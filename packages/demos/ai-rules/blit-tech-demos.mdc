@@ -1,17 +1,17 @@
 ---
-description: Blit-Tech Demos - interactive examples for the blit-tech WebGPU game engine
+description: Blit-Tech Demos - interactive examples for the Blit-Tech WebGPU game engine
 globs: ["**/*.ts", "**/*.js", "**/*.html", "**/*.css"]
 alwaysApply: true
 ---
 
 # Blit-Tech Demos Project Rules
 
-This repository contains interactive demos and examples for the blit-tech WebGPU retro game engine.
+This repository contains interactive demos and examples for the Blit-Tech WebGPU retro game engine.
 The demos showcase engine capabilities and serve as learning resources for developers.
 
 ## Project Purpose
 
-- **Showcase blit-tech features** through 8 interactive demos
+- **Showcase Blit-Tech features** through 8 interactive demos
 - **Provide learning resources** with progressive complexity
 - **Serve as integration tests** for the engine
 - **Deploy to Cloudflare Pages** for public access
@@ -61,7 +61,7 @@ blit-tech-demos/
 Each demo follows a consistent pattern:
 
 1. **File header comment** - Brief description of what the demo shows
-2. **Imports from blit-tech** - Use named imports
+2. **Imports from Blit-Tech** - Use named imports
 3. **Game class** - Implements `IBlitTechGame`
 4. **Bootstrap call** - At the end of the file
 
@@ -152,7 +152,7 @@ Focus on **clarity and readability** over strict documentation.
 
 ## Workspace Integration
 
-This project is part of a pnpm workspace with blit-tech:
+This project is part of a pnpm workspace with Blit-Tech:
 
 ```yaml
 # ../pnpm-workspace.yaml
@@ -167,7 +167,7 @@ The dependency `"blit-tech": "workspace:*"` links to the local library.
 
 ```bash
 pnpm dev          # Start dev server (opens http://localhost:5173/demos/)
-pnpm dev:watch    # Dev server + watch blit-tech library for changes
+pnpm dev:watch    # Dev server + watch Blit-Tech library for changes
 pnpm build        # Build for production (output: dist/)
 pnpm preview      # Preview production build
 ```
@@ -175,7 +175,7 @@ pnpm preview      # Preview production build
 ## Deployment
 
 Demos deploy to Cloudflare Pages via GitHub Actions on push to main.
-The workflow builds blit-tech library first, then the demos.
+The workflow builds Blit-Tech library first, then the demos.
 
 ## Git Commits
 

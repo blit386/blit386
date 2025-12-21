@@ -1,7 +1,7 @@
 name: Changeset Check
 
-# This workflow verifies changesets for blit-tech-demos only.
-# The blit-tech library is cloned as a workspace dependency,
+# This workflow verifies changesets for Blit-Tech Demos only.
+# The Blit-Tech library is cloned as a workspace dependency,
 # but is NOT checked here (it has its own CI in vancura/blit-tech).
 
 on:
@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout blit-tech library
+      - name: Checkout Blit-Tech library
         uses: actions/checkout@v6
         with:
           repository: vancura/blit-tech
           path: blit-tech
 
-      - name: Checkout blit-tech-demos
+      - name: Checkout Blit-Tech Demos
         uses: actions/checkout@v6
         with:
           fetch-depth: 0

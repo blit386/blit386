@@ -1,8 +1,8 @@
 name: Deploy to Cloudflare Pages
 
-# This workflow deploys blit-tech-demos to Cloudflare Pages.
-# The blit-tech library is cloned and built as a dependency,
-# but is NOT tested here (it has its own CI in vancura/blit-tech).
+# This workflow deploys Blit-Tech Demos to Cloudflare Pages.
+# The Blit-Tech library is cloned and built as a dependency,
+# but is NOT tested here (it has its own CI in Blit-Tech repository).
 
 on:
   push:
@@ -16,13 +16,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout blit-tech library
+      - name: Checkout Blit-Tech library
         uses: actions/checkout@v6
         with:
           repository: vancura/blit-tech
           path: blit-tech
 
-      - name: Checkout blit-tech-demos
+      - name: Checkout Blit-Tech Demos
         uses: actions/checkout@v6
         with:
           path: blit-tech-demos
@@ -47,28 +47,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build blit-tech library (dependency - not tested here)
+      - name: Build Blit-Tech library (dependency - not tested here)
         run: |
           cd blit-tech
           pnpm build
 
-      - name: Check formatting (blit-tech-demos only)
+      - name: Check formatting (Blit-Tech Demos only)
         run: |
           cd blit-tech-demos
           pnpm format:check
 
-      - name: Lint code (blit-tech-demos only)
+      - name: Lint code (Blit-Tech Demos only)
         run: |
           cd blit-tech-demos
           pnpm lint
 
-      - name: Type check (blit-tech-demos only)
+      - name: Type check (Blit-Tech Demos only)
         run: |
           cd blit-tech-demos
           pnpm typecheck
 
   build-library:
-    name: Build blit-tech Library
+    name: Build Blit-Tech Library
     runs-on: ubuntu-latest
     needs: quality
 
@@ -104,7 +104,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build blit-tech library
+      - name: Build Blit-Tech library
         run: |
           cd blit-tech
           pnpm build

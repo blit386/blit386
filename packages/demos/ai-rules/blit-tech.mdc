@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Blit-Tech Engine Reference
 
-> This is a condensed reference for blit-tech. For full documentation, see the blit-tech repository.
+> This is a condensed reference for Blit-Tech. For full documentation, see the Blit-Tech repository.
 
 Blit-Tech is a lightweight WebGPU retro game engine for TypeScript, inspired by RetroBlit.
 It provides pixel-perfect 2D rendering with a clean, fantasy-console-style API.

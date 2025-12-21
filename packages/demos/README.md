@@ -1,8 +1,8 @@
 # Blit-Tech Demos
 
-Interactive demos for the [blit-tech](../blit-tech/) WebGPU retro game engine.
+Interactive demos for the [Blit-Tech](../blit-tech/) WebGPU retro game engine.
 
-This repository showcases the capabilities of blit-tech through 8 interactive demos, demonstrating everything from basic
+This repository showcases the capabilities of Blit-Tech through 8 interactive demos, demonstrating everything from basic
 rendering to advanced sprite effects.
 
 ## Prerequisites
@@ -16,12 +16,43 @@ rendering to advanced sprite effects.
 
 ## Setup
 
-This project uses a pnpm workspace with the main `blit-tech` library. Install dependencies from the workspace root:
+This project depends on the [Blit-Tech](https://github.com/vancura/blit-tech) library using a pnpm workspace. Since
+Blit-Tech is not yet published to npm, you need to set up a local workspace structure.
+
+> **Detailed Setup Guide:** See [docs/EXTERNAL-DEVELOPER-SETUP.md](docs/EXTERNAL-DEVELOPER-SETUP.md) for complete
+> step-by-step instructions and troubleshooting.
+
+### Quick Setup
 
 ```bash
-# From the workspace root (parent directory containing blit-tech and blit-tech-demos)
+# 1. Create workspace directory
+mkdir blit-tech-workspace && cd blit-tech-workspace
+
+# 2. Clone both repositories
+git clone https://github.com/vancura/blit-tech.git
+git clone https://github.com/vancura/blit-tech-demos.git
+
+# 3. Create workspace config
+cat > pnpm-workspace.yaml << 'EOF'
+packages:
+  - "blit-tech"
+  - "blit-tech-demos"
+EOF
+
+# 4. Install dependencies
 pnpm install
 ```
+
+Your directory structure:
+
+```text
+blit-tech-workspace/          # Your workspace root
+├── pnpm-workspace.yaml       # Workspace config (you created this)
+├── blit-tech/                # Cloned from GitHub
+└── blit-tech-demos/          # Cloned from GitHub
+```
+
+> **Note:** Once Blit-Tech is published to npm, you'll be able to install it directly without this workspace setup.
 
 ## Running the Demos
 
@@ -36,14 +67,14 @@ The browser will open automatically at `http://localhost:5173/demos/` showing th
 
 ### Development with Auto-Rebuild
 
-For seamless development where changes to the blit-tech library automatically rebuild:
+For seamless development where changes to the Blit-Tech library automatically rebuild:
 
 ```bash
 cd blit-tech-demos
 pnpm dev:watch
 ```
 
-This runs both the library watcher and the dev server concurrently. Any changes to blit-tech source files will trigger
+This runs both the library watcher and the dev server concurrently. Any changes to Blit-Tech source files will trigger
 an automatic rebuild.
 
 ## Available Demos
@@ -52,7 +83,7 @@ an automatic rebuild.
 
 **Minimal game setup and game loop**
 
-Demonstrates the fundamental structure of a blit-tech game:
+Demonstrates the fundamental structure of a Blit-Tech game:
 
 - Hardware configuration (`queryHardware`)
 - Game initialization
@@ -191,7 +222,7 @@ Text rendering system:
 
 ## Project Structure
 
-```
+```text
 blit-tech-demos/
 ├── demos/                    # All HTML files
 │   ├── index.html           # Demo gallery
@@ -255,12 +286,21 @@ pnpm format        # Format code with Biome + Prettier
 pnpm typecheck     # TypeScript type checking
 ```
 
-## Using blit-tech in Your Project
+## Using Blit-Tech in Your Project
 
-These demos use the local blit-tech library via pnpm workspace. When blit-tech is published to npm, you can install it:
+### Current Status (Pre-npm)
+
+These demos currently use the local Blit-Tech library via pnpm workspace (see Setup section above). This workspace setup
+is required because Blit-Tech is not yet published to npm.
+
+### After npm Publication
+
+When Blit-Tech is published to npm, you'll be able to install it directly:
 
 ```bash
 npm install blit-tech
+# or
+pnpm add blit-tech
 ```
 
 Then import in your project:
@@ -268,6 +308,8 @@ Then import in your project:
 ```typescript
 import { BT, bootstrap, Color32, Vector2i, type IBlitTechGame } from 'blit-tech';
 ```
+
+No workspace setup will be needed once the package is on npm.
 
 ## Browser Compatibility
 
@@ -280,14 +322,8 @@ import { BT, bootstrap, Color32, Vector2i, type IBlitTechGame } from 'blit-tech'
 
 ## License
 
-ISC License - See [blit-tech](../blit-tech/) for details.
+ISC
 
 ## Links
 
-- **Main Library:** [blit-tech](../blit-tech/)
-- **GitHub:** [github.com/vancura/blit-tech](https://github.com/vancura/blit-tech)
-- **Website:** [ambilab.com/blit-tech](https://ambilab.com/blit-tech)
-
----
-
-Built with WebGPU and TypeScript
+- **Blit-Tech on GitHub:** [github.com/vancura/blit-tech](https://github.com/vancura/blit-tech)

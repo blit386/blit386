@@ -2,7 +2,7 @@
   "name": "blit-tech-demos",
   "version": "0.1.1",
   "type": "module",
-  "description": "Interactive demos and examples for the blit-tech WebGPU retro game engine.",
+  "description": "Interactive demos and examples for the Blit-Tech WebGPU retro game engine.",
   "author": "Václav Vančura",
   "license": "ISC",
   "repository": {
