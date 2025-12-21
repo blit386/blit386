@@ -61,21 +61,6 @@ dependency** that has its own CI pipeline in the Blit-Tech repository.
 - ✅ Checks markdown links in Blit-Tech Demos
 - ❌ Does NOT check Blit-Tech commits
 
-### 4. Changeset Check (`changeset-check.yml`)
-
-**Triggers:** Pull Requests  
-**Purpose:** Ensure changesets are present for version tracking
-
-**Jobs:**
-
-- `changeset` - Verifies changeset exists for Blit-Tech Demos PR
-
-**What it does:**
-
-- ✅ Checks for changeset in Blit-Tech Demos
-- ✅ Allows skip via `skip-changeset` label
-- ❌ Does NOT check Blit-Tech changesets
-
 ## Workspace Structure in CI
 
 All workflows recreate the local workspace structure:

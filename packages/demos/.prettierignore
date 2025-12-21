@@ -25,7 +25,3 @@ build/
 **/*.min.js
 **/*.min.css
 vite.config.*.timestamp-*
-
-# Changesets (auto-generated)
-.changeset/*.md
-!.changeset/README.md

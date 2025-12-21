@@ -12,7 +12,6 @@
     "Bresenham",
     "BTAPI",
     "btfont",
-    "changesets",
     "Cietwierkowski",
     "codecov",
     "commitlint",
@@ -53,7 +52,6 @@
   "ignorePaths": [
     "*.map",
     "*.min.js",
-    ".changeset/*.md",
     ".git",
     ".pnpm-store",
     "CHANGELOG.md",

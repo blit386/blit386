@@ -1,6 +1,6 @@
 {
   "name": "blit-tech-demos",
-  "version": "0.1.1",
+  "private": true,
   "type": "module",
   "description": "Interactive demos and examples for the Blit-Tech WebGPU retro game engine.",
   "author": "Václav Vančura",
@@ -27,12 +27,6 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "sideEffects": false,
   "syncRules": {
     "source": "ai-rules",
     "targets": {
@@ -57,11 +51,6 @@
     "spellcheck": "cspell \"src/**/*.{ts,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
     "preflight": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm spellcheck",
     "clean": "rm -rf dist node_modules/.vite",
-    "changeset": "changeset",
-    "changeset:check": "changeset status --since=origin/main",
-    "changeset:version": "changeset version",
-    "changeset:publish": "pnpm build && changeset publish",
-    "version:bump": "pnpm changeset:version && pnpm install --no-frozen-lockfile",
     "sync-rules": "node scripts/sync-rules.mjs",
     "prepare": "husky"
   },
@@ -71,7 +60,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
-    "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^20.2.0",
     "@commitlint/config-conventional": "^20.2.0",
     "@eslint/js": "^9.39.2",
@@ -96,9 +84,7 @@
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vite": "^7.2.7",
-    "vite-plugin-dts": "^4.5.4",
     "vite-plugin-handlebars": "^2.0.0",
-    "vite-plugin-static-copy": "^3.1.4",
-    "wait-on": "^9.0.3"
+    "vite-plugin-static-copy": "^3.1.4"
   }
 }

@@ -99,7 +99,6 @@ All workflows in `.github/workflows/` use this pattern:
 - **ci.yml** - Code quality checks (format, lint, typecheck)
 - **deploy.yml** - Build and deploy to Cloudflare Pages
 - **pr-checks.yml** - PR commit linting
-- **changeset-check.yml** - Changeset verification
 
 ## Local Development
 

@@ -70,7 +70,6 @@ updates:
           - husky
           - lint-staged
           - '@commitlint/*'
-          - '@changesets/*'
         update-types:
           - minor
           - patch
