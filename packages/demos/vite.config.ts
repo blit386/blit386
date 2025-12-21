@@ -1,12 +1,62 @@
-import { basename, resolve } from 'node:path';
+import { copyFileSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import handlebars from 'vite-plugin-handlebars';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 import { exampleContexts } from './_config/contexts';
+
+/**
+ * Vite plugin to flatten the demos/ subdirectory in the build output.
+ * Moves all files from dist/demos/ to dist/ root for cleaner URLs.
+ * Also rewrites asset paths in HTML files (../assets/ -> ./assets/).
+ * @returns Vite plugin configuration
+ */
+function flattenDemosPlugin(): Plugin {
+    return {
+        name: 'flatten-demos',
+        apply: 'build',
+        closeBundle() {
+            const distDir = resolve(__dirname, 'dist');
+            const demosDir = join(distDir, 'demos');
+
+            try {
+                // eslint-disable-next-line security/detect-non-literal-fs-filename -- Safe: demosDir is built from __dirname constant
+                const files = readdirSync(demosDir);
+
+                for (const file of files) {
+                    const srcPath = join(demosDir, file);
+                    const destPath = join(distDir, file);
+
+                    // For HTML files, rewrite asset paths before copying.
+                    if (file.endsWith('.html')) {
+                        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Safe: srcPath derived from __dirname
+                        let content = readFileSync(srcPath, 'utf-8');
+
+                        // Fix asset paths: ../assets/ -> ./assets/, ../fonts/ -> ./fonts/
+                        content = content.replace(/\.\.\/assets\//g, './assets/');
+                        content = content.replace(/\.\.\/fonts\//g, './fonts/');
+
+                        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Safe: destPath derived from __dirname
+                        writeFileSync(destPath, content);
+                    } else {
+                        copyFileSync(srcPath, destPath);
+                    }
+                    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Safe: srcPath derived from __dirname
+                    unlinkSync(srcPath);
+                }
+
+                // Remove empty demos directory.
+                rmSync(demosDir, { recursive: true });
+            } catch {
+                // Demos directory may not exist in dev mode.
+            }
+        },
+    };
+}
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -41,6 +91,7 @@ export default defineConfig(({ command }) => {
                     },
                 ],
             }),
+            flattenDemosPlugin(),
         ],
 
         build: {
@@ -51,7 +102,6 @@ export default defineConfig(({ command }) => {
             rollupOptions: {
                 input: {
                     main: resolve(__dirname, 'demos/index.html'),
-                    landing: resolve(__dirname, 'demos/landing.html'),
                     basics: resolve(__dirname, 'demos/basics.html'),
                     primitives: resolve(__dirname, 'demos/primitives.html'),
                     camera: resolve(__dirname, 'demos/camera.html'),
