@@ -225,8 +225,7 @@ Text rendering system:
 ```text
 blit-tech-demos/
 ├── demos/                    # All HTML files
-│   ├── index.html           # Demo gallery
-│   ├── landing.html         # Landing/marketing page
+│   ├── index.html            # Demo gallery
 │   ├── basics.html
 │   ├── primitives.html
 │   ├── camera.html
@@ -330,8 +329,17 @@ process is handled by GitHub Actions:
 3. **Skip Cloudflare Build**: Cloudflare Pages is configured to skip its own build process via `wrangler.jsonc` and
    `.cfignore`
 
+### URL Structure
+
+- **Development**: URLs include the `demos/` path (e.g., `http://localhost:5173/demos/basics.html`)
+- **Production**: URLs are at the root (e.g., `https://blit-tech-demos.ambilab.com/basics.html`)
+
+A custom Vite plugin flattens the `dist/demos/` output to `dist/` during the build, providing cleaner production URLs
+while keeping source files organized in the `demos/` folder.
+
 ### Deployment Configuration
 
+- **vite.config.ts**: Contains `flattenDemosPlugin()` to restructure build output for production
 - **wrangler.jsonc**: Specifies `pages_build_output_dir` to indicate pre-built content
 - **.cfignore**: Prevents Cloudflare from attempting to install dependencies
 - **GitHub Actions**: Handles all build steps with proper pnpm workspace setup

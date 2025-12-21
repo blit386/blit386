@@ -95,6 +95,9 @@ pnpm dev
 
 Opens browser at `http://localhost:5173/demos/`
 
+> **Note:** Development URLs include the `demos/` path, while production URLs are at the root (e.g.,
+> `https://blit-tech-demos.ambilab.com/basics.html`). A build plugin handles this transformation.
+
 ### Development with Auto-Rebuild
 
 If you want to edit the Blit-Tech library and see changes instantly:

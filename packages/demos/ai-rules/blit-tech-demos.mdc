@@ -31,12 +31,11 @@ All rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics.
 ```text
 blit-tech-demos/
   demos/                  # HTML pages for each demo
-    index.html           # Demo gallery
-    landing.html         # Marketing/landing page
-    basics.html          # Individual demo pages...
-    styles.css           # Shared demo styling
+    index.html            # Demo gallery
+    basics.html           # Individual demo pages...
+    styles.css            # Shared demo styling
   src/                    # TypeScript source for demos
-    basics.ts            # One file per demo
+    basics.ts             # One file per demo
     primitives.ts
     camera.ts
     patterns.ts
@@ -45,13 +44,13 @@ blit-tech-demos/
     sprite-effects.ts
     fonts.ts
   public/                 # Static assets
-    fonts/               # Bitmap fonts (.btfont + .png)
+    fonts/                # Bitmap fonts (.btfont + .png)
   _partials/              # Handlebars templates
-    layout-top.hbs       # Page header
-    layout-bottom.hbs    # Page footer
-    font-attribution.hbs # Font credits
+    layout-top.hbs        # Page header
+    layout-bottom.hbs     # Page footer
+    font-attribution.hbs  # Font credits
   _config/
-    contexts.ts          # Page context data for templates
+    contexts.ts           # Page context data for templates
 ```
 
 ## Demo File Conventions
