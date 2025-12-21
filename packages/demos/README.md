@@ -320,6 +320,25 @@ No workspace setup will be needed once the package is on npm.
 | Firefox     | Nightly | ⚠️ Requires `dom.webgpu.enabled` |
 | Opera       | Latest  | ✅ Full support (Chromium-based) |
 
+## Deployment
+
+The demos are automatically deployed to Cloudflare Pages when changes are pushed to the `main` branch. The deployment
+process is handled by GitHub Actions:
+
+1. **Build in GitHub Actions**: The blit-tech library is cloned, built, and then the demos are built against it
+2. **Deploy Artifacts**: The built `dist/` directory is deployed to Cloudflare Pages using the `cloudflare/pages-action`
+3. **Skip Cloudflare Build**: Cloudflare Pages is configured to skip its own build process via `wrangler.jsonc` and
+   `.cfignore`
+
+### Deployment Configuration
+
+- **wrangler.jsonc**: Specifies `pages_build_output_dir` to indicate pre-built content
+- **.cfignore**: Prevents Cloudflare from attempting to install dependencies
+- **GitHub Actions**: Handles all build steps with proper pnpm workspace setup
+
+This approach works around Cloudflare Pages' lack of native pnpm workspace support while maintaining the ability to use
+the local unpublished `blit-tech` dependency.
+
 ## License
 
 ISC
@@ -327,3 +346,4 @@ ISC
 ## Links
 
 - **Blit-Tech on GitHub:** [github.com/vancura/blit-tech](https://github.com/vancura/blit-tech)
+- **Live Demos:** [blit-tech-demos.ambilab.com](https://blit-tech-demos.ambilab.com)
