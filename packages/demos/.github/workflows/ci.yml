@@ -34,6 +34,7 @@ jobs:
             - 'blit-tech'
             - 'blit-tech-demos'
           EOF
+          cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
