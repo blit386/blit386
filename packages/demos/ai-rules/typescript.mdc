@@ -1,0 +1,466 @@
+---
+description: TypeScript conventions and style guide for Blit-Tech
+globs: ["**/*.ts"]
+alwaysApply: false
+---
+
+# TypeScript Conventions
+
+This document covers TypeScript-specific patterns and style requirements for Blit-Tech.
+
+## Compiler Configuration
+
+The project uses strict TypeScript. Key settings from `tsconfig.json`:
+
+```json
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "verbatimModuleSyntax": true
+    }
+}
+```
+
+All these checks are enabled - code must pass all of them.
+
+## Type Imports
+
+Always use type-only imports for types:
+
+```typescript
+// Correct - type import
+import type { HardwareSettings, IBlitTechGame } from './IBlitTechGame';
+import { Vector2i, Rect2i } from '../utils/Vector2i';
+
+// Wrong - importing types as values
+import { HardwareSettings } from './IBlitTechGame';
+```
+
+Use `import type` when:
+
+- Importing interfaces
+- Importing type aliases
+- Importing types only used in type positions
+
+## Type Safety
+
+### Avoid `any`
+
+Never use `any` unless absolutely necessary:
+
+```typescript
+// Bad
+function process(data: any): any {
+    return data.value;
+}
+
+// Good
+function process<T extends { value: unknown }>(data: T): T['value'] {
+    return data.value;
+}
+
+// Also acceptable for truly unknown data
+function process(data: unknown): number {
+    if (typeof data === 'object' && data !== null && 'value' in data) {
+        return data.value as number;
+    }
+    throw new Error('Invalid data');
+}
+```
+
+### Null Checks
+
+Use strict null checks. Handle null/undefined explicitly:
+
+```typescript
+// Bad - might be undefined
+const value = array[index];
+console.log(value.property);
+
+// Good - check first (noUncheckedIndexedAccess)
+const value = array[index];
+if (value !== undefined) {
+    console.log(value.property);
+}
+
+// Also good - use optional chaining
+console.log(array[index]?.property);
+```
+
+### Non-null Assertions
+
+Avoid `!` assertions. If you must use them, add a comment:
+
+```typescript
+// Bad - unexplained assertion
+const element = document.getElementById('game')!;
+
+// Better - with justification
+// Element guaranteed to exist in index.html
+const element = document.getElementById('game')!;
+
+// Best - runtime check
+const element = document.getElementById('game');
+if (!element) {
+    throw new Error('Game canvas not found');
+}
+```
+
+## Naming Conventions
+
+### Classes and Interfaces
+
+- Classes: PascalCase - `SpriteSheet`, `BitmapFont`, `Renderer`
+- Interfaces: PascalCase with `I` prefix for contracts - `IBlitTechGame`
+- Type aliases: PascalCase - `HardwareSettings`, `GlyphData`
+
+```typescript
+// Interface for implementation contract
+interface IBlitTechGame {
+    update(): void;
+    render(): void;
+}
+
+// Type alias for data shape
+type HardwareSettings = {
+    displaySize: Vector2i;
+    targetFPS: number;
+};
+
+// Class implementing interface
+class MyGame implements IBlitTechGame {
+    update(): void { /* ... */ }
+    render(): void { /* ... */ }
+}
+```
+
+### Variables and Functions
+
+- Variables: camelCase - `vertexCount`, `spriteSheet`
+- Functions: camelCase - `drawSprite`, `loadImage`
+- Constants: UPPER_SNAKE_CASE - `MAX_VERTICES`, `FLIP_H`
+- Private members: camelCase (no underscore prefix) - `private vertexData`
+
+```typescript
+// Constants
+const MAX_BATCH_SIZE = 4096;
+const VERTEX_SIZE = 8;
+
+// Class with naming conventions
+class Renderer {
+    private device: GPUDevice;
+    private vertexBuffer: GPUBuffer;
+    private vertexCount = 0;
+
+    drawSprite(sheet: SpriteSheet, rect: Rect2i, pos: Vector2i): void {
+        // ...
+    }
+}
+```
+
+### Parameters
+
+- Use descriptive names, not abbreviations
+- Unused parameters: prefix with underscore
+
+```typescript
+// Good - descriptive names
+function createTexture(device: GPUDevice, width: number, height: number): GPUTexture;
+
+// Good - unused parameter marked
+function handleEvent(_event: Event, data: string): void {
+    console.log(data);
+}
+
+// Bad - unclear abbreviations
+function createTex(d: GPUDevice, w: number, h: number): GPUTexture;
+```
+
+## JSDoc Requirements
+
+Public APIs require JSDoc documentation:
+
+### Functions
+
+```typescript
+/**
+ * Draws a filled rectangle on the screen.
+ * @param rect - The rectangle bounds in screen coordinates
+ * @param color - Fill color
+ */
+export function drawRectFill(rect: Rect2i, color: Color32): void {
+    // implementation
+}
+```
+
+### Classes
+
+```typescript
+/**
+ * Manages GPU textures for sprite rendering.
+ * Handles lazy texture creation and UV coordinate calculation.
+ */
+export class SpriteSheet {
+    /**
+     * Loads a sprite sheet from an image URL.
+     * @param url - Path to the image file
+     * @returns Promise resolving to the loaded sprite sheet
+     * @throws Error if the image fails to load
+     */
+    static async load(url: string): Promise<SpriteSheet> {
+        // implementation
+    }
+}
+```
+
+### Interfaces
+
+```typescript
+/**
+ * Game lifecycle interface.
+ * Implement this to create a Blit-Tech game.
+ */
+export interface IBlitTechGame {
+    /**
+     * Called once at startup to configure hardware.
+     * @returns Hardware configuration for the engine
+     */
+    queryHardware(): HardwareSettings;
+
+    /**
+     * Called after hardware initialization.
+     * Load assets and initialize game state here.
+     * @returns Promise resolving to true if initialization succeeded
+     */
+    initialize(): Promise<boolean>;
+}
+```
+
+## Async Patterns
+
+### Async/Await
+
+Use async/await for all asynchronous code:
+
+```typescript
+// Good - async/await
+async function loadAssets(): Promise<void> {
+    const sheet = await SpriteSheet.load('sprites.png');
+    const font = await BitmapFont.load('font.btfont');
+    // ...
+}
+
+// Bad - raw promises
+function loadAssets(): Promise<void> {
+    return SpriteSheet.load('sprites.png')
+        .then((sheet) => {
+            return BitmapFont.load('font.btfont');
+        })
+        .then((font) => {
+            // ...
+        });
+}
+```
+
+### Parallel Loading
+
+Load independent assets in parallel:
+
+```typescript
+// Good - parallel loading
+async function initialize(): Promise<boolean> {
+    const [spriteSheet, font, music] = await Promise.all([
+        SpriteSheet.load('sprites.png'),
+        BitmapFont.load('font.btfont'),
+        AudioAsset.load('music.mp3'),
+    ]);
+    // All loaded
+    return true;
+}
+
+// Bad - sequential when parallel is possible
+async function initialize(): Promise<boolean> {
+    const spriteSheet = await SpriteSheet.load('sprites.png');
+    const font = await BitmapFont.load('font.btfont');
+    const music = await AudioAsset.load('music.mp3');
+    return true;
+}
+```
+
+### Error Handling
+
+Handle async errors appropriately:
+
+```typescript
+// In initialize() - let errors propagate
+async initialize(): Promise<boolean> {
+    try {
+        this.spriteSheet = await SpriteSheet.load('sprites.png');
+        return true;
+    } catch (error) {
+        console.error('Failed to load sprites:', error);
+        return false;
+    }
+}
+
+// Or use Promise.allSettled for partial success
+const results = await Promise.allSettled([
+    SpriteSheet.load('required.png'),
+    SpriteSheet.load('optional.png'),
+]);
+```
+
+## Error Handling
+
+### Custom Errors
+
+Use descriptive error messages:
+
+```typescript
+// Good - descriptive error
+if (!navigator.gpu) {
+    throw new Error(
+        'WebGPU is not supported in this browser. ' +
+        'Please use Chrome 113+, Edge 113+, or Safari 18+.'
+    );
+}
+
+// Bad - vague error
+if (!navigator.gpu) {
+    throw new Error('GPU error');
+}
+```
+
+### Guard Clauses
+
+Use early returns for validation:
+
+```typescript
+// Good - guard clauses
+function drawSprite(sheet: SpriteSheet | null, rect: Rect2i, pos: Vector2i): void {
+    if (!sheet) {
+        console.warn('drawSprite called with null sheet');
+        return;
+    }
+
+    if (rect.width <= 0 || rect.height <= 0) {
+        return; // Nothing to draw
+    }
+
+    // Main logic here
+}
+
+// Bad - deeply nested
+function drawSprite(sheet: SpriteSheet | null, rect: Rect2i, pos: Vector2i): void {
+    if (sheet) {
+        if (rect.width > 0 && rect.height > 0) {
+            // Main logic buried in nesting
+        }
+    }
+}
+```
+
+## Code Organization
+
+### File Structure
+
+One primary export per file:
+
+```typescript
+// Vector2i.ts - single class export
+export class Vector2i {
+    // ...
+}
+
+// Also export related utilities
+export function vector2iFromAngle(angle: number, length: number): Vector2i {
+    // ...
+}
+```
+
+### Import Order
+
+Imports sorted by ESLint (simple-import-sort):
+
+```typescript
+// 1. External packages
+import type { GPUDevice, GPUTexture } from '@webgpu/types';
+
+// 2. Internal absolute imports
+import { BTAPI } from './core/BTAPI';
+import type { IBlitTechGame } from './core/IBlitTechGame';
+
+// 3. Relative imports
+import { Color32 } from '../utils/Color32';
+import { Vector2i } from '../utils/Vector2i';
+```
+
+### Export Patterns
+
+Use named exports (not default):
+
+```typescript
+// Good - named exports
+export class SpriteSheet { }
+export function loadImage(url: string): Promise<HTMLImageElement> { }
+
+// Bad - default exports
+export default class SpriteSheet { }
+```
+
+## Performance Considerations
+
+### Avoid Object Creation in Loops
+
+```typescript
+// Bad - creates new Vector2i every frame
+update(): void {
+    this.position = this.position.add(new Vector2i(1, 0));
+}
+
+// Good - reuse objects
+private velocity = new Vector2i(1, 0);
+update(): void {
+    this.position = this.position.add(this.velocity);
+}
+
+// Best - mutate in place (for performance-critical code)
+private position = { x: 0, y: 0 };
+update(): void {
+    this.position.x += 1;
+}
+```
+
+### Use TypedArrays for GPU Data
+
+```typescript
+// Good - TypedArray for GPU upload
+private vertices = new Float32Array(MAX_VERTICES * STRIDE);
+
+// Bad - regular array (requires conversion)
+private vertices: number[] = [];
+```
+
+### Const Assertions
+
+Use `as const` for literal types:
+
+```typescript
+// Good - const assertion
+const SPRITE_FLAGS = {
+    FLIP_H: 1 << 0,
+    FLIP_V: 1 << 1,
+    ROT_90: 1 << 2,
+} as const;
+
+type SpriteFlag = typeof SPRITE_FLAGS[keyof typeof SPRITE_FLAGS];
+```

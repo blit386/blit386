@@ -1,0 +1,31 @@
+# Prettier ignore - only for Markdown/YAML formatting
+
+# NOTE: TS/JS/JSON/CSS are handled by Biome, not Prettier
+
+# NOTE: HTML files are excluded - they use Handlebars syntax
+*.html
+
+# Lock files (never format)
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+
+# Git
+.git/
+
+# Generated/minified files
+**/*.min.js
+**/*.min.css
+vite.config.*.timestamp-*
+
+# Changesets (auto-generated)
+.changeset/*.md
+!.changeset/README.md

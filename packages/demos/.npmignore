@@ -1,0 +1,56 @@
+# Source files (only dist/ should be published)
+src/
+
+# Configuration files
+.husky/
+.github/
+.vscode/
+.zed/
+.idea/
+.changeset/
+
+# AI assistant configs (development only)
+ai-rules/
+.cursor/
+.rules
+CLAUDE.md
+.claude/
+
+*.config.js
+*.config.ts
+tsconfig.json
+.editorconfig
+.gitignore
+.gitattributes
+.prettierignore
+.lintstagedrc.json
+biome.json
+wrangler.jsonc
+
+# Development files
+vite.config.*.timestamp-*
+.eslintcache
+
+# Documentation (keep README.md and LICENSE)
+docs/
+
+# Build artifacts
+node_modules/
+.pnpm-store/
+coverage/
+*.log
+pnpm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+*.tmp
+*.tgz

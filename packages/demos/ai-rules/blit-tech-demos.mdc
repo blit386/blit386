@@ -1,0 +1,190 @@
+---
+description: Blit-Tech Demos - interactive examples for the blit-tech WebGPU game engine
+globs: ["**/*.ts", "**/*.js", "**/*.html", "**/*.css"]
+alwaysApply: true
+---
+
+# Blit-Tech Demos Project Rules
+
+This repository contains interactive demos and examples for the blit-tech WebGPU retro game engine.
+The demos showcase engine capabilities and serve as learning resources for developers.
+
+## Project Purpose
+
+- **Showcase blit-tech features** through 8 interactive demos
+- **Provide learning resources** with progressive complexity
+- **Serve as integration tests** for the engine
+- **Deploy to Cloudflare Pages** for public access
+
+## Critical Rules
+
+### No Emoji
+
+NEVER use emoji anywhere in this project - source code, comments, documentation, or commit messages.
+
+### Use Integer Coordinates
+
+All rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics.
+
+## Project Structure
+
+```text
+blit-tech-demos/
+  demos/                  # HTML pages for each demo
+    index.html           # Demo gallery
+    landing.html         # Marketing/landing page
+    basics.html          # Individual demo pages...
+    styles.css           # Shared demo styling
+  src/                    # TypeScript source for demos
+    basics.ts            # One file per demo
+    primitives.ts
+    camera.ts
+    patterns.ts
+    sprites.ts
+    animation.ts
+    sprite-effects.ts
+    fonts.ts
+  public/                 # Static assets
+    fonts/               # Bitmap fonts (.btfont + .png)
+  _partials/              # Handlebars templates
+    layout-top.hbs       # Page header
+    layout-bottom.hbs    # Page footer
+    font-attribution.hbs # Font credits
+  _config/
+    contexts.ts          # Page context data for templates
+```
+
+## Demo File Conventions
+
+### TypeScript Demo Files (`src/*.ts`)
+
+Each demo follows a consistent pattern:
+
+1. **File header comment** - Brief description of what the demo shows
+2. **Imports from blit-tech** - Use named imports
+3. **Game class** - Implements `IBlitTechGame`
+4. **Bootstrap call** - At the end of the file
+
+```typescript
+/**
+ * Demo Name
+ *
+ * Brief description of what this demo demonstrates.
+ */
+
+import {
+    bootstrap,
+    BT,
+    Color32,
+    type HardwareSettings,
+    type IBlitTechGame,
+    Vector2i,
+} from 'blit-tech';
+
+// #region Game Class
+
+class DemoGame implements IBlitTechGame {
+    // #region Module State
+    // ...
+    // #endregion
+
+    // #region IBlitTechGame Implementation
+    queryHardware(): HardwareSettings { /* ... */ }
+    async initialize(): Promise<boolean> { /* ... */ }
+    update(): void { /* ... */ }
+    render(): void { /* ... */ }
+    // #endregion
+}
+
+// #endregion
+
+// #region App Lifecycle
+
+bootstrap(DemoGame);
+
+// #endregion
+```
+
+### HTML Demo Pages (`demos/*.html`)
+
+Use Handlebars partials for consistent layout:
+
+```html
+{{> layout-top title="Demo Name" }}
+
+<canvas id="game-canvas"></canvas>
+<script type="module" src="../src/demo-name.ts"></script>
+
+{{> layout-bottom }}
+```
+
+## Code Quality (Relaxed for Demos)
+
+Demos have relaxed linting rules compared to the library:
+
+- **JSDoc not required** - Comments are optional for demo code
+- **Non-null assertions allowed** - `element!` is acceptable
+- **Console logging allowed** - Useful for demonstration
+
+Focus on **clarity and readability** over strict documentation.
+
+## Adding a New Demo
+
+1. Create `src/new-demo.ts` following the demo pattern above
+2. Create `demos/new-demo.html` using the HTML template
+3. Add entry to `vite.config.ts` rollupOptions.input
+4. Add context to `_config/contexts.ts`
+5. Add link to `demos/index.html` gallery
+
+## Asset Conventions
+
+### Bitmap Fonts
+
+- Location: `public/fonts/`
+- Format: `.btfont` JSON + `.png` texture
+- Load with: `BitmapFont.load('/fonts/FontName.btfont')`
+
+### Sprites (Future)
+
+- Location: `public/sprites/`
+- Format: PNG with transparency
+- Load with: `SpriteSheet.load('/sprites/sheet.png')`
+
+## Workspace Integration
+
+This project is part of a pnpm workspace with blit-tech:
+
+```yaml
+# ../pnpm-workspace.yaml
+packages:
+  - "blit-tech"
+  - "blit-tech-demos"
+```
+
+The dependency `"blit-tech": "workspace:*"` links to the local library.
+
+## Development Commands
+
+```bash
+pnpm dev          # Start dev server (opens http://localhost:5173/demos/)
+pnpm dev:watch    # Dev server + watch blit-tech library for changes
+pnpm build        # Build for production (output: dist/)
+pnpm preview      # Preview production build
+```
+
+## Deployment
+
+Demos deploy to Cloudflare Pages via GitHub Actions on push to main.
+The workflow builds blit-tech library first, then the demos.
+
+## Git Commits
+
+Follow Conventional Commits format:
+
+- `feat(demos)`: New demo or demo feature
+- `fix(demos)`: Bug fix in demos
+- `docs`: Documentation changes
+- `style`: Formatting changes
+- `refactor(demos)`: Code refactoring
+
+Always sign off commits: `git commit -s`

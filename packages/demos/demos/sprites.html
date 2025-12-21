@@ -1,0 +1,37 @@
+{{> layout-top}}
+
+<h3 class="mb-2.5 text-accent">Demonstrated Features:</h3>
+
+<ul class="info-list list-none pl-0">
+    <li class="py-1 pl-5 relative">
+        <code class="bg-surface-code px-1.5 py-0.5">SpriteSheet.load(url)</code>
+        — Load sprite sheets from images
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        <code class="bg-surface-code px-1.5 py-0.5">BT.drawSprite(sheet, srcRect, destPos, tint)</code>
+        — Render textured sprites
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Color tinting and transparency control
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Sprite animation (position, color, opacity)
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Efficient texture batching (automatic)
+    </li>
+</ul>
+
+<div class="bg-sky-500/20 border-l-4 border-sky-400 p-2.5 mt-4">
+    <strong>How to use your own sprites:</strong><br />
+
+    1. Load your sprite sheet: <code class="bg-surface-code px-1.5 py-0.5">const sheet = await SpriteSheet.load('path/to/sprites.png')</code><br />
+    2. Define sprite regions: <code class="bg-surface-code px-1.5 py-0.5">const sprite = new Rect2i(x, y, width, height)</code><br />
+    3. Render: <code class="bg-surface-code px-1.5 py-0.5">BT.drawSprite(sheet, sprite, position, tintColor)</code>
+</div>
+
+{{> font-attribution}} {{> layout-bottom}}

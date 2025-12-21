@@ -1,0 +1,227 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blit-Tech - WebGPU Retro Game Engine</title>
+    <meta
+      name="description"
+      content="A lightweight WebGPU retro game engine for TypeScript, inspired by RetroBlit. Build pixel-perfect 2D games with a clean, fantasy-console-style API."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+
+  <body
+    class="bg-black min-h-screen flex items-center justify-center text-white p-10 pb-20"
+  >
+    <div class="max-w-5xl w-full">
+      <div class="text-center mb-10">
+        <h1 class="text-6xl mb-5 drop-shadow-lg">Blit-Tech</h1>
+
+        <p class="text-2xl opacity-90 mb-8">
+          WebGPU Retro Game Engine for TypeScript
+        </p>
+
+        <p
+          class="text-lg opacity-75 max-w-3xl mx-auto leading-relaxed text-balance"
+        >
+          A lightweight pixel-perfect 2D game engine inspired by RetroBlit.
+          Build retro games with a clean, fantasy-console-style API powered by
+          WebGPU.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 select-none">
+        <a
+          href="./index.html"
+          class="bg-accent/20 border-2 border-accent/40 p-6 text-white hover:bg-accent/30 hover:border-accent/60 hover:shadow-xl text-center"
+        >
+          <div class="text-4xl mb-3">▶</div>
+
+          <div class="text-xl mb-2">Examples & Demos</div>
+
+          <div class="text-sm opacity-80">
+            Interactive examples and tutorials
+          </div>
+        </a>
+
+        <a
+          href="https://github.com/vancura/blit-tech"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="bg-white/10 border-2 border-white/20 p-6 text-white hover:bg-white/20 hover:border-white/40 hover:shadow-xl text-center"
+        >
+          <div class="text-4xl mb-3">&lt;/&gt;</div>
+
+          <div class="text-xl mb-2">GitHub</div>
+
+          <div class="text-sm opacity-80">Source code and documentation</div>
+        </a>
+
+        <a
+          href="https://www.npmjs.com/package/blit-tech"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="bg-white/10 border-2 border-white/20 p-6 text-white hover:bg-white/20 hover:border-white/40 hover:shadow-xl text-center pointer-events-none opacity-35"
+        >
+          <div class="text-4xl mb-3">📦</div>
+
+          <div class="text-xl mb-2">npm Package</div>
+
+          <div class="text-sm opacity-80">Install and use in your project</div>
+        </a>
+      </div>
+
+      <div class="bg-surface p-8 pt-6 mb-8">
+        <h2 class="text-3xl mb-6">Features</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-xl mb-3">Core Rendering</h3>
+
+            <ul class="check-list list-none pl-0 space-y-2">
+              <li class="pl-6 relative">WebGPU dual-pipeline architecture</li>
+              <li class="pl-6 relative">Pixel-perfect integer coordinates</li>
+              <li class="pl-6 relative">
+                Primitives: pixels, lines, rectangles
+              </li>
+              <li class="pl-6 relative">Sprite rendering with batching</li>
+              <li class="pl-6 relative">Bitmap font system</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="text-xl mb-3">Game Features</h3>
+
+            <ul class="check-list list-none pl-0 space-y-2">
+              <li class="pl-6 relative">Fixed 60 FPS timestep</li>
+              <li class="pl-6 relative">Camera scrolling system</li>
+              <li class="pl-6 relative">Color tinting and effects</li>
+              <li class="pl-6 relative">Asset loading and caching</li>
+              <li class="pl-6 relative">Clean BT namespace API</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Getting Started -->
+      <div class="bg-surface p-8 mb-8">
+        <h2 class="text-3xl mb-6">Getting Started</h2>
+
+        <div class="mb-6">
+          <h3 class="text-xl mb-3">Installation</h3>
+
+          <pre
+            class="bg-surface-code p-4 overflow-x-auto"
+          ><code>npm install blit-tech</code></pre>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-xl mb-3">Quick Example</h3>
+
+          <pre
+            class="bg-surface-code p-4 overflow-x-auto text-sm"
+          ><code>import { BlitTech, BT, Color32, Vector2i } from 'blit-tech';
+
+class MyGame {
+    queryHardware() {
+        return {
+            displaySize: new Vector2i(320, 240),
+            targetFPS: 60,
+        };
+    }
+
+    async initialize() {
+        // Load assets here
+        return true;
+    }
+
+    update() {
+        // Game logic (60 FPS)
+    }
+
+    render() {
+        BT.clear(Color32.black());
+        BT.drawRectFill(
+            new Rect2i(100, 100, 50, 50),
+            Color32.white()
+        );
+    }
+}
+
+const blitTech = new BlitTech();
+await blitTech.run(new MyGame());</code></pre>
+        </div>
+      </div>
+
+      <!-- Requirements -->
+      <div class="bg-surface p-8 mb-8">
+        <h2 class="text-3xl mb-6">Requirements</h2>
+
+        <ul class="check-list list-none pl-0 space-y-2">
+          <li class="pl-6 relative">
+            Chrome/Edge 113+ (Windows, macOS, Linux, Android)
+          </li>
+          <li class="pl-6 relative">Firefox Nightly (with WebGPU enabled)</li>
+          <li class="pl-6 relative">Safari 18+ (macOS/iOS)</li>
+          <li class="pl-6 relative">Compatible GPU and drivers</li>
+        </ul>
+      </div>
+
+      <!-- Inspiration -->
+      <div class="bg-surface p-8 mb-8">
+        <h2 class="text-3xl mb-6">Inspiration</h2>
+
+        <p class="opacity-90 leading-relaxed mb-4">
+          Blit-Tech is heavily inspired by
+          <a
+            href="https://www.badcastle.com/retroblit/docs/doc/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent underline"
+            >RetroBlit</a
+          >, a retro pixel game framework for Unity by Martin Cietwierkowski.
+          RetroBlit provides an ideal environment for pixel-perfect retro games
+          through a traditional game loop and code-only development.
+        </p>
+
+        <p class="opacity-90 leading-relaxed">
+          Blit-Tech brings this philosophy to the web using WebGPU: no scene
+          graphs, no complex frameworks – just sprites, primitives, and fonts.
+        </p>
+      </div>
+
+      <!-- Open Source -->
+      <div class="bg-accent/10 border-2 border-accent/30 p-8 text-center">
+        <h2 class="text-3xl mb-4">Open Source & MIT Licensed</h2>
+
+        <p class="text-lg opacity-90 mb-6">
+          Blit-Tech is free and open source. Contributions welcome!
+        </p>
+
+        <a
+          href="https://github.com/vancura/blit-tech"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-block bg-accent text-black px-8 py-3 hover:bg-accent-hover hover:shadow-lg"
+        >
+          View on GitHub
+        </a>
+      </div>
+
+      <!-- Footer -->
+      <div class="text-center mt-10 text-sm">
+        <p>Built with WebGPU</p>
+
+        <p class="mt-2">
+          Part of the
+          <a href="https://ambilab.com" class="text-accent underline"
+            >ambilab</a
+          >
+          collection of retro game development tools
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

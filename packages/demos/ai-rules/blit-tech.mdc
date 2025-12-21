@@ -1,0 +1,130 @@
+---
+description: Blit-Tech engine reference - context for demos development
+globs: ["**/*.ts"]
+alwaysApply: false
+---
+
+# Blit-Tech Engine Reference
+
+> This is a condensed reference for blit-tech. For full documentation, see the blit-tech repository.
+
+Blit-Tech is a lightweight WebGPU retro game engine for TypeScript, inspired by RetroBlit.
+It provides pixel-perfect 2D rendering with a clean, fantasy-console-style API.
+
+## Critical Rules
+
+### No Emoji
+
+NEVER use emoji in source code, comments, documentation, or commit messages.
+
+### Integer Coordinates
+
+All rendering uses integer positions for pixel-perfect graphics:
+
+- Use `Vector2i` for positions and sizes
+- Use `Rect2i` for rectangular regions
+- Values are automatically floored to integers
+
+## Public API
+
+All engine functionality is accessed through the static `BT` namespace:
+
+```typescript
+// Rendering
+BT.clear(Color32.black());
+BT.drawPixel(pos, color);
+BT.drawLine(p0, p1, color);
+BT.drawRect(rect, color);
+BT.drawRectFill(rect, color);
+BT.drawSprite(sheet, srcRect, destPos, tint);
+
+// Text
+BT.printFont(font, pos, text, color);
+
+// Camera
+BT.cameraSet(offset);
+BT.cameraGet();
+BT.cameraReset();
+
+// Info
+BT.displaySize();
+BT.fps();
+BT.ticks();
+```
+
+## Core Types
+
+### Vector2i
+
+Integer 2D vector for positions and sizes:
+
+```typescript
+const pos = new Vector2i(100, 50);
+const moved = pos.add(new Vector2i(10, 5));
+```
+
+Static constructors: `Vector2i.zero()`, `Vector2i.one()`
+
+### Rect2i
+
+Integer rectangle for regions:
+
+```typescript
+const rect = new Rect2i(x, y, width, height);
+const contains = rect.contains(point);
+```
+
+### Color32
+
+32-bit RGBA color (0-255 per channel):
+
+```typescript
+const red = new Color32(255, 0, 0);
+const blue = Color32.blue();
+const custom = Color32.fromHex('#FF5500');
+```
+
+Static colors: `Color32.white()`, `Color32.black()`, `Color32.red()`, etc.
+
+## Game Interface
+
+Games implement `IBlitTechGame`:
+
+```typescript
+interface IBlitTechGame {
+    queryHardware(): HardwareSettings;   // Configure display
+    initialize(): Promise<boolean>;       // Load assets
+    update(): void;                        // Game logic (60 FPS)
+    render(): void;                        // Draw frame
+}
+```
+
+## Asset Loading
+
+### SpriteSheet
+
+```typescript
+const sheet = await SpriteSheet.load('sprites.png');
+BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(100, 100));
+```
+
+### BitmapFont
+
+```typescript
+const font = await BitmapFont.load('fonts/MyFont.btfont');
+BT.printFont(font, new Vector2i(10, 10), 'Hello World', Color32.white());
+```
+
+## Bootstrap
+
+Start a game with the bootstrap helper:
+
+```typescript
+import { bootstrap } from 'blit-tech';
+
+class MyGame implements IBlitTechGame {
+    // ... implementation
+}
+
+bootstrap(MyGame);
+```

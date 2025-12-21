@@ -1,0 +1,39 @@
+{{> layout-top}}
+
+<h3 class="mb-2.5 text-accent">Demonstrated Features:</h3>
+
+<ul class="info-list list-none pl-0">
+    <li class="py-1 pl-5 relative">
+        <code class="bg-surface-code px-1.5 py-0.5">BT.cameraSet(offset)</code>
+        — Set camera position for scrolling
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        <code class="bg-surface-code px-1.5 py-0.5">BT.cameraGet()</code>
+        — Get current camera offset
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        <code class="bg-surface-code px-1.5 py-0.5">BT.cameraReset()</code>
+        — Reset camera to origin (used for the UI).
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Large world (800x600) with viewport scrolling (320x240)
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Mini-map showing camera position in the world
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        UI overlay that doesn't scroll with the camera
+    </li>
+</ul>
+
+<div class="bg-note-bg border-l-4 border-note-border p-2.5 mt-4">
+    <strong>Note:</strong> The camera automatically scrolls in a pattern since input is not yet implemented in Phase 1.
+    Future versions will allow manual camera control with a keyboard/mouse.
+</div>
+
+{{> font-attribution}} {{> layout-bottom}}

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Blit-Tech - Examples</title>
+        <link rel="stylesheet" href="./styles.css" />
+        {{> plausible-analytics}}
+    </head>
+
+    <body class="bg-black min-h-screen flex items-center justify-center text-white p-10 pb-20">
+        <div class="max-w-5xl w-full">
+            <div class="text-center mb-10">
+                <h1 class="text-5xl mb-5 drop-shadow-lg">Blit-Tech Examples</h1>
+
+                <p class="text-xl opacity-90">WebGPU Retro Game Engine — Phase 1 Demos</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10 select-none">
+                <a href="basics.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[*]</div>
+                    <div class="text-2xl mb-2.5">Basic Example</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Bouncing square demo. Demonstrates a basic setup and rendering.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Getting Started</div>
+                </a>
+
+                <a href="primitives.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[#]</div>
+                    <div class="text-2xl mb-2.5">Primitives</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Showcase of all drawing primitives: pixels, lines, rectangles, and filled shapes.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Drawing API</div>
+                </a>
+
+                <a href="camera.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[o]</div>
+                    <div class="text-2xl mb-2.5">Camera</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Demonstrates camera scrolling in a large world with mini-map and UI overlay.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Camera System</div>
+                </a>
+
+                <a href="patterns.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[~]</div>
+                    <div class="text-2xl mb-2.5">Patterns</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Animated mathematical patterns: spirals, waves, Lissajous curves, and more.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Animation</div>
+                </a>
+
+                <a href="sprites.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[%]</div>
+                    <div class="text-2xl mb-2.5">Sprites</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Textured sprite rendering with color tinting, transparency, and animation effects.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Sprite System</div>
+                </a>
+
+                <a href="fonts.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[A]</div>
+                    <div class="text-2xl mb-2.5">Bitmap Fonts</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Bitmap font rendering with colors, effects, and custom font loading.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Text Rendering</div>
+                </a>
+
+                <a href="sprite-effects.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[+]</div>
+                    <div class="text-2xl mb-2.5">Sprite Effects</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Practical tinting effects: damage flash, shadows, team colors, and ambient lighting.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Sprite System</div>
+                </a>
+
+                <a href="animation.html" class="bg-white/10 border-2 border-white/20 p-5 no-underline text-white cursor-pointer hover:bg-white/20 hover:border-white/40 hover:shadow-xl">
+                    <div class="text-5xl mb-2.5">[>]</div>
+                    <div class="text-2xl mb-2.5">Animation & Timing</div>
+                    <div class="text-sm opacity-80 leading-relaxed">Tick-based animation with state machines, cooldowns, and frame-based game logic.</div>
+                    <div class="inline-block bg-accent/50 px-2 py-1 text-xs mt-2.5">Animation</div>
+                </a>
+            </div>
+
+            <div class="bg-surface p-8 pt-6 mb-8">
+                <h2 class="text-3xl mb-6">Phase 1 Features Implemented:</h2>
+
+                <ul class="check-list list-none pl-0 space-y-2">
+                    <li class="pl-6 relative">
+                        Core type system: <code class="bg-surface-code px-1.5 py-0.5">Vector2i</code>,
+                        <code class="bg-surface-code px-1.5 py-0.5">Rect2i</code>,
+                        <code class="bg-surface-code px-1.5 py-0.5">Color32</code>
+                    </li>
+
+                    <li class="pl-6 relative">
+                        WebGPU dual-pipeline renderer (primitives + sprites)
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Primitive rendering: pixels, lines, rectangles
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Sprite rendering with texture batching and color tinting
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Bitmap font system with fixed-width font support
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Asset loading: <code class="bg-surface-code px-1.5 py-0.5">SpriteSheet</code>,
+                        <code class="bg-surface-code px-1.5 py-0.5">BitmapFont</code>
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Camera system with offset and reset
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Fixed timestep game loop (60 FPS)
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Clear operations (full-screen and rectangular regions)
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-amber-500/10 border-2 border-amber-500/30 p-8 pt-6 mb-8">
+                <h2 class="text-3xl mb-6 text-amber-400">Not Yet Implemented (Planned):</h2>
+
+                <ul class="list-none pl-0 space-y-2">
+                    <li class="pl-6 relative opacity-80">
+                        Keyboard input (WASD, Arrow Keys) -
+                        <code class="bg-surface-code px-1.5 py-0.5">BT.keyDown()</code>,
+                        <code class="bg-surface-code px-1.5 py-0.5">BT.keyPressed()</code>
+                    </li>
+
+                    <li class="pl-6 relative opacity-80">Gamepad support:
+                        <code class="bg-surface-code px-1.5 py-0.5">BT.buttonDown()</code>
+                    </li>
+
+                    <li class="pl-6 relative opacity-80">
+                        Mouse input
+                    </li>
+
+                    <li class="pl-6 relative opacity-80">
+                        Palette system (indexed colors, color cycling)
+                    </li>
+
+                    <li class="pl-6 relative opacity-80">
+                        Tilemap rendering
+                    </li>
+
+                    <li class="pl-6 relative opacity-80">
+                        Audio playback
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-surface p-8 pt-6 mb-8">
+                <h2 class="text-3xl mb-6">Requirements:</h2>
+
+                <ul class="check-list list-none pl-0 space-y-2">
+                    <li class="pl-6 relative">
+                        Chrome/Edge 113+ or Firefox Nightly
+                    </li>
+
+                    <li class="pl-6 relative">
+                        WebGPU support enabled
+                    </li>
+
+                    <li class="pl-6 relative">
+                        Compatible GPU and drivers
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-surface p-8 pt-6 mb-8">
+                <h2 class="text-3xl mb-6">Assets and Fonts:</h2>
+
+                <p class="opacity-90 leading-relaxed">
+                    Bitmap font examples use <strong>PragmataPro</strong> by Fabrizio Schiavi.<br />
+                    Available at <a href="https://fsd.it/shop/fonts/pragmatapro/" target="_blank" class="text-accent underline">https://fsd.it/shop/fonts/pragmatapro/</a>
+                </p>
+            </div>
+
+            <div class="text-center mt-10 text-sm">
+                <p>Blit-Tech - Inspired by RetroBlit | Built with WebGPU</p>
+
+                <p class="mt-2">
+                    <a href="../" class="text-accent underline">&larr; Back to Main Page</a>
+                </p>
+            </div>
+        </div>
+    </body>
+
+</html>

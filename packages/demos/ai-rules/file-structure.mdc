@@ -1,0 +1,567 @@
+---
+description: File structure and region organization patterns for Blit-Tech
+globs: ["**/*.ts", "**/*.js", "**/*.mjs"]
+alwaysApply: false
+---
+
+# File Structure and Region Organization
+
+> See also: [blit-tech.mdc](blit-tech.mdc) for project-wide rules, architecture, and API conventions.
+
+This document defines the `// #region` patterns used throughout the Blit-Tech codebase. All TypeScript files should
+follow these conventions for consistent code organization.
+
+## Region Syntax
+
+Use JavaScript/TypeScript region comments for collapsible sections:
+
+```typescript
+// #region Region Name
+
+// Code here...
+
+// #endregion
+```
+
+**Rules:**
+
+- Region name follows `// #region` with a single space.
+- Use Title Case for region names.
+- End with `// #endregion` on its own line.
+- Add a blank line after `// #region` and before `// #endregion`.
+- Regions can be nested for large sections (use sparingly).
+
+## Standard Region Order
+
+All files should follow this general order from top to bottom:
+
+1. **Imports** - No region needed (always at the top).
+2. **Configuration** - Constants, settings, environment checks.
+3. **Type Definitions** - Interfaces, type aliases, enums.
+4. **Module State** - Module-level variables and state.
+5. **Helper Functions** - Pure functions and utilities.
+6. **Main Logic** - Classes, primary functions.
+7. **Exports** - Public API exports.
+
+## Region Patterns by File Type
+
+### API/Entry Files (e.g., BlitTech.ts)
+
+Public API modules that export the main interface:
+
+```typescript
+import { ... } from './core/BTAPI';
+
+// #region Module State
+
+const _warnedFunctions = new Set<string>();
+
+// #endregion
+
+// #region Helper Functions
+
+function warnOnce(funcName: string, message: string): void {
+    // ...
+}
+
+// #endregion
+
+// #region Public API
+
+export const BT = {
+    // #region Constants - Sprite Transform Flags
+
+    FLIP_H: 1,
+    FLIP_V: 1 << 1,
+
+    // #endregion
+
+    // #region Constants - Button Codes
+
+    BTN_UP: 0,
+    BTN_DOWN: 1,
+
+    // #endregion
+
+    // #region Initialization
+
+    initialize: async (game, canvas) => { /* ... */ },
+
+    // #endregion
+
+    // #region Hardware Information
+
+    displaySize: () => { /* ... */ },
+    fps: () => { /* ... */ },
+    ticks: () => { /* ... */ },
+
+    // #endregion
+
+    // #region Rendering - Clear Operations
+
+    clear: (color) => { /* ... */ },
+    clearRect: (color, rect) => { /* ... */ },
+
+    // #endregion
+
+    // #region Rendering - Primitives
+
+    drawPixel: (pos, color) => { /* ... */ },
+    drawLine: (p0, p1, color) => { /* ... */ },
+    drawRect: (rect, color) => { /* ... */ },
+    drawRectFill: (rect, color) => { /* ... */ },
+
+    // #endregion
+
+    // #region Camera
+
+    cameraSet: (offset) => { /* ... */ },
+    cameraGet: () => { /* ... */ },
+    cameraReset: () => { /* ... */ },
+
+    // #endregion
+
+    // #region Input - Gamepad Buttons
+
+    buttonDown: (button, player) => { /* ... */ },
+    buttonPressed: (button, player) => { /* ... */ },
+
+    // #endregion
+
+    // #region Input - Keyboard
+
+    keyDown: (key) => { /* ... */ },
+    keyPressed: (key) => { /* ... */ },
+
+    // #endregion
+
+    // #region Text Rendering
+
+    print: (pos, color, text) => { /* ... */ },
+    printFont: (font, pos, text, color) => { /* ... */ },
+
+    // #endregion
+
+    // #region Sprite Rendering
+
+    drawSprite: (spriteSheet, srcRect, destPos, tint) => { /* ... */ },
+
+    // #endregion
+};
+
+// #endregion
+
+// #region Exports
+
+export { Vector2i, Rect2i, Color32, SpriteSheet, BitmapFont };
+export type { HardwareSettings, IBlitTechGame };
+
+// #endregion
+```
+
+### Singleton Classes (e.g., BTAPI.ts)
+
+Internal singleton managing subsystems:
+
+```typescript
+import type { ... } from './IBlitTechGame';
+
+// #region Version Constants
+
+public static readonly VERSION_MAJOR = 0;
+public static readonly VERSION_MINOR = 1;
+public static readonly VERSION_PATCH = 0;
+
+// #endregion
+
+// #region Singleton Instance
+
+private static _instance: BTAPI | null = null;
+
+// #endregion
+
+// #region Module State - Game Instance
+
+private game: IBlitTechGame | null = null;
+private hwSettings: HardwareSettings | null = null;
+
+// #endregion
+
+// #region Module State - WebGPU Resources
+
+private device: GPUDevice | null = null;
+private context: GPUCanvasContext | null = null;
+
+// #endregion
+
+// #region Module State - Subsystems
+
+private renderer: Renderer | null = null;
+
+// #endregion
+
+// #region Module State - Game Loop
+
+private isRunning: boolean = false;
+private ticks: number = 0;
+
+// #endregion
+
+// #region Constructor
+
+private constructor() {}
+
+// #endregion
+
+// #region Singleton Access
+
+public static get instance(): BTAPI { /* ... */ }
+
+// #endregion
+
+// #region Initialization
+
+public async initialize(game, canvas): Promise<boolean> { /* ... */ }
+
+// #endregion
+
+// #region WebGPU Initialization
+
+private async initializeWebGPU(): Promise<boolean> { /* ... */ }
+
+// #endregion
+
+// #region Game Loop
+
+private startGameLoop(): void { /* ... */ }
+public stop(): void { /* ... */ }
+
+// #endregion
+
+// #region Game State Accessors
+
+public getTicks(): number { /* ... */ }
+public resetTicks(): void { /* ... */ }
+public getHardwareSettings(): HardwareSettings | null { /* ... */ }
+
+// #endregion
+
+// #region WebGPU Resource Accessors
+
+public getDevice(): GPUDevice | null { /* ... */ }
+public getContext(): GPUCanvasContext | null { /* ... */ }
+
+// #endregion
+
+// #region Rendering API - Clear Operations
+
+public setClearColor(color): void { /* ... */ }
+public clearRect(color, rect): void { /* ... */ }
+
+// #endregion
+
+// #region Rendering API - Primitives
+
+public drawPixel(pos, color): void { /* ... */ }
+public drawLine(p0, p1, color): void { /* ... */ }
+public drawRect(rect, color): void { /* ... */ }
+public drawRectFill(rect, color): void { /* ... */ }
+
+// #endregion
+
+// #region Rendering API - Sprites
+
+public drawSprite(spriteSheet, srcRect, destPos, tint): void { /* ... */ }
+public drawBitmapText(font, pos, text, color): void { /* ... */ }
+
+// #endregion
+
+// #region Camera API
+
+public setCameraOffset(offset): void { /* ... */ }
+public getCameraOffset(): Vector2i { /* ... */ }
+public resetCamera(): void { /* ... */ }
+
+// #endregion
+```
+
+### Renderer/Complex Classes (e.g., Renderer.ts)
+
+Large classes with multiple subsystems:
+
+```typescript
+import type { ... } from '../assets/SpriteSheet';
+
+// #region Configuration
+
+const MAX_PRIMITIVE_VERTICES = 50000;
+const MAX_SPRITE_VERTICES = 50000;
+
+// #endregion
+
+export class Renderer {
+    // #region Module State - WebGPU Resources
+
+    private readonly device: GPUDevice;
+    private context: GPUCanvasContext;
+    private displaySize: Vector2i;
+
+    // #endregion
+
+    // #region Module State - Primitive Pipeline
+
+    private primitivePipeline: GPURenderPipeline | null = null;
+    private primitiveUniformBuffer: GPUBuffer | null = null;
+    private primitiveVertexBuffer: GPUBuffer | null = null;
+
+    // #endregion
+
+    // #region Module State - Sprite Pipeline
+
+    private spritePipeline: GPURenderPipeline | null = null;
+    private spriteUniformBuffer: GPUBuffer | null = null;
+    private spriteSampler: GPUSampler | null = null;
+
+    // #endregion
+
+    // #region Module State - Sprite Batching
+
+    private currentTexture: GPUTexture | null = null;
+    private textureBindGroups: Map<GPUTexture, GPUBindGroup> = new Map();
+    private spriteBatches: Array<{ bindGroup, vertexStart, vertexCount }> = [];
+
+    // #endregion
+
+    // #region Module State - Frame State
+
+    private currentClearColor: Color32 = Color32.black();
+    private cameraOffset: Vector2i = Vector2i.zero();
+
+    // #endregion
+
+    // #region Module State - Reusable Objects
+
+    private readonly tempRect: Rect2i = new Rect2i(0, 0, 0, 0);
+    private readonly tempVec: Vector2i = new Vector2i(0, 0);
+
+    // #endregion
+
+    // #region Constructor
+
+    constructor(device, context, displaySize) { /* ... */ }
+
+    // #endregion
+
+    // #region Initialization
+
+    async initialize(): Promise<boolean> { /* ... */ }
+
+    // #endregion
+
+    // #region Pipeline Creation
+
+    private async createPrimitivePipeline(): Promise<void> { /* ... */ }
+    private async createSpritePipeline(): Promise<void> { /* ... */ }
+
+    // #endregion
+
+    // #region Buffer Creation
+
+    private async createBuffers(): Promise<void> { /* ... */ }
+
+    // #endregion
+
+    // #region Frame Management
+
+    beginFrame(): void { /* ... */ }
+    setClearColor(color): void { /* ... */ }
+
+    // #endregion
+
+    // #region Primitive Drawing
+
+    drawRectFill(rect, color): void { /* ... */ }
+    drawPixel(pos, color): void { /* ... */ }
+    drawLine(p0, p1, color): void { /* ... */ }
+    drawRect(rect, color): void { /* ... */ }
+
+    // #endregion
+
+    // #region Sprite Drawing
+
+    drawSprite(spriteSheet, srcRect, destPos, tint): void { /* ... */ }
+    drawBitmapText(font, pos, text, color): void { /* ... */ }
+
+    // #endregion
+
+    // #region Camera
+
+    setCameraOffset(offset): void { /* ... */ }
+    getCameraOffset(): Vector2i { /* ... */ }
+    resetCamera(): void { /* ... */ }
+
+    // #endregion
+
+    // #region Frame Rendering
+
+    endFrame(): void { /* ... */ }
+    private resetFrameState(): void { /* ... */ }
+
+    // #endregion
+}
+```
+
+### Interface/Type Files (e.g., IBlitTechGame.ts)
+
+Files defining types and interfaces:
+
+```typescript
+import { Vector2i } from '../utils/Vector2i';
+
+// #region Type Definitions
+
+export interface HardwareSettings {
+    displaySize: Vector2i;
+    canvasDisplaySize?: Vector2i;
+    targetFPS: number;
+}
+
+export interface IBlitTechGame {
+    queryHardware(): HardwareSettings;
+    initialize(): Promise<boolean>;
+    update(): void;
+    render(): void;
+}
+
+// #endregion
+
+// #region Helper Functions
+
+export function defaultHardwareSettings(): HardwareSettings {
+    return {
+        displaySize: new Vector2i(320, 240),
+        targetFPS: 60,
+    };
+}
+
+// #endregion
+```
+
+### Utility Classes (e.g., Vector2i.ts, Color32.ts)
+
+Simple utility classes with static methods:
+
+```typescript
+// #region Type Definitions
+
+export interface Vector2iLike {
+    x: number;
+    y: number;
+}
+
+// #endregion
+
+// #region Class Definition
+
+export class Vector2i {
+    // Properties and methods...
+}
+
+// #endregion
+
+// #region Static Constructors
+
+Vector2i.zero = () => new Vector2i(0, 0);
+Vector2i.one = () => new Vector2i(1, 1);
+
+// #endregion
+```
+
+## Region Naming Conventions
+
+### Hierarchical Naming
+
+Use `Category - Subcategory` format for related regions:
+
+```typescript
+// #region Module State - WebGPU Resources
+// #region Module State - Game Loop
+// #region Rendering API - Primitives
+// #region Rendering API - Sprites
+// #region Input - Keyboard
+// #region Input - Gamepad Buttons
+```
+
+### Descriptive Names
+
+Region names should clearly indicate their purpose:
+
+```typescript
+// Good
+// #region Pipeline Creation
+// #region Frame Management
+// #region Sprite Batching
+
+// Bad
+// #region Misc
+// #region Stuff
+// #region Section1
+```
+
+### Consistency
+
+Use the same region names across similar files:
+
+- All renderer-related classes use `// #region Frame Management`.
+- All API classes use `// #region Initialization`.
+- All files with exports use `// #region Exports`.
+
+## Nested Regions
+
+Use nested regions sparingly, only for large sections:
+
+```typescript
+// #region Public API
+
+export const BT = {
+    // #region Constants - Sprite Transform Flags
+    FLIP_H: 1,
+    // #endregion
+
+    // #region Initialization
+    initialize: async () => { /* ... */ },
+    // #endregion
+};
+
+// #endregion
+```
+
+**Guidelines for nesting:**
+
+- Maximum 2 levels of nesting.
+- Only nest within regions that would otherwise be very large (100+ lines).
+- Inner regions should be closely related to the outer region's purpose.
+
+## When to Create New Regions
+
+Create a new region when:
+
+1. **Logical grouping**: Related functions/properties that serve a single purpose.
+2. **Size threshold**: Section exceeds ~30 lines.
+3. **Navigation benefit**: Would help developers find code quickly.
+
+Do not create regions for:
+
+1. **Single functions**: Unless they are very long (100+ lines).
+2. **Obvious groupings**: Import statements at the top of the file.
+3. **Temporary code**: Debug statements, TODO comments.
+
+## Editor Support
+
+Regions are supported by:
+
+- **VS Code/Cursor**: Fold/unfold with `Ctrl+Shift+[` / `Ctrl+Shift+]`.
+- **WebStorm/IntelliJ**: Fold/unfold with `Ctrl+.` or code folding menu.
+- **Zed**: Native folding support.
+
+The region pattern `// #region` / `// #endregion` is a de facto standard in JavaScript/TypeScript projects.

@@ -1,0 +1,228 @@
+# Blit-Tech WebGPU Game Engine - Project Rules
+
+You are working on Blit-Tech, a lightweight WebGPU retro game engine for
+TypeScript inspired by RetroBlit. It provides pixel-perfect 2D rendering with
+a clean, fantasy-console-style API.
+
+## CRITICAL RULES - READ FIRST
+
+### No Emoji - ZERO TOLERANCE
+
+NEVER use emoji anywhere: source code, comments, documentation, commit messages,
+or log output. No exceptions. Use plain text descriptions instead.
+
+### Integer Coordinates Only
+
+- All rendering uses integer positions (Vector2i, Rect2i)
+- Never use floating-point coordinates for rendering
+- Values are automatically floored to integers
+
+### Performance First
+
+- Target: 60 FPS with thousands of sprites
+- Minimize allocations in update/render loops
+- Reuse buffers and objects (use object pools)
+- Batch draw calls automatically by texture
+
+## Architecture Overview
+
+### Public API - BT Namespace
+
+All engine functionality is accessed through the static `BT` namespace.
+NEVER access internal classes like BTAPI directly.
+
+```typescript
+// Correct
+BT.clear(Color32.black());
+BT.drawSprite(sheet, srcRect, destPos);
+BT.cameraSet(new Vector2i(100, 50));
+
+// Wrong - never do this
+BTAPI.instance.renderer.drawSprite(...);
+```
+
+### Game Interface
+
+Games implement `IBlitTechGame` with these methods:
+
+- `queryHardware()`: Configure display settings
+- `initialize()`: Load assets (async, return true if ready)
+- `update()`: Fixed timestep logic (60 FPS default)
+- `render()`: Variable rate rendering
+
+### Core Types
+
+- `Vector2i`: Integer 2D vectors (auto-floors values)
+- `Rect2i`: Integer rectangles
+- `Color32`: 32-bit RGBA color (auto-clamps 0-255)
+
+## TypeScript Requirements
+
+### Strict Mode Enabled
+
+Project uses strict TypeScript with all checks enabled:
+
+- No `any` types (use proper types or `unknown`)
+- Handle null/undefined explicitly
+- Avoid `!` non-null assertions
+- Use guard clauses and early returns
+
+### Type Imports
+
+Always use type-only imports for types:
+
+```typescript
+// Correct
+import type { HardwareSettings, IBlitTechGame } from './IBlitTechGame';
+
+// Wrong
+import { HardwareSettings } from './IBlitTechGame';
+```
+
+### JSDoc Required
+
+All public APIs must have JSDoc comments:
+
+```typescript
+/**
+ * Draws a filled rectangle on the screen.
+ * @param rect - The rectangle bounds in screen coordinates
+ * @param color - Fill color
+ */
+export function drawRectFill(rect: Rect2i, color: Color32): void {
+    // implementation
+}
+```
+
+### Naming Conventions
+
+- Classes/Interfaces: PascalCase (`SpriteSheet`, `IBlitTechGame`)
+- Variables/Functions: camelCase (`vertexCount`, `drawSprite`)
+- Constants: UPPER_SNAKE_CASE (`MAX_VERTICES`, `FLIP_H`)
+- Private members: camelCase (no underscore prefix)
+- Unused parameters: prefix with underscore
+
+## Code Style (Biome/ESLint)
+
+- Indent: 4 spaces
+- Line width: 120 characters max
+- Quotes: Single quotes for strings
+- Semicolons: Always required
+- Trailing commas: Always (including function parameters)
+- Arrow parens: Always use parentheses
+- Named exports only (no default exports)
+
+### Import Order
+
+1. External packages
+2. Internal absolute imports
+3. Relative imports
+
+### Code Organization
+
+Use `// #region` and `// #endregion` for collapsible sections.
+
+File structure (top to bottom):
+
+1. Imports/Requires
+2. Configuration (constants, setup)
+3. Module State
+4. Helper/Utility Functions
+5. Event Handlers
+6. Lifecycle Functions
+7. Exports
+
+## WebGPU Conventions
+
+### Buffer Management
+
+- Pre-allocate buffers at initialization
+- Reuse buffers across frames with TypedArrays
+- Never reallocate buffers per frame - reset counters instead
+
+### Texture Handling
+
+- Sprites/images: `rgba8unorm` format
+- Sampling: ALWAYS nearest-neighbor (pixel-perfect)
+- NEVER use `linear` filtering for pixel art
+
+### WGSL Shaders
+
+Organize bindings by update frequency:
+
+- Group 0: Per-frame uniforms (resolution, camera)
+- Group 1: Per-material resources (textures, samplers)
+
+## Git Commits
+
+### Conventional Commits (Required)
+
+Format: `<type>(<scope>): <description>`
+
+Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
+
+Common scopes: renderer, camera, assets, api, utils, examples, ci, docs
+
+Rules:
+
+- Header max 100 characters
+- Subject must be lowercase
+- Subject must not end with period
+- No emoji anywhere
+
+### Signed-Off Commits (DCO - Required)
+
+All commits must include:
+
+```text
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+Use `git commit -s` to add automatically.
+
+### AI-Assisted Commits (Required when using AI)
+
+When AI tools (Zed AI, Claude, Cursor, Copilot, etc.) help write code or
+commits, include:
+
+```text
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+## Common Mistakes to Avoid
+
+1. Using floating-point coordinates - Always use Vector2i/Rect2i
+2. Creating objects in render loop - Pre-allocate or use pools
+3. Accessing BTAPI directly - Use BT namespace
+4. Forgetting async in initialize() - Asset loading is async
+5. Using emoji - Never allowed anywhere
+6. Skipping JSDoc - Required for public functions/classes
+7. Using `any` type - Use proper types or `unknown`
+8. Using default exports - Use named exports
+9. Linear texture filtering - Use nearest-neighbor for pixel art
+10. Reallocating buffers per frame - Reuse with reset counters
+
+## Directory Structure
+
+```text
+src/
+  BlitTech.ts          # Public API (BT namespace exports)
+  main.ts              # Dev entry point
+  core/
+    BTAPI.ts           # Internal singleton
+    IBlitTechGame.ts   # Game interface
+  render/
+    Renderer.ts        # WebGPU renderer
+  assets/
+    AssetLoader.ts     # Image loading with caching
+    SpriteSheet.ts     # GPU texture wrapper
+    BitmapFont.ts      # Bitmap font system
+  utils/
+    Vector2i.ts        # Integer 2D vector
+    Rect2i.ts          # Integer rectangle
+    Color32.ts         # 32-bit color
+```
+
+## Full Rules
+
+For complete details, see the `.rules` file in the project root.

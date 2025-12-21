@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+    /* Accent color - unified blue theme */
+    --color-accent: #5da0f2;
+    --color-accent-hover: #7db4f5;
+
+    /* Surface colors */
+    --color-surface: #111;
+    --color-surface-code: black;
+
+    /* Note/warning colors */
+    --color-note-bg: oklch(85% 0.1 85 / 0.2);
+    --color-note-border: #ffc864;
+
+    /* Success color for checkmarks */
+    --color-success: #2ecc71;
+
+    /* Font family */
+    --font-mono: "Courier New", monospace;
+}
+
+/* Canvas pixel-perfect rendering - using both values for cross-browser support */
+/* pixelated works in Chrome/Safari, crisp-edges works in Firefox */
+canvas {
+    display: block;
+    image-rendering: pixelated;
+}
+
+@supports (image-rendering: crisp-edges) {
+    canvas {
+        image-rendering: crisp-edges;
+    }
+}
+
+/* List marker styling */
+.info-list li::before {
+    content: "\25B8";
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+}
+
+.check-list li::before {
+    content: "\2713";
+    position: absolute;
+    left: 0;
+    color: var(--color-success);
+    font-weight: bold;
+}

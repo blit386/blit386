@@ -1,0 +1,83 @@
+{
+  "assistant": {
+    "version": "2",
+    "provider": {
+      "name": "anthropic",
+      "default_model": {
+        "model": "claude-sonnet-4-20250514"
+      }
+    }
+  },
+  "context_servers": {
+    "rules-server": {
+      "command": {
+        "path": "cat",
+        "args": [".rules"]
+      }
+    }
+  },
+  "tab_size": 4,
+  "hard_tabs": false,
+  "preferred_line_length": 120,
+  "format_on_save": "on",
+  "formatter": {
+    "external": {
+      "command": "biome",
+      "arguments": ["format", "--stdin-file-path", "{buffer_path}"]
+    }
+  },
+  "code_actions_on_format": {
+    "source.organizeImports": true,
+    "source.fixAll": true
+  },
+  "languages": {
+    "TypeScript": {
+      "tab_size": 4,
+      "preferred_line_length": 120,
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "biome",
+          "arguments": ["format", "--stdin-file-path", "{buffer_path}"]
+        }
+      }
+    },
+    "JavaScript": {
+      "tab_size": 4,
+      "preferred_line_length": 120,
+      "format_on_save": "on",
+      "formatter": {
+        "external": {
+          "command": "biome",
+          "arguments": ["format", "--stdin-file-path", "{buffer_path}"]
+        }
+      }
+    },
+    "WGSL": {
+      "tab_size": 4,
+      "preferred_line_length": 120
+    }
+  },
+  "lsp": {
+    "typescript-language-server": {
+      "initialization_options": {
+        "preferences": {
+          "importModuleSpecifierPreference": "relative",
+          "includeInlayParameterNameHints": "all",
+          "includeInlayFunctionParameterTypeHints": true,
+          "includeInlayVariableTypeHints": true,
+          "includeInlayPropertyDeclarationTypeHints": true,
+          "includeInlayFunctionLikeReturnTypeHints": true
+        }
+      }
+    }
+  },
+  "git": {
+    "inline_blame": {
+      "enabled": true
+    }
+  },
+  "journal": {
+    "hour_format": "hour24"
+  }
+}

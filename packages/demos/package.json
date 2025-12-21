@@ -1,0 +1,104 @@
+{
+  "name": "blit-tech-demos",
+  "version": "0.1.1",
+  "type": "module",
+  "description": "Interactive demos and examples for the blit-tech WebGPU retro game engine.",
+  "author": "Václav Vančura",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vancura/blit-tech-demos.git"
+  },
+  "homepage": "https://ambilab.com/blit-tech",
+  "keywords": [
+    "blit-tech",
+    "webgpu",
+    "typescript",
+    "demos",
+    "examples",
+    "game-engine",
+    "retro",
+    "pixel-art",
+    "2d-game",
+    "sprite",
+    "canvas",
+    "fantasy-console"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "syncRules": {
+    "source": "ai-rules",
+    "targets": {
+      "cursor": true,
+      "webstorm": true,
+      "zed": true,
+      "claude": true
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:watch": "concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit-tech build --watch\" \"pnpm dev\"",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
+    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
+    "format:biome": "biome format --write .",
+    "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
+    "typecheck": "tsc --noEmit",
+    "spellcheck": "cspell \"src/**/*.{ts,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
+    "preflight": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm spellcheck",
+    "clean": "rm -rf dist node_modules/.vite",
+    "changeset": "changeset",
+    "changeset:check": "changeset status --since=origin/main",
+    "changeset:version": "changeset version",
+    "changeset:publish": "pnpm build && changeset publish",
+    "version:bump": "pnpm changeset:version && pnpm install --no-frozen-lockfile",
+    "sync-rules": "node scripts/sync-rules.mjs",
+    "prepare": "husky"
+  },
+  "packageManager": "pnpm@10.24.0+sha512.01ff8ae71b4419903b65c60fb2dc9d34cf8bb6e06d03bde112ef38f7a34d6904c424ba66bea5cdcf12890230bf39f9580473140ed9c946fef328b6e5238a345a",
+  "dependencies": {
+    "blit-tech": "workspace:*"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
+    "@changesets/cli": "^2.29.8",
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@eslint/js": "^9.39.2",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^25.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "@webgpu/types": "^0.1.68",
+    "concurrently": "^9.1.0",
+    "cspell": "^9.1.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsdoc": "^61.5.0",
+    "eslint-plugin-perfectionist": "^4.15.1",
+    "eslint-plugin-promise": "^7.2.1",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.7",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-handlebars": "^2.0.0",
+    "vite-plugin-static-copy": "^3.1.4",
+    "wait-on": "^9.0.3"
+  }
+}

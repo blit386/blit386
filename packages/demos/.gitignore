@@ -1,0 +1,64 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Generated files
+vite.config.*.timestamp-*
+
+# Generated AI assistant rules (source of truth: ai-rules/*.mdc)
+.cursor/rules/
+.aiassistant/
+.rules
+CLAUDE.md
+.claude
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing & coverage
+coverage/
+*.lcov
+playwright-report/
+test-results/
+.vitest/
+
+# IDE and editor files
+.vscode/launch.json
+.vscode/*.code-workspace
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+pnpm-debug.log*
+
+# Cache
+.eslintcache
+.cache/
+
+# Temporary folders
+tmp/
+temp/
+
+# Output of 'npm pack'
+*.tgz
+
+# Husky runtime
+.husky/_/

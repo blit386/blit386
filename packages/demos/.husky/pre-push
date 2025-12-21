@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Load Node.js environment and ensure pnpm is available
+. "$(dirname "$0")/ensure-pnpm.sh"
+
+echo "Running pre-push checks..."
+
+# Run format check on entire project (same as CI)
+echo "Checking formatting..."
+pnpm format:check || {
+    echo ""
+    echo "Formatting issues found. Run 'pnpm format' to fix them."
+    exit 1
+}
+
+# Run lint check on entire project
+echo "Linting..."
+pnpm lint || {
+    echo ""
+    echo "Lint issues found. Run 'pnpm lint:fix' to fix them."
+    exit 1
+}
+
+# Run spell check on entire project
+echo "Spell checking..."
+pnpm spellcheck || {
+    echo ""
+    echo "Spelling issues found. Please fix them."
+    exit 1
+}
+
+echo "Pre-push checks passed!"

@@ -1,0 +1,99 @@
+# Dependabot configuration
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # npm ecosystem (covers pnpm)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Europe/Prague
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+    labels:
+      - dependencies
+      - npm
+    groups:
+      # Group all production dependencies
+      production-dependencies:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+
+      # Group TypeScript and related tooling
+      typescript:
+        patterns:
+          - typescript
+          - '@types/*'
+          - '@typescript-eslint/*'
+        update-types:
+          - minor
+          - patch
+
+      # Group ESLint and plugins
+      eslint:
+        patterns:
+          - eslint
+          - eslint-*
+          - '@eslint/*'
+        update-types:
+          - minor
+          - patch
+
+      # Group Biome formatter
+      biome:
+        patterns:
+          - '@biomejs/*'
+        update-types:
+          - minor
+          - patch
+
+      # Group Vite and build tools
+      build-tools:
+        patterns:
+          - vite
+          - vite-*
+        update-types:
+          - minor
+          - patch
+
+      # Group code quality tools
+      code-quality:
+        patterns:
+          - prettier
+          - husky
+          - lint-staged
+          - '@commitlint/*'
+          - '@changesets/*'
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Europe/Prague
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'ci(deps)'
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      # Group all GitHub Actions updates
+      github-actions:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch

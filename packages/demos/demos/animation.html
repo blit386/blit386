@@ -1,0 +1,47 @@
+{{> layout-top}}
+
+<h3 class="mb-2.5 text-accent">Demonstrated Features:</h3>
+
+<ul class="info-list list-none pl-0">
+    <li class="py-1 pl-5 relative">
+        <code class="bg-surface-code px-1.5 py-0.5">BT.ticks()</code>
+        — Frame-based timing counter
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        <code class="bg-surface-code px-1.5 py-0.5">BT.ticksReset()</code>
+        — Reset tick counter for animation sequences
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Sprite animation with frame cycling
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Animation state machine (Idle, Walking, Jumping)
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Cooldown timers and event scheduling
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Deterministic frame-based game logic
+    </li>
+</ul>
+
+<div class="bg-sky-500/20 border-l-4 border-sky-400 p-2.5 mt-4">
+    <strong>Why tick-based timing?</strong><br />
+
+    Using ticks instead of delta time ensures deterministic behavior - the same inputs always produce the same results. This is ideal for animation timing, cooldowns, and any gameplay logic that needs predictable frame-based behavior.
+</div>
+
+<div class="bg-note-bg border-l-4 border-note-border p-2.5 mt-4">
+    <strong>Key concepts:</strong><br />
+    - Ticks increment once per a fixed update (60 FPS)<br />
+    - Compare tick differences for timers: <code class="bg-surface-code px-1.5 py-0.5">if (BT.ticks() - lastTick >= duration)</code><br />
+    - Reset ticks when starting new animation sequences<br />
+    - Store tick timestamps for cooldowns and events
+</div>
+
+{{> font-attribution}} {{> layout-bottom}}

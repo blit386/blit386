@@ -1,0 +1,45 @@
+{{> layout-top}}
+
+<h3 class="mb-2.5 text-accent">Demonstrated Features:</h3>
+
+<ul class="info-list list-none pl-0">
+    <li class="py-1 pl-5 relative">
+        Damage flash effect (red/white pulse)
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Silhouette rendering for shadows
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Ghost/fade effects with transparency
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Team color palette swaps
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Status effects (frozen, poisoned, invincible)
+    </li>
+
+    <li class="py-1 pl-5 relative">
+        Day/night cycle ambient lighting
+    </li>
+</ul>
+
+<div class="bg-sky-500/20 border-l-4 border-sky-400 p-2.5 mt-4">
+    <strong>Practical tinting techniques:</strong><br />
+
+    - <strong>Damage flash:</strong> Alternate white/red tints for hit feedback<br />
+    - <strong>Shadows:</strong> Black tint (0, 0, 0) creates silhouettes<br />
+    - <strong>Ghost:</strong> A white tint and reduced alpha for transparency<br />
+    - <strong>Team colors:</strong> Color multiply for palette swaps<br />
+    - <strong>Ambient light:</strong> Subtle color tints for time-of-day
+</div>
+
+<div class="bg-note-bg border-l-4 border-note-border p-2.5 mt-4">
+    <strong>Performance tip:</strong> All tinting happens in the GPU shader, so these effects are essentially free - no extra draw calls or texture processing needed!
+</div>
+
+{{> font-attribution}} {{> layout-bottom}}
