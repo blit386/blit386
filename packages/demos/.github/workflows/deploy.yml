@@ -1,5 +1,9 @@
 name: Deploy to Cloudflare Pages
 
+# This workflow deploys blit-tech-demos to Cloudflare Pages.
+# The blit-tech library is cloned and built as a dependency,
+# but is NOT tested here (it has its own CI in vancura/blit-tech).
+
 on:
   push:
     branches: [main]
@@ -12,8 +16,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout blit-tech library
         uses: actions/checkout@v6
+        with:
+          repository: vancura/blit-tech
+          path: blit-tech
+
+      - name: Checkout blit-tech-demos
+        uses: actions/checkout@v6
+        with:
+          path: blit-tech-demos
+
+      - name: Create workspace config
+        run: |
+          cat > pnpm-workspace.yaml << EOF
+          packages:
+            - 'blit-tech'
+            - 'blit-tech-demos'
+          EOF
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -27,14 +47,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm format:check
+      - name: Build blit-tech library (dependency - not tested here)
+        run: |
+          cd blit-tech
+          pnpm build
 
-      - name: Lint code
-        run: pnpm lint
+      - name: Check formatting (blit-tech-demos only)
+        run: |
+          cd blit-tech-demos
+          pnpm format:check
 
-      - name: Type check
-        run: pnpm typecheck
+      - name: Lint code (blit-tech-demos only)
+        run: |
+          cd blit-tech-demos
+          pnpm lint
+
+      - name: Type check (blit-tech-demos only)
+        run: |
+          cd blit-tech-demos
+          pnpm typecheck
 
   build-library:
     name: Build blit-tech Library

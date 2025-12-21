@@ -1,5 +1,9 @@
 name: PR Checks
 
+# This workflow checks PR conventions for blit-tech-demos only.
+# The blit-tech library is cloned as a workspace dependency,
+# but is NOT checked here (it has its own CI in vancura/blit-tech).
+
 on:
   pull_request:
     branches: [main]
@@ -10,10 +14,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout blit-tech library
+        uses: actions/checkout@v6
+        with:
+          repository: vancura/blit-tech
+          path: blit-tech
+
+      - name: Checkout blit-tech-demos
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          path: blit-tech-demos
+
+      - name: Create workspace config
+        run: |
+          cat > pnpm-workspace.yaml << EOF
+          packages:
+            - 'blit-tech'
+            - 'blit-tech-demos'
+          EOF
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -28,7 +47,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Validate PR commits
-        run: pnpm commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+        run: |
+          cd blit-tech-demos
+          pnpm commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
 
   docs-links:
     name: Check Documentation Links

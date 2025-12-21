@@ -1,5 +1,9 @@
 name: Changeset Check
 
+# This workflow verifies changesets for blit-tech-demos only.
+# The blit-tech library is cloned as a workspace dependency,
+# but is NOT checked here (it has its own CI in vancura/blit-tech).
+
 on:
   pull_request:
     branches: [main]
@@ -10,10 +14,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout blit-tech library
+        uses: actions/checkout@v6
+        with:
+          repository: vancura/blit-tech
+          path: blit-tech
+
+      - name: Checkout blit-tech-demos
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          path: blit-tech-demos
+
+      - name: Create workspace config
+        run: |
+          cat > pnpm-workspace.yaml << EOF
+          packages:
+            - 'blit-tech'
+            - 'blit-tech-demos'
+          EOF
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -30,6 +49,7 @@ jobs:
       - name: Check for changeset
         id: changeset-check
         run: |
+          cd blit-tech-demos
           if pnpm changeset status --since=origin/main 2>/dev/null; then
             echo "Changeset found"
             echo "has_changeset=true" >> $GITHUB_OUTPUT
