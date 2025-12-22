@@ -1,0 +1,7 @@
+# Cloudflare Pages Headers Configuration
+# This file configures HTTP headers for the deployed site.
+
+# Allow embedding in iframes from ambilab.com and Framer sites
+/*
+  Content-Security-Policy: frame-ancestors https://ambilab.com https://*.framer.app
+  X-Frame-Options: ALLOW-FROM https://ambilab.com

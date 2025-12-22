@@ -89,6 +89,10 @@ export default defineConfig(({ command }) => {
                         src: 'public/fonts/*',
                         dest: 'fonts',
                     },
+                    {
+                        src: 'public/_headers',
+                        dest: '.',
+                    },
                 ],
             }),
             flattenDemosPlugin(),
