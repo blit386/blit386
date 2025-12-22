@@ -100,4 +100,4 @@ pnpm build           # Vite build
 ## Related Documentation
 
 - [CI-WORKSPACE-SETUP.md](CI-WORKSPACE-SETUP.md) - Detailed explanation of the workspace setup
-- [Blit-Tech CI](https://github.com/vancura/blit-tech/.github/workflows/) - Library's own CI workflows
+- [Blit-Tech CI](https://github.com/vancura/blit-tech/tree/main/.github/workflows) - Library's own CI workflows
