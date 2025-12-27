@@ -25,3 +25,11 @@ build/
 **/*.min.js
 **/*.min.css
 vite.config.*.timestamp-*
+
+# JSON is handled by Biome
+*.json
+
+# Generated files
+CLAUDE.md
+.rules
+CHANGELOG.md

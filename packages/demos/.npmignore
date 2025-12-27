@@ -1,0 +1,10 @@
+# npm ignore file
+# Even for private repos, good practice to define what would be published
+
+# Ignore everything
+*
+
+# Except these
+!dist/**
+!README.md
+!LICENSE

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
     /* Accent color - unified blue theme */
@@ -17,7 +17,7 @@
     --color-success: #2ecc71;
 
     /* Font family */
-    --font-mono: "Courier New", monospace;
+    --font-mono: 'Courier New', monospace;
 }
 
 /* Canvas pixel-perfect rendering - using both values for cross-browser support */
@@ -35,14 +35,14 @@ canvas {
 
 /* List marker styling */
 .info-list li::before {
-    content: "\25B8";
+    content: '\25B8';
     position: absolute;
     left: 0;
     color: var(--color-accent);
 }
 
 .check-list li::before {
-    content: "\2713";
+    content: '\2713';
     position: absolute;
     left: 0;
     color: var(--color-success);

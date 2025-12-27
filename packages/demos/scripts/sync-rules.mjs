@@ -1,7 +1,3 @@
-#!/usr/bin/env node
-
-/* eslint-disable security/detect-object-injection */
-
 /**
  * Sync AI assistant rules across different tools.
  *
