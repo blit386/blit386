@@ -15,17 +15,19 @@
     "indentWidth": 4,
     "lineWidth": 120,
     "lineEnding": "lf",
-    "formatWithErrors": true
+    "formatWithErrors": true,
+    "attributePosition": "auto"
   },
-  "assist": {
-    "enabled": false
-  },
+  "assist": { "actions": { "source": { "organizeImports": "off" } } },
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
       "trailingCommas": "all",
       "semicolons": "always",
-      "arrowParentheses": "always"
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "bracketSameLine": false,
+      "quoteProperties": "asNeeded"
     }
   },
   "json": {
@@ -36,14 +38,14 @@
   },
   "css": {
     "parser": {
-      "cssModules": false,
+      "cssModules": true,
       "allowWrongLineComments": false,
       "tailwindDirectives": true
     },
     "formatter": {
       "indentWidth": 4,
       "lineWidth": 100,
-      "quoteStyle": "double"
+      "quoteStyle": "single"
     },
     "linter": {
       "enabled": true
@@ -53,14 +55,18 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "suspicious": {
-        "noExplicitAny": "warn",
-        "noConsole": "off",
-        "noImplicitAnyLet": "off"
-      },
       "style": {
         "noNonNullAssertion": "warn",
+        "useConst": "error",
+        "useBlockStatements": "off",
+        "noParameterAssign": "warn",
         "useImportType": "error"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noDebugger": "error",
+        "noConsole": "off",
+        "noImplicitAnyLet": "off"
       },
       "correctness": {
         "noUnusedVariables": "error",
@@ -68,8 +74,12 @@
         "noVoidTypeReturn": "off"
       },
       "complexity": {
+        "noForEach": "off",
         "noStaticOnlyClass": "off",
         "noThisInStatic": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "error"
       }
     }
   },

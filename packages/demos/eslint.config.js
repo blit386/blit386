@@ -26,6 +26,8 @@ export default [
             '.pnpm-store/**',
             '**/.pnpm-store/**',
             'vite.config.ts.timestamp-*',
+            'CLAUDE.md',
+            '.rules',
         ],
     },
 
@@ -99,6 +101,9 @@ export default [
             ...promisePlugin.configs.recommended.rules,
             'promise/always-return': 'warn',
             'promise/catch-or-return': 'warn',
+            'promise/no-return-wrap': 'error',
+            'promise/param-names': 'error',
+            'promise/no-nesting': 'warn',
 
             // Security rules
             ...securityPlugin.configs.recommended.rules,

@@ -11,11 +11,13 @@ export default {
     // Base settings (applied to Markdown/YAML)
     semi: true,
     singleQuote: true,
-    tabWidth: 2,
+    tabWidth: 4,
     useTabs: false,
     trailingComma: 'all',
     printWidth: 120,
     endOfLine: 'lf',
+    proseWrap: 'always',
+    htmlWhitespaceSensitivity: 'css',
 
     overrides: [
         {

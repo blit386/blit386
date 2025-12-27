@@ -6,7 +6,7 @@ Thumbs.db
 node_modules/
 .pnpm-store/
 
-# Build outputs
+# Build output
 dist/
 build/
 
@@ -41,6 +41,9 @@ test-results/
 !.vscode/settings.json
 !.vscode/extensions.json
 .idea/
+*.iml
+.zed/
+.cursor/
 *.swp
 *.swo
 *~
@@ -62,3 +65,7 @@ temp/
 
 # Husky runtime
 .husky/_/
+
+# Minified files
+*.min.js
+*.min.css

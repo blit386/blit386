@@ -4,7 +4,6 @@
 *.png binary
 *.gif binary
 *.webp binary
-*.svg binary
 *.ico binary
 *.mp4 binary
 *.mov binary

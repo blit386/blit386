@@ -1,5 +1,6 @@
 # Cloudflare Pages - Skip build dependencies
 # The project is built via GitHub Actions and artifacts are deployed
+
 node_modules/
 src/
 public/
