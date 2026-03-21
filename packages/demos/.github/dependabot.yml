@@ -69,7 +69,6 @@ updates:
           - prettier
           - husky
           - lint-staged
-          - '@commitlint/*'
         update-types:
           - minor
           - patch
