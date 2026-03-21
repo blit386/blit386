@@ -30,6 +30,4 @@ vite.config.*.timestamp-*
 *.json
 
 # Generated files
-CLAUDE.md
-.rules
 CHANGELOG.md

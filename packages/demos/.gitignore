@@ -18,13 +18,6 @@ build/
 # Generated files
 vite.config.*.timestamp-*
 
-# Generated AI assistant rules (source of truth: ai-rules/*.mdc)
-.cursor/rules/
-.aiassistant/
-.rules
-CLAUDE.md
-.claude
-
 # TypeScript
 *.tsbuildinfo
 
