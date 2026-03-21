@@ -10,104 +10,103 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  quality:
-    name: Code Quality
+  quality-checks:
+    name: Code Quality Checks
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Blit-Tech library
-        uses: actions/checkout@v6
-        with:
-          repository: vancura/blit-tech
-          path: blit-tech
+      - name: Set up workspace
+        uses: ./.github/actions/workspace-setup
 
-      - name: Checkout Blit-Tech Demos
-        uses: actions/checkout@v6
-        with:
-          path: blit-tech-demos
-
-      - name: Create workspace config
-        run: |
-          cat > pnpm-workspace.yaml << EOF
-          packages:
-            - 'blit-tech'
-            - 'blit-tech-demos'
-          EOF
-          cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
-        with:
-          version: 10.26.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build Blit-Tech library (dependency - not tested here)
-        run: |
-          cd blit-tech
-          pnpm build
-
-      - name: Check formatting (Blit-Tech Demos only)
+      - name: Check formatting
         run: |
           cd blit-tech-demos
           pnpm format:check
 
-      - name: Lint code (Blit-Tech Demos only)
+      - name: Lint code
         run: |
           cd blit-tech-demos
           pnpm lint
 
-      - name: Type check (Blit-Tech Demos only)
+      - name: Type check
         run: |
           cd blit-tech-demos
           pnpm typecheck
 
-      - name: Spell check (Blit-Tech Demos only)
+      - name: Spell check
         run: |
           cd blit-tech-demos
           pnpm spellcheck
 
-  # Placeholder for tests - will run when tests are added
-  test:
-    name: Run Tests
+      - name: Check for unused exports
+        run: |
+          cd blit-tech-demos
+          pnpm knip
+
+  docs-links:
+    name: Check Documentation Links
     runs-on: ubuntu-latest
-    needs: quality
-    if: false # Disabled until tests are added
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+      - name: Check markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
-          version: 10.26.2
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          file-path: './README.md'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: quality-checks
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/workspace-setup
+
+      - name: Build demos
+        run: |
+          cd blit-tech-demos
+          pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
         with:
-          node-version: '20'
-          cache: 'pnpm'
+          name: demos-dist
+          path: blit-tech-demos/dist/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+  deploy:
+    name: Deploy to Cloudflare Pages
+    runs-on: ubuntu-latest
+    needs: [build, docs-links]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
 
-      - name: Run unit tests
-        run: pnpm test:unit
-
-      - name: Run E2E tests
-        run: pnpm test:e2e
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v5
-        if: always()
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v8
         with:
-          files: ./coverage/coverage-final.json
+          name: demos-dist
+          path: dist/
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist/ --project-name=blit-tech-demos
