@@ -22,7 +22,7 @@ This works perfectly for local development but creates a challenge in CI:
 
 ## Solution: Recreate Workspace Structure in CI
 
-All CI workflows recreate the exact workspace structure that exists locally by:
+The CI workflow recreates the exact workspace structure that exists locally by:
 
 1. Cloning both repositories into the correct relative paths
 2. Creating a `pnpm-workspace.yaml` at the root
@@ -34,11 +34,11 @@ All CI workflows recreate the exact workspace structure that exists locally by:
 
 The Blit-Tech library has **its own CI pipeline** in the Blit-Tech repository.
 
-In the Blit-Tech Demos workflows, we:
+In the Blit-Tech Demos workflow, we:
 
-- ✅ Clone and build Blit-Tech (as a dependency)
-- ❌ Do NOT run quality checks on Blit-Tech (linting, formatting, etc.)
-- ❌ Do NOT run tests on Blit-Tech
+- Clone and build Blit-Tech (as a dependency)
+- Do NOT run quality checks on Blit-Tech (linting, formatting, etc.)
+- Do NOT run tests on Blit-Tech
 
 We treat Blit-Tech as a **trusted, pre-tested dependency** that is already validated by its own CI.
 
@@ -77,7 +77,7 @@ steps:
       cache: 'pnpm'
 
   - name: Install dependencies
-    run: pnpm install --frozen-lockfile
+    run: pnpm install --no-frozen-lockfile
 
   - name: Build Blit-Tech library (dependency - not tested here)
     run: |
@@ -92,23 +92,23 @@ steps:
       pnpm format:check
 ```
 
-## Affected Workflows
+## Affected Workflow
 
-All workflows in `.github/workflows/` use this pattern:
+The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across all its jobs:
 
-- **ci.yml** - Code quality checks (format, lint, typecheck)
-- **deploy.yml** - Build and deploy to Cloudflare Pages
-- **pr-checks.yml** - PR commit linting
+- **quality-checks** - Code quality (format, lint, typecheck, spellcheck, knip)
+- **build** - Build demos and upload artifacts
+- **deploy** - Deploy to Cloudflare Pages (main branch only)
 
 ## Local Development
 
 Local development remains unchanged. The workspace structure is already set up in the parent directory:
 
 ```text
-_AMBILAB_/
-├── pnpm-workspace.yaml
-├── blit-tech/
-└── blit-tech-demos/
+parent-dir/
+  pnpm-workspace.yaml
+  blit-tech/
+  blit-tech-demos/
 ```
 
 Hot reloading works perfectly with:
@@ -131,24 +131,6 @@ This script uses `concurrently` to watch both projects:
 4. **Type safety** - TypeScript resolves imports correctly in both environments
 5. **Hot reload** - Local dev:watch script provides excellent DX
 
-## Alternative Approaches Considered
-
-### 1. Git Submodules
-
-**Rejected**: Adds complexity, difficult to manage across separate repos
-
-### 2. npm link in CI
-
-**Rejected**: Fragile, doesn't support frozen lockfile, caching issues
-
-### 3. Publish to private npm registry
-
-**Rejected**: Overhead of running private registry, not needed yet
-
-### 4. Copy built files manually
-
-**Rejected**: Loses type definitions, breaks TypeScript integration
-
 ## Future: Publishing to npm
 
 When Blit-Tech is ready for npm publication:
@@ -164,7 +146,7 @@ When Blit-Tech is ready for npm publication:
    }
    ```
 
-3. Simplify CI workflows (no need to clone both repos)
+3. Simplify CI workflow (no need to clone both repos)
 4. Local development can still use workspace protocol if desired
 
 ## Troubleshooting
@@ -173,7 +155,7 @@ When Blit-Tech is ready for npm publication:
 
 **Cause**: Workspace structure not created before `pnpm install`
 
-**Fix**: Ensure the workflow includes all three checkout/workspace steps before installing
+**Fix**: Ensure the workflow includes all checkout/workspace steps before installing
 
 ### CI Error: "No matching version found for blit-tech@workspace:\*"
 
