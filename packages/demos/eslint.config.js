@@ -26,8 +26,6 @@ export default [
             '.pnpm-store/**',
             '**/.pnpm-store/**',
             'vite.config.ts.timestamp-*',
-            'CLAUDE.md',
-            '.rules',
         ],
     },
 
