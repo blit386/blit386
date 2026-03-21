@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'input=$(cat); FILE=$(echo \"$input\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if echo \"$FILE\" | grep -qE \"(\\.env(\\..*)?$|package-lock\\.json$|pnpm-lock\\.yaml$|\\.lock$)\"; then echo \"[BLOCKED] Sensitive file detected. Modifications to .env files and lock files should be done manually.\"; exit 2; fi'",
+            "continueOnError": false
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then cd \"$CLAUDE_PROJECT_DIR\" && npx biome check --write \"$FILE\" 2>/dev/null; npx prettier --write \"$FILE\" 2>/dev/null; fi; true"
+          },
+          {
+            "type": "command",
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(ts|tsx|js|md|mdx)$'; then cd \"$CLAUDE_PROJECT_DIR\" && RESULT=$(npx cspell --no-progress \"$FILE\" 2>&1); if [ $? -ne 0 ]; then echo \"[SPELLCHECK] Errors found in $FILE:\"; echo \"$RESULT\"; echo \"Fix typos in the source code, or add legitimate technical terms to cspell.json in the words array.\"; fi; fi; true"
+          }
+        ]
+      }
+    ]
+  }
+}
