@@ -7,7 +7,7 @@ import { defineConfig, type Plugin } from 'vite';
 import handlebars from 'vite-plugin-handlebars';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
-import { exampleContexts } from './_config/contexts';
+import { EXAMPLE_CONTEXTS } from './_config/contexts';
 
 /**
  * Vite plugin to flatten the demos/ subdirectory in the build output.
@@ -67,8 +67,8 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
  */
 function getPageContext(pagePath: string): Record<string, string> {
     const filename = basename(pagePath);
-    // eslint-disable-next-line security/detect-object-injection -- Safe: exampleContexts is a static config object, filename is sanitized by basename()
-    return exampleContexts[filename] ?? {};
+    // eslint-disable-next-line security/detect-object-injection -- Safe: EXAMPLE_CONTEXTS is a static config object, filename is sanitized by basename()
+    return EXAMPLE_CONTEXTS[filename] ?? {};
 }
 
 export default defineConfig(({ command }) => {

@@ -2,7 +2,7 @@
  * Context data for example pages.
  * Each key is the HTML filename, values are Handlebars template variables.
  */
-export const exampleContexts: Record<string, Record<string, string>> = {
+export const EXAMPLE_CONTEXTS: Record<string, Record<string, string>> = {
     'basics.html': {
         title: 'Blit-Tech - Basic Example',
         h1Title: 'Blit-Tech Basic Example',
