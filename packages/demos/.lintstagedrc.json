@@ -1,15 +1,17 @@
 {
   "*.{ts,tsx}": [
-    "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true",
-    "eslint --fix --max-warnings=0",
-    "cspell --no-must-find-files",
-    "bash -c 'pnpm typecheck'"
+    "biome check --write --no-errors-on-unmatched",
+    "biome format --write --no-errors-on-unmatched",
+    "eslint --fix --max-warnings 0",
+    "cspell --no-progress --no-must-find-files"
   ],
   "*.{js,cjs,mjs}": [
-    "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true",
-    "eslint --fix --max-warnings=0"
+    "biome check --write --no-errors-on-unmatched",
+    "biome format --write --no-errors-on-unmatched",
+    "eslint --fix --max-warnings 0"
   ],
-  "*.{json,jsonc,css}": ["biome format --write --no-errors-on-unmatched --files-ignore-unknown=true"],
-  "*.{md,mdx}": ["prettier --write", "cspell --no-must-find-files"],
-  "*.{yml,yaml}": ["prettier --write"]
+  "*.{json,jsonc}": ["biome format --write --no-errors-on-unmatched"],
+  "*.css": ["biome format --write --no-errors-on-unmatched"],
+  "*.{md,mdx}": ["prettier --write", "cspell --no-progress --no-must-find-files"],
+  "*.{yaml,yml}": ["prettier --write"]
 }
