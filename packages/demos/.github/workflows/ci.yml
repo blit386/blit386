@@ -20,45 +20,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Blit-Tech library
-        uses: actions/checkout@v6
-        with:
-          repository: vancura/blit-tech
-          ref: main
-          path: blit-tech
-
-      - name: Checkout Blit-Tech Demos
-        uses: actions/checkout@v6
-        with:
-          path: blit-tech-demos
-
-      - name: Create workspace config
-        run: |
-          cat > pnpm-workspace.yaml << EOF
-          packages:
-            - 'blit-tech'
-            - 'blit-tech-demos'
-          EOF
-          cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5.0.0
-        with:
-          version: 10.26.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build Blit-Tech library (dependency - not tested here)
-        run: |
-          cd blit-tech
-          pnpm build
+      - name: Set up workspace
+        uses: ./.github/actions/workspace-setup
 
       - name: Check formatting
         run: |
@@ -106,45 +69,8 @@ jobs:
     needs: quality-checks
 
     steps:
-      - name: Checkout Blit-Tech library
-        uses: actions/checkout@v6
-        with:
-          repository: vancura/blit-tech
-          ref: main
-          path: blit-tech
-
-      - name: Checkout Blit-Tech Demos
-        uses: actions/checkout@v6
-        with:
-          path: blit-tech-demos
-
-      - name: Create workspace config
-        run: |
-          cat > pnpm-workspace.yaml << EOF
-          packages:
-            - 'blit-tech'
-            - 'blit-tech-demos'
-          EOF
-          cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5.0.0
-        with:
-          version: 10.26.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build Blit-Tech library
-        run: |
-          cd blit-tech
-          pnpm build
+      - name: Set up workspace
+        uses: ./.github/actions/workspace-setup
 
       - name: Build demos
         run: |
