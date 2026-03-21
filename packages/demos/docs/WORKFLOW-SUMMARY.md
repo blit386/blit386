@@ -1,77 +1,50 @@
 # Workflow Summary
 
-This document provides a quick overview of all CI/CD workflows in Blit-Tech Demos.
+This document provides a quick overview of the CI/CD workflow in Blit-Tech Demos.
 
 ## Key Principle
 
-All workflows **test and check Blit-Tech Demos only**. The Blit-Tech library is treated as a **trusted, pre-tested
+The workflow **tests and checks Blit-Tech Demos only**. The Blit-Tech library is treated as a **trusted, pre-tested
 dependency** that has its own CI pipeline in the Blit-Tech repository.
 
-## Workflows
+## CI Workflow (`ci.yml`)
 
-### 1. CI (`ci.yml`)
-
-**Triggers:** Push to `main`, Pull Requests  
-**Purpose:** Code quality checks for Blit-Tech Demos
+**Triggers:** Push to `main`, Pull Requests
 
 **Jobs:**
 
-- `quality` - Runs format, lint, typecheck, and spellcheck on Blit-Tech Demos only
-- `test` - Placeholder for future tests (currently disabled)
+### 1. quality-checks
 
-**What it does:**
+Runs all quality checks on Blit-Tech Demos:
 
-- ✅ Clones both repos and creates workspace
-- ✅ Builds Blit-Tech (as dependency)
-- ✅ Runs all quality checks on Blit-Tech Demos
-- ❌ Does NOT test Blit-Tech
+- Format check (Biome + Prettier)
+- Lint (ESLint)
+- Type check (TypeScript)
+- Spell check (cspell)
+- Unused exports check (knip)
 
-### 2. Deploy (`deploy.yml`)
+### 2. build (depends on quality-checks)
 
-**Triggers:** Push to `main`, Pull Requests (deploys only on main push)  
-**Purpose:** Build and deploy to Cloudflare Pages
+- Builds Blit-Tech library (as dependency)
+- Builds Blit-Tech Demos
+- Uploads build artifacts
 
-**Jobs:**
+### 3. deploy (depends on build, main branch only)
 
-- `quality` - Same as CI (format, lint, typecheck on Blit-Tech Demos)
-- `build-library` - Builds Blit-Tech and uploads artifact
-- `build-demos` - Builds Blit-Tech Demos using the library artifact
-- `deploy` - Deploys to Cloudflare Pages (main branch only)
-
-**What it does:**
-
-- ✅ Quality checks on Blit-Tech Demos only
-- ✅ Builds both projects
-- ✅ Deploys demos to Cloudflare Pages
-- ❌ Does NOT test Blit-Tech
-
-### 3. PR Checks (`pr-checks.yml`)
-
-**Triggers:** Pull Requests  
-**Purpose:** Validate PR conventions
-
-**Jobs:**
-
-- `commitlint` - Validates commit messages in Blit-Tech Demos PR
-- `docs-links` - Checks documentation links
-
-**What it does:**
-
-- ✅ Validates conventional commits for Blit-Tech Demos
-- ✅ Checks markdown links in Blit-Tech Demos
-- ❌ Does NOT check Blit-Tech commits
+- Downloads build artifacts
+- Deploys to Cloudflare Pages via Wrangler
 
 ## Workspace Structure in CI
 
-All workflows recreate the local workspace structure:
+The workflow recreates the local workspace structure:
 
 ```text
 (GitHub Actions workspace root)
-├── pnpm-workspace.yaml          # Created at runtime
-├── blit-tech/                   # Cloned from vancura/blit-tech
-│   └── (built as dependency)
-└── blit-tech-demos/             # Cloned from current repo
-    └── (tested and deployed)
+  pnpm-workspace.yaml          # Created at runtime
+  blit-tech/                   # Cloned from vancura/blit-tech
+    (built as dependency)
+  blit-tech-demos/             # Cloned from current repo
+    (tested and deployed)
 ```
 
 This allows the `workspace:*` dependency to resolve correctly.
@@ -86,6 +59,7 @@ pnpm format:check    # Biome + Prettier formatting
 pnpm lint            # ESLint
 pnpm typecheck       # TypeScript
 pnpm spellcheck      # cspell
+pnpm knip            # Unused exports
 pnpm build           # Vite build
 ```
 
@@ -100,4 +74,3 @@ pnpm build           # Vite build
 ## Related Documentation
 
 - [CI-WORKSPACE-SETUP.md](CI-WORKSPACE-SETUP.md) - Detailed explanation of the workspace setup
-- [Blit-Tech CI](https://github.com/vancura/blit-tech/tree/main/.github/workflows) - Library's own CI workflows
