@@ -1,0 +1,49 @@
+name: Workspace Setup
+description: Checkout repos, create pnpm workspace, install dependencies, and build the Blit-Tech library.
+
+runs:
+  using: composite
+
+  steps:
+    - name: Checkout Blit-Tech library
+      uses: actions/checkout@v6
+      with:
+        repository: vancura/blit-tech
+        ref: main
+        path: blit-tech
+
+    - name: Checkout Blit-Tech Demos
+      uses: actions/checkout@v6
+      with:
+        path: blit-tech-demos
+
+    - name: Create workspace config
+      shell: bash
+      run: |
+        cat > pnpm-workspace.yaml << EOF
+        packages:
+          - 'blit-tech'
+          - 'blit-tech-demos'
+        EOF
+        cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v5.0.0
+      with:
+        version: 10.26.2
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --no-frozen-lockfile
+
+    - name: Build Blit-Tech library
+      shell: bash
+      run: |
+        cd blit-tech
+        pnpm build
