@@ -1,0 +1,85 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits", ":prHourlyLimitNone"],
+  "timezone": "Europe/Prague",
+  "schedule": ["before 6am on Monday"],
+  "rangeStrategy": "bump",
+  "labels": ["dependencies"],
+  "commitMessagePrefix": "chore(deps):",
+  "prConcurrentLimit": 5,
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "Core build tools",
+      "matchPackageNames": ["vite", "typescript"],
+      "groupName": "core build tools",
+      "schedule": ["before 6am on Monday"]
+    },
+    {
+      "description": "Vite plugins",
+      "matchPackagePatterns": ["^vite-plugin-"],
+      "groupName": "vite plugins",
+      "schedule": ["before 6am on Monday"]
+    },
+    {
+      "description": "Linting and formatting tools",
+      "matchPackagePatterns": ["eslint", "prettier", "biome"],
+      "groupName": "linting and formatting",
+      "schedule": ["before 6am on Monday"]
+    },
+    {
+      "description": "Tailwind and styling",
+      "matchPackagePatterns": ["tailwind"],
+      "groupName": "tailwind",
+      "schedule": ["before 6am on Monday"]
+    },
+    {
+      "description": "TypeScript type definitions",
+      "matchPackagePatterns": ["^@types/"],
+      "groupName": "type definitions",
+      "schedule": ["before 6am on Monday"]
+    },
+    {
+      "description": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Security patches - automerge",
+      "matchUpdateTypes": ["patch"],
+      "matchPackagePatterns": ["*"],
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Minor updates - manual review",
+      "matchUpdateTypes": ["minor"],
+      "automerge": false
+    },
+    {
+      "description": "Major updates - manual review with high priority",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-update"]
+    },
+    {
+      "description": "Pin pnpm version",
+      "matchPackageNames": ["pnpm"],
+      "rangeStrategy": "pin"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "ignoreDeps": [],
+  "postUpdateOptions": ["pnpmDedupe"]
+}
