@@ -1,10 +1,6 @@
-# Cloudflare Pages - Skip build dependencies
-# The project is built via GitHub Actions and artifacts are deployed
+# Cloudflare Pages ignores
+# Since we deploy pre-built artifacts via GitHub Actions,
+# skip building on Cloudflare side
 
-node_modules/
-src/
-public/
-*.ts
-*.json
-!wrangler.jsonc
-
+*
+!dist/**
