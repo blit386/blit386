@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/**/*.ts"],
+  "project": ["src/**/*.ts"],
+  "ignore": [],
+  "ignoreExportsUsedInFile": true,
+  "typescript": {
+    "config": ["tsconfig.json"]
+  }
+}

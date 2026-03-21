@@ -48,6 +48,7 @@ pnpm-debug.log*
 # Cache
 .eslintcache
 .cache/
+.knip-output.json
 
 # Temporary folders
 tmp/

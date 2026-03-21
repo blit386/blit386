@@ -84,6 +84,22 @@ jobs:
           cd blit-tech-demos
           pnpm knip
 
+  docs-links:
+    name: Check Documentation Links
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Check markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          config-file: '.github/markdown-link-check.json'
+          file-path: './README.md'
+
   build:
     name: Build
     runs-on: ubuntu-latest
