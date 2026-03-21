@@ -42,7 +42,7 @@ jobs:
           cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5.0.0
         with:
           version: 10.26.2
 
@@ -98,7 +98,6 @@ jobs:
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
-          config-file: '.github/markdown-link-check.json'
           file-path: './README.md'
 
   build:
@@ -129,7 +128,7 @@ jobs:
           cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5.0.0
         with:
           version: 10.26.2
 
