@@ -17,40 +17,32 @@
     },
     {
       "description": "Vite plugins",
-      "matchPackagePatterns": ["^vite-plugin-"],
+      "matchPackageNames": ["^vite-plugin-"],
       "groupName": "vite plugins",
       "schedule": ["before 6am on Monday"]
     },
     {
       "description": "Linting and formatting tools",
-      "matchPackagePatterns": ["eslint", "prettier", "biome"],
+      "matchPackageNames": ["eslint", "prettier", "biome"],
       "groupName": "linting and formatting",
       "schedule": ["before 6am on Monday"]
     },
     {
       "description": "Tailwind and styling",
-      "matchPackagePatterns": ["tailwind"],
+      "matchPackageNames": ["tailwind"],
       "groupName": "tailwind",
       "schedule": ["before 6am on Monday"]
     },
     {
       "description": "TypeScript type definitions",
-      "matchPackagePatterns": ["^@types/"],
+      "matchPackageNames": ["^@types/"],
       "groupName": "type definitions",
       "schedule": ["before 6am on Monday"]
     },
     {
-      "description": "GitHub Actions",
-      "matchManagers": ["github-actions"],
-      "groupName": "github actions",
-      "automerge": true,
-      "automergeType": "pr",
-      "minimumReleaseAge": "3 days"
-    },
-    {
       "description": "Security patches - automerge",
       "matchUpdateTypes": ["patch"],
-      "matchPackagePatterns": ["*"],
+      "matchPackageNames": ["*"],
       "automerge": true,
       "automergeType": "pr",
       "minimumReleaseAge": "3 days"
@@ -65,6 +57,14 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "major-update"]
+    },
+    {
+      "description": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "3 days"
     },
     {
       "description": "Pin pnpm version",

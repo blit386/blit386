@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: vancura/blit-tech
+          ref: main
           path: blit-tech
 
       - name: Checkout Blit-Tech Demos
@@ -110,6 +111,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: vancura/blit-tech
+          ref: main
           path: blit-tech
 
       - name: Checkout Blit-Tech Demos
@@ -157,6 +159,7 @@ jobs:
         with:
           name: demos-dist
           path: blit-tech-demos/dist/
+          if-no-files-found: error
           retention-days: 7
           compression-level: 9
 
