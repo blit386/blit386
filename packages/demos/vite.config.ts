@@ -107,13 +107,6 @@ export default defineConfig(({ command }) => {
                 input: {
                     main: resolve(__dirname, 'demos/index.html'),
                     basics: resolve(__dirname, 'demos/basics.html'),
-                    primitives: resolve(__dirname, 'demos/primitives.html'),
-                    camera: resolve(__dirname, 'demos/camera.html'),
-                    patterns: resolve(__dirname, 'demos/patterns.html'),
-                    sprites: resolve(__dirname, 'demos/sprites.html'),
-                    animation: resolve(__dirname, 'demos/animation.html'),
-                    'sprite-effects': resolve(__dirname, 'demos/sprite-effects.html'),
-                    fonts: resolve(__dirname, 'demos/fonts.html'),
                 },
                 output: isProduction
                     ? {
