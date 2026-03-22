@@ -16,7 +16,7 @@ pushing significant changes or creating pull requests.
 ## Steps
 
 1. **Run preflight checks**
-   - Execute `pnpm preflight` (format, lint, typecheck, spellcheck, knip)
+   - Execute `pnpm preflight` (format, lint, spellcheck, knip)
    - If any check fails, report issues and stop
    - All automated checks must pass before AI review
 
@@ -43,8 +43,7 @@ pushing significant changes or creating pull requests.
 5. **Check project-specific rules**
    - No emoji anywhere (code, comments, docs, commits)
    - Integer coordinates (Vector2i, Rect2i) for all rendering
-   - TypeScript strict types (no `any`)
-   - Type imports use `import type` syntax
+   - Plain JavaScript (ES2022, no TypeScript)
 
 6. **Generate PR-ready summary**
    - Create a summary suitable for PR description
@@ -64,7 +63,6 @@ pushing significant changes or creating pull requests.
 
 - [PASS/FAIL] Format check
 - [PASS/FAIL] Lint check
-- [PASS/FAIL] Type check
 - [PASS/FAIL] Spell check
 - [PASS/FAIL] Unused exports (knip)
 - [PASS/FAIL] Security audit
