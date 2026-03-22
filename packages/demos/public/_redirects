@@ -1,0 +1,2 @@
+# Redirect root to main site
+/ https://vancura.dev 302
