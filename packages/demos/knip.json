@@ -4,7 +4,7 @@
   "project": ["src/**/*.ts"],
   "ignore": [],
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["blit-tech", "tailwindcss"],
+  "ignoreDependencies": ["blit-tech"],
   "typescript": {
     "config": ["tsconfig.json"]
   }
