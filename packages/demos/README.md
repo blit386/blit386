@@ -63,7 +63,7 @@ cd blit-tech-demos
 pnpm dev
 ```
 
-The browser will open automatically at `http://localhost:5173/demos/index.html` showing the demo gallery.
+The browser will open automatically at `http://localhost:5173/demos/basics.html` showing the demo gallery.
 
 ### Development with Auto-Rebuild
 
