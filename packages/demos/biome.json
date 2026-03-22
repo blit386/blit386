@@ -39,8 +39,7 @@
   "css": {
     "parser": {
       "cssModules": true,
-      "allowWrongLineComments": false,
-      "tailwindDirectives": true
+      "allowWrongLineComments": false
     },
     "formatter": {
       "indentWidth": 4,
