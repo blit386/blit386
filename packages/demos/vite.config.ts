@@ -103,7 +103,6 @@ export default defineConfig(({ command }) => {
             emptyOutDir: true,
             rollupOptions: {
                 input: {
-                    main: resolve(__dirname, 'demos/index.html'),
                     basics: resolve(__dirname, 'demos/basics.html'),
                 },
                 output: isProduction
@@ -120,7 +119,7 @@ export default defineConfig(({ command }) => {
         },
 
         server: {
-            open: '/demos/index.html',
+            open: '/demos/basics.html',
             hmr: true,
         },
 
