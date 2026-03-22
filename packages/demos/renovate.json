@@ -28,12 +28,6 @@
       "schedule": ["before 6am on Monday"]
     },
     {
-      "description": "Tailwind and styling",
-      "matchPackageNames": ["tailwind"],
-      "groupName": "tailwind",
-      "schedule": ["before 6am on Monday"]
-    },
-    {
       "description": "TypeScript type definitions",
       "matchPackageNames": ["^@types/"],
       "groupName": "type definitions",

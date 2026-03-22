@@ -7,7 +7,7 @@ Interactive demos and examples for the Blit-Tech WebGPU retro game engine.
 - **Node**: >= 20.0.0
 - **Build Tool**: Vite 7 with Handlebars templates
 - **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS 4
+- **Styling**: Plain CSS with CSS custom properties
 - **Engine**: Blit-Tech (WebGPU retro game engine, workspace dependency)
 - **Package Manager**: pnpm
 - **Deployment**: Cloudflare Pages via GitHub Actions

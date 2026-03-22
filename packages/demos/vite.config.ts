@@ -2,7 +2,6 @@ import { copyFileSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileS
 import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, type Plugin } from 'vite';
 import handlebars from 'vite-plugin-handlebars';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
@@ -78,7 +77,6 @@ export default defineConfig(({ command }) => {
         base: './',
 
         plugins: [
-            tailwindcss(),
             handlebars({
                 partialDirectory: resolve(__dirname, '_partials'),
                 context: getPageContext,
