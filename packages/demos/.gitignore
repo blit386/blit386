@@ -28,6 +28,9 @@ playwright-report/
 test-results/
 .vitest/
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # IDE and editor files
 .vscode/launch.json
 .vscode/*.code-workspace

@@ -1,25 +1,10 @@
 {
-  "assistant": {
-    "version": "2",
-    "provider": {
-      "name": "anthropic",
-      "default_model": {
-        "model": "claude-sonnet-4-20250514"
-      }
-    }
-  },
-  "context_servers": {
-    "rules-server": {
-      "command": {
-        "path": "cat",
-        "args": [".rules"]
-      }
-    }
-  },
   "tab_size": 4,
   "hard_tabs": false,
   "preferred_line_length": 120,
   "format_on_save": "on",
+  "ensure_final_newline_on_save": true,
+  "wrap_guides": [120],
   "formatter": {
     "external": {
       "command": "biome",
@@ -27,7 +12,6 @@
     }
   },
   "code_actions_on_format": {
-    "source.organizeImports": true,
     "source.fixAll": true
   },
   "languages": {
@@ -53,6 +37,24 @@
         }
       }
     },
+    "JSON": {
+      "tab_size": 2
+    },
+    "CSS": {
+      "tab_size": 4,
+      "preferred_line_length": 100,
+      "format_on_save": "on"
+    },
+    "Markdown": {
+      "tab_size": 2,
+      "preferred_line_length": 120,
+      "formatter": "prettier"
+    },
+    "YAML": {
+      "tab_size": 2,
+      "preferred_line_length": 120,
+      "formatter": "prettier"
+    },
     "WGSL": {
       "tab_size": 4,
       "preferred_line_length": 120
@@ -62,12 +64,7 @@
     "typescript-language-server": {
       "initialization_options": {
         "preferences": {
-          "importModuleSpecifierPreference": "relative",
-          "includeInlayParameterNameHints": "all",
-          "includeInlayFunctionParameterTypeHints": true,
-          "includeInlayVariableTypeHints": true,
-          "includeInlayPropertyDeclarationTypeHints": true,
-          "includeInlayFunctionLikeReturnTypeHints": true
+          "importModuleSpecifierPreference": "relative"
         }
       }
     }

@@ -1,14 +1,14 @@
 # Blit-Tech Demos
 
-Interactive demos for the [Blit-Tech](../blit-tech/) WebGPU retro game engine.
+Interactive demos for the [Blit-Tech](https://github.com/vancura/blit-tech/) WebGPU retro game engine.
 
-This repository showcases the capabilities of Blit-Tech through 8 interactive demos, demonstrating everything from basic
-rendering to advanced sprite effects.
+This repository showcases the capabilities of Blit-Tech through a growing collection of interactive demos, demonstrating
+everything from basic rendering to advanced sprite effects.
 
 ## Prerequisites
 
 - **Node.js** v20 or higher (LTS)
-- **pnpm** v10.24.0 or higher
+- **pnpm** v10.26.0 or higher
 - A **WebGPU-compatible browser**:
   - Chrome/Edge 113+ (Windows, macOS, Linux, Android)
   - Firefox Nightly (with `dom.webgpu.enabled` in `about:config`)
@@ -63,7 +63,7 @@ cd blit-tech-demos
 pnpm dev
 ```
 
-The browser will open automatically at `http://localhost:5173/demos/` showing the demo gallery.
+The browser will open automatically at `http://localhost:5173/demos/index.html` showing the demo gallery.
 
 ### Development with Auto-Rebuild
 
@@ -99,41 +99,17 @@ pnpm preview
 pnpm lint          # Run ESLint
 pnpm format        # Format code with Biome + Prettier
 pnpm typecheck     # TypeScript type checking
+pnpm preflight     # Run all quality checks (format, lint, typecheck, spellcheck, knip)
 ```
-
-## Using Blit-Tech in Your Project
-
-### Current Status (Pre-npm)
-
-These demos currently use the local Blit-Tech library via pnpm workspace (see Setup section above). This workspace setup
-is required because Blit-Tech is not yet published to npm.
-
-### After npm Publication
-
-When Blit-Tech is published to npm, you'll be able to install it directly:
-
-```bash
-npm install blit-tech
-# or
-pnpm add blit-tech
-```
-
-Then import in your project:
-
-```typescript
-import { BT, bootstrap, Color32, Vector2i, type IBlitTechGame } from 'blit-tech';
-```
-
-No workspace setup will be needed once the package is on npm.
 
 ## Browser Compatibility
 
-| Browser     | Version | Status                           |
-| ----------- | ------- | -------------------------------- |
-| Chrome/Edge | 113+    | ✅ Full support                  |
-| Safari      | 18+     | ✅ Full support                  |
-| Firefox     | Nightly | ⚠️ Requires `dom.webgpu.enabled` |
-| Opera       | Latest  | ✅ Full support (Chromium-based) |
+| Browser     | Version | Status                        |
+| ----------- | ------- | ----------------------------- |
+| Chrome/Edge | 113+    | Full support                  |
+| Safari      | 18+     | Full support                  |
+| Firefox     | Nightly | Requires `dom.webgpu.enabled` |
+| Opera       | Latest  | Full support (Chromium-based) |
 
 ## Deployment
 
@@ -148,7 +124,7 @@ process is handled by GitHub Actions:
 ### URL Structure
 
 - **Development**: URLs include the `demos/` path (e.g., `http://localhost:5173/demos/basics.html`)
-- **Production**: URLs are at the root (e.g., `https://blit-tech-demos.ambilab.com/basics.html`)
+- **Production**: URLs are at the root (e.g., `https://blit-tech-demos.vancura.dev/basics.html`)
 
 A custom Vite plugin flattens the `dist/demos/` output to `dist/` during the build, providing cleaner production URLs
 while keeping source files organized in the `demos/` folder.
@@ -170,4 +146,3 @@ ISC
 ## Links
 
 - **Blit-Tech on GitHub:** [github.com/vancura/blit-tech](https://github.com/vancura/blit-tech)
-- **Live Demos:** [blit-tech-demos.ambilab.com](https://blit-tech-demos.ambilab.com)

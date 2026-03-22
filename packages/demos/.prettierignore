@@ -28,6 +28,3 @@ vite.config.*.timestamp-*
 
 # JSON is handled by Biome
 *.json
-
-# Generated files
-CHANGELOG.md
