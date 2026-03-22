@@ -4,4 +4,3 @@
 # Allow embedding in iframes from the vancura.dev Framer site
 /*
   Content-Security-Policy: frame-ancestors https://vancura.dev https://*.framer.app
-  X-Frame-Options: ALLOW-FROM https://vancura.dev
