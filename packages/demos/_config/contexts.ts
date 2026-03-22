@@ -5,7 +5,6 @@
 export const EXAMPLE_CONTEXTS: Record<string, Record<string, string>> = {
     'basics.html': {
         title: 'Blit-Tech - Basic Example',
-        h1Title: 'Blit-Tech Basic Example',
         scriptFile: '../src/basics',
     },
 };

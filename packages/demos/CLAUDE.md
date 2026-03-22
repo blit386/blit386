@@ -24,7 +24,6 @@ Interactive demos and examples for the Blit-Tech WebGPU retro game engine.
 ```text
 blit-tech-demos/
   demos/                  # HTML pages for each demo
-    index.html            # Demo gallery
     basics.html           # Individual demo pages...
     styles.css            # Shared demo styling
   src/                    # TypeScript source for demos
@@ -40,9 +39,8 @@ blit-tech-demos/
     fonts/                # Bitmap fonts (.btfont + .png)
     _headers              # Cloudflare headers
   _partials/              # Handlebars templates
-    layout-top.hbs        # Page header
-    layout-bottom.hbs     # Page footer
-    font-attribution.hbs  # Font credits
+    layout-top.hbs        # Page header (HTML boilerplate + centered canvas)
+    layout-bottom.hbs     # Page footer (script tag + closing tags)
   _config/
     contexts.ts           # Page context data for templates
   docs/                   # Project documentation
@@ -127,13 +125,10 @@ bootstrap(DemoGame);
 
 ### HTML Demo Pages (`demos/*.html`)
 
-Use Handlebars partials:
+Use Handlebars partials (canvas and script are included by the partials):
 
 ```html
-{{> layout-top title="Demo Name" }}
-<canvas id="game-canvas"></canvas>
-<script type="module" src="../src/demo-name.ts"></script>
-{{> layout-bottom }}
+{{> layout-top}} {{> layout-bottom}}
 ```
 
 ### Adding a New Demo
@@ -142,7 +137,6 @@ Use Handlebars partials:
 2. Create `demos/new-demo.html` using the HTML template
 3. Add entry to `vite.config.ts` rollupOptions.input
 4. Add context to `_config/contexts.ts`
-5. Add link to `demos/index.html` gallery
 
 ## Code Quality (Relaxed for Demos)
 
