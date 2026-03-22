@@ -13,7 +13,7 @@
   "keywords": [
     "blit-tech",
     "webgpu",
-    "typescript",
+    "javascript",
     "demos",
     "examples",
     "game-engine",
@@ -30,7 +30,7 @@
   "scripts": {
     "dev": "vite",
     "dev:watch": "concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit-tech build --watch\" \"pnpm dev\"",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -38,9 +38,8 @@
     "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
     "format:biome": "biome format --write .",
     "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
-    "typecheck": "tsc --noEmit",
-    "spellcheck": "cspell \"src/**/*.{ts,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
-    "preflight": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm spellcheck && pnpm knip",
+    "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
+    "preflight": "pnpm format:check && pnpm lint && pnpm spellcheck && pnpm knip",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "clean": "rm -rf dist node_modules/.vite",
@@ -61,10 +60,6 @@
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
     "@eslint/js": "^9.39.2",
-    "@types/node": "^25.0.2",
-    "@typescript-eslint/eslint-plugin": "^8.49.0",
-    "@typescript-eslint/parser": "^8.49.0",
-    "@webgpu/types": "^0.1.68",
     "concurrently": "^9.1.0",
     "cspell": "^9.1.2",
     "eslint": "^9.39.2",
@@ -79,7 +74,6 @@
     "knip": "^5.56.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
-    "typescript": "^5.9.3",
     "vite": "^7.2.7",
     "vite-plugin-handlebars": "^2.0.0",
     "vite-plugin-static-copy": "^3.1.4"

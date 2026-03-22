@@ -55,11 +55,9 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noNonNullAssertion": "warn",
         "useConst": "error",
         "useBlockStatements": "off",
-        "noParameterAssign": "warn",
-        "useImportType": "error"
+        "noParameterAssign": "warn"
       },
       "suspicious": {
         "noExplicitAny": "warn",
@@ -84,12 +82,10 @@
   },
   "overrides": [
     {
-      "includes": ["src/**/*.ts"],
+      "includes": ["src/**/*.js"],
       "linter": {
         "rules": {
-          "style": {
-            "noNonNullAssertion": "off"
-          }
+          "style": {}
         }
       }
     }

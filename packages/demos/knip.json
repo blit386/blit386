@@ -1,11 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["src/**/*.ts"],
-  "project": ["src/**/*.ts"],
+  "entry": ["src/**/*.js"],
+  "project": ["src/**/*.js"],
   "ignore": [],
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["blit-tech"],
-  "typescript": {
-    "config": ["tsconfig.json"]
-  }
+  "ignoreDependencies": ["blit-tech"]
 }

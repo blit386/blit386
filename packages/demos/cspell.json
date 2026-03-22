@@ -2,25 +2,15 @@
   "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
   "language": "en",
   "allowCompoundWords": true,
-  "dictionaries": ["typescript", "node", "html", "css", "fonts", "npm", "softwareTerms"],
+  "dictionaries": ["node", "html", "css", "fonts", "npm", "softwareTerms"],
   "words": [
     "biomejs",
     "blit",
     "btfont",
     "cfignore",
-    "cooldown",
-    "cooldowns",
     "esbuild",
-    "Fabrizio",
-    "gamepad",
-    "nsis",
     "pnpm",
-    "retroblit",
     "Rollup",
-    "Schiavi",
-    "spritesheet",
-    "tilemap",
-    "timestep",
     "Vančura",
     "Vite",
     "Vitest",
@@ -31,10 +21,5 @@
   "flagWords": ["cant", "dont", "hte", "teh", "wont"],
   "ignorePaths": ["*.map", "*.min.js", ".git", ".pnpm-store", "coverage", "dist", "node_modules", "pnpm-lock.yaml"],
   "ignoreRegExpList": ["/#[0-9A-Fa-f]{3,8}/", "/0x[0-9A-Fa-f]+/", "/@[a-zA-Z0-9_-]+\\/[a-zA-Z0-9_-]+/"],
-  "overrides": [
-    {
-      "filename": "**/*.ts",
-      "words": ["instanceof", "keyof", "readonly", "typeof"]
-    }
-  ]
+  "overrides": []
 }

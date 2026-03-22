@@ -1,40 +1,32 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits", ":prHourlyLimitNone"],
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
   "timezone": "Europe/Prague",
   "schedule": ["before 6am on Monday"],
   "rangeStrategy": "bump",
   "labels": ["dependencies"],
   "commitMessagePrefix": "chore(deps):",
   "prConcurrentLimit": 5,
+  "prHourlyLimit": 4,
   "automerge": false,
   "packageRules": [
     {
       "description": "Core build tools",
-      "matchPackageNames": ["vite", "typescript"],
-      "groupName": "core build tools",
-      "schedule": ["before 6am on Monday"]
+      "matchPackageNames": ["vite"],
+      "groupName": "core build tools"
     },
     {
       "description": "Vite plugins",
       "matchPackageNames": ["^vite-plugin-"],
-      "groupName": "vite plugins",
-      "schedule": ["before 6am on Monday"]
+      "groupName": "vite plugins"
     },
     {
       "description": "Linting and formatting tools",
       "matchPackageNames": ["eslint", "prettier", "biome"],
-      "groupName": "linting and formatting",
-      "schedule": ["before 6am on Monday"]
+      "groupName": "linting and formatting"
     },
     {
-      "description": "TypeScript type definitions",
-      "matchPackageNames": ["^@types/"],
-      "groupName": "type definitions",
-      "schedule": ["before 6am on Monday"]
-    },
-    {
-      "description": "Security patches - automerge",
+      "description": "All patches - automerge",
       "matchUpdateTypes": ["patch"],
       "matchPackageNames": ["*"],
       "automerge": true,
