@@ -20,6 +20,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout for local actions
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/actions
+          sparse-checkout-cone-mode: false
+
       - name: Set up workspace
         uses: ./.github/actions/workspace-setup
 
@@ -69,6 +75,12 @@ jobs:
     needs: quality-checks
 
     steps:
+      - name: Checkout for local actions
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/actions
+          sparse-checkout-cone-mode: false
+
       - name: Set up workspace
         uses: ./.github/actions/workspace-setup
 
