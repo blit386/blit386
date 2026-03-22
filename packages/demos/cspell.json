@@ -4,10 +4,8 @@
   "allowCompoundWords": true,
   "dictionaries": ["typescript", "node", "html", "css", "fonts", "npm", "softwareTerms"],
   "words": [
-    "Ambilab",
     "biomejs",
     "blit",
-    "Bresenham",
     "btfont",
     "cfignore",
     "cooldown",
@@ -15,12 +13,9 @@
     "esbuild",
     "Fabrizio",
     "gamepad",
-    "invinc",
     "nsis",
     "pnpm",
-    "rects",
     "retroblit",
-    "RGBA",
     "Rollup",
     "Schiavi",
     "spritesheet",
@@ -31,8 +26,7 @@
     "Vitest",
     "Václav",
     "WASD",
-    "WebGPU",
-    "yoffset"
+    "WebGPU"
   ],
   "flagWords": ["cant", "dont", "hte", "teh", "wont"],
   "ignorePaths": [
