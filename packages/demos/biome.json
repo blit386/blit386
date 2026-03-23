@@ -79,15 +79,5 @@
         "noDangerouslySetInnerHtml": "error"
       }
     }
-  },
-  "overrides": [
-    {
-      "includes": ["src/**/*.js"],
-      "linter": {
-        "rules": {
-          "style": {}
-        }
-      }
-    }
-  ]
+  }
 }
