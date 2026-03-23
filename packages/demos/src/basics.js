@@ -44,9 +44,11 @@ class Demo {
         this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
 
         // Put the square in the middle of the screen.
+        // Vector2i truncates fractional values via |0, ensuring integer pixel positions
+        // even when displaySize or size dimensions are odd.
         const screen = BT.displaySize();
-        const x = screen.x / 2 - this.size.x / 2;
-        const y = screen.y / 2 - this.size.y / 2;
+        const x = Math.floor(screen.x / 2 - this.size.x / 2);
+        const y = Math.floor(screen.y / 2 - this.size.y / 2);
         this.pos = new Vector2i(x, y);
 
         // Return true to indicate initialization is complete.
