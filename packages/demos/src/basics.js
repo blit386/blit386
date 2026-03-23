@@ -36,7 +36,7 @@ class Demo {
     }
 
     /**
-     * Sets up the demo before the game starts: loads the font and places the square in the center.
+     * Sets up the demo before the demo starts: loads the font and places the square in the center.
      * The engine waits for this to finish before calling update() or render().
      */
     async initialize() {
@@ -57,7 +57,7 @@ class Demo {
 
     /**
      * Moves the square and checks if it hit a wall. The engine calls this 60 times per second
-     * to keep the game running at a steady speed, no matter how fast the computer is.
+     * to keep the demo running at a steady speed, no matter how fast the computer is.
      */
     update() {
         // Move the square.

@@ -1,6 +1,6 @@
 # Project Rules
 
-Interactive demos and examples for the Blit-Tech WebGPU retro game engine.
+Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 
 ## Tech Stack
 
@@ -8,7 +8,7 @@ Interactive demos and examples for the Blit-Tech WebGPU retro game engine.
 - **Build Tool**: Vite 7 with Handlebars templates
 - **Language**: JavaScript (ES2022)
 - **Styling**: Plain CSS with CSS custom properties
-- **Engine**: Blit-Tech (WebGPU retro game engine, workspace dependency)
+- **Engine**: Blit-Tech (WebGPU retro engine, workspace dependency)
 - **Package Manager**: pnpm
 - **Deployment**: Cloudflare Pages via GitHub Actions
 - **Linting**: Biome + ESLint + Prettier
@@ -96,9 +96,9 @@ Each demo follows this pattern:
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
-// #region Game Class
+// #region Demo Class
 
-class DemoGame {
+class Demo {
   queryHardware() {
     /* ... */
   }
@@ -117,7 +117,7 @@ class DemoGame {
 
 // #region App Lifecycle
 
-bootstrap(DemoGame);
+bootstrap(Demo);
 
 // #endregion
 ```
@@ -143,8 +143,8 @@ Demos have relaxed linting compared to the library:
 
 - JSDoc not required
 - Console logging allowed
-- Mutation allowed for game state -- demo classes may mutate instance properties in `update()` and `render()` for
-  performance. The global immutability preference does not apply to per-frame game state.
+- Mutation allowed for demo state -- demo classes may mutate instance properties in `update()` and `render()` for
+  performance. The global immutability preference does not apply to per-frame demo state.
 
 Focus on clarity and readability over strict documentation.
 
