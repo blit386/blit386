@@ -1,14 +1,9 @@
 {
-  "*.{ts,tsx}": [
+  "*.{js,cjs,mjs}": [
     "biome check --write --no-errors-on-unmatched",
     "biome format --write --no-errors-on-unmatched",
     "eslint --fix --max-warnings 0",
     "cspell --no-progress --no-must-find-files"
-  ],
-  "*.{js,cjs,mjs}": [
-    "biome check --write --no-errors-on-unmatched",
-    "biome format --write --no-errors-on-unmatched",
-    "eslint --fix --max-warnings 0"
   ],
   "*.{json,jsonc}": ["biome format --write --no-errors-on-unmatched"],
   "*.css": ["biome format --write --no-errors-on-unmatched"],

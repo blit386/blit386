@@ -16,7 +16,7 @@ Format all code files using the project's formatters and verify results.
 
 1. **Run formatters**
    - Execute `pnpm format` which runs:
-     - Biome for TypeScript/JavaScript/JSON/CSS
+     - Biome for JavaScript/JSON/CSS
      - Prettier for Markdown/YAML
 
 2. **Show what changed**
@@ -29,11 +29,11 @@ Format all code files using the project's formatters and verify results.
 
 ## Formatter Configuration
 
-| File Types                     | Tool     | Config               |
-| ------------------------------ | -------- | -------------------- |
-| `.ts`, `.tsx`, `.js`, `.json`  | Biome    | `biome.json`         |
-| `.css`                         | Biome    | `biome.json`         |
-| `.md`, `.mdx`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
+| File Types                               | Tool     | Config               |
+| ---------------------------------------- | -------- | -------------------- |
+| `.js`, `.cjs`, `.mjs`, `.json`, `.jsonc` | Biome    | `biome.json`         |
+| `.css`                                   | Biome    | `biome.json`         |
+| `.md`, `.mdx`, `.yml`, `.yaml`           | Prettier | `prettier.config.js` |
 
 ## Formatting Rules
 

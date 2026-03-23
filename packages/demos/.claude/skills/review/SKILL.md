@@ -21,14 +21,12 @@ Review current changes against project rules and quality standards.
 
 2. **Run automated checks**
    - `pnpm lint` - Report any lint issues
-   - `pnpm typecheck` - Report any type errors
    - `pnpm spellcheck` - Check for spelling issues
 
 3. **Check against project rules**
    - No emoji anywhere (code, comments, docs, commits)
    - Integer coordinates (Vector2i, Rect2i) for rendering
-   - TypeScript strict types (no `any`)
-   - Type imports use `import type` syntax
+   - Plain JavaScript (ES2022, no TypeScript)
    - Proper error handling (guard clauses, null checks)
    - Consistent naming conventions
 

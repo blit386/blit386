@@ -1,14 +1,14 @@
 # Project Rules
 
-Interactive demos and examples for the Blit-Tech WebGPU retro game engine.
+Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 
 ## Tech Stack
 
 - **Node**: >= 20.0.0
 - **Build Tool**: Vite 7 with Handlebars templates
-- **Language**: TypeScript (strict mode)
+- **Language**: JavaScript (ES2022)
 - **Styling**: Plain CSS with CSS custom properties
-- **Engine**: Blit-Tech (WebGPU retro game engine, workspace dependency)
+- **Engine**: Blit-Tech (WebGPU retro engine, workspace dependency)
 - **Package Manager**: pnpm
 - **Deployment**: Cloudflare Pages via GitHub Actions
 - **Linting**: Biome + ESLint + Prettier
@@ -17,7 +17,7 @@ Interactive demos and examples for the Blit-Tech WebGPU retro game engine.
 
 - **No emoji** -- no emoji in code, commits, docs, or UI strings (no exceptions)
 - **Integer coordinates** -- all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
-- **TypeScript strict mode** -- all strict checks enabled
+- **Plain JavaScript** -- demos use ES2022 JS for simplicity (no TypeScript)
 
 ## Project Structure
 
@@ -26,15 +26,15 @@ blit-tech-demos/
   demos/                  # HTML pages for each demo
     basics.html           # Individual demo pages...
     styles.css            # Shared demo styling
-  src/                    # TypeScript source for demos
-    basics.ts             # One file per demo
-    primitives.ts
-    camera.ts
-    patterns.ts
-    sprites.ts
-    animation.ts
-    sprite-effects.ts
-    fonts.ts
+  src/                    # JavaScript source for demos
+    basics.js             # One file per demo
+    primitives.js
+    camera.js
+    patterns.js
+    sprites.js
+    animation.js
+    sprite-effects.js
+    fonts.js
   public/                 # Static assets
     fonts/                # Bitmap fonts (.btfont + .png)
     _headers              # Cloudflare headers
@@ -42,7 +42,7 @@ blit-tech-demos/
     layout-top.hbs        # Page header (HTML boilerplate + centered canvas)
     layout-bottom.hbs     # Page footer (script tag + closing tags)
   _config/
-    contexts.ts           # Page context data for templates
+    contexts.js           # Page context data for templates
   docs/                   # Project documentation
 ```
 
@@ -57,7 +57,6 @@ pnpm lint             # Lint (ESLint)
 pnpm lint:fix         # Auto-fix lint issues
 pnpm format           # Format (Biome + Prettier)
 pnpm format:check     # Check formatting
-pnpm typecheck        # TypeScript type checking
 pnpm spellcheck       # Check spelling
 pnpm knip             # Find unused exports
 pnpm preflight        # ALL quality checks before committing
@@ -86,30 +85,30 @@ CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.
 
 ## Demo File Conventions
 
-### TypeScript Demo Files (`src/*.ts`)
+### JavaScript Demo Files (`src/*.js`)
 
 Each demo follows this pattern:
 
-```typescript
+```javascript
 /**
  * Demo Name - Brief description.
  */
 
-import { bootstrap, BT, Color32, type HardwareSettings, type IBlitTechGame, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
-// #region Game Class
+// #region Demo Class
 
-class DemoGame implements IBlitTechGame {
-  queryHardware(): HardwareSettings {
+class Demo {
+  queryHardware() {
     /* ... */
   }
-  async initialize(): Promise<boolean> {
+  async initialize() {
     /* ... */
   }
-  update(): void {
+  update() {
     /* ... */
   }
-  render(): void {
+  render() {
     /* ... */
   }
 }
@@ -118,7 +117,7 @@ class DemoGame implements IBlitTechGame {
 
 // #region App Lifecycle
 
-bootstrap(DemoGame);
+bootstrap(Demo);
 
 // #endregion
 ```
@@ -133,20 +132,19 @@ Use Handlebars partials (canvas and script are included by the partials):
 
 ### Adding a New Demo
 
-1. Create `src/new-demo.ts` following the demo pattern
+1. Create `src/new-demo.js` following the demo pattern
 2. Create `demos/new-demo.html` using the HTML template
-3. Add entry to `vite.config.ts` rollupOptions.input
-4. Add context to `_config/contexts.ts`
+3. Add entry to `vite.config.js` rollupOptions.input
+4. Add context to `_config/contexts.js`
 
 ## Code Quality (Relaxed for Demos)
 
 Demos have relaxed linting compared to the library:
 
 - JSDoc not required
-- Non-null assertions allowed (`element!`)
 - Console logging allowed
-- Mutation allowed for game state -- demo classes may mutate instance properties in `update()` and `render()` for
-  performance. The global immutability preference does not apply to per-frame game state.
+- Mutation allowed for demo state -- demo classes may mutate instance properties in `update()` and `render()` for
+  performance. The global immutability preference does not apply to per-frame demo state.
 
 Focus on clarity and readability over strict documentation.
 
@@ -154,7 +152,7 @@ Focus on clarity and readability over strict documentation.
 
 All engine functionality via static `BT` namespace:
 
-```typescript
+```javascript
 BT.clear(Color32.black());
 BT.drawPixel(pos, color);
 BT.drawLine(p0, p1, color);
@@ -182,7 +180,7 @@ Use `// #region` / `// #endregion` for collapsible sections. Standard order:
 
 ## Formatting Rules
 
-Enforced by Biome (TS/JS/JSON/CSS) and Prettier (Markdown/YAML):
+Enforced by Biome (JS/JSON/CSS) and Prettier (Markdown/YAML):
 
 - Four spaces indent (two for JSON/YAML/Markdown)
 - 120 char line width, single quotes, always semicolons, always trailing commas
@@ -200,7 +198,7 @@ AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
 Managed by Husky (auto-installed via `prepare` script).
 
 - **Pre-commit** (lint-staged): auto-formats and lints staged files
-- **Pre-push**: runs typecheck + lint
+- **Pre-push**: runs lint
 
 ## Deployment
 

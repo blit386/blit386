@@ -39,11 +39,6 @@ jobs:
           cd blit-tech-demos
           pnpm lint
 
-      - name: Type check
-        run: |
-          cd blit-tech-demos
-          pnpm typecheck
-
       - name: Spell check
         run: |
           cd blit-tech-demos

@@ -17,7 +17,7 @@ steps for maximum speed.
 
 1. **Run formatters**
    - Execute `pnpm format` which runs:
-     - Biome for TypeScript/JavaScript/JSON/CSS
+     - Biome for JavaScript/JSON/CSS
      - Prettier for Markdown/YAML
 
 2. **Brief confirmation**
