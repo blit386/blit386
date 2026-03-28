@@ -29,6 +29,9 @@ Review current changes against project rules and quality standards.
    - Plain JavaScript (ES2022, no TypeScript)
    - Proper error handling (guard clauses, null checks)
    - Consistent naming conventions
+   - Beginner-friendly comments in `src/*.js` demo files: every logical block must have a plain-English comment
+     explaining what it does and why. Comments that only restate the code (e.g., "// increment counter" above `i++`) are
+     not sufficient. Math functions, loop structures, and engine API calls must be explained in plain language.
 
 4. **Summarize findings**
    - List critical issues that must be fixed

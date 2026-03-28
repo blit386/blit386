@@ -44,6 +44,9 @@ pushing significant changes or creating pull requests.
    - No emoji anywhere (code, comments, docs, commits)
    - Integer coordinates (Vector2i, Rect2i) for all rendering
    - Plain JavaScript (ES2022, no TypeScript)
+   - Beginner-friendly comments in `src/*.js` demo files: every logical block must have a plain-English comment
+     explaining what it does and why. Comments that only restate the code (e.g., "// increment counter" above `i++`) are
+     not sufficient. Math functions, loop structures, and engine API calls must be explained in plain language.
 
 6. **Generate PR-ready summary**
    - Create a summary suitable for PR description

@@ -172,7 +172,7 @@ If this setup seems complex, you can wait for Blit-Tech to be published to npm. 
 simple:
 
 ```bash
-npm create vite@latest my-demo --template vanilla-ts
+npm create vite@latest my-demo --template vanilla
 cd my-demo
 npm install blit-tech
 ```

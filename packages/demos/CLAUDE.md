@@ -18,6 +18,7 @@ Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 - **No emoji** -- no emoji in code, commits, docs, or UI strings (no exceptions)
 - **Integer coordinates** -- all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
 - **Plain JavaScript** -- demos use ES2022 JS for simplicity (no TypeScript)
+- **Beginner-friendly comments** -- see Documentation Style section below
 
 ## Project Structure
 
@@ -89,7 +90,7 @@ CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.
 
 Each demo follows this pattern:
 
-```javascript
+```js
 /**
  * Demo Name - Brief description.
  */
@@ -141,27 +142,80 @@ Use Handlebars partials (canvas and script are included by the partials):
 
 Demos have relaxed linting compared to the library:
 
-- JSDoc not required
+- JSDoc not required (but class-level JSDoc with `@implements {IBlitTechDemo}` is encouraged)
 - Console logging allowed
 - Mutation allowed for demo state -- demo classes may mutate instance properties in `update()` and `render()` for
   performance. The global immutability preference does not apply to per-frame demo state.
 
 Focus on clarity and readability over strict documentation.
 
+## Documentation Style
+
+Demo source files are written for readers with little or no coding experience. Comments must explain **what** the code
+does and **why**, not just restate it.
+
+### Rules
+
+- Comment nearly every line or logical block in plain English.
+- Explain programming concepts when they appear (e.g., what `Math.sin()` returns, what `%` does).
+- Use analogies where they help (e.g., "Like looking through a window" for camera offset).
+- Never assume the reader knows what a function does just from its name.
+- Use short sentences. Avoid jargon unless you explain it immediately after.
+- Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
+  https://vancura.dev/articles/blit-tech-basics"
+
+### Example (do this)
+
+```js
+// Move the square by adding its speed to its position.
+// Think of it like adding steps to where you are standing.
+this.pos = this.pos.add(this.speed);
+
+// If the square goes past the right edge of the screen...
+// BT.displaySize().x is how wide the screen is in pixels.
+if (this.pos.x >= BT.displaySize().x - this.size.x) {
+  // Flip the horizontal direction so it bounces back.
+  this.speed.x = -this.speed.x;
+}
+```
+
+### Example (do not do this)
+
+```js
+// Update position.
+this.pos = this.pos.add(this.speed);
+
+if (this.pos.x >= BT.displaySize().x - this.size.x) {
+  this.speed.x = -this.speed.x;
+}
+```
+
+When reviewing demo files, check that comments would make sense to someone who has never written code before. If a block
+has no comment, or the comment only restates the code without explaining it, that is a quality issue.
+
 ## Blit-Tech Engine API
 
 All engine functionality via static `BT` namespace:
 
-```javascript
+```js
 BT.clear(Color32.black());
+BT.clearRect(color, rect);
 BT.drawPixel(pos, color);
 BT.drawLine(p0, p1, color);
 BT.drawRect(rect, color);
 BT.drawRectFill(rect, color);
 BT.drawSprite(sheet, srcRect, destPos, tint);
+BT.print(pos, color, text); // built-in placeholder text (no font asset)
 BT.printFont(font, pos, text, color);
 BT.cameraSet(offset);
+BT.cameraGet();
 BT.cameraReset();
+BT.displaySize();
+BT.ticks();
+BT.ticksReset();
+BT.fps();
+await BT.captureFrame(); // returns a Blob
+await BT.downloadFrame(filename); // optional filename; default PNG name if omitted
 ```
 
 Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.

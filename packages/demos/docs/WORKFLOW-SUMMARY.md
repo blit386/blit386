@@ -19,7 +19,6 @@ Runs all quality checks on Blit-Tech Demos:
 
 - Format check (Biome + Prettier)
 - Lint (ESLint)
-- Type check (TypeScript)
 - Spell check (cspell)
 - Unused exports check (knip)
 
@@ -57,7 +56,6 @@ All quality checks run from Blit-Tech Demos directory:
 cd blit-tech-demos
 pnpm format:check    # Biome + Prettier formatting
 pnpm lint            # ESLint
-pnpm typecheck       # TypeScript
 pnpm spellcheck      # cspell
 pnpm knip            # Unused exports
 pnpm build           # Vite build
