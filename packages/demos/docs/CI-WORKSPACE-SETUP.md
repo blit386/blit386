@@ -96,7 +96,7 @@ steps:
 
 The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across all its jobs:
 
-- **quality-checks** - Code quality (format, lint, typecheck, spellcheck, knip)
+- **quality-checks** - Code quality (format, lint, spellcheck, knip)
 - **build** - Build demos and upload artifacts
 - **deploy** - Deploy to Cloudflare Pages (main branch only)
 
