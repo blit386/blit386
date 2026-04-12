@@ -46,6 +46,16 @@ The demos build on each other in numeric order; later pages assume you have seen
 - **013-image-output** -- Frame capture and PNG export
 - **014-game-scene** -- Capstone: everything combined into a mini game scene
 
+## Browser Requirements
+
+The demos require a WebGPU-capable browser:
+
+| Browser     | Version        | Notes                                                        |
+| ----------- | -------------- | ------------------------------------------------------------ |
+| Chrome/Edge | 113+           | Enabled by default                                           |
+| Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux     |
+| Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags |
+
 ## How to run
 
 You need both the `blit-tech` engine and `blit-tech-demos` set up as a pnpm workspace. See
