@@ -23,7 +23,7 @@
 //   - Startup speed matters more than visual style.
 //
 // This demo shows how to load a font, draw text in different colors,
-// make text that changes color over time (rainbow), text that pulses in brightness,
+// make text that changes color over time (rainbow), text that pulses in opacity (alpha),
 // and how to measure how wide a piece of text will be before drawing it.
 
 // #region Imports
@@ -35,6 +35,13 @@ import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 // #endregion
 
 // #region Configuration
+
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
+
+// The x position where the rainbow text row starts.
+// Shared by update() (hue calculation) and renderRainbowText() (glyph drawing) so they stay in sync.
+const RAINBOW_ORIGIN_X = 10;
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -49,18 +56,19 @@ const C_ORANGE_LINE = 8; // Orange: underline below the measured-width text
 const C_DIM_GRAY = 9; // Dim gray: font metadata line
 const C_DARKER_GRAY = 10; // Darker gray: FPS/tick counter
 
-// Dynamic slots: the rainbow text has 18 characters that each need a unique animated color.
-// We reserve palette slots 20..37 -- one slot per character in RAINBOW_TEXT.
-// update() computes each character's current hue and stores it here.
-// render() then reads the slot index -- no Color32 math happens during drawing!
-const C_RAINBOW_BASE = 20; // slots 20, 21, 22, ... 37 for the 18 rainbow characters
-
-// Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
-const C_PULSE = 38; // single slot for the pulsing-text color
-
-// We define the rainbow text string here so both update() and render() use the exact same letters.
+// We define the rainbow text string before the slot constants so C_PULSE can be derived from it.
 // If you change this string, update() will compute the right number of palette colors automatically.
 const RAINBOW_TEXT = 'Rainbow Animation!';
+
+// Dynamic slots: each character in RAINBOW_TEXT gets its own animated color slot.
+// We start at C_RAINBOW_BASE and reserve one slot per character.
+// update() computes each character's current hue and stores it here.
+// render() then reads the slot index -- no Color32 math happens during drawing!
+const C_RAINBOW_BASE = 20; // first slot for the rainbow characters
+
+// Dynamic slot: placed immediately after the rainbow slots so it can never overlap them
+// even if RAINBOW_TEXT changes length. C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length.
+const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pulsing-text color
 
 // #endregion
 
@@ -102,8 +110,8 @@ class Demo {
             // This makes every pixel look 2x2 screen pixels large.
             canvasDisplaySize: new Vector2i(640, 480),
 
-            // Run at 60 frames per second.
-            targetFPS: 60,
+            // Run at TARGET_FPS frames per second.
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -169,8 +177,8 @@ class Demo {
     // We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
     // We advance the animation timer AND update dynamic palette colors here.
     update() {
-        // Move the animation clock forward by one update tick's worth of time (1/60 second).
-        this.animTime += 1 / 60;
+        // Move the animation clock forward by one update tick's worth of time (1/TARGET_FPS second).
+        this.animTime += 1 / TARGET_FPS;
 
         // --- Update the pulsing text color ---
         // Math.sin returns a wave that smoothly oscillates between -1 and +1.
@@ -190,7 +198,7 @@ class Demo {
         // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
         // https://vancura.dev/articles/blit-tech-colors
         if (this.font) {
-            let charX = 10; // Starting x position -- same as where render() draws the rainbow text.
+            let charX = RAINBOW_ORIGIN_X; // Starting x position -- same as where render() draws the rainbow text.
             for (let i = 0; i < RAINBOW_TEXT.length; i++) {
                 // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
                 // Using charX (actual x position) matches the visual rhythm of the rainbow.
@@ -291,8 +299,8 @@ class Demo {
     // lineHeight: how many pixels to move down between lines.
     // Returns the Y position after the text.
     renderRainbowText(y, lineHeight) {
-        // Start drawing from the left margin.
-        let x = 10;
+        // Start drawing from the left margin (must match RAINBOW_ORIGIN_X used in update()).
+        let x = RAINBOW_ORIGIN_X;
         let slotIndex = 0;
 
         // Loop through each character in the string one at a time.
