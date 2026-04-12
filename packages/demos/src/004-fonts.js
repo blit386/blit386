@@ -31,6 +31,7 @@ const C_GREEN_TEXT = 4; // Soft green: "Green Text" sample line
 const C_BLUE_TEXT = 5; // Soft blue: "Blue Text" sample line
 const C_YELLOW_TEXT = 6; // Yellow: "Yellow Text" sample line
 const C_GRAY_TEXT = 7; // Light gray: secondary info lines
+// Slot 8 is intentionally skipped to keep C_DIM_GRAY at index 9.
 const C_DIM_GRAY = 9; // Dim gray: FPS/tick counter
 
 // Dynamic slots: the rainbow text has 18 characters that each need a unique animated color.

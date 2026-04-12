@@ -98,7 +98,7 @@ class Demo {
     }
 
     /**
-     * Sets up the palette, loads the sprite from a file, and loads the font.
+     * Sets up the palette, loads the sprite from a file, and links pixels to palette slots.
      *
      * IMPORTANT ORDER:
      *   1. Create palette with static UI colors.
@@ -107,7 +107,6 @@ class Demo {
      *   4. BT.paletteSet() -- activate the palette.
      *   5. SpriteSheet.load() -- load the image as a GPU texture.
      *   6. spriteSheet.indexize() -- link sprite pixels to palette slots.
-     *   7. BitmapFont.load() + indexize() -- same for the font.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */

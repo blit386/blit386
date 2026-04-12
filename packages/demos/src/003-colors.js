@@ -267,10 +267,6 @@ class Demo {
     /**
      * Paints the top row of preset Color32 colors (red(), green(), and so on).
      * Each block is a filled rectangle; the label sits above it in small text.
-     *
-     * printFont offset formula: offset = paletteIndex - 1.
-     * White text: offset 0 = palette[1] = C_WHITE.
-     * Black text: offset C_BLACK-1 = 2 = palette[3] = C_BLACK.
      */
     drawNamedColorsSection() {
         // Section header in white.
