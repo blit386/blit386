@@ -187,6 +187,8 @@ class Demo {
         // --- Update the rainbow text character colors ---
         // We compute hue (color wheel position) for each character based on its x position
         // and animTime. We need the font loaded to get the correct glyph widths.
+        // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
+        // https://vancura.dev/articles/blit-tech-colors
         if (this.font) {
             let charX = 10; // Starting x position -- same as where render() draws the rainbow text.
             for (let i = 0; i < RAINBOW_TEXT.length; i++) {
@@ -208,14 +210,6 @@ class Demo {
     render() {
         // Fill the screen with the dark blue-navy background.
         BT.clear(C_BG);
-
-        // If the font hasn't loaded yet, show a waiting message using the built-in system print.
-        // BT.systemPrint() is always available -- it doesn't need a font file to load.
-        // This is a good example of when the system font is useful: as a loading screen fallback.
-        if (!this.font) {
-            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
 
         // Start drawing from near the top of the screen.
         let y = 10;
