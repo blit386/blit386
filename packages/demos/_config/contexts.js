@@ -88,4 +88,8 @@ export const EXAMPLE_CONTEXTS = {
         title: 'Blit-Tech Dev - Error Preview',
         scriptFile: '../src/021-error-preview',
     },
+    '022-bitmap-font.html': {
+        title: 'Blit-Tech Demo 022 - Bitmap Font',
+        scriptFile: '../src/022-bitmap-font',
+    },
 };
