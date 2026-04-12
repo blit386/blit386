@@ -203,6 +203,8 @@ class Demo {
                 // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
                 // Using charX (actual x position) matches the visual rhythm of the rainbow.
                 // Adding animTime*100 scrolls the rainbow to the left over time.
+                // The % 360 keeps hue within the 0-359 range so it cycles smoothly around the
+                // color wheel instead of growing unbounded as animTime increases.
                 const hue = (charX * 3 + this.animTime * 100) % 360;
                 this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
 
