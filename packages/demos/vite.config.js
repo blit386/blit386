@@ -120,6 +120,7 @@ export default defineConfig(({ command }) => {
                     '019_palette_cycling': resolve(__dirname, 'demos/019-palette-cycling.html'),
                     '020_palette_fade': resolve(__dirname, 'demos/020-palette-fade.html'),
                     '021_error_preview': resolve(__dirname, 'demos/021-error-preview.html'),
+                    '022_bitmap_font': resolve(__dirname, 'demos/022-bitmap-font.html'),
                 },
                 output: isProduction
                     ? {
