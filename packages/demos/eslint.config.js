@@ -113,8 +113,10 @@ export default [
             'promise/no-nesting': 'warn',
 
             // Security rules
+            // detect-object-injection is disabled for demos: all array/object indexing here
+            // uses controlled game-state values, never untrusted user input.
             ...securityPlugin.configs.recommended.rules,
-            'security/detect-object-injection': 'warn',
+            'security/detect-object-injection': 'off',
 
             // General code style
             'max-len': ['warn', { code: 120, ignoreUrls: true, ignoreStrings: true }],

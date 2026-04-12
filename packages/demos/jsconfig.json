@@ -5,7 +5,11 @@
     "moduleResolution": "bundler",
     "checkJs": false,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "blit-tech": ["../blit-tech/src/BlitTech.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

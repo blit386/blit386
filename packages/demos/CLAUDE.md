@@ -25,17 +25,23 @@ Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 ```text
 blit-tech-demos/
   demos/                  # HTML pages for each demo
-    basics.html           # Individual demo pages...
+    001-basics.html       # Individual demo pages...
     styles.css            # Shared demo styling
   src/                    # JavaScript source for demos
-    basics.js             # One file per demo
-    primitives.js
-    camera.js
-    patterns.js
-    sprites.js
-    animation.js
-    sprite-effects.js
-    fonts.js
+    001-basics.js         # One file per demo
+    002-primitives.js
+    003-colors.js
+    004-fonts.js
+    005-pixel-art.js
+    006-patterns.js
+    007-camera.js
+    008-sprites.js
+    009-animation.js
+    010-sprite-effects.js
+    011-starfield.js
+    012-tilemap.js
+    013-image-output.js
+    014-game-scene.js
   public/                 # Static assets
     fonts/                # Bitmap fonts (.btfont + .png)
     _headers              # Cloudflare headers
@@ -86,13 +92,14 @@ CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.
 
 ## Demo File Conventions
 
-### JavaScript Demo Files (`src/*.js`)
+### JavaScript Demo Files (`src/NNN-name.js`)
 
-Each demo follows this pattern:
+Each demo lives in a numbered file that matches its HTML page (e.g. `src/003-colors.js` with `demos/003-colors.html`).
+Follow this pattern:
 
 ```js
 /**
- * Demo Name - Brief description.
+ * 003 Colors - Brief description.
  */
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
@@ -123,7 +130,7 @@ bootstrap(Demo);
 // #endregion
 ```
 
-### HTML Demo Pages (`demos/*.html`)
+### HTML Demo Pages (`demos/NNN-name.html`)
 
 Use Handlebars partials (canvas and script are included by the partials):
 
@@ -133,8 +140,12 @@ Use Handlebars partials (canvas and script are included by the partials):
 
 ### Adding a New Demo
 
-1. Create `src/new-demo.js` following the demo pattern
-2. Create `demos/new-demo.html` using the HTML template
+Demos use a **three-digit prefix** plus kebab-case (`NNN-topic`), e.g. `015-particles`.
+
+That number sets teaching order in `contexts.js` and keeps URLs stable.
+
+1. Choose the next free number and name: `src/015-your-topic.js` and `demos/015-your-topic.html`
+2. Follow the JavaScript demo pattern above
 3. Add entry to `vite.config.js` rollupOptions.input
 4. Add context to `_config/contexts.js`
 
@@ -257,4 +268,4 @@ Managed by Husky (auto-installed via `prepare` script).
 ## Deployment
 
 Demos deploy to Cloudflare Pages via GitHub Actions on push to main. A Vite plugin flattens `demos/` URLs so production
-paths are clean (e.g., `/basics.html`).
+paths are clean (e.g., `/001-basics.html`).
