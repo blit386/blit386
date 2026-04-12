@@ -1,8 +1,8 @@
 // Bitmap Font Demo -- shows how to load and use a proportional bitmap font.
 //
 // Demo 022 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics -- https://vancura.dev/articles/blit-tech-basics
-//                004-Fonts  -- https://vancura.dev/articles/blit-tech-fonts
+// We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
+// We learned about fonts in the Fonts demo: https://vancura.dev/articles/blit-tech-fonts
 //
 // Demos 002-020 use BT.systemPrint() -- the built-in 8x8 pixel font that needs no file to load.
 // This demo shows the ALTERNATIVE approach: loading a proportional bitmap font from a .btfont file.
@@ -27,8 +27,6 @@
 // and how to measure how wide a piece of text will be before drawing it.
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
-
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Palette Constants
 
@@ -91,11 +89,8 @@ class Demo {
 
     // #region IBlitTechDemo Implementation
 
-    /**
-     * Tells the engine how big the screen should be and how fast to run.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
+    // Tells the engine how big the screen should be and how fast to run.
+    // Returns an object with displaySize, canvasDisplaySize, and targetFPS.
     queryHardware() {
         return {
             // 320x240 is a classic retro resolution, similar to the Game Boy Advance.
@@ -110,13 +105,10 @@ class Demo {
         };
     }
 
-    /**
-     * Sets up the color palette and downloads the bitmap font.
-     * Notice the "await" keyword -- we wait here until the font file is fully downloaded.
-     * The built-in system font (BT.systemPrint) skips this step entirely.
-     *
-     * @returns {Promise<boolean>} Returns true when the font has loaded successfully.
-     */
+    // Sets up the color palette and downloads the bitmap font.
+    // Notice the "await" keyword -- we wait here until the font file is fully downloaded.
+    // The built-in system font (BT.systemPrint) skips this step entirely.
+    // Returns true when the font has loaded successfully, or false if loading fails.
     async initialize() {
         console.log('[BitmapFontDemo] Initializing...');
 
@@ -171,11 +163,9 @@ class Demo {
         return true;
     }
 
-    /**
-     * Runs at a fixed rate (60 times per second). See the Basics demo for the full explanation:
-     * https://vancura.dev/articles/blit-tech-basics
-     * We advance the animation timer AND update dynamic palette colors here.
-     */
+    // Runs at a fixed rate (60 times per second).
+    // We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
+    // We advance the animation timer AND update dynamic palette colors here.
     update() {
         // Move the animation clock forward by one update tick's worth of time (1/60 second).
         this.animTime += 1 / 60;
@@ -209,9 +199,7 @@ class Demo {
         }
     }
 
-    /**
-     * Runs once per screen refresh to draw all the text demonstrations on screen.
-     */
+    // Runs once per screen refresh to draw all the text demonstrations on screen.
     render() {
         // Fill the screen with the dark blue-navy background.
         BT.clear(C_BG);
@@ -236,9 +224,19 @@ class Demo {
         // The colorOffset is a 0-based index FROM palette slot 1.
         // So offset 0 = slot 1 (C_WHITE), offset 2 = slot 3 (C_RED_TEXT), etc.
         // This is different from BT.systemPrint() which takes the palette slot number directly.
-        BT.printFont(this.font, new Vector2i(10, y), 'Blit-Tech Bitmap Font Demo (022)', 0);
 
-        // Move down past the title, with a little extra gap.
+        // Draw the title in both fonts, one below the other, so you can compare them side-by-side.
+        // "A:" marks the bitmap font version (proportional spacing, each letter its own width).
+        // "B:" marks the built-in system font (every character is a fixed 8x8 pixel block).
+        BT.systemPrint(new Vector2i(10, y), C_WHITE, 'A:');
+        BT.printFont(this.font, new Vector2i(26, y), 'Blit-Tech Font Demo (022)', 0);
+        y += lineHeight;
+
+        // The same title text in the system font so the visual difference is obvious.
+        BT.systemPrint(new Vector2i(10, y), C_WHITE, 'B:');
+        BT.systemPrint(new Vector2i(26, y), C_WHITE, 'Blit-Tech Font Demo (022)');
+
+        // Move down past both title lines, with a little extra gap before the next section.
         y += lineHeight + 4;
 
         // Draw each section in order, updating y as we go so nothing overlaps.
@@ -256,15 +254,12 @@ class Demo {
 
     // #region Rendering Helpers
 
-    /**
-     * Draws the same four words, each in a different color.
-     * This shows how passing different palette offsets changes the text color.
-     * Compare to BT.systemPrint() where you pass the palette slot directly.
-     *
-     * @param {number} y - The Y position to start drawing at.
-     * @param {number} lineHeight - How many pixels to move down between lines.
-     * @returns {number} The Y position after the last line drawn.
-     */
+    // Draws the same four words, each in a different color.
+    // This shows how passing different palette offsets changes the text color.
+    // Compare to BT.systemPrint() where you pass the palette slot directly.
+    // y: the Y position to start drawing at.
+    // lineHeight: how many pixels to move down between lines.
+    // Returns the Y position after the last line drawn.
     renderColoredText(y, lineHeight) {
         // Each color is looked up by offset: palette[1 + offset] = the desired color.
         // C_RED_TEXT = 3, so offset = 3 - 1 = 2. That means palette[1 + 2] = palette[3] = red.
@@ -286,17 +281,14 @@ class Demo {
         return y;
     }
 
-    /**
-     * Draws text where each character has a different color, and the colors
-     * shift over time to create a flowing rainbow animation.
-     * The colors were pre-computed in update() and stored in palette slots C_RAINBOW_BASE+i.
-     * This technique works with BT.printFont() because it draws one character at a time
-     * with a different palette offset for each glyph.
-     *
-     * @param {number} y - The Y position to start drawing at.
-     * @param {number} lineHeight - How many pixels to move down between lines.
-     * @returns {number} The Y position after the text.
-     */
+    // Draws text where each character has a different color, and the colors
+    // shift over time to create a flowing rainbow animation.
+    // The colors were pre-computed in update() and stored in palette slots C_RAINBOW_BASE+i.
+    // This technique works with BT.printFont() because it draws one character at a time
+    // with a different palette offset for each glyph.
+    // y: the Y position to start drawing at.
+    // lineHeight: how many pixels to move down between lines.
+    // Returns the Y position after the text.
     renderRainbowText(y, lineHeight) {
         // Start drawing from the left margin.
         let x = 10;
@@ -323,15 +315,12 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    /**
-     * Draws text that pulses -- it gets brighter and darker in a smooth rhythm.
-     * The color is pre-computed in update() and stored in palette slot C_PULSE.
-     * This palette animation technique works exactly the same with BT.systemPrint().
-     *
-     * @param {number} y - The Y position to start drawing at.
-     * @param {number} lineHeight - How many pixels to move down between lines.
-     * @returns {number} The Y position after the text.
-     */
+    // Draws text that pulses -- it gets brighter and darker in a smooth rhythm.
+    // The color is pre-computed in update() and stored in palette slot C_PULSE.
+    // This palette animation technique works exactly the same with BT.systemPrint().
+    // y: the Y position to start drawing at.
+    // lineHeight: how many pixels to move down between lines.
+    // Returns the Y position after the text.
     renderPulsingText(y, lineHeight) {
         // C_PULSE - 1 = 37. That means palette[1 + 37] = palette[38] = C_PULSE (the animated color).
         BT.printFont(this.font, new Vector2i(10, y), 'Pulsing Text', C_PULSE - 1);
@@ -339,29 +328,25 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    /**
-     * Shows that the font can draw special characters like multiplication signs.
-     *
-     * @param {number} y - The Y position to start drawing at.
-     * @param {number} lineHeight - How many pixels to move down between lines.
-     * @returns {number} The Y position after the text.
-     */
+    // Shows that the font can draw special characters like multiplication signs.
+    // y: the Y position to start drawing at.
+    // lineHeight: how many pixels to move down between lines.
+    // Returns the Y position after the text.
     renderSpecialCharacters(y, lineHeight) {
         // Offset 0 = palette[1] = C_WHITE = white text.
-        BT.printFont(this.font, new Vector2i(10, y), 'Special: 3 x 4 = 12', 0);
+        // The '\u00D7' is the Unicode multiplication sign (×), which is a non-ASCII character.
+        // This tests that the font includes glyphs outside the basic Latin alphabet.
+        BT.printFont(this.font, new Vector2i(10, y), 'Special: 3 \u00D7 4 = 12', 0);
 
         return y + lineHeight;
     }
 
-    /**
-     * Demonstrates font.measureText() -- which tells you exactly how wide a string will
-     * be before you draw it. We draw an underline that is exactly the right length.
-     * BT.systemPrint() does not have a measureText() equivalent; this is a BitmapFont-only feature.
-     *
-     * @param {number} y - The Y position to start drawing at.
-     * @param {number} lineHeight - How many pixels to move down between lines.
-     * @returns {number} The Y position after the text and underline.
-     */
+    // Demonstrates font.measureText() -- which tells you exactly how wide a string will
+    // be before you draw it. We draw an underline that is exactly the right length.
+    // BT.systemPrint() does not have a measureText() equivalent; this is a BitmapFont-only feature.
+    // y: the Y position to start drawing at.
+    // lineHeight: how many pixels to move down between lines.
+    // Returns the Y position after the text and underline.
     renderTextMeasurement(y, lineHeight) {
         const measureText = 'Measured Width';
 
@@ -385,14 +370,11 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    /**
-     * Shows information about the loaded font and the current frame rate at the bottom.
-     * The font metadata (name, glyph count, line height) is only available with BitmapFont.
-     * BT.systemPrint() has no equivalent -- the built-in font has no external representation.
-     *
-     * @param {number} y - The Y position to start drawing at.
-     * @param {number} lineHeight - How many pixels to move down between lines.
-     */
+    // Shows information about the loaded font and the current frame rate at the bottom.
+    // The font metadata (name, glyph count, line height) is only available with BitmapFont.
+    // BT.systemPrint() has no equivalent -- the built-in font has no external representation.
+    // y: the Y position to start drawing at.
+    // lineHeight: how many pixels to move down between lines.
     renderFontInfo(y, lineHeight) {
         // Show the font's name and how many different characters (glyphs) it contains.
         // C_DIM_GRAY - 1 = 8. That means palette[1 + 8] = palette[9] = C_DIM_GRAY = dim gray.
