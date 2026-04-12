@@ -84,4 +84,8 @@ export const EXAMPLE_CONTEXTS = {
         title: 'Blit-Tech Demo 020 - Palette Fade',
         scriptFile: '../src/020-palette-fade',
     },
+    '021-error-preview.html': {
+        title: 'Blit-Tech Dev - Error Preview',
+        scriptFile: '../src/021-error-preview',
+    },
 };
