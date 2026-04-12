@@ -6,7 +6,7 @@
 // Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics).
 // Live article: https://vancura.dev/articles/blit-tech-image-output
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -41,9 +41,6 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
  */
 class Demo {
     // #region Module State
-
-    // font is the loaded bitmap font used to draw labels and instructions on screen.
-    font = null;
 
     // palette holds the list of colors the engine uses for drawing.
     palette = null;
@@ -112,21 +109,7 @@ class Demo {
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
 
-        // --- Step 2: load the font ---
-        // Load the same font other demos use; if the file is missing or broken we log and stop startup.
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-        } catch (error) {
-            console.error('[ImageOutputDemo] Failed to load font:', error);
-            return false;
-        }
-
-        // After loading the font, tell it about our palette.
-        // The font's glyphs are white pixels; indexize() maps them to palette index C_WHITE (1).
-        // After this call, printFont() knows to look up C_WHITE when drawing letter shapes.
-        this.font.getSpriteSheet().indexize(this.palette);
-
-        // --- Step 3: wire up the Space key ---
+        // --- Step 2: wire up the Space key ---
         // Listen for keyboard presses anywhere in the window for the whole time the demo runs.
         window.addEventListener('keydown', (e) => {
             // e.code === 'Space' means the physical Space bar was pressed (not just the letter "Space" typed).
@@ -244,24 +227,19 @@ class Demo {
         // Vertical line through the center (20 pixels up and down from center).
         BT.drawLine(new Vector2i(cx, cy - 20), new Vector2i(cx, cy + 20), C_WHITE);
 
-        // Title and instructions in the top-left.
-        // Palette offset 0 means "use color palette[1 + 0] = palette[1] = white."
-        BT.printFont(this.font, new Vector2i(10, 10), 'Image Output Demo', 0);
-        // Palette offset C_YELLOW - 1 = 2 means "use palette[1 + 2] = palette[3] = yellow."
-        BT.printFont(this.font, new Vector2i(10, 26), 'Press SPACE to download PNG', C_YELLOW - 1);
+        // Title and instructions in the top-left. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Image Output Demo');
+        BT.systemPrint(new Vector2i(10, 26), C_YELLOW, 'Press SPACE to download PNG');
 
         // Show either a busy message, a result message, or nothing in the third text line.
         if (this.capturing) {
-            // Cyan: C_CYAN - 1 = 3 -> palette[1 + 3] = palette[4] = cyan.
-            BT.printFont(this.font, new Vector2i(10, 42), 'Capturing...', C_CYAN - 1);
+            BT.systemPrint(new Vector2i(10, 42), C_CYAN, 'Capturing...');
         } else if (this.messageTimer > 0) {
-            // Green: C_GREEN - 1 = 4 -> palette[1 + 4] = palette[5] = green.
-            BT.printFont(this.font, new Vector2i(10, 42), this.lastCaptureMessage, C_GREEN - 1);
+            BT.systemPrint(new Vector2i(10, 42), C_GREEN, this.lastCaptureMessage);
         }
 
         // Frame counter near the bottom so you can tell consecutive screenshots apart.
-        // Gray: C_GRAY - 1 = 5 -> palette[1 + 5] = palette[6] = gray.
-        BT.printFont(this.font, new Vector2i(10, screen.y - 20), `Frame: ${this.tick}`, C_GRAY - 1);
+        BT.systemPrint(new Vector2i(10, screen.y - 20), C_GRAY, `Frame: ${this.tick}`);
     }
 
     // #endregion

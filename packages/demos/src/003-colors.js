@@ -33,7 +33,7 @@
 //   not in how often the monitor redraws. render() can run a different number of times
 //   per second on high-refresh screens, but animTime still only changes inside update().
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -105,9 +105,6 @@ class Demo {
     // Imagine it as a box of 256 numbered paint cans.
     palette = null;
 
-    // font is our bitmap font for labels (loaded once in initialize()).
-    font = null;
-
     // The two Color32 objects used to compute the lerp gradient.
     // We store them here so update() can call colorA.lerp(colorB, t) every tick.
     lerpColorA = null;
@@ -136,13 +133,7 @@ class Demo {
     }
 
     /**
-     * Sets up the palette, loads the font, and prepares lerp color objects.
-     *
-     * IMPORTANT ORDER:
-     *   1. Create palette and fill in static colors.
-     *   2. BT.paletteSet() -- tell the engine to use this palette.
-     *   3. BitmapFont.load() -- load the font file.
-     *   4. font.getSpriteSheet().indexize() -- link font pixels to palette slots.
+     * Sets up the palette and prepares lerp color objects.
      *
      * @returns {Promise<boolean>}
      */
@@ -189,14 +180,6 @@ class Demo {
 
         // --- Step 3: Activate the palette ---
         BT.paletteSet(this.palette);
-
-        // --- Step 4 & 5: Load the font and link it to the palette ---
-        // Wait for the font file; without it we cannot print neat labels.
-        this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-
-        // indexize() converts each font pixel's color into a palette index.
-        // It must be called after paletteSet so it knows which palette to use.
-        this.font.getSpriteSheet().indexize(this.palette);
 
         return true;
     }
@@ -284,14 +267,11 @@ class Demo {
     /**
      * Paints the top row of preset Color32 colors (red(), green(), and so on).
      * Each block is a filled rectangle; the label sits above it in small text.
-     *
-     * printFont offset formula: offset = paletteIndex - 1.
-     * White text: offset 0 = palette[1] = C_WHITE.
-     * Black text: offset C_BLACK-1 = 2 = palette[3] = C_BLACK.
      */
     drawNamedColorsSection() {
-        // Section header in white. Offset 0 means palette[1+0] = C_WHITE.
-        BT.printFont(this.font, new Vector2i(6, 4), '1 NAMED COLORS (shortcuts)', 0);
+        // Section header in white.
+        // BT.systemPrint() arguments: (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(6, 4), C_WHITE, '1 NAMED COLORS (shortcuts)');
 
         const rowY = 20;
         const swatchH = 16;
@@ -320,10 +300,10 @@ class Demo {
             // Light swatches (white, yellow) need black labels so you can read them.
             // Dark swatches get white labels.
             const isLight = entry.index === C_WHITE || entry.index === C_YELLOW_N;
-            const labelOffset = isLight ? C_BLACK - 1 : 0; // C_BLACK-1=2 or 0 for white.
+            const labelColor = isLight ? C_BLACK : C_WHITE;
 
             // Print the label above the swatch.
-            BT.printFont(this.font, new Vector2i(x, rowY - 14), entry.label, labelOffset);
+            BT.systemPrint(new Vector2i(x, rowY - 10), labelColor, entry.label);
 
             // Fill a rectangle with that named color.
             BT.drawRectFill(new Rect2i(x, rowY, swatchW, swatchH), entry.index);
@@ -336,27 +316,24 @@ class Demo {
      */
     drawRgbMixSection() {
         // Section header in white.
-        BT.printFont(this.font, new Vector2i(6, 40), '2 RGB MIX (overlap, see-through)', 0);
+        BT.systemPrint(new Vector2i(6, 40), C_WHITE, '2 RGB MIX (overlap, see-through)');
 
         // Base y for the three little experiments side by side.
         const y0 = 52;
         const size = 34;
 
-        // Left pair: red and green make yellow where they cross.
-        // Offset C_YELLOW_N-1 = 6 → palette[7] = yellow text.
-        BT.printFont(this.font, new Vector2i(8, y0 - 12), 'R+G', C_YELLOW_N - 1);
+        // Left pair: red and green make yellow where they cross. Label in yellow.
+        BT.systemPrint(new Vector2i(8, y0 - 10), C_YELLOW_N, 'R+G');
         BT.drawRectFill(new Rect2i(12, y0, size, size), C_MIX_RED_A);
         BT.drawRectFill(new Rect2i(28, y0 + 14, size, size), C_MIX_GREEN_A);
 
-        // Middle pair: red and blue make magenta in the overlap.
-        // Offset C_MAGENTA_N-1 = 8 → palette[9] = magenta text.
-        BT.printFont(this.font, new Vector2i(118, y0 - 12), 'R+B', C_MAGENTA_N - 1);
+        // Middle pair: red and blue make magenta in the overlap. Label in magenta.
+        BT.systemPrint(new Vector2i(118, y0 - 10), C_MAGENTA_N, 'R+B');
         BT.drawRectFill(new Rect2i(122, y0, size, size), C_MIX_RED_A);
         BT.drawRectFill(new Rect2i(138, y0 + 14, size, size), C_MIX_BLUE_A);
 
-        // Right pair: green and blue make cyan in the overlap.
-        // Offset C_CYAN_N-1 = 7 → palette[8] = cyan text.
-        BT.printFont(this.font, new Vector2i(228, y0 - 12), 'G+B', C_CYAN_N - 1);
+        // Right pair: green and blue make cyan in the overlap. Label in cyan.
+        BT.systemPrint(new Vector2i(228, y0 - 10), C_CYAN_N, 'G+B');
         BT.drawRectFill(new Rect2i(232, y0, size, size), C_MIX_GREEN_A);
         BT.drawRectFill(new Rect2i(248, y0 + 14, size, size), C_MIX_BLUE_A);
     }
@@ -370,7 +347,7 @@ class Demo {
      * Hue is an angle 0..360 on a color wheel. 64 slots cover the whole wheel in steps.
      */
     drawHslRainbowSection() {
-        BT.printFont(this.font, new Vector2i(6, 102), '3 HSL RAINBOW (fromHSL, scrolling hue)', 0);
+        BT.systemPrint(new Vector2i(6, 102), C_WHITE, '3 HSL RAINBOW (fromHSL, scrolling hue)');
 
         const stripY = 114;
         const stripH = 8;
@@ -394,7 +371,7 @@ class Demo {
      * need to pass index numbers here.
      */
     drawAlphaSection() {
-        BT.printFont(this.font, new Vector2i(6, 126), '4 ALPHA (fourth number = see-through)', 0);
+        BT.systemPrint(new Vector2i(6, 126), C_WHITE, '4 ALPHA (fourth number = see-through)');
 
         const box = new Rect2i(20, 138, 200, 40);
 
@@ -419,15 +396,15 @@ class Demo {
      * The end swatches (small colored squares at left and right) use C_LERP_A and C_LERP_B directly.
      */
     drawLerpSection() {
-        BT.printFont(this.font, new Vector2i(6, 184), '5 LERP: slide + pulse (see comments)', 0);
+        BT.systemPrint(new Vector2i(6, 184), C_WHITE, '5 LERP: slide + pulse (see comments)');
 
         const barY = 198;
 
         // Small squares at the ends showing the pure A and B colors.
         BT.drawRectFill(new Rect2i(8, barY, 12, 12), C_LERP_A);
-        BT.printFont(this.font, new Vector2i(8, barY + 13), 'A', 0); // White label.
+        BT.systemPrint(new Vector2i(8, barY + 13), C_WHITE, 'A');
         BT.drawRectFill(new Rect2i(300, barY, 12, 12), C_LERP_B);
-        BT.printFont(this.font, new Vector2i(300, barY + 13), 'B', 0); // White label.
+        BT.systemPrint(new Vector2i(300, barY + 13), C_WHITE, 'B');
 
         // Middle gradient bar: 268 pixels wide, using 32 pre-computed lerp slots.
         const barX = 26;

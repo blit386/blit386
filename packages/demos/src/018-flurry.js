@@ -28,7 +28,7 @@
 //   001-Basics            https://vancura.dev/articles/blit-tech-basics
 //   016-Palette-Animation https://vancura.dev/articles/blit-tech-palette-animation
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -127,10 +127,10 @@ const PALETTE_STRIP_PART_H = 4; // 4 px tall.
 // update() refills the pots every tick with fresh Color32 objects.
 // render() only reads the pot numbers -- it never touches Color32 directly.
 // This separation is the essence of palette animation.
-const C_WHITE = 1; // Pure white -- the font's pixels map here (used as offset base).
+const C_WHITE = 1; // Pure white.
 const C_BG = 2; // Near-black deep-space background color.
-const C_TITLE = 3; // Golden yellow title text. Reached via printFont offset 2 (1 + 2 = 3).
-const C_FPS = 5; // Very dim gray FPS counter. Used directly with BT.print(), not as an offset.
+const C_TITLE = 3; // Golden yellow title text.
+const C_FPS = 5; // Very dim gray FPS counter.
 const C_SPARK_CORE = 6; // White-hot single-pixel center of each spark.
 
 // Particle color ramp: 8 hue bands × 5 brightness tiers = 40 slots (10..49).
@@ -194,10 +194,6 @@ class Demo {
 
     // The 256-slot palette used for all drawing. Filled in initialize(), updated every tick.
     palette = null;
-
-    // The bitmap font for the title and FPS counter. Loaded in initialize().
-    // If loading fails this stays null and the demo runs without text labels.
-    font = null;
 
     // Total elapsed animation time, measured in seconds.
     // Grows by exactly 1/60 each tick (at 60 FPS).
@@ -291,18 +287,6 @@ class Demo {
         // Activate the palette. From this point on, all drawing uses these color slots.
         BT.paletteSet(this.palette);
 
-        // --- Load font ---
-        // We load the font AFTER activating the palette so that indexize() can correctly
-        // map the font's white pixels to slot C_WHITE (slot 1).
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[FlurryDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            // If the font fails to load, the demo still runs -- just without text labels.
-            console.warn('[FlurryDemo] Font load failed (demo runs without text labels):', error);
-        }
-
         // --- Create sparks ---
         // Sparks are the invisible gravity wells that all particles orbit around.
         this.initSparks();
@@ -363,19 +347,13 @@ class Demo {
         // Draw the 12 spark attractors on top of everything.
         this.renderSparks();
 
-        // Title in the top-left corner using the bitmap font.
-        // BT.printFont() adds an offset to all pixel indices in the font sprite.
-        // The font's pixels normally land at slot 1 (C_WHITE = pure white).
-        // Offset 2 shifts them to slot 1+2 = 3, which is C_TITLE (golden yellow).
-        if (this.font) {
-            BT.printFont(this.font, new Vector2i(4, 4), 'Flurry', 2);
-        }
+        // Title in the top-left corner using the built-in system font.
+        // BT.systemPrint() arguments: (position, paletteIndex, text).
+        // C_TITLE (slot 3) is the golden yellow color set up in initialize().
+        BT.systemPrint(new Vector2i(4, 4), C_TITLE, 'Flurry');
 
-        // FPS counter in the top-right corner using the built-in basic font.
-        // BT.print() takes a direct palette slot number -- no offset arithmetic needed.
-        // BT.fps() returns the current measured frames per second as a number.
-        // The backtick string (`...`) lets us embed ${BT.fps()} directly into the text.
-        BT.printFont(this.font, new Vector2i(258, 4), `${BT.fps()} fps`);
+        // FPS counter in the top-right corner in the very dim gray (C_FPS = slot 5).
+        BT.systemPrint(new Vector2i(258, 4), C_FPS, `${BT.fps()} fps`);
 
         // Palette strip along the very bottom of the screen.
         // Shows the live particle and spark color slots as small colored squares.

@@ -24,7 +24,7 @@
 //
 // It also shows a mini-map in the corner that shows where in the world we currently are.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -88,9 +88,6 @@ class Demo {
     buildings = [];
     trees = [];
 
-    // The bitmap font for drawing text on screen.
-    font = null;
-
     // The palette holds all the colors this demo uses.
     palette = null;
 
@@ -126,14 +123,12 @@ class Demo {
     }
 
     /**
-     * Runs once when the demo starts. Sets up the palette, loads the font, and
-     * generates random buildings and trees to fill the world.
+     * Runs once when the demo starts. Sets up the palette and generates random
+     * buildings and trees to fill the world.
      *
      * @returns {Promise<boolean>} Returns true when ready to run.
      */
     async initialize() {
-        console.log('[CameraDemo] Initializing...');
-
         // --- Set up the color palette ---
         // Think of a palette like an artist choosing paint colors before painting a picture.
         // Every color we might draw with gets a numbered slot. We set the static colors
@@ -163,26 +158,12 @@ class Demo {
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
 
-        // Load the font after activating the palette so indexize() can map font pixels to C_WHITE.
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            console.log(`[CameraDemo] Loaded font: ${this.font.name} (${this.font.glyphCount} glyphs)`);
-        } catch (error) {
-            console.error('[CameraDemo] Failed to load font:', error);
-            return false;
-        }
-
-        // Tell the font about our palette. The font's letter images are white pixels.
-        // indexize() records that those white pixels map to palette index C_WHITE (1).
-        this.font.getSpriteSheet().indexize(this.palette);
-
         // Generate buildings AFTER the palette is set up.
         // generateBuildings() adds 20 random colors to the palette (slots 20..39)
         // and stores the slot index on each building instead of a Color32 object.
         this.generateBuildings();
         this.generateTrees();
 
-        console.log('[CameraDemo] Initialized');
         return true;
     }
 
@@ -410,40 +391,34 @@ class Demo {
      * Everything here is in screen coordinates (not offset by the camera).
      */
     renderUI() {
-        if (!this.font) {
-            return;
-        }
-
         // Draw a semi-transparent black bar across the top for the title area.
         this.tempRect.set(0, 0, 320, 40);
         BT.drawRectFill(this.tempRect, C_HUD_BG);
 
-        // Demo title in white. Palette offset 0 = palette[1 + 0] = palette[1] = C_WHITE.
+        // Demo title in white.
+        // BT.systemPrint() arguments: (position, paletteIndex, text).
         this.tempVec1.set(10, 10);
-        BT.printFont(this.font, this.tempVec1, 'Camera Demo', 0);
+        BT.systemPrint(this.tempVec1, C_WHITE, 'Camera Demo');
 
         // Show the camera's current position in the world so you can see it changing.
-        // Offset C_TEXT_DIM - 1 = 12 -> palette[1 + 12] = palette[13] = C_TEXT_DIM = dim white.
         const camPos = BT.cameraGet();
         this.tempVec1.set(10, 22);
-        BT.printFont(this.font, this.tempVec1, `Camera: (${camPos.x}, ${camPos.y})`, C_TEXT_DIM - 1);
+        BT.systemPrint(this.tempVec1, C_TEXT_DIM, `Camera: (${camPos.x}, ${camPos.y})`);
 
         // Note that this demo scrolls automatically (no player input).
-        // Offset C_TEXT_DIMMER - 1 = 13 -> palette[1 + 13] = palette[14] = C_TEXT_DIMMER = dimmer white.
         this.tempVec1.set(170, 10);
-        BT.printFont(this.font, this.tempVec1, 'Auto-scrolling', C_TEXT_DIMMER - 1);
+        BT.systemPrint(this.tempVec1, C_TEXT_DIMMER, 'Auto-scrolling');
 
         // Show how big the world is.
         this.tempVec1.set(170, 22);
-        BT.printFont(this.font, this.tempVec1, `World: ${this.worldWidth}x${this.worldHeight}`, C_TEXT_DIMMER - 1);
+        BT.systemPrint(this.tempVec1, C_TEXT_DIMMER, `World: ${this.worldWidth}x${this.worldHeight}`);
 
         // Draw the mini-map in the bottom-right corner.
         this.renderMiniMap();
 
         // FPS counter at the very bottom.
-        // Offset C_FPS - 1 = 17 -> palette[1 + 17] = palette[18] = C_FPS = gray.
         this.tempVec1.set(10, 225);
-        BT.printFont(this.font, this.tempVec1, `FPS: ${BT.fps()}`, C_FPS - 1);
+        BT.systemPrint(this.tempVec1, C_FPS, `FPS: ${BT.fps()}`);
     }
 
     /**

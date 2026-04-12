@@ -33,7 +33,7 @@
 //   3. Flashing health bar     -- one slot alternates red / white every 8 ticks.
 //   4. Cycling water strip     -- three blue-green slots ripple in sequence.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -120,9 +120,6 @@ class Demo {
     // The single palette used for all drawing.
     palette = null;
 
-    // The bitmap font for labels.
-    font = null;
-
     // Counts up by 1/60 every frame (in seconds).
     // Used to drive continuous animation in update().
     animTime = 0;
@@ -194,18 +191,6 @@ class Demo {
         // Tell the engine to use our palette from this point forward.
         BT.paletteSet(this.palette);
 
-        // --- Load font ---
-        // We load the font AFTER activating the palette so that
-        // indexize() can map the font's white pixels to slot 1 (C_WHITE).
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[PaletteAnimationDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[PaletteAnimationDemo] Failed to load font:', error);
-            return false;
-        }
-
         // Run one update cycle so all dynamic slots have real colors before the first render.
         this.update();
 
@@ -253,13 +238,8 @@ class Demo {
         // Clear the screen with the dark background.
         BT.clear(C_BG);
 
-        if (!this.font) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
-
-        // Title. printFont offset 3 means palette[1+3] = palette[4] = golden label color.
-        BT.printFont(this.font, new Vector2i(6, 4), 'Blit-Tech - Palette Animation', 3);
+        // Title. systemPrint takes (position, paletteIndex, text). Slot 4 = golden label.
+        BT.systemPrint(new Vector2i(6, 4), C_LABEL, 'Blit-Tech - Palette Animation');
 
         // Draw each of the four panels.
         this.renderGradientPanel();
@@ -267,9 +247,8 @@ class Demo {
         this.renderHealthPanel();
         this.renderWaterPanel();
 
-        // FPS counter in the bottom-right corner.
-        // printFont offset 5 means palette[1+5] = palette[6] = dim FPS color.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, 5);
+        // FPS counter in the bottom-right corner. Slot 6 = dim FPS color.
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
     }
 
     // #endregion
@@ -411,10 +390,9 @@ class Demo {
         // Panel background.
         BT.drawRectFill(new Rect2i(0, panelY, 320, 46), C_PANEL);
 
-        // Section heading.
-        // printFont offset 3 = palette[4] = golden label color.
-        BT.printFont(this.font, new Vector2i(6, panelY + 2), 'Scrolling Gradient', 3);
-        BT.printFont(this.font, new Vector2i(6, panelY + 14), 'Hues rotate in update() each tick', 4);
+        // Section heading. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Scrolling Gradient');
+        BT.systemPrint(new Vector2i(6, panelY + 14), C_DIM, 'Hues rotate in update() each tick');
 
         // Draw one rectangle per gradient slot, side by side across the full screen width.
         for (let i = 0; i < GRAD_SLOTS; i++) {
@@ -435,8 +413,8 @@ class Demo {
         BT.drawRectFill(new Rect2i(0, panelY, 320, 70), C_PANEL);
 
         // Section heading.
-        BT.printFont(this.font, new Vector2i(6, panelY + 2), 'Fire Column', 3);
-        BT.printFont(this.font, new Vector2i(6, panelY + 14), 'Color stack shifts upward in update()', 4);
+        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Fire Column');
+        BT.systemPrint(new Vector2i(6, panelY + 14), C_DIM, 'Color stack shifts upward in update()');
 
         // Fire bands, from bottom (slot 0 = darkest) to top (slot FIRE_SLOTS-1 = brightest).
         // We draw them from bottom up so slot 0 is at the base of the column.
@@ -451,10 +429,9 @@ class Demo {
         }
 
         // Explanatory note beside the column.
-        // printFont offset 4 = palette[5] = dim gray-blue.
-        BT.printFont(this.font, new Vector2i(colX + FIRE_COL_W + 6, panelY + 28), 'slot 0 = black', 4);
-        BT.printFont(this.font, new Vector2i(colX + FIRE_COL_W + 6, panelY + 40), '...  = red', 4);
-        BT.printFont(this.font, new Vector2i(colX + FIRE_COL_W + 6, panelY + 52), 'slot 19 = white', 4);
+        BT.systemPrint(new Vector2i(colX + FIRE_COL_W + 6, panelY + 28), C_DIM, 'slot 0 = black');
+        BT.systemPrint(new Vector2i(colX + FIRE_COL_W + 6, panelY + 40), C_DIM, '...  = red');
+        BT.systemPrint(new Vector2i(colX + FIRE_COL_W + 6, panelY + 52), C_DIM, 'slot 19 = white');
     }
 
     /**
@@ -468,7 +445,7 @@ class Demo {
         BT.drawRectFill(new Rect2i(0, panelY, 320, 44), C_PANEL);
 
         // Section heading.
-        BT.printFont(this.font, new Vector2i(6, panelY + 2), 'Flashing Health Bar', 3);
+        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Flashing Health Bar');
 
         // Compute the width of the filled portion from the current health value.
         // health / HEALTH_MAX is a fraction from 0 to 1; multiply by max bar width (200 px).
@@ -476,21 +453,20 @@ class Demo {
         const barW = Math.max(1, Math.floor((this.health / HEALTH_MAX) * barMaxW));
 
         // Background trough (dark, always full width).
-        // printFont offset 3 = palette[4] = golden label color -- we use C_DIM directly.
         BT.drawRectFill(new Rect2i(6, panelY + 14, barMaxW, 12), C_BG);
         BT.drawRect(new Rect2i(6, panelY + 14, barMaxW, 12), C_DIM);
 
         // Filled bar -- uses C_HEALTH_BAR, which flashes in update() when health is low.
         BT.drawRectFill(new Rect2i(6, panelY + 14, barW, 12), C_HEALTH_BAR);
 
-        // Health value as text. printFont offset 3 = palette[4] = golden.
-        BT.printFont(this.font, new Vector2i(212, panelY + 14), `HP: ${this.health}`, 3);
+        // Health value as text.
+        BT.systemPrint(new Vector2i(212, panelY + 14), C_LABEL, `HP: ${this.health}`);
 
         // Tip: flashes when low.
         if (this.health <= HEALTH_LOW) {
-            BT.printFont(this.font, new Vector2i(6, panelY + 30), 'CRITICAL! slot 80 flashes red/white', 4);
+            BT.systemPrint(new Vector2i(6, panelY + 30), C_DIM, 'CRITICAL! slot 80 flashes red/white');
         } else {
-            BT.printFont(this.font, new Vector2i(6, panelY + 30), 'Healthy: slot 80 = steady red', 4);
+            BT.systemPrint(new Vector2i(6, panelY + 30), C_DIM, 'Healthy: slot 80 = steady red');
         }
     }
 
@@ -506,8 +482,8 @@ class Demo {
         BT.drawRectFill(new Rect2i(0, panelY, 320, 44), C_PANEL);
 
         // Section heading.
-        BT.printFont(this.font, new Vector2i(6, panelY + 2), 'Cycling Water Strip', 3);
-        BT.printFont(this.font, new Vector2i(6, panelY + 14), '3 slots ripple in sequence', 4);
+        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Cycling Water Strip');
+        BT.systemPrint(new Vector2i(6, panelY + 14), C_DIM, '3 slots ripple in sequence');
 
         // Draw 15 water tiles (5 repetitions of the 3-slot cycle) to make a wide strip.
         const tileW = 18;
@@ -521,7 +497,7 @@ class Demo {
         }
 
         // Label to the right.
-        BT.printFont(this.font, new Vector2i(6 + totalTiles * tileW + 4, panelY + 28), 'slots 90..92', 4);
+        BT.systemPrint(new Vector2i(6 + totalTiles * tileW + 4, panelY + 28), C_DIM, 'slots 90..92');
     }
 
     // #endregion

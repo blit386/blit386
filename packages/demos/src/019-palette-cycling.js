@@ -32,7 +32,7 @@
 //
 // Plus a palette swap demonstration every few seconds.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -93,7 +93,6 @@ class Demo {
     // #region Module State
 
     palette = null;
-    font = null;
 
     // Track the last swap tick so we know when to do the next swap demo.
     lastSwapTick = 0;
@@ -173,16 +172,6 @@ class Demo {
         // --- Activate palette ---
         BT.paletteSet(this.palette);
 
-        // --- Load font ---
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[PaletteCyclingDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[PaletteCyclingDemo] Failed to load font:', error);
-            return false;
-        }
-
         // --- Start cycling effects ---
         // These run automatically each frame until we call BT.paletteClearEffects().
         BT.paletteCycle(C_SKY_BASE, C_SKY_BASE + SKY_SLOTS - 1, SKY_SPEED);
@@ -226,20 +215,15 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        if (!this.font) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
-
-        // Title.
-        BT.printFont(this.font, new Vector2i(6, 4), 'Blit-Tech - Palette Cycling', 3);
+        // Title. systemPrint takes (position, paletteIndex, text). Slot 4 = golden label.
+        BT.systemPrint(new Vector2i(6, 4), C_LABEL, 'Blit-Tech - Palette Cycling');
 
         this.renderSkyPanel();
         this.renderFirePanel();
         this.renderWaterPanel();
 
-        // FPS counter.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, 5);
+        // FPS counter. Slot 6 = dim FPS color.
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
     }
 
     // #endregion
@@ -255,7 +239,7 @@ class Demo {
         const stripeH = 5;
 
         BT.drawRectFill(new Rect2i(0, panelY, 320, 60), C_PANEL);
-        BT.printFont(this.font, new Vector2i(6, panelY + 2), 'Sky (0.5 steps/sec, forward)', 3);
+        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Sky (0.5 steps/sec, forward)');
 
         // Draw 10 horizontal stripes, repeated twice for fullness.
         for (let row = 0; row < 2; row++) {
@@ -278,7 +262,7 @@ class Demo {
         const colW = Math.floor(308 / FIRE_SLOTS);
 
         BT.drawRectFill(new Rect2i(0, panelY, 320, 60), C_PANEL);
-        BT.printFont(this.font, new Vector2i(6, panelY + 2), 'Fire (-6 steps/sec, backward)', 3);
+        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Fire (-6 steps/sec, backward)');
 
         // Draw fire columns.
         for (let i = 0; i < FIRE_SLOTS; i++) {
@@ -293,12 +277,7 @@ class Demo {
 
         // Show swap label if active.
         if (this.showSwapLabel) {
-            BT.printFont(
-                this.font,
-                new Vector2i(6, panelY + 48),
-                `Swapped slots ${this.swappedA} <-> ${this.swappedB}`,
-                4,
-            );
+            BT.systemPrint(new Vector2i(6, panelY + 48), C_DIM, `Swapped slots ${this.swappedA} <-> ${this.swappedB}`);
         }
     }
 
@@ -311,7 +290,7 @@ class Demo {
         const colW = Math.floor(308 / WATER_SLOTS);
 
         BT.drawRectFill(new Rect2i(0, panelY, 320, 70), C_PANEL);
-        BT.printFont(this.font, new Vector2i(6, panelY + 2), 'Water (4 steps/sec, forward)', 3);
+        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Water (4 steps/sec, forward)');
 
         // Draw water tiles in a grid pattern.
         for (let row = 0; row < 10; row++) {
@@ -327,7 +306,7 @@ class Demo {
         }
 
         // Explanatory text.
-        BT.printFont(this.font, new Vector2i(6, panelY + 56), 'BT.paletteCycle() runs automatically', 4);
+        BT.systemPrint(new Vector2i(6, panelY + 56), C_DIM, 'BT.paletteCycle() runs automatically');
     }
 
     // #endregion

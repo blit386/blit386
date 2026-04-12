@@ -16,7 +16,7 @@
 //   - Why we sometimes draw many BT.drawPixel calls in a small block to make one "big" chunky pixel
 //   - A pattern drawn only with loops and math (no picture array), with colors that move over time
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -121,9 +121,6 @@ class Demo {
     // We only change it inside update(), so it stays smooth even when render() runs at odd rates.
     animTime = 0;
 
-    // font is the bitmap font used for section titles (loaded once in initialize()).
-    font = null;
-
     // palette holds all the colors this demo uses.
     palette = null;
 
@@ -150,13 +147,11 @@ class Demo {
     }
 
     /**
-     * Sets up the palette and loads the shared demo font so labels are readable.
+     * Sets up the palette.
      *
      * @returns {Promise<boolean>}
      */
     async initialize() {
-        console.log('[PixelArtDemo] Initializing...');
-
         // --- Set up the color palette ---
         // Think of this as laying out paint on an artist's palette tray before starting a painting.
         // Every color we might use gets a number. We set them all up before drawing begins.
@@ -183,19 +178,6 @@ class Demo {
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
-
-        try {
-            // BitmapFont.load() downloads the font file and prepares every glyph for drawing.
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            console.log(`[PixelArtDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[PixelArtDemo] Failed to load font:', error);
-            return false;
-        }
-
-        // Tell the font about our palette. Font glyphs are white pixels;
-        // indexize() maps them to C_WHITE (palette index 1).
-        this.font.getSpriteSheet().indexize(this.palette);
 
         return true;
     }
@@ -226,14 +208,8 @@ class Demo {
         // Clear to the deep gray-blue background so light pixel art pops.
         BT.clear(C_BG);
 
-        if (!this.font) {
-            // Offset 0 = palette[1] = C_WHITE = white text.
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
-
-        // Main title across the top. Offset 0 = white.
-        BT.printFont(this.font, new Vector2i(10, 8), 'Blit-Tech - Pixel Art (nested loops)', 0);
+        // Main title across the top in white.
+        BT.systemPrint(new Vector2i(10, 8), C_WHITE, 'Blit-Tech - Pixel Art (nested loops)');
 
         // Left and right art pieces share the same vertical starting line so they look side by side.
         this.renderHeartSection();
@@ -243,8 +219,7 @@ class Demo {
         this.renderCheckerPatternSection();
 
         // Same status line style as other demos: frames per second plus engine tick count.
-        // C_DIM - 1 = 3 -> palette[4] = C_DIM = dim gray.
-        BT.printFont(this.font, new Vector2i(10, 225), `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`, C_DIM - 1);
+        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`);
     }
 
     // #endregion
@@ -309,8 +284,7 @@ class Demo {
      * Labels and draws the 8x8 heart on the left.
      */
     renderHeartSection() {
-        // C_LABEL - 1 = 2 -> palette[3] = C_LABEL = pale blue-white label color.
-        BT.printFont(this.font, new Vector2i(10, 28), 'Heart 8x8 (number grid)', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(10, 28), C_LABEL, 'Heart 8x8 (number grid)');
 
         // scale = 4 makes the 8-cell-wide picture use 32 virtual pixels of width.
         const scale = 4;
@@ -324,7 +298,7 @@ class Demo {
      * Labels and draws the 12x16 tree on the right.
      */
     renderTreeSection() {
-        BT.printFont(this.font, new Vector2i(168, 28), 'Tree 12x16 (number grid)', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(168, 28), C_LABEL, 'Tree 12x16 (number grid)');
 
         // Slightly smaller scale so the taller tree still fits comfortably.
         const scale = 3;
@@ -339,7 +313,7 @@ class Demo {
      * Colors slide around based on animTime (updated in update()) so you can see the clock moving.
      */
     renderCheckerPatternSection() {
-        BT.printFont(this.font, new Vector2i(10, 100), 'Checkerboard (loops + math, no grid array)', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(10, 100), C_LABEL, 'Checkerboard (loops + math, no grid array)');
 
         // How many squares along each side.
         const cells = 8;

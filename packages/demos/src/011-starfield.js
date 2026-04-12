@@ -31,7 +31,7 @@
 // The engine splits work the usual way: update() moves things; render() only draws.
 // See the Basics demo for the full story: https://vancura.dev/articles/blit-tech-basics
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -78,9 +78,6 @@ class Demo {
     // The palette holds all colors used in this demo.
     palette = null;
 
-    // Bitmap font used for on-screen labels (loaded once in initialize).
-    font = null;
-
     // Three separate arrays. Each entry is a plain object:
     // { x, y, speed, paletteIndex }
     // paletteIndex is the slot number registered during initialize().
@@ -121,14 +118,13 @@ class Demo {
     }
 
     /**
-     * Sets up the palette, creates star layers, and loads the font.
+     * Sets up the palette and creates star layers.
      *
      * IMPORTANT ORDER:
      *   1. Create palette and register static colors.
      *   2. Build the star layers (this decides each star's brightness).
      *   3. Register each star's gray color in the palette, store the slot on the star.
      *   4. BT.paletteSet() -- tell the engine to use this palette.
-     *   5. Load font and indexize.
      *
      * @returns {Promise<boolean>}
      */
@@ -181,22 +177,8 @@ class Demo {
             slot++;
         }
 
-        // --- Step 4: Activate the palette ---
+        // --- Activate the palette ---
         BT.paletteSet(this.palette);
-
-        // --- Step 5: Load font and link it to the palette ---
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-
-            // indexize() scans the font's pixel data and maps colors to palette indices.
-            // It must run after paletteSet so it knows which palette to use.
-            this.font.getSpriteSheet().indexize(this.palette);
-
-            console.log(`[StarfieldDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[StarfieldDemo] Failed to load font:', error);
-            return false;
-        }
 
         // Start the shooting-star timer at a pleasant "about 200 ticks" delay.
         this.ticksSinceShoot = 0;
@@ -226,12 +208,6 @@ class Demo {
     render() {
         // Deep space background.
         BT.clear(C_BG);
-
-        if (!this.font) {
-            // Built-in tiny font while the real font is still loading.
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
 
         // Draw back to front so near stars visually cover far ones, like real depth.
         this.drawFarStars();
@@ -410,25 +386,20 @@ class Demo {
     // #region Labels
 
     /**
-     * Explain the three layers using the bitmap font (drawn last so text stays readable).
-     *
-     * printFont offset formula: offset = paletteIndex - 1.
-     * C_TITLE=3 → offset 2 → palette[3] = light title color.
-     * C_LABEL=4 → offset 3 → palette[4] = dim label color.
-     * C_TIP=5   → offset 4 → palette[5] = tip color.
-     * C_FPS=6   → offset 5 → palette[6] = FPS color.
+     * Explain the three layers using the system font (drawn last so text stays readable).
+     * systemPrint takes (position, paletteIndex, text).
      */
     drawLabels() {
-        BT.printFont(this.font, new Vector2i(8, 6), 'STARFIELD (PARALLAX)', C_TITLE - 1);
+        BT.systemPrint(new Vector2i(8, 6), C_TITLE, 'STARFIELD (PARALLAX)');
 
         // One line per layer so readers can match words to what they see moving.
-        BT.printFont(this.font, new Vector2i(8, 22), 'FAR: slow, dim, 1 pixel', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(8, 38), 'MED: faster, brighter pixel', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(8, 54), 'NEAR: fastest, bright 2x2 block', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(8, 22), C_LABEL, 'FAR: slow, dim, 1 pixel');
+        BT.systemPrint(new Vector2i(8, 38), C_LABEL, 'MED: faster, brighter pixel');
+        BT.systemPrint(new Vector2i(8, 54), C_LABEL, 'NEAR: fastest, bright 2x2 block');
 
-        BT.printFont(this.font, new Vector2i(8, 200), 'Tip: like a car window -- close stuff moves faster.', C_TIP - 1);
+        BT.systemPrint(new Vector2i(8, 200), C_TIP, 'Tip: like a car window -- close stuff moves faster.');
 
-        BT.printFont(this.font, new Vector2i(230, 220), `FPS: ${BT.fps()}`, C_FPS - 1);
+        BT.systemPrint(new Vector2i(230, 220), C_FPS, `FPS: ${BT.fps()}`);
     }
 
     // #endregion

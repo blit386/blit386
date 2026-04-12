@@ -26,7 +26,7 @@
 // We learned about palette offsets in Demo 008-Sprites:
 // https://vancura.dev/articles/blit-tech-sprites
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -99,9 +99,6 @@ class Demo {
 
     // The palette holds all colors for this demo.
     palette = null;
-
-    // The loaded bitmap font.
-    font = null;
 
     // The sprite sheet loaded from /sprites/test.png.
     spriteSheet = null;
@@ -203,16 +200,6 @@ class Demo {
             return false;
         }
 
-        // --- Load and indexize font ---
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[SpriteEffectsDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[SpriteEffectsDemo] Failed to load font:', error);
-            return false;
-        }
-
         console.log('[SpriteEffectsDemo] Initialization complete!');
         return true;
     }
@@ -252,13 +239,13 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        if (!this.font || !this.spriteSheet || !this.charSprite) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading...');
+        if (!this.spriteSheet || !this.charSprite) {
+            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
 
-        // printFont offset 0 = palette[1] = C_WHITE (white title).
-        BT.printFont(this.font, new Vector2i(10, 8), 'SPRITE PALETTE EFFECTS', 0);
+        // systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, 8), C_WHITE, 'SPRITE PALETTE EFFECTS');
 
         // Draw both effect rows.
         this.renderStaticEffects();
@@ -267,8 +254,7 @@ class Demo {
         // Day/night cycle at the bottom.
         this.renderDayNightCycle();
 
-        // FPS counter. offset C_FPS-1 = 10 = palette[11] = dim gray.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, C_FPS - 1);
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
     }
 
     // #endregion
@@ -480,32 +466,32 @@ class Demo {
      * Normal, Silhouette, Team Red, Team Blue, Frozen.
      */
     renderStaticEffects() {
-        if (!this.spriteSheet || !this.font || !this.charSprite) {
+        if (!this.spriteSheet || !this.charSprite) {
             return;
         }
 
         const row1Y = 30;
         const spacing = 60;
 
-        // Offset 0 = block 0 = original stone.
+        // Offset 0 = block 0 = original stone. systemPrint takes (position, paletteIndex, text).
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10, row1Y), BLOCK_ORIGINAL * N);
-        BT.printFont(this.font, new Vector2i(6, row1Y + 36), 'Normal', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(6, row1Y + 36), C_LABEL, 'Normal');
 
         // Offset N = block 1 = silhouette (near-black).
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * N);
-        BT.printFont(this.font, new Vector2i(6 + spacing, row1Y + 36), 'Shadow', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(6 + spacing, row1Y + 36), C_LABEL, 'Shadow');
 
         // Team red.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * N);
-        BT.printFont(this.font, new Vector2i(6 + spacing * 2, row1Y + 36), 'Team Red', C_LABEL_RED - 1);
+        BT.systemPrint(new Vector2i(6 + spacing * 2, row1Y + 36), C_LABEL_RED, 'Team Red');
 
         // Team blue.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * N);
-        BT.printFont(this.font, new Vector2i(6 + spacing * 3, row1Y + 36), 'Team Blue', C_LABEL_BLUE - 1);
+        BT.systemPrint(new Vector2i(6 + spacing * 3, row1Y + 36), C_LABEL_BLUE, 'Team Blue');
 
         // Frozen.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 4, row1Y), BLOCK_FROZEN * N);
-        BT.printFont(this.font, new Vector2i(6 + spacing * 4, row1Y + 36), 'Frozen', C_LABEL_CYAN - 1);
+        BT.systemPrint(new Vector2i(6 + spacing * 4, row1Y + 36), C_LABEL_CYAN, 'Frozen');
     }
 
     /**
@@ -513,24 +499,25 @@ class Demo {
      * Damage Flash, Ghost, Invincibility, Poison.
      */
     renderDynamicEffects() {
-        if (!this.spriteSheet || !this.font || !this.charSprite) {
+        if (!this.spriteSheet || !this.charSprite) {
             return;
         }
 
         const row2Y = 90;
         const spacing = 60;
 
+        // systemPrint takes (position, paletteIndex, text).
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * N);
-        BT.printFont(this.font, new Vector2i(6, row2Y + 36), 'Damage', C_LABEL_RED - 1);
+        BT.systemPrint(new Vector2i(6, row2Y + 36), C_LABEL_RED, 'Damage');
 
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * N);
-        BT.printFont(this.font, new Vector2i(6 + spacing, row2Y + 36), 'Ghost', C_LABEL_CYAN - 1);
+        BT.systemPrint(new Vector2i(6 + spacing, row2Y + 36), C_LABEL_CYAN, 'Ghost');
 
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * N);
-        BT.printFont(this.font, new Vector2i(6 + spacing * 2, row2Y + 36), 'Invincible', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(6 + spacing * 2, row2Y + 36), C_LABEL, 'Invincible');
 
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * N);
-        BT.printFont(this.font, new Vector2i(6 + spacing * 3, row2Y + 36), 'Poisoned', C_LABEL_GREEN - 1);
+        BT.systemPrint(new Vector2i(6 + spacing * 3, row2Y + 36), C_LABEL_GREEN, 'Poisoned');
     }
 
     /**
@@ -538,14 +525,14 @@ class Demo {
      * A progress bar shows the current phase.
      */
     renderDayNightCycle() {
-        if (!this.spriteSheet || !this.font || !this.charSprite) {
+        if (!this.spriteSheet || !this.charSprite) {
             return;
         }
 
         const baseY = 162;
 
-        // offset C_LABEL_YELLOW-1 = 7 = palette[8] = yellow header.
-        BT.printFont(this.font, new Vector2i(10, baseY), 'Day/Night Cycle:', C_LABEL_YELLOW - 1);
+        // systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, baseY), C_LABEL_YELLOW, 'Day/Night Cycle:');
 
         // Draw the sprite with the day/night block.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10, baseY + 16), BLOCK_DAYNIGHT * N);
@@ -567,10 +554,10 @@ class Demo {
         BT.drawRect(new Rect2i(barX, barY, barWidth, barHeight), C_BAR_BORDER);
 
         // Phase labels.
-        BT.printFont(this.font, new Vector2i(barX, barY + 14), 'Day', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(barX + 60, barY + 14), 'Sunset', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(barX + 120, barY + 14), 'Night', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(barX + 180, barY + 14), 'Dawn', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(barX, barY + 14), C_LABEL, 'Day');
+        BT.systemPrint(new Vector2i(barX + 60, barY + 14), C_LABEL, 'Sunset');
+        BT.systemPrint(new Vector2i(barX + 120, barY + 14), C_LABEL, 'Night');
+        BT.systemPrint(new Vector2i(barX + 180, barY + 14), C_LABEL, 'Dawn');
     }
 
     // #endregion
