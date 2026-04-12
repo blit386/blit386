@@ -39,7 +39,7 @@
 //
 // Think of it as updating the paint cans before the painter starts working.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -165,9 +165,6 @@ class Demo {
 
     // The palette holds all colors used in this demo.
     palette = null;
-
-    // Bitmap font loaded once in initialize().
-    font = null;
 
     // Sprite sheet for the rock hero, loaded from /sprites/test.png.
     heroSheet = null;
@@ -306,16 +303,6 @@ class Demo {
             return false;
         }
 
-        // --- Load font ---
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[GameSceneDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[GameSceneDemo] Failed to load font:', error);
-            return false;
-        }
-
         // Place camera on the hero to start.
         this.cameraXFloat = this.heroPos.x - DISPLAY_W / 2 + HERO_W / 2;
         this.cameraPos.x = Math.floor(this.cameraXFloat);
@@ -353,8 +340,8 @@ class Demo {
     render() {
         BT.clear(C_BLACK);
 
-        if (!this.font || !this.heroSheet) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading...');
+        if (!this.heroSheet) {
+            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
 
@@ -742,23 +729,19 @@ class Demo {
      * Screen-space labels pinned after cameraReset.
      */
     renderHud() {
-        if (!this.font) {
-            return;
-        }
-
         // Semi-transparent dark bar behind the HUD text so it stays readable.
         this.tempRect.set(0, 0, DISPLAY_W, 34);
         BT.drawRectFill(this.tempRect, C_HUD_BAR);
 
-        // Title text. Offset = C_HUD_TITLE - 1 = 40 = palette[41] = C_HUD_TITLE.
-        BT.printFont(this.font, new Vector2i(8, 4), 'GAME SCENE CAPSTONE (014)', C_HUD_TITLE - 1);
+        // systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(8, 4), C_HUD_TITLE, 'GAME SCENE CAPSTONE (014)');
 
         // Score and position.
-        BT.printFont(this.font, new Vector2i(8, 18), `Score: ${this.score}`, C_HUD_SCORE - 1);
-        BT.printFont(this.font, new Vector2i(130, 18), `Rock: (${this.heroPos.x},${this.heroPos.y})`, C_HUD_POS - 1);
+        BT.systemPrint(new Vector2i(8, 18), C_HUD_SCORE, `Score: ${this.score}`);
+        BT.systemPrint(new Vector2i(130, 18), C_HUD_POS, `Rock: (${this.heroPos.x},${this.heroPos.y})`);
 
         // FPS and day/night phase.
-        BT.printFont(this.font, new Vector2i(260, 220), `FPS: ${BT.fps()}`, C_HUD_FPS - 1);
+        BT.systemPrint(new Vector2i(260, 220), C_HUD_FPS, `FPS: ${BT.fps()}`);
 
         const phaseTick = BT.ticks() % DAY_NIGHT_CYCLE_TICKS;
         const phaseLabel =
@@ -769,7 +752,7 @@ class Demo {
                   : phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.75
                     ? 'Night'
                     : 'Toward dawn';
-        BT.printFont(this.font, new Vector2i(8, 220), phaseLabel, C_HUD_FPS - 1);
+        BT.systemPrint(new Vector2i(8, 220), C_HUD_FPS, phaseLabel);
     }
 
     // #endregion

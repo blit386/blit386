@@ -8,7 +8,7 @@
 // pixels (single dots), lines, rectangles, and filled rectangles.
 // This demo shows each one with a live animation so you can see them in action.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -53,10 +53,6 @@ class Demo {
     // We use it to make things move and change over time.
     animTicks = 0;
 
-    // font holds the loaded bitmap font so we can draw text on screen.
-    // It starts as null because we haven't loaded it yet.
-    font = null;
-
     // palette holds all the colors this demo uses.
     palette = null;
 
@@ -85,13 +81,11 @@ class Demo {
     }
 
     /**
-     * Runs once when the demo starts. Sets up the palette and loads the font.
+     * Runs once when the demo starts. Sets up the palette.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
     async initialize() {
-        console.log('[PrimitivesDemo] Initializing...');
-
         // --- Set up the color palette ---
         // We pick all the colors we need BEFORE drawing anything -- like an artist
         // squeezing paint onto a palette before picking up the brush.
@@ -120,23 +114,6 @@ class Demo {
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
 
-        // Load the bitmap font from a file on the server.
-        // "await" means we wait here until the font is fully downloaded.
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            console.log(`[PrimitivesDemo] Loaded font: ${this.font.name} (${this.font.glyphCount} glyphs)`);
-        } catch (error) {
-            // If something goes wrong (like the file is missing), print the error
-            // and return false to tell the engine we couldn't start.
-            console.error('[PrimitivesDemo] Failed to load font:', error);
-            return false;
-        }
-
-        // Tell the font about our palette. The font's letter images are white pixels.
-        // indexize() records that those white pixels map to palette index C_WHITE (1).
-        this.font.getSpriteSheet().indexize(this.palette);
-
-        console.log('[PrimitivesDemo] Initialized');
         return true;
     }
 
@@ -180,17 +157,9 @@ class Demo {
         // Fill the whole screen with the dark background to start fresh each frame.
         BT.clear(C_BG);
 
-        // If the font hasn't loaded yet, just show a loading message and stop.
-        if (!this.font) {
-            // BT.print() is the simple text renderer. Arguments: position, palette index, text.
-            // Note: the palette index comes BEFORE the text string.
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
-
         // Draw the title at the top of the screen in white.
-        // Palette offset 0 = palette[1 + 0] = palette[1] = C_WHITE = white text.
-        BT.printFont(this.font, new Vector2i(10, 10), 'Blit-Tech - Primitives Demo', 0);
+        // BT.systemPrint() arguments: (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Blit-Tech - Primitives Demo');
 
         // Draw each type of primitive in its own area of the screen.
         this.renderPixelDemo();
@@ -200,9 +169,8 @@ class Demo {
         this.renderClearRectDemo();
         this.renderCombinedDemo();
 
-        // Show the frame rate (FPS) and tick count at the bottom.
-        // Palette offset C_DIM - 1 = 10 -> palette[1 + 10] = palette[11] = C_DIM = dim gray.
-        BT.printFont(this.font, new Vector2i(10, 225), `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`, C_DIM - 1);
+        // Show the frame rate (FPS) and tick count at the bottom in dim gray.
+        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`);
     }
 
     // #endregion
@@ -215,13 +183,8 @@ class Demo {
      * The colors shift over time because update() rotates them each tick.
      */
     renderPixelDemo() {
-        if (!this.font) {
-            return;
-        }
-
         // Print the section label in amber (orange-yellow) color.
-        // Offset C_AMBER - 1 = 2 -> palette[1 + 2] = palette[3] = C_AMBER.
-        BT.printFont(this.font, new Vector2i(10, 30), 'Pixels:', C_AMBER - 1);
+        BT.systemPrint(new Vector2i(10, 30), C_AMBER, 'Pixels:');
 
         // Draw 50 pixels scattered across a small area.
         // The colors were already computed in update() and stored in palette slots 20..69.
@@ -242,11 +205,7 @@ class Demo {
      * We show three static lines (horizontal, vertical, diagonal) plus one that spins.
      */
     renderLineDemo() {
-        if (!this.font) {
-            return;
-        }
-
-        BT.printFont(this.font, new Vector2i(10, 75), 'Lines:', C_AMBER - 1);
+        BT.systemPrint(new Vector2i(10, 75), C_AMBER, 'Lines:');
 
         // A horizontal line goes straight left-to-right. Color: red.
         BT.drawLine(new Vector2i(10, 90), new Vector2i(70, 90), C_RED);
@@ -282,11 +241,7 @@ class Demo {
      * We draw three static rectangles in different colors plus one that pulses in size.
      */
     renderRectOutlineDemo() {
-        if (!this.font) {
-            return;
-        }
-
-        BT.printFont(this.font, new Vector2i(90, 30), 'Rect Outlines:', C_AMBER - 1);
+        BT.systemPrint(new Vector2i(90, 30), C_AMBER, 'Rect Outlines:');
 
         // Three rectangles with different colors. Rect2i takes (x, y, width, height).
         BT.drawRect(new Rect2i(90, 45, 40, 25), C_RED); // Red outline.
@@ -308,11 +263,7 @@ class Demo {
      * Same as the outline demo but these rectangles are filled in.
      */
     renderRectFillDemo() {
-        if (!this.font) {
-            return;
-        }
-
-        BT.printFont(this.font, new Vector2i(90, 90), 'Rect Fills:', C_AMBER - 1);
+        BT.systemPrint(new Vector2i(90, 90), C_AMBER, 'Rect Fills:');
 
         // Three filled rectangles in different colors.
         BT.drawRectFill(new Rect2i(90, 105, 40, 25), C_RED); // Red fill.
@@ -337,11 +288,7 @@ class Demo {
      * is special because it "paints over" the existing content with a solid color.
      */
     renderClearRectDemo() {
-        if (!this.font) {
-            return;
-        }
-
-        BT.printFont(this.font, new Vector2i(10, 135), 'Clear Rect:', C_AMBER - 1);
+        BT.systemPrint(new Vector2i(10, 135), C_AMBER, 'Clear Rect:');
 
         // Draw a background grid of steel-blue squares.
         // The outer loop goes across (i = 0 to 9), the inner loop goes down (j = 0 to 4).
@@ -369,11 +316,7 @@ class Demo {
      * and lines that trace a wave across the graph.
      */
     renderCombinedDemo() {
-        if (!this.font) {
-            return;
-        }
-
-        BT.printFont(this.font, new Vector2i(120, 150), 'Combined:', C_AMBER - 1);
+        BT.systemPrint(new Vector2i(120, 150), C_AMBER, 'Combined:');
 
         // The graph's position and size on screen.
         const graphX = 120;

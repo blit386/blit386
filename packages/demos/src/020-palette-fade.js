@@ -37,7 +37,7 @@
 //   6. Fade to day    -- 2 seconds, ease-out (dawn)
 //   Repeat forever.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -155,7 +155,6 @@ class Demo {
     palette = null;
     dayPalette = null;
     nightPalette = null;
-    font = null;
 
     // Which phase of the day/night cycle we are in.
     phase = 'day';
@@ -202,16 +201,6 @@ class Demo {
         this.palette = BT.paletteCreate(256);
         fillDayPalette(this.palette);
         BT.paletteSet(this.palette);
-
-        // Load font.
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[PaletteFadeDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[PaletteFadeDemo] Failed to load font:', error);
-            return false;
-        }
 
         console.log('[PaletteFadeDemo] Initialized');
         return true;
@@ -286,11 +275,6 @@ class Demo {
     render() {
         // Sky fills the whole screen as background.
         BT.clear(C_SKY);
-
-        if (!this.font) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
 
         this.renderScene();
         this.renderUI();
@@ -455,10 +439,10 @@ class Demo {
 
         // Dark background strip for readability.
         BT.drawRectFill(new Rect2i(0, 0, 320, 16), C_GROUND_DARK);
-        BT.printFont(this.font, new Vector2i(6, 2), `Palette Fade & Flash - ${label}`, 2);
+        BT.systemPrint(new Vector2i(6, 2), C_LABEL, `Palette Fade & Flash - ${label}`);
 
         // FPS counter.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, 4);
+        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.fps()}`);
     }
 
     // #endregion

@@ -20,7 +20,7 @@
 // whole map. A mini-map in the corner shows the full world and the yellow box is the
 // part you are looking at right now.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -92,9 +92,6 @@ class Demo {
     // cameraPos is the top-left corner of the world (in pixels) that appears at the
     // top-left of the screen. When this moves right, the world seems to slide left.
     cameraPos = new Vector2i(0, 0);
-
-    // Bitmap font for the HUD (title, hints, FPS). Loaded once in initialize().
-    font = null;
 
     // palette holds all the colors this demo uses. We fill it in initialize()
     // so the engine knows every color before drawing begins.
@@ -171,20 +168,6 @@ class Demo {
 
         // Fill tilemap with a simple outdoor scene: sky, grass, dirt, trees, water, rocks.
         this.buildLandscapeTilemap();
-
-        // Load the font after activating the palette so indexize() can map font pixels to C_WHITE.
-        try {
-            // BitmapFont.load reads a .btfont file (plus its PNG) from the public folder.
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            console.log(`[TilemapDemo] Loaded font: ${this.font.name} (${this.font.glyphCount} glyphs)`);
-        } catch (error) {
-            console.error('[TilemapDemo] Failed to load font:', error);
-            return false;
-        }
-
-        // Tell the font about our palette. The font's letter images are white pixels.
-        // indexize() records that those white pixels map to palette index C_WHITE (1).
-        this.font.getSpriteSheet().indexize(this.palette);
 
         console.log('[TilemapDemo] Initialized');
         return true;
@@ -407,28 +390,22 @@ class Demo {
      * Draws labels and the mini-map after the camera is reset so they stay on the screen.
      */
     renderHud() {
-        if (!this.font) {
-            return;
-        }
-
         // Semi-transparent bar at the top so white text stays readable on any tile.
         this.tileRect.set(0, 0, 320, 38);
         BT.drawRectFill(this.tileRect, C_HUD_BAR);
 
-        // Palette offset 0 = palette[1 + 0] = palette[1] = C_WHITE = white text.
+        // systemPrint takes (position, paletteIndex, text).
         this.tempVec.set(8, 8);
-        BT.printFont(this.font, this.tempVec, 'Tilemap Demo (012)', 0);
+        BT.systemPrint(this.tempVec, C_WHITE, 'Tilemap Demo (012)');
 
-        // Palette offset C_TEXT_DIM - 1 = 3 = palette[1 + 3] = palette[4] = C_TEXT_DIM = dim white.
         this.tempVec.set(8, 22);
-        BT.printFont(this.font, this.tempVec, '30x20 tiles, 16px each, camera scrolls', C_TEXT_DIM - 1);
+        BT.systemPrint(this.tempVec, C_TEXT_DIM, '30x20 tiles, 16px each, camera scrolls');
 
         // Mini-map sits in the bottom-right, like a treasure map corner-fold.
         this.renderMiniMap();
 
-        // Palette offset C_FPS - 1 = 12 = palette[1 + 12] = palette[13] = C_FPS = dim gray.
         this.tempVec.set(8, 226);
-        BT.printFont(this.font, this.tempVec, `FPS: ${BT.fps()}`, C_FPS - 1);
+        BT.systemPrint(this.tempVec, C_FPS, `FPS: ${BT.fps()}`);
     }
 
     /**

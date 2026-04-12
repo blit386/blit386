@@ -39,7 +39,7 @@
 //   Center: one large sprite that changes theme every 2 seconds.
 //   Right: code snippet showing how to build and swap palettes.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -81,9 +81,6 @@ class Demo {
 
     // The sprite sheet loaded from test.png.
     spriteSheet = null;
-
-    // The bitmap font for labels and code text.
-    font = null;
 
     // The rectangular region of the sprite within the sheet.
     charSprite = null;
@@ -183,17 +180,6 @@ class Demo {
             return false;
         }
 
-        // --- Step 6: Load and indexize the font ---
-        // Fonts are also sprite sheets. indexize() maps font glyphs to slot 1 (white).
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.themepalettes[0]);
-            console.log(`[PaletteSwapDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[PaletteSwapDemo] Failed to load font:', error);
-            return false;
-        }
-
         console.log('[PaletteSwapDemo] Initialization complete!');
         return true;
     }
@@ -233,21 +219,21 @@ class Demo {
         // Clear to the background color (slot 2 = dark bg, same in all theme palettes).
         BT.clear(C_BG);
 
-        if (!this.font || !this.spriteSheet || !this.charSprite) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading...');
+        if (!this.spriteSheet || !this.charSprite) {
+            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
 
-        // Title. printFont offset 3 = palette[1+3] = palette[4] = C_HEADER = golden.
-        BT.printFont(this.font, new Vector2i(6, 4), 'Blit-Tech - Palette Swap', 3);
+        // Title. systemPrint takes (position, paletteIndex, text). C_HEADER = golden.
+        BT.systemPrint(new Vector2i(6, 4), C_HEADER, 'Blit-Tech - Palette Swap');
 
         // Draw the three main sections.
         this.renderThemeButtons();
         this.renderCyclingSprite();
         this.renderCodePanel();
 
-        // FPS counter. printFont offset 5 = palette[6] = C_DIM = dim gray.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, 5);
+        // FPS counter.
+        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.fps()}`);
     }
 
     // #endregion
@@ -270,21 +256,20 @@ class Demo {
 
             // Highlight box around the active theme.
             if (i === this.currentTheme) {
-                // C_LABEL - 1 = 2 = palette[3] = C_LABEL = gray.
-                BT.drawRect(new Rect2i(4, btnY - 1, btnW, btnH + 2), C_LABEL - 1);
+                BT.drawRect(new Rect2i(4, btnY - 1, btnW, btnH + 2), C_LABEL);
             }
 
             // Color swatch dot: a small filled square using the representative swatch slot.
             // These slots (30..33) are the SAME in every theme palette, so the dots never change.
             BT.drawRectFill(new Rect2i(8, btnY + 4, 12, 12), SWATCH_STONE + i);
 
-            // Theme name. printFont offset 2 = palette[3] = C_LABEL = label gray.
-            BT.printFont(this.font, new Vector2i(24, btnY + 4), this.themeNames[i], 2);
+            // Theme name. systemPrint takes (position, paletteIndex, text).
+            BT.systemPrint(new Vector2i(24, btnY + 4), C_LABEL, this.themeNames[i]);
         }
 
         // Section heading below the buttons.
-        BT.printFont(this.font, new Vector2i(6, 120), 'Themes:', 2);
-        BT.printFont(this.font, new Vector2i(6, 132), '2 s each', C_DIM - 1);
+        BT.systemPrint(new Vector2i(6, 120), C_LABEL, 'Themes:');
+        BT.systemPrint(new Vector2i(6, 132), C_DIM, '2 s each');
     }
 
     /**
@@ -304,28 +289,19 @@ class Demo {
         // Offset 0 means: draw using palette slots starting at the sprite's base index.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(spriteX, spriteY), 0);
 
-        // Label below the sprite.
-        // printFont offset 3 = palette[4] = C_HEADER = golden.
-        BT.printFont(
-            this.font,
+        // Label below the sprite. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(
             new Vector2i(spriteX, spriteY + this.charSprite.height + 8),
+            C_HEADER,
             `Theme: ${this.themeNames[this.currentTheme]}`,
-            3,
         );
 
         // Explain offset 0.
-        // printFont offset 4 = palette[5] = C_CODE = blue-gray.
-        BT.printFont(
-            this.font,
-            new Vector2i(spriteX, spriteY + this.charSprite.height + 20),
-            'drawSprite offset = 0',
-            4,
-        );
-        BT.printFont(
-            this.font,
+        BT.systemPrint(new Vector2i(spriteX, spriteY + this.charSprite.height + 20), C_CODE, 'drawSprite offset = 0');
+        BT.systemPrint(
             new Vector2i(spriteX, spriteY + this.charSprite.height + 32),
+            C_CODE,
             `slots ${SPRITE_BASE}..${SPRITE_BASE + this.spriteColorCount - 1}`,
-            4,
         );
     }
 
@@ -333,34 +309,26 @@ class Demo {
      * Draws a code snippet on the right side showing how palette swap works.
      */
     renderCodePanel() {
-        if (!this.font) {
-            return;
-        }
-
         const x = 200;
         const startY = 20;
-        // printFont offset 2 = palette[3] = C_LABEL (label gray) for headings.
-        // printFont offset 4 = palette[5] = C_CODE (blue-gray) for code.
-        const headOff = 2;
-        const codeOff = 4;
 
-        BT.printFont(this.font, new Vector2i(x, startY), 'How it works:', headOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 14), '// Build palettes', codeOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 26), 'stone = clone()', codeOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 38), 'fire = clone()', codeOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 50), 'fire.set(10, red)', codeOff);
+        BT.systemPrint(new Vector2i(x, startY), C_LABEL, 'How it works:');
+        BT.systemPrint(new Vector2i(x, startY + 14), C_CODE, '// Build palettes');
+        BT.systemPrint(new Vector2i(x, startY + 26), C_CODE, 'stone = clone()');
+        BT.systemPrint(new Vector2i(x, startY + 38), C_CODE, 'fire = clone()');
+        BT.systemPrint(new Vector2i(x, startY + 50), C_CODE, 'fire.set(10, red)');
 
-        BT.printFont(this.font, new Vector2i(x, startY + 70), '// Swap theme', headOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 82), 'BT.paletteSet(', codeOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 94), '  firePalette)', codeOff);
+        BT.systemPrint(new Vector2i(x, startY + 70), C_LABEL, '// Swap theme');
+        BT.systemPrint(new Vector2i(x, startY + 82), C_CODE, 'BT.paletteSet(');
+        BT.systemPrint(new Vector2i(x, startY + 94), C_CODE, '  firePalette)');
 
-        BT.printFont(this.font, new Vector2i(x, startY + 114), '// Sync sprites', headOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 126), '// (when layout', codeOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 138), '// changes)', codeOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 150), 'BT.spritesRefresh()', codeOff);
+        BT.systemPrint(new Vector2i(x, startY + 114), C_LABEL, '// Sync sprites');
+        BT.systemPrint(new Vector2i(x, startY + 126), C_CODE, '// (when layout');
+        BT.systemPrint(new Vector2i(x, startY + 138), C_CODE, '// changes)');
+        BT.systemPrint(new Vector2i(x, startY + 150), C_CODE, 'BT.spritesRefresh()');
 
-        BT.printFont(this.font, new Vector2i(x, startY + 170), '// Snapshot:', headOff);
-        BT.printFont(this.font, new Vector2i(x, startY + 182), 'copy = pal.clone()', codeOff);
+        BT.systemPrint(new Vector2i(x, startY + 170), C_LABEL, '// Snapshot:');
+        BT.systemPrint(new Vector2i(x, startY + 182), C_CODE, 'copy = pal.clone()');
     }
 
     // #endregion

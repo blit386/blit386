@@ -34,7 +34,7 @@
 // are recalculated every tick in update() and stored back in the palette.
 // The render() function only ever uses color numbers (indices), never Color32 objects.
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -100,9 +100,6 @@ class Demo {
     // Think of it as a box of 256 numbered paint colors.
     palette = null;
 
-    // font holds the loaded bitmap font for drawing labels.
-    font = null;
-
     // #endregion
 
     // #region Pre-allocated Reusable Objects (Performance)
@@ -132,20 +129,16 @@ class Demo {
     }
 
     /**
-     * Runs once when the demo starts. Sets up the palette and loads the font.
+     * Runs once when the demo starts. Sets up the palette.
      *
      * IMPORTANT ORDER:
      *   1. Create palette            -- make the 256-slot color table.
      *   2. Fill in static colors     -- the ones that never change.
      *   3. BT.paletteSet()           -- tell the engine to use this palette.
-     *   4. BitmapFont.load()         -- load the font file from disk.
-     *   5. font.getSpriteSheet().indexize() -- link font pixels to palette slots.
      *
      * @returns {Promise<boolean>} Returns true when ready to run.
      */
     async initialize() {
-        console.log('[PatternsDemo] Initializing...');
-
         // --- Step 1: Create the palette ---
         // BT.paletteCreate(256) makes a color table with 256 numbered slots.
         // Slot 0 is always transparent and cannot be changed.
@@ -185,21 +178,6 @@ class Demo {
         // --- Step 3: Activate the palette ---
         // This tells the engine "use this palette for all drawing from now on".
         BT.paletteSet(this.palette);
-
-        // --- Step 4 & 5: Load the font and link it to the palette ---
-        try {
-            // Load the font from a file. BitmapFont knows how to read .btfont files.
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-
-            // indexize() scans the font's pixel data and converts each pixel's color
-            // into a palette index number. After this call, the font draws using our palette.
-            this.font.getSpriteSheet().indexize(this.palette);
-
-            console.log(`[PatternsDemo] Loaded font: ${this.font.name} (${this.font.glyphCount} glyphs)`);
-        } catch (error) {
-            console.error('[PatternsDemo] Failed to load font:', error);
-            return false;
-        }
 
         console.log('[PatternsDemo] Initialized');
         return true;
@@ -265,15 +243,8 @@ class Demo {
         // Fill the whole screen with the background color (very dark blue-black).
         BT.clear(C_BG);
 
-        if (!this.font) {
-            // The font hasn't loaded yet. Show a quick status message.
-            // BT.print takes (position, paletteIndex, text).
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading font...');
-            return;
-        }
-
-        // Title at the top. printFont offset 0 means use palette[1+0] = C_WHITE.
-        BT.printFont(this.font, new Vector2i(10, 5), 'Blit-Tech - Patterns Demo', 0);
+        // Title at the top. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, 5), C_WHITE, 'Blit-Tech - Patterns Demo');
 
         // Top row: three patterns centered at y=50.
         this.drawSpiral(new Vector2i(40, 50));
@@ -289,13 +260,7 @@ class Demo {
         this.renderLabels();
 
         // FPS and time counter at the bottom of the screen.
-        // Offset 3 means palette[1+3] = C_DIM (the dim gray color).
-        BT.printFont(
-            this.font,
-            new Vector2i(10, 225),
-            `FPS: ${BT.fps()} | Time: ${this.animTime.toFixed(1)}s`,
-            C_DIM - 1,
-        );
+        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.fps()} | Time: ${this.animTime.toFixed(1)}s`);
     }
 
     // #endregion
@@ -517,27 +482,18 @@ class Demo {
     /**
      * Draws the text label beneath each pattern so viewers know what they're looking at.
      *
-     * C_LABEL is dim white (200, 200, 200). The printFont offset formula:
-     *   offset = paletteIndex - 1
-     * So for C_LABEL=3, offset = 3-1 = 2, meaning palette[1+2] = palette[3] = C_LABEL.
+     * C_LABEL is dim white (200, 200, 200). systemPrint takes (position, paletteIndex, text).
      */
     renderLabels() {
-        if (!this.font) {
-            return;
-        }
-
-        // The offset 2 maps to C_LABEL: palette[1+2] = palette[3] = dim white.
-        const labelOffset = C_LABEL - 1; // = 2
-
         // Labels for the top row.
-        BT.printFont(this.font, new Vector2i(15, 95), 'Spiral', labelOffset);
-        BT.printFont(this.font, new Vector2i(90, 95), 'Radial', labelOffset);
-        BT.printFont(this.font, new Vector2i(175, 95), 'Wave', labelOffset);
+        BT.systemPrint(new Vector2i(15, 95), C_LABEL, 'Spiral');
+        BT.systemPrint(new Vector2i(90, 95), C_LABEL, 'Radial');
+        BT.systemPrint(new Vector2i(175, 95), C_LABEL, 'Wave');
 
         // Labels for the bottom row.
-        BT.printFont(this.font, new Vector2i(15, 175), 'Circle', labelOffset);
-        BT.printFont(this.font, new Vector2i(85, 175), 'Lissajous', labelOffset);
-        BT.printFont(this.font, new Vector2i(175, 175), 'Tunnel', labelOffset);
+        BT.systemPrint(new Vector2i(15, 175), C_LABEL, 'Circle');
+        BT.systemPrint(new Vector2i(85, 175), C_LABEL, 'Lissajous');
+        BT.systemPrint(new Vector2i(175, 175), C_LABEL, 'Tunnel');
     }
 
     // #endregion

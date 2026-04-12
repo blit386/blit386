@@ -28,7 +28,7 @@
 // We learned about palette setup in Demo 015-Palette-Presets:
 // https://vancura.dev/articles/blit-tech-palette-presets
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -64,9 +64,6 @@ class Demo {
 
     // The sprite sheet loaded from /sprites/test.png.
     spriteSheet = null;
-
-    // font is the loaded bitmap font for drawing labels.
-    font = null;
 
     // The rectangular region within the sheet that defines our sprite.
     // Set after loading the image so we know its actual dimensions.
@@ -191,16 +188,6 @@ class Demo {
             return false;
         }
 
-        // --- Step 7: Load and indexize the font ---
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[SpriteDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[SpriteDemo] Failed to load font:', error);
-            return false;
-        }
-
         console.log('[SpriteDemo] Initialization complete!');
         return true;
     }
@@ -235,13 +222,13 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        if (!this.font || !this.spriteSheet || !this.charSprite) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading...');
+        if (!this.spriteSheet || !this.charSprite) {
+            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
 
-        // Title header. printFont offset 5 = palette[1+5] = palette[6] = C_HEADER = golden.
-        BT.printFont(this.font, new Vector2i(10, 8), 'BLIT-TECH SPRITE DEMO', C_HEADER - 1);
+        // Title header. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, 8), C_HEADER, 'BLIT-TECH SPRITE DEMO');
 
         // --- Row 1: Four color themes using palette offsets ---
         const N = this.spriteColorCount;
@@ -250,34 +237,34 @@ class Demo {
 
         // Original colors: offset 0 (uses palette[SPRITE_BASE..SPRITE_BASE+N-1]).
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15, row1Y), 0);
-        BT.printFont(this.font, new Vector2i(10, row1Y + 36), 'Original', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(10, row1Y + 36), C_LABEL, 'Original');
 
         // Fire theme: offset N shifts all pixel indices by N into the fire color block.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15 + spacing, row1Y), N);
-        BT.printFont(this.font, new Vector2i(10 + spacing, row1Y + 36), 'Fire', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(10 + spacing, row1Y + 36), C_LABEL, 'Fire');
 
         // Ice theme: offset 2*N shifts into the ice color block.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15 + spacing * 2, row1Y), N * 2);
-        BT.printFont(this.font, new Vector2i(10 + spacing * 2, row1Y + 36), 'Ice', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(10 + spacing * 2, row1Y + 36), C_LABEL, 'Ice');
 
         // Void theme: offset 3*N shifts into the dark near-black block.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15 + spacing * 3, row1Y), N * 3);
-        BT.printFont(this.font, new Vector2i(10 + spacing * 3, row1Y + 36), 'Void', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(10 + spacing * 3, row1Y + 36), C_LABEL, 'Void');
 
         // --- Row 2: Alpha pulsing (transparency animation) ---
         // The pulse block is updated every tick in update() with animating alpha values.
         // Offset 4*N shifts into that block.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15, 120), N * 4);
-        BT.printFont(this.font, new Vector2i(10, 158), 'Alpha Pulse', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(75, 123), 'Transparency changes in', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(75, 135), 'update() via palette slots.', C_LABEL - 1);
-        BT.printFont(this.font, new Vector2i(75, 147), 'render() just draws the index.', C_LABEL - 1);
+        BT.systemPrint(new Vector2i(10, 158), C_LABEL, 'Alpha Pulse');
+        BT.systemPrint(new Vector2i(75, 123), C_LABEL, 'Transparency changes in');
+        BT.systemPrint(new Vector2i(75, 135), C_LABEL, 'update() via palette slots.');
+        BT.systemPrint(new Vector2i(75, 147), C_LABEL, 'render() just draws the index.');
 
         // --- Right panel: code snippet ---
         this.renderCodeSnippet();
 
-        // FPS counter. printFont offset C_DIM-1 = 4 = palette[5] = C_DIM.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, C_DIM - 1);
+        // FPS counter.
+        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.fps()}`);
     }
 
     // #endregion
@@ -288,21 +275,12 @@ class Demo {
      * Draws a short code snippet on the right side showing how to load a sprite and indexize it.
      */
     renderCodeSnippet() {
-        if (!this.font) {
-            return;
-        }
-
-        // printFont offset C_LABEL-1 = 2 (dim white for headers)
-        // printFont offset C_CODE-1 = 3 (blue for code)
-        const codeOffset = C_CODE - 1;
-        const labelOffset = C_LABEL - 1;
-
-        BT.printFont(this.font, new Vector2i(170, 165), 'Load from file:', labelOffset);
-        BT.printFont(this.font, new Vector2i(170, 178), 'const sheet =', codeOffset);
-        BT.printFont(this.font, new Vector2i(170, 190), '  await SpriteSheet', codeOffset);
-        BT.printFont(this.font, new Vector2i(170, 202), "  .load('rock.png');", codeOffset);
-        BT.printFont(this.font, new Vector2i(170, 214), 'sheet.indexize(', codeOffset);
-        BT.printFont(this.font, new Vector2i(170, 226), '  palette);', codeOffset);
+        BT.systemPrint(new Vector2i(170, 165), C_LABEL, 'Load from file:');
+        BT.systemPrint(new Vector2i(170, 178), C_CODE, 'const sheet =');
+        BT.systemPrint(new Vector2i(170, 190), C_CODE, '  await SpriteSheet');
+        BT.systemPrint(new Vector2i(170, 202), C_CODE, "  .load('rock.png');");
+        BT.systemPrint(new Vector2i(170, 214), C_CODE, 'sheet.indexize(');
+        BT.systemPrint(new Vector2i(170, 226), C_CODE, '  palette);');
     }
 
     /**

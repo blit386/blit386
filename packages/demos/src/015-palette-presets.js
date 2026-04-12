@@ -39,7 +39,7 @@
 //   - A "live view" panel that auto-cycles through all six presets every 2 seconds.
 //   - Named slots: the live view uses palette.setNamed() / getNamed() to pick colors.
 
-import { BitmapFont, bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -75,9 +75,6 @@ class Demo {
 
     // Name strings for each preset (for display).
     presetNames = ['Game Boy', 'CGA', 'C64', 'PICO-8', 'NES', 'VGA'];
-
-    // The bitmap font for labels.
-    font = null;
 
     // Which preset index (0..5) is currently shown in the live view.
     currentPresetIndex = 0;
@@ -190,16 +187,6 @@ class Demo {
         // --- Activate palette ---
         BT.paletteSet(this.palette);
 
-        // --- Load font ---
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[PalettePresetsDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[PalettePresetsDemo] Failed to load font:', error);
-            return false;
-        }
-
         // Initialize the live view.
         this.updateLiveSwatches();
 
@@ -231,13 +218,8 @@ class Demo {
         // Background. Index 2 = dark navy.
         BT.clear(2);
 
-        if (!this.font) {
-            BT.print(new Vector2i(10, 10), 1, 'Loading font...');
-            return;
-        }
-
-        // Title. printFont offset 3 = palette[1+3] = palette[4] = golden.
-        BT.printFont(this.font, new Vector2i(6, 4), 'Blit-Tech - Palette Presets', 3);
+        // Title. systemPrint takes (position, paletteIndex, text). Slot 4 = golden.
+        BT.systemPrint(new Vector2i(6, 4), 4, 'Blit-Tech - Palette Presets');
 
         // Draw each preset as a row of colored swatches.
         this.renderSwatchRows();
@@ -245,8 +227,8 @@ class Demo {
         // Draw the live cycling preview.
         this.renderLivePreview();
 
-        // FPS. printFont offset 5 = palette[1+5] = palette[6] = dim gray.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, 5);
+        // FPS. Slot 6 = dim gray.
+        BT.systemPrint(new Vector2i(250, 225), 6, `FPS: ${BT.fps()}`);
     }
 
     // #endregion
@@ -276,10 +258,6 @@ class Demo {
      * Each rectangle's color comes directly from the swatch slots we copied in initialize().
      */
     renderSwatchRows() {
-        if (!this.font) {
-            return;
-        }
-
         // Row positions: six presets spread across the upper portion of the screen.
         // y positions are spaced 20 pixels apart.
         const rowY = [20, 40, 60, 80, 100, 120];
@@ -295,10 +273,9 @@ class Demo {
                 BT.drawRectFill(new Rect2i(6 + c * (SWATCH_W + 1), y, SWATCH_W, SWATCH_H), offset + c);
             }
 
-            // Label: preset name and actual slot count.
-            // printFont offset 2 = palette[3] = dim gray.
+            // Label: preset name and actual slot count. Slot 3 = dim gray.
             const label = `${this.presetNames[p]} (${this.presets[p].size})`;
-            BT.printFont(this.font, new Vector2i(6 + count * (SWATCH_W + 1) + 4, y + 2), label, 2);
+            BT.systemPrint(new Vector2i(6 + count * (SWATCH_W + 1) + 4, y + 2), 3, label);
         }
     }
 
@@ -307,32 +284,27 @@ class Demo {
      * Shows 16 swatches from the current preset, plus the preset name and a description.
      */
     renderLivePreview() {
-        if (!this.font) {
-            return;
-        }
-
         const panelY = 148;
 
         // Panel background -- index 2 is the dark background color we set in initialize().
         BT.drawRectFill(new Rect2i(0, panelY - 4, 320, 96), 2);
 
-        // Header. printFont offset 4 = palette[5] = blue-gray subtitle.
-        BT.printFont(this.font, new Vector2i(6, panelY - 2), 'Live view (cycles every 2s):', 4);
+        // Header. Slot 5 = blue-gray subtitle. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(6, panelY - 2), 5, 'Live view (cycles every 2s):');
 
         // Show 16 large swatches from the live slots (200..215).
         for (let i = 0; i < 16; i++) {
             BT.drawRectFill(new Rect2i(6 + i * 18, panelY + 12, 16, 24), 200 + i);
         }
 
-        // Current preset name below swatches. printFont offset 3 = palette[4] = golden.
+        // Current preset name below swatches. Slot 4 = golden.
         const name = this.presetNames[this.currentPresetIndex];
         const size = this.presets[this.currentPresetIndex].size;
-        BT.printFont(this.font, new Vector2i(6, panelY + 42), `Current: ${name} -- ${size} colors`, 3);
+        BT.systemPrint(new Vector2i(6, panelY + 42), 4, `Current: ${name} -- ${size} colors`);
 
-        // Explain named slots.
-        // printFont offset 2 = palette[3] = dim gray.
-        BT.printFont(this.font, new Vector2i(6, panelY + 56), "palette.setNamed('ui-bg', 2)", 2);
-        BT.printFont(this.font, new Vector2i(6, panelY + 68), "palette.getNamed('ui-bg') => 2", 2);
+        // Explain named slots. Slot 3 = dim gray.
+        BT.systemPrint(new Vector2i(6, panelY + 56), 3, "palette.setNamed('ui-bg', 2)");
+        BT.systemPrint(new Vector2i(6, panelY + 68), 3, "palette.getNamed('ui-bg') => 2");
     }
 
     // #endregion

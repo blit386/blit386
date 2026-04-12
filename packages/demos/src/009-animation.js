@@ -32,7 +32,7 @@
 // We used the same idea in Demo 016-Palette-Animation:
 // https://vancura.dev/articles/blit-tech-palette-animation
 
-import { BitmapFont, bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -92,9 +92,6 @@ class Demo {
 
     // The palette holds all colors used in this demo.
     palette = null;
-
-    // The bitmap font for drawing text labels on screen.
-    font = null;
 
     // The sprite sheet loaded from /sprites/test.png.
     spriteSheet = null;
@@ -218,16 +215,6 @@ class Demo {
             return false;
         }
 
-        // --- Load font ---
-        try {
-            this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
-            this.font.getSpriteSheet().indexize(this.palette);
-            console.log(`[AnimationDemo] Loaded font: ${this.font.name}`);
-        } catch (error) {
-            console.error('[AnimationDemo] Failed to load font:', error);
-            return false;
-        }
-
         console.log('[AnimationDemo] Initialization complete!');
         return true;
     }
@@ -288,8 +275,8 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        if (!this.font || !this.spriteSheet) {
-            BT.print(new Vector2i(10, 10), C_WHITE, 'Loading...');
+        if (!this.spriteSheet) {
+            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
 
@@ -439,18 +426,14 @@ class Demo {
      * Draws the information panel showing state, tick count, cooldown, and spawn timer.
      */
     renderUI() {
-        if (!this.font) {
-            return;
-        }
-
-        // Title in white.
-        BT.printFont(this.font, new Vector2i(10, 10), 'ANIMATION & TIMING DEMO', 0);
+        // Title in white. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'ANIMATION & TIMING DEMO');
 
         // Current state (e.g. "State: Jumping").
-        BT.printFont(this.font, new Vector2i(10, 28), `State: ${this.animState}`, C_STATE_TEXT - 1);
+        BT.systemPrint(new Vector2i(10, 28), C_STATE_TEXT, `State: ${this.animState}`);
 
         // Ticks since start.
-        BT.printFont(this.font, new Vector2i(10, 42), `Ticks: ${BT.ticks()}`, C_STAT_DIM - 1);
+        BT.systemPrint(new Vector2i(10, 42), C_STAT_DIM, `Ticks: ${BT.ticks()}`);
 
         // Cooldown bar.
         this.renderCooldownUI();
@@ -459,33 +442,26 @@ class Demo {
         this.renderSpawnTimerUI();
 
         // Concept summary.
-        BT.printFont(this.font, new Vector2i(10, 168), 'Tick-based timing:', C_INFO_HEADER - 1);
-        BT.printFont(this.font, new Vector2i(10, 182), '- Deterministic frame timing', C_INFO_TEXT - 1);
-        BT.printFont(this.font, new Vector2i(10, 196), '- Cooldown & event scheduling', C_INFO_TEXT - 1);
-        BT.printFont(this.font, new Vector2i(10, 210), '- State machine transitions', C_INFO_TEXT - 1);
+        BT.systemPrint(new Vector2i(10, 168), C_INFO_HEADER, 'Tick-based timing:');
+        BT.systemPrint(new Vector2i(10, 182), C_INFO_TEXT, '- Deterministic frame timing');
+        BT.systemPrint(new Vector2i(10, 196), C_INFO_TEXT, '- Cooldown & event scheduling');
+        BT.systemPrint(new Vector2i(10, 210), C_INFO_TEXT, '- State machine transitions');
 
         // FPS.
-        BT.printFont(this.font, new Vector2i(250, 225), `FPS: ${BT.fps()}`, C_FPS - 1);
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
     }
 
     /**
      * Draws the ability cooldown bar and timer.
      */
     renderCooldownUI() {
-        if (!this.font) {
-            return;
-        }
-
         const cooldownPercent = Math.max(0, this.abilityCooldownTicks / this.abilityCooldownDuration);
 
-        // Red when counting down, green when ready.
-        const labelOffset = cooldownPercent > 0 ? C_COOLDOWN_ACTIVE - 1 : C_COOLDOWN_READY - 1;
-
-        BT.printFont(
-            this.font,
+        // Red when counting down, green when ready. systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(
             new Vector2i(10, 58),
+            cooldownPercent > 0 ? C_COOLDOWN_ACTIVE : C_COOLDOWN_READY,
             `Cooldown: ${Math.ceil(this.abilityCooldownTicks / 60)}s`,
-            labelOffset,
         );
 
         // Bar background.
@@ -509,20 +485,11 @@ class Demo {
      * Shows the spawn timer countdown and particle count.
      */
     renderSpawnTimerUI() {
-        if (!this.font) {
-            return;
-        }
-
         const ticksUntilSpawn = this.spawnInterval - (BT.ticks() - this.lastSpawnTick);
 
-        BT.printFont(
-            this.font,
-            new Vector2i(10, 95),
-            `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`,
-            C_SPAWN_TEXT - 1,
-        );
-
-        BT.printFont(this.font, new Vector2i(10, 110), `Particles: ${this.particles.length}`, C_STAT_DIM - 1);
+        // systemPrint takes (position, paletteIndex, text).
+        BT.systemPrint(new Vector2i(10, 95), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);
+        BT.systemPrint(new Vector2i(10, 110), C_STAT_DIM, `Particles: ${this.particles.length}`);
     }
 
     // #endregion
