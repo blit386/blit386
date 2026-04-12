@@ -16,6 +16,14 @@ Blit-Tech Demos depends on Blit-Tech via a pnpm workspace dependency:
 
 Since Blit-Tech is not yet on npm, you need to clone both repositories and set up a local workspace.
 
+## Browser Requirements
+
+The demos require WebGPU support:
+
+- Chrome/Edge 113+
+- Firefox 141+ on Windows; 145+/147+ on macOS; Nightly on Linux
+- Safari 26+; or Safari 18-25 with WebGPU enabled via Feature Flags
+
 ## One-Time Setup
 
 ### 1. Create Workspace Directory
