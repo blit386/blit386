@@ -30,6 +30,8 @@
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
+/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+
 // #endregion
 
 // #region Configuration
