@@ -26,9 +26,13 @@
 // make text that changes color over time (rainbow), text that pulses in brightness,
 // and how to measure how wide a piece of text will be before drawing it.
 
+// #region Imports
+
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
-// #region Palette Constants
+// #endregion
+
+// #region Configuration
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -49,12 +53,8 @@ const C_DARKER_GRAY = 10; // Darker gray: FPS/tick counter
 // render() then reads the slot index -- no Color32 math happens during drawing!
 const C_RAINBOW_BASE = 20; // slots 20, 21, 22, ... 37 for the 18 rainbow characters
 
-// Dynamic slot: pulsing text changes color every frame (brightens and darkens in a wave).
+// Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
 const C_PULSE = 38; // single slot for the pulsing-text color
-
-// #endregion
-
-// #region Module Constants
 
 // We define the rainbow text string here so both update() and render() use the exact same letters.
 // If you change this string, update() will compute the right number of palette colors automatically.
@@ -62,7 +62,7 @@ const RAINBOW_TEXT = 'Rainbow Animation!';
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates bitmap font loading and rendering with various text effects.
@@ -171,13 +171,16 @@ class Demo {
         this.animTime += 1 / 60;
 
         // --- Update the pulsing text color ---
-        // Math.sin returns a wave between -1 and +1 that oscillates smoothly.
-        // Multiplying animTime by 3 makes it cycle 3 times per second.
-        // Adding 0.5 and multiplying by 0.5 shifts the range from [-1,1] to [0,1].
-        const pulse = Math.sin(this.animTime * 3) * 0.5 + 0.5;
-        // Red and green rise with pulse while blue stays at 255, so the text shifts from
-        // medium blue (100, 100, 255) toward bright white (255, 255, 255).
-        this.palette.set(C_PULSE, new Color32(Math.floor(100 + pulse * 155), Math.floor(100 + pulse * 155), 255));
+        // Math.sin returns a wave that smoothly oscillates between -1 and +1.
+        // The formula "2 * Math.PI * frequency" converts seconds into radians, which is what
+        // Math.sin expects. With frequency=3 the wave completes exactly 3 full cycles per second.
+        // Multiplying by 0.5 and adding 0.5 shifts the output from [-1,1] to [0,1].
+        const pulse = Math.sin(2 * Math.PI * 3 * this.animTime) * 0.5 + 0.5;
+
+        // The alpha channel controls how opaque (visible) the text is.
+        // At pulse=0 the text is nearly invisible; at pulse=1 it is fully opaque.
+        // RGB stays fixed at (100, 100, 255) -- a medium blue -- so only opacity changes.
+        this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
         // --- Update the rainbow text character colors ---
         // We compute hue (color wheel position) for each character based on its x position
@@ -224,6 +227,8 @@ class Demo {
         // The colorOffset is a 0-based index FROM palette slot 1.
         // So offset 0 = slot 1 (C_WHITE), offset 2 = slot 3 (C_RED_TEXT), etc.
         // This is different from BT.systemPrint() which takes the palette slot number directly.
+        // We learned about palette offset math in the Palette Walkthrough demo:
+        // https://vancura.dev/articles/blit-tech-palette
 
         // Draw the title in both fonts, one below the other, so you can compare them side-by-side.
         // "A:" marks the bitmap font version (proportional spacing, each letter its own width).
@@ -315,8 +320,8 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    // Draws text that pulses -- it gets brighter and darker in a smooth rhythm.
-    // The color is pre-computed in update() and stored in palette slot C_PULSE.
+    // Draws text that pulses in opacity -- it fades in and out in a smooth rhythm (alpha pulsing).
+    // The alpha value is pre-computed in update() using Math.sin and stored in palette slot C_PULSE.
     // This palette animation technique works exactly the same with BT.systemPrint().
     // y: the Y position to start drawing at.
     // lineHeight: how many pixels to move down between lines.
