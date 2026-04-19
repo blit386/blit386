@@ -573,9 +573,13 @@ class Demo {
             // Instantaneous velocity = the mathematical derivative of the position formula.
             //   d/dt [sin(t * f + p)] = cos(t * f + p) * f
             //   d/dt [cos(t * f + p)] = -sin(t * f + p) * f
-            // Dividing by 60 converts from "per second" to "per tick".
-            spark.vx = (Math.cos(this.animTime * spark.freqX + spark.phaseX) * spark.freqX * FIELD_RANGE * 0.8) / 60;
-            spark.vy = (-Math.sin(this.animTime * spark.freqY + spark.phaseY) * spark.freqY * FIELD_RANGE * 0.8) / 60;
+            // Dividing by TARGET_FPS converts from "per second" to "per tick" using the
+            // same constant that drives animTime in update(), so if TARGET_FPS ever
+            // changes, both the clock and this velocity scale stay in sync.
+            spark.vx =
+                (Math.cos(this.animTime * spark.freqX + spark.phaseX) * spark.freqX * FIELD_RANGE * 0.8) / TARGET_FPS;
+            spark.vy =
+                (-Math.sin(this.animTime * spark.freqY + spark.phaseY) * spark.freqY * FIELD_RANGE * 0.8) / TARGET_FPS;
         }
     }
 

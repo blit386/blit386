@@ -41,6 +41,10 @@ const TARGET_FPS = 60;
 // Everything before this (index 1..9) is used for UI colors.
 const SPRITE_BASE = 10;
 
+// Path to the sprite PNG. Defined once so every load call (color extraction,
+// GPU upload, and dimension lookup) references the exact same file.
+const SPRITE_PATH = '/sprites/test.png';
+
 // UI color slots.
 const C_WHITE = 1;
 const C_BG = 2; // Dark purple background.
@@ -132,7 +136,7 @@ class Demo {
         // (sorted darkest-first by brightness, just like the manual version we used to have).
         // Think of it as reading a painting and writing down every paint color used,
         // then putting those paints in your numbered slots for later reference.
-        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
+        this.baseColors = await SpriteSheet.loadColorsIntoPalette(SPRITE_PATH, this.palette, SPRITE_BASE);
 
         const colorCount = this.baseColors.length;
         this.spriteColorCount = colorCount;
@@ -175,11 +179,11 @@ class Demo {
         // SpriteSheet.load reads a PNG file from the public folder.
         // indexize() scans each pixel and matches its color to a palette slot.
         try {
-            this.spriteSheet = await SpriteSheet.load('/sprites/test.png');
+            this.spriteSheet = await SpriteSheet.load(SPRITE_PATH);
 
             // Get the sprite's pixel dimensions so we know the src rectangle.
             const img = new Image();
-            img.src = '/sprites/test.png';
+            img.src = SPRITE_PATH;
             await new Promise((resolve) => {
                 img.onload = () => resolve();
             });

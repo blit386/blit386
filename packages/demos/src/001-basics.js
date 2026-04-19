@@ -58,7 +58,7 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 //
 // Index 0 is always transparent (completely invisible). Our custom colors start at 1.
 const C_WHITE = 1; // White: most of the on-screen text
-const C_BG = 2; // Dark blue: fills the whole screen each frame to erase the last picture
+const C_BG = 2; // Black: fills the whole screen each frame to erase the last picture
 const C_BLUE = 3; // Blue: used for the bounce counter so it stands out from the rest
 
 // Where the sprite's own colors begin in the palette.
@@ -311,8 +311,8 @@ class Demo {
      * pile up on top of it (which can look cool, but is usually a bug!).
      */
     render() {
-        // Clear the entire screen to dark blue. This erases the previous frame.
-        // C_BG is palette index 2, which we set to (0, 0, 40) in initialize().
+        // Clear the entire screen to black. This erases the previous frame.
+        // C_BG is palette index 2, which we set to (0, 0, 0) in initialize().
         // We pass the index number, not the color directly - the palette handles the rest.
         BT.clear(C_BG);
 

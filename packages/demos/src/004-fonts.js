@@ -266,7 +266,11 @@ class Demo {
      * @returns {number} The Y position after the text.
      */
     renderPulsingText(y) {
-        // C_PULSE (slot 38) holds the animated blue-to-white color computed in update().
+        // C_PULSE (slot 38) holds an alpha (transparency) pulse precomputed in update():
+        // RGB stays fixed at (100, 100, 255) -- a soft blue -- and the alpha channel is
+        // animated from 0 to 255 with Math.sin(), so the text fades in and out smoothly
+        // rather than shifting hue. The engine blends the palette color against the
+        // background at draw time, which is what gives the pulse its smooth look.
         BT.systemPrint(new Vector2i(10, y), C_PULSE, 'Pulsing Text');
 
         return y + 14;
