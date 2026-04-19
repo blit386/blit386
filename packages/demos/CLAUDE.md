@@ -5,7 +5,7 @@ Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 ## Tech Stack
 
 - **Node**: >= 20.0.0
-- **Build Tool**: Vite 7 with Handlebars templates
+- **Build Tool**: Vite 7 with a custom virtual-demos plugin (no templating library)
 - **Language**: JavaScript (ES2022)
 - **Styling**: Plain CSS with CSS custom properties
 - **Engine**: Blit-Tech (WebGPU retro engine, workspace dependency)
@@ -24,33 +24,22 @@ Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 
 ```text
 blit-tech-demos/
-  demos/                  # HTML pages for each demo
-    001-basics.html       # Individual demo pages...
-    styles.css            # Shared demo styling
-  src/                    # JavaScript source for demos
-    001-basics.js         # One file per demo
+  demos/                       # Shared demo styling (HTML pages are virtual)
+    styles.css
+  src/                         # JavaScript source - one file per demo (single source of truth)
+    001-basics.js
     002-primitives.js
-    003-colors.js
-    004-fonts.js
-    005-pixel-art.js
-    006-patterns.js
-    007-camera.js
-    008-sprites.js
-    009-animation.js
-    010-sprite-effects.js
-    011-starfield.js
-    012-tilemap.js
-    013-image-output.js
-    014-game-scene.js
-  public/                 # Static assets
-    fonts/                # Bitmap fonts (.btfont + .png)
-    _headers              # Cloudflare headers
-  _partials/              # Handlebars templates
-    layout-top.hbs        # Page header (HTML boilerplate + centered canvas)
-    layout-bottom.hbs     # Page footer (script tag + closing tags)
-  _config/
-    contexts.js           # Page context data for templates
-  docs/                   # Project documentation
+    ...                        # 003 through 022
+  public/                      # Static assets
+    fonts/                     # Bitmap fonts (.btfont + .png)
+    _headers                   # Cloudflare headers
+  _partials/                   # Shared HTML template (plain HTML with {{title}} and {{scriptFile}} placeholders)
+    layout.html
+    plausible-analytics.html   # Inlined at the <!-- analytics --> marker in layout.html
+  plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
+    virtual-demos.js
+    demo-registry.js
+  docs/                        # Project documentation
 ```
 
 ## Development Commands
@@ -94,8 +83,8 @@ CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.
 
 ### JavaScript Demo Files (`src/NNN-name.js`)
 
-Each demo lives in a numbered file that matches its HTML page (e.g. `src/003-colors.js` with `demos/003-colors.html`).
-Follow this pattern:
+Each demo is a single JS file under `src/`. The matching HTML page is served virtually at `/demos/NNN-name.html` by the
+`virtual-demos` Vite plugin; no HTML file exists on disk. Follow this pattern:
 
 ```js
 /**
@@ -130,24 +119,18 @@ bootstrap(Demo);
 // #endregion
 ```
 
-### HTML Demo Pages (`demos/NNN-name.html`)
-
-Use Handlebars partials (canvas and script are included by the partials):
-
-```html
-{{> layout-top}} {{> layout-bottom}}
-```
-
 ### Adding a New Demo
 
-Demos use a **three-digit prefix** plus kebab-case (`NNN-topic`), e.g. `015-particles`.
+Demos use a **three-digit prefix** plus kebab-case (`NNN-topic`), e.g. `023-particles`.
 
-That number sets teaching order in `contexts.js` and keeps URLs stable.
+The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` for this pattern. Adding a demo is a
+single step:
 
-1. Choose the next free number and name: `src/015-your-topic.js` and `demos/015-your-topic.html`
-2. Follow the JavaScript demo pattern above
-3. Add entry to `vite.config.js` rollupOptions.input
-4. Add context to `_config/contexts.js`
+1. Create `src/NNN-your-topic.js` with the next free number. The page title defaults to
+   `Blit-Tech Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a `// @pageTitle Custom Title`
+   comment in the first ~20 lines of the file (see `src/021-error-preview.js` for an example).
+
+No `vite.config.js` edit. No context file to update. No HTML file to create.
 
 ## Code Quality (Relaxed for Demos)
 

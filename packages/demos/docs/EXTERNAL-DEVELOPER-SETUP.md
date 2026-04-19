@@ -72,8 +72,10 @@ blit-tech-workspace/          # Your workspace root
 │   ├── dist/                 # Built output
 │   └── package.json
 └── blit-tech-demos/          # The demos
-    ├── src/
-    ├── demos/
+    ├── src/                  # One JS file per demo (single source of truth)
+    ├── demos/                # styles.css only - HTML pages are served virtually
+    ├── _partials/            # Shared HTML template
+    ├── plugins/              # virtual-demos Vite plugin
     └── package.json
 ```
 
@@ -103,7 +105,7 @@ cd blit-tech-demos
 pnpm dev
 ```
 
-Opens browser at `http://localhost:5173/demos/`
+Opens browser at `http://localhost:5173/demos/001-basics.html` (or visit `/demos/` for the full index).
 
 ### Development with Auto-Rebuild
 
