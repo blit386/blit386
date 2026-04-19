@@ -191,7 +191,7 @@ class Demo {
     palette = null;
 
     // Total elapsed animation time, measured in seconds.
-    // Grows by exactly 1/60 each tick (at 60 FPS).
+    // Grows by exactly 1 / TARGET_FPS each tick (e.g. 1/60 when TARGET_FPS is 60).
     // The spark position formula uses this as its clock -- every tick the sparks move forward.
     animTime = 0;
 
@@ -299,11 +299,11 @@ class Demo {
     }
 
     /**
-     * Runs 60 times per second. Advances physics and rewrites palette colors.
+     * Runs TARGET_FPS times per second (target frame rate, e.g. 60 by default). Advances physics and rewrites palette colors.
      * All Color32 work happens here; render() only ever uses slot numbers.
      */
     update() {
-        // Advance time. Each tick is exactly 1/60 of a second at 60 FPS.
+        // Advance time. Each tick adds 1 / TARGET_FPS seconds (e.g. 1/60 when the target frame rate is 60).
         this.animTime += 1 / TARGET_FPS;
 
         // Rotate the global hue. The % operator wraps the angle back to 0 at 360.
