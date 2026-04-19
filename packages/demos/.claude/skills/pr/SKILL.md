@@ -35,7 +35,12 @@ The description after `/pr` becomes the commit subject.
    - Generate conventional commit message:
      - Format: `<type>(<scope>): <description>`
      - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
-     - Scopes: `examples` (demo source), `demos` (shared demo HTML/CSS), `ci`, `docs`, `config`
+     - Scopes:
+       - `examples` - demo source
+       - `demos` - shared demo HTML/CSS
+       - `ci`
+       - `docs`
+       - `config`
    - Include trailer: `Co-Authored-By: Claude <noreply@anthropic.com>`
 
 5. **Push and create PR**
