@@ -73,7 +73,6 @@ blit-tech-workspace/          # Your workspace root
 │   └── package.json
 └── blit-tech-demos/          # The demos
     ├── src/                  # One JS file per demo (single source of truth)
-    ├── demos/                # styles.css only - HTML pages are served virtually
     ├── _partials/            # Shared HTML template
     ├── plugins/              # virtual-demos Vite plugin
     └── package.json
