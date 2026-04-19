@@ -1,3 +1,4 @@
+// @pageTitle Blit-Tech Dev - Error Preview
 // Error Preview - Visual testing tool for all engine error messages.
 //
 // This is a developer utility, not a regular demo. It uses previewWebGPUErrors()

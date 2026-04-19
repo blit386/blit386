@@ -5,7 +5,8 @@ Fun examples for the [Blit-Tech](https://github.com/vancura/blit-tech/) pixel ar
 Each demo shows a different feature of the engine. Source files in `src/` use plain JavaScript with lots of comments
 explaining how everything works.
 
-**Progressive learning:** Use `NNN-name` file stems (e.g. `demos/001-basics.html` and `src/001-basics.js`).
+**Progressive learning:** Each demo lives in a single numbered file under `src/` (e.g. `src/001-basics.js`). The
+matching HTML page is served virtually at `/demos/001-basics.html`.
 
 The demos build on each other in numeric order; later pages assume you have seen the ideas from earlier ones.
 
@@ -75,8 +76,8 @@ pnpm install
 pnpm dev
 ```
 
-This opens the demos at `http://localhost:5173/demos/`. Open numbered pages such as `001-basics.html` from the file list
-there.
+This opens the demos at `http://localhost:5173/demos/001-basics.html`. The `/demos/` index page lists every demo, or you
+can navigate directly to any `/demos/NNN-name.html` URL.
 
 ## License
 
