@@ -35,7 +35,6 @@ blit-tech-demos/
     _headers                   # Cloudflare headers
   _partials/                   # Shared HTML template (plain HTML with {{title}} and {{scriptFile}} placeholders)
     layout.html
-    plausible-analytics.html   # Inlined at the <!-- analytics --> marker in layout.html
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
     virtual-demos.js
     demo-registry.js

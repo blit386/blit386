@@ -5,7 +5,6 @@ import { buildRegistry } from './demo-registry.js';
 
 // #region Constants
 
-const ANALYTICS_MARKER = '<!-- analytics -->';
 const DEMO_URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
 // #endregion
@@ -15,7 +14,7 @@ const DEMO_URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 /**
  * Vite plugin that serves/generates demo HTML pages virtually from src/NNN-*.js files.
  * No per-demo HTML file is needed on disk; the template lives in _partials/layout.html
- * and plausible-analytics.html and is rendered via simple string substitution.
+ * and is rendered via simple string substitution.
  * @returns {import('vite').Plugin}
  */
 export function virtualDemos() {
@@ -27,9 +26,7 @@ export function virtualDemos() {
     let layoutTemplate = '';
 
     function reloadTemplate() {
-        const layout = readFileSync(resolve(partialsDir, 'layout.html'), 'utf-8');
-        const analytics = readFileSync(resolve(partialsDir, 'plausible-analytics.html'), 'utf-8');
-        layoutTemplate = layout.replace(ANALYTICS_MARKER, analytics);
+        layoutTemplate = readFileSync(resolve(partialsDir, 'layout.html'), 'utf-8');
     }
 
     function reloadRegistry() {
