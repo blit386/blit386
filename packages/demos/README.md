@@ -19,9 +19,10 @@ The demos build on each other in numeric order; later pages assume you have seen
 
 ### Text and Visual Art
 
-- **004-fonts** -- Bitmap fonts, text rendering, measurement
+- **004-fonts** -- Built-in system font with `BT.systemPrint()`
 - **005-pixel-art** -- Programmatic pixel art with nested loops
 - **006-patterns** -- Mathematical art: spirals, Lissajous, waves, tunnel
+- **022-bitmap-font** -- Load a proportional `.btfont` file and draw rainbow, alpha-pulsing, and measured text
 
 ### World Building
 
@@ -45,6 +46,11 @@ The demos build on each other in numeric order; later pages assume you have seen
 
 - **013-image-output** -- Frame capture and PNG export
 - **014-game-scene** -- Capstone: everything combined into a mini game scene
+
+### Developer Tools
+
+- **021-error-preview** -- Utility that cycles through every WebGPU error message the engine can display, for checking
+  layout and wording without needing to simulate real failures
 
 ## Browser Requirements
 

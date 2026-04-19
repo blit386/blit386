@@ -44,61 +44,46 @@ We treat Blit-Tech as a **trusted, pre-tested dependency** that is already valid
 
 ### Workflow Pattern
 
-Every job that needs to install dependencies follows this pattern:
+The setup is encapsulated in a composite action at `.github/actions/workspace-setup`. Every job that needs dependencies
+invokes it in two steps:
 
 ```yaml
 steps:
-  - name: Checkout Blit-Tech library
+  - name: Checkout for local actions
     uses: actions/checkout@v6
     with:
-      repository: vancura/blit-tech
-      path: blit-tech
+      sparse-checkout: .github/actions
+      sparse-checkout-cone-mode: false
 
-  - name: Checkout Blit-Tech Demos
-    uses: actions/checkout@v6
-    with:
-      path: blit-tech-demos
+  - name: Set up workspace
+    uses: ./.github/actions/workspace-setup
 
-  - name: Create workspace config
-    run: |
-      cat > pnpm-workspace.yaml << EOF
-      packages:
-        - 'blit-tech'
-        - 'blit-tech-demos'
-      EOF
-
-  - name: Setup pnpm
-    uses: pnpm/action-setup@v4
-
-  - name: Setup Node.js
-    uses: actions/setup-node@v6
-    with:
-      node-version: '20'
-      cache: 'pnpm'
-
-  - name: Install dependencies
-    run: pnpm install --no-frozen-lockfile
-
-  - name: Build Blit-Tech library (dependency - not tested here)
-    run: |
-      cd blit-tech
-      pnpm build
-
-  # Now both packages are available and linked
-  # Run checks ONLY on Blit-Tech Demos
+  # Now both packages are available and linked.
+  # Run checks ONLY on Blit-Tech Demos.
   - name: Check formatting (Blit-Tech Demos only)
     run: |
       cd blit-tech-demos
       pnpm format:check
 ```
 
+The composite action performs these steps internally:
+
+1. Checkout `vancura/blit-tech` into `blit-tech/`
+2. Checkout the current repo into `blit-tech-demos/`
+3. Write `pnpm-workspace.yaml` at the root listing both packages
+4. Copy `blit-tech/pnpm-lock.yaml` to the root
+5. Install pnpm and Node.js (with pnpm cache)
+6. Run `pnpm install --no-frozen-lockfile`
+7. Build the Blit-Tech library
+
 ## Affected Workflow
 
-The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across all its jobs:
+The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across its jobs:
 
 - **quality-checks** - Code quality (format, lint, spellcheck, knip)
+- **docs-links** - Markdown link check on `README.md` (no workspace needed)
 - **build** - Build demos and upload artifacts
-- **deploy** - Deploy to Cloudflare Pages (main branch only)
+- **deploy** - Deploy to Cloudflare Pages (main branch only; depends on `build` and `docs-links`)
 
 ## Local Development
 
