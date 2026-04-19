@@ -216,6 +216,16 @@ await BT.downloadFrame(filename); // optional filename; default PNG name if omit
 
 Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
 
+Static helpers on those types worth knowing:
+
+- `await SpriteSheet.load(url)` -- loads a PNG as a GPU texture.
+- `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` -- scans a PNG and registers every unique
+  opaque color into `palette` starting at `startSlot`. Returns the registered `Color32[]` in palette-write order (sorted
+  darkest-first by luminance by default; pass `{ sort: 'none' }` to keep raster scan order). Use this whenever a demo
+  needs a sprite's colors in the palette so subsequent `sheet.indexize(palette)` resolves.
+- `Color32#multiply(other)` -- component-wise color multiply, returns a new Color32. Use this for ambient tints and
+  team-color modulation instead of writing your own helper.
+
 ## File Organization
 
 Use `// #region` / `// #endregion` for collapsible sections. Standard order:

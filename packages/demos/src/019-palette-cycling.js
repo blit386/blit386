@@ -57,10 +57,6 @@ const SKY_SPEED = 0.5;
 // Every SWAP_INTERVAL ticks, swap two fire slots to show BT.paletteSwap().
 const SWAP_INTERVAL = 180; // ~3 seconds at 60 FPS
 
-// #endregion
-
-// #region Palette Slot Constants
-
 // Slot 0: always transparent (reserved by the engine).
 const C_WHITE = 1;
 const C_BG = 2;
@@ -80,7 +76,7 @@ const C_WATER_BASE = 50;
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates BT.paletteCycle() for automatic palette rotation, plus

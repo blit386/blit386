@@ -34,9 +34,16 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 
 // #region Configuration
 
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
+
 // Where in the palette the sprite's original colors start.
 // Everything before this (index 1..9) is used for UI colors.
 const SPRITE_BASE = 10;
+
+// Path to the sprite PNG. Defined once so every load call (color extraction,
+// GPU upload, and dimension lookup) references the exact same file.
+const SPRITE_PATH = '/sprites/test.png';
 
 // UI color slots.
 const C_WHITE = 1;
@@ -48,7 +55,7 @@ const C_HEADER = 6; // Golden header text.
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates sprite rendering using a file-loaded sprite sheet, palette indexization,
@@ -93,7 +100,7 @@ class Demo {
         return {
             displaySize: new Vector2i(320, 240),
             canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -124,9 +131,14 @@ class Demo {
         this.palette.set(C_HEADER, new Color32(255, 220, 100));
 
         // --- Steps 2 & 3: Extract sprite colors and build theme blocks ---
-        // This reads the sprite's pixels, finds unique colors, and fills the palette.
-        const colorCount = await this.buildSpritepalette('/sprites/test.png', SPRITE_BASE);
+        // Ask the engine to scan the PNG and add every unique color it finds into our palette,
+        // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
+        // (sorted darkest-first by brightness, just like the manual version we used to have).
+        // Think of it as reading a painting and writing down every paint color used,
+        // then putting those paints in your numbered slots for later reference.
+        this.baseColors = await SpriteSheet.loadColorsIntoPalette(SPRITE_PATH, this.palette, SPRITE_BASE);
 
+        const colorCount = this.baseColors.length;
         this.spriteColorCount = colorCount;
 
         // Build three color theme blocks from the extracted base colors:
@@ -167,11 +179,11 @@ class Demo {
         // SpriteSheet.load reads a PNG file from the public folder.
         // indexize() scans each pixel and matches its color to a palette slot.
         try {
-            this.spriteSheet = await SpriteSheet.load('/sprites/test.png');
+            this.spriteSheet = await SpriteSheet.load(SPRITE_PATH);
 
             // Get the sprite's pixel dimensions so we know the src rectangle.
             const img = new Image();
-            img.src = '/sprites/test.png';
+            img.src = SPRITE_PATH;
             await new Promise((resolve) => {
                 img.onload = () => resolve();
             });
@@ -196,7 +208,7 @@ class Demo {
      * The pulse block is the same colors as the original but with changing transparency.
      */
     update() {
-        this.animTime += 1 / 60;
+        this.animTime += 1 / TARGET_FPS;
 
         if (!this.spriteColorCount) {
             return;
@@ -280,78 +292,6 @@ class Demo {
         BT.systemPrint(new Vector2i(170, 202), C_CODE, "  .load('rock.png');");
         BT.systemPrint(new Vector2i(170, 214), C_CODE, 'sheet.indexize(');
         BT.systemPrint(new Vector2i(170, 226), C_CODE, '  palette);');
-    }
-
-    /**
-     * Loads a PNG image, extracts its unique non-transparent pixel colors,
-     * sorts them by brightness (darkest first), and registers them in the palette
-     * starting at `startSlot`. Stores the Color32 objects in `this.baseColors`.
-     *
-     * Returns the number of unique colors found.
-     *
-     * Think of this as reading a painting and writing down every paint color used,
-     * then putting those paints in your numbered slots for later reference.
-     *
-     * @param {string} imageUrl - URL to a PNG file in the public folder.
-     * @param {number} startSlot - First palette slot to use.
-     * @returns {Promise<number>} Number of unique colors registered.
-     */
-    async buildSpritepalette(imageUrl, startSlot) {
-        // Load the image into a hidden canvas so we can read its pixel data.
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise((resolve) => {
-            img.onload = () => resolve();
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        // data is a flat array of bytes: [R, G, B, A, R, G, B, A, ...] for each pixel.
-        const { data } = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
-
-        // Collect unique RGBA combinations (skip fully transparent pixels).
-        const seen = new Map();
-        const unique = [];
-
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
-
-            if (a === 0) {
-                continue; // Transparent pixels have no color to register.
-            }
-
-            // Build a single string key so we can detect duplicates.
-            const key = `${r},${g},${b},${a}`;
-
-            if (!seen.has(key)) {
-                seen.set(key, true);
-                unique.push(new Color32(r, g, b, a));
-            }
-        }
-
-        // Sort darkest first: brightness = weighted average of channels.
-        // The formula (0.299*r + 0.587*g + 0.114*b) matches how the human eye perceives brightness.
-        unique.sort((a, b) => {
-            const brightnessA = a.r * 0.299 + a.g * 0.587 + a.b * 0.114;
-            const brightnessB = b.r * 0.299 + b.g * 0.587 + b.b * 0.114;
-            return brightnessA - brightnessB;
-        });
-
-        // Register each unique color in the palette and save it in baseColors.
-        for (let i = 0; i < unique.length; i++) {
-            this.palette.set(startSlot + i, unique[i]);
-            this.baseColors.push(unique[i]);
-        }
-
-        return unique.length;
     }
 
     // #endregion

@@ -34,6 +34,9 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
+
 // --- World space ---
 // Particles and sparks live in a virtual coordinate system measured in abstract "world units".
 // FIELD_RANGE is the half-extent: the center is (0, 0), and the edges are ±FIELD_RANGE.
@@ -116,10 +119,6 @@ const PALETTE_STRIP_SPARK_H = 3; // 3 px tall.
 const PALETTE_STRIP_PART_Y = DISPLAY_H - 4; // Particle color row top edge (y = 236).
 const PALETTE_STRIP_PART_H = 4; // 4 px tall.
 
-// #endregion
-
-// #region Palette Slot Constants
-
 // Palette slot numbers -- "addresses" in the 256-slot color table.
 // Slot 0 is always transparent; the engine reserves it. Never write to slot 0.
 //
@@ -147,10 +146,6 @@ const C_SPARK_BRIGHT = 100;
 // Spark halo colors: one dimmer slot per spark. Slots 112..123 (12 sparks).
 // Same hue as the bright slot but lower lightness and saturation, to suggest a glow ring.
 const C_SPARK_HALO = 112;
-
-// #endregion
-
-// #region Spark Table
 
 // Each row defines one spark's orbit parameters and color offset.
 // Format: [freqX, freqY, phaseX, phaseY, hueOffset]
@@ -180,7 +175,7 @@ const SPARK_TABLE = [
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Retro port of the classic macOS Flurry screensaver.
@@ -196,7 +191,7 @@ class Demo {
     palette = null;
 
     // Total elapsed animation time, measured in seconds.
-    // Grows by exactly 1/60 each tick (at 60 FPS).
+    // Grows by exactly 1 / TARGET_FPS each tick (e.g. 1/60 when TARGET_FPS is 60).
     // The spark position formula uses this as its clock -- every tick the sparks move forward.
     animTime = 0;
 
@@ -244,7 +239,7 @@ class Demo {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             canvasDisplaySize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
-            targetFPS: 60,
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -304,12 +299,12 @@ class Demo {
     }
 
     /**
-     * Runs 60 times per second. Advances physics and rewrites palette colors.
+     * Runs TARGET_FPS times per second (target frame rate, e.g. 60 by default). Advances physics and rewrites palette colors.
      * All Color32 work happens here; render() only ever uses slot numbers.
      */
     update() {
-        // Advance time. Each tick is exactly 1/60 of a second at 60 FPS.
-        this.animTime += 1 / 60;
+        // Advance time. Each tick adds 1 / TARGET_FPS seconds (e.g. 1/60 when the target frame rate is 60).
+        this.animTime += 1 / TARGET_FPS;
 
         // Rotate the global hue. The % operator wraps the angle back to 0 at 360.
         this.huePhase = (this.huePhase + HUE_ADVANCE) % 360;
@@ -578,9 +573,13 @@ class Demo {
             // Instantaneous velocity = the mathematical derivative of the position formula.
             //   d/dt [sin(t * f + p)] = cos(t * f + p) * f
             //   d/dt [cos(t * f + p)] = -sin(t * f + p) * f
-            // Dividing by 60 converts from "per second" to "per tick".
-            spark.vx = (Math.cos(this.animTime * spark.freqX + spark.phaseX) * spark.freqX * FIELD_RANGE * 0.8) / 60;
-            spark.vy = (-Math.sin(this.animTime * spark.freqY + spark.phaseY) * spark.freqY * FIELD_RANGE * 0.8) / 60;
+            // Dividing by TARGET_FPS converts from "per second" to "per tick" using the
+            // same constant that drives animTime in update(), so if TARGET_FPS ever
+            // changes, both the clock and this velocity scale stay in sync.
+            spark.vx =
+                (Math.cos(this.animTime * spark.freqX + spark.phaseX) * spark.freqX * FIELD_RANGE * 0.8) / TARGET_FPS;
+            spark.vy =
+                (-Math.sin(this.animTime * spark.freqY + spark.phaseY) * spark.freqY * FIELD_RANGE * 0.8) / TARGET_FPS;
         }
     }
 

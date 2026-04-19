@@ -68,7 +68,7 @@ const C_DIM = 6;
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates palette swap: building multiple palettes and switching between them
@@ -139,10 +139,16 @@ class Demo {
 
         // --- Step 1: Extract sprite colors ---
         // We read the sprite PNG ahead of time so we know the exact RGBA values
-        // that need to be registered in each palette.
-        const colorCount = await this.extractSpriteColors('/sprites/test.png');
-        this.spriteColorCount = colorCount;
-        console.log(`[PaletteSwapDemo] Found ${colorCount} unique sprite colors`);
+        // that need to be registered in each theme palette below.
+        //
+        // The engine's helper (SpriteSheet.loadColorsIntoPalette) writes the colors into
+        // a palette AND returns them as an array. Here we only need the array, so we hand
+        // it a throwaway "scratch" palette as a sink and keep the returned array for later.
+        // Each theme palette gets built from this.baseColors with its own tint applied.
+        const scratchPalette = BT.paletteCreate(256);
+        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', scratchPalette, SPRITE_BASE);
+        this.spriteColorCount = this.baseColors.length;
+        console.log(`[PaletteSwapDemo] Found ${this.spriteColorCount} unique sprite colors`);
 
         // --- Steps 2 & 3: Build all four theme palettes ---
         this.themepalettes = [
@@ -334,68 +340,6 @@ class Demo {
     // #endregion
 
     // #region Palette Builders
-
-    /**
-     * Reads a sprite PNG into an offscreen canvas, finds every unique non-transparent
-     * pixel color, sorts them by brightness (dark to bright), and saves them in
-     * this.baseColors for theme palette construction.
-     *
-     * Think of it as inspecting your paint box pixel by pixel to record which paints
-     * were used, before you create new paint boxes with different color sets.
-     *
-     * @param {string} imageUrl - URL to a PNG file in the public folder.
-     * @returns {Promise<number>} Number of unique colors found.
-     */
-    async extractSpriteColors(imageUrl) {
-        // Load the image into a hidden browser canvas so we can read pixel values.
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise((resolve) => {
-            img.onload = () => resolve();
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-
-        // ctx.getImageData gives us the raw pixel bytes as a flat array [R, G, B, A, R, G, B, A, ...].
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const { data } = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
-
-        // Walk through the pixel data four bytes at a time (R, G, B, A per pixel).
-        const seen = new Map();
-        const unique = [];
-
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
-
-            // Skip fully transparent pixels -- they don't need a palette slot.
-            if (a === 0) {
-                continue;
-            }
-
-            // Build a string key to detect duplicates quickly.
-            const key = `${r},${g},${b}`;
-
-            if (!seen.has(key)) {
-                seen.set(key, true);
-                unique.push(new Color32(r, g, b, 255));
-            }
-        }
-
-        // Sort darkest to brightest using perceptual brightness.
-        // The formula 0.299*R + 0.587*G + 0.114*B matches how the human eye sees brightness.
-        unique.sort((a, b) => a.r * 0.299 + a.g * 0.587 + a.b * 0.114 - (b.r * 0.299 + b.g * 0.587 + b.b * 0.114));
-
-        // Store for later use in buildPalette().
-        this.baseColors = unique;
-
-        return unique.length;
-    }
 
     /**
      * Builds a complete Palette for the given theme name.

@@ -28,7 +28,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
 
 // Every color in this demo is pre-registered in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -58,7 +58,7 @@ const C_BUILDING_BASE = 20; // building 0 is at index 20, building 1 at 21, and 
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates camera scrolling with a procedurally generated city.

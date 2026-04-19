@@ -20,7 +20,10 @@ import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
+
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -40,12 +43,8 @@ const C_DIM_GRAY = 9; // Dim gray: FPS/tick counter
 // render() then reads the slot index -- no Color32 math happens during drawing!
 const C_RAINBOW_BASE = 20; // slots 20, 21, 22, ... 37 for the 18 rainbow characters
 
-// Dynamic slot: pulsing text changes color every frame (brightens and darkens in a wave).
+// Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
 const C_PULSE = 38; // single slot for the pulsing-text color
-
-// #endregion
-
-// #region Module Constants
 
 // We define the rainbow text string here so both update() and render() use the exact same letters.
 // If you change this string, update() will compute the right number of palette colors automatically.
@@ -57,7 +56,7 @@ const SYSTEM_FONT_CHAR_W = 8;
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates BT.systemPrint() with various text effects powered by palette animation.
@@ -95,7 +94,7 @@ class Demo {
             canvasDisplaySize: new Vector2i(640, 480),
 
             // Run at 60 frames per second.
-            targetFPS: 60,
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -140,16 +139,16 @@ class Demo {
      */
     update() {
         // Move the animation clock forward by one update tick's worth of time (1/60 second).
-        this.animTime += 1 / 60;
+        this.animTime += 1 / TARGET_FPS;
 
         // --- Update the pulsing text color ---
         // Math.sin returns a wave between -1 and +1 that oscillates smoothly.
-        // Multiplying animTime by 3 makes it cycle 3 times per second.
+        // Multiplying by 2 * Math.PI * 3 makes it complete 3 full cycles per second.
         // Adding 0.5 and multiplying by 0.5 shifts the range from [-1,1] to [0,1].
-        const pulse = Math.sin(this.animTime * 3) * 0.5 + 0.5;
-        // Red and green rise with pulse while blue stays at 255, so the text shifts from
-        // medium blue (100, 100, 255) toward bright white (255, 255, 255).
-        this.palette.set(C_PULSE, new Color32(Math.floor(100 + pulse * 155), Math.floor(100 + pulse * 155), 255));
+        const pulse = Math.sin(2 * Math.PI * 3 * this.animTime) * 0.5 + 0.5;
+        // We drive the alpha (opacity) channel so the text fades in and out in a smooth wave.
+        // RGB stays fixed at (100, 100, 255) -- a soft blue -- while alpha goes from 0 to 255.
+        this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
         // --- Update the rainbow text character colors ---
         // Each character gets a hue based on its horizontal position and the current time.
@@ -260,14 +259,18 @@ class Demo {
     }
 
     /**
-     * Draws text that pulses -- it gets brighter and darker in a smooth rhythm.
-     * The color is pre-computed in update() and stored in palette slot C_PULSE.
+     * Draws the pulsing-text line. The text fades in and out in a smooth rhythm (alpha pulsing).
+     * The alpha value is pre-computed in update() using Math.sin and stored in palette slot C_PULSE.
      *
      * @param {number} y - The Y position to start drawing at.
      * @returns {number} The Y position after the text.
      */
     renderPulsingText(y) {
-        // C_PULSE (slot 38) holds the animated blue-to-white color computed in update().
+        // C_PULSE (slot 38) holds an alpha (transparency) pulse precomputed in update():
+        // RGB stays fixed at (100, 100, 255) -- a soft blue -- and the alpha channel is
+        // animated from 0 to 255 with Math.sin(), so the text fades in and out smoothly
+        // rather than shifting hue. The engine blends the palette color against the
+        // background at draw time, which is what gives the pulse its smooth look.
         BT.systemPrint(new Vector2i(10, y), C_PULSE, 'Pulsing Text');
 
         return y + 14;

@@ -38,7 +38,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
 //
 // These numbers are the "addresses" in the palette table.
 // Index 0 is always reserved for transparent -- we never use it.
@@ -82,7 +82,7 @@ const TUNNEL_RECTS = 20;
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates animated mathematical patterns using primitive drawing.

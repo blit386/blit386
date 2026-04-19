@@ -36,7 +36,7 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region State Constants
+// #region Configuration
 
 // AnimState defines the three states the moving rock can be in.
 // Object.freeze prevents these values from being changed by accident.
@@ -45,10 +45,6 @@ const AnimState = Object.freeze({
     Walking: 'Walking', // The rock is sliding across the screen.
     Jumping: 'Jumping', // The rock is following a jump arc.
 });
-
-// #endregion
-
-// #region Configuration
 
 // How many particles can be alive at once. Each gets its own palette slot.
 const MAX_PARTICLES = 20;
@@ -78,7 +74,7 @@ const C_FPS = 15; // (100, 100, 100) dim FPS text.
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates tick-based animation timing and state management.
@@ -190,7 +186,11 @@ class Demo {
         }
 
         // --- Extract sprite colors and register in palette at SPRITE_BASE ---
-        this.spriteColorCount = await this.extractSpriteColors('/sprites/test.png', SPRITE_BASE);
+        // Ask the engine to scan the PNG and add every unique color it finds into our palette,
+        // starting at SPRITE_BASE. The returned array is the same colors in palette-write order.
+        // We only need the count here -- the sprite is later linked to these slots by indexize().
+        const baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
+        this.spriteColorCount = baseColors.length;
 
         // --- Activate the palette ---
         BT.paletteSet(this.palette);
@@ -490,66 +490,6 @@ class Demo {
         // systemPrint takes (position, paletteIndex, text).
         BT.systemPrint(new Vector2i(10, 95), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);
         BT.systemPrint(new Vector2i(10, 110), C_STAT_DIM, `Particles: ${this.particles.length}`);
-    }
-
-    // #endregion
-
-    // #region Sprite Color Extraction
-
-    /**
-     * Loads a PNG, finds all unique non-transparent pixel colors, sorts them by
-     * brightness (darkest first), and registers them in the palette at startSlot.
-     *
-     * @param {string} imageUrl - URL of the PNG file to sample.
-     * @param {number} startSlot - First palette slot to use.
-     * @returns {Promise<number>} Number of unique colors registered.
-     */
-    async extractSpriteColors(imageUrl, startSlot) {
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise((resolve) => {
-            img.onload = () => resolve();
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const { data } = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
-
-        const seen = new Map();
-        const unique = [];
-
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
-
-            if (a === 0) {
-                continue;
-            }
-
-            const key = `${r},${g},${b},${a}`;
-
-            if (!seen.has(key)) {
-                seen.set(key, true);
-                unique.push(new Color32(r, g, b, a));
-            }
-        }
-
-        unique.sort((a, b) => {
-            return a.r * 0.299 + a.g * 0.587 + a.b * 0.114 - (b.r * 0.299 + b.g * 0.587 + b.b * 0.114);
-        });
-
-        for (let i = 0; i < unique.length; i++) {
-            this.palette.set(startSlot + i, unique[i]);
-        }
-
-        return unique.length;
     }
 
     // #endregion
