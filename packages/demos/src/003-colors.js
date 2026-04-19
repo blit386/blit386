@@ -37,7 +37,11 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
+
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
+
 //
 // These numbers are the palette "addresses". We name them so the code is readable.
 // Index 0 is always transparent and reserved -- never assign to it.
@@ -85,7 +89,7 @@ const C_PULSE = 126;
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Shows how Color32 works: RGB names, mixing, HSL rainbow, alpha, and lerp.
@@ -128,7 +132,7 @@ class Demo {
             canvasDisplaySize: new Vector2i(640, 480),
 
             // Run update() 60 times per second when possible -- smooth motion.
-            targetFPS: 60,
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -193,7 +197,7 @@ class Demo {
      */
     update() {
         // Add one tick's worth of seconds. At 60 ticks per second, each tick is 1/60 of a second.
-        this.animTime += 1 / 60;
+        this.animTime += 1 / TARGET_FPS;
 
         // --- HSL rainbow: 64 animated hue slots ---
         // Each slot gets a hue based on its position on the color wheel PLUS

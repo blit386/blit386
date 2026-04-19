@@ -12,7 +12,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
 
 // Every color used for drawing is pre-registered in a numbered palette slot.
 // Think of each slot like a labeled jar of paint on an art shelf.
@@ -38,7 +38,7 @@ const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates all primitive drawing operations with animated examples.

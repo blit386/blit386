@@ -32,6 +32,9 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 
 // #region Configuration
 
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
+
 // Where sprite colors start in the palette.
 const SPRITE_BASE = 10;
 
@@ -86,7 +89,7 @@ const BLOCK_DAYNIGHT = 12; // Dynamic.
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates palette-offset based sprite effects.
@@ -131,7 +134,7 @@ class Demo {
         return {
             displaySize: new Vector2i(320, 240),
             canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -160,8 +163,12 @@ class Demo {
         this.palette.set(C_FPS, new Color32(100, 100, 100));
 
         // --- Extract sprite colors ---
-        // This fills this.baseColors with the sprite's unique colors sorted by brightness.
-        const colorCount = await this.extractSpriteColors('/sprites/test.png', SPRITE_BASE);
+        // Ask the engine to scan the PNG and add every unique color it finds into our palette,
+        // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
+        // (sorted darkest-first by brightness). We keep them so the theme-block builders can
+        // tint each base color and write the result into a higher slot.
+        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
+        const colorCount = this.baseColors.length;
         this.spriteColorCount = colorCount;
 
         // Update the module-level N so other helpers can use it without passing it around.
@@ -214,7 +221,7 @@ class Demo {
      * Day/night smoothly cycles brightness over 20 seconds.
      */
     update() {
-        this.animTime += 1 / 60;
+        this.animTime += 1 / TARGET_FPS;
 
         if (!this.spriteColorCount) {
             return;
@@ -266,7 +273,7 @@ class Demo {
      * Called once in initialize() -- these never change after setup.
      */
     buildStaticThemeBlocks() {
-        // Block 0 (original) is already filled by extractSpriteColors.
+        // Block 0 (original) is already filled by SpriteSheet.loadColorsIntoPalette above.
 
         for (let i = 0; i < N; i++) {
             const base = this.baseColors[i];
@@ -558,64 +565,6 @@ class Demo {
         BT.systemPrint(new Vector2i(barX + 60, barY + 14), C_LABEL, 'Sunset');
         BT.systemPrint(new Vector2i(barX + 120, barY + 14), C_LABEL, 'Night');
         BT.systemPrint(new Vector2i(barX + 180, barY + 14), C_LABEL, 'Dawn');
-    }
-
-    // #endregion
-
-    // #region Sprite Color Extraction
-
-    /**
-     * Loads a PNG, finds all unique non-transparent pixel colors, sorts them by
-     * brightness (darkest first), registers them in the palette at startSlot,
-     * and saves them in this.baseColors.
-     *
-     * @param {string} imageUrl - URL of the PNG file.
-     * @param {number} startSlot - First palette slot to use.
-     * @returns {Promise<number>} Number of unique colors registered.
-     */
-    async extractSpriteColors(imageUrl, startSlot) {
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise((resolve) => {
-            img.onload = () => resolve();
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const { data } = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
-        const seen = new Map();
-        const unique = [];
-
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
-
-            if (a === 0) {
-                continue;
-            }
-
-            const key = `${r},${g},${b},${a}`;
-
-            if (!seen.has(key)) {
-                seen.set(key, true);
-                unique.push(new Color32(r, g, b, a));
-            }
-        }
-
-        unique.sort((a, b) => a.r * 0.299 + a.g * 0.587 + a.b * 0.114 - (b.r * 0.299 + b.g * 0.587 + b.b * 0.114));
-
-        for (let i = 0; i < unique.length; i++) {
-            this.palette.set(startSlot + i, unique[i]);
-            this.baseColors.push(unique[i]);
-        }
-
-        return unique.length;
     }
 
     // #endregion

@@ -4,7 +4,7 @@
  * Welcome! This demo teaches you the absolute basics of making things appear
  * on screen with the Blit-Tech engine. You will learn:
  *   - How a demo is structured (the four lifecycle methods)
- *   - How to clear the screen and draw shapes
+ *   - How to clear the screen and load a sprite (a tiny picture)
  *   - How to make something move and bounce off walls
  *   - How to display text on screen
  *
@@ -34,12 +34,13 @@
  * "import" loads tools from the Blit-Tech engine library.
  * Think of it like opening a toolbox before you start building.
  *   - bootstrap: a helper that starts the engine and connects your demo to it
- *   - BT: the main engine object - you call BT.clear(), BT.drawRectFill(), etc.
+ *   - BT: the main engine object - you call BT.clear(), BT.drawSprite(), etc.
  *   - Color32: represents a color with Red, Green, Blue (and optional Alpha)
  *   - Rect2i: a rectangle defined by (x, y, width, height) using whole numbers
+ *   - SpriteSheet: a loaded image you can draw pieces of on screen (a "sprite")
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
 /**
  * This line tells code editors that our Demo class follows the IBlitTechDemo
@@ -48,7 +49,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
  */
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
 
 // Blit-Tech uses a "palette" - a numbered list of colors you choose BEFORE drawing.
 // Think of it like an artist picking paint colors and laying them on a palette tray
@@ -56,16 +57,27 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 // When we draw, we say "use color number 1" instead of spelling out the color each time.
 //
 // Index 0 is always transparent (completely invisible). Our custom colors start at 1.
-const C_WHITE = 1; // White: the bouncing square, the line, and most text
+const C_WHITE = 1; // White: most of the on-screen text
 const C_BG = 2; // Dark blue: fills the whole screen each frame to erase the last picture
 const C_BLUE = 3; // Blue: used for the bounce counter so it stands out from the rest
 
+// Where the sprite's own colors begin in the palette.
+// We reserve indices 1..3 for our text colors above. From index 10 onward we
+// store every color that the sprite image uses, one per palette slot. Starting
+// at 10 (instead of 4) leaves a little room to add more text colors later
+// without having to renumber the sprite slots.
+const SPRITE_BASE = 10;
+
+// Path to the sprite image. The "public" folder contents are served at the
+// site root, so /sprites/head-1.png maps to public/sprites/head-1.png on disk.
+const SPRITE_URL = '/sprites/head-1.png';
+
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
- * Bouncing-square demo - the simplest possible Blit-Tech demo.
+ * Bouncing-sprite demo - the simplest possible Blit-Tech demo.
  *
  * Every Blit-Tech demo is a class with four methods that the engine calls:
  *
@@ -93,30 +105,41 @@ class Demo {
     // things are and how they are moving. We set them up here at the top
     // so they are easy to find.
 
-    // "pos" is short for "position". It stores where the square is on screen.
+    // "pos" is short for "position". It stores where the sprite is on screen.
     // Vector2i holds two whole numbers: x (horizontal) and y (vertical).
     // (0, 0) is the top-left corner of the screen. x increases going right,
     // y increases going DOWN (this is different from math class where y goes up!).
     // We start at (160, 120) which is roughly the center of a 320x240 screen.
     pos = new Vector2i(160, 120);
 
-    // "speed" is how many pixels the square moves each update().
+    // "speed" is how many pixels the sprite moves each update().
     // x=2 means it moves 2 pixels to the right each tick.
     // y=1 means it moves 1 pixel downward each tick.
-    // When we make a number negative (like -2), the square moves in the
+    // When we make a number negative (like -2), the sprite moves in the
     // opposite direction (left instead of right, or up instead of down).
     speed = new Vector2i(2, 1);
 
-    // "size" is how big the square is: 16 pixels wide and 16 pixels tall.
+    // "size" is how big the sprite is: 16 pixels wide and 16 pixels tall.
+    // We update this from the loaded image in initialize() so the bounce
+    // checks stay correct even if you swap the PNG for a bigger one.
     size = new Vector2i(16, 16);
 
-    // "bounces" counts how many times the square has hit a wall.
+    // "bounces" counts how many times the sprite has hit a wall.
     // We display this on screen so you can see it going up.
     bounces = 0;
 
     // "palette" holds the list of colors the engine will use for drawing.
     // We create it in initialize() once we know what colors we need.
     palette = null;
+
+    // "spriteSheet" is the loaded image we will draw on screen.
+    // It stays null until initialize() finishes loading the PNG file.
+    spriteSheet = null;
+
+    // "spriteRect" tells the engine WHICH rectangular piece of the image to draw.
+    // A sprite sheet can hold many sprites in one big picture. Our PNG only has
+    // one sprite, so the rectangle covers the whole image: (x=0, y=0, full width, full height).
+    spriteRect = null;
 
     // #region Lifecycle Methods
 
@@ -149,12 +172,12 @@ class Demo {
     }
 
     /**
-     * Called once after queryHardware(). Sets up the palette and positions the
-     * square in the center of the screen.
+     * Called once after queryHardware(). Sets up the palette, loads the sprite
+     * image, and positions the sprite in the center of the screen.
      *
-     * The "async" keyword is required by the engine interface. In more complex
-     * demos you would use "await" here to load images and fonts from the server.
-     * This demo uses the built-in system font, so there is nothing to load!
+     * The "async" keyword lets us use "await" inside this method. "await" pauses
+     * until something slow finishes (like loading an image from the server) and
+     * then continues with the result. Without "async", we could not use "await".
      *
      * @returns {Promise<boolean>} Return true when everything is ready.
      *   Returning false tells the engine that something went wrong.
@@ -167,21 +190,55 @@ class Demo {
         // 256 is a classic retro number: old game consoles like the NES used exactly that many!
         this.palette = BT.paletteCreate(256);
 
-        // Fill in the colors we need. palette.set(number, color) stores one color.
+        // Fill in the colors we need for text and background.
+        // palette.set(number, color) stores one color in a numbered slot.
         // Color32(Red, Green, Blue) - each value is 0 to 255.
         // 0 = none of that color, 255 = maximum of that color.
         this.palette.set(C_WHITE, Color32.white());
-        this.palette.set(C_BG, new Color32(0, 0, 40));
+        this.palette.set(C_BG, new Color32(0, 0, 0));
         this.palette.set(C_BLUE, Color32.fromHex('#5da0f2'));
 
+        // -- Step 2: register every color used by the sprite image --
+        // The engine draws sprites using palette indices, not raw RGB colors.
+        // So before we can show the sprite, every color in the PNG must live in
+        // a palette slot. The library helper below opens the file, looks at every
+        // pixel, collects each unique color, and writes them into the palette
+        // starting at SPRITE_BASE. We "await" because reading the PNG file takes
+        // a moment. The helper returns the list of colors it added, but we do
+        // not need it here - we just want them sitting in the palette.
+        await SpriteSheet.loadColorsIntoPalette(SPRITE_URL, this.palette, SPRITE_BASE);
+
+        // -- Step 3: activate the palette --
         // Tell the engine "use this palette from now on."
         // Before this call, the engine doesn't know what colors are available.
+        // We do this AFTER adding the sprite colors so they are included.
         BT.paletteSet(this.palette);
 
-        // -- Step 2: position the square in the center --
-        // Place the square exactly in the center of the screen.
+        // -- Step 4: load the sprite image as a GPU texture --
+        // SpriteSheet.load() reads the PNG file and uploads its pixels to the
+        // graphics card so they can be drawn very fast. The result is a
+        // SpriteSheet object that knows the image's width and height.
+        this.spriteSheet = await SpriteSheet.load(SPRITE_URL);
+
+        // -- Step 5: link each sprite pixel to a palette slot ("indexize") --
+        // After this call, the sprite no longer remembers raw RGB colors. Each
+        // pixel just stores the NUMBER of the palette slot whose color matches.
+        // That is what makes palette tricks (like color cycling) possible later.
+        this.spriteSheet.indexize(this.palette);
+
+        // -- Step 6: remember the sprite's pixel size --
+        // The sprite sheet exposes its dimensions through the .size property.
+        // We copy them into our own size vector so the bounce checks below use
+        // the real image size (not a hard-coded 16x16).
+        this.size = new Vector2i(this.spriteSheet.size.x, this.spriteSheet.size.y);
+
+        // The source rectangle says "draw the WHOLE image" - top-left at (0,0)
+        // and as wide and tall as the image itself.
+        this.spriteRect = new Rect2i(0, 0, this.size.x, this.size.y);
+
+        // -- Step 7: position the sprite in the center of the screen --
         // BT.displaySize() returns how big the screen is (320x240 in our case).
-        // We subtract the square's size, so the CENTER of the square is centered,
+        // We subtract the sprite's size so the CENTER of the sprite is centered,
         // not its top-left corner.
         // Math.floor() rounds down to a whole number - we need whole pixels
         // because you cannot draw at position 160.5 on a pixel screen.
@@ -210,18 +267,18 @@ class Demo {
      * have happened since the demo started with BT.ticks().
      */
     update() {
-        // Move the square by adding its speed to its position.
+        // Move the sprite by adding its speed to its position.
         // Think of it like taking steps: if you are standing at position 160
         // and your speed is 2, after one step you are at 162.
         // .add() creates a new Vector2i with both numbers added together.
         this.pos = this.pos.add(this.speed);
 
-        // Check if the square has gone past the left or right edge of the screen.
+        // Check if the sprite has gone past the left or right edge of the screen.
         // BT.displaySize().x is how wide the screen is (320 pixels).
-        // We subtract the square's width because the position is the TOP-LEFT
-        // corner - the right edge of the square is at pos.x + size.x.
+        // We subtract the sprite's width because the position is the TOP-LEFT
+        // corner - the right edge of the sprite is at pos.x + size.x.
         if (this.pos.x <= 0 || this.pos.x >= BT.displaySize().x - this.size.x) {
-            // Flip the horizontal speed so the square bounces back.
+            // Flip the horizontal speed so the sprite bounces back.
             // If speed.x was 2 (going right), it becomes -2 (going left).
             this.speed.x = -this.speed.x;
 
@@ -259,11 +316,16 @@ class Demo {
         // We pass the index number, not the color directly - the palette handles the rest.
         BT.clear(C_BG);
 
-        // Draw the bouncing square as a filled white rectangle.
-        // Rect2i takes (x, y, width, height) - the position and size.
-        // C_WHITE is index 1, which we set to pure white (255, 255, 255).
-        const squarePos = new Rect2i(this.pos.x, this.pos.y, this.size.x, this.size.y);
-        BT.drawRectFill(squarePos, C_WHITE);
+        // Draw the bouncing sprite at its current position.
+        // BT.drawSprite takes (sheet, sourceRect, destinationPosition, paletteOffset).
+        //   - sheet: the loaded image we want to draw from.
+        //   - sourceRect: WHICH part of the image to draw. Our sprite fills the
+        //     whole image, so spriteRect is the full image bounds.
+        //   - destinationPosition: WHERE on screen to draw it (the top-left corner).
+        //   - paletteOffset: a number added to every pixel's palette index. We
+        //     pass 0 here to use the original colors. Bigger numbers can swap to
+        //     alternate "team colors" - you will see this trick in demo 008.
+        BT.drawSprite(this.spriteSheet, this.spriteRect, this.pos, 0);
 
         // Draw text showing the current FPS, position, and bounce count.
         // BT.systemPrint() draws text using the engine's built-in 8x8 system font.

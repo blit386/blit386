@@ -51,10 +51,6 @@ const PHASE_FLASH = 12; // 200 ms
 const PHASE_NIGHT_HOLD_2 = 120; // 2 seconds
 const PHASE_FADE_TO_DAY = 120; // 2 seconds
 
-// #endregion
-
-// #region Palette Slot Constants
-
 // Slot 0: always transparent.
 const C_WHITE = 1;
 const C_BG = 2; // Not used for scene, but available.
@@ -80,7 +76,7 @@ const C_MOUNTAIN_LIGHT = 23;
 
 // #endregion
 
-// #region Palette Builders
+// #region Helper Functions
 
 /**
  * Builds the "day" palette -- bright, saturated outdoor colors.
@@ -140,7 +136,7 @@ function fillNightPalette(p) {
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates BT.paletteFade(), BT.paletteFadeRange(), and BT.paletteFlash().

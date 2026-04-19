@@ -65,7 +65,7 @@ const C_STREAK = 7; // Cool white for the shooting star streak.
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Parallax starfield with three layers plus an occasional shooting star.

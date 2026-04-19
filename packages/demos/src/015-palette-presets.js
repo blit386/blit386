@@ -57,7 +57,7 @@ const SWATCH_H = 14;
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates the six built-in palette presets and named palette slots.

@@ -24,7 +24,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Tile type constants
+// #region Configuration
 
 // These numbers are the "tile IDs" stored inside the 2D array.
 // Using named constants helps you remember what each number means when you read the map.
@@ -34,10 +34,6 @@ const TILE_DIRT = 2; // Brown earth below or beside grass.
 const TILE_STONE = 3; // Gray rocks.
 const TILE_WATER = 4; // Blue water (we animate the shade a little each frame).
 const TILE_TREE_TOP = 5; // Dark green tree canopy.
-
-// #endregion
-
-// #region Map size constants
 
 // How many tiles wide and tall the world is. Multiply by TILE_SIZE to get pixel size.
 const MAP_WIDTH_TILES = 30;
@@ -49,10 +45,6 @@ const TILE_SIZE = 16;
 // World size in pixels: 30 * 16 = 480 wide, 20 * 16 = 320 tall.
 const WORLD_WIDTH_PX = MAP_WIDTH_TILES * TILE_SIZE;
 const WORLD_HEIGHT_PX = MAP_HEIGHT_TILES * TILE_SIZE;
-
-// #endregion
-
-// #region Palette Constants
 
 // Each color in this demo has a reserved palette slot (a number from 1 upward).
 // Index 0 is always transparent. Giving each slot a name makes the drawing code
@@ -74,7 +66,7 @@ const C_WATER = 14; // DYNAMIC: the animated water tile color, updated every tic
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Shows a scrolling tile-based landscape with a mini-map and animated water.

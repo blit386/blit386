@@ -39,6 +39,9 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
+
 // --- Gradient bar ---
 // How many color slots the scrolling gradient uses.
 // More slots = smoother rainbow; fewer slots = more "chunky".
@@ -74,11 +77,7 @@ const HEALTH_MAX = 100;
 // How many ticks for one full health drain cycle.
 const HEALTH_DRAIN_TICKS = 360; // ~6 seconds to drain completely.
 
-// #endregion
-
-// #region Palette Slot Constants
-//
-// We group our palette like compartments in a paint box.
+// Palette slot constants -- we group our palette like compartments in a paint box.
 // Each section owns a range of slots that it fills in update() every tick.
 
 // Slot 0:   always transparent -- reserved by the engine.
@@ -105,7 +104,7 @@ const C_WATER_BASE = 90; // Slots 90..92.
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Demonstrates the "palette animation" technique: change palette entries every tick
@@ -146,7 +145,7 @@ class Demo {
         return {
             displaySize: new Vector2i(320, 240),
             canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -204,7 +203,7 @@ class Demo {
      */
     update() {
         // Advance the clock. animTime grows by 1/60 each frame.
-        this.animTime += 1 / 60;
+        this.animTime += 1 / TARGET_FPS;
 
         // Advance health drain.
         // We simulate a health bar that empties over HEALTH_DRAIN_TICKS ticks,

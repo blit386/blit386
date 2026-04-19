@@ -20,7 +20,10 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
+
+// Target frame rate used in queryHardware() and to advance the animation clock in update().
+const TARGET_FPS = 60;
 
 // Every color used for drawing gets a numbered slot in the palette (like a numbered paint jar).
 // Index 0 is always transparent. Custom colors start at 1.
@@ -41,10 +44,6 @@ const C_TRUNK = 9; // Brown: tree trunk pixels
 // Checker pattern colors: these are updated every frame in update() so the colors move.
 const C_CHECKER_A = 10; // Dynamic: lerp between red and yellow
 const C_CHECKER_B = 11; // Dynamic: lerp between blue and cyan
-
-// #endregion
-
-// #region Pixel art data (number grids)
 
 // HEART_GRID is an 8 by 8 table of small integers.
 // Think of graph paper: each cell is one tiny part of the picture.
@@ -90,6 +89,10 @@ const HEART_PALETTE_MAP = [null, C_HEART_OUTLINE, C_HEART_FILL];
 
 const TREE_PALETTE_MAP = [null, C_TREE_DARK, C_TREE_LIGHT, C_TRUNK];
 
+// #endregion
+
+// #region Helper Functions
+
 /**
  * Looks up the palette index for a paint code.
  * The grid only uses small integers we authored, not user input.
@@ -107,7 +110,7 @@ function indexFromPaletteMap(paletteMap, code) {
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Teaches pixel grids, nested loops, screen mapping, and a tiny procedural pattern.
@@ -142,7 +145,7 @@ class Demo {
             canvasDisplaySize: new Vector2i(640, 480),
 
             // Sixty updates per second keeps motion easy on the eyes.
-            targetFPS: 60,
+            targetFPS: TARGET_FPS,
         };
     }
 
@@ -189,7 +192,7 @@ class Demo {
      */
     update() {
         // Add one tick's worth of time. If targetFPS is 60, each tick is about 1/60 second.
-        this.animTime += 1 / 60;
+        this.animTime += 1 / TARGET_FPS;
 
         // --- Update the checker pattern colors ---
         // The checker squares use "lerp" (short for linear interpolation -- smoothly blending
@@ -344,7 +347,7 @@ class Demo {
 
 // #endregion
 
-// #region App lifecycle
+// #region App Lifecycle
 
 bootstrap(Demo);
 

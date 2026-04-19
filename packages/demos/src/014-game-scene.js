@@ -29,12 +29,17 @@
 //
 // HOW THE DAY/NIGHT PALETTE WORKS:
 //
-// Instead of computing `multiplyColor(base, ambient)` in render() and passing a Color32
-// to draw calls, we pre-compute those multiplied colors in update() and store them in
-// dedicated palette slots. render() only ever uses palette index numbers.
+// Instead of computing `base.multiply(ambient)` in render() and passing a Color32 to draw
+// calls, we pre-compute those multiplied colors in update() and store them in dedicated
+// palette slots. render() only ever uses palette index numbers.
+//
+// `Color32.multiply()` is a built-in engine method: it scales each channel of `base` by
+// the matching channel of `ambient` and returns a new Color32. Think of it as shining a
+// colored flashlight on a surface -- a blue light on a red wall gives you a darker,
+// purple-ish result.
 //
 // Example: the grass fill has a base color (50, 140, 70) and a reserved slot C_GRASS.
-// Every tick in update(), we compute `ambient * base` and write it to C_GRASS.
+// Every tick in update(), we compute `grassBase.multiply(ambient)` and write it to C_GRASS.
 // render() calls `BT.drawRectFill(rect, C_GRASS)` -- no Color32 needed there.
 //
 // Think of it as updating the paint cans before the painter starts working.
@@ -43,7 +48,7 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Constants
+// #region Configuration
 
 // Internal game resolution.
 const DISPLAY_W = 320;
@@ -87,10 +92,6 @@ const SKY_BANDS = 20;
 // Maximum live particles at once.
 const MAX_PARTICLES = 20;
 
-// #endregion
-
-// #region Palette Constants
-
 // Static UI slots (never change after initialize).
 const C_WHITE = 1; // Font base color.
 const C_BLACK = 2; // Black for BT.clear.
@@ -128,31 +129,7 @@ const SPRITE_BASE = 70;
 
 // #endregion
 
-// #region Helpers
-
-/**
- * "Multiplies" two colors the same way a sprite tint does: each channel is scaled 0-255.
- * Used in update() to compute ambient-lit versions of base colors for palette slots.
- *
- * Think of it as shining a colored flashlight on a surface. A blue light on a red wall
- * gives you a darker, purple-ish result.
- *
- * @param {Color32} base - The original paint color (grass green, brick red, etc.).
- * @param {Color32} ambient - The lighting tint (bright = day, dark blue = night).
- * @returns {Color32} A new color representing base under ambient lighting.
- */
-function multiplyColor(base, ambient) {
-    return new Color32(
-        Math.floor((base.r * ambient.r) / 255),
-        Math.floor((base.g * ambient.g) / 255),
-        Math.floor((base.b * ambient.b) / 255),
-        base.a,
-    );
-}
-
-// #endregion
-
-// #region Demo Class
+// #region Main Logic
 
 /**
  * One self-running mini scene: walking rock, following camera, HUD, day/night, sparkles.
@@ -273,8 +250,14 @@ class Demo {
         this.buildWorldDecor();
 
         // --- Extract sprite colors and register in palette ---
-        const colorCount = await this.extractSpriteColors('/sprites/test.png', SPRITE_BASE);
+        // Ask the engine to scan the PNG and add every unique color it finds into our palette,
+        // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
+        // (sorted darkest-first by brightness). We keep them so updateWorldPalette() can
+        // multiply each base color by the current ambient tint and write the lit version into
+        // the higher "ambient block" (SPRITE_BASE+N..SPRITE_BASE+2N-1).
+        this.spriteBaseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
 
+        const colorCount = this.spriteBaseColors.length;
         this.spriteColorCount = colorCount;
 
         // Pre-fill the "ambient sprite" block (SPRITE_BASE+N..SPRITE_BASE+2N-1).
@@ -457,27 +440,27 @@ class Demo {
                 Math.floor(this.skyTop.g + (this.skyHorizon.g - this.skyTop.g) * t),
                 Math.floor(this.skyTop.b + (this.skyHorizon.b - this.skyTop.b) * t),
             );
-            this.palette.set(C_SKY_BASE + band, multiplyColor(bandBase, ambient));
+            this.palette.set(C_SKY_BASE + band, bandBase.multiply(ambient));
         }
 
         // --- Ground ---
-        this.palette.set(C_GRASS, multiplyColor(this.grassBaseColor, ambient));
-        this.palette.set(C_DIRTLINE, multiplyColor(this.dirtBaseColor, ambient));
+        this.palette.set(C_GRASS, this.grassBaseColor.multiply(ambient));
+        this.palette.set(C_DIRTLINE, this.dirtBaseColor.multiply(ambient));
 
         // --- Buildings ---
         for (let i = 0; i < this.buildings.length; i++) {
-            this.palette.set(C_BUILDING_BASE + i * 2, multiplyColor(this.buildingFills[i], ambient));
-            this.palette.set(C_BUILDING_BASE + i * 2 + 1, multiplyColor(this.buildingOutlines[i], ambient));
+            this.palette.set(C_BUILDING_BASE + i * 2, this.buildingFills[i].multiply(ambient));
+            this.palette.set(C_BUILDING_BASE + i * 2 + 1, this.buildingOutlines[i].multiply(ambient));
         }
 
         // --- Clouds ---
-        this.palette.set(C_CLOUD, multiplyColor(this.cloudBaseColor, ambient));
+        this.palette.set(C_CLOUD, this.cloudBaseColor.multiply(ambient));
 
         // --- HUD text (subtle night tint on screen text) ---
-        this.palette.set(C_HUD_TITLE, multiplyColor(this.hudTitleBase, ambient));
-        this.palette.set(C_HUD_SCORE, multiplyColor(this.hudScoreBase, ambient));
-        this.palette.set(C_HUD_POS, multiplyColor(this.hudPosBase, ambient));
-        this.palette.set(C_HUD_FPS, multiplyColor(this.hudFpsBase, ambient));
+        this.palette.set(C_HUD_TITLE, this.hudTitleBase.multiply(ambient));
+        this.palette.set(C_HUD_SCORE, this.hudScoreBase.multiply(ambient));
+        this.palette.set(C_HUD_POS, this.hudPosBase.multiply(ambient));
+        this.palette.set(C_HUD_FPS, this.hudFpsBase.multiply(ambient));
 
         // --- Hero shadow ---
         const shadowAlpha = Math.floor(60 + (ambient.r / 255) * 60); // Softer at night.
@@ -488,7 +471,7 @@ class Demo {
         // drawSprite uses offset = spriteColorCount so it reads from this "ambient block".
         for (let i = 0; i < this.spriteColorCount; i++) {
             const base = this.spriteBaseColors[i];
-            this.palette.set(SPRITE_BASE + this.spriteColorCount + i, multiplyColor(base, ambient));
+            this.palette.set(SPRITE_BASE + this.spriteColorCount + i, base.multiply(ambient));
         }
     }
 
@@ -704,7 +687,7 @@ class Demo {
 
             const hue = (p.spawnTick * 7 + age * 4) % 360;
             const base = Color32.fromHSL(hue, 90, 65);
-            const lit = multiplyColor(base, ambient);
+            const lit = base.multiply(ambient);
 
             this.palette.set(p.paletteSlot, new Color32(lit.r, lit.g, lit.b, alpha));
         }
@@ -753,63 +736,6 @@ class Demo {
                     ? 'Night'
                     : 'Toward dawn';
         BT.systemPrint(new Vector2i(8, 220), C_HUD_FPS, phaseLabel);
-    }
-
-    // #endregion
-
-    // #region Sprite Color Extraction
-
-    /**
-     * Loads a PNG, finds all unique non-transparent pixel colors, sorts by brightness,
-     * registers them in the palette, and saves them in this.spriteBaseColors.
-     *
-     * @param {string} imageUrl - URL of the PNG file.
-     * @param {number} startSlot - First palette slot to use.
-     * @returns {Promise<number>} Number of unique colors registered.
-     */
-    async extractSpriteColors(imageUrl, startSlot) {
-        const img = new Image();
-        img.src = imageUrl;
-        await new Promise((resolve) => {
-            img.onload = () => resolve();
-        });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const { data } = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
-        const seen = new Map();
-        const unique = [];
-
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
-
-            if (a === 0) {
-                continue;
-            }
-
-            const key = `${r},${g},${b},${a}`;
-
-            if (!seen.has(key)) {
-                seen.set(key, true);
-                unique.push(new Color32(r, g, b, a));
-            }
-        }
-
-        unique.sort((a, b) => a.r * 0.299 + a.g * 0.587 + a.b * 0.114 - (b.r * 0.299 + b.g * 0.587 + b.b * 0.114));
-
-        for (let i = 0; i < unique.length; i++) {
-            this.palette.set(startSlot + i, unique[i]);
-            this.spriteBaseColors.push(unique[i]);
-        }
-
-        return unique.length;
     }
 
     // #endregion

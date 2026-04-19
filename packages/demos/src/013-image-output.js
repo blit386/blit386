@@ -10,7 +10,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Palette Constants
+// #region Configuration
 
 // Every color used for drawing is stored in a numbered "palette" slot.
 // Think of each slot like a labeled paint jar on an artist's shelf.
@@ -31,7 +31,7 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Image output demo.
