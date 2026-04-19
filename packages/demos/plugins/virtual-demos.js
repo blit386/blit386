@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { isAbsolute, resolve, sep } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 
 import { buildRegistry } from './demo-registry.js';
 
@@ -103,8 +103,8 @@ export function virtualDemos() {
         },
 
         configureServer(server) {
-            server.watcher.add(partialsDir + sep + '*.html');
-            server.watcher.add(srcDir + sep + '*.js');
+            server.watcher.add(join(partialsDir, '*.html'));
+            server.watcher.add(join(srcDir, '*.js'));
 
             server.watcher.on('change', (changedPath) => {
                 if (changedPath.startsWith(partialsDir)) {

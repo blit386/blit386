@@ -104,10 +104,5 @@ export default defineConfig(({ command }) => {
         preview: {
             open: true,
         },
-
-        optimizeDeps: {
-            include: [],
-            exclude: [],
-        },
     };
 });
