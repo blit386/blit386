@@ -110,6 +110,9 @@ export function virtualDemos() {
                 if (changedPath.startsWith(partialsDir)) {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
+                } else if (changedPath.startsWith(srcDir)) {
+                    reloadRegistry();
+                    server.ws.send({ type: 'full-reload' });
                 }
             });
             server.watcher.on('add', (addedPath) => {
@@ -164,7 +167,7 @@ function renderIndexPage(registry) {
     const items = registry
         .map(
             (entry) =>
-                `            <li><a href="${entry.slug}.html">${escapeHtml(entry.slug)} &mdash; ${escapeHtml(entry.title)}</a></li>`,
+                `            <li><a href="/demos/${escapeHtml(entry.slug)}.html">${escapeHtml(entry.slug)} &mdash; ${escapeHtml(entry.title)}</a></li>`,
         )
         .join('\n');
 
