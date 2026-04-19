@@ -11,6 +11,9 @@ dependency** that has its own CI pipeline in the Blit-Tech repository.
 
 **Triggers:** Push to `main`, Pull Requests
 
+Workspace setup is shared across jobs via the composite action at `.github/actions/workspace-setup` (see
+`CI-WORKSPACE-SETUP.md`).
+
 **Jobs:**
 
 ### 1. quality-checks
@@ -22,16 +25,21 @@ Runs all quality checks on Blit-Tech Demos:
 - Spell check (cspell)
 - Unused exports check (knip)
 
-### 2. build (depends on quality-checks)
+### 2. docs-links
+
+Runs a Markdown link check against `README.md` using `gaurav-nelson/github-action-markdown-link-check`. Does not need
+the workspace.
+
+### 3. build (depends on quality-checks)
 
 - Builds Blit-Tech library (as dependency)
 - Builds Blit-Tech Demos
-- Uploads build artifacts
+- Uploads build artifacts (`demos-dist`, 7-day retention, compression level 9)
 
-### 3. deploy (depends on build, main branch only)
+### 4. deploy (depends on build and docs-links, main branch only)
 
 - Downloads build artifacts
-- Deploys to Cloudflare Pages via Wrangler
+- Deploys to Cloudflare Pages via `cloudflare/wrangler-action`
 
 ## Workspace Structure in CI
 

@@ -81,12 +81,14 @@ blit-tech-workspace/          # Your workspace root
 
 You can optionally create a `package.json` in the workspace root:
 
+Prerequisite: Node.js >= 20.0.0 is required before installing pnpm.
+
 ```json
 {
   "name": "blit-tech-workspace",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.24.0"
+  "packageManager": "pnpm@10.26.2"
 }
 ```
 
