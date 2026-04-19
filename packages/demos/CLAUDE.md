@@ -24,15 +24,15 @@ Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 
 ```text
 blit-tech-demos/
-  demos/                       # Shared demo styling (HTML pages are virtual)
-    styles.css
   src/                         # JavaScript source - one file per demo (single source of truth)
     001-basics.js
     002-primitives.js
     ...                        # 003 through 022
-  public/                      # Static assets
+  public/                      # Static assets copied to dist/ verbatim
     fonts/                     # Bitmap fonts (.btfont + .png)
-    _headers                   # Cloudflare headers
+    sprites/                   # Sprite sheets used by demos
+    _headers                   # Cloudflare Pages headers
+    _redirects                 # Cloudflare Pages redirects
   _partials/                   # Shared HTML template (plain HTML with {{title}} and {{scriptFile}} placeholders)
     layout.html
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
@@ -40,6 +40,9 @@ blit-tech-demos/
     demo-registry.js
   docs/                        # Project documentation
 ```
+
+The `/demos/NNN-name.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
+disk.
 
 ## Development Commands
 
