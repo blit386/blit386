@@ -87,7 +87,7 @@ const SPRITE_URL = '/sprites/head-1.png';
 // field on the effect instance; see demo 023 for what every parameter does.
 const CRT_SCAN_LINE_AMOUNT = 0.55;
 const CRT_MASK_INTENSITY = 0.18;
-const CRT_VIGNETTE_AMOUNT = 0.35;
+const CRT_VIGNETTE_AMOUNT = 0.1;
 const CRT_NOISE_AMOUNT = 0.025;
 const BLOOM_GLOW = 0.18;
 
@@ -224,7 +224,7 @@ class Demo {
             // displaySize is the "retro screen" resolution - the number of pixels
             // you can actually draw on. 320x240 was common in old game consoles.
             // Every pixel you draw maps to this grid.
-            displaySize: new Vector2i(320, 240),
+            displaySize: new Vector2i(640, 480),
 
             // canvasDisplaySize is how big the canvas looks on the web page.
             // Setting it to 640x480 (double the display size) makes each pixel
@@ -269,7 +269,7 @@ class Demo {
         // 0 = none of that color, 255 = maximum of that color.
         // These three colors match the PipBoy palette in demo 023 so the CRT
         // effect we wrap the demo in feels like one continuous screen.
-        this.palette.set(C_BG, new Color32(8, 14, 8)); // Almost-black, faint green tint.
+        this.palette.set(C_BG, new Color32(8 * 2, 14 * 2, 8 * 2)); // Almost-black, faint green tint.
         this.palette.set(C_GREEN, new Color32(80, 200, 110)); // PipBoy phosphor green.
         this.palette.set(C_AMBER, new Color32(220, 180, 60)); // Vault-Tec amber accent.
 
@@ -486,7 +486,7 @@ class Demo {
         // It takes (position, paletteIndex, text) - no font loading needed!
         // The template string (`backticks`) lets us insert variable values with ${...}.
         // BT.fps() returns the target frames per second (60 in this demo).
-        BT.systemPrint(new Vector2i(3, 0), C_GREEN, `Position: ${this.pos.x}*${this.pos.y}`);
+        BT.systemPrint(new Vector2i(3, 0), C_GREEN, `Position: ${this.pos.x}, ${this.pos.y}`);
         BT.systemPrint(new Vector2i(BT.displaySize().x - 50, 0), C_GREEN, `FPS: ${BT.fps()}`);
 
         // Show the bounce count in amber so it stands out from the green text.
