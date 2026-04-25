@@ -161,7 +161,8 @@ class Demo {
     // Vector2i holds two whole numbers: x (horizontal) and y (vertical).
     // (0, 0) is the top-left corner of the screen. x increases going right,
     // y increases going DOWN (this is different from math class where y goes up!).
-    // We start at (160, 120) which is roughly the center of a 320x240 screen.
+    // We start near the screen center as a placeholder; initialize() will
+    // overwrite this with the exact center calculated from the real display size.
     pos = new Vector2i(160, 120);
 
     // "speed" is how many pixels the sprite moves each update().
@@ -312,7 +313,7 @@ class Demo {
         this.spriteRect = new Rect2i(0, 0, this.size.x, this.size.y);
 
         // -- Step 7: position the sprite in the center of the screen --
-        // BT.displaySize() returns how big the screen is (320x240 in our case).
+        // BT.displaySize() returns how big the screen is (640x480 in our case).
         // We subtract the sprite's size so the CENTER of the sprite is centered,
         // not its top-left corner.
         // Math.floor() rounds down to a whole number - we need whole pixels
