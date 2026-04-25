@@ -60,8 +60,8 @@ import { BloomEffect, bootstrap, BT, Color32, PipBoyEffect, Rect2i, SpriteSheet,
 //
 // We use the same green-on-black "PipBoy" terminal palette as demo 023 so the CRT
 // effect feels like one consistent retro screen across the demos. The sprite keeps
-// its own colors (registered from the PNG further down) so the bouncing head still
-// reads as a head, not a green silhouette.
+// its own colors (registered from the PNG further down) so the bouncing logo still
+// reads as a logo, not a green silhouette.
 const C_BG = 1; // Almost-black with a green tint: matches the inside of a PipBoy screen.
 const C_GREEN = 2; // PipBoy green: the main text color (Position, FPS).
 const C_AMBER = 3; // Amber: the bounce counter, standing in for the old blue accent.
@@ -74,8 +74,8 @@ const C_AMBER = 3; // Amber: the bounce counter, standing in for the old blue ac
 const SPRITE_BASE = 10;
 
 // Path to the sprite image. The "public" folder contents are served at the
-// site root, so /sprites/head-1.png maps to public/sprites/head-1.png on disk.
-const SPRITE_URL = '/sprites/head-1.png';
+// site root, so /sprites/logo-1.png maps to public/sprites/logo-1.png on disk.
+const SPRITE_URL = '/sprites/logo-1.png';
 
 // -- Post-process effect tuning --
 // We wrap the whole demo in a CRT screen + soft glow, just like demo 023.
@@ -227,15 +227,15 @@ class Demo {
             displaySize: new Vector2i(640, 480),
 
             // canvasDisplaySize is how big the canvas looks on the web page.
-            // Setting it to 640x480 (double the display size) makes each pixel
-            // appear as a 2x2 square, giving that chunky retro look.
+            // Setting it to the same 640x480 as displaySize means every internal
+            // pixel maps to exactly one screen pixel -- a crisp, 1:1 view.
             canvasDisplaySize: new Vector2i(640, 480),
 
             // targetFPS is how many times per second update() will be called.
-            // 60 is the standard for smooth animation. render() runs once per
-            // screen refresh, which is also usually 60 times per second but can
-            // be different (some monitors refresh at 120 or 144 times per second).
-            targetFPS: 60,
+            // TARGET_FPS (60) is the standard for smooth animation. render() runs
+            // once per screen refresh, which is also usually 60 times per second
+            // but can be different (some monitors refresh at 120 or 144 Hz).
+            targetFPS: TARGET_FPS,
 
             // detectDroppedFrames enables frame dropping detection. If true, the
             // engine will try to keep the frame rate consistent by skipping frames
@@ -466,7 +466,7 @@ class Demo {
      */
     render() {
         // Clear the entire screen to the PipBoy background. This erases the previous frame.
-        // C_BG is palette index 1, which we set to (8, 14, 8) in initialize() -- almost
+        // C_BG is palette index 1, which we set to (16, 28, 16) in initialize() -- almost
         // black but with a faint green tint so the CRT phosphor never looks dead.
         BT.clear(C_BG);
 

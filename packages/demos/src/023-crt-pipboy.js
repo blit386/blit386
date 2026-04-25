@@ -1,6 +1,6 @@
 // @pageTitle Blit-Tech Demo 023 - PipBoy CRT
 //
-// Demo 023 -- PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
+// Demo 023 - PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //
 // Demo 023 in the Blit-Tech demo series.
 // We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
@@ -16,8 +16,8 @@
 //
 // WHAT YOU WILL LEARN
 //   - "Post-processing": running an effect on the WHOLE screen after we are done drawing it.
-//   - The PipBoyEffect class -- a built-in CRT shader you can add with one line of code.
-//   - The BloomEffect class -- a soft-glow shader you can stack on top of the CRT.
+//   - The PipBoyEffect class - a built-in CRT shader you can add with one line of code.
+//   - The BloomEffect class - a soft-glow shader you can stack on top of the CRT.
 //   - A "state machine": a tiny set of rules that decides when to start a glitch, what kind,
 //     and how long it lasts. We pick one of four glitch styles each time.
 //
@@ -46,8 +46,6 @@
 // #region Imports
 
 import { BitmapFont, BloomEffect, bootstrap, BT, Color32, PipBoyEffect, Rect2i, Vector2i } from 'blit-tech';
-
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #endregion
 
@@ -82,7 +80,7 @@ const BOOT_LINE_SPACER_TICKS = 6;
 const BOOT_TICKS_PER_CHAR = 2;
 
 // The boot sequence. Each entry is one line that appears letter-by-letter.
-// Keep this short -- with too many lines the demo never finishes booting.
+// Keep this short - with too many lines the demo never finishes booting.
 // Tip: read this top-to-bottom to imagine how a real PipBoy might wake up.
 const BOOT_LINES = [
     'ROBCO INDUSTRIES (TM) PIP-BOY 3000',
@@ -138,7 +136,13 @@ const FLICKER_DIP = 0.6;
 
 // #endregion
 
-// #region Helpers
+// #region Type Definitions
+
+/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+
+// #endregion
+
+// #region Helper Functions
 
 /**
  * Returns a random integer in the half-open range [min, max).
@@ -199,7 +203,7 @@ class Demo {
     queryHardware() {
         return {
             // The internal canvas is pixel-art sized. The CSS layer can scale it up,
-            // but the CRT effect is computed at this resolution -- intentional for the look.
+            // but the CRT effect is computed at this resolution - intentional for the look.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             targetFPS: TARGET_FPS,
         };
@@ -217,7 +221,7 @@ class Demo {
         BT.paletteSet(palette);
 
         // Load the bitmap font we use for everything on screen. PragmataPro is a monospaced
-        // programming font -- a perfect fit for a fictional terminal.
+        // programming font - a perfect fit for a fictional terminal.
         this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
 
         // The font is loaded as a sprite sheet of white pixels. We "indexize" it: the engine
@@ -240,7 +244,7 @@ class Demo {
         this.pipboy.vignetteAmount = 0.35; // darker corners sell the curved-glass illusion
         this.pipboy.noiseAmount = 0.025; // subtle film grain
 
-        // Tone the bloom down a little -- defaults are "studio bright"; we want "underground vault".
+        // Tone the bloom down a little - defaults are "studio bright"; we want "underground vault".
         this.bloom.bloomGlow = 0.18;
 
         // Order matters: CRT first, bloom second. Demo 024 (CRT toggle) shows what add/remove
@@ -264,14 +268,14 @@ class Demo {
 
     update() {
         // ---- 1. Drive the boot animation timer ----
-        // We don't draw here -- render() reads `this._ticksSinceBoot` and computes how many
+        // We don't draw here - render() reads `this._ticksSinceBoot` and computes how many
         // characters to show. update() just provides time.
         this._ticksSinceBoot = BT.ticks() - this.bootStartTick;
 
         // ---- 2. Drive the glitch state machine ----
         if (this.glitchActive > 0) {
             // We are inside a glitch burst. Build an "envelope": ramps up to glitchPeak,
-            // holds, then ramps down. Sounds fancy -- in practice it just makes a sin curve
+            // holds, then ramps down. Sounds fancy - in practice it just makes a sin curve
             // over the lifetime of the burst (sin from 0 to PI is a nice 0 -> 1 -> 0 hump).
             const t = 1 - this.glitchActive / this.glitchDuration; // 0 at start, 1 at end
             const envelope = Math.sin(t * Math.PI); // 0 -> 1 -> 0
@@ -286,7 +290,7 @@ class Demo {
                 this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
         } else {
-            // No active glitch -- count down to the next one.
+            // No active glitch - count down to the next one.
             this.glitchCooldown--;
             if (this.glitchCooldown <= 0) {
                 // Roll a new burst. Pick a random type, duration, and peak strength.
@@ -321,7 +325,7 @@ class Demo {
             // Horizontal band shift: bands of pixels jump sideways. Drives glitchIntensity only.
             this.pipboy.glitchIntensity = peak;
         } else if (this.glitchType === 'chromasplit') {
-            // The R/G/B channels split apart -- the shader scales chromatic aberration with
+            // The R/G/B channels split apart - the shader scales chromatic aberration with
             // glitchIntensity. Same uniform, different feel because the underlying "ABERRATION"
             // and band-shift terms both scale with it.
             this.pipboy.glitchIntensity = peak * 1.2;
@@ -329,7 +333,7 @@ class Demo {
             // Noisy bands of static. Slightly higher intensity to emphasize the noise mix term.
             this.pipboy.glitchIntensity = peak * 0.9;
         } else if (this.glitchType === 'flicker') {
-            // Whole-screen brightness dip. Doesn't touch glitchIntensity at all -- just tugs
+            // Whole-screen brightness dip. Doesn't touch glitchIntensity at all - just tugs
             // flickerAmount down toward FLICKER_DIP and back. This is the "lights flicker"
             // moment in a horror movie.
             this.pipboy.flickerAmount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
@@ -385,7 +389,7 @@ class Demo {
             // BOOT_TICKS_PER_CHAR ticks. Clamp to [0, length].
             const charsToShow = Math.max(0, Math.min(fullLine.length, Math.floor(ticksLeft / BOOT_TICKS_PER_CHAR)));
             if (charsToShow === 0) {
-                // Future line, not yet started. Stop -- everything below is also invisible.
+                // Future line, not yet started. Stop - everything below is also invisible.
                 return;
             }
 
@@ -426,7 +430,7 @@ class Demo {
             const y = y0 + (i + 2) * LINE_HEIGHT;
             this.print(new Vector2i(x, y), label, C_GREEN_DIM);
             // Right-align the value. Label sits at column 0; value sits at column 70px.
-            // Hand-tuned for this font size -- fine because both label and value are short.
+            // Hand-tuned for this font size - fine because both label and value are short.
             this.print(new Vector2i(x + 70, y), value, colorSlot(colorName));
         }
     }
@@ -444,10 +448,6 @@ class Demo {
         }
     }
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 bootstrap(Demo);
 

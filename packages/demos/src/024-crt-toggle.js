@@ -1,6 +1,6 @@
 // @pageTitle Blit-Tech Demo 024 - CRT Toggle
 //
-// Demo 024 -- CRT Toggle: turn the post-process effect on and off in flight.
+// Demo 024 - CRT Toggle: turn the post-process effect on and off in flight.
 //
 // Demo 024 in the Blit-Tech demo series.
 // We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
@@ -9,7 +9,7 @@
 // Live article: https://vancura.dev/articles/blit-tech-crt-toggle
 //
 // WHAT YOU WILL SEE
-// A colorful, simple scene -- bouncing squares, a few horizontal bars, and a label in the
+// A colorful, simple scene - bouncing squares, a few horizontal bars, and a label in the
 // corner. Every two seconds the CRT effect flips on and off automatically. While it is on
 // you see scanlines, the RGB shadow mask, and gentle screen curvature; while it is off the
 // pixels are exactly what the engine drew (no post-processing). The bouncing keeps going
@@ -22,7 +22,7 @@
 //     screen texture; the last BT.effectRemove or BT.effectClear frees it again.
 //   - That you keep the SAME PipBoyEffect instance across toggles. Demos that destroy and
 //     recreate it on every toggle would also work, but they would re-create the GPU pipeline
-//     on every toggle -- wasteful when the effect is the same.
+//     on every toggle - wasteful when the effect is the same.
 //
 // HOW THE TOGGLE WORKS
 // We measure time in ticks (60 per second). Every TOGGLE_PERIOD_TICKS the demo flips a
@@ -36,8 +36,6 @@
 // #region Imports
 
 import { bootstrap, BT, Color32, PipBoyEffect, Rect2i, Vector2i } from 'blit-tech';
-
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #endregion
 
@@ -69,7 +67,7 @@ const SQUARE_SIZE = 24;
 const SQUARE_COUNT = 5;
 
 // How fast each square moves (pixels per tick). One value per square so the
-// motion looks irregular -- if all five moved at the same speed, they would
+// motion looks irregular - if all five moved at the same speed, they would
 // line up vertically and the demo would look duller.
 const SQUARE_SPEEDS = [
     new Vector2i(2, 1),
@@ -93,6 +91,12 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 
 // #endregion
 
+// #region Type Definitions
+
+/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+
+// #endregion
+
 // #region Main Logic
 
 /**
@@ -112,7 +116,7 @@ class Demo {
 
     async initialize() {
         // Build a small, colorful palette. Bright primaries make the CRT effect
-        // visually obvious -- soft pastels would look the same with or without.
+        // visually obvious - soft pastels would look the same with or without.
         const palette = BT.paletteCreate(16);
         palette.set(C_BG, new Color32(20, 30, 50, 255));
         palette.set(C_LABEL, Color32.white());
@@ -126,7 +130,7 @@ class Demo {
 
         // Create the CRT effect instance ONCE, up front. We will call BT.effectAdd /
         // BT.effectRemove on this same instance every two seconds. The instance keeps
-        // its pipeline + uniform buffer alive across toggles -- only the chain's
+        // its pipeline + uniform buffer alive across toggles - only the chain's
         // off-screen render target is allocated/freed by the add/remove calls.
         this.crt = new PipBoyEffect();
 
@@ -173,12 +177,12 @@ class Demo {
         }
 
         // The CRT shader uses `time` for its rolling line and noise; feed it seconds.
-        // Safe to set even when the effect is not in the chain -- the field is just
+        // Safe to set even when the effect is not in the chain - the field is just
         // a number on the JS instance until the next encode pass reads it.
         this.crt.time = BT.ticks() / TARGET_FPS;
 
         // ---- 2. Move each square and bounce off the screen edges ----
-        // Mutating per-frame state directly is allowed in demos (see CLAUDE.md) -- it
+        // Mutating per-frame state directly is allowed in demos (see CLAUDE.md) - it
         // avoids per-frame allocations.
         for (const sq of this.squares) {
             sq.x += sq.vx;
@@ -203,7 +207,7 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        // Draw the high-contrast horizontal bars across the middle. They're static --
+        // Draw the high-contrast horizontal bars across the middle. They're static -
         // the CRT scanlines and shadow mask interact strongly with bright horizontals.
         for (let i = 0; i < BAR_COLORS.length; i++) {
             const y = BAR_TOP + i * (BAR_HEIGHT + BAR_GAP);
@@ -226,10 +230,10 @@ class Demo {
     }
 }
 
+bootstrap(Demo);
+
 // #endregion
 
-// #region App Lifecycle
-
-bootstrap(Demo);
+// #region Exports
 
 // #endregion
