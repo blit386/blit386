@@ -40,7 +40,7 @@
  *   - SpriteSheet: a loaded image you can draw pieces of on screen (a "sprite")
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { BloomEffect, bootstrap, BT, Color32, PipBoyEffect, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
 /**
  * This line tells code editors that our Demo class follows the IBlitTechDemo
@@ -57,9 +57,14 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 // When we draw, we say "use color number 1" instead of spelling out the color each time.
 //
 // Index 0 is always transparent (completely invisible). Our custom colors start at 1.
-const C_WHITE = 1; // White: most of the on-screen text
-const C_BG = 2; // Black: fills the whole screen each frame to erase the last picture
-const C_BLUE = 3; // Blue: used for the bounce counter so it stands out from the rest
+//
+// We use the same green-on-black "PipBoy" terminal palette as demo 023 so the CRT
+// effect feels like one consistent retro screen across the demos. The sprite keeps
+// its own colors (registered from the PNG further down) so the bouncing logo still
+// reads as a logo, not a green silhouette.
+const C_BG = 1; // Almost-black with a green tint: matches the inside of a PipBoy screen.
+const C_GREEN = 2; // PipBoy green: the main text color (Position, FPS).
+const C_AMBER = 3; // Amber: the bounce counter, standing in for the old blue accent.
 
 // Where the sprite's own colors begin in the palette.
 // We reserve indices 1..3 for our text colors above. From index 10 onward we
@@ -69,8 +74,55 @@ const C_BLUE = 3; // Blue: used for the bounce counter so it stands out from the
 const SPRITE_BASE = 10;
 
 // Path to the sprite image. The "public" folder contents are served at the
-// site root, so /sprites/head-1.png maps to public/sprites/head-1.png on disk.
-const SPRITE_URL = '/sprites/head-1.png';
+// site root, so /sprites/logo-1.png maps to public/sprites/logo-1.png on disk.
+const SPRITE_URL = '/sprites/logo-1.png';
+
+// -- Post-process effect tuning --
+// We wrap the whole demo in a CRT screen + soft glow, just like demo 023.
+// You can ignore everything from here to the end of this region on a first
+// read - the bouncing sprite would still work without any of it. Skip ahead
+// to "// #region Main Logic" if you just want the basics.
+//
+// Tuning knobs for the PipBoyEffect (the CRT shader). Each one matches a
+// field on the effect instance; see demo 023 for what every parameter does.
+const CRT_SCAN_LINE_AMOUNT = 0.55;
+const CRT_MASK_INTENSITY = 0.18;
+const CRT_VIGNETTE_AMOUNT = 0.1;
+const CRT_NOISE_AMOUNT = 0.025;
+const BLOOM_GLOW = 0.18;
+
+// Glitch state machine (also lifted from demo 023). Every few seconds the
+// screen briefly stutters so the CRT illusion feels alive.
+const GLITCH_COOLDOWN_MIN = 120; // 2 seconds at 60 ticks/sec
+const GLITCH_COOLDOWN_MAX = 360; // 6 seconds
+const GLITCH_ACTIVE_MIN = 5;
+const GLITCH_ACTIVE_MAX = 30;
+const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker'];
+const GLITCH_INTENSITY_MIN = 0.35;
+const GLITCH_INTENSITY_MAX = 1.0;
+const FLICKER_BASE = 1.0;
+const FLICKER_DIP = 0.6;
+const TARGET_FPS = 60;
+
+// #endregion
+
+// #region Glitch Helpers
+
+// Random integer in [min, max). The glitch state machine uses this to pick
+// a fresh duration / cooldown each time a burst starts.
+function randInt(min, max) {
+    return min + Math.floor(Math.random() * (max - min));
+}
+
+// Random float in [min, max). Used to roll the strength of each glitch.
+function randFloat(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+// Pick a random element from an array. Picks the next glitch personality.
+function randPick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
 
 // #endregion
 
@@ -109,7 +161,8 @@ class Demo {
     // Vector2i holds two whole numbers: x (horizontal) and y (vertical).
     // (0, 0) is the top-left corner of the screen. x increases going right,
     // y increases going DOWN (this is different from math class where y goes up!).
-    // We start at (160, 120) which is roughly the center of a 320x240 screen.
+    // We start near the screen center as a placeholder; initialize() will
+    // overwrite this with the exact center calculated from the real display size.
     pos = new Vector2i(160, 120);
 
     // "speed" is how many pixels the sprite moves each update().
@@ -141,6 +194,22 @@ class Demo {
     // one sprite, so the rectangle covers the whole image: (x=0, y=0, full width, full height).
     spriteRect = null;
 
+    // -- Post-process effect state --
+    // The CRT screen + soft glow we wrap the whole demo in. We create them
+    // here and register them in initialize(). See demo 023 for the full
+    // explanation of post-processing.
+    crt = null;
+    bloom = null;
+
+    // Glitch state machine state. Two counters: how long until the next
+    // glitch (`glitchCooldown`) and how long the current glitch still has
+    // to run (`glitchActive`). When `glitchActive` is 0 the screen is calm.
+    glitchCooldown = 0;
+    glitchActive = 0;
+    glitchDuration = 0;
+    glitchType = 'none';
+    glitchPeak = 0;
+
     // #region Lifecycle Methods
 
     /**
@@ -156,18 +225,23 @@ class Demo {
             // displaySize is the "retro screen" resolution - the number of pixels
             // you can actually draw on. 320x240 was common in old game consoles.
             // Every pixel you draw maps to this grid.
-            displaySize: new Vector2i(320, 240),
+            displaySize: new Vector2i(640, 480),
 
             // canvasDisplaySize is how big the canvas looks on the web page.
-            // Setting it to 640x480 (double the display size) makes each pixel
-            // appear as a 2x2 square, giving that chunky retro look.
+            // Setting it to the same 640x480 as displaySize means every internal
+            // pixel maps to exactly one screen pixel -- a crisp, 1:1 view.
             canvasDisplaySize: new Vector2i(640, 480),
 
             // targetFPS is how many times per second update() will be called.
-            // 60 is the standard for smooth animation. render() runs once per
-            // screen refresh, which is also usually 60 times per second but can
-            // be different (some monitors refresh at 120 or 144 times per second).
-            targetFPS: 60,
+            // TARGET_FPS (60) is the standard for smooth animation. render() runs
+            // once per screen refresh, which is also usually 60 times per second
+            // but can be different (some monitors refresh at 120 or 144 Hz).
+            targetFPS: TARGET_FPS,
+
+            // detectDroppedFrames enables frame dropping detection. If true, the
+            // engine will try to keep the frame rate consistent by skipping frames
+            // when the game is running too slow.
+            detectDroppedFrames: true,
         };
     }
 
@@ -194,9 +268,11 @@ class Demo {
         // palette.set(number, color) stores one color in a numbered slot.
         // Color32(Red, Green, Blue) - each value is 0 to 255.
         // 0 = none of that color, 255 = maximum of that color.
-        this.palette.set(C_WHITE, Color32.white());
-        this.palette.set(C_BG, new Color32(0, 0, 0));
-        this.palette.set(C_BLUE, Color32.fromHex('#5da0f2'));
+        // These three colors match the PipBoy palette in demo 023 so the CRT
+        // effect we wrap the demo in feels like one continuous screen.
+        this.palette.set(C_BG, new Color32(8 * 2, 14 * 2, 8 * 2)); // Almost-black, faint green tint.
+        this.palette.set(C_GREEN, new Color32(80, 200, 110)); // PipBoy phosphor green.
+        this.palette.set(C_AMBER, new Color32(220, 180, 60)); // Vault-Tec amber accent.
 
         // -- Step 2: register every color used by the sprite image --
         // The engine draws sprites using palette indices, not raw RGB colors.
@@ -237,7 +313,7 @@ class Demo {
         this.spriteRect = new Rect2i(0, 0, this.size.x, this.size.y);
 
         // -- Step 7: position the sprite in the center of the screen --
-        // BT.displaySize() returns how big the screen is (320x240 in our case).
+        // BT.displaySize() returns how big the screen is (640x480 in our case).
         // We subtract the sprite's size so the CENTER of the sprite is centered,
         // not its top-left corner.
         // Math.floor() rounds down to a whole number - we need whole pixels
@@ -246,6 +322,28 @@ class Demo {
         const x = Math.floor(screen.x / 2 - this.size.x / 2);
         const y = Math.floor(screen.y / 2 - this.size.y / 2);
         this.pos = new Vector2i(x, y);
+
+        // -- Step 8: wrap the screen in a CRT + bloom post-process chain --
+        // Lifted from demo 023 so this first demo also gets the retro look.
+        // BT.effectAdd(...) makes the engine route the scene through the effect
+        // chain instead of straight to the screen. Order matters: CRT first,
+        // bloom second, so the bloom sees the post-CRT image.
+        this.crt = new PipBoyEffect();
+        this.crt.scanLineAmount = CRT_SCAN_LINE_AMOUNT;
+        this.crt.maskIntensity = CRT_MASK_INTENSITY;
+        this.crt.vignetteAmount = CRT_VIGNETTE_AMOUNT;
+        this.crt.noiseAmount = CRT_NOISE_AMOUNT;
+
+        this.bloom = new BloomEffect();
+        this.bloom.bloomGlow = BLOOM_GLOW;
+
+        BT.effectAdd(this.crt);
+        BT.effectAdd(this.bloom);
+
+        // Start the glitch state machine in "waiting" mode -- pick a random
+        // cooldown so glitches don't all fire at the same moment if the user
+        // refreshes the demo.
+        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
 
         // Return true to tell the engine: "Everything loaded fine, start the demo!"
         return true;
@@ -292,6 +390,63 @@ class Demo {
             this.speed.y = -this.speed.y;
             this.bounces++;
         }
+
+        // -- Drive the CRT effect (post-processing) --
+        // The shader uses `time` for its rolling line and noise pattern. We
+        // feed it seconds (ticks divided by the target frame rate) so the
+        // animation speed is independent of how fast the demo runs.
+        this.crt.time = BT.ticks() / TARGET_FPS;
+
+        // Glitch state machine. See demo 023 for the full explanation.
+        // Short version: when a glitch is active, mutate the shader uniforms
+        // each frame following an "envelope" (sin curve) that ramps up and
+        // back down. When no glitch is active, count down to the next one.
+        if (this.glitchActive > 0) {
+            // Where are we in the burst? 0 at start, 1 at end.
+            const t = 1 - this.glitchActive / this.glitchDuration;
+            // sin(0..PI) is a nice 0 -> 1 -> 0 hump -- our envelope.
+            const envelope = Math.sin(t * Math.PI);
+            this.applyGlitchUniforms(envelope);
+            this.glitchActive--;
+            if (this.glitchActive === 0) {
+                // Burst over -- reset uniforms to "calm" and roll the next cooldown.
+                this.crt.glitchIntensity = 0;
+                this.crt.flickerAmount = FLICKER_BASE;
+                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+            }
+        } else {
+            this.glitchCooldown--;
+            if (this.glitchCooldown <= 0) {
+                // Time for a new burst: pick a personality, length, and strength.
+                this.glitchType = randPick(GLITCH_TYPES);
+                this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+                this.glitchActive = this.glitchDuration;
+                this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+                // Reset the random seed so the band noise looks new each burst.
+                this.crt.glitchSeed = Math.random() * 1000;
+            }
+        }
+    }
+
+    /**
+     * Drives the CRT shader uniforms based on the current glitch type and
+     * the envelope value (0 -> 1 -> 0 over the lifetime of the burst).
+     * @param {number} envelope
+     */
+    applyGlitchUniforms(envelope) {
+        const peak = this.glitchPeak * envelope;
+        // Reset to "calm" first, then layer the chosen personality on top.
+        this.crt.glitchIntensity = 0;
+        this.crt.flickerAmount = FLICKER_BASE;
+        if (this.glitchType === 'hshift') {
+            this.crt.glitchIntensity = peak;
+        } else if (this.glitchType === 'chromasplit') {
+            this.crt.glitchIntensity = peak * 1.2;
+        } else if (this.glitchType === 'noise') {
+            this.crt.glitchIntensity = peak * 0.9;
+        } else if (this.glitchType === 'flicker') {
+            this.crt.flickerAmount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
+        }
     }
 
     /**
@@ -311,9 +466,9 @@ class Demo {
      * pile up on top of it (which can look cool, but is usually a bug!).
      */
     render() {
-        // Clear the entire screen to black. This erases the previous frame.
-        // C_BG is palette index 2, which we set to (0, 0, 0) in initialize().
-        // We pass the index number, not the color directly - the palette handles the rest.
+        // Clear the entire screen to the PipBoy background. This erases the previous frame.
+        // C_BG is palette index 1, which we set to (16, 28, 16) in initialize() -- almost
+        // black but with a faint green tint so the CRT phosphor never looks dead.
         BT.clear(C_BG);
 
         // Draw the bouncing sprite at its current position.
@@ -332,12 +487,12 @@ class Demo {
         // It takes (position, paletteIndex, text) - no font loading needed!
         // The template string (`backticks`) lets us insert variable values with ${...}.
         // BT.fps() returns the target frames per second (60 in this demo).
-        BT.systemPrint(new Vector2i(3, 0), C_WHITE, `Position: ${this.pos.x}*${this.pos.y}`);
-        BT.systemPrint(new Vector2i(BT.displaySize().x - 50, 0), C_WHITE, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(3, 0), C_GREEN, `Position: ${this.pos.x}, ${this.pos.y}`);
+        BT.systemPrint(new Vector2i(BT.displaySize().x - 50, 0), C_GREEN, `FPS: ${BT.fps()}`);
 
-        // Show the bounce count in blue so it stands out from the other text.
-        // C_BLUE is palette index 3, which we set to pure blue in initialize().
-        BT.systemPrint(new Vector2i(3, BT.displaySize().y - 13), C_BLUE, `Bounces: ${this.bounces}`);
+        // Show the bounce count in amber so it stands out from the green text.
+        // C_AMBER is palette index 3, the secondary PipBoy accent color.
+        BT.systemPrint(new Vector2i(3, BT.displaySize().y - 13), C_AMBER, `Bounces: ${this.bounces}`);
     }
 
     // #endregion
