@@ -161,10 +161,10 @@ const GLITCH_COOLDOWN_MAX = 360; // 6 seconds
 const GLITCH_ACTIVE_MIN = 5; // 0.083 seconds (a brief stutter)
 const GLITCH_ACTIVE_MAX = 30; // 0.5 seconds  (a noticeable hiccup)
 
-// The four glitch personalities the state machine can pick from.
+// The glitch personalities the state machine can pick from.
 // Each one drives a different combination of effect uniforms. Strings are easier to read
 // in `update()` than magic numbers when you decide to tune one of them.
-const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker'];
+const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker', 'interference'];
 
 // Multipliers per glitch type. We pick the strength for the current burst once and then
 // blend it in for the lifetime of the burst (envelope: ramp up, hold, ramp down).
@@ -175,11 +175,11 @@ const GLITCH_INTENSITY_MAX = 1.0;
 const FLICKER_BASE = 1.0;
 const FLICKER_DIP = 0.6;
 
-// Resting values that the glitch state machine returns to between bursts. The chromatic
-// aberration baseline is the gentle "always-on" channel split; noise base is the constant
-// faint film-grain. Bursts add on top of these, then we restore the baselines when the
-// burst ends.
-const ABERRATION_BASE = 1.0;
+// Resting values the glitch state machine returns to between bursts.
+// ABERRATION_BASE is 0 so the screen is clean between bursts -- chromasplit
+// glitches then clearly pop the channel split on from nothing rather than
+// boosting an already-visible split. NOISE_BASE is the constant faint grain.
+const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
 // #endregion
@@ -335,8 +335,10 @@ class Demo {
         this.aberration.aberration = ABERRATION_BASE;
 
         // Interference: per-row horizontal jitter that simulates analog signal noise.
+        // Set to 0 at rest so the screen is calm between glitch bursts; the state
+        // machine spikes this during an 'interference' burst.
         this.interference = new Interference();
-        this.interference.amount = 0.06;
+        this.interference.amount = 0;
 
         // Roll line: a horizontal bright band slowly scrolls down the screen, like an
         // old TV that isn't quite sync'd.
@@ -487,6 +489,10 @@ class Demo {
             // Whole-screen brightness dip via the Flicker effect. This is the "lights
             // flicker" moment in a horror movie.
             this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
+        } else if (this.glitchType === 'interference') {
+            // Per-row jitter burst. At rest the interference amount is 0 (screen calm);
+            // during this burst we spike it so the rows suddenly start jittering.
+            this.interference.amount = peak * 0.06;
         }
     }
 
@@ -500,6 +506,7 @@ class Demo {
         this.aberration.aberration = ABERRATION_BASE;
         this.noise.amount = NOISE_BASE;
         this.flicker.amount = FLICKER_BASE;
+        this.interference.amount = 0;
     }
 
     render() {
