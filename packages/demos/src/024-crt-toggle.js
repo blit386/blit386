@@ -1,6 +1,6 @@
 // @pageTitle Blit-Tech Demo 024 - CRT Toggle
 //
-// Demo 024 - CRT Toggle: turn the post-process effect on and off in flight.
+// Demo 024 - CRT Toggle: turn the post-process effects on and off in flight.
 //
 // Demo 024 in the Blit-Tech demo series.
 // We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
@@ -10,32 +10,37 @@
 //
 // WHAT YOU WILL SEE
 // A colorful, simple scene - bouncing squares, a few horizontal bars, and a label in the
-// corner. Every two seconds the CRT effect flips on and off automatically. While it is on
-// you see scanlines, the RGB shadow mask, and gentle screen curvature; while it is off the
-// pixels are exactly what the engine drew (no post-processing). The bouncing keeps going
-// either way, so you can compare the two looks side by side over time.
+// corner. Every two seconds the CRT preset flips on and off automatically. While it is on
+// you see scanlines, the RGB shadow mask, smooth barrel curvature, and a soft phosphor
+// glow; while it is off the pixels are exactly what the engine drew (no post-processing).
+// The bouncing keeps going either way, so you can compare the two looks side by side.
+//
+// Notice that the lines stay STRAIGHT through the toggle: the barrel distortion in the
+// new two-tier post-process system runs at the canvas output resolution, not on the
+// 320x240 framebuffer, so it does not introduce stair-step artifacts on diagonals.
 //
 // WHAT YOU WILL LEARN
-//   - How to add and remove a post-process effect at runtime with BT.effectAdd / BT.effectRemove.
+//   - How to add and remove a STACK of post-process effects at runtime.
 //   - That the effect chain is "free" when nothing is registered: the engine renders straight
 //     to the screen with zero extra cost. The first call to BT.effectAdd allocates an off-
 //     screen texture; the last BT.effectRemove or BT.effectClear frees it again.
-//   - That you keep the SAME PipBoyEffect instance across toggles. Demos that destroy and
-//     recreate it on every toggle would also work, but they would re-create the GPU pipeline
-//     on every toggle - wasteful when the effect is the same.
+//   - That you keep the SAME effect instances across toggles. Demos that destroy and
+//     recreate them on every toggle would also work, but they would re-create the GPU
+//     pipeline on every toggle - wasteful when the look is the same.
+//   - The convenience of `BT.preset.crtPipBoy()`: returns a fresh array of pre-configured
+//     display-tier effects so you do not have to wire them up by hand.
 //
 // HOW THE TOGGLE WORKS
 // We measure time in ticks (60 per second). Every TOGGLE_PERIOD_TICKS the demo flips a
-// boolean and either calls BT.effectAdd(this.crt) or BT.effectRemove(this.crt). The label
-// in the top-left corner reads "CRT: ON" or "CRT: OFF" so you always know which side you
-// are looking at.
+// boolean and either adds or removes the entire preset stack. The label in the top-left
+// corner reads "CRT: ON" or "CRT: OFF" so you always know which side you are looking at.
 //
 // Why auto-toggle and not a button? Demos in this series do not (yet) take user input
 // from the engine. Auto-toggling is the simplest way to demonstrate the dynamic API.
 
 // #region Imports
 
-import { bootstrap, BT, Color32, PipBoyEffect, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #endregion
 
@@ -44,6 +49,13 @@ import { bootstrap, BT, Color32, PipBoyEffect, Rect2i, Vector2i } from 'blit-tec
 // Internal pixel resolution.
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
+
+// Output drawing-buffer resolution. Setting it 4x larger than the logical size unlocks
+// the display-tier effects (barrel, scanlines, mask, etc.) and gives them enough output
+// pixels to render smoothly. Each logical pixel maps to a 4x4 output block.
+const OUTPUT_W = 1280;
+const OUTPUT_H = 960;
+
 const TARGET_FPS = 60;
 
 // Palette indices. Index 0 is always transparent.
@@ -100,23 +112,42 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 // #region Main Logic
 
 /**
- * Toggle demo: a small animated scene with the CRT effect flipping on and off
- * every two seconds. Demonstrates the dynamic add/remove path of the post-
- * process chain.
+ * Toggle demo: a small animated scene with the CRT effect stack flipping on and off
+ * every two seconds. Demonstrates the dynamic add/remove path of the post-process chain.
+ *
+ * The effect stack comes from `BT.preset.crtPipBoy()`, a one-line helper that returns a
+ * fresh array of display-tier effects (BarrelDistortion + ChromaticAberration + ... +
+ * Bloom). We hold onto the array so we can re-add the SAME instances on each toggle -
+ * that way the GPU pipelines stay alive across toggles instead of being torn down and
+ * rebuilt every two seconds.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
     queryHardware() {
         return {
+            // Internal pixel-art resolution. Game logic and draws operate at this size.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+
+            // canvasDisplaySize is required for display-tier effects (barrel, scanlines,
+            // mask, bloom) to have a place to operate. We render the scene at 320x240
+            // and then upscale to 1280x960 (a clean 4x integer scale) before the display
+            // chain runs. Without this field, BT.effectAdd would throw when given a
+            // display-tier effect, and the toggle would never work.
+            canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
+
+            // 'nearest' keeps each source pixel as a crisp 4x4 block. 'linear' would
+            // soften them into bilinear-blended squishes - a different look, also valid.
+            outputUpscaleFilter: 'nearest',
+
             targetFPS: TARGET_FPS,
         };
     }
 
     async initialize() {
-        // Build a small, colorful palette. Bright primaries make the CRT effect
-        // visually obvious - soft pastels would look the same with or without.
+        // -- Step 1: build the palette --
+        // A small, colorful palette. Bright primaries make the CRT effect visually
+        // obvious - soft pastels would look the same with or without.
         const palette = BT.paletteCreate(16);
         palette.set(C_BG, new Color32(20, 30, 50, 255));
         palette.set(C_LABEL, Color32.white());
@@ -128,25 +159,32 @@ class Demo {
         palette.set(C_MAGENTA, Color32.magenta());
         BT.paletteSet(palette);
 
-        // Create the CRT effect instance ONCE, up front. We will call BT.effectAdd /
-        // BT.effectRemove on this same instance every two seconds. The instance keeps
-        // its pipeline + uniform buffer alive across toggles - only the chain's
-        // off-screen render target is allocated/freed by the add/remove calls.
-        this.crt = new PipBoyEffect();
+        // -- Step 2: build the CRT preset ONCE up front --
+        // BT.preset.crtPipBoy() returns a fresh array of pre-configured display-tier
+        // effects (BarrelDistortion + ChromaticAberration + Interference + RollLine +
+        // Scanlines + RGBMask + Vignette + Noise + Flicker + Bloom).
+        //
+        // We hold onto the array so we can re-add the SAME instances on each toggle.
+        // Re-creating them every toggle would also work, but it would re-allocate the
+        // GPU pipelines and uniform buffers each time - wasteful when the look is the
+        // same.
+        this.crtStack = BT.preset.crtPipBoy();
 
-        // Tune the look: a little less curvature than default so the demo still feels
-        // "honest" about which pixels you're seeing, plus a bit more mask intensity so
-        // the CRT half is unmistakable.
-        this.crt.screenCurvature = 0.015;
-        this.crt.maskIntensity = 0.2;
+        // -- Step 3: pick out the time-driven effects so update() can animate them --
+        // Some effects (RollLine, Noise, Interference) animate using a `time` field;
+        // we filter the array once and remember the references so we don't iterate
+        // the whole stack on every frame.
+        this.timedEffects = this.crtStack.filter((fx) => 'time' in fx);
 
-        // Start in the OFF state. Demo 023 already shows what the CRT looks like
-        // straight away; here it's nicer to begin clean and then have the effect arrive.
+        // -- Step 4: start in the OFF state --
+        // Demo 023 already shows what the CRT looks like straight away; here it's nicer
+        // to begin clean and then have the effect arrive after the first toggle.
         this.crtEnabled = false;
         this.lastToggleTick = BT.ticks();
 
-        // Place the squares evenly across the top half so they don't all start in the
-        // same spot. Each square keeps its own position (x, y) and a copy of its speed
+        // -- Step 5: place the bouncing squares --
+        // Place them evenly across the bottom half so they don't all start in the same
+        // spot. Each square keeps its own position (x, y) and a copy of its speed
         // (we'll flip the speed components when it bounces off an edge).
         this.squares = [];
         for (let i = 0; i < SQUARE_COUNT; i++) {
@@ -164,22 +202,35 @@ class Demo {
 
     update() {
         // ---- 1. Time-based toggle ----
-        // Every TOGGLE_PERIOD_TICKS we flip the boolean and either add or remove
-        // the CRT instance from the chain. The engine handles the rest.
+        // Every TOGGLE_PERIOD_TICKS we flip the boolean and either add or remove the
+        // entire preset stack. The engine handles the GPU pipeline lifecycle for us.
         if (BT.ticks() - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
             this.lastToggleTick = BT.ticks();
             this.crtEnabled = !this.crtEnabled;
             if (this.crtEnabled) {
-                BT.effectAdd(this.crt);
+                // Add every effect from the preset to the chain. Each one declares its
+                // own tier ('display' for the CRT effects), so the engine routes them
+                // automatically.
+                for (const fx of this.crtStack) {
+                    BT.effectAdd(fx);
+                }
             } else {
-                BT.effectRemove(this.crt);
+                // Remove them all. When the last effect is removed, the engine drops
+                // the off-screen ping-pong textures and reverts to drawing straight
+                // through the upscale pass to the swap chain.
+                for (const fx of this.crtStack) {
+                    BT.effectRemove(fx);
+                }
             }
         }
 
-        // The CRT shader uses `time` for its rolling line and noise; feed it seconds.
-        // Safe to set even when the effect is not in the chain - the field is just
-        // a number on the JS instance until the next encode pass reads it.
-        this.crt.time = BT.ticks() / TARGET_FPS;
+        // The CRT shaders use `time` for their rolling line and noise. Feed it seconds.
+        // Safe to set even when the effects are not in the chain - the field is just a
+        // number on the JS instance until the next encode pass reads it.
+        const seconds = BT.ticks() / TARGET_FPS;
+        for (const fx of this.timedEffects) {
+            fx.time = seconds;
+        }
 
         // ---- 2. Move each square and bounce off the screen edges ----
         // Mutating per-frame state directly is allowed in demos (see CLAUDE.md) - it

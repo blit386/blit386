@@ -48,6 +48,13 @@ The demos build on each other in numeric order; later pages assume you have seen
 - **013-image-output** -- Frame capture and PNG export
 - **014-game-scene** -- Capstone: everything combined into a mini game scene
 
+### Post-Process Effects
+
+- **023-crt-pipboy** -- Faux Fallout terminal with the full CRT stack (barrel, scanlines, mask, bloom, glitch state
+  machine) built from individual decomposed effects
+- **024-crt-toggle** -- Add and remove the entire CRT preset (`BT.preset.crtPipBoy()`) at runtime to compare the before
+  / after pixels side by side
+
 ### Developer Tools
 
 - **021-error-preview** -- Utility that cycles through every WebGPU error message the engine can display, for checking
