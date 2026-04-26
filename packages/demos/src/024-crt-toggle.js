@@ -184,15 +184,13 @@ class Demo {
 
         // -- Step 5: place the bouncing squares --
         // Place them evenly across the bottom half so they don't all start in the same
-        // spot. Each square keeps its own position (x, y) and a copy of its speed
-        // (we'll flip the speed components when it bounces off an edge).
+        // spot. Each square keeps its own position (pos) and velocity (vel) as Vector2i
+        // instances -- the engine convention for all pixel-level coordinates.
         this.squares = [];
         for (let i = 0; i < SQUARE_COUNT; i++) {
             this.squares.push({
-                x: 20 + i * 50,
-                y: 150 + (i % 2) * 30,
-                vx: SQUARE_SPEEDS[i].x,
-                vy: SQUARE_SPEEDS[i].y,
+                pos: new Vector2i(20 + i * 50, 150 + (i % 2) * 30),
+                vel: new Vector2i(SQUARE_SPEEDS[i].x, SQUARE_SPEEDS[i].y),
                 color: SQUARE_COLORS[i % SQUARE_COLORS.length],
             });
         }
@@ -233,24 +231,23 @@ class Demo {
         }
 
         // ---- 2. Move each square and bounce off the screen edges ----
-        // Mutating per-frame state directly is allowed in demos (see CLAUDE.md) - it
-        // avoids per-frame allocations.
+        // Vector2i is immutable, so we assign new instances rather than mutating components.
+        // Reassigning sq.pos and sq.vel is allowed for per-frame demo state (see CLAUDE.md).
         for (const sq of this.squares) {
-            sq.x += sq.vx;
-            sq.y += sq.vy;
+            sq.pos = new Vector2i(sq.pos.x + sq.vel.x, sq.pos.y + sq.vel.y);
 
             // Bounce against the left/right walls. We compare against [0, DISPLAY_W - SQUARE_SIZE]
             // because the square's anchor is its top-left corner.
-            if (sq.x <= 0 || sq.x >= DISPLAY_W - SQUARE_SIZE) {
-                sq.vx = -sq.vx;
+            if (sq.pos.x <= 0 || sq.pos.x >= DISPLAY_W - SQUARE_SIZE) {
+                sq.vel = new Vector2i(-sq.vel.x, sq.vel.y);
                 // Nudge the position back inside the playfield so we don't bounce twice.
-                sq.x = Math.max(0, Math.min(sq.x, DISPLAY_W - SQUARE_SIZE));
+                sq.pos = new Vector2i(Math.max(0, Math.min(sq.pos.x, DISPLAY_W - SQUARE_SIZE)), sq.pos.y);
             }
 
             // Same for the top/bottom walls. We let the squares roam the full screen.
-            if (sq.y <= 0 || sq.y >= DISPLAY_H - SQUARE_SIZE) {
-                sq.vy = -sq.vy;
-                sq.y = Math.max(0, Math.min(sq.y, DISPLAY_H - SQUARE_SIZE));
+            if (sq.pos.y <= 0 || sq.pos.y >= DISPLAY_H - SQUARE_SIZE) {
+                sq.vel = new Vector2i(sq.vel.x, -sq.vel.y);
+                sq.pos = new Vector2i(sq.pos.x, Math.max(0, Math.min(sq.pos.y, DISPLAY_H - SQUARE_SIZE)));
             }
         }
     }
@@ -267,7 +264,7 @@ class Demo {
 
         // Draw the bouncing squares on top of the bars.
         for (const sq of this.squares) {
-            BT.drawRectFill(new Rect2i(sq.x, sq.y, SQUARE_SIZE, SQUARE_SIZE), sq.color);
+            BT.drawRectFill(new Rect2i(sq.pos.x, sq.pos.y, SQUARE_SIZE, SQUARE_SIZE), sq.color);
         }
 
         // Status label in the top-left corner. BT.systemPrint uses the built-in

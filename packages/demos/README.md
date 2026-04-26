@@ -52,8 +52,8 @@ The demos build on each other in numeric order; later pages assume you have seen
 
 - **023-crt-pipboy** -- Faux Fallout terminal with the full CRT stack (barrel, scanlines, mask, bloom, glitch state
   machine) built from individual decomposed effects
-- **024-crt-toggle** -- Add and remove the entire CRT preset (`BT.preset.crtPipBoy()`) at runtime to compare the before
-  / after pixels side by side
+- **024-crt-toggle** -- Toggle the entire `BT.preset.crtPipBoy()` CRT stack on and off at runtime -- auto-switches
+  between clean and CRT output every two seconds
 
 ### Developer Tools
 
