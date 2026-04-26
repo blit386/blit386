@@ -9,23 +9,36 @@
 // Live article: https://vancura.dev/articles/blit-tech-pipboy-crt
 //
 // WHAT YOU WILL SEE
-// A green-on-black terminal that looks like an old curved CRT screen. Scanlines, a soft glow
-// (called "bloom"), and tiny noise speckles make the picture look like it is coming from a
-// real cathode-ray tube. Every few seconds the picture glitches: a band of pixels jumps
-// sideways, the color channels split apart, the whole screen flickers darker, or static rolls.
+// A green-on-black terminal that looks like an old curved CRT screen. Scanlines, a soft
+// glow (called "bloom"), and tiny noise speckles make the picture look like it is coming
+// from a real cathode-ray tube. Every few seconds the picture glitches: a band of pixels
+// jumps sideways, the color channels split apart, the whole screen flickers darker, or
+// static noise rolls.
 //
 // WHAT YOU WILL LEARN
-//   - "Post-processing": running an effect on the WHOLE screen after we are done drawing it.
-//   - The PipBoyEffect class - a built-in CRT shader you can add with one line of code.
-//   - The BloomEffect class - a soft-glow shader you can stack on top of the CRT.
+//   - "Post-processing": running effects on the WHOLE screen after we are done drawing it.
+//   - The two effect TIERS Blit-Tech offers, and why they exist:
+//       * pixel-tier: chunky, palette-friendly, runs at the internal 320x240.
+//       * display-tier: smooth, simulates the screen, runs at the canvas output resolution.
+//   - How to compose individual effects (BarrelDistortion, Scanlines, RGBMask, ...) instead
+//     of relying on a single big shader. The preset BT.preset.crtPipBoy() does this for you
+//     in one line; here we build the stack explicitly so each piece is visible.
 //   - A "state machine": a tiny set of rules that decides when to start a glitch, what kind,
-//     and how long it lasts. We pick one of four glitch styles each time.
+//     and how long it lasts.
 //
 // HOW POST-PROCESSING WORKS
-// Normally the engine draws straight to the screen. When you add a "post-process effect"
-// with BT.effectAdd(...), the engine instead draws to an off-screen picture, then runs your
-// effect on that picture, and only THEN puts the final result on the screen. You can stack
-// more than one effect: each one reads the previous result and writes a new one.
+// Normally the engine draws straight to the screen. When you add an effect with BT.effectAdd
+// the engine routes the scene through one or two effect chains. Each effect reads a texture,
+// writes a new one, and the last effect in the display chain writes to the swap chain.
+//
+// Pixel-tier effects (e.g. PixelGlitch) operate on the rendered palette pixels at the
+// internal logical resolution. They keep the pixel-art crispness because they sample with
+// NEAREST filtering and never introduce intermediate hues.
+//
+// Display-tier effects (e.g. BarrelDistortion, Scanlines) operate AFTER an upscale pass at
+// the full canvas resolution. They simulate the physical CRT the game would be displayed
+// on. Crucially, BarrelDistortion does NOT quantize the curve onto the 320x240 grid - lines
+// stay smooth instead of breaking into stair-steps.
 //
 // HOW THE GLITCH STATE MACHINE WORKS
 // We keep two counters:
@@ -33,8 +46,7 @@
 //   - active:   ticks remaining in the CURRENT glitch (0 means "no glitch right now").
 // Every frame we count one down. When `active` runs out we decrement `cooldown`. When
 // `cooldown` runs out we roll a new glitch (random type, random duration, random strength)
-// and reset `active` to that duration. The shader itself is uniform-driven, so all we do
-// in JS is set numbers on the effect each frame.
+// and reset `active` to that duration. Each burst type drives different effect uniforms.
 //
 // HOW THE BITMAP FONT COLORS WORK
 // The font is loaded as a sprite sheet of WHITE glyph pixels. We "indexize" the sheet
@@ -45,7 +57,27 @@
 
 // #region Imports
 
-import { BitmapFont, BloomEffect, bootstrap, BT, Color32, PipBoyEffect, Rect2i, Vector2i } from 'blit-tech';
+// Pull in everything we need from the engine. The new two-tier post-process API exposes
+// each individual effect as its own class so we can compose them however we like.
+import {
+    BarrelDistortion,
+    BitmapFont,
+    Bloom,
+    bootstrap,
+    BT,
+    ChromaticAberration,
+    Color32,
+    Flicker,
+    Interference,
+    Noise,
+    PixelGlitch,
+    Rect2i,
+    RGBMask,
+    RollLine,
+    Scanlines,
+    Vector2i,
+    Vignette,
+} from 'blit-tech';
 
 // #endregion
 
@@ -54,6 +86,16 @@ import { BitmapFont, BloomEffect, bootstrap, BT, Color32, PipBoyEffect, Rect2i, 
 // The internal pixel resolution of the demo. Small numbers keep the pixel art look.
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
+
+// Output resolution. Setting this 4x larger than the logical size gives the display-tier
+// effects (barrel curve, scanlines, RGB mask) enough output pixels to render smoothly,
+// and turns each logical pixel into a clean 4x4 block on screen.
+//
+// IMPORTANT: this is the SCREEN size we present at, NOT the pixel-art size. The game still
+// thinks it is drawing into a 320x240 framebuffer. The engine scales that framebuffer up
+// to 1280x960 before running the display-tier effects.
+const OUTPUT_W = 1280;
+const OUTPUT_H = 960;
 
 // We update at this rate (60 ticks per second). The glitch state machine measures
 // time in ticks, so changing this also changes how often glitches trigger.
@@ -120,9 +162,8 @@ const GLITCH_ACTIVE_MIN = 5; // 0.083 seconds (a brief stutter)
 const GLITCH_ACTIVE_MAX = 30; // 0.5 seconds  (a noticeable hiccup)
 
 // The four glitch personalities the state machine can pick from.
-// All four mutate the SAME shader uniforms (glitchIntensity / glitchSeed / flickerAmount);
-// the difference is which combination we drive each frame. Strings are easier to read in
-// `update()` than magic numbers when you decide to tune one of them.
+// Each one drives a different combination of effect uniforms. Strings are easier to read
+// in `update()` than magic numbers when you decide to tune one of them.
 const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker'];
 
 // Multipliers per glitch type. We pick the strength for the current burst once and then
@@ -133,6 +174,13 @@ const GLITCH_INTENSITY_MAX = 1.0;
 // Flicker dips the brightness of the WHOLE picture briefly. 1.0 = unmodulated; lower = darker.
 const FLICKER_BASE = 1.0;
 const FLICKER_DIP = 0.6;
+
+// Resting values that the glitch state machine returns to between bursts. The chromatic
+// aberration baseline is the gentle "always-on" channel split; noise base is the constant
+// faint film-grain. Bursts add on top of these, then we restore the baselines when the
+// burst ends.
+const ABERRATION_BASE = 1.0;
+const NOISE_BASE = 0.025;
 
 // #endregion
 
@@ -146,6 +194,8 @@ const FLICKER_DIP = 0.6;
 
 /**
  * Returns a random integer in the half-open range [min, max).
+ * Used by the glitch state machine to pick a fresh duration / cooldown each burst.
+ *
  * @param {number} min
  * @param {number} max
  * @returns {number}
@@ -156,6 +206,8 @@ function randInt(min, max) {
 
 /**
  * Returns a random float in [min, max).
+ * Used to roll the strength of each glitch.
+ *
  * @param {number} min
  * @param {number} max
  * @returns {number}
@@ -165,8 +217,9 @@ function randFloat(min, max) {
 }
 
 /**
- * Returns a random element from `arr`.
- * Used to pick a glitch personality. Strings or numbers, doesn't matter.
+ * Returns a random element from `arr`. Used to pick a glitch personality.
+ * Strings or numbers, doesn't matter.
+ *
  * @template T
  * @param {readonly T[]} arr
  * @returns {T}
@@ -178,6 +231,7 @@ function randPick(arr) {
 /**
  * Maps a status-line "color name" (kept as a string in STATUS_LINES so the table
  * is human-readable) to the matching palette slot.
+ *
  * @param {string} name
  * @returns {number}
  */
@@ -193,70 +247,161 @@ function colorSlot(name) {
 
 /**
  * PipBoy-style terminal showcase. Renders a tiny boot sequence + status block in green
- * bitmap text, then drives a JS-side glitch state machine that mutates the PipBoyEffect
- * uniforms each frame to produce occasional glitches. BloomEffect is stacked on top to
- * soften the phosphor glow.
+ * bitmap text, then drives a JS-side glitch state machine that mutates the post-process
+ * effect uniforms each frame to produce occasional glitches.
+ *
+ * The effect stack is built explicitly here so each piece is visible:
+ *   - PixelGlitch (pixel tier) for chunky band shifts that respect the palette.
+ *   - BarrelDistortion + ChromaticAberration + Interference + RollLine + Scanlines +
+ *     RGBMask + Vignette + Noise + Flicker + Bloom (display tier) for the physical
+ *     CRT simulation.
+ *
+ * If you want the same look in one line of code, use `BT.preset.crtPipBoy()` instead.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
     queryHardware() {
         return {
-            // The internal canvas is pixel-art sized. The CSS layer can scale it up,
-            // but the CRT effect is computed at this resolution - intentional for the look.
+            // The internal canvas is pixel-art sized. Game logic and draws operate at this
+            // resolution. The CRT effects do NOT see this resolution; they see the upscaled
+            // version below.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+
+            // canvasDisplaySize is REQUIRED to enable the display tier of the post-process
+            // chain. Without it, the engine renders straight to a 320x240 swap chain and
+            // any display-tier effect you try to add will throw an error. We pick a clean
+            // 4x integer scale so each logical pixel maps to a 4x4 output block.
+            canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
+
+            // 'nearest' keeps the pixel-art crispness through the upscale; 'linear' would
+            // soften it like an old TV signal. Try changing this to 'linear' to see the
+            // softer look.
+            outputUpscaleFilter: 'nearest',
+
             targetFPS: TARGET_FPS,
         };
     }
 
     async initialize() {
-        // Build the palette. Just six colors: every effect on screen comes from these.
+        // -- Step 1: build the palette --
+        // Six colors. Every effect on screen comes from these.
         const palette = BT.paletteCreate(16);
-        palette.set(C_BG, new Color32(8, 14, 8, 255));
-        palette.set(C_WHITE, Color32.white()); // The slot the font glyph pixels resolve to.
-        palette.set(C_GREEN_DIM, new Color32(40, 100, 60, 255));
-        palette.set(C_GREEN, new Color32(80, 200, 110, 255));
-        palette.set(C_GREEN_BRIGHT, new Color32(170, 255, 190, 255));
-        palette.set(C_AMBER, new Color32(220, 180, 60, 255));
+        palette.set(C_BG, new Color32(8, 14, 8, 255)); // Almost-black with green tint
+        palette.set(C_WHITE, Color32.white()); // Slot the font glyph pixels resolve to
+        palette.set(C_GREEN_DIM, new Color32(40, 100, 60, 255)); // Faded green
+        palette.set(C_GREEN, new Color32(80, 200, 110, 255)); // PipBoy green
+        palette.set(C_GREEN_BRIGHT, new Color32(170, 255, 190, 255)); // Hot green highlights
+        palette.set(C_AMBER, new Color32(220, 180, 60, 255)); // Vault-Tec amber accent
         BT.paletteSet(palette);
 
-        // Load the bitmap font we use for everything on screen. PragmataPro is a monospaced
-        // programming font - a perfect fit for a fictional terminal.
+        // -- Step 2: load the bitmap font --
+        // PragmataPro is a monospaced programming font - a perfect fit for a fictional
+        // terminal. The .btfont is a Blit-Tech bitmap font: a PNG glyph atlas plus a
+        // small JSON describing each character's bounds.
         this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
 
-        // The font is loaded as a sprite sheet of white pixels. We "indexize" it: the engine
-        // walks every pixel, looks up its color in the palette, and replaces the pixel with
-        // the matching slot index. After this, the font's pixels carry index = C_WHITE, and
+        // -- Step 3: indexize the font --
+        // The font is loaded as a sprite sheet of white pixels. "Indexize" walks every
+        // pixel, looks up its color in the palette, and replaces the pixel with the
+        // matching slot index. After this, the font's pixels carry index = C_WHITE, and
         // BT.printFont can shift that index by an offset to recolor the glyphs at draw time.
         this.font.getSpriteSheet().indexize(palette);
 
-        // Create the two post-process effects.
-        // PipBoyEffect: the CRT look (scanlines, mask, curvature, vignette, glitch hooks).
-        // BloomEffect: a soft glow on bright pixels. Stacked AFTER the CRT so the bloom
-        // sees the post-CRT image.
-        this.pipboy = new PipBoyEffect();
-        this.bloom = new BloomEffect();
+        // -- Step 4: pixel-tier effect (chunky glitch) --
+        // PixelGlitch lives in 320x240 land where chunky band shifts feel pixel-correct.
+        // Snapping to logical pixels would look wrong if it ran in display tier - bands
+        // would be 4 output pixels tall, not crisp source pixels.
+        this.pixelGlitch = new PixelGlitch();
+        this.pixelGlitch.bandHeight = 6; // height of each glitch band in source pixels
+        this.pixelGlitch.intensity = 0; // 0 = no glitch right now (state machine will spike it)
+        BT.effectAdd(this.pixelGlitch); // tier='pixel' on the effect routes this automatically
 
-        // Tune the CRT to taste. The defaults are designed to match the original PipBoy
-        // snippet, but we lean into a slightly darker, glowier look here.
-        this.pipboy.scanLineAmount = 0.55; // a touch lighter than default scanlines
-        this.pipboy.maskIntensity = 0.18; // RGB phosphor mask is more visible
-        this.pipboy.vignetteAmount = 0.35; // darker corners sell the curved-glass illusion
-        this.pipboy.noiseAmount = 0.025; // subtle film grain
+        // -- Step 5: display-tier stack --
+        // Order matters: barrel first (warps the UVs the rest of the chain inherits),
+        // then color/signal artifacts, then scanlines and mask, then noise, then flicker,
+        // and finally bloom on top of the modulated image.
 
-        // Tone the bloom down a little - defaults are "studio bright"; we want "underground vault".
-        this.bloom.bloomGlow = 0.18;
+        // Pincushion barrel distortion: simulates the curved glass of a CRT tube. Because
+        // this runs AFTER the upscale, the curve is computed at 1280x960 - lines stay
+        // smooth. (In the previous single-shader version, this would quantize to the
+        // 320x240 grid and produce visible step artifacts on diagonals.)
+        this.barrel = new BarrelDistortion();
+        this.barrel.curvature = 0.05; // small tube; 0.10 would be a tiny pocket TV
 
-        // Order matters: CRT first, bloom second. Demo 024 (CRT toggle) shows what add/remove
-        // looks like without bloom in the chain.
-        BT.effectAdd(this.pipboy);
-        BT.effectAdd(this.bloom);
+        // Chromatic aberration: shifts the red and blue channels horizontally. Cheap CRT
+        // optics produce a tiny version of this naturally.
+        this.aberration = new ChromaticAberration();
+        this.aberration.aberration = ABERRATION_BASE;
 
-        // Boot animation state. We use ticks instead of wall-clock so it stays deterministic
+        // Interference: per-row horizontal jitter that simulates analog signal noise.
+        this.interference = new Interference();
+        this.interference.amount = 0.06;
+
+        // Roll line: a horizontal bright band slowly scrolls down the screen, like an
+        // old TV that isn't quite sync'd.
+        this.rollLine = new RollLine();
+        this.rollLine.amount = 0.1; // strength of the bright band
+        this.rollLine.speed = 1.0; // how fast it scrolls
+
+        // Scanlines: alternating bright/dark horizontal bands aligned to source pixel rows.
+        this.scanlines = new Scanlines();
+        this.scanlines.amount = 0.55; // mix factor: 0 disables, 1 full effect
+        this.scanlines.strength = -8; // sharper bands at more negative values
+        // Match scanline density to logical rows so each source pixel row gets one
+        // bright/dark cycle. Without this, the scanlines would map to OUTPUT rows and
+        // be 4x denser than the underlying pixel art.
+        this.scanlines.density = DISPLAY_H;
+
+        // RGB shadow mask: per-pixel R/G/B vertical-stripe pattern with darkened cell
+        // borders, simulating the phosphor grille of an aperture-grille CRT.
+        this.mask = new RGBMask();
+        this.mask.intensity = 0.18; // 0 hides the mask, 1 = max influence
+        this.mask.size = 6; // mask cell pitch in source pixels
+        this.mask.border = 0.5; // border darkening within each cell
+
+        // Vignette: edge darkening to sell the curved-glass illusion.
+        this.vignette = new Vignette();
+        this.vignette.amount = 0.35;
+
+        // Per-frame noise: subtle film grain that animates each frame.
+        this.noise = new Noise();
+        this.noise.amount = NOISE_BASE;
+
+        // Flicker: a brightness multiplier driven by the glitch state machine.
+        this.flicker = new Flicker();
+        this.flicker.amount = FLICKER_BASE;
+
+        // Bloom: a soft glow on bright pixels - the warm phosphor halo of an old monitor.
+        // Stacked LAST so the bloom sees the final post-CRT image.
+        this.bloom = new Bloom();
+        this.bloom.spread = 3.0; // size of the bloom kernel
+        this.bloom.glow = 0.18; // mix factor onto the original pixel
+
+        // Register all display-tier effects in order.
+        for (const fx of [
+            this.barrel,
+            this.aberration,
+            this.interference,
+            this.rollLine,
+            this.scanlines,
+            this.mask,
+            this.vignette,
+            this.noise,
+            this.flicker,
+            this.bloom,
+        ]) {
+            BT.effectAdd(fx);
+        }
+
+        // -- Step 6: boot animation timer --
+        // We use ticks instead of wall-clock so the boot animation stays deterministic
         // even if the browser frame rate hiccups.
         this.bootStartTick = BT.ticks();
 
-        // Glitch state machine state. See the file header for what each field means.
+        // -- Step 7: glitch state machine state --
+        // See the file header for what each field means. We start in a long cooldown so
+        // the first burst doesn't fire on frame 1.
         this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchActive = 0;
         this.glitchDuration = 0;
@@ -272,7 +417,16 @@ class Demo {
         // characters to show. update() just provides time.
         this._ticksSinceBoot = BT.ticks() - this.bootStartTick;
 
-        // ---- 2. Drive the glitch state machine ----
+        // ---- 2. Drive the time-based effects every frame ----
+        // RollLine, Noise, and Interference all need a wall-clock seconds value to drive
+        // their animations. Convert ticks to seconds so the animation speed is independent
+        // of TARGET_FPS.
+        const seconds = BT.ticks() / TARGET_FPS;
+        this.rollLine.time = seconds;
+        this.noise.time = seconds;
+        this.interference.time = seconds;
+
+        // ---- 3. Drive the glitch state machine ----
         if (this.glitchActive > 0) {
             // We are inside a glitch burst. Build an "envelope": ramps up to glitchPeak,
             // holds, then ramps down. Sounds fancy - in practice it just makes a sin curve
@@ -285,8 +439,7 @@ class Demo {
             this.glitchActive--;
             // When the burst ends, reset the uniforms so the screen calms down.
             if (this.glitchActive === 0) {
-                this.pipboy.glitchIntensity = 0;
-                this.pipboy.flickerAmount = FLICKER_BASE;
+                this.resetGlitchUniforms();
                 this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
         } else {
@@ -299,45 +452,54 @@ class Demo {
                 this.glitchActive = this.glitchDuration;
                 this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
                 // Reset the seed so the shader uses a new band-noise pattern this burst.
-                this.pipboy.glitchSeed = Math.random() * 1000;
+                this.pixelGlitch.seed = Math.random() * 1000;
             }
         }
-
-        // The CRT shader uses `time` for its rolling line and noise. We feed it seconds
-        // so the rolling effect speed is independent of TARGET_FPS.
-        this.pipboy.time = BT.ticks() / TARGET_FPS;
     }
 
     /**
-     * Sets the glitch uniforms based on the current glitch type and an "envelope" value
-     * that goes 0 -> 1 -> 0 over the lifetime of the burst.
-     * @param {number} envelope
+     * Layers the chosen glitch personality onto the resting effect uniforms.
+     * Different burst types drive different effect uniforms - that is what gives each
+     * burst its own visual feel.
+     *
+     * @param {number} envelope - 0 -> 1 -> 0 over the lifetime of the burst.
      */
     applyGlitchUniforms(envelope) {
         const peak = this.glitchPeak * envelope;
 
-        // Reset everything to "calm" first, then layer the chosen personality on top.
+        // Reset to "calm" first, then layer the chosen personality.
         // This way two bursts back-to-back never accidentally inherit each other's settings.
-        this.pipboy.glitchIntensity = 0;
-        this.pipboy.flickerAmount = FLICKER_BASE;
+        this.resetGlitchUniforms();
 
         if (this.glitchType === 'hshift') {
-            // Horizontal band shift: bands of pixels jump sideways. Drives glitchIntensity only.
-            this.pipboy.glitchIntensity = peak;
+            // Pixel-tier band shift: chunky and palette-correct. Lives in 320x240 space
+            // so each band is one source-pixel row tall.
+            this.pixelGlitch.intensity = peak;
         } else if (this.glitchType === 'chromasplit') {
-            // The R/G/B channels split apart - the shader scales chromatic aberration with
-            // glitchIntensity. Same uniform, different feel because the underlying "ABERRATION"
-            // and band-shift terms both scale with it.
-            this.pipboy.glitchIntensity = peak * 1.2;
+            // Boost chromatic aberration for a split-color look. The display-tier effect
+            // works in output-pixel space so we get smooth fringes, not jagged ones.
+            this.aberration.aberration = ABERRATION_BASE + peak * 4;
         } else if (this.glitchType === 'noise') {
-            // Noisy bands of static. Slightly higher intensity to emphasize the noise mix term.
-            this.pipboy.glitchIntensity = peak * 0.9;
+            // Push noise up by a multiplier of its baseline. The noise reseeds every
+            // frame, so this looks like crackling static.
+            this.noise.amount = NOISE_BASE + peak * 0.08;
         } else if (this.glitchType === 'flicker') {
-            // Whole-screen brightness dip. Doesn't touch glitchIntensity at all - just tugs
-            // flickerAmount down toward FLICKER_DIP and back. This is the "lights flicker"
-            // moment in a horror movie.
-            this.pipboy.flickerAmount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
+            // Whole-screen brightness dip via the Flicker effect. This is the "lights
+            // flicker" moment in a horror movie.
+            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
         }
+    }
+
+    /**
+     * Returns every glitch-driven uniform to its resting value. Called between bursts
+     * AND at the start of each frame inside applyGlitchUniforms() so the state machine
+     * never accidentally inherits settings from the previous burst.
+     */
+    resetGlitchUniforms() {
+        this.pixelGlitch.intensity = 0;
+        this.aberration.aberration = ABERRATION_BASE;
+        this.noise.amount = NOISE_BASE;
+        this.flicker.amount = FLICKER_BASE;
     }
 
     render() {
@@ -359,6 +521,7 @@ class Demo {
      * Wraps BT.printFont so callers pass a target palette slot rather than the
      * raw offset the engine wants. C_WHITE is where the font's pixels live after
      * indexize, so the offset to reach `slot` is `slot - C_WHITE`.
+     *
      * @param {Vector2i} pos
      * @param {string} text
      * @param {number} slot - target palette slot index (e.g. C_GREEN)
