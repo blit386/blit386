@@ -40,7 +40,25 @@
  *   - SpriteSheet: a loaded image you can draw pieces of on screen (a "sprite")
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import {
+    BarrelDistortion,
+    Bloom,
+    bootstrap,
+    BT,
+    ChromaticAberration,
+    Color32,
+    Flicker,
+    Interference,
+    Noise,
+    PixelGlitch,
+    Rect2i,
+    RGBMask,
+    RollLine,
+    Scanlines,
+    SpriteSheet,
+    Vector2i,
+    Vignette,
+} from 'blit-tech';
 
 /**
  * This line tells code editors that our Demo class follows the IBlitTechDemo
@@ -73,7 +91,87 @@ const SPRITE_BASE = 10;
 const SPRITE_URL = '/sprites/logo-1.png';
 
 // Target update rate. 60 ticks per second is the classic smooth-animation rate.
-const TARGET_FPS = 60;
+const TARGET_FPS = 30;
+
+// -- Canvas output resolution --
+// The internal drawing canvas is 320x240. The canvas shown on the web page is
+// 4x that size: 1280x960. This gap is what lets the CRT display-tier effects
+// work well. Effects like barrel curve and scanlines operate on the LARGER
+// canvas, so their output stays smooth and crisp instead of blocky.
+const OUTPUT_W = 1280;
+const OUTPUT_H = 960;
+
+// -- Glitch state machine tuning --
+// The glitch machine picks a random pause ("cooldown") between glitches, then
+// fires a short burst. These numbers control those durations in ticks (60 per second).
+// MIN/MAX cooldown = how long the screen stays calm between glitches.
+// MIN/MAX active   = how long each glitch lasts once it starts.
+const GLITCH_COOLDOWN_MIN = 60; // 1 second of calm
+const GLITCH_COOLDOWN_MAX = 120; // up to 2 seconds of calm
+const GLITCH_ACTIVE_MIN = 5; // shortest burst: about 0.08 seconds
+const GLITCH_ACTIVE_MAX = 30; // longest burst: about 0.5 seconds
+
+// The glitch "personalities" the state machine can pick from. Each one drives
+// a different combination of effect settings to look distinct.
+const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker', 'interference'];
+
+// The peak strength of each burst is random in this range. 0 = invisible, 1 = full.
+const GLITCH_INTENSITY_MIN = 0.35;
+const GLITCH_INTENSITY_MAX = 1.0;
+
+// Flicker dims the whole screen. 1.0 = full brightness, lower = darker.
+const FLICKER_BASE = 1.0;
+const FLICKER_DIP = 0.6;
+
+// Resting values for chromatic aberration and noise. Glitch bursts add on top
+// of these, then we restore them when the burst ends so the screen calms back down.
+// ABERRATION_BASE is 0 so the resting CRT look is clean -- the channel split only
+// appears during a 'chromasplit' burst, making the state machine clearly visible.
+const ABERRATION_BASE = 0; // no permanent channel split
+const NOISE_BASE = 0.025; // constant faint film grain
+
+// #endregion
+
+// #region Glitch Helpers
+
+/**
+ * Returns a random whole number between min (included) and max (not included).
+ * For example, randInt(2, 5) can return 2, 3, or 4 but never 5.
+ * Used to pick a fresh cooldown or burst length each time the glitch fires.
+ *
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+function randInt(min, max) {
+    return min + Math.floor(Math.random() * (max - min));
+}
+
+/**
+ * Returns a random decimal number between min (included) and max (not included).
+ * For example, randFloat(0.35, 1.0) might return 0.72 or 0.91.
+ * Used to roll the peak strength of each glitch.
+ *
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+function randFloat(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+/**
+ * Returns one random element from an array.
+ * For example, randPick(['a', 'b', 'c']) might return 'b'.
+ * Used to pick which glitch personality fires next.
+ *
+ * @template T
+ * @param {readonly T[]} arr
+ * @returns {T}
+ */
+function randPick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
 
 // #endregion
 
@@ -121,7 +219,7 @@ class Demo {
     // y=1 means it moves 1 pixel downward each tick.
     // When we make a number negative (like -2), the sprite moves in the
     // opposite direction (left instead of right, or up instead of down).
-    speed = new Vector2i(2, 1);
+    speed = new Vector2i(1, 1);
 
     // "size" is how big the sprite is: 16 pixels wide and 16 pixels tall.
     // We update this from the loaded image in initialize() so the bounce
@@ -145,6 +243,40 @@ class Demo {
     // one sprite, so the rectangle covers the whole image: (x=0, y=0, full width, full height).
     spriteRect = null;
 
+    // -- Post-process effects --
+    // These are the individual CRT effects we stack on top of the rendered frame.
+    // Think of them like Photoshop filters applied in order. We set them up in
+    // initialize() and update some of their settings every frame in update().
+    // They all start as null and get filled in after the engine is ready.
+
+    // Pixel-tier effect: runs at the internal 320x240 resolution.
+    // This produces chunky pixel-wide band shifts that look like a real CRT glitch.
+    pixelGlitch = null;
+
+    // Display-tier effects: run at the canvas output resolution (1280x960).
+    // They simulate what the physical CRT screen would look like.
+    barrel = null; // pincushion curve that makes the edges bow inward
+    aberration = null; // tiny red/blue channel split (cheap CRT optics)
+    interference = null; // per-row horizontal jitter; 0 at rest, spiked by state machine
+    rollLine = null; // a bright band slowly scrolling down the screen
+    scanlines = null; // alternating bright/dark horizontal lines
+    mask = null; // RGB phosphor dot pattern (the dots of the screen)
+    vignette = null; // darkened corners, like looking into a curved tube
+    noise = null; // faint random film grain every frame
+    flicker = null; // whole-screen brightness modulated by the glitch machine
+    bloom = null; // soft glow around bright pixels (phosphor halo)
+
+    // -- Glitch state machine --
+    // Two counters drive the glitch: "cooldown" counts DOWN to the next glitch,
+    // "active" counts DOWN through the current glitch. When active > 0 we are
+    // inside a glitch burst. When active reaches 0, the burst is over and we
+    // start a new cooldown. See update() for the full logic.
+    glitchCooldown = 0; // ticks until the next glitch starts
+    glitchActive = 0; // ticks remaining in the current glitch (0 = no glitch)
+    glitchDuration = 0; // total length of the current burst (used to compute the envelope)
+    glitchType = 'none'; // which personality was randomly chosen for this burst
+    glitchPeak = 0; // how strong this burst is at its peak (0..1)
+
     // #region Lifecycle Methods
 
     /**
@@ -157,15 +289,22 @@ class Demo {
      */
     queryHardware() {
         return {
-            // displaySize is the "retro screen" resolution - the number of pixels
-            // you can actually draw on. 640x480 gives us comfortable room without
-            // looking blocky. Every pixel you draw maps to this grid.
-            displaySize: new Vector2i(640, 480),
+            // displaySize is the "retro screen" resolution - the pixel grid we draw on.
+            // 320x240 is a classic retro resolution that keeps the pixel-art look.
+            // All our drawing coordinates use this grid.
+            displaySize: new Vector2i(320, 240),
 
             // canvasDisplaySize is how big the canvas looks on the web page.
-            // Setting it to the same 640x480 as displaySize means every internal
-            // pixel maps to exactly one screen pixel -- a crisp, 1:1 view.
-            canvasDisplaySize: new Vector2i(640, 480),
+            // We set it 4x larger (1280x960) than the internal resolution so the
+            // CRT post-process effects have enough canvas pixels to draw smooth
+            // curves and scanlines. Without this, the barrel distortion would
+            // look like jagged pixel steps instead of a smooth curve.
+            canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
+
+            // 'nearest' keeps each internal pixel as a crisp 4x4 block when the
+            // engine scales up the 320x240 image to fill the 1280x960 canvas.
+            // Using 'linear' here would blur the pixel art.
+            outputUpscaleFilter: 'nearest',
 
             // targetFPS is how many times per second update() will be called.
             // 60 is the standard for smooth animation. render() runs once per
@@ -246,7 +385,7 @@ class Demo {
         this.spriteRect = new Rect2i(0, 0, this.size.x, this.size.y);
 
         // -- Step 7: position the sprite in the center of the screen --
-        // BT.displaySize() returns how big the screen is (640x480 in our case).
+        // BT.displaySize() returns how big the screen is (320x240 in our case).
         // We subtract the sprite's size so the CENTER of the sprite is centered,
         // not its top-left corner.
         // Math.floor() rounds down to a whole number - we need whole pixels
@@ -255,6 +394,113 @@ class Demo {
         const x = Math.floor(screen.x / 2 - this.size.x / 2);
         const y = Math.floor(screen.y / 2 - this.size.y / 2);
         this.pos = new Vector2i(x, y);
+
+        // -- Step 8: set up the CRT post-process effect chain --
+        // Post-processing means: after we finish drawing the scene, run it through
+        // one or more filters before showing it on screen. The engine supports two
+        // tiers of effects (see the file header in demo 023 for the full explanation):
+        //
+        //   Pixel tier: runs at 320x240. Effects here are chunky and palette-friendly.
+        //   Display tier: runs at 1280x960. Effects here are smooth CRT simulations.
+        //
+        // We add them with BT.effectAdd(). The engine routes each to the correct tier
+        // automatically based on which class it is. Order within each tier matters
+        // because the output of one effect feeds into the next.
+
+        // ---- Pixel-tier effect ----
+        // PixelGlitch shifts horizontal bands of pixels sideways at the 320x240 grid.
+        // We start it calm (intensity = 0). The glitch state machine in update() will
+        // spike the intensity whenever a 'hshift' burst fires.
+        this.pixelGlitch = new PixelGlitch();
+        this.pixelGlitch.bandHeight = 6; // each glitch band is 6 source pixels tall
+        this.pixelGlitch.intensity = 0; // off until the state machine triggers it
+        BT.effectAdd(this.pixelGlitch);
+
+        // ---- Display-tier effects (added in order: first applied first) ----
+
+        // Barrel distortion curves the edges inward like a real CRT glass tube.
+        // It runs at the 1280x960 canvas so the curve is smooth, not stair-stepped.
+        this.barrel = new BarrelDistortion();
+        this.barrel.curvature = 0.25; // noticeable curve; 0.05 is subtle, 0.10 is a small TV
+
+        // Chromatic aberration: shifts red and blue channels horizontally.
+        // Real CRT optics always had a tiny version of this.
+        this.aberration = new ChromaticAberration();
+        this.aberration.aberration = ABERRATION_BASE; // start at the resting value
+
+        // Interference: per-row jitter that mimics an unstable analog signal.
+        // Starts at 0 (screen calm). The 'interference' glitch type spikes this
+        // to 0.06 during a burst, so the jitter only appears during glitch events.
+        this.interference = new Interference();
+        this.interference.amount = 0;
+
+        // Roll line: a bright band slowly scrolling down the screen, like an old
+        // TV set that is not quite synced to the signal.
+        this.rollLine = new RollLine();
+        this.rollLine.amount = 0.1; // how bright the band is
+        this.rollLine.speed = 1.0; // how fast it scrolls
+
+        // Scanlines: alternating bright/dark horizontal stripes, one per logical row.
+        // Setting density = 240 aligns the lines to our 320x240 source pixels so each
+        // source row gets exactly one scanline. Without this, the stripes would be
+        // four times denser than the pixel art underneath.
+        this.scanlines = new Scanlines();
+        this.scanlines.amount = 0.55; // how much the effect is mixed in (0 = off, 1 = full)
+        this.scanlines.strength = -8; // sharper bands at more negative values
+        this.scanlines.density = 240; // match to the internal display height in pixels
+
+        // RGB shadow mask: simulates the phosphor dot grid of an aperture-grille CRT.
+        // Each cell has a red, green, and blue sub-pixel stripe.
+        this.mask = new RGBMask();
+        this.mask.intensity = 0.18; // subtle -- just enough to see the texture
+        this.mask.size = 6; // dot pitch in source pixels
+        this.mask.border = 0.5; // how dark the border between dots is
+
+        // Vignette: darkens the corners and edges to sell the curved-glass look.
+        this.vignette = new Vignette();
+        this.vignette.amount = 0.4;
+
+        // Noise: random film grain that reseeds every frame. A tiny amount makes the
+        // screen feel "alive" even when nothing is moving.
+        this.noise = new Noise();
+        this.noise.amount = NOISE_BASE;
+
+        // Flicker: a brightness multiplier. The glitch machine dips this during
+        // 'flicker' bursts to simulate a brief power dropout.
+        this.flicker = new Flicker();
+        this.flicker.amount = FLICKER_BASE; // 1.0 = full brightness (no flicker yet)
+
+        // Bloom: a soft glow around bright pixels. Added last so it sees the fully
+        // post-processed image, giving the warm phosphor-halo look.
+        this.bloom = new Bloom();
+        this.bloom.spread = 3.0; // radius of the glow kernel
+        this.bloom.glow = 0.18; // how much the glow blends onto the original pixel
+
+        // Register all display-tier effects in order. The loop is just a tidy way
+        // of calling BT.effectAdd() ten times -- same as writing it out ten lines.
+        for (const fx of [
+            this.barrel,
+            this.aberration,
+            this.interference,
+            this.rollLine,
+            this.scanlines,
+            this.mask,
+            this.vignette,
+            this.noise,
+            this.flicker,
+            this.bloom,
+        ]) {
+            BT.effectAdd(fx);
+        }
+
+        // ---- Glitch state machine: start in a random cooldown ----
+        // We pick a random wait before the first glitch so multiple page loads do
+        // not all glitch at the same moment.
+        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        this.glitchActive = 0;
+        this.glitchDuration = 0;
+        this.glitchType = 'none';
+        this.glitchPeak = 0;
 
         // Return true to tell the engine: "Everything loaded fine, start the demo!"
         return true;
@@ -301,6 +547,109 @@ class Demo {
             this.speed.y = -this.speed.y;
             this.bounces++;
         }
+
+        // ---- Drive the time-animated effects ----
+        // Some effects need to know the current time in SECONDS (not ticks) so their
+        // animations run at the same speed regardless of frame rate.
+        // BT.ticks() counts how many update() calls have happened. Dividing by
+        // TARGET_FPS (60) converts that into seconds.
+        const seconds = BT.ticks() / TARGET_FPS;
+        this.rollLine.time = seconds; // scrolls the bright band down the screen
+        this.noise.time = seconds; // reseeds the grain so it looks random each frame
+        this.interference.time = seconds; // needed when an 'interference' burst fires
+
+        // ---- Glitch state machine ----
+        // This is a simple "is a glitch happening right now?" counter system.
+        // Think of it like a traffic light: most of the time it is green (calm),
+        // but occasionally it switches to red (glitch burst) for a short time.
+        if (this.glitchActive > 0) {
+            // We are inside a glitch burst. Calculate an "envelope": a number that
+            // rises from 0 to 1 and back to 0 over the lifetime of the burst.
+            // We use Math.sin(0..PI) for this -- it gives a smooth hump shape.
+            // At the start of the burst: t = 0, envelope = 0 (effect just starting).
+            // At the middle:            t = 0.5, envelope ≈ 1 (effect at its peak).
+            // At the end:               t = 1, envelope = 0 (effect fading out).
+            const t = 1 - this.glitchActive / this.glitchDuration; // 0 at start, 1 at end
+            const envelope = Math.sin(t * Math.PI); // smooth 0 -> 1 -> 0 hump
+
+            // Apply the effect uniforms based on the current glitch type and strength.
+            this.applyGlitchUniforms(envelope);
+
+            // Count down: one tick used up.
+            this.glitchActive--;
+
+            // When the burst finishes, restore everything to calm and pick a new cooldown.
+            if (this.glitchActive === 0) {
+                this.resetGlitchUniforms();
+                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+            }
+        } else {
+            // No active glitch. Count down towards the next one.
+            this.glitchCooldown--;
+
+            if (this.glitchCooldown <= 0) {
+                // Time for a new burst! Roll a random personality, duration, and strength.
+                this.glitchType = randPick(GLITCH_TYPES);
+                this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+                this.glitchActive = this.glitchDuration;
+                this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+                // A new seed means the band-shift noise looks different every burst.
+                this.pixelGlitch.seed = Math.random() * 1000;
+            }
+        }
+    }
+
+    /**
+     * Pushes the right values into each effect's settings based on the current
+     * glitch type and the envelope (a 0 -> 1 -> 0 strength curve).
+     *
+     * We call resetGlitchUniforms() first so each burst always starts from a
+     * clean resting state. Then we add on top of that. This prevents two
+     * consecutive bursts from accidentally bleeding into each other.
+     *
+     * @param {number} envelope - strength of the burst right now, 0 to 1.
+     */
+    applyGlitchUniforms(envelope) {
+        // "peak" is the strength for THIS tick. At the middle of the burst
+        // (envelope = 1), peak = glitchPeak. At the edges, peak = 0.
+        const peak = this.glitchPeak * envelope;
+
+        // Start from calm, then layer the chosen personality on top.
+        this.resetGlitchUniforms();
+
+        if (this.glitchType === 'hshift') {
+            // Chunky pixel band shift. Lives in 320x240 space via the pixel-tier
+            // PixelGlitch effect. Each band is 6 source pixels tall (set by bandHeight).
+            this.pixelGlitch.intensity = peak;
+        } else if (this.glitchType === 'chromasplit') {
+            // Boost chromatic aberration so the red and blue channels split apart.
+            // This runs at display resolution, so the fringe is smooth.
+            this.aberration.aberration = ABERRATION_BASE + peak * 4;
+        } else if (this.glitchType === 'noise') {
+            // Crank up the film grain until it looks like crackling static.
+            this.noise.amount = NOISE_BASE + peak * 0.08;
+        } else if (this.glitchType === 'flicker') {
+            // Dip the whole-screen brightness -- the "lights briefly cut out" moment.
+            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
+        } else if (this.glitchType === 'interference') {
+            // Per-row jitter burst. The screen is calm (amount = 0) between bursts;
+            // this spikes the rows into jittering for the life of the burst.
+            this.interference.amount = peak * 0.06;
+        }
+    }
+
+    /**
+     * Returns every effect uniform to its resting ("calm") value.
+     * Called when a burst ends, and at the start of each frame inside
+     * applyGlitchUniforms() so the state machine never inherits leftover
+     * settings from the previous burst.
+     */
+    resetGlitchUniforms() {
+        this.pixelGlitch.intensity = 0;
+        this.aberration.aberration = ABERRATION_BASE;
+        this.noise.amount = NOISE_BASE;
+        this.flicker.amount = FLICKER_BASE;
+        this.interference.amount = 0;
     }
 
     /**
