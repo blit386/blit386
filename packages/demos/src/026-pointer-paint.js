@@ -20,8 +20,9 @@
 // What this demonstrates:
 //   - BT.buttonPressed() / BT.buttonReleased() for stroke begin / end events
 //   - BT.pointerPosValid(slot) / BT.pointerPos(slot) for per-slot positions
-//   - BT.pointerDelta(slot) for thick "stamp" strokes that fill gaps between
-//     fast-moving frames
+//   - lastPosX / lastPosY per-slot tracking: stamps the brush along the full
+//     line segment from the previous frame's position to the current one so
+//     fast strokes look continuous instead of dotted
 //
 // The painting happens on an offscreen palette layer (a 2D array of palette
 // indices) so brush strokes persist across frames even though render() clears

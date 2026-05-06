@@ -11,9 +11,8 @@
 // - Move the mouse over the demo to see the crosshair track your cursor.
 // - Click left, right, or middle to light up the A, B, or C button indicator.
 // - Spin the scroll wheel to nudge the scroll bar up or down.
-// - On a touchscreen: tap and drag to see slot 0 deactivate (no mouse) and
-//   slots 1-3 activate as touches arrive. (See demo 026 for the multi-touch
-//   paint version.)
+// - On a touchscreen: tap and drag to move the crosshair on slot 0. (See
+//   demo 026 for the full multi-touch paint version with all four slots.)
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
@@ -176,8 +175,6 @@ class Demo {
      */
     renderReadouts() {
         const valid = BT.pointerPosValid(0);
-        const pos = BT.pointerPos(0);
-        const delta = BT.pointerDelta(0);
         const scroll = BT.pointerScrollDelta();
 
         // Background panel so text is readable over any colour.
@@ -186,8 +183,19 @@ class Demo {
 
         BT.systemPrint(new Vector2i(12, 44), C_AMBER, 'Slot 0 (mouse):');
         BT.systemPrint(new Vector2i(12, 58), valid ? C_WHITE : C_DIM, `valid: ${valid}`);
-        BT.systemPrint(new Vector2i(12, 70), C_WHITE, `pos:   ${pos.x},${pos.y}`);
-        BT.systemPrint(new Vector2i(12, 82), C_WHITE, `delta: ${delta.x},${delta.y}`);
+
+        // Only read position and delta when the pointer is over the canvas.
+        // BT.pointerPos / BT.pointerDelta may hold stale data when not valid.
+        if (valid) {
+            const pos = BT.pointerPos(0);
+            const delta = BT.pointerDelta(0);
+            BT.systemPrint(new Vector2i(12, 70), C_WHITE, `pos:   ${pos.x},${pos.y}`);
+            BT.systemPrint(new Vector2i(12, 82), C_WHITE, `delta: ${delta.x},${delta.y}`);
+        } else {
+            BT.systemPrint(new Vector2i(12, 70), C_DIM, 'pos:   --,--');
+            BT.systemPrint(new Vector2i(12, 82), C_DIM, 'delta: --,--');
+        }
+
         BT.systemPrint(new Vector2i(12, 94), C_WHITE, `wheel: ${scroll.toFixed(1)}`);
     }
 
