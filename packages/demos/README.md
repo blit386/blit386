@@ -48,6 +48,15 @@ The demos build on each other in numeric order; later pages assume you have seen
 - **013-image-output** -- Frame capture and PNG export
 - **014-game-scene** -- Capstone: everything combined into a mini game scene
 
+### Input
+
+- **025-pointer-basics** -- Mouse position, delta, scroll wheel, and four pointer buttons (A/B/C/D) on slot 0 with a
+  live crosshair, button indicators, and a wheel-driven scroll bar
+- **026-pointer-paint** -- Multi-touch finger painting using all four pointer slots (mouse + up to three touches), with
+  edge-triggered clear / brush-cycle on right and middle click
+- **027-pointer-drag-flick** -- Drag-and-flick physics: grab one of three bouncing balls, release with `pointerDelta` as
+  launch velocity. Multi-touch grabs one ball per finger.
+
 ### Post-Process Effects
 
 - **023-crt-pipboy** -- Faux Fallout terminal with the full CRT stack (barrel, scanlines, mask, bloom, glitch state
