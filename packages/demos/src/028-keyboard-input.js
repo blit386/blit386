@@ -17,7 +17,7 @@
 //   same frame.
 //
 // Try this:
-// - Hold WASD and Space / N on player 1; arrow keys and ; ' on player 2.
+// - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
 // - Hold **Q** to see `keyDown`; tap **F** and watch the release line.
 // - Hold **H** to see `keyPressed(..., 15)` fire on an edge and then every 15 ticks.
 // - Type letters into the buffer line at the bottom.
@@ -97,6 +97,9 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async initialize() {
+        // Start from default keyboard maps so this demo does not inherit remaps from others.
+        BT.inputMapReset();
+
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255));
@@ -191,7 +194,7 @@ class Demo {
         const title = player === 0 ? 'Player 0 (P1 map)' : 'Player 1 (P2 map)';
         const hints =
             player === 0
-                ? 'WASD, Space or B=A, N=B, 5=Start, Esc=Select'
+                ? 'W, A, S, D, Space or B=A, N=B, 5=Start, Esc=Select'
                 : 'Arrows, ; or 1=A, quote or 2=B, Backspace or /=Start';
 
         // Which buttons have at least one key in the default map (skip empty slots).

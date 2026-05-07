@@ -3,7 +3,7 @@
 // Demo 029 in the Blit-Tech demo series.
 // Prerequisites: 001-Basics, 023-PipBoy-CRT (effect stack), 028-Keyboard-Input (face buttons).
 //
-// Move with player 1 face buttons (WASD / arrows): Up, Down, Left, Right. Each food dot grows
+// Move with player 1 face buttons (W, A, S, D): Up, Down, Left, Right. Each food dot grows
 // the snake. Hitting the boundary wall or your own body ends the run; the game restarts after
 // two seconds. Everything is drawn with rectangles only (no text).
 //
@@ -241,6 +241,9 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async initialize() {
+        // Start from default keyboard maps so this demo stays independent from remapping demos.
+        BT.inputMapReset();
+
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_BG, new Color32(25, 35, 45));

@@ -53,8 +53,8 @@ const HEADER_KEYS_Y = 76;
 const PANEL_TOP_Y = 100;
 const FOOTER_Y = DISPLAY_H - 18;
 
-// Horizontal step between face-button labels (seven buttons fit inside `PANEL_W` padding).
-const FACE_SLOT_WIDTH = 38;
+// Horizontal step between face-button labels (eight buttons fit inside `PANEL_W` padding).
+const FACE_SLOT_WIDTH = 32;
 
 /** @type {Array<{ label: string, code: number }>} */
 const FACE_ROW_ALL = [
@@ -64,6 +64,7 @@ const FACE_ROW_ALL = [
     { label: 'Rt', code: BT.BTN_RIGHT },
     { label: 'A', code: BT.BTN_A },
     { label: 'B', code: BT.BTN_B },
+    { label: 'St', code: BT.BTN_START },
     { label: 'Sl', code: BT.BTN_SELECT },
 ];
 
@@ -238,7 +239,7 @@ class Demo {
         const title = player === 0 ? 'Player 0' : 'Player 1';
         const hintLine1 =
             player === 0
-                ? 'Default keys: WASD, Space or B=A, N=B, 5=Start, Esc=Select'
+                ? 'Default keys: W, A, S, D, Space or B=A, N=B, 5=Start, Esc=Select'
                 : 'Default keys: arrows, ; or 1=A, quote or 2=B';
         const hintLine2 = player === 0 ? '' : 'Backspace or Numpad / = Start';
 
