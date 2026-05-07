@@ -12,9 +12,17 @@
 // It also shows `BT.gamepadConnected`, `BT.gamepadCount`, `BT.getAxis`, and
 // a bitmask button check with `BT.buttonDown(BT.BTN_A | BT.BTN_B, player)`.
 
+// #region Imports
+
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+// #endregion
+
+// #region Type Definitions
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+
+// #endregion
 
 // #region Configuration
 
@@ -43,7 +51,7 @@ const TRAIL_MAX = 28;
 
 // #endregion
 
-// #region Demo Class
+// #region Main Logic
 
 /**
  * Tiny gamepad playground that visualizes sticks, triggers, and buttons.
@@ -71,7 +79,122 @@ class Demo {
 
     // #endregion
 
-    // #region IBlitTechDemo Implementation
+    // #region Helper Functions
+
+    /**
+     * Return one of the pod palette colors.
+     *
+     * @returns {number}
+     */
+    currentPodColor() {
+        if (this.podColorIndex === 0) return C_POD_A;
+        if (this.podColorIndex === 1) return C_POD_B;
+        return C_POD_C;
+    }
+
+    /**
+     * Convert trigger pressure (0..1) into integer size.
+     *
+     * @param {number} throttle
+     * @returns {number}
+     */
+    currentPodSize(throttle) {
+        return POD_BASE_SIZE + Math.round(throttle * POD_MAX_EXTRA_SIZE);
+    }
+
+    /**
+     * Return half of the rendered pod size, floored for integer pixels.
+     *
+     * @param {number} throttle
+     * @returns {number}
+     */
+    currentPodHalfSize(throttle) {
+        return Math.floor(this.currentPodSize(throttle) / 2);
+    }
+
+    /**
+     * Keep a square centered point inside the play area.
+     *
+     * @param {Vector2i} pos
+     * @param {number} radius
+     * @returns {Vector2i}
+     */
+    clampToArena(pos, radius) {
+        const minX = 8 + radius;
+        const maxX = DISPLAY_W - 9 - radius;
+        const minY = 44 + radius;
+        const maxY = DISPLAY_H - 9 - radius;
+
+        const clampedX = Math.max(minX, Math.min(maxX, pos.x));
+        const clampedY = Math.max(minY, Math.min(maxY, pos.y));
+
+        return new Vector2i(clampedX, clampedY);
+    }
+
+    /**
+     * Reset pod and aim cursor near center.
+     */
+    resetPod() {
+        this.podPos = new Vector2i(Math.floor(DISPLAY_W / 2), Math.floor((44 + DISPLAY_H - 8) / 2));
+        this.aimPos = this.podPos.add(new Vector2i(28, 0));
+        this.trail = [];
+    }
+
+    /**
+     * Draw arena border, optional trail, pod, and aim cursor.
+     */
+    renderArena() {
+        BT.drawRectFill(new Rect2i(8, 44, DISPLAY_W - 16, DISPLAY_H - 52), C_PANEL);
+        BT.drawRect(new Rect2i(8, 44, DISPLAY_W - 16, DISPLAY_H - 52), C_PANEL_BORDER);
+
+        if (this.trailEnabled) {
+            for (let i = 0; i < this.trail.length; i++) {
+                const p = this.trail[i];
+                BT.drawPixel(p, C_TRAIL);
+            }
+        }
+
+        const throttle = Math.max(BT.getAxis(BT.AXIS_TRIGGER_L, PLAYER), BT.getAxis(BT.AXIS_TRIGGER_R, PLAYER));
+        const size = this.currentPodSize(throttle);
+        const half = this.currentPodHalfSize(throttle);
+
+        BT.drawRectFill(new Rect2i(this.podPos.x - half, this.podPos.y - half, size, size), this.currentPodColor());
+        BT.drawRect(new Rect2i(this.podPos.x - half, this.podPos.y - half, size, size), C_WHITE);
+
+        // Small crosshair from right-stick position.
+        BT.drawLine(
+            new Vector2i(this.aimPos.x - 4, this.aimPos.y),
+            new Vector2i(this.aimPos.x + 4, this.aimPos.y),
+            C_AIM,
+        );
+        BT.drawLine(
+            new Vector2i(this.aimPos.x, this.aimPos.y - 4),
+            new Vector2i(this.aimPos.x, this.aimPos.y + 4),
+            C_AIM,
+        );
+    }
+
+    /**
+     * Draw gamepad status and quick button hints.
+     */
+    renderHud() {
+        const connected = BT.gamepadConnected(PLAYER);
+        const count = BT.gamepadCount();
+        const aOrB = BT.buttonDown(BT.BTN_A | BT.BTN_B, PLAYER);
+        const controlsHint = 'A cycle color | B toggle trail | Start reset';
+        const maskHint = `(A|B) mask down: ${aOrB ? 'true' : 'false'}`;
+
+        BT.systemPrint(new Vector2i(10, 222), C_DIM, `Gamepads: ${count} | P1 connected: ${connected ? 'yes' : 'no'}`);
+        BT.systemPrint(new Vector2i(10, 232), C_DIM, `${controlsHint} | ${maskHint}`);
+
+        if (!connected) {
+            BT.systemPrint(new Vector2i(10, 34), C_ACCENT, 'Connect a gamepad and press any button to wake it.');
+        }
+    }
+
+    // #endregion
+
+    // #region Main Demo Logic
 
     /**
      * 320x240 logical pixels, scaled 2x in the browser.
@@ -148,9 +271,9 @@ class Demo {
         this.podPos = this.podPos.add(new Vector2i(Math.round(moveX * POD_SPEED), Math.round(moveY * POD_SPEED)));
         this.aimPos = this.aimPos.add(new Vector2i(Math.round(aimX * AIM_SPEED), Math.round(aimY * AIM_SPEED)));
 
-        const podSize = this.currentPodSize(throttle);
-        this.podPos = this.clampToArena(this.podPos, podSize);
-        this.aimPos = this.clampToArena(this.aimPos, 2);
+        const podHalf = this.currentPodHalfSize(throttle);
+        this.podPos = this.clampToArena(this.podPos, podHalf);
+        this.aimPos = this.clampToArena(this.aimPos, 4);
 
         if (this.trailEnabled) {
             this.trail.push(this.podPos);
@@ -175,118 +298,11 @@ class Demo {
     }
 
     // #endregion
-
-    // #region Helpers
-
-    /**
-     * Return one of the pod palette colors.
-     *
-     * @returns {number}
-     */
-    currentPodColor() {
-        if (this.podColorIndex === 0) return C_POD_A;
-        if (this.podColorIndex === 1) return C_POD_B;
-        return C_POD_C;
-    }
-
-    /**
-     * Convert trigger pressure (0..1) into integer size.
-     *
-     * @param {number} throttle
-     * @returns {number}
-     */
-    currentPodSize(throttle) {
-        return POD_BASE_SIZE + Math.round(throttle * POD_MAX_EXTRA_SIZE);
-    }
-
-    /**
-     * Keep a square centered point inside the play area.
-     *
-     * @param {Vector2i} pos
-     * @param {number} radius
-     * @returns {Vector2i}
-     */
-    clampToArena(pos, radius) {
-        const minX = 8 + radius;
-        const maxX = DISPLAY_W - 9 - radius;
-        const minY = 44 + radius;
-        const maxY = DISPLAY_H - 9 - radius;
-
-        const clampedX = Math.max(minX, Math.min(maxX, pos.x));
-        const clampedY = Math.max(minY, Math.min(maxY, pos.y));
-
-        return new Vector2i(clampedX, clampedY);
-    }
-
-    /**
-     * Reset pod and aim cursor near center.
-     */
-    resetPod() {
-        this.podPos = new Vector2i(Math.floor(DISPLAY_W / 2), Math.floor((44 + DISPLAY_H - 8) / 2));
-        this.aimPos = this.podPos.add(new Vector2i(28, 0));
-        this.trail = [];
-    }
-
-    /**
-     * Draw arena border, optional trail, pod, and aim cursor.
-     */
-    renderArena() {
-        BT.drawRectFill(new Rect2i(8, 44, DISPLAY_W - 16, DISPLAY_H - 52), C_PANEL);
-        BT.drawRect(new Rect2i(8, 44, DISPLAY_W - 16, DISPLAY_H - 52), C_PANEL_BORDER);
-
-        if (this.trailEnabled) {
-            for (let i = 0; i < this.trail.length; i++) {
-                const p = this.trail[i];
-                BT.drawPixel(p, C_TRAIL);
-            }
-        }
-
-        const throttle = Math.max(BT.getAxis(BT.AXIS_TRIGGER_L, PLAYER), BT.getAxis(BT.AXIS_TRIGGER_R, PLAYER));
-        const size = this.currentPodSize(throttle);
-        const half = Math.floor(size / 2);
-
-        BT.drawRectFill(new Rect2i(this.podPos.x - half, this.podPos.y - half, size, size), this.currentPodColor());
-        BT.drawRect(new Rect2i(this.podPos.x - half, this.podPos.y - half, size, size), C_WHITE);
-
-        // Small crosshair from right-stick position.
-        BT.drawLine(
-            new Vector2i(this.aimPos.x - 4, this.aimPos.y),
-            new Vector2i(this.aimPos.x + 4, this.aimPos.y),
-            C_AIM,
-        );
-        BT.drawLine(
-            new Vector2i(this.aimPos.x, this.aimPos.y - 4),
-            new Vector2i(this.aimPos.x, this.aimPos.y + 4),
-            C_AIM,
-        );
-    }
-
-    /**
-     * Draw gamepad status and quick button hints.
-     */
-    renderHud() {
-        const connected = BT.gamepadConnected(PLAYER);
-        const count = BT.gamepadCount();
-        const aOrB = BT.buttonDown(BT.BTN_A | BT.BTN_B, PLAYER);
-
-        BT.systemPrint(new Vector2i(10, 222), C_DIM, `Gamepads: ${count} | P1 connected: ${connected ? 'yes' : 'no'}`);
-        BT.systemPrint(
-            new Vector2i(10, 232),
-            C_DIM,
-            `A cycle color | B toggle trail | Start reset | (A|B) mask down: ${aOrB ? 'true' : 'false'}`,
-        );
-
-        if (!connected) {
-            BT.systemPrint(new Vector2i(10, 34), C_ACCENT, 'Connect a gamepad and press any button to wake it.');
-        }
-    }
-
-    // #endregion
 }
 
 // #endregion
 
-// #region App Lifecycle
+// #region Exports
 
 bootstrap(Demo);
 
