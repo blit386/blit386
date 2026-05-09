@@ -52,6 +52,7 @@ jobs:
   docs-links:
     name: Check Documentation Links
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Checkout code
