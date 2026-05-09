@@ -25,8 +25,6 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 ### Drawing Basics
 
-- **[00a-barebones](https://blit-tech-demos.vancura.dev/00a-barebones)** -- Smallest runnable demo: fixed display, one
-  palette, clear each frame
 - **[001-basics](https://blit-tech-demos.vancura.dev/001-basics)** -- Engine basics, lifecycle, bouncing square
 - **[002-primitives](https://blit-tech-demos.vancura.dev/002-primitives)** -- All primitive drawing: pixels, lines,
   rectangles
