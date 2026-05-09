@@ -85,9 +85,9 @@ CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.
 
 ### JavaScript Demo Files (`src/NNN-name.js`)
 
-Each demo is a single JS file under `src/`. Filenames are either `00a-topic.js` (barebones starter) or `NNN-topic.js`
-with three digits. The matching HTML page is served virtually at `/demos/<slug>.html` by the `virtual-demos` Vite
-plugin; no HTML file exists on disk. Follow this pattern:
+Each demo is a single JS file under `src/`. Filenames are `NNN-topic.js` with three digits. The matching HTML page is
+served virtually at `/demos/<slug>.html` by the `virtual-demos` Vite plugin; no HTML file exists on disk. Follow this
+pattern:
 
 ```js
 /**
@@ -126,8 +126,7 @@ bootstrap(Demo);
 
 ### Adding a New Demo
 
-Demos use kebab-case slugs: **`00a-topic`** (single barebones slot) or **`NNN-topic`** with three digits, e.g.
-`023-particles`.
+Demos use kebab-case slugs: **`NNN-topic`** with three digits, e.g. `023-particles`.
 
 The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` for this pattern. Adding a demo is a
 single step:
