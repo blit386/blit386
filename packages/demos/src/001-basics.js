@@ -703,7 +703,7 @@ class Demo {
 // bootstrap() is the function that starts everything. You pass it your Demo
 // class, and it takes care of:
 //   1. Setting up the HTML canvas on the page
-//   2. Checking that your browser supports WebGPU (the graphics technology)
+//   2. Picking a renderer: WebGPU when the browser supports it, otherwise Canvas 2D software mode (see README)
 //   3. Creating a new instance of your Demo class
 //   4. Calling configure() when you define it, then init(), then the update/render loop
 //

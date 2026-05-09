@@ -104,15 +104,42 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 - **[024-crt-toggle](https://blit-tech-demos.vancura.dev/024-crt-toggle)** -- Toggle the entire `BT.preset.crtPipBoy()`
   CRT stack on and off at runtime -- auto-switches between clean and CRT output every two seconds
 
-## Browser Requirements
+## Browser and renderer
 
-The demos require a WebGPU-capable browser:
+Blit-Tech uses **two renderers**. The default path is **WebGPU** (indexed framebuffer, full post-process chain, CRT
+presets, and related demos). If WebGPU is unavailable or fails to initialize, the engine **automatically** switches to a
+**Canvas 2D software renderer**; a small dismissible **SOFTWARE RENDERER** banner appears on the canvas. You can also
+force software mode with the `?renderer=software` query on a demo URL, or with `HardwareSettings.renderer: 'software'`
+in a demo’s `configure()`.
+
+Most demos run in **software mode** for core drawing (sprites, primitives, palette, input). **Post-process and
+fullscreen effect stacks** (for example the CRT demos) need **WebGPU**; the engine throws a clear error if software mode
+cannot provide them.
+
+**WebGPU support** (for the full experience) is typical in:
 
 | Browser     | Version        | Notes                                                        |
 | ----------- | -------------- | ------------------------------------------------------------ |
 | Chrome/Edge | 113+           | Enabled by default                                           |
 | Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux     |
 | Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags |
+
+## Engine documentation
+
+These demos are thin wrappers around the library. For complete behavior, APIs, and internals, use the Blit-Tech repo:
+
+- **[README](https://github.com/vancura/blit-tech/blob/main/README.md)** — features list, quick start, bootstrap
+  helpers, manual `BT.init`, project layout
+- **[Input](https://github.com/vancura/blit-tech/blob/main/docs/input.md)** — pointer slots, keyboard, gamepad,
+  remapping
+- **[Post-process effects](https://github.com/vancura/blit-tech/blob/main/docs/post-process-effects.md)** — pixel vs
+  display tiers, presets, writing effects
+- **[Bitmap fonts](https://github.com/vancura/blit-tech/blob/main/docs/bitmap-fonts.md)** — `.btfont` format and tooling
+- **[Testing](https://github.com/vancura/blit-tech/blob/main/docs/testing.md)** — unit, integration, and visual tests
+- **[Performance testing](https://github.com/vancura/blit-tech/blob/main/docs/performance-testing.md)** — benchmarks and
+  CI
+- **[Software fallback smoke matrix](https://github.com/vancura/blit-tech/blob/main/docs/software-fallback-smoke-matrix.md)**
+  — manual backend coverage notes
 
 ## How to run
 
