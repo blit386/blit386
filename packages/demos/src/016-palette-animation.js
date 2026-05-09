@@ -175,7 +175,8 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // Run one update cycle so all dynamic slots have real colors before the first render.
-        this.update();
+        // Pass false so animTime is not incremented during this priming call.
+        this.update(false);
 
         console.log('[PaletteAnimationDemo] Initialized');
         return true;
@@ -185,9 +186,12 @@ class Demo {
      * Called 60 times per second. Computes new Color32 values for every dynamic slot.
      * render() will never see Color32 -- it only reads slot indices we set here.
      */
-    update() {
+    update(advanceTime = true) {
         // Advance the clock. animTime grows by 1/60 each frame.
-        this.animTime += BT.deltaSeconds();
+        // Skipped when advanceTime is false (used during init() priming call).
+        if (advanceTime) {
+            this.animTime += BT.deltaSeconds();
+        }
 
         // Advance health drain.
         // We simulate a health bar that empties over HEALTH_DRAIN_TICKS ticks,

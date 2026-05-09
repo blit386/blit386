@@ -100,6 +100,7 @@ class Demo {
     tempVec1 = new Vector2i(0, 0);
     tempVec2 = new Vector2i(0, 0);
     tempRect = new Rect2i(0, 0, 0, 0);
+    worldSize = new Vector2i(800, 600); // matches worldWidth/worldHeight above
 
     // #endregion
 
@@ -169,11 +170,7 @@ class Demo {
         // Make sure the camera doesn't scroll past the edges of the world.
         // The right edge is worldWidth minus the screen width, because we don't want
         // the screen to show empty space past the world's right boundary.
-        this.cameraPos = BT.cameraClamp(
-            this.cameraPos,
-            new Vector2i(this.worldWidth, this.worldHeight),
-            BT.displaySize(),
-        );
+        this.cameraPos = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize());
 
         // Tell the engine to offset all world-space drawing by the camera position.
         // After this call, drawing at (0,0) will draw at the camera's top-left corner.

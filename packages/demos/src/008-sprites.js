@@ -262,7 +262,7 @@ class Demo {
      */
     renderCodeSnippet() {
         BT.systemPrint(new Vector2i(170, 165), C_LABEL, 'Load from file:');
-        BT.systemPrint(new Vector2i(170, 178), C_CODE, 'const sheet =');
+        BT.systemPrint(new Vector2i(170, 178), C_CODE, 'const indexed =');
         BT.systemPrint(new Vector2i(170, 190), C_CODE, '  await SpriteSheet');
         BT.systemPrint(new Vector2i(170, 202), C_CODE, '  .loadIndexed(');
         BT.systemPrint(new Vector2i(170, 214), C_CODE, "   'rock.png',");

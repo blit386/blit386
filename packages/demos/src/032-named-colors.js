@@ -1,3 +1,5 @@
+// @pageTitle Blit-Tech Demo 032 - Named Colors
+//
 // Named Colors Demo -- Color32 named lookup table and custom registration APIs.
 //
 // Demo 032 in the Blit-Tech demo series.
@@ -193,10 +195,10 @@ class Demo {
         BT.drawRectFill(new Rect2i(6, 32, 308, 126), C_PANEL);
         BT.drawRect(new Rect2i(6, 32, 308, 126), C_PANEL_BORDER);
 
-        this.drawSwatch(16, 44, C_TOMATO, "resolveNamedColor('tomato')");
-        this.drawSwatch(96, 44, C_CORNFLOWER, "resolveNamedColor('cornflowerblue')");
-        this.drawSwatch(176, 44, C_CUSTOM_DYNAMIC, "updateColor('demo-dynamic', ...)");
-        this.drawSwatch(256, 44, C_OPTIONAL, "resolveNamedColor('demo-optional')");
+        this.drawSwatch(16, 44, C_TOMATO, 'tomato');
+        this.drawSwatch(96, 44, C_CORNFLOWER, 'cornflower');
+        this.drawSwatch(176, 44, C_CUSTOM_DYNAMIC, 'dynamic');
+        this.drawSwatch(256, 44, C_OPTIONAL, 'optional');
 
         BT.systemPrint(new Vector2i(16, 104), C_TEXT, "Custom dynamic name: 'demo-dynamic'");
         BT.systemPrint(new Vector2i(16, 116), C_TEXT, "Custom optional name: 'demo-optional'");

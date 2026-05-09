@@ -1,3 +1,5 @@
+// @pageTitle Blit-Tech Demo 003 - Colors
+//
 // Colors Demo -- a deep dive into Color32 and palettes in Blit-Tech.
 //
 // Demo 003 in the Blit-Tech demo series, written for young learners (around 12)

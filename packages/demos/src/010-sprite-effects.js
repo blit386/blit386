@@ -33,7 +33,8 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 // #region Configuration
 
 // Where sprite colors start in the palette.
-const SPRITE_BASE = 10;
+// Must be above the highest UI slot (C_FPS = 11) to avoid overwriting UI colors.
+const SPRITE_BASE = 12;
 
 // Placeholder for "how many unique colors in the sprite" -- set during init().
 // We use 0 here and update it after extracting colors.

@@ -96,7 +96,7 @@ const TIER_LIGHTNESS = [85, 68, 52, 36, 20];
 
 // --- Screen layout ---
 // The logical resolution of the canvas in pixels. This is the number of "dots" in the display,
-// not the size of the window (the window is 2x larger, set in configure).
+// not the size of the window (the window is 2x larger via engine defaultConfig).
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
 

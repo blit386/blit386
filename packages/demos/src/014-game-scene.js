@@ -197,6 +197,7 @@ class Demo {
     // Reused rectangle and vector to avoid creating new objects every frame.
     tempRect = new Rect2i(0, 0, 0, 0);
     tempVec = new Vector2i(0, 0);
+    worldSize = new Vector2i(WORLD_W, WORLD_H); // pre-allocated for cameraClamp calls
 
     // Sky band colors: top and horizon base values for the gradient.
     skyTop = new Color32(40, 70, 140);
@@ -592,7 +593,7 @@ class Demo {
      * Keeps cameraPos.x between 0 and WORLD_W - DISPLAY_W.
      */
     clampCamera() {
-        const clamped = BT.cameraClamp(this.cameraPos, new Vector2i(WORLD_W, WORLD_H), BT.displaySize());
+        const clamped = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize());
         this.cameraPos.x = clamped.x;
         this.cameraPos.y = clamped.y;
         this.cameraXFloat = this.cameraPos.x;
