@@ -4,7 +4,7 @@ import { join } from 'node:path';
 // #region Constants
 
 // Three digits (`001-topic`) or special prefix `00a-topic` for the barebones starter.
-const DEMO_FILENAME_PATTERN = /^([0-9]{2}a|[0-9]{3})-([a-z0-9-]+)\.js$/;
+const DEMO_FILENAME_PATTERN = /^(00a|[0-9]{3})-([a-z0-9-]+)\.js$/;
 const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
 const HEADER_SCAN_BYTES = 2000;
 
