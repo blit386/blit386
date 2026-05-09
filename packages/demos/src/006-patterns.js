@@ -44,7 +44,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 // Index 0 is always reserved for transparent -- we never use it.
 // We give each color a readable name so the code is easier to follow.
 
-// Static colors (set once in initialize, never change).
+// Static colors (set once in init, never change).
 const C_WHITE = 1; // Pure white -- title text and font base color.
 const C_BG = 2; // Very dark blue-black background.
 const C_LABEL = 3; // Dim white -- section labels ("Spiral", "Wave", etc.).
@@ -116,19 +116,6 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Runs once when the demo starts. Sets up the palette.
      *
      * IMPORTANT ORDER:
@@ -138,7 +125,7 @@ class Demo {
      *
      * @returns {Promise<boolean>} Returns true when ready to run.
      */
-    async initialize() {
+    async init() {
         // --- Step 1: Create the palette ---
         // BT.paletteCreate(256) makes a color table with 256 numbered slots.
         // Slot 0 is always transparent and cannot be changed.
@@ -191,8 +178,8 @@ class Demo {
      * All color computation happens here. render() only uses palette index numbers.
      */
     update() {
-        // 0.016 seconds is roughly one frame at 60 FPS (1/60 ≈ 0.01666...).
-        this.animTime += 0.016;
+        // deltaSeconds is one fixed update step in seconds (usually 1/60).
+        this.animTime += BT.deltaSeconds();
 
         // --- Update spiral colors (100 animated dots) ---
         // Each dot gets a hue that depends on its position AND the current time.
@@ -300,7 +287,7 @@ class Demo {
 
     /**
      * Draws lines radiating from a center point like sun rays.
-     * Each ray has a different color (set once in initialize) and its length pulses.
+     * Each ray has a different color (set once in init) and its length pulses.
      *
      * @param {Vector2i} center - The center point to draw rays from.
      */
@@ -320,7 +307,7 @@ class Demo {
             const x = center.x + Math.cos(angle) * length;
             const y = center.y + Math.sin(angle) * length;
 
-            // Use the static color for ray i (set in initialize, never changes).
+            // Use the static color for ray i (set in init, never changes).
             this.tempVec1.set(Math.floor(x), Math.floor(y));
             BT.drawLine(center, this.tempVec1, C_RADIAL_BASE + i);
         }
@@ -367,7 +354,7 @@ class Demo {
      * This shows how circles can be approximated with only line-drawing primitives.
      * The radius pulses and the whole circle slowly rotates.
      *
-     * Segment colors are static (set once in initialize based on hue position).
+     * Segment colors are static (set once in init based on hue position).
      *
      * @param {Vector2i} center - The center of the circle.
      */

@@ -21,7 +21,7 @@
 //   from the palette. Think of it like numbered paint cans: you choose which can to use,
 //   not the exact mix of paint every time you pick up the brush.
 //
-//   Static colors (named swatches, alpha layers) go into the palette once during initialize().
+//   Static colors (named swatches, alpha layers) go into the palette once during init().
 //   Animated colors (HSL rainbow, lerp gradient, pulse) are recalculated every tick
 //   inside update() and written back into their reserved palette slots.
 //   render() only ever uses palette index numbers -- no Color32 objects there.
@@ -39,14 +39,11 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
-
 //
 // These numbers are the palette "addresses". We name them so the code is readable.
 // Index 0 is always transparent and reserved -- never assign to it.
 
-// Basic colors (set once in initialize, never change).
+// Basic colors (set once in init, never change).
 const C_WHITE = 1; // Pure white -- font base and section headers.
 const C_BG = 2; // Dark gray-blue background.
 const C_BLACK = 3; // Pure black -- labels on light-colored swatches.
@@ -119,29 +116,11 @@ class Demo {
     // #region Lifecycle
 
     /**
-     * Tells the engine the virtual screen size, canvas size on the page, and update rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            // Internal drawing grid: 320 by 240 pixels (classic small-game resolution).
-            displaySize: new Vector2i(320, 240),
-
-            // Canvas on the web page is doubled so each pixel looks chunky and clear.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            // Run update() 60 times per second when possible -- smooth motion.
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Sets up the palette and prepares lerp color objects.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         // --- Step 1: Create the palette ---
         this.palette = BT.paletteCreate(256);
 
@@ -197,7 +176,7 @@ class Demo {
      */
     update() {
         // Add one tick's worth of seconds. At 60 ticks per second, each tick is 1/60 of a second.
-        this.animTime += 1 / TARGET_FPS;
+        this.animTime += BT.deltaSeconds();
 
         // --- HSL rainbow: 64 animated hue slots ---
         // Each slot gets a hue based on its position on the color wheel PLUS
@@ -371,7 +350,7 @@ class Demo {
      * Draws a bright base rectangle, then stacks softer rectangles on top.
      * The fourth number in new Color32(r, g, b, a) is alpha: 255 = solid, 0 = invisible.
      *
-     * Each layer was pre-registered as a palette slot in initialize() so we only
+     * Each layer was pre-registered as a palette slot in init() so we only
      * need to pass index numbers here.
      */
     drawAlphaSection() {

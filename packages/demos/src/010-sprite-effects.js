@@ -18,7 +18,7 @@
 //   - Day/night: a block dynamically updated every tick to reflect ambient light
 //
 // For STATIC effects (normal, silhouette, team red/blue/green, frozen): we build color
-// blocks once in initialize() and never change them.
+// blocks once in init() and never change them.
 //
 // For DYNAMIC effects (damage flash, ghost pulse, invincibility, poison, day/night):
 // we update the color block in update() every tick and draw with that offset in render().
@@ -32,13 +32,10 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
-
 // Where sprite colors start in the palette.
 const SPRITE_BASE = 10;
 
-// Placeholder for "how many unique colors in the sprite" -- set during initialize().
+// Placeholder for "how many unique colors in the sprite" -- set during init().
 // We use 0 here and update it after extracting colors.
 let N = 0; // Each theme block is N entries wide.
 
@@ -93,7 +90,7 @@ const BLOCK_DAYNIGHT = 12; // Dynamic.
 
 /**
  * Demonstrates palette-offset based sprite effects.
- * Static effects are pre-built in initialize(); dynamic effects update in update().
+ * Static effects are pre-built in init(); dynamic effects update in update().
  *
  * @implements {IBlitTechDemo}
  */
@@ -109,7 +106,7 @@ class Demo {
     // The source rectangle for the rock sprite.
     charSprite = null;
 
-    // How many unique colors the sprite has (N). Computed in initialize().
+    // How many unique colors the sprite has (N). Computed in init().
     spriteColorCount = 0;
 
     // The extracted original Color32 objects (used to build theme blocks).
@@ -126,33 +123,22 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine how big the screen should be and how fast to run.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Sets up the palette with static UI colors, builds all 13 theme blocks,
      * loads the sprite, and loads the font.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
-    async initialize() {
+    async init() {
         console.log('[SpriteEffectsDemo] Initializing...');
 
         // --- Palette: static UI colors ---
+        // applyHUD(1) fills six standard HUD slots. Slots 1 (white) and 3 (label
+        // gray) match this demo's values exactly. Slot 2 (bg) and slots 4-6 are
+        // overridden below with demo-specific colors; slots 7-11 are new additions.
         this.palette = BT.paletteCreate(256);
+        this.palette.applyHUD(1);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
         this.palette.set(C_BG, new Color32(25, 25, 35));
-        this.palette.set(C_LABEL, new Color32(200, 200, 200));
         this.palette.set(C_LABEL_RED, new Color32(255, 100, 100));
         this.palette.set(C_LABEL_BLUE, new Color32(100, 150, 255));
         this.palette.set(C_LABEL_GREEN, new Color32(100, 255, 100));
@@ -187,21 +173,15 @@ class Demo {
             }
         }
 
-        // --- Activate palette ---
-        BT.paletteSet(this.palette);
-
         // --- Load and indexize sprite ---
         try {
-            this.spriteSheet = await SpriteSheet.load('/sprites/test.png');
-
-            const img = new Image();
-            img.src = '/sprites/test.png';
-            await new Promise((resolve) => {
-                img.onload = () => resolve();
+            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
+                sort: 'none',
             });
-            this.charSprite = new Rect2i(0, 0, img.naturalWidth, img.naturalHeight);
-            this.spriteSheet.indexize(this.palette);
-            console.log(`[SpriteEffectsDemo] Loaded sprite: ${img.naturalWidth}x${img.naturalHeight}px`);
+            this.spriteSheet = indexed.sheet;
+            this.charSprite = this.spriteSheet.fullRect();
+            BT.paletteSet(this.palette);
+            console.log(`[SpriteEffectsDemo] Loaded sprite: ${this.charSprite.width}x${this.charSprite.height}px`);
         } catch (error) {
             console.error('[SpriteEffectsDemo] Failed to load sprite:', error);
             return false;
@@ -221,7 +201,7 @@ class Demo {
      * Day/night smoothly cycles brightness over 20 seconds.
      */
     update() {
-        this.animTime += 1 / TARGET_FPS;
+        this.animTime += BT.deltaSeconds();
 
         if (!this.spriteColorCount) {
             return;
@@ -270,7 +250,7 @@ class Demo {
 
     /**
      * Builds the 8 static theme blocks by transforming the base colors.
-     * Called once in initialize() -- these never change after setup.
+     * Called once in init() -- these never change after setup.
      */
     buildStaticThemeBlocks() {
         // Block 0 (original) is already filled by SpriteSheet.loadColorsIntoPalette above.
@@ -279,7 +259,7 @@ class Demo {
             const base = this.baseColors[i];
 
             // The average brightness of this pixel (0..255 range).
-            const lum = Math.floor(base.r * 0.299 + base.g * 0.587 + base.b * 0.114);
+            const lum = Math.floor(base.luminance);
 
             // Block 1: Silhouette -- near-black with slight variation to preserve depth cues.
             this.palette.set(
@@ -354,7 +334,7 @@ class Demo {
 
         for (let i = 0; i < N; i++) {
             const base = this.baseColors[i];
-            const lum = Math.floor(base.r * 0.299 + base.g * 0.587 + base.b * 0.114);
+            const lum = Math.floor(base.luminance);
 
             let color;
 
@@ -389,7 +369,7 @@ class Demo {
 
         for (let i = 0; i < N; i++) {
             const base = this.baseColors[i];
-            const lum = Math.floor(base.r * 0.299 + base.g * 0.587 + base.b * 0.114);
+            const lum = Math.floor(base.luminance);
 
             // Push toward a cool blue-white while reducing alpha.
             this.palette.set(
@@ -411,7 +391,7 @@ class Demo {
 
             // fromHSL takes hue (0-360), saturation (0-100), lightness (0-100).
             // We use varying lightness so darker parts stay darker.
-            const lum = base.r * 0.299 + base.g * 0.587 + base.b * 0.114;
+            const lum = base.luminance;
             const lightness = 30 + (lum / 255) * 40; // 30..70%
             const rainbow = Color32.fromHSL(hue, 100, lightness);
 

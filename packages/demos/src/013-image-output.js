@@ -65,28 +65,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Provides the demo's virtual display size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}} Settings for bootstrap.
-     */
-    queryHardware() {
-        // Return settings Blit-Tech uses to create the canvas and run the game loop.
-        return {
-            // displaySize is the internal pixel resolution we draw to (320 wide, 240 tall).
-            displaySize: new Vector2i(320, 240),
-            // canvasDisplaySize is how big the canvas is on the page (640x480 px, scaled up for visibility).
-            canvasDisplaySize: new Vector2i(640, 480),
-            // targetFPS asks the engine to run update() about 60 times per second.
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Sets up the palette, loads the bitmap font, and wires the Space key to frame capture.
      *
      * @returns {Promise<boolean>} Resolves to `true` when the demo is ready to run.
      */
-    async initialize() {
+    async init() {
         // --- Step 1: build the color palette ---
         // Create a palette with room for 256 colors. 256 is a classic retro amount.
         this.palette = BT.paletteCreate(256);

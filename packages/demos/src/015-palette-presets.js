@@ -70,7 +70,7 @@ class Demo {
     // The main palette used for UI and the live preview.
     palette = null;
 
-    // The six preset palette objects, loaded in initialize().
+    // The six preset palette objects, loaded in init().
     presets = [];
 
     // Name strings for each preset (for display).
@@ -82,7 +82,7 @@ class Demo {
     // Tick number when we last switched the live view.
     lastSwitchTick = 0;
 
-    // Palette slot offsets for each preset's swatch row (filled in initialize()).
+    // Palette slot offsets for each preset's swatch row (filled in init()).
     swatchOffsets = [];
 
     // #endregion
@@ -90,24 +90,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Loads all six presets, builds the main UI palette, and loads the font.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[PalettePresetsDemo] Initializing...');
 
         // --- Load all six preset palettes ---
@@ -255,7 +242,7 @@ class Demo {
 
     /**
      * Draws one row of colored rectangles per preset.
-     * Each rectangle's color comes directly from the swatch slots we copied in initialize().
+     * Each rectangle's color comes directly from the swatch slots we copied in init().
      */
     renderSwatchRows() {
         // Row positions: six presets spread across the upper portion of the screen.
@@ -286,7 +273,7 @@ class Demo {
     renderLivePreview() {
         const panelY = 148;
 
-        // Panel background -- index 2 is the dark background color we set in initialize().
+        // Panel background -- index 2 is the dark background color we set in init().
         BT.drawRectFill(new Rect2i(0, panelY - 4, 320, 96), 2);
 
         // Header. Slot 5 = blue-gray subtitle. systemPrint takes (position, paletteIndex, text).

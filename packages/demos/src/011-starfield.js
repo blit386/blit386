@@ -80,7 +80,7 @@ class Demo {
 
     // Three separate arrays. Each entry is a plain object:
     // { x, y, speed, paletteIndex }
-    // paletteIndex is the slot number registered during initialize().
+    // paletteIndex is the slot number registered during init().
     farStars = [];
     mediumStars = [];
     nearStars = [];
@@ -104,20 +104,6 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tell Blit-Tech how big the internal display is, how big the HTML canvas looks,
-     * and how many logic updates to aim for per second.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Sets up the palette and creates star layers.
      *
      * IMPORTANT ORDER:
@@ -128,7 +114,7 @@ class Demo {
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[StarfieldDemo] Initializing...');
 
         // --- Step 1: Create palette and static colors ---
@@ -224,7 +210,7 @@ class Demo {
     /**
      * Build one layer's raw data: count stars with random positions and brightness.
      * Returns objects with { x, y, speed, brightness } -- paletteIndex is added later
-     * in initialize() once the palette is ready.
+     * in init() once the palette is ready.
      *
      * Math.random() returns a fraction from 0 up to (but not including) 1.
      *
@@ -249,7 +235,7 @@ class Demo {
             // Brightness: 0 = black, 255 = white. Used to make a gray Color32.
             const brightness = Math.floor(brightMin + Math.random() * (brightMax - brightMin + 1));
 
-            // paletteIndex starts at 0; initialize() will fill it in after palette setup.
+            // paletteIndex starts at 0; init() will fill it in after palette setup.
             layer.push({ x, y, speed, brightness, paletteIndex: 0 });
         }
 
@@ -325,7 +311,7 @@ class Demo {
 
     /**
      * Draw a short bright line: tail behind the head along the motion direction.
-     * Uses the static C_STREAK palette slot registered in initialize().
+     * Uses the static C_STREAK palette slot registered in init().
      */
     drawShootingStar() {
         if (!this.shootingStar.active) {
@@ -339,7 +325,7 @@ class Demo {
         const tailX = hx + 14;
         const tailY = hy - 4;
 
-        // C_STREAK is the cool white color registered in initialize().
+        // C_STREAK is the cool white color registered in init().
         BT.drawLine(new Vector2i(tailX, tailY), new Vector2i(hx, hy), C_STREAK);
     }
 
@@ -349,7 +335,7 @@ class Demo {
 
     /**
      * Farthest layer: one pixel per star (BT.drawPixel), dim gray range.
-     * Each star's paletteIndex was set in initialize() to point at its unique gray shade.
+     * Each star's paletteIndex was set in init() to point at its unique gray shade.
      */
     drawFarStars() {
         for (let i = 0; i < this.farStars.length; i++) {

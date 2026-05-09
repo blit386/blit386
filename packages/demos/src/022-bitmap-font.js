@@ -36,9 +36,6 @@ import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
-
 // The x position where the rainbow text row starts.
 // Shared by update() (hue calculation) and renderRainbowText() (glyph drawing) so they stay in sync.
 const RAINBOW_ORIGIN_X = 10;
@@ -101,25 +98,11 @@ class Demo {
 
     // Tells the engine how big the screen should be and how fast to run.
     // Returns an object with displaySize, canvasDisplaySize, and targetFPS.
-    queryHardware() {
-        return {
-            // 320x240 is a classic retro resolution, similar to the Game Boy Advance.
-            displaySize: new Vector2i(320, 240),
-
-            // The canvas on the page is displayed at double size (640x480).
-            // This makes every pixel look 2x2 screen pixels large.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            // Run at TARGET_FPS frames per second.
-            targetFPS: TARGET_FPS,
-        };
-    }
-
     // Sets up the color palette and downloads the bitmap font.
     // Notice the "await" keyword -- we wait here until the font file is fully downloaded.
     // The built-in system font (BT.systemPrint) skips this step entirely.
     // Returns true when the font has loaded successfully, or false if loading fails.
-    async initialize() {
+    async init() {
         console.log('[BitmapFontDemo] Initializing...');
 
         // --- Set up the color palette ---
@@ -177,8 +160,8 @@ class Demo {
     // We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
     // We advance the animation timer AND update dynamic palette colors here.
     update() {
-        // Move the animation clock forward by one update tick's worth of time (1/TARGET_FPS second).
-        this.animTime += 1 / TARGET_FPS;
+        // Move the animation clock forward by one fixed update step in seconds.
+        this.animTime += BT.deltaSeconds();
 
         // --- Update the pulsing text color ---
         // Math.sin returns a wave that smoothly oscillates between -1 and +1.
@@ -272,24 +255,29 @@ class Demo {
     // lineHeight: how many pixels to move down between lines.
     // Returns the Y position after the last line drawn.
     renderColoredText(y, lineHeight) {
+        // Use a local variable so we don't modify the original parameter.
+        // In JavaScript, changing a parameter's value inside a function can confuse readers
+        // because they expect the original value to stay the same throughout the function.
+        let currentY = y;
+
         // Each color is looked up by offset: palette[1 + offset] = the desired color.
         // C_RED_TEXT = 3, so offset = 3 - 1 = 2. That means palette[1 + 2] = palette[3] = red.
         // With BT.systemPrint() you would just write: BT.systemPrint(pos, C_RED_TEXT, text).
-        BT.printFont(this.font, new Vector2i(10, y), 'Red Text', C_RED_TEXT - 1);
-        y += lineHeight;
+        BT.printFont(this.font, new Vector2i(10, currentY), 'Red Text', C_RED_TEXT - 1);
+        currentY += lineHeight;
 
-        BT.printFont(this.font, new Vector2i(10, y), 'Green Text', C_GREEN_TEXT - 1);
-        y += lineHeight;
+        BT.printFont(this.font, new Vector2i(10, currentY), 'Green Text', C_GREEN_TEXT - 1);
+        currentY += lineHeight;
 
-        BT.printFont(this.font, new Vector2i(10, y), 'Blue Text', C_BLUE_TEXT - 1);
-        y += lineHeight;
+        BT.printFont(this.font, new Vector2i(10, currentY), 'Blue Text', C_BLUE_TEXT - 1);
+        currentY += lineHeight;
 
-        BT.printFont(this.font, new Vector2i(10, y), 'Yellow Text', C_YELLOW_TEXT - 1);
+        BT.printFont(this.font, new Vector2i(10, currentY), 'Yellow Text', C_YELLOW_TEXT - 1);
 
         // Add extra space after this section.
-        y += lineHeight + 4;
+        currentY += lineHeight + 4;
 
-        return y;
+        return currentY;
     }
 
     // Draws text where each character has a different color, and the colors
@@ -387,20 +375,28 @@ class Demo {
     // y: the Y position to start drawing at.
     // lineHeight: how many pixels to move down between lines.
     renderFontInfo(y, lineHeight) {
+        // Use a local variable so we don't modify the original parameter.
+        let currentY = y;
+
         // Show the font's name and how many different characters (glyphs) it contains.
         // C_DIM_GRAY - 1 = 8. That means palette[1 + 8] = palette[9] = C_DIM_GRAY = dim gray.
         BT.printFont(
             this.font,
-            new Vector2i(10, y),
+            new Vector2i(10, currentY),
             `Font: ${this.font.name} (${this.font.glyphCount} glyphs)`,
             C_DIM_GRAY - 1,
         );
 
-        y += lineHeight;
+        currentY += lineHeight;
 
         // Show the current FPS and total ticks.
         // C_DARKER_GRAY - 1 = 9. That means palette[1 + 9] = palette[10] = C_DARKER_GRAY.
-        BT.printFont(this.font, new Vector2i(10, y), `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`, C_DARKER_GRAY - 1);
+        BT.printFont(
+            this.font,
+            new Vector2i(10, currentY),
+            `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`,
+            C_DARKER_GRAY - 1,
+        );
     }
 
     // #endregion

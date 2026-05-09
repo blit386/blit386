@@ -70,24 +70,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Runs once at startup. Sets up the palette and prefills the trail.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255));

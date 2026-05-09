@@ -197,24 +197,11 @@ class Demo {
     // #region Main Demo Logic
 
     /**
-     * 320x240 logical pixels, scaled 2x in the browser.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            canvasDisplaySize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Build a small custom palette and start centered.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_WHITE, new Color32(245, 248, 255));

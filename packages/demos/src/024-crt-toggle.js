@@ -15,9 +15,9 @@
 // glow; while it is off the pixels are exactly what the engine drew (no post-processing).
 // The bouncing keeps going either way, so you can compare the two looks side by side.
 //
-// Notice that the lines stay STRAIGHT through the toggle: the barrel distortion in the
-// new two-tier post-process system runs at the canvas output resolution, not on the
-// 320x240 framebuffer, so it does not introduce stair-step artifacts on diagonals.
+// Notice that the lines stay STRAIGHT through the toggle: barrel distortion is display-tier,
+// so it runs on RGBA after palette resolve + upscale to the canvas size — not on the
+// 320x240 index buffer — which avoids stair-step artifacts on diagonals.
 //
 // WHAT YOU WILL LEARN
 //   - How to add and remove a STACK of post-process effects at runtime.
@@ -124,16 +124,16 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    queryHardware() {
+    configure() {
         return {
             // Internal pixel-art resolution. Game logic and draws operate at this size.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
 
             // canvasDisplaySize is required for display-tier effects (barrel, scanlines,
-            // mask, bloom) to have a place to operate. We render the scene at 320x240
-            // and then upscale to 1280x960 (a clean 4x integer scale) before the display
-            // chain runs. Without this field, BT.effectAdd would throw when given a
-            // display-tier effect, and the toggle would never work.
+            // mask, bloom). Flow: draw palette indices at 320x240, optional pixel-tier on
+            // that r8uint buffer, then the engine resolves indices through the palette LUT
+            // and upscales to RGBA at this size, then the display chain runs on RGBA.
+            // Without this field, BT.effectAdd would throw for display-tier effects.
             canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
 
             // 'nearest' keeps each source pixel as a crisp 4x4 block. 'linear' would
@@ -144,7 +144,7 @@ class Demo {
         };
     }
 
-    async initialize() {
+    async init() {
         // -- Step 1: build the palette --
         // A small, colorful palette. Bright primaries make the CRT effect visually
         // obvious - soft pastels would look the same with or without.

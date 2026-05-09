@@ -27,7 +27,7 @@ blit-tech-demos/
   src/                         # JavaScript source - one file per demo (single source of truth)
     001-basics.js
     002-primitives.js
-    ...                        # 003 through 022
+    ...                        # numbered demos under src/*.js (plugin discovers all)
   public/                      # Static assets copied to dist/ verbatim
     fonts/                     # Bitmap fonts (.btfont + .png)
     sprites/                   # Sprite sheets used by demos
@@ -98,10 +98,11 @@ import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 // #region Demo Class
 
 class Demo {
-  queryHardware() {
+  // Optional: omit configure() to use engine defaultConfig (320x240 logical, 640x480 canvas, 60 FPS).
+  configure() {
     /* ... */
   }
-  async initialize() {
+  async init() {
     /* ... */
   }
   update() {
@@ -130,7 +131,7 @@ single step:
 
 1. Create `src/NNN-your-topic.js` with the next free number. The page title defaults to
    `Blit-Tech Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a `// @pageTitle Custom Title`
-   comment in the first ~20 lines of the file (see `src/021-error-preview.js` for an example).
+   comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or `src/024-crt-toggle.js` for examples).
 
 No `vite.config.js` edit. No context file to update. No HTML file to create.
 
@@ -219,12 +220,22 @@ Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
 Static helpers on those types worth knowing:
 
 - `await SpriteSheet.load(url)` -- loads a PNG as a GPU texture.
+- `sheet.width` / `sheet.height` -- sprite-sheet dimensions in pixels.
+- `sheet.fullRect()` -- returns `Rect2i(0, 0, sheet.width, sheet.height)` for whole-sheet draw calls.
 - `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` -- scans a PNG and registers every unique
   opaque color into `palette` starting at `startSlot`. Returns the registered `Color32[]` in palette-write order (sorted
   darkest-first by luminance by default; pass `{ sort: 'none' }` to keep raster scan order). Use this whenever a demo
   needs a sprite's colors in the palette so subsequent `sheet.indexize(palette)` resolves.
+- `Color32#luminance` -- perceived (Rec.601) brightness in the 0..255 range. Use this instead of writing inline
+  `0.299*r + 0.587*g + 0.114*b` formulas in demos.
 - `Color32#multiply(other)` -- component-wise color multiply, returns a new Color32. Use this for ambient tints and
   team-color modulation instead of writing your own helper.
+- `Color32.fromHex('#ff8800')` and `Color32.resolveNamedColor('cornflowerblue')` -- use these when a demo needs to parse
+  user/authored string colors. You can extend names with `registerColor`, `updateColor`, and `unregisterColor`.
+- `palette.applyHUD(startSlot?)` -- fills six contiguous slots starting at `startSlot` (default 1) with the canonical
+  HUD colors (white, background, label gray, header gold, dim gray, code blue) and registers named aliases (`hud_white`,
+  `hud_bg`, `hud_label`, `hud_header`, `hud_dim`, `hud_code`). Eliminates the repetitive `palette.set()` boilerplate for
+  UI text colors. Call in `init()` before `BT.paletteSet()`.
 
 ## File Organization
 

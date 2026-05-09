@@ -39,9 +39,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
-
 // --- Gradient bar ---
 // How many color slots the scrolling gradient uses.
 // More slots = smoother rainbow; fewer slots = more "chunky".
@@ -137,24 +134,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Builds the palette with all static slots and zeroed dynamic slots, then loads the font.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[PaletteAnimationDemo] Initializing...');
 
         // --- Build the main palette ---
@@ -203,7 +187,7 @@ class Demo {
      */
     update() {
         // Advance the clock. animTime grows by 1/60 each frame.
-        this.animTime += 1 / TARGET_FPS;
+        this.animTime += BT.deltaSeconds();
 
         // Advance health drain.
         // We simulate a health bar that empties over HEALTH_DRAIN_TICKS ticks,

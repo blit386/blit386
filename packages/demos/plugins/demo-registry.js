@@ -3,7 +3,8 @@ import { join } from 'node:path';
 
 // #region Constants
 
-const DEMO_FILENAME_PATTERN = /^(\d{3})-([a-z0-9-]+)\.js$/;
+// Three digits (`001-topic`) or special prefix `00a-topic` for the barebones starter.
+const DEMO_FILENAME_PATTERN = /^([0-9]{2}a|[0-9]{3})-([a-z0-9-]+)\.js$/;
 const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
 const HEADER_SCAN_BYTES = 2000;
 
@@ -12,7 +13,7 @@ const HEADER_SCAN_BYTES = 2000;
 // #region Public API
 
 /**
- * Build the list of demos by scanning src/*.js for files matching NNN-topic.js.
+ * Build the list of demos by scanning src/*.js for files matching NNN-topic.js or 00a-topic.js.
  * Each entry's title defaults to "Blit-Tech Demo NNN - Title Cased Topic" and
  * may be overridden by a `@pageTitle ...` tag in the JS file header.
  * @param {string} rootDir - Absolute path to the project root (Vite's config.root).
@@ -44,7 +45,7 @@ export function buildRegistry(rootDir) {
         });
     }
 
-    entries.sort((a, b) => a.number.localeCompare(b.number));
+    entries.sort((a, b) => demoSortKey(a.number).localeCompare(demoSortKey(b.number)));
 
     return entries;
 }
@@ -65,8 +66,18 @@ function readHeader(path) {
 }
 
 /**
+ * Stable ordering so `00a` sorts before numeric demos (`001`, …).
+ *
+ * @param {string} number - Demo id, e.g. "001" or "00a"
+ * @returns {string}
+ */
+function demoSortKey(number) {
+    return number === '00a' ? '000a' : number;
+}
+
+/**
  * Derive the page title for a demo.
- * @param {string} number - Three-digit demo number, e.g. "001"
+ * @param {string} number - Demo id, e.g. "001" or "00a"
  * @param {string} topic - Kebab-case topic, e.g. "sprite-effects"
  * @param {string} header - First chunk of the JS source (to scan for @pageTitle)
  * @returns {string}

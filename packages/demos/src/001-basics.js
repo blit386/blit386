@@ -3,7 +3,7 @@
  *
  * Welcome! This demo teaches you the absolute basics of making things appear
  * on screen with the Blit-Tech engine. You will learn:
- *   - How a demo is structured (the four lifecycle methods)
+ *   - How a demo is structured (configure is optional; then init, update, render)
  *   - How to clear the screen and load a sprite (a tiny picture)
  *   - How to make something move and bounce off walls
  *   - How to display text on screen
@@ -51,7 +51,6 @@ import {
     Interference,
     Noise,
     PixelGlitch,
-    Rect2i,
     RGBMask,
     RollLine,
     Scanlines,
@@ -62,8 +61,9 @@ import {
 
 /**
  * This line tells code editors that our Demo class follows the IBlitTechDemo
- * interface - the contract that says "you must have queryHardware, initialize,
- * update, and render methods."
+ * interface - the contract that says you need init, update, and render.
+ * configure() is optional (the engine defaultConfig is 320x240 logical, 640x480
+ * canvas, 60 FPS if you skip it).
  */
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -94,12 +94,13 @@ const SPRITE_URL = '/sprites/logo-1.png';
 const TARGET_FPS = 30;
 
 // -- Canvas output resolution --
-// The internal drawing canvas is 320x240. The canvas shown on the web page is
-// 4x that size: 1280x960. This gap is what lets the CRT display-tier effects
-// work well. Effects like barrel curve and scanlines operate on the LARGER
-// canvas, so their output stays smooth and crisp instead of blocky.
-const OUTPUT_W = 1280;
-const OUTPUT_H = 960;
+// The internal logical screen is 320x240: the GPU keeps palette indices (one byte per
+// pixel) at that size. The canvas drawing buffer is larger so we can resolve those indices
+// to RGBA and upscale, then run CRT-style display-tier effects on that full-size RGBA
+// image. Barrel curves and scanlines need those extra pixels to look smooth instead of
+// blocky.
+const OUTPUT_W = 960;
+const OUTPUT_H = 720;
 
 // -- Glitch state machine tuning --
 // The glitch machine picks a random pause ("cooldown") between glitches, then
@@ -180,15 +181,18 @@ function randPick(arr) {
 /**
  * Bouncing-sprite demo - the simplest possible Blit-Tech demo.
  *
- * Every Blit-Tech demo is a class with four methods that the engine calls:
+ * Every Blit-Tech demo is a class the engine drives with three required methods
+ * plus one optional hook:
  *
- *   1. queryHardware() - called once at the very start, before anything else.
- *      You tell the engine how big the screen should be and how fast to run.
+ *   1. configure() - optional. If you define it, the engine calls it once at
+ *      the very start so you can set resolution, output size, and target FPS.
+ *      If you skip it, you get sensible defaults (320x240, 640x480 output, 60 FPS).
  *
- *   2. initialize() - called once after queryHardware(). This is where you
- *      load images, fonts, and set up your starting state. It uses "async"
- *      because loading files from the internet takes time, and we need to
- *      wait for them to finish (like waiting for a web page to load).
+ *   2. init() - called once after hardware is known (from configure() or
+ *      defaults). This is where you load images, fonts, and set up your
+ *      starting state. It uses "async" because loading files from the internet
+ *      takes time, and we need to wait for them to finish (like waiting for a
+ *      web page to load).
  *
  *   3. update() - called many times per second (at the targetFPS rate you set).
  *      This is where you move things, check for collisions, and update scores.
@@ -210,7 +214,7 @@ class Demo {
     // Vector2i holds two whole numbers: x (horizontal) and y (vertical).
     // (0, 0) is the top-left corner of the screen. x increases going right,
     // y increases going DOWN (this is different from math class where y goes up!).
-    // We start near the screen center as a placeholder; initialize() will
+    // We start near the screen center as a placeholder; init() will
     // overwrite this with the exact center calculated from the real display size.
     pos = new Vector2i(160, 120);
 
@@ -222,7 +226,7 @@ class Demo {
     speed = new Vector2i(1, 1);
 
     // "size" is how big the sprite is: 16 pixels wide and 16 pixels tall.
-    // We update this from the loaded image in initialize() so the bounce
+    // We update this from the loaded image in init() so the bounce
     // checks stay correct even if you swap the PNG for a bigger one.
     size = new Vector2i(16, 16);
 
@@ -231,11 +235,11 @@ class Demo {
     bounces = 0;
 
     // "palette" holds the list of colors the engine will use for drawing.
-    // We create it in initialize() once we know what colors we need.
+    // We create it in init() once we know what colors we need.
     palette = null;
 
     // "spriteSheet" is the loaded image we will draw on screen.
-    // It stays null until initialize() finishes loading the PNG file.
+    // It stays null until init() finishes loading the PNG file.
     spriteSheet = null;
 
     // "spriteRect" tells the engine WHICH rectangular piece of the image to draw.
@@ -246,15 +250,16 @@ class Demo {
     // -- Post-process effects --
     // These are the individual CRT effects we stack on top of the rendered frame.
     // Think of them like Photoshop filters applied in order. We set them up in
-    // initialize() and update some of their settings every frame in update().
+    // init() and update some of their settings every frame in update().
     // They all start as null and get filled in after the engine is ready.
 
-    // Pixel-tier effect: runs at the internal 320x240 resolution.
-    // This produces chunky pixel-wide band shifts that look like a real CRT glitch.
+    // Pixel-tier effect: runs on the logical 320x240 index buffer (palette slots, r8uint).
+    // This produces chunky band shifts that stay palette-correct, like a real CRT glitch
+    // in index space.
     pixelGlitch = null;
 
-    // Display-tier effects: run at the canvas output resolution (1280x960).
-    // They simulate what the physical CRT screen would look like.
+    // Display-tier effects: run on RGBA after the engine resolves indices and upscales
+    // to the canvas size. They simulate what the physical CRT screen would look like.
     barrel = null; // pincushion curve that makes the edges bow inward
     aberration = null; // tiny red/blue channel split (cheap CRT optics)
     interference = null; // per-row horizontal jitter; 0 at rest, spiked by state machine
@@ -287,22 +292,21 @@ class Demo {
      *
      * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
      */
-    queryHardware() {
+    configure() {
         return {
             // displaySize is the "retro screen" resolution - the pixel grid we draw on.
             // 320x240 is a classic retro resolution that keeps the pixel-art look.
             // All our drawing coordinates use this grid.
             displaySize: new Vector2i(320, 240),
 
-            // canvasDisplaySize is how big the canvas looks on the web page.
-            // We set it 4x larger (1280x960) than the internal resolution so the
-            // CRT post-process effects have enough canvas pixels to draw smooth
-            // curves and scanlines. Without this, the barrel distortion would
-            // look like jagged pixel steps instead of a smooth curve.
+            // canvasDisplaySize is the GPU drawing-buffer size on the web page.
+            // After drawing at 320x240, the engine converts indices to RGBA and upscales
+            // to this size, then runs display-tier CRT effects on that RGBA. Extra pixels
+            // here let barrel distortion and scanlines look smooth instead of stair-stepped.
             canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
 
-            // 'nearest' keeps each internal pixel as a crisp 4x4 block when the
-            // engine scales up the 320x240 image to fill the 1280x960 canvas.
+            // 'nearest' keeps each logical pixel a crisp block when the engine upscales
+            // from the resolved RGBA (one color per source cell) to this canvas size.
             // Using 'linear' here would blur the pixel art.
             outputUpscaleFilter: 'nearest',
 
@@ -320,8 +324,9 @@ class Demo {
     }
 
     /**
-     * Called once after queryHardware(). Sets up the palette, loads the sprite
-     * image, and positions the sprite in the center of the screen.
+     * Called once after hardware settings are resolved (configure() or engine
+     * defaults). Sets up the palette, loads the sprite image, and positions the
+     * sprite in the center of the screen.
      *
      * The "async" keyword lets us use "await" inside this method. "await" pauses
      * until something slow finishes (like loading an image from the server) and
@@ -330,7 +335,7 @@ class Demo {
      * @returns {Promise<boolean>} Return true when everything is ready.
      *   Returning false tells the engine that something went wrong.
      */
-    async initialize() {
+    async init() {
         // -- Step 1: set up the color palette --
         // A palette is like an artist's tray of paint colors laid out before painting.
         // We pick every color we need here so the engine knows about them in advance.
@@ -356,35 +361,26 @@ class Demo {
         // not need it here - we just want them sitting in the palette.
         await SpriteSheet.loadColorsIntoPalette(SPRITE_URL, this.palette, SPRITE_BASE);
 
-        // -- Step 3: activate the palette --
+        // -- Step 3: load + indexize sprite in one helper call --
+        // loadIndexed() wraps the full setup path and returns both the prepared sheet
+        // and a full-image source rectangle.
+        const indexed = await SpriteSheet.loadIndexed(SPRITE_URL, this.palette, SPRITE_BASE, { sort: 'none' });
+        this.spriteSheet = indexed.sheet;
+        this.spriteRect = indexed.srcRect;
+
+        // -- Step 4: activate the palette --
         // Tell the engine "use this palette from now on."
         // Before this call, the engine doesn't know what colors are available.
         // We do this AFTER adding the sprite colors so they are included.
         BT.paletteSet(this.palette);
 
-        // -- Step 4: load the sprite image as a GPU texture --
-        // SpriteSheet.load() reads the PNG file and uploads its pixels to the
-        // graphics card so they can be drawn very fast. The result is a
-        // SpriteSheet object that knows the image's width and height.
-        this.spriteSheet = await SpriteSheet.load(SPRITE_URL);
-
-        // -- Step 5: link each sprite pixel to a palette slot ("indexize") --
-        // After this call, the sprite no longer remembers raw RGB colors. Each
-        // pixel just stores the NUMBER of the palette slot whose color matches.
-        // That is what makes palette tricks (like color cycling) possible later.
-        this.spriteSheet.indexize(this.palette);
-
-        // -- Step 6: remember the sprite's pixel size --
+        // -- Step 5: remember the sprite's pixel size --
         // The sprite sheet exposes its dimensions through the .size property.
         // We copy them into our own size vector so the bounce checks below use
         // the real image size (not a hard-coded 16x16).
         this.size = new Vector2i(this.spriteSheet.size.x, this.spriteSheet.size.y);
 
-        // The source rectangle says "draw the WHOLE image" - top-left at (0,0)
-        // and as wide and tall as the image itself.
-        this.spriteRect = new Rect2i(0, 0, this.size.x, this.size.y);
-
-        // -- Step 7: position the sprite in the center of the screen --
+        // -- Step 6: position the sprite in the center of the screen --
         // BT.displaySize() returns how big the screen is (320x240 in our case).
         // We subtract the sprite's size so the CENTER of the sprite is centered,
         // not its top-left corner.
@@ -395,20 +391,19 @@ class Demo {
         const y = Math.floor(screen.y / 2 - this.size.y / 2);
         this.pos = new Vector2i(x, y);
 
-        // -- Step 8: set up the CRT post-process effect chain --
-        // Post-processing means: after we finish drawing the scene, run it through
-        // one or more filters before showing it on screen. The engine supports two
-        // tiers of effects (see the file header in demo 023 for the full explanation):
+        // -- Step 7: set up the CRT post-process effect chain --
+        // Post-processing means: after we finish drawing, the frame passes through filters
+        // before it hits the screen. The engine uses two tiers (demo 023 explains more):
         //
-        //   Pixel tier: runs at 320x240. Effects here are chunky and palette-friendly.
-        //   Display tier: runs at 1280x960. Effects here are smooth CRT simulations.
+        //   Pixel tier: runs on the 320x240 index buffer (which palette slot each pixel uses).
+        //   Then: palette lookup + upscale to RGBA at canvas size (automatic).
+        //   Display tier: runs on that RGBA — smooth CRT simulations like barrel and scanlines.
         //
-        // We add them with BT.effectAdd(). The engine routes each to the correct tier
-        // automatically based on which class it is. Order within each tier matters
-        // because the output of one effect feeds into the next.
+        // We add them with BT.effectAdd(). The engine routes each effect by its tier.
+        // Order within each tier matters because each filter reads the previous filter's output.
 
         // ---- Pixel-tier effect ----
-        // PixelGlitch shifts horizontal bands of pixels sideways at the 320x240 grid.
+        // PixelGlitch shifts horizontal bands sideways on the 320x240 index grid.
         // We start it calm (intensity = 0). The glitch state machine in update() will
         // spike the intensity whenever a 'hshift' burst fires.
         this.pixelGlitch = new PixelGlitch();
@@ -419,7 +414,7 @@ class Demo {
         // ---- Display-tier effects (added in order: first applied first) ----
 
         // Barrel distortion curves the edges inward like a real CRT glass tube.
-        // It runs at the 1280x960 canvas so the curve is smooth, not stair-stepped.
+        // It runs on RGBA at canvas resolution (after resolve + upscale), so the curve is smooth.
         this.barrel = new BarrelDistortion();
         this.barrel.curvature = 0.25; // noticeable curve; 0.05 is subtle, 0.10 is a small TV
 
@@ -437,7 +432,7 @@ class Demo {
         // Roll line: a bright band slowly scrolling down the screen, like an old
         // TV set that is not quite synced to the signal.
         this.rollLine = new RollLine();
-        this.rollLine.amount = 0.1; // how bright the band is
+        this.rollLine.amount = 0; // 0.1; // how bright the band is
         this.rollLine.speed = 1.0; // how fast it scrolls
 
         // Scanlines: alternating bright/dark horizontal stripes, one per logical row.
@@ -445,14 +440,14 @@ class Demo {
         // source row gets exactly one scanline. Without this, the stripes would be
         // four times denser than the pixel art underneath.
         this.scanlines = new Scanlines();
-        this.scanlines.amount = 0.55; // how much the effect is mixed in (0 = off, 1 = full)
+        this.scanlines.amount = 0; // .55; // how much the effect is mixed in (0 = off, 1 = full)
         this.scanlines.strength = -8; // sharper bands at more negative values
         this.scanlines.density = 240; // match to the internal display height in pixels
 
         // RGB shadow mask: simulates the phosphor dot grid of an aperture-grille CRT.
         // Each cell has a red, green, and blue sub-pixel stripe.
         this.mask = new RGBMask();
-        this.mask.intensity = 0.18; // subtle -- just enough to see the texture
+        this.mask.intensity = 0; // .18; // subtle -- just enough to see the texture
         this.mask.size = 6; // dot pitch in source pixels
         this.mask.border = 0.5; // how dark the border between dots is
 
@@ -553,7 +548,7 @@ class Demo {
         // animations run at the same speed regardless of frame rate.
         // BT.ticks() counts how many update() calls have happened. Dividing by
         // TARGET_FPS (60) converts that into seconds.
-        const seconds = BT.ticks() / TARGET_FPS;
+        const seconds = BT.timeSeconds();
         this.rollLine.time = seconds; // scrolls the bright band down the screen
         this.noise.time = seconds; // reseeds the grain so it looks random each frame
         this.interference.time = seconds; // needed when an 'interference' burst fires
@@ -670,7 +665,7 @@ class Demo {
      */
     render() {
         // Clear the entire screen to the background color. This erases the previous frame.
-        // C_BG is palette index 1, which we set to (16, 28, 16) in initialize() -- almost
+        // C_BG is palette index 1, which we set to (16, 28, 16) in init() -- almost
         // black with a faint green tint.
         BT.clear(C_BG);
 
@@ -710,7 +705,7 @@ class Demo {
 //   1. Setting up the HTML canvas on the page
 //   2. Checking that your browser supports WebGPU (the graphics technology)
 //   3. Creating a new instance of your Demo class
-//   4. Calling queryHardware(), then initialize(), then starting the update/render loop
+//   4. Calling configure() when you define it, then init(), then the update/render loop
 //
 // After this line runs, your demo is alive and running!
 bootstrap(Demo);

@@ -166,24 +166,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Creates day and night palettes, activates the day palette, loads font.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[PaletteFadeDemo] Initializing...');
 
         // Build both palettes.

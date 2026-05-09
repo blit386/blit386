@@ -35,7 +35,7 @@ const C_PANEL = 6;
 const C_PANEL_BORDER = 7;
 const C_ACCENT = 8;
 
-// Layout for a 640x480 logical framebuffer (see `queryHardware`).
+// Layout for a 640x480 logical framebuffer (set in configure(); wider than engine default).
 const DISPLAY_W = 640;
 const DISPLAY_H = 480;
 const MARGIN_X = 24;
@@ -91,11 +91,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * 640x480 logical pixels, canvas scaled 2x for a sharp browser window, 60 FPS ticks.
+     * Wider logical canvas than `defaultConfig()` so two panels of key maps fit comfortably.
      *
      * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
      */
-    queryHardware() {
+    configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             canvasDisplaySize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
@@ -108,7 +108,7 @@ class Demo {
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255));
