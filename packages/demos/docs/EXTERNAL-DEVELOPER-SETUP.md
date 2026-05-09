@@ -16,13 +16,17 @@ Blit-Tech Demos depends on Blit-Tech via a pnpm workspace dependency:
 
 Since Blit-Tech is not yet on npm, you need to clone both repositories and set up a local workspace.
 
-## Browser Requirements
+## Browser and renderer
 
-The demos require WebGPU support:
+The engine prefers **WebGPU** and falls back to a **Canvas 2D software renderer** when WebGPU is missing or fails to
+start (optional `?renderer=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
 
-- Chrome/Edge 113+
-- Firefox 141+ on Windows; 145+/147+ on macOS; Nightly on Linux
-- Safari 26+; or Safari 18-25 with WebGPU enabled via Feature Flags
+**WebGPU** is required for post-process / fullscreen effect demos (CRT stacks, two-tier chains). Most other demos run in
+software mode for core 2D.
+
+**WebGPU** is supported in current versions of Chrome/Edge, recent Firefox and Safari as listed in the
+[Blit-Tech README](https://github.com/vancura/blit-tech/blob/main/README.md#prerequisites) and the demos
+[README](../README.md#browser-and-renderer).
 
 ## One-Time Setup
 

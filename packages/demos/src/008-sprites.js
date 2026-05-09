@@ -28,14 +28,11 @@
 // We learned about palette setup in Demo 015-Palette-Presets:
 // https://vancura.dev/articles/blit-tech-palette-presets
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
-
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
 
 // Where in the palette the sprite's original colors start.
 // Everything before this (index 1..9) is used for UI colors.
@@ -45,13 +42,15 @@ const SPRITE_BASE = 10;
 // GPU upload, and dimension lookup) references the exact same file.
 const SPRITE_PATH = '/sprites/test.png';
 
-// UI color slots.
+// UI color slot indices written by palette.applyHUD() in init().
+// The preset fills six contiguous slots in this order: white(1), bg(2),
+// label(3), header(4), dim(5), code(6). See Palette.applyHUD() docs.
 const C_WHITE = 1;
-const C_BG = 2; // Dark purple background.
-const C_LABEL = 3; // Section labels ("Original", "Fire", etc.).
-const C_CODE = 4; // Code snippet text (blue-gray).
+const C_BG = 2;
+const C_LABEL = 3;
+const C_HEADER = 4; // Golden header text.
 const C_DIM = 5; // Dimmer gray for FPS.
-const C_HEADER = 6; // Golden header text.
+const C_CODE = 6; // Code snippet text (blue-gray).
 
 // #endregion
 
@@ -92,45 +91,29 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine how big the screen should be and how fast to run.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Sets up the palette, loads the sprite from a file, and links pixels to palette slots.
      *
      * IMPORTANT ORDER:
      *   1. Create palette with static UI colors.
      *   2. Extract unique colors from the sprite image.
      *   3. Register those colors + theme blocks in the palette.
-     *   4. BT.paletteSet() -- activate the palette.
-     *   5. SpriteSheet.load() -- load the image as a GPU texture.
-     *   6. spriteSheet.indexize() -- link sprite pixels to palette slots.
+     *   4. SpriteSheet.loadIndexed() -- load, register, and indexize in one call.
+     *   5. BT.paletteSet() -- activate the palette.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
-    async initialize() {
+    async init() {
         console.log('[SpriteDemo] Initializing...');
 
-        // --- Step 1: Create palette and register static UI colors ---
+        // --- Step 1: Create palette and fill the built-in HUD UI colors ---
+        // BT.paletteCreate(256) makes a blank 256-slot color table for us to fill.
+        // palette.applyHUD(1) writes six standard UI colors into slots 1-6 and
+        // registers named aliases so you could also look them up by name:
+        //   this.palette.getNamed('hud_header') returns 4.
         this.palette = BT.paletteCreate(256);
+        this.palette.applyHUD(1);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
-        this.palette.set(C_BG, new Color32(30, 20, 40));
-        this.palette.set(C_LABEL, new Color32(200, 200, 200));
-        this.palette.set(C_CODE, new Color32(100, 150, 200));
-        this.palette.set(C_DIM, new Color32(100, 100, 100));
-        this.palette.set(C_HEADER, new Color32(255, 220, 100));
-
-        // --- Steps 2 & 3: Extract sprite colors and build theme blocks ---
+        // --- Step 2: Extract sprite colors and register them in the palette ---
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
         // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
         // (sorted darkest-first by brightness, just like the manual version we used to have).
@@ -172,27 +155,19 @@ class Demo {
             this.palette.set(SPRITE_BASE + colorCount * 4 + i, new Color32(base.r, base.g, base.b, 255));
         }
 
-        // --- Step 4: Activate the palette ---
-        BT.paletteSet(this.palette);
-
-        // --- Steps 5 & 6: Load and indexize the sprite ---
-        // SpriteSheet.load reads a PNG file from the public folder.
-        // indexize() scans each pixel and matches its color to a palette slot.
+        // --- Step 3: Load and indexize the sprite ---
+        // loadIndexed() combines loadColorsIntoPalette + load + indexize. We already called
+        // loadColorsIntoPalette above so we pass sort:'none' here to avoid reshuffling colors.
+        // This call still gives us a reliable full-image source rectangle from sheet.size.
         try {
-            this.spriteSheet = await SpriteSheet.load(SPRITE_PATH);
+            const indexed = await SpriteSheet.loadIndexed(SPRITE_PATH, this.palette, SPRITE_BASE, { sort: 'none' });
+            this.spriteSheet = indexed.sheet;
+            this.charSprite = this.spriteSheet.fullRect();
 
-            // Get the sprite's pixel dimensions so we know the src rectangle.
-            const img = new Image();
-            img.src = SPRITE_PATH;
-            await new Promise((resolve) => {
-                img.onload = () => resolve();
-            });
-            this.charSprite = new Rect2i(0, 0, img.naturalWidth, img.naturalHeight);
-
-            // After indexize, each pixel stores its matching palette index number.
-            this.spriteSheet.indexize(this.palette);
+            // Activate palette after all setup is done.
+            BT.paletteSet(this.palette);
             console.log(
-                `[SpriteDemo] Loaded sprite: ${img.naturalWidth}x${img.naturalHeight}px, ${colorCount} unique colors`,
+                `[SpriteDemo] Loaded sprite: ${this.charSprite.width}x${this.charSprite.height}px, ${colorCount} unique colors`,
             );
         } catch (error) {
             console.error('[SpriteDemo] Failed to load sprite:', error);
@@ -208,7 +183,7 @@ class Demo {
      * The pulse block is the same colors as the original but with changing transparency.
      */
     update() {
-        this.animTime += 1 / TARGET_FPS;
+        this.animTime += BT.deltaSeconds();
 
         if (!this.spriteColorCount) {
             return;
@@ -287,11 +262,11 @@ class Demo {
      */
     renderCodeSnippet() {
         BT.systemPrint(new Vector2i(170, 165), C_LABEL, 'Load from file:');
-        BT.systemPrint(new Vector2i(170, 178), C_CODE, 'const sheet =');
+        BT.systemPrint(new Vector2i(170, 178), C_CODE, 'const indexed =');
         BT.systemPrint(new Vector2i(170, 190), C_CODE, '  await SpriteSheet');
-        BT.systemPrint(new Vector2i(170, 202), C_CODE, "  .load('rock.png');");
-        BT.systemPrint(new Vector2i(170, 214), C_CODE, 'sheet.indexize(');
-        BT.systemPrint(new Vector2i(170, 226), C_CODE, '  palette);');
+        BT.systemPrint(new Vector2i(170, 202), C_CODE, '  .loadIndexed(');
+        BT.systemPrint(new Vector2i(170, 214), C_CODE, "   'rock.png',");
+        BT.systemPrint(new Vector2i(170, 226), C_CODE, '   palette, 10);');
     }
 
     // #endregion

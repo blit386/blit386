@@ -85,7 +85,7 @@ class Demo {
     // top-left of the screen. When this moves right, the world seems to slide left.
     cameraPos = new Vector2i(0, 0);
 
-    // palette holds all the colors this demo uses. We fill it in initialize()
+    // palette holds all the colors this demo uses. We fill it in init()
     // so the engine knows every color before drawing begins.
     palette = null;
 
@@ -105,30 +105,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells Blit-Tech how large the internal framebuffer is, how big the HTML canvas looks,
-     * and how many logic updates to aim for per second.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            // The game thinks in a 320x240 pixel "retro" screen.
-            displaySize: new Vector2i(320, 240),
-
-            // The canvas is stretched to 640x480 so pixels look chunky and easy to see.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            // Sixty updates per second is smooth for simple demos.
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Runs once at startup: builds the palette, the tilemap, and loads the font file.
      *
      * @returns {Promise<boolean>} True when the demo is ready to run.
      */
-    async initialize() {
+    async init() {
         console.log('[TilemapDemo] Initializing...');
 
         // --- Set up the color palette ---
@@ -177,8 +158,9 @@ class Demo {
         // Math.sin(t) wiggles forever between -1 and +1, like a gentle wave on water.
         // We scale and shift it so the camera slides horizontally across most of the map.
         // Floor turns the float into a whole pixel position (Blit-Tech uses integer pixels).
-        const maxCamX = WORLD_WIDTH_PX - BT.displaySize().x;
-        const maxCamY = WORLD_HEIGHT_PX - BT.displaySize().y;
+        const viewSize = BT.displaySize();
+        const maxCamX = WORLD_WIDTH_PX - viewSize.x;
+        const maxCamY = WORLD_HEIGHT_PX - viewSize.y;
         const centerX = maxCamX / 2;
         const centerY = maxCamY / 2;
         const amplitudeX = Math.max(0, maxCamX / 2);
@@ -188,8 +170,7 @@ class Demo {
         this.cameraPos.y = Math.floor(centerY + Math.sin(t * 0.65) * amplitudeY);
 
         // Clamp keeps the camera inside the world so you never see empty void past the edge.
-        this.cameraPos.x = Math.max(0, Math.min(maxCamX, this.cameraPos.x));
-        this.cameraPos.y = Math.max(0, Math.min(maxCamY, this.cameraPos.y));
+        this.cameraPos = BT.cameraClamp(this.cameraPos, new Vector2i(WORLD_WIDTH_PX, WORLD_HEIGHT_PX), viewSize);
 
         // From this point until BT.cameraReset(), all drawing uses world coordinates
         // shifted by this offset -- like sliding a picture under a fixed window.

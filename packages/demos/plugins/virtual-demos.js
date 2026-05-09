@@ -69,7 +69,7 @@ export function virtualDemos() {
             const input = {};
             for (const entry of registry) {
                 const key = entry.slug.replace(/-/g, '_');
-                // eslint-disable-next-line security/detect-object-injection -- Safe: key is derived from a slug matched by /^\d{3}-[a-z0-9-]+$/, so it only contains digits, lowercase letters, and underscores.
+                // eslint-disable-next-line security/detect-object-injection -- Safe: key is derived from a slug matched by /^([0-9]{2}a|[0-9]{3})-[a-z0-9-]+$/, so it only contains digits, lowercase letters, and underscores.
                 input[key] = resolve(demosDir, `${entry.slug}.html`);
             }
 

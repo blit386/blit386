@@ -18,8 +18,9 @@
 // WHAT YOU WILL LEARN
 //   - "Post-processing": running effects on the WHOLE screen after we are done drawing it.
 //   - The two effect TIERS Blit-Tech offers, and why they exist:
-//       * pixel-tier: chunky, palette-friendly, runs at the internal 320x240.
-//       * display-tier: smooth, simulates the screen, runs at the canvas output resolution.
+//       * pixel-tier: chunky, palette-native, runs on the logical index buffer at 320x240 (one byte per pixel).
+//       * between tiers: the engine looks up each index in your palette and upscales to RGBA at canvas size.
+//       * display-tier: smooth, simulates the physical screen, runs on that full-size RGBA image.
 //   - How to compose individual effects (BarrelDistortion, Scanlines, RGBMask, ...) instead
 //     of relying on a single big shader. The preset BT.preset.crtPipBoy() does this for you
 //     in one line; here we build the stack explicitly so each piece is visible.
@@ -31,14 +32,15 @@
 // the engine routes the scene through one or two effect chains. Each effect reads a texture,
 // writes a new one, and the last effect in the display chain writes to the swap chain.
 //
-// Pixel-tier effects (e.g. PixelGlitch) operate on the rendered palette pixels at the
-// internal logical resolution. They keep the pixel-art crispness because they sample with
-// NEAREST filtering and never introduce intermediate hues.
+// Pixel-tier effects (e.g. PixelGlitch) operate on the logical framebuffer, which stores
+// palette slot indices (GPU format r8uint) at 320x240 — not full RGBA yet. They stay
+// palette-native: integer texture reads, no averaging into fake in-between colors.
 //
-// Display-tier effects (e.g. BarrelDistortion, Scanlines) operate AFTER an upscale pass at
-// the full canvas resolution. They simulate the physical CRT the game would be displayed
-// on. Crucially, BarrelDistortion does NOT quantize the curve onto the 320x240 grid - lines
-// stay smooth instead of breaking into stair-steps.
+// Next the engine runs palette LUT resolve plus upscale: each index becomes a real RGBA
+// color and the image grows to the canvas size (here 1280x960). Display-tier effects
+// (e.g. BarrelDistortion, Scanlines) run on that RGBA output. Crucially, BarrelDistortion
+// does NOT bend the curve on the 320x240 index grid — lines stay smooth instead of
+// breaking into stair-steps.
 //
 // HOW THE GLITCH STATE MACHINE WORKS
 // We keep two counters:
@@ -92,8 +94,9 @@ const DISPLAY_H = 240;
 // and turns each logical pixel into a clean 4x4 block on screen.
 //
 // IMPORTANT: this is the SCREEN size we present at, NOT the pixel-art size. The game still
-// thinks it is drawing into a 320x240 framebuffer. The engine scales that framebuffer up
-// to 1280x960 before running the display-tier effects.
+// draws palette indices into a 320x240 logical buffer. Pixel-tier effects touch that index
+// buffer; then resolve + upscale turns it into RGBA at this size; display-tier effects run
+// on the RGBA image.
 const OUTPUT_W = 1280;
 const OUTPUT_H = 960;
 
@@ -251,26 +254,27 @@ function colorSlot(name) {
  * effect uniforms each frame to produce occasional glitches.
  *
  * The effect stack is built explicitly here so each piece is visible:
- *   - PixelGlitch (pixel tier) for chunky band shifts that respect the palette.
+ *   - PixelGlitch (pixel tier) on the logical r8uint index buffer for chunky band shifts.
+ *   - Palette resolve + upscale to RGBA at canvas size (handled by the engine).
  *   - BarrelDistortion + ChromaticAberration + Interference + RollLine + Scanlines +
- *     RGBMask + Vignette + Noise + Flicker + Bloom (display tier) for the physical
- *     CRT simulation.
+ *     RGBMask + Vignette + Noise + Flicker + Bloom (display tier) on that RGBA for the
+ *     physical CRT simulation.
  *
  * If you want the same look in one line of code, use `BT.preset.crtPipBoy()` instead.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    queryHardware() {
+    configure() {
         return {
-            // The internal canvas is pixel-art sized. Game logic and draws operate at this
-            // resolution. The CRT effects do NOT see this resolution; they see the upscaled
-            // version below.
+            // The internal canvas is pixel-art sized. Game logic and draws write palette
+            // indices into an r8uint buffer at this resolution. PixelGlitch sees that buffer.
+            // Display-tier CRT effects run later on RGBA after resolve + upscale below.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
 
             // canvasDisplaySize is REQUIRED to enable the display tier of the post-process
-            // chain. Without it, the engine renders straight to a 320x240 swap chain and
-            // any display-tier effect you try to add will throw an error. We pick a clean
+            // chain. Without it, there is no canvas-sized RGBA surface for display-tier
+            // shaders, so BT.effectAdd will throw for those effects. We pick a clean
             // 4x integer scale so each logical pixel maps to a 4x4 output block.
             canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
 
@@ -283,7 +287,7 @@ class Demo {
         };
     }
 
-    async initialize() {
+    async init() {
         // -- Step 1: build the palette --
         // Six colors. Every effect on screen comes from these.
         const palette = BT.paletteCreate(16);
@@ -309,9 +313,9 @@ class Demo {
         this.font.getSpriteSheet().indexize(palette);
 
         // -- Step 4: pixel-tier effect (chunky glitch) --
-        // PixelGlitch lives in 320x240 land where chunky band shifts feel pixel-correct.
-        // Snapping to logical pixels would look wrong if it ran in display tier - bands
-        // would be 4 output pixels tall, not crisp source pixels.
+        // PixelGlitch reads/writes the logical index buffer (320x240 r8uint) so band shifts
+        // stay palette-native. If the same shift ran after resolve + upscale, each band
+        // would span multiple output pixels and lose the chunky retro look.
         this.pixelGlitch = new PixelGlitch();
         this.pixelGlitch.bandHeight = 6; // height of each glitch band in source pixels
         this.pixelGlitch.intensity = 0; // 0 = no glitch right now (state machine will spike it)
@@ -323,9 +327,9 @@ class Demo {
         // and finally bloom on top of the modulated image.
 
         // Pincushion barrel distortion: simulates the curved glass of a CRT tube. Because
-        // this runs AFTER the upscale, the curve is computed at 1280x960 - lines stay
-        // smooth. (In the previous single-shader version, this would quantize to the
-        // 320x240 grid and produce visible step artifacts on diagonals.)
+        // this runs AFTER palette resolve + upscale, the curve is computed at 1280x960 —
+        // lines stay smooth. (Bending earlier on the 320x240 grid would quantize the curve
+        // and produce visible step artifacts on diagonals.)
         this.barrel = new BarrelDistortion();
         this.barrel.curvature = 0.05; // small tube; 0.10 would be a tiny pocket TV
 

@@ -61,31 +61,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine how big the screen should be and how fast to run.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            // The drawing area is 320 pixels wide and 240 pixels tall.
-            // This is like a small retro screen -- same size as old game consoles.
-            displaySize: new Vector2i(320, 240),
-
-            // The actual canvas on your web page is twice as big (640x480).
-            // This makes the pixels look big and chunky, like classic pixel art.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            // Try to draw 60 frames every second, so the animation is smooth.
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Runs once when the demo starts. Sets up the palette.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
-    async initialize() {
+    async init() {
         // --- Set up the color palette ---
         // We pick all the colors we need BEFORE drawing anything -- like an artist
         // squeezing paint onto a palette before picking up the brush.

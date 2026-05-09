@@ -1,6 +1,6 @@
 # Project Rules
 
-Interactive demos and examples for the Blit-Tech WebGPU retro engine.
+Interactive demos and examples for Blit-Tech (WebGPU primary renderer with Canvas 2D software fallback).
 
 ## Tech Stack
 
@@ -8,7 +8,7 @@ Interactive demos and examples for the Blit-Tech WebGPU retro engine.
 - **Build Tool**: Vite 7 with a custom virtual-demos plugin (no templating library)
 - **Language**: JavaScript (ES2022)
 - **Styling**: Plain CSS with CSS custom properties
-- **Engine**: Blit-Tech (WebGPU retro engine, workspace dependency)
+- **Engine**: Blit-Tech (pixel engine: WebGPU default, optional software renderer; workspace dependency)
 - **Package Manager**: pnpm
 - **Deployment**: Cloudflare Pages via GitHub Actions
 - **Linting**: Biome + ESLint + Prettier
@@ -27,7 +27,7 @@ blit-tech-demos/
   src/                         # JavaScript source - one file per demo (single source of truth)
     001-basics.js
     002-primitives.js
-    ...                        # 003 through 022
+    ...                        # numbered demos under src/*.js (plugin discovers all)
   public/                      # Static assets copied to dist/ verbatim
     fonts/                     # Bitmap fonts (.btfont + .png)
     sprites/                   # Sprite sheets used by demos
@@ -85,8 +85,9 @@ CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.
 
 ### JavaScript Demo Files (`src/NNN-name.js`)
 
-Each demo is a single JS file under `src/`. The matching HTML page is served virtually at `/demos/NNN-name.html` by the
-`virtual-demos` Vite plugin; no HTML file exists on disk. Follow this pattern:
+Each demo is a single JS file under `src/`. Filenames are either `00a-topic.js` (barebones starter) or `NNN-topic.js`
+with three digits. The matching HTML page is served virtually at `/demos/<slug>.html` by the `virtual-demos` Vite
+plugin; no HTML file exists on disk. Follow this pattern:
 
 ```js
 /**
@@ -98,10 +99,12 @@ import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 // #region Demo Class
 
 class Demo {
-  queryHardware() {
+  // Optional: omit configure() to use engine defaultConfig (320x240 logical, 640x480 canvas, 60 FPS).
+  // In configure(), you may set `renderer: 'software'` to force Canvas 2D; default is WebGPU with automatic fallback.
+  configure() {
     /* ... */
   }
-  async initialize() {
+  async init() {
     /* ... */
   }
   update() {
@@ -123,14 +126,16 @@ bootstrap(Demo);
 
 ### Adding a New Demo
 
-Demos use a **three-digit prefix** plus kebab-case (`NNN-topic`), e.g. `023-particles`.
+Demos use kebab-case slugs: **`00a-topic`** (single barebones slot) or **`NNN-topic`** with three digits, e.g.
+`023-particles`.
 
 The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` for this pattern. Adding a demo is a
 single step:
 
-1. Create `src/NNN-your-topic.js` with the next free number. The page title defaults to
-   `Blit-Tech Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a `// @pageTitle Custom Title`
-   comment in the first ~20 lines of the file (see `src/021-error-preview.js` for an example).
+1. Create `src/NNN-your-topic.js` (or `00a-…`) with the next free number. Retired numbers stay unused (e.g. `021`). The
+   page title defaults to `Blit-Tech Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a
+   `// @pageTitle Custom Title` comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or
+   `src/024-crt-toggle.js` for examples).
 
 No `vite.config.js` edit. No context file to update. No HTML file to create.
 
@@ -201,15 +206,20 @@ BT.drawLine(p0, p1, color);
 BT.drawRect(rect, color);
 BT.drawRectFill(rect, color);
 BT.drawSprite(sheet, srcRect, destPos, tint);
-BT.print(pos, color, text); // built-in placeholder text (no font asset)
-BT.printFont(font, pos, text, color);
+BT.systemPrint(pos, paletteIndex, text); // built-in 6x14 system font (palette index, not Color32)
+BT.systemPrintMeasure(text); // Vector2i size in pixels
+BT.printFont(font, pos, text, paletteOffset?); // bitmap font; paletteOffset shifts glyph indices (default 0)
 BT.cameraSet(offset);
 BT.cameraGet();
 BT.cameraReset();
+BT.cameraClamp(camera, worldSize, viewSize?); // clamp scroll position to world bounds
 BT.displaySize();
 BT.ticks();
 BT.ticksReset();
 BT.fps();
+BT.deltaSeconds();
+BT.timeSeconds();
+BT.getActiveBackend(); // 'webgpu' | 'software' | null — after successful init
 await BT.captureFrame(); // returns a Blob
 await BT.downloadFrame(filename); // optional filename; default PNG name if omitted
 ```
@@ -219,12 +229,26 @@ Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
 Static helpers on those types worth knowing:
 
 - `await SpriteSheet.load(url)` -- loads a PNG as a GPU texture.
+- `sheet.width` / `sheet.height` -- sprite-sheet dimensions in pixels.
+- `sheet.fullRect()` -- returns `Rect2i(0, 0, sheet.width, sheet.height)` for whole-sheet draw calls.
 - `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` -- scans a PNG and registers every unique
   opaque color into `palette` starting at `startSlot`. Returns the registered `Color32[]` in palette-write order (sorted
   darkest-first by luminance by default; pass `{ sort: 'none' }` to keep raster scan order). Use this whenever a demo
   needs a sprite's colors in the palette so subsequent `sheet.indexize(palette)` resolves.
+- `Color32#luminance` -- perceived (Rec.601) brightness in the 0..255 range. Use this instead of writing inline
+  `0.299*r + 0.587*g + 0.114*b` formulas in demos.
 - `Color32#multiply(other)` -- component-wise color multiply, returns a new Color32. Use this for ambient tints and
   team-color modulation instead of writing your own helper.
+- `Color32.fromHex('#ff8800')` and `Color32.resolveNamedColor('cornflowerblue')` -- use these when a demo needs to parse
+  user/authored string colors. You can extend names with `registerColor`, `updateColor`, and `unregisterColor`.
+- `palette.applyHUD(startSlot?)` -- fills six contiguous slots starting at `startSlot` (default 1) with the canonical
+  HUD colors (white, background, label gray, header gold, dim gray, code blue) and registers named aliases (`hud_white`,
+  `hud_bg`, `hud_label`, `hud_header`, `hud_dim`, `hud_code`). Eliminates the repetitive `palette.set()` boilerplate for
+  UI text colors. Call in `init()` before `BT.paletteSet()`.
+
+Full input APIs (`BT.keyDown`, `BT.buttonDown`, gamepad helpers, remapping) are documented in the engine
+[input guide](https://github.com/vancura/blit-tech/blob/main/docs/input.md). Post-process presets and effect tiers are
+in [post-process-effects.md](https://github.com/vancura/blit-tech/blob/main/docs/post-process-effects.md).
 
 ## File Organization
 
@@ -262,5 +286,6 @@ Managed by Husky (auto-installed via `prepare` script).
 
 ## Deployment
 
-Demos deploy to Cloudflare Pages via GitHub Actions on push to main. A Vite plugin flattens `demos/` URLs so production
-paths are clean (e.g., `/001-basics.html`).
+Demos deploy to Cloudflare Pages via GitHub Actions on push to main. The production build copies each virtual demo to
+`dist/<slug>.html` at the site root (see `flattenDemosPlugin` in `vite.config.js`). Public URLs are listed in
+`README.md` (the hosted site uses short paths such as `/001-basics`; local dev still uses `/demos/<slug>.html`).

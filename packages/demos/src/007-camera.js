@@ -100,27 +100,11 @@ class Demo {
     tempVec1 = new Vector2i(0, 0);
     tempVec2 = new Vector2i(0, 0);
     tempRect = new Rect2i(0, 0, 0, 0);
+    worldSize = new Vector2i(800, 600); // matches worldWidth/worldHeight above
 
     // #endregion
 
     // #region IBlitTechDemo Implementation
-
-    /**
-     * Tells the engine how big the screen should be and how fast to run.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            // Internal rendering resolution -- the "retro screen" size.
-            displaySize: new Vector2i(320, 240),
-
-            // The canvas on the page is displayed at 2x this size.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            targetFPS: 60,
-        };
-    }
 
     /**
      * Runs once when the demo starts. Sets up the palette and generates random
@@ -128,7 +112,7 @@ class Demo {
      *
      * @returns {Promise<boolean>} Returns true when ready to run.
      */
-    async initialize() {
+    async init() {
         // --- Set up the color palette ---
         // Think of a palette like an artist choosing paint colors before painting a picture.
         // Every color we might draw with gets a numbered slot. We set the static colors
@@ -186,9 +170,7 @@ class Demo {
         // Make sure the camera doesn't scroll past the edges of the world.
         // The right edge is worldWidth minus the screen width, because we don't want
         // the screen to show empty space past the world's right boundary.
-        const displaySize = BT.displaySize();
-        this.cameraPos.x = Math.max(0, Math.min(this.worldWidth - displaySize.x, this.cameraPos.x));
-        this.cameraPos.y = Math.max(0, Math.min(this.worldHeight - displaySize.y, this.cameraPos.y));
+        this.cameraPos = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize());
 
         // Tell the engine to offset all world-space drawing by the camera position.
         // After this call, drawing at (0,0) will draw at the camera's top-left corner.

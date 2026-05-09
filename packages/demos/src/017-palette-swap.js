@@ -39,7 +39,7 @@
 //   Center: one large sprite that changes theme every 2 seconds.
 //   Right: code snippet showing how to build and swap palettes.
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -101,25 +101,12 @@ class Demo {
     // Index of the currently active theme (0..3).
     currentTheme = 0;
 
-    // Tick number when we last switched themes.
-    lastSwapTick = 0;
+    // Fires every 120 ticks (2 seconds) to switch to the next theme.
+    swapTimer = new Timer(SWAP_PERIOD_TICKS);
 
     // #endregion
 
     // #region IBlitTechDemo Implementation
-
-    /**
-     * Tells the engine how big the screen should be and how fast to run.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
 
     /**
      * Loads the sprite, builds four theme palettes, then loads the font.
@@ -134,7 +121,7 @@ class Demo {
      *
      * @returns {Promise<boolean>} True when everything is ready.
      */
-    async initialize() {
+    async init() {
         console.log('[PaletteSwapDemo] Initializing...');
 
         // --- Step 1: Extract sprite colors ---
@@ -170,17 +157,12 @@ class Demo {
         try {
             this.spriteSheet = await SpriteSheet.load('/sprites/test.png');
 
-            // Read the image size so we know the full sprite rectangle.
-            const img = new Image();
-            img.src = '/sprites/test.png';
-            await new Promise((resolve) => {
-                img.onload = () => resolve();
-            });
-            this.charSprite = new Rect2i(0, 0, img.naturalWidth, img.naturalHeight);
+            // Grab a source rectangle that covers the whole sprite sheet.
+            this.charSprite = this.spriteSheet.fullRect();
 
             // Link pixels to palette slots.
             this.spriteSheet.indexize(this.themepalettes[0]);
-            console.log(`[PaletteSwapDemo] Sprite loaded: ${img.naturalWidth}x${img.naturalHeight}px`);
+            console.log(`[PaletteSwapDemo] Sprite loaded: ${this.charSprite.width}x${this.charSprite.height}px`);
         } catch (error) {
             console.error('[PaletteSwapDemo] Failed to load sprite:', error);
             return false;
@@ -197,10 +179,9 @@ class Demo {
     update() {
         const tick = BT.ticks();
 
-        if (tick - this.lastSwapTick >= SWAP_PERIOD_TICKS) {
+        if (this.swapTimer.tick(tick)) {
             // Move to the next theme; wrap around after void (index 3).
             this.currentTheme = (this.currentTheme + 1) % this.themepalettes.length;
-            this.lastSwapTick = tick;
 
             // --- Palette swap! ---
             // BT.paletteSet() uploads the new palette to the GPU.
@@ -361,9 +342,11 @@ class Demo {
         const palette = BT.paletteCreate(256);
 
         // --- Static UI colors (same in every palette) ---
-        // These must not change so that font rendering, labels, and FPS text
-        // look the same regardless of which theme is active.
-        palette.set(C_WHITE, new Color32(255, 255, 255)); // Font base.
+        // applyHUD(1) fills the six standard HUD slots. Slot 1 (white) is used
+        // directly. Slots 2-6 are overridden with this demo's values, which use
+        // a dark navy instead of the preset's dark purple, and slightly different
+        // shades for labels, header, code, and FPS dim text.
+        palette.applyHUD(1);
         palette.set(C_BG, new Color32(16, 18, 28)); // Dark navy background.
         palette.set(C_LABEL, new Color32(180, 180, 180)); // Gray labels.
         palette.set(C_HEADER, new Color32(255, 210, 80)); // Golden header.
@@ -388,7 +371,7 @@ class Demo {
                 tinted = new Color32(Math.max(0, base.r - 70), Math.min(255, base.g + 20), Math.min(255, base.b + 90));
             } else {
                 // void: desaturate and shift toward green.
-                const luma = Math.floor(base.r * 0.299 + base.g * 0.587 + base.b * 0.114);
+                const luma = Math.floor(base.luminance);
                 tinted = new Color32(
                     Math.floor(luma * 0.4),
                     Math.min(255, Math.floor(luma * 0.8 + 20)),

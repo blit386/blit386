@@ -79,24 +79,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Match other recent demos: low-res frame, 2x canvas, 60 FPS fixed ticks.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Allocate palette colours once at startup.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         // Start from default keyboard maps so this demo does not inherit remaps from others.
         BT.inputMapReset();
 

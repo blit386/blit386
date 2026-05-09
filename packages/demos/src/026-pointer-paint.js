@@ -100,24 +100,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            canvasDisplaySize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Sets up the palette and allocates the offscreen paint layer.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_BG, new Color32(20, 25, 35));

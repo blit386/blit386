@@ -7,9 +7,10 @@
 // the snake. Hitting the boundary wall or your own body ends the run; the game restarts after
 // two seconds. Everything is drawn with rectangles only (no text).
 //
-// Post-processing matches demo 023: pixel-tier PixelGlitch plus display-tier barrel distortion,
-// chromatic aberration, interference, rolling scan line, scanlines, RGB mask, vignette, noise,
-// flicker, bloom, and the same glitch state machine driving occasional bursts.
+// Post-processing matches demo 023: PixelGlitch on the logical index buffer, then engine
+// palette resolve + upscale, then display-tier barrel distortion, chromatic aberration,
+// interference, rolling scan line, scanlines, RGB mask, vignette, noise, flicker, bloom,
+// and the same glitch state machine driving occasional bursts.
 
 import {
     BarrelDistortion,
@@ -172,7 +173,7 @@ class Demo {
     /** Tick index when the snake died (`BT.ticks()`); null while playing. */
     deathTick = null;
 
-    // CRT effects (initialized in initialize())
+    // CRT effects (initialized in init())
     /** @type {PixelGlitch} */
     pixelGlitch;
 
@@ -226,7 +227,7 @@ class Demo {
      *
      * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number, outputUpscaleFilter: string}}
      */
-    queryHardware() {
+    configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
@@ -240,7 +241,7 @@ class Demo {
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         // Start from default keyboard maps so this demo stays independent from remapping demos.
         BT.inputMapReset();
 

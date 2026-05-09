@@ -39,9 +39,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
-
 // --- Gradient bar ---
 // How many color slots the scrolling gradient uses.
 // More slots = smoother rainbow; fewer slots = more "chunky".
@@ -137,24 +134,11 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Builds the palette with all static slots and zeroed dynamic slots, then loads the font.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[PaletteAnimationDemo] Initializing...');
 
         // --- Build the main palette ---
@@ -191,7 +175,8 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // Run one update cycle so all dynamic slots have real colors before the first render.
-        this.update();
+        // Pass false so animTime is not incremented during this priming call.
+        this.update(false);
 
         console.log('[PaletteAnimationDemo] Initialized');
         return true;
@@ -201,9 +186,12 @@ class Demo {
      * Called 60 times per second. Computes new Color32 values for every dynamic slot.
      * render() will never see Color32 -- it only reads slot indices we set here.
      */
-    update() {
+    update(advanceTime = true) {
         // Advance the clock. animTime grows by 1/60 each frame.
-        this.animTime += 1 / TARGET_FPS;
+        // Skipped when advanceTime is false (used during init() priming call).
+        if (advanceTime) {
+            this.animTime += BT.deltaSeconds();
+        }
 
         // Advance health drain.
         // We simulate a health bar that empties over HEALTH_DRAIN_TICKS ticks,

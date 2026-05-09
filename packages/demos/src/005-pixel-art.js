@@ -22,9 +22,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
-
 // Every color used for drawing gets a numbered slot in the palette (like a numbered paint jar).
 // Index 0 is always transparent. Custom colors start at 1.
 const C_WHITE = 1; // Pure white: font base color
@@ -132,29 +129,11 @@ class Demo {
     // #region Lifecycle
 
     /**
-     * Chooses the virtual screen size, the on-page canvas size, and how often update() runs.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            // 320 by 240 is the same cozy resolution many Blit-Tech demos use.
-            displaySize: new Vector2i(320, 240),
-
-            // The browser canvas is doubled so each logical pixel looks chunky on a modern monitor.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            // Sixty updates per second keeps motion easy on the eyes.
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Sets up the palette.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         // --- Set up the color palette ---
         // Think of this as laying out paint on an artist's palette tray before starting a painting.
         // Every color we might use gets a number. We set them all up before drawing begins.
@@ -192,7 +171,7 @@ class Demo {
      */
     update() {
         // Add one tick's worth of time. If targetFPS is 60, each tick is about 1/60 second.
-        this.animTime += 1 / TARGET_FPS;
+        this.animTime += BT.deltaSeconds();
 
         // --- Update the checker pattern colors ---
         // The checker squares use "lerp" (short for linear interpolation -- smoothly blending

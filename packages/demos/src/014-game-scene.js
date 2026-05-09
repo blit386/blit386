@@ -44,7 +44,7 @@
 //
 // Think of it as updating the paint cans before the painter starts working.
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -52,7 +52,6 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 
 // Internal game resolution.
 const DISPLAY_W = 320;
-const DISPLAY_H = 240;
 
 // The level is wider than the screen so the camera can scroll (007-Camera).
 const WORLD_W = 640;
@@ -92,7 +91,7 @@ const SKY_BANDS = 20;
 // Maximum live particles at once.
 const MAX_PARTICLES = 20;
 
-// Static UI slots (never change after initialize).
+// Static UI slots (never change after init).
 const C_WHITE = 1; // Font base color.
 const C_BLACK = 2; // Black for BT.clear.
 const C_HUD_BAR = 3; // (0,0,0,150) semi-transparent HUD overlay.
@@ -163,7 +162,7 @@ class Demo {
 
     // Walk "step" counter (not a frame index -- just bobs the rock position slightly).
     walkStep = 0;
-    lastWalkFrameTick = 0;
+    walkFrameTimer = new Timer(WALK_FRAME_TICKS);
 
     // Camera top-left in world coordinates.
     cameraPos = new Vector2i(0, 0);
@@ -173,10 +172,10 @@ class Demo {
 
     // Simple score counter.
     score = 0;
-    lastScoreTick = 0;
+    scoreTimer = new Timer(SCORE_INTERVAL_TICKS);
 
     // Particle spawn timer.
-    lastParticleSpawnTick = 0;
+    particleSpawnTimer = new Timer(PARTICLE_SPAWN_INTERVAL);
 
     // Active particle objects: { pos, spawnTick, paletteSlot }.
     particles = [];
@@ -184,7 +183,7 @@ class Demo {
     // Rotating pool index for particle palette slots.
     nextParticleSlot = 0;
 
-    // World decoration: buildings and clouds (built once in initialize).
+    // World decoration: buildings and clouds (built once in init).
     buildings = [];
     clouds = [];
 
@@ -198,6 +197,7 @@ class Demo {
     // Reused rectangle and vector to avoid creating new objects every frame.
     tempRect = new Rect2i(0, 0, 0, 0);
     tempVec = new Vector2i(0, 0);
+    worldSize = new Vector2i(WORLD_W, WORLD_H); // pre-allocated for cameraClamp calls
 
     // Sky band colors: top and horizon base values for the gradient.
     skyTop = new Color32(40, 70, 140);
@@ -214,30 +214,20 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Screen size, canvas scale, and fixed update rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Loads font, loads sprite, builds palette, places buildings and clouds.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[GameSceneDemo] Initializing...');
 
         // --- Create palette and set static slots ---
+        // applyHUD(1) fills six standard HUD slots. Slot 1 (white) matches directly.
+        // Slots 2 and 3 are overridden: this demo uses pure black (not a dark-purple
+        // background) and a semi-transparent black overlay for the HUD bar.
         this.palette = BT.paletteCreate(256);
+        this.palette.applyHUD(1);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
         this.palette.set(C_BLACK, new Color32(0, 0, 0));
         this.palette.set(C_HUD_BAR, new Color32(0, 0, 0, 150));
 
@@ -266,21 +256,15 @@ class Demo {
             this.palette.set(SPRITE_BASE + colorCount + i, this.spriteBaseColors[i]);
         }
 
-        // --- Activate palette ---
-        BT.paletteSet(this.palette);
-
         // --- Load hero sprite ---
         try {
-            this.heroSheet = await SpriteSheet.load('/sprites/test.png');
-
-            const img = new Image();
-            img.src = '/sprites/test.png';
-            await new Promise((resolve) => {
-                img.onload = () => resolve();
+            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
+                sort: 'none',
             });
-            this.heroSprite = new Rect2i(0, 0, img.naturalWidth, img.naturalHeight);
-            this.heroSheet.indexize(this.palette);
-            console.log(`[GameSceneDemo] Loaded sprite: ${img.naturalWidth}x${img.naturalHeight}px`);
+            this.heroSheet = indexed.sheet;
+            this.heroSprite = this.heroSheet.fullRect();
+            BT.paletteSet(this.palette);
+            console.log(`[GameSceneDemo] Loaded sprite: ${this.heroSprite.width}x${this.heroSprite.height}px`);
         } catch (error) {
             console.error('[GameSceneDemo] Failed to load sprite:', error);
             return false;
@@ -560,9 +544,8 @@ class Demo {
      * @param {number} tick - Current tick.
      */
     updateWalkStep(tick) {
-        if (tick - this.lastWalkFrameTick >= WALK_FRAME_TICKS) {
+        if (this.walkFrameTimer.tick(tick)) {
             this.walkStep = (this.walkStep + 1) % 4;
-            this.lastWalkFrameTick = tick;
         }
     }
 
@@ -610,13 +593,9 @@ class Demo {
      * Keeps cameraPos.x between 0 and WORLD_W - DISPLAY_W.
      */
     clampCamera() {
-        const maxCamX = WORLD_W - DISPLAY_W;
-        if (this.cameraPos.x < 0) {
-            this.cameraPos.x = 0;
-        }
-        if (this.cameraPos.x > maxCamX) {
-            this.cameraPos.x = maxCamX;
-        }
+        const clamped = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize());
+        this.cameraPos.x = clamped.x;
+        this.cameraPos.y = clamped.y;
         this.cameraXFloat = this.cameraPos.x;
     }
 
@@ -630,9 +609,8 @@ class Demo {
      * @param {number} tick - Current tick.
      */
     updateScore(tick) {
-        if (tick - this.lastScoreTick >= SCORE_INTERVAL_TICKS) {
+        if (this.scoreTimer.tick(tick)) {
             this.score += 1;
-            this.lastScoreTick = tick;
         }
     }
 
@@ -642,7 +620,7 @@ class Demo {
      * @param {number} tick - Current tick.
      */
     updateParticlesSpawn(tick) {
-        if (tick - this.lastParticleSpawnTick >= PARTICLE_SPAWN_INTERVAL) {
+        if (this.particleSpawnTimer.tick(tick)) {
             for (let i = 0; i < 3; i++) {
                 const slot = PARTICLE_SLOT_START + (this.nextParticleSlot % MAX_PARTICLES);
                 this.nextParticleSlot++;
@@ -656,8 +634,6 @@ class Demo {
                     paletteSlot: slot,
                 });
             }
-
-            this.lastParticleSpawnTick = tick;
         }
     }
 

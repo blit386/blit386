@@ -22,7 +22,7 @@
 // single pixel.
 //
 // Blit-Tech gives you BT.paletteCycle(start, end, speed) to do exactly that.
-// Call it once in initialize(), and the engine rotates the colors automatically
+// Call it once in init(), and the engine rotates the colors automatically
 // each frame. Positive speed = forward, negative = backward.
 //
 // WHAT YOU WILL SEE (three horizontal bands):
@@ -103,25 +103,12 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Builds the palette with gradient colors, starts the cycling effects,
      * and loads the bitmap font.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[PaletteCyclingDemo] Initializing...');
 
         this.palette = BT.paletteCreate(256);

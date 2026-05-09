@@ -32,7 +32,7 @@
 // We used the same idea in Demo 016-Palette-Animation:
 // https://vancura.dev/articles/blit-tech-palette-animation
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -110,11 +110,8 @@ class Demo {
     // Total duration of the cooldown (2 seconds at 60 FPS = 120 ticks).
     abilityCooldownDuration = 120;
 
-    // lastSpawnTick records when the last particle was spawned.
-    lastSpawnTick = 0;
-
-    // How many ticks between particle spawns (3 seconds at 60 FPS = 180 ticks).
-    spawnInterval = 180;
+    // Fires every 180 ticks (3 seconds at 60 FPS) to spawn the next particle batch.
+    spawnTimer = new Timer(180);
 
     // particles is an array of active particle objects.
     // Each particle: { pos: Vector2i, spawnTick: number, paletteSlot: number }
@@ -140,31 +137,20 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine the screen size and target frame rate.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            targetFPS: 60,
-        };
-    }
-
-    /**
      * Sets up the palette, loads the sprite and font.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
-    async initialize() {
+    async init() {
         console.log('[AnimationDemo] Initializing...');
 
         // --- Create palette and fill static UI colors ---
+        // applyHUD(1) writes six standard HUD defaults into slots 1-6.
+        // Slots 1 (white) and 2 (dark bg) come directly from the preset.
+        // Slots 3-6 are overridden below with demo-specific colors.
         this.palette = BT.paletteCreate(256);
+        this.palette.applyHUD(1);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
-        this.palette.set(C_BG, new Color32(30, 20, 40));
         this.palette.set(C_GROUND, new Color32(40, 60, 40));
         this.palette.set(C_SHADOW, new Color32(0, 0, 0, 100));
         this.palette.set(C_STATE_TEXT, new Color32(100, 200, 255));
@@ -192,24 +178,15 @@ class Demo {
         const baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
         this.spriteColorCount = baseColors.length;
 
-        // --- Activate the palette ---
-        BT.paletteSet(this.palette);
-
         // --- Load sprite ---
         try {
-            this.spriteSheet = await SpriteSheet.load('/sprites/test.png');
-
-            // Get sprite dimensions for the src rectangle.
-            const img = new Image();
-            img.src = '/sprites/test.png';
-            await new Promise((resolve) => {
-                img.onload = () => resolve();
+            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
+                sort: 'none',
             });
-            this.charSprite = new Rect2i(0, 0, img.naturalWidth, img.naturalHeight);
-
-            // Link sprite pixels to palette indices.
-            this.spriteSheet.indexize(this.palette);
-            console.log(`[AnimationDemo] Loaded sprite: ${img.naturalWidth}x${img.naturalHeight}px`);
+            this.spriteSheet = indexed.sheet;
+            this.charSprite = this.spriteSheet.fullRect();
+            BT.paletteSet(this.palette);
+            console.log(`[AnimationDemo] Loaded sprite: ${this.charSprite.width}x${this.charSprite.height}px`);
         } catch (error) {
             console.error('[AnimationDemo] Failed to load sprite:', error);
             return false;
@@ -237,10 +214,9 @@ class Demo {
             this.abilityCooldownTicks--;
         }
 
-        // Spawn a particle batch every spawnInterval ticks.
-        if (tick - this.lastSpawnTick >= this.spawnInterval) {
+        // Spawn a particle batch every 180 ticks.
+        if (this.spawnTimer.tick(tick)) {
             this.spawnParticle();
-            this.lastSpawnTick = tick;
         }
 
         // Remove dead particles (older than 3 seconds = 180 ticks).
@@ -485,7 +461,8 @@ class Demo {
      * Shows the spawn timer countdown and particle count.
      */
     renderSpawnTimerUI() {
-        const ticksUntilSpawn = this.spawnInterval - (BT.ticks() - this.lastSpawnTick);
+        // Ask the timer how many ticks are left until the next spawn event.
+        const ticksUntilSpawn = this.spawnTimer.remainingTicks(BT.ticks());
 
         // systemPrint takes (position, paletteIndex, text).
         BT.systemPrint(new Vector2i(10, 95), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);

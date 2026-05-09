@@ -34,7 +34,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
+// Target frame rate for fixed update() steps (matches engine defaultConfig).
 const TARGET_FPS = 60;
 
 // --- World space ---
@@ -96,7 +96,7 @@ const TIER_LIGHTNESS = [85, 68, 52, 36, 20];
 
 // --- Screen layout ---
 // The logical resolution of the canvas in pixels. This is the number of "dots" in the display,
-// not the size of the window (the window is 2x larger, set in queryHardware).
+// not the size of the window (the window is 2x larger via engine defaultConfig).
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
 
@@ -187,7 +187,7 @@ const SPARK_TABLE = [
 class Demo {
     // #region Module State
 
-    // The 256-slot palette used for all drawing. Filled in initialize(), updated every tick.
+    // The 256-slot palette used for all drawing. Filled in init(), updated every tick.
     palette = null;
 
     // Total elapsed animation time, measured in seconds.
@@ -225,31 +225,12 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine how to set up the display before anything else runs.
-     *
-     * displaySize is the logical resolution -- the number of pixels the demo draws into.
-     * canvasDisplaySize is how large the canvas appears on screen. Setting it to 2x
-     * makes each logical pixel four physical pixels (2 wide × 2 tall), giving the
-     * chunky retro look of old game hardware without reducing actual pixel count.
-     * targetFPS is how many times per second update() and render() are called.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            canvasDisplaySize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Builds the palette, loads the font, and creates sparks and particles.
      * Runs once before the first update() call.
      *
      * @returns {Promise<boolean>}
      */
-    async initialize() {
+    async init() {
         console.log('[FlurryDemo] Initializing...');
 
         // --- Build the palette ---
@@ -303,8 +284,8 @@ class Demo {
      * All Color32 work happens here; render() only ever uses slot numbers.
      */
     update() {
-        // Advance time. Each tick adds 1 / TARGET_FPS seconds (e.g. 1/60 when the target frame rate is 60).
-        this.animTime += 1 / TARGET_FPS;
+        // Advance time by one fixed-step duration in seconds.
+        this.animTime += BT.deltaSeconds();
 
         // Rotate the global hue. The % operator wraps the angle back to 0 at 360.
         this.huePhase = (this.huePhase + HUE_ADVANCE) % 360;
@@ -344,7 +325,7 @@ class Demo {
 
         // Title in the top-left corner using the built-in system font.
         // BT.systemPrint() arguments: (position, paletteIndex, text).
-        // C_TITLE (slot 3) is the golden yellow color set up in initialize().
+        // C_TITLE (slot 3) is the golden yellow color set up in init().
         BT.systemPrint(new Vector2i(4, 4), C_TITLE, 'Flurry');
 
         // FPS counter in the top-right corner in the very dim gray (C_FPS = slot 5).

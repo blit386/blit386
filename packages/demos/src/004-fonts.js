@@ -22,9 +22,6 @@ import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// Target frame rate used in queryHardware() and to advance the animation clock in update().
-const TARGET_FPS = 60;
-
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
 const C_WHITE = 1; // Pure white: title and special characters
@@ -80,31 +77,12 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine how big the screen should be and how fast to run.
-     *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
-     */
-    queryHardware() {
-        return {
-            // 320x240 is a classic retro resolution, similar to the Game Boy Advance.
-            displaySize: new Vector2i(320, 240),
-
-            // The canvas on the page is displayed at double size (640x480).
-            // This makes every pixel look 2x2 screen pixels large.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            // Run at 60 frames per second.
-            targetFPS: TARGET_FPS,
-        };
-    }
-
-    /**
      * Sets up the color palette.
      * Unlike Demo 022, there is no font to load -- BT.systemPrint() needs nothing.
      *
      * @returns {Promise<boolean>} Returns true when ready.
      */
-    async initialize() {
+    async init() {
         // --- Set up the color palette ---
         // We pick every color before drawing anything, like an artist mixing paint.
         this.palette = BT.paletteCreate(256);
@@ -139,7 +117,7 @@ class Demo {
      */
     update() {
         // Move the animation clock forward by one update tick's worth of time (1/60 second).
-        this.animTime += 1 / TARGET_FPS;
+        this.animTime += BT.deltaSeconds();
 
         // --- Update the pulsing text color ---
         // Math.sin returns a wave between -1 and +1 that oscillates smoothly.
@@ -210,23 +188,28 @@ class Demo {
      * @returns {number} The Y position after the last line drawn.
      */
     renderColoredText(y) {
+        // Use a local variable so we don't modify the original parameter.
+        // In JavaScript, changing a parameter's value inside a function can confuse readers
+        // because they expect the original value to stay the same throughout the function.
+        let currentY = y;
+
         // BT.systemPrint(position, paletteSlot, text) -- the slot number IS the color directly.
         // Compare to BT.printFont() which uses a 0-based offset: slot 3 needs offset 2 there.
-        BT.systemPrint(new Vector2i(10, y), C_RED_TEXT, 'Red Text');
-        y += 10;
+        BT.systemPrint(new Vector2i(10, currentY), C_RED_TEXT, 'Red Text');
+        currentY += 10;
 
-        BT.systemPrint(new Vector2i(10, y), C_GREEN_TEXT, 'Green Text');
-        y += 10;
+        BT.systemPrint(new Vector2i(10, currentY), C_GREEN_TEXT, 'Green Text');
+        currentY += 10;
 
-        BT.systemPrint(new Vector2i(10, y), C_BLUE_TEXT, 'Blue Text');
-        y += 10;
+        BT.systemPrint(new Vector2i(10, currentY), C_BLUE_TEXT, 'Blue Text');
+        currentY += 10;
 
-        BT.systemPrint(new Vector2i(10, y), C_YELLOW_TEXT, 'Yellow Text');
+        BT.systemPrint(new Vector2i(10, currentY), C_YELLOW_TEXT, 'Yellow Text');
 
         // Add extra space after this section.
-        y += 14;
+        currentY += 14;
 
-        return y;
+        return currentY;
     }
 
     /**
