@@ -1,6 +1,6 @@
 # Blit-Tech Demos
 
-Fun examples for the [Blit-Tech](https://github.com/vancura/blit-tech/) pixel art engine.
+Fun examples for [Blit-Tech](https://github.com/vancura/blit-tech/), a palette-first WebGPU retro engine for TypeScript.
 
 Each demo shows a different feature of the engine. Source files in `src/` use plain JavaScript with lots of comments
 explaining how everything works.

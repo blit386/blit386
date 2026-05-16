@@ -2,7 +2,7 @@
   "name": "blit-tech-demos",
   "private": true,
   "type": "module",
-  "description": "Interactive demos and examples for Blit-Tech (WebGPU primary, Canvas 2D software fallback).",
+  "description": "Interactive demos for Blit-Tech, a palette-first WebGPU retro engine for TypeScript.",
   "author": "Václav Vančura",
   "license": "ISC",
   "repository": {
