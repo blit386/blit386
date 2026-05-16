@@ -292,7 +292,7 @@ class Demo {
         // Six colors. Every effect on screen comes from these.
         const palette = BT.paletteCreate(16);
         palette.set(C_BG, new Color32(8, 14, 8, 255)); // Almost-black with green tint
-        palette.set(C_WHITE, Color32.white()); // Slot the font glyph pixels resolve to
+        palette.set(C_WHITE, Color32.white); // Slot the font glyph pixels resolve to
         palette.set(C_GREEN_DIM, new Color32(40, 100, 60, 255)); // Faded green
         palette.set(C_GREEN, new Color32(80, 200, 110, 255)); // PipBoy green
         palette.set(C_GREEN_BRIGHT, new Color32(170, 255, 190, 255)); // Hot green highlights

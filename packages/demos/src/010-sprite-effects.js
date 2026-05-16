@@ -433,15 +433,10 @@ class Demo {
 
         for (let i = 0; i < N; i++) {
             const base = this.baseColors[i];
-            this.palette.set(
-                SPRITE_BASE + BLOCK_DAYNIGHT * N + i,
-                new Color32(
-                    Math.floor(base.r * brightness),
-                    Math.floor(base.g * brightness),
-                    Math.min(255, Math.floor(base.b * brightness + 30 * (1 - brightness))), // Blue hint at night.
-                    base.a,
-                ),
-            );
+            // Blend from a fixed cool night tint (slight blue) toward the sprite's daylight colors as brightness → 1.
+            // Color32.lerp(a, b, t): t=0 is all `a`, t=1 is all `b`; matches the old per-channel formula.
+            const nightTint = new Color32(0, 0, 30, base.a);
+            this.palette.set(SPRITE_BASE + BLOCK_DAYNIGHT * N + i, Color32.lerp(nightTint, base, brightness));
         }
     }
 
