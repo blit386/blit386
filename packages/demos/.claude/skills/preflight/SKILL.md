@@ -17,7 +17,7 @@ Run comprehensive quality checks before committing or pushing code.
 1. **Run all checks**
    - Execute `pnpm preflight` which runs:
      - `format:check` - Verify all files are formatted
-     - `lint` - Check for lint errors (Biome + ESLint)
+     - `lint` - Check for lint errors (ESLint)
      - `spellcheck` - Check spelling in code and docs
      - `knip` - Find unused exports and dependencies
 

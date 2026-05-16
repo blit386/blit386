@@ -1,6 +1,6 @@
 # Project Rules
 
-Interactive demos and examples for Blit-Tech (WebGPU primary renderer with Canvas 2D software fallback).
+Interactive demos and examples for Blit-Tech, a palette-first WebGPU retro engine for TypeScript.
 
 ## Tech Stack
 
@@ -198,13 +198,15 @@ has no comment, or the comment only restates the code without explaining it, tha
 All engine functionality via static `BT` namespace:
 
 ```js
-BT.clear(Color32.black());
-BT.clearRect(color, rect);
-BT.drawPixel(pos, color);
-BT.drawLine(p0, p1, color);
-BT.drawRect(rect, color);
-BT.drawRectFill(rect, color);
-BT.drawSprite(sheet, srcRect, destPos, tint);
+const BG = 1;
+const FG = 2;
+BT.clear(BG);
+BT.clearRect(rect, FG);
+BT.drawPixel(pos, FG); // or BT.drawPixel(x, y, FG)
+BT.drawLine(p0, p1, FG);
+BT.drawRect(rect, FG);
+BT.drawRectFill(rect, FG);
+BT.drawSprite(sheet, srcRect, destPos, paletteOffset); // default paletteOffset is 0
 BT.systemPrint(pos, paletteIndex, text); // built-in 6x14 system font (palette index, not Color32)
 BT.systemPrintMeasure(text); // Vector2i size in pixels
 BT.printFont(font, pos, text, paletteOffset?); // bitmap font; paletteOffset shifts glyph indices (default 0)
