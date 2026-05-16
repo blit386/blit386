@@ -49,12 +49,12 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 const C_WHITE = 1; // Pure white -- font base and section headers.
 const C_BG = 2; // Dark gray-blue background.
 const C_BLACK = 3; // Pure black -- labels on light-colored swatches.
-const C_RED = 4; // Color32.red() -- (255, 0, 0).
-const C_GREEN_N = 5; // Color32.green() -- (0, 255, 0).
-const C_BLUE_N = 6; // Color32.blue() -- (0, 0, 255).
-const C_YELLOW_N = 7; // Color32.yellow() -- (255, 255, 0).
-const C_CYAN_N = 8; // Color32.cyan() -- (0, 255, 255).
-const C_MAGENTA_N = 9; // Color32.magenta() -- (255, 0, 255).
+const C_RED = 4; // Color32.red -- (255, 0, 0).
+const C_GREEN_N = 5; // Color32.green -- (0, 255, 0).
+const C_BLUE_N = 6; // Color32.blue -- (0, 0, 255).
+const C_YELLOW_N = 7; // Color32.yellow -- (255, 255, 0).
+const C_CYAN_N = 8; // Color32.cyan -- (0, 255, 255).
+const C_MAGENTA_N = 9; // Color32.magenta -- (255, 0, 255).
 
 // Semi-transparent versions for the RGB mix section.
 const C_MIX_RED_A = 10; // (255, 0, 0, 140) -- translucent red.
@@ -134,12 +134,12 @@ class Demo {
         this.palette.set(C_BLACK, new Color32(0, 0, 0));
 
         // Named shortcut colors (same values as the Color32 static helpers).
-        this.palette.set(C_RED, Color32.red());
-        this.palette.set(C_GREEN_N, Color32.green());
-        this.palette.set(C_BLUE_N, Color32.blue());
-        this.palette.set(C_YELLOW_N, Color32.yellow());
-        this.palette.set(C_CYAN_N, Color32.cyan());
-        this.palette.set(C_MAGENTA_N, Color32.magenta());
+        this.palette.set(C_RED, Color32.red);
+        this.palette.set(C_GREEN_N, Color32.green);
+        this.palette.set(C_BLUE_N, Color32.blue);
+        this.palette.set(C_YELLOW_N, Color32.yellow);
+        this.palette.set(C_CYAN_N, Color32.cyan);
+        this.palette.set(C_MAGENTA_N, Color32.magenta);
 
         // Semi-transparent versions for the RGB mix section.
         // The fourth argument to Color32 is alpha: 255 = fully solid, 0 = fully invisible.

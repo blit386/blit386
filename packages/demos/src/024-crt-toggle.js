@@ -150,13 +150,13 @@ class Demo {
         // obvious - soft pastels would look the same with or without.
         const palette = BT.paletteCreate(16);
         palette.set(C_BG, new Color32(20, 30, 50, 255));
-        palette.set(C_LABEL, Color32.white());
-        palette.set(C_RED, Color32.red());
-        palette.set(C_GREEN, Color32.green());
-        palette.set(C_BLUE, Color32.blue());
-        palette.set(C_YELLOW, Color32.yellow());
-        palette.set(C_CYAN, Color32.cyan());
-        palette.set(C_MAGENTA, Color32.magenta());
+        palette.set(C_LABEL, Color32.white);
+        palette.set(C_RED, Color32.red);
+        palette.set(C_GREEN, Color32.green);
+        palette.set(C_BLUE, Color32.blue);
+        palette.set(C_YELLOW, Color32.yellow);
+        palette.set(C_CYAN, Color32.cyan);
+        palette.set(C_MAGENTA, Color32.magenta);
         BT.paletteSet(palette);
 
         // -- Step 2: build the CRT preset ONCE up front --

@@ -179,8 +179,8 @@ class Demo {
         // At wave=0 colorA is red; at wave=1 it is yellow. At wave=0 colorB is blue; at 1 it is cyan.
         // Both colors shift at the same time but in opposite directions, so they always contrast.
         const wave = (Math.sin(this.animTime * 2) + 1) * 0.5;
-        this.palette.set(C_CHECKER_A, Color32.red().lerp(Color32.yellow(), wave));
-        this.palette.set(C_CHECKER_B, Color32.blue().lerp(Color32.cyan(), 1 - wave));
+        this.palette.set(C_CHECKER_A, Color32.red.lerp(Color32.yellow, wave));
+        this.palette.set(C_CHECKER_B, Color32.blue.lerp(Color32.cyan, 1 - wave));
     }
 
     /**

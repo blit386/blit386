@@ -77,9 +77,9 @@ class Demo {
         // Store the static colors we always need.
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(20, 20, 30)); // very dark blue-gray background
-        this.palette.set(C_YELLOW, Color32.yellow()); // yellow for the instruction text
-        this.palette.set(C_CYAN, Color32.cyan()); // cyan for the "Capturing..." message
-        this.palette.set(C_GREEN, Color32.green()); // green for the "Saved" success message
+        this.palette.set(C_YELLOW, Color32.yellow); // yellow for the instruction text
+        this.palette.set(C_CYAN, Color32.cyan); // cyan for the "Capturing..." message
+        this.palette.set(C_GREEN, Color32.green); // green for the "Saved" success message
         this.palette.set(C_GRAY, new Color32(128, 128, 128)); // medium gray for the frame counter
 
         // Pre-fill the six animated stripe slots with a starting color (dark gray).
