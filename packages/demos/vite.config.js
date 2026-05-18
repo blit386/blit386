@@ -84,11 +84,14 @@ export default defineConfig(({ command }) => {
     return {
         base: './',
 
-        // Always use the workspace library build, not a stale copy under node_modules/.pnpm.
+        // Dev only: point at ../blit-tech/dist so dev:watch picks up library rebuilds.
+        // Production build resolves blit-tech via node_modules (workspace package).
         resolve: {
-            alias: {
-                'blit-tech': blitTechDistEntry,
-            },
+            alias: isServe
+                ? {
+                      'blit-tech': blitTechDistEntry,
+                  }
+                : {},
         },
 
         plugins: [
