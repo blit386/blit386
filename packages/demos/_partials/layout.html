@@ -28,7 +28,7 @@
             }
 
             #canvas-container {
-                width: 100vw;
+                width: 100dvw;
                 height: 100dvh;
                 display: flex;
                 align-items: center;
@@ -48,17 +48,17 @@
                  * --canvas-max-w/h: max on-screen size (from configure() maxCanvasDisplaySize).
                  */
                 width: min(
-                    100vw,
+                    100dvw,
                     calc(100dvh * var(--canvas-display-w, 640) / var(--canvas-display-h, 480)),
                     var(--canvas-max-w, 960px),
                     calc(var(--canvas-max-h, 720px) * var(--canvas-display-w, 640) / var(--canvas-display-h, 480))
-                ) !important;
+                );
                 height: min(
                     100dvh,
-                    calc(100vw * var(--canvas-display-h, 480) / var(--canvas-display-w, 640)),
+                    calc(100dvw * var(--canvas-display-h, 480) / var(--canvas-display-w, 640)),
                     var(--canvas-max-h, 720px),
                     calc(var(--canvas-max-w, 960px) * var(--canvas-display-h, 480) / var(--canvas-display-w, 640))
-                ) !important;
+                );
             }
 
             @supports (image-rendering: crisp-edges) {
