@@ -172,8 +172,8 @@ does and **why**, not just restate it.
 this.pos = this.pos.add(this.speed);
 
 // If the square goes past the right edge of the screen...
-// BT.displaySize().x is how wide the screen is in pixels.
-if (this.pos.x >= BT.displaySize().x - this.size.x) {
+// BT.displaySize.x is how wide the screen is in pixels.
+if (this.pos.x >= BT.displaySize.x - this.size.x) {
   // Flip the horizontal direction so it bounces back.
   this.speed.x = -this.speed.x;
 }
@@ -185,7 +185,7 @@ if (this.pos.x >= BT.displaySize().x - this.size.x) {
 // Update position.
 this.pos = this.pos.add(this.speed);
 
-if (this.pos.x >= BT.displaySize().x - this.size.x) {
+if (this.pos.x >= BT.displaySize.x - this.size.x) {
   this.speed.x = -this.speed.x;
 }
 ```
@@ -211,16 +211,16 @@ BT.systemPrint(pos, paletteIndex, text); // built-in 6x14 system font (palette i
 BT.systemPrintMeasure(text); // Vector2i size in pixels
 BT.printFont(font, pos, text, paletteOffset?); // bitmap font; paletteOffset shifts glyph indices (default 0)
 BT.cameraSet(offset);
-BT.cameraGet();
+BT.camera;
 BT.cameraReset();
 BT.cameraClamp(camera, worldSize, viewSize?); // clamp scroll position to world bounds
-BT.displaySize();
-BT.ticks();
+BT.displaySize;
+BT.ticks;
 BT.ticksReset();
-BT.fps();
-BT.deltaSeconds();
-BT.timeSeconds();
-BT.getActiveBackend(); // 'webgpu' | 'software' | null — after successful init
+BT.targetFPS;
+BT.deltaSeconds;
+BT.timeSeconds;
+BT.activeBackend; // 'webgpu' | 'software' | null - after successful init
 await BT.captureFrame(); // returns a Blob
 await BT.downloadFrame(filename); // optional filename; default PNG name if omitted
 ```

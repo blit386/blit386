@@ -1,6 +1,6 @@
 # Quick Start Guide for External Developers
 
-This guide is for developers who want to try out Blit-Tech Demos before Blit-Tech is published to npm.
+This guide is for developers who want to run Blit-Tech Demos locally with the latest Blit-Tech source.
 
 ## Why This Setup Is Needed
 
@@ -14,9 +14,11 @@ Blit-Tech Demos depends on Blit-Tech via a pnpm workspace dependency:
 }
 ```
 
-Since Blit-Tech is not yet on npm, you need to clone both repositories and set up a local workspace.
+Blit-Tech is published to npm, but this demos repository intentionally depends on `blit-tech` via `workspace:*` so the
+demos can track the local sibling repo during development. That means you still need both repositories in one pnpm
+workspace.
 
-## Browser and renderer
+## Browser and Renderer
 
 The engine prefers **WebGPU** and falls back to a **Canvas 2D software renderer** when WebGPU is missing or fails to
 start (optional `?renderer=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
@@ -86,7 +88,7 @@ blit-tech-workspace/          # Your workspace root
 
 You can optionally create a `package.json` in the workspace root:
 
-Prerequisite: Node.js >= 20.0.0 is required before installing pnpm.
+Prerequisite: Node.js >= 22.18.0 is required for this workspace because the sibling `blit-tech` package requires it.
 
 ```json
 {
@@ -108,7 +110,7 @@ cd blit-tech-demos
 pnpm dev
 ```
 
-Opens browser at `http://localhost:5173/demos/001-basics.html` (or visit `/demos/` for the full index).
+Opens the browser at `http://localhost:5173/demos/001-basics.html` (or visit `/demos/` for the full index).
 
 ### Development with Auto-Rebuild
 
@@ -134,16 +136,6 @@ pnpm build
 ```
 
 Then the demos will use the newly built version.
-
-## After npm Publication
-
-Once Blit-Tech is published to npm, you can:
-
-1. Clone just `blit-tech-demos`
-2. Run `pnpm install`
-3. Start developing
-
-The workspace setup will no longer be needed.
 
 ## Troubleshooting
 
@@ -181,15 +173,13 @@ cd ../blit-tech-demos
 pnpm dev
 ```
 
-## Alternative: Wait for npm Publication
+## Alternative: Use Blit-Tech from npm
 
-If this setup seems complex, you can wait for Blit-Tech to be published to npm. Once published, installation will be a
-simple:
+If you only want to build your own standalone app with the published package (instead of working on this demos repo),
+you can install Blit-Tech directly from npm:
 
 ```bash
-npm create vite@latest my-demo --template vanilla
+pnpm create vite my-demo --template vanilla-ts
 cd my-demo
-npm install blit-tech
+pnpm add blit-tech
 ```
-
-Check the [Blit-Tech repository](https://github.com/vancura/blit-tech) for publication status.
