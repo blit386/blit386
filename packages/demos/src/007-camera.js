@@ -26,6 +26,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -57,6 +59,8 @@ const C_FPS = 18; // Gray: FPS counter text
 const C_BUILDING_BASE = 20; // building 0 is at index 20, building 1 at 21, and so on
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -397,10 +401,6 @@ class Demo {
 
         // Draw the mini-map in the bottom-right corner.
         this.renderMiniMap();
-
-        // FPS counter at the very bottom.
-        this.tempVec1.set(10, 225);
-        BT.systemPrint(this.tempVec1, C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     /**
@@ -448,6 +448,7 @@ class Demo {
 
         this.tempRect.set(playerMiniX - 1, playerMiniY - 1, 2, 2);
         BT.drawRectFill(this.tempRect, C_PLAYER);
+        footer.draw();
     }
 
     // #endregion

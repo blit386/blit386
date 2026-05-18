@@ -32,6 +32,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -176,6 +178,8 @@ const SPARK_TABLE = [
 ];
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_TITLE, baselineY: PALETTE_STRIP_SPARK_Y - 15 });
 
 // #region Main Logic
 
@@ -329,14 +333,11 @@ class Demo {
         // BT.systemPrint() arguments: (position, paletteIndex, text).
         // C_TITLE (slot 3) is the golden yellow color set up in init().
         BT.systemPrint(new Vector2i(4, 4), C_TITLE, 'Flurry');
-
-        // FPS counter in the top-right corner in the very dim gray (C_FPS = slot 5).
-        BT.systemPrint(new Vector2i(258, 4), C_FPS, `${BT.targetFPS} fps`);
-
         // Palette strip along the very bottom of the screen.
         // Shows the live particle and spark color slots as small colored squares.
         // As huePhase advances, watch this strip cycle through the entire rainbow.
         this.renderPaletteStrip();
+        footer.draw();
     }
 
     // #endregion

@@ -25,7 +25,7 @@
 //   - Moving rock hero = sprites (008) and timing (009).
 //   - Sparkles near the rock = small fading squares, like the particles in animation (009).
 //   - Day and night = palette-based ambient lighting (010); the world dims at night.
-//   - Score, position, FPS on top = bitmap text HUD (004).
+//   - Score and position on top = bitmap text HUD (004); FPS is rendered by the shared footer.
 //
 // HOW THE DAY/NIGHT PALETTE WORKS:
 //
@@ -45,6 +45,8 @@
 // Think of it as updating the paint cans before the painter starts working.
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
+
+import { createDemoFooter } from './shared/demo-footer.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -127,6 +129,8 @@ const PARTICLE_SLOT_START = 50;
 const SPRITE_BASE = 70;
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_HUD_FPS, rightColor: C_HUD_TITLE });
 
 // #region Main Logic
 
@@ -698,10 +702,6 @@ class Demo {
         // Score and position.
         BT.systemPrint(new Vector2i(8, 18), C_HUD_SCORE, `Score: ${this.score}`);
         BT.systemPrint(new Vector2i(130, 18), C_HUD_POS, `Rock: (${this.heroPos.x},${this.heroPos.y})`);
-
-        // FPS and day/night phase.
-        BT.systemPrint(new Vector2i(260, 220), C_HUD_FPS, `FPS: ${BT.targetFPS}`);
-
         const phaseTick = BT.ticks % DAY_NIGHT_CYCLE_TICKS;
         const phaseLabel =
             phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.25
@@ -712,6 +712,7 @@ class Demo {
                     ? 'Night'
                     : 'Toward dawn';
         BT.systemPrint(new Vector2i(8, 220), C_HUD_FPS, phaseLabel);
+        footer.draw();
     }
 
     // #endregion

@@ -18,6 +18,8 @@
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -52,6 +54,8 @@ const RAINBOW_TEXT = 'Rainbow Animation!';
 const SYSTEM_FONT_CHAR_W = 8;
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DIM_GRAY, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -167,13 +171,7 @@ class Demo {
         y = this.renderRainbowText(y);
         y = this.renderPulsingText(y);
         y = this.renderSpecialCharacters(y);
-
-        // Draw the FPS counter at the bottom.
-        BT.systemPrint(
-            new Vector2i(10, BT.displaySize.y - 13),
-            C_DIM_GRAY,
-            `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`,
-        );
+        footer.draw();
     }
 
     // #endregion

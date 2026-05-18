@@ -81,6 +81,8 @@ import {
     Vignette,
 } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 // #endregion
 
 // #region Configuration
@@ -245,6 +247,8 @@ function colorSlot(name) {
 }
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_GREEN_DIM, rightColor: C_GREEN });
 
 // #region Main Logic
 
@@ -526,6 +530,8 @@ class Demo {
             this.renderStatusBlock();
             this.renderBlinkingCursor();
         }
+
+        footer.draw();
     }
 
     /**

@@ -10,6 +10,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -35,6 +37,8 @@ const C_STEEL = 12; // Steel blue: background squares in the clearRect grid
 // update() will compute and store each pixel's current color in slots 20..69 every tick.
 // render() then simply passes the slot number to BT.drawPixel() - no Color32 needed there!
 const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 69
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #endregion
 
@@ -149,8 +153,7 @@ class Demo {
         this.renderClearRectDemo();
         this.renderCombinedDemo();
 
-        // Show the frame rate (FPS) and tick count at the bottom in dim gray.
-        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`);
+        footer.draw();
     }
 
     // #endregion

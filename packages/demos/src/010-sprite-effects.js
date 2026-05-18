@@ -30,6 +30,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -88,6 +90,8 @@ const BLOCK_POISON = 11; // Dynamic.
 const BLOCK_DAYNIGHT = 12; // Dynamic.
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -231,6 +235,7 @@ class Demo {
 
         if (!this.spriteSheet || !this.charSprite) {
             BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
+            footer.draw();
             return;
         }
 
@@ -244,7 +249,7 @@ class Demo {
         // Day/night cycle at the bottom.
         this.renderDayNightCycle();
 
-        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.targetFPS}`);
+        footer.draw();
     }
 
     // #endregion

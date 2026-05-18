@@ -34,6 +34,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -73,6 +75,8 @@ const C_INFO_TEXT = 14; // (180, 180, 180) gray info text.
 const C_FPS = 15; // (100, 100, 100) dim FPS text.
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -267,6 +271,7 @@ class Demo {
 
         // Draw the info panel.
         this.renderUI();
+        footer.draw();
     }
 
     // #endregion
@@ -422,9 +427,6 @@ class Demo {
         BT.systemPrint(new Vector2i(10, 182), C_INFO_TEXT, '- Deterministic frame timing');
         BT.systemPrint(new Vector2i(10, 196), C_INFO_TEXT, '- Cooldown & event scheduling');
         BT.systemPrint(new Vector2i(10, 210), C_INFO_TEXT, '- State machine transitions');
-
-        // FPS.
-        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     /**

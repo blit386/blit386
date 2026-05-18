@@ -41,6 +41,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -67,6 +69,8 @@ const C_CODE = 5;
 const C_DIM = 6;
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_HEADER });
 
 // #region Main Logic
 
@@ -208,6 +212,7 @@ class Demo {
 
         if (!this.spriteSheet || !this.charSprite) {
             BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
+            footer.draw();
             return;
         }
 
@@ -219,8 +224,7 @@ class Demo {
         this.renderCyclingSprite();
         this.renderCodePanel();
 
-        // FPS counter.
-        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.targetFPS}`);
+        footer.draw();
     }
 
     // #endregion

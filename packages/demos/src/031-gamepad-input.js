@@ -16,6 +16,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 // #endregion
 
 // #region Type Definitions
@@ -50,6 +52,8 @@ const AIM_SPEED = 4;
 const TRAIL_MAX = 28;
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -184,8 +188,8 @@ class Demo {
         const controlsHint = 'A cycle color | B toggle trail | Start reset';
         const maskHint = `(A|B) mask down: ${aOrB ? 'true' : 'false'}`;
 
-        BT.systemPrint(new Vector2i(10, 222), C_DIM, `Gamepads: ${count} | P1 connected: ${connected ? 'yes' : 'no'}`);
-        BT.systemPrint(new Vector2i(10, 232), C_DIM, `${controlsHint} | ${maskHint}`);
+        BT.systemPrint(new Vector2i(10, 200), C_DIM, `Gamepads: ${count} | P1 connected: ${connected ? 'yes' : 'no'}`);
+        BT.systemPrint(new Vector2i(10, 212), C_DIM, `${controlsHint} | ${maskHint}`);
 
         if (!connected) {
             BT.systemPrint(new Vector2i(10, 34), C_ACCENT, 'Connect a gamepad and press any button to wake it.');
@@ -282,6 +286,7 @@ class Demo {
 
         this.renderArena();
         this.renderHud();
+        footer.draw();
     }
 
     // #endregion

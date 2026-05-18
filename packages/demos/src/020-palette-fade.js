@@ -39,6 +39,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -135,6 +137,8 @@ function fillNightPalette(p) {
 }
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -261,6 +265,7 @@ class Demo {
 
         this.renderScene();
         this.renderUI();
+        footer.draw();
     }
 
     // #endregion
@@ -405,10 +410,11 @@ class Demo {
     }
 
     /**
-     * Draws UI overlay: phase label and FPS counter.
+     * Draws the top UI strip for this demo: a dark bar and the current fade/flash phase name.
+     * FPS and the demo title are drawn separately by the shared footer (footer.draw() in render()).
      */
     renderUI() {
-        // Phase label.
+        // Look up a short human-readable label for the current animation phase (day, night, etc.).
         const phaseLabels = {
             day: 'Day',
             'fade-to-night': 'Fading to night... (ease-in-out)',
@@ -423,9 +429,6 @@ class Demo {
         // Dark background strip for readability.
         BT.drawRectFill(new Rect2i(0, 0, 320, 16), C_GROUND_DARK);
         BT.systemPrint(new Vector2i(6, 2), C_LABEL, `Palette Fade & Flash - ${label}`);
-
-        // FPS counter.
-        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion

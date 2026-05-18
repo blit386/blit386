@@ -22,6 +22,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -51,7 +53,8 @@ const HEADER_SUB_Y = 36;
 const HEADER_PRESET_Y = 56;
 const HEADER_KEYS_Y = 76;
 const PANEL_TOP_Y = 100;
-const FOOTER_Y = DISPLAY_H - 18;
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // Horizontal step between face-button labels (eight buttons fit inside `PANEL_W` padding).
 const FACE_SLOT_WIDTH = 32;
@@ -177,7 +180,7 @@ class Demo {
         this.renderPlayerPanel(0, PANEL0_X, PANEL_TOP_Y);
         this.renderPlayerPanel(1, PANEL1_X, PANEL_TOP_Y);
 
-        BT.systemPrint(new Vector2i(MARGIN_X, FOOTER_Y), C_DIM, `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`);
+        footer.draw();
     }
 
     // #endregion

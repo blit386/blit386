@@ -3,7 +3,7 @@
  *
  * Welcome! This demo teaches you the absolute basics of making things appear
  * on screen with the Blit-Tech engine. You will learn:
- *   - How a demo is structured (configure is optional; then init, update, render)
+ *   - How a demo is structured (init, update, and render)
  *   - How to clear the screen and load a sprite (a tiny picture)
  *   - How to make something move and bounce off walls
  *   - How to display text on screen
@@ -46,6 +46,8 @@
  */
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 // #endregion
 
 // #region Configuration
@@ -71,8 +73,10 @@ const SPRITE_BASE = 10;
 // site root, so /sprites/logo-1.png maps to public/sprites/logo-1.png on disk.
 const SPRITE_URL = '/sprites/logo-1.png';
 
-// Target update rate. 60 ticks per second is the classic smooth-animation rate.
+// Target update rate. 30 ticks per second is slower than the engine default (60).
 const TARGET_FPS = 30;
+
+const footer = createDemoFooter({ leftColor: C_GREEN, rightColor: C_AMBER });
 
 // #endregion
 
@@ -167,39 +171,20 @@ class Demo {
      * - How big the canvas element should appear on the web page.
      * - How many times per second update() should run.
      *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
+     * @returns {{targetFPS: number}}
      */
     configure() {
+        // Only override the tick rate; the engine fills in displaySize,
+        // canvasDisplaySize, and the rest from defaultConfig().
         return {
-            // displaySize is the "retro screen" resolution - the pixel grid we draw on.
-            // 320x240 is a classic retro resolution that keeps the pixel-art look.
-            // All our drawing coordinates use this grid.
-            displaySize: new Vector2i(320, 240),
-
-            // canvasDisplaySize controls the size of the visible canvas on the page.
-            // 640x480 is a clean 2x upscale of our 320x240 logical display.
-            canvasDisplaySize: new Vector2i(640, 480),
-
-            // maxCanvasDisplaySize caps how large the canvas may appear on the page (CSS pixels).
-            // canvasDisplaySize is the GPU buffer; this limit is separate and used by layout.html.
-            maxCanvasDisplaySize: new Vector2i(320 * 4, 240 * 4),
-
-            // targetFPS is how many times per second update() will be called.
-            // 60 is the standard for smooth animation. render() runs once per
-            // screen refresh, which is also usually 60 times per second but
-            // can be different (some monitors refresh at 120 or 144 Hz).
             targetFPS: TARGET_FPS,
-
-            // detectDroppedFrames enables frame dropping detection. If true, the
-            // engine will try to keep the frame rate consistent by skipping frames
-            // when the game is running too slow.
-            detectDroppedFrames: true,
         };
     }
 
     /**
-     * Called once after hardware settings are resolved (configure() or engine
-     * defaults). Sets up the palette, loads the sprite image, and positions the
+     * Called once after hardware settings are resolved (from configure()
+     * merged with engine defaults, or defaults alone if you skip configure).
+     * Sets up the palette, loads the sprite image, and positions the
      * sprite in the center of the screen.
      *
      * The "async" keyword lets us use "await" inside this method. "await" pauses
@@ -351,11 +336,12 @@ class Demo {
         // The template string (`backticks`) lets us insert variable values with ${...}.
         // BT.targetFPS returns the target update rate we set in configure() (30 in this demo).
         BT.systemPrint(new Vector2i(3, 0), C_GREEN, `Position: ${this.pos.x}, ${this.pos.y}`);
-        BT.systemPrint(new Vector2i(BT.displaySize.x - 90, 0), C_GREEN, `Target FPS: ${BT.targetFPS}`);
 
         // Show the bounce count in amber so it stands out from the green text.
         // C_AMBER is palette index 3, the secondary PipBoy accent color.
-        BT.systemPrint(new Vector2i(3, BT.displaySize.y - 13), C_AMBER, `Bounces: ${this.bounces}`);
+        BT.systemPrint(new Vector2i(3, BT.displaySize.y - 27), C_AMBER, `Bounces: ${this.bounces}`);
+
+        footer.draw();
     }
 
     // #endregion

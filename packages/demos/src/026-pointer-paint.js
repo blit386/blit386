@@ -30,6 +30,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -58,6 +60,8 @@ const SLOT_PAINT = [
 const BRUSH_SIZES = [0, 2, 4];
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_TEXT, baselineY: DISPLAY_H - 36 - 15 });
 
 // #region Main Logic
 
@@ -317,6 +321,7 @@ class Demo {
             C_DIM,
             `brush r=${radius} (middle-click to cycle)  |  right-click to clear`,
         );
+        footer.draw();
     }
 
     // #endregion

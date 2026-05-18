@@ -30,6 +30,8 @@
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #endregion
@@ -68,6 +70,8 @@ const C_RAINBOW_BASE = 20; // first slot for the rainbow characters
 const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pulsing-text color
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DARKER_GRAY, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -240,8 +244,10 @@ class Demo {
         y = this.renderSpecialCharacters(y, lineHeight);
         y = this.renderTextMeasurement(y, lineHeight);
 
-        // Draw the font info and FPS counter at the bottom.
+        // Draw one line of font metadata (name and glyph count) near the bottom of the demo area.
+        // The shared footer (footer.draw() on the next line) draws measured FPS and the demo title.
         this.renderFontInfo(y, lineHeight);
+        footer.draw();
     }
 
     // #endregion
@@ -369,16 +375,16 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    // Shows information about the loaded font and the current frame rate at the bottom.
-    // The font metadata (name, glyph count, line height) is only available with BitmapFont.
-    // BT.systemPrint() has no equivalent - the built-in font has no external representation.
-    // y: the Y position to start drawing at.
-    // lineHeight: how many pixels to move down between lines.
+    // Draws one line of BitmapFont metadata: the font file name and how many glyphs it contains.
+    // This is demo-specific info that only BitmapFont exposes; the built-in system font has no
+    // name or glyph count you can print this way.
+    // y: the Y position to start drawing at (pixels from the top of the screen).
+    // lineHeight: how many pixels tall one text line is (used to step down if we add more lines).
     renderFontInfo(y, lineHeight) {
         // Use a local variable so we don't modify the original parameter.
         let currentY = y;
 
-        // Show the font's name and how many different characters (glyphs) it contains.
+        // Print the font name and glyph count in dim gray so it reads as secondary info.
         // C_DIM_GRAY - 1 = 8. That means palette[1 + 8] = palette[9] = C_DIM_GRAY = dim gray.
         BT.printFont(
             this.font,
@@ -388,15 +394,6 @@ class Demo {
         );
 
         currentY += lineHeight;
-
-        // Show the current FPS and total ticks.
-        // C_DARKER_GRAY - 1 = 9. That means palette[1 + 9] = palette[10] = C_DARKER_GRAY.
-        BT.printFont(
-            this.font,
-            new Vector2i(10, currentY),
-            `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`,
-            C_DARKER_GRAY - 1,
-        );
     }
 
     // #endregion
