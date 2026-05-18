@@ -1,4 +1,4 @@
-// Pointer Basics Demo -- shows how to read mouse, touch, and scroll-wheel input.
+// Pointer Basics Demo - shows how to read mouse, touch, and scroll-wheel input.
 //
 // Demo 025 in the Blit-Tech demo series.
 // Prerequisites: 001-Basics

@@ -1,4 +1,4 @@
-// Demo 009 -- Animation and timing: how to animate sprites using tick-based timing.
+// Demo 009 - Animation and timing: how to animate sprites using tick-based timing.
 //
 // Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
 // 008-Sprites (https://vancura.dev/articles/blit-tech-sprites).
@@ -27,7 +27,7 @@
 // Each particle gets its own palette slot at the moment it is spawned.
 // In update(), we compute the color (hue from spawn time, alpha from age)
 // and write it into that slot with palette.set(). In render(), we just
-// use the particle's slot number -- no Color32 objects needed there.
+// use the particle's slot number - no Color32 objects needed there.
 //
 // We used the same idea in Demo 016-Palette-Animation:
 // https://vancura.dev/articles/blit-tech-palette-animation
@@ -144,7 +144,7 @@ class Demo {
     async init() {
         console.log('[AnimationDemo] Initializing...');
 
-        // --- Create palette and fill static UI colors ---
+        // Create palette and fill static UI colors
         // applyHUD(1) writes six standard HUD defaults into slots 1-6.
         // Slots 1 (white) and 2 (dark bg) come directly from the preset.
         // Slots 3-6 are overridden below with demo-specific colors.
@@ -165,20 +165,20 @@ class Demo {
         this.palette.set(C_INFO_TEXT, new Color32(180, 180, 180));
         this.palette.set(C_FPS, new Color32(100, 100, 100));
 
-        // Particle slots (50..69) start as transparent -- update() fills them when particles spawn.
+        // Particle slots (50..69) start as transparent - update() fills them when particles spawn.
         // We pre-fill with a dim white so nothing shows before the first particle.
         for (let i = 0; i < MAX_PARTICLES; i++) {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }
 
-        // --- Extract sprite colors and register in palette at SPRITE_BASE ---
+        // Extract sprite colors and register in palette at SPRITE_BASE
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
         // starting at SPRITE_BASE. The returned array is the same colors in palette-write order.
-        // We only need the count here -- the sprite is later linked to these slots by indexize().
+        // We only need the count here - the sprite is later linked to these slots by indexize().
         const baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
         this.spriteColorCount = baseColors.length;
 
-        // --- Load sprite ---
+        // Load sprite
         try {
             const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
                 sort: 'none',
@@ -232,7 +232,7 @@ class Demo {
             // Alpha fades from 255 (solid) to 0 (invisible) as the particle ages.
             const alpha = Math.floor(255 * (1 - age / lifetime));
 
-            // Hue is based on when the particle was spawned -- no two batches look the same.
+            // Hue is based on when the particle was spawned - no two batches look the same.
             const hue = (p.spawnTick * 3) % 360;
 
             // Compute the color and write it into this particle's reserved palette slot.
@@ -246,7 +246,7 @@ class Demo {
 
     /**
      * Runs once per screen refresh to draw the rock, particles, and UI.
-     * Notice: NO Color32 objects appear in draw calls -- only palette indices and offsets.
+     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
      */
     render() {
         BT.clear(C_BG);
@@ -389,7 +389,7 @@ class Demo {
     /**
      * Draws all active particles as small colored squares.
      * The color for each particle was already updated in update() via palette.set().
-     * Here we just use the slot number -- no Color32 needed.
+     * Here we just use the slot number - no Color32 needed.
      */
     renderParticles() {
         for (const p of this.particles) {

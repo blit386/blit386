@@ -1,26 +1,28 @@
-// Demo 018 -- Flurry: a retro screensaver built on particle physics and palette animation.
+// @pageTitle Flurry
+//
+// Demo 018 - Flurry: a retro screensaver built on particle physics and palette animation.
 //
 // Ported from the classic macOS Flurry screensaver by Calum Robinson (2002).
 // Original source: https://github.com/calumr/flurry
 //
 // WHAT IS FLURRY?
 // Flurry was a free screensaver for macOS that showed a cloud of glowing particles
-// swirling around invisible "sparks" -- points in space that pull particles toward them
+// swirling around invisible "sparks" - points in space that pull particles toward them
 // like tiny gravity wells. Twelve sparks trace beautiful figure-eight-like paths
 // (called Lissajous orbits), and hundreds of particles spiral around them.
 //
 // HOW DOES THIS VERSION DIFFER FROM THE ORIGINAL?
-// The original Flurry used "additive blending" -- overlapping particles added their light
+// The original Flurry used "additive blending" - overlapping particles added their light
 // together to create soft glowing halos. Blit-Tech does not support that technique.
 // Instead, we use palette animation: every frame, we rewrite the palette so that young
 // particles appear bright and large, while old particles appear dim and small.
 // The mesmerizing orbital motion and rainbow color cycling are fully preserved.
 //
 // KEY PHYSICS CONCEPTS:
-//   Inverse-square gravity -- each particle is pulled toward every spark.
+//   Inverse-square gravity - each particle is pulled toward every spark.
 //     The closer the particle, the stronger the pull. Same law as real planets.
-//   Drag -- a tiny friction force applied each tick, slowing particles gradually.
-//   Lissajous orbit -- a path traced by two sine waves with different frequencies.
+//   Drag - a tiny friction force applied each tick, slowing particles gradually.
+//   Lissajous orbit - a path traced by two sine waves with different frequencies.
 //     The spark's x position follows one sine wave; its y position follows another.
 //     When the frequencies are slightly different, the path never exactly repeats.
 //
@@ -37,14 +39,14 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 // Target frame rate for fixed update() steps (matches engine defaultConfig).
 const TARGET_FPS = 60;
 
-// --- World space ---
+// World space
 // Particles and sparks live in a virtual coordinate system measured in abstract "world units".
 // FIELD_RANGE is the half-extent: the center is (0, 0), and the edges are ±FIELD_RANGE.
 // Sparks are constrained to orbit within 80% of this range, so ±8000 units.
 // When drawing, world units are converted to screen pixels using the formulas at the bottom.
 const FIELD_RANGE = 10000;
 
-// --- Simulation ---
+// Simulation
 // How many particles are kept alive at once.
 // More particles = denser, richer swirls, but more work each frame.
 // 800 particles at 60 FPS means the physics loop runs 800 × 60 = 48,000 times per second.
@@ -54,7 +56,7 @@ const PARTICLE_COUNT = 800;
 // 12 is the same count as the original Flurry screensaver.
 const SPARK_COUNT = 12;
 
-// --- Physics constants (from the original Flurry source) ---
+// Physics constants (from the original Flurry source)
 // How strong the gravity pull is between a particle and a spark.
 // A larger number means particles get sucked in faster.
 const GRAVITY_CONST = 1500000;
@@ -62,7 +64,7 @@ const GRAVITY_CONST = 1500000;
 // How much velocity the particle keeps each tick (a fraction between 0 and 1).
 // The ** operator is JavaScript's "exponent" symbol: base ** exponent.
 // 0.9965^(85/60) is the original Flurry formula; the result is about 0.9950.
-// That means each tick a particle keeps 99.5% of its speed -- very gentle drag.
+// That means each tick a particle keeps 99.5% of its speed - very gentle drag.
 const DRAG_FACTOR = 0.9965 ** (85 / 60);
 
 // How fast newly spawned particles shoot outward from their spark, in world units per tick.
@@ -80,12 +82,12 @@ const SPAWN_SCATTER = 30;
 // to enormous speeds and shoot instantly off screen.
 const SPEED_CAP = 600;
 
-// --- Palette animation ---
+// Palette animation
 // How many degrees the global hue rotates per tick.
 // At 60 FPS: 0.4 degrees/tick × 60 ticks/sec = 24 degrees/sec.
 // One full rotation (360 degrees) takes 360 / 24 = 15 seconds.
 // During those 15 seconds every particle cycles through red, orange, yellow, green,
-// cyan, blue, violet, and back to red -- a complete rainbow.
+// cyan, blue, violet, and back to red - a complete rainbow.
 const HUE_ADVANCE = 0.4;
 
 // Lightness values (brightness) for the 5 particle age tiers.
@@ -94,7 +96,7 @@ const HUE_ADVANCE = 0.4;
 // Going from 85 down to 20 makes particles fade from near-white to nearly invisible as they age.
 const TIER_LIGHTNESS = [85, 68, 52, 36, 20];
 
-// --- Screen layout ---
+// Screen layout
 // The logical resolution of the canvas in pixels. This is the number of "dots" in the display,
 // not the size of the window (the window is 2x larger via engine defaultConfig).
 const DISPLAY_W = 320;
@@ -108,7 +110,7 @@ const DISPLAY_H = 240;
 const HALF_W = DISPLAY_W / 2; // 160
 const HALF_H = DISPLAY_H / 2; // 120
 
-// --- Palette strip ---
+// Palette strip
 // A thin strip at the very bottom of the screen shows the live palette.
 // Two rows are drawn there:
 //   Top row (3 px tall): 12 spark-bright slots, each ~26 px wide.
@@ -119,12 +121,12 @@ const PALETTE_STRIP_SPARK_H = 3; // 3 px tall.
 const PALETTE_STRIP_PART_Y = DISPLAY_H - 4; // Particle color row top edge (y = 236).
 const PALETTE_STRIP_PART_H = 4; // 4 px tall.
 
-// Palette slot numbers -- "addresses" in the 256-slot color table.
+// Palette slot numbers - "addresses" in the 256-slot color table.
 // Slot 0 is always transparent; the engine reserves it. Never write to slot 0.
 //
 // Think of each slot as a numbered paint pot.
 // update() refills the pots every tick with fresh Color32 objects.
-// render() only reads the pot numbers -- it never touches Color32 directly.
+// render() only reads the pot numbers - it never touches Color32 directly.
 // This separation is the essence of palette animation.
 const C_WHITE = 1; // Pure white.
 const C_BG = 2; // Near-black deep-space background color.
@@ -192,7 +194,7 @@ class Demo {
 
     // Total elapsed animation time, measured in seconds.
     // Grows by exactly 1 / TARGET_FPS each tick (e.g. 1/60 when TARGET_FPS is 60).
-    // The spark position formula uses this as its clock -- every tick the sparks move forward.
+    // The spark position formula uses this as its clock - every tick the sparks move forward.
     animTime = 0;
 
     // Current hue rotation offset in degrees (0..359).
@@ -203,21 +205,21 @@ class Demo {
 
     // Array of SPARK_COUNT spark objects (the invisible gravity-well attractors).
     // Created in initSparks(). Each spark has:
-    //   x, y        -- current world position
-    //   vx, vy      -- instantaneous velocity (used as a hint when spawning particles)
-    //   freqX, freqY  -- oscillation frequencies for the Lissajous orbit
-    //   phaseX, phaseY -- starting angles on the orbit path
-    //   hueOffset   -- this spark's personal color angle on the rainbow (0..330 degrees)
+    //   x, y        - current world position
+    //   vx, vy      - instantaneous velocity (used as a hint when spawning particles)
+    //   freqX, freqY  - oscillation frequencies for the Lissajous orbit
+    //   phaseX, phaseY - starting angles on the orbit path
+    //   hueOffset   - this spark's personal color angle on the rainbow (0..330 degrees)
     sparks = [];
 
     // Array of PARTICLE_COUNT particle objects. Created in initParticles(), reused forever.
     // Dead particles are respawned rather than deleted. Each particle has:
-    //   x, y        -- current world position
-    //   vx, vy      -- current velocity
-    //   age         -- how old the particle is (0.0 = newborn, 1.0 = about to die)
-    //   ageRate     -- how fast it ages each tick (varies slightly per particle)
-    //   hueIndex    -- which of the 8 color families it belongs to (0..7)
-    //   alive       -- false means the particle is waiting to be respawned
+    //   x, y        - current world position
+    //   vx, vy      - current velocity
+    //   age         - how old the particle is (0.0 = newborn, 1.0 = about to die)
+    //   ageRate     - how fast it ages each tick (varies slightly per particle)
+    //   hueIndex    - which of the 8 color families it belongs to (0..7)
+    //   alive       - false means the particle is waiting to be respawned
     particles = [];
 
     // #endregion
@@ -233,7 +235,7 @@ class Demo {
     async init() {
         console.log('[FlurryDemo] Initializing...');
 
-        // --- Build the palette ---
+        // Build the palette
         // We pre-fill all static (never-changing) slots now.
         // The dynamic particle and spark color slots start as black and are
         // overwritten every frame by updatePalette() inside update().
@@ -263,11 +265,11 @@ class Demo {
         // Activate the palette. From this point on, all drawing uses these color slots.
         BT.paletteSet(this.palette);
 
-        // --- Create sparks ---
+        // Create sparks
         // Sparks are the invisible gravity wells that all particles orbit around.
         this.initSparks();
 
-        // --- Create particles ---
+        // Create particles
         // All PARTICLE_COUNT particles are created here and reused for the life of the demo.
         this.initParticles();
 
@@ -309,7 +311,7 @@ class Demo {
     }
 
     /**
-     * Draws the current frame. Only palette slot numbers appear here -- no Color32 objects.
+     * Draws the current frame. Only palette slot numbers appear here - no Color32 objects.
      * All color decisions were already made in update() and stored in the palette.
      */
     render() {
@@ -398,7 +400,7 @@ class Demo {
     updateParticle(p) {
         // Advance the particle's age by its personal ageRate (about 0.002 per tick).
         // age counts from 0.0 (just born) toward 1.0 (end of life).
-        // Think of it like a candle burning down -- each tick uses a little more.
+        // Think of it like a candle burning down - each tick uses a little more.
         p.age += p.ageRate;
 
         if (p.age >= 1.0) {
@@ -408,7 +410,7 @@ class Demo {
             return; // Nothing more to do for a dead particle this tick.
         }
 
-        // --- Gravity from all 12 sparks ---
+        // Gravity from all 12 sparks
         // We add up the gravitational pull from every spark.
         // Each spark pulls the particle a little bit; the total is the net acceleration.
         let ax = 0; // Accumulated acceleration on the x axis.
@@ -422,7 +424,7 @@ class Demo {
             const dx = spark.x - p.x;
             const dy = spark.y - p.y;
 
-            // Squared distance. We add 250000 (= 500^2) as a "softening factor" --
+            // Squared distance. We add 250000 (= 500^2) as a "softening factor"
             // this prevents the force from becoming infinite if the particle sits
             // exactly on top of the spark.
             const distSq = dx * dx + dy * dy + 250000;
@@ -447,14 +449,14 @@ class Demo {
         p.vx += ax;
         p.vy += ay;
 
-        // --- Drag ---
+        // Drag
         // Multiply velocity by DRAG_FACTOR (~0.9950) each tick.
         // This slowly bleeds off speed, like air resistance.
         // Without drag, particles would spiral in, slingshot around, and fly away forever.
         p.vx *= DRAG_FACTOR;
         p.vy *= DRAG_FACTOR;
 
-        // --- Speed cap ---
+        // Speed cap
         // If the particle is moving faster than SPEED_CAP, scale velocity back down.
         // vx^2 + vy^2 is the squared speed (we avoid a sqrt here for performance).
         const speedSq = p.vx * p.vx + p.vy * p.vy;
@@ -466,12 +468,12 @@ class Demo {
             p.vy = (p.vy / speed) * SPEED_CAP;
         }
 
-        // --- Move the particle ---
+        // Move the particle
         // Velocity (units/tick) added to position gives the new position.
         p.x += p.vx;
         p.y += p.vy;
 
-        // --- Soft boundary ---
+        // Soft boundary
         // If the particle has escaped more than 20% beyond the field boundary,
         // gently nudge it back toward center rather than letting it drift off forever.
         // 1.2^2 = 1.44, so we check against FIELD_RANGE * 1.2.
@@ -547,7 +549,7 @@ class Demo {
             // Lissajous orbit: x follows a sine wave, y follows a cosine wave.
             // Slightly different frequencies (freqX vs freqY) mean the path slowly
             // drifts and fills in, never quite repeating itself.
-            // FIELD_RANGE * 0.8: sparks orbit within 80% of the field -- they stay on screen.
+            // FIELD_RANGE * 0.8: sparks orbit within 80% of the field - they stay on screen.
             spark.x = Math.sin(this.animTime * spark.freqX + spark.phaseX) * FIELD_RANGE * 0.8;
             spark.y = Math.cos(this.animTime * spark.freqY + spark.phaseY) * FIELD_RANGE * 0.8;
 
@@ -580,7 +582,7 @@ class Demo {
      *      Each spark has its own hue offset, so all 12 display different rainbow colors.
      */
     updatePalette() {
-        // --- Particle color ramp ---
+        // Particle color ramp
         for (let h = 0; h < 8; h++) {
             // The base angle for this hue band: evenly spread around the color wheel.
             //   h=0 → 0°, h=1 → 45°, h=2 → 90°, ..., h=7 → 315°.
@@ -598,7 +600,7 @@ class Demo {
             }
         }
 
-        // --- Spark colors ---
+        // Spark colors
         // Each spark has a personal hueOffset (0°, 30°, 60°, ..., 330°) so they each
         // show a different color on the rainbow at the same time.
         // Adding the global huePhase makes all spark colors cycle along with the particles.
@@ -628,18 +630,18 @@ class Demo {
      * simply paint over it, which is the correct layering order.
      * This avoids sorting the particle array (which would be much slower).
      *
-     * Pass 1 -- old particles (tier 3 and 4): drawn as 1×1 single pixels.
-     * Pass 2 -- young particles (tier 0, 1, 2): drawn as 2×2 filled rectangles.
+     * Pass 1 - old particles (tier 3 and 4): drawn as 1×1 single pixels.
+     * Pass 2 - young particles (tier 0, 1, 2): drawn as 2×2 filled rectangles.
      */
     renderParticles() {
-        // --- Pass 1: old, dim particles as single 1×1 pixels ---
+        // Pass 1: old, dim particles as single 1×1 pixels
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             const p = this.particles[i];
 
             // "continue" means: stop processing this particle and jump straight
             // to the next one. It is like saying "skip this one".
             if (!p.alive) {
-                continue; // Skip dead particles -- they have no position to draw.
+                continue; // Skip dead particles - they have no position to draw.
             }
 
             // Convert age (0..1) to a tier index (0..4).
@@ -650,7 +652,7 @@ class Demo {
 
             // Pass 1 only draws particles that are in their last two tiers (3 or 4).
             // Tier 3 is "aging" (lightness 36) and tier 4 is "near-dead" (lightness 20).
-            // Tiers 0, 1, 2 are handled in pass 2 -- skip them here.
+            // Tiers 0, 1, 2 are handled in pass 2 - skip them here.
             if (tier < 3) {
                 continue;
             }
@@ -676,7 +678,7 @@ class Demo {
             BT.drawPixel(new Vector2i(sx, sy), slot);
         }
 
-        // --- Pass 2: young, bright particles as 2×2 filled rectangles ---
+        // Pass 2: young, bright particles as 2×2 filled rectangles
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             const p = this.particles[i];
 
@@ -686,7 +688,7 @@ class Demo {
 
             // Recompute the tier for this pass. Each particle is only handled in one pass,
             // so checking the tier again here costs very little and keeps both passes
-            // independent -- no shared state needed between the two loops.
+            // independent - no shared state needed between the two loops.
             const tier = Math.min(4, Math.floor(p.age * 5));
 
             // This pass only draws young particles (tiers 0, 1, and 2).
@@ -717,9 +719,9 @@ class Demo {
      * Draws all 12 sparks as three-layer colored squares to suggest a glowing light source.
      *
      * Three layers are stacked from largest (drawn first / underneath) to smallest (on top):
-     *   Layer 1: 5×5 pixels, dim halo color   -- the outer glow ring.
-     *   Layer 2: 3×3 pixels, bright body color -- the vivid colored core.
-     *   Layer 3: 1×1 pixel,  white             -- the white-hot center point.
+     *   Layer 1: 5×5 pixels, dim halo color   - the outer glow ring.
+     *   Layer 2: 3×3 pixels, bright body color - the vivid colored core.
+     *   Layer 3: 1×1 pixel,  white             - the white-hot center point.
      *
      * Drawing larger shapes first and smaller shapes on top is how layered "glow" effects
      * are built without any actual blending or transparency.
@@ -755,12 +757,12 @@ class Demo {
     /**
      * Draws two thin rows of colored squares along the very bottom of the screen.
      *
-     * Top row -- 12 spark-bright slots:
+     * Top row - 12 spark-bright slots:
      *   Each of the 12 sparks gets one rectangle ~26 px wide.
      *   All 12 span different hues (the sparks are 30 degrees apart on the color wheel),
      *   so this row always looks like a full rainbow no matter where huePhase is.
      *
-     * Bottom row -- 40 particle slots (8 hues x 5 brightness tiers):
+     * Bottom row - 40 particle slots (8 hues x 5 brightness tiers):
      *   The 40 particle palette entries are displayed left to right.
      *   Each group of 5 squares (40 px wide) is one hue band, going from bright to dim.
      *   As the global hue rotates, this entire row slides through the rainbow in real time.
@@ -768,7 +770,7 @@ class Demo {
      * Think of these rows as a "legend" for the colors currently on screen.
      */
     renderPaletteStrip() {
-        // --- Top row: 12 spark-bright color slots, one per spark ---
+        // Top row: 12 spark-bright color slots, one per spark
         // We divide the full screen width (320 px) equally among 12 sparks.
         // Math.floor() rounds down, so each rectangle is 26 px wide (320 / 12 = 26.67).
         const sparkW = Math.floor(DISPLAY_W / SPARK_COUNT); // 26 px per spark rectangle.
@@ -788,8 +790,8 @@ class Demo {
             BT.drawRectFill(new Rect2i(x, PALETTE_STRIP_SPARK_Y, w, PALETTE_STRIP_SPARK_H), C_SPARK_BRIGHT + i);
         }
 
-        // --- Bottom row: 40 particle color slots, each 8 px wide ---
-        // 8 hues × 5 tiers = 40 slots. 40 × 8 px = 320 px -- a perfect fit.
+        // Bottom row: 40 particle color slots, each 8 px wide
+        // 8 hues × 5 tiers = 40 slots. 40 × 8 px = 320 px - a perfect fit.
         // The slots are arranged in the same order as the palette layout:
         //   index 0..4   = hue 0, tiers 0..4 (brightest to darkest)
         //   index 5..9   = hue 1, tiers 0..4

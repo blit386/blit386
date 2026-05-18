@@ -1,11 +1,11 @@
-// Demo 008 -- Sprites: how to draw images (sprites) on screen using Blit-Tech.
+// Demo 008 - Sprites: how to draw images (sprites) on screen using Blit-Tech.
 //
 // Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
 // 002-Primitives (https://vancura.dev/articles/blit-tech-primitives),
 // 003-Colors (https://vancura.dev/articles/blit-tech-colors).
 // Live article: https://vancura.dev/articles/blit-tech-sprites
 //
-// A "sprite" is a 2D image used in a game -- like a character, a coin, or an enemy.
+// A "sprite" is a 2D image used in a game - like a character, a coin, or an enemy.
 // In Blit-Tech, sprites are stored in a "sprite sheet": one big image file that
 // contains many small sprites arranged in a grid. You then draw individual
 // sprites by telling the engine which rectangular region of the sheet to use.
@@ -18,11 +18,11 @@
 // After calling spriteSheet.indexize(palette), each pixel in the sprite is stored
 // as a palette index number. When you draw the sprite:
 //
-//   BT.drawSprite(sheet, src, pos, 0)           -- uses original colors
-//   BT.drawSprite(sheet, src, pos, colorCount)  -- shifts ALL pixel indices up by colorCount
+//   BT.drawSprite(sheet, src, pos, 0)           - uses original colors
+//   BT.drawSprite(sheet, src, pos, colorCount)  - shifts ALL pixel indices up by colorCount
 //
 // If the original stone colors are at palette[10..14], offset=5 shifts every pixel
-// to use palette[15..19] -- a completely different color theme!
+// to use palette[15..19] - a completely different color theme!
 // This is how retro games did "team colors" and environmental lighting.
 //
 // We learned about palette setup in Demo 015-Palette-Presets:
@@ -97,15 +97,15 @@ class Demo {
      *   1. Create palette with static UI colors.
      *   2. Extract unique colors from the sprite image.
      *   3. Register those colors + theme blocks in the palette.
-     *   4. SpriteSheet.loadIndexed() -- load, register, and indexize in one call.
-     *   5. BT.paletteSet() -- activate the palette.
+     *   4. SpriteSheet.loadIndexed() - load, register, and indexize in one call.
+     *   5. BT.paletteSet() - activate the palette.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
     async init() {
         console.log('[SpriteDemo] Initializing...');
 
-        // --- Step 1: Create palette and fill the built-in HUD UI colors ---
+        // Step 1: Create palette and fill the built-in HUD UI colors
         // BT.paletteCreate(256) makes a blank 256-slot color table for us to fill.
         // palette.applyHUD(1) writes six standard UI colors into slots 1-6 and
         // registers named aliases so you could also look them up by name:
@@ -113,7 +113,7 @@ class Demo {
         this.palette = BT.paletteCreate(256);
         this.palette.applyHUD(1);
 
-        // --- Step 2: Extract sprite colors and register them in the palette ---
+        // Step 2: Extract sprite colors and register them in the palette
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
         // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
         // (sorted darkest-first by brightness, just like the manual version we used to have).
@@ -144,7 +144,7 @@ class Demo {
                 new Color32(Math.max(0, base.r - 60), base.g, Math.min(255, base.b + 80)),
             );
 
-            // Void: shrink all channels to 25% -- very dark.
+            // Void: shrink all channels to 25% - very dark.
             this.palette.set(
                 SPRITE_BASE + colorCount * 3 + i,
                 new Color32(Math.floor(base.r * 0.25), Math.floor(base.g * 0.25), Math.floor(base.b * 0.25)),
@@ -155,7 +155,7 @@ class Demo {
             this.palette.set(SPRITE_BASE + colorCount * 4 + i, new Color32(base.r, base.g, base.b, 255));
         }
 
-        // --- Step 3: Load and indexize the sprite ---
+        // Step 3: Load and indexize the sprite
         // loadIndexed() combines loadColorsIntoPalette + load + indexize. We already called
         // loadColorsIntoPalette above so we pass sort:'none' here to avoid reshuffling colors.
         // This call still gives us a reliable full-image source rectangle from sheet.size.
@@ -203,7 +203,7 @@ class Demo {
 
     /**
      * Runs once per screen refresh to draw all the sprite demonstrations.
-     * Notice: NO Color32 objects appear in draw calls -- only palette indices and offsets.
+     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
      */
     render() {
         BT.clear(C_BG);
@@ -216,7 +216,7 @@ class Demo {
         // Title header. systemPrint takes (position, paletteIndex, text).
         BT.systemPrint(new Vector2i(10, 8), C_HEADER, 'BLIT-TECH SPRITE DEMO');
 
-        // --- Row 1: Four color themes using palette offsets ---
+        // Row 1: Four color themes using palette offsets
         const N = this.spriteColorCount;
         const row1Y = 40;
         const spacing = 50;
@@ -237,7 +237,7 @@ class Demo {
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15 + spacing * 3, row1Y), N * 3);
         BT.systemPrint(new Vector2i(10 + spacing * 3, row1Y + 36), C_LABEL, 'Void');
 
-        // --- Row 2: Alpha pulsing (transparency animation) ---
+        // Row 2: Alpha pulsing (transparency animation)
         // The pulse block is updated every tick in update() with animating alpha values.
         // Offset 4*N shifts into that block.
         BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15, 120), N * 4);
@@ -246,7 +246,7 @@ class Demo {
         BT.systemPrint(new Vector2i(75, 135), C_LABEL, 'update() via palette slots.');
         BT.systemPrint(new Vector2i(75, 147), C_LABEL, 'render() just draws the index.');
 
-        // --- Right panel: code snippet ---
+        // Right panel: code snippet
         this.renderCodeSnippet();
 
         // FPS counter.

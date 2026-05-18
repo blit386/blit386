@@ -1,4 +1,4 @@
-// Demo 013 -- Image Output: demonstrates BT.downloadFrame().
+// Demo 013 - Image Output: demonstrates BT.downloadFrame().
 //
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Press Space to download the current frame.
@@ -25,7 +25,7 @@ const C_GRAY = 6; // Medium gray: the frame counter at the bottom
 // Dynamic slots: these six colors change every frame to create the animated rainbow stripes.
 // We pre-allocate (reserve) index slots 10 through 15, one for each horizontal stripe.
 // In update() we calculate the new color and store it here; render() just uses the index.
-// This is called "palette animation" -- the retro trick that made old consoles look alive!
+// This is called "palette animation" - the retro trick that made old consoles look alive!
 const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 // Stripes 1-5 follow at C_STRIPE_0 + 1 through C_STRIPE_0 + 5
 
@@ -70,7 +70,7 @@ class Demo {
      * @returns {Promise<boolean>} Resolves to `true` when the demo is ready to run.
      */
     async init() {
-        // --- Step 1: build the color palette ---
+        // Step 1: build the color palette
         // Create a palette with room for 256 colors. 256 is a classic retro amount.
         this.palette = BT.paletteCreate(256);
 
@@ -92,7 +92,7 @@ class Demo {
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
 
-        // --- Step 2: wire up the Space key ---
+        // Step 2: wire up the Space key
         // Listen for keyboard presses anywhere in the window for the whole time the demo runs.
         window.addEventListener('keydown', (e) => {
             // e.code === 'Space' means the physical Space bar was pressed (not just the letter "Space" typed).
@@ -138,10 +138,10 @@ class Demo {
             this.messageTimer--;
         }
 
-        // --- Palette animation for the six horizontal stripes ---
+        // Palette animation for the six horizontal stripes
         // Instead of computing colors inside render(), we compute them here in update()
         // and store the results in reserved palette slots. render() then just uses the index numbers.
-        // This is the classic "palette animation" technique -- retro hardware did the same thing!
+        // This is the classic "palette animation" technique - retro hardware did the same thing!
         for (let i = 0; i < 6; i++) {
             // phase is an angle-like value 0-359 that moves as tick increases.
             // Each stripe adds i * 20 so neighboring stripes do not look identical.
@@ -162,7 +162,7 @@ class Demo {
             const b = Math.floor(127 + 127 * Math.sin(((phase + 240) * Math.PI) / 180));
 
             // Store the computed color in the palette slot for this stripe.
-            // render() will read C_STRIPE_0 + i to draw each stripe -- no Color32 needed there!
+            // render() will read C_STRIPE_0 + i to draw each stripe - no Color32 needed there!
             this.palette.set(C_STRIPE_0 + i, new Color32(r, g, b));
         }
     }
@@ -180,7 +180,7 @@ class Demo {
         BT.clear(C_BG);
 
         // Draw six horizontal stripes using the animated palette slots we updated in update().
-        // Each stripe's color was already computed and stored -- we just reference the index.
+        // Each stripe's color was already computed and stored - we just reference the index.
         const stripeHeight = 40;
 
         for (let i = 0; i < 6; i++) {

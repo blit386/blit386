@@ -1,4 +1,4 @@
-// Demo 006 -- Patterns: animated mathematical art using only primitive drawing.
+// Demo 006 - Patterns: animated mathematical art using only primitive drawing.
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
 // (https://vancura.dev/articles/blit-tech-basics), shapes in Demo 002-Primitives
@@ -11,26 +11,26 @@
 //
 // Live walkthrough: https://vancura.dev/articles/blit-tech-patterns
 //
-// All six patterns here are drawn using just pixels, lines, and rectangles --
+// All six patterns here are drawn using just pixels, lines, and rectangles
 // no images needed. Each pattern is based on simple math (angles, waves, circles)
 // that creates surprisingly complex-looking results.
 //
 // The six patterns arranged in a 2x3 grid are:
-//   Spiral    -- dots expanding outward in a spinning coil
-//   Radial    -- lines radiating from a center point like sun rays
-//   Wave      -- overlapping wave curves that interfere with each other
-//   Circle    -- a circle drawn from many tiny line segments
-//   Lissajous -- a smooth looping curve used in physics and electronics
-//   Tunnel    -- concentric rectangles that spin to look like a tunnel
+//   Spiral    - dots expanding outward in a spinning coil
+//   Radial    - lines radiating from a center point like sun rays
+//   Wave      - overlapping wave curves that interfere with each other
+//   Circle    - a circle drawn from many tiny line segments
+//   Lissajous - a smooth looping curve used in physics and electronics
+//   Tunnel    - concentric rectangles that spin to look like a tunnel
 //
 // HOW COLORS WORK IN THIS DEMO:
 //
 // Every color must be registered in a "palette" before drawing. Think of it
-// like choosing all your paint colors before starting a painting -- you pick
+// like choosing all your paint colors before starting a painting - you pick
 // them out first, then use them by number ("color 5", "color 12", etc.).
 //
-// Some colors never change (white, background, wave colors) -- those are set
-// once during setup. Other colors animate (spiral, Lissajous, tunnel) -- those
+// Some colors never change (white, background, wave colors) - those are set
+// once during setup. Other colors animate (spiral, Lissajous, tunnel) - those
 // are recalculated every tick in update() and stored back in the palette.
 // The render() function only ever uses color numbers (indices), never Color32 objects.
 
@@ -41,17 +41,17 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 // #region Configuration
 //
 // These numbers are the "addresses" in the palette table.
-// Index 0 is always reserved for transparent -- we never use it.
+// Index 0 is always reserved for transparent - we never use it.
 // We give each color a readable name so the code is easier to follow.
 
 // Static colors (set once in init, never change).
-const C_WHITE = 1; // Pure white -- title text and font base color.
+const C_WHITE = 1; // Pure white - title text and font base color.
 const C_BG = 2; // Very dark blue-black background.
-const C_LABEL = 3; // Dim white -- section labels ("Spiral", "Wave", etc.).
-const C_DIM = 4; // Slightly dimmer -- FPS counter text.
-const C_WAVE_1 = 5; // Blue -- primary sine wave.
-const C_WAVE_2 = 6; // Orange -- secondary cosine wave.
-const C_WAVE_3 = 7; // Green -- interference (both waves combined).
+const C_LABEL = 3; // Dim white - section labels ("Spiral", "Wave", etc.).
+const C_DIM = 4; // Slightly dimmer - FPS counter text.
+const C_WAVE_1 = 5; // Blue - primary sine wave.
+const C_WAVE_2 = 6; // Orange - secondary cosine wave.
+const C_WAVE_3 = 7; // Green - interference (both waves combined).
 
 // Circle segments: 32 entries at indices 8..39.
 // Each segment gets a different hue. Hue never changes so this is static.
@@ -119,19 +119,19 @@ class Demo {
      * Runs once when the demo starts. Sets up the palette.
      *
      * IMPORTANT ORDER:
-     *   1. Create palette            -- make the 256-slot color table.
-     *   2. Fill in static colors     -- the ones that never change.
-     *   3. BT.paletteSet()           -- tell the engine to use this palette.
+     *   1. Create palette            - make the 256-slot color table.
+     *   2. Fill in static colors     - the ones that never change.
+     *   3. BT.paletteSet()           - tell the engine to use this palette.
      *
      * @returns {Promise<boolean>} Returns true when ready to run.
      */
     async init() {
-        // --- Step 1: Create the palette ---
+        // Step 1: Create the palette
         // BT.paletteCreate(256) makes a color table with 256 numbered slots.
         // Slot 0 is always transparent and cannot be changed.
         this.palette = BT.paletteCreate(256);
 
-        // --- Step 2: Register static colors ---
+        // Step 2: Register static colors
 
         // Basic UI colors.
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // White for title text.
@@ -162,7 +162,7 @@ class Demo {
         // Spiral, Lissajous, and tunnel slots are left empty here.
         // They will be filled in by update() before the first frame renders.
 
-        // --- Step 3: Activate the palette ---
+        // Step 3: Activate the palette
         // This tells the engine "use this palette for all drawing from now on".
         BT.paletteSet(this.palette);
 
@@ -181,7 +181,7 @@ class Demo {
         // deltaSeconds is one fixed update step in seconds (usually 1/60).
         this.animTime += BT.deltaSeconds;
 
-        // --- Update spiral colors (100 animated dots) ---
+        // Update spiral colors (100 animated dots)
         // Each dot gets a hue that depends on its position AND the current time.
         // As animTime grows, the hue offset grows too, making colors scroll outward.
         for (let i = 0; i < SPIRAL_POINTS; i++) {
@@ -194,7 +194,7 @@ class Demo {
             this.palette.set(C_SPIRAL_BASE + i, Color32.fromHSL(hue % 360, 100, 50));
         }
 
-        // --- Update Lissajous color bands (32 bands for the 200-point curve) ---
+        // Update Lissajous color bands (32 bands for the 200-point curve)
         // We divide the 200 curve points into 32 color groups to save palette slots.
         for (let i = 0; i < LISSAJOUS_BANDS; i++) {
             // animTime * 30 rotates the color cycle: 30 degrees per second.
@@ -202,7 +202,7 @@ class Demo {
             this.palette.set(C_LISSAJOUS_BASE + i, Color32.fromHSL(hue % 360, 100, 50));
         }
 
-        // --- Update tunnel rectangle colors (20 rectangles) ---
+        // Update tunnel rectangle colors (20 rectangles)
         // Outer rectangles (high i, near viewer) get brighter hues.
         // Inner rectangles (low i, far away) get darker hues to suggest depth.
         for (let i = 0; i < TUNNEL_RECTS; i++) {
@@ -260,7 +260,7 @@ class Demo {
      * Draws an Archimedean spiral: a coil of colored dots that expands outward
      * while rotating. The inner dots are near the center, the outer ones are far.
      *
-     * Colors are animated -- they scroll along the spiral over time. The actual
+     * Colors are animated - they scroll along the spiral over time. The actual
      * color values are computed in update() and stored in palette slots C_SPIRAL_BASE+i.
      *
      * @param {Vector2i} center - The center point to spiral around.
@@ -281,7 +281,7 @@ class Demo {
             const x = center.x + Math.cos(t) * radius;
             const y = center.y + Math.sin(t) * radius;
 
-            // Use the animated color for dot i -- already updated in update().
+            // Use the animated color for dot i - already updated in update().
             this.tempVec1.set(Math.floor(x), Math.floor(y));
             BT.drawPixel(this.tempVec1, C_SPIRAL_BASE + i);
         }
@@ -320,7 +320,7 @@ class Demo {
      * Two separate waves plus a combined "interference" pattern that shows
      * what happens when the two waves add together.
      *
-     * All three wave colors are static -- they never change.
+     * All three wave colors are static - they never change.
      *
      * @param {Vector2i} center - The center point to draw the waves around.
      */
@@ -385,14 +385,14 @@ class Demo {
     }
 
     /**
-     * Draws a Lissajous curve -- a parametric figure where the x and y axes
+     * Draws a Lissajous curve - a parametric figure where the x and y axes
      * oscillate at different frequencies. The ratio 3:4 here creates an interlocking
      * looping curve (not a simple figure-eight; a classic figure-eight shape often
      * comes from a 1:2 frequency ratio instead).
      *
      * Lissajous figures are used in physics and electronics to visualize frequency ratios.
      *
-     * Colors are animated -- 200 curve points are mapped to 32 color bands,
+     * Colors are animated - 200 curve points are mapped to 32 color bands,
      * and those bands rotate through the rainbow over time.
      *
      * @param {Vector2i} center - The center of the curve.
@@ -438,7 +438,7 @@ class Demo {
      * Draws a tunnel effect by stacking concentric rectangles of decreasing size.
      * The rectangles slowly rotate and wobble, creating an illusion of depth.
      *
-     * Colors are animated -- each rectangle's hue and brightness are updated in update().
+     * Colors are animated - each rectangle's hue and brightness are updated in update().
      *
      * @param {Vector2i} center - The vanishing point (center) of the tunnel.
      */

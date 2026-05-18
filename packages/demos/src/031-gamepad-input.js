@@ -1,4 +1,4 @@
-// Gamepad Input Demo -- analog sticks, triggers, and face-button masks.
+// Gamepad Input Demo - analog sticks, triggers, and face-button masks.
 //
 // Demo 031 in the Blit-Tech demo series.
 // Prerequisites: 001-Basics, 028-Keyboard-Input.

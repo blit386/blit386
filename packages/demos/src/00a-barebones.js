@@ -1,7 +1,7 @@
 // @pageTitle Blit-Tech Demo 00a - Barebones
 //
 // The smallest possible Blit-Tech demo: a single square that moves and jumps.
-// This is the "blank canvas" starter -- every other demo in the series builds on this pattern.
+// This is the "blank canvas" starter - every other demo in the series builds on this pattern.
 //
 // What you will see:
 //   - A square that falls under gravity.
@@ -9,9 +9,9 @@
 //   - Press left / right to move it sideways.
 //
 // The three methods every Blit-Tech demo can have:
-//   init()   -- called once at startup to set up colors and load resources.
-//   update() -- called 60 times per second to move things and respond to input.
-//   render() -- called 60 times per second to draw everything on screen.
+//   init()   - called once at startup to set up colors and load resources.
+//   update() - called 60 times per second to move things and respond to input.
+//   render() - called 60 times per second to draw everything on screen.
 
 // #region Imports
 
@@ -38,7 +38,7 @@ class Demo {
     palette = null;
 
     // The player's current position on screen, in pixels.
-    // Vector2i stores two whole numbers (x and y) -- no fractions needed for pixels.
+    // Vector2i stores two whole numbers (x and y) - no fractions needed for pixels.
     // Starting at (160, 120) puts the square roughly in the center of the 320x240 display.
     player = new Vector2i(160, 120);
 
@@ -66,7 +66,7 @@ class Demo {
         this.palette = BT.paletteCreate(16);
 
         // Slot 1: the color we will use for the player square.
-        // RGB (18, 22, 32) is a very dark navy -- almost black, like a night sky.
+        // RGB (18, 22, 32) is a very dark navy - almost black, like a night sky.
         this.palette.set(1, new Color32(18, 22, 32));
 
         // Slot 2: the color we will use to clear the screen each frame.
@@ -74,7 +74,7 @@ class Demo {
         this.palette.set(2, new Color32(32, 0, 128));
 
         // Hand this palette to the engine. From now on, every draw call uses slot numbers,
-        // not Color32 objects -- the engine looks up the actual color from the palette.
+        // not Color32 objects - the engine looks up the actual color from the palette.
         BT.paletteSet(this.palette);
 
         return true;
@@ -82,11 +82,11 @@ class Demo {
 
     /**
      * Called 60 times per second before render(). Reads input and moves the player.
-     * Think of this as the "physics" step -- we calculate where things should be,
+     * Think of this as the "physics" step - we calculate where things should be,
      * but we do not draw anything here.
      */
     update() {
-        // -- Input: jumping --
+        // Input: jumping
         // BT.buttonDown() returns true every tick that a button is held.
         // BTN_A maps to the Space bar on keyboards and the A button on gamepads.
         if (BT.buttonDown(BT.BTN_A, 0)) {
@@ -101,7 +101,7 @@ class Demo {
             this.jump = 0;
         }
 
-        // -- Input: left/right movement --
+        // Input: left/right movement
         if (BT.buttonDown(BT.BTN_RIGHT, 0)) {
             // Move one pixel to the right each tick the button is held.
             this.player.x++;
@@ -110,13 +110,13 @@ class Demo {
             this.player.x--;
         }
 
-        // -- Physics: gravity --
+        // Physics: gravity
         // Each tick, gravity grows by 0.1 pixels/tick, pulling the square downward faster and faster.
         // Without a floor to land on (not added here), the square eventually flies off screen.
         this.gravity += 0.1;
 
         // Apply gravity: add the falling speed to the Y position.
-        // Y increases downward in Blit-Tech -- 0 is the top edge of the screen.
+        // Y increases downward in Blit-Tech - 0 is the top edge of the screen.
         this.player.y += this.gravity;
 
         // Apply jump: subtract the jump force from Y to push the square upward.

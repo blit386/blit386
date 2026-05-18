@@ -1,4 +1,4 @@
-// Demo 019 -- Palette Cycling: classic retro color rotation using BT.paletteCycle().
+// Demo 019 - Palette Cycling: classic retro color rotation using BT.paletteCycle().
 //
 // Demo 019 in the Blit-Tech series (written for readers about 12 years old).
 //
@@ -12,13 +12,13 @@
 //
 // On old hardware, colors were stored in numbered "slots" called a palette.
 // Every pixel on screen was just a number pointing to a slot.
-// If you ROTATE the colors -- move each color one slot forward, wrap the last
-// one to the beginning -- everything on screen that uses those slots appears
+// If you ROTATE the colors - move each color one slot forward, wrap the last
+// one to the beginning - everything on screen that uses those slots appears
 // to ripple or flow. The picture data never changes; only the paint-bucket
 // labels shift around.
 //
 // This trick powered water, lava, plasma, and aurora effects in classic games
-// like Sonic, Secret of Mana, and Chrono Trigger -- all without redrawing a
+// like Sonic, Secret of Mana, and Chrono Trigger - all without redrawing a
 // single pixel.
 //
 // Blit-Tech gives you BT.paletteCycle(start, end, speed) to do exactly that.
@@ -26,9 +26,9 @@
 // each frame. Positive speed = forward, negative = backward.
 //
 // WHAT YOU WILL SEE (three horizontal bands):
-//   1. Water (bottom) -- blue gradient slots cycling forward = flowing water
-//   2. Fire  (middle) -- orange-yellow slots cycling backward = rising flames
-//   3. Sky   (top)    -- purple-pink slots cycling very slowly = twilight drift
+//   1. Water (bottom) - blue gradient slots cycling forward = flowing water
+//   2. Fire  (middle) - orange-yellow slots cycling backward = rising flames
+//   3. Sky   (top)    - purple-pink slots cycling very slowly = twilight drift
 //
 // Plus a palette swap demonstration every few seconds.
 
@@ -38,22 +38,22 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// --- Water ---
+// Water
 // 8 blue-gradient slots cycling at 4 steps per second.
 const WATER_SLOTS = 8;
 const WATER_SPEED = 4;
 
-// --- Fire ---
+// Fire
 // 6 orange-yellow slots cycling backward at 6 steps per second.
 const FIRE_SLOTS = 6;
 const FIRE_SPEED = -6;
 
-// --- Sky ---
+// Sky
 // 10 purple-pink slots cycling very slowly at 0.5 steps per second.
 const SKY_SLOTS = 10;
 const SKY_SPEED = 0.5;
 
-// --- Palette swap demo ---
+// Palette swap demo
 // Every SWAP_INTERVAL ticks, swap two fire slots to show BT.paletteSwap().
 const SWAP_INTERVAL = 180; // ~3 seconds at 60 FPS
 
@@ -113,7 +113,7 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
-        // --- Static UI colors ---
+        // Static UI colors
         this.palette.set(C_WHITE, new Color32(255, 255, 255));
         this.palette.set(C_BG, new Color32(10, 12, 20));
         this.palette.set(C_PANEL, new Color32(20, 24, 36));
@@ -121,7 +121,7 @@ class Demo {
         this.palette.set(C_DIM, new Color32(120, 130, 160));
         this.palette.set(C_FPS, new Color32(70, 70, 90));
 
-        // --- Sky gradient: purple to pink ---
+        // Sky gradient: purple to pink
         // Each slot goes from deep purple to soft pink across 10 steps.
         for (let i = 0; i < SKY_SLOTS; i++) {
             const t = i / (SKY_SLOTS - 1); // 0..1
@@ -132,7 +132,7 @@ class Demo {
             this.palette.set(C_SKY_BASE + i, new Color32(r, g, b));
         }
 
-        // --- Fire gradient: dark red to bright yellow ---
+        // Fire gradient: dark red to bright yellow
         for (let i = 0; i < FIRE_SLOTS; i++) {
             const t = i / (FIRE_SLOTS - 1);
             const r = Math.floor(80 + t * 175); // 80..255
@@ -142,7 +142,7 @@ class Demo {
             this.palette.set(C_FIRE_BASE + i, new Color32(r, g, b));
         }
 
-        // --- Water gradient: dark blue to bright cyan ---
+        // Water gradient: dark blue to bright cyan
         for (let i = 0; i < WATER_SLOTS; i++) {
             const t = i / (WATER_SLOTS - 1);
             const r = Math.floor(t * 60); // 0..60
@@ -152,10 +152,10 @@ class Demo {
             this.palette.set(C_WATER_BASE + i, new Color32(r, g, b));
         }
 
-        // --- Activate palette ---
+        // Activate palette
         BT.paletteSet(this.palette);
 
-        // --- Start cycling effects ---
+        // Start cycling effects
         // These run automatically each frame until we call BT.paletteClearEffects().
         BT.paletteCycle(C_SKY_BASE, C_SKY_BASE + SKY_SLOTS - 1, SKY_SPEED);
         BT.paletteCycle(C_FIRE_BASE, C_FIRE_BASE + FIRE_SLOTS - 1, FIRE_SPEED);
@@ -193,7 +193,7 @@ class Demo {
 
     /**
      * Draws the three animated bands and UI labels.
-     * No Color32 objects here -- only palette indices.
+     * No Color32 objects here - only palette indices.
      */
     render() {
         BT.clear(C_BG);

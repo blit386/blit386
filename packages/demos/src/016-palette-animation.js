@@ -1,4 +1,4 @@
-// Demo 016 -- Palette Animation: change palette entries every tick for instant visual effects.
+// Demo 016 - Palette Animation: change palette entries every tick for instant visual effects.
 //
 // Demo 016 in the Blit-Tech series (written for readers about 12 years old).
 //
@@ -13,25 +13,25 @@
 // WHAT IS PALETTE ANIMATION?
 //
 // Old game hardware (Super Nintendo, Sega Genesis, Commodore 64) had strict rules:
-// each pixel only stored a small number -- a "palette index" pointing to one color slot.
+// each pixel only stored a small number - a "palette index" pointing to one color slot.
 // To animate colors, programmers changed what color was IN the slot, not what was on screen.
 //
 // Imagine 16 buckets of paint, each numbered. A painting only records the bucket number
 // for every spot, not the actual color. To change the sky from blue to red, you just
-// repaint bucket 5. Every sky-colored spot changes instantly -- without touching the painting!
+// repaint bucket 5. Every sky-colored spot changes instantly - without touching the painting!
 //
 // That trick is called "palette animation". Modern engines don't need it, but it's a
 // beautiful technique to understand, and Blit-Tech lets you do it the same way.
 //
 // THE KEY RULE:
-//   render() writes palette indices (numbers) -- never Color32 objects.
+//   render() writes palette indices (numbers) - never Color32 objects.
 //   update() computes new Color32 values and stores them in palette slots.
 //
 // WHAT YOU WILL SEE (four panels):
-//   1. Scrolling gradient bar  -- 32 color slots hold a rainbow; the base hue rotates.
-//   2. Fire column             -- colors stack up from black to red to yellow to white.
-//   3. Flashing health bar     -- one slot alternates red / white every 8 ticks.
-//   4. Cycling water strip     -- three blue-green slots ripple in sequence.
+//   1. Scrolling gradient bar  - 32 color slots hold a rainbow; the base hue rotates.
+//   2. Fire column             - colors stack up from black to red to yellow to white.
+//   3. Flashing health bar     - one slot alternates red / white every 8 ticks.
+//   4. Cycling water strip     - three blue-green slots ripple in sequence.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
@@ -39,7 +39,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // #region Configuration
 
-// --- Gradient bar ---
+// Gradient bar
 // How many color slots the scrolling gradient uses.
 // More slots = smoother rainbow; fewer slots = more "chunky".
 const GRAD_SLOTS = 32;
@@ -47,7 +47,7 @@ const GRAD_SLOTS = 32;
 // Width of each gradient swatch rectangle in pixels.
 const GRAD_SWATCH_W = Math.floor(320 / GRAD_SLOTS); // ~10 px each
 
-// --- Fire column ---
+// Fire column
 // How many color slots make up the fire gradient.
 // The bottom of the fire is dark/black; the top is bright yellow-white.
 const FIRE_SLOTS = 20;
@@ -58,11 +58,11 @@ const FIRE_BAND_H = 4;
 // Width of the fire column in pixels.
 const FIRE_COL_W = 60;
 
-// --- Water strip ---
+// Water strip
 // Three slots cycle in sequence to create a ripple shimmer.
 const WATER_SLOTS = 3;
 
-// --- Health bar ---
+// Health bar
 // The health bar flashes every N ticks (8 ticks = about 0.13 seconds at 60 FPS).
 const FLASH_PERIOD = 8;
 
@@ -74,10 +74,10 @@ const HEALTH_MAX = 100;
 // How many ticks for one full health drain cycle.
 const HEALTH_DRAIN_TICKS = 360; // ~6 seconds to drain completely.
 
-// Palette slot constants -- we group our palette like compartments in a paint box.
+// Palette slot constants - we group our palette like compartments in a paint box.
 // Each section owns a range of slots that it fills in update() every tick.
 
-// Slot 0:   always transparent -- reserved by the engine.
+// Slot 0:   always transparent - reserved by the engine.
 const C_WHITE = 1; // Font base color.
 const C_BG = 2; // Screen background.
 const C_PANEL = 3; // Panel background (slightly lighter than screen).
@@ -105,7 +105,7 @@ const C_WATER_BASE = 90; // Slots 90..92.
 
 /**
  * Demonstrates the "palette animation" technique: change palette entries every tick
- * to create scrolling gradients, fire, flashing effects, and rippling water --
+ * to create scrolling gradients, fire, flashing effects, and rippling water
  * all without touching the geometry drawn in render().
  *
  * @implements {IBlitTechDemo}
@@ -141,7 +141,7 @@ class Demo {
     async init() {
         console.log('[PaletteAnimationDemo] Initializing...');
 
-        // --- Build the main palette ---
+        // Build the main palette
         // Think of this like setting up your paint box before you start painting.
         // Static entries (labels, background) go in now and never change.
         // Dynamic entries (gradient, fire, health, water) start as black and get
@@ -170,7 +170,7 @@ class Demo {
             this.palette.set(C_WATER_BASE + i, new Color32(0, 80, 160));
         }
 
-        // --- Activate palette ---
+        // Activate palette
         // Tell the engine to use our palette from this point forward.
         BT.paletteSet(this.palette);
 
@@ -184,7 +184,7 @@ class Demo {
 
     /**
      * Called 60 times per second. Computes new Color32 values for every dynamic slot.
-     * render() will never see Color32 -- it only reads slot indices we set here.
+     * render() will never see Color32 - it only reads slot indices we set here.
      */
     update(advanceTime = true) {
         // Advance the clock. animTime grows by 1/60 each frame.
@@ -199,27 +199,27 @@ class Demo {
         const tick = BT.ticks;
         this.health = HEALTH_MAX - Math.floor((tick % HEALTH_DRAIN_TICKS) * (HEALTH_MAX / HEALTH_DRAIN_TICKS));
 
-        // --- Panel 1: Scrolling gradient ---
+        // Panel 1: Scrolling gradient
         // We rotate a base hue forward every frame so the gradient appears to scroll.
         // animTime * 60 gives us degrees per second (one full rotation per ~6 seconds).
         this.updateGradient();
 
-        // --- Panel 2: Fire column ---
+        // Panel 2: Fire column
         // Each slot maps to a position along the fire column.
         // Lower slots = closer to the bottom = darker/cooler colors.
         this.updateFire();
 
-        // --- Panel 3: Flashing health bar ---
+        // Panel 3: Flashing health bar
         // The slot alternates between red and white based on the tick count.
         this.updateHealthBar(tick);
 
-        // --- Panel 4: Cycling water ---
+        // Panel 4: Cycling water
         // Three slots take turns being the bright highlight.
         this.updateWater(tick);
     }
 
     /**
-     * Draws all four panels. Only palette indices appear here -- no Color32 objects.
+     * Draws all four panels. Only palette indices appear here - no Color32 objects.
      */
     render() {
         // Clear the screen with the dark background.
@@ -348,13 +348,13 @@ class Demo {
             let color;
 
             if (dist === 0) {
-                // Bright highlight -- the "wave crest".
+                // Bright highlight - the "wave crest".
                 color = new Color32(80, 200, 255);
             } else if (dist === 1) {
-                // Medium shade -- just before or after the crest.
+                // Medium shade - just before or after the crest.
                 color = new Color32(30, 100, 200);
             } else {
-                // Dark trough -- between ripples.
+                // Dark trough - between ripples.
                 color = new Color32(10, 40, 120);
             }
 
@@ -443,7 +443,7 @@ class Demo {
         BT.drawRectFill(new Rect2i(6, panelY + 14, barMaxW, 12), C_BG);
         BT.drawRect(new Rect2i(6, panelY + 14, barMaxW, 12), C_DIM);
 
-        // Filled bar -- uses C_HEALTH_BAR, which flashes in update() when health is low.
+        // Filled bar - uses C_HEALTH_BAR, which flashes in update() when health is low.
         BT.drawRectFill(new Rect2i(6, panelY + 14, barW, 12), C_HEALTH_BAR);
 
         // Health value as text.

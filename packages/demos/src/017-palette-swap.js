@@ -1,4 +1,4 @@
-// Demo 017 -- Palette Swap: change the active palette at runtime to switch color themes.
+// Demo 017 - Palette Swap: change the active palette at runtime to switch color themes.
 //
 // Demo 017 in the Blit-Tech series (written for readers about 12 years old).
 //
@@ -115,16 +115,16 @@ class Demo {
      *   1. Extract unique colors from the sprite PNG.
      *   2. Build the stone (base) palette with those colors.
      *   3. Build fire, ice, void palettes by tinting the base colors.
-     *   4. BT.paletteSet(stonePalette) -- activate the starting palette.
-     *   5. SpriteSheet.load() + indexize() -- link pixels to slot numbers.
-     *   6. BitmapFont.load() + indexize() -- same for the font.
+     *   4. BT.paletteSet(stonePalette) - activate the starting palette.
+     *   5. SpriteSheet.load() + indexize() - link pixels to slot numbers.
+     *   6. BitmapFont.load() + indexize() - same for the font.
      *
      * @returns {Promise<boolean>} True when everything is ready.
      */
     async init() {
         console.log('[PaletteSwapDemo] Initializing...');
 
-        // --- Step 1: Extract sprite colors ---
+        // Step 1: Extract sprite colors
         // We read the sprite PNG ahead of time so we know the exact RGBA values
         // that need to be registered in each theme palette below.
         //
@@ -137,7 +137,7 @@ class Demo {
         this.spriteColorCount = this.baseColors.length;
         console.log(`[PaletteSwapDemo] Found ${this.spriteColorCount} unique sprite colors`);
 
-        // --- Steps 2 & 3: Build all four theme palettes ---
+        // Steps 2 & 3: Build all four theme palettes
         this.themepalettes = [
             this.buildPalette('stone'), // Original rock colors.
             this.buildPalette('fire'), // Warm reds and oranges.
@@ -145,12 +145,12 @@ class Demo {
             this.buildPalette('void'), // Dark desaturated greens.
         ];
 
-        // --- Step 4: Activate the starting palette (stone theme) ---
+        // Step 4: Activate the starting palette (stone theme)
         // This must happen BEFORE indexize() so the sprite's pixels are mapped
         // against the correct starting palette.
         BT.paletteSet(this.themepalettes[0]);
 
-        // --- Step 5: Load and indexize the sprite ---
+        // Step 5: Load and indexize the sprite
         // SpriteSheet.load() fetches the PNG from the public folder.
         // indexize() scans every pixel and finds its color in the active palette.
         // After this, every pixel stores a palette slot number instead of an RGBA value.
@@ -183,14 +183,14 @@ class Demo {
             // Move to the next theme; wrap around after void (index 3).
             this.currentTheme = (this.currentTheme + 1) % this.themepalettes.length;
 
-            // --- Palette swap! ---
+            // Palette swap!
             // BT.paletteSet() uploads the new palette to the GPU.
             // All drawing calls immediately use the new colors.
             // Because every theme palette keeps the sprite colors at the SAME SLOT NUMBERS
             // (SPRITE_BASE..SPRITE_BASE+N-1), the sprite's stored indices are still correct.
             BT.paletteSet(this.themepalettes[this.currentTheme]);
 
-            // BT.spritesRefresh() is needed when the new palette REORGANIZES slots --
+            // BT.spritesRefresh() is needed when the new palette REORGANIZES slots
             // i.e., the same RGBA colors appear at different slot NUMBERS than before.
             // In this demo the slot layout is identical across all palettes, so
             // spritesRefresh() is a no-op here, but we call it to show the pattern.
@@ -200,7 +200,7 @@ class Demo {
 
     /**
      * Draws the theme buttons, cycling sprite, and code panel.
-     * NO Color32 objects appear in draw calls -- only palette indices and offsets.
+     * NO Color32 objects appear in draw calls - only palette indices and offsets.
      */
     render() {
         // Clear to the background color (slot 2 = dark bg, same in all theme palettes).
@@ -261,7 +261,7 @@ class Demo {
 
     /**
      * Draws the large cycling sprite in the center of the screen.
-     * The sprite uses offset 0 -- it draws from SPRITE_BASE..SPRITE_BASE+N-1,
+     * The sprite uses offset 0 - it draws from SPRITE_BASE..SPRITE_BASE+N-1,
      * which contains the current theme's colors in whichever palette is active.
      */
     renderCyclingSprite() {
@@ -326,13 +326,13 @@ class Demo {
      * Builds a complete Palette for the given theme name.
      *
      * Every palette has the SAME slot layout:
-     *   Slots 1..9:    UI colors (white, background, labels -- identical in all palettes).
+     *   Slots 1..9:    UI colors (white, background, labels - identical in all palettes).
      *   Slots 10..N:   Sprite colors for this theme (different RGBA per theme).
      *   Slots 30..33:  Representative swatch color per theme (identical in all palettes).
      *
      * Because the sprite slot NUMBERS (10..N) are the same in every palette,
      * the sprite sheet does not need re-indexization when we swap themes.
-     * The sprite's stored indices already point to the right slots -- just the colors
+     * The sprite's stored indices already point to the right slots - just the colors
      * in those slots differ.
      *
      * @param {'stone'|'fire'|'ice'|'void'} themeName - Which tint to apply.
@@ -341,7 +341,7 @@ class Demo {
     buildPalette(themeName) {
         const palette = BT.paletteCreate(256);
 
-        // --- Static UI colors (same in every palette) ---
+        // Static UI colors (same in every palette)
         // applyHUD(1) fills the six standard HUD slots. Slot 1 (white) is used
         // directly. Slots 2-6 are overridden with this demo's values, which use
         // a dark navy instead of the preset's dark purple, and slightly different
@@ -353,7 +353,7 @@ class Demo {
         palette.set(C_CODE, new Color32(100, 155, 210)); // Blue-gray code.
         palette.set(C_DIM, new Color32(80, 80, 100)); // Dim FPS text.
 
-        // --- Sprite colors for this theme ---
+        // Sprite colors for this theme
         // We take the original stone RGBA values from baseColors and apply a tint.
         // The tint depends on the theme name.
         for (let i = 0; i < this.baseColors.length; i++) {
@@ -361,7 +361,7 @@ class Demo {
             let tinted;
 
             if (themeName === 'stone') {
-                // Original colors -- no tint.
+                // Original colors - no tint.
                 tinted = base;
             } else if (themeName === 'fire') {
                 // Warm: boost red, reduce blue.
@@ -383,7 +383,7 @@ class Demo {
             palette.set(SPRITE_BASE + i, tinted);
         }
 
-        // --- Representative swatch colors (same in every palette) ---
+        // Representative swatch colors (same in every palette)
         // These are used for the theme buttons on the left side.
         // They do NOT change with the theme so the buttons always show all four options.
         palette.set(SWATCH_STONE, new Color32(130, 120, 110)); // Warm gray for stone.

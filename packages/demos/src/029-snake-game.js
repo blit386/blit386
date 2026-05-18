@@ -1,4 +1,4 @@
-// Snake -- grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
+// Snake - grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
 //
 // Demo 029 in the Blit-Tech demo series.
 // Prerequisites: 001-Basics, 023-PipBoy-CRT (effect stack), 028-Keyboard-Input (face buttons).
@@ -73,7 +73,7 @@ const MOVE_INTERVAL = 10;
 // Two seconds at 60 ticks per second before a new round starts.
 const RESTART_DELAY_TICKS = 120;
 
-// --- CRT glitch state machine (same tuning as demo 023) ---
+// CRT glitch state machine (same tuning as demo 023)
 const GLITCH_COOLDOWN_MIN = 120;
 const GLITCH_COOLDOWN_MAX = 360;
 const GLITCH_ACTIVE_MIN = 5;
@@ -106,7 +106,7 @@ function randomInt(min, max) {
 }
 
 /**
- * Random integer in [min, max) — used by glitch cooldown rolls (demo 023 style).
+ * Random integer in [min, max) - used by glitch cooldown rolls (demo 023 style).
  *
  * @param {number} min
  * @param {number} max

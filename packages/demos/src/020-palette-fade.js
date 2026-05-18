@@ -1,4 +1,4 @@
-// Demo 020 -- Palette Fade & Flash: smooth color transitions and flash effects.
+// Demo 020 - Palette Fade & Flash: smooth color transitions and flash effects.
 //
 // Demo 020 in the Blit-Tech series (written for readers about 12 years old).
 //
@@ -14,7 +14,7 @@
 // Imagine you have two sets of paint buckets: one for a sunny day, one for a
 // dark night. A "palette fade" gradually mixes the day paints with the night
 // paints over several seconds, so the whole picture smoothly transitions from
-// bright to dark -- like watching a sunset.
+// bright to dark - like watching a sunset.
 //
 // Blit-Tech does this with BT.paletteFade(targetPalette, durationMs, easing).
 // You give it the destination paint set, how long the transition should take,
@@ -29,12 +29,12 @@
 //
 // WHAT YOU WILL SEE:
 //   A pixel-art landscape (sky, ground, trees, sun) that loops through:
-//   1. Day (bright)   -- hold 3 seconds
-//   2. Fade to night  -- 2 seconds, ease-in-out
-//   3. Night (dark)   -- hold 3 seconds
-//   4. Lightning flash -- 200 ms white flash
-//   5. Night hold     -- 2 seconds
-//   6. Fade to day    -- 2 seconds, ease-out (dawn)
+//   1. Day (bright)   - hold 3 seconds
+//   2. Fade to night  - 2 seconds, ease-in-out
+//   3. Night (dark)   - hold 3 seconds
+//   4. Lightning flash - 200 ms white flash
+//   5. Night hold     - 2 seconds
+//   6. Fade to day    - 2 seconds, ease-out (dawn)
 //   Repeat forever.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
@@ -79,7 +79,7 @@ const C_MOUNTAIN_LIGHT = 23;
 // #region Helper Functions
 
 /**
- * Builds the "day" palette -- bright, saturated outdoor colors.
+ * Builds the "day" palette - bright, saturated outdoor colors.
  *
  * @param {Palette} p - Palette to fill.
  */
@@ -107,7 +107,7 @@ function fillDayPalette(p) {
 }
 
 /**
- * Builds the "night" palette -- dark, desaturated blues and purples.
+ * Builds the "night" palette - dark, desaturated blues and purples.
  *
  * @param {Palette} p - Palette to fill.
  */
@@ -252,7 +252,7 @@ class Demo {
     }
 
     /**
-     * Draws the pixel-art landscape. The scene geometry never changes --
+     * Draws the pixel-art landscape. The scene geometry never changes
      * only the palette colors shift via the fade/flash effects.
      */
     render() {
@@ -288,35 +288,35 @@ class Demo {
      * All draw calls use palette indices only.
      */
     renderScene() {
-        // --- Sky gradient (two bands) ---
+        // Sky gradient (two bands)
         BT.drawRectFill(new Rect2i(0, 0, 320, 80), C_SKY);
         BT.drawRectFill(new Rect2i(0, 80, 320, 40), C_SKY_LIGHT);
 
-        // --- Clouds ---
+        // Clouds
         this.drawCloud(30, 20);
         this.drawCloud(180, 35);
         this.drawCloud(260, 15);
 
-        // --- Mountains ---
+        // Mountains
         this.drawMountain(60, 105, 80, 35);
         this.drawMountain(160, 100, 100, 40);
         this.drawMountain(250, 108, 70, 32);
 
-        // --- Sun ---
+        // Sun
         BT.drawRectFill(new Rect2i(250, 25, 20, 20), C_SUN);
         BT.drawRectFill(new Rect2i(248, 27, 24, 16), C_SUN_GLOW);
 
-        // --- Ground ---
+        // Ground
         BT.drawRectFill(new Rect2i(0, 120, 320, 120), C_GROUND);
         BT.drawRectFill(new Rect2i(0, 180, 320, 60), C_GROUND_DARK);
 
-        // --- Trees ---
+        // Trees
         this.drawTree(40, 110);
         this.drawTree(100, 115);
         this.drawTree(200, 108);
         this.drawTree(270, 118);
 
-        // --- Flowers ---
+        // Flowers
         this.drawFlowers();
     }
 

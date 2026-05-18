@@ -1,4 +1,4 @@
-// Input Map Remapping Demo -- runtime `BT.inputMap` and `BT.inputMapReset`.
+// Input Map Remapping Demo - runtime `BT.inputMap` and `BT.inputMapReset`.
 //
 // Demo 030 in the Blit-Tech demo series.
 // Prerequisites: 001-Basics, 028-Keyboard-Input (face buttons vs raw keys).
@@ -10,7 +10,7 @@
 // so you can feel defaults, a custom map, and a **cleared** binding.
 //
 // Important: `BT.keyDown('KeyW')` only watches the real W key. Changing the map
-// does not rename keys -- it changes which keys feed **face buttons** through
+// does not rename keys - it changes which keys feed **face buttons** through
 // `BT.buttonDown(BT.BTN_*, player)`.
 //
 // Try this:
@@ -82,7 +82,7 @@ class Demo {
 
     palette = null;
 
-    // Human-readable name for the active preset (we track it ourselves -- the
+    // Human-readable name for the active preset (we track it ourselves - the
     // engine does not expose a "get current map" API).
     presetLabel = '1 Defaults (engine tables)';
 
@@ -194,7 +194,7 @@ class Demo {
 
     /**
      * Custom layout: remap a few buttons, and give **two** keys for one direction
-     * so either key counts (OR) -- hold Q **or** E and player 0 left should light.
+     * so either key counts (OR) - hold Q **or** E and player 0 left should light.
      */
     applyPresetCustom() {
         // Start from known defaults, then layer edits (order matters only for clarity).
@@ -207,7 +207,7 @@ class Demo {
         // until we reset (we replace the whole key list for that button).
         BT.inputMap(1, BT.BTN_UP, 'KeyI');
 
-        // Player 0: LEFT listens to **two** keys at once -- first **or** second held counts.
+        // Player 0: LEFT listens to **two** keys at once - first **or** second held counts.
         BT.inputMap(0, BT.BTN_LEFT, 'KeyQ', 'KeyE');
 
         this.presetLabel = '2 Custom (P0: Z=A, Q|E=Lft | P1: I=Up)';

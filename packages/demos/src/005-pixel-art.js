@@ -1,4 +1,4 @@
-// Pixel Art Demo -- draw tiny pictures from number grids and from math patterns.
+// Pixel Art Demo - draw tiny pictures from number grids and from math patterns.
 //
 // Demo 005 in the Blit-Tech demo series for young learners (around 12).
 //
@@ -134,7 +134,7 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
-        // --- Set up the color palette ---
+        // Set up the color palette
         // Think of this as laying out paint on an artist's palette tray before starting a painting.
         // Every color we might use gets a number. We set them all up before drawing begins.
         this.palette = BT.paletteCreate(256);
@@ -173,8 +173,8 @@ class Demo {
         // Add one tick's worth of time. If targetFPS is 60, each tick is about 1/60 second.
         this.animTime += BT.deltaSeconds;
 
-        // --- Update the checker pattern colors ---
-        // The checker squares use "lerp" (short for linear interpolation -- smoothly blending
+        // Update the checker pattern colors
+        // The checker squares use "lerp" (short for linear interpolation - smoothly blending
         // between two colors). wave goes from 0 to 1 and back using Math.sin.
         // At wave=0 colorA is red; at wave=1 it is yellow. At wave=0 colorB is blue; at 1 it is cyan.
         // Both colors shift at the same time but in opposite directions, so they always contrast.
@@ -217,7 +217,7 @@ class Demo {
      *
      * BT.drawPixel() paints exactly one screen cell. To make each design cell bigger, we use two
      * more small loops (dx and dy) that stamp a scale-by-scale block of pixels. Another valid way
-     * is BT.drawRectFill() with width and height equal to scale -- same math, one call per cell.
+     * is BT.drawRectFill() with width and height equal to scale - same math, one call per cell.
      *
      * @param {number[][]} grid - Rows of paint codes; grid[row][col] matches graph-paper rows/columns.
      * @param {(number | null)[]} paletteMap - paletteMap[code] is the palette index, or null to skip.
@@ -236,7 +236,7 @@ class Demo {
                 // Read the paint code for this cell, like looking up a coordinate on graph paper.
                 const code = rowCodes[col];
 
-                // Zero means "no ink here" -- skip so the background stays visible.
+                // Zero means "no ink here" - skip so the background stays visible.
                 if (code === 0) {
                     continue;
                 }
@@ -291,7 +291,7 @@ class Demo {
     }
 
     /**
-     * Draws a checkerboard using only math inside nested loops -- no picture array.
+     * Draws a checkerboard using only math inside nested loops - no picture array.
      * Colors slide around based on animTime (updated in update()) so you can see the clock moving.
      */
     renderCheckerPatternSection() {
@@ -305,7 +305,7 @@ class Demo {
         const startX = 12;
         const startY = 118;
 
-        // Outer loop picks the row of squares; inner loop picks the column -- same nested idea as the art.
+        // Outer loop picks the row of squares; inner loop picks the column - same nested idea as the art.
         for (let row = 0; row < cells; row++) {
             for (let col = 0; col < cells; col++) {
                 // Checker rule: neighbors differ. (row + col) % 2 is 0 or 1, flipping like a chessboard.
