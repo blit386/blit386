@@ -1,3 +1,5 @@
+// @pageTitle Sprite Effects
+//
 // Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
 //
 // Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
