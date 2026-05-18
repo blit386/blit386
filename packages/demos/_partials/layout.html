@@ -16,10 +16,20 @@
                 box-sizing: border-box;
             }
 
+            html,
             body {
                 margin: 0;
-                background: #111;
-                min-height: 100vh;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            body {
+                background: black;
+            }
+
+            #canvas-container {
+                width: 100dvw;
+                height: 100dvh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -28,19 +38,33 @@
             #canvas-container canvas {
                 display: block;
                 image-rendering: pixelated;
-                width: 100% !important;
-                height: 100% !important;
+                outline: none;
+                max-width: var(--canvas-max-w, 960px);
+                max-height: var(--canvas-max-h, 720px);
+
+                /*
+                 * Largest size that fits the viewport and demo max cap while keeping aspect ratio.
+                 * --canvas-display-w/h: aspect (from canvasDisplaySize or displaySize).
+                 * --canvas-max-w/h: max on-screen size (from configure() maxCanvasDisplaySize).
+                 */
+                width: min(
+                    100dvw,
+                    calc(100dvh * var(--canvas-display-w, 640) / var(--canvas-display-h, 480)),
+                    var(--canvas-max-w, 960px),
+                    calc(var(--canvas-max-h, 720px) * var(--canvas-display-w, 640) / var(--canvas-display-h, 480))
+                );
+                height: min(
+                    100dvh,
+                    calc(100dvw * var(--canvas-display-h, 480) / var(--canvas-display-w, 640)),
+                    var(--canvas-max-h, 720px),
+                    calc(var(--canvas-max-w, 960px) * var(--canvas-display-h, 480) / var(--canvas-display-w, 640))
+                );
             }
 
             @supports (image-rendering: crisp-edges) {
                 #canvas-container canvas {
                     image-rendering: crisp-edges;
                 }
-            }
-
-            #canvas-container {
-                width: 100%;
-                min-height: 100vh;
             }
         </style>
     </head>
