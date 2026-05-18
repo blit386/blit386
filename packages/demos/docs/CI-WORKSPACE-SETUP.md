@@ -1,8 +1,8 @@
 # CI Workspace Setup
 
-This document explains how the CI/CD pipeline handles the workspace dependency between Blit-Tech Demos and Blit-Tech.
+This document explains how the CI pipeline handles the workspace dependency between Blit-Tech Demos and Blit-Tech.
 
-## Problem
+## Context
 
 The Blit-Tech Demos project depends on Blit-Tech using a pnpm workspace dependency:
 
@@ -18,7 +18,7 @@ This works perfectly for local development but creates a challenge in CI:
 
 1. Both projects are in **separate Git repositories**
 2. CI workflows need to resolve the workspace dependency
-3. We want to avoid publishing Blit-Tech to npm until it's ready
+3. This demos repo intentionally tracks a sibling workspace build of Blit-Tech
 
 ## Solution: Recreate Workspace Structure in CI
 
@@ -44,8 +44,8 @@ We treat Blit-Tech as a **trusted, pre-tested dependency** that is already valid
 
 ### Workflow Pattern
 
-The setup is encapsulated in a composite action at `.github/actions/workspace-setup`. Every job that needs dependencies
-invokes it in two steps:
+The setup is encapsulated in a composite action at `.github/actions/workspace-setup`. Every job that needs workspace
+dependencies invokes it in two steps:
 
 ```yaml
 steps:
@@ -76,14 +76,14 @@ The composite action performs these steps internally:
 6. Run `pnpm install --no-frozen-lockfile`
 7. Build the Blit-Tech library
 
-## Affected Workflow
+## CI Job Flow
 
 The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across its jobs:
 
 - **quality-checks** - Code quality (format, lint, spellcheck, knip)
-- **docs-links** - Markdown link check on `README.md` (no workspace needed)
 - **build** - Build demos and upload artifacts
-- **deploy** - Deploy to Cloudflare Pages (main branch only; depends on `build` and `docs-links`)
+- **deploy** - Deploy to Cloudflare Pages (main branch only; depends on `build`)
+- **docs-links** - Markdown link check on `README.md` (no workspace needed; runs only on main push after deploy)
 
 ## Local Development
 
@@ -116,23 +116,22 @@ This script uses `concurrently` to watch both projects:
 4. **Type safety** - TypeScript resolves imports correctly in both environments
 5. **Hot reload** - Local dev:watch script provides excellent DX
 
-## Future: Publishing to npm
+## Future Option: Switch Demos to npm Dependency
 
-When Blit-Tech is ready for npm publication:
+If this demos repo ever switches from `workspace:*` to an npm semver dependency:
 
-1. Publish Blit-Tech to npm as a public package
-2. Update `blit-tech-demos/package.json`:
+1. Update `blit-tech-demos/package.json`:
 
    ```json
    {
      "dependencies": {
-       "blit-tech": "^0.1.0"
+       "blit-tech": "^1.0.0"
      }
    }
    ```
 
-3. Simplify CI workflow (no need to clone both repos)
-4. Local development can still use workspace protocol if desired
+2. Simplify CI workflow (no need to clone both repos)
+3. Keep local workspace linking as an optional development setup if desired
 
 ## Troubleshooting
 

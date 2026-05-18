@@ -1,11 +1,11 @@
 # Workflow Summary
 
-This document provides a quick overview of the CI/CD workflow in Blit-Tech Demos.
+This document provides a quick overview of the CI workflow in Blit-Tech Demos.
 
 ## Key Principle
 
-The workflow **tests and checks Blit-Tech Demos only**. The Blit-Tech library is treated as a **trusted, pre-tested
-dependency** that has its own CI pipeline in the Blit-Tech repository.
+The workflow validates the **Blit-Tech Demos repository only**. The Blit-Tech library is treated as a **trusted,
+pre-tested dependency** that has its own CI pipeline in the Blit-Tech repository.
 
 ## CI Workflow (`ci.yml`)
 
@@ -25,21 +25,21 @@ Runs all quality checks on Blit-Tech Demos:
 - Spell check (cspell)
 - Unused exports check (knip)
 
-### 2. docs-links
-
-Runs a Markdown link check against `README.md` using `gaurav-nelson/github-action-markdown-link-check`. Does not need
-the workspace.
-
-### 3. build (depends on quality-checks)
+### 2. build (depends on quality-checks)
 
 - Builds Blit-Tech library (as dependency)
 - Builds Blit-Tech Demos
 - Uploads build artifacts (`demos-dist`, 7-day retention, compression level 9)
 
-### 4. deploy (depends on build and docs-links, main branch only)
+### 3. deploy (depends on build, main branch only)
 
 - Downloads build artifacts
 - Deploys to Cloudflare Pages via `cloudflare/wrangler-action`
+
+### 4. docs-links (depends on deploy, main branch only)
+
+Runs a Markdown link check against `README.md` using `gaurav-nelson/github-action-markdown-link-check`. Does not need
+the workspace. This job does not run for pull requests.
 
 ## Workspace Structure in CI
 
