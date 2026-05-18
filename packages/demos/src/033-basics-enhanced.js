@@ -30,6 +30,8 @@
 // it up for a few frames, and ramps it down again. A preset is a sealed
 // recipe; a hand-built chain is an instrument.
 
+// #region Imports
+
 import {
     BarrelDistortion,
     Bloom,
@@ -49,7 +51,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+// #endregion
 
 // #region Configuration
 
@@ -112,7 +114,13 @@ const GLITCH_LABELS = {
 
 // #endregion
 
-// #region Helpers
+// #region Type Definitions
+
+/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+
+// #endregion
+
+// #region Helper Functions
 
 // Pick a whole number from min (inclusive) to max (exclusive). Used for
 // tick counts (cooldown length, glitch duration).
@@ -210,6 +218,7 @@ class Demo {
         // and center the sprite on screen. Everything below is what makes
         // 033 different from 001.
         this.palette = BT.paletteCreate(256);
+        this.palette.applyHUD();
         this.palette.set(C_BG, new Color32(16, 28, 16));
         this.palette.set(C_GREEN, new Color32(80, 200, 110));
         this.palette.set(C_AMBER, new Color32(220, 180, 60));
@@ -363,7 +372,7 @@ class Demo {
             // t goes from 0 at the START of the glitch to 1 at the END.
             // (We invert glitchActive/glitchDuration because glitchActive
             // counts DOWN, so 1 - that ratio counts UP.)
-            const t = 1 - this.glitchActive / this.glitchDuration;
+            const t = 1 - (this.glitchActive - 1) / this.glitchDuration;
             // Math.sin(t * Math.PI) is a one-shot bell curve: 0 at t=0,
             // 1 at t=0.5 (the middle), 0 again at t=1. Multiplying any
             // uniform by this envelope makes it ramp in and out smoothly,
@@ -372,7 +381,7 @@ class Demo {
             this.applyGlitchUniforms(envelope);
 
             this.glitchActive--;
-            if (this.glitchActive === 0) {
+            if (this.glitchActive <= 0) {
                 this.resetGlitchUniforms();
                 this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
@@ -463,7 +472,7 @@ class Demo {
 
 // #endregion
 
-// #region App Lifecycle
+// #region Exports
 
 bootstrap(Demo);
 

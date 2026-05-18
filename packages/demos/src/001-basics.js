@@ -30,6 +30,10 @@
  * Live version: https://vancura.dev/articles/blit-tech-basics
  */
 
+// @pageTitle Blit-Tech Demo 001 - Basics
+
+// #region Imports
+
 /**
  * "import" loads tools from the Blit-Tech engine library.
  * Think of it like opening a toolbox before you start building.
@@ -42,13 +46,7 @@
  */
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
 
-/**
- * This line tells code editors that our Demo class follows the IBlitTechDemo
- * interface - the contract that says you need init, update, and render.
- * configure() is optional (the engine defaultConfig is 320x240 logical, 640x480
- * canvas, 60 FPS if you skip it).
- */
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+// #endregion
 
 // #region Configuration
 
@@ -75,6 +73,18 @@ const SPRITE_URL = '/sprites/logo-1.png';
 
 // Target update rate. 60 ticks per second is the classic smooth-animation rate.
 const TARGET_FPS = 30;
+
+// #endregion
+
+// #region Type Definitions
+
+/**
+ * This line tells code editors that our Demo class follows the IBlitTechDemo
+ * interface - the contract that says you need init, update, and render.
+ * configure() is optional (the engine defaultConfig is 320x240 logical, 640x480
+ * canvas, 60 FPS if you skip it).
+ */
+/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #endregion
 
@@ -339,9 +349,9 @@ class Demo {
         // BT.systemPrint() draws text using the engine's built-in 6x14 system font.
         // It takes (position, paletteIndex, text) - no font loading needed!
         // The template string (`backticks`) lets us insert variable values with ${...}.
-        // BT.targetFPS returns the target frames per second (60 in this demo).
+        // BT.targetFPS returns the target update rate we set in configure() (30 in this demo).
         BT.systemPrint(new Vector2i(3, 0), C_GREEN, `Position: ${this.pos.x}, ${this.pos.y}`);
-        BT.systemPrint(new Vector2i(BT.displaySize.x - 50, 0), C_GREEN, `FPS: ${BT.targetFPS}`);
+        BT.systemPrint(new Vector2i(BT.displaySize.x - 90, 0), C_GREEN, `Target FPS: ${BT.targetFPS}`);
 
         // Show the bounce count in amber so it stands out from the green text.
         // C_AMBER is palette index 3, the secondary PipBoy accent color.
@@ -353,7 +363,7 @@ class Demo {
 
 // #endregion
 
-// #region App Lifecycle
+// #region Exports
 
 // bootstrap() is the function that starts everything. You pass it your Demo
 // class, and it takes care of:
