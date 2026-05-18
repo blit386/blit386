@@ -418,12 +418,12 @@ class Demo {
     }
 
     update() {
-        // ---- 1. Drive the boot animation timer ----
+        // 1. Drive the boot animation timer
         // We don't draw here - render() reads `this._ticksSinceBoot` and computes how many
         // characters to show. update() just provides time.
         this._ticksSinceBoot = BT.ticks - this.bootStartTick;
 
-        // ---- 2. Drive the time-based effects every frame ----
+        // 2. Drive the time-based effects every frame
         // RollLine, Noise, and Interference all need a wall-clock seconds value to drive
         // their animations. Convert ticks to seconds so the animation speed is independent
         // of TARGET_FPS.
@@ -432,7 +432,7 @@ class Demo {
         this.noise.time = seconds;
         this.interference.time = seconds;
 
-        // ---- 3. Drive the glitch state machine ----
+        // 3. Drive the glitch state machine
         if (this.glitchActive > 0) {
             // We are inside a glitch burst. Build an "envelope": ramps up to glitchPeak,
             // holds, then ramps down. Sounds fancy - in practice it just makes a sin curve

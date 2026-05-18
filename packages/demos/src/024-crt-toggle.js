@@ -199,7 +199,7 @@ class Demo {
     }
 
     update() {
-        // ---- 1. Time-based toggle ----
+        // 1. Time-based toggle
         // Every TOGGLE_PERIOD_TICKS we flip the boolean and either add or remove the
         // entire preset stack. The engine handles the GPU pipeline lifecycle for us.
         if (BT.ticks - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
@@ -230,7 +230,7 @@ class Demo {
             fx.time = seconds;
         }
 
-        // ---- 2. Move each square and bounce off the screen edges ----
+        // 2. Move each square and bounce off the screen edges
         // Vector2i is immutable, so we assign new instances rather than mutating components.
         // Reassigning sq.pos and sq.vel is allowed for per-frame demo state (see CLAUDE.md).
         for (const sq of this.squares) {
