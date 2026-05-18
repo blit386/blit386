@@ -1,4 +1,4 @@
-// Demo 014 -- Game Scene (CAPSTONE): one small world that uses almost everything from the series.
+// Demo 014 - Game Scene (CAPSTONE): one small world that uses almost everything from the series.
 //
 // This demo brings together everything you have learned!
 //
@@ -35,12 +35,12 @@
 //
 // `Color32.multiply()` is a built-in engine method: it scales each channel of `base` by
 // the matching channel of `ambient` and returns a new Color32. Think of it as shining a
-// colored flashlight on a surface -- a blue light on a red wall gives you a darker,
+// colored flashlight on a surface - a blue light on a red wall gives you a darker,
 // purple-ish result.
 //
 // Example: the grass fill has a base color (50, 140, 70) and a reserved slot C_GRASS.
 // Every tick in update(), we compute `grassBase.multiply(ambient)` and write it to C_GRASS.
-// render() calls `BT.drawRectFill(rect, C_GRASS)` -- no Color32 needed there.
+// render() calls `BT.drawRectFill(rect, C_GRASS)` - no Color32 needed there.
 //
 // Think of it as updating the paint cans before the painter starts working.
 
@@ -160,7 +160,7 @@ class Demo {
     // +1 = moving right, -1 = moving left.
     heroFacing = 1;
 
-    // Walk "step" counter (not a frame index -- just bobs the rock position slightly).
+    // Walk "step" counter (not a frame index - just bobs the rock position slightly).
     walkStep = 0;
     walkFrameTimer = new Timer(WALK_FRAME_TICKS);
 
@@ -221,7 +221,7 @@ class Demo {
     async init() {
         console.log('[GameSceneDemo] Initializing...');
 
-        // --- Create palette and set static slots ---
+        // Create palette and set static slots
         // applyHUD(1) fills six standard HUD slots. Slot 1 (white) matches directly.
         // Slots 2 and 3 are overridden: this demo uses pure black (not a dark-purple
         // background) and a semi-transparent black overlay for the HUD bar.
@@ -236,10 +236,10 @@ class Demo {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }
 
-        // --- Build world decoration ---
+        // Build world decoration
         this.buildWorldDecor();
 
-        // --- Extract sprite colors and register in palette ---
+        // Extract sprite colors and register in palette
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
         // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
         // (sorted darkest-first by brightness). We keep them so updateWorldPalette() can
@@ -256,7 +256,7 @@ class Demo {
             this.palette.set(SPRITE_BASE + colorCount + i, this.spriteBaseColors[i]);
         }
 
-        // --- Load hero sprite ---
+        // Load hero sprite
         try {
             const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
                 sort: 'none',
@@ -302,7 +302,7 @@ class Demo {
 
     /**
      * Draws world layers back-to-front, then the HUD on top.
-     * Every draw call uses only palette index numbers -- no Color32 objects.
+     * Every draw call uses only palette index numbers - no Color32 objects.
      */
     render() {
         BT.clear(C_BLACK);
@@ -413,7 +413,7 @@ class Demo {
     updateWorldPalette() {
         const ambient = this.getAmbientTint();
 
-        // --- Sky gradient bands ---
+        // Sky gradient bands
         for (let band = 0; band < SKY_BANDS; band++) {
             // t goes 0 at the top to 1 near the horizon.
             const t = band / SKY_BANDS;
@@ -427,30 +427,30 @@ class Demo {
             this.palette.set(C_SKY_BASE + band, bandBase.multiply(ambient));
         }
 
-        // --- Ground ---
+        // Ground
         this.palette.set(C_GRASS, this.grassBaseColor.multiply(ambient));
         this.palette.set(C_DIRTLINE, this.dirtBaseColor.multiply(ambient));
 
-        // --- Buildings ---
+        // Buildings
         for (let i = 0; i < this.buildings.length; i++) {
             this.palette.set(C_BUILDING_BASE + i * 2, this.buildingFills[i].multiply(ambient));
             this.palette.set(C_BUILDING_BASE + i * 2 + 1, this.buildingOutlines[i].multiply(ambient));
         }
 
-        // --- Clouds ---
+        // Clouds
         this.palette.set(C_CLOUD, this.cloudBaseColor.multiply(ambient));
 
-        // --- HUD text (subtle night tint on screen text) ---
+        // HUD text (subtle night tint on screen text)
         this.palette.set(C_HUD_TITLE, this.hudTitleBase.multiply(ambient));
         this.palette.set(C_HUD_SCORE, this.hudScoreBase.multiply(ambient));
         this.palette.set(C_HUD_POS, this.hudPosBase.multiply(ambient));
         this.palette.set(C_HUD_FPS, this.hudFpsBase.multiply(ambient));
 
-        // --- Hero shadow ---
+        // Hero shadow
         const shadowAlpha = Math.floor(60 + (ambient.r / 255) * 60); // Softer at night.
         this.palette.set(C_HERO_SHADOW, new Color32(0, 0, 0, shadowAlpha));
 
-        // --- Sprite ambient block ---
+        // Sprite ambient block
         // Each base stone color is multiplied by the current ambient to get the lit version.
         // drawSprite uses offset = spriteColorCount so it reads from this "ambient block".
         for (let i = 0; i < this.spriteColorCount; i++) {
@@ -671,7 +671,7 @@ class Demo {
 
     /**
      * Draws active particles as 3x3 colored squares.
-     * Colors were already computed in update() -- render() just reads the slot.
+     * Colors were already computed in update() - render() just reads the slot.
      */
     renderParticles() {
         for (const p of this.particles) {

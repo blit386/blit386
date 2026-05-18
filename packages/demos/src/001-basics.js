@@ -336,7 +336,7 @@ class Demo {
      *   Returning false tells the engine that something went wrong.
      */
     async init() {
-        // -- Step 1: set up the color palette --
+        // Step 1: set up the color palette
         // A palette is like an artist's tray of paint colors laid out before painting.
         // We pick every color we need here so the engine knows about them in advance.
         // BT.paletteCreate(256) makes a new empty palette with room for 256 colors.
@@ -351,7 +351,7 @@ class Demo {
         this.palette.set(C_GREEN, new Color32(80, 200, 110)); // PipBoy phosphor green.
         this.palette.set(C_AMBER, new Color32(220, 180, 60)); // Vault-Tec amber accent.
 
-        // -- Step 2: register every color used by the sprite image --
+        // Step 2: register every color used by the sprite image
         // The engine draws sprites using palette indices, not raw RGB colors.
         // So before we can show the sprite, every color in the PNG must live in
         // a palette slot. The library helper below opens the file, looks at every
@@ -361,27 +361,27 @@ class Demo {
         // not need it here - we just want them sitting in the palette.
         await SpriteSheet.loadColorsIntoPalette(SPRITE_URL, this.palette, SPRITE_BASE);
 
-        // -- Step 3: load + indexize sprite in one helper call --
+        // Step 3: load + indexize sprite in one helper call
         // loadIndexed() wraps the full setup path and returns both the prepared sheet
         // and a full-image source rectangle.
         const indexed = await SpriteSheet.loadIndexed(SPRITE_URL, this.palette, SPRITE_BASE, { sort: 'none' });
         this.spriteSheet = indexed.sheet;
         this.spriteRect = indexed.srcRect;
 
-        // -- Step 4: activate the palette --
+        // Step 4: activate the palette
         // Tell the engine "use this palette from now on."
         // Before this call, the engine doesn't know what colors are available.
         // We do this AFTER adding the sprite colors so they are included.
         BT.paletteSet(this.palette);
 
-        // -- Step 5: remember the sprite's pixel size --
+        // Step 5: remember the sprite's pixel size
         // The sprite sheet exposes its dimensions through the .size property.
         // We copy them into our own size vector so the bounce checks below use
         // the real image size (not a hard-coded 16x16).
         this.size = new Vector2i(this.spriteSheet.size.x, this.spriteSheet.size.y);
 
-        // -- Step 6: position the sprite in the center of the screen --
         // BT.displaySize() returns how big the screen is (320x240 in our case).
+        // Step 6: position the sprite in the center of the screen
         // We subtract the sprite's size so the CENTER of the sprite is centered,
         // not its top-left corner.
         // Math.floor() rounds down to a whole number - we need whole pixels
@@ -665,7 +665,7 @@ class Demo {
      */
     render() {
         // Clear the entire screen to the background color. This erases the previous frame.
-        // C_BG is palette index 1, which we set to (16, 28, 16) in init() -- almost
+        // C_BG is palette index 1, which we set to (16, 28, 16) in init() - almost
         // black with a faint green tint.
         BT.clear(C_BG);
 

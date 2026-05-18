@@ -1,7 +1,7 @@
-// Primitives Demo -- shows all the basic shapes you can draw with Blit-Tech.
+// Primitives Demo - shows all the basic shapes you can draw with Blit-Tech.
 //
 // Demo 002 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics -- https://vancura.dev/articles/blit-tech-basics
+// Prerequisites: 001-Basics - https://vancura.dev/articles/blit-tech-basics
 // Live version: https://vancura.dev/articles/blit-tech-primitives
 //
 // "Primitives" means the simplest building blocks of drawing:
@@ -33,7 +33,7 @@ const C_STEEL = 12; // Steel blue: background squares in the clearRect grid
 // Dynamic palette slots for the rainbow pixel animation.
 // Each of the 50 animated pixels needs its own slot so they can all be different colors.
 // update() will compute and store each pixel's current color in slots 20..69 every tick.
-// render() then simply passes the slot number to BT.drawPixel() -- no Color32 needed there!
+// render() then simply passes the slot number to BT.drawPixel() - no Color32 needed there!
 const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 69
 
 // #endregion
@@ -66,8 +66,8 @@ class Demo {
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
     async init() {
-        // --- Set up the color palette ---
-        // We pick all the colors we need BEFORE drawing anything -- like an artist
+        // Set up the color palette
+        // We pick all the colors we need BEFORE drawing anything - like an artist
         // squeezing paint onto a palette before picking up the brush.
         this.palette = BT.paletteCreate(256);
 
@@ -107,12 +107,12 @@ class Demo {
         // After 1 second at 60 update ticks per second, animTicks will be 60.
         this.animTicks++;
 
-        // --- Pre-compute the rainbow pixel colors ---
+        // Pre-compute the rainbow pixel colors
         // Each of the 50 animated pixels gets a different hue, and the whole rainbow
         // rotates forward by animTicks so it appears to cycle over time.
         // We compute the color here in update() and store it in the palette so that
         // render() can just say "use slot 20", "use slot 21", etc.
-        // This keeps ALL color math out of render() -- the "palette animation" technique.
+        // This keeps ALL color math out of render() - the "palette animation" technique.
         for (let i = 0; i < 50; i++) {
             // hue is a position on the color wheel (0 = red, 120 = green, 240 = blue, 360 = back to red).
             // We spread 50 pixels evenly by multiplying i by 17 (about 1/50 of 360).
@@ -158,7 +158,7 @@ class Demo {
     // #region Rendering Helpers
 
     /**
-     * Shows how BT.drawPixel() works -- it draws a single colored dot.
+     * Shows how BT.drawPixel() works - it draws a single colored dot.
      * We draw 50 dots in a pattern, each with a different rainbow color.
      * The colors shift over time because update() rotates them each tick.
      */
@@ -168,7 +168,7 @@ class Demo {
 
         // Draw 50 pixels scattered across a small area.
         // The colors were already computed in update() and stored in palette slots 20..69.
-        // Here we just pass the slot index number -- no Color32 math needed in render()!
+        // Here we just pass the slot index number - no Color32 math needed in render()!
         for (let i = 0; i < 50; i++) {
             // Use a formula to spread the pixels out so they don't all overlap.
             // Multiplying by 13 and 7 spreads them without an obvious pattern.
@@ -181,7 +181,7 @@ class Demo {
     }
 
     /**
-     * Shows how BT.drawLine() works -- it draws a straight line between two points.
+     * Shows how BT.drawLine() works - it draws a straight line between two points.
      * We show three static lines (horizontal, vertical, diagonal) plus one that spins.
      */
     renderLineDemo() {
@@ -217,7 +217,7 @@ class Demo {
     }
 
     /**
-     * Shows how BT.drawRect() works -- it draws just the border of a rectangle (hollow).
+     * Shows how BT.drawRect() works - it draws just the border of a rectangle (hollow).
      * We draw three static rectangles in different colors plus one that pulses in size.
      */
     renderRectOutlineDemo() {
@@ -228,7 +228,7 @@ class Demo {
         BT.drawRect(new Rect2i(140, 45, 30, 30), C_GREEN_SHAPE); // Green outline.
         BT.drawRect(new Rect2i(180, 45, 25, 35), C_BLUE_SHAPE); // Blue outline.
 
-        // A yellow rectangle that pulses -- it grows and shrinks over time.
+        // A yellow rectangle that pulses - it grows and shrinks over time.
         // Math.sin goes smoothly between -1 and +1, so adding 10 to 5*sin gives
         // a size that oscillates between 5 and 15. Math.floor rounds to whole pixels.
         const pulse = Math.floor(10 + Math.sin(this.animTicks * 0.1) * 5);
@@ -239,7 +239,7 @@ class Demo {
     }
 
     /**
-     * Shows how BT.drawRectFill() works -- it fills a rectangle with solid color.
+     * Shows how BT.drawRectFill() works - it fills a rectangle with solid color.
      * Same as the outline demo but these rectangles are filled in.
      */
     renderRectFillDemo() {
@@ -259,12 +259,12 @@ class Demo {
     }
 
     /**
-     * Shows how BT.clearRect() works -- it erases a rectangle back to a specific color.
+     * Shows how BT.clearRect() works - it erases a rectangle back to a specific color.
      * We first draw a grid of blue squares, then erase a moving rectangular chunk.
      * The erased area reveals the background color underneath.
      *
      * IMPORTANT NOTE: clearRect(rect, paletteIndex) takes the RECTANGLE first, then
-     * the color index. The order is different from drawRect(rect, index) -- clearRect
+     * the color index. The order is different from drawRect(rect, index) - clearRect
      * is special because it "paints over" the existing content with a solid color.
      */
     renderClearRectDemo() {
@@ -285,7 +285,7 @@ class Demo {
 
         // Erase a 40x30 rectangle back to the background color.
         // This makes it look like a window is moving across the grid.
-        // Note: clearRect takes (rectangle, paletteIndex) -- rectangle FIRST, then index.
+        // Note: clearRect takes (rectangle, paletteIndex) - rectangle FIRST, then index.
         // This is different from the old API which put the color first!
         BT.clearRect(new Rect2i(clearX, 160, 40, 30), C_BG);
     }

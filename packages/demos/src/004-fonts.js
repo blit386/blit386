@@ -1,11 +1,11 @@
-// Fonts Demo -- shows the built-in system font and palette-animated text effects.
+// Fonts Demo - shows the built-in system font and palette-animated text effects.
 //
 // Demo 004 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics -- https://vancura.dev/articles/blit-tech-basics
+// Prerequisites: 001-Basics - https://vancura.dev/articles/blit-tech-basics
 // Live version: https://vancura.dev/articles/blit-tech-fonts
 //
 // BT.systemPrint() is the simplest way to draw text in Blit-Tech.
-// It uses a built-in 8x8 pixel monospace font that is always available --
+// It uses a built-in 8x8 pixel monospace font that is always available
 // no file loading, no await, no font object to manage.
 //
 // This demo shows:
@@ -35,9 +35,9 @@ const C_GRAY_TEXT = 7; // Light gray: secondary info lines
 const C_DIM_GRAY = 9; // Dim gray: FPS/tick counter
 
 // Dynamic slots: the rainbow text has 18 characters that each need a unique animated color.
-// We reserve palette slots 20..37 -- one slot per character in RAINBOW_TEXT.
+// We reserve palette slots 20..37 - one slot per character in RAINBOW_TEXT.
 // update() computes each character's current hue and stores it here.
-// render() then reads the slot index -- no Color32 math happens during drawing!
+// render() then reads the slot index - no Color32 math happens during drawing!
 const C_RAINBOW_BASE = 20; // slots 20, 21, 22, ... 37 for the 18 rainbow characters
 
 // Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
@@ -78,12 +78,12 @@ class Demo {
 
     /**
      * Sets up the color palette.
-     * Unlike Demo 022, there is no font to load -- BT.systemPrint() needs nothing.
+     * Unlike Demo 022, there is no font to load - BT.systemPrint() needs nothing.
      *
      * @returns {Promise<boolean>} Returns true when ready.
      */
     async init() {
-        // --- Set up the color palette ---
+        // Set up the color palette
         // We pick every color before drawing anything, like an artist mixing paint.
         this.palette = BT.paletteCreate(256);
 
@@ -119,19 +119,19 @@ class Demo {
         // Move the animation clock forward by one update tick's worth of time (1/60 second).
         this.animTime += BT.deltaSeconds();
 
-        // --- Update the pulsing text color ---
+        // Update the pulsing text color
         // Math.sin returns a wave between -1 and +1 that oscillates smoothly.
         // Multiplying by 2 * Math.PI * 3 makes it complete 3 full cycles per second.
         // Adding 0.5 and multiplying by 0.5 shifts the range from [-1,1] to [0,1].
         const pulse = Math.sin(2 * Math.PI * 3 * this.animTime) * 0.5 + 0.5;
         // We drive the alpha (opacity) channel so the text fades in and out in a smooth wave.
-        // RGB stays fixed at (100, 100, 255) -- a soft blue -- while alpha goes from 0 to 255.
+        // RGB stays fixed at (100, 100, 255) - a soft blue - while alpha goes from 0 to 255.
         this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
-        // --- Update the rainbow text character colors ---
+        // Update the rainbow text character colors
         // Each character gets a hue based on its horizontal position and the current time.
         // The system font is monospace: every character is SYSTEM_FONT_CHAR_W pixels wide.
-        let charX = 10; // Starting x position -- same as where render() draws the rainbow text.
+        let charX = 10; // Starting x position - same as where render() draws the rainbow text.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
             // Using charX (actual x position) matches the visual rhythm of the rainbow.
@@ -193,7 +193,7 @@ class Demo {
         // because they expect the original value to stay the same throughout the function.
         let currentY = y;
 
-        // BT.systemPrint(position, paletteSlot, text) -- the slot number IS the color directly.
+        // BT.systemPrint(position, paletteSlot, text) - the slot number IS the color directly.
         // Compare to BT.printFont() which uses a 0-based offset: slot 3 needs offset 2 there.
         BT.systemPrint(new Vector2i(10, currentY), C_RED_TEXT, 'Red Text');
         currentY += 10;
@@ -250,7 +250,7 @@ class Demo {
      */
     renderPulsingText(y) {
         // C_PULSE (slot 38) holds an alpha (transparency) pulse precomputed in update():
-        // RGB stays fixed at (100, 100, 255) -- a soft blue -- and the alpha channel is
+        // RGB stays fixed at (100, 100, 255) - a soft blue - and the alpha channel is
         // animated from 0 to 255 with Math.sin(), so the text fades in and out smoothly
         // rather than shifting hue. The engine blends the palette color against the
         // background at draw time, which is what gives the pulse its smooth look.

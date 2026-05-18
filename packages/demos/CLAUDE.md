@@ -15,10 +15,10 @@ Interactive demos and examples for Blit-Tech, a palette-first WebGPU retro engin
 
 ## Critical Rules
 
-- **No emoji** -- no emoji in code, commits, docs, or UI strings (no exceptions)
-- **Integer coordinates** -- all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
-- **Plain JavaScript** -- demos use ES2022 JS for simplicity (no TypeScript)
-- **Beginner-friendly comments** -- see Documentation Style section below
+- **No emoji** - no emoji in code, commits, docs, or UI strings (no exceptions)
+- **Integer coordinates** - all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
+- **Plain JavaScript** - demos use ES2022 JS for simplicity (no TypeScript)
+- **Beginner-friendly comments** - see Documentation Style section below
 
 ## Project Structure
 
@@ -144,7 +144,7 @@ Demos have relaxed linting compared to the library:
 
 - JSDoc not required (but class-level JSDoc with `@implements {IBlitTechDemo}` is encouraged)
 - Console logging allowed
-- Mutation allowed for demo state -- demo classes may mutate instance properties in `update()` and `render()` for
+- Mutation allowed for demo state - demo classes may mutate instance properties in `update()` and `render()` for
   performance. The global immutability preference does not apply to per-frame demo state.
 
 Focus on clarity and readability over strict documentation.
@@ -229,21 +229,21 @@ Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
 
 Static helpers on those types worth knowing:
 
-- `await SpriteSheet.load(url)` -- loads a PNG as a GPU texture.
-- `sheet.width` / `sheet.height` -- sprite-sheet dimensions in pixels.
-- `sheet.fullRect()` -- returns `Rect2i(0, 0, sheet.width, sheet.height)` for whole-sheet draw calls.
-- `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` -- scans a PNG and registers every unique
+- `await SpriteSheet.load(url)` - loads a PNG as a GPU texture.
+- `sheet.width` / `sheet.height` - sprite-sheet dimensions in pixels.
+- `sheet.fullRect()` - returns `Rect2i(0, 0, sheet.width, sheet.height)` for whole-sheet draw calls.
+- `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` - scans a PNG and registers every unique
   opaque color into `palette` starting at `startSlot`. Returns the registered `Color32[]` in palette-write order (sorted
   darkest-first by luminance by default; pass `{ sort: 'none' }` to keep raster scan order). Use this whenever a demo
   needs a sprite's colors in the palette so subsequent `sheet.indexize(palette)` resolves.
-- `Color32#luminance` -- perceived (Rec.601) brightness in the 0..255 range. Use this instead of writing inline
+- `Color32#luminance` - perceived (Rec.601) brightness in the 0..255 range. Use this instead of writing inline
   `0.299*r + 0.587*g + 0.114*b` formulas in demos.
-- `Color32#multiply(other)` -- component-wise color multiply, returns a new Color32. Use this for ambient tints and
+- `Color32#multiply(other)` - component-wise color multiply, returns a new Color32. Use this for ambient tints and
   team-color modulation instead of writing your own helper.
-- `Color32.fromHex('#ff8800')` and `Color32.resolveNamedColor('cornflowerblue')` -- use these when a demo needs to parse
+- `Color32.fromHex('#ff8800')` and `Color32.resolveNamedColor('cornflowerblue')` - use these when a demo needs to parse
   user/authored string colors. You can extend names with `registerColor`, `updateColor`, and `unregisterColor`.
-- `palette.applyHUD(startSlot?)` -- fills six contiguous slots starting at `startSlot` (default 1) with the canonical
-  HUD colors (white, background, label gray, header gold, dim gray, code blue) and registers named aliases (`hud_white`,
+- `palette.applyHUD(startSlot?)` - fills six contiguous slots starting at `startSlot` (default 1) with the canonical HUD
+  colors (white, background, label gray, header gold, dim gray, code blue) and registers named aliases (`hud_white`,
   `hud_bg`, `hud_label`, `hud_header`, `hud_dim`, `hud_code`). Eliminates the repetitive `palette.set()` boilerplate for
   UI text colors. Call in `init()` before `BT.paletteSet()`.
 

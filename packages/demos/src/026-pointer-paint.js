@@ -1,4 +1,4 @@
-// Pointer Paint Demo -- multi-touch finger painting with mouse + up to 3 touches.
+// Pointer Paint Demo - multi-touch finger painting with mouse + up to 3 touches.
 //
 // Demo 026 in the Blit-Tech demo series.
 // Prerequisites: 025-Pointer Basics

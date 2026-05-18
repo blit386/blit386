@@ -1,4 +1,4 @@
-// Pointer Drag-and-Flick Demo -- grab balls, drag them, release to throw.
+// Pointer Drag-and-Flick Demo - grab balls, drag them, release to throw.
 //
 // Demo 027 in the Blit-Tech demo series.
 // Prerequisites: 025-Pointer Basics, 026-Pointer Paint
@@ -9,7 +9,7 @@
 //
 //   - Three balls bounce around inside a closed box under gravity.
 //   - Click and HOLD on a ball to grab it (the ball follows the pointer).
-//   - RELEASE to throw it -- the release-frame `BT.pointerDelta` becomes the
+//   - RELEASE to throw it - the release-frame `BT.pointerDelta` becomes the
 //     ball's launch velocity.
 //
 // On a touchscreen each finger can grab its own ball; up to three balls can

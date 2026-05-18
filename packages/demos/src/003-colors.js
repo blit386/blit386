@@ -1,6 +1,6 @@
 // @pageTitle Blit-Tech Demo 003 - Colors
 //
-// Colors Demo -- a deep dive into Color32 and palettes in Blit-Tech.
+// Colors Demo - a deep dive into Color32 and palettes in Blit-Tech.
 //
 // Demo 003 in the Blit-Tech demo series, written for young learners (around 12)
 // who are getting comfortable with code. You will see:
@@ -16,9 +16,9 @@
 //
 // Live version: https://vancura.dev/articles/blit-tech-colors
 //
-// IMPORTANT -- palettes and how they changed from older demos:
+// IMPORTANT - palettes and how they changed from older demos:
 //
-//   The engine now uses a "palette" -- a table of up to 256 numbered colors.
+//   The engine now uses a "palette" - a table of up to 256 numbered colors.
 //   Instead of passing a Color32 to every draw call, you pick a number (an "index")
 //   from the palette. Think of it like numbered paint cans: you choose which can to use,
 //   not the exact mix of paint every time you pick up the brush.
@@ -26,9 +26,9 @@
 //   Static colors (named swatches, alpha layers) go into the palette once during init().
 //   Animated colors (HSL rainbow, lerp gradient, pulse) are recalculated every tick
 //   inside update() and written back into their reserved palette slots.
-//   render() only ever uses palette index numbers -- no Color32 objects there.
+//   render() only ever uses palette index numbers - no Color32 objects there.
 //
-// IMPORTANT -- update() ticks vs render() frames:
+// IMPORTANT - update() ticks vs render() frames:
 //   update() runs at a fixed rate (here, 60 times per second when the tab is active).
 //   Each call to update() is one "tick". Our animTime adds 1/60 on every tick, so after
 //   60 ticks (about one second), animTime is about 1.0. That is time measured in ticks,
@@ -43,36 +43,36 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 //
 // These numbers are the palette "addresses". We name them so the code is readable.
-// Index 0 is always transparent and reserved -- never assign to it.
+// Index 0 is always transparent and reserved - never assign to it.
 
 // Basic colors (set once in init, never change).
-const C_WHITE = 1; // Pure white -- font base and section headers.
+const C_WHITE = 1; // Pure white - font base and section headers.
 const C_BG = 2; // Dark gray-blue background.
-const C_BLACK = 3; // Pure black -- labels on light-colored swatches.
-const C_RED = 4; // Color32.red -- (255, 0, 0).
-const C_GREEN_N = 5; // Color32.green -- (0, 255, 0).
-const C_BLUE_N = 6; // Color32.blue -- (0, 0, 255).
-const C_YELLOW_N = 7; // Color32.yellow -- (255, 255, 0).
-const C_CYAN_N = 8; // Color32.cyan -- (0, 255, 255).
-const C_MAGENTA_N = 9; // Color32.magenta -- (255, 0, 255).
+const C_BLACK = 3; // Pure black - labels on light-colored swatches.
+const C_RED = 4; // Color32.red - (255, 0, 0).
+const C_GREEN_N = 5; // Color32.green - (0, 255, 0).
+const C_BLUE_N = 6; // Color32.blue - (0, 0, 255).
+const C_YELLOW_N = 7; // Color32.yellow - (255, 255, 0).
+const C_CYAN_N = 8; // Color32.cyan - (0, 255, 255).
+const C_MAGENTA_N = 9; // Color32.magenta - (255, 0, 255).
 
 // Semi-transparent versions for the RGB mix section.
-const C_MIX_RED_A = 10; // (255, 0, 0, 140) -- translucent red.
-const C_MIX_GREEN_A = 11; // (0, 255, 0, 140) -- translucent green.
-const C_MIX_BLUE_A = 12; // (0, 0, 255, 140) -- translucent blue.
+const C_MIX_RED_A = 10; // (255, 0, 0, 140) - translucent red.
+const C_MIX_GREEN_A = 11; // (0, 255, 0, 140) - translucent green.
+const C_MIX_BLUE_A = 12; // (0, 0, 255, 140) - translucent blue.
 
 // Alpha-layered colors for the alpha demo section.
-const C_ALPHA_BASE = 13; // (255, 140, 40, 255) -- opaque orange base.
-const C_ALPHA_1 = 14; // (80, 120, 255, 180) -- semi-transparent blue.
-const C_ALPHA_2 = 15; // (200, 80, 200, 140) -- semi-transparent purple.
-const C_ALPHA_3 = 16; // (120, 255, 120, 100) -- semi-transparent green.
-const C_ALPHA_4 = 17; // (255, 255, 255, 70)  -- almost-invisible white.
+const C_ALPHA_BASE = 13; // (255, 140, 40, 255) - opaque orange base.
+const C_ALPHA_1 = 14; // (80, 120, 255, 180) - semi-transparent blue.
+const C_ALPHA_2 = 15; // (200, 80, 200, 140) - semi-transparent purple.
+const C_ALPHA_3 = 16; // (120, 255, 120, 100) - semi-transparent green.
+const C_ALPHA_4 = 17; // (255, 255, 255, 70)  - almost-invisible white.
 
 // Lerp endpoints (the two colors being blended).
-const C_LERP_A = 18; // (180, 40, 220) -- purple.
-const C_LERP_B = 19; // (40, 220, 160) -- teal.
+const C_LERP_A = 18; // (180, 40, 220) - purple.
+const C_LERP_B = 19; // (40, 220, 160) - teal.
 
-// Dynamic slots -- recalculated every tick in update().
+// Dynamic slots - recalculated every tick in update().
 
 // HSL rainbow strip: 64 hue slots covering the full 0..360 degree color wheel.
 // Slot C_HSL_BASE+i represents the color for column group i.
@@ -93,7 +93,7 @@ const C_PULSE = 126;
 /**
  * Shows how Color32 works: RGB names, mixing, HSL rainbow, alpha, and lerp.
  * All animated colors are computed in update() and stored in palette slots.
- * render() uses only palette index numbers -- no Color32 objects there.
+ * render() uses only palette index numbers - no Color32 objects there.
  *
  * @implements {IBlitTechDemo}
  */
@@ -123,10 +123,10 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
-        // --- Step 1: Create the palette ---
+        // Step 1: Create the palette
         this.palette = BT.paletteCreate(256);
 
-        // --- Step 2: Fill in static colors ---
+        // Step 2: Fill in static colors
 
         // Basic colors.
         this.palette.set(C_WHITE, new Color32(255, 255, 255));
@@ -154,7 +154,7 @@ class Demo {
         this.palette.set(C_ALPHA_3, new Color32(120, 255, 120, 100));
         this.palette.set(C_ALPHA_4, new Color32(255, 255, 255, 70));
 
-        // Lerp endpoints -- the two colors the gradient blends between.
+        // Lerp endpoints - the two colors the gradient blends between.
         this.lerpColorA = new Color32(180, 40, 220); // Purple.
         this.lerpColorB = new Color32(40, 220, 160); // Teal.
         this.palette.set(C_LERP_A, this.lerpColorA);
@@ -163,7 +163,7 @@ class Demo {
         // HSL, lerp gradient, and pulse slots are left empty here.
         // update() will fill them before the first frame is drawn.
 
-        // --- Step 3: Activate the palette ---
+        // Step 3: Activate the palette
         BT.paletteSet(this.palette);
 
         return true;
@@ -180,7 +180,7 @@ class Demo {
         // Add one tick's worth of seconds. At 60 ticks per second, each tick is 1/60 of a second.
         this.animTime += BT.deltaSeconds();
 
-        // --- HSL rainbow: 64 animated hue slots ---
+        // HSL rainbow: 64 animated hue slots
         // Each slot gets a hue based on its position on the color wheel PLUS
         // a time-based scroll offset so the whole rainbow moves over time.
         const scroll = this.animTime * 90; // 90 degrees per second.
@@ -196,7 +196,7 @@ class Demo {
             this.palette.set(C_HSL_BASE + i, Color32.fromHSL(hue, 100, 50));
         }
 
-        // --- Lerp gradient: 32 sliding color steps ---
+        // Lerp gradient: 32 sliding color steps
         // phase01 cycles from 0 to 1 repeatedly, making the gradient appear to travel.
         const phase = this.animTime * 0.35; // Speed of the scroll.
         const phase01 = phase - Math.floor(phase); // Only the fractional part (0..1).
@@ -212,7 +212,7 @@ class Demo {
             this.palette.set(C_LERP_BASE + j, this.lerpColorA.lerp(this.lerpColorB, t));
         }
 
-        // --- Pulse: one color that breathes back and forth ---
+        // Pulse: one color that breathes back and forth
         // Math.sin() returns a wave between -1 and 1.
         // We shift it to 0..1 by adding 1 and dividing by 2.
         const sinVal = Math.sin(this.animTime * 2.5);
@@ -327,7 +327,7 @@ class Demo {
      * Draws one horizontal strip where each column group uses a palette slot from C_HSL_BASE.
      *
      * The HSL slots are updated in update() so the rainbow scrolls over time.
-     * This function only maps each x column to the right slot -- no Color32 objects needed.
+     * This function only maps each x column to the right slot - no Color32 objects needed.
      *
      * Hue is an angle 0..360 on a color wheel. 64 slots cover the whole wheel in steps.
      */
@@ -360,7 +360,7 @@ class Demo {
 
         const box = new Rect2i(20, 138, 200, 40);
 
-        // Bottom layer: fully opaque orange -- you always see this one.
+        // Bottom layer: fully opaque orange - you always see this one.
         BT.drawRectFill(box, C_ALPHA_BASE);
 
         // Each new layer is more transparent so you still see the orange through them.

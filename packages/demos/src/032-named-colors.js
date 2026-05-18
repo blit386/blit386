@@ -1,6 +1,6 @@
 // @pageTitle Blit-Tech Demo 032 - Named Colors
 //
-// Named Colors Demo -- Color32 named lookup table and custom registration APIs.
+// Named Colors Demo - Color32 named lookup table and custom registration APIs.
 //
 // Demo 032 in the Blit-Tech demo series.
 //

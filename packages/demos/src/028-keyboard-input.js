@@ -1,4 +1,4 @@
-// Keyboard Input Demo -- face buttons, raw keys, and typed text.
+// Keyboard Input Demo - face buttons, raw keys, and typed text.
 //
 // Demo 028 in the Blit-Tech demo series.
 // Prerequisites: 001-Basics, 025-Pointer-Basics (pointer vs keyboard).
@@ -21,7 +21,7 @@
 // - Hold **Q** to see `keyDown`; tap **F** and watch the release line.
 // - Hold **H** to see `keyPressed(..., 15)` fire on an edge and then every 15 ticks.
 // - Type letters into the buffer line at the bottom.
-// - If keys stop responding, click the canvas — focus may have moved to another
+// - If keys stop responding, click the canvas - focus may have moved to another
 //   part of the page after you tabbed away.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
@@ -67,11 +67,11 @@ class Demo {
     lastFReleaseMessage = 'Tap F to see keyReleased';
 
     // Running count of how many times `BT.keyPressed('KeyH', …)` was true this run
-    // (initial edge plus tick repeats). Resets when H is not pressed for a moment — we
+    // (initial edge plus tick repeats). Resets when H is not pressed for a moment - we
     // just show the count while testing; a simple visual for repeat firing.
     hPressStreak = 0;
 
-    // Text built from `BT.inputString()` over time (capped).
+    // Text built from `BT.inputString` over time (capped).
     typedBuffer = '';
 
     // #endregion
@@ -107,7 +107,7 @@ class Demo {
      * Read keyboard state after the engine has updated input for this tick.
      */
     update() {
-        // --- Raw key: release edge for F ---
+        // Raw key: release edge for F
         // `keyReleased` is true only on the frame the key goes up, like a doorbell
         // when you let go.
         if (BT.keyReleased('KeyF')) {
@@ -115,10 +115,10 @@ class Demo {
             this.lastFReleaseMessage = `keyReleased(KeyF) at tick ${tick}`;
         }
 
-        // --- Raw key: Q held ---
+        // Raw key: Q held
         // We only use this boolean inside render for a label; no state needed.
 
-        // --- Raw key: H with fixed tick repeat ---
+        // Raw key: H with fixed tick repeat
         // `keyPressed` with a second number repeats every N ticks after the first
         // press (same clock as `BT.ticks()`).
         if (BT.keyPressed('KeyH', KEY_H_REPEAT_TICKS)) {
@@ -130,7 +130,7 @@ class Demo {
             this.hPressStreak = 0;
         }
 
-        // --- Text buffer ---
+        // Text buffer
         // Characters arrive for this frame only; concat now or they are gone next frame.
         const chunk = BT.inputString();
 

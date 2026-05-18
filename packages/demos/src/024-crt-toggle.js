@@ -16,8 +16,8 @@
 // The bouncing keeps going either way, so you can compare the two looks side by side.
 //
 // Notice that the lines stay STRAIGHT through the toggle: barrel distortion is display-tier,
-// so it runs on RGBA after palette resolve + upscale to the canvas size — not on the
-// 320x240 index buffer — which avoids stair-step artifacts on diagonals.
+// so it runs on RGBA after palette resolve + upscale to the canvas size - not on the
+// 320x240 index buffer - which avoids stair-step artifacts on diagonals.
 //
 // WHAT YOU WILL LEARN
 //   - How to add and remove a STACK of post-process effects at runtime.
@@ -145,7 +145,7 @@ class Demo {
     }
 
     async init() {
-        // -- Step 1: build the palette --
+        // Step 1: build the palette
         // A small, colorful palette. Bright primaries make the CRT effect visually
         // obvious - soft pastels would look the same with or without.
         const palette = BT.paletteCreate(16);
@@ -159,7 +159,7 @@ class Demo {
         palette.set(C_MAGENTA, Color32.magenta);
         BT.paletteSet(palette);
 
-        // -- Step 2: build the CRT preset ONCE up front --
+        // Step 2: build the CRT preset ONCE up front
         // BT.preset.crtPipBoy() returns a fresh array of pre-configured display-tier
         // effects (BarrelDistortion + ChromaticAberration + Interference + RollLine +
         // Scanlines + RGBMask + Vignette + Noise + Flicker + Bloom).
@@ -170,22 +170,22 @@ class Demo {
         // same.
         this.crtStack = BT.preset.crtPipBoy();
 
-        // -- Step 3: pick out the time-driven effects so update() can animate them --
+        // Step 3: pick out the time-driven effects so update() can animate them
         // Some effects (RollLine, Noise, Interference) animate using a `time` field;
         // we filter the array once and remember the references so we don't iterate
         // the whole stack on every frame.
         this.timedEffects = this.crtStack.filter((fx) => 'time' in fx);
 
-        // -- Step 4: start in the OFF state --
+        // Step 4: start in the OFF state
         // Demo 023 already shows what the CRT looks like straight away; here it's nicer
         // to begin clean and then have the effect arrive after the first toggle.
         this.crtEnabled = false;
         this.lastToggleTick = BT.ticks();
 
-        // -- Step 5: place the bouncing squares --
+        // Step 5: place the bouncing squares
         // Place them evenly across the bottom half so they don't all start in the same
         // spot. Each square keeps its own position (pos) and velocity (vel) as Vector2i
-        // instances -- the engine convention for all pixel-level coordinates.
+        // instances - the engine convention for all pixel-level coordinates.
         this.squares = [];
         for (let i = 0; i < SQUARE_COUNT; i++) {
             this.squares.push({

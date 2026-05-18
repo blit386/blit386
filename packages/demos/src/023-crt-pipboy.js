@@ -33,13 +33,13 @@
 // writes a new one, and the last effect in the display chain writes to the swap chain.
 //
 // Pixel-tier effects (e.g. PixelGlitch) operate on the logical framebuffer, which stores
-// palette slot indices (GPU format r8uint) at 320x240 — not full RGBA yet. They stay
+// palette slot indices (GPU format r8uint) at 320x240 - not full RGBA yet. They stay
 // palette-native: integer texture reads, no averaging into fake in-between colors.
 //
 // Next the engine runs palette LUT resolve plus upscale: each index becomes a real RGBA
 // color and the image grows to the canvas size (here 1280x960). Display-tier effects
 // (e.g. BarrelDistortion, Scanlines) run on that RGBA output. Crucially, BarrelDistortion
-// does NOT bend the curve on the 320x240 index grid — lines stay smooth instead of
+// does NOT bend the curve on the 320x240 index grid - lines stay smooth instead of
 // breaking into stair-steps.
 //
 // HOW THE GLITCH STATE MACHINE WORKS
@@ -179,7 +179,7 @@ const FLICKER_BASE = 1.0;
 const FLICKER_DIP = 0.6;
 
 // Resting values the glitch state machine returns to between bursts.
-// ABERRATION_BASE is 0 so the screen is clean between bursts -- chromasplit
+// ABERRATION_BASE is 0 so the screen is clean between bursts - chromasplit
 // glitches then clearly pop the channel split on from nothing rather than
 // boosting an already-visible split. NOISE_BASE is the constant faint grain.
 const ABERRATION_BASE = 0;
@@ -288,7 +288,7 @@ class Demo {
     }
 
     async init() {
-        // -- Step 1: build the palette --
+        // Step 1: build the palette
         // Six colors. Every effect on screen comes from these.
         const palette = BT.paletteCreate(16);
         palette.set(C_BG, new Color32(8, 14, 8, 255)); // Almost-black with green tint
@@ -299,20 +299,20 @@ class Demo {
         palette.set(C_AMBER, new Color32(220, 180, 60, 255)); // Vault-Tec amber accent
         BT.paletteSet(palette);
 
-        // -- Step 2: load the bitmap font --
+        // Step 2: load the bitmap font
         // PragmataPro is a monospaced programming font - a perfect fit for a fictional
         // terminal. The .btfont is a Blit-Tech bitmap font: a PNG glyph atlas plus a
         // small JSON describing each character's bounds.
         this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
 
-        // -- Step 3: indexize the font --
+        // Step 3: indexize the font
         // The font is loaded as a sprite sheet of white pixels. "Indexize" walks every
         // pixel, looks up its color in the palette, and replaces the pixel with the
         // matching slot index. After this, the font's pixels carry index = C_WHITE, and
         // BT.printFont can shift that index by an offset to recolor the glyphs at draw time.
         this.font.getSpriteSheet().indexize(palette);
 
-        // -- Step 4: pixel-tier effect (chunky glitch) --
+        // Step 4: pixel-tier effect (chunky glitch)
         // PixelGlitch reads/writes the logical index buffer (320x240 r8uint) so band shifts
         // stay palette-native. If the same shift ran after resolve + upscale, each band
         // would span multiple output pixels and lose the chunky retro look.
@@ -321,13 +321,13 @@ class Demo {
         this.pixelGlitch.intensity = 0; // 0 = no glitch right now (state machine will spike it)
         BT.effectAdd(this.pixelGlitch); // tier='pixel' on the effect routes this automatically
 
-        // -- Step 5: display-tier stack --
+        // Step 5: display-tier stack
         // Order matters: barrel first (warps the UVs the rest of the chain inherits),
         // then color/signal artifacts, then scanlines and mask, then noise, then flicker,
         // and finally bloom on top of the modulated image.
 
         // Pincushion barrel distortion: simulates the curved glass of a CRT tube. Because
-        // this runs AFTER palette resolve + upscale, the curve is computed at 1280x960 —
+        // this runs AFTER palette resolve + upscale, the curve is computed at 1280x960
         // lines stay smooth. (Bending earlier on the 320x240 grid would quantize the curve
         // and produce visible step artifacts on diagonals.)
         this.barrel = new BarrelDistortion();
@@ -400,12 +400,12 @@ class Demo {
             BT.effectAdd(fx);
         }
 
-        // -- Step 6: boot animation timer --
+        // Step 6: boot animation timer
         // We use ticks instead of wall-clock so the boot animation stays deterministic
         // even if the browser frame rate hiccups.
         this.bootStartTick = BT.ticks();
 
-        // -- Step 7: glitch state machine state --
+        // Step 7: glitch state machine state
         // See the file header for what each field means. We start in a long cooldown so
         // the first burst doesn't fire on frame 1.
         this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);

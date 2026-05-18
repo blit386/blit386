@@ -1,4 +1,4 @@
-// Demo 011 -- Starfield: parallax scrolling stars that feel like 3D depth.
+// Demo 011 - Starfield: parallax scrolling stars that feel like 3D depth.
 //
 // Demo 011 in the Blit-Tech demo series (written for readers about 12 years old).
 //
@@ -13,7 +13,7 @@
 // Three layers of stars scroll to the left at different speeds. Stars that are
 // "far away" move slowly and look dim and tiny. Stars that are "close" move fast
 // and look bright and a little bigger. Your brain reads that mix as depth, even
-// though the screen is flat -- like looking out a car window: nearby trees zip
+// though the screen is flat - like looking out a car window: nearby trees zip
 // past, but faraway mountains barely seem to move.
 //
 // WHAT YOU WILL LEARN
@@ -26,7 +26,7 @@
 // Every star has a unique brightness (how bright its gray color is). Instead of
 // making a new Color32 every frame, we register each star's gray color in the
 // palette once at startup and store the palette slot number on the star.
-// render() just reads that slot number -- no Color32 objects needed per frame.
+// render() just reads that slot number - no Color32 objects needed per frame.
 //
 // The engine splits work the usual way: update() moves things; render() only draws.
 // See the Basics demo for the full story: https://vancura.dev/articles/blit-tech-basics
@@ -55,7 +55,7 @@ const NEAR_STAR_SIZE = 2;
 const STAR_SLOT_START = 10;
 
 // Static color slots.
-const C_WHITE = 1; // White -- font base color.
+const C_WHITE = 1; // White - font base color.
 const C_BG = 2; // Deep space background (very dark blue-black).
 const C_TITLE = 3; // Light blue-white for the title text.
 const C_LABEL = 4; // Dim blue-gray for the layer description lines.
@@ -85,7 +85,7 @@ class Demo {
     mediumStars = [];
     nearStars = [];
 
-    // Shooting star: not an array -- only one at a time, or none.
+    // Shooting star: not an array - only one at a time, or none.
     // When active is false, we ignore the numbers until we spawn again.
     shootingStar = {
         active: false,
@@ -110,14 +110,14 @@ class Demo {
      *   1. Create palette and register static colors.
      *   2. Build the star layers (this decides each star's brightness).
      *   3. Register each star's gray color in the palette, store the slot on the star.
-     *   4. BT.paletteSet() -- tell the engine to use this palette.
+     *   4. BT.paletteSet() - tell the engine to use this palette.
      *
      * @returns {Promise<boolean>}
      */
     async init() {
         console.log('[StarfieldDemo] Initializing...');
 
-        // --- Step 1: Create palette and static colors ---
+        // Step 1: Create palette and static colors
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255));
@@ -128,7 +128,7 @@ class Demo {
         this.palette.set(C_FPS, new Color32(90, 95, 110)); // Very dim FPS counter.
         this.palette.set(C_STREAK, new Color32(230, 240, 255)); // Cool white shooting streak.
 
-        // --- Step 2: Build the three star layers ---
+        // Step 2: Build the three star layers
         // Each helper picks random positions, speeds, and brightness values in the given ranges.
         // Far stars: slow (0.3..0.5 pixels/tick), dim (80..120 brightness).
         // Medium stars: medium (0.8..1.2), brighter (150..200).
@@ -137,7 +137,7 @@ class Demo {
         this.mediumStars = this.createStarLayerData(MEDIUM_STAR_COUNT, 0.8, 1.2, 150, 200);
         this.nearStars = this.createStarLayerData(NEAR_STAR_COUNT, 1.5, 2.5, 220, 255);
 
-        // --- Step 3: Register each star's color in the palette ---
+        // Step 3: Register each star's color in the palette
         // We walk all three layers in one pass, giving each star its own slot number.
         // new Color32(b, b, b) makes a neutral gray: equal red, green, and blue.
         let slot = STAR_SLOT_START;
@@ -163,7 +163,7 @@ class Demo {
             slot++;
         }
 
-        // --- Activate the palette ---
+        // Activate the palette
         BT.paletteSet(this.palette);
 
         // Start the shooting-star timer at a pleasant "about 200 ticks" delay.
@@ -209,7 +209,7 @@ class Demo {
 
     /**
      * Build one layer's raw data: count stars with random positions and brightness.
-     * Returns objects with { x, y, speed, brightness } -- paletteIndex is added later
+     * Returns objects with { x, y, speed, brightness } - paletteIndex is added later
      * in init() once the palette is ready.
      *
      * Math.random() returns a fraction from 0 up to (but not including) 1.
@@ -273,7 +273,7 @@ class Demo {
      */
     updateShootingStar() {
         if (this.shootingStar.active) {
-            // Very fast compared to normal stars -- several pixels per tick.
+            // Very fast compared to normal stars - several pixels per tick.
             this.shootingStar.headX -= 14;
 
             // A gentle downward drift sells the "falling" look.
@@ -383,7 +383,7 @@ class Demo {
         BT.systemPrint(new Vector2i(8, 38), C_LABEL, 'MED: faster, brighter pixel');
         BT.systemPrint(new Vector2i(8, 54), C_LABEL, 'NEAR: fastest, bright 2x2 block');
 
-        BT.systemPrint(new Vector2i(8, 200), C_TIP, 'Tip: like a car window -- close stuff moves faster.');
+        BT.systemPrint(new Vector2i(8, 200), C_TIP, 'Tip: like a car window - close stuff moves faster.');
 
         BT.systemPrint(new Vector2i(230, 220), C_FPS, `FPS: ${BT.fps()}`);
     }

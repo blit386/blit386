@@ -1,16 +1,16 @@
-// Demo 012 -- Tilemap: build a grid world from a 2D array and scroll the camera across it.
+// Demo 012 - Tilemap: build a grid world from a 2D array and scroll the camera across it.
 //
 // Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
 // 002-Primitives (https://vancura.dev/articles/blit-tech-primitives),
 // 007-Camera (https://vancura.dev/articles/blit-tech-camera),
-// 008-Sprites (https://vancura.dev/articles/blit-tech-sprites) -- same idea of arranging
+// 008-Sprites (https://vancura.dev/articles/blit-tech-sprites) - same idea of arranging
 // art on a grid, but here we use colored rectangles instead of a sprite sheet image.
 //
 // Live walkthrough: https://vancura.dev/articles/blit-tech-tilemap
 //
 // A "tilemap" is like a floor made of same-sized square tiles. Each cell in a 2D array
 // (a list of rows, each row a list of columns) stores a small number that means "which
-// kind of tile goes here" -- like a Lego instruction sheet that says which brick color
+// kind of tile goes here" - like a Lego instruction sheet that says which brick color
 // fits each stud. The computer walks the grid with nested loops (one loop for rows,
 // one loop for columns) and draws only the tiles the camera can see, which is faster
 // than drawing thousands of off-screen tiles nobody would see.
@@ -28,7 +28,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 // These numbers are the "tile IDs" stored inside the 2D array.
 // Using named constants helps you remember what each number means when you read the map.
-const TILE_SKY = 0; // Empty air -- we skip drawing and let the sky clear color show through.
+const TILE_SKY = 0; // Empty air - we skip drawing and let the sky clear color show through.
 const TILE_GRASS = 1; // Green ground.
 const TILE_DIRT = 2; // Brown earth below or beside grass.
 const TILE_STONE = 3; // Gray rocks.
@@ -48,7 +48,7 @@ const WORLD_HEIGHT_PX = MAP_HEIGHT_TILES * TILE_SIZE;
 
 // Each color in this demo has a reserved palette slot (a number from 1 upward).
 // Index 0 is always transparent. Giving each slot a name makes the drawing code
-// easier to read -- "draw in C_GRASS" is clearer than "draw in index 5."
+// easier to read - "draw in C_GRASS" is clearer than "draw in index 5."
 const C_WHITE = 1; // Pure white: font base color, mini-map border
 const C_SKY = 2; // Soft sky blue: fills the screen background
 const C_HUD_BAR = 3; // Semi-transparent black: the dark bar behind the HUD text
@@ -112,8 +112,8 @@ class Demo {
     async init() {
         console.log('[TilemapDemo] Initializing...');
 
-        // --- Set up the color palette ---
-        // A palette is like an artist's paint tray -- we choose all our colors BEFORE
+        // Set up the color palette
+        // A palette is like an artist's paint tray - we choose all our colors BEFORE
         // drawing anything. Each color gets a number (an "index") that we use in draw calls.
         this.palette = BT.paletteCreate(256);
 
@@ -173,13 +173,13 @@ class Demo {
         this.cameraPos = BT.cameraClamp(this.cameraPos, new Vector2i(WORLD_WIDTH_PX, WORLD_HEIGHT_PX), viewSize);
 
         // From this point until BT.cameraReset(), all drawing uses world coordinates
-        // shifted by this offset -- like sliding a picture under a fixed window.
+        // shifted by this offset - like sliding a picture under a fixed window.
         BT.cameraSet(this.cameraPos);
 
-        // --- Update the animated water color in the palette ---
+        // Update the animated water color in the palette
         // Instead of computing a new Color32 inside render() every frame, we compute it
         // here in update() and store it in the reserved C_WATER palette slot.
-        // render() can then just write C_WATER as a plain number -- no Color32 needed there.
+        // render() can then just write C_WATER as a plain number - no Color32 needed there.
         // This "palette animation" technique is how retro hardware made water shimmer!
         const waterPulse = Math.sin(BT.ticks() * 0.12); // a slow gentle wave between -1 and +1
         const waterBlue = Math.floor(210 + waterPulse * 28); // shifts the blue channel 28 units up and down
@@ -338,7 +338,7 @@ class Demo {
                 this.tileRect.set(worldX, worldY, TILE_SIZE, TILE_SIZE);
 
                 // Pick the palette index for this tile ID. if / else if is like a menu: first match wins.
-                // We pass just a number (C_GRASS, C_DIRT, etc.) -- the palette knows the actual color.
+                // We pass just a number (C_GRASS, C_DIRT, etc.) - the palette knows the actual color.
                 if (id === TILE_GRASS) {
                     BT.drawRectFill(this.tileRect, C_GRASS);
                 } else if (id === TILE_DIRT) {
@@ -346,7 +346,7 @@ class Demo {
                 } else if (id === TILE_STONE) {
                     BT.drawRectFill(this.tileRect, C_STONE);
                 } else if (id === TILE_WATER) {
-                    // C_WATER is the animated water slot -- update() already set its color this frame.
+                    // C_WATER is the animated water slot - update() already set its color this frame.
                     BT.drawRectFill(this.tileRect, C_WATER);
                 } else if (id === TILE_TREE_TOP) {
                     BT.drawRectFill(this.tileRect, C_TREE_TOP);
@@ -406,7 +406,7 @@ class Demo {
 
                 // Pick a palette index for each tile type.
                 // Using C_SKY for sky tiles shows the background color as the map background.
-                // We use C_MINIMAP_WATER for water on the mini-map -- this is a static shade,
+                // We use C_MINIMAP_WATER for water on the mini-map - this is a static shade,
                 // not the animated C_WATER, so the mini-map stays calm even as the tiles shimmer.
                 let c = C_SKY;
                 if (id === TILE_GRASS) {

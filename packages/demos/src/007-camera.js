@@ -1,4 +1,4 @@
-// Demo 007 -- Camera: shows how to scroll a view over a world larger than the screen.
+// Demo 007 - Camera: shows how to scroll a view over a world larger than the screen.
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
 // (https://vancura.dev/articles/blit-tech-basics) and shapes in Demo 002-Primitives
@@ -8,13 +8,13 @@
 //
 // How BT.cameraSet() works: a positive camera offset shifts the view to the right, so the
 // world appears to scroll left on the screen. A positive X offset means the camera is
-// looking that many pixels to the right of the world's left edge -- for example, an X
+// looking that many pixels to the right of the world's left edge - for example, an X
 // offset of 200 shows the world starting 200 pixels in from the left (like the camera
 // moved 200 steps east along the map).
 //
 // Imagine looking through a window: the window doesn't move, but you can shift
 // what part of the outside world you see through it. That's exactly what a camera
-// does in a game. The "camera" here is just an offset -- how far we've scrolled
+// does in a game. The "camera" here is just an offset - how far we've scrolled
 // the view to the right and down.
 //
 // This demo creates a 800x600 pixel world (bigger than the 320x240 screen),
@@ -78,7 +78,7 @@ class Demo {
     // (0,0) means the top-left corner of the world is visible.
     cameraPos = new Vector2i(0, 0);
 
-    // A stationary red square we call the "player" -- it stays in place
+    // A stationary red square we call the "player" - it stays in place
     // while the camera moves around it.
     playerPos = new Vector2i(400, 300);
 
@@ -113,13 +113,13 @@ class Demo {
      * @returns {Promise<boolean>} Returns true when ready to run.
      */
     async init() {
-        // --- Set up the color palette ---
+        // Set up the color palette
         // Think of a palette like an artist choosing paint colors before painting a picture.
         // Every color we might draw with gets a numbered slot. We set the static colors
         // first, then add the 20 random building colors when we generate the buildings.
         this.palette = BT.paletteCreate(256);
 
-        // Static colors -- these are the same every time the demo runs.
+        // Static colors - these are the same every time the demo runs.
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_SKY, new Color32(135, 206, 235)); // sky blue background
         this.palette.set(C_GRID, new Color32(100, 180, 100)); // medium green for the ground grid

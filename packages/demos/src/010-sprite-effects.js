@@ -1,4 +1,4 @@
-// Demo 010 -- Sprite Effects: shows how to use palette offsets to create game effects.
+// Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
 //
 // Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
 // 008-Sprites (https://vancura.dev/articles/blit-tech-sprites).
@@ -36,7 +36,7 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech
 // Must be above the highest UI slot (C_FPS = 11) to avoid overwriting UI colors.
 const SPRITE_BASE = 12;
 
-// Placeholder for "how many unique colors in the sprite" -- set during init().
+// Placeholder for "how many unique colors in the sprite" - set during init().
 // We use 0 here and update it after extracting colors.
 let N = 0; // Each theme block is N entries wide.
 
@@ -58,9 +58,9 @@ const C_FPS = 11; // (100, 100, 100) dim FPS.
 // Blocks 0..7 are static; blocks 8..12 are dynamic (updated in update()).
 //
 // Block 0 (offset 0):         Original stone colors.
-// Block 1 (offset N):         Silhouette -- all colors near-black.
-// Block 2 (offset 2*N):       Damage white -- all colors bright white.
-// Block 3 (offset 3*N):       Damage red -- all colors shifted red.
+// Block 1 (offset N):         Silhouette - all colors near-black.
+// Block 2 (offset 2*N):       Damage white - all colors bright white.
+// Block 3 (offset 3*N):       Damage red - all colors shifted red.
 // Block 4 (offset 4*N):       Team red.
 // Block 5 (offset 5*N):       Team blue.
 // Block 6 (offset 6*N):       Team green.
@@ -132,7 +132,7 @@ class Demo {
     async init() {
         console.log('[SpriteEffectsDemo] Initializing...');
 
-        // --- Palette: static UI colors ---
+        // Palette: static UI colors
         // applyHUD(1) fills six standard HUD slots. Slots 1 (white) and 3 (label
         // gray) match this demo's values exactly. Slot 2 (bg) and slots 4-6 are
         // overridden below with demo-specific colors; slots 7-11 are new additions.
@@ -149,7 +149,7 @@ class Demo {
         this.palette.set(C_BAR_BORDER, new Color32(150, 150, 150));
         this.palette.set(C_FPS, new Color32(100, 100, 100));
 
-        // --- Extract sprite colors ---
+        // Extract sprite colors
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
         // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
         // (sorted darkest-first by brightness). We keep them so the theme-block builders can
@@ -161,7 +161,7 @@ class Demo {
         // Update the module-level N so other helpers can use it without passing it around.
         N = colorCount;
 
-        // --- Build the 8 static theme blocks ---
+        // Build the 8 static theme blocks
         // Each block sits at SPRITE_BASE + blockIndex * N.
         this.buildStaticThemeBlocks();
 
@@ -174,7 +174,7 @@ class Demo {
             }
         }
 
-        // --- Load and indexize sprite ---
+        // Load and indexize sprite
         try {
             const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
                 sort: 'none',
@@ -222,7 +222,7 @@ class Demo {
 
     /**
      * Runs once per screen refresh to draw all the sprite effect demonstrations.
-     * Notice: NO Color32 objects appear in draw calls -- only palette indices and offsets.
+     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
      */
     render() {
         BT.clear(C_BG);
@@ -251,7 +251,7 @@ class Demo {
 
     /**
      * Builds the 8 static theme blocks by transforming the base colors.
-     * Called once in init() -- these never change after setup.
+     * Called once in init() - these never change after setup.
      */
     buildStaticThemeBlocks() {
         // Block 0 (original) is already filled by SpriteSheet.loadColorsIntoPalette above.
@@ -262,26 +262,26 @@ class Demo {
             // The average brightness of this pixel (0..255 range).
             const lum = Math.floor(base.luminance);
 
-            // Block 1: Silhouette -- near-black with slight variation to preserve depth cues.
+            // Block 1: Silhouette - near-black with slight variation to preserve depth cues.
             this.palette.set(
                 SPRITE_BASE + BLOCK_SILHOUETTE * N + i,
                 new Color32(lum * 0.08, lum * 0.08, lum * 0.1, base.a),
             );
 
-            // Block 2: Damage white -- everything shifted toward bright white.
+            // Block 2: Damage white - everything shifted toward bright white.
             const whitened = Math.floor(128 + lum * 0.5);
             this.palette.set(
                 SPRITE_BASE + BLOCK_DAMAGE_WHITE * N + i,
                 new Color32(whitened, whitened, whitened, base.a),
             );
 
-            // Block 3: Damage red -- everything shifted toward red.
+            // Block 3: Damage red - everything shifted toward red.
             this.palette.set(
                 SPRITE_BASE + BLOCK_DAMAGE_RED * N + i,
                 new Color32(Math.min(255, lum + 80), lum * 0.3, lum * 0.3, base.a),
             );
 
-            // Block 4: Team red -- multiply base colors with a red tint.
+            // Block 4: Team red - multiply base colors with a red tint.
             this.palette.set(
                 SPRITE_BASE + BLOCK_TEAM_RED * N + i,
                 new Color32(
@@ -292,7 +292,7 @@ class Demo {
                 ),
             );
 
-            // Block 5: Team blue -- multiply with a blue tint.
+            // Block 5: Team blue - multiply with a blue tint.
             this.palette.set(
                 SPRITE_BASE + BLOCK_TEAM_BLUE * N + i,
                 new Color32(
@@ -303,7 +303,7 @@ class Demo {
                 ),
             );
 
-            // Block 6: Team green -- multiply with a green tint.
+            // Block 6: Team green - multiply with a green tint.
             this.palette.set(
                 SPRITE_BASE + BLOCK_TEAM_GREEN * N + i,
                 new Color32(
@@ -314,7 +314,7 @@ class Demo {
                 ),
             );
 
-            // Block 7: Frozen -- push toward cold blue-white.
+            // Block 7: Frozen - push toward cold blue-white.
             this.palette.set(
                 SPRITE_BASE + BLOCK_FROZEN * N + i,
                 new Color32(Math.floor(lum * 0.7 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 80), base.a),

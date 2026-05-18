@@ -1,4 +1,4 @@
-// Demo 015 -- Palette Presets: six built-in color sets you can load instantly.
+// Demo 015 - Palette Presets: six built-in color sets you can load instantly.
 //
 // Demo 015 in the Blit-Tech series (written for readers about 12 years old).
 //
@@ -18,19 +18,19 @@
 //   palette.set(1, new Color32(255, 0, 0)); // My red.
 //   palette.set(2, new Color32(0, 255, 0)); // My green.
 //
-// Blit-Tech ships with six "preset" palettes -- ready-made color sets based on
+// Blit-Tech ships with six "preset" palettes - ready-made color sets based on
 // real hardware from the history of video games:
 //
-//   Game Boy    4 colors   (1989 Nintendo handheld -- shades of green)
-//   CGA        16 colors   (1981 IBM PC graphics card -- loud, iconic)
-//   C64        16 colors   (1982 Commodore 64 -- earthy, distinctive)
-//   PICO-8     16 colors   (2015 fantasy console -- soft, retro feel)
-//   NES        56 colors   (1983 Nintendo console -- wide but limited)
-//   VGA       256 colors   (1987 IBM PC graphics standard -- rich range)
+//   Game Boy    4 colors   (1989 Nintendo handheld - shades of green)
+//   CGA        16 colors   (1981 IBM PC graphics card - loud, iconic)
+//   C64        16 colors   (1982 Commodore 64 - earthy, distinctive)
+//   PICO-8     16 colors   (2015 fantasy console - soft, retro feel)
+//   NES        56 colors   (1983 Nintendo console - wide but limited)
+//   VGA       256 colors   (1987 IBM PC graphics standard - rich range)
 //
 // A preset palette gives you instant authentic retro style.
 //
-// You can also NAME slots using setNamed() / getNamed() -- like labeling paint cans
+// You can also NAME slots using setNamed() / getNamed() - like labeling paint cans
 // instead of just numbering them. "background" is easier to remember than slot 2.
 //
 // WHAT YOU WILL SEE:
@@ -97,7 +97,7 @@ class Demo {
     async init() {
         console.log('[PalettePresetsDemo] Initializing...');
 
-        // --- Load all six preset palettes ---
+        // Load all six preset palettes
         // These are static factory methods that return a ready-made Palette object.
         // Think of them as pre-sorted boxes of paint for specific retro styles.
         this.presets = [
@@ -109,7 +109,7 @@ class Demo {
             Palette.vga(), // 256 VGA standard colors.
         ];
 
-        // --- Build the main UI palette ---
+        // Build the main UI palette
         // This palette holds the colors we need to draw labels and the layout.
         // We keep it separate from the preset palettes so the UI is always readable.
         this.palette = BT.paletteCreate(256);
@@ -157,7 +157,7 @@ class Demo {
         // Store offsets for use in render().
         this.swatchOffsets = swatch_offsets;
 
-        // --- Use setNamed() for semantic color aliases in the live view ---
+        // Use setNamed() for semantic color aliases in the live view
         // setNamed() lets you refer to a slot by a descriptive word instead of a number.
         // This is like writing "background" on a label instead of "slot 2".
         this.palette.setNamed('ui-bg', 2); // "ui-bg" = slot 2 = dark background.
@@ -171,7 +171,7 @@ class Demo {
         }
         this.palette.setNamed('live-swatch-0', 200); // Named alias for the first live swatch.
 
-        // --- Activate palette ---
+        // Activate palette
         BT.paletteSet(this.palette);
 
         // Initialize the live view.
@@ -199,7 +199,7 @@ class Demo {
 
     /**
      * Draws the static swatch rows, labels, and the live cycling preview panel.
-     * NO Color32 objects appear in draw calls here -- only palette index numbers.
+     * NO Color32 objects appear in draw calls here - only palette index numbers.
      */
     render() {
         // Background. Index 2 = dark navy.
@@ -273,7 +273,7 @@ class Demo {
     renderLivePreview() {
         const panelY = 148;
 
-        // Panel background -- index 2 is the dark background color we set in init().
+        // Panel background - index 2 is the dark background color we set in init().
         BT.drawRectFill(new Rect2i(0, panelY - 4, 320, 96), 2);
 
         // Header. Slot 5 = blue-gray subtitle. systemPrint takes (position, paletteIndex, text).
@@ -287,7 +287,7 @@ class Demo {
         // Current preset name below swatches. Slot 4 = golden.
         const name = this.presetNames[this.currentPresetIndex];
         const size = this.presets[this.currentPresetIndex].size;
-        BT.systemPrint(new Vector2i(6, panelY + 42), 4, `Current: ${name} -- ${size} colors`);
+        BT.systemPrint(new Vector2i(6, panelY + 42), 4, `Current: ${name} - ${size} colors`);
 
         // Explain named slots. Slot 3 = dim gray.
         BT.systemPrint(new Vector2i(6, panelY + 56), 3, "palette.setNamed('ui-bg', 2)");
