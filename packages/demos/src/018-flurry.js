@@ -285,7 +285,7 @@ class Demo {
      */
     update() {
         // Advance time by one fixed-step duration in seconds.
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         // Rotate the global hue. The % operator wraps the angle back to 0 at 360.
         this.huePhase = (this.huePhase + HUE_ADVANCE) % 360;
@@ -329,7 +329,7 @@ class Demo {
         BT.systemPrint(new Vector2i(4, 4), C_TITLE, 'Flurry');
 
         // FPS counter in the top-right corner in the very dim gray (C_FPS = slot 5).
-        BT.systemPrint(new Vector2i(258, 4), C_FPS, `${BT.fps()} fps`);
+        BT.systemPrint(new Vector2i(258, 4), C_FPS, `${BT.targetFPS} fps`);
 
         // Palette strip along the very bottom of the screen.
         // Shows the live particle and spark color slots as small colored squares.

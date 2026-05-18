@@ -179,7 +179,7 @@ class Demo {
      */
     renderHud() {
         const connected = BT.gamepadConnected(PLAYER);
-        const count = BT.gamepadCount();
+        const count = BT.gamepadCount;
         const aOrB = BT.buttonDown(BT.BTN_A | BT.BTN_B, PLAYER);
         const controlsHint = 'A cycle color | B toggle trail | Start reset';
         const maskHint = `(A|B) mask down: ${aOrB ? 'true' : 'false'}`;

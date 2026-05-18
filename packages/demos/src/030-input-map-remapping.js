@@ -177,7 +177,7 @@ class Demo {
         this.renderPlayerPanel(0, PANEL0_X, PANEL_TOP_Y);
         this.renderPlayerPanel(1, PANEL1_X, PANEL_TOP_Y);
 
-        BT.systemPrint(new Vector2i(MARGIN_X, FOOTER_Y), C_DIM, `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`);
+        BT.systemPrint(new Vector2i(MARGIN_X, FOOTER_Y), C_DIM, `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`);
     }
 
     // #endregion

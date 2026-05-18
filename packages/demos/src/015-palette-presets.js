@@ -185,7 +185,7 @@ class Demo {
      * Advances the live view: switches to the next preset every LIVE_SWITCH_TICKS ticks.
      */
     update() {
-        const tick = BT.ticks();
+        const tick = BT.ticks;
 
         if (tick - this.lastSwitchTick >= LIVE_SWITCH_TICKS) {
             // Move to the next preset; wrap around after the last one.
@@ -215,7 +215,7 @@ class Demo {
         this.renderLivePreview();
 
         // FPS. Slot 6 = dim gray.
-        BT.systemPrint(new Vector2i(250, 225), 6, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), 6, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion

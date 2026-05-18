@@ -179,7 +179,7 @@ class Demo {
      */
     update() {
         // deltaSeconds is one fixed update step in seconds (usually 1/60).
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         // --- Update spiral colors (100 animated dots) ---
         // Each dot gets a hue that depends on its position AND the current time.
@@ -227,11 +227,11 @@ class Demo {
      * Notice: there are NO Color32 objects here. Every draw call uses a palette index.
      */
     render() {
+        const w = BT.displaySize.x;
+        const h = BT.displaySize.y;
+
         // Fill the whole screen with the background color (very dark blue-black).
         BT.clear(C_BG);
-
-        // Title at the top. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 5), C_WHITE, 'Blit-Tech - Patterns Demo');
 
         // Top row: three patterns centered at y=50.
         this.drawSpiral(new Vector2i(40, 50));
@@ -243,11 +243,13 @@ class Demo {
         this.drawLissajous(new Vector2i(120, 130));
         this.drawTunnel(new Vector2i(200, 130));
 
-        // Text labels below each pattern.
-        this.renderLabels();
-
         // FPS and time counter at the bottom of the screen.
-        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.fps()} | Time: ${this.animTime.toFixed(1)}s`);
+        BT.systemPrint(new Vector2i(5, 225), C_DIM, `FPS: ${BT.targetFPS} | Time: ${this.animTime.toFixed(1)}s`);
+
+        // Title at the bottom. systemPrint takes (position, paletteIndex, text).
+        const title = 'Blit-Tech - Patterns Demo';
+        const titleWidth = BT.systemPrintMeasure(title).x;
+        BT.systemPrint(new Vector2i(w - titleWidth - 4, h - 15), C_WHITE, title);
     }
 
     // #endregion
@@ -360,7 +362,7 @@ class Demo {
      */
     drawCircleApproximation(center) {
         // The radius pulses between 25 and 35 pixels using Math.sin.
-        const radius = 30 + Math.sin(this.animTime * 2) * 5;
+        const radius = 16 + Math.sin(this.animTime) * 14;
 
         for (let i = 0; i < CIRCLE_SEGMENTS; i++) {
             // Calculate the start and end angle of this segment.
@@ -377,6 +379,7 @@ class Demo {
             // Each segment uses its own static color from the palette.
             this.tempVec1.set(Math.floor(x1), Math.floor(y1));
             this.tempVec2.set(Math.floor(x2), Math.floor(y2));
+
             BT.drawLine(this.tempVec1, this.tempVec2, C_CIRCLE_BASE + i);
         }
     }
@@ -421,6 +424,7 @@ class Demo {
 
                 this.tempVec1.set(Math.floor(prevX), Math.floor(prevY));
                 this.tempVec2.set(Math.floor(x), Math.floor(y));
+
                 BT.drawLine(this.tempVec1, this.tempVec2, C_LISSAJOUS_BASE + band);
             }
 
@@ -460,27 +464,6 @@ class Demo {
             this.tempRect.set(Math.floor(x), Math.floor(y), Math.floor(size), Math.floor(size));
             BT.drawRect(this.tempRect, C_TUNNEL_BASE + i);
         }
-    }
-
-    // #endregion
-
-    // #region Rendering Helpers
-
-    /**
-     * Draws the text label beneath each pattern so viewers know what they're looking at.
-     *
-     * C_LABEL is dim white (200, 200, 200). systemPrint takes (position, paletteIndex, text).
-     */
-    renderLabels() {
-        // Labels for the top row.
-        BT.systemPrint(new Vector2i(15, 95), C_LABEL, 'Spiral');
-        BT.systemPrint(new Vector2i(90, 95), C_LABEL, 'Radial');
-        BT.systemPrint(new Vector2i(175, 95), C_LABEL, 'Wave');
-
-        // Labels for the bottom row.
-        BT.systemPrint(new Vector2i(15, 175), C_LABEL, 'Circle');
-        BT.systemPrint(new Vector2i(85, 175), C_LABEL, 'Lissajous');
-        BT.systemPrint(new Vector2i(175, 175), C_LABEL, 'Tunnel');
     }
 
     // #endregion

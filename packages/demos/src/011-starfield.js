@@ -385,7 +385,7 @@ class Demo {
 
         BT.systemPrint(new Vector2i(8, 200), C_TIP, 'Tip: like a car window -- close stuff moves faster.');
 
-        BT.systemPrint(new Vector2i(230, 220), C_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(230, 220), C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion

@@ -178,7 +178,7 @@ class Demo {
      */
     update() {
         // Add one tick's worth of seconds. At 60 ticks per second, each tick is 1/60 of a second.
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         // --- HSL rainbow: 64 animated hue slots ---
         // Each slot gets a hue based on its position on the color wheel PLUS

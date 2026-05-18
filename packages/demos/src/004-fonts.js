@@ -117,7 +117,7 @@ class Demo {
      */
     update() {
         // Move the animation clock forward by one update tick's worth of time (1/60 second).
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         // --- Update the pulsing text color ---
         // Math.sin returns a wave between -1 and +1 that oscillates smoothly.
@@ -170,9 +170,9 @@ class Demo {
 
         // Draw the FPS counter at the bottom.
         BT.systemPrint(
-            new Vector2i(10, BT.displaySize().y - 13),
+            new Vector2i(10, BT.displaySize.y - 13),
             C_DIM_GRAY,
-            `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`,
+            `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`,
         );
     }
 

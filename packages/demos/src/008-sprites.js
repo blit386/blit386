@@ -183,7 +183,7 @@ class Demo {
      * The pulse block is the same colors as the original but with changing transparency.
      */
     update() {
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         if (!this.spriteColorCount) {
             return;
@@ -250,7 +250,7 @@ class Demo {
         this.renderCodeSnippet();
 
         // FPS counter.
-        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion

@@ -170,7 +170,7 @@ class Demo {
     /** When true, the snake does not move until restart. */
     gameOver = false;
 
-    /** Tick index when the snake died (`BT.ticks()`); null while playing. */
+    /** Tick index when the snake died (`BT.ticks`); null while playing. */
     deathTick = null;
 
     // CRT effects (initialized in init())
@@ -330,7 +330,7 @@ class Demo {
         this.tickGlitchMachine();
 
         if (this.gameOver) {
-            const tick = BT.ticks();
+            const tick = BT.ticks;
 
             if (this.deathTick !== null && tick - this.deathTick >= RESTART_DELAY_TICKS) {
                 this.startRound();
@@ -379,7 +379,7 @@ class Demo {
      * Updates time-driven uniforms for rolling noise, interference, and roll line.
      */
     tickCrtClock() {
-        const seconds = BT.ticks() / TARGET_FPS;
+        const seconds = BT.ticks / TARGET_FPS;
 
         this.rollLine.time = seconds;
         this.noise.time = seconds;
@@ -585,7 +585,7 @@ class Demo {
      */
     endGame() {
         this.gameOver = true;
-        this.deathTick = BT.ticks();
+        this.deathTick = BT.ticks;
     }
 
     // #endregion

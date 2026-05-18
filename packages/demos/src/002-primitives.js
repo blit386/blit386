@@ -150,7 +150,7 @@ class Demo {
         this.renderCombinedDemo();
 
         // Show the frame rate (FPS) and tick count at the bottom in dim gray.
-        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`);
+        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`);
     }
 
     // #endregion

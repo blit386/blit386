@@ -177,7 +177,7 @@ class Demo {
      * When SWAP_PERIOD_TICKS have passed, switch to the next theme palette.
      */
     update() {
-        const tick = BT.ticks();
+        const tick = BT.ticks;
 
         if (this.swapTimer.tick(tick)) {
             // Move to the next theme; wrap around after void (index 3).
@@ -220,7 +220,7 @@ class Demo {
         this.renderCodePanel();
 
         // FPS counter.
-        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion

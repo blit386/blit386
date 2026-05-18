@@ -148,7 +148,7 @@ class Demo {
      * Animate custom named colors every tick.
      */
     update() {
-        this.elapsed += BT.deltaSeconds();
+        this.elapsed += BT.deltaSeconds;
 
         // Read two built-in names from the registry.
         const tomato = this.resolveOr('tomato', new Color32(255, 99, 71));
