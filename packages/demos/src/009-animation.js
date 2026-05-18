@@ -19,7 +19,7 @@
 //
 //   4. Jump arc: a smooth sine-curve arc using Math.sin (not gravity-style parabola).
 //
-// All timing is done by comparing BT.ticks() to a stored "start tick".
+// All timing is done by comparing BT.ticks to a stored "start tick".
 // Each tick is one update() call; at targetFPS = 60, one tick is 1/60 of a second.
 //
 // HOW PARTICLE COLORS WORK:
@@ -204,7 +204,7 @@ class Demo {
      *   4. Update each particle's palette slot with its current color.
      */
     update() {
-        const tick = BT.ticks();
+        const tick = BT.ticks;
 
         // Auto-cycle through states every 2 seconds (120 ticks at 60 FPS).
         this.autoCycleStates(tick);
@@ -349,7 +349,7 @@ class Demo {
 
         if (this.animState === AnimState.Jumping) {
             // jumpProgress goes 0 (just launched) to 1 (landing).
-            const jumpProgress = (BT.ticks() - this.jumpStartTick) / this.jumpDuration;
+            const jumpProgress = (BT.ticks - this.jumpStartTick) / this.jumpDuration;
 
             // Math.sin(0) = 0, Math.sin(PI/2) = 1, Math.sin(PI) = 0.
             // Multiplying by PI gives an arc that starts and ends at 0.
@@ -381,7 +381,7 @@ class Demo {
 
         this.particles.push({
             pos: new Vector2i(x, y),
-            spawnTick: BT.ticks(),
+            spawnTick: BT.ticks,
             paletteSlot: slot, // This particle "owns" this palette slot.
         });
     }
@@ -409,7 +409,7 @@ class Demo {
         BT.systemPrint(new Vector2i(10, 28), C_STATE_TEXT, `State: ${this.animState}`);
 
         // Ticks since start.
-        BT.systemPrint(new Vector2i(10, 42), C_STAT_DIM, `Ticks: ${BT.ticks()}`);
+        BT.systemPrint(new Vector2i(10, 42), C_STAT_DIM, `Ticks: ${BT.ticks}`);
 
         // Cooldown bar.
         this.renderCooldownUI();
@@ -424,7 +424,7 @@ class Demo {
         BT.systemPrint(new Vector2i(10, 210), C_INFO_TEXT, '- State machine transitions');
 
         // FPS.
-        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     /**
@@ -462,7 +462,7 @@ class Demo {
      */
     renderSpawnTimerUI() {
         // Ask the timer how many ticks are left until the next spawn event.
-        const ticksUntilSpawn = this.spawnTimer.remainingTicks(BT.ticks());
+        const ticksUntilSpawn = this.spawnTimer.remainingTicks(BT.ticks);
 
         // systemPrint takes (position, paletteIndex, text).
         BT.systemPrint(new Vector2i(10, 95), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);

@@ -12,7 +12,7 @@
 // - **Raw keys** (`BT.keyDown`, `BT.keyPressed`, `BT.keyReleased`) when you need
 //   a specific key, optional fixed-tick repeats with `BT.keyPressed(code, rate)`,
 //   and release edges.
-// - **Text input** (`BT.inputString()`) for characters in one frame. The buffer
+// - **Text input** (`BT.inputString`) for characters in one frame. The buffer
 //   clears after each frame, so read it during `update()` or `render()` in that
 //   same frame.
 //
@@ -111,7 +111,7 @@ class Demo {
         // `keyReleased` is true only on the frame the key goes up, like a doorbell
         // when you let go.
         if (BT.keyReleased('KeyF')) {
-            const tick = BT.ticks();
+            const tick = BT.ticks;
             this.lastFReleaseMessage = `keyReleased(KeyF) at tick ${tick}`;
         }
 
@@ -120,7 +120,7 @@ class Demo {
 
         // --- Raw key: H with fixed tick repeat ---
         // `keyPressed` with a second number repeats every N ticks after the first
-        // press (same clock as `BT.ticks()`).
+        // press (same clock as `BT.ticks`).
         if (BT.keyPressed('KeyH', KEY_H_REPEAT_TICKS)) {
             this.hPressStreak += 1;
         }
@@ -132,7 +132,7 @@ class Demo {
 
         // --- Text buffer ---
         // Characters arrive for this frame only; concat now or they are gone next frame.
-        const chunk = BT.inputString();
+        const chunk = BT.inputString;
 
         if (chunk.length > 0) {
             this.typedBuffer += chunk;
@@ -162,7 +162,7 @@ class Demo {
         BT.systemPrint(
             new Vector2i(8, 226),
             C_DIM,
-            `FPS: ${BT.fps()} | Ticks: ${BT.ticks()} | Click canvas if keys stop.`,
+            `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks} | Click canvas if keys stop.`,
         );
     }
 
@@ -279,7 +279,7 @@ class Demo {
     }
 
     /**
-     * Shows text accumulated from `BT.inputString()`.
+     * Shows text accumulated from `BT.inputString`.
      *
      * @param {number} x
      * @param {number} y
@@ -288,7 +288,7 @@ class Demo {
         BT.drawRectFill(new Rect2i(x, y, 304, 22), C_PANEL);
         BT.drawRect(new Rect2i(x, y, 304, 22), C_PANEL_BORDER);
 
-        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'BT.inputString() (typed this session)');
+        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'BT.inputString (typed this session)');
         BT.systemPrint(new Vector2i(x + 4, y + 12), C_WHITE, this.typedBuffer.length > 0 ? this.typedBuffer : '…');
     }
 

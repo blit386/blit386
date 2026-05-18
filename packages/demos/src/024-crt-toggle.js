@@ -180,7 +180,7 @@ class Demo {
         // Demo 023 already shows what the CRT looks like straight away; here it's nicer
         // to begin clean and then have the effect arrive after the first toggle.
         this.crtEnabled = false;
-        this.lastToggleTick = BT.ticks();
+        this.lastToggleTick = BT.ticks;
 
         // -- Step 5: place the bouncing squares --
         // Place them evenly across the bottom half so they don't all start in the same
@@ -202,8 +202,8 @@ class Demo {
         // ---- 1. Time-based toggle ----
         // Every TOGGLE_PERIOD_TICKS we flip the boolean and either add or remove the
         // entire preset stack. The engine handles the GPU pipeline lifecycle for us.
-        if (BT.ticks() - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
-            this.lastToggleTick = BT.ticks();
+        if (BT.ticks - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
+            this.lastToggleTick = BT.ticks;
             this.crtEnabled = !this.crtEnabled;
             if (this.crtEnabled) {
                 // Add every effect from the preset to the chain. Each one declares its
@@ -225,7 +225,7 @@ class Demo {
         // The CRT shaders use `time` for their rolling line and noise. Feed it seconds.
         // Safe to set even when the effects are not in the chain - the field is just a
         // number on the JS instance until the next encode pass reads it.
-        const seconds = BT.ticks() / TARGET_FPS;
+        const seconds = BT.ticks / TARGET_FPS;
         for (const fx of this.timedEffects) {
             fx.time = seconds;
         }

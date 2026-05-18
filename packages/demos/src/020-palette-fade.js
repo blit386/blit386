@@ -194,7 +194,7 @@ class Demo {
      * Each phase triggers a palette effect at its start and waits for a duration.
      */
     update() {
-        const tick = BT.ticks();
+        const tick = BT.ticks;
         const elapsed = tick - this.phaseStartTick;
 
         // Trigger the effect for this phase (only once).
@@ -425,7 +425,7 @@ class Demo {
         BT.systemPrint(new Vector2i(6, 2), C_LABEL, `Palette Fade & Flash - ${label}`);
 
         // FPS counter.
-        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), C_DIM, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion

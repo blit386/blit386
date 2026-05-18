@@ -173,7 +173,7 @@ class Demo {
      */
     render() {
         // Ask the engine how wide and tall our virtual screen is in pixels.
-        const screen = BT.displaySize();
+        const screen = BT.displaySize;
 
         // Fill the whole framebuffer with the dark background before drawing anything else.
         // C_BG is just a number (2); the palette knows it means dark blue-gray.
