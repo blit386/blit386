@@ -30,6 +30,8 @@
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #endregion
@@ -68,6 +70,8 @@ const C_RAINBOW_BASE = 20; // first slot for the rainbow characters
 const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pulsing-text color
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DARKER_GRAY, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -242,6 +246,7 @@ class Demo {
 
         // Draw the font info and FPS counter at the bottom.
         this.renderFontInfo(y, lineHeight);
+        footer.draw();
     }
 
     // #endregion
@@ -388,15 +393,6 @@ class Demo {
         );
 
         currentY += lineHeight;
-
-        // Show the current FPS and total ticks.
-        // C_DARKER_GRAY - 1 = 9. That means palette[1 + 9] = palette[10] = C_DARKER_GRAY.
-        BT.printFont(
-            this.font,
-            new Vector2i(10, currentY),
-            `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`,
-            C_DARKER_GRAY - 1,
-        );
     }
 
     // #endregion

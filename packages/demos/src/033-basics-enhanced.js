@@ -51,6 +51,8 @@ import {
     Vignette,
 } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 // #endregion
 
 // #region Configuration
@@ -156,6 +158,8 @@ function randPick(arr) {
 }
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_GREEN, rightColor: C_HEADER });
 
 // #region Main Logic
 
@@ -457,16 +461,17 @@ class Demo {
         BT.systemPrint(new Vector2i(3, 0), C_HEADER, '033 BASICS ENHANCED');
         BT.systemPrint(new Vector2i(3, 14), C_GREEN, 'CRT STACK: ON');
         BT.systemPrint(new Vector2i(3, 28), C_GREEN, `POS: ${this.pos.x},${this.pos.y}`);
-        BT.systemPrint(new Vector2i(3, 42), C_GREEN, `FPS: ${BT.targetFPS}`);
         BT.systemPrint(new Vector2i(3, 56), C_GREEN, `BOUNCES: ${this.bounces}`);
 
         const glitchLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
         const glitchValue = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
         BT.systemPrint(
-            new Vector2i(3, BT.displaySize.y - 13),
+            new Vector2i(3, BT.displaySize.y - 27),
             C_AMBER,
             `GLITCH: ${glitchLabel} ${String(glitchValue).padStart(2, '0')}%`,
         );
+
+        footer.draw();
     }
 }
 

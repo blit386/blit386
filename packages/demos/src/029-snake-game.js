@@ -31,6 +31,8 @@ import {
     Vignette,
 } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -40,6 +42,10 @@ const C_BG = 1;
 const C_WALL = 2;
 const C_SNAKE = 3;
 const C_FOOD = 4;
+const C_FOOTER_DIM = 5;
+const C_FOOTER_WHITE = 6;
+
+const footer = createDemoFooter({ leftColor: C_FOOTER_DIM, rightColor: C_FOOTER_WHITE });
 
 // Logical resolution: small playfield as requested.
 const DISPLAY_W = 160;
@@ -251,6 +257,8 @@ class Demo {
         this.palette.set(C_WALL, new Color32(180, 170, 140));
         this.palette.set(C_SNAKE, new Color32(90, 220, 120));
         this.palette.set(C_FOOD, new Color32(240, 90, 70));
+        this.palette.set(C_FOOTER_DIM, new Color32(120, 130, 150));
+        this.palette.set(C_FOOTER_WHITE, new Color32(220, 230, 240));
 
         BT.paletteSet(this.palette);
 
@@ -462,6 +470,7 @@ class Demo {
             const seg = this.snake[i];
             BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
         }
+        footer.draw();
     }
 
     // #endregion

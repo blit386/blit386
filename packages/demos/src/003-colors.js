@@ -37,6 +37,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -87,6 +89,8 @@ const LERP_SLOTS = 32;
 const C_PULSE = 126;
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_WHITE, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -243,6 +247,7 @@ class Demo {
 
         // Section 5: sliding blend between two colors using colorA.lerp(colorB, t).
         this.drawLerpSection();
+        footer.draw();
     }
 
     // #endregion

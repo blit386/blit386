@@ -17,11 +17,19 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 // #endregion
 
 // #region Type Definitions
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+
+// Footer text colors (slots 3 and 4; slots 1-2 are player and background).
+const C_FOOTER_DIM = 3;
+const C_FOOTER_WHITE = 4;
+
+const footer = createDemoFooter({ leftColor: C_FOOTER_DIM, rightColor: C_FOOTER_WHITE });
 
 // #endregion
 
@@ -72,6 +80,9 @@ class Demo {
         // Slot 2: the color we will use to clear the screen each frame.
         // RGB (32, 0, 128) is a deep violet-blue, the "background sky".
         this.palette.set(2, new Color32(32, 0, 128));
+
+        this.palette.set(C_FOOTER_DIM, new Color32(160, 170, 200));
+        this.palette.set(C_FOOTER_WHITE, new Color32(230, 235, 255));
 
         // Hand this palette to the engine. From now on, every draw call uses slot numbers,
         // not Color32 objects - the engine looks up the actual color from the palette.
@@ -136,6 +147,8 @@ class Demo {
         // Rect2i(x, y, width, height) defines where and how large the rectangle is.
         // Slot 1 is our dark-navy player color.
         BT.drawRectFill(new Rect2i(this.player.x, this.player.y, 32, 32), 1);
+
+        footer.draw();
     }
 
     // #endregion

@@ -36,6 +36,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -79,6 +81,9 @@ const LISSAJOUS_BANDS = 32;
 // Outer rectangles are brighter and more saturated; inner ones are darker.
 const C_TUNNEL_BASE = 192;
 const TUNNEL_RECTS = 20;
+
+// Shared footer: measured FPS, target FPS, and demo name from the page title.
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #endregion
 
@@ -227,9 +232,6 @@ class Demo {
      * Notice: there are NO Color32 objects here. Every draw call uses a palette index.
      */
     render() {
-        const w = BT.displaySize.x;
-        const h = BT.displaySize.y;
-
         // Fill the whole screen with the background color (very dark blue-black).
         BT.clear(C_BG);
 
@@ -243,13 +245,8 @@ class Demo {
         this.drawLissajous(new Vector2i(120, 130));
         this.drawTunnel(new Vector2i(200, 130));
 
-        // FPS and time counter at the bottom of the screen.
-        BT.systemPrint(new Vector2i(5, 225), C_DIM, `FPS: ${BT.targetFPS} | Time: ${this.animTime.toFixed(1)}s`);
-
-        // Title at the bottom. systemPrint takes (position, paletteIndex, text).
-        const title = 'Blit-Tech - Patterns Demo';
-        const titleWidth = BT.systemPrintMeasure(title).x;
-        BT.systemPrint(new Vector2i(w - titleWidth - 4, h - 15), C_WHITE, title);
+        // Measured FPS, target FPS, and demo name (from document.title).
+        footer.draw();
     }
 
     // #endregion

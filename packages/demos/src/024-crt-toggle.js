@@ -42,6 +42,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 // #endregion
 
 // #region Configuration
@@ -108,6 +110,8 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_LABEL, rightColor: C_LABEL });
 
 // #region Main Logic
 
@@ -275,6 +279,8 @@ class Demo {
         // Hint about how to read the demo. Helps a first-time viewer understand
         // why the picture changes every two seconds.
         BT.systemPrint(new Vector2i(8, DISPLAY_H - 22), C_LABEL, 'Auto-toggles every 2s');
+
+        footer.draw();
     }
 }
 

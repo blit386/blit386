@@ -26,6 +26,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -48,6 +50,8 @@ const KEY_H_REPEAT_TICKS = 15;
 
 // Horizontal spacing for face-button pips so four fit inside each 148px-wide panel.
 const FACE_SLOT_WIDTH = 34;
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #endregion
 
@@ -159,11 +163,7 @@ class Demo {
         this.renderRawKeyPanel(8, 118);
         this.renderTypedLine(8, 198);
 
-        BT.systemPrint(
-            new Vector2i(8, 226),
-            C_DIM,
-            `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks} | Click canvas if keys stop.`,
-        );
+        footer.draw();
     }
 
     // #endregion

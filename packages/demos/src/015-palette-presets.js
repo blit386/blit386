@@ -41,6 +41,8 @@
 
 import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -56,6 +58,8 @@ const SWATCH_W = 7;
 const SWATCH_H = 14;
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: 6, rightColor: 4 });
 
 // #region Main Logic
 
@@ -214,8 +218,7 @@ class Demo {
         // Draw the live cycling preview.
         this.renderLivePreview();
 
-        // FPS. Slot 6 = dim gray.
-        BT.systemPrint(new Vector2i(250, 225), 6, `FPS: ${BT.targetFPS}`);
+        footer.draw();
     }
 
     // #endregion

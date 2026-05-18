@@ -18,6 +18,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -106,6 +108,8 @@ function indexFromPaletteMap(paletteMap, code) {
 }
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -200,8 +204,7 @@ class Demo {
         // Checkerboard below, with colors that shift using animTime.
         this.renderCheckerPatternSection();
 
-        // Same status line style as other demos: frames per second plus engine tick count.
-        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`);
+        footer.draw();
     }
 
     // #endregion

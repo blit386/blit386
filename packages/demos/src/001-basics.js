@@ -46,6 +46,8 @@
  */
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 // #endregion
 
 // #region Configuration
@@ -73,6 +75,8 @@ const SPRITE_URL = '/sprites/logo-1.png';
 
 // Target update rate. 60 ticks per second is the classic smooth-animation rate.
 const TARGET_FPS = 30;
+
+const footer = createDemoFooter({ leftColor: C_GREEN, rightColor: C_AMBER });
 
 // #endregion
 
@@ -171,28 +175,10 @@ class Demo {
      */
     configure() {
         return {
-            // displaySize is the "retro screen" resolution - the pixel grid we draw on.
-            // 320x240 is a classic retro resolution that keeps the pixel-art look.
-            // All our drawing coordinates use this grid.
             displaySize: new Vector2i(320, 240),
-
-            // canvasDisplaySize controls the size of the visible canvas on the page.
-            // 640x480 is a clean 2x upscale of our 320x240 logical display.
             canvasDisplaySize: new Vector2i(640, 480),
-
-            // maxCanvasDisplaySize caps how large the canvas may appear on the page (CSS pixels).
-            // canvasDisplaySize is the GPU buffer; this limit is separate and used by layout.html.
             maxCanvasDisplaySize: new Vector2i(320 * 4, 240 * 4),
-
-            // targetFPS is how many times per second update() will be called.
-            // 60 is the standard for smooth animation. render() runs once per
-            // screen refresh, which is also usually 60 times per second but
-            // can be different (some monitors refresh at 120 or 144 Hz).
             targetFPS: TARGET_FPS,
-
-            // detectDroppedFrames enables frame dropping detection. If true, the
-            // engine will try to keep the frame rate consistent by skipping frames
-            // when the game is running too slow.
             detectDroppedFrames: true,
         };
     }
@@ -351,11 +337,12 @@ class Demo {
         // The template string (`backticks`) lets us insert variable values with ${...}.
         // BT.targetFPS returns the target update rate we set in configure() (30 in this demo).
         BT.systemPrint(new Vector2i(3, 0), C_GREEN, `Position: ${this.pos.x}, ${this.pos.y}`);
-        BT.systemPrint(new Vector2i(BT.displaySize.x - 90, 0), C_GREEN, `Target FPS: ${BT.targetFPS}`);
 
         // Show the bounce count in amber so it stands out from the green text.
         // C_AMBER is palette index 3, the secondary PipBoy accent color.
-        BT.systemPrint(new Vector2i(3, BT.displaySize.y - 13), C_AMBER, `Bounces: ${this.bounces}`);
+        BT.systemPrint(new Vector2i(3, BT.displaySize.y - 27), C_AMBER, `Bounces: ${this.bounces}`);
+
+        footer.draw();
     }
 
     // #endregion

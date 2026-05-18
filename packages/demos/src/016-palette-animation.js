@@ -35,6 +35,8 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
+import { createDemoFooter } from './shared/demo-footer.js';
+
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -100,6 +102,8 @@ const C_HEALTH_BAR = 80; // Slot 80.
 const C_WATER_BASE = 90; // Slots 90..92.
 
 // #endregion
+
+const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -234,8 +238,7 @@ class Demo {
         this.renderHealthPanel();
         this.renderWaterPanel();
 
-        // FPS counter in the bottom-right corner. Slot 6 = dim FPS color.
-        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.targetFPS}`);
+        footer.draw();
     }
 
     // #endregion
