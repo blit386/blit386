@@ -54,14 +54,49 @@ function flattenDemosPlugin() {
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
+const blitTechDistEntry = resolve(__dirname, '../blit-tech/dist/blit-tech.js');
+
+/**
+ * Full-reload the dev server when the linked blit-tech library rebuilds.
+ * Vite pre-bundles dependencies once; without this, configure() API changes
+ * in the workspace package do not show up until you restart `pnpm dev`.
+ * @returns {import('vite').Plugin}
+ */
+function blitTechWatchReload() {
+    return {
+        name: 'blit-tech-watch-reload',
+        apply: 'serve',
+        configureServer(server) {
+            server.watcher.add(blitTechDistEntry);
+            server.watcher.on('change', (file) => {
+                if (file === blitTechDistEntry) {
+                    server.ws.send({ type: 'full-reload' });
+                }
+            });
+        },
+    };
+}
+
 export default defineConfig(({ command }) => {
     const isProduction = command === 'build';
+    const isServe = command === 'serve';
 
     return {
         base: './',
 
+        // Dev only: point at ../blit-tech/dist so dev:watch picks up library rebuilds.
+        // Production build resolves blit-tech via node_modules (workspace package).
+        resolve: {
+            alias: isServe
+                ? {
+                      'blit-tech': blitTechDistEntry,
+                  }
+                : {},
+        },
+
         plugins: [
             virtualDemos(),
+            ...(isServe ? [blitTechWatchReload()] : []),
             viteStaticCopy({
                 targets: [
                     {
@@ -96,9 +131,18 @@ export default defineConfig(({ command }) => {
             },
         },
 
+        optimizeDeps: {
+            // Load the workspace package from dist on each refresh instead of a frozen pre-bundle.
+            exclude: ['blit-tech'],
+        },
+
         server: {
             open: '/demos/001-basics.html',
             hmr: true,
+            watch: {
+                // pnpm links ../blit-tech; watch its dist output during `dev:watch`.
+                ignored: ['**/node_modules/**', '!**/blit-tech/dist/**'],
+            },
         },
 
         preview: {
