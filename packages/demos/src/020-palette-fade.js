@@ -410,10 +410,11 @@ class Demo {
     }
 
     /**
-     * Draws UI overlay: phase label and FPS counter.
+     * Draws the top UI strip for this demo: a dark bar and the current fade/flash phase name.
+     * FPS and the demo title are drawn separately by the shared footer (footer.draw() in render()).
      */
     renderUI() {
-        // Phase label.
+        // Look up a short human-readable label for the current animation phase (day, night, etc.).
         const phaseLabels = {
             day: 'Day',
             'fade-to-night': 'Fading to night... (ease-in-out)',

@@ -264,18 +264,19 @@ class Demo {
         if (!BT.pointerPosValid(0)) {
             // Show a hint in the centre of the screen instead.
             BT.systemPrint(new Vector2i(80, 120), C_DIM, 'Move pointer over canvas');
-            return;
+        } else {
+            const pos = BT.pointerPos(0);
+            const size = 6;
+
+            // Horizontal arm.
+            BT.drawLine(new Vector2i(pos.x - size, pos.y), new Vector2i(pos.x + size, pos.y), C_WHITE);
+            // Vertical arm.
+            BT.drawLine(new Vector2i(pos.x, pos.y - size), new Vector2i(pos.x, pos.y + size), C_WHITE);
+            // Centre dot.
+            BT.drawPixel(pos, C_WHITE);
         }
 
-        const pos = BT.pointerPos(0);
-        const size = 6;
-
-        // Horizontal arm.
-        BT.drawLine(new Vector2i(pos.x - size, pos.y), new Vector2i(pos.x + size, pos.y), C_WHITE);
-        // Vertical arm.
-        BT.drawLine(new Vector2i(pos.x, pos.y - size), new Vector2i(pos.x, pos.y + size), C_WHITE);
-        // Centre dot.
-        BT.drawPixel(pos, C_WHITE);
+        // Always draw the shared footer (FPS + demo name), even when the pointer is off-canvas.
         footer.draw();
     }
 

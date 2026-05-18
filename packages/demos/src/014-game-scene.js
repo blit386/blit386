@@ -25,7 +25,7 @@
 //   - Moving rock hero = sprites (008) and timing (009).
 //   - Sparkles near the rock = small fading squares, like the particles in animation (009).
 //   - Day and night = palette-based ambient lighting (010); the world dims at night.
-//   - Score, position, FPS on top = bitmap text HUD (004).
+//   - Score and position on top = bitmap text HUD (004); FPS is rendered by the shared footer.
 //
 // HOW THE DAY/NIGHT PALETTE WORKS:
 //

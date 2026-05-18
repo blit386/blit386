@@ -13,7 +13,7 @@
 
 import { BT, defaultConfig, Vector2i } from 'blit-tech';
 
-// #region Constants
+// #region Configuration
 
 // Engine default when configure() is omitted or BT.targetFPS is not yet valid.
 const DEFAULT_TARGET_FPS = defaultConfig().targetFPS;
@@ -36,7 +36,26 @@ const REGISTRY_TITLE_PATTERN = /^Blit-Tech Demo\s+.+?\s+-\s+(.+)$/;
 
 // #endregion
 
-// #region Engine Helpers
+// #region Type Definitions
+
+/**
+ * @typedef {Object} DemoFooterOptions
+ * @property {number} leftColor - Palette index for the FPS line (left).
+ * @property {number} rightColor - Palette index for the demo name (right).
+ * @property {number} [marginX] - Horizontal inset from screen edges in pixels.
+ * @property {number} [baselineY] - Y position for both footer strings; defaults to one system font line above the bottom edge.
+ */
+
+// #endregion
+
+// #region Module State
+
+/** @type {number} */
+let cachedSystemLineHeight = 0;
+
+// #endregion
+
+// #region Helper Functions
 
 /**
  * @returns {number} Configured target FPS from the running demo, or the engine default.
@@ -46,9 +65,6 @@ function resolveTargetFps() {
 
     return Number.isFinite(fps) && fps > 0 ? fps : DEFAULT_TARGET_FPS;
 }
-
-/** @type {number} */
-let cachedSystemLineHeight = 0;
 
 /**
  * Height of one systemPrint line in pixels, measured from the active engine font.
@@ -68,10 +84,6 @@ function resolveSystemLineHeight() {
 
     return cachedSystemLineHeight;
 }
-
-// #endregion
-
-// #region Title Resolution
 
 /**
  * Turn the browser page title into a short footer label.
@@ -99,7 +111,7 @@ function resolveDemoLabel(pageTitle) {
 
 // #endregion
 
-// #region FPS Sampler
+// #region Main Logic
 
 /**
  * Tracks render-frame timing and exposes a smoothed measured FPS.
@@ -148,24 +160,24 @@ class FpsSampler {
 
 // #endregion
 
-// #region Public API
-
-/**
- * @typedef {Object} DemoFooterOptions
- * @property {number} leftColor - Palette index for the FPS line (left).
- * @property {number} rightColor - Palette index for the demo name (right).
- * @property {number} [marginX] - Horizontal inset from screen edges in pixels.
- * @property {number} [baselineY] - Y position for both footer strings; defaults to one system font line above the bottom edge.
- */
+// #region Exports
 
 /**
  * Create a footer helper that demos call from render() each frame.
  *
- * @param {DemoFooterOptions} options
+ * @param {DemoFooterOptions} [options]
  * @returns {{ draw: () => void }}
  */
-export function createDemoFooter(options) {
+export function createDemoFooter(options = {}) {
     const { leftColor, rightColor, marginX = FOOTER_EDGE_MARGIN_PX, baselineY } = options;
+
+    if (leftColor === undefined || leftColor === null) {
+        throw new Error('createDemoFooter: leftColor is required (palette index for the FPS line).');
+    }
+
+    if (rightColor === undefined || rightColor === null) {
+        throw new Error('createDemoFooter: rightColor is required (palette index for the demo name).');
+    }
 
     const fps = new FpsSampler();
     const demoLabel = resolveDemoLabel(typeof document !== 'undefined' ? document.title : undefined);

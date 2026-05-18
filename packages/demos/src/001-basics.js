@@ -3,7 +3,7 @@
  *
  * Welcome! This demo teaches you the absolute basics of making things appear
  * on screen with the Blit-Tech engine. You will learn:
- *   - How a demo is structured (configure is optional; then init, update, render)
+ *   - How a demo is structured (init, update, and render)
  *   - How to clear the screen and load a sprite (a tiny picture)
  *   - How to make something move and bounce off walls
  *   - How to display text on screen
@@ -73,7 +73,7 @@ const SPRITE_BASE = 10;
 // site root, so /sprites/logo-1.png maps to public/sprites/logo-1.png on disk.
 const SPRITE_URL = '/sprites/logo-1.png';
 
-// Target update rate. 60 ticks per second is the classic smooth-animation rate.
+// Target update rate. 30 ticks per second is slower than the engine default (60).
 const TARGET_FPS = 30;
 
 const footer = createDemoFooter({ leftColor: C_GREEN, rightColor: C_AMBER });
@@ -171,21 +171,20 @@ class Demo {
      * - How big the canvas element should appear on the web page.
      * - How many times per second update() should run.
      *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
+     * @returns {{targetFPS: number}}
      */
     configure() {
+        // Only override the tick rate; the engine fills in displaySize,
+        // canvasDisplaySize, and the rest from defaultConfig().
         return {
-            displaySize: new Vector2i(320, 240),
-            canvasDisplaySize: new Vector2i(640, 480),
-            maxCanvasDisplaySize: new Vector2i(320 * 4, 240 * 4),
             targetFPS: TARGET_FPS,
-            detectDroppedFrames: true,
         };
     }
 
     /**
-     * Called once after hardware settings are resolved (configure() or engine
-     * defaults). Sets up the palette, loads the sprite image, and positions the
+     * Called once after hardware settings are resolved (from configure()
+     * merged with engine defaults, or defaults alone if you skip configure).
+     * Sets up the palette, loads the sprite image, and positions the
      * sprite in the center of the screen.
      *
      * The "async" keyword lets us use "await" inside this method. "await" pauses
