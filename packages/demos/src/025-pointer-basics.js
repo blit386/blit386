@@ -62,7 +62,7 @@ class Demo {
     trail = [];
 
     // Vertical position of the on-screen scroll-bar handle (in display pixels).
-    // Starts in the middle. BT.pointerScrollDelta() pushes it up or down.
+    // Starts in the middle. BT.pointerScrollDelta pushes it up or down.
     scrollBarY = 120;
 
     // #endregion
@@ -123,7 +123,7 @@ class Demo {
         // Convert scroll delta (pixels of CSS scroll) into a small bar movement.
         // Multiplying by a fraction makes one wheel-click move the bar a few pixels
         // instead of jumping a full screen height.
-        this.scrollBarY += BT.pointerScrollDelta() * SCROLL_SENSITIVITY;
+        this.scrollBarY += BT.pointerScrollDelta * SCROLL_SENSITIVITY;
 
         // Keep the scroll bar inside the visible area.
         if (this.scrollBarY < 0) {
@@ -149,7 +149,7 @@ class Demo {
         this.renderTrail();
         this.renderCrosshair();
 
-        BT.systemPrint(new Vector2i(8, 226), C_DIM, `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`);
+        BT.systemPrint(new Vector2i(8, 226), C_DIM, `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`);
     }
 
     // #endregion
@@ -162,7 +162,7 @@ class Demo {
      */
     renderReadouts() {
         const valid = BT.pointerPosValid(0);
-        const scroll = BT.pointerScrollDelta();
+        const scroll = BT.pointerScrollDelta;
 
         // Background panel so text is readable over any colour.
         BT.drawRectFill(new Rect2i(8, 40, 140, 64), C_PANEL);

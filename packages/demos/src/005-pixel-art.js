@@ -171,7 +171,7 @@ class Demo {
      */
     update() {
         // Add one tick's worth of time. If targetFPS is 60, each tick is about 1/60 second.
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         // Update the checker pattern colors
         // The checker squares use "lerp" (short for linear interpolation - smoothly blending
@@ -201,7 +201,7 @@ class Demo {
         this.renderCheckerPatternSection();
 
         // Same status line style as other demos: frames per second plus engine tick count.
-        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`);
+        BT.systemPrint(new Vector2i(10, 225), C_DIM, `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`);
     }
 
     // #endregion

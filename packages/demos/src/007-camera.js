@@ -159,7 +159,7 @@ class Demo {
     update() {
         // t increases slowly each tick, driving the sinusoidal movement.
         // Multiplying ticks by 0.02 makes the movement nice and slow.
-        const t = BT.ticks() * 0.02;
+        const t = BT.ticks * 0.02;
 
         // Math.sin and Math.cos produce values between -1 and +1.
         // Multiplying by 150 and 100 turns those into pixel distances.
@@ -170,7 +170,7 @@ class Demo {
         // Make sure the camera doesn't scroll past the edges of the world.
         // The right edge is worldWidth minus the screen width, because we don't want
         // the screen to show empty space past the world's right boundary.
-        this.cameraPos = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize());
+        this.cameraPos = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize);
 
         // Tell the engine to offset all world-space drawing by the camera position.
         // After this call, drawing at (0,0) will draw at the camera's top-left corner.
@@ -383,7 +383,7 @@ class Demo {
         BT.systemPrint(this.tempVec1, C_WHITE, 'Camera Demo');
 
         // Show the camera's current position in the world so you can see it changing.
-        const camPos = BT.cameraGet();
+        const camPos = BT.camera;
         this.tempVec1.set(10, 22);
         BT.systemPrint(this.tempVec1, C_TEXT_DIM, `Camera: (${camPos.x}, ${camPos.y})`);
 
@@ -400,7 +400,7 @@ class Demo {
 
         // FPS counter at the very bottom.
         this.tempVec1.set(10, 225);
-        BT.systemPrint(this.tempVec1, C_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(this.tempVec1, C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     /**
@@ -433,7 +433,7 @@ class Demo {
         }
 
         // Draw a yellow rectangle showing the visible area (the camera viewport).
-        const displaySize = BT.displaySize();
+        const displaySize = BT.displaySize;
         const viewX = mapX + Math.floor((this.cameraPos.x / this.worldWidth) * mapW);
         const viewY = mapY + Math.floor((this.cameraPos.y / this.worldHeight) * mapH);
         const viewW = Math.floor((displaySize.x / this.worldWidth) * mapW);

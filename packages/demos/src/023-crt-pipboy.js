@@ -403,7 +403,7 @@ class Demo {
         // Step 6: boot animation timer
         // We use ticks instead of wall-clock so the boot animation stays deterministic
         // even if the browser frame rate hiccups.
-        this.bootStartTick = BT.ticks();
+        this.bootStartTick = BT.ticks;
 
         // Step 7: glitch state machine state
         // See the file header for what each field means. We start in a long cooldown so
@@ -421,13 +421,13 @@ class Demo {
         // ---- 1. Drive the boot animation timer ----
         // We don't draw here - render() reads `this._ticksSinceBoot` and computes how many
         // characters to show. update() just provides time.
-        this._ticksSinceBoot = BT.ticks() - this.bootStartTick;
+        this._ticksSinceBoot = BT.ticks - this.bootStartTick;
 
         // ---- 2. Drive the time-based effects every frame ----
         // RollLine, Noise, and Interference all need a wall-clock seconds value to drive
         // their animations. Convert ticks to seconds so the animation speed is independent
         // of TARGET_FPS.
-        const seconds = BT.ticks() / TARGET_FPS;
+        const seconds = BT.ticks / TARGET_FPS;
         this.rollLine.time = seconds;
         this.noise.time = seconds;
         this.interference.time = seconds;
@@ -614,7 +614,7 @@ class Demo {
      * a second and then off for half a second. (Old terminals worked exactly like this.)
      */
     renderBlinkingCursor() {
-        const phase = Math.floor(BT.ticks() / CURSOR_BLINK_TICKS) % 2;
+        const phase = Math.floor(BT.ticks / CURSOR_BLINK_TICKS) % 2;
         if (phase === 0) {
             // The "I'm here" square. Sits one line below the last boot line.
             const lastLineY = TEXT_TOP + BOOT_LINES.length * LINE_HEIGHT;

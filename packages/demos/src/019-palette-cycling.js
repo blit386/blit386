@@ -169,7 +169,7 @@ class Demo {
      * Periodically swaps two fire palette entries to demonstrate BT.paletteSwap().
      */
     update() {
-        const tick = BT.ticks();
+        const tick = BT.ticks;
 
         // Every SWAP_INTERVAL ticks, swap two random fire slots.
         if (tick - this.lastSwapTick >= SWAP_INTERVAL) {
@@ -206,7 +206,7 @@ class Demo {
         this.renderWaterPanel();
 
         // FPS counter. Slot 6 = dim FPS color.
-        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion

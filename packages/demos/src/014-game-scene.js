@@ -285,7 +285,7 @@ class Demo {
      * then recalculates all ambient-lit palette colors.
      */
     update() {
-        const tick = BT.ticks();
+        const tick = BT.ticks;
 
         this.updateHeroMovement();
         this.updateWalkStep(tick);
@@ -392,7 +392,7 @@ class Demo {
      * @returns {Color32} The ambient light color.
      */
     getAmbientTint() {
-        const tick = BT.ticks();
+        const tick = BT.ticks;
         const cycle = (tick % DAY_NIGHT_CYCLE_TICKS) / DAY_NIGHT_CYCLE_TICKS;
 
         // Math.cos returns -1..1. (cos + 1) / 2 gives 0..1 for "how bright is the sun".
@@ -593,7 +593,7 @@ class Demo {
      * Keeps cameraPos.x between 0 and WORLD_W - DISPLAY_W.
      */
     clampCamera() {
-        const clamped = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize());
+        const clamped = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize);
         this.cameraPos.x = clamped.x;
         this.cameraPos.y = clamped.y;
         this.cameraXFloat = this.cameraPos.x;
@@ -700,9 +700,9 @@ class Demo {
         BT.systemPrint(new Vector2i(130, 18), C_HUD_POS, `Rock: (${this.heroPos.x},${this.heroPos.y})`);
 
         // FPS and day/night phase.
-        BT.systemPrint(new Vector2i(260, 220), C_HUD_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(260, 220), C_HUD_FPS, `FPS: ${BT.targetFPS}`);
 
-        const phaseTick = BT.ticks() % DAY_NIGHT_CYCLE_TICKS;
+        const phaseTick = BT.ticks % DAY_NIGHT_CYCLE_TICKS;
         const phaseLabel =
             phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.25
                 ? 'Dawn/Day'

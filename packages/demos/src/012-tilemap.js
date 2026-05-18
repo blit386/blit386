@@ -151,14 +151,14 @@ class Demo {
      * animated water color in the palette so render() can use C_WATER as a plain index.
      */
     update() {
-        // BT.ticks() counts how many fixed updates have happened since the demo started.
+        // BT.ticks counts how many fixed updates have happened since the demo started.
         // Multiplying by a small number makes the wave change slowly over time.
-        const t = BT.ticks() * 0.028;
+        const t = BT.ticks * 0.028;
 
         // Math.sin(t) wiggles forever between -1 and +1, like a gentle wave on water.
         // We scale and shift it so the camera slides horizontally across most of the map.
         // Floor turns the float into a whole pixel position (Blit-Tech uses integer pixels).
-        const viewSize = BT.displaySize();
+        const viewSize = BT.displaySize;
         const maxCamX = WORLD_WIDTH_PX - viewSize.x;
         const maxCamY = WORLD_HEIGHT_PX - viewSize.y;
         const centerX = maxCamX / 2;
@@ -181,7 +181,7 @@ class Demo {
         // here in update() and store it in the reserved C_WATER palette slot.
         // render() can then just write C_WATER as a plain number - no Color32 needed there.
         // This "palette animation" technique is how retro hardware made water shimmer!
-        const waterPulse = Math.sin(BT.ticks() * 0.12); // a slow gentle wave between -1 and +1
+        const waterPulse = Math.sin(BT.ticks * 0.12); // a slow gentle wave between -1 and +1
         const waterBlue = Math.floor(210 + waterPulse * 28); // shifts the blue channel 28 units up and down
         this.palette.set(C_WATER, new Color32(30, 110, waterBlue));
     }
@@ -304,8 +304,8 @@ class Demo {
      */
     renderVisibleTiles() {
         // How big is the virtual screen in pixels?
-        const viewW = BT.displaySize().x;
-        const viewH = BT.displaySize().y;
+        const viewW = BT.displaySize.x;
+        const viewH = BT.displaySize.y;
 
         // Camera position is the world pixel at the top-left of the view.
         const camX = this.cameraPos.x;
@@ -378,7 +378,7 @@ class Demo {
         this.renderMiniMap();
 
         this.tempVec.set(8, 226);
-        BT.systemPrint(this.tempVec, C_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(this.tempVec, C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     /**
@@ -427,8 +427,8 @@ class Demo {
         }
 
         // Viewport indicator: where is the 320x240 window inside the 480x320 world?
-        const cam = BT.cameraGet();
-        const disp = BT.displaySize();
+        const cam = BT.camera;
+        const disp = BT.displaySize;
         const vx = mapX + Math.floor((cam.x / WORLD_WIDTH_PX) * mapPixelW);
         const vy = mapY + Math.floor((cam.y / WORLD_HEIGHT_PX) * mapPixelH);
         const vw = Math.max(1, Math.floor((disp.x / WORLD_WIDTH_PX) * mapPixelW));

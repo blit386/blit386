@@ -190,13 +190,13 @@ class Demo {
         // Advance the clock. animTime grows by 1/60 each frame.
         // Skipped when advanceTime is false (used during init() priming call).
         if (advanceTime) {
-            this.animTime += BT.deltaSeconds();
+            this.animTime += BT.deltaSeconds;
         }
 
         // Advance health drain.
         // We simulate a health bar that empties over HEALTH_DRAIN_TICKS ticks,
         // then resets to full so the demo loops forever.
-        const tick = BT.ticks();
+        const tick = BT.ticks;
         this.health = HEALTH_MAX - Math.floor((tick % HEALTH_DRAIN_TICKS) * (HEALTH_MAX / HEALTH_DRAIN_TICKS));
 
         // Panel 1: Scrolling gradient
@@ -235,7 +235,7 @@ class Demo {
         this.renderWaterPanel();
 
         // FPS counter in the bottom-right corner. Slot 6 = dim FPS color.
-        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion
@@ -311,7 +311,7 @@ class Demo {
      * Health bar: toggles one slot between red and near-white every FLASH_PERIOD ticks.
      * Only flashes when health is critically low.
      *
-     * @param {number} tick - Current tick count from BT.ticks().
+     * @param {number} tick - Current tick count from BT.ticks.
      */
     updateHealthBar(tick) {
         if (this.health <= HEALTH_LOW) {
@@ -330,7 +330,7 @@ class Demo {
      * Each slot cycles: bright -> medium -> dim -> bright -> ...
      * The phases are offset by one slot so the bright spot appears to travel.
      *
-     * @param {number} tick - Current tick count from BT.ticks().
+     * @param {number} tick - Current tick count from BT.ticks.
      */
     updateWater(tick) {
         // Advance the ripple every 8 ticks (about 7 ripples per second).

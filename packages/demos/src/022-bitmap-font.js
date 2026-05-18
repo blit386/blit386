@@ -161,7 +161,7 @@ class Demo {
     // We advance the animation timer AND update dynamic palette colors here.
     update() {
         // Move the animation clock forward by one fixed update step in seconds.
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         // Update the pulsing text color
         // Math.sin returns a wave that smoothly oscillates between -1 and +1.
@@ -394,7 +394,7 @@ class Demo {
         BT.printFont(
             this.font,
             new Vector2i(10, currentY),
-            `FPS: ${BT.fps()} | Ticks: ${BT.ticks()}`,
+            `FPS: ${BT.targetFPS} | Ticks: ${BT.ticks}`,
             C_DARKER_GRAY - 1,
         );
     }

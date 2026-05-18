@@ -202,15 +202,15 @@ class Demo {
      * Day/night smoothly cycles brightness over 20 seconds.
      */
     update() {
-        this.animTime += BT.deltaSeconds();
+        this.animTime += BT.deltaSeconds;
 
         if (!this.spriteColorCount) {
             return;
         }
 
         // Trigger a damage event every 3 seconds (180 ticks).
-        if (BT.ticks() % 180 === 0) {
-            this.damageFlashTick = BT.ticks();
+        if (BT.ticks % 180 === 0) {
+            this.damageFlashTick = BT.ticks;
         }
 
         this.updateDamageFlashBlock();
@@ -242,7 +242,7 @@ class Demo {
         // Day/night cycle at the bottom.
         this.renderDayNightCycle();
 
-        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.fps()}`);
+        BT.systemPrint(new Vector2i(250, 225), C_FPS, `FPS: ${BT.targetFPS}`);
     }
 
     // #endregion
@@ -331,7 +331,7 @@ class Demo {
      * for the first 30 ticks after damage. Fades back to normal after that.
      */
     updateDamageFlashBlock() {
-        const flashAge = BT.ticks() - this.damageFlashTick;
+        const flashAge = BT.ticks - this.damageFlashTick;
 
         for (let i = 0; i < N; i++) {
             const base = this.baseColors[i];
@@ -428,7 +428,7 @@ class Demo {
      * At midday the multiplier is ~1.0; at midnight it drops to ~0.3.
      */
     updateDayNightBlock() {
-        const cycle = (BT.ticks() % 1200) / 1200; // 0..1
+        const cycle = (BT.ticks % 1200) / 1200; // 0..1
         const brightness = (Math.cos(cycle * Math.PI * 2) + 1) * 0.35 + 0.3; // 0.3..1.0
 
         for (let i = 0; i < N; i++) {
@@ -528,7 +528,7 @@ class Demo {
 
         BT.drawRectFill(new Rect2i(barX, barY, barWidth, barHeight), C_BAR_DARK);
 
-        const cycle = (BT.ticks() % 1200) / 1200;
+        const cycle = (BT.ticks % 1200) / 1200;
         const indicatorX = barX + Math.floor(barWidth * cycle);
 
         // The indicator rectangle uses the current day/night color (block 12, first color).
