@@ -4,7 +4,7 @@ Interactive demos and examples for Blit-Tech, a palette-first WebGPU retro engin
 
 ## Tech Stack
 
-- **Node**: >= 20.0.0
+- **Node**: >= 22.18.0 (required by cspell 10 and workspace sibling blit-tech)
 - **Build Tool**: Vite 7 with a custom virtual-demos plugin (no templating library)
 - **Language**: JavaScript (ES2022)
 - **Styling**: Plain CSS with CSS custom properties

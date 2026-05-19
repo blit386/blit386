@@ -170,7 +170,7 @@ class Demo {
         y = this.renderColoredText(y);
         y = this.renderRainbowText(y);
         y = this.renderPulsingText(y);
-        y = this.renderSpecialCharacters(y);
+        this.renderSpecialCharacters(y);
         footer.draw();
     }
 
@@ -259,14 +259,12 @@ class Demo {
 
     /**
      * Shows that the system font can draw special characters.
+     * Last section before the footer, so this helper does not return an updated y.
      *
      * @param {number} y - The Y position to start drawing at.
-     * @returns {number} The Y position after the text.
      */
     renderSpecialCharacters(y) {
         BT.systemPrint(new Vector2i(10, y), C_GRAY_TEXT, 'Special: 3 x 4 = 12');
-
-        return y + 10;
     }
 
     // #endregion
