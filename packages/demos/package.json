@@ -46,7 +46,8 @@
     "clean": "rm -rf dist node_modules/.vite",
     "prepare": "husky",
     "security:audit": "pnpm audit --audit-level=moderate",
-    "security:audit:fix": "pnpm audit --fix"
+    "security:audit:fix": "pnpm audit --fix",
+    "security:mcp-preflight": "node ../blit-tech/scripts/security/mcp-preflight.mjs"
   },
   "packageManager": "pnpm@10.26.2",
   "pnpm": {
