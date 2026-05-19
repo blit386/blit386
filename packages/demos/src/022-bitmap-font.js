@@ -246,7 +246,7 @@ class Demo {
 
         // Draw one line of font metadata (name and glyph count) near the bottom of the demo area.
         // The shared footer (footer.draw() on the next line) draws measured FPS and the demo title.
-        this.renderFontInfo(y, lineHeight);
+        this.renderFontInfo(y);
         footer.draw();
     }
 
@@ -379,8 +379,7 @@ class Demo {
     // This is demo-specific info that only BitmapFont exposes; the built-in system font has no
     // name or glyph count you can print this way.
     // y: the Y position to start drawing at (pixels from the top of the screen).
-    // lineHeight: how many pixels tall one text line is (used to step down if we add more lines).
-    renderFontInfo(y, _lineHeight) {
+    renderFontInfo(y) {
         // Print the font name and glyph count in dim gray so it reads as secondary info.
         // C_DIM_GRAY - 1 = 8. That means palette[1 + 8] = palette[9] = C_DIM_GRAY = dim gray.
         BT.printFont(
