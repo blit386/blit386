@@ -380,20 +380,15 @@ class Demo {
     // name or glyph count you can print this way.
     // y: the Y position to start drawing at (pixels from the top of the screen).
     // lineHeight: how many pixels tall one text line is (used to step down if we add more lines).
-    renderFontInfo(y, lineHeight) {
-        // Use a local variable so we don't modify the original parameter.
-        let currentY = y;
-
+    renderFontInfo(y, _lineHeight) {
         // Print the font name and glyph count in dim gray so it reads as secondary info.
         // C_DIM_GRAY - 1 = 8. That means palette[1 + 8] = palette[9] = C_DIM_GRAY = dim gray.
         BT.printFont(
             this.font,
-            new Vector2i(10, currentY),
+            new Vector2i(10, y),
             `Font: ${this.font.name} (${this.font.glyphCount} glyphs)`,
             C_DIM_GRAY - 1,
         );
-
-        currentY += lineHeight;
     }
 
     // #endregion

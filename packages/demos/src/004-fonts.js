@@ -170,7 +170,7 @@ class Demo {
         y = this.renderColoredText(y);
         y = this.renderRainbowText(y);
         y = this.renderPulsingText(y);
-        y = this.renderSpecialCharacters(y);
+        this.renderSpecialCharacters(y);
         footer.draw();
     }
 
