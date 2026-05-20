@@ -50,6 +50,11 @@
     "security:mcp-preflight": "node ../blit-tech/scripts/security/mcp-preflight.mjs"
   },
   "packageManager": "pnpm@10.26.2",
+  "pnpm": {
+    "overrides": {
+      "yaml@>=2.0.0 <2.8.3": "^2.8.3"
+    }
+  },
   "dependencies": {
     "blit-tech": "workspace:*"
   },
