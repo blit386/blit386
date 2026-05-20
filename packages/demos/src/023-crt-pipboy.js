@@ -50,6 +50,12 @@
 // `cooldown` runs out we roll a new glitch (random type, random duration, random strength)
 // and reset `active` to that duration. Each burst type drives different effect uniforms.
 //
+// SOFTWARE FALLBACK
+// If the browser uses the Canvas 2D software renderer (WebGPU missing or
+// ?renderer=software), post-process effects are not available. The terminal
+// scene, boot animation, and status block still run; only the CRT stack is skipped.
+// An on-screen note explains the reduced mode.
+//
 // HOW THE BITMAP FONT COLORS WORK
 // The font is loaded as a sprite sheet of WHITE glyph pixels. We "indexize" the sheet
 // against our palette, which replaces each white pixel with the index of the white slot
@@ -82,6 +88,7 @@ import {
 } from 'blit-tech';
 
 import { createDemoFooter } from './shared/demo-footer.js';
+import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
 
@@ -316,6 +323,14 @@ class Demo {
         // BT.printFont can shift that index by an offset to recolor the glyphs at draw time.
         this.font.getSpriteSheet().indexize(palette);
 
+        // Post-process (pixel + display tiers) needs WebGPU. Software mode skips this block.
+        this.postProcessAvailable = isPostProcessAvailable();
+
+        if (!this.postProcessAvailable) {
+            this.bootStartTick = BT.ticks;
+            return true;
+        }
+
         // Step 4: pixel-tier effect (chunky glitch)
         // PixelGlitch reads/writes the logical index buffer (320x240 r8uint) so band shifts
         // stay palette-native. If the same shift ran after resolve + upscale, each band
@@ -422,6 +437,11 @@ class Demo {
     }
 
     update() {
+        if (!this.postProcessAvailable) {
+            this._ticksSinceBoot = BT.ticks - this.bootStartTick;
+            return;
+        }
+
         // 1. Drive the boot animation timer
         // We don't draw here - render() reads `this._ticksSinceBoot` and computes how many
         // characters to show. update() just provides time.
@@ -529,6 +549,10 @@ class Demo {
         if (this.bootFullyDone()) {
             this.renderStatusBlock();
             this.renderBlinkingCursor();
+        }
+
+        if (!this.postProcessAvailable) {
+            BT.systemPrint(new Vector2i(TEXT_LEFT, DISPLAY_H - 28), C_GREEN_DIM, SOFTWARE_FALLBACK_NOTE);
         }
 
         footer.draw();

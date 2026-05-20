@@ -35,6 +35,10 @@
 // boolean and either adds or removes the entire preset stack. The label in the top-left
 // corner reads "CRT: ON" or "CRT: OFF" so you always know which side you are looking at.
 //
+// SOFTWARE FALLBACK
+// In software renderer mode, post-process effects are unavailable. The bouncing
+// squares and color bars still animate; CRT toggle is disabled and a note explains why.
+//
 // Why auto-toggle and not a button? Demos in this series do not (yet) take user input
 // from the engine. Auto-toggling is the simplest way to demonstrate the dynamic API.
 
@@ -43,6 +47,7 @@
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 import { createDemoFooter } from './shared/demo-footer.js';
+import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
 
@@ -163,22 +168,29 @@ class Demo {
         palette.set(C_MAGENTA, Color32.magenta);
         BT.paletteSet(palette);
 
-        // Step 2: build the CRT preset ONCE up front
-        // BT.preset.crtPipBoy() returns a fresh array of pre-configured display-tier
-        // effects (BarrelDistortion + ChromaticAberration + Interference + RollLine +
-        // Scanlines + RGBMask + Vignette + Noise + Flicker + Bloom).
-        //
-        // We hold onto the array so we can re-add the SAME instances on each toggle.
-        // Re-creating them every toggle would also work, but it would re-allocate the
-        // GPU pipelines and uniform buffers each time - wasteful when the look is the
-        // same.
-        this.crtStack = BT.preset.crtPipBoy();
+        this.postProcessAvailable = isPostProcessAvailable();
 
-        // Step 3: pick out the time-driven effects so update() can animate them
-        // Some effects (RollLine, Noise, Interference) animate using a `time` field;
-        // we filter the array once and remember the references so we don't iterate
-        // the whole stack on every frame.
-        this.timedEffects = this.crtStack.filter((fx) => 'time' in fx);
+        if (this.postProcessAvailable) {
+            // Step 2: build the CRT preset ONCE up front
+            // BT.preset.crtPipBoy() returns a fresh array of pre-configured display-tier
+            // effects (BarrelDistortion + ChromaticAberration + Interference + RollLine +
+            // Scanlines + RGBMask + Vignette + Noise + Flicker + Bloom).
+            //
+            // We hold onto the array so we can re-add the SAME instances on each toggle.
+            // Re-creating them every toggle would also work, but it would re-allocate the
+            // GPU pipelines and uniform buffers each time - wasteful when the look is the
+            // same.
+            this.crtStack = BT.preset.crtPipBoy();
+
+            // Step 3: pick out the time-driven effects so update() can animate them
+            // Some effects (RollLine, Noise, Interference) animate using a `time` field;
+            // we filter the array once and remember the references so we don't iterate
+            // the whole stack on every frame.
+            this.timedEffects = this.crtStack.filter((fx) => 'time' in fx);
+        } else {
+            this.crtStack = [];
+            this.timedEffects = [];
+        }
 
         // Step 4: start in the OFF state
         // Demo 023 already shows what the CRT looks like straight away; here it's nicer
@@ -203,10 +215,10 @@ class Demo {
     }
 
     update() {
-        // 1. Time-based toggle
+        // 1. Time-based toggle (WebGPU only - effectAdd throws in software mode)
         // Every TOGGLE_PERIOD_TICKS we flip the boolean and either add or remove the
         // entire preset stack. The engine handles the GPU pipeline lifecycle for us.
-        if (BT.ticks - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
+        if (this.postProcessAvailable && BT.ticks - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
             this.lastToggleTick = BT.ticks;
             this.crtEnabled = !this.crtEnabled;
             if (this.crtEnabled) {
@@ -226,12 +238,14 @@ class Demo {
             }
         }
 
-        // The CRT shaders use `time` for their rolling line and noise. Feed it seconds.
-        // Safe to set even when the effects are not in the chain - the field is just a
-        // number on the JS instance until the next encode pass reads it.
-        const seconds = BT.ticks / TARGET_FPS;
-        for (const fx of this.timedEffects) {
-            fx.time = seconds;
+        if (this.postProcessAvailable) {
+            // The CRT shaders use `time` for their rolling line and noise. Feed it seconds.
+            // Safe to set even when the effects are not in the chain - the field is just a
+            // number on the JS instance until the next encode pass reads it.
+            const seconds = BT.ticks / TARGET_FPS;
+            for (const fx of this.timedEffects) {
+                fx.time = seconds;
+            }
         }
 
         // 2. Move each square and bounce off the screen edges
@@ -273,12 +287,16 @@ class Demo {
 
         // Status label in the top-left corner. BT.systemPrint uses the built-in
         // 6x14 font so we don't need to load anything.
-        const label = this.crtEnabled ? 'CRT: ON' : 'CRT: OFF';
+        const label = this.postProcessAvailable ? (this.crtEnabled ? 'CRT: ON' : 'CRT: OFF') : 'CRT: N/A';
         BT.systemPrint(new Vector2i(8, 8), C_LABEL, label);
 
-        // Hint about how to read the demo. Helps a first-time viewer understand
-        // why the picture changes every two seconds.
-        BT.systemPrint(new Vector2i(8, DISPLAY_H - 22), C_LABEL, 'Auto-toggles every 2s');
+        if (this.postProcessAvailable) {
+            // Hint about how to read the demo. Helps a first-time viewer understand
+            // why the picture changes every two seconds.
+            BT.systemPrint(new Vector2i(8, DISPLAY_H - 22), C_LABEL, 'Auto-toggles every 2s');
+        } else {
+            BT.systemPrint(new Vector2i(8, DISPLAY_H - 22), C_LABEL, SOFTWARE_FALLBACK_NOTE);
+        }
 
         footer.draw();
     }

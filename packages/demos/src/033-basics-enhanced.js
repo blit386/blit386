@@ -29,6 +29,10 @@
 // the glitch state machine below picks ONE of five glitch styles, ramps
 // it up for a few frames, and ramps it down again. A preset is a sealed
 // recipe; a hand-built chain is an instrument.
+//
+// SOFTWARE FALLBACK: when the engine uses the software renderer, the bouncing
+// sprite demo still runs but the CRT stack is not registered. Labels show the
+// reduced mode.
 
 // #region Imports
 
@@ -52,6 +56,7 @@ import {
 } from 'blit-tech';
 
 import { createDemoFooter } from './shared/demo-footer.js';
+import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
 
@@ -241,6 +246,17 @@ class Demo {
             Math.floor(BT.displaySize.y / 2 - this.size.y / 2),
         );
 
+        this.postProcessAvailable = isPostProcessAvailable();
+
+        if (!this.postProcessAvailable) {
+            this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+            this.glitchActive = 0;
+            this.glitchDuration = 0;
+            this.glitchType = 'none';
+            this.glitchPeak = 0;
+            return true;
+        }
+
         // Pixel-tier pass. PixelGlitch runs on the 320x240 indexed buffer
         // BEFORE the palette is resolved, so it can shove whole bands of
         // palette indices sideways - the result looks like analog
@@ -352,10 +368,16 @@ class Demo {
         // so they can shimmer over time. The engine exposes this as
         // BT.timeSeconds (a real-number count of seconds since startup).
         // We push it into each effect's "time" uniform every frame.
-        const seconds = BT.timeSeconds;
-        this.rollLine.time = seconds;
-        this.noise.time = seconds;
-        this.interference.time = seconds;
+        if (this.postProcessAvailable) {
+            const seconds = BT.timeSeconds;
+            this.rollLine.time = seconds;
+            this.noise.time = seconds;
+            this.interference.time = seconds;
+        }
+
+        if (!this.postProcessAvailable) {
+            return;
+        }
 
         // Glitch state machine. Two states:
         //
@@ -459,17 +481,21 @@ class Demo {
         BT.drawSprite(this.spriteSheet, this.spriteRect, this.pos, 0);
 
         BT.systemPrint(new Vector2i(3, 0), C_HEADER, '033 BASICS ENHANCED');
-        BT.systemPrint(new Vector2i(3, 14), C_GREEN, 'CRT STACK: ON');
+        BT.systemPrint(new Vector2i(3, 14), C_GREEN, this.postProcessAvailable ? 'CRT STACK: ON' : 'CRT STACK: OFF');
         BT.systemPrint(new Vector2i(3, 28), C_GREEN, `POS: ${this.pos.x},${this.pos.y}`);
         BT.systemPrint(new Vector2i(3, 56), C_GREEN, `BOUNCES: ${this.bounces}`);
 
-        const glitchLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
-        const glitchValue = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
-        BT.systemPrint(
-            new Vector2i(3, BT.displaySize.y - 27),
-            C_AMBER,
-            `GLITCH: ${glitchLabel} ${String(glitchValue).padStart(2, '0')}%`,
-        );
+        if (this.postProcessAvailable) {
+            const glitchLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
+            const glitchValue = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
+            BT.systemPrint(
+                new Vector2i(3, BT.displaySize.y - 27),
+                C_AMBER,
+                `GLITCH: ${glitchLabel} ${String(glitchValue).padStart(2, '0')}%`,
+            );
+        } else {
+            BT.systemPrint(new Vector2i(3, 42), C_AMBER, SOFTWARE_FALLBACK_NOTE);
+        }
 
         footer.draw();
     }

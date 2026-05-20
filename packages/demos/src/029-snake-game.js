@@ -7,10 +7,12 @@
 // the snake. Hitting the boundary wall or your own body ends the run; the game restarts after
 // two seconds. Everything is drawn with rectangles only (no text).
 //
-// Post-processing matches demo 023: PixelGlitch on the logical index buffer, then engine
-// palette resolve + upscale, then display-tier barrel distortion, chromatic aberration,
-// interference, rolling scan line, scanlines, RGB mask, vignette, noise, flicker, bloom,
-// and the same glitch state machine driving occasional bursts.
+// Post-processing matches demo 023 when WebGPU is active. In software fallback mode the
+// snake game still runs; CRT effects are skipped and a short note is shown.
+//
+// WebGPU path: PixelGlitch on the logical index buffer, then palette resolve + upscale,
+// then display-tier barrel distortion, chromatic aberration, interference, rolling scan
+// line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
 
 import {
     BarrelDistortion,
@@ -32,6 +34,7 @@ import {
 } from 'blit-tech';
 
 import { createDemoFooter } from './shared/demo-footer.js';
+import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -262,6 +265,13 @@ class Demo {
 
         BT.paletteSet(this.palette);
 
+        this.postProcessAvailable = isPostProcessAvailable();
+
+        if (!this.postProcessAvailable) {
+            this.startRound();
+            return true;
+        }
+
         // Pixel-tier glitch (same role as demo 023).
         this.pixelGlitch = new PixelGlitch();
         this.pixelGlitch.bandHeight = 6;
@@ -334,19 +344,56 @@ class Demo {
      * Drive CRT animation and glitch machine every tick; run snake logic when alive.
      */
     update() {
-        this.tickCrtClock();
-        this.tickGlitchMachine();
+        if (this.postProcessAvailable) {
+            this.tickCrtClock();
+            this.tickGlitchMachine();
+        }
 
-        if (this.gameOver) {
-            const tick = BT.ticks;
-
-            if (this.deathTick !== null && tick - this.deathTick >= RESTART_DELAY_TICKS) {
-                this.startRound();
-            }
-
+        if (this.tickRestartAfterDeath()) {
             return;
         }
 
+        this.pollDirectionInput();
+
+        this.moveCooldown -= 1;
+
+        if (this.moveCooldown > 0) {
+            return;
+        }
+
+        this.moveCooldown = MOVE_INTERVAL;
+
+        if (!(this.pendingDx === -this.dx && this.pendingDy === -this.dy)) {
+            this.dx = this.pendingDx;
+            this.dy = this.pendingDy;
+        }
+
+        this.stepSnake();
+    }
+
+    /**
+     * While game over, waits for the restart delay then starts a new round.
+     *
+     * @returns {boolean} True when the snake should not move this tick.
+     */
+    tickRestartAfterDeath() {
+        if (!this.gameOver) {
+            return false;
+        }
+
+        const tick = BT.ticks;
+
+        if (this.deathTick !== null && tick - this.deathTick >= RESTART_DELAY_TICKS) {
+            this.startRound();
+        }
+
+        return true;
+    }
+
+    /**
+     * Reads player 1 face buttons and updates pending direction (no instant reverse).
+     */
+    pollDirectionInput() {
         if (BT.buttonPressed(BT.BTN_UP, 0) && this.dy !== 1) {
             this.pendingDx = 0;
             this.pendingDy = -1;
@@ -366,21 +413,6 @@ class Demo {
             this.pendingDx = 1;
             this.pendingDy = 0;
         }
-
-        this.moveCooldown -= 1;
-
-        if (this.moveCooldown > 0) {
-            return;
-        }
-
-        this.moveCooldown = MOVE_INTERVAL;
-
-        if (!(this.pendingDx === -this.dx && this.pendingDy === -this.dy)) {
-            this.dx = this.pendingDx;
-            this.dy = this.pendingDy;
-        }
-
-        this.stepSnake();
     }
 
     /**
@@ -470,6 +502,11 @@ class Demo {
             const seg = this.snake[i];
             BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
         }
+
+        if (!this.postProcessAvailable) {
+            BT.systemPrint(new Vector2i(WALL, DISPLAY_H - WALL - 14), C_FOOTER_DIM, SOFTWARE_FALLBACK_NOTE);
+        }
+
         footer.draw();
     }
 

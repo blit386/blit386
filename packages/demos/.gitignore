@@ -26,6 +26,7 @@ coverage/
 *.lcov
 playwright-report/
 test-results/
+.playwright-cli/
 .vitest/
 
 # Claude Code local settings

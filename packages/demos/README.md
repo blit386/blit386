@@ -113,8 +113,8 @@ force software mode with the `?renderer=software` query on a demo URL, or with `
 in a demo’s `configure()`.
 
 Most demos run in **software mode** for core drawing (sprites, primitives, palette, input). **Post-process and
-fullscreen effect stacks** (for example the CRT demos) need **WebGPU**; the engine throws a clear error if software mode
-cannot provide them.
+fullscreen effect stacks** (for example the CRT demos) need **WebGPU**; effect-heavy demos skip those stacks in software
+mode and show an on-screen note while the rest of the scene keeps running.
 
 **WebGPU support** (for the full experience) is typical in:
 
