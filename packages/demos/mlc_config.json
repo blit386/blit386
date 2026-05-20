@@ -4,7 +4,7 @@
       "pattern": "^https://vancura\\.dev"
     },
     {
-      "pattern": "^https://github\\.com/vancura/blit-tech"
+      "pattern": "^https://github\\.com/vancura/blit-tech/.*/security-runbook(/|$)"
     }
   ]
 }
