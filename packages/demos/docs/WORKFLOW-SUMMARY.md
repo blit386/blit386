@@ -77,6 +77,23 @@ pnpm build           # Vite build
 4. **Faster CI** - Skip unnecessary checks
 5. **Maintainability** - Changes to Blit-Tech CI don't affect demos
 
+## GitHub Actions pinning
+
+Third-party actions in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and
+[`.github/actions/workspace-setup/action.yml`](../.github/actions/workspace-setup/action.yml) are pinned to a
+**40-character commit SHA**, with a trailing `# vN` comment for the release tag they were resolved from. Mutable `@vN`
+references are not used.
+
+| Path        | Who refreshes pins                                                                             |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| **Routine** | [Renovate](../renovate.json) `github-actions` manager — grouped PRs,                           |
+|             | 3-day `minimumReleaseAge`, patch automerge                                                     |
+| **Manual**  | Resolve the tag to a commit on the action repository                                           |
+|             | (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), replace the SHA, update the `# vN` comment |
+
+After changing pins, confirm CI still passes (workspace setup, artifact upload/download, Cloudflare deploy, README link
+check on `main`).
+
 ## Related Documentation
 
 - [CI-WORKSPACE-SETUP.md](CI-WORKSPACE-SETUP.md) - Detailed explanation of the workspace setup
