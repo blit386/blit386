@@ -32,7 +32,7 @@
 // We used the same idea in Demo 016-Palette-Animation:
 // https://vancura.dev/articles/blit-tech-palette-animation
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
+import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
 import { createDemoFooter } from './shared/demo-footer.js';
 
@@ -233,8 +233,15 @@ class Demo {
             const age = tick - p.spawnTick;
             const lifetime = 180;
 
-            // Alpha fades from 255 (solid) to 0 (invisible) as the particle ages.
-            const alpha = Math.floor(255 * (1 - age / lifetime));
+            // t goes from 0 (just born) to 1 (fully aged, about to disappear).
+            // Think of it like a candle burning down: 0 is a fresh candle, 1 is gone.
+            const t = age / lifetime;
+
+            // applyEasing(t, 'ease-in') starts slow and accelerates toward the end.
+            // Subtracting from 1 flips it: alpha stays high for most of the particle's life,
+            // then drops quickly right before it disappears - like a real spark that glows
+            // brightly, then winks out all at once instead of fading evenly.
+            const alpha = Math.floor(255 * (1 - applyEasing(t, 'ease-in')));
 
             // Hue is based on when the particle was spawned - no two batches look the same.
             const hue = (p.spawnTick * 3) % 360;
