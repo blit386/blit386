@@ -7,14 +7,32 @@
  * to register CRT stacks.
  */
 
+// #region Imports
+
 import { BT } from 'blit-tech';
 
+// #endregion
+
+// #region Configuration
+
 // Short on-screen note shown when effects are skipped (fits one or two systemPrint lines).
-export const SOFTWARE_FALLBACK_NOTE = 'Post-process needs WebGPU. Running without CRT effects.';
+const SOFTWARE_FALLBACK_NOTE = 'Post-process needs WebGPU. Running without CRT effects.';
+
+// #endregion
+
+// #region Helper Functions
 
 /**
  * @returns {boolean} True when fullscreen post-process effects can be registered.
  */
-export function isPostProcessAvailable() {
+function isPostProcessAvailable() {
     return BT.activeBackend === 'webgpu';
 }
+
+// #endregion
+
+// #region Exports
+
+export { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE };
+
+// #endregion
