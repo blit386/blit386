@@ -23,8 +23,9 @@ workspace.
 The engine prefers **WebGPU** and falls back to a **Canvas 2D software renderer** when WebGPU is missing or fails to
 start (optional `?renderer=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
 
-**WebGPU** is required for post-process / fullscreen effect demos (CRT stacks, two-tier chains). Most other demos run in
-software mode for core 2D.
+**WebGPU** is required for post-process / fullscreen effect demos (CRT stacks, two-tier chains). In software mode those
+demos still boot and run their core scene without the CRT stack; an on-screen note explains the limitation. Most other
+demos run fully in software mode for core 2D.
 
 **WebGPU** is supported in current versions of Chrome/Edge, recent Firefox and Safari as listed in the
 [Blit-Tech README](https://github.com/vancura/blit-tech/blob/main/README.md#prerequisites) and the demos
