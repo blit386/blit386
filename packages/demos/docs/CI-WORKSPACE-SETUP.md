@@ -50,7 +50,7 @@ dependencies invokes it in two steps:
 ```yaml
 steps:
   - name: Checkout for local actions
-    uses: actions/checkout@v6
+    uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
     with:
       sparse-checkout: .github/actions
       sparse-checkout-cone-mode: false
