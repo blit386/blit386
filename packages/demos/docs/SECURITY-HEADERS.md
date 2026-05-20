@@ -81,5 +81,6 @@ Check the browser console for CSP violations after deploy.
 ## Related
 
 - Parent hardening: Linear VV-516 (security program).
-- Runbook row: [`blit-tech/docs/security/security-runbook.md`](../../blit-tech/docs/security/security-runbook.md)
+- Runbook row:
+  [`blit-tech/docs/security/security-runbook.md`](https://github.com/vancura/blit-tech/blob/main/docs/security/security-runbook.md)
   (deploy headers evidence).
