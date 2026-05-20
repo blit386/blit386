@@ -18,6 +18,7 @@ export default [
             '**/build/**',
             '**/coverage/**',
             '**/dist/**',
+            '**/.wrangler/**',
             '**/node_modules/**',
             '.pnpm-store/**',
             '**/.pnpm-store/**',
