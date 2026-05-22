@@ -9,13 +9,13 @@ Run comprehensive quality checks before committing or pushing code.
 ## Usage
 
 ```text
-/preflight
+/demos-preflight
 ```
 
 ## Steps
 
 1. **Run all checks**
-   - Execute `pnpm preflight` which runs:
+   - Execute `pnpm run preflight` which runs:
      - `format:check` - Verify all files are formatted
      - `lint` - Check for lint errors (ESLint)
      - `spellcheck` - Check spelling in code and docs
@@ -26,7 +26,7 @@ Run comprehensive quality checks before committing or pushing code.
    - If any check fails: Report specific failures with file locations
 
 3. **Suggest fixes**
-   - For formatting issues: Suggest `pnpm format`
-   - For lint errors: Suggest `pnpm lint:fix`
+   - For formatting issues: Suggest `pnpm run format`
+   - For lint errors: Suggest `pnpm run lint:fix`
    - For spelling: Add words to `cspell.json` or fix typos
    - For unused exports: Remove unused code or add to knip ignore

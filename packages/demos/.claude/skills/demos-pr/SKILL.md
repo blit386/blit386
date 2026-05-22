@@ -9,10 +9,10 @@ Create a pull request with automatic quality checks and proper commit message.
 ## Usage
 
 ```text
-/pr Add new demo for input handling
+/demos-pr Add new demo for input handling
 ```
 
-The description after `/pr` becomes the commit subject.
+The description after `/demos-pr` becomes the commit subject.
 
 ## Steps
 
@@ -21,7 +21,7 @@ The description after `/pr` becomes the commit subject.
    - Run `git status` to see all changes
 
 2. **Run quality checks**
-   - Execute `pnpm preflight` (all checks)
+   - Execute `pnpm run preflight` (all checks)
    - If any check fails, stop and report errors
    - Do not proceed with failing checks
 

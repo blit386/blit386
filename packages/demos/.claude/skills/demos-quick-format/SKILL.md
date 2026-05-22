@@ -4,19 +4,19 @@ description: Quickly format all code files without verification steps
 
 # Quick Format
 
-Rapidly format all code files using the project's formatters. Streamlined version of `/format` that skips verification
-steps for maximum speed.
+Rapidly format all code files using the project's formatters. Streamlined version of `/demos-format` that skips
+verification steps for maximum speed.
 
 ## Usage
 
 ```text
-/quick-format
+/demos-quick-format
 ```
 
 ## Steps
 
 1. **Run formatters**
-   - Execute `pnpm format` which runs:
+   - Execute `pnpm run format` which runs:
      - Biome for JavaScript/JSON/CSS
      - Prettier for Markdown/YAML
 
