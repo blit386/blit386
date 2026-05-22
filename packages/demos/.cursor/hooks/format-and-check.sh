@@ -5,6 +5,26 @@ set -u
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 INPUT_JSON="$(cat)"
 
+canonical_path() {
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -c "
+import os, sys
+
+path = os.path.normpath(os.path.abspath(sys.argv[1]))
+if os.path.exists(path):
+    path = os.path.realpath(path)
+print(path)
+" "$1" 2>/dev/null && return
+    fi
+
+    if command -v realpath >/dev/null 2>&1; then
+        realpath -m "$1" 2>/dev/null && return
+        realpath "$1" 2>/dev/null && return
+    fi
+
+    printf '%s\n' "$1"
+}
+
 if command -v rtk >/dev/null 2>&1; then
     RUNNER='rtk pnpm exec'
 else
@@ -53,8 +73,11 @@ if [ ! -f "$TARGET_FILE" ]; then
     exit 0
 fi
 
-case "$TARGET_FILE" in
-    "$REPO_ROOT"/*) ;;
+CANON_REPO_ROOT="$(canonical_path "$REPO_ROOT")"
+CANON_TARGET="$(canonical_path "$TARGET_FILE")"
+
+case "$CANON_TARGET" in
+    "$CANON_REPO_ROOT"|"$CANON_REPO_ROOT"/*) ;;
     *) exit 0 ;;
 esac
 

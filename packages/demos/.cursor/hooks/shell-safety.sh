@@ -38,7 +38,7 @@ if [ -z "$COMMAND_TEXT" ]; then
     exit 0
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+clean[[:space:]]+-[^[:cntrl:]]*f[^[:cntrl:]]*d|git[[:space:]]+checkout[[:space:]]+--'; then
+if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+clean[[:space:]]+(-[^[:cntrl:]]*f[^[:cntrl:]]*d|-[^[:cntrl:]]*d[^[:cntrl:]]*f|-([^[:cntrl:]]|[[:space:]])*-f([^[:cntrl:]]|[[:space:]])*-d|-([^[:cntrl:]]|[[:space:]])*-d([^[:cntrl:]]|[[:space:]])*-f)|git[[:space:]]+checkout[[:space:]]+--'; then
     printf '{"permission":"deny","user_message":"Blocked risky destructive git command.","agent_message":"Use safer git operations or ask for explicit approval."}\n'
     exit 0
 fi

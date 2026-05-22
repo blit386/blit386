@@ -5,7 +5,7 @@ alwaysApply: true
 
 # blit-tech-demos CLAUDE Is Canonical
 
-- Treat `/Users/vancura/Repos/_BLIT_TECH_/blit-tech-demos/CLAUDE.md` as canonical for work in this repo.
+- Treat `CLAUDE.md` at the repository root as canonical for work in this repo.
 - Follow its demo conventions: plain JavaScript only, integer-coordinate rendering, and beginner-friendly explanatory comments.
 - Keep demo code and narration aligned with `CLAUDE.md` documentation style requirements.
 - Do not apply library-only TypeScript conventions to demo source files.
