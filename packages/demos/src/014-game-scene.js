@@ -44,7 +44,7 @@
 //
 // Think of it as updating the paint cans before the painter starts working.
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
+import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
 import { createDemoFooter } from './shared/demo-footer.js';
 
@@ -422,12 +422,13 @@ class Demo {
             // t goes 0 at the top to 1 near the horizon.
             const t = band / SKY_BANDS;
 
-            // Blend from skyTop to skyHorizon based on t.
-            const bandBase = new Color32(
-                Math.floor(this.skyTop.r + (this.skyHorizon.r - this.skyTop.r) * t),
-                Math.floor(this.skyTop.g + (this.skyHorizon.g - this.skyTop.g) * t),
-                Math.floor(this.skyTop.b + (this.skyHorizon.b - this.skyTop.b) * t),
-            );
+            // applyEasing(t, 'ease-in-out') squishes the transition so it moves slowly
+            // near the top, speeds up through the middle, then slows again near the horizon.
+            // Real skies work the same way: a deep uniform color at the zenith, a quick
+            // color shift through the middle bands, then a flatter wash near the horizon.
+            // lerp(other, t) blends smoothly between two Color32 values at position t,
+            // where t=0 is all skyTop and t=1 is all skyHorizon.
+            const bandBase = this.skyTop.lerp(this.skyHorizon, applyEasing(t, 'ease-in-out'));
             this.palette.set(C_SKY_BASE + band, bandBase.multiply(ambient));
         }
 
