@@ -151,7 +151,7 @@ Once the workspace is ready:
 ```bash
 cd blit-tech-demos
 pnpm install
-pnpm dev
+pnpm run dev
 ```
 
 This opens the demo index at `http://localhost:5173/demos/` and each page at `http://localhost:5173/demos/<slug>.html`
