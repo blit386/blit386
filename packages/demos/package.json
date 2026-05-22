@@ -30,7 +30,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:watch": "pnpm --filter blit-tech build && concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit-tech build --watch\" \"pnpm dev\"",
+    "dev:watch": "pnpm --filter blit-tech run build && concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit-tech run build --watch\" \"pnpm run dev\"",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -40,7 +40,7 @@
     "format:biome": "biome format --write .",
     "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
     "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
-    "preflight": "pnpm format:check && pnpm lint && pnpm spellcheck && pnpm knip",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run spellcheck && pnpm run knip",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "clean": "rm -rf dist node_modules/.vite",
