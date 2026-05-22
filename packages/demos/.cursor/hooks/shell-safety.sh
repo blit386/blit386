@@ -38,12 +38,15 @@ if [ -z "$COMMAND_TEXT" ]; then
     exit 0
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+clean[[:space:]]+(-[^[:cntrl:]]*f[^[:cntrl:]]*d|-[^[:cntrl:]]*d[^[:cntrl:]]*f|-([^[:cntrl:]]|[[:space:]])*-f([^[:cntrl:]]|[[:space:]])*-d|-([^[:cntrl:]]|[[:space:]])*-d([^[:cntrl:]]|[[:space:]])*-f)|git[[:space:]]+checkout[[:space:]]+--'; then
+GIT_PREFIX='git([[:space:]]+(-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?|--[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?))*[[:space:]]+'
+GIT_CLEAN_FLAGS='(-[^[:cntrl:]]*f[^[:cntrl:]]*d|-[^[:cntrl:]]*d[^[:cntrl:]]*f|-([^[:cntrl:]]|[[:space:]])*-f([^[:cntrl:]]|[[:space:]])*-d|-([^[:cntrl:]]|[[:space:]])*-d([^[:cntrl:]]|[[:space:]])*-f)'
+
+if printf '%s' "$COMMAND_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}clean[[:space:]]+${GIT_CLEAN_FLAGS}|${GIT_PREFIX}checkout[[:space:]]+--"; then
     printf '{"permission":"deny","user_message":"Blocked risky destructive git command.","agent_message":"Use safer git operations or ask for explicit approval."}\n'
     exit 0
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+push[^[:cntrl:]]*--force|git[[:space:]]+push[^[:cntrl:]]*-f'; then
+if printf '%s' "$COMMAND_TEXT" | grep -Eq "${GIT_PREFIX}push[^[:cntrl:]]*--force|${GIT_PREFIX}push[^[:cntrl:]]*-f"; then
     printf '{"permission":"ask","user_message":"Force push detected. Confirm before continuing.","agent_message":"Potential history rewrite command requires confirmation."}\n'
     exit 0
 fi
