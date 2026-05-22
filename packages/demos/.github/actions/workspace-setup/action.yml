@@ -46,4 +46,4 @@ runs:
       shell: bash
       run: |
         cd blit-tech
-        pnpm build
+        pnpm run build

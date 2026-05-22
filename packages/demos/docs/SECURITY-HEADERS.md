@@ -47,7 +47,7 @@ Deployed demos are static HTML, JS, fonts, and sprites on
 
 ```bash
 cd blit-tech-demos
-pnpm build
+pnpm run build
 test -f dist/_headers
 ```
 
@@ -56,7 +56,7 @@ test -f dist/_headers
 `vite preview` serves files but does **not** parse Cloudflare `_headers`. To exercise the real header rules locally:
 
 ```bash
-pnpm build
+pnpm run build
 npx wrangler pages dev dist --port 8788
 curl -sI 'http://127.0.0.1:8788/001-basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
 ```

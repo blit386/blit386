@@ -47,20 +47,23 @@ disk.
 ## Development Commands
 
 ```bash
-pnpm dev              # Start dev server (http://localhost:5173/demos/)
-pnpm dev:watch        # Dev server + watch Blit-Tech library for changes
-pnpm build            # Build for production (output: dist/)
-pnpm preview          # Preview production build
-pnpm lint             # Lint (ESLint)
-pnpm lint:fix         # Auto-fix lint issues
-pnpm format           # Format (Biome + Prettier)
-pnpm format:check     # Check formatting
-pnpm spellcheck       # Check spelling
-pnpm knip             # Find unused exports
-pnpm preflight        # ALL quality checks before committing
-pnpm clean            # Clean build artifacts
-pnpm security:audit   # Run security audit on dependencies
+pnpm run dev              # Start dev server (http://localhost:5173/demos/)
+pnpm run dev:watch        # Dev server + watch Blit-Tech library for changes
+pnpm run build            # Build for production (output: dist/)
+pnpm run preview          # Preview production build
+pnpm run lint             # Lint (ESLint)
+pnpm run lint:fix         # Auto-fix lint issues
+pnpm run format           # Format (Biome + Prettier)
+pnpm run format:check     # Check formatting
+pnpm run spellcheck       # Check spelling
+pnpm run knip             # Find unused exports
+pnpm run preflight        # ALL quality checks before committing
+pnpm run clean            # Clean build artifacts
+pnpm run security:audit   # Run security audit on dependencies
 ```
+
+**RTK:** Use `pnpm run …` for scripts. Cursor `.cursor/hooks.json` runs `rtk hook cursor` on Shell; Claude Code uses
+`rtk hook claude` on Bash. Prefer shell + RTK over native Read/Grep for exploration. See `~/.claude/RTK.md`.
 
 ## Workspace Integration
 

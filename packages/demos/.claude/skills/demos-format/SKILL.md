@@ -9,13 +9,13 @@ Format all code files using the project's formatters and verify results.
 ## Usage
 
 ```text
-/format
+/demos-format
 ```
 
 ## Steps
 
 1. **Run formatters**
-   - Execute `pnpm format` which runs:
+   - Execute `pnpm run format` which runs:
      - Biome for JavaScript/JSON/CSS
      - Prettier for Markdown/YAML
 
@@ -24,7 +24,7 @@ Format all code files using the project's formatters and verify results.
    - List the number of files modified
 
 3. **Verify formatting**
-   - Run `pnpm format:check` to confirm all files pass
+   - Run `pnpm run format:check` to confirm all files pass
    - Report any files that still have formatting issues
 
 ## Formatter Configuration

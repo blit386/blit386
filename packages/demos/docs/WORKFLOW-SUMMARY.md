@@ -62,11 +62,11 @@ All quality checks run from Blit-Tech Demos directory:
 
 ```bash
 cd blit-tech-demos
-pnpm format:check    # Biome + Prettier formatting
-pnpm lint            # ESLint
-pnpm spellcheck      # cspell
-pnpm knip            # Unused exports
-pnpm build           # Vite build
+pnpm run format:check    # Biome + Prettier formatting
+pnpm run lint            # ESLint
+pnpm run spellcheck      # cspell
+pnpm run knip            # Unused exports
+pnpm run build           # Vite build
 ```
 
 ## Why This Approach?

@@ -29,8 +29,22 @@ test-results/
 .playwright-cli/
 .vitest/
 
-# Claude Code local settings
+# Claude Code (skills, rules, settings.json are tracked)
 .claude/settings.local.json
+.claude/memory/
+.claude/worktrees/
+
+# MCP configs (local secrets; project MCP also lives under ~/.cursor/projects/)
+.mcp.json
+mcp.json
+
+# Other AI assistants (local only)
+.codex/
+.aider*
+.continue/
+.windsurf/
+ai-rules/
+.rules
 
 # IDE and editor files
 .vscode/launch.json
@@ -40,7 +54,12 @@ test-results/
 .idea/
 *.iml
 .zed/
-.cursor/
+.cursor/*
+!.cursor/hooks.json
+!.cursor/hooks/
+!.cursor/hooks/**
+!.cursor/rules/
+!.cursor/rules/**
 *.swp
 *.swo
 *~

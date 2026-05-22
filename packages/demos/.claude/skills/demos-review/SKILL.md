@@ -9,7 +9,7 @@ Review current changes against project rules and quality standards.
 ## Usage
 
 ```text
-/review
+/demos-review
 ```
 
 ## Steps
@@ -20,8 +20,8 @@ Review current changes against project rules and quality standards.
    - List which files were modified and what changed
 
 2. **Run automated checks**
-   - `pnpm lint` - Report any lint issues
-   - `pnpm spellcheck` - Check for spelling issues
+   - `pnpm run lint` - Report any lint issues
+   - `pnpm run spellcheck` - Check for spelling issues
 
 3. **Check against project rules**
    - No emoji anywhere (code, comments, docs, commits)

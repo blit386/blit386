@@ -9,13 +9,13 @@ Run project-wide spellcheck, then fix all reported errors.
 ## Usage
 
 ```text
-/spellcheck
+/demos-spellcheck
 ```
 
 ## Steps
 
 1. **Run spellcheck**
-   - Execute `pnpm spellcheck` to check all `*.{js,md,mdx}` files
+   - Execute `pnpm run spellcheck` to check all `*.{js,md,mdx}` files
    - Capture the full error output
 
 2. **Analyze each error** For every word flagged by cspell, determine if it is:
@@ -32,11 +32,11 @@ Run project-wide spellcheck, then fix all reported errors.
    - Do not add duplicates
 
 5. **Re-run spellcheck**
-   - Execute `pnpm spellcheck` again to confirm all errors are resolved
+   - Execute `pnpm run spellcheck` again to confirm all errors are resolved
    - If new errors appear, repeat from step 2
 
 6. **Format**
-   - Run `/format` to ensure all modified files are properly formatted
+   - Run `/demos-format` to ensure all modified files are properly formatted
 
 ## Dictionary file
 

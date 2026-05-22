@@ -108,7 +108,7 @@ This is not required but can help with pnpm version pinning.
 
 ```bash
 cd blit-tech-demos
-pnpm dev
+pnpm run dev
 ```
 
 Opens the browser at `http://localhost:5173/demos/001-basics.html` (or visit `/demos/` for the full index).
@@ -119,7 +119,7 @@ If you want to edit the Blit-Tech library and see changes instantly:
 
 ```bash
 cd blit-tech-demos
-pnpm dev:watch
+pnpm run dev:watch
 ```
 
 This runs two processes concurrently:
@@ -133,7 +133,7 @@ If you want to rebuild the library:
 
 ```bash
 cd blit-tech
-pnpm build
+pnpm run build
 ```
 
 Then the demos will use the newly built version.
@@ -169,9 +169,9 @@ Then the demos will use the newly built version.
 ```bash
 cd blit-tech
 pnpm install
-pnpm build
+pnpm run build
 cd ../blit-tech-demos
-pnpm dev
+pnpm run dev
 ```
 
 ## Alternative: Use Blit-Tech from npm

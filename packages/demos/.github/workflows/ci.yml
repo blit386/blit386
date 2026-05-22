@@ -32,22 +32,22 @@ jobs:
       - name: Check formatting
         run: |
           cd blit-tech-demos
-          pnpm format:check
+          pnpm run format:check
 
       - name: Lint code
         run: |
           cd blit-tech-demos
-          pnpm lint
+          pnpm run lint
 
       - name: Spell check
         run: |
           cd blit-tech-demos
-          pnpm spellcheck
+          pnpm run spellcheck
 
       - name: Check for unused exports
         run: |
           cd blit-tech-demos
-          pnpm knip
+          pnpm run knip
 
   build:
     name: Build
@@ -67,7 +67,7 @@ jobs:
       - name: Build demos
         run: |
           cd blit-tech-demos
-          pnpm build
+          pnpm run build
         env:
           NODE_ENV: production
 

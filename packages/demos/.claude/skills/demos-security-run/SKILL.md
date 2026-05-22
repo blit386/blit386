@@ -10,7 +10,7 @@ in `blit-tech`.
 ## Usage
 
 ```text
-/security-run
+/demos-security-run
 ```
 
 ## Steps
@@ -18,7 +18,7 @@ in `blit-tech`.
 1. **MCP preflight (required)**
 
    ```bash
-   pnpm security:mcp-preflight -- \
+   pnpm run security:mcp-preflight -- \
      --mcps-dir "<cursor-project-mcps-path>" \
      --repo-root . \
      --allow-fallback \
@@ -36,11 +36,11 @@ in `blit-tech`.
    ```
 
 2. **Repo-native checks**
-   - `pnpm security:audit`
+   - `pnpm run security:audit`
    - `pnpm audit --prod --audit-level=moderate`
    - `pnpm audit --dev --audit-level=moderate`
-   - `pnpm preflight`
-   - `pnpm build` (after dependency/toolchain changes)
+   - `pnpm run preflight`
+   - `pnpm run build` (after dependency/toolchain changes)
 
 3. **MCP scans** — only when corresponding servers are `healthy` (see library runbook).
 
@@ -50,7 +50,7 @@ in `blit-tech`.
 ## Periodic governance (monthly)
 
 ```bash
-pnpm security:mcp-preflight -- \
+pnpm run security:mcp-preflight -- \
   --mcps-dir "<cursor-project-mcps-path>" \
   --repo-root . \
   --governance-only \

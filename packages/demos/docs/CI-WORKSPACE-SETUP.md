@@ -63,7 +63,7 @@ steps:
   - name: Check formatting (Blit-Tech Demos only)
     run: |
       cd blit-tech-demos
-      pnpm format:check
+      pnpm run format:check
 ```
 
 The composite action performs these steps internally:
@@ -100,7 +100,7 @@ Hot reloading works perfectly with:
 
 ```bash
 cd blit-tech-demos
-pnpm dev:watch
+pnpm run dev:watch
 ```
 
 This script uses `concurrently` to watch both projects:
