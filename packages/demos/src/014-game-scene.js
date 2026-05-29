@@ -733,7 +733,7 @@ class Demo {
         const phaseTick = tick % DAY_NIGHT_CYCLE_TICKS;
 
         if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.25) {
-            return 'Dawn/Day';
+            return 'Day';
         }
 
         if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.5) {

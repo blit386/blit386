@@ -143,7 +143,7 @@ These demos are thin wrappers around the library. For complete behavior, APIs, a
 - **[Performance testing](https://github.com/vancura/blit-tech/blob/main/docs/performance-testing.md)** - benchmarks and
   CI
 - **[Software fallback smoke matrix](https://github.com/vancura/blit-tech/blob/main/docs/software-fallback-smoke-matrix.md)**
-  - manual renderer coverage notes
+  - manual backend coverage notes
 
 ## How to Run
 

@@ -231,6 +231,15 @@ class Demo {
      * @returns {readonly { leftText: string }[]}
      */
     overlayRows() {
+        if (
+            this.presets.length === 0 ||
+            this.currentPresetIndex < 0 ||
+            this.currentPresetIndex >= this.presets.length ||
+            this.currentPresetIndex >= this.presetNames.length
+        ) {
+            return this.overlayRowData;
+        }
+
         const name = this.presetNames[this.currentPresetIndex];
         const size = this.presets[this.currentPresetIndex].size;
         this.overlayRowData[0].leftText = `Current: ${name} - ${size} colors`;
