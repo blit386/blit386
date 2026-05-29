@@ -40,13 +40,10 @@
  *   - bootstrap: a helper that starts the engine and connects your demo to it
  *   - BT: the main engine object - you call BT.clear(), BT.drawSprite(), etc.
  *   - Color32: represents a color with Red, Green, Blue (and optional Alpha)
- *   - Rect2i: a rectangle defined by (x, y, width, height) using whole numbers
  *   - SpriteSheet: a loaded image you can draw pieces of on screen (a "sprite")
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
-
-import { createDemoFooter } from './shared/demo-footer.js';
 
 // #endregion
 
@@ -59,11 +56,13 @@ import { createDemoFooter } from './shared/demo-footer.js';
 //
 // Index 0 is always transparent (completely invisible). Our custom colors start at 1.
 const C_BG = 1; // Almost-black with a green tint: matches the inside of a PipBoy screen.
-const C_GREEN = 2; // PipBoy green: the main text color (Position, FPS).
-const C_AMBER = 3; // Amber: the bounce counter, standing in for the old blue accent.
+const C_OVERLAY_BAR = 2; // Slightly lighter bar behind overlay text (readable on PipBoy green).
+const C_OVERLAY_GREEN = 3; // PipBoy green for position line in the overlay.
+const C_OVERLAY_AMBER = 4; // Amber for bounce count in the overlay.
+const C_OVERLAY_ERROR = 5; // Red accent reserved for future timing-chart severity markers.
 
 // Where the sprite's own colors begin in the palette.
-// We reserve indices 1..3 for our text colors above. From index 10 onward we
+// Index 1 is our background. From index 10 onward we
 // store every color that the sprite image uses, one per palette slot. Starting
 // at 10 (instead of 4) leaves a little room to add more text colors later
 // without having to renumber the sprite slots.
@@ -75,8 +74,6 @@ const SPRITE_URL = '/sprites/logo-1.png';
 
 // Target update rate. 30 ticks per second is slower than the engine default (60).
 const TARGET_FPS = 30;
-
-const footer = createDemoFooter({ leftColor: C_GREEN, rightColor: C_AMBER });
 
 // #endregion
 
@@ -135,7 +132,7 @@ class Demo {
     pos = new Vector2i(160, 120);
 
     // "speed" is how many pixels the sprite moves each update().
-    // x=2 means it moves 2 pixels to the right each tick.
+    // x=1 means it moves 1 pixel to the right each tick.
     // y=1 means it moves 1 pixel downward each tick.
     // When we make a number negative (like -2), the sprite moves in the
     // opposite direction (left instead of right, or up instead of down).
@@ -163,6 +160,14 @@ class Demo {
     // one sprite, so the rectangle covers the whole image: (x=0, y=0, full width, full height).
     spriteRect = null;
 
+    // Reused every frame for the engine overlay (position + bounces).
+    // We keep one array and update the text strings in place so we do not
+    // allocate new objects on every screen refresh.
+    overlayRowData = [
+        { leftText: 'Position: 0, 0', textPaletteIndex: C_OVERLAY_GREEN },
+        { leftText: 'Bounces: 0', textPaletteIndex: C_OVERLAY_AMBER },
+    ];
+
     // #region Lifecycle Methods
 
     /**
@@ -171,13 +176,33 @@ class Demo {
      * - How big the canvas element should appear on the web page.
      * - How many times per second update() should run.
      *
-     * @returns {{targetFPS: number}}
+     * @returns {{ targetFPS: number, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayTimingChartHeight: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
      */
     configure() {
         // Only override the tick rate; the engine fills in displaySize,
-        // canvasDisplaySize, and the rest from defaultConfig().
+        // drawingBufferSize, and the rest from defaultConfig().
         return {
             targetFPS: TARGET_FPS,
+            // Live palette grid at the bottom: every palette slot as a tiny swatch.
+            // Slots your demo draws this frame show their color; unused slots show a dim marker.
+            overlayPaletteView: true,
+            // Scrolling timing chart under the title row (green = update(), amber = render()).
+            // One dot per screen refresh; no extra CPU load added in this demo.
+            overlayTimingChart: true,
+            overlayTimingChartHeight: 32,
+            // Tell the engine which palette slots to use for the overlay bars
+            // (top FPS strip, bottom title strip, and the bar behind custom rows).
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_OVERLAY_GREEN,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_OVERLAY_GREEN,
+                renderBarPaletteIndex: C_OVERLAY_AMBER,
+                warningPaletteIndex: C_OVERLAY_AMBER,
+                errorPaletteIndex: C_OVERLAY_ERROR,
+                eventPaletteIndex: C_OVERLAY_GREEN,
+            },
         };
     }
 
@@ -207,8 +232,12 @@ class Demo {
         // Color32(Red, Green, Blue) - each value is 0 to 255.
         // 0 = none of that color, 255 = maximum of that color.
         this.palette.set(C_BG, new Color32(16, 28, 16)); // Almost-black, faint green tint.
-        this.palette.set(C_GREEN, new Color32(80, 200, 110)); // PipBoy phosphor green.
-        this.palette.set(C_AMBER, new Color32(220, 180, 60)); // Vault-Tec amber accent.
+
+        // Overlay colors (must match overlayStyle and overlayRowData above).
+        this.palette.set(C_OVERLAY_BAR, new Color32(24, 44, 28)); // Dark bar, slightly lighter than C_BG.
+        this.palette.set(C_OVERLAY_GREEN, new Color32(80, 200, 110)); // Bright PipBoy green for overlay text.
+        this.palette.set(C_OVERLAY_AMBER, new Color32(220, 180, 60)); // Amber accent for the bounce row.
+        this.palette.set(C_OVERLAY_ERROR, new Color32(200, 70, 70)); // Red for timing-chart error slot (future use).
 
         // Step 2: register every color used by the sprite image
         // The engine draws sprites using palette indices, not raw RGB colors.
@@ -255,13 +284,14 @@ class Demo {
     }
 
     /**
-     * Called at a fixed rate (60 times per second in this demo).
+     * Called at a fixed rate (30 times per second in this demo).
      *
      * This is where ALL game logic goes: moving things, checking collisions,
      * counting scores, etc. Never draw anything here - that belongs in render().
      *
      * update() may be called 0 to 8 times between screen refreshes:
-     *   - Usually it runs once per refresh (at 60 FPS on a 60 Hz monitor).
+     *   - Usually it runs at the targetFPS cadence (30 updates per second here).
+     *     On a 60 Hz monitor, that is about one update every two refreshes.
      *   - If the computer is slow, it may run multiple times to catch up.
      *   - If you switch to another browser tab, it pauses completely.
      *   - When you come back, it runs up to 8 times to catch up.
@@ -298,6 +328,23 @@ class Demo {
     }
 
     /**
+     * Optional hook: tells the engine what extra lines to draw in the overlay.
+     *
+     * The overlay is the thin bars at the top and bottom (FPS, demo title, timing chart,
+     * palette grid, etc.). Custom rows stack upward from just above the bottom palette band.
+     * Colors come from palette slots we set in init() and from configure().overlayStyle.
+     * We return the same overlayRowData array every time and only change the text.
+     *
+     * @returns {readonly { leftText: string }[]}
+     */
+    overlayRows() {
+        this.overlayRowData[0].leftText = `Position: (${this.pos.x}, ${this.pos.y})`;
+        this.overlayRowData[1].leftText = `Bounces: ${this.bounces}`;
+
+        return this.overlayRowData;
+    }
+
+    /**
      * Called once per screen refresh to draw everything.
      *
      * render() runs AFTER update(). By the time render() is called, all
@@ -327,21 +374,12 @@ class Demo {
         //   - destinationPosition: WHERE on screen to draw it (the top-left corner).
         //   - paletteOffset: a number added to every pixel's palette index. We
         //     pass 0 here to use the original colors. Bigger numbers can swap to
-        //     alternate "team colors" - you will see this trick in demo 008.
+        //     alternate "team colors" - you will see this trick in a future demo.
         BT.drawSprite(this.spriteSheet, this.spriteRect, this.pos, 0);
 
-        // Draw text showing the current FPS, position, and bounce count.
-        // BT.systemPrint() draws text using the engine's built-in 6x14 system font.
-        // It takes (position, paletteIndex, text) - no font loading needed!
-        // The template string (`backticks`) lets us insert variable values with ${...}.
-        // BT.targetFPS returns the target update rate we set in configure() (30 in this demo).
-        BT.systemPrint(new Vector2i(3, 0), C_GREEN, `Position: ${this.pos.x}, ${this.pos.y}`);
-
-        // Show the bounce count in amber so it stands out from the green text.
-        // C_AMBER is palette index 3, the secondary PipBoy accent color.
-        BT.systemPrint(new Vector2i(3, BT.displaySize.y - 27), C_AMBER, `Bounces: ${this.bounces}`);
-
-        footer.draw();
+        // Position and bounce count are shown in overlayRows() above the bottom
+        // FPS bar. The engine draws FPS and the demo title there too - no need to
+        // print those lines ourselves with BT.systemPrint().
     }
 
     // #endregion
@@ -354,7 +392,7 @@ class Demo {
 // bootstrap() is the function that starts everything. You pass it your Demo
 // class, and it takes care of:
 //   1. Setting up the HTML canvas on the page
-//   2. Picking a renderer: WebGPU when the browser supports it, otherwise Canvas 2D software mode (see README)
+//   2. Picking a backend: WebGPU when the browser supports it, otherwise Canvas 2D software mode (see README)
 //   3. Creating a new instance of your Demo class
 //   4. Calling configure() when you define it, then init(), then the update/render loop
 //

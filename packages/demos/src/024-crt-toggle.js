@@ -9,8 +9,8 @@
 // Live article: https://vancura.dev/articles/blit-tech-crt-toggle
 //
 // WHAT YOU WILL SEE
-// A colorful, simple scene - bouncing squares, a few horizontal bars, and a label in the
-// corner. Every two seconds the CRT preset flips on and off automatically. While it is on
+// A colorful, simple scene - bouncing squares and a few horizontal bars. Every two seconds
+// the CRT preset flips on and off automatically. Status text lives in the overlay. While it is on
 // you see scanlines, the RGB shadow mask, smooth barrel curvature, and a soft phosphor
 // glow; while it is off the pixels are exactly what the engine drew (no post-processing).
 // The bouncing keeps going either way, so you can compare the two looks side by side.
@@ -32,8 +32,8 @@
 //
 // HOW THE TOGGLE WORKS
 // We measure time in ticks (60 per second). Every TOGGLE_PERIOD_TICKS the demo flips a
-// boolean and either adds or removes the entire preset stack. The label in the top-left
-// corner reads "CRT: ON" or "CRT: OFF" so you always know which side you are looking at.
+// boolean and either adds or removes the entire preset stack. The overlay shows
+// "CRT: ON" or "CRT: OFF" so you always know which side you are looking at.
 //
 // SOFTWARE FALLBACK
 // In software renderer mode, post-process effects are unavailable. The bouncing
@@ -46,7 +46,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
 import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
@@ -74,6 +73,7 @@ const C_BLUE = 5;
 const C_YELLOW = 6;
 const C_CYAN = 7;
 const C_MAGENTA = 8;
+const C_OVERLAY_BAR = 9; // Overlay row background
 
 // The five colors used for the bouncing squares. We list them in order so each
 // square gets a distinct color from the palette.
@@ -116,8 +116,6 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 
 // #endregion
 
-const footer = createDemoFooter({ leftColor: C_LABEL, rightColor: C_LABEL });
-
 // #region Main Logic
 
 /**
@@ -133,23 +131,37 @@ const footer = createDemoFooter({ leftColor: C_LABEL, rightColor: C_LABEL });
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    // Reused every frame for the overlay (CRT status + hint).
+    overlayRowData = [
+        { leftText: 'CRT: OFF', textPaletteIndex: C_LABEL },
+        { leftText: 'Auto-toggles every 2s', textPaletteIndex: C_LABEL },
+    ];
+
     configure() {
         return {
             // Internal pixel-art resolution. Game logic and draws operate at this size.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
 
-            // canvasDisplaySize is required for display-tier effects (barrel, scanlines,
+            // drawingBufferSize is required for display-tier effects (barrel, scanlines,
             // mask, bloom). Flow: draw palette indices at 320x240, optional pixel-tier on
             // that r8uint buffer, then the engine resolves indices through the palette LUT
             // and upscales to RGBA at this size, then the display chain runs on RGBA.
             // Without this field, BT.effectAdd would throw for display-tier effects.
-            canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
+            drawingBufferSize: new Vector2i(OUTPUT_W, OUTPUT_H),
+
+            // Match output buffer size so the CRT picture is not capped at 960x720 CSS.
+            maxCanvasSize: new Vector2i(OUTPUT_W, OUTPUT_H),
 
             // 'nearest' keeps each source pixel as a crisp 4x4 block. 'linear' would
             // soften them into bilinear-blended squishes - a different look, also valid.
             outputUpscaleFilter: 'nearest',
 
             targetFPS: TARGET_FPS,
+
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_LABEL,
+            },
         };
     }
 
@@ -166,6 +178,7 @@ class Demo {
         palette.set(C_YELLOW, Color32.yellow);
         palette.set(C_CYAN, Color32.cyan);
         palette.set(C_MAGENTA, Color32.magenta);
+        palette.set(C_OVERLAY_BAR, new Color32(10, 15, 25, 220));
         BT.paletteSet(palette);
 
         this.postProcessAvailable = isPostProcessAvailable();
@@ -270,6 +283,22 @@ class Demo {
         }
     }
 
+    /**
+     * CRT on/off status and backend hint for the engine overlay.
+     *
+     * @returns {readonly { leftText: string }[]}
+     */
+    overlayRows() {
+        this.overlayRowData[0].leftText = this.postProcessAvailable
+            ? this.crtEnabled
+                ? 'CRT: ON'
+                : 'CRT: OFF'
+            : 'CRT: N/A';
+        this.overlayRowData[1].leftText = this.postProcessAvailable ? 'Auto-toggles every 2s' : SOFTWARE_FALLBACK_NOTE;
+
+        return this.overlayRowData;
+    }
+
     render() {
         BT.clear(C_BG);
 
@@ -285,20 +314,7 @@ class Demo {
             BT.drawRectFill(new Rect2i(sq.pos.x, sq.pos.y, SQUARE_SIZE, SQUARE_SIZE), sq.color);
         }
 
-        // Status label in the top-left corner. BT.systemPrint uses the built-in
-        // 6x14 font so we don't need to load anything.
-        const label = this.postProcessAvailable ? (this.crtEnabled ? 'CRT: ON' : 'CRT: OFF') : 'CRT: N/A';
-        BT.systemPrint(new Vector2i(8, 8), C_LABEL, label);
-
-        if (this.postProcessAvailable) {
-            // Hint about how to read the demo. Helps a first-time viewer understand
-            // why the picture changes every two seconds.
-            BT.systemPrint(new Vector2i(8, DISPLAY_H - 22), C_LABEL, 'Auto-toggles every 2s');
-        } else {
-            BT.systemPrint(new Vector2i(8, DISPLAY_H - 22), C_LABEL, SOFTWARE_FALLBACK_NOTE);
-        }
-
-        footer.draw();
+        // CRT status and hints are drawn in overlayRows() above the FPS bar.
     }
 }
 

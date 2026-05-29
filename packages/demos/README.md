@@ -20,6 +20,10 @@ Each demo passes a class to `bootstrap()` from `blit-tech`. Optional `configure(
 omit it, the engine applies `defaultConfig()` (`320x240` logical, `640x480` canvas, `60` FPS). Every demo still
 implements `init()`, `update()`, and `render()`.
 
+The engine draws a unified overlay on top of each frame (FPS, target FPS, backend, resolution, demo title). Press
+Backquote (`~`) or tap the bottom-right corner to hide or show it. Set `overlayEnabled: false` in `configure()` to
+disable it entirely.
+
 ## Demos
 
 Below, each title links to the deployed page. Slug `021-error-preview` was retired; numbering resumes at `022`.
@@ -106,11 +110,11 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 ## Browser and Renderer
 
-Blit-Tech uses **two renderers**. The default path is **WebGPU** (indexed framebuffer, full post-process chain, CRT
-presets, and related demos). If WebGPU is unavailable or fails to initialize, the engine **automatically** switches to a
-**Canvas 2D software renderer**; a small dismissible **SOFTWARE RENDERER** banner appears on the canvas. You can also
-force software mode with the `?renderer=software` query on a demo URL, or with `HardwareSettings.renderer: 'software'`
-in a demo’s `configure()`.
+Blit-Tech uses **two backends** (WebGPU and Canvas 2D software). The default path is **WebGPU** (indexed framebuffer,
+full post-process chain, CRT presets, and related demos). If WebGPU is unavailable or fails to initialize, the engine
+**automatically** switches to a **Canvas 2D software renderer**; a small dismissible **SOFTWARE RENDERER** banner
+appears on the canvas. You can also force software mode with the `?backend=software` query on a demo URL, or with
+`HardwareSettings.backend: 'software'` in a demo’s `configure()`.
 
 Most demos run in **software mode** for core drawing (sprites, primitives, palette, input). **Post-process and
 fullscreen effect stacks** (for example the CRT demos) need **WebGPU**; effect-heavy demos skip those stacks in software
@@ -139,7 +143,7 @@ These demos are thin wrappers around the library. For complete behavior, APIs, a
 - **[Performance testing](https://github.com/vancura/blit-tech/blob/main/docs/performance-testing.md)** - benchmarks and
   CI
 - **[Software fallback smoke matrix](https://github.com/vancura/blit-tech/blob/main/docs/software-fallback-smoke-matrix.md)**
-  - manual backend coverage notes
+  - manual renderer coverage notes
 
 ## How to Run
 

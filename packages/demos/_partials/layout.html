@@ -44,20 +44,20 @@
 
                 /*
                  * Largest size that fits the viewport and demo max cap while keeping aspect ratio.
-                 * --canvas-display-w/h: aspect (from canvasDisplaySize or displaySize).
-                 * --canvas-max-w/h: max on-screen size (from configure() maxCanvasDisplaySize).
+                 * --canvas-aspect-w/h: aspect (from drawingBufferSize or displaySize).
+                 * --canvas-max-w/h: max on-screen size (from configure() maxCanvasSize).
                  */
                 width: min(
                     100dvw,
-                    calc(100dvh * var(--canvas-display-w, 640) / var(--canvas-display-h, 480)),
+                    calc(100dvh * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
                     var(--canvas-max-w, 960px),
-                    calc(var(--canvas-max-h, 720px) * var(--canvas-display-w, 640) / var(--canvas-display-h, 480))
+                    calc(var(--canvas-max-h, 720px) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480))
                 );
                 height: min(
                     100dvh,
-                    calc(100dvw * var(--canvas-display-h, 480) / var(--canvas-display-w, 640)),
+                    calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
                     var(--canvas-max-h, 720px),
-                    calc(var(--canvas-max-w, 960px) * var(--canvas-display-h, 480) / var(--canvas-display-w, 640))
+                    calc(var(--canvas-max-w, 960px) * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640))
                 );
             }
 

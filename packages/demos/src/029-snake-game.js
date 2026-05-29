@@ -33,8 +33,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isPostProcessAvailable } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -47,8 +46,6 @@ const C_SNAKE = 3;
 const C_FOOD = 4;
 const C_FOOTER_DIM = 5;
 const C_FOOTER_WHITE = 6;
-
-const footer = createDemoFooter({ leftColor: C_FOOTER_DIM, rightColor: C_FOOTER_WHITE });
 
 // Logical resolution: small playfield as requested.
 const DISPLAY_W = 160;
@@ -234,12 +231,13 @@ class Demo {
     /**
      * 160x120 framebuffer, 4x upscale for CRT chain, 60 fixed updates per second.
      *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number, outputUpscaleFilter: string}}
+     * @returns {{displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, targetFPS: number, outputUpscaleFilter: string}}
      */
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
+            drawingBufferSize: new Vector2i(OUTPUT_W, OUTPUT_H),
+            maxCanvasSize: new Vector2i(OUTPUT_W, OUTPUT_H),
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
         };
@@ -502,12 +500,6 @@ class Demo {
             const seg = this.snake[i];
             BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
         }
-
-        if (!this.postProcessAvailable) {
-            BT.systemPrint(new Vector2i(WALL, DISPLAY_H - WALL - 14), C_FOOTER_DIM, SOFTWARE_FALLBACK_NOTE);
-        }
-
-        footer.draw();
     }
 
     // #endregion

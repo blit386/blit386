@@ -30,8 +30,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -60,8 +58,6 @@ const SLOT_PAINT = [
 const BRUSH_SIZES = [0, 2, 4];
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_TEXT, baselineY: DISPLAY_H - 36 - 15 });
 
 // #region Main Logic
 
@@ -295,10 +291,6 @@ class Demo {
      * Heads-up display: title plus per-slot status panel and brush hint.
      */
     renderHUD() {
-        // Top title strip.
-        BT.drawRectFill(new Rect2i(0, 0, DISPLAY_W, 14), C_PANEL);
-        BT.systemPrint(new Vector2i(4, 3), C_TEXT, 'Pointer Paint - drag to draw');
-
         // Bottom status panel.
         const panelY = DISPLAY_H - 36;
         BT.drawRectFill(new Rect2i(0, panelY, DISPLAY_W, 36), C_PANEL);
@@ -321,7 +313,6 @@ class Demo {
             C_DIM,
             `brush r=${radius} (middle-click to cycle)  |  right-click to clear`,
         );
-        footer.draw();
     }
 
     // #endregion

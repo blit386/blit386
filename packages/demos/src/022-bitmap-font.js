@@ -30,8 +30,6 @@
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #endregion
@@ -71,8 +69,6 @@ const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pul
 
 // #endregion
 
-const footer = createDemoFooter({ leftColor: C_DARKER_GRAY, rightColor: C_WHITE });
-
 // #region Main Logic
 
 /**
@@ -100,9 +96,8 @@ class Demo {
 
     // #region IBlitTechDemo Implementation
 
-    // Tells the engine how big the screen should be and how fast to run.
-    // Returns an object with displaySize, canvasDisplaySize, and targetFPS.
     // Sets up the color palette and downloads the bitmap font.
+    // Screen size and FPS use engine defaultConfig() (no configure() in this demo).
     // Notice the "await" keyword - we wait here until the font file is fully downloaded.
     // The built-in system font (BT.systemPrint) skips this step entirely.
     // Returns true when the font has loaded successfully, or false if loading fails.
@@ -245,9 +240,8 @@ class Demo {
         y = this.renderTextMeasurement(y, lineHeight);
 
         // Draw one line of font metadata (name and glyph count) near the bottom of the demo area.
-        // The shared footer (footer.draw() on the next line) draws measured FPS and the demo title.
+        // Measured FPS and the demo title are drawn by the engine overlay.
         this.renderFontInfo(y);
-        footer.draw();
     }
 
     // #endregion

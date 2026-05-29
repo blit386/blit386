@@ -17,8 +17,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 // #endregion
 
 // #region Type Definitions
@@ -28,8 +26,6 @@ import { createDemoFooter } from './shared/demo-footer.js';
 // Footer text colors (slots 3 and 4; slots 1-2 are player and background).
 const C_FOOTER_DIM = 3;
 const C_FOOTER_WHITE = 4;
-
-const footer = createDemoFooter({ leftColor: C_FOOTER_DIM, rightColor: C_FOOTER_WHITE });
 
 // #endregion
 
@@ -147,8 +143,6 @@ class Demo {
         // Rect2i(x, y, width, height) defines where and how large the rectangle is.
         // Slot 1 is our dark-navy player color.
         BT.drawRectFill(new Rect2i(this.player.x, this.player.y, 32, 32), 1);
-
-        footer.draw();
     }
 
     // #endregion

@@ -38,10 +38,9 @@
 //   - The preset name and slot count next to each row.
 //   - A "live view" panel that auto-cycles through all six presets every 2 seconds.
 //   - Named slots: the live view uses palette.setNamed() / getNamed() to pick colors.
+//   - Current preset name and color count = engine overlay row above the FPS bar.
 
 import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit-tech';
-
-import { createDemoFooter } from './shared/demo-footer.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -57,9 +56,14 @@ const MAX_SWATCHES_PER_ROW = 32;
 const SWATCH_W = 7;
 const SWATCH_H = 14;
 
-// #endregion
+// UI palette slots (see init()).
+const C_UI_BG = 2;
+const C_UI_DIM = 3;
+const C_UI_HEADER = 4;
+const C_UI_SUBTITLE = 5;
+const C_OVERLAY_BAR = 7; // Overlay row background
 
-const footer = createDemoFooter({ leftColor: 6, rightColor: 4 });
+// #endregion
 
 // #region Main Logic
 
@@ -89,9 +93,26 @@ class Demo {
     // Palette slot offsets for each preset's swatch row (filled in init()).
     swatchOffsets = [];
 
+    // Reused every frame for the overlay (current live-view preset).
+    overlayRowData = [{ leftText: 'Current: Game Boy - 4 colors', textPaletteIndex: C_UI_HEADER }];
+
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Palette slots for the engine overlay bars.
+     *
+     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_UI_HEADER,
+            },
+        };
+    }
 
     /**
      * Loads all six presets, builds the main UI palette, and loads the font.
@@ -136,6 +157,9 @@ class Demo {
 
         // Index 6: dim FPS text.
         this.palette.set(6, new Color32(80, 80, 100));
+
+        // Overlay bar (must match configure().overlayStyle).
+        this.palette.set(C_OVERLAY_BAR, new Color32(12, 12, 22, 220));
 
         // Slots 10..265 hold the swatch colors for the six static swatch rows.
         // We copy each preset's colors into this palette so we can draw swatches
@@ -202,23 +226,31 @@ class Demo {
     }
 
     /**
+     * Current live-view preset name and slot count for the engine overlay.
+     *
+     * @returns {readonly { leftText: string }[]}
+     */
+    overlayRows() {
+        const name = this.presetNames[this.currentPresetIndex];
+        const size = this.presets[this.currentPresetIndex].size;
+        this.overlayRowData[0].leftText = `Current: ${name} - ${size} colors`;
+
+        return this.overlayRowData;
+    }
+
+    /**
      * Draws the static swatch rows, labels, and the live cycling preview panel.
      * NO Color32 objects appear in draw calls here - only palette index numbers.
      */
     render() {
-        // Background. Index 2 = dark navy.
-        BT.clear(2);
-
-        // Title. systemPrint takes (position, paletteIndex, text). Slot 4 = golden.
-        BT.systemPrint(new Vector2i(6, 4), 4, 'Blit-Tech - Palette Presets');
+        // Background.
+        BT.clear(C_UI_BG);
 
         // Draw each preset as a row of colored swatches.
         this.renderSwatchRows();
 
         // Draw the live cycling preview.
         this.renderLivePreview();
-
-        footer.draw();
     }
 
     // #endregion
@@ -265,7 +297,7 @@ class Demo {
 
             // Label: preset name and actual slot count. Slot 3 = dim gray.
             const label = `${this.presetNames[p]} (${this.presets[p].size})`;
-            BT.systemPrint(new Vector2i(6 + count * (SWATCH_W + 1) + 4, y + 2), 3, label);
+            BT.systemPrint(new Vector2i(6 + count * (SWATCH_W + 1) + 4, y + 2), C_UI_DIM, label);
         }
     }
 
@@ -277,24 +309,21 @@ class Demo {
         const panelY = 148;
 
         // Panel background - index 2 is the dark background color we set in init().
-        BT.drawRectFill(new Rect2i(0, panelY - 4, 320, 96), 2);
+        BT.drawRectFill(new Rect2i(0, panelY - 4, 320, 96), C_UI_BG);
 
         // Header. Slot 5 = blue-gray subtitle. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(6, panelY - 2), 5, 'Live view (cycles every 2s):');
+        BT.systemPrint(new Vector2i(6, panelY - 2), C_UI_SUBTITLE, 'Live view (cycles every 2s):');
 
         // Show 16 large swatches from the live slots (200..215).
         for (let i = 0; i < 16; i++) {
             BT.drawRectFill(new Rect2i(6 + i * 18, panelY + 12, 16, 24), 200 + i);
         }
 
-        // Current preset name below swatches. Slot 4 = golden.
-        const name = this.presetNames[this.currentPresetIndex];
-        const size = this.presets[this.currentPresetIndex].size;
-        BT.systemPrint(new Vector2i(6, panelY + 42), 4, `Current: ${name} - ${size} colors`);
+        // Current preset name and color count are shown in overlayRows() above the FPS bar.
 
         // Explain named slots. Slot 3 = dim gray.
-        BT.systemPrint(new Vector2i(6, panelY + 56), 3, "palette.setNamed('ui-bg', 2)");
-        BT.systemPrint(new Vector2i(6, panelY + 68), 3, "palette.getNamed('ui-bg') => 2");
+        BT.systemPrint(new Vector2i(6, panelY + 42), C_UI_DIM, "palette.setNamed('ui-bg', 2)");
+        BT.systemPrint(new Vector2i(6, panelY + 54), C_UI_DIM, "palette.getNamed('ui-bg') => 2");
     }
 
     // #endregion

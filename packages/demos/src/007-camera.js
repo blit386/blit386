@@ -26,8 +26,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -47,20 +45,20 @@ const C_WINDOW = 9; // Pale yellow (semi-transparent): building windows
 const C_PLAYER = 10; // Salmon red: player square fill
 const C_PLAYER_OUTLINE = 11; // Darker red: player square border
 const C_HUD_BG = 12; // Black (semi-transparent): HUD bar behind text
-const C_TEXT_DIM = 13; // Dim white: camera position and secondary text
-const C_TEXT_DIMMER = 14; // Dimmer white: world size and "auto-scrolling" labels
+const C_TEXT_DIMMER = 14; // Dimmer white: "auto-scrolling" label on the top HUD bar
 const C_MINIMAP_BG = 15; // Black (semi-transparent): mini-map background panel
 const C_BUILDING_DOT = 16; // Blue-gray: building dot on the mini-map
 const C_VIEWPORT = 17; // Yellow: viewport rectangle on the mini-map
 const C_FPS = 18; // Gray: FPS counter text
+const C_OVERLAY_BAR = 40; // Semi-transparent bar behind overlay custom rows
+const C_OVERLAY_GREEN = 41; // Bright text for camera position in the overlay
+const C_OVERLAY_AMBER = 42; // Amber accent for world size in the overlay
 
 // Each of the 20 buildings gets its own randomly chosen color stored at index 20..39.
 // We define the base index here so the code stays easy to read.
 const C_BUILDING_BASE = 20; // building 0 is at index 20, building 1 at 21, and so on
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -95,6 +93,14 @@ class Demo {
     // The palette holds all the colors this demo uses.
     palette = null;
 
+    // Reused every frame for the engine overlay (camera position + world size).
+    // We keep one array and update the text strings in place so we do not
+    // allocate new objects on every screen refresh.
+    overlayRowData = [
+        { leftText: 'Camera: (0, 0)', textPaletteIndex: C_OVERLAY_GREEN },
+        { leftText: 'World: 800x600', textPaletteIndex: C_OVERLAY_AMBER },
+    ];
+
     // #endregion
 
     // #region Pre-allocated Reusable Objects (Performance)
@@ -109,6 +115,22 @@ class Demo {
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Called once at the very start. Tells the engine which palette slots to use
+     * for the overlay bars (FPS strip, demo title, and custom debug rows).
+     *
+     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayPaletteView: true,
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_OVERLAY_GREEN,
+            },
+        };
+    }
 
     /**
      * Runs once when the demo starts. Sets up the palette and generates random
@@ -136,12 +158,16 @@ class Demo {
         this.palette.set(C_PLAYER, new Color32(255, 100, 100)); // salmon red player fill
         this.palette.set(C_PLAYER_OUTLINE, new Color32(200, 50, 50)); // darker red player outline
         this.palette.set(C_HUD_BG, new Color32(0, 0, 0, 180)); // semi-transparent black HUD bar
-        this.palette.set(C_TEXT_DIM, new Color32(200, 200, 200)); // dim white for camera position text
-        this.palette.set(C_TEXT_DIMMER, new Color32(180, 180, 180)); // even dimmer for world-size label
+        this.palette.set(C_TEXT_DIMMER, new Color32(180, 180, 180)); // dim label on the top HUD bar
         this.palette.set(C_MINIMAP_BG, new Color32(0, 0, 0, 200)); // dark mini-map panel
         this.palette.set(C_BUILDING_DOT, new Color32(150, 150, 200)); // blue-gray dots on mini-map
         this.palette.set(C_VIEWPORT, new Color32(255, 255, 0)); // yellow viewport box on mini-map
         this.palette.set(C_FPS, new Color32(150, 150, 150)); // gray FPS counter
+
+        // Overlay colors (must match configure().overlayStyle and overlayRowData).
+        this.palette.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200)); // dark bar behind custom overlay rows
+        this.palette.set(C_OVERLAY_GREEN, new Color32(200, 200, 200)); // camera position line
+        this.palette.set(C_OVERLAY_AMBER, new Color32(220, 180, 60)); // world size line
 
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
@@ -179,6 +205,25 @@ class Demo {
         // Tell the engine to offset all world-space drawing by the camera position.
         // After this call, drawing at (0,0) will draw at the camera's top-left corner.
         BT.cameraSet(this.cameraPos);
+    }
+
+    /**
+     * Optional hook: tells the engine what extra lines to draw in the overlay.
+     *
+     * The overlay is the thin bars at the top and bottom (FPS, demo title, etc.).
+     * Custom rows stack upward from just above the bottom FPS bar. Colors come from
+     * palette slots we set in init() and from configure().overlayStyle.
+     * We return the same overlayRowData array every time and only change the text.
+     *
+     * @returns {readonly { leftText: string }[]}
+     */
+    overlayRows() {
+        // Use this.cameraPos, not BT.camera: the engine calls this hook after render(),
+        // and we call BT.cameraReset() at the end of render() so screen UI stays fixed.
+        this.overlayRowData[0].leftText = `Camera: (${this.cameraPos.x}, ${this.cameraPos.y})`;
+        this.overlayRowData[1].leftText = `World: ${this.worldWidth}x${this.worldHeight}`;
+
+        return this.overlayRowData;
     }
 
     /**
@@ -373,31 +418,14 @@ class Demo {
 
     /**
      * Draws the HUD (heads-up display) overlaid on the screen.
-     * Includes the title bar, camera info, mini-map, and FPS counter.
+     * Camera position and world size are shown in overlayRows() above the bottom
+     * FPS bar (see the Basics demo for the same pattern).
      * Everything here is in screen coordinates (not offset by the camera).
      */
     renderUI() {
         // Draw a semi-transparent black bar across the top for the title area.
         this.tempRect.set(0, 0, 320, 40);
         BT.drawRectFill(this.tempRect, C_HUD_BG);
-
-        // Demo title in white.
-        // BT.systemPrint() arguments: (position, paletteIndex, text).
-        this.tempVec1.set(10, 10);
-        BT.systemPrint(this.tempVec1, C_WHITE, 'Camera Demo');
-
-        // Show the camera's current position in the world so you can see it changing.
-        const camPos = BT.camera;
-        this.tempVec1.set(10, 22);
-        BT.systemPrint(this.tempVec1, C_TEXT_DIM, `Camera: (${camPos.x}, ${camPos.y})`);
-
-        // Note that this demo scrolls automatically (no player input).
-        this.tempVec1.set(170, 10);
-        BT.systemPrint(this.tempVec1, C_TEXT_DIMMER, 'Auto-scrolling');
-
-        // Show how big the world is.
-        this.tempVec1.set(170, 22);
-        BT.systemPrint(this.tempVec1, C_TEXT_DIMMER, `World: ${this.worldWidth}x${this.worldHeight}`);
 
         // Draw the mini-map in the bottom-right corner.
         this.renderMiniMap();
@@ -448,7 +476,6 @@ class Demo {
 
         this.tempRect.set(playerMiniX - 1, playerMiniY - 1, 2, 2);
         BT.drawRectFill(this.tempRect, C_PLAYER);
-        footer.draw();
     }
 
     // #endregion

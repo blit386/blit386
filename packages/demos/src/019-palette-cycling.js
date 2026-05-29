@@ -34,8 +34,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -77,8 +75,6 @@ const C_FIRE_BASE = 30;
 const C_WATER_BASE = 50;
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -202,14 +198,9 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        // Title. systemPrint takes (position, paletteIndex, text). Slot 4 = golden label.
-        BT.systemPrint(new Vector2i(6, 4), C_LABEL, 'Blit-Tech - Palette Cycling');
-
         this.renderSkyPanel();
         this.renderFirePanel();
         this.renderWaterPanel();
-
-        footer.draw();
     }
 
     // #endregion

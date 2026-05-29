@@ -30,8 +30,6 @@
 
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -50,13 +48,9 @@ const SPRITE_PATH = '/sprites/test.png';
 const C_WHITE = 1;
 const C_BG = 2;
 const C_LABEL = 3;
-const C_HEADER = 4; // Golden header text.
-const C_DIM = 5; // Dimmer gray for FPS.
-const C_CODE = 6; // Code snippet text (blue-gray).
+const C_CODE = 6; // Code snippet text (blue-gray). (hud_dim at 5 is used by the engine overlay.)
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -214,12 +208,8 @@ class Demo {
 
         if (!this.spriteSheet || !this.charSprite) {
             BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
-            footer.draw();
             return;
         }
-
-        // Title header. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 8), C_HEADER, 'BLIT-TECH SPRITE DEMO');
 
         // Row 1: Four color themes using palette offsets
         const N = this.spriteColorCount;
@@ -253,8 +243,6 @@ class Demo {
 
         // Right panel: code snippet
         this.renderCodeSnippet();
-
-        footer.draw();
     }
 
     // #endregion
