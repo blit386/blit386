@@ -84,8 +84,7 @@ const C_LABEL_YELLOW = 8; // (255, 200, 100) day/night label.
 const C_BAR_DARK = 9; // (30, 30, 30) progress bar track.
 const C_BAR_BORDER = 10; // (150, 150, 150) progress bar outline.
 const C_FPS = 11; // (100, 100, 100) dim FPS.
-// Reuse C_BG (below SPRITE_BASE); slot 14 sits inside the sprite color block once N >= 3.
-const C_OVERLAY_BG = C_BG;
+const C_OVERLAY_BG = 14;
 
 // Theme block indices (as palette offsets from SPRITE_BASE).
 // Each block contains N entries. Offset = blockIndex * N.
