@@ -18,8 +18,6 @@
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -55,8 +53,6 @@ const SYSTEM_FONT_CHAR_W = 8;
 
 // #endregion
 
-const footer = createDemoFooter({ leftColor: C_DIM_GRAY, rightColor: C_WHITE });
-
 // #region Main Logic
 
 /**
@@ -79,6 +75,23 @@ class Demo {
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Optional engine settings. We keep the default 320x240 screen and show the full
+     * 256-slot palette in the overlay grid with 13 swatches per row.
+     *
+     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayPaletteView: true,
+            overlayPaletteColumns: 13,
+            overlayStyle: {
+                barPaletteIndex: 1,
+                textPaletteIndex: 2,
+            },
+        };
+    }
 
     /**
      * Sets up the color palette.
@@ -153,25 +166,14 @@ class Demo {
         // Fill the screen with the dark blue-navy background.
         BT.clear(C_BG);
 
-        // BT.systemPrint() arguments: (position, paletteIndex, text)
-        // paletteIndex is the slot number in the palette (1 = C_WHITE, 3 = C_RED_TEXT, etc.).
-        // This is simpler than BT.printFont() which uses a 0-based offset from slot 1.
-
         // Start drawing from near the top of the screen.
-        let y = 10;
-
-        // Draw the title in white (palette slot 1 = C_WHITE).
-        BT.systemPrint(new Vector2i(10, y), C_WHITE, 'Blit-Tech System Font Demo (004)');
-
-        // Move down one line (8 pixels for the system font) plus a small gap.
-        y += 14;
+        let y = 24;
 
         // Draw each section in order, updating y as we go so nothing overlaps.
         y = this.renderColoredText(y);
         y = this.renderRainbowText(y);
         y = this.renderPulsingText(y);
         this.renderSpecialCharacters(y);
-        footer.draw();
     }
 
     // #endregion
@@ -259,7 +261,7 @@ class Demo {
 
     /**
      * Shows that the system font can draw special characters.
-     * Last section before the footer, so this helper does not return an updated y.
+     * Last section before the overlay bars, so this helper does not return an updated y.
      *
      * @param {number} y - The Y position to start drawing at.
      */

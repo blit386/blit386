@@ -22,8 +22,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -67,8 +65,6 @@ const C_FPS = 13; // Dim gray: the FPS counter text color
 const C_WATER = 14; // DYNAMIC: the animated water tile color, updated every tick in update()
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -372,9 +368,6 @@ class Demo {
         BT.drawRectFill(this.tileRect, C_HUD_BAR);
 
         // systemPrint takes (position, paletteIndex, text).
-        this.tempVec.set(8, 8);
-        BT.systemPrint(this.tempVec, C_WHITE, 'Tilemap Demo (012)');
-
         this.tempVec.set(8, 22);
         BT.systemPrint(this.tempVec, C_TEXT_DIM, '30x20 tiles, 16px each, camera scrolls');
 
@@ -437,7 +430,6 @@ class Demo {
 
         this.tileRect.set(vx, vy, vw, vh);
         BT.drawRect(this.tileRect, C_VIEWPORT);
-        footer.draw();
     }
 
     // #endregion

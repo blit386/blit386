@@ -30,8 +30,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -75,8 +73,6 @@ const THROW_SCALE = 1.4;
 const MAX_THROW_SPEED = 16;
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_TEXT });
 
 // #region Main Logic
 
@@ -424,7 +420,6 @@ class Demo {
             BT.drawLine(new Vector2i(pos.x - 4, pos.y), new Vector2i(pos.x + 4, pos.y), C_TEXT);
             BT.drawLine(new Vector2i(pos.x, pos.y - 4), new Vector2i(pos.x, pos.y + 4), C_TEXT);
         }
-        footer.draw();
     }
 
     // #endregion

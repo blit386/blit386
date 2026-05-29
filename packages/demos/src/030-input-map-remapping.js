@@ -22,8 +22,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -48,13 +46,10 @@ const PANEL_H = 118;
 const PANEL0_X = MARGIN_X;
 const PANEL1_X = MARGIN_X + PANEL_W + GAP_PANELS;
 
-const HEADER_TITLE_Y = 18;
 const HEADER_SUB_Y = 36;
 const HEADER_PRESET_Y = 56;
 const HEADER_KEYS_Y = 76;
 const PANEL_TOP_Y = 100;
-
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // Horizontal step between face-button labels (eight buttons fit inside `PANEL_W` padding).
 const FACE_SLOT_WIDTH = 32;
@@ -95,13 +90,15 @@ class Demo {
 
     /**
      * Wider logical canvas than `defaultConfig()` so two panels of key maps fit comfortably.
+     * No post-process effects, so we upscale 2x in the browser (maxCanvasSize) instead
+     * of allocating a larger drawing buffer (drawingBufferSize).
      *
-     * @returns {{displaySize: Vector2i, canvasDisplaySize: Vector2i, targetFPS: number}}
+     * @returns {{displaySize: Vector2i, maxCanvasSize: Vector2i, targetFPS: number}}
      */
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            canvasDisplaySize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
+            maxCanvasSize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
             targetFPS: 60,
         };
     }
@@ -162,7 +159,6 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        BT.systemPrint(new Vector2i(MARGIN_X, HEADER_TITLE_Y), C_WHITE, 'Blit-Tech - Input Map Remapping');
         BT.systemPrint(
             new Vector2i(MARGIN_X, HEADER_SUB_Y),
             C_DIM,
@@ -179,8 +175,6 @@ class Demo {
 
         this.renderPlayerPanel(0, PANEL0_X, PANEL_TOP_Y);
         this.renderPlayerPanel(1, PANEL1_X, PANEL_TOP_Y);
-
-        footer.draw();
     }
 
     // #endregion

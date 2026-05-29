@@ -16,8 +16,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -44,8 +42,6 @@ const TRAIL_LENGTH = 24;
 const SCROLL_SENSITIVITY = 0.25;
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -144,7 +140,6 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        BT.systemPrint(new Vector2i(8, 6), C_WHITE, 'Blit-Tech - Pointer Basics');
         BT.systemPrint(new Vector2i(8, 22), C_DIM, 'Move the mouse, click, spin the wheel.');
 
         this.renderReadouts();
@@ -276,8 +271,7 @@ class Demo {
             BT.drawPixel(pos, C_WHITE);
         }
 
-        // Always draw the shared footer (FPS + demo name), even when the pointer is off-canvas.
-        footer.draw();
+        // The engine overlay (FPS + demo name) draws on top automatically.
     }
 
     // #endregion

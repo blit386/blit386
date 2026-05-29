@@ -8,8 +8,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -32,8 +30,6 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 // Stripes 1-5 follow at C_STRIPE_0 + 1 through C_STRIPE_0 + 5
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_GRAY, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -215,7 +211,6 @@ class Demo {
         BT.drawLine(new Vector2i(cx, cy - 20), new Vector2i(cx, cy + 20), C_WHITE);
 
         // Title and instructions in the top-left. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Image Output Demo');
         BT.systemPrint(new Vector2i(10, 26), C_YELLOW, 'Press SPACE to download PNG');
 
         // Show either a busy message, a result message, or nothing in the third text line.
@@ -227,7 +222,6 @@ class Demo {
 
         // Frame counter near the bottom so you can tell consecutive screenshots apart.
         BT.systemPrint(new Vector2i(10, screen.y - 20), C_GRAY, `Frame: ${this.tick}`);
-        footer.draw();
     }
 
     // #endregion

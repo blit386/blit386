@@ -34,8 +34,6 @@
 
 import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -62,7 +60,6 @@ const C_WHITE = 1;
 const C_BG = 2; // (30, 20, 40) dark purple.
 const C_GROUND = 3; // (40, 60, 40) dark green.
 const C_SHADOW = 4; // (0, 0, 0, 100) semi-transparent shadow.
-const C_STATE_TEXT = 5; // (100, 200, 255) blue info text.
 const C_STAT_DIM = 6; // (150, 150, 150) gray stat text.
 const C_COOLDOWN_ACTIVE = 7; // (255, 100, 100) red cooldown label.
 const C_COOLDOWN_READY = 8; // (100, 255, 100) green ready label.
@@ -73,10 +70,10 @@ const C_SPAWN_TEXT = 12; // (200, 200, 100) yellow spawn text.
 const C_INFO_HEADER = 13; // (255, 200, 100) golden section header.
 const C_INFO_TEXT = 14; // (180, 180, 180) gray info text.
 const C_FPS = 15; // (100, 100, 100) dim FPS text.
+const C_OVERLAY_BAR = 70; // Bar behind overlay custom rows
+const C_OVERLAY_STATE = 71; // Status row text (state left, ticks right)
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -136,9 +133,26 @@ class Demo {
     // Starting X position for the walk state.
     walkStartX = 80;
 
+    // Reused every frame for the engine overlay status row (state + ticks).
+    overlayRowData = [{ leftText: 'State: Idle', rightText: 'Ticks: 0', textPaletteIndex: C_OVERLAY_STATE }];
+
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Tells the engine which palette slots to use for overlay bars.
+     *
+     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_OVERLAY_STATE,
+            },
+        };
+    }
 
     /**
      * Sets up the palette, loads the sprite and font.
@@ -157,7 +171,6 @@ class Demo {
 
         this.palette.set(C_GROUND, new Color32(40, 60, 40));
         this.palette.set(C_SHADOW, new Color32(0, 0, 0, 100));
-        this.palette.set(C_STATE_TEXT, new Color32(100, 200, 255));
         this.palette.set(C_STAT_DIM, new Color32(150, 150, 150));
         this.palette.set(C_COOLDOWN_ACTIVE, new Color32(255, 100, 100));
         this.palette.set(C_COOLDOWN_READY, new Color32(100, 255, 100));
@@ -168,6 +181,10 @@ class Demo {
         this.palette.set(C_INFO_HEADER, new Color32(255, 200, 100));
         this.palette.set(C_INFO_TEXT, new Color32(180, 180, 180));
         this.palette.set(C_FPS, new Color32(100, 100, 100));
+
+        // Overlay (must match configure().overlayStyle and overlayRowData).
+        this.palette.set(C_OVERLAY_BAR, new Color32(20, 15, 30, 220)); // dark bar over the purple background
+        this.palette.set(C_OVERLAY_STATE, new Color32(100, 200, 255)); // matches former C_STATE_TEXT
 
         // Particle slots (50..69) start as transparent - update() fills them when particles spawn.
         // We pre-fill with a dim white so nothing shows before the first particle.
@@ -256,6 +273,19 @@ class Demo {
     }
 
     /**
+     * Status row in the engine overlay: animation state (left) and tick count (right).
+     *
+     * @returns {readonly { leftText: string, rightText?: string }[]}
+     */
+    overlayRows() {
+        const row = this.overlayRowData[0];
+        row.leftText = `State: ${this.animState}`;
+        row.rightText = `Ticks: ${BT.ticks}`;
+
+        return this.overlayRowData;
+    }
+
+    /**
      * Runs once per screen refresh to draw the rock, particles, and UI.
      * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
      */
@@ -278,7 +308,6 @@ class Demo {
 
         // Draw the info panel.
         this.renderUI();
-        footer.draw();
     }
 
     // #endregion
@@ -411,18 +440,10 @@ class Demo {
     }
 
     /**
-     * Draws the information panel showing state, tick count, cooldown, and spawn timer.
+     * Draws the information panel (cooldown, spawn timer, concept summary).
+     * State and tick count are shown in overlayRows() above the bottom FPS bar.
      */
     renderUI() {
-        // Title in white. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'ANIMATION & TIMING DEMO');
-
-        // Current state (e.g. "State: Jumping").
-        BT.systemPrint(new Vector2i(10, 28), C_STATE_TEXT, `State: ${this.animState}`);
-
-        // Ticks since start.
-        BT.systemPrint(new Vector2i(10, 42), C_STAT_DIM, `Ticks: ${BT.ticks}`);
-
         // Cooldown bar.
         this.renderCooldownUI();
 
@@ -444,7 +465,7 @@ class Demo {
 
         // Red when counting down, green when ready. systemPrint takes (position, paletteIndex, text).
         BT.systemPrint(
-            new Vector2i(10, 58),
+            new Vector2i(10, 28),
             cooldownPercent > 0 ? C_COOLDOWN_ACTIVE : C_COOLDOWN_READY,
             `Cooldown: ${Math.ceil(this.abilityCooldownTicks / 60)}s`,
         );
@@ -453,7 +474,7 @@ class Demo {
         const barWidth = 100;
         const barHeight = 8;
         const barX = 10;
-        const barY = 75;
+        const barY = 45;
         BT.drawRectFill(new Rect2i(barX, barY, barWidth, barHeight), C_COOLDOWN_BG);
 
         // Bar fill (scales with remaining fraction).
@@ -474,8 +495,8 @@ class Demo {
         const ticksUntilSpawn = this.spawnTimer.remainingTicks(BT.ticks);
 
         // systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 95), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);
-        BT.systemPrint(new Vector2i(10, 110), C_STAT_DIM, `Particles: ${this.particles.length}`);
+        BT.systemPrint(new Vector2i(10, 65), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);
+        BT.systemPrint(new Vector2i(10, 80), C_STAT_DIM, `Particles: ${this.particles.length}`);
     }
 
     // #endregion

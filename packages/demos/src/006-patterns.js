@@ -36,8 +36,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -82,8 +80,7 @@ const LISSAJOUS_BANDS = 32;
 const C_TUNNEL_BASE = 192;
 const TUNNEL_RECTS = 20;
 
-// Shared footer: measured FPS, target FPS, and demo name from the page title.
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
+// Engine overlay: measured FPS, target FPS, and demo name (enabled by default).
 
 // #endregion
 
@@ -119,6 +116,22 @@ class Demo {
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Optional engine settings. We keep the default 320x240 screen and show the full
+     * 256-slot palette in the overlay grid with 32 swatches per row.
+     *
+     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayPaletteView: true,
+            overlayStyle: {
+                barPaletteIndex: 1,
+                textPaletteIndex: 2,
+            },
+        };
+    }
 
     /**
      * Runs once when the demo starts. Sets up the palette.
@@ -246,7 +259,6 @@ class Demo {
         this.drawTunnel(new Vector2i(200, 130));
 
         // Measured FPS, target FPS, and demo name (from document.title).
-        footer.draw();
     }
 
     // #endregion

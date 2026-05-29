@@ -33,8 +33,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -66,8 +64,6 @@ const C_FPS = 6; // Dimmer still for the FPS counter.
 const C_STREAK = 7; // Cool white for the shooting star streak.
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_TITLE });
 
 // #region Main Logic
 
@@ -205,7 +201,6 @@ class Demo {
         this.drawNearStars();
         this.drawShootingStar();
         this.drawLabels();
-        footer.draw();
     }
 
     // #endregion
@@ -381,14 +376,9 @@ class Demo {
      * systemPrint takes (position, paletteIndex, text).
      */
     drawLabels() {
-        BT.systemPrint(new Vector2i(8, 6), C_TITLE, 'STARFIELD (PARALLAX)');
-
-        // One line per layer so readers can match words to what they see moving.
         BT.systemPrint(new Vector2i(8, 22), C_LABEL, 'FAR: slow, dim, 1 pixel');
         BT.systemPrint(new Vector2i(8, 38), C_LABEL, 'MED: faster, brighter pixel');
         BT.systemPrint(new Vector2i(8, 54), C_LABEL, 'NEAR: fastest, bright 2x2 block');
-
-        BT.systemPrint(new Vector2i(8, 200), C_TIP, 'Tip: like a car window - close stuff moves faster.');
     }
 
     // #endregion

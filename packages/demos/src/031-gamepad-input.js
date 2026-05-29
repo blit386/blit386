@@ -16,8 +16,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 // #endregion
 
 // #region Type Definitions
@@ -52,8 +50,6 @@ const AIM_SPEED = 4;
 const TRAIL_MAX = 28;
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -281,12 +277,10 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        BT.systemPrint(new Vector2i(8, 6), C_WHITE, 'Blit-Tech - Gamepad Input');
         BT.systemPrint(new Vector2i(8, 18), C_DIM, 'Left stick move | Right stick aim | Triggers = pod size');
 
         this.renderArena();
         this.renderHud();
-        footer.draw();
     }
 
     // #endregion

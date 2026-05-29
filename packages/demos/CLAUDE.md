@@ -103,7 +103,7 @@ import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 class Demo {
   // Optional: omit configure() to use engine defaultConfig (320x240 logical, 640x480 canvas, 60 FPS).
-  // In configure(), you may set `renderer: 'software'` to force Canvas 2D; default is WebGPU with automatic fallback.
+  // In configure(), you may set `backend: 'software'` to force Canvas 2D; default is WebGPU with automatic fallback.
   configure() {
     /* ... */
   }
@@ -253,6 +253,12 @@ Static helpers on those types worth knowing:
 Full input APIs (`BT.keyDown`, `BT.buttonDown`, gamepad helpers, remapping) are documented in the engine
 [input guide](https://github.com/vancura/blit-tech/blob/main/docs/input.md). Post-process presets and effect tiers are
 in [post-process-effects.md](https://github.com/vancura/blit-tech/blob/main/docs/post-process-effects.md).
+
+The engine draws a default overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call. Toggle
+it with Backquote or a tap in the bottom-right corner; disable it in `configure()` with `overlayEnabled: false` (see
+[api-core.md](https://github.com/vancura/blit-tech/blob/main/docs/api-core.md)). Set `overlayTimingChart: true` to opt
+in to the scrolling update/render timing chart band (~22 px under the title row). Bar colors default to `overlayStyle`
+indices; override with `overlayTimingChartStyle` (warning/error/event slots are reserved for future chart overlays).
 
 ## File Organization
 

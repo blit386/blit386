@@ -21,7 +21,7 @@ workspace.
 ## Browser and Renderer
 
 The engine prefers **WebGPU** and falls back to a **Canvas 2D software renderer** when WebGPU is missing or fails to
-start (optional `?renderer=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
+start (optional `?backend=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
 
 **WebGPU** is required for post-process / fullscreen effect demos (CRT stacks, two-tier chains). In software mode those
 demos still boot and run their core scene without the CRT stack; an on-screen note explains the limitation. Most other

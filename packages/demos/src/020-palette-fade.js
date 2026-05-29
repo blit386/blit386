@@ -36,10 +36,9 @@
 //   5. Night hold     - 2 seconds
 //   6. Fade to day    - 2 seconds, ease-out (dawn)
 //   Repeat forever.
+//   Current phase label (Day, Night, Dawn, etc.) = engine overlay row above the FPS bar.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
-
-import { createDemoFooter } from './shared/demo-footer.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -59,6 +58,7 @@ const C_BG = 2; // Not used for scene, but available.
 const C_LABEL = 3;
 const C_DIM = 4;
 const C_FPS = 5;
+const C_OVERLAY_BAR = 6; // Overlay row background (same in day and night palettes)
 
 // Scene colors: sky, sun, ground, tree trunk, tree leaves, flowers.
 const C_SKY = 10;
@@ -91,6 +91,7 @@ function fillDayPalette(p) {
     p.set(C_LABEL, new Color32(255, 210, 80));
     p.set(C_DIM, new Color32(120, 130, 160));
     p.set(C_FPS, new Color32(70, 70, 90));
+    p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
 
     p.set(C_SKY, new Color32(100, 170, 255));
     p.set(C_SKY_LIGHT, new Color32(150, 200, 255));
@@ -119,6 +120,7 @@ function fillNightPalette(p) {
     p.set(C_LABEL, new Color32(180, 160, 100));
     p.set(C_DIM, new Color32(80, 80, 110));
     p.set(C_FPS, new Color32(40, 40, 60));
+    p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
 
     p.set(C_SKY, new Color32(15, 20, 50));
     p.set(C_SKY_LIGHT, new Color32(25, 35, 70));
@@ -137,8 +139,6 @@ function fillNightPalette(p) {
 }
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
 
 // #region Main Logic
 
@@ -165,9 +165,26 @@ class Demo {
     // Whether a fade/flash has been triggered for this phase.
     effectTriggered = false;
 
+    // Reused every frame for the overlay (current day/night phase label).
+    overlayRowData = [{ leftText: 'Day', textPaletteIndex: C_LABEL }];
+
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Palette slots for the engine overlay bars.
+     *
+     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_LABEL,
+            },
+        };
+    }
 
     /**
      * Creates day and night palettes, activates the day palette, loads font.
@@ -206,6 +223,17 @@ class Demo {
 
         // Check if the current phase has expired and advance to the next one.
         this.advancePhaseIfExpired(elapsed, tick);
+    }
+
+    /**
+     * Current fade/flash phase for the engine overlay (Day, Night, Dawn, etc.).
+     *
+     * @returns {readonly { leftText: string }[]}
+     */
+    overlayRows() {
+        this.overlayRowData[0].leftText = this.getPhaseLabel();
+
+        return this.overlayRowData;
     }
 
     /**
@@ -264,13 +292,29 @@ class Demo {
         BT.clear(C_SKY);
 
         this.renderScene();
-        this.renderUI();
-        footer.draw();
     }
 
     // #endregion
 
     // #region Phase Management
+
+    /**
+     * Short label for the current day/night cycle phase.
+     *
+     * @returns {string}
+     */
+    getPhaseLabel() {
+        const phaseLabels = {
+            day: 'Day',
+            'fade-to-night': 'Fading to night... (ease-in-out)',
+            night: 'Night',
+            flash: 'Lightning flash!',
+            'night-2': 'Night',
+            'fade-to-day': 'Dawn... (ease-out)',
+        };
+
+        return phaseLabels[this.phase] ?? this.phase;
+    }
 
     /**
      * Transitions to a new phase of the day/night cycle.
@@ -407,28 +451,6 @@ class Demo {
             BT.drawPixel(new Vector2i(fx, fy + 1), slot);
             BT.drawPixel(new Vector2i(fx + 1, fy + 1), slot);
         }
-    }
-
-    /**
-     * Draws the top UI strip for this demo: a dark bar and the current fade/flash phase name.
-     * FPS and the demo title are drawn separately by the shared footer (footer.draw() in render()).
-     */
-    renderUI() {
-        // Look up a short human-readable label for the current animation phase (day, night, etc.).
-        const phaseLabels = {
-            day: 'Day',
-            'fade-to-night': 'Fading to night... (ease-in-out)',
-            night: 'Night',
-            flash: 'Lightning flash!',
-            'night-2': 'Night',
-            'fade-to-day': 'Dawn... (ease-out)',
-        };
-
-        const label = phaseLabels[this.phase] || this.phase;
-
-        // Dark background strip for readability.
-        BT.drawRectFill(new Rect2i(0, 0, 320, 16), C_GROUND_DARK);
-        BT.systemPrint(new Vector2i(6, 2), C_LABEL, `Palette Fade & Flash - ${label}`);
     }
 
     // #endregion

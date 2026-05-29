@@ -25,7 +25,7 @@
 //   - Moving rock hero = sprites (008) and timing (009).
 //   - Sparkles near the rock = small fading squares, like the particles in animation (009).
 //   - Day and night = palette-based ambient lighting (010); the world dims at night.
-//   - Score and position on top = bitmap text HUD (004); FPS is rendered by the shared footer.
+//   - Score, rock position, and day phase = engine overlay rows (004 + built-in FPS bar).
 //
 // HOW THE DAY/NIGHT PALETTE WORKS:
 //
@@ -45,8 +45,6 @@
 // Think of it as updating the paint cans before the painter starts working.
 
 import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
-
-import { createDemoFooter } from './shared/demo-footer.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -121,6 +119,9 @@ const C_HUD_FPS = 44;
 // Hero shadow: 45.
 const C_HERO_SHADOW = 45;
 
+// Overlay bar fill (text slots reuse C_HUD_SCORE / C_HUD_POS / C_HUD_FPS below).
+const C_OVERLAY_BAR = 46;
+
 // Particle slots: 50..69 (MAX_PARTICLES=20).
 const PARTICLE_SLOT_START = 50;
 
@@ -129,8 +130,6 @@ const PARTICLE_SLOT_START = 50;
 const SPRITE_BASE = 70;
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_HUD_FPS, rightColor: C_HUD_TITLE });
 
 // #region Main Logic
 
@@ -213,9 +212,30 @@ class Demo {
     hudPosBase = new Color32(180, 200, 180);
     hudFpsBase = new Color32(150, 150, 160);
 
+    // Reused every frame for overlay rows (score, rock position, day phase).
+    overlayRowData = [
+        { leftText: 'Score: 0', textPaletteIndex: C_HUD_SCORE },
+        { leftText: 'Rock: (0,0)', textPaletteIndex: C_HUD_POS },
+        { leftText: 'Dawn/Day', textPaletteIndex: C_HUD_FPS },
+    ];
+
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Palette slots for the engine overlay bars (FPS strip uses the engine defaults).
+     *
+     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_HUD_SCORE,
+            },
+        };
+    }
 
     /**
      * Loads font, loads sprite, builds palette, places buildings and clouds.
@@ -234,6 +254,7 @@ class Demo {
 
         this.palette.set(C_BLACK, new Color32(0, 0, 0));
         this.palette.set(C_HUD_BAR, new Color32(0, 0, 0, 150));
+        this.palette.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 180)); // overlay row backgrounds
 
         // Pre-fill particle slots as transparent.
         for (let i = 0; i < MAX_PARTICLES; i++) {
@@ -305,7 +326,21 @@ class Demo {
     }
 
     /**
-     * Draws world layers back-to-front, then the HUD on top.
+     * Score, rock position, and day/night phase for the engine overlay.
+     * Text colors are updated each tick in updateWorldPalette() so they dim at night.
+     *
+     * @returns {readonly { leftText: string, rightText?: string }[]}
+     */
+    overlayRows() {
+        this.overlayRowData[0].leftText = `Score: ${this.score}`;
+        this.overlayRowData[1].leftText = `Rock: (${this.heroPos.x},${this.heroPos.y})`;
+        this.overlayRowData[2].leftText = this.getDayPhaseLabel();
+
+        return this.overlayRowData;
+    }
+
+    /**
+     * Draws world layers back-to-front. HUD text is handled by the engine overlay.
      * Every draw call uses only palette index numbers - no Color32 objects.
      */
     render() {
@@ -326,8 +361,7 @@ class Demo {
         this.renderHero();
         BT.cameraReset();
 
-        // HUD: pinned to the screen (not the world).
-        this.renderHud();
+        // Score, rock position, and day phase are drawn in overlayRows() above the FPS bar.
     }
 
     // #endregion
@@ -687,33 +721,30 @@ class Demo {
 
     // #endregion
 
-    // #region HUD
+    // #region Day/Night Label
 
     /**
-     * Screen-space labels pinned after cameraReset.
+     * Human-readable label for where we are in the day/night cycle.
+     *
+     * @param {number} [tick] - Tick to evaluate (defaults to {@link BT.ticks}).
+     * @returns {string}
      */
-    renderHud() {
-        // Semi-transparent dark bar behind the HUD text so it stays readable.
-        this.tempRect.set(0, 0, DISPLAY_W, 34);
-        BT.drawRectFill(this.tempRect, C_HUD_BAR);
+    getDayPhaseLabel(tick = BT.ticks) {
+        const phaseTick = tick % DAY_NIGHT_CYCLE_TICKS;
 
-        // systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(8, 4), C_HUD_TITLE, 'GAME SCENE CAPSTONE (014)');
+        if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.25) {
+            return 'Day';
+        }
 
-        // Score and position.
-        BT.systemPrint(new Vector2i(8, 18), C_HUD_SCORE, `Score: ${this.score}`);
-        BT.systemPrint(new Vector2i(130, 18), C_HUD_POS, `Rock: (${this.heroPos.x},${this.heroPos.y})`);
-        const phaseTick = BT.ticks % DAY_NIGHT_CYCLE_TICKS;
-        const phaseLabel =
-            phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.25
-                ? 'Dawn/Day'
-                : phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.5
-                  ? 'Toward dusk'
-                  : phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.75
-                    ? 'Night'
-                    : 'Toward dawn';
-        BT.systemPrint(new Vector2i(8, 220), C_HUD_FPS, phaseLabel);
-        footer.draw();
+        if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.5) {
+            return 'Toward dusk';
+        }
+
+        if (phaseTick < DAY_NIGHT_CYCLE_TICKS * 0.75) {
+            return 'Night';
+        }
+
+        return 'Toward dawn';
     }
 
     // #endregion

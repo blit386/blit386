@@ -3,8 +3,8 @@
  *
  * The engine picks WebGPU by default and falls back to Canvas 2D software mode
  * when WebGPU is missing. Software mode does not support BT.effectAdd and related
- * APIs. Demos call isPostProcessAvailable() after init starts to decide whether
- * to register CRT stacks.
+ * APIs. Demos call isPostProcessAvailable() after init to check BT.activeBackend
+ * (not BT.requestedBackend, which stays 'webgpu' when WebGPU fell back).
  */
 
 // #region Imports

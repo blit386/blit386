@@ -19,8 +19,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 // #endregion
 
 // #region Type Definitions
@@ -50,8 +48,6 @@ const SWATCH_W = 64;
 const SWATCH_H = 26;
 
 // #endregion
-
-const footer = createDemoFooter({ leftColor: C_TEXT, rightColor: C_TEXT });
 
 // #region Main Logic
 
@@ -193,7 +189,6 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        BT.systemPrint(new Vector2i(8, 8), C_TEXT, 'Blit-Tech - Named Colors Registry');
         BT.systemPrint(new Vector2i(8, 20), C_TEXT, 'Built-in lookups + custom register/update/unregister');
 
         BT.drawRectFill(new Rect2i(6, 32, 308, 126), C_PANEL);
@@ -218,7 +213,6 @@ class Demo {
         BT.systemPrint(new Vector2i(14, 190), C_TEXT, '- Names are trim + lowercase normalized.');
         BT.systemPrint(new Vector2i(14, 202), C_TEXT, '- registerColor throws if the name already exists.');
         BT.systemPrint(new Vector2i(14, 214), C_TEXT, '- updateColor and unregisterColor throw if missing.');
-        footer.draw();
     }
 
     // #endregion

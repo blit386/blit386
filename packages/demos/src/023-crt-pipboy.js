@@ -52,7 +52,7 @@
 //
 // SOFTWARE FALLBACK
 // If the browser uses the Canvas 2D software renderer (WebGPU missing or
-// ?renderer=software), post-process effects are not available. The terminal
+// ?backend=software), post-process effects are not available. The terminal
 // scene, boot animation, and status block still run; only the CRT stack is skipped.
 // An on-screen note explains the reduced mode.
 //
@@ -87,7 +87,6 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
 import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
@@ -255,8 +254,6 @@ function colorSlot(name) {
 
 // #endregion
 
-const footer = createDemoFooter({ leftColor: C_GREEN_DIM, rightColor: C_GREEN });
-
 // #region Main Logic
 
 /**
@@ -283,11 +280,14 @@ class Demo {
             // Display-tier CRT effects run later on RGBA after resolve + upscale below.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
 
-            // canvasDisplaySize is REQUIRED to enable the display tier of the post-process
+            // drawingBufferSize is REQUIRED to enable the display tier of the post-process
             // chain. Without it, there is no canvas-sized RGBA surface for display-tier
             // shaders, so BT.effectAdd will throw for those effects. We pick a clean
             // 4x integer scale so each logical pixel maps to a 4x4 output block.
-            canvasDisplaySize: new Vector2i(OUTPUT_W, OUTPUT_H),
+            drawingBufferSize: new Vector2i(OUTPUT_W, OUTPUT_H),
+
+            // Let the demos layout show the full drawing buffer (default CSS cap is 960x720).
+            maxCanvasSize: new Vector2i(OUTPUT_W, OUTPUT_H),
 
             // 'nearest' keeps the pixel-art crispness through the upscale; 'linear' would
             // soften it like an old TV signal. Try changing this to 'linear' to see the
@@ -554,8 +554,6 @@ class Demo {
         if (!this.postProcessAvailable) {
             BT.systemPrint(new Vector2i(TEXT_LEFT, DISPLAY_H - 28), C_GREEN_DIM, SOFTWARE_FALLBACK_NOTE);
         }
-
-        footer.draw();
     }
 
     /**

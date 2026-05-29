@@ -18,8 +18,6 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
 // #region Configuration
@@ -109,8 +107,6 @@ function indexFromPaletteMap(paletteMap, code) {
 
 // #endregion
 
-const footer = createDemoFooter({ leftColor: C_DIM, rightColor: C_WHITE });
-
 // #region Main Logic
 
 /**
@@ -133,6 +129,23 @@ class Demo {
     // #region Lifecycle
 
     /**
+     * Optional engine settings. We keep the default 320x240 screen and ask for eight
+     * palette swatches per row so the overlay grid lines up with the 8-cell-wide heart art.
+     *
+     * @returns {{ overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayPaletteView: true,
+            overlayPaletteColumns: 8,
+            overlayStyle: {
+                barPaletteIndex: 3,
+                textPaletteIndex: 2,
+            },
+        };
+    }
+
+    /**
      * Sets up the palette.
      *
      * @returns {Promise<boolean>}
@@ -141,7 +154,9 @@ class Demo {
         // Set up the color palette
         // Think of this as laying out paint on an artist's palette tray before starting a painting.
         // Every color we might use gets a number. We set them all up before drawing begins.
-        this.palette = BT.paletteCreate(256);
+        // Sixteen slots are enough for this demo (we only use indices 1 through 11) and keep
+        // the stats palette grid to two short rows when configure() asks for eight per row.
+        this.palette = BT.paletteCreate(16);
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(28, 32, 48)); // deep gray-blue background
@@ -161,6 +176,9 @@ class Demo {
         // update() will overwrite these on the very first tick.
         this.palette.set(C_CHECKER_A, new Color32(255, 0, 0)); // start as red
         this.palette.set(C_CHECKER_B, new Color32(0, 0, 255)); // start as blue
+
+        // Overlay colors (must match configure().overlayStyle above).
+        // Bar fill uses slot 7 (C_TREE_DARK); text uses C_LABEL. Both are set above.
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
@@ -194,17 +212,12 @@ class Demo {
         // Clear to the deep gray-blue background so light pixel art pops.
         BT.clear(C_BG);
 
-        // Main title across the top in white.
-        BT.systemPrint(new Vector2i(10, 8), C_WHITE, 'Blit-Tech - Pixel Art (nested loops)');
-
         // Left and right art pieces share the same vertical starting line so they look side by side.
         this.renderHeartSection();
         this.renderTreeSection();
 
         // Checkerboard below, with colors that shift using animTime.
         this.renderCheckerPatternSection();
-
-        footer.draw();
     }
 
     // #endregion

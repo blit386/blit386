@@ -27,10 +27,38 @@
 //
 // We learned about palette offsets in Demo 008-Sprites:
 // https://vancura.dev/articles/blit-tech-sprites
+//
+// FULLSCREEN CRT (Tesla Orava TV)
+// The sprite grid is drawn at 640x400, then the engine resolves and upscales it and runs
+// a display-tier stack tuned for 1970s Czechoslovak B/W CRT sets (Tesla Orava 131/226/229):
+// curved tube, soft phosphor halation, scanlines, light bezel vignette, a roll band
+// scrolling top-to-bottom, subtle offset-band wobble, and occasional TV faults (tear,
+// snow, dim, ghost, roll). Same building blocks as demo 033; chroma split is omitted (B/W).
+// Post-process needs WebGPU; the software renderer still shows the sprite effects without CRT.
+//
+// We learned about composing effects in 023-PipBoy CRT and 033-Basics Enhanced.
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import {
+    BarrelDistortion,
+    Bloom,
+    bootstrap,
+    BT,
+    ChromaticAberration,
+    Color32,
+    Flicker,
+    Interference,
+    Noise,
+    PixelGlitch,
+    Rect2i,
+    RGBMask,
+    RollLine,
+    Scanlines,
+    SpriteSheet,
+    Vector2i,
+    Vignette,
+} from 'blit-tech';
 
-import { createDemoFooter } from './shared/demo-footer.js';
+import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -56,6 +84,7 @@ const C_LABEL_YELLOW = 8; // (255, 200, 100) day/night label.
 const C_BAR_DARK = 9; // (30, 30, 30) progress bar track.
 const C_BAR_BORDER = 10; // (150, 150, 150) progress bar outline.
 const C_FPS = 11; // (100, 100, 100) dim FPS.
+const C_OVERLAY_BG = 14;
 
 // Theme block indices (as palette offsets from SPRITE_BASE).
 // Each block contains N entries. Offset = blockIndex * N.
@@ -89,9 +118,101 @@ const BLOCK_INVINCIBLE = 10; // Dynamic.
 const BLOCK_POISON = 11; // Dynamic.
 const BLOCK_DAYNIGHT = 12; // Dynamic.
 
-// #endregion
+// Logical game resolution (where render() draws). The demos page scales this up on screen.
+const DISPLAY_W = 640;
+const DISPLAY_H = 400;
 
-const footer = createDemoFooter({ leftColor: C_FPS, rightColor: C_WHITE });
+// How large the canvas may appear in the browser (3x logical, crisp CSS upscale).
+const MAX_CANVAS_W = DISPLAY_W * 3;
+const MAX_CANVAS_H = DISPLAY_H * 3;
+
+// Display-tier CRT runs on the upscaled RGBA buffer (3x logical, like demo 033).
+const OUTPUT_W = DISPLAY_W * 3;
+const OUTPUT_H = DISPLAY_H * 3;
+
+// Analog-TV glitch bursts (ticks at default 60 FPS).
+const GLITCH_COOLDOWN_MIN = 150;
+const GLITCH_COOLDOWN_MAX = 420;
+const GLITCH_ACTIVE_MIN = 4;
+const GLITCH_ACTIVE_MAX = 24;
+const GLITCH_INTENSITY_MIN = 0.3;
+const GLITCH_INTENSITY_MAX = 0.95;
+
+// Orava B/W: horizontal tear, snow, brightness waver, ghosting, vertical roll (no chroma split).
+const GLITCH_TYPES = ['hshift', 'noise', 'flicker', 'interference', 'vroll'];
+const GLITCH_LABELS = {
+    none: 'NONE',
+    hshift: 'H-HOLD',
+    noise: 'SNOW',
+    flicker: 'DIM',
+    interference: 'GHOST',
+    vroll: 'V-ROLL',
+};
+
+const FLICKER_BASE = 1.0;
+const FLICKER_DIP = 0.78;
+const ABERRATION_BASE = 0;
+const NOISE_BASE = 0.038;
+// Always-on bright band scrolling top to bottom (RollLine).
+const ROLL_BASE = 0.26;
+const ROLL_SPEED = 0.92;
+const INTERFERENCE_BASE = 0;
+
+// Occasional subtle horizontal band offset (PixelGlitch), separate from TV fault bursts.
+const BAND_WOBBLE_COOLDOWN_MIN = 100;
+const BAND_WOBBLE_COOLDOWN_MAX = 280;
+const BAND_WOBBLE_ACTIVE_MIN = 3;
+const BAND_WOBBLE_ACTIVE_MAX = 10;
+const BAND_WOBBLE_INTENSITY = 0.11;
+
+/**
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+function randInt(min, max) {
+    return min + Math.floor(Math.random() * (max - min));
+}
+
+/**
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+function randFloat(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+/**
+ * @template T
+ * @param {readonly T[]} arr
+ * @returns {T}
+ */
+function randPick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Spins the CPU until roughly `ms` milliseconds have passed.
+ * The timing chart maps bar height from real update()/render() time; this demo adds
+ * a gentle pulse so the scrolling bars are easy to see while you watch the effects.
+ *
+ * @param {number} ms - Target delay in milliseconds.
+ */
+function burnCpuMs(ms) {
+    if (ms <= 0) {
+        return;
+    }
+
+    // performance.now() returns a high-resolution clock in milliseconds.
+    const deadline = performance.now() + ms;
+
+    while (performance.now() < deadline) {
+        // Empty loop on purpose: we are waiting for the clock, not doing useful work.
+    }
+}
+
+// #endregion
 
 // #region Main Logic
 
@@ -125,9 +246,68 @@ class Demo {
     // Which tick the last "damage event" occurred on (for the damage flash).
     damageFlashTick = 0;
 
+    pixelGlitch = null;
+    barrel = null;
+    aberration = null;
+    interference = null;
+    rollLine = null;
+    scanlines = null;
+    mask = null;
+    vignette = null;
+    noise = null;
+    flicker = null;
+    bloom = null;
+
+    postProcessAvailable = false;
+    glitchCooldown = 0;
+    glitchActive = 0;
+    glitchDuration = 0;
+    glitchType = 'none';
+    glitchPeak = 0;
+
+    bandWobbleCooldown = 0;
+    bandWobbleActive = 0;
+    bandWobbleDuration = 0;
+    bandWobbleSeed = 0;
+
+    overlayRowData = [
+        { leftText: 'Orava CRT: OFF', textPaletteIndex: C_LABEL },
+        { leftText: 'TV fault: NONE', textPaletteIndex: C_LABEL_YELLOW },
+    ];
+
     // #endregion
 
     // #region IBlitTechDemo Implementation
+
+    /**
+     * Wider logical screen for the sprite grid; display-tier Orava CRT runs at 3x upscale.
+     *
+     * @returns {{ displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, outputUpscaleFilter: string, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+            drawingBufferSize: new Vector2i(OUTPUT_W, OUTPUT_H),
+            maxCanvasSize: new Vector2i(MAX_CANVAS_W, MAX_CANVAS_H),
+            outputUpscaleFilter: 'nearest',
+            overlayPaletteView: true,
+            // Opt in to the engine timing chart band under the title row.
+            // overlayTimingChartHeight sets band height in pixels (default 22).
+            overlayTimingChart: true,
+            overlayTimingChartHeight: 256,
+            overlayStyle: {
+                barPaletteIndex: C_OVERLAY_BG,
+                textPaletteIndex: C_BG,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_LABEL_GREEN,
+                renderBarPaletteIndex: C_LABEL_YELLOW,
+                warningPaletteIndex: C_LABEL_YELLOW,
+                errorPaletteIndex: C_LABEL_RED,
+                eventPaletteIndex: C_LABEL_CYAN,
+            },
+        };
+    }
 
     /**
      * Sets up the palette with static UI colors, builds all 13 theme blocks,
@@ -194,6 +374,86 @@ class Demo {
             return false;
         }
 
+        this.postProcessAvailable = isPostProcessAvailable();
+
+        if (!this.postProcessAvailable) {
+            this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+            this.glitchActive = 0;
+            this.glitchDuration = 0;
+            this.glitchType = 'none';
+            this.glitchPeak = 0;
+            console.log('[SpriteEffectsDemo] Initialization complete (no CRT stack).');
+            return true;
+        }
+
+        // Pixel tier: indexed-buffer horizontal band tear (V-hold style).
+        this.pixelGlitch = new PixelGlitch();
+        this.pixelGlitch.bandHeight = 4;
+        this.pixelGlitch.intensity = 0;
+        BT.effectAdd(this.pixelGlitch);
+
+        // Display tier: Tesla Orava B/W tube - curved glass, faint grille, soft halation.
+        this.barrel = new BarrelDistortion();
+        this.barrel.curvature = 0.07;
+
+        this.aberration = new ChromaticAberration();
+        this.aberration.aberration = ABERRATION_BASE;
+
+        this.interference = new Interference();
+        this.interference.amount = INTERFERENCE_BASE;
+
+        this.rollLine = new RollLine();
+        this.rollLine.amount = ROLL_BASE;
+        this.rollLine.speed = ROLL_SPEED;
+
+        this.scanlines = new Scanlines();
+        this.scanlines.amount = 0.42;
+        this.scanlines.strength = -7;
+        this.scanlines.density = DISPLAY_H;
+
+        this.mask = new RGBMask();
+        this.mask.intensity = 0.07;
+        this.mask.size = 5;
+        this.mask.border = 0.45;
+
+        this.vignette = new Vignette();
+        this.vignette.amount = 0.1;
+
+        this.noise = new Noise();
+        this.noise.amount = NOISE_BASE;
+
+        this.flicker = new Flicker();
+        this.flicker.amount = FLICKER_BASE;
+
+        this.bloom = new Bloom();
+        this.bloom.spread = 2.2;
+        this.bloom.glow = 0.09;
+
+        for (const fx of [
+            this.barrel,
+            this.aberration,
+            this.interference,
+            this.rollLine,
+            this.scanlines,
+            this.mask,
+            this.vignette,
+            this.noise,
+            this.flicker,
+            this.bloom,
+        ]) {
+            BT.effectAdd(fx);
+        }
+
+        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        this.glitchActive = 0;
+        this.glitchDuration = 0;
+        this.glitchType = 'none';
+        this.glitchPeak = 0;
+
+        this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+        this.bandWobbleActive = 0;
+        this.bandWobbleDuration = 0;
+
         console.log('[SpriteEffectsDemo] Initialization complete!');
         return true;
     }
@@ -224,6 +484,118 @@ class Demo {
         this.updateInvincibleBlock();
         this.updatePoisonBlock();
         this.updateDayNightBlock();
+
+        if (this.postProcessAvailable) {
+            this.updateCrtEffects();
+        }
+
+        // Extra update() work so the overlay timing chart shows green scrolling bars.
+        // Math.sin swings between -1 and 1; * 0.5 + 0.5 remaps that to 0..1 for a smooth pulse.
+        const chartUpdateLoadMs = 2 + (Math.sin(BT.timeSeconds * 1.5) * 0.5 + 0.5) * 8;
+        burnCpuMs(chartUpdateLoadMs);
+    }
+
+    /**
+     * Orava CRT stack and current analog-TV fault (overlay custom rows).
+     *
+     * @returns {readonly { leftText: string }[]}
+     */
+    overlayRows() {
+        if (this.postProcessAvailable) {
+            this.overlayRowData[0].leftText = 'Orava CRT: ON';
+            const faultLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
+            const faultValue = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
+            this.overlayRowData[1].leftText = `TV fault: ${faultLabel} ${String(faultValue).padStart(2, '0')}%`;
+        } else {
+            this.overlayRowData[0].leftText = 'Orava CRT: OFF';
+            this.overlayRowData[1].leftText = SOFTWARE_FALLBACK_NOTE;
+        }
+
+        return this.overlayRowData;
+    }
+
+    /**
+     * Drives RollLine scroll, TV fault bursts, and occasional subtle band offset wobble.
+     */
+    updateCrtEffects() {
+        const seconds = BT.timeSeconds;
+        this.rollLine.time = seconds;
+        this.noise.time = seconds;
+        this.interference.time = seconds;
+
+        if (this.glitchActive > 0) {
+            const t = 1 - (this.glitchActive - 1) / this.glitchDuration;
+            const envelope = Math.sin(t * Math.PI);
+            this.applyRestingCrtUniforms();
+            this.applyGlitchUniforms(envelope);
+            this.glitchActive--;
+            if (this.glitchActive <= 0) {
+                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+            }
+            return;
+        }
+
+        this.applyRestingCrtUniforms();
+
+        if (this.bandWobbleActive > 0) {
+            const t = 1 - (this.bandWobbleActive - 1) / this.bandWobbleDuration;
+            const envelope = Math.sin(t * Math.PI);
+            this.pixelGlitch.intensity = BAND_WOBBLE_INTENSITY * envelope;
+            this.pixelGlitch.seed = this.bandWobbleSeed;
+            this.bandWobbleActive--;
+            if (this.bandWobbleActive <= 0) {
+                this.pixelGlitch.intensity = 0;
+                this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+            }
+        } else {
+            this.bandWobbleCooldown--;
+            if (this.bandWobbleCooldown <= 0) {
+                this.bandWobbleDuration = randInt(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
+                this.bandWobbleActive = this.bandWobbleDuration;
+                this.bandWobbleSeed = Math.random() * 1000;
+            }
+        }
+
+        this.glitchCooldown--;
+        if (this.glitchCooldown <= 0) {
+            this.glitchType = randPick(GLITCH_TYPES);
+            this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+            this.glitchActive = this.glitchDuration;
+            this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+            this.pixelGlitch.seed = Math.random() * 1000;
+        }
+    }
+
+    /** Resting Orava CRT look: scrolling roll band plus calm noise/flicker. */
+    applyRestingCrtUniforms() {
+        this.pixelGlitch.intensity = 0;
+        this.aberration.aberration = ABERRATION_BASE;
+        this.noise.amount = NOISE_BASE;
+        this.flicker.amount = FLICKER_BASE;
+        this.interference.amount = INTERFERENCE_BASE;
+        this.rollLine.amount = ROLL_BASE;
+        this.rollLine.speed = ROLL_SPEED;
+    }
+
+    /**
+     * @param {number} envelope
+     */
+    applyGlitchUniforms(envelope) {
+        const peak = this.glitchPeak * envelope;
+
+        if (this.glitchType === 'hshift') {
+            this.pixelGlitch.intensity = peak;
+        } else if (this.glitchType === 'noise') {
+            this.noise.amount = NOISE_BASE + peak * 0.1;
+        } else if (this.glitchType === 'flicker') {
+            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
+        } else if (this.glitchType === 'interference') {
+            this.interference.amount = peak * 0.07;
+        } else if (this.glitchType === 'vroll') {
+            this.rollLine.amount = ROLL_BASE + peak * 0.35;
+            this.rollLine.speed = ROLL_SPEED + peak * 1.8;
+        }
     }
 
     /**
@@ -235,12 +607,12 @@ class Demo {
 
         if (!this.spriteSheet || !this.charSprite) {
             BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
-            footer.draw();
             return;
         }
 
-        // systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 8), C_WHITE, 'SPRITE PALETTE EFFECTS');
+        // Extra render() work so the timing chart shows yellow scrolling bars.
+        const chartRenderLoadMs = 1 + (Math.cos(BT.timeSeconds * 2.2) * 0.5 + 0.5) * 6;
+        burnCpuMs(chartRenderLoadMs);
 
         // Draw both effect rows.
         this.renderStaticEffects();
@@ -248,8 +620,6 @@ class Demo {
 
         // Day/night cycle at the bottom.
         this.renderDayNightCycle();
-
-        footer.draw();
     }
 
     // #endregion
