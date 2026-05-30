@@ -20,6 +20,7 @@ Run comprehensive quality checks before committing or pushing code.
      - `lint` - Check for lint errors (ESLint)
      - `spellcheck` - Check spelling in code and docs
      - `knip` - Find unused exports and dependencies
+     - `docs:links` - Verify Markdown links (README, docs/, skills)
 
 2. **Report results**
    - If all checks pass: Confirm code is ready for commit
@@ -29,4 +30,5 @@ Run comprehensive quality checks before committing or pushing code.
    - For formatting issues: Suggest `pnpm run format`
    - For lint errors: Suggest `pnpm run lint:fix`
    - For spelling: Add words to `cspell.json` or fix typos
+   - For dead links: Fix URLs or run `pnpm run docs:links` to see failures
    - For unused exports: Remove unused code or add to knip ignore

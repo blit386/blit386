@@ -57,6 +57,7 @@ pnpm run format           # Format (Biome + Prettier)
 pnpm run format:check     # Check formatting
 pnpm run spellcheck       # Check spelling
 pnpm run knip             # Find unused exports
+pnpm run docs:links       # Check Markdown links (README, docs/, skills)
 pnpm run preflight        # ALL quality checks before committing
 pnpm run clean            # Clean build artifacts
 pnpm run security:audit   # Run security audit on dependencies
