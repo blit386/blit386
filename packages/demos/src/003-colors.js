@@ -121,7 +121,16 @@ class Demo {
      * Optional engine settings. We keep the default 320x240 screen and show the
      * palette grid in the overlay with 4 visible rows (scroll for the rest).
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayPaletteView: boolean,
+     *   overlayPaletteRowsVisible: number,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {

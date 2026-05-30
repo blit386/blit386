@@ -129,10 +129,20 @@ class Demo {
     // #region Lifecycle
 
     /**
-     * Optional engine settings. We keep the default 320x240 screen and ask for eight
-     * palette swatches per row so the overlay grid lines up with the 8-cell-wide heart art.
+     * Optional engine settings. We keep the default 320x240 screen and ask for 16
+     * palette swatches per row so the overlay grid lines up with the 8-cell-wide heart art
+     * (two grid columns per art cell gives comfortable visual alignment).
      *
-     * @returns {{ overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayPaletteView: boolean,
+     *   overlayPaletteColumns: number,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {

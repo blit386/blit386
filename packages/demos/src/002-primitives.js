@@ -64,7 +64,18 @@ class Demo {
      * Optional engine settings. We keep the default 320x240 screen and show the
      * palette grid in the overlay with 24 swatches per row and 3 visible rows.
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayPaletteView: boolean,
+     *   overlayPaletteColumns: number,
+     *   overlayPaletteRowsVisible: number,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartHeight: number,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number, gridPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {

@@ -137,10 +137,21 @@ class Demo {
      * Palette slots for the engine overlay bars.
      *
      * The live palette grid at the bottom highlights slots used by this frame's
-     * swatches and live-view preset. Sixteen swatches per row, two visible rows;
-     * scroll to browse the full palette while presets auto-cycle.
+     * swatches and live-view preset. Sixty-four swatches per row; scroll to browse
+     * the full palette while presets auto-cycle.
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   displaySize: import('blit-tech').Vector2i,
+     *   maxCanvasSize: import('blit-tech').Vector2i,
+     *   overlayPaletteView: boolean,
+     *   overlayPaletteColumns: number,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {
@@ -159,7 +170,7 @@ class Demo {
                 renderBarPaletteIndex: 5,
                 warningPaletteIndex: 5,
                 errorPaletteIndex: 3,
-                tagPaletteIndex: 4,
+                tagPaletteIndex: C_LABEL,
             },
         };
     }

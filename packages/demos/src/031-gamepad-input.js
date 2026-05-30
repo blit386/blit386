@@ -240,12 +240,20 @@ class Demo {
      * Read gamepad input and update toy state.
      */
     update() {
+        // Ask the engine whether a gamepad is currently plugged in for this player slot.
         const connected = BT.gamepadConnected(PLAYER);
 
+        // "Edge detection": we only want to react the moment the gamepad is first connected,
+        // not every single frame it stays connected. So we compare the current state
+        // to what it was last frame (stored in gamepadWasConnected).
+        // If it just became true (false -> true), that is the "rising edge" - the instant of connection.
         if (connected && !this.gamepadWasConnected) {
+            // Label this moment on the overlay timing chart so you can see exactly
+            // which frame the gamepad was detected.
             BT.assignTag('Gamepad connected');
         }
 
+        // Save this frame's connection state so next frame can compare against it.
         this.gamepadWasConnected = connected;
 
         // A press (edge) cycles pod color once per physical press.
