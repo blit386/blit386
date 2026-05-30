@@ -12,7 +12,7 @@
 //   - Lerp: smoothly sliding between two colors (like a dimmer between two lights)
 //
 // We learned about the demo lifecycle, Vector2i, Rect2i, and clearing the screen in the Basics demo:
-// https://vancura.dev/articles/blit-tech-basics
+// https://blit-tech-demos.vancura.dev/001-basics
 //
 // Live version: https://vancura.dev/articles/blit-tech-colors
 //

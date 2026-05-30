@@ -3,7 +3,7 @@
 // Demo 016 in the Blit-Tech series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://vancura.dev/articles/blit-tech-basics
+//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
 //   002-Primitives https://vancura.dev/articles/blit-tech-primitives
 //   003-Colors     https://vancura.dev/articles/blit-tech-colors
 //   015-Palette Presets https://vancura.dev/articles/blit-tech-palette-presets

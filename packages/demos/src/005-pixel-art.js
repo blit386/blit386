@@ -3,7 +3,7 @@
 // Demo 005 in the Blit-Tech demo series for young learners (around 12).
 //
 // We learned about the demo lifecycle, coordinates, and clearing the screen in the Basics demo:
-// https://vancura.dev/articles/blit-tech-basics
+// https://blit-tech-demos.vancura.dev/001-basics
 //
 // Prerequisites: 001-Basics, 002-Primitives, 003-Colors
 // Live version: https://vancura.dev/articles/blit-tech-pixel-art
@@ -189,7 +189,7 @@ class Demo {
     /**
      * Fixed-step clock. Advances animTime and updates the animated checker colors in the palette.
      * See the Basics article for why update() and render() are separate steps:
-     * https://vancura.dev/articles/blit-tech-basics
+     * https://blit-tech-demos.vancura.dev/001-basics
      */
     update() {
         // Add one tick's worth of time. If targetFPS is 60, each tick is about 1/60 second.

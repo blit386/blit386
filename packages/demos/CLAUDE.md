@@ -57,6 +57,7 @@ pnpm run format           # Format (Biome + Prettier)
 pnpm run format:check     # Check formatting
 pnpm run spellcheck       # Check spelling
 pnpm run knip             # Find unused exports
+pnpm run docs:links       # Check Markdown links (README, docs/, skills)
 pnpm run preflight        # ALL quality checks before committing
 pnpm run clean            # Clean build artifacts
 pnpm run security:audit   # Run security audit on dependencies
@@ -165,7 +166,7 @@ does and **why**, not just restate it.
 - Never assume the reader knows what a function does just from its name.
 - Use short sentences. Avoid jargon unless you explain it immediately after.
 - Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
-  https://vancura.dev/articles/blit-tech-basics"
+  https://blit-tech-demos.vancura.dev/001-basics"
 
 ### Example (do this)
 
@@ -292,7 +293,7 @@ AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
 Managed by Husky (auto-installed via `prepare` script).
 
 - **Pre-commit** (lint-staged): auto-formats and lints staged files
-- **Pre-push**: runs lint
+- **Pre-push**: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links)
 
 ## Deployment
 

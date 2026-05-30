@@ -27,7 +27,7 @@
 //     When the frequencies are slightly different, the path never exactly repeats.
 //
 // Prerequisites:
-//   001-Basics            https://vancura.dev/articles/blit-tech-basics
+//   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
 //   016-Palette-Animation https://vancura.dev/articles/blit-tech-palette-animation
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';

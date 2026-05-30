@@ -3,7 +3,7 @@
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Press Space to download the current frame.
 //
-// Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics).
+// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics).
 // Live article: https://vancura.dev/articles/blit-tech-image-output
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';

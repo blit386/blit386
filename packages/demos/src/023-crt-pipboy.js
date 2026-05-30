@@ -3,7 +3,7 @@
 // Demo 023 - PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //
 // Demo 023 in the Blit-Tech demo series.
-// We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
+// We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
 // We learned about bitmap fonts in the Bitmap Font demo: https://vancura.dev/articles/blit-tech-bitmap-font
 //
 // Live article: https://vancura.dev/articles/blit-tech-pipboy-crt

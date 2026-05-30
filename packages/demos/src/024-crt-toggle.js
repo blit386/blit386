@@ -3,7 +3,7 @@
 // Demo 024 - CRT Toggle: turn the post-process effects on and off in flight.
 //
 // Demo 024 in the Blit-Tech demo series.
-// We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
+// We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
 // We learned about post-processing in the PipBoy CRT demo: https://vancura.dev/articles/blit-tech-pipboy-crt
 //
 // Live article: https://vancura.dev/articles/blit-tech-crt-toggle

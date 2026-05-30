@@ -40,7 +40,8 @@
     "format:biome": "biome format --write .",
     "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
     "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
-    "preflight": "pnpm run format:check && pnpm run lint && pnpm run spellcheck && pnpm run knip",
+    "docs:links": "node scripts/check-markdown-links.mjs",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run spellcheck && pnpm run knip && pnpm run docs:links",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "clean": "rm -rf dist node_modules/.vite",
@@ -86,6 +87,7 @@
     "husky": "^9.1.7",
     "knip": "^6.14.1",
     "lint-staged": "^16.4.0",
+    "markdown-link-check": "^3.14.2",
     "prettier": "^3.7.4",
     "vite": "^8.0.13",
     "vite-plugin-static-copy": "^4.1.0"

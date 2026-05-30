@@ -3,7 +3,7 @@
 // This demo brings together everything you have learned!
 //
 // Written for readers about 12 years old. Prerequisites (do these first):
-//   001-Basics       https://vancura.dev/articles/blit-tech-basics
+//   001-Basics       https://blit-tech-demos.vancura.dev/001-basics
 //   002-Primitives   https://vancura.dev/articles/blit-tech-primitives
 //   003-Colors       https://vancura.dev/articles/blit-tech-colors
 //   004-Fonts        https://vancura.dev/articles/blit-tech-fonts

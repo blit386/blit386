@@ -61,4 +61,4 @@ pnpm run security:mcp-preflight -- \
 ## References
 
 - [blit-tech/docs/security/security-runbook.md](https://github.com/vancura/blit-tech/blob/main/docs/security/security-runbook.md)
-- [blit-tech/.claude/skills/security-run/SKILL.md](https://github.com/vancura/blit-tech/blob/main/.claude/skills/security-run/SKILL.md)
+- [blit-tech/.claude/skills/bt-security-run/SKILL.md](https://github.com/vancura/blit-tech/blob/main/.claude/skills/bt-security-run/SKILL.md)

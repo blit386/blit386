@@ -5,10 +5,9 @@
 echo "Running pre-push checks..."
 echo ""
 
-echo "[1/1] Linting..."
-pnpm lint || {
+pnpm run preflight || {
     echo ""
-    echo "[FAIL] Lint issues found. Run 'pnpm lint:fix' to fix them."
+    echo "[FAIL] Preflight checks failed. Fix issues above before pushing."
     exit 1
 }
 

@@ -1,6 +1,6 @@
 // Demo 009 - Animation and timing: how to animate sprites using tick-based timing.
 //
-// Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
+// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
 // 008-Sprites (https://vancura.dev/articles/blit-tech-sprites).
 // Live article: https://vancura.dev/articles/blit-tech-animation
 //

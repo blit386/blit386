@@ -1,7 +1,7 @@
 // Primitives Demo - shows all the basic shapes you can draw with Blit-Tech.
 //
 // Demo 002 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics - https://vancura.dev/articles/blit-tech-basics
+// Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
 // Live version: https://vancura.dev/articles/blit-tech-primitives
 //
 // "Primitives" means the simplest building blocks of drawing:
@@ -115,7 +115,7 @@ class Demo {
 
     /**
      * Runs at a fixed rate (60 times per second). See the Basics demo for the full explanation:
-     * https://vancura.dev/articles/blit-tech-basics
+     * https://blit-tech-demos.vancura.dev/001-basics
      * We count ticks AND pre-compute the rainbow pixel colors here so render() stays fast.
      */
     update() {

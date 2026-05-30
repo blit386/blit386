@@ -1,0 +1,53 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^https?://localhost"
+    },
+    {
+      "pattern": "^https?://127\\.0\\.0\\.1"
+    },
+    {
+      "pattern": "^https?://0\\.0\\.0\\.0"
+    },
+    {
+      "pattern": "^#"
+    },
+    {
+      "pattern": "^https?://www\\.w3\\.org(/|$)"
+    },
+    {
+      "pattern": "^https?://fsd\\.it(/|$)"
+    },
+    {
+      "pattern": "^https?://www\\.angelcode\\.com(/|$)"
+    },
+    {
+      "pattern": "^https?://renderhjs\\.net(/|$)"
+    },
+    {
+      "pattern": "^https?://github\\.com/[^/]+/[^/]+/actions(/|$)"
+    },
+    {
+      "pattern": "^https?://www\\.npmjs\\.com/package/[^\\s]+$"
+    }
+  ],
+  "replacementPatterns": [
+    {
+      "pattern": "^/",
+      "replacement": "{{BASEURL}}/"
+    }
+  ],
+  "httpHeaders": [
+    {
+      "urls": ["https://github.com/", "https://raw.githubusercontent.com/"],
+      "headers": {
+        "Accept-Encoding": "zstd, br, gzip, deflate"
+      }
+    }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 202, 206]
+}

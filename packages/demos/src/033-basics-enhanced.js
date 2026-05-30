@@ -2,7 +2,7 @@
 //
 // Demo 033 - Basics Enhanced.
 //
-// Same bouncing-sprite behavior as demo 001 (https://vancura.dev/articles/blit-tech-basics),
+// Same bouncing-sprite behavior as demo 001 (https://blit-tech-demos.vancura.dev/001-basics),
 // with the same PipBoy palette and overlay rows for position and bounces. Every
 // frame is also routed through a hand-built CRT stack on WebGPU. If 001 was "the engine
 // works", this demo is "the engine works, and here is the kind of finish you can layer

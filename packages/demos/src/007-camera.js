@@ -1,7 +1,7 @@
 // Demo 007 - Camera: shows how to scroll a view over a world larger than the screen.
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
-// (https://vancura.dev/articles/blit-tech-basics) and shapes in Demo 002-Primitives
+// (https://blit-tech-demos.vancura.dev/001-basics) and shapes in Demo 002-Primitives
 // (https://vancura.dev/articles/blit-tech-primitives).
 //
 // Live walkthrough: https://vancura.dev/articles/blit-tech-camera
