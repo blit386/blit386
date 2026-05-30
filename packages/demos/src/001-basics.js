@@ -183,19 +183,28 @@ class Demo {
         // drawingBufferSize, and the rest from defaultConfig().
         return {
             targetFPS: TARGET_FPS,
+
             // Live palette grid at the bottom: every palette slot as a tiny swatch.
             // Slots your demo draws this frame show their color; unused slots show a dim marker.
             overlayPaletteView: true,
+
+            // Show 16 swatches per row and only 1 row at a time (scroll the rest with wheel or drag).
+            overlayPaletteColumns: 16,
+            overlayPaletteRowsVisible: 1,
+
             // Scrolling timing chart under the title row (green = update(), amber = render()).
             // One dot per screen refresh; no extra CPU load added in this demo.
             overlayTimingChart: true,
             overlayTimingChartHeight: 32,
+
             // Tell the engine which palette slots to use for the overlay bars
             // (top FPS strip, bottom title strip, and the bar behind custom rows).
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_GREEN,
+                gapPaletteIndex: C_BG,
             },
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_OVERLAY_GREEN,
                 renderBarPaletteIndex: C_OVERLAY_AMBER,

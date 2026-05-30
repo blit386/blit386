@@ -103,13 +103,30 @@ class Demo {
     /**
      * Palette slots for the engine overlay bars.
      *
-     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * The live palette grid at the bottom highlights slots used by this frame's
+     * swatches and live-view preset. Sixteen swatches per row, two visible rows;
+     * scroll to browse the full palette while presets auto-cycle.
+     *
+     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
      */
     configure() {
         return {
+            displaySize: new Vector2i(520, 390),
+            maxCanvasSize: new Vector2i(520 * 2, 390 * 2),
+            overlayPaletteView: true,
+            overlayPaletteColumns: 64,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_UI_HEADER,
+                gapPaletteIndex: 44,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_UI_HEADER,
+                renderBarPaletteIndex: C_UI_SUBTITLE,
+                warningPaletteIndex: C_UI_SUBTITLE,
+                errorPaletteIndex: C_UI_DIM,
+                eventPaletteIndex: C_UI_HEADER,
             },
         };
     }

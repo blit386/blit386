@@ -161,6 +161,15 @@ class Demo {
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_LABEL,
+                gapPaletteIndex: C_OVERLAY_BAR,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_CYAN,
+                renderBarPaletteIndex: C_YELLOW,
+                warningPaletteIndex: C_MAGENTA,
+                errorPaletteIndex: C_RED,
+                eventPaletteIndex: C_GREEN,
             },
         };
     }

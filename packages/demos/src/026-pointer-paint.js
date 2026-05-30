@@ -100,6 +100,29 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Finger painting can spike render() when strokes are long; the chart makes that visible.
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayStyle: {
+                barPaletteIndex: C_PANEL,
+                textPaletteIndex: C_TEXT,
+                gapPaletteIndex: C_PANEL,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: SLOT_PAINT[0],
+                renderBarPaletteIndex: SLOT_PAINT[1],
+                warningPaletteIndex: SLOT_PAINT[2],
+                errorPaletteIndex: SLOT_PAINT[3],
+                eventPaletteIndex: C_TEXT,
+            },
+        };
+    }
+
+    /**
      * Sets up the palette and allocates the offscreen paint layer.
      *
      * @returns {Promise<boolean>}

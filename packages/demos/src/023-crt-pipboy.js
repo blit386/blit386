@@ -295,6 +295,20 @@ class Demo {
             outputUpscaleFilter: 'nearest',
 
             targetFPS: TARGET_FPS,
+
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_GREEN,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_GREEN,
+                renderBarPaletteIndex: C_AMBER,
+                warningPaletteIndex: C_AMBER,
+                errorPaletteIndex: C_GREEN_BRIGHT,
+                eventPaletteIndex: C_GREEN_DIM,
+            },
         };
     }
 

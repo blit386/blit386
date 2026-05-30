@@ -100,6 +100,20 @@ class Demo {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             maxCanvasSize: new Vector2i(DISPLAY_W * 2, DISPLAY_H * 2),
             targetFPS: 60,
+
+            overlayStyle: {
+                barPaletteIndex: C_PANEL,
+                textPaletteIndex: C_WHITE,
+                gapPaletteIndex: C_PANEL,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_LIT,
+                renderBarPaletteIndex: C_AMBER,
+                warningPaletteIndex: C_ACCENT,
+                errorPaletteIndex: C_ACCENT,
+                eventPaletteIndex: C_LIT,
+            },
         };
     }
 

@@ -137,10 +137,19 @@ class Demo {
     configure() {
         return {
             overlayPaletteView: true,
-            overlayPaletteColumns: 8,
+            overlayPaletteColumns: 16,
             overlayStyle: {
                 barPaletteIndex: 3,
                 textPaletteIndex: 2,
+                gapPaletteIndex: 2,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: 2,
+                renderBarPaletteIndex: 3,
+                warningPaletteIndex: 3,
+                errorPaletteIndex: 4,
+                eventPaletteIndex: 2,
             },
         };
     }

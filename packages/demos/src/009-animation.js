@@ -150,6 +150,15 @@ class Demo {
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_STATE,
+                gapPaletteIndex: C_OVERLAY_BAR,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_COOLDOWN_READY,
+                renderBarPaletteIndex: C_SPAWN_TEXT,
+                warningPaletteIndex: C_COOLDOWN_ACTIVE,
+                errorPaletteIndex: C_COOLDOWN_BAR,
+                eventPaletteIndex: C_INFO_HEADER,
             },
         };
     }

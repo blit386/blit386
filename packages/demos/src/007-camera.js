@@ -120,14 +120,28 @@ class Demo {
      * Called once at the very start. Tells the engine which palette slots to use
      * for the overlay bars (FPS strip, demo title, and custom debug rows).
      *
-     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * The palette grid shows 16 swatches per row and 2 visible rows (32 colors at
+     * a time); scroll the band to browse the rest of the 256-slot palette.
+     *
+     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
      */
     configure() {
         return {
             overlayPaletteView: true,
+            overlayPaletteColumns: 32,
+            overlayPaletteRowsVisible: 2,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_GREEN,
+                gapPaletteIndex: C_OVERLAY_BAR,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_OVERLAY_GREEN,
+                renderBarPaletteIndex: C_OVERLAY_AMBER,
+                warningPaletteIndex: C_OVERLAY_AMBER,
+                errorPaletteIndex: C_OVERLAY_AMBER,
+                eventPaletteIndex: C_OVERLAY_GREEN,
             },
         };
     }

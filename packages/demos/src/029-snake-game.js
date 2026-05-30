@@ -240,6 +240,20 @@ class Demo {
             maxCanvasSize: new Vector2i(OUTPUT_W, OUTPUT_H),
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
+
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_FOOTER_WHITE,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_SNAKE,
+                renderBarPaletteIndex: C_FOOD,
+                warningPaletteIndex: C_FOOTER_DIM,
+                errorPaletteIndex: C_WALL,
+                eventPaletteIndex: C_FOOTER_WHITE,
+            },
         };
     }
 

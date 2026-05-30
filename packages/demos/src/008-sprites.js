@@ -89,6 +89,30 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Enables the engine timing chart so you can compare update() vs render() cost
+     * while switching sprite palette themes.
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_LABEL,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_LABEL,
+                renderBarPaletteIndex: C_CODE,
+                warningPaletteIndex: C_CODE,
+                errorPaletteIndex: C_WHITE,
+                eventPaletteIndex: C_LABEL,
+            },
+        };
+    }
+
+    /**
      * Sets up the palette, loads the sprite from a file, and links pixels to palette slots.
      *
      * IMPORTANT ORDER:

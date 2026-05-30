@@ -226,13 +226,29 @@ class Demo {
     /**
      * Palette slots for the engine overlay bars (FPS strip uses the engine defaults).
      *
-     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * The live palette grid at the bottom shows which slots this frame's draw calls
+     * use (helpful for day/night tinting and sprite palette blocks). Sixteen swatches
+     * per row, two visible rows; scroll to browse the full 256-slot palette.
+     *
+     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
      */
     configure() {
         return {
+            overlayPaletteView: true,
+            overlayPaletteColumns: 32,
+            overlayPaletteRowsVisible: 3,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_HUD_SCORE,
+                gapPaletteIndex: C_OVERLAY_BAR,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_HUD_POS,
+                renderBarPaletteIndex: C_HUD_SCORE,
+                warningPaletteIndex: C_HUD_FPS,
+                errorPaletteIndex: C_HUD_TITLE,
+                eventPaletteIndex: C_HUD_POS,
             },
         };
     }

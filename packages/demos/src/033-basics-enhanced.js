@@ -193,6 +193,7 @@ class Demo {
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_GREEN,
+                gapPaletteIndex: C_OVERLAY_BAR,
             },
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_OVERLAY_GREEN,

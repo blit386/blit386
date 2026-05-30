@@ -134,6 +134,37 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Palette slots for the engine overlay bars.
+     *
+     * The live palette grid at the bottom highlights slots used by this frame's
+     * swatches and live-view preset. Sixteen swatches per row, two visible rows;
+     * scroll to browse the full palette while presets auto-cycle.
+     *
+     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            displaySize: new Vector2i(520, 390),
+            maxCanvasSize: new Vector2i(520 * 2, 390 * 2),
+            overlayPaletteView: true,
+            overlayPaletteColumns: 64,
+            overlayStyle: {
+                barPaletteIndex: 2,
+                textPaletteIndex: 4,
+                gapPaletteIndex: 80,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: 4,
+                renderBarPaletteIndex: 5,
+                warningPaletteIndex: 5,
+                errorPaletteIndex: 3,
+                eventPaletteIndex: 4,
+            },
+        };
+    }
+
+    /**
      * Builds the palette with all static slots and zeroed dynamic slots, then loads the font.
      *
      * @returns {Promise<boolean>}

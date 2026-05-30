@@ -291,13 +291,15 @@ class Demo {
             maxCanvasSize: new Vector2i(MAX_CANVAS_W, MAX_CANVAS_H),
             outputUpscaleFilter: 'nearest',
             overlayPaletteView: true,
+
             // Opt in to the engine timing chart band under the title row.
             // overlayTimingChartHeight sets band height in pixels (default 22).
             overlayTimingChart: true,
-            overlayTimingChartHeight: 256,
+            overlayTimingChartHeight: 64,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BG,
                 textPaletteIndex: C_BG,
+                gapPaletteIndex: C_BG,
             },
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_LABEL_GREEN,

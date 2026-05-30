@@ -61,17 +61,28 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Optional engine settings. We keep the default 320x240 screen and show the full
-     * 256-slot palette in the overlay grid with 32 swatches per row.
+     * Optional engine settings. We keep the default 320x240 screen and show the
+     * palette grid in the overlay with 24 swatches per row and 3 visible rows.
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
      */
     configure() {
         return {
             overlayPaletteView: true,
+            overlayPaletteColumns: 24,
+            overlayPaletteRowsVisible: 3,
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
+                gapPaletteIndex: 2,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_CYAN,
+                renderBarPaletteIndex: C_AMBER,
+                warningPaletteIndex: C_YELLOW,
+                errorPaletteIndex: C_RED,
+                eventPaletteIndex: C_GREEN_SHAPE,
             },
         };
     }

@@ -104,6 +104,29 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Shows the timing chart while many stars move each frame (useful for spotting render spikes).
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_TITLE,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_TITLE,
+                renderBarPaletteIndex: C_STREAK,
+                warningPaletteIndex: C_LABEL,
+                errorPaletteIndex: C_STREAK,
+                eventPaletteIndex: C_TIP,
+            },
+        };
+    }
+
+    /**
      * Sets up the palette and creates star layers.
      *
      * IMPORTANT ORDER:

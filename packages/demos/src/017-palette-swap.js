@@ -109,6 +109,29 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Timing chart helps compare CPU cost while palettes swap on a timer.
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_HEADER,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_HEADER,
+                renderBarPaletteIndex: C_CODE,
+                warningPaletteIndex: C_DIM,
+                errorPaletteIndex: C_LABEL,
+                eventPaletteIndex: C_CODE,
+            },
+        };
+    }
+
+    /**
      * Loads the sprite, builds four theme palettes, then loads the font.
      *
      * ORDER MATTERS:
