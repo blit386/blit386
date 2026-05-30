@@ -109,6 +109,29 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Timing chart helps compare CPU cost while palettes swap on a timer.
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_HEADER,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_HEADER,
+                renderBarPaletteIndex: C_CODE,
+                warningPaletteIndex: C_DIM,
+                errorPaletteIndex: C_LABEL,
+                tagPaletteIndex: C_CODE,
+            },
+        };
+    }
+
+    /**
      * Loads the sprite, builds four theme palettes, then loads the font.
      *
      * ORDER MATTERS:
@@ -189,6 +212,7 @@ class Demo {
             // Because every theme palette keeps the sprite colors at the SAME SLOT NUMBERS
             // (SPRITE_BASE..SPRITE_BASE+N-1), the sprite's stored indices are still correct.
             BT.paletteSet(this.themepalettes[this.currentTheme]);
+            BT.assignTag(`Theme: ${this.themeNames[this.currentTheme]}`);
 
             // BT.spritesRefresh() is needed when the new palette REORGANIZES slots
             // i.e., the same RGBA colors appear at different slot NUMBERS than before.

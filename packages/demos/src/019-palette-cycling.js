@@ -103,6 +103,29 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Palette cycling runs in the engine each frame; the chart shows update vs render time.
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_LABEL,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_LABEL,
+                renderBarPaletteIndex: C_PANEL,
+                warningPaletteIndex: C_DIM,
+                errorPaletteIndex: C_FPS,
+                tagPaletteIndex: C_WHITE,
+            },
+        };
+    }
+
+    /**
      * Builds the palette with gradient colors, starts the cycling effects,
      * and loads the bitmap font.
      *

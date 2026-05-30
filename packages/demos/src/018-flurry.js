@@ -227,6 +227,32 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Heavy particle physics each tick; the timing chart helps spot frame budget pressure.
+     *
+     * @returns {{ targetFPS: number, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            targetFPS: TARGET_FPS,
+            overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_TITLE,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_TITLE,
+                renderBarPaletteIndex: C_WHITE,
+                warningPaletteIndex: C_SPARK_CORE,
+                errorPaletteIndex: C_WHITE,
+                tagPaletteIndex: C_FPS,
+            },
+        };
+    }
+
+    /**
      * Builds the palette, loads the font, and creates sparks and particles.
      * Runs once before the first update() call.
      *

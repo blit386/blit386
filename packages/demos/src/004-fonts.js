@@ -77,18 +77,38 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Optional engine settings. We keep the default 320x240 screen and show the full
-     * 256-slot palette in the overlay grid with 13 swatches per row.
+     * Optional engine settings. We keep the default 320x240 screen and show the
+     * palette grid in the overlay with 32 swatches per row and 2 visible rows.
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayPaletteView: boolean,
+     *   overlayPaletteColumns: number,
+     *   overlayPaletteRowsVisible: number,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {
             overlayPaletteView: true,
-            overlayPaletteColumns: 13,
+            overlayPaletteColumns: 32,
+            overlayPaletteRowsVisible: 2,
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
+                gapPaletteIndex: 2,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_GREEN_TEXT,
+                renderBarPaletteIndex: C_YELLOW_TEXT,
+                warningPaletteIndex: C_YELLOW_TEXT,
+                errorPaletteIndex: C_RED_TEXT,
+                tagPaletteIndex: C_BLUE_TEXT,
             },
         };
     }
@@ -123,7 +143,6 @@ class Demo {
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
-
         return true;
     }
 

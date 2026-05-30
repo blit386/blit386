@@ -104,6 +104,33 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Tells the engine the screen size and which palette slots to use for the
+     * timing chart overlay. The chart shows update() and render() time side by side
+     * so you can see when a ball throw causes a spike.
+     *
+     * @returns {{
+     *   displaySize: import('blit-tech').Vector2i,
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, tagPaletteIndex: number }
+     * }}
+     */
+    configure() {
+        return {
+            // Set the logical display size (how many pixels the demo draws at).
+            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+            // Show the scrolling timing chart in the overlay so each frame's cost is visible.
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                // C_DIM makes update bars subtle so render bars stand out by contrast.
+                updateBarPaletteIndex: C_DIM,
+                // C_TEXT gives render bars and milestone labels high contrast against the dark background.
+                renderBarPaletteIndex: C_TEXT,
+                tagPaletteIndex: C_TEXT,
+            },
+        };
+    }
+
+    /**
      * Sets up the palette and seeds three balls at varied starting positions.
      *
      * @returns {Promise<boolean>}
@@ -136,7 +163,6 @@ class Demo {
             { x: 160, y: 50, vx: -0.6, vy: 0.4, color: BALL_COLORS[1], grabbedBy: -1 },
             { x: 240, y: 70, vx: 0.8, vy: -0.2, color: BALL_COLORS[2], grabbedBy: -1 },
         ];
-
         return true;
     }
 
@@ -237,6 +263,11 @@ class Demo {
      * pointer's release-frame velocity (scaled and clamped to MAX_THROW_SPEED).
      */
     tryThrow(slot) {
+        // Mark this throw event on the overlay timing chart so you can see exactly
+        // when a throw happened and which pointer slot caused it. The template string
+        // inserts the slot number so repeated throws from different fingers are distinct.
+        BT.assignTag(`Throw slot ${slot}`);
+
         for (const ball of this.balls) {
             if (ball.grabbedBy !== slot) {
                 continue;

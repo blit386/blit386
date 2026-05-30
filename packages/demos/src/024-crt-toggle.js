@@ -161,6 +161,15 @@ class Demo {
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_LABEL,
+                gapPaletteIndex: C_OVERLAY_BAR,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_CYAN,
+                renderBarPaletteIndex: C_YELLOW,
+                warningPaletteIndex: C_MAGENTA,
+                errorPaletteIndex: C_RED,
+                tagPaletteIndex: C_GREEN,
             },
         };
     }
@@ -223,7 +232,6 @@ class Demo {
                 color: SQUARE_COLORS[i % SQUARE_COLORS.length],
             });
         }
-
         return true;
     }
 
@@ -241,6 +249,7 @@ class Demo {
                 for (const fx of this.crtStack) {
                     BT.effectAdd(fx);
                 }
+                BT.assignTag('CRT: ON');
             } else {
                 // Remove them all. When the last effect is removed, the engine drops
                 // the off-screen ping-pong textures and reverts to drawing straight
@@ -248,6 +257,7 @@ class Demo {
                 for (const fx of this.crtStack) {
                     BT.effectRemove(fx);
                 }
+                BT.assignTag('CRT: OFF');
             }
         }
 

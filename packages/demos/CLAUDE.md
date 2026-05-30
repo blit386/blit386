@@ -28,6 +28,8 @@ blit-tech-demos/
     001-basics.js
     002-primitives.js
     ...                        # numbered demos under src/*.js (plugin discovers all)
+    shared/                    # Cross-demo helpers (post-process backend checks)
+      post-process-backend.js
   public/                      # Static assets copied to dist/ verbatim
     fonts/                     # Bitmap fonts (.btfont + .png)
     sprites/                   # Sprite sheets used by demos
@@ -255,11 +257,20 @@ Full input APIs (`BT.keyDown`, `BT.buttonDown`, gamepad helpers, remapping) are 
 [input guide](https://github.com/vancura/blit-tech/blob/main/docs/input.md). Post-process presets and effect tiers are
 in [post-process-effects.md](https://github.com/vancura/blit-tech/blob/main/docs/post-process-effects.md).
 
-The engine draws a default overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call. Toggle
-it with Backquote or a tap in the bottom-right corner; disable it in `configure()` with `overlayEnabled: false` (see
+The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
+The overlay **body starts hidden**; a bitmap toggle hint sits in the **bottom-left** corner by default. Toggle the body
+with Backquote or a primary press in the bottom-left 48x48 px corner. Use `overlayVisibleAtStart: true` to show the body
+on the first frame, `overlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still toggles
+with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
+`overlayToggleEnabled: false` to lock body visibility, or `overlayEnabled: false` to disable the overlay subsystem (see
 [api-core.md](https://github.com/vancura/blit-tech/blob/main/docs/api-core.md)). Set `overlayTimingChart: true` to opt
-in to the scrolling update/render timing chart band (~22 px under the title row). Bar colors default to `overlayStyle`
-indices; override with `overlayTimingChartStyle` (warning/error/event slots are reserved for future chart overlays).
+in to the scrolling update/render timing chart band (~22 px under the title row). Chart renderer diagnostics default to
+**minimal** when the chart is on; set `overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to
+disable chart markers. Set `overlayRendererDiagnosticsBar: true` for a GPU pipeline text row below frame timings (off by
+default). Bar colors default to `overlayStyle` indices; override with `overlayTimingChartStyle`. Milestone labels use
+`overlayTimingChartStyle.tagPaletteIndex` (engine default **5**). The engine adds a **Start** tag when the chart resets
+(first layout and on resize). For gameplay events, call `BT.assignTag('...')` from `update()` or `init()` when the chart
+is enabled in `configure()`.
 
 ## File Organization
 

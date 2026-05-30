@@ -282,7 +282,7 @@ class Demo {
     /**
      * Wider logical screen for the sprite grid; display-tier Orava CRT runs at 3x upscale.
      *
-     * @returns {{ displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, outputUpscaleFilter: string, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     * @returns {{ displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, outputUpscaleFilter: string, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
@@ -291,20 +291,24 @@ class Demo {
             maxCanvasSize: new Vector2i(MAX_CANVAS_W, MAX_CANVAS_H),
             outputUpscaleFilter: 'nearest',
             overlayPaletteView: true,
+
             // Opt in to the engine timing chart band under the title row.
             // overlayTimingChartHeight sets band height in pixels (default 22).
             overlayTimingChart: true,
-            overlayTimingChartHeight: 256,
+            overlayTimingChartHeight: 64,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BG,
                 textPaletteIndex: C_BG,
+                gapPaletteIndex: C_BG,
             },
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_LABEL_GREEN,
                 renderBarPaletteIndex: C_LABEL_YELLOW,
                 warningPaletteIndex: C_LABEL_YELLOW,
                 errorPaletteIndex: C_LABEL_RED,
-                eventPaletteIndex: C_LABEL_CYAN,
+                tagPaletteIndex: C_LABEL_CYAN,
             },
         };
     }

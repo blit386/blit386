@@ -20,9 +20,13 @@ Each demo passes a class to `bootstrap()` from `blit-tech`. Optional `configure(
 omit it, the engine applies `defaultConfig()` (`320x240` logical, `640x480` canvas, `60` FPS). Every demo still
 implements `init()`, `update()`, and `render()`.
 
-The engine draws a unified overlay on top of each frame (FPS, target FPS, backend, resolution, demo title). Press
-Backquote (`~`) or tap the bottom-right corner to hide or show it. Set `overlayEnabled: false` in `configure()` to
-disable it entirely.
+The engine draws a unified stats overlay on top of each frame (FPS, target FPS, backend, resolution, demo title). The
+overlay **body starts hidden**; a small bitmap toggle hint sits in the **bottom-left** corner by default. Press
+Backquote (`~`) or tap the bottom-left 48x48 px corner to show or hide the body. Opt into a body that is visible on the
+first frame with `overlayVisibleAtStart: true`. Immersive demos hide the hint icon with
+`overlayToggleHintVisible: false` (see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, and `029-snake-game`);
+the overlay still toggles with Backquote. Set `overlayToggleEnabled: false` to lock body visibility, or
+`overlayEnabled: false` in `configure()` to disable the overlay subsystem entirely.
 
 ## Demos
 

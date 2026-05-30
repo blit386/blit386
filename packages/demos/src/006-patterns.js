@@ -119,9 +119,20 @@ class Demo {
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the full
-     * 256-slot palette in the overlay grid with 32 swatches per row.
+     * 256-slot palette in the overlay grid (default column count). Rich diagnostics and
+     * the renderer diagnostics bar are enabled so GPU pipeline pressure is visible.
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayPaletteView: boolean,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartDiagnostics: string,
+     *   overlayRendererDiagnosticsBar: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {
@@ -129,6 +140,17 @@ class Demo {
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
+                gapPaletteIndex: 2,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_WAVE_3,
+                renderBarPaletteIndex: C_WAVE_1,
+                warningPaletteIndex: C_WAVE_2,
+                errorPaletteIndex: C_WAVE_2,
+                tagPaletteIndex: C_LABEL,
             },
         };
     }

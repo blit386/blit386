@@ -240,6 +240,26 @@ class Demo {
             maxCanvasSize: new Vector2i(OUTPUT_W, OUTPUT_H),
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
+
+            // Hide the small "~" toggle hint in the bottom-left corner so the game
+            // board stays clean. Players who want the stats overlay can still press
+            // the Backquote key (`) to show it and press ` again to hide it - hiding
+            // the hint does not turn the overlay off.
+            overlayToggleHintVisible: false,
+
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_FOOTER_WHITE,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_SNAKE,
+                renderBarPaletteIndex: C_FOOD,
+                warningPaletteIndex: C_FOOTER_DIM,
+                errorPaletteIndex: C_WALL,
+                tagPaletteIndex: C_FOOTER_WHITE,
+            },
         };
     }
 
@@ -384,7 +404,6 @@ class Demo {
         if (this.deathTick !== null && tick - this.deathTick >= RESTART_DELAY_TICKS) {
             this.startRound();
         }
-
         return true;
     }
 
@@ -553,6 +572,7 @@ class Demo {
         this.pendingDy = 0;
 
         this.placeFood();
+        BT.assignTag('Round start');
     }
 
     /**
@@ -624,6 +644,7 @@ class Demo {
     endGame() {
         this.gameOver = true;
         this.deathTick = BT.ticks;
+        BT.assignTag('Game over');
     }
 
     // #endregion

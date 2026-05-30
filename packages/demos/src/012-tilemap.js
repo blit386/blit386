@@ -105,6 +105,31 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Enables the timing chart while the camera scrolls across many tiles per frame.
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
+            overlayStyle: {
+                barPaletteIndex: C_HUD_BAR,
+                textPaletteIndex: C_TEXT_DIM,
+                gapPaletteIndex: C_HUD_BAR,
+            },
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_VIEWPORT,
+                renderBarPaletteIndex: C_GRASS,
+                warningPaletteIndex: C_MINIMAP_BORDER,
+                errorPaletteIndex: C_STONE,
+                tagPaletteIndex: C_FPS,
+            },
+        };
+    }
+
+    /**
      * Runs once at startup: builds the palette, the tilemap, and loads the font file.
      *
      * @returns {Promise<boolean>} True when the demo is ready to run.

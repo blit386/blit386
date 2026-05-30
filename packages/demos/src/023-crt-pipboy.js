@@ -295,6 +295,30 @@ class Demo {
             outputUpscaleFilter: 'nearest',
 
             targetFPS: TARGET_FPS,
+
+            // Hide the little "~" toggle hint that normally sits in the bottom-left
+            // corner. This is a full-screen CRT terminal, so a stray hint icon would
+            // break the illusion (and show up in the curved-glass post-process). The
+            // stats overlay still opens: press the Backquote key (`) to toggle the
+            // full dev HUD, press ` again to hide it. The hint is only hidden, not
+            // disabled.
+            overlayToggleHintVisible: false,
+
+            overlayStyle: {
+                barPaletteIndex: C_BG,
+                textPaletteIndex: C_GREEN,
+                gapPaletteIndex: C_BG,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_GREEN,
+                renderBarPaletteIndex: C_AMBER,
+                warningPaletteIndex: C_AMBER,
+                errorPaletteIndex: C_GREEN_BRIGHT,
+                tagPaletteIndex: C_GREEN_DIM,
+            },
         };
     }
 
@@ -432,7 +456,6 @@ class Demo {
         this.glitchDuration = 0;
         this.glitchType = 'none';
         this.glitchPeak = 0;
-
         return true;
     }
 
@@ -478,6 +501,7 @@ class Demo {
             if (this.glitchCooldown <= 0) {
                 // Roll a new burst. Pick a random type, duration, and peak strength.
                 this.glitchType = randPick(GLITCH_TYPES);
+                BT.assignTag(`Glitch: ${this.glitchType}`);
                 this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
                 this.glitchActive = this.glitchDuration;
                 this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
@@ -547,6 +571,10 @@ class Demo {
 
         // Once the boot lines are all visible, draw the status block on the right.
         if (this.bootFullyDone()) {
+            if (!this._bootTagged) {
+                this._bootTagged = true;
+                BT.assignTag('Boot done');
+            }
             this.renderStatusBlock();
             this.renderBlinkingCursor();
         }

@@ -118,17 +118,36 @@ class Demo {
     // #region Lifecycle
 
     /**
-     * Optional engine settings. We keep the default 320x240 screen and show the full
-     * 256-slot palette in the overlay grid with 32 swatches per row.
+     * Optional engine settings. We keep the default 320x240 screen and show the
+     * palette grid in the overlay with 4 visible rows (scroll for the rest).
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayPaletteView: boolean,
+     *   overlayPaletteRowsVisible: number,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {
             overlayPaletteView: true,
+            overlayPaletteRowsVisible: 4,
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
+                gapPaletteIndex: 3,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: 1,
+                renderBarPaletteIndex: 3,
+                warningPaletteIndex: 3,
+                errorPaletteIndex: 4,
+                tagPaletteIndex: 2,
             },
         };
     }
@@ -181,7 +200,6 @@ class Demo {
 
         // Step 3: Activate the palette
         BT.paletteSet(this.palette);
-
         return true;
     }
 

@@ -129,18 +129,37 @@ class Demo {
     // #region Lifecycle
 
     /**
-     * Optional engine settings. We keep the default 320x240 screen and ask for eight
-     * palette swatches per row so the overlay grid lines up with the 8-cell-wide heart art.
+     * Optional engine settings. We keep the default 320x240 screen and ask for 16
+     * palette swatches per row so the overlay grid lines up with the 8-cell-wide heart art
+     * (two grid columns per art cell gives comfortable visual alignment).
      *
-     * @returns {{ overlayPaletteColumns: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayPaletteView: boolean,
+     *   overlayPaletteColumns: number,
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {
             overlayPaletteView: true,
-            overlayPaletteColumns: 8,
+            overlayPaletteColumns: 16,
             overlayStyle: {
                 barPaletteIndex: 3,
                 textPaletteIndex: 2,
+                gapPaletteIndex: 2,
+            },
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: 2,
+                renderBarPaletteIndex: 3,
+                warningPaletteIndex: 3,
+                errorPaletteIndex: 4,
+                tagPaletteIndex: 2,
             },
         };
     }
@@ -182,7 +201,6 @@ class Demo {
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
-
         return true;
     }
 

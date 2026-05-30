@@ -141,15 +141,37 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
-     * Tells the engine which palette slots to use for overlay bars.
+     * Tells the engine which palette slots to use for overlay bars and timing chart.
      *
-     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {{
+     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
+     *   overlayTimingChart: boolean,
+     *   overlayTimingChartStyle: {
+     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
+     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
+     *   }
+     * }}
      */
     configure() {
         return {
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_STATE,
+                gapPaletteIndex: C_OVERLAY_BAR,
+            },
+            // Show the scrolling timing chart in the overlay so each frame's update/render cost is visible.
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                // C_COOLDOWN_READY: green - used for update() bars, matching the "ready" cooldown color.
+                updateBarPaletteIndex: C_COOLDOWN_READY,
+                // C_SPAWN_TEXT: bright - used for render() bars, matching the sprite spawn text color.
+                renderBarPaletteIndex: C_SPAWN_TEXT,
+                // C_COOLDOWN_ACTIVE: yellow-orange - flags frames that are close to the frame budget.
+                warningPaletteIndex: C_COOLDOWN_ACTIVE,
+                // C_COOLDOWN_BAR: dim red - marks frames that went over budget (error / dropped frame).
+                errorPaletteIndex: C_COOLDOWN_BAR,
+                // C_INFO_HEADER: gold - used for milestone labels such as "Start" or BT.assignTag() calls.
+                tagPaletteIndex: C_INFO_HEADER,
             },
         };
     }
