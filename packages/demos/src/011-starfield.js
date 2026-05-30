@@ -3,7 +3,7 @@
 // Demo 011 in the Blit-Tech demo series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://vancura.dev/articles/blit-tech-basics
+//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
 //   002-Primitives https://vancura.dev/articles/blit-tech-primitives
 //   003-Colors     https://vancura.dev/articles/blit-tech-colors
 //
@@ -29,7 +29,7 @@
 // render() just reads that slot number - no Color32 objects needed per frame.
 //
 // The engine splits work the usual way: update() moves things; render() only draws.
-// See the Basics demo for the full story: https://vancura.dev/articles/blit-tech-basics
+// See the Basics demo for the full story: https://blit-tech-demos.vancura.dev/001-basics
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 

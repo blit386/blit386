@@ -166,7 +166,7 @@ does and **why**, not just restate it.
 - Never assume the reader knows what a function does just from its name.
 - Use short sentences. Avoid jargon unless you explain it immediately after.
 - Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
-  https://vancura.dev/articles/blit-tech-basics"
+  https://blit-tech-demos.vancura.dev/001-basics"
 
 ### Example (do this)
 

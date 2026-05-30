@@ -1,6 +1,6 @@
 // Demo 012 - Tilemap: build a grid world from a 2D array and scroll the camera across it.
 //
-// Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
+// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
 // 002-Primitives (https://vancura.dev/articles/blit-tech-primitives),
 // 007-Camera (https://vancura.dev/articles/blit-tech-camera),
 // 008-Sprites (https://vancura.dev/articles/blit-tech-sprites) - same idea of arranging

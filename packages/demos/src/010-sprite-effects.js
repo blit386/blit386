@@ -2,7 +2,7 @@
 //
 // Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
 //
-// Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
+// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
 // 008-Sprites (https://vancura.dev/articles/blit-tech-sprites).
 // Live article: https://vancura.dev/articles/blit-tech-sprite-effects
 //

@@ -1,7 +1,7 @@
 // Demo 006 - Patterns: animated mathematical art using only primitive drawing.
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
-// (https://vancura.dev/articles/blit-tech-basics), shapes in Demo 002-Primitives
+// (https://blit-tech-demos.vancura.dev/001-basics), shapes in Demo 002-Primitives
 // (https://vancura.dev/articles/blit-tech-primitives), and color in Demo 003-Colors
 // (https://vancura.dev/articles/blit-tech-colors).
 //

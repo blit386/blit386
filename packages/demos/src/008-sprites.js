@@ -1,6 +1,6 @@
 // Demo 008 - Sprites: how to draw images (sprites) on screen using Blit-Tech.
 //
-// Prerequisites: 001-Basics (https://vancura.dev/articles/blit-tech-basics),
+// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
 // 002-Primitives (https://vancura.dev/articles/blit-tech-primitives),
 // 003-Colors (https://vancura.dev/articles/blit-tech-colors).
 // Live article: https://vancura.dev/articles/blit-tech-sprites

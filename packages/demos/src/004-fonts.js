@@ -1,7 +1,7 @@
 // Fonts Demo - shows the built-in system font and palette-animated text effects.
 //
 // Demo 004 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics - https://vancura.dev/articles/blit-tech-basics
+// Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
 // Live version: https://vancura.dev/articles/blit-tech-fonts
 //
 // BT.systemPrint() is the simplest way to draw text in Blit-Tech.
@@ -129,7 +129,7 @@ class Demo {
 
     /**
      * Runs at a fixed rate (60 times per second). See the Basics demo for the full explanation:
-     * https://vancura.dev/articles/blit-tech-basics
+     * https://blit-tech-demos.vancura.dev/001-basics
      * We advance the animation timer AND update dynamic palette colors here.
      */
     update() {

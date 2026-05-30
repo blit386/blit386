@@ -1,7 +1,7 @@
 // Bitmap Font Demo - shows how to load and use a proportional bitmap font.
 //
 // Demo 022 in the Blit-Tech demo series.
-// We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
+// We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
 // We learned about fonts in the Fonts demo: https://vancura.dev/articles/blit-tech-fonts
 //
 // Demos 002-020 use BT.systemPrint() - the built-in 8x8 pixel font that needs no file to load.
@@ -156,7 +156,7 @@ class Demo {
     }
 
     // Runs at a fixed rate (60 times per second).
-    // We learned about the demo loop in the Basics demo: https://vancura.dev/articles/blit-tech-basics
+    // We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
     // We advance the animation timer AND update dynamic palette colors here.
     update() {
         // Move the animation clock forward by one fixed update step in seconds.
