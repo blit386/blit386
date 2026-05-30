@@ -1,5 +1,5 @@
 ---
-description: Run all quality checks (format, lint, spellcheck, knip) before committing
+description: Run all quality checks (format, lint, spellcheck, knip, docs:links) before committing
 ---
 
 # Preflight Checks

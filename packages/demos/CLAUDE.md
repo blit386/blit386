@@ -293,7 +293,7 @@ AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
 Managed by Husky (auto-installed via `prepare` script).
 
 - **Pre-commit** (lint-staged): auto-formats and lints staged files
-- **Pre-push**: runs lint
+- **Pre-push**: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links)
 
 ## Deployment
 
