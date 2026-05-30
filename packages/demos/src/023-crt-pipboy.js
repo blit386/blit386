@@ -296,6 +296,14 @@ class Demo {
 
             targetFPS: TARGET_FPS,
 
+            // Hide the little "~" toggle hint that normally sits in the bottom-left
+            // corner. This is a full-screen CRT terminal, so a stray hint icon would
+            // break the illusion (and show up in the curved-glass post-process). The
+            // stats overlay still opens: press the Backquote key (`) to toggle the
+            // full dev HUD, press ` again to hide it. The hint is only hidden, not
+            // disabled.
+            overlayToggleHintVisible: false,
+
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_GREEN,

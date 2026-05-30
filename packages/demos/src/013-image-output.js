@@ -65,6 +65,24 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Hides the overlay toggle hint so saved screenshots stay clean.
+     *
+     * @returns {Partial<import('blit-tech').HardwareSettings>} Demo hardware settings.
+     */
+    configure() {
+        return {
+            // The engine usually draws a small "~" hint in the bottom-left corner to
+            // tell people they can press the Backquote key (`) to open the stats
+            // overlay. This demo's whole point is saving a clean picture with
+            // BT.downloadFrame(), and the overlay is drawn on top of everything, so
+            // that hint would end up baked into the saved PNG. We hide the hint to keep
+            // captures tidy. The overlay still works on demand: press ` to show it and
+            // ` again to hide it before you capture.
+            overlayToggleHintVisible: false,
+        };
+    }
+
+    /**
      * Sets up the palette, loads the bitmap font, and wires the Space key to frame capture.
      *
      * @returns {Promise<boolean>} Resolves to `true` when the demo is ready to run.

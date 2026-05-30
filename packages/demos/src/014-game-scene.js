@@ -230,10 +230,19 @@ class Demo {
      * use (helpful for day/night tinting and sprite palette blocks). Sixteen swatches
      * per row, two visible rows; scroll to browse the full 256-slot palette.
      *
-     * @returns {{ overlayPaletteView: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {Partial<import('blit-tech').HardwareSettings>}
      */
     configure() {
         return {
+            // The engine normally shows a tiny "~" toggle hint in the bottom-left
+            // corner so people know they can press the Backquote key (`) to open the
+            // stats overlay. This is an immersive game scene, so we hide that hint to
+            // keep the picture clean. The overlay still works: press ` to reveal the
+            // full dev HUD (timing chart and palette grid) on demand, then ` again to
+            // hide it. Teaching demos leave this hint visible (the default) so newcomers
+            // can find it.
+            overlayToggleHintVisible: false,
+
             overlayPaletteView: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 3,

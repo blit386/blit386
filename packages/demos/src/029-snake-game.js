@@ -241,6 +241,12 @@ class Demo {
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
 
+            // Hide the small "~" toggle hint in the bottom-left corner so the game
+            // board stays clean. Players who want the stats overlay can still press
+            // the Backquote key (`) to show it and press ` again to hide it - hiding
+            // the hint does not turn the overlay off.
+            overlayToggleHintVisible: false,
+
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_FOOTER_WHITE,
