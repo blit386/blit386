@@ -107,6 +107,8 @@ class Demo {
     configure() {
         return {
             overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
             overlayStyle: {
                 barPaletteIndex: C_PANEL,
                 textPaletteIndex: C_TEXT,

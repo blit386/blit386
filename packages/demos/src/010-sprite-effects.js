@@ -296,6 +296,8 @@ class Demo {
             // overlayTimingChartHeight sets band height in pixels (default 22).
             overlayTimingChart: true,
             overlayTimingChartHeight: 64,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BG,
                 textPaletteIndex: C_BG,

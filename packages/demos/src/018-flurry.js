@@ -235,6 +235,8 @@ class Demo {
         return {
             targetFPS: TARGET_FPS,
             overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_TITLE,

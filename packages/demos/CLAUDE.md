@@ -260,10 +260,13 @@ in [post-process-effects.md](https://github.com/vancura/blit-tech/blob/main/docs
 The engine draws a default overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call. Toggle
 it with Backquote or a tap in the bottom-right corner; disable it in `configure()` with `overlayEnabled: false` (see
 [api-core.md](https://github.com/vancura/blit-tech/blob/main/docs/api-core.md)). Set `overlayTimingChart: true` to opt
-in to the scrolling update/render timing chart band (~22 px under the title row). Bar colors default to `overlayStyle`
-indices; override with `overlayTimingChartStyle`. Milestone labels use `overlayTimingChartStyle.tagPaletteIndex` (engine
-default **5**). The engine adds a **Start** tag when the chart resets (first layout and on resize). For gameplay events,
-call `BT.assignTag('...')` from `update()` or `init()` when the chart is enabled in `configure()`.
+in to the scrolling update/render timing chart band (~22 px under the title row). Chart renderer diagnostics default to
+**minimal** when the chart is on; set `overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to
+disable chart markers. Set `overlayRendererDiagnosticsBar: true` for a GPU pipeline text row below frame timings (off by
+default). Bar colors default to `overlayStyle` indices; override with `overlayTimingChartStyle`. Milestone labels use
+`overlayTimingChartStyle.tagPaletteIndex` (engine default **5**). The engine adds a **Start** tag when the chart resets
+(first layout and on resize). For gameplay events, call `BT.assignTag('...')` from `update()` or `init()` when the chart
+is enabled in `configure()`.
 
 ## File Organization
 

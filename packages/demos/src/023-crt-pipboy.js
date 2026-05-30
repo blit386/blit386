@@ -302,6 +302,8 @@ class Demo {
                 gapPaletteIndex: C_BG,
             },
             overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_GREEN,
                 renderBarPaletteIndex: C_AMBER,

@@ -132,6 +132,8 @@ class Demo {
                 gapPaletteIndex: 2,
             },
             overlayTimingChart: true,
+            overlayTimingChartDiagnostics: 'rich',
+            overlayRendererDiagnosticsBar: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_WAVE_3,
                 renderBarPaletteIndex: C_WAVE_1,
