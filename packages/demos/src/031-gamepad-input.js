@@ -77,6 +77,8 @@ class Demo {
     // Cycles through three pod colors when A is pressed.
     podColorIndex = 0;
 
+    gamepadWasConnected = false;
+
     // #endregion
 
     // #region Helper Functions
@@ -196,6 +198,18 @@ class Demo {
 
     // #region Main Demo Logic
 
+    configure() {
+        return {
+            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_DIM,
+                renderBarPaletteIndex: C_WHITE,
+                tagPaletteIndex: C_ACCENT,
+            },
+        };
+    }
+
     /**
      * Build a small custom palette and start centered.
      *
@@ -219,7 +233,6 @@ class Demo {
         BT.paletteSet(this.palette);
 
         this.resetPod();
-
         return true;
     }
 
@@ -227,6 +240,14 @@ class Demo {
      * Read gamepad input and update toy state.
      */
     update() {
+        const connected = BT.gamepadConnected(PLAYER);
+
+        if (connected && !this.gamepadWasConnected) {
+            BT.assignTag('Gamepad connected');
+        }
+
+        this.gamepadWasConnected = connected;
+
         // A press (edge) cycles pod color once per physical press.
         if (BT.buttonPressed(BT.BTN_A, PLAYER)) {
             this.podColorIndex = (this.podColorIndex + 1) % 3;

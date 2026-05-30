@@ -105,7 +105,7 @@ class Demo {
     /**
      * Palette cycling runs in the engine each frame; the chart shows update vs render time.
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
@@ -120,7 +120,7 @@ class Demo {
                 renderBarPaletteIndex: C_PANEL,
                 warningPaletteIndex: C_DIM,
                 errorPaletteIndex: C_FPS,
-                eventPaletteIndex: C_WHITE,
+                tagPaletteIndex: C_WHITE,
             },
         };
     }

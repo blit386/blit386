@@ -106,7 +106,7 @@ class Demo {
     /**
      * Shows the timing chart while many stars move each frame (useful for spotting render spikes).
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
@@ -121,7 +121,7 @@ class Demo {
                 renderBarPaletteIndex: C_STREAK,
                 warningPaletteIndex: C_LABEL,
                 errorPaletteIndex: C_STREAK,
-                eventPaletteIndex: C_TIP,
+                tagPaletteIndex: C_TIP,
             },
         };
     }

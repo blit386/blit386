@@ -78,6 +78,17 @@ class Demo {
 
     // #region IBlitTechDemo Implementation
 
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_DIM,
+                renderBarPaletteIndex: C_WHITE,
+                tagPaletteIndex: C_ACCENT,
+            },
+        };
+    }
+
     /**
      * Allocate palette colours once at startup.
      *
@@ -99,7 +110,6 @@ class Demo {
         this.palette.set(C_ACCENT, new Color32(255, 140, 90));
 
         BT.paletteSet(this.palette);
-
         return true;
     }
 
@@ -113,6 +123,7 @@ class Demo {
         if (BT.keyReleased('KeyF')) {
             const tick = BT.ticks;
             this.lastFReleaseMessage = `keyReleased(KeyF) at tick ${tick}`;
+            BT.assignTag('Key F released');
         }
 
         // Raw key: Q held

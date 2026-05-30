@@ -113,6 +113,17 @@ class Demo {
 
     // #region Main Demo Logic
 
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_PANEL_BORDER,
+                renderBarPaletteIndex: C_TEXT,
+                tagPaletteIndex: C_OK,
+            },
+        };
+    }
+
     /**
      * Build palette and register custom named colors.
      *
@@ -168,9 +179,11 @@ class Demo {
         if (shouldBeRegistered && !this.optionalRegistered) {
             Color32.registerColor(CUSTOM_OPTIONAL_NAME, new Color32(255, 90, 150));
             this.optionalRegistered = true;
+            BT.assignTag('Optional registered');
         } else if (!shouldBeRegistered && this.optionalRegistered) {
             Color32.unregisterColor(CUSTOM_OPTIONAL_NAME);
             this.optionalRegistered = false;
+            BT.assignTag('Optional removed');
         }
 
         // Copy current named colors into palette slots used by draw calls.

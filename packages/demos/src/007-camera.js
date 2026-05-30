@@ -141,7 +141,7 @@ class Demo {
                 renderBarPaletteIndex: C_OVERLAY_AMBER,
                 warningPaletteIndex: C_OVERLAY_AMBER,
                 errorPaletteIndex: C_OVERLAY_AMBER,
-                eventPaletteIndex: C_OVERLAY_GREEN,
+                tagPaletteIndex: C_OVERLAY_GREEN,
             },
         };
     }
@@ -191,7 +191,6 @@ class Demo {
         // and stores the slot index on each building instead of a Color32 object.
         this.generateBuildings();
         this.generateTrees();
-
         return true;
     }
 

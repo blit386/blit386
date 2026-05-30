@@ -103,6 +103,18 @@ class Demo {
 
     // #region IBlitTechDemo Implementation
 
+    configure() {
+        return {
+            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_DIM,
+                renderBarPaletteIndex: C_TEXT,
+                tagPaletteIndex: C_TEXT,
+            },
+        };
+    }
+
     /**
      * Sets up the palette and seeds three balls at varied starting positions.
      *
@@ -136,7 +148,6 @@ class Demo {
             { x: 160, y: 50, vx: -0.6, vy: 0.4, color: BALL_COLORS[1], grabbedBy: -1 },
             { x: 240, y: 70, vx: 0.8, vy: -0.2, color: BALL_COLORS[2], grabbedBy: -1 },
         ];
-
         return true;
     }
 
@@ -237,6 +248,8 @@ class Demo {
      * pointer's release-frame velocity (scaled and clamped to MAX_THROW_SPEED).
      */
     tryThrow(slot) {
+        BT.assignTag(`Throw slot ${slot}`);
+
         for (const ball of this.balls) {
             if (ball.grabbedBy !== slot) {
                 continue;

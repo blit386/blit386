@@ -126,7 +126,7 @@ class Demo {
                 renderBarPaletteIndex: C_UI_SUBTITLE,
                 warningPaletteIndex: C_UI_SUBTITLE,
                 errorPaletteIndex: C_UI_DIM,
-                eventPaletteIndex: C_UI_HEADER,
+                tagPaletteIndex: C_UI_HEADER,
             },
         };
     }
@@ -236,6 +236,7 @@ class Demo {
             // Move to the next preset; wrap around after the last one.
             this.currentPresetIndex = (this.currentPresetIndex + 1) % this.presets.length;
             this.lastSwitchTick = tick;
+            BT.assignTag(`Preset: ${this.presetNames[this.currentPresetIndex]}`);
 
             // Copy the new preset's colors into the live view swatch slots (200..215).
             this.updateLiveSwatches();

@@ -176,7 +176,7 @@ class Demo {
      * - How big the canvas element should appear on the web page.
      * - How many times per second update() should run.
      *
-     * @returns {{ targetFPS: number, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayTimingChartHeight: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     * @returns {{ targetFPS: number, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayTimingChartHeight: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         // Only override the tick rate; the engine fills in displaySize,
@@ -210,7 +210,7 @@ class Demo {
                 renderBarPaletteIndex: C_OVERLAY_AMBER,
                 warningPaletteIndex: C_OVERLAY_AMBER,
                 errorPaletteIndex: C_OVERLAY_ERROR,
-                eventPaletteIndex: C_OVERLAY_GREEN,
+                tagPaletteIndex: C_OVERLAY_GREEN,
             },
         };
     }
@@ -289,6 +289,7 @@ class Demo {
         this.pos = new Vector2i(x, y);
 
         // Return true to tell the engine: "Everything loaded fine, start the demo!"
+
         return true;
     }
 
@@ -326,6 +327,11 @@ class Demo {
 
             // Count this as a bounce.
             this.bounces++;
+
+            // Mark the moment on the timing chart (Backquote toggles the overlay).
+            // Each tag scrolls left with the green/amber dots so you can line up
+            // spikes in update/render time with when the logo hit a wall.
+            BT.assignTag('H');
         }
 
         // Same check for the top and bottom edges.
@@ -333,6 +339,9 @@ class Demo {
             // Flip the vertical speed.
             this.speed.y = -this.speed.y;
             this.bounces++;
+
+            // Same timing-chart marker as the left/right bounce above.
+            BT.assignTag('V');
         }
     }
 

@@ -252,7 +252,7 @@ class Demo {
                 renderBarPaletteIndex: C_FOOD,
                 warningPaletteIndex: C_FOOTER_DIM,
                 errorPaletteIndex: C_WALL,
-                eventPaletteIndex: C_FOOTER_WHITE,
+                tagPaletteIndex: C_FOOTER_WHITE,
             },
         };
     }
@@ -398,7 +398,6 @@ class Demo {
         if (this.deathTick !== null && tick - this.deathTick >= RESTART_DELAY_TICKS) {
             this.startRound();
         }
-
         return true;
     }
 
@@ -567,6 +566,7 @@ class Demo {
         this.pendingDy = 0;
 
         this.placeFood();
+        BT.assignTag('Round start');
     }
 
     /**
@@ -638,6 +638,7 @@ class Demo {
     endGame() {
         this.gameOver = true;
         this.deathTick = BT.ticks;
+        BT.assignTag('Game over');
     }
 
     // #endregion

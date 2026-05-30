@@ -158,7 +158,7 @@ class Demo {
                 renderBarPaletteIndex: C_SPAWN_TEXT,
                 warningPaletteIndex: C_COOLDOWN_ACTIVE,
                 errorPaletteIndex: C_COOLDOWN_BAR,
-                eventPaletteIndex: C_INFO_HEADER,
+                tagPaletteIndex: C_INFO_HEADER,
             },
         };
     }

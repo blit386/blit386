@@ -107,7 +107,7 @@ class Demo {
     /**
      * Enables the timing chart while the camera scrolls across many tiles per frame.
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
@@ -122,7 +122,7 @@ class Demo {
                 renderBarPaletteIndex: C_GRASS,
                 warningPaletteIndex: C_MINIMAP_BORDER,
                 errorPaletteIndex: C_STONE,
-                eventPaletteIndex: C_FPS,
+                tagPaletteIndex: C_FPS,
             },
         };
     }

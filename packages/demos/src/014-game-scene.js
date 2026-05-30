@@ -248,7 +248,7 @@ class Demo {
                 renderBarPaletteIndex: C_HUD_SCORE,
                 warningPaletteIndex: C_HUD_FPS,
                 errorPaletteIndex: C_HUD_TITLE,
-                eventPaletteIndex: C_HUD_POS,
+                tagPaletteIndex: C_HUD_POS,
             },
         };
     }

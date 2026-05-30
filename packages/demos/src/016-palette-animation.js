@@ -159,7 +159,7 @@ class Demo {
                 renderBarPaletteIndex: 5,
                 warningPaletteIndex: 5,
                 errorPaletteIndex: 3,
-                eventPaletteIndex: 4,
+                tagPaletteIndex: 4,
             },
         };
     }

@@ -307,7 +307,7 @@ class Demo {
                 renderBarPaletteIndex: C_AMBER,
                 warningPaletteIndex: C_AMBER,
                 errorPaletteIndex: C_GREEN_BRIGHT,
-                eventPaletteIndex: C_GREEN_DIM,
+                tagPaletteIndex: C_GREEN_DIM,
             },
         };
     }
@@ -446,7 +446,6 @@ class Demo {
         this.glitchDuration = 0;
         this.glitchType = 'none';
         this.glitchPeak = 0;
-
         return true;
     }
 
@@ -492,6 +491,7 @@ class Demo {
             if (this.glitchCooldown <= 0) {
                 // Roll a new burst. Pick a random type, duration, and peak strength.
                 this.glitchType = randPick(GLITCH_TYPES);
+                BT.assignTag(`Glitch: ${this.glitchType}`);
                 this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
                 this.glitchActive = this.glitchDuration;
                 this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
@@ -561,6 +561,10 @@ class Demo {
 
         // Once the boot lines are all visible, draw the status block on the right.
         if (this.bootFullyDone()) {
+            if (!this._bootTagged) {
+                this._bootTagged = true;
+                BT.assignTag('Boot done');
+            }
             this.renderStatusBlock();
             this.renderBlinkingCursor();
         }

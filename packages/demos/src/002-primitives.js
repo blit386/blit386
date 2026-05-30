@@ -71,18 +71,23 @@ class Demo {
             overlayPaletteView: true,
             overlayPaletteColumns: 24,
             overlayPaletteRowsVisible: 3,
+
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
                 gapPaletteIndex: 2,
             },
+
             overlayTimingChart: true,
+            overlayTimingChartHeight: 50,
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_CYAN,
                 renderBarPaletteIndex: C_AMBER,
                 warningPaletteIndex: C_YELLOW,
                 errorPaletteIndex: C_RED,
-                eventPaletteIndex: C_GREEN_SHAPE,
+                tagPaletteIndex: 2,
+                gridPaletteIndex: 12,
             },
         };
     }

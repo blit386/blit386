@@ -70,6 +70,22 @@ class Demo {
     // #region IBlitTechDemo Implementation
 
     /**
+     * Enables the timing chart so pointer milestones appear on the overlay HUD.
+     *
+     * @returns {{ overlayTimingChart: boolean, overlayTimingChartStyle: { tagPaletteIndex: number } }}
+     */
+    configure() {
+        return {
+            overlayTimingChart: true,
+            overlayTimingChartStyle: {
+                updateBarPaletteIndex: C_DIM,
+                renderBarPaletteIndex: C_WHITE,
+                tagPaletteIndex: C_WHITE,
+            },
+        };
+    }
+
+    /**
      * Runs once at startup. Sets up the palette and prefills the trail.
      *
      * @returns {Promise<boolean>}
@@ -100,7 +116,6 @@ class Demo {
         for (let i = 0; i < TRAIL_LENGTH; i++) {
             this.trail.push([160, 120]);
         }
-
         return true;
     }
 

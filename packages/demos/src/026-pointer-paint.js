@@ -102,7 +102,7 @@ class Demo {
     /**
      * Finger painting can spike render() when strokes are long; the chart makes that visible.
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
@@ -117,7 +117,7 @@ class Demo {
                 renderBarPaletteIndex: SLOT_PAINT[1],
                 warningPaletteIndex: SLOT_PAINT[2],
                 errorPaletteIndex: SLOT_PAINT[3],
-                eventPaletteIndex: C_TEXT,
+                tagPaletteIndex: C_TEXT,
             },
         };
     }
@@ -153,7 +153,6 @@ class Demo {
         // Allocate the paint layer. `fill(0)` makes every pixel start blank
         // (transparent) so the background colour shows through.
         this.paintLayer = new Uint8Array(DISPLAY_W * DISPLAY_H);
-
         return true;
     }
 

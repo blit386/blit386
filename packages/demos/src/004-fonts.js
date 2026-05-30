@@ -98,7 +98,7 @@ class Demo {
                 renderBarPaletteIndex: C_YELLOW_TEXT,
                 warningPaletteIndex: C_YELLOW_TEXT,
                 errorPaletteIndex: C_RED_TEXT,
-                eventPaletteIndex: C_BLUE_TEXT,
+                tagPaletteIndex: C_BLUE_TEXT,
             },
         };
     }
@@ -133,7 +133,6 @@ class Demo {
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
-
         return true;
     }
 

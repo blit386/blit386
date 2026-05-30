@@ -112,7 +112,7 @@ class Demo {
                 renderBarPaletteIndex: C_AMBER,
                 warningPaletteIndex: C_ACCENT,
                 errorPaletteIndex: C_ACCENT,
-                eventPaletteIndex: C_LIT,
+                tagPaletteIndex: C_LIT,
             },
         };
     }
@@ -140,7 +140,6 @@ class Demo {
         // so hot reload or revisiting this URL does not inherit another demo's edits.
         BT.inputMapReset();
         this.presetLabel = '1 Defaults (engine tables)';
-
         return true;
     }
 
@@ -201,6 +200,7 @@ class Demo {
     applyPresetDefaults() {
         BT.inputMapReset();
         this.presetLabel = '1 Defaults (BT.inputMapReset)';
+        BT.assignTag('Map: defaults');
     }
 
     /**
@@ -222,6 +222,7 @@ class Demo {
         BT.inputMap(0, BT.BTN_LEFT, 'KeyQ', 'KeyE');
 
         this.presetLabel = '2 Custom (P0: Z=A, Q|E=Lft | P1: I=Up)';
+        BT.assignTag('Map: custom');
     }
 
     /**
@@ -233,6 +234,7 @@ class Demo {
         // Empty rest arguments -> empty list stored -> no key lights BTN_A for player 0.
         BT.inputMap(0, BT.BTN_A);
         this.presetLabel = '3 Cleared P0 A (BT.inputMap(0, BTN_A) with no keys)';
+        BT.assignTag('Map: cleared A');
     }
 
     // #endregion

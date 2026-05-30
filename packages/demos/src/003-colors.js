@@ -138,7 +138,7 @@ class Demo {
                 renderBarPaletteIndex: 3,
                 warningPaletteIndex: 3,
                 errorPaletteIndex: 4,
-                eventPaletteIndex: 2,
+                tagPaletteIndex: 2,
             },
         };
     }
@@ -191,7 +191,6 @@ class Demo {
 
         // Step 3: Activate the palette
         BT.paletteSet(this.palette);
-
         return true;
     }
 

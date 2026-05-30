@@ -200,7 +200,7 @@ class Demo {
                 renderBarPaletteIndex: C_OVERLAY_AMBER,
                 warningPaletteIndex: C_OVERLAY_AMBER,
                 errorPaletteIndex: C_OVERLAY_ERROR,
-                eventPaletteIndex: C_OVERLAY_GREEN,
+                tagPaletteIndex: C_OVERLAY_GREEN,
             },
         };
     }
@@ -300,7 +300,6 @@ class Demo {
         this.glitchDuration = 0;
         this.glitchType = 'none';
         this.glitchPeak = 0;
-
         return true;
     }
 

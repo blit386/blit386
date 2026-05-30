@@ -137,7 +137,7 @@ class Demo {
                 renderBarPaletteIndex: C_WAVE_1,
                 warningPaletteIndex: C_WAVE_2,
                 errorPaletteIndex: C_WAVE_2,
-                eventPaletteIndex: C_LABEL,
+                tagPaletteIndex: C_LABEL,
             },
         };
     }

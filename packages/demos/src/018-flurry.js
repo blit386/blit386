@@ -229,7 +229,7 @@ class Demo {
     /**
      * Heavy particle physics each tick; the timing chart helps spot frame budget pressure.
      *
-     * @returns {{ targetFPS: number, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, eventPaletteIndex: number } }}
+     * @returns {{ targetFPS: number, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
@@ -245,7 +245,7 @@ class Demo {
                 renderBarPaletteIndex: C_WHITE,
                 warningPaletteIndex: C_SPARK_CORE,
                 errorPaletteIndex: C_WHITE,
-                eventPaletteIndex: C_FPS,
+                tagPaletteIndex: C_FPS,
             },
         };
     }

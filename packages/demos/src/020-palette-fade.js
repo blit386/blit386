@@ -190,7 +190,7 @@ class Demo {
                 renderBarPaletteIndex: C_SUN,
                 warningPaletteIndex: C_SUN_GLOW,
                 errorPaletteIndex: C_FLOWER_2,
-                eventPaletteIndex: C_DIM,
+                tagPaletteIndex: C_DIM,
             },
         };
     }
@@ -256,14 +256,17 @@ class Demo {
         if (this.phase === 'fade-to-night') {
             // Smooth 2-second fade from current palette to night.
             BT.paletteFade(this.nightPalette, 2000, 'ease-in-out');
+            BT.assignTag('Fade to night');
             this.effectTriggered = true;
         } else if (this.phase === 'flash') {
             // Lightning! White flash for 200ms.
             BT.paletteFlash(new Color32(255, 255, 255), 200);
+            BT.assignTag('Lightning flash');
             this.effectTriggered = true;
         } else if (this.phase === 'fade-to-day') {
             // Dawn: 2-second fade back to day, with ease-out for a quick start.
             BT.paletteFade(this.dayPalette, 2000, 'ease-out');
+            BT.assignTag('Fade to day');
             this.effectTriggered = true;
         }
     }
