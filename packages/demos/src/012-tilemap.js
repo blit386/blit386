@@ -104,27 +104,6 @@ class Demo {
 
     // #region IBlitTechDemo Implementation
 
-    /**
-     * Enables the timing chart while the camera scrolls across many tiles per frame.
-     *
-     * @returns {{
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartDiagnostics: 'rich' | false,
-     *   isOverlayRendererDiagnosticsBarEnabled: boolean,
-     *   overlayStyle: {
-     *     barPaletteIndex: number,
-     *     textPaletteIndex: number,
-     *     gapPaletteIndex: number,
-     *   },
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number,
-     *     renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number,
-     *     errorPaletteIndex: number,
-     *     tagPaletteIndex: number,
-     *   },
-     * }}
-     */
     configure() {
         return {
             isOverlayTimingChartEnabled: true,
