@@ -9,8 +9,8 @@
 //   `KeyboardEvent.code` strings (like `KeyW`, `ArrowUp`) so labels stay the
 //   same even when the OS keyboard layout changes (unlike `event.key`, which
 //   might print different letters).
-// - **Raw keys** (`BT.keyDown`, `BT.keyPressed`, `BT.keyReleased`) when you need
-//   a specific key, optional fixed-tick repeats with `BT.keyPressed(code, rate)`,
+// - **Raw keys** (`BT.isKeyDown`, `BT.isKeyPressed`, `BT.isKeyReleased`) when you need
+//   a specific key, optional fixed-tick repeats with `BT.isKeyPressed(code, rate)`,
 //   and release edges.
 // - **Text input** (`BT.inputString`) for characters in one frame. The buffer
 //   clears after each frame, so read it during `update()` or `render()` in that
@@ -18,8 +18,8 @@
 //
 // Try this:
 // - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
-// - Hold **Q** to see `keyDown`; tap **F** and watch the release line.
-// - Hold **H** to see `keyPressed(..., 15)` fire on an edge and then every 15 ticks.
+// - Hold **Q** to see `isKeyDown`; tap **F** and watch the release line.
+// - Hold **H** to see `isKeyPressed(..., 15)` fire on an edge and then every 15 ticks.
 // - Type letters into the buffer line at the bottom.
 // - If keys stop responding, click the canvas - focus may have moved to another
 //   part of the page after you tabbed away.
@@ -43,7 +43,7 @@ const C_ACCENT = 8;
 // How many characters we keep in the typed-text demo line (rolling window).
 const TYPED_BUFFER_MAX = 80;
 
-// For `BT.keyPressed('KeyH', repeatRate)`, repeats happen every this many fixed ticks.
+// For `BT.isKeyPressed('KeyH', repeatRate)`, repeats happen every this many fixed ticks.
 const KEY_H_REPEAT_TICKS = 15;
 
 // Horizontal spacing for face-button pips so four fit inside each 148px-wide panel.
@@ -63,10 +63,10 @@ class Demo {
 
     palette = null;
 
-    // Set when `BT.keyReleased('KeyF')` is true this frame (plain English message).
-    lastFReleaseMessage = 'Tap F to see keyReleased';
+    // Set when `BT.isKeyReleased('KeyF')` is true this frame (plain English message).
+    lastFReleaseMessage = 'Tap F to see isKeyReleased';
 
-    // Running count of how many times `BT.keyPressed('KeyH', …)` was true this run
+    // Running count of how many times `BT.isKeyPressed('KeyH', …)` was true this run
     // (initial edge plus tick repeats). Resets when H is not pressed for a moment - we
     // just show the count while testing; a simple visual for repeat firing.
     hPressStreak = 0;
@@ -118,11 +118,11 @@ class Demo {
      */
     update() {
         // Raw key: release edge for F
-        // `keyReleased` is true only on the frame the key goes up, like a doorbell
+        // `isKeyReleased` is true only on the frame the key goes up, like a doorbell
         // when you let go.
-        if (BT.keyReleased('KeyF')) {
+        if (BT.isKeyReleased('KeyF')) {
             const tick = BT.ticks;
-            this.lastFReleaseMessage = `keyReleased(KeyF) at tick ${tick}`;
+            this.lastFReleaseMessage = `isKeyReleased(KeyF) at tick ${tick}`;
             BT.assignTag('Key F released');
         }
 
@@ -130,13 +130,13 @@ class Demo {
         // We only use this boolean inside render for a label; no state needed.
 
         // Raw key: H with fixed tick repeat
-        // `keyPressed` with a second number repeats every N ticks after the first
+        // `isKeyPressed` with a second number repeats every N ticks after the first
         // press (same clock as `BT.ticks`).
-        if (BT.keyPressed('KeyH', KEY_H_REPEAT_TICKS)) {
+        if (BT.isKeyPressed('KeyH', KEY_H_REPEAT_TICKS)) {
             this.hPressStreak += 1;
         }
 
-        if (!BT.keyDown('KeyH')) {
+        if (!BT.isKeyDown('KeyH')) {
             // When H is not held, reset the streak so the number matches a new try.
             this.hPressStreak = 0;
         }
@@ -177,7 +177,7 @@ class Demo {
     /**
      * Draws one player's mapped face buttons as a row of lit/dim pips.
      *
-     * @param {number} player - 0 or 1 (`BT.buttonDown` player index).
+     * @param {number} player - 0 or 1 (`BT.isDown` player index).
      * @param {number} originX - Left edge of the panel in display pixels.
      * @param {number} originY - Top edge of the panel.
      */
@@ -241,7 +241,7 @@ class Demo {
 
         for (let i = 0; i < row.length; i++) {
             const { label, code } = row[i];
-            const held = BT.buttonDown(code, player);
+            const held = BT.isDown(code, player);
             const pip = new Rect2i(cx, y, 8, 8);
 
             if (held) {
@@ -267,11 +267,11 @@ class Demo {
 
         BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'Raw keys (separate from face buttons)');
 
-        const qHeld = BT.keyDown('KeyQ');
-        BT.systemPrint(new Vector2i(x + 4, y + 18), C_WHITE, 'BT.keyDown(KeyQ):');
+        const qHeld = BT.isKeyDown('KeyQ');
+        BT.systemPrint(new Vector2i(x + 4, y + 18), C_WHITE, 'BT.isKeyDown(KeyQ):');
         BT.systemPrint(new Vector2i(x + 120, y + 18), qHeld ? C_LIT : C_DIM, qHeld ? 'true (held)' : 'false');
 
-        BT.systemPrint(new Vector2i(x + 4, y + 32), C_WHITE, `BT.keyPressed(KeyH, ${KEY_H_REPEAT_TICKS}):`);
+        BT.systemPrint(new Vector2i(x + 4, y + 32), C_WHITE, `BT.isKeyPressed(KeyH, ${KEY_H_REPEAT_TICKS}):`);
         BT.systemPrint(
             new Vector2i(x + 4, y + 44),
             C_DIM,

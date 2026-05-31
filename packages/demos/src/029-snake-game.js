@@ -411,22 +411,22 @@ class Demo {
      * Reads player 1 face buttons and updates pending direction (no instant reverse).
      */
     pollDirectionInput() {
-        if (BT.buttonPressed(BT.BTN_UP, 0) && this.dy !== 1) {
+        if (BT.isPressed(BT.BTN_UP, 0) && this.dy !== 1) {
             this.pendingDx = 0;
             this.pendingDy = -1;
         }
 
-        if (BT.buttonPressed(BT.BTN_DOWN, 0) && this.dy !== -1) {
+        if (BT.isPressed(BT.BTN_DOWN, 0) && this.dy !== -1) {
             this.pendingDx = 0;
             this.pendingDy = 1;
         }
 
-        if (BT.buttonPressed(BT.BTN_LEFT, 0) && this.dx !== 1) {
+        if (BT.isPressed(BT.BTN_LEFT, 0) && this.dx !== 1) {
             this.pendingDx = -1;
             this.pendingDy = 0;
         }
 
-        if (BT.buttonPressed(BT.BTN_RIGHT, 0) && this.dx !== -1) {
+        if (BT.isPressed(BT.BTN_RIGHT, 0) && this.dx !== -1) {
             this.pendingDx = 1;
             this.pendingDy = 0;
         }

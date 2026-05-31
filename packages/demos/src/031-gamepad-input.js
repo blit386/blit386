@@ -9,8 +9,8 @@
 // - Trigger pressure changes pod size (a little "throttle" feeling).
 // - A cycles pod color, B toggles a small trail, Start resets position.
 //
-// It also shows `BT.gamepadConnected`, `BT.gamepadCount`, `BT.getAxis`, and
-// a bitmask button check with `BT.buttonDown(BT.BTN_A | BT.BTN_B, player)`.
+// It also shows `BT.isGamepadConnected`, `BT.gamepadCount`, `BT.getAxis`, and
+// a bitmask button check with `BT.isDown(BT.BTN_A | BT.BTN_B, player)`.
 
 // #region Imports
 
@@ -180,9 +180,9 @@ class Demo {
      * Draw gamepad status and quick button hints.
      */
     renderHud() {
-        const connected = BT.gamepadConnected(PLAYER);
+        const connected = BT.isGamepadConnected(PLAYER);
         const count = BT.gamepadCount;
-        const aOrB = BT.buttonDown(BT.BTN_A | BT.BTN_B, PLAYER);
+        const aOrB = BT.isDown(BT.BTN_A | BT.BTN_B, PLAYER);
         const controlsHint = 'A cycle color | B toggle trail | Start reset';
         const maskHint = `(A|B) mask down: ${aOrB ? 'true' : 'false'}`;
 
@@ -201,7 +201,7 @@ class Demo {
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_DIM,
                 renderBarPaletteIndex: C_WHITE,
@@ -241,7 +241,7 @@ class Demo {
      */
     update() {
         // Ask the engine whether a gamepad is currently plugged in for this player slot.
-        const connected = BT.gamepadConnected(PLAYER);
+        const connected = BT.isGamepadConnected(PLAYER);
 
         // "Edge detection": we only want to react the moment the gamepad is first connected,
         // not every single frame it stays connected. So we compare the current state
@@ -257,12 +257,12 @@ class Demo {
         this.gamepadWasConnected = connected;
 
         // A press (edge) cycles pod color once per physical press.
-        if (BT.buttonPressed(BT.BTN_A, PLAYER)) {
+        if (BT.isPressed(BT.BTN_A, PLAYER)) {
             this.podColorIndex = (this.podColorIndex + 1) % 3;
         }
 
         // B press (edge) toggles trail drawing.
-        if (BT.buttonPressed(BT.BTN_B, PLAYER)) {
+        if (BT.isPressed(BT.BTN_B, PLAYER)) {
             this.trailEnabled = !this.trailEnabled;
 
             // Clearing keeps the trail from "teleporting" across toggles.
@@ -272,7 +272,7 @@ class Demo {
         }
 
         // Start recenters the toy instantly.
-        if (BT.buttonPressed(BT.BTN_START, PLAYER)) {
+        if (BT.isPressed(BT.BTN_START, PLAYER)) {
             this.resetPod();
         }
 

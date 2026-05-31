@@ -127,7 +127,7 @@ class Demo {
         // Only record the trail when the pointer is over the canvas. If it
         // isn't (mouse left the canvas, or no input yet), keep the previous
         // trail intact so the line doesn't snap to (0, 0).
-        if (BT.pointerPosValid(0)) {
+        if (BT.isPointerActive(0)) {
             const pos = BT.pointerPos(0);
 
             // Drop the oldest sample and append the new one.
@@ -173,7 +173,7 @@ class Demo {
      * and whether slot 0 is currently valid.
      */
     renderReadouts() {
-        const valid = BT.pointerPosValid(0);
+        const valid = BT.isPointerActive(0);
         const scroll = BT.pointerScrollDelta;
 
         // Background panel so text is readable over any colour.
@@ -217,7 +217,7 @@ class Demo {
             const [label, lit, code] = buttons[i];
             const x = 160;
             const y = 58 + i * 12;
-            const held = BT.buttonDown(code, 0);
+            const held = BT.isDown(code, 0);
 
             // Indicator pip - filled when the button is held, empty otherwise.
             const pipRect = new Rect2i(x, y, 8, 8);
@@ -255,7 +255,7 @@ class Demo {
      * Polyline through the recent pointer positions, dimmest at the oldest end.
      */
     renderTrail() {
-        if (!BT.pointerPosValid(0)) {
+        if (!BT.isPointerActive(0)) {
             return;
         }
 
@@ -271,7 +271,7 @@ class Demo {
      * pointer is over the canvas (slot 0 valid).
      */
     renderCrosshair() {
-        if (!BT.pointerPosValid(0)) {
+        if (!BT.isPointerActive(0)) {
             // Show a hint in the centre of the screen instead.
             BT.systemPrint(new Vector2i(80, 120), C_DIM, 'Move pointer over canvas');
         } else {

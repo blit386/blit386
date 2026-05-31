@@ -17,9 +17,9 @@
 //
 // What this demonstrates that 025 and 026 do not:
 //
-//   - `BT.buttonPressed(...)` as a "grab" edge: only fires the frame the
+//   - `BT.isPressed(...)` as a "grab" edge: only fires the frame the
 //     button transitions to down, used to start the drag exactly once.
-//   - `BT.buttonReleased(...)` as a "throw" edge: only fires the frame the
+//   - `BT.isReleased(...)` as a "throw" edge: only fires the frame the
 //     button transitions to up. We sample `BT.pointerDelta` *during* this
 //     edge to capture the user's release-time hand velocity.
 //   - `BT.pointerDelta` actively driving simulation, not just shown as text.
@@ -176,12 +176,12 @@ class Demo {
         // ("contact made = A held"), for the mouse it's the left button.
         for (let slot = 0; slot < 4; slot++) {
             // Edge: pointer just went down on this slot. Try to grab a ball.
-            if (BT.buttonPressed(BT.BTN_POINTER_A, slot)) {
+            if (BT.isPressed(BT.BTN_POINTER_A, slot)) {
                 this.tryGrab(slot);
             }
 
             // Edge: pointer just released on this slot. Throw whatever it held.
-            if (BT.buttonReleased(BT.BTN_POINTER_A, slot)) {
+            if (BT.isReleased(BT.BTN_POINTER_A, slot)) {
                 this.tryThrow(slot);
             }
         }
@@ -218,7 +218,7 @@ class Demo {
      * this slot is already holding a ball.
      */
     tryGrab(slot) {
-        if (!BT.pointerPosValid(slot)) {
+        if (!BT.isPointerActive(slot)) {
             return;
         }
 
@@ -307,7 +307,7 @@ class Demo {
     updateHeldBall(ball) {
         const slot = ball.grabbedBy;
 
-        if (!BT.pointerPosValid(slot)) {
+        if (!BT.isPointerActive(slot)) {
             // Pointer disappeared - drop the ball where it is.
             ball.grabbedBy = -1;
             ball.vx = 0;
@@ -407,7 +407,7 @@ class Demo {
         // Determine which ball, if any, the mouse is currently hovering over.
         // We only do this for the mouse (slot 0) since touch slots only have
         // a position while in contact (which means they're already grabbing).
-        const mousePos = BT.pointerPosValid(0) ? BT.pointerPos(0) : null;
+        const mousePos = BT.isPointerActive(0) ? BT.pointerPos(0) : null;
         let hoverIndex = -1;
 
         if (mousePos !== null && mousePos.y >= HUD_HEIGHT) {
@@ -443,7 +443,7 @@ class Demo {
      */
     renderCursors() {
         for (let slot = 0; slot < 4; slot++) {
-            if (!BT.pointerPosValid(slot)) {
+            if (!BT.isPointerActive(slot)) {
                 continue;
             }
 

@@ -94,26 +94,26 @@ class Demo {
      */
     update() {
         // Input: jumping
-        // BT.buttonDown() returns true every tick that a button is held.
+        // BT.isDown() returns true every tick that a button is held.
         // BTN_A maps to the Space bar on keyboards and the A button on gamepads.
-        if (BT.buttonDown(BT.BTN_A, 0)) {
+        if (BT.isDown(BT.BTN_A, 0)) {
             // While held, build up jump force and cancel any downward gravity.
             this.jump += 0.1;
             this.gravity = 0;
         }
 
-        // BT.buttonReleased() returns true only on the single tick the button is let go.
-        if (BT.buttonReleased(BT.BTN_A, 0)) {
+        // BT.isReleased() returns true only on the single tick the button is let go.
+        if (BT.isReleased(BT.BTN_A, 0)) {
             // Once released, stop adding upward force so the square falls naturally.
             this.jump = 0;
         }
 
         // Input: left/right movement
-        if (BT.buttonDown(BT.BTN_RIGHT, 0)) {
+        if (BT.isDown(BT.BTN_RIGHT, 0)) {
             // Move one pixel to the right each tick the button is held.
             this.player.x++;
         }
-        if (BT.buttonDown(BT.BTN_LEFT, 0)) {
+        if (BT.isDown(BT.BTN_LEFT, 0)) {
             this.player.x--;
         }
 

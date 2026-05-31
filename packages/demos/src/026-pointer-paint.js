@@ -18,8 +18,8 @@
 // are tracked at once; a fourth simultaneous touch is dropped silently.
 //
 // What this demonstrates:
-//   - BT.buttonPressed() / BT.buttonReleased() for stroke begin / end events
-//   - BT.pointerPosValid(slot) / BT.pointerPos(slot) for per-slot positions
+//   - BT.isPressed() / BT.isReleased() for stroke begin / end events
+//   - BT.isPointerActive(slot) / BT.pointerPos(slot) for per-slot positions
 //   - lastPosX / lastPosY per-slot tracking: stamps the brush along the full
 //     line segment from the previous frame's position to the current one so
 //     fast strokes look continuous instead of dotted
@@ -67,7 +67,7 @@ const BRUSH_SIZES = [0, 2, 4];
  * The "canvas" we paint onto is a flat array of palette indices, one entry per
  * display pixel. Each frame, render() copies that array onto the screen with
  * BT.drawPixel() so strokes persist between frames. Stroke input comes from
- * checking BT.pointerPosValid() / BT.buttonDown() / BT.pointerDelta() on each
+ * checking BT.isPointerActive() / BT.isDown() / BT.pointerDelta() on each
  * of the four slots in update().
  *
  * @implements {IBlitTechDemo}
@@ -163,24 +163,24 @@ class Demo {
      */
     update() {
         // Mouse-only controls: B clears the canvas, C cycles the brush size.
-        // We use buttonPressed (edge) so a single click triggers exactly once.
-        if (BT.buttonPressed(BT.BTN_POINTER_B, 0)) {
+        // We use isPressed (edge) so a single click triggers exactly once.
+        if (BT.isPressed(BT.BTN_POINTER_B, 0)) {
             this.paintLayer.fill(0);
         }
 
-        if (BT.buttonPressed(BT.BTN_POINTER_C, 0)) {
+        if (BT.isPressed(BT.BTN_POINTER_C, 0)) {
             this.brushIndex = (this.brushIndex + 1) % BRUSH_SIZES.length;
         }
 
         // Walk the four slots. Slot 0 paints while BTN_POINTER_A is held;
         // slots 1-3 paint while their touch is in contact (slot is valid).
         for (let slot = 0; slot < 4; slot++) {
-            const valid = BT.pointerPosValid(slot);
+            const valid = BT.isPointerActive(slot);
 
             // For slot 0 (mouse) painting is gated on the left button. For
             // touch slots there is only one button (A); the mere presence of
             // a contact is enough.
-            const wantPaint = slot === 0 ? BT.buttonDown(BT.BTN_POINTER_A, 0) && valid : valid;
+            const wantPaint = slot === 0 ? BT.isDown(BT.BTN_POINTER_A, 0) && valid : valid;
 
             if (wantPaint) {
                 const pos = BT.pointerPos(slot);
@@ -298,7 +298,7 @@ class Demo {
      */
     renderCursors() {
         for (let slot = 0; slot < 4; slot++) {
-            if (!BT.pointerPosValid(slot)) {
+            if (!BT.isPointerActive(slot)) {
                 continue;
             }
 
@@ -323,7 +323,7 @@ class Demo {
         // Per-slot active indicators across the bottom row.
         for (let slot = 0; slot < 4; slot++) {
             const x = 4 + slot * 78;
-            const valid = BT.pointerPosValid(slot);
+            const valid = BT.isPointerActive(slot);
             const label = ['Mouse', 'Touch 1', 'Touch 2', 'Touch 3'][slot];
 
             BT.drawRectFill(new Rect2i(x, panelY + 4, 8, 8), valid ? SLOT_PAINT[slot] : C_PANEL_BORDER);
