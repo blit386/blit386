@@ -282,6 +282,13 @@ gamepad helpers, remapping) are documented in the engine
 [input guide](https://github.com/vancura/blit-tech/blob/main/docs/input.md). Post-process presets and effect tiers are
 in [post-process-effects.md](https://github.com/vancura/blit-tech/blob/main/docs/post-process-effects.md).
 
+### Shared demo helpers
+
+CRT and post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` from
+`src/shared/post-process-backend.js`. After `init()`, call `this.effectsAvailable = isAvailable()` (checks
+`BT.activeBackend === 'webgpu'`, not `BT.requestedBackend`) before `BT.effectAdd(...)`. When effects are skipped, show
+`SOFTWARE_FALLBACK_NOTE` on the overlay or in demo HUD text.
+
 The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
 The overlay **body starts hidden**; a bitmap toggle hint sits in the **bottom-left** corner by default. Toggle the body
 with Backquote or a primary press in the bottom-left 48x48 px corner. Use `isOverlayVisibleAtStart: true` to show the
