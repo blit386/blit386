@@ -1,0 +1,35 @@
+---
+description: Use blit-tech API and boolean naming when editing demos
+alwaysApply: true
+---
+
+# Blit-Tech API names in demos
+
+Demos call the library through `BT` and `configure()` — use the **same public names** as blit-tech.
+
+Canonical references (read before adding or renaming API usage):
+
+- [blit-tech/CLAUDE.md](https://github.com/vancura/blit-tech/blob/main/CLAUDE.md) — **Boolean naming**, **BT API: getters vs methods**, **Input conventions**
+- [blit-tech/docs/developer-experience-guide.md](https://github.com/vancura/blit-tech/blob/main/docs/developer-experience-guide.md) — full three-tier boolean table
+- [blit-tech/docs/input.md](https://github.com/vancura/blit-tech/blob/main/docs/input.md) — input examples
+
+## Configure flags (Tier B)
+
+Use grammatical `is*` names from `HardwareSettings`:
+
+- `isOverlayEnabled`, `isOverlayVisibleAtStart`, `isOverlayToggleHintVisible`, `isOverlayToggleEnabled`
+- `isOverlayPaletteEnabled`, `isOverlayTimingChartEnabled`, `isOverlayRendererDiagnosticsBarEnabled`
+- `isDetectingDroppedFrames`, `isWaitingForDOMReady`
+- `canvasID`, `containerID` in bootstrap options (not `canvasId`)
+
+## Input on `BT` (Tier A)
+
+- Hold: `BT.isDown(...)`, `BT.isKeyDown(...)`
+- Edge: `BT.isPressed(...)`, `BT.isReleased(...)`, `BT.isKeyPressed(...)`, `BT.isKeyReleased(...)`
+- Pointer: `BT.isPointerActive(slot?)`
+
+Do not use removed names: `BT.isButtonDown` (use `BT.isDown`), `isKeyIsDown` / `isKeyIsPressed` (embedded `Is`), `overlayEnabled`, `canvasId`.
+
+## When the library API changes
+
+Update affected demo `configure()` blocks, runtime call sites, this repo's `CLAUDE.md`, and `README.md` in the same change.
