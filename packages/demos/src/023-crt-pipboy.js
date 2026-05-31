@@ -87,7 +87,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
 
@@ -348,9 +348,9 @@ class Demo {
         this.font.getSpriteSheet().indexize(palette);
 
         // Post-process (pixel + display tiers) needs WebGPU. Software mode skips this block.
-        this.postProcessAvailable = isPostProcessAvailable();
+        this.effectsAvailable = isAvailable();
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             this.bootStartTick = BT.ticks;
             return true;
         }
@@ -460,7 +460,7 @@ class Demo {
     }
 
     update() {
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             this._ticksSinceBoot = BT.ticks - this.bootStartTick;
             return;
         }
@@ -579,7 +579,7 @@ class Demo {
             this.renderBlinkingCursor();
         }
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             BT.systemPrint(new Vector2i(TEXT_LEFT, DISPLAY_H - 28), C_GREEN_DIM, SOFTWARE_FALLBACK_NOTE);
         }
     }

@@ -79,7 +79,7 @@ class Demo {
 
     // Painting layer: one palette index per display pixel. 0 means "blank"
     // (the background colour shows through). Length = DISPLAY_W * DISPLAY_H.
-    paintLayer = null;
+    layer = null;
 
     // Index into BRUSH_SIZES; cycled by middle-click on the mouse.
     brushIndex = 1;
@@ -154,18 +154,18 @@ class Demo {
 
         // Allocate the paint layer. `fill(0)` makes every pixel start blank
         // (transparent) so the background colour shows through.
-        this.paintLayer = new Uint8Array(DISPLAY_W * DISPLAY_H);
+        this.layer = new Uint8Array(DISPLAY_W * DISPLAY_H);
         return true;
     }
 
     /**
-     * Per-tick: read input from each slot and write strokes into paintLayer.
+     * Per-tick: read input from each slot and write strokes into layer.
      */
     update() {
         // Mouse-only controls: B clears the canvas, C cycles the brush size.
         // We use isPressed (edge) so a single click triggers exactly once.
         if (BT.isPressed(BT.BTN_POINTER_B, 0)) {
-            this.paintLayer.fill(0);
+            this.layer.fill(0);
         }
 
         if (BT.isPressed(BT.BTN_POINTER_C, 0)) {
@@ -211,7 +211,7 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        this.renderPaintLayer();
+        this.renderLayer();
         this.renderCursors();
         this.renderHUD();
     }
@@ -263,13 +263,13 @@ class Demo {
     }
 
     /**
-     * Writes a palette index into paintLayer, ignoring out-of-bounds writes.
+     * Writes a palette index into layer, ignoring out-of-bounds writes.
      */
     setPixel(x, y, colour) {
         if (x < 0 || x >= DISPLAY_W || y < 0 || y >= DISPLAY_H) {
             return;
         }
-        this.paintLayer[y * DISPLAY_W + x] = colour;
+        this.layer[y * DISPLAY_W + x] = colour;
     }
 
     // #endregion
@@ -280,11 +280,11 @@ class Demo {
      * Copies the persistent paint layer onto the screen. Pixels with palette
      * index 0 are skipped so the background colour shows through.
      */
-    renderPaintLayer() {
+    renderLayer() {
         for (let y = 0; y < DISPLAY_H; y++) {
             const row = y * DISPLAY_W;
             for (let x = 0; x < DISPLAY_W; x++) {
-                const c = this.paintLayer[row + x];
+                const c = this.layer[row + x];
                 if (c !== 0) {
                     BT.drawPixel(new Vector2i(x, y), c);
                 }

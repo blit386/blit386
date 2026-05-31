@@ -5,7 +5,7 @@ import { buildRegistry } from './demo-registry.js';
 
 // #region Constants
 
-const DEMO_URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
+const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
 // #endregion
 
@@ -29,7 +29,7 @@ export function virtualDemos() {
         layoutTemplate = readFileSync(resolve(partialsDir, 'layout.html'), 'utf-8');
     }
 
-    function reloadRegistry() {
+    function reload() {
         registry = buildRegistry(rootDir);
     }
 
@@ -47,7 +47,7 @@ export function virtualDemos() {
         return null;
     }
 
-    function renderDemoHtml(entry) {
+    function renderHtml(entry) {
         return layoutTemplate
             .replaceAll('{{title}}', escapeHtml(entry.title))
             .replaceAll('{{scriptFile}}', entry.scriptFile);
@@ -64,7 +64,7 @@ export function virtualDemos() {
             srcDir = resolve(rootDir, 'src');
 
             reloadTemplate();
-            reloadRegistry();
+            reload();
 
             const input = {};
             for (const entry of registry) {
@@ -96,7 +96,7 @@ export function virtualDemos() {
         load(id) {
             const entry = findEntryByAbsPath(id);
             if (!entry) return null;
-            return renderDemoHtml(entry);
+            return renderHtml(entry);
         },
 
         configureServer(server) {
@@ -108,19 +108,19 @@ export function virtualDemos() {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
                 } else if (changedPath.startsWith(srcDir)) {
-                    reloadRegistry();
+                    reload();
                     server.ws.send({ type: 'full-reload' });
                 }
             });
             server.watcher.on('add', (addedPath) => {
                 if (addedPath.startsWith(srcDir)) {
-                    reloadRegistry();
+                    reload();
                     server.ws.send({ type: 'full-reload' });
                 }
             });
             server.watcher.on('unlink', (removedPath) => {
                 if (removedPath.startsWith(srcDir)) {
-                    reloadRegistry();
+                    reload();
                     server.ws.send({ type: 'full-reload' });
                 }
             });
@@ -137,14 +137,14 @@ export function virtualDemos() {
                     return;
                 }
 
-                const demoMatch = url.match(DEMO_URL_PATTERN);
+                const demoMatch = url.match(URL_PATTERN);
                 if (!demoMatch) return next();
 
                 const entry = findEntryBySlug(demoMatch[1]);
                 if (!entry) return next();
 
                 try {
-                    let html = renderDemoHtml(entry);
+                    let html = renderHtml(entry);
                     html = await server.transformIndexHtml(url, html);
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     res.end(html);

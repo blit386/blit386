@@ -77,7 +77,7 @@ class Demo {
     // Cycles through three pod colors when A is pressed.
     podColorIndex = 0;
 
-    gamepadWasConnected = false;
+    wasConnected = false;
 
     // #endregion
 
@@ -245,16 +245,16 @@ class Demo {
 
         // "Edge detection": we only want to react the moment the gamepad is first connected,
         // not every single frame it stays connected. So we compare the current state
-        // to what it was last frame (stored in gamepadWasConnected).
+        // to what it was last frame (stored in wasConnected).
         // If it just became true (false -> true), that is the "rising edge" - the instant of connection.
-        if (connected && !this.gamepadWasConnected) {
+        if (connected && !this.wasConnected) {
             // Label this moment on the overlay timing chart so you can see exactly
             // which frame the gamepad was detected.
             BT.assignTag('Gamepad connected');
         }
 
         // Save this frame's connection state so next frame can compare against it.
-        this.gamepadWasConnected = connected;
+        this.wasConnected = connected;
 
         // A press (edge) cycles pod color once per physical press.
         if (BT.isPressed(BT.BTN_A, PLAYER)) {

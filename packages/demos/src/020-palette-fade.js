@@ -85,7 +85,7 @@ const C_MOUNTAIN_LIGHT = 23;
  *
  * @param {Palette} p - Palette to fill.
  */
-function fillDayPalette(p) {
+function fillDay(p) {
     p.set(C_WHITE, new Color32(255, 255, 255));
     p.set(C_BG, new Color32(10, 12, 20));
     p.set(C_LABEL, new Color32(255, 210, 80));
@@ -114,7 +114,7 @@ function fillDayPalette(p) {
  *
  * @param {Palette} p - Palette to fill.
  */
-function fillNightPalette(p) {
+function fillNight(p) {
     p.set(C_WHITE, new Color32(200, 200, 220));
     p.set(C_BG, new Color32(5, 5, 15));
     p.set(C_LABEL, new Color32(180, 160, 100));
@@ -153,8 +153,8 @@ class Demo {
     // #region Module State
 
     palette = null;
-    dayPalette = null;
-    nightPalette = null;
+    day = null;
+    night = null;
 
     // Which phase of the day/night cycle we are in.
     phase = 'day';
@@ -204,15 +204,15 @@ class Demo {
         console.log('[PaletteFadeDemo] Initializing...');
 
         // Build both palettes.
-        this.dayPalette = BT.paletteCreate(256);
-        fillDayPalette(this.dayPalette);
+        this.day = BT.paletteCreate(256);
+        fillDay(this.day);
 
-        this.nightPalette = BT.paletteCreate(256);
-        fillNightPalette(this.nightPalette);
+        this.night = BT.paletteCreate(256);
+        fillNight(this.night);
 
         // Start with the day palette.
         this.palette = BT.paletteCreate(256);
-        fillDayPalette(this.palette);
+        fillDay(this.palette);
         BT.paletteSet(this.palette);
 
         console.log('[PaletteFadeDemo] Initialized');
@@ -255,7 +255,7 @@ class Demo {
 
         if (this.phase === 'fade-to-night') {
             // Smooth 2-second fade from current palette to night.
-            BT.paletteFade(this.nightPalette, 2000, 'ease-in-out');
+            BT.paletteFade(this.night, 2000, 'ease-in-out');
             BT.assignTag('Fade to night');
             this.effectTriggered = true;
         } else if (this.phase === 'flash') {
@@ -265,7 +265,7 @@ class Demo {
             this.effectTriggered = true;
         } else if (this.phase === 'fade-to-day') {
             // Dawn: 2-second fade back to day, with ease-out for a quick start.
-            BT.paletteFade(this.dayPalette, 2000, 'ease-out');
+            BT.paletteFade(this.day, 2000, 'ease-out');
             BT.assignTag('Fade to day');
             this.effectTriggered = true;
         }

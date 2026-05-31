@@ -15,7 +15,7 @@
 //
 // HOW PALETTE OFFSETS WORK FOR SPRITES:
 //
-// After calling spriteSheet.indexize(palette), each pixel in the sprite is stored
+// After calling sheet.indexize(palette), each pixel in the sprite is stored
 // as a palette index number. When you draw the sprite:
 //
 //   BT.drawSprite(sheet, src, pos, 0)           - uses original colors
@@ -36,11 +36,11 @@ import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
 
 // Where in the palette the sprite's original colors start.
 // Everything before this (index 1..9) is used for UI colors.
-const SPRITE_BASE = 10;
+const COLOR_BASE = 10;
 
 // Path to the sprite PNG. Defined once so every load call (color extraction,
 // GPU upload, and dimension lookup) references the exact same file.
-const SPRITE_PATH = '/sprites/test.png';
+const ASSET_PATH = '/sprites/test.png';
 
 // UI color slot indices written by palette.applyHUD() in init().
 // The preset fills six contiguous slots in this order: white(1), bg(2),
@@ -67,15 +67,15 @@ class Demo {
     palette = null;
 
     // The sprite sheet loaded from /sprites/test.png.
-    spriteSheet = null;
+    sheet = null;
 
     // The rectangular region within the sheet that defines our sprite.
     // Set after loading the image so we know its actual dimensions.
-    charSprite = null;
+    charRect = null;
 
     // How many unique colors were extracted from the sprite.
     // Each color theme block is this many entries wide in the palette.
-    spriteColorCount = 0;
+    colorCount = 0;
 
     // The original Color32 objects for the sprite's base colors.
     // We keep them so update() can create pulsing variants with different alpha.
@@ -144,14 +144,14 @@ class Demo {
 
         // Step 2: Extract sprite colors and register them in the palette
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
-        // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
+        // starting at COLOR_BASE. The returned array is the same colors in palette-write order
         // (sorted darkest-first by brightness, just like the manual version we used to have).
         // Think of it as reading a painting and writing down every paint color used,
         // then putting those paints in your numbered slots for later reference.
-        this.baseColors = await SpriteSheet.loadColorsIntoPalette(SPRITE_PATH, this.palette, SPRITE_BASE);
+        this.baseColors = await SpriteSheet.loadColorsIntoPalette(ASSET_PATH, this.palette, COLOR_BASE);
 
         const colorCount = this.baseColors.length;
-        this.spriteColorCount = colorCount;
+        this.colorCount = colorCount;
 
         // Build three color theme blocks from the extracted base colors:
         //   Fire theme (offset = N): warm reds and oranges.
@@ -163,25 +163,25 @@ class Demo {
 
             // Fire: push red channel up, pull blue channel down.
             this.palette.set(
-                SPRITE_BASE + colorCount + i,
+                COLOR_BASE + colorCount + i,
                 new Color32(Math.min(255, base.r + 80), base.g, Math.max(0, base.b - 80)),
             );
 
             // Ice: pull red down, push blue up.
             this.palette.set(
-                SPRITE_BASE + colorCount * 2 + i,
+                COLOR_BASE + colorCount * 2 + i,
                 new Color32(Math.max(0, base.r - 60), base.g, Math.min(255, base.b + 80)),
             );
 
             // Void: shrink all channels to 25% - very dark.
             this.palette.set(
-                SPRITE_BASE + colorCount * 3 + i,
+                COLOR_BASE + colorCount * 3 + i,
                 new Color32(Math.floor(base.r * 0.25), Math.floor(base.g * 0.25), Math.floor(base.b * 0.25)),
             );
 
             // Pulse block is filled by update() with the same colors but animating alpha.
             // Pre-fill with the base color so the first frame is not blank.
-            this.palette.set(SPRITE_BASE + colorCount * 4 + i, new Color32(base.r, base.g, base.b, 255));
+            this.palette.set(COLOR_BASE + colorCount * 4 + i, new Color32(base.r, base.g, base.b, 255));
         }
 
         // Step 3: Load and indexize the sprite
@@ -189,14 +189,14 @@ class Demo {
         // loadColorsIntoPalette above so we pass sort:'none' here to avoid reshuffling colors.
         // This call still gives us a reliable full-image source rectangle from sheet.size.
         try {
-            const indexed = await SpriteSheet.loadIndexed(SPRITE_PATH, this.palette, SPRITE_BASE, { sort: 'none' });
-            this.spriteSheet = indexed.sheet;
-            this.charSprite = this.spriteSheet.fullRect();
+            const indexed = await SpriteSheet.loadIndexed(ASSET_PATH, this.palette, COLOR_BASE, { sort: 'none' });
+            this.sheet = indexed.sheet;
+            this.charRect = this.sheet.fullRect();
 
             // Activate palette after all setup is done.
             BT.paletteSet(this.palette);
             console.log(
-                `[SpriteDemo] Loaded sprite: ${this.charSprite.width}x${this.charSprite.height}px, ${colorCount} unique colors`,
+                `[SpriteDemo] Loaded sprite: ${this.charRect.width}x${this.charRect.height}px, ${colorCount} unique colors`,
             );
         } catch (error) {
             console.error('[SpriteDemo] Failed to load sprite:', error);
@@ -214,7 +214,7 @@ class Demo {
     update() {
         this.animTime += BT.deltaSeconds;
 
-        if (!this.spriteColorCount) {
+        if (!this.colorCount) {
             return;
         }
 
@@ -224,9 +224,9 @@ class Demo {
         const alpha = Math.floor(60 + pulse * 195); // 60..255
 
         // Update every color in the pulse block with the new alpha value.
-        for (let i = 0; i < this.spriteColorCount; i++) {
+        for (let i = 0; i < this.colorCount; i++) {
             const base = this.baseColors[i];
-            this.palette.set(SPRITE_BASE + this.spriteColorCount * 4 + i, new Color32(base.r, base.g, base.b, alpha));
+            this.palette.set(COLOR_BASE + this.colorCount * 4 + i, new Color32(base.r, base.g, base.b, alpha));
         }
     }
 
@@ -237,36 +237,36 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.sheet || !this.charRect) {
             BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
 
         // Row 1: Four color themes using palette offsets
-        const N = this.spriteColorCount;
+        const N = this.colorCount;
         const row1Y = 40;
         const spacing = 50;
 
-        // Original colors: offset 0 (uses palette[SPRITE_BASE..SPRITE_BASE+N-1]).
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15, row1Y), 0);
+        // Original colors: offset 0 (uses palette[COLOR_BASE..COLOR_BASE+N-1]).
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(15, row1Y), 0);
         BT.systemPrint(new Vector2i(10, row1Y + 36), C_LABEL, 'Original');
 
         // Fire theme: offset N shifts all pixel indices by N into the fire color block.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15 + spacing, row1Y), N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(15 + spacing, row1Y), N);
         BT.systemPrint(new Vector2i(10 + spacing, row1Y + 36), C_LABEL, 'Fire');
 
         // Ice theme: offset 2*N shifts into the ice color block.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15 + spacing * 2, row1Y), N * 2);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(15 + spacing * 2, row1Y), N * 2);
         BT.systemPrint(new Vector2i(10 + spacing * 2, row1Y + 36), C_LABEL, 'Ice');
 
         // Void theme: offset 3*N shifts into the dark near-black block.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15 + spacing * 3, row1Y), N * 3);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(15 + spacing * 3, row1Y), N * 3);
         BT.systemPrint(new Vector2i(10 + spacing * 3, row1Y + 36), C_LABEL, 'Void');
 
         // Row 2: Alpha pulsing (transparency animation)
         // The pulse block is updated every tick in update() with animating alpha values.
         // Offset 4*N shifts into that block.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(15, 120), N * 4);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(15, 120), N * 4);
         BT.systemPrint(new Vector2i(10, 158), C_LABEL, 'Alpha Pulse');
         BT.systemPrint(new Vector2i(75, 123), C_LABEL, 'Transparency changes in');
         BT.systemPrint(new Vector2i(75, 135), C_LABEL, 'update() via palette slots.');

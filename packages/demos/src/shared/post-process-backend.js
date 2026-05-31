@@ -3,7 +3,7 @@
  *
  * The engine picks WebGPU by default and falls back to Canvas 2D software mode
  * when WebGPU is missing. Software mode does not support BT.effectAdd and related
- * APIs. Demos call isPostProcessAvailable() after init to check BT.activeBackend
+ * APIs. Demos call isAvailable() after init to check BT.activeBackend
  * (not BT.requestedBackend, which stays 'webgpu' when WebGPU fell back).
  */
 
@@ -25,7 +25,7 @@ const SOFTWARE_FALLBACK_NOTE = 'Post-process needs WebGPU. Running without CRT e
 /**
  * @returns {boolean} True when fullscreen post-process effects can be registered.
  */
-function isPostProcessAvailable() {
+function isAvailable() {
     return BT.activeBackend === 'webgpu';
 }
 
@@ -33,6 +33,6 @@ function isPostProcessAvailable() {
 
 // #region Exports
 
-export { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE };
+export { isAvailable, SOFTWARE_FALLBACK_NOTE };
 
 // #endregion

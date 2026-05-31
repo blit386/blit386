@@ -4,7 +4,7 @@ import { join } from 'node:path';
 // #region Constants
 
 // Three digits (`001-topic`) or special prefix `00a-topic`.
-const DEMO_FILENAME_PATTERN = /^(00a|[0-9]{3})-([a-z0-9-]+)\.js$/;
+const FILENAME_PATTERN = /^(00a|[0-9]{3})-([a-z0-9-]+)\.js$/;
 const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
 const HEADER_SCAN_BYTES = 2000;
 
@@ -26,7 +26,7 @@ export function buildRegistry(rootDir) {
     const entries = [];
 
     for (const file of files) {
-        const match = file.match(DEMO_FILENAME_PATTERN);
+        const match = file.match(FILENAME_PATTERN);
 
         if (!match) continue;
 
@@ -45,7 +45,7 @@ export function buildRegistry(rootDir) {
         });
     }
 
-    entries.sort((a, b) => demoSortKey(a.number).localeCompare(demoSortKey(b.number)));
+    entries.sort((a, b) => sortKey(a.number).localeCompare(sortKey(b.number)));
 
     return entries;
 }
@@ -71,7 +71,7 @@ function readHeader(path) {
  * @param {string} number - Demo id, e.g. "001" or "00a"
  * @returns {string}
  */
-function demoSortKey(number) {
+function sortKey(number) {
     return number === '00a' ? '000a' : number;
 }
 

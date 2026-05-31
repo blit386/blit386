@@ -58,7 +58,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -66,7 +66,7 @@ import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-pr
 
 // Where sprite colors start in the palette.
 // Must be above the highest UI slot (C_FPS = 11) to avoid overwriting UI colors.
-const SPRITE_BASE = 12;
+const COLOR_BASE = 12;
 
 // Placeholder for "how many unique colors in the sprite" - set during init().
 // We use 0 here and update it after extracting colors.
@@ -86,7 +86,7 @@ const C_BAR_BORDER = 10; // (150, 150, 150) progress bar outline.
 const C_FPS = 11; // (100, 100, 100) dim FPS.
 const C_OVERLAY_BG = 14;
 
-// Theme block indices (as palette offsets from SPRITE_BASE).
+// Theme block indices (as palette offsets from COLOR_BASE).
 // Each block contains N entries. Offset = blockIndex * N.
 // Blocks 0..7 are static; blocks 8..12 are dynamic (updated in update()).
 //
@@ -229,13 +229,13 @@ class Demo {
     palette = null;
 
     // The sprite sheet loaded from /sprites/test.png.
-    spriteSheet = null;
+    sheet = null;
 
     // The source rectangle for the rock sprite.
-    charSprite = null;
+    charRect = null;
 
     // How many unique colors the sprite has (N). Computed in init().
-    spriteColorCount = 0;
+    colorCount = 0;
 
     // The extracted original Color32 objects (used to build theme blocks).
     baseColors = [];
@@ -258,7 +258,7 @@ class Demo {
     flicker = null;
     bloom = null;
 
-    postProcessAvailable = false;
+    effectsAvailable = false;
     glitchCooldown = 0;
     glitchActive = 0;
     glitchDuration = 0;
@@ -341,18 +341,18 @@ class Demo {
 
         // Extract sprite colors
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
-        // starting at SPRITE_BASE. The returned array is the same colors in palette-write order
+        // starting at COLOR_BASE. The returned array is the same colors in palette-write order
         // (sorted darkest-first by brightness). We keep them so the theme-block builders can
         // tint each base color and write the result into a higher slot.
-        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
+        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, COLOR_BASE);
         const colorCount = this.baseColors.length;
-        this.spriteColorCount = colorCount;
+        this.colorCount = colorCount;
 
         // Update the module-level N so other helpers can use it without passing it around.
         N = colorCount;
 
         // Build the 8 static theme blocks
-        // Each block sits at SPRITE_BASE + blockIndex * N.
+        // Each block sits at COLOR_BASE + blockIndex * N.
         this.buildStaticThemeBlocks();
 
         // Dynamic blocks (8..12) start as copies of the original.
@@ -360,27 +360,27 @@ class Demo {
         for (let block = BLOCK_DAMAGE_FLASH; block <= BLOCK_DAYNIGHT; block++) {
             for (let i = 0; i < N; i++) {
                 const base = this.baseColors[i];
-                this.palette.set(SPRITE_BASE + block * N + i, new Color32(base.r, base.g, base.b, base.a));
+                this.palette.set(COLOR_BASE + block * N + i, new Color32(base.r, base.g, base.b, base.a));
             }
         }
 
         // Load and indexize sprite
         try {
-            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
+            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, COLOR_BASE, {
                 sort: 'none',
             });
-            this.spriteSheet = indexed.sheet;
-            this.charSprite = this.spriteSheet.fullRect();
+            this.sheet = indexed.sheet;
+            this.charRect = this.sheet.fullRect();
             BT.paletteSet(this.palette);
-            console.log(`[SpriteEffectsDemo] Loaded sprite: ${this.charSprite.width}x${this.charSprite.height}px`);
+            console.log(`[SpriteEffectsDemo] Loaded sprite: ${this.charRect.width}x${this.charRect.height}px`);
         } catch (error) {
             console.error('[SpriteEffectsDemo] Failed to load sprite:', error);
             return false;
         }
 
-        this.postProcessAvailable = isPostProcessAvailable();
+        this.effectsAvailable = isAvailable();
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             this.glitchActive = 0;
             this.glitchDuration = 0;
@@ -474,7 +474,7 @@ class Demo {
     update() {
         this.animTime += BT.deltaSeconds;
 
-        if (!this.spriteColorCount) {
+        if (!this.colorCount) {
             return;
         }
 
@@ -489,7 +489,7 @@ class Demo {
         this.updatePoisonBlock();
         this.updateDayNightBlock();
 
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             this.updateCrtEffects();
         }
 
@@ -505,7 +505,7 @@ class Demo {
      * @returns {readonly { leftText: string }[]}
      */
     overlayRows() {
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             this.overlayRowData[0].leftText = 'Orava CRT: ON';
             const faultLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
             const faultValue = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
@@ -609,7 +609,7 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.sheet || !this.charRect) {
             BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
@@ -645,26 +645,26 @@ class Demo {
 
             // Block 1: Silhouette - near-black with slight variation to preserve depth cues.
             this.palette.set(
-                SPRITE_BASE + BLOCK_SILHOUETTE * N + i,
+                COLOR_BASE + BLOCK_SILHOUETTE * N + i,
                 new Color32(lum * 0.08, lum * 0.08, lum * 0.1, base.a),
             );
 
             // Block 2: Damage white - everything shifted toward bright white.
             const whitened = Math.floor(128 + lum * 0.5);
             this.palette.set(
-                SPRITE_BASE + BLOCK_DAMAGE_WHITE * N + i,
+                COLOR_BASE + BLOCK_DAMAGE_WHITE * N + i,
                 new Color32(whitened, whitened, whitened, base.a),
             );
 
             // Block 3: Damage red - everything shifted toward red.
             this.palette.set(
-                SPRITE_BASE + BLOCK_DAMAGE_RED * N + i,
+                COLOR_BASE + BLOCK_DAMAGE_RED * N + i,
                 new Color32(Math.min(255, lum + 80), lum * 0.3, lum * 0.3, base.a),
             );
 
             // Block 4: Team red - multiply base colors with a red tint.
             this.palette.set(
-                SPRITE_BASE + BLOCK_TEAM_RED * N + i,
+                COLOR_BASE + BLOCK_TEAM_RED * N + i,
                 new Color32(
                     Math.min(255, Math.floor(base.r * 1.4)),
                     Math.floor(base.g * 0.5),
@@ -675,7 +675,7 @@ class Demo {
 
             // Block 5: Team blue - multiply with a blue tint.
             this.palette.set(
-                SPRITE_BASE + BLOCK_TEAM_BLUE * N + i,
+                COLOR_BASE + BLOCK_TEAM_BLUE * N + i,
                 new Color32(
                     Math.floor(base.r * 0.5),
                     Math.floor(base.g * 0.7),
@@ -686,7 +686,7 @@ class Demo {
 
             // Block 6: Team green - multiply with a green tint.
             this.palette.set(
-                SPRITE_BASE + BLOCK_TEAM_GREEN * N + i,
+                COLOR_BASE + BLOCK_TEAM_GREEN * N + i,
                 new Color32(
                     Math.floor(base.r * 0.5),
                     Math.min(255, Math.floor(base.g * 1.4)),
@@ -697,7 +697,7 @@ class Demo {
 
             // Block 7: Frozen - push toward cold blue-white.
             this.palette.set(
-                SPRITE_BASE + BLOCK_FROZEN * N + i,
+                COLOR_BASE + BLOCK_FROZEN * N + i,
                 new Color32(Math.floor(lum * 0.7 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 80), base.a),
             );
         }
@@ -736,7 +736,7 @@ class Demo {
                 color = new Color32(base.r, base.g, base.b, base.a);
             }
 
-            this.palette.set(SPRITE_BASE + BLOCK_DAMAGE_FLASH * N + i, color);
+            this.palette.set(COLOR_BASE + BLOCK_DAMAGE_FLASH * N + i, color);
         }
     }
 
@@ -755,7 +755,7 @@ class Demo {
 
             // Push toward a cool blue-white while reducing alpha.
             this.palette.set(
-                SPRITE_BASE + BLOCK_GHOST * N + i,
+                COLOR_BASE + BLOCK_GHOST * N + i,
                 new Color32(Math.floor(lum * 0.8 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 60), alpha),
             );
         }
@@ -778,7 +778,7 @@ class Demo {
             const rainbow = Color32.fromHSL(hue, 100, lightness);
 
             this.palette.set(
-                SPRITE_BASE + BLOCK_INVINCIBLE * N + i,
+                COLOR_BASE + BLOCK_INVINCIBLE * N + i,
                 new Color32(rainbow.r, rainbow.g, rainbow.b, base.a),
             );
         }
@@ -793,7 +793,7 @@ class Demo {
         for (let i = 0; i < N; i++) {
             const base = this.baseColors[i];
             this.palette.set(
-                SPRITE_BASE + BLOCK_POISON * N + i,
+                COLOR_BASE + BLOCK_POISON * N + i,
                 new Color32(
                     Math.floor(base.r * 0.5 * pulse),
                     Math.min(255, Math.floor(base.g * 1.4 * pulse)),
@@ -817,7 +817,7 @@ class Demo {
             // Blend from a fixed cool night tint (slight blue) toward the sprite's daylight colors as brightness → 1.
             // Color32.lerp(a, b, t): t=0 is all `a`, t=1 is all `b`; matches the old per-channel formula.
             const nightTint = new Color32(0, 0, 30, base.a);
-            this.palette.set(SPRITE_BASE + BLOCK_DAYNIGHT * N + i, Color32.lerp(nightTint, base, brightness));
+            this.palette.set(COLOR_BASE + BLOCK_DAYNIGHT * N + i, Color32.lerp(nightTint, base, brightness));
         }
     }
 
@@ -830,7 +830,7 @@ class Demo {
      * Normal, Silhouette, Team Red, Team Blue, Frozen.
      */
     renderStaticEffects() {
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.sheet || !this.charRect) {
             return;
         }
 
@@ -838,23 +838,23 @@ class Demo {
         const spacing = 60;
 
         // Offset 0 = block 0 = original stone. systemPrint takes (position, paletteIndex, text).
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10, row1Y), BLOCK_ORIGINAL * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row1Y), BLOCK_ORIGINAL * N);
         BT.systemPrint(new Vector2i(6, row1Y + 36), C_LABEL, 'Normal');
 
         // Offset N = block 1 = silhouette (near-black).
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * N);
         BT.systemPrint(new Vector2i(6 + spacing, row1Y + 36), C_LABEL, 'Shadow');
 
         // Team red.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * N);
         BT.systemPrint(new Vector2i(6 + spacing * 2, row1Y + 36), C_LABEL_RED, 'Team Red');
 
         // Team blue.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * N);
         BT.systemPrint(new Vector2i(6 + spacing * 3, row1Y + 36), C_LABEL_BLUE, 'Team Blue');
 
         // Frozen.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 4, row1Y), BLOCK_FROZEN * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 4, row1Y), BLOCK_FROZEN * N);
         BT.systemPrint(new Vector2i(6 + spacing * 4, row1Y + 36), C_LABEL_CYAN, 'Frozen');
     }
 
@@ -863,7 +863,7 @@ class Demo {
      * Damage Flash, Ghost, Invincibility, Poison.
      */
     renderDynamicEffects() {
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.sheet || !this.charRect) {
             return;
         }
 
@@ -871,16 +871,16 @@ class Demo {
         const spacing = 60;
 
         // systemPrint takes (position, paletteIndex, text).
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * N);
         BT.systemPrint(new Vector2i(6, row2Y + 36), C_LABEL_RED, 'Damage');
 
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * N);
         BT.systemPrint(new Vector2i(6 + spacing, row2Y + 36), C_LABEL_CYAN, 'Ghost');
 
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * N);
         BT.systemPrint(new Vector2i(6 + spacing * 2, row2Y + 36), C_LABEL, 'Invincible');
 
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * N);
         BT.systemPrint(new Vector2i(6 + spacing * 3, row2Y + 36), C_LABEL_GREEN, 'Poisoned');
     }
 
@@ -889,7 +889,7 @@ class Demo {
      * A progress bar shows the current phase.
      */
     renderDayNightCycle() {
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.sheet || !this.charRect) {
             return;
         }
 
@@ -899,7 +899,7 @@ class Demo {
         BT.systemPrint(new Vector2i(10, baseY), C_LABEL_YELLOW, 'Day/Night Cycle:');
 
         // Draw the sprite with the day/night block.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(10, baseY + 16), BLOCK_DAYNIGHT * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 16), BLOCK_DAYNIGHT * N);
 
         // Progress bar showing time of day.
         const barX = 60;
@@ -913,8 +913,8 @@ class Demo {
         const indicatorX = barX + Math.floor(barWidth * cycle);
 
         // The indicator rectangle uses the current day/night color (block 12, first color).
-        // We compute the actual index: SPRITE_BASE + 12*N + 0 = first slot in the day/night block.
-        BT.drawRectFill(new Rect2i(indicatorX - 2, barY - 2, 4, barHeight + 4), SPRITE_BASE + BLOCK_DAYNIGHT * N);
+        // We compute the actual index: COLOR_BASE + 12*N + 0 = first slot in the day/night block.
+        BT.drawRectFill(new Rect2i(indicatorX - 2, barY - 2, 4, barHeight + 4), COLOR_BASE + BLOCK_DAYNIGHT * N);
         BT.drawRect(new Rect2i(barX, barY, barWidth, barHeight), C_BAR_BORDER);
 
         // Phase labels.

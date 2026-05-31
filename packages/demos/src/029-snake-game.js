@@ -33,7 +33,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { isPostProcessAvailable } from './shared/post-process-backend.js';
+import { isAvailable } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -283,9 +283,9 @@ class Demo {
 
         BT.paletteSet(this.palette);
 
-        this.postProcessAvailable = isPostProcessAvailable();
+        this.effectsAvailable = isAvailable();
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             this.startRound();
             return true;
         }
@@ -362,7 +362,7 @@ class Demo {
      * Drive CRT animation and glitch machine every tick; run snake logic when alive.
      */
     update() {
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             this.tickCrtClock();
             this.tickGlitchMachine();
         }
@@ -386,7 +386,7 @@ class Demo {
             this.dy = this.pendingDy;
         }
 
-        this.stepSnake();
+        this.step();
     }
 
     /**
@@ -604,7 +604,7 @@ class Demo {
     /**
      * One grid step: wall check, self check, grow or shift tail.
      */
-    stepSnake() {
+    step() {
         const head = this.snake[0];
         const nx = head.x + this.dx;
         const ny = head.y + this.dy;

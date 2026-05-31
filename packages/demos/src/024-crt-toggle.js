@@ -46,7 +46,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
 
@@ -190,9 +190,9 @@ class Demo {
         palette.set(C_OVERLAY_BAR, new Color32(10, 15, 25, 220));
         BT.paletteSet(palette);
 
-        this.postProcessAvailable = isPostProcessAvailable();
+        this.effectsAvailable = isAvailable();
 
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             // Step 2: build the CRT preset ONCE up front
             // BT.preset.crtPipBoy() returns a fresh array of pre-configured display-tier
             // effects (BarrelDistortion + ChromaticAberration + Interference + RollLine +
@@ -202,22 +202,22 @@ class Demo {
             // Re-creating them every toggle would also work, but it would re-allocate the
             // GPU pipelines and uniform buffers each time - wasteful when the look is the
             // same.
-            this.crtStack = BT.preset.crtPipBoy();
+            this.stack = BT.preset.crtPipBoy();
 
             // Step 3: pick out the time-driven effects so update() can animate them
             // Some effects (RollLine, Noise, Interference) animate using a `time` field;
             // we filter the array once and remember the references so we don't iterate
             // the whole stack on every frame.
-            this.timedEffects = this.crtStack.filter((fx) => 'time' in fx);
+            this.timedEffects = this.stack.filter((fx) => 'time' in fx);
         } else {
-            this.crtStack = [];
+            this.stack = [];
             this.timedEffects = [];
         }
 
         // Step 4: start in the OFF state
         // Demo 023 already shows what the CRT looks like straight away; here it's nicer
         // to begin clean and then have the effect arrive after the first toggle.
-        this.crtEnabled = false;
+        this.enabled = false;
         this.lastToggleTick = BT.ticks;
 
         // Step 5: place the bouncing squares
@@ -239,14 +239,14 @@ class Demo {
         // 1. Time-based toggle (WebGPU only - effectAdd throws in software mode)
         // Every TOGGLE_PERIOD_TICKS we flip the boolean and either add or remove the
         // entire preset stack. The engine handles the GPU pipeline lifecycle for us.
-        if (this.postProcessAvailable && BT.ticks - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
+        if (this.effectsAvailable && BT.ticks - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
             this.lastToggleTick = BT.ticks;
-            this.crtEnabled = !this.crtEnabled;
-            if (this.crtEnabled) {
+            this.enabled = !this.enabled;
+            if (this.enabled) {
                 // Add every effect from the preset to the chain. Each one declares its
                 // own tier ('display' for the CRT effects), so the engine routes them
                 // automatically.
-                for (const fx of this.crtStack) {
+                for (const fx of this.stack) {
                     BT.effectAdd(fx);
                 }
                 BT.assignTag('CRT: ON');
@@ -254,14 +254,14 @@ class Demo {
                 // Remove them all. When the last effect is removed, the engine drops
                 // the off-screen ping-pong textures and reverts to drawing straight
                 // through the upscale pass to the swap chain.
-                for (const fx of this.crtStack) {
+                for (const fx of this.stack) {
                     BT.effectRemove(fx);
                 }
                 BT.assignTag('CRT: OFF');
             }
         }
 
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             // The CRT shaders use `time` for their rolling line and noise. Feed it seconds.
             // Safe to set even when the effects are not in the chain - the field is just a
             // number on the JS instance until the next encode pass reads it.
@@ -299,12 +299,8 @@ class Demo {
      * @returns {readonly { leftText: string }[]}
      */
     overlayRows() {
-        this.overlayRowData[0].leftText = this.postProcessAvailable
-            ? this.crtEnabled
-                ? 'CRT: ON'
-                : 'CRT: OFF'
-            : 'CRT: N/A';
-        this.overlayRowData[1].leftText = this.postProcessAvailable ? 'Auto-toggles every 2s' : SOFTWARE_FALLBACK_NOTE;
+        this.overlayRowData[0].leftText = this.effectsAvailable ? (this.enabled ? 'CRT: ON' : 'CRT: OFF') : 'CRT: N/A';
+        this.overlayRowData[1].leftText = this.effectsAvailable ? 'Auto-toggles every 2s' : SOFTWARE_FALLBACK_NOTE;
 
         return this.overlayRowData;
     }
