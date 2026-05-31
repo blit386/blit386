@@ -186,10 +186,10 @@ class Demo {
             maxCanvasSize: new Vector2i(320 * 4, 240 * 4),
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
-            detectDroppedFrames: true,
+            isDetectingDroppedFrames: true,
             // Opt in to the engine timing chart band (update vs render CPU bars above the FPS row).
             // Bar colors default to overlayStyle; we set explicit indices so they match this palette.
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_GREEN,

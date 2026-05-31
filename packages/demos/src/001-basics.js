@@ -176,7 +176,7 @@ class Demo {
      * - How big the canvas element should appear on the web page.
      * - How many times per second update() should run.
      *
-     * @returns {{ targetFPS: number, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayTimingChartHeight: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {{ targetFPS: number, isOverlayPaletteEnabled: boolean, isOverlayTimingChartEnabled: boolean, overlayTimingChartHeight: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         // Only override the tick rate; the engine fills in displaySize,
@@ -186,7 +186,7 @@ class Demo {
 
             // Live palette grid at the bottom: every palette slot as a tiny swatch.
             // Slots your demo draws this frame show their color; unused slots show a dim marker.
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
 
             // Show 16 swatches per row and only 1 row at a time (scroll the rest with wheel or drag).
             overlayPaletteColumns: 16,
@@ -194,7 +194,7 @@ class Demo {
 
             // Scrolling timing chart under the title row (green = update(), amber = render()).
             // One dot per screen refresh; no extra CPU load added in this demo.
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartHeight: 32,
 
             // Tell the engine which palette slots to use for the overlay bars

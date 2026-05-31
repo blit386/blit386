@@ -145,7 +145,7 @@ class Demo {
      *
      * @returns {{
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
      *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
@@ -160,7 +160,7 @@ class Demo {
                 gapPaletteIndex: C_OVERLAY_BAR,
             },
             // Show the scrolling timing chart in the overlay so each frame's update/render cost is visible.
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 // C_COOLDOWN_READY: green - used for update() bars, matching the "ready" cooldown color.
                 updateBarPaletteIndex: C_COOLDOWN_READY,

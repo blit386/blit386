@@ -123,11 +123,11 @@ class Demo {
      * the renderer diagnostics bar are enabled so GPU pipeline pressure is visible.
      *
      * @returns {{
-     *   overlayPaletteView: boolean,
+     *   isOverlayPaletteEnabled: boolean,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartDiagnostics: string,
-     *   overlayRendererDiagnosticsBar: boolean,
+     *   isOverlayRendererDiagnosticsBarEnabled: boolean,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
      *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
@@ -136,15 +136,15 @@ class Demo {
      */
     configure() {
         return {
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
                 gapPaletteIndex: 2,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_WAVE_3,
                 renderBarPaletteIndex: C_WAVE_1,

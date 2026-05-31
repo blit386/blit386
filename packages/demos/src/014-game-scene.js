@@ -241,9 +241,9 @@ class Demo {
             // full dev HUD (timing chart and palette grid) on demand, then ` again to
             // hide it. Teaching demos leave this hint visible (the default) so newcomers
             // can find it.
-            overlayToggleHintVisible: false,
+            isOverlayToggleHintVisible: false,
 
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 3,
             overlayStyle: {
@@ -251,7 +251,7 @@ class Demo {
                 textPaletteIndex: C_HUD_SCORE,
                 gapPaletteIndex: C_OVERLAY_BAR,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_HUD_POS,
                 renderBarPaletteIndex: C_HUD_SCORE,

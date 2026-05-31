@@ -110,7 +110,7 @@ class Demo {
      *
      * @returns {{
      *   displaySize: import('blit-tech').Vector2i,
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, tagPaletteIndex: number }
      * }}
      */
@@ -119,7 +119,7 @@ class Demo {
             // Set the logical display size (how many pixels the demo draws at).
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             // Show the scrolling timing chart in the overlay so each frame's cost is visible.
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 // C_DIM makes update bars subtle so render bars stand out by contrast.
                 updateBarPaletteIndex: C_DIM,

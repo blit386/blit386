@@ -72,11 +72,11 @@ class Demo {
     /**
      * Enables the timing chart so pointer milestones appear on the overlay HUD.
      *
-     * @returns {{ overlayTimingChart: boolean, overlayTimingChartStyle: { tagPaletteIndex: number } }}
+     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayTimingChartStyle: { tagPaletteIndex: number } }}
      */
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_DIM,
                 renderBarPaletteIndex: C_WHITE,

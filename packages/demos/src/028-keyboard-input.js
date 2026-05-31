@@ -80,7 +80,7 @@ class Demo {
 
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_DIM,
                 renderBarPaletteIndex: C_WHITE,

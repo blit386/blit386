@@ -229,14 +229,14 @@ class Demo {
     /**
      * Heavy particle physics each tick; the timing chart helps spot frame budget pressure.
      *
-     * @returns {{ targetFPS: number, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {{ targetFPS: number, isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
             targetFPS: TARGET_FPS,
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_TITLE,

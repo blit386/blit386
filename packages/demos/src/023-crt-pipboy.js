@@ -302,16 +302,16 @@ class Demo {
             // stats overlay still opens: press the Backquote key (`) to toggle the
             // full dev HUD, press ` again to hide it. The hint is only hidden, not
             // disabled.
-            overlayToggleHintVisible: false,
+            isOverlayToggleHintVisible: false,
 
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_GREEN,
                 gapPaletteIndex: C_BG,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_GREEN,
                 renderBarPaletteIndex: C_AMBER,

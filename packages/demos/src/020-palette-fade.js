@@ -184,7 +184,7 @@ class Demo {
                 textPaletteIndex: C_LABEL,
                 gapPaletteIndex: C_OVERLAY_BAR,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_LABEL,
                 renderBarPaletteIndex: C_SUN,

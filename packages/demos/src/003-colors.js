@@ -122,10 +122,10 @@ class Demo {
      * palette grid in the overlay with 4 visible rows (scroll for the rest).
      *
      * @returns {{
-     *   overlayPaletteView: boolean,
+     *   isOverlayPaletteEnabled: boolean,
      *   overlayPaletteRowsVisible: number,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
      *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
@@ -134,14 +134,14 @@ class Demo {
      */
     configure() {
         return {
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayPaletteRowsVisible: 4,
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
                 gapPaletteIndex: 3,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: 1,
                 renderBarPaletteIndex: 3,

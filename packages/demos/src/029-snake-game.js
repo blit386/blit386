@@ -245,14 +245,14 @@ class Demo {
             // board stays clean. Players who want the stats overlay can still press
             // the Backquote key (`) to show it and press ` again to hide it - hiding
             // the hint does not turn the overlay off.
-            overlayToggleHintVisible: false,
+            isOverlayToggleHintVisible: false,
 
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_FOOTER_WHITE,
                 gapPaletteIndex: C_BG,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_SNAKE,
                 renderBarPaletteIndex: C_FOOD,

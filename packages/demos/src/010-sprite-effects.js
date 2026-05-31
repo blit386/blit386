@@ -282,7 +282,7 @@ class Demo {
     /**
      * Wider logical screen for the sprite grid; display-tier Orava CRT runs at 3x upscale.
      *
-     * @returns {{ displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, outputUpscaleFilter: string, overlayPaletteView: boolean, overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {{ displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, outputUpscaleFilter: string, isOverlayPaletteEnabled: boolean, isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
@@ -290,14 +290,14 @@ class Demo {
             drawingBufferSize: new Vector2i(OUTPUT_W, OUTPUT_H),
             maxCanvasSize: new Vector2i(MAX_CANVAS_W, MAX_CANVAS_H),
             outputUpscaleFilter: 'nearest',
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
 
             // Opt in to the engine timing chart band under the title row.
             // overlayTimingChartHeight sets band height in pixels (default 22).
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartHeight: 64,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BG,
                 textPaletteIndex: C_BG,

@@ -93,7 +93,7 @@ class Demo {
      * while switching sprite palette themes.
      *
      * @returns {{
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
@@ -103,7 +103,7 @@ class Demo {
      */
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_LABEL,

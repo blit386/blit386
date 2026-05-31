@@ -102,13 +102,13 @@ class Demo {
     /**
      * Finger painting can spike render() when strokes are long; the chart makes that visible.
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_PANEL,
                 textPaletteIndex: C_TEXT,

@@ -106,7 +106,7 @@ class Demo {
                 textPaletteIndex: C_WHITE,
                 gapPaletteIndex: C_PANEL,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_LIT,
                 renderBarPaletteIndex: C_AMBER,

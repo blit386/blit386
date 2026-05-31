@@ -115,7 +115,7 @@ class Demo {
 
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_PANEL_BORDER,
                 renderBarPaletteIndex: C_TEXT,

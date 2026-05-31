@@ -124,11 +124,11 @@ class Demo {
      * a time); scroll the band to browse the rest of the 256-slot palette.
      *
      * @returns {{
-     *   overlayPaletteView: boolean,
+     *   isOverlayPaletteEnabled: boolean,
      *   overlayPaletteColumns: number,
      *   overlayPaletteRowsVisible: number,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
      *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
@@ -137,7 +137,7 @@ class Demo {
      */
     configure() {
         return {
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 2,
             overlayStyle: {
@@ -145,7 +145,7 @@ class Demo {
                 textPaletteIndex: C_OVERLAY_GREEN,
                 gapPaletteIndex: C_OVERLAY_BAR,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_OVERLAY_GREEN,
                 renderBarPaletteIndex: C_OVERLAY_AMBER,
