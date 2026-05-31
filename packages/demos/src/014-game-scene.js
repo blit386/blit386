@@ -608,7 +608,7 @@ class Demo {
      * @param {number} tick - Current tick.
      */
     updateWalkStep(tick) {
-        if (this.walkFrameTimer.shouldFire(tick)) {
+        if (this.walkFrameTimer.fireIfElapsed(tick)) {
             this.walkStep = (this.walkStep + 1) % 4;
         }
     }
@@ -673,7 +673,7 @@ class Demo {
      * @param {number} tick - Current tick.
      */
     updateScore(tick) {
-        if (this.scoreTimer.shouldFire(tick)) {
+        if (this.scoreTimer.fireIfElapsed(tick)) {
             this.score += 1;
         }
     }
@@ -684,7 +684,7 @@ class Demo {
      * @param {number} tick - Current tick.
      */
     updateParticlesSpawn(tick) {
-        if (this.particleSpawnTimer.shouldFire(tick)) {
+        if (this.particleSpawnTimer.fireIfElapsed(tick)) {
             for (let i = 0; i < 3; i++) {
                 const slot = PARTICLE_SLOT_START + (this.nextParticleSlot % MAX_PARTICLES);
                 this.nextParticleSlot++;
