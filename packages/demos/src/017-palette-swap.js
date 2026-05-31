@@ -202,7 +202,7 @@ class Demo {
     update() {
         const tick = BT.ticks;
 
-        if (this.swapTimer.tick(tick)) {
+        if (this.swapTimer.shouldFire(tick)) {
             // Move to the next theme; wrap around after void (index 3).
             this.currentTheme = (this.currentTheme + 1) % this.themepalettes.length;
 

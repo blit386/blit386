@@ -258,7 +258,7 @@ class Demo {
         }
 
         // Spawn a particle batch every 180 ticks.
-        if (this.spawnTimer.tick(tick)) {
+        if (this.spawnTimer.shouldFire(tick)) {
             this.spawnParticle();
         }
 
