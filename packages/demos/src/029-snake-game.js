@@ -33,7 +33,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { isAvailable } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -286,6 +286,7 @@ class Demo {
         this.effectsAvailable = isAvailable();
 
         if (!this.effectsAvailable) {
+            BT.assignTag(SOFTWARE_FALLBACK_NOTE);
             this.startRound();
             return true;
         }

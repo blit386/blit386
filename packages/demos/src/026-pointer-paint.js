@@ -18,11 +18,11 @@
 // are tracked at once; a fourth simultaneous touch is dropped silently.
 //
 // What this demonstrates:
-//   - BT.isPressed() / BT.isReleased() for stroke begin / end events
-//   - BT.isPointerActive(slot) / BT.pointerPos(slot) for per-slot positions
-//   - lastPosX / lastPosY per-slot tracking: stamps the brush along the full
-//     line segment from the previous frame's position to the current one so
-//     fast strokes look continuous instead of dotted
+//   - BT.isPressed() for one-shot mouse actions (clear canvas, cycle brush size)
+//   - BT.isDown(BT.BTN_POINTER_A) while BT.isPointerActive(0) for mouse painting
+//   - BT.isPointerActive(slot) / BT.pointerPos(slot) for per-slot touch painting
+//   - lastPosX / lastPosY per-slot stamping: draws from the previous frame's
+//     position to the current one so fast strokes look continuous instead of dotted
 //
 // The painting happens on an offscreen palette layer (a 2D array of palette
 // indices) so brush strokes persist across frames even though render() clears
@@ -67,7 +67,7 @@ const BRUSH_SIZES = [0, 2, 4];
  * The "canvas" we paint onto is a flat array of palette indices, one entry per
  * display pixel. Each frame, render() copies that array onto the screen with
  * BT.drawPixel() so strokes persist between frames. Stroke input comes from
- * checking BT.isPointerActive() / BT.isDown() / BT.pointerDelta() on each
+ * checking BT.isPointerActive() / BT.isDown() / BT.pointerPos() on each
  * of the four slots in update().
  *
  * @implements {IBlitTechDemo}

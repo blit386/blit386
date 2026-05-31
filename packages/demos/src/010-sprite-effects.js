@@ -62,6 +62,23 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/**
+ * Hardware settings for the Orava CRT sprite-effects demo.
+ *
+ * @typedef {Object} SpriteEffectsConfig
+ * @property {Vector2i} displaySize
+ * @property {Vector2i} drawingBufferSize
+ * @property {Vector2i} maxCanvasSize
+ * @property {string} outputUpscaleFilter
+ * @property {boolean} isOverlayPaletteEnabled
+ * @property {boolean} isOverlayTimingChartEnabled
+ * @property {number} overlayTimingChartHeight
+ * @property {'rich'|false} overlayTimingChartDiagnostics
+ * @property {boolean} isOverlayRendererDiagnosticsBarEnabled
+ * @property {{ barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }} overlayStyle
+ * @property {{ updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number }} overlayTimingChartStyle
+ */
+
 // #region Configuration
 
 // Where sprite colors start in the palette.
@@ -282,7 +299,7 @@ class Demo {
     /**
      * Wider logical screen for the sprite grid; display-tier Orava CRT runs at 3x upscale.
      *
-     * @returns {{ displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, outputUpscaleFilter: string, isOverlayPaletteEnabled: boolean, isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {SpriteEffectsConfig}
      */
     configure() {
         return {

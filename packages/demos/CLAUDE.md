@@ -344,7 +344,3 @@ Managed by Husky (auto-installed via `prepare` script).
 Demos deploy to Cloudflare Pages via GitHub Actions on push to main. The production build copies each virtual demo to
 `dist/<slug>.html` at the site root (see `flattenDemosPlugin` in `vite.config.js`). Public URLs are listed in
 `README.md` (the hosted site uses short paths such as `/001-basics`; local dev still uses `/demos/<slug>.html`).
-
-```
-
-```
