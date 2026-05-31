@@ -81,11 +81,11 @@ class Demo {
      * palette grid in the overlay with 32 swatches per row and 2 visible rows.
      *
      * @returns {{
-     *   overlayPaletteView: boolean,
+     *   isOverlayPaletteEnabled: boolean,
      *   overlayPaletteColumns: number,
      *   overlayPaletteRowsVisible: number,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
      *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
@@ -94,7 +94,7 @@ class Demo {
      */
     configure() {
         return {
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 2,
             overlayStyle: {
@@ -102,7 +102,7 @@ class Demo {
                 textPaletteIndex: 2,
                 gapPaletteIndex: 2,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_GREEN_TEXT,
                 renderBarPaletteIndex: C_YELLOW_TEXT,

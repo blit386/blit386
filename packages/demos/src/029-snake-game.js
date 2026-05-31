@@ -33,7 +33,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { isPostProcessAvailable } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -245,14 +245,14 @@ class Demo {
             // board stays clean. Players who want the stats overlay can still press
             // the Backquote key (`) to show it and press ` again to hide it - hiding
             // the hint does not turn the overlay off.
-            overlayToggleHintVisible: false,
+            isOverlayToggleHintVisible: false,
 
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_FOOTER_WHITE,
                 gapPaletteIndex: C_BG,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_SNAKE,
                 renderBarPaletteIndex: C_FOOD,
@@ -283,9 +283,10 @@ class Demo {
 
         BT.paletteSet(this.palette);
 
-        this.postProcessAvailable = isPostProcessAvailable();
+        this.effectsAvailable = isAvailable();
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
+            BT.assignTag(SOFTWARE_FALLBACK_NOTE);
             this.startRound();
             return true;
         }
@@ -362,7 +363,7 @@ class Demo {
      * Drive CRT animation and glitch machine every tick; run snake logic when alive.
      */
     update() {
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             this.tickCrtClock();
             this.tickGlitchMachine();
         }
@@ -386,7 +387,7 @@ class Demo {
             this.dy = this.pendingDy;
         }
 
-        this.stepSnake();
+        this.step();
     }
 
     /**
@@ -411,22 +412,22 @@ class Demo {
      * Reads player 1 face buttons and updates pending direction (no instant reverse).
      */
     pollDirectionInput() {
-        if (BT.buttonPressed(BT.BTN_UP, 0) && this.dy !== 1) {
+        if (BT.isPressed(BT.BTN_UP, 0) && this.dy !== 1) {
             this.pendingDx = 0;
             this.pendingDy = -1;
         }
 
-        if (BT.buttonPressed(BT.BTN_DOWN, 0) && this.dy !== -1) {
+        if (BT.isPressed(BT.BTN_DOWN, 0) && this.dy !== -1) {
             this.pendingDx = 0;
             this.pendingDy = 1;
         }
 
-        if (BT.buttonPressed(BT.BTN_LEFT, 0) && this.dx !== 1) {
+        if (BT.isPressed(BT.BTN_LEFT, 0) && this.dx !== 1) {
             this.pendingDx = -1;
             this.pendingDy = 0;
         }
 
-        if (BT.buttonPressed(BT.BTN_RIGHT, 0) && this.dx !== -1) {
+        if (BT.isPressed(BT.BTN_RIGHT, 0) && this.dx !== -1) {
             this.pendingDx = 1;
             this.pendingDy = 0;
         }
@@ -604,7 +605,7 @@ class Demo {
     /**
      * One grid step: wall check, self check, grow or shift tail.
      */
-    stepSnake() {
+    step() {
         const head = this.snake[0];
         const nx = head.x + this.dx;
         const ny = head.y + this.dy;

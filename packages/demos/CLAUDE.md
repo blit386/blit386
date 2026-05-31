@@ -227,9 +227,33 @@ BT.targetFPS;
 BT.deltaSeconds;
 BT.timeSeconds;
 BT.activeBackend; // 'webgpu' | 'software' | null - after successful init
+BT.isPointerActive(0); // pointer slot active (mouse hover or touch contact)
+BT.isDown(BT.BTN_A, 0); // button held (ANY-match for masks)
+BT.isPressed(BT.BTN_A, 0); // edge: up -> down this frame
+BT.isKeyDown('KeyW'); // raw keyboard hold
+BT.isKeyPressed('ArrowUp', 10); // edge + optional tick repeat
 await BT.captureFrame(); // returns a Blob
 await BT.downloadFrame(filename); // optional filename; default PNG name if omitted
 ```
+
+Configure example (overlay flags use grammatical `is*`):
+
+```javascript
+configure() {
+    return {
+        isOverlayEnabled: true,
+        isOverlayVisibleAtStart: false,
+        isOverlayPaletteEnabled: true,
+    };
+}
+```
+
+## Boolean naming
+
+Demos use the library's public names only. **Configure flags** (Tier B): grammatical `is*` in `configure()` —
+`isOverlayEnabled`, `isDetectingDroppedFrames`, `canvasID`. **Runtime input** (Tier A): `BT.isDown`, `BT.isPressed`,
+`BT.isKeyDown`, `BT.isPointerActive`. Full policy: blit-tech
+[docs/developer-experience-guide.md](https://github.com/vancura/blit-tech/blob/main/docs/developer-experience-guide.md).
 
 Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
 
@@ -253,21 +277,30 @@ Static helpers on those types worth knowing:
   `hud_bg`, `hud_label`, `hud_header`, `hud_dim`, `hud_code`). Eliminates the repetitive `palette.set()` boilerplate for
   UI text colors. Call in `init()` before `BT.paletteSet()`.
 
-Full input APIs (`BT.keyDown`, `BT.buttonDown`, gamepad helpers, remapping) are documented in the engine
+Full input APIs (`BT.isKeyDown`, `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.isDown`, `BT.isPressed`, `BT.isReleased`,
+gamepad helpers, remapping) are documented in the engine
 [input guide](https://github.com/vancura/blit-tech/blob/main/docs/input.md). Post-process presets and effect tiers are
 in [post-process-effects.md](https://github.com/vancura/blit-tech/blob/main/docs/post-process-effects.md).
 
+### Shared demo helpers
+
+CRT and post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` from
+`src/shared/post-process-backend.js`. After `init()`, call `this.effectsAvailable = isAvailable()` (checks
+`BT.activeBackend === 'webgpu'`, not `BT.requestedBackend`) before `BT.effectAdd(...)`. When effects are skipped, show
+`SOFTWARE_FALLBACK_NOTE` on the overlay or in demo HUD text.
+
 The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
 The overlay **body starts hidden**; a bitmap toggle hint sits in the **bottom-left** corner by default. Toggle the body
-with Backquote or a primary press in the bottom-left 48x48 px corner. Use `overlayVisibleAtStart: true` to show the body
-on the first frame, `overlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still toggles
-with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
-`overlayToggleEnabled: false` to lock body visibility, or `overlayEnabled: false` to disable the overlay subsystem (see
-[api-core.md](https://github.com/vancura/blit-tech/blob/main/docs/api-core.md)). Set `overlayTimingChart: true` to opt
-in to the scrolling update/render timing chart band (~22 px under the title row). Chart renderer diagnostics default to
-**minimal** when the chart is on; set `overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to
-disable chart markers. Set `overlayRendererDiagnosticsBar: true` for a GPU pipeline text row below frame timings (off by
-default). Bar colors default to `overlayStyle` indices; override with `overlayTimingChartStyle`. Milestone labels use
+with Backquote or a primary press in the bottom-left 48x48 px corner. Use `isOverlayVisibleAtStart: true` to show the
+body on the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still
+toggles with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
+`isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem
+(see [api-core.md](https://github.com/vancura/blit-tech/blob/main/docs/api-core.md)). Set
+`isOverlayTimingChartEnabled: true` to opt in to the scrolling update/render timing chart band (~22 px under the title
+row). Chart renderer diagnostics default to **minimal** when the chart is on; set
+`overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to disable chart markers. Set
+`isOverlayRendererDiagnosticsBarEnabled: true` for a GPU pipeline text row below frame timings (off by default). Bar
+colors default to `overlayStyle` indices; override with `overlayTimingChartStyle`. Milestone labels use
 `overlayTimingChartStyle.tagPaletteIndex` (engine default **5**). The engine adds a **Start** tag when the chart resets
 (first layout and on resize). For gameplay events, call `BT.assignTag('...')` from `update()` or `init()` when the chart
 is enabled in `configure()`.

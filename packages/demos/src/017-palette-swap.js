@@ -49,7 +49,7 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'bl
 const SWAP_PERIOD_TICKS = 120;
 
 // Where in the palette the sprite's base colors begin.
-const SPRITE_BASE = 10;
+const COLOR_BASE = 10;
 
 // Static representative swatches for each theme (one color each, for the theme buttons).
 // These stay the same across ALL theme palettes so the buttons look stable.
@@ -80,20 +80,20 @@ class Demo {
     // #region Module State
 
     // The sprite sheet loaded from test.png.
-    spriteSheet = null;
+    sheet = null;
 
     // The rectangular region of the sprite within the sheet.
     charSprite = null;
 
     // How many unique colors were extracted from the sprite image.
-    spriteColorCount = 0;
+    colorCount = 0;
 
     // Original Color32 objects for the sprite's base colors (used to build theme palettes).
     baseColors = [];
 
     // The four theme palettes. We switch between them in update().
     // 0 = stone, 1 = fire, 2 = ice, 3 = void.
-    themepalettes = [];
+    themes = [];
 
     // Display names for each theme (shown in the left column).
     themeNames = ['Stone', 'Fire', 'Ice', 'Void'];
@@ -111,11 +111,11 @@ class Demo {
     /**
      * Timing chart helps compare CPU cost while palettes swap on a timer.
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_HEADER,
@@ -156,35 +156,35 @@ class Demo {
         // it a throwaway "scratch" palette as a sink and keep the returned array for later.
         // Each theme palette gets built from this.baseColors with its own tint applied.
         const scratchPalette = BT.paletteCreate(256);
-        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', scratchPalette, SPRITE_BASE);
-        this.spriteColorCount = this.baseColors.length;
-        console.log(`[PaletteSwapDemo] Found ${this.spriteColorCount} unique sprite colors`);
+        this.baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', scratchPalette, COLOR_BASE);
+        this.colorCount = this.baseColors.length;
+        console.log(`[PaletteSwapDemo] Found ${this.colorCount} unique sprite colors`);
 
         // Steps 2 & 3: Build all four theme palettes
-        this.themepalettes = [
-            this.buildPalette('stone'), // Original rock colors.
-            this.buildPalette('fire'), // Warm reds and oranges.
-            this.buildPalette('ice'), // Cool blues and whites.
-            this.buildPalette('void'), // Dark desaturated greens.
+        this.themes = [
+            this.buildTheme('stone'), // Original rock colors.
+            this.buildTheme('fire'), // Warm reds and oranges.
+            this.buildTheme('ice'), // Cool blues and whites.
+            this.buildTheme('void'), // Dark desaturated greens.
         ];
 
         // Step 4: Activate the starting palette (stone theme)
         // This must happen BEFORE indexize() so the sprite's pixels are mapped
         // against the correct starting palette.
-        BT.paletteSet(this.themepalettes[0]);
+        BT.paletteSet(this.themes[0]);
 
         // Step 5: Load and indexize the sprite
         // SpriteSheet.load() fetches the PNG from the public folder.
         // indexize() scans every pixel and finds its color in the active palette.
         // After this, every pixel stores a palette slot number instead of an RGBA value.
         try {
-            this.spriteSheet = await SpriteSheet.load('/sprites/test.png');
+            this.sheet = await SpriteSheet.load('/sprites/test.png');
 
             // Grab a source rectangle that covers the whole sprite sheet.
-            this.charSprite = this.spriteSheet.fullRect();
+            this.charSprite = this.sheet.fullRect();
 
             // Link pixels to palette slots.
-            this.spriteSheet.indexize(this.themepalettes[0]);
+            this.sheet.indexize(this.themes[0]);
             console.log(`[PaletteSwapDemo] Sprite loaded: ${this.charSprite.width}x${this.charSprite.height}px`);
         } catch (error) {
             console.error('[PaletteSwapDemo] Failed to load sprite:', error);
@@ -202,16 +202,16 @@ class Demo {
     update() {
         const tick = BT.ticks;
 
-        if (this.swapTimer.tick(tick)) {
+        if (this.swapTimer.fireIfElapsed(tick)) {
             // Move to the next theme; wrap around after void (index 3).
-            this.currentTheme = (this.currentTheme + 1) % this.themepalettes.length;
+            this.currentTheme = (this.currentTheme + 1) % this.themes.length;
 
             // Palette swap!
             // BT.paletteSet() uploads the new palette to the GPU.
             // All drawing calls immediately use the new colors.
             // Because every theme palette keeps the sprite colors at the SAME SLOT NUMBERS
-            // (SPRITE_BASE..SPRITE_BASE+N-1), the sprite's stored indices are still correct.
-            BT.paletteSet(this.themepalettes[this.currentTheme]);
+            // (COLOR_BASE..COLOR_BASE+N-1), the sprite's stored indices are still correct.
+            BT.paletteSet(this.themes[this.currentTheme]);
             BT.assignTag(`Theme: ${this.themeNames[this.currentTheme]}`);
 
             // BT.spritesRefresh() is needed when the new palette REORGANIZES slots
@@ -230,7 +230,7 @@ class Demo {
         // Clear to the background color (slot 2 = dark bg, same in all theme palettes).
         BT.clear(C_BG);
 
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.sheet || !this.charSprite) {
             BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
             return;
         }
@@ -256,7 +256,7 @@ class Demo {
         const btnW = 70;
         const gap = 4;
 
-        for (let i = 0; i < this.themepalettes.length; i++) {
+        for (let i = 0; i < this.themes.length; i++) {
             const btnY = startY + i * (btnH + gap);
 
             // Highlight box around the active theme.
@@ -279,11 +279,11 @@ class Demo {
 
     /**
      * Draws the large cycling sprite in the center of the screen.
-     * The sprite uses offset 0 - it draws from SPRITE_BASE..SPRITE_BASE+N-1,
+     * The sprite uses offset 0 - it draws from COLOR_BASE..COLOR_BASE+N-1,
      * which contains the current theme's colors in whichever palette is active.
      */
     renderCyclingSprite() {
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.sheet || !this.charSprite) {
             return;
         }
 
@@ -292,7 +292,7 @@ class Demo {
 
         // Draw the sprite at its natural size.
         // Offset 0 means: draw using palette slots starting at the sprite's base index.
-        BT.drawSprite(this.spriteSheet, this.charSprite, new Vector2i(spriteX, spriteY), 0);
+        BT.drawSprite(this.sheet, this.charSprite, new Vector2i(spriteX, spriteY), 0);
 
         // Label below the sprite. systemPrint takes (position, paletteIndex, text).
         BT.systemPrint(
@@ -306,7 +306,7 @@ class Demo {
         BT.systemPrint(
             new Vector2i(spriteX, spriteY + this.charSprite.height + 32),
             C_CODE,
-            `slots ${SPRITE_BASE}..${SPRITE_BASE + this.spriteColorCount - 1}`,
+            `slots ${COLOR_BASE}..${COLOR_BASE + this.colorCount - 1}`,
         );
     }
 
@@ -356,7 +356,7 @@ class Demo {
      * @param {'stone'|'fire'|'ice'|'void'} themeName - Which tint to apply.
      * @returns {import('blit-tech').Palette} Ready-to-use Palette object.
      */
-    buildPalette(themeName) {
+    buildTheme(themeName) {
         const palette = BT.paletteCreate(256);
 
         // Static UI colors (same in every palette)
@@ -398,7 +398,7 @@ class Demo {
             }
 
             // Register the tinted color at the SAME slot number regardless of theme.
-            palette.set(SPRITE_BASE + i, tinted);
+            palette.set(COLOR_BASE + i, tinted);
         }
 
         // Representative swatch colors (same in every palette)

@@ -134,10 +134,10 @@ class Demo {
      * (two grid columns per art cell gives comfortable visual alignment).
      *
      * @returns {{
-     *   overlayPaletteView: boolean,
+     *   isOverlayPaletteEnabled: boolean,
      *   overlayPaletteColumns: number,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
      *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
@@ -146,14 +146,14 @@ class Demo {
      */
     configure() {
         return {
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 16,
             overlayStyle: {
                 barPaletteIndex: 3,
                 textPaletteIndex: 2,
                 gapPaletteIndex: 2,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: 2,
                 renderBarPaletteIndex: 3,

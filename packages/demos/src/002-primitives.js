@@ -65,11 +65,11 @@ class Demo {
      * palette grid in the overlay with 24 swatches per row and 3 visible rows.
      *
      * @returns {{
-     *   overlayPaletteView: boolean,
+     *   isOverlayPaletteEnabled: boolean,
      *   overlayPaletteColumns: number,
      *   overlayPaletteRowsVisible: number,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartHeight: number,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
@@ -79,7 +79,7 @@ class Demo {
      */
     configure() {
         return {
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 24,
             overlayPaletteRowsVisible: 3,
 
@@ -89,7 +89,7 @@ class Demo {
                 gapPaletteIndex: 2,
             },
 
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartHeight: 50,
 
             overlayTimingChartStyle: {
@@ -181,12 +181,12 @@ class Demo {
         BT.clear(C_BG);
 
         // Draw each type of primitive in its own area of the screen.
-        this.renderPixelDemo();
-        this.renderLineDemo();
-        this.renderRectOutlineDemo();
-        this.renderRectFillDemo();
-        this.renderClearRectDemo();
-        this.renderCombinedDemo();
+        this.renderPixel();
+        this.renderLine();
+        this.renderRectOutline();
+        this.renderRectFill();
+        this.renderClearRect();
+        this.renderCombined();
     }
 
     // #endregion
@@ -198,7 +198,7 @@ class Demo {
      * We draw 50 dots in a pattern, each with a different rainbow color.
      * The colors shift over time because update() rotates them each tick.
      */
-    renderPixelDemo() {
+    renderPixel() {
         // Print the section label in amber (orange-yellow) color.
         BT.systemPrint(new Vector2i(10, 30), C_AMBER, 'Pixels:');
 
@@ -220,7 +220,7 @@ class Demo {
      * Shows how BT.drawLine() works - it draws a straight line between two points.
      * We show three static lines (horizontal, vertical, diagonal) plus one that spins.
      */
-    renderLineDemo() {
+    renderLine() {
         BT.systemPrint(new Vector2i(10, 75), C_AMBER, 'Lines:');
 
         // A horizontal line goes straight left-to-right. Color: red.
@@ -256,7 +256,7 @@ class Demo {
      * Shows how BT.drawRect() works - it draws just the border of a rectangle (hollow).
      * We draw three static rectangles in different colors plus one that pulses in size.
      */
-    renderRectOutlineDemo() {
+    renderRectOutline() {
         BT.systemPrint(new Vector2i(90, 30), C_AMBER, 'Rect Outlines:');
 
         // Three rectangles with different colors. Rect2i takes (x, y, width, height).
@@ -278,7 +278,7 @@ class Demo {
      * Shows how BT.drawRectFill() works - it fills a rectangle with solid color.
      * Same as the outline demo but these rectangles are filled in.
      */
-    renderRectFillDemo() {
+    renderRectFill() {
         BT.systemPrint(new Vector2i(90, 90), C_AMBER, 'Rect Fills:');
 
         // Three filled rectangles in different colors.
@@ -303,7 +303,7 @@ class Demo {
      * the color index. The order is different from drawRect(rect, index) - clearRect
      * is special because it "paints over" the existing content with a solid color.
      */
-    renderClearRectDemo() {
+    renderClearRect() {
         BT.systemPrint(new Vector2i(10, 135), C_AMBER, 'Clear Rect:');
 
         // Draw a background grid of steel-blue squares.
@@ -331,7 +331,7 @@ class Demo {
      * A filled rectangle for the background, an outline for the border,
      * and lines that trace a wave across the graph.
      */
-    renderCombinedDemo() {
+    renderCombined() {
         BT.systemPrint(new Vector2i(120, 150), C_AMBER, 'Combined:');
 
         // The graph's position and size on screen.

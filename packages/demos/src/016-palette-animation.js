@@ -143,10 +143,10 @@ class Demo {
      * @returns {{
      *   displaySize: import('blit-tech').Vector2i,
      *   maxCanvasSize: import('blit-tech').Vector2i,
-     *   overlayPaletteView: boolean,
+     *   isOverlayPaletteEnabled: boolean,
      *   overlayPaletteColumns: number,
      *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   overlayTimingChart: boolean,
+     *   isOverlayTimingChartEnabled: boolean,
      *   overlayTimingChartStyle: {
      *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
      *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
@@ -157,14 +157,14 @@ class Demo {
         return {
             displaySize: new Vector2i(520, 390),
             maxCanvasSize: new Vector2i(520 * 2, 390 * 2),
-            overlayPaletteView: true,
+            isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 64,
             overlayStyle: {
                 barPaletteIndex: 2,
                 textPaletteIndex: 4,
                 gapPaletteIndex: 80,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: 4,
                 renderBarPaletteIndex: 5,

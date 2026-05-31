@@ -9,9 +9,9 @@
 // button counts as down (OR). This demo switches **presets** with number keys
 // so you can feel defaults, a custom map, and a **cleared** binding.
 //
-// Important: `BT.keyDown('KeyW')` only watches the real W key. Changing the map
+// Important: `BT.isKeyDown('KeyW')` only watches the real W key. Changing the map
 // does not rename keys - it changes which keys feed **face buttons** through
-// `BT.buttonDown(BT.BTN_*, player)`.
+// `BT.isDown(BT.BTN_*, player)`.
 //
 // Try this:
 // - Press **1** for built-in defaults (`BT.inputMapReset()`).
@@ -106,7 +106,7 @@ class Demo {
                 textPaletteIndex: C_WHITE,
                 gapPaletteIndex: C_PANEL,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_LIT,
                 renderBarPaletteIndex: C_AMBER,
@@ -148,20 +148,20 @@ class Demo {
      */
     update() {
         // Each branch calls a small helper so `update()` stays easy to read.
-        // `keyPressed` without a repeat rate only fires once per physical press.
-        if (BT.keyPressed('Digit1')) {
+        // `isKeyPressed` without a repeat rate only fires once per physical press.
+        if (BT.isKeyPressed('Digit1')) {
             this.applyPresetDefaults();
         }
 
-        if (BT.keyPressed('Digit2')) {
+        if (BT.isKeyPressed('Digit2')) {
             this.applyPresetCustom();
         }
 
-        if (BT.keyPressed('Digit3')) {
+        if (BT.isKeyPressed('Digit3')) {
             this.applyPresetClearPlayer0A();
         }
 
-        if (BT.keyPressed('Digit0') || BT.keyPressed('KeyR')) {
+        if (BT.isKeyPressed('Digit0') || BT.isKeyPressed('KeyR')) {
             this.applyPresetDefaults();
         }
     }
@@ -175,7 +175,7 @@ class Demo {
         BT.systemPrint(
             new Vector2i(MARGIN_X, HEADER_SUB_Y),
             C_DIM,
-            'Face buttons use BT.buttonDown(BTN_*, player). Remap at runtime with BT.inputMap / BT.inputMapReset.',
+            'Face buttons use BT.isDown(BTN_*, player). Remap at runtime with BT.inputMap / BT.inputMapReset.',
         );
 
         BT.systemPrint(new Vector2i(MARGIN_X, HEADER_PRESET_Y), C_ACCENT, this.presetLabel);
@@ -282,7 +282,7 @@ class Demo {
 
         for (let i = 0; i < row.length; i++) {
             const { label, code } = row[i];
-            const held = BT.buttonDown(code, player);
+            const held = BT.isDown(code, player);
             const pip = new Rect2i(cx, y, 8, 8);
 
             if (held) {

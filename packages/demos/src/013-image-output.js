@@ -78,7 +78,7 @@ class Demo {
             // that hint would end up baked into the saved PNG. We hide the hint to keep
             // captures tidy. The overlay still works on demand: press ` to show it and
             // ` again to hide it before you capture.
-            overlayToggleHintVisible: false,
+            isOverlayToggleHintVisible: false,
         };
     }
 

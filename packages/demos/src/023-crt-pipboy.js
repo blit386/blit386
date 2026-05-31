@@ -87,7 +87,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
 
@@ -302,16 +302,16 @@ class Demo {
             // stats overlay still opens: press the Backquote key (`) to toggle the
             // full dev HUD, press ` again to hide it. The hint is only hidden, not
             // disabled.
-            overlayToggleHintVisible: false,
+            isOverlayToggleHintVisible: false,
 
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_GREEN,
                 gapPaletteIndex: C_BG,
             },
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_GREEN,
                 renderBarPaletteIndex: C_AMBER,
@@ -348,9 +348,9 @@ class Demo {
         this.font.getSpriteSheet().indexize(palette);
 
         // Post-process (pixel + display tiers) needs WebGPU. Software mode skips this block.
-        this.postProcessAvailable = isPostProcessAvailable();
+        this.effectsAvailable = isAvailable();
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             this.bootStartTick = BT.ticks;
             return true;
         }
@@ -460,7 +460,7 @@ class Demo {
     }
 
     update() {
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             this._ticksSinceBoot = BT.ticks - this.bootStartTick;
             return;
         }
@@ -579,7 +579,7 @@ class Demo {
             this.renderBlinkingCursor();
         }
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             BT.systemPrint(new Vector2i(TEXT_LEFT, DISPLAY_H - 28), C_GREEN_DIM, SOFTWARE_FALLBACK_NOTE);
         }
     }

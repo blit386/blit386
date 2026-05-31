@@ -79,7 +79,7 @@ class Demo {
     // tilemap is an array of rows. tilemap[row][column] is one cell.
     // row 0 is the top of the world; column 0 is the left edge.
     // Think of it like a spreadsheet: first index is how far down, second is how far right.
-    tilemap = [];
+    map = [];
 
     // cameraPos is the top-left corner of the world (in pixels) that appears at the
     // top-left of the screen. When this moves right, the world seems to slide left.
@@ -104,16 +104,11 @@ class Demo {
 
     // #region IBlitTechDemo Implementation
 
-    /**
-     * Enables the timing chart while the camera scrolls across many tiles per frame.
-     *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
-     */
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_HUD_BAR,
                 textPaletteIndex: C_TEXT_DIM,
@@ -165,7 +160,7 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // Fill tilemap with a simple outdoor scene: sky, grass, dirt, trees, water, rocks.
-        this.buildLandscapeTilemap();
+        this.buildLandscape();
 
         console.log('[TilemapDemo] Initialized');
         return true;
@@ -237,9 +232,9 @@ class Demo {
      * Creates the 2D array and paints a simple slice of nature: sky, ground strip, trees,
      * a pond at the bottom, and a few stone patches in the water.
      */
-    buildLandscapeTilemap() {
+    buildLandscape() {
         // Start with a fresh empty array we will push rows into.
-        this.tilemap = [];
+        this.map = [];
 
         // Outer loop: each row is one horizontal line of tiles from left to right.
         for (let row = 0; row < MAP_HEIGHT_TILES; row++) {
@@ -252,47 +247,47 @@ class Demo {
             }
 
             // Attach the finished row to the map (rows stack from top to bottom).
-            this.tilemap.push(line);
+            this.map.push(line);
         }
 
         // Ground band: a few rows of grass and dirt in the middle-lower area.
         const grassRow = 9;
         for (let col = 0; col < MAP_WIDTH_TILES; col++) {
-            this.tilemap[grassRow][col] = TILE_GRASS;
-            this.tilemap[grassRow + 1][col] = TILE_DIRT;
-            this.tilemap[grassRow + 2][col] = TILE_DIRT;
+            this.map[grassRow][col] = TILE_GRASS;
+            this.map[grassRow + 1][col] = TILE_DIRT;
+            this.map[grassRow + 2][col] = TILE_DIRT;
         }
 
         // Small hills of dirt sticking up into the sky on the left and right.
         for (let col = 2; col < 8; col++) {
-            this.tilemap[grassRow - 1][col] = TILE_DIRT;
+            this.map[grassRow - 1][col] = TILE_DIRT;
         }
         for (let col = 22; col < 28; col++) {
-            this.tilemap[grassRow - 1][col] = TILE_DIRT;
+            this.map[grassRow - 1][col] = TILE_DIRT;
         }
 
         // Tree tops sit on top of grass like broccoli on a plate.
         const treeCols = [4, 5, 14, 15, 16, 25, 26];
         for (const col of treeCols) {
-            this.tilemap[grassRow - 1][col] = TILE_TREE_TOP;
-            this.tilemap[grassRow - 2][col] = TILE_TREE_TOP;
+            this.map[grassRow - 1][col] = TILE_TREE_TOP;
+            this.map[grassRow - 2][col] = TILE_TREE_TOP;
         }
         // Wider tree: two tiles side by side on the second canopy row only.
-        this.tilemap[grassRow - 2][6] = TILE_TREE_TOP;
-        this.tilemap[grassRow - 2][7] = TILE_TREE_TOP;
+        this.map[grassRow - 2][6] = TILE_TREE_TOP;
+        this.map[grassRow - 2][7] = TILE_TREE_TOP;
 
         // Lower area: more dirt, then water rows filling the bottom of the map.
         const waterTopRow = 14;
         for (let row = grassRow + 3; row < waterTopRow; row++) {
             for (let col = 0; col < MAP_WIDTH_TILES; col++) {
-                this.tilemap[row][col] = TILE_DIRT;
+                this.map[row][col] = TILE_DIRT;
             }
         }
 
         // Pond: water across the bottom rows.
         for (let row = waterTopRow; row < MAP_HEIGHT_TILES; row++) {
             for (let col = 0; col < MAP_WIDTH_TILES; col++) {
-                this.tilemap[row][col] = TILE_WATER;
+                this.map[row][col] = TILE_WATER;
             }
         }
 
@@ -310,12 +305,12 @@ class Demo {
             [19, 14],
         ];
         for (const [row, col] of stoneSpots) {
-            this.tilemap[row][col] = TILE_STONE;
+            this.map[row][col] = TILE_STONE;
         }
 
         // One stone tile peeking at the shoreline.
-        this.tilemap[waterTopRow - 1][10] = TILE_STONE;
-        this.tilemap[waterTopRow - 1][11] = TILE_STONE;
+        this.map[waterTopRow - 1][10] = TILE_STONE;
+        this.map[waterTopRow - 1][11] = TILE_STONE;
     }
 
     // #endregion
@@ -348,7 +343,7 @@ class Demo {
         for (let row = startRow; row <= endRow; row++) {
             for (let col = startCol; col <= endCol; col++) {
                 // Read which tile kind lives in this grid cell.
-                const id = this.tilemap[row][col];
+                const id = this.map[row][col];
 
                 // Sky tiles are invisible rectangles; the clear color already painted the sky.
                 if (id === TILE_SKY) {
@@ -419,7 +414,7 @@ class Demo {
         // Walk every tile in the entire world (the map is small, so this is cheap).
         for (let row = 0; row < MAP_HEIGHT_TILES; row++) {
             for (let col = 0; col < MAP_WIDTH_TILES; col++) {
-                const id = this.tilemap[row][col];
+                const id = this.map[row][col];
                 const px = mapX + col * scale;
                 const py = mapY + row * scale;
 

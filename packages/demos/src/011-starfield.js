@@ -42,9 +42,9 @@ const DISPLAY_W = 320;
 const DISPLAY_H = 240;
 
 // How many stars live in each layer. Far = many tiny dots; near = fewer, brighter blobs.
-const FAR_STAR_COUNT = 30;
-const MEDIUM_STAR_COUNT = 20;
-const NEAR_STAR_COUNT = 10;
+const FAR_COUNT = 30;
+const MEDIUM_COUNT = 20;
+const NEAR_COUNT = 10;
 
 // Near stars are drawn as a small solid square this many pixels wide and tall.
 const NEAR_STAR_SIZE = 2;
@@ -52,7 +52,7 @@ const NEAR_STAR_SIZE = 2;
 // Where in the palette we start registering individual star colors.
 // Each star gets its own slot so brightness variety is preserved exactly.
 // We have 30 + 20 + 10 = 60 stars, using slots 10..69.
-const STAR_SLOT_START = 10;
+const SLOT_START = 10;
 
 // Static color slots.
 const C_WHITE = 1; // White - font base color.
@@ -81,13 +81,13 @@ class Demo {
     // Three separate arrays. Each entry is a plain object:
     // { x, y, speed, paletteIndex }
     // paletteIndex is the slot number registered during init().
-    farStars = [];
-    mediumStars = [];
-    nearStars = [];
+    farLayer = [];
+    mediumLayer = [];
+    nearLayer = [];
 
     // Shooting star: not an array - only one at a time, or none.
     // When active is false, we ignore the numbers until we spawn again.
-    shootingStar = {
+    streak = {
         active: false,
         headX: 0,
         headY: 0,
@@ -106,11 +106,11 @@ class Demo {
     /**
      * Shows the timing chart while many stars move each frame (useful for spotting render spikes).
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_BG,
                 textPaletteIndex: C_TITLE,
@@ -156,30 +156,30 @@ class Demo {
         // Far stars: slow (0.3..0.5 pixels/tick), dim (80..120 brightness).
         // Medium stars: medium (0.8..1.2), brighter (150..200).
         // Near stars: fast (1.5..2.5), bright (220..255).
-        this.farStars = this.createStarLayerData(FAR_STAR_COUNT, 0.3, 0.5, 80, 120);
-        this.mediumStars = this.createStarLayerData(MEDIUM_STAR_COUNT, 0.8, 1.2, 150, 200);
-        this.nearStars = this.createStarLayerData(NEAR_STAR_COUNT, 1.5, 2.5, 220, 255);
+        this.farLayer = this.createLayerData(FAR_COUNT, 0.3, 0.5, 80, 120);
+        this.mediumLayer = this.createLayerData(MEDIUM_COUNT, 0.8, 1.2, 150, 200);
+        this.nearLayer = this.createLayerData(NEAR_COUNT, 1.5, 2.5, 220, 255);
 
         // Step 3: Register each star's color in the palette
         // We walk all three layers in one pass, giving each star its own slot number.
         // new Color32(b, b, b) makes a neutral gray: equal red, green, and blue.
-        let slot = STAR_SLOT_START;
+        let slot = SLOT_START;
 
-        for (const star of this.farStars) {
+        for (const star of this.farLayer) {
             const b = star.brightness;
             this.palette.set(slot, new Color32(b, b, b));
             star.paletteIndex = slot;
             slot++;
         }
 
-        for (const star of this.mediumStars) {
+        for (const star of this.mediumLayer) {
             const b = star.brightness;
             this.palette.set(slot, new Color32(b, b, b));
             star.paletteIndex = slot;
             slot++;
         }
 
-        for (const star of this.nearStars) {
+        for (const star of this.nearLayer) {
             const b = star.brightness;
             this.palette.set(slot, new Color32(b, b, b));
             star.paletteIndex = slot;
@@ -203,11 +203,11 @@ class Demo {
      */
     update() {
         // Move the three layers. wrapW is how wide the star is for "gone off the left?" checks.
-        this.moveStarLayer(this.farStars, 1);
-        this.moveStarLayer(this.mediumStars, 1);
-        this.moveStarLayer(this.nearStars, NEAR_STAR_SIZE);
+        this.moveLayer(this.farLayer, 1);
+        this.moveLayer(this.mediumLayer, 1);
+        this.moveLayer(this.nearLayer, NEAR_STAR_SIZE);
 
-        this.updateShootingStar();
+        this.updateStreak();
     }
 
     /**
@@ -219,10 +219,10 @@ class Demo {
         BT.clear(C_BG);
 
         // Draw back to front so near stars visually cover far ones, like real depth.
-        this.drawFarStars();
-        this.drawMediumStars();
-        this.drawNearStars();
-        this.drawShootingStar();
+        this.drawFar();
+        this.drawMedium();
+        this.drawNear();
+        this.drawStreak();
         this.drawLabels();
     }
 
@@ -244,7 +244,7 @@ class Demo {
      * @param {number} brightMax
      * @returns {Array<{x: number, y: number, speed: number, brightness: number, paletteIndex: number}>}
      */
-    createStarLayerData(count, speedMin, speedMax, brightMin, brightMax) {
+    createLayerData(count, speedMin, speedMax, brightMin, brightMax) {
         const layer = [];
 
         for (let i = 0; i < count; i++) {
@@ -271,7 +271,7 @@ class Demo {
      * @param {Array<{x: number, y: number, speed: number, brightness: number, paletteIndex: number}>} layer
      * @param {number} wrapW how many pixels wide the drawable star occupies (for wrapping)
      */
-    moveStarLayer(layer, wrapW) {
+    moveLayer(layer, wrapW) {
         for (let i = 0; i < layer.length; i++) {
             const star = layer[i];
 
@@ -294,17 +294,17 @@ class Demo {
     /**
      * Maybe start a new streak, or move the current one until it leaves the screen.
      */
-    updateShootingStar() {
-        if (this.shootingStar.active) {
+    updateStreak() {
+        if (this.streak.active) {
             // Very fast compared to normal stars - several pixels per tick.
-            this.shootingStar.headX -= 14;
+            this.streak.headX -= 14;
 
             // A gentle downward drift sells the "falling" look.
-            this.shootingStar.headY += 0.7;
+            this.streak.headY += 0.7;
 
             // Once the head is well past the left edge, turn it off and reset the timer.
-            if (this.shootingStar.headX < -24) {
-                this.shootingStar.active = false;
+            if (this.streak.headX < -24) {
+                this.streak.active = false;
                 this.ticksSinceShoot = 0;
                 this.nextShootDelay = 180 + Math.floor(Math.random() * 60);
             }
@@ -316,7 +316,7 @@ class Demo {
         this.ticksSinceShoot += 1;
 
         if (this.ticksSinceShoot >= this.nextShootDelay) {
-            this.spawnShootingStar();
+            this.spawnStreak();
             this.ticksSinceShoot = 0;
         }
     }
@@ -324,25 +324,25 @@ class Demo {
     /**
      * Place a new streak just beyond the right edge so it flies across the sky.
      */
-    spawnShootingStar() {
-        this.shootingStar.active = true;
+    spawnStreak() {
+        this.streak.active = true;
         // Start slightly off-screen to the right so it enters smoothly.
-        this.shootingStar.headX = DISPLAY_W + 10 + Math.random() * 60;
+        this.streak.headX = DISPLAY_W + 10 + Math.random() * 60;
         // Keep it in the upper half so it reads as "sky" above the labels.
-        this.shootingStar.headY = 16 + Math.random() * (DISPLAY_H * 0.45);
+        this.streak.headY = 16 + Math.random() * (DISPLAY_H * 0.45);
     }
 
     /**
      * Draw a short bright line: tail behind the head along the motion direction.
      * Uses the static C_STREAK palette slot registered in init().
      */
-    drawShootingStar() {
-        if (!this.shootingStar.active) {
+    drawStreak() {
+        if (!this.streak.active) {
             return;
         }
 
-        const hx = Math.floor(this.shootingStar.headX);
-        const hy = Math.floor(this.shootingStar.headY);
+        const hx = Math.floor(this.streak.headX);
+        const hy = Math.floor(this.streak.headY);
 
         // Tail sits to the right and a little up because we move left and down each tick.
         const tailX = hx + 14;
@@ -360,9 +360,9 @@ class Demo {
      * Farthest layer: one pixel per star (BT.drawPixel), dim gray range.
      * Each star's paletteIndex was set in init() to point at its unique gray shade.
      */
-    drawFarStars() {
-        for (let i = 0; i < this.farStars.length; i++) {
-            const star = this.farStars[i];
+    drawFar() {
+        for (let i = 0; i < this.farLayer.length; i++) {
+            const star = this.farLayer[i];
             BT.drawPixel(new Vector2i(Math.floor(star.x), Math.floor(star.y)), star.paletteIndex);
         }
     }
@@ -370,9 +370,9 @@ class Demo {
     /**
      * Middle layer: still single pixels, but brighter.
      */
-    drawMediumStars() {
-        for (let i = 0; i < this.mediumStars.length; i++) {
-            const star = this.mediumStars[i];
+    drawMedium() {
+        for (let i = 0; i < this.mediumLayer.length; i++) {
+            const star = this.mediumLayer[i];
             BT.drawPixel(new Vector2i(Math.floor(star.x), Math.floor(star.y)), star.paletteIndex);
         }
     }
@@ -380,9 +380,9 @@ class Demo {
     /**
      * Closest layer: filled rectangle (NEAR_STAR_SIZE x NEAR_STAR_SIZE) so stars look bigger.
      */
-    drawNearStars() {
-        for (let i = 0; i < this.nearStars.length; i++) {
-            const star = this.nearStars[i];
+    drawNear() {
+        for (let i = 0; i < this.nearLayer.length; i++) {
+            const star = this.nearLayer[i];
             const px = Math.floor(star.x);
             const py = Math.floor(star.y);
 

@@ -18,11 +18,11 @@
 // are tracked at once; a fourth simultaneous touch is dropped silently.
 //
 // What this demonstrates:
-//   - BT.buttonPressed() / BT.buttonReleased() for stroke begin / end events
-//   - BT.pointerPosValid(slot) / BT.pointerPos(slot) for per-slot positions
-//   - lastPosX / lastPosY per-slot tracking: stamps the brush along the full
-//     line segment from the previous frame's position to the current one so
-//     fast strokes look continuous instead of dotted
+//   - BT.isPressed() for one-shot mouse actions (clear canvas, cycle brush size)
+//   - BT.isDown(BT.BTN_POINTER_A) while BT.isPointerActive(0) for mouse painting
+//   - BT.isPointerActive(slot) / BT.pointerPos(slot) for per-slot touch painting
+//   - lastPosX / lastPosY per-slot stamping: draws from the previous frame's
+//     position to the current one so fast strokes look continuous instead of dotted
 //
 // The painting happens on an offscreen palette layer (a 2D array of palette
 // indices) so brush strokes persist across frames even though render() clears
@@ -67,7 +67,7 @@ const BRUSH_SIZES = [0, 2, 4];
  * The "canvas" we paint onto is a flat array of palette indices, one entry per
  * display pixel. Each frame, render() copies that array onto the screen with
  * BT.drawPixel() so strokes persist between frames. Stroke input comes from
- * checking BT.pointerPosValid() / BT.buttonDown() / BT.pointerDelta() on each
+ * checking BT.isPointerActive() / BT.isDown() / BT.pointerPos() on each
  * of the four slots in update().
  *
  * @implements {IBlitTechDemo}
@@ -79,7 +79,7 @@ class Demo {
 
     // Painting layer: one palette index per display pixel. 0 means "blank"
     // (the background colour shows through). Length = DISPLAY_W * DISPLAY_H.
-    paintLayer = null;
+    layer = null;
 
     // Index into BRUSH_SIZES; cycled by middle-click on the mouse.
     brushIndex = 1;
@@ -102,13 +102,13 @@ class Demo {
     /**
      * Finger painting can spike render() when strokes are long; the chart makes that visible.
      *
-     * @returns {{ overlayTimingChart: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
      */
     configure() {
         return {
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
-            overlayRendererDiagnosticsBar: true,
+            isOverlayRendererDiagnosticsBarEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_PANEL,
                 textPaletteIndex: C_TEXT,
@@ -154,33 +154,33 @@ class Demo {
 
         // Allocate the paint layer. `fill(0)` makes every pixel start blank
         // (transparent) so the background colour shows through.
-        this.paintLayer = new Uint8Array(DISPLAY_W * DISPLAY_H);
+        this.layer = new Uint8Array(DISPLAY_W * DISPLAY_H);
         return true;
     }
 
     /**
-     * Per-tick: read input from each slot and write strokes into paintLayer.
+     * Per-tick: read input from each slot and write strokes into layer.
      */
     update() {
         // Mouse-only controls: B clears the canvas, C cycles the brush size.
-        // We use buttonPressed (edge) so a single click triggers exactly once.
-        if (BT.buttonPressed(BT.BTN_POINTER_B, 0)) {
-            this.paintLayer.fill(0);
+        // We use isPressed (edge) so a single click triggers exactly once.
+        if (BT.isPressed(BT.BTN_POINTER_B, 0)) {
+            this.layer.fill(0);
         }
 
-        if (BT.buttonPressed(BT.BTN_POINTER_C, 0)) {
+        if (BT.isPressed(BT.BTN_POINTER_C, 0)) {
             this.brushIndex = (this.brushIndex + 1) % BRUSH_SIZES.length;
         }
 
         // Walk the four slots. Slot 0 paints while BTN_POINTER_A is held;
         // slots 1-3 paint while their touch is in contact (slot is valid).
         for (let slot = 0; slot < 4; slot++) {
-            const valid = BT.pointerPosValid(slot);
+            const valid = BT.isPointerActive(slot);
 
             // For slot 0 (mouse) painting is gated on the left button. For
             // touch slots there is only one button (A); the mere presence of
             // a contact is enough.
-            const wantPaint = slot === 0 ? BT.buttonDown(BT.BTN_POINTER_A, 0) && valid : valid;
+            const wantPaint = slot === 0 ? BT.isDown(BT.BTN_POINTER_A, 0) && valid : valid;
 
             if (wantPaint) {
                 const pos = BT.pointerPos(slot);
@@ -211,7 +211,7 @@ class Demo {
     render() {
         BT.clear(C_BG);
 
-        this.renderPaintLayer();
+        this.renderLayer();
         this.renderCursors();
         this.renderHUD();
     }
@@ -263,13 +263,13 @@ class Demo {
     }
 
     /**
-     * Writes a palette index into paintLayer, ignoring out-of-bounds writes.
+     * Writes a palette index into layer, ignoring out-of-bounds writes.
      */
     setPixel(x, y, colour) {
         if (x < 0 || x >= DISPLAY_W || y < 0 || y >= DISPLAY_H) {
             return;
         }
-        this.paintLayer[y * DISPLAY_W + x] = colour;
+        this.layer[y * DISPLAY_W + x] = colour;
     }
 
     // #endregion
@@ -280,11 +280,11 @@ class Demo {
      * Copies the persistent paint layer onto the screen. Pixels with palette
      * index 0 are skipped so the background colour shows through.
      */
-    renderPaintLayer() {
+    renderLayer() {
         for (let y = 0; y < DISPLAY_H; y++) {
             const row = y * DISPLAY_W;
             for (let x = 0; x < DISPLAY_W; x++) {
-                const c = this.paintLayer[row + x];
+                const c = this.layer[row + x];
                 if (c !== 0) {
                     BT.drawPixel(new Vector2i(x, y), c);
                 }
@@ -298,7 +298,7 @@ class Demo {
      */
     renderCursors() {
         for (let slot = 0; slot < 4; slot++) {
-            if (!BT.pointerPosValid(slot)) {
+            if (!BT.isPointerActive(slot)) {
                 continue;
             }
 
@@ -323,7 +323,7 @@ class Demo {
         // Per-slot active indicators across the bottom row.
         for (let slot = 0; slot < 4; slot++) {
             const x = 4 + slot * 78;
-            const valid = BT.pointerPosValid(slot);
+            const valid = BT.isPointerActive(slot);
             const label = ['Mouse', 'Touch 1', 'Touch 2', 'Touch 3'][slot];
 
             BT.drawRectFill(new Rect2i(x, panelY + 4, 8, 8), valid ? SLOT_PAINT[slot] : C_PANEL_BORDER);

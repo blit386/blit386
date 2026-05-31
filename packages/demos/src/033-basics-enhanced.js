@@ -49,7 +49,7 @@ import {
     Vignette,
 } from 'blit-tech';
 
-import { isPostProcessAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
 // #endregion
 
@@ -168,7 +168,7 @@ class Demo {
     glitchType = 'none';
     glitchPeak = 0;
 
-    postProcessAvailable = false;
+    effectsAvailable = false;
 
     overlayRowData = [
         { leftText: 'Position: 0, 0', textPaletteIndex: C_OVERLAY_GREEN },
@@ -186,10 +186,10 @@ class Demo {
             maxCanvasSize: new Vector2i(320 * 4, 240 * 4),
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
-            detectDroppedFrames: true,
+            isDetectingDroppedFrames: true,
             // Opt in to the engine timing chart band (update vs render CPU bars above the FPS row).
             // Bar colors default to overlayStyle; we set explicit indices so they match this palette.
-            overlayTimingChart: true,
+            isOverlayTimingChartEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_GREEN,
@@ -228,9 +228,9 @@ class Demo {
             Math.floor(BT.displaySize.y / 2 - this.size.y / 2),
         );
 
-        this.postProcessAvailable = isPostProcessAvailable();
+        this.effectsAvailable = isAvailable();
 
-        if (!this.postProcessAvailable) {
+        if (!this.effectsAvailable) {
             this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             this.glitchActive = 0;
             this.glitchDuration = 0;
@@ -317,7 +317,7 @@ class Demo {
             this.bounces++;
         }
 
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             const seconds = BT.timeSeconds;
             this.rollLine.time = seconds;
             this.noise.time = seconds;
@@ -358,7 +358,7 @@ class Demo {
         this.overlayRowData[0].leftText = `Position: ${this.pos.x}, ${this.pos.y}`;
         this.overlayRowData[1].leftText = `Bounces: ${this.bounces}`;
 
-        if (this.postProcessAvailable) {
+        if (this.effectsAvailable) {
             this.overlayRowData[2].leftText = 'CRT stack: ON';
             const glitchLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
             const glitchValue = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
