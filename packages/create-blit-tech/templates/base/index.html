@@ -1,0 +1,65 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{projectName}}</title>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                margin: 0;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            body {
+                background: black;
+            }
+
+            #canvas-container {
+                width: 100dvw;
+                height: 100dvh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /*
+             * Scale the pixel canvas up to fill the window while keeping its aspect ratio and staying crisp.
+             * The engine sets the --canvas-* custom properties; the fallbacks here keep things sensible if it does not.
+             */
+            #canvas-container canvas {
+                display: block;
+                image-rendering: pixelated;
+                width: min(
+                    100dvw,
+                    calc(100dvh * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
+                    var(--canvas-max-w, 1280px)
+                );
+                height: min(
+                    100dvh,
+                    calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
+                    var(--canvas-max-h, 960px)
+                );
+            }
+
+            @supports (image-rendering: crisp-edges) {
+                #canvas-container canvas {
+                    image-rendering: crisp-edges;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <div id="canvas-container"><canvas id="blit-tech-canvas"></canvas></div>
+        <script type="module" src="/src/game.js"></script>
+    </body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "name": "@blit-tech/kit",
+  "version": "0.1.0",
+  "description": "Canonical Blit-Tech AI docs (AGENTS.md + local docs) and the blit project CLI.",
+  "author": "Václav Vančura",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "bin": {
+    "blit": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "content"
+  ],
+  "keywords": [
+    "blit-tech",
+    "cli",
+    "scaffold",
+    "agents",
+    "game-engine"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}

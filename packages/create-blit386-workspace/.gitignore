@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output (rebuilt on publish via each package's prepack; shipped via the "files" allowlist)
+dist/
+*.tsbuildinfo
+
+# Package-manager caches
+.pnpm-store/
+
+# Local env and secrets
+.env
+.env.*
+
+# Editors
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+
+# Logs and scratch
+*.log
+.tmp/

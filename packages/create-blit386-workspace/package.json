@@ -1,0 +1,33 @@
+{
+  "name": "create-blit-tech-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Monorepo for the Blit-Tech scaffolder (create-blit-tech) and kit (@blit-tech/kit).",
+  "author": "Václav Vančura",
+  "license": "ISC",
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
+    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
+    "preflight": "pnpm run format:check && pnpm run typecheck && pnpm run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "prettier": "^3.8.3",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}

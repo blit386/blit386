@@ -1,0 +1,40 @@
+{
+  "name": "create-blit-tech",
+  "version": "0.1.0",
+  "description": "Scaffold a new Blit-Tech game in seconds.",
+  "author": "Václav Vančura",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "bin": {
+    "create-blit-tech": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "keywords": [
+    "blit-tech",
+    "create",
+    "scaffold",
+    "game-engine",
+    "pixel-art",
+    "webgpu"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@blit-tech/kit": "workspace:*",
+    "@clack/prompts": "^0.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}
