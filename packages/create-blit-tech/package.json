@@ -26,7 +26,8 @@
   "scripts": {
     "build": "tsup",
     "prepack": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'test/**/*.test.mjs'"
   },
   "dependencies": {
     "@blit-tech/kit": "workspace:*",

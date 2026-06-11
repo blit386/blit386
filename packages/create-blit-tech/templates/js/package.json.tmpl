@@ -9,12 +9,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "biome format --write .",
+    "format:check": "biome check .",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
   },
   "dependencies": {
     "blit-tech": "{{blitTechVersion}}"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
     "@blit-tech/kit": "{{kitVersion}}",
     "vite": "^8.0.0"
   }

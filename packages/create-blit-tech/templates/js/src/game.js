@@ -33,14 +33,14 @@ class Game {
     // How big the screen is. We read the real size in init().
     screen = new Vector2i(320, 240);
 
-    // The paddle's top-left corner.
-    paddleX = 0;
-    paddleY = 0;
+    // The paddle's initial position.
+    paddlePos = new Vector2i(0, 0);
 
     // The blocks falling right now. Each one is a Vector2i holding its top-left corner.
     /** @type {Vector2i[]} */
     items = [];
 
+    // The player's score and lives.
     score = 0;
     lives = STARTING_LIVES;
 
@@ -51,10 +51,12 @@ class Game {
         // Make a palette (a numbered set of colors) and choose four colors.
         // Color32(red, green, blue) - each value goes from 0 (none) to 255 (full).
         const palette = BT.paletteCreate(16);
+
         palette.set(COLOR_BACKGROUND, new Color32(18, 22, 40)); // dark blue
         palette.set(COLOR_PADDLE, new Color32(90, 200, 160)); // teal
         palette.set(COLOR_ITEM, new Color32(240, 180, 70)); // warm yellow
         palette.set(COLOR_TEXT, new Color32(235, 240, 255)); // near white
+
         BT.paletteSet(palette);
 
         // Put the paddle in the middle, near the bottom.
@@ -67,8 +69,9 @@ class Game {
     update() {
         // Move the paddle while the left or right arrow is held (Space and a gamepad work too).
         if (BT.isDown(BT.BTN_LEFT, 0)) {
-            this.paddleX -= PADDLE_SPEED;
+            this.paddlePos.X -= PADDLE_SPEED;
         }
+
         if (BT.isDown(BT.BTN_RIGHT, 0)) {
             this.paddleX += PADDLE_SPEED;
         }

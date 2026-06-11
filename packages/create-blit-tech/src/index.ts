@@ -13,7 +13,7 @@ import { cancel, intro, isCancel, log, note, outro, text } from '@clack/prompts'
 
 import { detectPackageManager, pmHints } from './pkgManager';
 import { scaffold } from './scaffold';
-import { runWizard } from './wizard';
+import { defaultWizardOptions, runWizard } from './wizard';
 
 function tryGitInit(dir: string): boolean {
     try {
@@ -78,13 +78,18 @@ async function main(): Promise<void> {
         process.exit(1);
     }
 
-    if (!yes) {
-        await runWizard();
-    }
+    const wizardOptions = yes ? defaultWizardOptions() : await runWizard();
 
     const pm = pmHints(detectPackageManager());
 
-    scaffold({ targetDir, projectName, pmInstall: pm.installCmd, pmRunDev: pm.runDevCmd });
+    scaffold({
+        targetDir,
+        projectName,
+        pmInstall: pm.installCmd,
+        pmRunDev: pm.runDevCmd,
+        includeCi: wizardOptions.includeCi,
+        agent: wizardOptions.agent,
+    });
     log.success(`Created ${projectName} (JavaScript)`);
 
     if (!noGit && tryGitInit(targetDir)) {
