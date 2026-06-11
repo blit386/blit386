@@ -85,6 +85,9 @@ test('scaffold copies optional CI and agent files when requested', () => {
             projectName: 'optional-game',
             pmInstall: 'pnpm install',
             pmRunDev: 'pnpm run dev',
+            pmRunBuild: 'pnpm run build',
+            pmRunFormat: 'pnpm run format',
+            pmRunLint: 'pnpm run lint',
             includeCi: true,
             agent: 'claude',
         });
@@ -99,6 +102,9 @@ test('scaffold copies optional CI and agent files when requested', () => {
             projectName: 'cursor-game',
             pmInstall: 'pnpm install',
             pmRunDev: 'pnpm run dev',
+            pmRunBuild: 'pnpm run build',
+            pmRunFormat: 'pnpm run format',
+            pmRunLint: 'pnpm run lint',
             includeCi: false,
             agent: 'cursor',
         });

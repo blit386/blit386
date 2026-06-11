@@ -87,6 +87,9 @@ async function main(): Promise<void> {
         projectName,
         pmInstall: pm.installCmd,
         pmRunDev: pm.runDevCmd,
+        pmRunBuild: pm.runBuildCmd,
+        pmRunFormat: pm.runFormatCmd,
+        pmRunLint: pm.runLintCmd,
         includeCi: wizardOptions.includeCi,
         agent: wizardOptions.agent,
     });

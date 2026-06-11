@@ -25,6 +25,9 @@ export interface ScaffoldOptions {
     projectName: string;
     pmInstall: string;
     pmRunDev: string;
+    pmRunBuild: string;
+    pmRunFormat: string;
+    pmRunLint: string;
     includeCi?: boolean;
     agent?: AgentChoice;
 }
@@ -107,6 +110,9 @@ export function scaffold(options: ScaffoldOptions): void {
         kitVersion: kitVersionRange(),
         pmInstall: options.pmInstall,
         pmRunDev: options.pmRunDev,
+        pmRunBuild: options.pmRunBuild,
+        pmRunFormat: options.pmRunFormat,
+        pmRunLint: options.pmRunLint,
     };
 
     const templates = templatesDir();

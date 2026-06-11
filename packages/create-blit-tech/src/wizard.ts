@@ -58,7 +58,7 @@ export async function runWizard(): Promise<WizardOptions> {
 
     return {
         agent: agent as AgentChoice,
-        includeCi: includeCi === true,
+        includeCi,
     };
 }
 
