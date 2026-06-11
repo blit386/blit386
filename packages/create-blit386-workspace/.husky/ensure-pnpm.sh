@@ -4,8 +4,10 @@
 # This handles nvm, fnm, volta, and other version managers
 
 if [ -z "$(command -v pnpm)" ]; then
-    if [ -s "$HOME/.nvm/nvm.sh" ]; then
-        . "$HOME/.nvm/nvm.sh"
+    if [ -n "$BASH_VERSION" ] || [ -n "$ZSH_VERSION" ]; then
+        if [ -s "$HOME/.nvm/nvm.sh" ]; then
+            . "$HOME/.nvm/nvm.sh"
+        fi
     fi
 
     if [ -d "$HOME/.local/share/fnm" ]; then

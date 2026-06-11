@@ -26,7 +26,7 @@ pnpm install
 pnpm run build        # build both packages with tsup
 pnpm run typecheck    # tsc --noEmit per package
 pnpm run test         # scaffolder smoke test (needs a build first)
-pnpm run preflight    # format:check + typecheck + build + test
+pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + build + test
 ```
 
 CI (`.github/workflows/ci.yml`) runs the same checks on every push and pull request to `main`.
