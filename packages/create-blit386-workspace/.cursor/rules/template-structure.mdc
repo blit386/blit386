@@ -1,0 +1,15 @@
+---
+description: Template and scaffold file layout conventions
+globs: packages/create-blit-tech/templates/**/*
+alwaysApply: false
+---
+
+# Scaffold template structure
+
+- **`templates/base/`** — language-agnostic files (HTML, Vite config, README, `.editorconfig`, `biome.json`).
+- **`templates/js/`** — JavaScript layer (`package.json.tmpl`, `jsconfig.json`, `src/game.js`).
+- **`templates/optional/`** — wizard opt-in extras (CI, Cursor rules, Claude guide).
+- Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
+- Rename `gitignore` → `.gitignore` and strip `.tmpl` extensions during scaffold copy.
+- Generated games ship beginner-friendly comments; explain what and why, not just restate code.
+- Do not add ESLint, Husky, cspell, or knip to generated projects unless explicitly requested in a future phase.
