@@ -25,8 +25,11 @@ The scaffolder auto-detects whichever package manager you used (`npm`, `pnpm`, `
 pnpm install
 pnpm run build        # build both packages with tsup
 pnpm run typecheck    # tsc --noEmit per package
-pnpm run preflight    # format:check + typecheck + build
+pnpm run test         # scaffolder smoke test (needs a build first)
+pnpm run preflight    # format:check + typecheck + build + test
 ```
+
+CI (`.github/workflows/ci.yml`) runs the same checks on every push and pull request to `main`.
 
 ## Status
 
