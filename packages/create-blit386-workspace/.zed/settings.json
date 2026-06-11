@@ -1,0 +1,61 @@
+{
+  "agent": {
+    "tool_permissions": {
+      "tools": {
+        "edit_file": {
+          "always_deny": [
+            { "pattern": "pnpm-lock\\.yaml$" },
+            { "pattern": "\\.lock$" },
+            { "pattern": "\\.env(\\..*)?$" }
+          ]
+        },
+        "write_file": {
+          "always_deny": [
+            { "pattern": "pnpm-lock\\.yaml$" },
+            { "pattern": "\\.lock$" },
+            { "pattern": "\\.env(\\..*)?$" }
+          ]
+        },
+        "terminal": {
+          "default": "allow",
+          "always_allow": [
+            { "pattern": "^pnpm\\s+" },
+            { "pattern": "^npx\\s+" },
+            { "pattern": "^node\\s+" },
+            { "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$" }
+          ],
+          "always_confirm": [
+            { "pattern": "^git\\s+(push|tag|release)" },
+            { "pattern": "^gh\\s+" },
+            { "pattern": "rm\\s+-rf" },
+            { "pattern": "sudo\\s+" }
+          ]
+        }
+      }
+    }
+  },
+  "languages": {
+    "TypeScript": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.fixAll.biome": true },
+      "format_on_save": "on"
+    },
+    "JavaScript": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.fixAll.biome": true },
+      "format_on_save": "on"
+    },
+    "JSON": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "format_on_save": "on"
+    },
+    "Markdown": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+    "YAML": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    }
+  }
+}
