@@ -28,11 +28,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then cd \"$CLAUDE_PROJECT_DIR\" && npx biome check --write \"$FILE\" 2>/dev/null; npx prettier --write \"$FILE\" 2>/dev/null; fi; true"
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then cd \"$CLAUDE_PROJECT_DIR\" && if echo \"$FILE\" | grep -qE '\\.(ts|tsx|js|cjs|mjs|json|jsonc)$'; then pnpm exec biome check --write \"$FILE\" 2>/dev/null; elif echo \"$FILE\" | grep -qE '\\.(md|mdx|mdc|yml|yaml)$'; then pnpm exec prettier --write \"$FILE\" 2>/dev/null; fi; fi; true"
           },
           {
             "type": "command",
-            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(ts|tsx|js|md|mdx)$'; then cd \"$CLAUDE_PROJECT_DIR\" && RESULT=$(npx cspell --no-progress \"$FILE\" 2>&1); if [ $? -ne 0 ]; then echo \"[SPELLCHECK] Errors found in $FILE:\"; echo \"$RESULT\"; echo \"Fix typos in the source code, or add legitimate technical terms to cspell.json in the words array.\"; fi; fi; true"
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ] && echo \"$FILE\" | grep -qE '\\.(ts|tsx|js|md|mdx)$'; then cd \"$CLAUDE_PROJECT_DIR\" && RESULT=$(pnpm exec cspell --no-progress \"$FILE\" 2>&1); if [ $? -ne 0 ]; then echo \"[SPELLCHECK] Errors found in $FILE:\"; echo \"$RESULT\"; echo \"Fix typos in the source code, or add legitimate technical terms to cspell.json in the words array.\"; fi; fi; true"
           }
         ]
       }
