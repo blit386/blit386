@@ -18,6 +18,10 @@ const require = createRequire(import.meta.url);
 /** blit-tech version range written into the generated package.json. */
 const BLIT_TECH_RANGE = '^1.1.1';
 
+/** Output directory names for optional wizard templates. */
+const GITHUB_DIR = '.github';
+const CURSOR_DIR = '.cursor';
+
 export type AgentChoice = 'none' | 'claude' | 'cursor';
 
 export interface ScaffoldOptions {
@@ -66,10 +70,10 @@ function mapOutputName(name: string): string {
         return '.editorconfig';
     }
     if (name === 'dot-cursor') {
-        return '.cursor';
+        return CURSOR_DIR;
     }
     if (name === 'dot-github') {
-        return '.github';
+        return GITHUB_DIR;
     }
     return stripTmpl(name);
 }
@@ -120,11 +124,15 @@ export function scaffold(options: ScaffoldOptions): void {
     copyTemplateTree(join(templates, 'js'), options.targetDir, vars);
 
     if (options.includeCi) {
-        copyTemplateTree(join(templates, 'optional', 'ci', 'github'), join(options.targetDir, '.github'), vars);
+        copyTemplateTree(join(templates, 'optional', 'ci', 'github'), join(options.targetDir, GITHUB_DIR), vars);
     }
 
     if (options.agent === 'cursor') {
-        copyTemplateTree(join(templates, 'optional', 'cursor', 'dot-cursor'), join(options.targetDir, '.cursor'), vars);
+        copyTemplateTree(
+            join(templates, 'optional', 'cursor', 'dot-cursor'),
+            join(options.targetDir, CURSOR_DIR),
+            vars,
+        );
     }
 
     if (options.agent === 'claude') {

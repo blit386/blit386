@@ -66,6 +66,7 @@ test('scaffolds a runnable game project', () => {
         assert.ok(manifest.devDependencies?.['@biomejs/biome'], '@biomejs/biome devDependency is missing');
         assert.ok(manifest.scripts?.format, 'format script is missing');
         assert.ok(manifest.scripts?.lint, 'lint script is missing');
+        assert.ok(manifest.scripts?.build, 'build script is missing');
 
         const game = readFileSync(join(project, 'src', 'game.js'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.js is missing the bootstrap call');
@@ -80,14 +81,17 @@ test('scaffold copies optional CI and agent files when requested', () => {
 
     try {
         const project = join(work, 'optional-game');
+        const pmRunBuild = 'pnpm run build';
+        const pmRunFormat = 'pnpm run format';
+        const pmRunLint = 'pnpm run lint';
         scaffold({
             targetDir: project,
             projectName: 'optional-game',
             pmInstall: 'pnpm install',
             pmRunDev: 'pnpm run dev',
-            pmRunBuild: 'pnpm run build',
-            pmRunFormat: 'pnpm run format',
-            pmRunLint: 'pnpm run lint',
+            pmRunBuild,
+            pmRunFormat,
+            pmRunLint,
             includeCi: true,
             agent: 'claude',
         });
@@ -95,6 +99,14 @@ test('scaffold copies optional CI and agent files when requested', () => {
         assert.ok(existsSync(join(project, '.github', 'workflows', 'ci.yml')), 'CI workflow should be generated');
         assert.ok(existsSync(join(project, 'CLAUDE.md')), 'CLAUDE.md should be generated for Claude agent choice');
         assertNoPlaceholders(project, 'CLAUDE.md');
+
+        const claudeGuide = readFileSync(join(project, 'CLAUDE.md'), 'utf8');
+        assert.ok(claudeGuide.includes(pmRunBuild), 'CLAUDE.md should include the build command');
+        assert.ok(claudeGuide.includes(pmRunFormat), 'CLAUDE.md should include the format command');
+        assert.ok(claudeGuide.includes(pmRunLint), 'CLAUDE.md should include the lint command');
+        assert.ok(!claudeGuide.includes('{{pmRunBuild}}'), 'CLAUDE.md should not contain pmRunBuild placeholder');
+        assert.ok(!claudeGuide.includes('{{pmRunFormat}}'), 'CLAUDE.md should not contain pmRunFormat placeholder');
+        assert.ok(!claudeGuide.includes('{{pmRunLint}}'), 'CLAUDE.md should not contain pmRunLint placeholder');
 
         const cursorProject = join(work, 'cursor-game');
         scaffold({
