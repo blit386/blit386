@@ -1,0 +1,111 @@
+name: DCO Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  dco:
+    name: Developer Certificate of Origin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Check DCO for Pull Request
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Checking DCO for pull request..."
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          COMMITS=$(git log --format="%H" "${BASE_SHA}..${HEAD_SHA}")
+
+          if [ -z "$COMMITS" ]; then
+            echo "No commits to check"
+            exit 0
+          fi
+
+          FAILED=0
+          echo "Checking commits:"
+          for commit in $COMMITS; do
+            SUBJECT=$(git log --format=%s -n 1 "$commit")
+            PARENT_COUNT=$(git log --format=%P -n 1 "$commit" | wc -w)
+            if [ "$PARENT_COUNT" -gt 1 ]; then
+              echo "[SKIP] $commit: $SUBJECT (merge commit)"
+              continue
+            fi
+
+            if git log --format=%B -n 1 "$commit" | grep -q "^Signed-off-by: "; then
+              echo "[PASS] $commit: $SUBJECT"
+            else
+              echo "[FAIL] $commit: $SUBJECT (missing DCO sign-off)"
+              FAILED=1
+            fi
+          done
+
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "All commits must be signed off. Use: git commit -s -m \"message\""
+            echo "See CONTRIBUTING.md for details."
+            exit 1
+          fi
+
+          echo ""
+          echo "[PASS] All commits are properly signed off"
+
+      - name: Check DCO for Push
+        if: github.event_name == 'push'
+        run: |
+          echo "Checking DCO for push event..."
+
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            COMMITS=$(git log --format="%H" "$AFTER" --not --remotes=origin)
+          else
+            COMMITS=$(git log --format="%H" "${BEFORE}..${AFTER}")
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            echo "No commits to check"
+            exit 0
+          fi
+
+          FAILED=0
+          echo "Checking commits:"
+          for commit in $COMMITS; do
+            SUBJECT=$(git log --format=%s -n 1 "$commit")
+            PARENT_COUNT=$(git log --format=%P -n 1 "$commit" | wc -w)
+            if [ "$PARENT_COUNT" -gt 1 ]; then
+              echo "[SKIP] $commit: $SUBJECT (merge commit)"
+              continue
+            fi
+
+            if git log --format=%B -n 1 "$commit" | grep -q "^Signed-off-by: "; then
+              echo "[PASS] $commit: $SUBJECT"
+            else
+              echo "[FAIL] $commit: $SUBJECT (missing DCO sign-off)"
+              FAILED=1
+            fi
+          done
+
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "All commits must be signed off. Use: git commit -s -m \"message\""
+            echo "See CONTRIBUTING.md for details."
+            exit 1
+          fi
+
+          echo ""
+          echo "[PASS] All commits are properly signed off"
