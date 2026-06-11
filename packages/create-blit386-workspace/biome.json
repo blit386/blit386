@@ -13,6 +13,7 @@
       "packages/*/*.json",
       "packages/*/*.mjs",
       "scripts/**/*.mjs",
+      ".claude/**/*.json",
       "*.json",
       "*.js",
       "commitlint.config.js"
