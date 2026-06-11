@@ -1,0 +1,30 @@
+#!/bin/sh
+
+. "$(dirname "$0")/ensure-pnpm.sh"
+
+echo "Running pre-push checks..."
+echo ""
+
+echo "[1/3] Type checking..."
+pnpm typecheck || {
+    echo ""
+    echo "[FAIL] Type errors found. Please fix them before pushing."
+    exit 1
+}
+
+echo "[2/3] Linting..."
+pnpm lint || {
+    echo ""
+    echo "[FAIL] Lint issues found. Run 'pnpm lint:fix' to fix them."
+    exit 1
+}
+
+echo "[3/3] Documentation links..."
+pnpm run docs:links || {
+    echo ""
+    echo "[FAIL] Dead markdown links found. Run 'pnpm run docs:links' for details."
+    exit 1
+}
+
+echo ""
+echo "Pre-push checks passed! Ready to push."

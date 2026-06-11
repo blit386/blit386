@@ -7,7 +7,16 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["packages/*/src/**/*.ts", "packages/*/*.ts", "packages/*/*.json", "*.json", "*.js"]
+    "includes": [
+      "packages/*/src/**/*.ts",
+      "packages/*/*.ts",
+      "packages/*/*.json",
+      "packages/*/*.mjs",
+      "scripts/**/*.mjs",
+      "*.json",
+      "*.js",
+      "commitlint.config.js"
+    ]
   },
   "formatter": {
     "enabled": true,

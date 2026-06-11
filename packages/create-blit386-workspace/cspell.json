@@ -1,0 +1,43 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "language": "en",
+  "allowCompoundWords": true,
+  "dictionaries": ["typescript", "node", "html", "css", "fonts", "npm", "softwareTerms"],
+  "words": [
+    "biomejs",
+    "blit",
+    "BTAPI",
+    "clack",
+    "commitlint",
+    "dco",
+    "esbuild",
+    "jsconfig",
+    "knip",
+    "pnpm",
+    "scaffolder",
+    "tsup",
+    "Vančura",
+    "Vite",
+    "Václav",
+    "webgpu"
+  ],
+  "flagWords": ["cant", "dont", "hte", "teh", "wont"],
+  "ignorePaths": [
+    "*.map",
+    "*.min.js",
+    ".git",
+    ".pnpm-store",
+    "cspell.json",
+    "dist",
+    "node_modules",
+    "pnpm-lock.yaml",
+    "packages/create-blit-tech/templates/**"
+  ],
+  "ignoreRegExpList": ["/#[0-9A-Fa-f]{3,8}/", "/0x[0-9A-Fa-f]+/", "/@[a-zA-Z0-9_-]+\\/[a-zA-Z0-9_-]+/"],
+  "overrides": [
+    {
+      "filename": "**/*.ts",
+      "words": ["instanceof", "keyof", "readonly", "typeof"]
+    }
+  ]
+}
