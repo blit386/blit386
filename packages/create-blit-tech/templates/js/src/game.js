@@ -33,14 +33,14 @@ class Game {
     // How big the screen is. We read the real size in init().
     screen = new Vector2i(320, 240);
 
-    // The paddle's top-left corner.
-    paddleX = 0;
-    paddleY = 0;
+    // The paddle's initial position.
+    paddlePos = new Vector2i(0, 0);
 
     // The blocks falling right now. Each one is a Vector2i holding its top-left corner.
     /** @type {Vector2i[]} */
     items = [];
 
+    // The player's score and lives.
     score = 0;
     lives = STARTING_LIVES;
 
@@ -51,15 +51,17 @@ class Game {
         // Make a palette (a numbered set of colors) and choose four colors.
         // Color32(red, green, blue) - each value goes from 0 (none) to 255 (full).
         const palette = BT.paletteCreate(16);
+
         palette.set(COLOR_BACKGROUND, new Color32(18, 22, 40)); // dark blue
         palette.set(COLOR_PADDLE, new Color32(90, 200, 160)); // teal
         palette.set(COLOR_ITEM, new Color32(240, 180, 70)); // warm yellow
         palette.set(COLOR_TEXT, new Color32(235, 240, 255)); // near white
+
         BT.paletteSet(palette);
 
         // Put the paddle in the middle, near the bottom.
-        this.paddleX = Math.floor((this.screen.x - PADDLE_WIDTH) / 2);
-        this.paddleY = this.screen.y - PADDLE_HEIGHT - 6;
+        this.paddlePos.x = Math.floor((this.screen.x - PADDLE_WIDTH) / 2);
+        this.paddlePos.y = this.screen.y - PADDLE_HEIGHT - 6;
 
         return true; // tell the engine that setup worked
     }
@@ -67,19 +69,20 @@ class Game {
     update() {
         // Move the paddle while the left or right arrow is held (Space and a gamepad work too).
         if (BT.isDown(BT.BTN_LEFT, 0)) {
-            this.paddleX -= PADDLE_SPEED;
+            this.paddlePos.x -= PADDLE_SPEED;
         }
+
         if (BT.isDown(BT.BTN_RIGHT, 0)) {
-            this.paddleX += PADDLE_SPEED;
+            this.paddlePos.x += PADDLE_SPEED;
         }
 
         // Keep the paddle on the screen.
         const maxX = this.screen.x - PADDLE_WIDTH;
-        if (this.paddleX < 0) {
-            this.paddleX = 0;
+        if (this.paddlePos.x < 0) {
+            this.paddlePos.x = 0;
         }
-        if (this.paddleX > maxX) {
-            this.paddleX = maxX;
+        if (this.paddlePos.x > maxX) {
+            this.paddlePos.x = maxX;
         }
 
         // Every SPAWN_EVERY steps, drop a new block at a random spot along the top.
@@ -89,7 +92,7 @@ class Game {
         }
 
         // The paddle as a rectangle, used to check for catches.
-        const paddleRect = new Rect2i(this.paddleX, this.paddleY, PADDLE_WIDTH, PADDLE_HEIGHT);
+        const paddleRect = new Rect2i(this.paddlePos.x, this.paddlePos.y, PADDLE_WIDTH, PADDLE_HEIGHT);
 
         // Move each block down, then decide: caught, missed, or still falling.
         /** @type {Vector2i[]} */
@@ -126,7 +129,7 @@ class Game {
         }
 
         // Draw the paddle.
-        BT.drawRectFill(new Rect2i(this.paddleX, this.paddleY, PADDLE_WIDTH, PADDLE_HEIGHT), COLOR_PADDLE);
+        BT.drawRectFill(new Rect2i(this.paddlePos.x, this.paddlePos.y, PADDLE_WIDTH, PADDLE_HEIGHT), COLOR_PADDLE);
 
         // Show the score and lives in the top-left corner.
         BT.systemPrint(new Vector2i(6, 6), COLOR_TEXT, `Score ${this.score}`);

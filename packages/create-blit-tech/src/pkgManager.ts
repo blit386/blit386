@@ -14,6 +14,12 @@ export interface PmHints {
     installCmd: string;
     /** Command a human types to start the dev server, e.g. "npm run dev". */
     runDevCmd: string;
+    /** Command a human types to build for production, e.g. "npm run build". */
+    runBuildCmd: string;
+    /** Command a human types to format source, e.g. "npm run format". */
+    runFormatCmd: string;
+    /** Command a human types to lint source, e.g. "npm run lint". */
+    runLintCmd: string;
     /** Argument list to spawn the manager's install, e.g. ["install"] ([] for yarn). */
     installArgs: string[];
 }
@@ -39,12 +45,44 @@ export function detectPackageManager(): PackageManager {
 export function pmHints(name: PackageManager): PmHints {
     switch (name) {
         case 'pnpm':
-            return { name, installCmd: 'pnpm install', runDevCmd: 'pnpm run dev', installArgs: ['install'] };
+            return {
+                name,
+                installCmd: 'pnpm install',
+                runDevCmd: 'pnpm run dev',
+                runBuildCmd: 'pnpm run build',
+                runFormatCmd: 'pnpm run format',
+                runLintCmd: 'pnpm run lint',
+                installArgs: ['install'],
+            };
         case 'yarn':
-            return { name, installCmd: 'yarn', runDevCmd: 'yarn dev', installArgs: [] };
+            return {
+                name,
+                installCmd: 'yarn',
+                runDevCmd: 'yarn dev',
+                runBuildCmd: 'yarn build',
+                runFormatCmd: 'yarn format',
+                runLintCmd: 'yarn lint',
+                installArgs: [],
+            };
         case 'bun':
-            return { name, installCmd: 'bun install', runDevCmd: 'bun run dev', installArgs: ['install'] };
+            return {
+                name,
+                installCmd: 'bun install',
+                runDevCmd: 'bun run dev',
+                runBuildCmd: 'bun run build',
+                runFormatCmd: 'bun run format',
+                runLintCmd: 'bun run lint',
+                installArgs: ['install'],
+            };
         default:
-            return { name: 'npm', installCmd: 'npm install', runDevCmd: 'npm run dev', installArgs: ['install'] };
+            return {
+                name: 'npm',
+                installCmd: 'npm install',
+                runDevCmd: 'npm run dev',
+                runBuildCmd: 'npm run build',
+                runFormatCmd: 'npm run format',
+                runLintCmd: 'npm run lint',
+                installArgs: ['install'],
+            };
     }
 }

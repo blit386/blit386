@@ -2,8 +2,9 @@
  * Turns the templates plus the kit's canonical docs into a ready-to-run game project.
  *
  * Sources:
- *   - ../templates/base  (language-agnostic: index.html, vite config, README, .gitignore, public/)
+ *   - ../templates/base  (language-agnostic: index.html, vite config, README, .editorconfig, biome.json)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
+ *   - ../templates/optional/* (wizard opt-in: CI, Cursor rules, Claude guide)
  *   - @blit-tech/kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
  */
 
@@ -17,11 +18,22 @@ const require = createRequire(import.meta.url);
 /** blit-tech version range written into the generated package.json. */
 const BLIT_TECH_RANGE = '^1.1.1';
 
+/** Output directory names for optional wizard templates. */
+const GITHUB_DIR = '.github';
+const CURSOR_DIR = '.cursor';
+
+export type AgentChoice = 'none' | 'claude' | 'cursor';
+
 export interface ScaffoldOptions {
     targetDir: string;
     projectName: string;
     pmInstall: string;
     pmRunDev: string;
+    pmRunBuild: string;
+    pmRunFormat: string;
+    pmRunLint: string;
+    includeCi?: boolean;
+    agent?: AgentChoice;
 }
 
 type TemplateVars = Record<string, string>;
@@ -49,6 +61,23 @@ function stripTmpl(name: string): string {
     return name.endsWith('.tmpl') ? name.slice(0, -'.tmpl'.length) : name;
 }
 
+/** Map template file/dir names to their output names in the generated project. */
+function mapOutputName(name: string): string {
+    if (name === 'gitignore') {
+        return '.gitignore';
+    }
+    if (name === 'editorconfig') {
+        return '.editorconfig';
+    }
+    if (name === 'dot-cursor') {
+        return CURSOR_DIR;
+    }
+    if (name === 'dot-github') {
+        return GITHUB_DIR;
+    }
+    return stripTmpl(name);
+}
+
 /** Turn a folder name into a valid npm package name (lowercase, dashes, no surprises). */
 function toPackageName(name: string): string {
     const cleaned = name
@@ -58,13 +87,13 @@ function toPackageName(name: string): string {
     return cleaned.length > 0 ? cleaned : 'my-blit-game';
 }
 
-/** Copy a template tree, renaming `gitignore` -> `.gitignore`, stripping `.tmpl`, and rendering placeholders. */
+/** Copy a template tree, renaming special files/dirs, stripping `.tmpl`, and rendering placeholders. */
 function copyTemplateTree(srcDir: string, destDir: string, vars: TemplateVars): void {
     mkdirSync(destDir, { recursive: true });
 
     for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
         const srcPath = join(srcDir, entry.name);
-        const outName = entry.name === 'gitignore' ? '.gitignore' : stripTmpl(entry.name);
+        const outName = mapOutputName(entry.name);
         const destPath = join(destDir, outName);
 
         if (entry.isDirectory()) {
@@ -85,11 +114,32 @@ export function scaffold(options: ScaffoldOptions): void {
         kitVersion: kitVersionRange(),
         pmInstall: options.pmInstall,
         pmRunDev: options.pmRunDev,
+        pmRunBuild: options.pmRunBuild,
+        pmRunFormat: options.pmRunFormat,
+        pmRunLint: options.pmRunLint,
     };
 
     const templates = templatesDir();
     copyTemplateTree(join(templates, 'base'), options.targetDir, vars);
     copyTemplateTree(join(templates, 'js'), options.targetDir, vars);
+
+    if (options.includeCi) {
+        copyTemplateTree(join(templates, 'optional', 'ci', 'github'), join(options.targetDir, GITHUB_DIR), vars);
+    }
+
+    if (options.agent === 'cursor') {
+        copyTemplateTree(
+            join(templates, 'optional', 'cursor', 'dot-cursor'),
+            join(options.targetDir, CURSOR_DIR),
+            vars,
+        );
+    }
+
+    if (options.agent === 'claude') {
+        const claudeTemplate = join(templates, 'optional', 'claude', 'CLAUDE.md.tmpl');
+        const claudeContent = render(readFileSync(claudeTemplate, 'utf8'), vars);
+        writeFileSync(join(options.targetDir, 'CLAUDE.md'), claudeContent);
+    }
 
     // Copy the kit's canonical guidance (single source of truth for AGENTS.md + docs).
     const content = kitRoot();

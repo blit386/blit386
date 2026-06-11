@@ -1,0 +1,37 @@
+# {{projectName}}
+
+A Blit-Tech pixel game project scaffolded with create-blit-tech.
+
+## Commands
+
+```bash
+{{pmRunDev}}     # Start the dev server
+{{pmRunBuild}}   # Production build
+{{pmRunFormat}}  # Format source with Biome
+{{pmRunLint}}    # Check code style
+blit doctor     # Check engine and project setup
+```
+
+## Project layout
+
+```text
+src/game.js   # Main game logic (start here)
+docs/         # Local guides for drawing, input, palette, and more
+AGENTS.md     # AI assistant reference for the Blit-Tech API
+```
+
+## Rules
+
+1. **Integer coordinates** — use `Vector2i` and `Rect2i` for all rendering
+2. **Use `BT` namespace** — all engine calls go through `BT`, never internal APIs
+3. **Beginner-friendly comments** — explain what code does and why
+4. **No emoji** in code, docs, or user-facing strings
+
+## Engine API quick reference
+
+- Drawing: `BT.clear`, `BT.drawRectFill`, `BT.drawSprite`, `BT.systemPrint`
+- Input: `BT.isDown`, `BT.isPressed`, `BT.isKeyDown`, `BT.isPointerActive`
+- Loop: `BT.ticks`, `BT.deltaSeconds`, `BT.displaySize`
+- Configure: `isOverlayEnabled`, `backend: 'webgpu' | 'software'`
+
+See `docs/getting-started.md` and `AGENTS.md` for full details.
