@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  statuses: write
 
 jobs:
   dco:
@@ -20,6 +18,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Check DCO for Pull Request
         if: github.event_name == 'pull_request'
@@ -72,7 +71,12 @@ jobs:
           AFTER="${{ github.event.after }}"
 
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            COMMITS=$(git log --format="%H" "$AFTER" --not --remotes=origin)
+            BASE=$(git merge-base origin/main "$AFTER" 2>/dev/null || true)
+            if [ -n "$BASE" ]; then
+              COMMITS=$(git log --format="%H" "${BASE}..${AFTER}")
+            else
+              COMMITS=$(git log --format="%H" -n 1 "$AFTER")
+            fi
           else
             COMMITS=$(git log --format="%H" "${BEFORE}..${AFTER}")
           fi
