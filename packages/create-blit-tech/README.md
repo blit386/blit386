@@ -19,8 +19,9 @@ Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it wi
 - A ready-to-run Vite setup: `index.html`, `src/game.js`, and a dev server.
 - Local guides (`docs/`) and an `AGENTS.md` so you - or an AI assistant - can learn the engine without leaving the
   project.
-- The `blit` helper CLI (`blit run`, `blit doctor`, `blit upgrade`), provided by
-  [`@blit-tech/kit`](https://www.npmjs.com/package/@blit-tech/kit).
+- The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`), provided by
+  [`@blit-tech/kit`](https://www.npmjs.com/package/@blit-tech/kit). It is a project-local bin, so invoke it through
+  `npx`.
 
 ## Options
 
