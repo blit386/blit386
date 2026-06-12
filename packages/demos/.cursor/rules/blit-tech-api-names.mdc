@@ -30,8 +30,8 @@ Use grammatical `is*` names from `HardwareSettings`:
 - Edge: `BT.isPressed(...)`, `BT.isReleased(...)`, `BT.isKeyPressed(...)`, `BT.isKeyReleased(...)`
 - Pointer: `BT.isPointerActive(slot?)`
 
-Do not use removed names: `BT.isButtonDown` (use `BT.isDown`), `isKeyDown` / `isKeyPressed` (embedded `Is`),
-`overlayEnabled`, `canvasId`.
+Do not use removed names: `BT.isButtonDown` (use `BT.isDown`), unprefixed `isKeyDown` / `isKeyPressed` (use
+`BT.isKeyDown` / `BT.isKeyPressed`), `overlayEnabled` (use `isOverlayEnabled`), `canvasId` (use `canvasID`).
 
 ## When the library API changes
 
