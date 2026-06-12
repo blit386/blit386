@@ -37,7 +37,9 @@ npm run dev
 It prints a web address like `http://localhost:5173`. Hold Cmd (or Ctrl on Windows) and click it, or paste it into your
 browser. Your game is running. Leave the terminal open while you play.
 
-You can also type `blit run`, which does the same thing in a friendlier way.
+You can also type `npx blit run`, which does the same thing in a friendlier way. The `npx` part means "run the helper
+that is installed inside this project" - typing plain `blit` would not work, because the helper lives in your game's
+folder, not on your whole computer.
 
 ## 5. Change something
 
@@ -46,5 +48,8 @@ whole loop: change a little, look, repeat.
 
 ## If something seems wrong
 
-Run `blit doctor`. It checks your Node version, whether your work is saved with git, and which version of Blit-Tech you
-have, then tells you what to do in plain language.
+Run `npx blit doctor`. It checks your Node version, whether your work is saved with git, and which version of Blit-Tech
+you have, then tells you what to do in plain language.
+
+If the game itself misbehaves - a blank screen, red errors, a change that did something strange - open
+`when-something-breaks.md` in this folder. It walks through the most common problems one by one.
