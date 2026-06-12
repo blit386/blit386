@@ -41,7 +41,7 @@
     "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
     "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
     "docs:links": "node scripts/check-markdown-links.mjs",
-    "preflight": "pnpm run format:check && pnpm run lint && pnpm run spellcheck && pnpm run knip && pnpm run docs:links",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run build",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "clean": "rm -rf dist node_modules/.vite",
@@ -55,17 +55,6 @@
     "overrides": {
       "yaml@>=2.0.0 <2.8.3": "^2.8.3"
     }
-  },
-  "lint-staged": {
-    "*.{js,cjs,mjs,json,jsonc,css}": [
-      "biome check --write"
-    ],
-    "*.{md,mdx,yml,yaml}": [
-      "prettier --write"
-    ],
-    "*.{js,cjs,mjs,md,mdx}": [
-      "cspell --no-progress"
-    ]
   },
   "dependencies": {
     "blit-tech": "workspace:*"
