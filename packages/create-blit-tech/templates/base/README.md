@@ -25,13 +25,44 @@ your browser updates by itself. A few things to try:
 
 ## Helpful commands
 
-- `blit run` - start the game (same as `{{pmRunDev}}`).
-- `blit doctor` - check your setup if something seems off.
-- `blit upgrade` - update Blit-Tech to the latest version.
+- `{{pmRunDev}}` - start the game (the everyday command).
+- `npx blit run` - the same thing, the friendly way.
+- `npx blit doctor` - check your setup if something seems off.
+- `npx blit upgrade` - update Blit-Tech to the latest version.
 
-Tip: press the `~` key while playing to peek at the engine overlay (frames per second and which renderer is active).
+The `blit` helper is installed inside this project, not on your whole computer, so it needs `npx` in front (it means
+"run the helper that lives in this project"). Typing plain `blit` would say "command not found."
+
+## Peek behind the scenes
+
+While the game runs, you can open the engine overlay - a small panel showing frames per second and which renderer is
+active.
+
+- **Keyboard:** press the key just below Esc, in the very top-left corner of your keyboard. On US keyboards it is
+  printed with `` ` `` and `~`. Classic PC games like Quake used that exact key to open their command console, and
+  Blit-Tech keeps the tradition. The engine listens for the key's **position**, not the symbol printed on it - on some
+  keyboard layouts the `~` symbol sits somewhere else entirely, but the overlay key is still the one below Esc.
+- **No keyboard, or can't find the key?** Click or tap the bottom-left corner of the game screen instead. That works
+  everywhere: phones, tablets, the Steam Deck.
+
+## Share your game
+
+When you want to show your game to a friend:
+
+```bash
+{{pmRunBuild}}
+```
+
+This packs everything into a `dist/` folder - a plain website, no server needed. Drag that folder onto a free static
+host such as [Netlify Drop](https://app.netlify.com/drop) or [Cloudflare Pages](https://pages.cloudflare.com), and you
+get a link anyone can open.
+
+## When something breaks
+
+It will - that is normal. Open `docs/when-something-breaks.md`. It explains how to read error messages and walks through
+the usual suspects: blank screens, "command not found," forgotten `await`, and more.
 
 ## Learn more
 
 - `AGENTS.md` - a short home base for you or an AI assistant.
-- `docs/` - friendly guides: getting started, the game loop, drawing, input, and colors.
+- `docs/` - friendly guides: getting started, the game loop, drawing, input, colors, and fixing problems.
