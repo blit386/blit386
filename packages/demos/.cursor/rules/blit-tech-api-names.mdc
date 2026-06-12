@@ -9,8 +9,10 @@ Demos call the library through `BT` and `configure()` — use the **same public 
 
 Canonical references (read before adding or renaming API usage):
 
-- [blit-tech/CLAUDE.md](https://github.com/vancura/blit-tech/blob/main/CLAUDE.md) — **Boolean naming**, **BT API: getters vs methods**, **Input conventions**
-- [blit-tech/docs/developer-experience-guide.md](https://github.com/vancura/blit-tech/blob/main/docs/developer-experience-guide.md) — full three-tier boolean table
+- [blit-tech/CLAUDE.md](https://github.com/vancura/blit-tech/blob/main/CLAUDE.md) — **Boolean naming**, **BT API:
+  getters vs methods**, **Input conventions**
+- [blit-tech/docs/developer-experience-guide.md](https://github.com/vancura/blit-tech/blob/main/docs/developer-experience-guide.md) —
+  full three-tier boolean table
 - [blit-tech/docs/input.md](https://github.com/vancura/blit-tech/blob/main/docs/input.md) — input examples
 
 ## Configure flags (Tier B)
@@ -28,8 +30,10 @@ Use grammatical `is*` names from `HardwareSettings`:
 - Edge: `BT.isPressed(...)`, `BT.isReleased(...)`, `BT.isKeyPressed(...)`, `BT.isKeyReleased(...)`
 - Pointer: `BT.isPointerActive(slot?)`
 
-Do not use removed names: `BT.isButtonDown` (use `BT.isDown`), `isKeyDown` / `isKeyPressed` (embedded `Is`), `overlayEnabled`, `canvasId`.
+Do not use removed names: `BT.isButtonDown` (use `BT.isDown`), unprefixed `isKeyDown` / `isKeyPressed` (use
+`BT.isKeyDown` / `BT.isKeyPressed`), `overlayEnabled` (use `isOverlayEnabled`), `canvasId` (use `canvasID`).
 
 ## When the library API changes
 
-Update affected demo `configure()` blocks, runtime call sites, this repo's `CLAUDE.md`, and `README.md` in the same change.
+Update affected demo `configure()` blocks, runtime call sites, this repo's `CLAUDE.md`, and `README.md` in the same
+change.

@@ -1,4 +1,5 @@
 ---
+name: demos-format
 description: Format all code files using Biome and Prettier, then verify formatting passes
 ---
 
@@ -15,17 +16,20 @@ Format all code files using the project's formatters and verify results.
 ## Steps
 
 1. **Run formatters**
-   - Execute `pnpm run format` which runs:
-     - Biome for JavaScript/JSON/CSS
-     - Prettier for Markdown/YAML
+
+- Execute `pnpm run format` which runs:
+  - Biome for JavaScript/JSON/CSS
+  - Prettier for Markdown/YAML
 
 2. **Show what changed**
-   - Run `git diff --stat` to show summary of reformatted files
-   - List the number of files modified
+
+- Run `git diff --stat` to show summary of reformatted files
+- List the number of files modified
 
 3. **Verify formatting**
-   - Run `pnpm run format:check` to confirm all files pass
-   - Report any files that still have formatting issues
+
+- Run `pnpm run format:check` to confirm all files pass
+- Report any files that still have formatting issues
 
 ## Formatter Configuration
 
@@ -37,7 +41,7 @@ Format all code files using the project's formatters and verify results.
 
 ## Formatting Rules
 
-- Indent: 4 spaces (2 for JSON/YAML/Markdown)
+- Indent: 4 spaces (2 for JSON/YAML examples)
 - Line width: 120 characters
 - Quotes: Single quotes
 - Semicolons: Always

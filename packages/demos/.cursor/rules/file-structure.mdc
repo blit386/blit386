@@ -1,0 +1,38 @@
+---
+description: Demo file layout and Demo class member order for src/ (no region markers)
+globs: { src/**/*.js }
+alwaysApply: false
+---
+
+# Demo file structure
+
+When adding or moving code in a demo (`src/NNN-*.js`). Keep the standard section order and the lifecycle method order so
+every demo reads the same way. **Never use `// #region` / `// #endregion`** — region markers are banned.
+
+## File layout (top to bottom)
+
+1. **Header comment** — the `// Demo NNN - …` block: what the demo teaches, prerequisites, and links to earlier demos.
+2. **Imports** — `import { … } from 'blit-tech';` (members sorted).
+3. **Type definitions** — `@typedef` JSDoc imports (`IBlitTechDemo`, `HardwareSettings`, …).
+4. **Configuration constants** — `const` values that tune the demo (`MAX_PARTICLES`, palette slot indices). Each with a
+   beginner-friendly comment.
+5. **Module state** — shared mutable module-level values, if any.
+6. **Helper functions** — pure helpers used by the demo class.
+7. **Main logic** — the `Demo` class.
+8. **Exports / bootstrap** — `bootstrap(Demo);` as the last statement.
+
+## Demo class member order
+
+1. **Instance fields** (if declared) — each with a plain-English comment.
+2. **`configure()`** — optional; omit to use the engine `defaultConfig`.
+3. **`init()`** — async setup (load sprites, build palette).
+4. **`update()`** — per-tick state changes.
+5. **`render()`** — drawing only.
+6. **Helper methods** — after the lifecycle methods.
+
+## Cross-cutting
+
+- Beginner-friendly comments on nearly every block (see `CLAUDE.md` **Documentation Style**).
+- Integer coordinates only (`Vector2i`, `Rect2i`); use the library's public API names.
+
+Full policy: `CLAUDE.md` (**File Organization**, **Demo File Conventions**).
