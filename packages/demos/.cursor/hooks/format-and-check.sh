@@ -65,8 +65,8 @@ if [ -z "$FILE_PATH" ]; then
 fi
 
 case "$FILE_PATH" in
-    /*) TARGET_FILE="$FILE_PATH" ;;
-    *) TARGET_FILE="$REPO_ROOT/$FILE_PATH" ;;
+/*) TARGET_FILE="$FILE_PATH" ;;
+*) TARGET_FILE="$REPO_ROOT/$FILE_PATH" ;;
 esac
 
 if [ ! -f "$TARGET_FILE" ]; then
@@ -77,29 +77,29 @@ CANON_REPO_ROOT="$(canonical_path "$REPO_ROOT")"
 CANON_TARGET="$(canonical_path "$TARGET_FILE")"
 
 case "$CANON_TARGET" in
-    "$CANON_REPO_ROOT"|"$CANON_REPO_ROOT"/*) ;;
-    *) exit 0 ;;
+"$CANON_REPO_ROOT" | "$CANON_REPO_ROOT"/*) ;;
+*) exit 0 ;;
 esac
 
 case "$TARGET_FILE" in
-    *.js|*.cjs|*.mjs|*.json|*.jsonc|*.css)
-        (cd "$REPO_ROOT" && $RUNNER biome check --write "$TARGET_FILE" >/dev/null 2>&1) || true
-        ;;
+*.js | *.cjs | *.mjs | *.json | *.jsonc | *.css)
+    (cd "$REPO_ROOT" && $RUNNER biome check --write "$TARGET_FILE" >/dev/null 2>&1) || true
+    ;;
 esac
 
 case "$TARGET_FILE" in
-    *.md|*.mdx|*.yml|*.yaml)
-        (cd "$REPO_ROOT" && $RUNNER prettier --write "$TARGET_FILE" >/dev/null 2>&1) || true
-        ;;
+*.md | *.mdx | *.yml | *.yaml)
+    (cd "$REPO_ROOT" && $RUNNER prettier --write "$TARGET_FILE" >/dev/null 2>&1) || true
+    ;;
 esac
 
 case "$TARGET_FILE" in
-    *.js|*.cjs|*.mjs|*.md|*.mdx)
-        SPELLCHECK_OUTPUT="$(cd "$REPO_ROOT" && $RUNNER cspell --no-progress "$TARGET_FILE" 2>&1)" || {
-            printf '[SPELLCHECK] %s\n' "$TARGET_FILE" >&2
-            printf '%s\n' "$SPELLCHECK_OUTPUT" >&2
-        }
-        ;;
+*.js | *.cjs | *.mjs | *.md | *.mdx)
+    SPELLCHECK_OUTPUT="$(cd "$REPO_ROOT" && $RUNNER cspell --no-progress "$TARGET_FILE" 2>&1)" || {
+        printf '[SPELLCHECK] %s\n' "$TARGET_FILE" >&2
+        printf '%s\n' "$SPELLCHECK_OUTPUT" >&2
+    }
+    ;;
 esac
 
 exit 0

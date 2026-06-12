@@ -102,8 +102,6 @@ pattern:
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
-// #region Demo Class
-
 class Demo {
   // Optional: omit configure() to use engine defaultConfig (320x240 logical, 640x480 canvas, 60 FPS).
   // In configure(), you may set `backend: 'software'` to force Canvas 2D; default is WebGPU with automatic fallback.
@@ -121,13 +119,7 @@ class Demo {
   }
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion
 ```
 
 ### Adding a New Demo
@@ -307,15 +299,21 @@ is enabled in `configure()`.
 
 ## File Organization
 
-Use `// #region` / `// #endregion` for collapsible sections. Standard order:
+Standard section order:
 
-1. Imports (no region needed)
+1. Imports
 2. Configuration
 3. Type Definitions
 4. Module State
 5. Helper Functions
 6. Main Logic
 7. Exports
+
+**Demo class member order:** instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
+methods. Keep `bootstrap(Demo);` as the last statement in the file.
+
+**Never use `// #region` / `// #endregion`** — region markers are banned everywhere. See
+`.cursor/rules/file-structure.mdc`.
 
 ## Formatting Rules
 
@@ -337,7 +335,7 @@ AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
 Managed by Husky (auto-installed via `prepare` script).
 
 - **Pre-commit** (lint-staged): auto-formats and lints staged files
-- **Pre-push**: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links)
+- **Pre-push**: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, build)
 
 ## Deployment
 

@@ -6,8 +6,11 @@ alwaysApply: true
 # blit-tech-demos CLAUDE Is Canonical
 
 - Treat `CLAUDE.md` at the repository root as canonical for work in this repo.
-- Follow its demo conventions: plain JavaScript only, integer-coordinate rendering, and beginner-friendly explanatory comments.
-- **API names:** use blit-tech public names for `BT` and `configure()` (`isDown`, `isOverlayEnabled`, …). See **Blit-Tech Engine API** and **Boolean naming** below; full rules in sibling repo `blit-tech/CLAUDE.md` and `docs/developer-experience-guide.md`.
+- Follow its demo conventions: plain JavaScript only, integer-coordinate rendering, and beginner-friendly explanatory
+  comments.
+- **API names:** use blit-tech public names for `BT` and `configure()` (`isDown`, `isOverlayEnabled`, …). See
+  **Blit-Tech Engine API** and **Boolean naming** below; full rules in sibling repo `blit-tech/CLAUDE.md` and
+  `docs/developer-experience-guide.md`.
 - Keep demo code and narration aligned with `CLAUDE.md` documentation style requirements.
 - Do not apply library-only TypeScript conventions to demo source files.
 - Use repo commands and quality checks exactly as documented in `CLAUDE.md`.
