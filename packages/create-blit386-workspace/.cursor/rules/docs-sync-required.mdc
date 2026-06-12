@@ -1,0 +1,31 @@
+---
+description: Require docs and kit content updates for scaffold and API-facing changes
+globs:
+  {
+    packages/**/src/**/*.ts,
+    packages/create-blit-tech/templates/**,
+    packages/kit/content/**,
+    README.md,
+    CLAUDE.md,
+    .claude/skills/**/SKILL.md,
+    .cursor/rules/*.mdc,
+  }
+alwaysApply: false
+---
+
+# Docs Sync Required
+
+- Documentation is part of the implementation, not a follow-up task.
+- When scaffold output changes (templates, wizard options, default game, CLI messages), update `packages/kit/content/`
+  (`AGENTS.md`, `docs/*.md`) and template READMEs in the same change when user-facing behavior shifts.
+- When `bootstrap()` usage, starter game code, or public `BT` API names in generated games change, review kit
+  `content/docs/basics.md`, `drawing.md`, `input.md`, and `palette.md` for stale examples.
+- When the pinned engine range in `packages/create-blit-tech/src/scaffold.ts` (`BLIT_TECH_RANGE`) changes, note it in
+  commit/PR text and check whether sibling repo `blit-tech` onboarding docs need a matching mention.
+- When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected
+  `.cursor/rules/*.mdc` cross-references.
+- Update root `README.md` or `CLAUDE.md` when commands, package layout, or wizard flow changes.
+- When blit-tech public API changes in the sibling engine repo, audit kit `content/docs/` and
+  `templates/optional/cursor/dot-cursor/rules/blit-tech-api-names.mdc` for stale names (`isDown`, `isOverlayEnabled`,
+  etc.).
+- If no docs update is needed, state why explicitly in the final response.

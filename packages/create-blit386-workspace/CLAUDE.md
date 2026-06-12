@@ -77,12 +77,35 @@ packages/create-blit-tech/templates/
 
 ## Agent skills
 
-Skills live in `.claude/skills/`:
+Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 
 - `cbt-preflight` — run all quality checks
 - `cbt-format` — format and verify
+- `cbt-quick-format` — format only, no verification
 - `cbt-review` — review changes against project rules
 - `cbt-pr` — create a pull request with checks
+- `cbt-spellcheck` — fix cspell errors and extend the dictionary
+- `cbt-test` — run the scaffold smoke test
+- `cbt-release` — npm publish procedure (`../PUBLISHING.md` in the local workspace layout)
+
+## Kit content vs engine docs
+
+Generated games receive `AGENTS.md` and five beginner docs from `packages/kit/content/`. They are **not** copies of
+blit-tech's full `docs/` tree — they teach the starter game and point to GitHub for deep API reference.
+
+When blit-tech public API or naming changes in the sibling repo, audit these kit files for stale examples:
+
+| Kit file                                                | Review when                                        |
+| ------------------------------------------------------- | -------------------------------------------------- |
+| `content/docs/basics.md`                                | `configure()`, loop timing getters, bootstrap flow |
+| `content/docs/drawing.md`                               | `BT.clear`, primitives, text APIs                  |
+| `content/docs/input.md`                                 | `BT.isDown`, edges, keyboard, pointer, gamepad     |
+| `content/docs/palette.md`                               | `paletteCreate`, slots, `Color32`                  |
+| `content/AGENTS.md`                                     | Overall game shape, hard rules, doc routing        |
+| `templates/optional/cursor/.../blit-tech-api-names.mdc` | Configure `is*` flags, input hold/edge naming      |
+
+Also check `BLIT_TECH_RANGE` in `packages/create-blit-tech/src/scaffold.ts` when new games should pin a newer engine
+version.
 
 ## Where to find information
 
