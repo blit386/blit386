@@ -227,6 +227,13 @@ function currentKitVersion(): string {
 function regenerate(manifest: BlitManifest, root: string): Map<string, string> {
     const kr = kitRoot();
     const vars = manifest.vars ?? fallbackVars(root);
+
+    // Lock the resolved vars into the manifest the first time we have to fall back. Without this a
+    // project scaffolded before vars were tracked would re-detect the package manager on every sync.
+    if (manifest.vars === undefined) {
+        manifest.vars = vars;
+    }
+
     const map = new Map<string, string>();
 
     const agents = agentsFile(kr);
@@ -457,8 +464,11 @@ export function runFullSync(
                 } else {
                     tally.unchanged++;
                 }
-                writeBase(root, relPath, merged);
-                entry.sha256 = sha256Text(merged);
+                // Keep the kit-generated version as the baseline/ancestor, not the merged result.
+                // The merged file carries the user's edits; recording it as the baseline would make
+                // the next sync treat those edits as the kit default and overwrite them.
+                writeBase(root, relPath, incoming);
+                entry.sha256 = incomingHash;
                 entry.kitVersion = newKitVersion;
                 continue;
             }
@@ -470,11 +480,13 @@ export function runFullSync(
     }
 
     // Pass 2: files the manifest tracks that the new kit no longer ships.
+    // Drop them from the tracked set so the refreshed manifest stops carrying stale entries.
     for (const entry of manifest.files) {
         if (entry.class === 'user-owned' || regenerated.has(entry.path)) {
             continue;
         }
         tally.orphaned.push(entry.path);
+        entryByPath.delete(entry.path);
     }
 
     // Write the refreshed manifest, preserving createdAt and vars when present.
