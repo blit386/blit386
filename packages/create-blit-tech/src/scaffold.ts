@@ -57,6 +57,12 @@ export interface BlitManifest {
     kitVersion: string;
     /** ISO-8601 creation timestamp. */
     createdAt: string;
+    /**
+     * Template variables used at scaffold time (package-manager commands, project name, ...).
+     * `blit agents sync` reads these back so it regenerates kit files with the exact same values,
+     * independent of the environment it runs in.
+     */
+    vars: Record<string, string>;
     /** One entry per generated file, sorted by path for stable diffs. */
     files: ManifestEntry[];
 }
@@ -193,7 +199,7 @@ function sha256(filePath: string): string {
  * Also write pristine copies of kit-owned and shared files under `.blit/base/` so a future
  * `blit agents sync` run can perform a proper three-way merge instead of clobbering user edits.
  */
-function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer: string): void {
+function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer: string, vars: TemplateVars): void {
     const blitDir = join(targetDir, BLIT_DIR);
     const baseDir = join(blitDir, 'base');
     mkdirSync(baseDir, { recursive: true });
@@ -227,6 +233,7 @@ function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer:
     const manifest: BlitManifest = {
         kitVersion: kitVer,
         createdAt: new Date().toISOString(),
+        vars,
         files: entries,
     };
 
@@ -619,7 +626,7 @@ export function scaffold(options: ScaffoldOptions): void {
     collectTree(docsDestDir, writtenPaths);
 
     // Seal the ownership manifest and write pristine base copies.
-    writeBlitManifest(options.targetDir, writtenPaths, kitVer);
+    writeBlitManifest(options.targetDir, writtenPaths, kitVer, vars);
 }
 
 /** Recursively add all files under `dir` to `collected` (used after cpSync which returns void). */
