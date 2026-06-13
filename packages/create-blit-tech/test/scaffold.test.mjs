@@ -187,10 +187,53 @@ test('scaffold copies optional CI and agent files when requested', () => {
             agent: 'cursor',
         });
 
+        // Cursor adapter: rules, hooks, and commands should all be generated.
         assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'rules', 'blit-tech-api-names.mdc')),
-            'Cursor rules should be generated',
+            existsSync(join(cursorProject, '.cursor', 'rules', 'blit-api-names.mdc')),
+            'Cursor rule blit-api-names.mdc should be generated',
         );
+        assert.ok(
+            existsSync(join(cursorProject, '.cursor', 'rules', 'blit-integer-coords.mdc')),
+            'Cursor rule blit-integer-coords.mdc should be generated',
+        );
+        assert.ok(existsSync(join(cursorProject, '.cursor', 'hooks.json')), '.cursor/hooks.json should be generated');
+        assert.ok(
+            existsSync(join(cursorProject, '.cursor', 'hooks', 'shell-safety.sh')),
+            '.cursor/hooks/shell-safety.sh should be generated',
+        );
+        assert.ok(
+            existsSync(join(cursorProject, '.cursor', 'commands', 'run.md')),
+            '.cursor/commands/run.md should be generated',
+        );
+        assert.ok(
+            existsSync(join(cursorProject, '.cursor', 'commands', 'fix.md')),
+            '.cursor/commands/fix.md should be generated',
+        );
+
+        // Cursor rule files should keep their MDC frontmatter (Cursor reads alwaysApply from it).
+        const apiRule = readFileSync(join(cursorProject, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8');
+        assert.ok(apiRule.startsWith('---'), 'Cursor rule files should keep YAML frontmatter');
+        assert.ok(apiRule.includes('alwaysApply: true'), 'Cursor rule should include alwaysApply flag');
+
+        // hooks.json should have the expected structure with afterFileEdit and beforeShellExecution.
+        const hooksJson = JSON.parse(readFileSync(join(cursorProject, '.cursor', 'hooks.json'), 'utf8'));
+        assert.equal(hooksJson.version, 1, 'hooks.json version should be 1');
+        assert.ok(Array.isArray(hooksJson.hooks.afterFileEdit), 'hooks.json should have afterFileEdit entries');
+        assert.ok(
+            Array.isArray(hooksJson.hooks.beforeShellExecution),
+            'hooks.json should have beforeShellExecution entries',
+        );
+        const safetyHook = hooksJson.hooks.beforeShellExecution[0];
+        assert.ok(safetyHook.failClosed === true, 'shell safety hook should be failClosed');
+
+        // Template vars should be rendered in hooks.json.
+        const formatHook = hooksJson.hooks.afterFileEdit[0];
+        assert.ok(formatHook.command.includes('format'), 'format hook should reference the format command');
+        assert.ok(!formatHook.command.includes('{{'), 'format hook should not have unrendered placeholders');
+
+        // Commands should have template vars rendered.
+        const runCmd = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
+        assert.ok(!runCmd.includes('{{'), 'run command should not have unrendered placeholders');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
