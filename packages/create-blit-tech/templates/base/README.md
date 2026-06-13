@@ -11,8 +11,12 @@ You need [Node.js](https://nodejs.org) installed once (download the big **LTS** 
 {{pmRunDev}}
 ```
 
-A web address like `http://localhost:5173` appears. Open it in your browser to play. Use the left and right arrow keys
-to move the paddle and catch the falling blocks.
+A web address like `http://localhost:5173` appears. Open it in your browser to play.
+
+- **Phone or tablet:** tap or drag — the paddle follows your finger.
+- **Computer:** move the mouse to steer the paddle, or use the left and right arrow keys as a fallback.
+
+Catch the falling blocks before they reach the bottom.
 
 ## Change the game
 
