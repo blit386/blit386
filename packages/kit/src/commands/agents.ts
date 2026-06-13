@@ -10,7 +10,7 @@
 
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, normalize, resolve, sep } from 'node:path';
 
 import { findProjectRoot } from '../env';
 import { ui } from '../messages';
@@ -67,13 +67,33 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
         return 1;
     }
 
+    if (!Array.isArray(manifest.files)) {
+        out(
+            ui.error(
+                '.blit/manifest.json is missing the files array. The manifest may be damaged or from an older version.',
+            ),
+        );
+        return 1;
+    }
+
     const tracked = manifest.files.filter((e) => e.class === 'kit-owned' || e.class === 'shared');
     const missing: string[] = [];
     const modified: string[] = [];
     let unchanged = 0;
 
     for (const entry of tracked) {
-        const absPath = join(root, entry.path);
+        // Reject paths that are absolute or escape the project root via ".." segments.
+        if (isAbsolute(entry.path) || normalize(entry.path).startsWith(`..${sep}`)) {
+            out(ui.warn(`Skipping unsafe manifest path: ${entry.path}`));
+            continue;
+        }
+
+        const absPath = resolve(root, entry.path);
+
+        if (absPath !== root && !absPath.startsWith(root + sep)) {
+            out(ui.warn(`Skipping unsafe manifest path: ${entry.path}`));
+            continue;
+        }
 
         if (!existsSync(absPath)) {
             missing.push(entry.path);
