@@ -9,12 +9,12 @@ Use when the game crashes, shows a blank screen, throws an error in the browser 
 ## Steps
 
 1. Open `docs/when-something-breaks.md` first. It covers the most common beginner errors with concrete fixes.
-2. For a **blank screen**: check that `BT.paletteSet(palette)` was called in `init()` before any draw call.
-3. For **"Cannot read properties of undefined"**: you likely forgot `await` before a load call (sprites, fonts).
-4. For **"0 is not a valid palette index"**: you drew with slot 0, which is always transparent. Use slot 1 or higher.
-5. For **engine API errors**: check `AGENTS.md` for the correct method name — getters have no `()`, methods do.
-6. For **post-process effects not showing**: they need WebGPU. Check `BT.activeBackend` — if it is `'software'`, the
-   Canvas 2D fallback is active and effects will not work. Keep starters free of post-process effects.
+2. On a **blank screen**: ensure `BT.paletteSet(palette)` was called in `init()` before any draw call.
+3. If you see **"Cannot read properties of undefined"**: you likely forgot `await` before sprite or font load calls.
+4. Note: **0 is not a valid palette index** — slot 0 is always transparent; use slot 1 or higher.
+5. Check `AGENTS.md` for correct engine API usage — getters have no `()`, methods do.
+6. Post-process effects require WebGPU — confirm `BT.activeBackend` is not `'software'` (the Canvas 2D fallback does not
+   run effects). Keep starters free of post-process effects.
 
 ## What to check
 

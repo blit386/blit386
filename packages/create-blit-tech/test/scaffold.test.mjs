@@ -222,7 +222,7 @@ test('scaffolds a TypeScript project when language is ts', () => {
         const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'));
         assert.ok(pkg.devDependencies?.typescript, 'typescript should be a devDependency for TS projects');
         assert.ok(pkg.scripts?.typecheck, 'typecheck script should be present for TS projects');
-        assert.ok(!pkg.devDependencies?.['blit-tech']?.includes('workspace:*'), 'no workspace:* in package.json');
+        assert.ok(!pkg.dependencies?.['blit-tech']?.includes('workspace:*'), 'no workspace:* in package.json');
 
         // Entry file references should point to the .ts file.
         const html = readFileSync(join(project, 'index.html'), 'utf8');

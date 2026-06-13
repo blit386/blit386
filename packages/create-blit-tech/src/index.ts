@@ -86,8 +86,9 @@ async function main(): Promise<void> {
     const interactive = isInteractive();
     const yes = flagYes || !interactive;
     if (!interactive && !flagYes) {
+        const defaultLanguageLabel = flagTs ? 'TypeScript' : 'JavaScript';
         log.info(
-            'No interactive terminal detected, so I used the defaults: JavaScript, no AI assistant, no CI. ' +
+            `No interactive terminal detected, so I used the defaults: ${defaultLanguageLabel}, no AI assistant, no CI. ` +
                 'Pass --yes to silence this, or run me in a terminal to choose. Other flags: --no-install, --no-git.',
         );
     }

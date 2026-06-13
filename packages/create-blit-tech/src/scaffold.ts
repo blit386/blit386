@@ -243,12 +243,21 @@ function stripFrontmatter(content: string): string {
         return content;
     }
 
-    const end = content.indexOf('---', 3);
-    if (end === -1) {
+    const firstLineEnd = content.indexOf('\n');
+    if (firstLineEnd === -1) {
         return content;
     }
 
-    return content.slice(end + 3).replace(/^\n/, '');
+    // Closing delimiter must be alone on a line; YAML values may contain `---` inline.
+    const rest = content.slice(firstLineEnd + 1);
+    const closingMatch = rest.match(/^---\s*(?:\r?\n|$)/m);
+    if (!closingMatch || closingMatch.index === undefined) {
+        return content;
+    }
+
+    const bodyStart = firstLineEnd + 1 + closingMatch.index + closingMatch[0].length;
+
+    return content.slice(bodyStart).replace(/^\r?\n/, '');
 }
 
 /**
