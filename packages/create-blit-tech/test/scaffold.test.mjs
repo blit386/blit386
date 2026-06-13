@@ -8,6 +8,7 @@
 
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -63,9 +64,12 @@ test('scaffolds a runnable game project', () => {
         const agentsEntry = blitManifest.files.find((f) => f.path === 'AGENTS.md');
         assert.ok(agentsEntry, 'manifest should have an AGENTS.md entry');
         assert.equal(agentsEntry.class, 'shared', 'AGENTS.md should be classified as shared');
-        assert.ok(typeof agentsEntry.sha256 === 'string' && agentsEntry.sha256.length === 64, 'sha256 should be a 64-char hex string');
+        const agentsBuf = readFileSync(join(project, 'AGENTS.md'));
+        const expectedSha = createHash('sha256').update(agentsBuf).digest('hex');
+        assert.equal(agentsEntry.sha256, expectedSha, 'manifest sha256 should match the actual AGENTS.md content');
         const baseAgents = join(project, '.blit', 'base', 'AGENTS.md');
         assert.ok(existsSync(baseAgents), '.blit/base/AGENTS.md (pristine copy) should exist');
+        assert.deepStrictEqual(agentsBuf, readFileSync(baseAgents), '.blit/base/AGENTS.md bytes should match the generated file');
 
         const manifestRaw = readFileSync(join(project, 'package.json'), 'utf8');
         assert.ok(!manifestRaw.includes('{{'), 'package.json still has unrendered placeholders');
