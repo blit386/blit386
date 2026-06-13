@@ -1,15 +1,15 @@
 /**
  * The short setup wizard.
  *
- * v0.1 produces a JavaScript project. TypeScript templates are shown as "coming soon".
- * Optional CI and AI-assistant files can be added when the user opts in.
+ * JavaScript and TypeScript are both supported. Optional CI and AI-assistant files can be added when the user opts in.
  */
 
-import { cancel, confirm, isCancel, note, select } from '@clack/prompts';
+import { cancel, confirm, isCancel, select } from '@clack/prompts';
 
-import type { AgentChoice } from './scaffold';
+import type { AgentChoice, LanguageChoice } from './scaffold';
 
 export interface WizardOptions {
+    language: LanguageChoice;
     agent: AgentChoice;
     includeCi: boolean;
 }
@@ -25,14 +25,11 @@ export async function runWizard(): Promise<WizardOptions> {
         initialValue: 'js',
         options: [
             { value: 'js', label: 'JavaScript', hint: 'great to start with' },
-            { value: 'ts', label: 'TypeScript', hint: 'coming soon' },
+            { value: 'ts', label: 'TypeScript', hint: 'adds types and a tsconfig' },
         ],
     });
     if (isCancel(language)) {
         bail();
-    }
-    if (language === 'ts') {
-        note('TypeScript templates arrive in a later version. Building a JavaScript game for now.', 'Heads up');
     }
 
     const agent = await select({
@@ -57,14 +54,16 @@ export async function runWizard(): Promise<WizardOptions> {
     }
 
     return {
+        language: language as LanguageChoice,
         agent: agent as AgentChoice,
         includeCi,
     };
 }
 
-/** Defaults used when --yes skips the wizard. */
+/** Defaults used when --yes or non-TTY mode skips the wizard. */
 export function defaultWizardOptions(): WizardOptions {
     return {
+        language: 'js',
         agent: 'none',
         includeCi: false,
     };
