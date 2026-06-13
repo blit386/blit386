@@ -206,7 +206,7 @@ export function exceedsCaretRange(version: string, caretRange: string): boolean 
  */
 export function kitEngineRange(): string | null {
     try {
-        const kitPkgPath = fileURLToPath(new URL('../../package.json', import.meta.url));
+        const kitPkgPath = fileURLToPath(new URL('../package.json', import.meta.url));
         const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
             blitTech?: { engineRange?: unknown };
         };
