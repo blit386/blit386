@@ -1,11 +1,12 @@
 /**
  * Environment helpers shared by the `blit` commands: package-manager detection, project lookup, git presence,
- * Node version check, and a thin wrapper for spawning the package manager.
+ * Node version check, semver range check, and a thin wrapper for spawning the package manager.
  */
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -138,6 +139,79 @@ export function installedVersion(root: string, dep: string): string | null {
         const pkgPath = join(root, 'node_modules', ...dep.split('/'), 'package.json');
         const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: unknown };
         return typeof pkg.version === 'string' ? pkg.version : null;
+    } catch {
+        return null;
+    }
+}
+
+type Triple = readonly [number, number, number];
+
+/** Parse a `major.minor.patch` version string into a triple of numbers. Pre-release tags are stripped. */
+function parseVersion(version: string): Triple {
+    const core = version.split('-', 1)[0] ?? '';
+    const parts = core.split('.').map((p) => Math.max(0, Number.parseInt(p, 10) || 0));
+
+    return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+}
+
+/** Compare two version triples: -1 when a < b, 0 when equal, 1 when a > b. */
+function compareTriple(a: Triple, b: Triple): -1 | 0 | 1 {
+    for (let i = 0; i < 3; i++) {
+        if ((a[i] ?? 0) < (b[i] ?? 0)) {
+            return -1;
+        }
+        if ((a[i] ?? 0) > (b[i] ?? 0)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Whether `version` satisfies a caret range (`^MAJOR.MINOR.PATCH`).
+ *
+ * A caret range requires: same major AND version >= the floor.
+ * For example `^1.1.1` accepts `1.1.1`, `1.2.0`, `1.99.0` but not `0.9.0` or `2.0.0`.
+ */
+export function satisfiesCaretRange(version: string, caretRange: string): boolean {
+    const floor = caretRange.startsWith('^') ? caretRange.slice(1) : caretRange;
+    const [vMajor] = parseVersion(version);
+    const [fMajor] = parseVersion(floor);
+
+    if (vMajor !== fMajor) {
+        return false;
+    }
+
+    return compareTriple(parseVersion(version), parseVersion(floor)) >= 0;
+}
+
+/**
+ * Whether the installed version is ABOVE the caret range (major bump means the kit is stale).
+ * Returns true when installed major > range major.
+ */
+export function exceedsCaretRange(version: string, caretRange: string): boolean {
+    const floor = caretRange.startsWith('^') ? caretRange.slice(1) : caretRange;
+    const [vMajor] = parseVersion(version);
+    const [fMajor] = parseVersion(floor);
+
+    return vMajor > fMajor;
+}
+
+/**
+ * Read the `blitTech.engineRange` field from the kit's own package.json, or null if absent.
+ *
+ * The kit's package.json ships alongside this file in the npm package, so we locate it relative
+ * to this module's URL rather than looking in `node_modules`.
+ */
+export function kitEngineRange(): string | null {
+    try {
+        const kitPkgPath = fileURLToPath(new URL('../../package.json', import.meta.url));
+        const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
+            blitTech?: { engineRange?: unknown };
+        };
+        const range = pkg.blitTech?.engineRange;
+        return typeof range === 'string' ? range : null;
     } catch {
         return null;
     }
