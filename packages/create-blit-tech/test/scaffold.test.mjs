@@ -9,7 +9,7 @@
 import { strict as assert } from 'node:assert';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -20,6 +20,7 @@ import { scaffold } from '../dist/scaffold.js';
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, '..');
 const cli = join(packageRoot, 'dist', 'index.js');
+const blitCli = join(here, '..', '..', 'kit', 'dist', 'cli.js');
 
 function assertNoPlaceholders(projectDir, relativePath) {
     const content = readFileSync(join(projectDir, relativePath), 'utf8');
@@ -239,6 +240,77 @@ test('scaffold copies optional CI and agent files when requested', () => {
         // Commands should have template vars rendered.
         const runCmd = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
         assert.ok(!runCmd.includes('{{'), 'run command should not have unrendered placeholders');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync --check exits 0 when no files have drifted', () => {
+    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+
+    const work = mkdtempSync(join(tmpdir(), 'cbt-sync-ok-'));
+
+    try {
+        const project = join(work, 'sync-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'sync-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // Nothing has been modified — check should pass with exit code 0.
+        const result = execFileSync(process.execPath, [blitCli, 'agents', 'sync', '--check'], {
+            cwd: project,
+            encoding: 'utf8',
+        });
+
+        assert.ok(result.includes('up to date'), 'sync --check should report files are up to date');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync --check exits non-zero when a kit-managed file is modified', () => {
+    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+
+    const work = mkdtempSync(join(tmpdir(), 'cbt-sync-drift-'));
+
+    try {
+        const project = join(work, 'drift-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'drift-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        // Simulate a user (or an AI agent) editing a kit-owned rule file.
+        writeFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), '# edited by user\n');
+
+        let exitCode = 0;
+        let output = '';
+
+        try {
+            execFileSync(process.execPath, [blitCli, 'agents', 'sync', '--check'], {
+                cwd: project,
+                encoding: 'utf8',
+            });
+        } catch (err) {
+            exitCode = err.status ?? 1;
+            output = err.stdout ?? '';
+        }
+
+        assert.ok(exitCode !== 0, 'sync --check should exit non-zero when a kit-managed file has drifted');
+        assert.ok(output.includes('blit-api-names.md'), 'output should name the drifted file');
+        assert.ok(output.includes('drifted'), 'output should mention drift');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }

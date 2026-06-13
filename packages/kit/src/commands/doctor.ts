@@ -12,6 +12,7 @@ import {
     satisfiesCaretRange,
 } from '../env';
 import { NO_GIT_NAG, ui } from '../messages';
+import { checkSyncDrift } from './agents';
 
 export function runDoctor(): void {
     const out = (line: string): void => {
@@ -74,4 +75,8 @@ export function runDoctor(): void {
             out(ui.info('Update blit-tech to match: run `npm update blit-tech` (or `npx blit upgrade`).'));
         }
     }
+
+    // Sync drift check (D13): warn when kit-managed files have been modified since they were generated.
+    out('');
+    checkSyncDrift(root, out);
 }
