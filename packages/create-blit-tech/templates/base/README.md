@@ -20,7 +20,7 @@ Catch the falling blocks before they reach the bottom.
 
 ## Change the game
 
-Open `src/game.js`. Every line has a comment explaining what it does. Change a number or a color, save the file, and
+Open `{{gameFile}}`. Every line has a comment explaining what it does. Change a number or a color, save the file, and
 your browser updates by itself. A few things to try:
 
 - Make the blocks fall faster: find `ITEM_FALL_SPEED`.

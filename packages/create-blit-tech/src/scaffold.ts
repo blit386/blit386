@@ -87,11 +87,14 @@ function classifyFile(relPath: string): FileClass {
         return 'kit-owned';
     }
 
-    // Source files, config, README, package.json – the user owns these.
+    // Source files, language config (jsconfig.json, tsconfig.json), README, package.json – the user owns these.
     return 'user-owned';
 }
 
 export type AgentChoice = 'none' | 'claude' | 'cursor';
+
+/** Which language layer to scaffold. */
+export type LanguageChoice = 'js' | 'ts';
 
 export interface ScaffoldOptions {
     targetDir: string;
@@ -103,6 +106,8 @@ export interface ScaffoldOptions {
     pmRunLint: string;
     includeCi?: boolean;
     agent?: AgentChoice;
+    /** Language layer to use; defaults to `'js'`. */
+    language?: LanguageChoice;
 }
 
 type TemplateVars = Record<string, string>;
@@ -231,6 +236,12 @@ export function scaffold(options: ScaffoldOptions): void {
     const kitPkg = JSON.parse(readFileSync(join(kitRoot(), 'package.json'), 'utf8')) as { version?: string };
     const kitVer = kitPkg.version ?? '0.1.0';
 
+    const language: LanguageChoice = options.language ?? 'js';
+
+    // gameFile is the user-readable path (README); entryFile is the HTML script src (leading slash).
+    const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    const entryFile = `/${gameFile}`;
+
     const vars: TemplateVars = {
         projectName: options.projectName,
         packageName: toPackageName(options.projectName),
@@ -241,6 +252,9 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunBuild: options.pmRunBuild,
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
+        // Resolved per language so base templates stay language-agnostic.
+        entryFile,
+        gameFile,
     };
 
     // Collect every file path we write so we can build the ownership manifest.
@@ -248,7 +262,7 @@ export function scaffold(options: ScaffoldOptions): void {
 
     const templates = templatesDir();
     copyTemplateTree(join(templates, 'base'), options.targetDir, vars, writtenPaths);
-    copyTemplateTree(join(templates, 'js'), options.targetDir, vars, writtenPaths);
+    copyTemplateTree(join(templates, language), options.targetDir, vars, writtenPaths);
 
     if (options.includeCi) {
         copyTemplateTree(
