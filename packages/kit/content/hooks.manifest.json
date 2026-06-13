@@ -1,0 +1,26 @@
+{
+  "version": "1",
+  "hooks": [
+    {
+      "id": "format-on-edit",
+      "intent": "Format source files after each AI-assisted edit to keep code consistent",
+      "cursor": {
+        "event": "afterFileEdit",
+        "command": "{{pmRunFormat}}",
+        "matcher": "Write|TabWrite",
+        "timeout": 30,
+        "failClosed": false
+      }
+    },
+    {
+      "id": "block-dangerous-shell",
+      "intent": "Block risky destructive git commands that could lose game progress",
+      "cursor": {
+        "event": "beforeShellExecution",
+        "command": "sh .cursor/hooks/shell-safety.sh",
+        "timeout": 10,
+        "failClosed": true
+      }
+    }
+  ]
+}
