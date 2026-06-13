@@ -381,9 +381,9 @@ export function scaffold(options: ScaffoldOptions): void {
 
     const language: LanguageChoice = options.language ?? 'js';
 
-    // The entry-point path appears in two places: as the `<script src>` in index.html (leading slash)
-    // and as a user-readable path in README.md (no leading slash).
-    const entryFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    // gameFile is the user-readable path (README); entryFile is the HTML script src (leading slash).
+    const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    const entryFile = `/${gameFile}`;
 
     const vars: TemplateVars = {
         projectName: options.projectName,
@@ -397,7 +397,7 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunLint: options.pmRunLint,
         // Resolved per language so base templates stay language-agnostic.
         entryFile,
-        gameFile: entryFile,
+        gameFile,
     };
 
     // Collect every file path we write so we can build the ownership manifest.
