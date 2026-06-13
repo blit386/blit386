@@ -1,6 +1,16 @@
 /** `blit doctor` - a friendly checkup of the things a Blit-Tech game needs. */
 
-import { detectPackageManager, findProjectRoot, installedVersion, isGitRepo, nodeVersionOk, readProject } from '../env';
+import {
+    detectPackageManager,
+    exceedsCaretRange,
+    findProjectRoot,
+    installedVersion,
+    isGitRepo,
+    kitEngineRange,
+    nodeVersionOk,
+    readProject,
+    satisfiesCaretRange,
+} from '../env';
 import { NO_GIT_NAG, ui } from '../messages';
 
 export function runDoctor(): void {
@@ -41,8 +51,27 @@ export function runDoctor(): void {
     const version = installedVersion(root, 'blit-tech');
     if (version) {
         out(ui.success(`blit-tech ${version} installed`));
-        out(ui.info('Run `blit upgrade` to get the latest version.'));
     } else {
         out(ui.warn('blit-tech is not installed yet. Run your install command (for example `npm install`).'));
+    }
+
+    // Kit-engine compatibility (D14): compare the engine range this kit was written for against what is installed.
+    const engineRange = kitEngineRange();
+    if (version && engineRange) {
+        if (satisfiesCaretRange(version, engineRange)) {
+            out(ui.success(`blit-tech ${version} is compatible with this kit (${engineRange})`));
+        } else if (exceedsCaretRange(version, engineRange)) {
+            out('');
+            out(
+                ui.warn(
+                    `Your local guides were written for an older Blit-Tech (${engineRange}), but ${version} is installed.`,
+                ),
+            );
+            out(ui.info('Update @blit-tech/kit to get guides that match your engine: run `npx blit upgrade`.'));
+        } else {
+            out('');
+            out(ui.warn(`This kit needs blit-tech ${engineRange}, but ${version} is installed.`));
+            out(ui.info('Update blit-tech to match: run `npm update blit-tech` (or `npx blit upgrade`).'));
+        }
     }
 }
