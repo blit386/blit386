@@ -1,8 +1,12 @@
 /**
  * `create-blit-tech` entry point.
  *
- * Flow: greet -> pick a folder -> short wizard -> scaffold -> git init -> install -> print next steps.
+ * Flow: check Node -> greet -> pick a folder -> short wizard -> scaffold -> git init -> install -> print next steps.
  * Flags: --yes/-y (skip prompts), --no-install, --no-git.
+ *
+ * Two guards run before the wizard: the Node version must meet the engine floor (a friendly message beats an
+ * EBADENGINE wall), and without an interactive terminal (an AI agent or CI) we behave as --yes instead of hanging on
+ * a prompt nobody can answer.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -11,6 +15,7 @@ import { basename, resolve } from 'node:path';
 
 import { cancel, intro, isCancel, log, note, outro, text } from '@clack/prompts';
 
+import { isInteractive, meetsNodeFloor, NODE_FLOOR } from './env';
 import { detectPackageManager, pmHints } from './pkgManager';
 import { scaffold } from './scaffold';
 import { defaultWizardOptions, runWizard } from './wizard';
@@ -61,11 +66,30 @@ async function resolveTargetDir(positional: string | undefined, yes: boolean): P
 }
 
 async function main(): Promise<void> {
+    if (!meetsNodeFloor(process.versions.node)) {
+        log.error(
+            `Blit-Tech needs Node ${NODE_FLOOR} or newer, and you have ${process.versions.node}. ` +
+                'Install the latest LTS from https://nodejs.org and run this again.',
+        );
+        process.exit(1);
+    }
+
     const argv = process.argv.slice(2);
     const positional = argv.filter((arg) => !arg.startsWith('-'));
-    const yes = argv.includes('--yes') || argv.includes('-y');
+    const flagYes = argv.includes('--yes') || argv.includes('-y');
     const noInstall = argv.includes('--no-install');
     const noGit = argv.includes('--no-git');
+
+    // Without a real terminal (an AI agent or CI), the clack wizard would hang waiting for input. Use the defaults
+    // instead and say so once, kindly, with the flags that control them.
+    const interactive = isInteractive();
+    const yes = flagYes || !interactive;
+    if (!interactive && !flagYes) {
+        log.info(
+            'No interactive terminal detected, so I used the defaults: JavaScript, no AI assistant, no CI. ' +
+                'Pass --yes to silence this, or run me in a terminal to choose. Other flags: --no-install, --no-git.',
+        );
+    }
 
     intro('create-blit-tech');
 

@@ -11,7 +11,7 @@ export default defineConfig([
         banner: { js: '#!/usr/bin/env node' },
     },
     {
-        entry: { scaffold: 'src/scaffold.ts' },
+        entry: { scaffold: 'src/scaffold.ts', env: 'src/env.ts' },
         format: ['esm'],
         target: 'node22',
         sourcemap: true,
