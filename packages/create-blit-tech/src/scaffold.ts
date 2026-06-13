@@ -82,6 +82,7 @@ function classifyFile(relPath: string): FileClass {
         normalized.startsWith('.cursor/rules/') ||
         normalized.startsWith('.cursor/hooks/') ||
         normalized.startsWith('.cursor/commands/') ||
+        normalized === '.cursor/hooks.json' ||
         normalized.startsWith('.claude/skills/') ||
         normalized.startsWith('.claude/rules/') ||
         normalized === '.claude/settings.json'
@@ -382,6 +383,178 @@ function generateClaudeAdapter(
     }
 }
 
+// ---------------------------------------------------------------------------
+// Cursor adapter types (mirrors the Cursor hooks.json wire format)
+// ---------------------------------------------------------------------------
+
+interface CursorHookEntry {
+    /** Shell command to run for this hook event. */
+    command?: string;
+    /** Regex string used by Cursor to match which tool calls trigger this hook. */
+    matcher?: string;
+    /** Seconds before the hook is considered timed out. */
+    timeout?: number;
+    /** When true, Cursor blocks the triggering action if the hook fails or exits non-zero. */
+    failClosed?: boolean;
+}
+
+interface CursorHooksJson {
+    version: number;
+    hooks: Record<string, CursorHookEntry[]>;
+}
+
+// ---------------------------------------------------------------------------
+// Hooks-manifest types (canonical intent format in content/hooks.manifest.json)
+// ---------------------------------------------------------------------------
+
+interface HookManifestCursorBlock extends CursorHookEntry {
+    /** Cursor hook event: "afterFileEdit" | "beforeShellExecution" | "preToolUse" */
+    event: string;
+}
+
+interface HookManifestEntry {
+    /** Stable identifier. */
+    id: string;
+    /** Human-readable intent used in AGENTS.md prose and as documentation. */
+    intent: string;
+    /** Cursor-specific rendering of this hook. */
+    cursor?: HookManifestCursorBlock;
+}
+
+interface HooksManifest {
+    version: string;
+    hooks: HookManifestEntry[];
+}
+
+/** Translate the canonical hooks manifest into Cursor's `hooks.json` structure, rendering template vars. */
+function buildCursorHooks(manifest: HooksManifest, vars: TemplateVars): CursorHooksJson {
+    const hooks: Record<string, CursorHookEntry[]> = {};
+
+    for (const hook of manifest.hooks) {
+        if (!hook.cursor) {
+            continue;
+        }
+
+        const { event, ...rest } = hook.cursor;
+        const entry: CursorHookEntry = {};
+
+        if (rest.command !== undefined) {
+            entry.command = render(rest.command, vars);
+        }
+
+        if (rest.matcher !== undefined) {
+            entry.matcher = rest.matcher;
+        }
+
+        if (rest.timeout !== undefined) {
+            entry.timeout = rest.timeout;
+        }
+
+        if (rest.failClosed !== undefined) {
+            entry.failClosed = rest.failClosed;
+        }
+
+        if (!hooks[event]) {
+            hooks[event] = [];
+        }
+
+        hooks[event].push(entry);
+    }
+
+    return { version: 1, hooks };
+}
+
+/**
+ * Generate the Cursor adapter files from the kit's canonical IR:
+ *   - `.cursor/rules/{name}.mdc`          (kit-owned, MDC format; frontmatter from rule files)
+ *   - `.cursor/hooks.json`                (kit-owned; translated from content/hooks.manifest.json)
+ *   - `.cursor/hooks/shell-safety.sh`     (kit-owned; shell hook script)
+ *   - `.cursor/commands/{name}.md`        (kit-owned, one per skill in content/skills/)
+ *
+ * Replaces the static `templates/optional/cursor/` tree.
+ */
+function generateCursorAdapter(
+    kitContentRoot: string,
+    targetDir: string,
+    vars: TemplateVars,
+    writtenPaths: Set<string>,
+): void {
+    const contentRoot = join(kitContentRoot, 'content');
+    const cursorDir = join(targetDir, CURSOR_DIR);
+    mkdirSync(cursorDir, { recursive: true });
+
+    // Emit .cursor/rules/*.mdc from content/rules/*.md.
+    // Kit rules carry YAML frontmatter with description/alwaysApply/globs — Cursor reads this as MDC.
+    const rulesDir = join(contentRoot, 'rules');
+    if (existsSync(rulesDir)) {
+        const cursorRulesDir = join(cursorDir, 'rules');
+        mkdirSync(cursorRulesDir, { recursive: true });
+
+        for (const entry of readdirSync(rulesDir, { withFileTypes: true })) {
+            if (!entry.isFile() || !entry.name.endsWith('.md')) {
+                continue;
+            }
+
+            const src = join(rulesDir, entry.name);
+            const destName = entry.name.replace(/\.md$/, '.mdc');
+            const dest = join(cursorRulesDir, destName);
+            writeFileSync(dest, render(readFileSync(src, 'utf8'), vars));
+            writtenPaths.add(dest);
+        }
+    }
+
+    // Emit .cursor/hooks.json from content/hooks.manifest.json.
+    const hookManifestPath = join(contentRoot, 'hooks.manifest.json');
+    if (existsSync(hookManifestPath)) {
+        const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
+        const cursorHooks = buildCursorHooks(manifest, vars);
+
+        const hooksJsonPath = join(cursorDir, 'hooks.json');
+        writeFileSync(hooksJsonPath, `${JSON.stringify(cursorHooks, null, 2)}\n`);
+        writtenPaths.add(hooksJsonPath);
+    }
+
+    // Copy hook scripts referenced in the manifest (e.g. shell-safety.sh).
+    const hooksScriptsDir = join(contentRoot, 'hooks');
+    if (existsSync(hooksScriptsDir)) {
+        const cursorHooksDir = join(cursorDir, 'hooks');
+        mkdirSync(cursorHooksDir, { recursive: true });
+
+        for (const entry of readdirSync(hooksScriptsDir, { withFileTypes: true })) {
+            if (!entry.isFile()) {
+                continue;
+            }
+
+            const src = join(hooksScriptsDir, entry.name);
+            const dest = join(cursorHooksDir, entry.name);
+            writeFileSync(dest, readFileSync(src, 'utf8'));
+            writtenPaths.add(dest);
+        }
+    }
+
+    // Emit .cursor/commands/ from content/skills/*/SKILL.md.
+    const skillsDir = join(contentRoot, 'skills');
+    if (existsSync(skillsDir)) {
+        const commandsDir = join(cursorDir, 'commands');
+        mkdirSync(commandsDir, { recursive: true });
+
+        for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
+            if (!entry.isDirectory()) {
+                continue;
+            }
+
+            const skillSrc = join(skillsDir, entry.name, 'SKILL.md');
+            if (!existsSync(skillSrc)) {
+                continue;
+            }
+
+            const dest = join(commandsDir, `${entry.name}.md`);
+            writeFileSync(dest, render(readFileSync(skillSrc, 'utf8'), vars));
+            writtenPaths.add(dest);
+        }
+    }
+}
+
 /** Generate the project at `targetDir`. The caller guarantees the folder is empty. */
 export function scaffold(options: ScaffoldOptions): void {
     // Resolve the actual kit version string (not the range) for the manifest.
@@ -426,12 +599,7 @@ export function scaffold(options: ScaffoldOptions): void {
     }
 
     if (options.agent === 'cursor') {
-        copyTemplateTree(
-            join(templates, 'optional', 'cursor', 'dot-cursor'),
-            join(options.targetDir, CURSOR_DIR),
-            vars,
-            writtenPaths,
-        );
+        generateCursorAdapter(kitRoot(), options.targetDir, vars, writtenPaths);
     }
 
     if (options.agent === 'claude') {
