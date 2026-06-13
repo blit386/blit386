@@ -13,7 +13,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { copyFileSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -81,8 +81,10 @@ function classifyFile(relPath: string): FileClass {
         normalized.startsWith('docs/') ||
         normalized.startsWith('.cursor/rules/') ||
         normalized.startsWith('.cursor/hooks/') ||
+        normalized.startsWith('.cursor/commands/') ||
         normalized.startsWith('.claude/skills/') ||
-        normalized.startsWith('.claude/rules/')
+        normalized.startsWith('.claude/rules/') ||
+        normalized === '.claude/settings.json'
     ) {
         return 'kit-owned';
     }
@@ -230,6 +232,156 @@ function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer:
     writeFileSync(join(blitDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
+/**
+ * Strip YAML frontmatter (a `---`…`---` block at the top) from a markdown file.
+ *
+ * Kit rules carry frontmatter used by the Cursor adapter (alwaysApply, globs). The Claude adapter uses
+ * only the body, so it strips the frontmatter before emitting the file into `.claude/rules/`.
+ */
+function stripFrontmatter(content: string): string {
+    if (!content.startsWith('---')) {
+        return content;
+    }
+
+    const firstLineEnd = content.indexOf('\n');
+    if (firstLineEnd === -1) {
+        return content;
+    }
+
+    // Closing delimiter must be alone on a line; YAML values may contain `---` inline.
+    const rest = content.slice(firstLineEnd + 1);
+    const closingMatch = rest.match(/^---\s*(?:\r?\n|$)/m);
+    if (!closingMatch || closingMatch.index === undefined) {
+        return content;
+    }
+
+    const bodyStart = firstLineEnd + 1 + closingMatch.index + closingMatch[0].length;
+
+    return content.slice(bodyStart).replace(/^\r?\n/, '');
+}
+
+/**
+ * Extract the content between `<!-- blit-kit:managed:start -->` and `<!-- blit-kit:managed:end -->` markers,
+ * skipping the ownership-comment block that immediately follows the start marker.
+ */
+function extractManagedRegion(content: string): string {
+    const START = '<!-- blit-kit:managed:start -->';
+    const END = '<!-- blit-kit:managed:end -->';
+
+    const startIdx = content.indexOf(START);
+    const endIdx = content.indexOf(END);
+
+    if (startIdx === -1 || endIdx === -1) {
+        return content.trim();
+    }
+
+    // Skip the start marker itself.
+    let bodyStart = startIdx + START.length;
+
+    // If an HTML comment immediately follows (the kit ownership note), skip past it.
+    const afterStart = content.slice(bodyStart).trimStart();
+    if (afterStart.startsWith('<!--')) {
+        const commentEnd = content.indexOf('-->', bodyStart);
+        if (commentEnd !== -1) {
+            bodyStart = commentEnd + '-->'.length;
+        }
+    }
+
+    return content.slice(bodyStart, endIdx).trim();
+}
+
+/**
+ * Generate the Claude Code adapter files from the kit's canonical IR:
+ *   - `CLAUDE.md`                        (shared file with a managed region)
+ *   - `.claude/rules/{name}.md`          (kit-owned, one per rule in content/rules/)
+ *   - `.claude/skills/{name}/SKILL.md`   (kit-owned, one per skill in content/skills/)
+ *
+ * Replaces the static `templates/optional/claude/CLAUDE.md.tmpl`. The generator reads the kit content
+ * and composes per-agent output, applying template-variable substitution throughout.
+ */
+function generateClaudeAdapter(
+    kitContentRoot: string,
+    targetDir: string,
+    vars: TemplateVars,
+    writtenPaths: Set<string>,
+): void {
+    const contentRoot = join(kitContentRoot, 'content');
+
+    // Build CLAUDE.md: managed region = AGENTS.md body + project commands.
+    const agentsMd = readFileSync(join(contentRoot, 'AGENTS.md'), 'utf8');
+    const managedBody = extractManagedRegion(agentsMd);
+
+    const commandsBlock = [
+        '',
+        '## Commands',
+        '',
+        `- \`${vars.pmRunDev}\` - start the dev server`,
+        `- \`${vars.pmRunBuild}\` - build for production`,
+        `- \`${vars.pmRunFormat}\` - format the code`,
+        `- \`${vars.pmRunLint}\` - check code style`,
+        '- `npx blit doctor` - check your setup',
+        '- `npx blit upgrade` - update Blit-Tech',
+    ].join('\n');
+
+    const claudeMd = [
+        '<!-- blit-kit:managed:start -->',
+        '<!-- This block is managed by @blit-tech/kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
+        '',
+        managedBody,
+        commandsBlock,
+        '',
+        '<!-- blit-kit:managed:end -->',
+        '',
+        '## Your notes',
+        '',
+        'Add project-specific notes for Claude here. This section is yours.',
+        '',
+    ].join('\n');
+
+    const claudePath = join(targetDir, 'CLAUDE.md');
+    writeFileSync(claudePath, claudeMd);
+    writtenPaths.add(claudePath);
+
+    // Emit .claude/rules/ from content/rules/*.md (strip frontmatter; Claude reads plain markdown).
+    const rulesDir = join(contentRoot, 'rules');
+    if (existsSync(rulesDir)) {
+        const claudeRulesDir = join(targetDir, '.claude', 'rules');
+        mkdirSync(claudeRulesDir, { recursive: true });
+
+        for (const entry of readdirSync(rulesDir, { withFileTypes: true })) {
+            if (!entry.isFile() || !entry.name.endsWith('.md')) {
+                continue;
+            }
+
+            const src = join(rulesDir, entry.name);
+            const dest = join(claudeRulesDir, entry.name);
+            writeFileSync(dest, render(stripFrontmatter(readFileSync(src, 'utf8')), vars));
+            writtenPaths.add(dest);
+        }
+    }
+
+    // Emit .claude/skills/ from content/skills/*/SKILL.md.
+    const skillsDir = join(contentRoot, 'skills');
+    if (existsSync(skillsDir)) {
+        for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
+            if (!entry.isDirectory()) {
+                continue;
+            }
+
+            const skillSrc = join(skillsDir, entry.name, 'SKILL.md');
+            if (!existsSync(skillSrc)) {
+                continue;
+            }
+
+            const skillDestDir = join(targetDir, '.claude', 'skills', entry.name);
+            mkdirSync(skillDestDir, { recursive: true });
+            const dest = join(skillDestDir, 'SKILL.md');
+            writeFileSync(dest, render(readFileSync(skillSrc, 'utf8'), vars));
+            writtenPaths.add(dest);
+        }
+    }
+}
+
 /** Generate the project at `targetDir`. The caller guarantees the folder is empty. */
 export function scaffold(options: ScaffoldOptions): void {
     // Resolve the actual kit version string (not the range) for the manifest.
@@ -283,11 +435,7 @@ export function scaffold(options: ScaffoldOptions): void {
     }
 
     if (options.agent === 'claude') {
-        const claudeTemplate = join(templates, 'optional', 'claude', 'CLAUDE.md.tmpl');
-        const claudeContent = render(readFileSync(claudeTemplate, 'utf8'), vars);
-        const claudePath = join(options.targetDir, 'CLAUDE.md');
-        writeFileSync(claudePath, claudeContent);
-        writtenPaths.add(claudePath);
+        generateClaudeAdapter(kitRoot(), options.targetDir, vars, writtenPaths);
     }
 
     // Copy the kit's canonical guidance (single source of truth for AGENTS.md + docs).

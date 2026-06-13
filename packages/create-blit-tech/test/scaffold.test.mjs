@@ -154,6 +154,25 @@ test('scaffold copies optional CI and agent files when requested', () => {
         assert.ok(!claudeGuide.includes('{{pmRunBuild}}'), 'CLAUDE.md should not contain pmRunBuild placeholder');
         assert.ok(!claudeGuide.includes('{{pmRunFormat}}'), 'CLAUDE.md should not contain pmRunFormat placeholder');
         assert.ok(!claudeGuide.includes('{{pmRunLint}}'), 'CLAUDE.md should not contain pmRunLint placeholder');
+        assert.ok(claudeGuide.includes('<!-- blit-kit:managed:start -->'), 'CLAUDE.md should have managed-region start marker');
+        assert.ok(claudeGuide.includes('<!-- blit-kit:managed:end -->'), 'CLAUDE.md should have managed-region end marker');
+        assert.ok(claudeGuide.includes('Your notes'), 'CLAUDE.md should have a Your notes section outside the managed region');
+
+        // The Claude adapter should also emit .claude/rules/ and .claude/skills/.
+        assert.ok(existsSync(join(project, '.claude', 'rules', 'blit-api-names.md')), '.claude/rules/blit-api-names.md should be generated');
+        assert.ok(existsSync(join(project, '.claude', 'rules', 'blit-integer-coords.md')), '.claude/rules/blit-integer-coords.md should be generated');
+        assert.ok(existsSync(join(project, '.claude', 'skills', 'run', 'SKILL.md')), '.claude/skills/run/SKILL.md should be generated');
+        assert.ok(existsSync(join(project, '.claude', 'skills', 'fix', 'SKILL.md')), '.claude/skills/fix/SKILL.md should be generated');
+
+        // Rule files should have frontmatter stripped (Claude reads plain markdown).
+        const apiNamesRule = readFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), 'utf8');
+        assert.ok(!apiNamesRule.startsWith('---'), 'Claude rule files should not have YAML frontmatter');
+        assert.ok(apiNamesRule.includes('BT'), 'Claude rule file should contain the API content');
+
+        // Skill files should have template vars rendered.
+        const runSkill = readFileSync(join(project, '.claude', 'skills', 'run', 'SKILL.md'), 'utf8');
+        assert.ok(runSkill.includes(pmRunBuild.replace('build', 'dev')), 'run skill should reference the dev command');
+        assert.ok(!runSkill.includes('{{'), 'run skill should not have unrendered placeholders');
 
         const cursorProject = join(work, 'cursor-game');
         scaffold({
@@ -203,7 +222,7 @@ test('scaffolds a TypeScript project when language is ts', () => {
         const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'));
         assert.ok(pkg.devDependencies?.typescript, 'typescript should be a devDependency for TS projects');
         assert.ok(pkg.scripts?.typecheck, 'typecheck script should be present for TS projects');
-        assert.ok(!pkg.devDependencies?.['blit-tech']?.includes('workspace:*'), 'no workspace:* in package.json');
+        assert.ok(!pkg.dependencies?.['blit-tech']?.includes('workspace:*'), 'no workspace:* in package.json');
 
         // Entry file references should point to the .ts file.
         const html = readFileSync(join(project, 'index.html'), 'utf8');
