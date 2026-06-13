@@ -50,10 +50,22 @@ test('scaffolds a runnable game project', () => {
             'AGENTS.md',
             join('docs', 'getting-started.md'),
             join('public', '.gitkeep'),
+            join('.blit', 'manifest.json'),
         ];
         for (const relativePath of expected) {
             assert.ok(existsSync(join(project, relativePath)), `expected ${relativePath} to be generated`);
         }
+
+        // The manifest should record files with sha256 hashes and correct classes.
+        const blitManifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+        assert.ok(Array.isArray(blitManifest.files), 'manifest.files should be an array');
+        assert.ok(blitManifest.files.length > 0, 'manifest should have at least one entry');
+        const agentsEntry = blitManifest.files.find((f) => f.path === 'AGENTS.md');
+        assert.ok(agentsEntry, 'manifest should have an AGENTS.md entry');
+        assert.equal(agentsEntry.class, 'shared', 'AGENTS.md should be classified as shared');
+        assert.ok(typeof agentsEntry.sha256 === 'string' && agentsEntry.sha256.length === 64, 'sha256 should be a 64-char hex string');
+        const baseAgents = join(project, '.blit', 'base', 'AGENTS.md');
+        assert.ok(existsSync(baseAgents), '.blit/base/AGENTS.md (pristine copy) should exist');
 
         const manifestRaw = readFileSync(join(project, 'package.json'), 'utf8');
         assert.ok(!manifestRaw.includes('{{'), 'package.json still has unrendered placeholders');
