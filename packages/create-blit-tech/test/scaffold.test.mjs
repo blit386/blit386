@@ -76,6 +76,28 @@ test('scaffolds a runnable game project', () => {
     }
 });
 
+test('scaffolds without --yes when no interactive terminal is attached', () => {
+    // stdio: 'ignore' means stdin/stdout are not TTYs, like an AI agent or CI. The non-TTY guard should fall back to
+    // the defaults instead of hanging on the wizard. The timeout fails the test if it ever blocks on a prompt.
+    const work = mkdtempSync(join(tmpdir(), 'cbt-nontty-'));
+
+    try {
+        execFileSync(process.execPath, [cli, 'agent-game', '--no-install', '--no-git'], {
+            cwd: work,
+            stdio: 'ignore',
+            timeout: 30_000,
+        });
+
+        const project = join(work, 'agent-game');
+        assert.ok(existsSync(join(project, 'package.json')), 'non-TTY run should still scaffold the project');
+        assert.ok(existsSync(join(project, 'src', 'game.js')), 'non-TTY run should emit the game file');
+        assert.ok(!existsSync(join(project, 'CLAUDE.md')), 'non-TTY run should use the default of no AI assistant');
+        assert.ok(!existsSync(join(project, '.github')), 'non-TTY run should use the default of no CI');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('scaffold copies optional CI and agent files when requested', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-opt-'));
 
