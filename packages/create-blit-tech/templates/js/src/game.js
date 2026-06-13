@@ -67,16 +67,29 @@ class Game {
     }
 
     update() {
-        // Move the paddle while the left or right arrow is held (Space and a gamepad work too).
-        if (BT.isDown(BT.BTN_LEFT, 0)) {
-            this.paddlePos.x -= PADDLE_SPEED;
+        // Blit-Tech supports two ways to move the paddle: pointer input (mouse and touch) and arrow keys.
+        // We check the pointer first because it works on phones, tablets, and any computer with a mouse.
+        // The "0" you see in BT.isPointerActive(0) and BT.pointerPos(0) means "the first pointer slot."
+        // A phone can track several fingers at once; slot 0 is always the first (or only) one.
+        if (BT.isPointerActive(0)) {
+            // BT.pointerPos(0) returns a Vector2i: the exact pixel position of the pointer right now.
+            // We want the CENTER of the paddle under the pointer, not its left edge.
+            // Subtracting half the paddle width shifts it left so it is balanced around the cursor or finger.
+            this.paddlePos.x = BT.pointerPos(0).x - Math.floor(PADDLE_WIDTH / 2);
+        } else {
+            // No pointer is active - fall back to the arrow keys (or a connected gamepad).
+            // BT.isDown() is true for every frame the button is held down, not just the frame it was pressed.
+            if (BT.isDown(BT.BTN_LEFT, 0)) {
+                this.paddlePos.x -= PADDLE_SPEED;
+            }
+
+            if (BT.isDown(BT.BTN_RIGHT, 0)) {
+                this.paddlePos.x += PADDLE_SPEED;
+            }
         }
 
-        if (BT.isDown(BT.BTN_RIGHT, 0)) {
-            this.paddlePos.x += PADDLE_SPEED;
-        }
-
-        // Keep the paddle on the screen.
+        // Keep the paddle on the screen no matter how it moved.
+        // Math.floor makes sure we store a whole number, not a fraction of a pixel.
         const maxX = this.screen.x - PADDLE_WIDTH;
         if (this.paddlePos.x < 0) {
             this.paddlePos.x = 0;
