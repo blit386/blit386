@@ -12,6 +12,7 @@
       "packages/*/*.ts",
       "packages/*/*.json",
       "packages/*/*.mjs",
+      "packages/create-blit-tech/templates/**/*.js",
       "scripts/**/*.mjs",
       ".claude/**/*.json",
       "*.json",

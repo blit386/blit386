@@ -41,7 +41,7 @@
       "prettier --write"
     ],
     "*.{ts,js,md,mdx}": [
-      "cspell --no-progress"
+      "cspell --no-progress --no-must-find-files"
     ]
   },
   "devDependencies": {
