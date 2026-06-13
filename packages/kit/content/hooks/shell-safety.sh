@@ -4,6 +4,15 @@
 
 set -u
 
+# python3 is required to parse the JSON payload from Cursor.
+# If it is not available the hook exits non-zero so Cursor treats this as a
+# fail-closed event and blocks the triggering action rather than silently
+# allowing it through.
+if ! command -v python3 > /dev/null 2>&1; then
+    printf '{"permission":"deny","user_message":"Shell safety hook could not run: python3 is not installed.","agent_message":"python3 is required by the blit shell-safety hook. Install it or run `npx blit agents sync` to regenerate hooks."}\n' >&2
+    exit 1
+fi
+
 INPUT_JSON="$(cat)"
 
 COMMAND_TEXT="$(printf '%s' "$INPUT_JSON" | python3 -c "

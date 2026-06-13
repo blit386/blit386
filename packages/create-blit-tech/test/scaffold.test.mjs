@@ -219,9 +219,14 @@ test('scaffold copies optional CI and agent files when requested', () => {
         const hooksJson = JSON.parse(readFileSync(join(cursorProject, '.cursor', 'hooks.json'), 'utf8'));
         assert.equal(hooksJson.version, 1, 'hooks.json version should be 1');
         assert.ok(Array.isArray(hooksJson.hooks.afterFileEdit), 'hooks.json should have afterFileEdit entries');
+        assert.ok(hooksJson.hooks.afterFileEdit.length > 0, 'afterFileEdit should contain at least one entry');
         assert.ok(
             Array.isArray(hooksJson.hooks.beforeShellExecution),
             'hooks.json should have beforeShellExecution entries',
+        );
+        assert.ok(
+            hooksJson.hooks.beforeShellExecution.length > 0,
+            'beforeShellExecution should contain at least one entry',
         );
         const safetyHook = hooksJson.hooks.beforeShellExecution[0];
         assert.ok(safetyHook.failClosed === true, 'shell safety hook should be failClosed');
