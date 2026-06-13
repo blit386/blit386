@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "adapters": {
+    "claude": {
+      "description": "Claude Code adapter",
+      "emits": ["CLAUDE.md", ".claude/rules/{name}.md", ".claude/skills/{name}/SKILL.md"]
+    },
+    "cursor": {
+      "description": "Cursor adapter",
+      "emits": [".cursor/rules/{name}.mdc", ".cursor/hooks.json", ".cursor/commands/{name}.md"]
+    }
+  }
+}
