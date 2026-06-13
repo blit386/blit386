@@ -77,6 +77,7 @@ async function main(): Promise<void> {
     const argv = process.argv.slice(2);
     const positional = argv.filter((arg) => !arg.startsWith('-'));
     const flagYes = argv.includes('--yes') || argv.includes('-y');
+    const flagTs = argv.includes('--ts');
     const noInstall = argv.includes('--no-install');
     const noGit = argv.includes('--no-git');
 
@@ -104,6 +105,10 @@ async function main(): Promise<void> {
 
     const wizardOptions = yes ? defaultWizardOptions() : await runWizard();
 
+    // --ts flag overrides the wizard's language choice so pros can skip the prompt.
+    const language = flagTs ? 'ts' : wizardOptions.language;
+    const languageLabel = language === 'ts' ? 'TypeScript' : 'JavaScript';
+
     const pm = pmHints(detectPackageManager());
 
     scaffold({
@@ -116,8 +121,9 @@ async function main(): Promise<void> {
         pmRunLint: pm.runLintCmd,
         includeCi: wizardOptions.includeCi,
         agent: wizardOptions.agent,
+        language,
     });
-    log.success(`Created ${projectName} (JavaScript)`);
+    log.success(`Created ${projectName} (${languageLabel})`);
 
     if (!noGit && tryGitInit(targetDir)) {
         log.step('Started a git repository and saved the first version');
@@ -136,7 +142,9 @@ async function main(): Promise<void> {
 
     const steps = [`cd ${dirArg}`, ...(installed ? [] : [pm.installCmd]), pm.runDevCmd];
     note(steps.join('\n'), 'Next steps');
-    outro('Have fun. Open src/game.js to change the game.');
+
+    const gameFile = language === 'ts' ? 'src/game.ts' : 'src/game.js';
+    outro(`Have fun. Open ${gameFile} to change the game.`);
 }
 
 main().catch((error: unknown) => {

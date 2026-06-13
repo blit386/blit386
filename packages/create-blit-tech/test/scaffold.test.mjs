@@ -87,6 +87,15 @@ test('scaffolds a runnable game project', () => {
         const game = readFileSync(join(project, 'src', 'game.js'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.js is missing the bootstrap call');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
+
+        // The base templates should use the entryFile and gameFile template vars, not hardcoded paths.
+        const html = readFileSync(join(project, 'index.html'), 'utf8');
+        assert.ok(html.includes('src/game.js'), 'index.html should contain the JS entry file path');
+        assert.ok(!html.includes('{{'), 'index.html still has unrendered placeholders');
+
+        const readme = readFileSync(join(project, 'README.md'), 'utf8');
+        assert.ok(readme.includes('src/game.js'), 'README.md should reference the game file');
+        assert.ok(!readme.includes('{{'), 'README.md still has unrendered placeholders');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
@@ -163,6 +172,72 @@ test('scaffold copies optional CI and agent files when requested', () => {
             existsSync(join(cursorProject, '.cursor', 'rules', 'blit-tech-api-names.mdc')),
             'Cursor rules should be generated',
         );
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('scaffolds a TypeScript project when language is ts', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-ts-'));
+
+    try {
+        const project = join(work, 'ts-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'ts-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            language: 'ts',
+        });
+
+        // TypeScript-specific files are present; JavaScript-only files are absent.
+        assert.ok(existsSync(join(project, 'src', 'game.ts')), 'src/game.ts should be generated for TS');
+        assert.ok(existsSync(join(project, 'tsconfig.json')), 'tsconfig.json should be generated for TS');
+        assert.ok(!existsSync(join(project, 'src', 'game.js')), 'src/game.js should not be generated for TS');
+        assert.ok(!existsSync(join(project, 'jsconfig.json')), 'jsconfig.json should not be generated for TS');
+
+        // package.json should include typescript as a devDependency.
+        const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'));
+        assert.ok(pkg.devDependencies?.typescript, 'typescript should be a devDependency for TS projects');
+        assert.ok(pkg.scripts?.typecheck, 'typecheck script should be present for TS projects');
+        assert.ok(!pkg.devDependencies?.['blit-tech']?.includes('workspace:*'), 'no workspace:* in package.json');
+
+        // Entry file references should point to the .ts file.
+        const html = readFileSync(join(project, 'index.html'), 'utf8');
+        assert.ok(html.includes('src/game.ts'), 'index.html should reference src/game.ts');
+        assert.ok(!html.includes('game.js'), 'index.html should not reference game.js for TS');
+
+        const readme = readFileSync(join(project, 'README.md'), 'utf8');
+        assert.ok(readme.includes('src/game.ts'), 'README.md should reference src/game.ts');
+        assert.ok(!readme.includes('game.js'), 'README.md should not reference game.js for TS');
+
+        // game.ts should have bootstrap call and no unrendered placeholders.
+        const game = readFileSync(join(project, 'src', 'game.ts'), 'utf8');
+        assert.ok(game.includes('bootstrap(Game)'), 'game.ts is missing the bootstrap call');
+        assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('scaffolds a TypeScript project when --ts flag is passed to the CLI', () => {
+    assert.ok(existsSync(cli), 'dist/index.js must be built before running tests');
+
+    const work = mkdtempSync(join(tmpdir(), 'cbt-ts-cli-'));
+
+    try {
+        execFileSync(process.execPath, [cli, 'ts-cli-game', '--yes', '--ts', '--no-install', '--no-git'], {
+            cwd: work,
+            stdio: 'ignore',
+        });
+
+        const project = join(work, 'ts-cli-game');
+        assert.ok(existsSync(join(project, 'src', 'game.ts')), '--ts flag should produce src/game.ts');
+        assert.ok(existsSync(join(project, 'tsconfig.json')), '--ts flag should produce tsconfig.json');
+        assert.ok(!existsSync(join(project, 'src', 'game.js')), '--ts flag should not produce src/game.js');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
