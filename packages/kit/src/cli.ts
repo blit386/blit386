@@ -18,7 +18,7 @@ Commands:
   ${color.cyan('run')}        Start your game in the browser
   ${color.cyan('doctor')}     Check your setup (Node, git, blit-tech version)
   ${color.cyan('upgrade')}    Update blit-tech to the latest version
-  ${color.cyan('agents')}     Set up AI-assistant files (coming in a later version)
+  ${color.cyan('agents')}     Manage AI-assistant files (sync, add)
   ${color.cyan('help')}       Show this help
 `;
 
