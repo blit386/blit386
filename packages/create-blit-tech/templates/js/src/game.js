@@ -1,6 +1,8 @@
 // {{projectName}} - a tiny Blit-Tech game called "Catcher".
 //
-// Move the paddle left and right to catch the blocks falling from the top.
+// Move the paddle to catch the blocks falling from the top.
+// On a phone or tablet: drag or tap - the paddle centers under your finger.
+// On a computer: move the mouse, or use the left and right arrow keys as a fallback.
 // Catch one: +1 point. Miss one: lose a life. Run out of lives and the game starts over.
 //
 // Every Blit-Tech game is one class with up to four methods. We use three of them here:
