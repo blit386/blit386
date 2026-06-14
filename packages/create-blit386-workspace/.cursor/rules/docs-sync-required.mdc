@@ -29,6 +29,6 @@ alwaysApply: false
   (`packages/kit/src/commands/agents.ts`) change, update `packages/kit/README.md`,
   `packages/create-blit-tech/README.md`, and the design doc (`CREATE_BLIT_TECH_DESIGN.md`).
 - When blit-tech public API changes in the sibling engine repo, audit kit `content/docs/` and the kit rule sources
-  `packages/kit/content/rules/blit-api-names.md` and `blit-integer-coords.md` for stale names (`isDown`,
-  `isOverlayEnabled`, etc.).
+  `packages/kit/content/rules/blit-api-names.md` and `packages/kit/content/rules/blit-integer-coords.md` for stale
+  names (`isDown`, `isOverlayEnabled`, etc.).
 - If no docs update is needed, state why explicitly in the final response.
