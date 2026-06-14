@@ -619,8 +619,10 @@ function isAgentPresent(manifest: BlitManifest, agent: AddableAgent): boolean {
 }
 
 /**
- * Set up one AI assistant's files in `root`. Returns the number of files that need the user's
- * attention (`.new` copies written because an untracked file already existed); 0 means clean.
+ * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
+ * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
+ * untouched (so a later `sync` cannot clobber the user files). Returns the number of colliding files
+ * that need the user's attention; 0 means the assistant was set up cleanly.
  */
 function runAddAgent(root: string, agent: AddableAgent, out: (line: string) => void): number {
     const result = readManifest(root, out);
@@ -641,32 +643,47 @@ function runAddAgent(root: string, agent: AddableAgent, out: (line: string) => v
     const kr = kitRoot();
     const vars = manifest.vars ?? fallbackVars(root);
 
-    // Persist resolved vars so future syncs regenerate deterministically (older manifests lacked them).
+    const generated = agent === 'claude' ? generateClaudeAdapter(kr, vars) : generateCursorAdapter(kr, vars);
+    const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
+
+    // A generated path that already exists on disk but is not tracked in the manifest belongs to the
+    // user. Setting up the assistant must be all-or-nothing: if we wrote only the non-colliding files,
+    // the assistant would be half-present, and a later `sync` would regenerate the colliding path, find
+    // no manifest entry, and overwrite the very user file we are protecting here. So if anything
+    // collides, save the kit versions beside the originals and stop without touching the project or the
+    // manifest.
+    const collisions = generated.filter(
+        (file) => isSafeRelPath(file.path, root) && existsSync(resolve(root, file.path)) && !entryByPath.has(file.path),
+    );
+
+    if (collisions.length > 0) {
+        for (const file of collisions) {
+            writeRel(root, `${file.path}.new`, file.content);
+            out(ui.warn(`${file.path} already exists, so I saved the kit version as ${file.path}.new.`));
+        }
+
+        out('');
+        out(ui.info('I did not change those files or set up the assistant.'));
+        out(ui.info('Move or merge the originals, then run the command again.'));
+
+        return collisions.length;
+    }
+
+    // No collisions: every generated path is either new or an already-tracked kit file, so writing them
+    // all and refreshing the manifest leaves the set consistent for the next `sync`.
+    const kitVersion = currentKitVersion();
+    const added: string[] = [];
+
+    // Lock in the resolved vars so future syncs regenerate deterministically (older manifests lacked them).
     if (manifest.vars === undefined) {
         manifest.vars = vars;
     }
-
-    const generated = agent === 'claude' ? generateClaudeAdapter(kr, vars) : generateCursorAdapter(kr, vars);
-    const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
-    const kitVersion = currentKitVersion();
-
-    const added: string[] = [];
-    const review: string[] = [];
 
     for (const file of generated) {
         const relPath = file.path;
 
         if (!isSafeRelPath(relPath, root)) {
             out(ui.warn(`Skipping unsafe path: ${relPath}`));
-            continue;
-        }
-
-        const abs = resolve(root, relPath);
-
-        // A file already on disk that the manifest does not track belongs to the user: never clobber it.
-        if (existsSync(abs) && !entryByPath.has(relPath)) {
-            writeRel(root, `${relPath}.new`, file.content);
-            review.push(relPath);
             continue;
         }
 
@@ -696,13 +713,9 @@ function runAddAgent(root: string, agent: AddableAgent, out: (line: string) => v
     for (const path of added) {
         out(ui.success(`Added ${path}.`));
     }
-    for (const path of review) {
-        out(ui.warn(`${path} already exists, so I saved the kit version as ${path}.new.`));
-        out(ui.info('Compare the two and keep what you like.'));
-    }
 
     out('');
-    if (added.length === 0 && review.length === 0) {
+    if (added.length === 0) {
         out(ui.info(`There were no ${label} files to add.`));
         return 0;
     }
@@ -710,7 +723,7 @@ function runAddAgent(root: string, agent: AddableAgent, out: (line: string) => v
     out(ui.success(`Set up ${label}.`));
     out(ui.info('Run `npx blit agents sync` later to keep these files up to date.'));
 
-    return review.length;
+    return 0;
 }
 
 export function runAgents(args: string[]): void {

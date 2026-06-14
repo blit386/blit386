@@ -676,6 +676,27 @@ test('blit agents add never clobbers an existing untracked file; it writes a .ne
         assert.ok(existsSync(`${claudePath}.new`), 'the kit version should be saved as CLAUDE.md.new');
         assert.ok(output.includes('CLAUDE.md.new'), 'output should mention the .new copy');
         assert.notEqual(exitCode, 0, 'a needs-review collision should exit non-zero');
+
+        // All-or-nothing: a collision must NOT half-activate the assistant. None of the other Claude
+        // files should be written, and the manifest must not gain any Claude entries.
+        assert.ok(
+            !existsSync(join(project, '.claude', 'rules', 'blit-api-names.md')),
+            'add must not write other Claude files when it aborts on a collision',
+        );
+        const manifestAfterAdd = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+        assert.ok(
+            !manifestAfterAdd.files.some((f) => f.path === 'CLAUDE.md' || f.path.startsWith('.claude/')),
+            'an aborted add must not record any Claude files in the manifest',
+        );
+
+        // The real regression: a later sync must not regenerate CLAUDE.md and clobber the user file.
+        const sync = runBlit(project, ['agents', 'sync']);
+        assert.equal(
+            readFileSync(claudePath, 'utf8'),
+            userContent,
+            'a later sync must not overwrite the user CLAUDE.md after an aborted add',
+        );
+        assert.equal(sync.exitCode, 0, 'sync should still succeed after an aborted add');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
