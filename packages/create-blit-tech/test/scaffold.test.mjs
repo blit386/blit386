@@ -520,6 +520,167 @@ test('blit agents sync keeps a shared-file note across repeated syncs', () => {
     }
 });
 
+test('blit agents add claude sets up Claude files in a project that did not pick an agent', () => {
+    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+
+    const work = mkdtempSync(join(tmpdir(), 'cbt-add-claude-'));
+
+    try {
+        const project = join(work, 'add-claude');
+        scaffold({
+            targetDir: project,
+            projectName: 'add-claude',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // No agent was chosen, so none of the Claude files exist yet.
+        assert.ok(!existsSync(join(project, 'CLAUDE.md')), 'CLAUDE.md should be absent before add');
+
+        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
+        assert.equal(exitCode, 0, 'add claude should exit 0');
+        assert.ok(output.includes('Set up Claude Code'), 'output should confirm the assistant was set up');
+
+        assert.ok(existsSync(join(project, 'CLAUDE.md')), 'CLAUDE.md should be created');
+        assert.ok(
+            existsSync(join(project, '.claude', 'rules', 'blit-api-names.md')),
+            '.claude/rules should be created',
+        );
+        assert.ok(existsSync(join(project, '.claude', 'skills', 'run', 'SKILL.md')), '.claude/skills should be created');
+
+        // The new files are recorded in the manifest, so a drift check is clean.
+        const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+        assert.ok(
+            manifest.files.some((f) => f.path === 'CLAUDE.md'),
+            'CLAUDE.md should be recorded in the manifest',
+        );
+        assert.ok(existsSync(join(project, '.blit', 'base', 'CLAUDE.md')), 'a pristine base copy should be written');
+
+        const drift = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(drift.exitCode, 0, 'sync --check should be clean right after add');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add cursor sets up Cursor files and a later sync is clean', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-add-cursor-'));
+
+    try {
+        const project = join(work, 'add-cursor');
+        scaffold({
+            targetDir: project,
+            projectName: 'add-cursor',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        const { exitCode } = runBlit(project, ['agents', 'add', 'cursor']);
+        assert.equal(exitCode, 0, 'add cursor should exit 0');
+
+        assert.ok(existsSync(join(project, '.cursor', 'hooks.json')), '.cursor/hooks.json should be created');
+        assert.ok(
+            existsSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc')),
+            '.cursor/rules should be created',
+        );
+        assert.ok(existsSync(join(project, '.cursor', 'commands', 'run.md')), '.cursor/commands should be created');
+
+        // A full sync on the freshly added agent changes nothing.
+        const sync = runBlit(project, ['agents', 'sync']);
+        assert.equal(sync.exitCode, 0, 'full sync after add should exit 0');
+        assert.ok(sync.output.includes('up to date'), 'full sync after add should report up to date');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add is a friendly no-op when the assistant is already set up', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-add-present-'));
+
+    try {
+        const project = join(work, 'present-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'present-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
+        assert.equal(exitCode, 0, 'adding an already-present assistant should exit 0');
+        assert.ok(output.includes('already set up'), 'output should say the assistant is already set up');
+        assert.ok(output.includes('sync'), 'output should point the user at sync');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add rejects an unknown assistant name', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-add-unknown-'));
+
+    try {
+        const project = join(work, 'unknown-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'unknown-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        const { exitCode, output } = runBlit(project, ['agents', 'add', 'emacs']);
+        assert.notEqual(exitCode, 0, 'an unknown assistant should exit non-zero');
+        assert.ok(output.includes('emacs'), 'output should name the unknown assistant');
+        assert.ok(output.includes('claude') && output.includes('cursor'), 'output should list supported assistants');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add never clobbers an existing untracked file; it writes a .new copy', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-add-collision-'));
+
+    try {
+        const project = join(work, 'collision-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'collision-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // The user hand-wrote their own CLAUDE.md before asking to add Claude.
+        const claudePath = join(project, 'CLAUDE.md');
+        const userContent = '# my own CLAUDE notes\n';
+        writeFileSync(claudePath, userContent);
+
+        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
+
+        // The user's file is preserved; the kit version lands beside it as CLAUDE.md.new.
+        assert.equal(readFileSync(claudePath, 'utf8'), userContent, 'the user CLAUDE.md must not be overwritten');
+        assert.ok(existsSync(`${claudePath}.new`), 'the kit version should be saved as CLAUDE.md.new');
+        assert.ok(output.includes('CLAUDE.md.new'), 'output should mention the .new copy');
+        assert.notEqual(exitCode, 0, 'a needs-review collision should exit non-zero');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('scaffolds a TypeScript project when language is ts', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-ts-'));
 
