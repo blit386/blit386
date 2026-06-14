@@ -504,8 +504,10 @@ test('blit agents sync keeps a shared-file note across repeated syncs', () => {
 
         // Two consecutive syncs: the note must survive both. A baseline that recorded the merged
         // result would make the second sync misread the file as unmodified and overwrite the note.
-        runBlit(project, ['agents', 'sync']);
-        runBlit(project, ['agents', 'sync']);
+        const first = runBlit(project, ['agents', 'sync']);
+        assert.equal(first.exitCode, 0, 'the first sync should exit 0');
+        const second = runBlit(project, ['agents', 'sync']);
+        assert.equal(second.exitCode, 0, 'the second sync should exit 0');
 
         const after = readFileSync(claudePath, 'utf8');
         assert.ok(after.includes(marker), 'user note must survive a second sync');
