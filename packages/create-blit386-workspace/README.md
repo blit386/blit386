@@ -6,7 +6,7 @@ packages:
 - **`create-blit-tech`** (`packages/create-blit-tech`) - the `npm create blit-tech` scaffolder. Asks a couple of quick
   questions, then writes a ready-to-run game project.
 - **`@blit-tech/kit`** (`packages/kit`) - the canonical AI docs (`AGENTS.md` + local `docs/`) plus the project-local
-  `blit` CLI (`run`, `doctor`, `upgrade`).
+  `blit` CLI (`run`, `doctor`, `upgrade`, `agents sync`).
 
 ## Quick start (for users)
 
@@ -57,8 +57,9 @@ CI (`.github/workflows/ci.yml`) runs the same checks on every push and pull requ
 
 ## Status
 
-v0.1 (phase 1): JavaScript scaffold, the Catcher starter game, local docs, and the `blit` CLI. No AI-agent config is
-generated yet (the project ships a readable `AGENTS.md`); TypeScript templates and per-agent generation arrive in later
-phases. See the design doc in the parent workspace for the full roadmap.
+Phase 2 ("agents on tap") is complete: the JavaScript and TypeScript scaffolds, the Catcher starter game, local docs,
+and the `blit` CLI. When you choose an AI assistant in the wizard, the scaffolder generates its config (Claude or
+Cursor) from the kit's canonical content, and `npx blit agents sync` keeps those files current without clobbering your
+edits. See the design doc in the parent workspace for the full roadmap.
 
 Publishing to npm is a deliberate, manual step and is not automated here.

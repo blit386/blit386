@@ -25,7 +25,10 @@ alwaysApply: false
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected
   `.cursor/rules/*.mdc` cross-references.
 - Update root `README.md` or `CLAUDE.md` when commands, package layout, or wizard flow changes.
-- When blit-tech public API changes in the sibling engine repo, audit kit `content/docs/` and
-  `templates/optional/cursor/dot-cursor/rules/blit-tech-api-names.mdc` for stale names (`isDown`, `isOverlayEnabled`,
-  etc.).
+- When the `blit` CLI, agent adapters (`packages/kit/src/adapters.ts`), or `blit agents sync`
+  (`packages/kit/src/commands/agents.ts`) change, update `packages/kit/README.md`,
+  `packages/create-blit-tech/README.md`, and the design doc (`CREATE_BLIT_TECH_DESIGN.md`).
+- When blit-tech public API changes in the sibling engine repo, audit kit `content/docs/` and the kit rule sources
+  `packages/kit/content/rules/blit-api-names.md` and `blit-integer-coords.md` for stale names (`isDown`,
+  `isOverlayEnabled`, etc.).
 - If no docs update is needed, state why explicitly in the final response.

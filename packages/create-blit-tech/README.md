@@ -15,18 +15,23 @@ Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it wi
 
 ## What you get
 
-- A small, complete starter game (Catcher) in plain JavaScript, with a comment on every line.
-- A ready-to-run Vite setup: `index.html`, `src/game.js`, and a dev server.
+- A small, complete starter game (Catcher) with a comment on every line - JavaScript by default, or TypeScript with
+  `--ts`.
+- A ready-to-run Vite setup: `index.html`, `src/game.js` (or `src/game.ts`), and a dev server.
 - Local guides (`docs/`) and an `AGENTS.md` so you - or an AI assistant - can learn the engine without leaving the
   project.
-- The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`), provided by
+- The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`, `npx blit agents sync`), provided by
   [`@blit-tech/kit`](https://www.npmjs.com/package/@blit-tech/kit). It is a project-local bin, so invoke it through
   `npx`.
+
+If you pick an AI assistant in the wizard, the scaffolder also generates its config (Claude: `CLAUDE.md` + `.claude/`;
+Cursor: `.cursor/`) from the kit's canonical content, and `npx blit agents sync` keeps it current.
 
 ## Options
 
 ```bash
 npm create blit-tech@latest my-game -- --yes         # skip the prompts (JavaScript, no AI files)
+npm create blit-tech@latest my-game -- --ts          # use the TypeScript starter instead of JavaScript
 npm create blit-tech@latest my-game -- --no-install  # do not install dependencies
 npm create blit-tech@latest my-game -- --no-git      # do not initialize a git repository
 ```

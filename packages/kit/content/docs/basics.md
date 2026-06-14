@@ -4,7 +4,7 @@ Every Blit-Tech game is one class with up to four methods. You hand the class to
 of the rest.
 
 ```js
-import { bootstrap, BT } from 'blit-tech';
+import { bootstrap, BT, Vector2i } from 'blit-tech';
 
 class Game {
   configure() {
