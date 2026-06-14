@@ -100,9 +100,15 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 
 ## Kit content vs engine docs
 
-Generated games receive `AGENTS.md` and six beginner docs from `packages/kit/content/docs/` (`getting-started`,
-`basics`, `drawing`, `input`, `palette`, `when-something-breaks`). They are **not** copies of blit-tech's full `docs/`
-tree — they teach the starter game and point to GitHub for deep API reference.
+Generated games receive `AGENTS.md`, six beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
+`drawing`, `input`, `palette`, `when-something-breaks`), and the game-author skills in `packages/kit/content/skills/`
+(emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`). They are **not** copies of blit-tech's
+full `docs/` tree — they teach the starter game and point to GitHub for deep API reference.
+
+**Kit content must be self-contained.** Skills and docs may reference only `blit-tech` (the engine) and other local kit
+files (`docs/*.md`, `AGENTS.md`). Do **not** reference the `blit-tech-demos` repo (demo slugs like `029-snake-game` or
+`blit-tech-demos.vancura.dev` URLs) — that repo may be archived in favor of kit-based demos, and shipped content must
+not break with it.
 
 When blit-tech public API or naming changes in the sibling repo, audit these kit files for stale examples:
 

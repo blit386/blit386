@@ -1,6 +1,8 @@
 ---
 name: cbt-test
-description: Run the scaffold smoke test and explain what automated testing exists in this repo.
+description:
+  Run the scaffold smoke test and explain what automated testing exists here. Use when the user wants to run tests or
+  verify the scaffolder still produces a working project.
 ---
 
 # Tests

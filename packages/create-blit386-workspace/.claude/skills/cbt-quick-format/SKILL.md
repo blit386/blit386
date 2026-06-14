@@ -1,6 +1,8 @@
 ---
 name: cbt-quick-format
-description: Quickly format all code files without verification steps.
+description:
+  Quickly format all code with Biome and Prettier, skipping the verification step. Use for a fast cleanup after edits or
+  to fix formatting flagged by CI or a hook.
 ---
 
 # Quick Format

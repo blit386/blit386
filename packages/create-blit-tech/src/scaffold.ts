@@ -368,7 +368,9 @@ function generateClaudeAdapter(
         }
     }
 
-    // Emit .claude/skills/ from content/skills/*/SKILL.md.
+    // Emit .claude/skills/ from content/skills/*/SKILL.md. The frontmatter is kept
+    // verbatim: Claude Code reads name/description from it to discover and trigger
+    // the skill, so stripping it would make the skill inert.
     const skillsDir = join(contentRoot, 'skills');
     if (existsSync(skillsDir)) {
         for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
@@ -555,8 +557,11 @@ function generateCursorAdapter(
                 continue;
             }
 
+            // Strip the skill's YAML frontmatter: a Cursor command is invoked by
+            // filename, so name/description add no value and would render as literal
+            // text. The Claude adapter keeps the frontmatter (a skill needs it).
             const dest = join(commandsDir, `${entry.name}.md`);
-            writeFileSync(dest, render(readFileSync(skillSrc, 'utf8'), vars));
+            writeFileSync(dest, render(stripFrontmatter(readFileSync(skillSrc, 'utf8')), vars));
             writtenPaths.add(dest);
         }
     }

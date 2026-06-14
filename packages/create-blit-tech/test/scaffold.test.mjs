@@ -175,6 +175,12 @@ test('scaffold copies optional CI and agent files when requested', () => {
         assert.ok(runSkill.includes(pmRunBuild.replace('build', 'dev')), 'run skill should reference the dev command');
         assert.ok(!runSkill.includes('{{'), 'run skill should not have unrendered placeholders');
 
+        // Claude skills keep their YAML frontmatter so Claude Code can discover and trigger them.
+        assert.ok(runSkill.startsWith('---'), 'Claude skill files should keep YAML frontmatter');
+        assert.ok(/\nname: run\n/.test(runSkill), 'Claude skill frontmatter should include the skill name');
+        // The description may be inline or folded across lines, so match the key only.
+        assert.ok(/\ndescription:/.test(runSkill), 'Claude skill frontmatter should include a description');
+
         const cursorProject = join(work, 'cursor-game');
         scaffold({
             targetDir: cursorProject,
@@ -210,6 +216,11 @@ test('scaffold copies optional CI and agent files when requested', () => {
             existsSync(join(cursorProject, '.cursor', 'commands', 'fix.md')),
             '.cursor/commands/fix.md should be generated',
         );
+
+        // Cursor commands are invoked by filename, so the skill frontmatter is stripped.
+        const runCommand = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
+        assert.ok(!runCommand.startsWith('---'), 'Cursor command files should not have YAML frontmatter');
+        assert.ok(runCommand.includes('# Run the game'), 'Cursor command should contain the skill body');
 
         // Cursor rule files should keep their MDC frontmatter (Cursor reads alwaysApply from it).
         const apiRule = readFileSync(join(cursorProject, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8');

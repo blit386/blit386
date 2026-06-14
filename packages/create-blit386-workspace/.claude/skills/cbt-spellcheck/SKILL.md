@@ -1,6 +1,8 @@
 ---
 name: cbt-spellcheck
-description: Run cspell spellcheck across the project, fix typos and add legitimate words to the dictionary.
+description:
+  Run cspell across the project, fix typos, and add legitimate words to the dictionary. Use when the user wants to
+  spellcheck, fix spelling, or resolve cspell failures.
 ---
 
 # Spellcheck

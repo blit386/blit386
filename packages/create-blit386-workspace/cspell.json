@@ -4,8 +4,10 @@
   "allowCompoundWords": true,
   "dictionaries": ["typescript", "node", "html", "css", "fonts", "npm", "softwareTerms"],
   "words": [
+    "ABXY",
     "biomejs",
     "blit",
+    "btfont",
     "BTAPI",
     "clack",
     "codemod",
@@ -17,6 +19,7 @@
     "Indexized",
     "jsconfig",
     "knip",
+    "pico",
     "pnpm",
     "scaffolder",
     "tsup",

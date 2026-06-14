@@ -215,6 +215,8 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
                 continue;
             }
 
+            // Keep the frontmatter: Claude Code reads name/description from it to
+            // discover and trigger the skill, so stripping it would make it inert.
             files.push({
                 path: `.claude/skills/${entry.name}/SKILL.md`,
                 content: render(readFileSync(skillSrc, 'utf8'), vars),
@@ -347,9 +349,12 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
                 continue;
             }
 
+            // A Cursor command is invoked by filename, so the skill's name/description
+            // frontmatter adds no value and would render as literal text. Strip it.
+            // The Claude adapter keeps the frontmatter (a skill needs it to trigger).
             files.push({
                 path: `.cursor/commands/${entry.name}.md`,
-                content: render(readFileSync(skillSrc, 'utf8'), vars),
+                content: render(stripFrontmatter(readFileSync(skillSrc, 'utf8')), vars),
             });
         }
     }
