@@ -1,9 +1,21 @@
 {
   "name": "create-blit-tech",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Scaffold a new Blit-Tech game in seconds.",
-  "author": "Václav Vančura",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vancura/create-blit-tech.git",
+    "directory": "packages/create-blit-tech"
+  },
+  "bugs": {
+    "url": "https://github.com/vancura/create-blit-tech/issues"
+  },
+  "homepage": "https://github.com/vancura/create-blit-tech#readme",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
@@ -17,11 +29,17 @@
   ],
   "keywords": [
     "blit-tech",
-    "create",
+    "create-blit-tech",
     "scaffold",
+    "starter",
     "game-engine",
+    "gamedev",
     "pixel-art",
-    "webgpu"
+    "retro",
+    "webgpu",
+    "vite",
+    "javascript",
+    "typescript"
   ],
   "scripts": {
     "build": "tsup",

@@ -1,9 +1,21 @@
 {
   "name": "@blit-tech/kit",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Canonical Blit-Tech AI docs (AGENTS.md + local docs) and the blit project CLI.",
-  "author": "Václav Vančura",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vancura/create-blit-tech.git",
+    "directory": "packages/kit"
+  },
+  "bugs": {
+    "url": "https://github.com/vancura/create-blit-tech/issues"
+  },
+  "homepage": "https://github.com/vancura/create-blit-tech#readme",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
@@ -23,7 +35,9 @@
     "cli",
     "scaffold",
     "agents",
-    "game-engine"
+    "game-engine",
+    "gamedev",
+    "webgpu"
   ],
   "publishConfig": {
     "access": "public"
