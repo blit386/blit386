@@ -1,6 +1,8 @@
 ---
 name: bt-test
-description: Run tests - unit tests, coverage, visual regression, or watch mode.
+description:
+  Run the test suite - unit, coverage, watch, visual regression, or a single file. Use when the user wants to run tests
+  or check coverage.
 ---
 
 # Run Tests
