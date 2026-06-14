@@ -69,7 +69,8 @@ From the project folder:
 - `npm run dev` (or `pnpm run dev`) - start the game and open it in your browser.
 - `npx blit run` - the same thing, the friendly way.
 - `npx blit doctor` - check your setup if something seems off.
-- `npx blit upgrade` - update Blit-Tech to the latest version.
+- `npx blit upgrade` - update Blit-Tech to the latest version (and offer to fix any renamed API names for you).
+- `npx blit migrate` - update old Blit-Tech names in your game to the current ones. Add `--write` to apply the changes.
 
 The `blit` helper is installed inside the project (it ships with `@blit-tech/kit`), so it is not on the system PATH.
 Always invoke it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works inside package scripts.

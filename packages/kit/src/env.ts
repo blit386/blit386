@@ -168,6 +168,11 @@ function compareTriple(a: Triple, b: Triple): -1 | 0 | 1 {
     return 0;
 }
 
+/** Compare two `major.minor.patch` strings (pre-release tags ignored): -1 when a < b, 0 when equal, 1 when a > b. */
+export function compareVersions(a: string, b: string): -1 | 0 | 1 {
+    return compareTriple(parseVersion(a), parseVersion(b));
+}
+
 /**
  * Whether `version` satisfies a caret range (`^MAJOR.MINOR.PATCH`).
  *

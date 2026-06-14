@@ -1,20 +1,9 @@
 /** `blit upgrade` - update blit-tech to the latest version, with a kind nudge if the project is not under git. */
 
-import { createInterface } from 'node:readline/promises';
-
 import { detectPackageManager, findProjectRoot, installedVersion, isGitRepo, pmAddArgs, runPm } from '../env';
 import { DEPRECATIONS_URL, NO_GIT_NAG, ui } from '../messages';
-
-async function confirm(question: string): Promise<boolean> {
-    const rl = createInterface({ input: process.stdin, output: process.stdout });
-
-    try {
-        const answer = (await rl.question(`${question} (y/N) `)).trim().toLowerCase();
-        return answer === 'y' || answer === 'yes';
-    } finally {
-        rl.close();
-    }
-}
+import { confirm } from '../prompt';
+import { migrateProject } from './migrate';
 
 function majorChanged(before: string, after: string): boolean {
     const beforeMajor = Number.parseInt(before.split('.')[0] ?? '', 10);
@@ -59,15 +48,32 @@ export async function runUpgrade(): Promise<void> {
     }
 
     const after = installedVersion(root, 'blit-tech');
-    if (before && after && before !== after) {
-        out(ui.success(`blit-tech ${before} -> ${after}`));
-        if (majorChanged(before, after)) {
-            out(ui.warn('This was a big update, so some commands may have changed names.'));
-            out(ui.info(`See what changed: ${DEPRECATIONS_URL}`));
+
+    if (!(before && after && before !== after)) {
+        out(ui.success(after ? `blit-tech is already up to date (${after}).` : 'blit-tech updated.'));
+        return;
+    }
+
+    out(ui.success(`blit-tech ${before} -> ${after}`));
+
+    if (majorChanged(before, after)) {
+        out(ui.warn('This was a big update, so some names may have changed.'));
+        out(ui.info(`Full list of changes: ${DEPRECATIONS_URL}`));
+    }
+
+    out('');
+    out(ui.info('Checking your game for old Blit-Tech names...'));
+
+    const summary = await migrateProject(root, out, { write: false });
+
+    if (summary.appliedCount > 0) {
+        out('');
+
+        if (await confirm('Apply these renames now?')) {
+            // upgrade already ran the no-git nag above, so do not repeat it here.
+            await migrateProject(root, out, { write: true, skipGitNag: true });
+        } else {
+            out(ui.info('No changes made. Run `blit migrate --write` when you are ready.'));
         }
-    } else if (after) {
-        out(ui.success(`blit-tech is already up to date (${after}).`));
-    } else {
-        out(ui.success('blit-tech updated.'));
     }
 }

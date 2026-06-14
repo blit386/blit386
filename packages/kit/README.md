@@ -10,6 +10,10 @@ The kit behind [Blit-Tech](https://www.npmjs.com/package/blit-tech) game project
   - `blit run` - start the dev server and open the game.
   - `blit doctor` - check Node, git, and the installed `blit-tech` version.
   - `blit upgrade` - update `blit-tech` to the latest version, with a friendly nudge if your work is not under git.
+    After a version change it checks your game for old API names and offers to update them for you (see `blit migrate`).
+  - `blit migrate` - update old Blit-Tech names in your game to the current ones. It previews the changes by default and
+    only writes them when you add `--write`. Safe, unambiguous renames are applied; names that are too common to change
+    automatically (like `equals`) are listed for you or your AI assistant to handle.
   - `blit agents sync` - refresh the AI-assistant files from the installed kit. It keeps your edits: kit-owned files you
     have not touched are updated in place, shared files (`AGENTS.md`, `CLAUDE.md`) get only their managed region
     rewritten, and a file you changed is three-way merged (or saved next to yours as `<file>.new`). Use `--check` to
@@ -30,6 +34,8 @@ Inside a project created by `create-blit-tech`:
 npx blit run
 npx blit doctor
 npx blit upgrade
+npx blit migrate
+npx blit migrate --write
 npx blit agents sync
 npx blit agents add cursor
 ```

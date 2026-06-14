@@ -6,6 +6,7 @@
 
 import { runAgents } from './commands/agents';
 import { runDoctor } from './commands/doctor';
+import { runMigrate } from './commands/migrate';
 import { runDev } from './commands/run';
 import { runUpgrade } from './commands/upgrade';
 import { color, ui } from './messages';
@@ -18,6 +19,7 @@ Commands:
   ${color.cyan('run')}        Start your game in the browser
   ${color.cyan('doctor')}     Check your setup (Node, git, blit-tech version)
   ${color.cyan('upgrade')}    Update blit-tech to the latest version
+  ${color.cyan('migrate')}    Update old Blit-Tech names in your game (--write to apply)
   ${color.cyan('agents')}     Manage AI-assistant files (sync, add)
   ${color.cyan('help')}       Show this help
 `;
@@ -34,6 +36,9 @@ async function main(): Promise<void> {
             break;
         case 'upgrade':
             await runUpgrade();
+            break;
+        case 'migrate':
+            await runMigrate(process.argv.slice(3));
             break;
         case 'agents':
             runAgents(process.argv.slice(3));
