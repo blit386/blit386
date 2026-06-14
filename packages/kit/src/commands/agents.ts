@@ -14,6 +14,11 @@
  *     alongside as `<file>.new`;
  *   - user-owned files are never touched.
  * `--force [path...]` overwrites the named files (or all kit-managed files) with the kit version.
+ *
+ * `add <claude|cursor>` sets up the files for one AI assistant in a project that did not pick it at
+ * scaffold time. It regenerates that assistant's adapter output from the installed kit, writes the new
+ * files, and records them in the manifest (so later `sync` runs keep them fresh). It never clobbers an
+ * existing file it does not already track: such a file is saved alongside as `<file>.new` instead.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -555,6 +560,172 @@ function printSummary(out: (line: string) => void, tally: SyncTally): void {
     out(ui.info(parts.join(', ')));
 }
 
+/** AI assistants `blit agents add` can set up. Matches the wizard's agent choices minus "none". */
+const ADDABLE_AGENTS = ['claude', 'cursor'] as const;
+
+type AddableAgent = (typeof ADDABLE_AGENTS)[number];
+
+/** Human-readable assistant names for Tier-1 messages. */
+const AGENT_LABEL: Record<AddableAgent, string> = {
+    claude: 'Claude Code',
+    cursor: 'Cursor',
+};
+
+/** Type guard: is `name` an assistant `add` knows how to set up? */
+function isAddableAgent(name: string): name is AddableAgent {
+    return (ADDABLE_AGENTS as readonly string[]).includes(name);
+}
+
+/** Result of reading the manifest: either the parsed manifest, or a friendly failure with an exit code. */
+type ManifestResult = { ok: true; manifest: BlitManifest } | { ok: false; exitCode: number };
+
+/**
+ * Read and validate `.blit/manifest.json`. Prints a Tier-1 line on failure.
+ * A missing manifest is informational (exit 0); a damaged one is an error (exit 1).
+ */
+function readManifest(root: string, out: (line: string) => void): ManifestResult {
+    const manifestPath = join(root, '.blit', 'manifest.json');
+
+    if (!existsSync(manifestPath)) {
+        out(ui.info('This project has no .blit/manifest.json.'));
+        out(ui.info('Scaffold with `npm create blit-tech` to enable agent setup.'));
+        return { ok: false, exitCode: 0 };
+    }
+
+    let manifest: BlitManifest;
+
+    try {
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as BlitManifest;
+    } catch {
+        out(ui.error('Could not read .blit/manifest.json. The file may be damaged.'));
+        return { ok: false, exitCode: 1 };
+    }
+
+    if (!Array.isArray(manifest.files)) {
+        out(ui.error('.blit/manifest.json is missing the files array. The manifest may be damaged.'));
+        return { ok: false, exitCode: 1 };
+    }
+
+    return { ok: true, manifest };
+}
+
+/** Does the manifest already track files for this assistant? */
+function isAgentPresent(manifest: BlitManifest, agent: AddableAgent): boolean {
+    if (agent === 'claude') {
+        return manifest.files.some((f) => f.path === 'CLAUDE.md' || f.path.startsWith('.claude/'));
+    }
+
+    return manifest.files.some((f) => f.path.startsWith('.cursor/'));
+}
+
+/**
+ * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
+ * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
+ * untouched (so a later `sync` cannot clobber the user files). Returns the number of colliding files
+ * that need the user's attention; 0 means the assistant was set up cleanly.
+ */
+function runAddAgent(root: string, agent: AddableAgent, out: (line: string) => void): number {
+    const result = readManifest(root, out);
+
+    if (!result.ok) {
+        return result.exitCode;
+    }
+
+    const manifest = result.manifest;
+    const label = AGENT_LABEL[agent];
+
+    if (isAgentPresent(manifest, agent)) {
+        out(ui.info(`${label} is already set up in this project.`));
+        out(ui.info('Run `npx blit agents sync` to update its files from the latest kit.'));
+        return 0;
+    }
+
+    const kr = kitRoot();
+    const vars = manifest.vars ?? fallbackVars(root);
+
+    const generated = agent === 'claude' ? generateClaudeAdapter(kr, vars) : generateCursorAdapter(kr, vars);
+    const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
+
+    // A generated path that already exists on disk but is not tracked in the manifest belongs to the
+    // user. Setting up the assistant must be all-or-nothing: if we wrote only the non-colliding files,
+    // the assistant would be half-present, and a later `sync` would regenerate the colliding path, find
+    // no manifest entry, and overwrite the very user file we are protecting here. So if anything
+    // collides, save the kit versions beside the originals and stop without touching the project or the
+    // manifest.
+    const collisions = generated.filter(
+        (file) => isSafeRelPath(file.path, root) && existsSync(resolve(root, file.path)) && !entryByPath.has(file.path),
+    );
+
+    if (collisions.length > 0) {
+        for (const file of collisions) {
+            writeRel(root, `${file.path}.new`, file.content);
+            out(ui.warn(`${file.path} already exists, so I saved the kit version as ${file.path}.new.`));
+        }
+
+        out('');
+        out(ui.info('I did not change those files or set up the assistant.'));
+        out(ui.info('Move or merge the originals, then run the command again.'));
+
+        return collisions.length;
+    }
+
+    // No collisions: every generated path is either new or an already-tracked kit file, so writing them
+    // all and refreshing the manifest leaves the set consistent for the next `sync`.
+    const kitVersion = currentKitVersion();
+    const added: string[] = [];
+
+    // Lock in the resolved vars so future syncs regenerate deterministically (older manifests lacked them).
+    if (manifest.vars === undefined) {
+        manifest.vars = vars;
+    }
+
+    for (const file of generated) {
+        const relPath = file.path;
+
+        if (!isSafeRelPath(relPath, root)) {
+            out(ui.warn(`Skipping unsafe path: ${relPath}`));
+            continue;
+        }
+
+        writeRel(root, relPath, file.content);
+        writeBase(root, relPath, file.content);
+        entryByPath.set(relPath, {
+            path: relPath,
+            class: classifyFile(relPath),
+            kitVersion,
+            sha256: sha256Text(file.content),
+        });
+        added.push(relPath);
+    }
+
+    const refreshed: BlitManifest = {
+        kitVersion: manifest.kitVersion,
+        files: [...entryByPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
+    };
+    if (manifest.createdAt !== undefined) {
+        refreshed.createdAt = manifest.createdAt;
+    }
+    if (manifest.vars !== undefined) {
+        refreshed.vars = manifest.vars;
+    }
+    writeFileSync(join(root, '.blit', 'manifest.json'), `${JSON.stringify(refreshed, null, 2)}\n`);
+
+    for (const path of added) {
+        out(ui.success(`Added ${path}.`));
+    }
+
+    out('');
+    if (added.length === 0) {
+        out(ui.info(`There were no ${label} files to add.`));
+        return 0;
+    }
+
+    out(ui.success(`Set up ${label}.`));
+    out(ui.info('Run `npx blit agents sync` later to keep these files up to date.'));
+
+    return 0;
+}
+
 export function runAgents(args: string[]): void {
     const sub = args[0] ?? '';
     const out = (line: string): void => {
@@ -595,15 +766,45 @@ export function runAgents(args: string[]): void {
     }
 
     if (sub === 'add') {
-        out(ui.info('Setting up files for a specific AI assistant arrives in a later version of Blit-Tech.'));
-        out(ui.info('For now your game already has an AGENTS.md and a docs/ folder that any AI can read.'));
+        const name = args[1] ?? '';
+
+        if (name === '') {
+            out(ui.warn('Tell me which assistant to set up.'));
+            out(ui.info('Try `npx blit agents add claude` or `npx blit agents add cursor`.'));
+            process.exitCode = 1;
+            return;
+        }
+
+        if (!isAddableAgent(name)) {
+            out(ui.warn(`I do not know the assistant "${name}".`));
+            out(ui.info(`You can set up: ${ADDABLE_AGENTS.join(', ')}.`));
+            process.exitCode = 1;
+            return;
+        }
+
+        const root = findProjectRoot(process.cwd());
+
+        if (!root) {
+            out(ui.warn('No game found here. Run this inside your game folder.'));
+            process.exitCode = 1;
+            return;
+        }
+
+        out(ui.info(`Setting up ${AGENT_LABEL[name]} files from the kit.`));
+        out('');
+        const needReview = runAddAgent(root, name, out);
+
+        if (needReview > 0) {
+            process.exitCode = 1;
+        }
+
         return;
     }
 
-    out('Usage: blit agents <sync [--check] [--force [path...]] | add>');
+    out('Usage: blit agents <sync [--check] [--force [path...]] | add <claude|cursor>>');
     out('');
-    out(ui.info('sync --check  Report kit-managed files that have drifted (non-zero exit on drift).'));
-    out(ui.info('sync          Update AI-assistant files from the latest kit version.'));
-    out(ui.info('sync --force  Overwrite your edits with the kit version (optionally name files).'));
-    out(ui.info('add           Set up files for a specific AI assistant (coming soon).'));
+    out(ui.info('sync --check       Report kit-managed files that have drifted (non-zero exit on drift).'));
+    out(ui.info('sync               Update AI-assistant files from the latest kit version.'));
+    out(ui.info('sync --force       Overwrite your edits with the kit version (optionally name files).'));
+    out(ui.info('add <claude|cursor>  Set up files for one AI assistant in this project.'));
 }

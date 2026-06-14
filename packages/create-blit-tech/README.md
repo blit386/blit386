@@ -25,7 +25,8 @@ Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it wi
   `npx`.
 
 If you pick an AI assistant in the wizard, the scaffolder also generates its config (Claude: `CLAUDE.md` + `.claude/`;
-Cursor: `.cursor/`) from the kit's canonical content, and `npx blit agents sync` keeps it current.
+Cursor: `.cursor/`) from the kit's canonical content, and `npx blit agents sync` keeps it current. Did not pick one at
+the start? Run `npx blit agents add claude` or `npx blit agents add cursor` later to set it up.
 
 ## Options
 

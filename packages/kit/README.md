@@ -14,7 +14,10 @@ The kit behind [Blit-Tech](https://www.npmjs.com/package/blit-tech) game project
     have not touched are updated in place, shared files (`AGENTS.md`, `CLAUDE.md`) get only their managed region
     rewritten, and a file you changed is three-way merged (or saved next to yours as `<file>.new`). Use `--check` to
     report drift without writing (CI-safe; `blit doctor` runs it too), or `--force [path...]` to take the kit version
-    back. `blit agents add` (set up a brand-new assistant) is coming in a later version.
+    back.
+  - `blit agents add <claude|cursor>` - set up the files for one AI assistant in a game that did not pick it at the
+    start. It writes the new files and records them so `blit agents sync` keeps them fresh. It never overwrites a file
+    you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
 - **`content/`** - the canonical `AGENTS.md` and `docs/` that scaffolded projects ship, so a person or an AI assistant
   can learn the engine from inside the project.
 
@@ -27,6 +30,7 @@ npx blit run
 npx blit doctor
 npx blit upgrade
 npx blit agents sync
+npx blit agents add cursor
 ```
 
 ## Requirements

@@ -89,6 +89,9 @@ If you use **Cursor**, `.cursor/rules/` loads rules automatically when you open 
 
 For **other assistants** (Zed, Copilot, Windsurf, and others), this file is your assistant's home base.
 
+Did not set up an assistant when you started the game? Run `npx blit agents add claude` or `npx blit agents add cursor`
+to add its files now.
+
 Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh the assistant files.
 
 <!-- blit-kit:managed:end -->

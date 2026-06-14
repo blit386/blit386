@@ -129,6 +129,7 @@ version.
 | What does `blit` CLI do?             | `packages/kit/src/cli.ts`, `packages/kit/README.md`                                          |
 | How are agent files generated?       | `src/scaffold.ts` (scaffold time), `packages/kit/src/adapters.ts` (sync, generate-to-memory) |
 | What does `blit agents sync` do?     | `packages/kit/src/commands/agents.ts` (drift `--check` + full write path), design doc 4.10   |
+| What does `blit agents add` do?      | `packages/kit/src/commands/agents.ts` (`runAddAgent`), design doc 4.5                        |
 | Sync ownership model / manifest      | `.blit/manifest.json` (classes + `vars`), design doc 4.10                                    |
 | Engine API names for generated games | sibling repo `blit-tech/CLAUDE.md`, `docs/api-core.md`                                       |
 | Cursor hooks and rules               | `.cursor/hooks.json`, `.cursor/rules/`                                                       |
