@@ -49,7 +49,12 @@ interface ManifestEntry {
     class: FileClass;
     /** Kit version that last wrote this file. */
     kitVersion?: string;
-    /** SHA-256 hex digest of the file content as generated. */
+    /**
+     * SHA-256 hex digest of the reconciled on-disk content from the last sync (at scaffold time this is
+     * simply the generated content). `--check`/doctor compare the current file against this to detect
+     * drift, so a clean-merged file is in-sync, not flagged forever. The pristine kit version used as the
+     * merge ancestor lives separately in `.blit/base/<path>`.
+     */
     sha256: string;
 }
 
@@ -455,8 +460,14 @@ export function runFullSync(
             continue;
         }
 
-        // Kit-owned, unmodified by the user: overwrite freely.
-        if (diskHash === entry.sha256) {
+        // Whether the user changed this file is measured against the pristine kit version from the last
+        // sync (the merge ancestor in .blit/base/), NOT entry.sha256. entry.sha256 records the reconciled
+        // on-disk content so `--check`/doctor do not flag a clean-merged file as drift. Older projects may
+        // lack a base copy; fall back to entry.sha256 there.
+        const baseHash = existsSync(basePath) ? sha256(basePath) : entry.sha256;
+
+        // Kit-owned, unchanged from the pristine kit version: adopt the new kit version freely.
+        if (diskHash === baseHash) {
             if (diskHash !== incomingHash) {
                 writeRel(root, relPath, incoming);
                 writeBase(root, relPath, incoming);
@@ -480,11 +491,12 @@ export function runFullSync(
                 } else {
                     tally.unchanged++;
                 }
-                // Keep the kit-generated version as the baseline/ancestor, not the merged result.
-                // The merged file carries the user's edits; recording it as the baseline would make
-                // the next sync treat those edits as the kit default and overwrite them.
+                // The base copy keeps the kit-generated version as the merge ancestor (so the next sync
+                // still detects the user's edits and re-merges them). entry.sha256 records the reconciled
+                // on-disk content instead, so `--check` treats this clean-merged file as in-sync rather
+                // than flagging it as drift forever.
                 writeBase(root, relPath, incoming);
-                entry.sha256 = incomingHash;
+                entry.sha256 = sha256Text(merged);
                 entry.kitVersion = newKitVersion;
                 continue;
             }
