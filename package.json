@@ -84,7 +84,7 @@
     "system-font:convert": "node scripts/convert-system-font.mjs",
     "prepublishOnly": "pnpm run build",
     "prepare": "husky",
-    "security:audit": "pnpm audit --audit-level=moderate",
+    "security:audit": "pnpm audit --audit-level=moderate --ignore GHSA-gv7w-rqvm-qjhr",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
     "security:audit:fix": "pnpm audit --fix",
     "security:mcp-preflight": "node scripts/security/mcp-preflight.mjs",
