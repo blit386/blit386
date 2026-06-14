@@ -44,9 +44,9 @@ in `blit-tech`.
 - `pnpm run preflight`
 - `pnpm run build` (after dependency/toolchain changes)
 
-3. **MCP scans** — only when corresponding servers are `healthy` (see library runbook).
+3. **MCP scans** - only when corresponding servers are `healthy` (see library runbook).
 
-4. **Report** — use template in
+4. **Report** - use template in
    [blit-tech/docs/security/security-runbook.md](https://github.com/vancura/blit-tech/blob/main/docs/security/security-runbook.md).
 
 ## Periodic governance (monthly)

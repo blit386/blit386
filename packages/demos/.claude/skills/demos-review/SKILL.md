@@ -1,6 +1,8 @@
 ---
 name: demos-review
-description: Review current changes against project rules, conventions, and quality standards
+description:
+  Review the current changes against project rules, conventions, and quality standards. Use when the user asks to review
+  changes, check the diff before committing, or look over recent edits.
 ---
 
 # Review Changes

@@ -1,6 +1,8 @@
 ---
 name: demos-format
-description: Format all code files using Biome and Prettier, then verify formatting passes
+description:
+  Format all code with Biome and Prettier, then verify formatting passes. Use when the user asks to format, reformat, or
+  clean up code style, or to fix a failing format check.
 ---
 
 # Format Code

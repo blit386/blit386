@@ -1,6 +1,8 @@
 ---
 name: demos-test
-description: Explains the test situation for blit-tech-demos - there are no automated tests in this repo.
+description:
+  Explain that blit-tech-demos has no automated tests and how to verify demos by hand instead. Use when the user asks to
+  run, write, or find tests in this repo.
 ---
 
 # Tests
