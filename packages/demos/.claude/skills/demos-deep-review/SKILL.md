@@ -28,7 +28,7 @@ pushing significant changes or creating pull requests.
 
 2. **Run preflight checks**
 
-- Execute `pnpm run preflight` (format, lint, spellcheck, knip)
+- Execute `pnpm run preflight` (format, lint, spellcheck, knip, docs:links)
 - Execute `pnpm run build` to confirm the production build succeeds
 - If any check fails, report issues and stop
 - All automated checks must pass before AI review
@@ -86,6 +86,7 @@ pushing significant changes or creating pull requests.
 - [PASS/FAIL] Lint check
 - [PASS/FAIL] Spell check
 - [PASS/FAIL] Unused exports (knip)
+- [PASS/FAIL] Docs links (docs:links)
 - [PASS/FAIL] Build
 - [PASS/FAIL] Security audit
 
