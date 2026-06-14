@@ -2,7 +2,7 @@
 name: bt-preflight
 description:
   Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, test:unit, test:declarations) before
-  committing.
+  committing or pushing. Use when the user wants to verify the code is ready to commit or run every check at once.
 ---
 
 # Preflight Checks

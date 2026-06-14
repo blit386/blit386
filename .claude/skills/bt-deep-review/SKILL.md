@@ -1,6 +1,8 @@
 ---
 name: bt-deep-review
-description: Comprehensive code review with AI analysis, security audit, and PR-ready summary.
+description:
+  Comprehensive pre-push review combining automated checks, a security audit, AI code analysis, and a PR-ready summary.
+  Use before pushing significant changes or opening a pull request.
 ---
 
 # Deep Review
