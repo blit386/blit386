@@ -1,6 +1,8 @@
 ---
 name: demos-preflight
-description: Run all quality checks (format, lint, spellcheck, knip, docs:links, build) before committing
+description:
+  Run all quality checks (format, lint, spellcheck, knip, docs:links, build) before committing or pushing. Use when the
+  user wants to verify the code is ready to commit or run every check at once.
 ---
 
 # Preflight Checks

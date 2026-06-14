@@ -1,6 +1,8 @@
 ---
 name: demos-pr
-description: Create a pull request with automatic quality checks, conventional commit, and gh CLI
+description:
+  Create a pull request with automatic quality checks, a conventional commit, and the gh CLI. Use when the user wants to
+  open a PR or push a branch for review.
 ---
 
 # Create Pull Request
