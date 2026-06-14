@@ -7,7 +7,7 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -697,6 +697,53 @@ test('blit agents add never clobbers an existing untracked file; it writes a .ne
             'a later sync must not overwrite the user CLAUDE.md after an aborted add',
         );
         assert.equal(sync.exitCode, 0, 'sync should still succeed after an aborted add');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+// The clean-merge path uses `git merge-file`; skip the test where git is unavailable.
+const hasGit = spawnSync('git', ['--version'], { stdio: 'ignore' }).status === 0;
+
+test('blit agents sync does not flag a clean-merged kit file as drift', { skip: !hasGit }, () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-merge-drift-'));
+
+    try {
+        const project = join(work, 'merge-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'merge-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        // The user adds their own line to a kit-owned rule file. With the kit unchanged, a sync three-way
+        // merge resolves cleanly (only the user side changed) and keeps the edit.
+        const rulePath = join(project, '.claude', 'rules', 'blit-api-names.md');
+        const note = 'MY-RULE-NOTE-24680';
+        writeFileSync(rulePath, `${readFileSync(rulePath, 'utf8')}\n<!-- ${note} -->\n`);
+
+        const sync = runBlit(project, ['agents', 'sync']);
+        assert.equal(sync.exitCode, 0, 'a clean merge should exit 0');
+        assert.ok(!existsSync(`${rulePath}.new`), 'a clean merge should not leave a .new conflict copy');
+        assert.ok(readFileSync(rulePath, 'utf8').includes(note), 'the merge must keep the user edit');
+
+        // The fix: after a clean merge, --check must report the file as in-sync, not drifted.
+        const check = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(check.exitCode, 0, 'a clean-merged kit file must not be reported as drift');
+        assert.ok(check.output.includes('up to date'), 'check should say files are up to date');
+
+        // A second sync must still preserve the edit (the base copy, not the merged result, is the ancestor).
+        const sync2 = runBlit(project, ['agents', 'sync']);
+        assert.equal(sync2.exitCode, 0, 'the second sync should exit 0');
+        assert.ok(readFileSync(rulePath, 'utf8').includes(note), 'the user edit must survive a second sync');
+
+        const check2 = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(check2.exitCode, 0, 'still in sync after a second sync');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }

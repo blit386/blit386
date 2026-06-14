@@ -14,7 +14,8 @@ The kit behind [Blit-Tech](https://www.npmjs.com/package/blit-tech) game project
     have not touched are updated in place, shared files (`AGENTS.md`, `CLAUDE.md`) get only their managed region
     rewritten, and a file you changed is three-way merged (or saved next to yours as `<file>.new`). Use `--check` to
     report drift without writing (CI-safe; `blit doctor` runs it too), or `--force [path...]` to take the kit version
-    back.
+    back. Once sync has merged your edits into a kit file, `--check` treats that file as settled - it will not keep
+    reporting it as drifted.
   - `blit agents add <claude|cursor>` - set up the files for one AI assistant in a game that did not pick it at the
     start. It writes the new files and records them so `blit agents sync` keeps them fresh. It never overwrites a file
     you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
