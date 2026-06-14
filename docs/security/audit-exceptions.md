@@ -26,7 +26,8 @@ Do **not** use exceptions for low-severity findings (CI does not gate on them).
 
 4. **Record the exception** in the table below (one row per GHSA).
 5. **Set a review-by date** (default: 30 days; extend only with written rationale in the issue).
-6. **Remove on expiry** — delete the GHSA from `ignoreGhsas`, clear the table row, and close the acceptance issue.
+6. **Remove on expiry** — remove the `--ignore <GHSA>` flag from the `security:audit` script, clear the table row, and
+   close the acceptance issue.
 
 ## Active exceptions
 
