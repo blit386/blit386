@@ -2,7 +2,7 @@
  * `create-blit-tech` entry point.
  *
  * Flow: check Node -> greet -> pick a folder -> short wizard -> scaffold -> git init -> install -> print next steps.
- * Flags: --yes/-y (skip prompts), --no-install, --no-git.
+ * Flags: --yes/-y (skip prompts), --ts (TypeScript template), --no-install, --no-git.
  *
  * Two guards run before the wizard: the Node version must meet the engine floor (a friendly message beats an
  * EBADENGINE wall), and without an interactive terminal (an AI agent or CI) we behave as --yes instead of hanging on

@@ -316,6 +316,210 @@ test('blit agents sync --check exits non-zero when a kit-managed file is modifie
     }
 });
 
+function runBlit(project, args) {
+    let exitCode = 0;
+    let output = '';
+    try {
+        output = execFileSync(process.execPath, [blitCli, ...args], { cwd: project, encoding: 'utf8' });
+    } catch (err) {
+        exitCode = err.status ?? 1;
+        output = (err.stdout ?? '') + (err.stderr ?? '');
+    }
+    return { exitCode, output };
+}
+
+test('blit agents sync (full) changes nothing on a freshly scaffolded Claude project', () => {
+    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+
+    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-claude-'));
+
+    try {
+        const project = join(work, 'sync-claude');
+        scaffold({
+            targetDir: project,
+            projectName: 'sync-claude',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        const ruleBefore = readFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), 'utf8');
+        const claudeBefore = readFileSync(join(project, 'CLAUDE.md'), 'utf8');
+
+        const { exitCode, output } = runBlit(project, ['agents', 'sync']);
+
+        // The kit regenerator must reproduce the scaffolder's bytes, so nothing changes.
+        assert.equal(exitCode, 0, 'full sync on a clean project should exit 0');
+        assert.ok(output.includes('up to date'), 'output should report everything is up to date');
+        assert.equal(
+            readFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), 'utf8'),
+            ruleBefore,
+            'kit-owned rule should be byte-identical after sync',
+        );
+        assert.equal(
+            readFileSync(join(project, 'CLAUDE.md'), 'utf8'),
+            claudeBefore,
+            'shared CLAUDE.md should be byte-identical after sync',
+        );
+        assert.ok(!existsSync(join(project, 'CLAUDE.md.new')), 'no .new conflict file should be created');
+
+        // The manifest still matches the files on disk.
+        const drift = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(drift.exitCode, 0, 'sync --check should be clean after a full sync of an unmodified project');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync (full) changes nothing on a freshly scaffolded Cursor project', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-cursor-'));
+
+    try {
+        const project = join(work, 'sync-cursor');
+        scaffold({
+            targetDir: project,
+            projectName: 'sync-cursor',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'cursor',
+        });
+
+        const hooksBefore = readFileSync(join(project, '.cursor', 'hooks.json'), 'utf8');
+        const ruleBefore = readFileSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8');
+
+        const { exitCode, output } = runBlit(project, ['agents', 'sync']);
+
+        assert.equal(exitCode, 0, 'full sync on a clean Cursor project should exit 0');
+        assert.ok(output.includes('up to date'), 'output should report everything is up to date');
+        assert.equal(
+            readFileSync(join(project, '.cursor', 'hooks.json'), 'utf8'),
+            hooksBefore,
+            'generated hooks.json should be byte-identical after sync',
+        );
+        assert.equal(
+            readFileSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8'),
+            ruleBefore,
+            'generated cursor rule should be byte-identical after sync',
+        );
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync --force restores the kit version of a user-edited kit file', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-force-'));
+
+    try {
+        const project = join(work, 'force-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'force-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        const rulePath = join(project, '.claude', 'rules', 'blit-api-names.md');
+        writeFileSync(rulePath, '# wrecked by user\n');
+
+        const { exitCode } = runBlit(project, ['agents', 'sync', '--force']);
+        assert.equal(exitCode, 0, 'forced sync should exit 0');
+
+        const restored = readFileSync(rulePath, 'utf8');
+        assert.ok(restored.includes('BT'), 'forced sync should restore the kit content');
+        assert.ok(!restored.includes('wrecked'), 'forced sync should discard the user edit');
+
+        // After a force, the project is back in sync.
+        const drift = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(drift.exitCode, 0, 'project should be clean after --force');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync preserves user notes outside the managed region of CLAUDE.md', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-shared-'));
+
+    try {
+        const project = join(work, 'shared-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'shared-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        const claudePath = join(project, 'CLAUDE.md');
+        const marker = 'MY-OWN-NOTE-12345';
+        writeFileSync(claudePath, `${readFileSync(claudePath, 'utf8')}\n${marker}\n`);
+
+        const { exitCode } = runBlit(project, ['agents', 'sync']);
+        assert.equal(exitCode, 0, 'shared-file sync should exit 0 (managed-region merge, no conflict)');
+
+        const after = readFileSync(claudePath, 'utf8');
+        assert.ok(after.includes(marker), 'user note below the managed region must be preserved');
+        assert.ok(after.includes('<!-- blit-kit:managed:start -->'), 'managed start marker should remain');
+        assert.ok(after.includes('<!-- blit-kit:managed:end -->'), 'managed end marker should remain');
+
+        // The manifest should now treat the file (with the note) as in sync.
+        const drift = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(drift.exitCode, 0, 'a preserved note should not count as drift after sync');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync keeps a shared-file note across repeated syncs', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-shared-twice-'));
+
+    try {
+        const project = join(work, 'shared-twice');
+        scaffold({
+            targetDir: project,
+            projectName: 'shared-twice',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        const claudePath = join(project, 'CLAUDE.md');
+        const marker = 'MY-OWN-NOTE-67890';
+        writeFileSync(claudePath, `${readFileSync(claudePath, 'utf8')}\n${marker}\n`);
+
+        // Two consecutive syncs: the note must survive both. A baseline that recorded the merged
+        // result would make the second sync misread the file as unmodified and overwrite the note.
+        const first = runBlit(project, ['agents', 'sync']);
+        assert.equal(first.exitCode, 0, 'the first sync should exit 0');
+        const second = runBlit(project, ['agents', 'sync']);
+        assert.equal(second.exitCode, 0, 'the second sync should exit 0');
+
+        const after = readFileSync(claudePath, 'utf8');
+        assert.ok(after.includes(marker), 'user note must survive a second sync');
+        assert.ok(after.includes('<!-- blit-kit:managed:start -->'), 'managed start marker should remain');
+
+        const drift = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(drift.exitCode, 0, 'the note should still not count as drift after two syncs');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('scaffolds a TypeScript project when language is ts', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-ts-'));
 

@@ -7,7 +7,12 @@
     },
     "cursor": {
       "description": "Cursor adapter",
-      "emits": [".cursor/rules/{name}.mdc", ".cursor/hooks.json", ".cursor/commands/{name}.md"]
+      "emits": [
+        ".cursor/rules/{name}.mdc",
+        ".cursor/hooks.json",
+        ".cursor/hooks/{script}",
+        ".cursor/commands/{name}.md"
+      ]
     }
   }
 }
