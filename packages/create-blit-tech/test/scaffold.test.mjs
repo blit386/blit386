@@ -482,6 +482,42 @@ test('blit agents sync preserves user notes outside the managed region of CLAUDE
     }
 });
 
+test('blit agents sync keeps a shared-file note across repeated syncs', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-shared-twice-'));
+
+    try {
+        const project = join(work, 'shared-twice');
+        scaffold({
+            targetDir: project,
+            projectName: 'shared-twice',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        const claudePath = join(project, 'CLAUDE.md');
+        const marker = 'MY-OWN-NOTE-67890';
+        writeFileSync(claudePath, `${readFileSync(claudePath, 'utf8')}\n${marker}\n`);
+
+        // Two consecutive syncs: the note must survive both. A baseline that recorded the merged
+        // result would make the second sync misread the file as unmodified and overwrite the note.
+        runBlit(project, ['agents', 'sync']);
+        runBlit(project, ['agents', 'sync']);
+
+        const after = readFileSync(claudePath, 'utf8');
+        assert.ok(after.includes(marker), 'user note must survive a second sync');
+        assert.ok(after.includes('<!-- blit-kit:managed:start -->'), 'managed start marker should remain');
+
+        const drift = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(drift.exitCode, 0, 'the note should still not count as drift after two syncs');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('scaffolds a TypeScript project when language is ts', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-ts-'));
 

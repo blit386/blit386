@@ -422,7 +422,35 @@ export function runFullSync(
             continue;
         }
 
-        // Unmodified by the user: overwrite freely.
+        // Shared files (AGENTS.md, CLAUDE.md): only the managed region is kit-owned, everything around
+        // it belongs to the user. Always refresh just that region and keep the rest, whether or not the
+        // file changed since the last sync. This runs before the kit-owned fast paths below so the user's
+        // surrounding notes are never overwritten wholesale.
+        if (entry.class === 'shared') {
+            const merged = replaceManagedRegion(onDisk, incoming);
+
+            if (merged !== null) {
+                if (merged !== onDisk) {
+                    writeRel(root, relPath, merged);
+                    tally.merged.push(relPath);
+                } else {
+                    tally.unchanged++;
+                }
+                // entry.sha256 tracks the reconciled on-disk content so `--check` treats a preserved
+                // note as in-sync; the base copy keeps the kit version as the merge ancestor.
+                writeBase(root, relPath, incoming);
+                entry.sha256 = sha256Text(merged);
+                entry.kitVersion = newKitVersion;
+                continue;
+            }
+
+            // Managed markers were removed: save the kit version alongside for the user to reconcile.
+            writeRel(root, `${relPath}.new`, incoming);
+            tally.review.push(relPath);
+            continue;
+        }
+
+        // Kit-owned, unmodified by the user: overwrite freely.
         if (diskHash === entry.sha256) {
             if (diskHash !== incomingHash) {
                 writeRel(root, relPath, incoming);
@@ -436,25 +464,8 @@ export function runFullSync(
             continue;
         }
 
-        // User modified the file. Shared files merge only their managed region.
-        if (entry.class === 'shared') {
-            const merged = replaceManagedRegion(onDisk, incoming);
-
-            if (merged !== null) {
-                if (merged !== onDisk) {
-                    writeRel(root, relPath, merged);
-                    tally.merged.push(relPath);
-                } else {
-                    tally.unchanged++;
-                }
-                writeBase(root, relPath, merged);
-                entry.sha256 = sha256Text(merged);
-                entry.kitVersion = newKitVersion;
-                continue;
-            }
-            // Markers were removed; fall through to the conflict path below.
-        } else {
-            // Kit-owned: try a real three-way merge; clean merges apply.
+        // Kit-owned, user-modified: try a real three-way merge; clean merges apply.
+        {
             const merged = gitThreeWayMerge(onDisk, basePath, incoming);
 
             if (merged !== null) {
