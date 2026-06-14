@@ -1,6 +1,6 @@
 {
   "name": "@blit-tech/kit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Canonical Blit-Tech AI docs (AGENTS.md + local docs) and the blit project CLI.",
   "author": {
     "name": "Václav Vančura",
