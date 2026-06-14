@@ -10,7 +10,11 @@ The kit behind [Blit-Tech](https://www.npmjs.com/package/blit-tech) game project
   - `blit run` - start the dev server and open the game.
   - `blit doctor` - check Node, git, and the installed `blit-tech` version.
   - `blit upgrade` - update `blit-tech` to the latest version, with a friendly nudge if your work is not under git.
-  - `blit agents` - set up files for a specific AI assistant (coming in a later version).
+  - `blit agents sync` - refresh the AI-assistant files from the installed kit. It keeps your edits: kit-owned files you
+    have not touched are updated in place, shared files (`AGENTS.md`, `CLAUDE.md`) get only their managed region
+    rewritten, and a file you changed is three-way merged (or saved next to yours as `<file>.new`). Use `--check` to
+    report drift without writing (CI-safe; `blit doctor` runs it too), or `--force [path...]` to take the kit version
+    back. `blit agents add` (set up a brand-new assistant) is coming in a later version.
 - **`content/`** - the canonical `AGENTS.md` and `docs/` that scaffolded projects ship, so a person or an AI assistant
   can learn the engine from inside the project.
 
@@ -22,6 +26,7 @@ Inside a project created by `create-blit-tech`:
 npx blit run
 npx blit doctor
 npx blit upgrade
+npx blit agents sync
 ```
 
 ## Requirements

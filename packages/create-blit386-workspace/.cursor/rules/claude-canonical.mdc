@@ -7,6 +7,6 @@ alwaysApply: true
 
 - Treat `CLAUDE.md` at the repository root as canonical for work in this repo.
 - Follow its monorepo layout, scaffold conventions, and command set.
-- Generated game templates use plain JavaScript and beginner-friendly comments; do not apply library-only TypeScript conventions to template JS files.
+- Generated games default to JavaScript; a TypeScript layer (`templates/ts/`, opt-in via the wizard or `npm create blit-tech ... --ts`) is also supported. Both ship beginner-friendly comments; do not apply library-only TypeScript conventions (no `any` bans, named-export rules, etc.) to generated game files.
 - Public engine API names in generated games must match sibling repo `blit-tech` (`BT.isDown`, `isOverlayEnabled`, etc.).
 - Use repo commands exactly as documented in `CLAUDE.md` (`pnpm run preflight`, not bare `pnpm preflight`).
