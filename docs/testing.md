@@ -1,6 +1,6 @@
 # Testing
 
-Blit-Tech uses three primary testing tiers (unit, integration, visual) plus a benchmark tier for CPU performance
+BLIT386 uses three primary testing tiers (unit, integration, visual) plus a benchmark tier for CPU performance
 regression tracking.
 
 ## Architecture
@@ -17,7 +17,7 @@ Pure logic with no GPU dependencies. Tests run in Node.js for maximum speed. The
 - **PaletteEffect** - manager lifecycle, CycleEffect rotation, FadeEffect/FadeRangeEffect lerp, FlashEffect, paletteSwap
 - **Easing** - boundary values, monotonicity, midpoint checks for all easing curves
 - **GameLoop** - constructor validation, tick counter
-- **IBlitTechDemo** - `defaultConfig()` and optional `configure()`
+- **IBTDemo** - `defaultConfig()` and optional `configure()`
 
 ### Tier 2: Integration Tests (Vitest, Node + GPU mocks)
 
@@ -47,7 +47,7 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
   integration (Node)
 - **FrameCapture** - GPU readback, PNG conversion (Node + GPU mocks + browser stubs)
 - **consumer-doc-imports** - `src/docs/consumer-doc-imports.test.ts` guards README/docs import paths against
-  `BlitTech.ts` exports
+  `BLIT386.ts` exports
 
 ### Tier 3: Visual Regression (Playwright, Chromium)
 

@@ -1,5 +1,5 @@
 /**
- * Bootstrap Utilities for Blit-Tech
+ * Bootstrap Utilities for BLIT386
  *
  * Provides a one-liner demo bootstrap that resolves the canvas, calls
  * {@link BTAPI.init}, and displays initialization errors on failure. Backend
@@ -7,7 +7,7 @@
  */
 
 import { BTAPI } from '../core/BTAPI';
-import type { IBlitTechDemo } from '../core/IBlitTechDemo';
+import type { IBTDemo } from '../core/IBTDemo';
 import type { ErrorContent } from './BootstrapHelpers';
 import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError, getCanvas } from './BootstrapHelpers';
 import { CANVAS_NOT_FOUND_MESSAGE, INIT_FAILED_MESSAGE } from './errorMessages';
@@ -18,7 +18,7 @@ import { CANVAS_NOT_FOUND_MESSAGE, INIT_FAILED_MESSAGE } from './errorMessages';
 export interface BootstrapOptions {
     /**
      * Canvas element ID to use.
-     * Default: 'blit-tech-canvas'
+     * Default: 'blit386-canvas'
      */
     canvasID?: string;
 
@@ -59,7 +59,7 @@ export interface BootstrapOptions {
 /**
  * Constructor type for demo classes.
  */
-export type DemoConstructor = new () => IBlitTechDemo;
+export type DemoConstructor = new () => IBTDemo;
 
 /**
  * Internal result type for bootstrap steps.
@@ -201,14 +201,14 @@ async function initDemo(
 }
 
 /**
- * One-liner bootstrap function for Blit-Tech demos.
+ * One-liner bootstrap function for BLIT386 demos.
  * Handles canvas retrieval and engine initialization. Backend selection
  * (WebGPU or software fallback) is managed internally by BTAPI.
  *
  * This function provides a streamlined way to start a demo with sensible defaults
  * while allowing customization through options.
  *
- * @param DemoClass - Demo class constructor implementing `IBlitTechDemo` (optional `configure()` for hardware settings).
+ * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options - Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.
  *

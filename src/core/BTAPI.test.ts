@@ -27,7 +27,7 @@ import {
 import type { BitmapFont } from '../assets/BitmapFont';
 import { Palette } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
-import { BT } from '../BlitTech';
+import { BT } from '../BLIT386';
 import type { OverlayDrawTarget } from '../overlay';
 import { DEFAULT_IDX_TEXT, Overlay, paletteBandY } from '../overlay';
 import { OVERLAY_EDGE_MARGIN_PX } from '../overlay/layout/constants';
@@ -41,7 +41,7 @@ import type { Effect } from '../render/effects/Effect';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { BTAPI } from './BTAPI';
-import type { IBlitTechDemo, OverlayRow } from './IBlitTechDemo';
+import type { IBTDemo, OverlayRow } from './IBTDemo';
 import { collectUsedIndices } from './RenderPaletteUsage';
 
 function resetSingleton(): void {
@@ -51,7 +51,7 @@ function resetSingleton(): void {
     (BTAPI as unknown as { _instance: BTAPI | null })._instance = null;
 }
 
-function makeMockDemo(targetFPS = 60, initResult = true): IBlitTechDemo {
+function makeMockDemo(targetFPS = 60, initResult = true): IBTDemo {
     return {
         configure: vi.fn().mockReturnValue({
             displaySize: new Vector2i(320, 240),
@@ -360,7 +360,7 @@ describe('BTAPI', () => {
         });
 
         it('rejects invalid displaySize before layout or renderer setup', async () => {
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
                     displaySize: { x: 0, y: 240 } as Vector2i,
                     targetFPS: 60,
@@ -384,7 +384,7 @@ describe('BTAPI', () => {
         });
 
         it('rejects invalid software drawingBufferSize before software renderer allocation', async () => {
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: { x: 8193, y: 480 } as Vector2i,
@@ -408,7 +408,7 @@ describe('BTAPI', () => {
         });
 
         it('rejects invalid maxCanvasSize before layout or renderer setup', async () => {
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
                     displaySize: new Vector2i(320, 240),
                     maxCanvasSize: { x: Number.NaN, y: 720 } as Vector2i,
@@ -449,7 +449,7 @@ describe('BTAPI', () => {
                 writable: true,
                 configurable: true,
             });
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
                     displaySize: new Vector2i(2048, 1024),
                     targetFPS: 60,
@@ -487,7 +487,7 @@ describe('BTAPI', () => {
                 writable: true,
                 configurable: true,
             });
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(2048, 1024),
@@ -529,7 +529,7 @@ describe('BTAPI', () => {
                 writable: true,
                 configurable: true,
             });
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(1024, 768),
@@ -579,7 +579,7 @@ describe('BTAPI', () => {
                     }
                 },
             );
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
@@ -616,7 +616,7 @@ describe('BTAPI', () => {
             );
             uninstallMockNavigatorGPU();
 
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
@@ -642,7 +642,7 @@ describe('BTAPI', () => {
         it('ignores unknown backend query values and keeps configure backend', async () => {
             vi.stubGlobal('location', { search: '?backend=banana' });
 
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
@@ -728,7 +728,7 @@ describe('BTAPI', () => {
         });
 
         it('should merge partial configure with defaultConfig', async () => {
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({ targetFPS: 30 }),
                 init: vi.fn().mockResolvedValue(true),
                 update: vi.fn(),
@@ -748,7 +748,7 @@ describe('BTAPI', () => {
         });
 
         it('should use defaultConfig when configure is omitted', async () => {
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 init: vi.fn().mockResolvedValue(true),
                 update: vi.fn(),
                 render: vi.fn(),
@@ -815,7 +815,7 @@ describe('BTAPI', () => {
 
         it('forwards overlayRows from the demo into Overlay.updateAndRender', async () => {
             const customRows: OverlayRow[] = [{ leftText: 'Position: 1, 2' }];
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 ...makeMockDemo(),
                 configure: vi.fn().mockReturnValue({
                     displaySize: new Vector2i(320, 240),
@@ -985,7 +985,7 @@ describe('BTAPI', () => {
             );
             uninstallMockNavigatorGPU();
 
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
@@ -1027,7 +1027,7 @@ describe('BTAPI', () => {
                     }
                 },
             );
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1078,7 +1078,7 @@ describe('BTAPI', () => {
             );
             uninstallMockNavigatorGPU();
 
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1111,7 +1111,7 @@ describe('BTAPI', () => {
                 },
             );
 
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1132,7 +1132,7 @@ describe('BTAPI', () => {
     describe('assignTag', () => {
         it('forwards tags to Overlay when the timing chart is enabled', async () => {
             const assignSpy = vi.spyOn(Overlay.prototype, 'assignTag');
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1152,7 +1152,7 @@ describe('BTAPI', () => {
         it('does not store tags when isOverlayTimingChartEnabled is disabled', async () => {
             const { TimingChart } = await import('../overlay/timing-chart/TimingChart');
             const assignSpy = vi.spyOn(TimingChart.prototype, 'assignTag');
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1179,7 +1179,7 @@ describe('BTAPI', () => {
          * @returns Overlay spy from the initialized instance.
          */
         async function initAndDrainUntil(
-            demo: IBlitTechDemo,
+            demo: IBTDemo,
             stopWhen: (overlaySpy: ReturnType<typeof vi.spyOn>) => boolean,
         ): Promise<ReturnType<typeof vi.spyOn>> {
             const overlaySpy = vi.spyOn(Overlay.prototype, 'updateAndRender');
@@ -1226,7 +1226,7 @@ describe('BTAPI', () => {
                 (await import('../render/WebGPURenderer')).WebGPURenderer.prototype,
                 'getFrameDiagnostics',
             );
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1247,7 +1247,7 @@ describe('BTAPI', () => {
                 (await import('../render/WebGPURenderer')).WebGPURenderer.prototype,
                 'getFrameDiagnostics',
             );
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1269,7 +1269,7 @@ describe('BTAPI', () => {
                 (await import('../render/WebGPURenderer')).WebGPURenderer.prototype,
                 'getFrameDiagnostics',
             );
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1299,7 +1299,7 @@ describe('BTAPI', () => {
                 'getFrameDiagnostics',
             ).mockReturnValue(mockDiagnostics);
 
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1348,7 +1348,7 @@ describe('BTAPI', () => {
             const markSpy = vi.fn();
             const mockSheet = makeIndexizedSpriteSheet(markSpy);
             const mockFont = { getSpriteSheet: () => mockSheet } as unknown as BitmapFont;
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1376,7 +1376,7 @@ describe('BTAPI', () => {
                 getSpriteSheet: () => mockSheet,
                 getGlyph: () => ({ rect: new Rect2i(0, 0, 8, 8) }),
             } as unknown as BitmapFont;
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1401,7 +1401,7 @@ describe('BTAPI', () => {
         it('skips palette scans when the palette grid is enabled but the overlay body is hidden', async () => {
             const markSpy = vi.fn();
             const mockSheet = makeIndexizedSpriteSheet(markSpy);
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1429,7 +1429,7 @@ describe('BTAPI', () => {
         it('skips palette scans when the overlay body is hidden even if the toggle hint is visible', async () => {
             const markSpy = vi.fn();
             const mockSheet = makeIndexizedSpriteSheet(markSpy);
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1469,7 +1469,7 @@ describe('BTAPI', () => {
 
             const palette = Palette.cga();
             const usedSlots = [5, 6] as const;
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1579,7 +1579,7 @@ describe('BTAPI', () => {
 
         it('drawSystemText marks only the text palette index and does not scan glyph rects', async () => {
             const glyphScanSpy = vi.fn();
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1623,7 +1623,7 @@ describe('BTAPI', () => {
                 getSpriteSheet: () => mockSheet,
                 getGlyph: (char: string) => ({ rect: new Rect2i(0, 0, 8, 8), char }),
             } as unknown as BitmapFont;
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
@@ -1685,7 +1685,7 @@ describe('BTAPI', () => {
                 }
             };
 
-            const demo: IBlitTechDemo = {
+            const demo: IBTDemo = {
                 configure: () => ({
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,

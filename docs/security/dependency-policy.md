@@ -1,6 +1,6 @@
 # Dependency security policy
 
-Continuous dependency vulnerability gating for the `blit-tech` library repo.
+Continuous dependency vulnerability gating for the `blit386` library repo.
 
 ## Severity gate
 
@@ -17,7 +17,7 @@ CI runs both checks on every pull request and push to `main` via the **Dependenc
 ## Local verification
 
 ```bash
-cd blit-tech
+cd blit386
 pnpm install --frozen-lockfile
 pnpm run security:audit
 pnpm run security:audit:prod

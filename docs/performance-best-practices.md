@@ -1,6 +1,6 @@
 # Performance Best Practices
 
-This guide explains when and how to optimize your Blit-Tech demos for performance, with a focus on object allocation
+This guide explains when and how to optimize your BLIT386 demos for performance, with a focus on object allocation
 patterns and rendering efficiency.
 
 ## Table of Contents
@@ -43,7 +43,7 @@ a 60 Hz simulation on a 120 Hz monitor still has a ~8.33 ms render budget per rA
 
 ## Object Allocation Patterns
 
-JavaScript's garbage collector can cause frame hitches if you allocate many objects per frame. Blit-Tech provides two
+JavaScript's garbage collector can cause frame hitches if you allocate many objects per frame. BLIT386 provides two
 patterns for managing allocations:
 
 ### Inline Allocation (Simple & Clear)
@@ -74,7 +74,7 @@ BT.printFont(font, new Vector2i(10, 20), 'Hello');
 **When to use:** Tight loops that run 50+ times per frame.
 
 ```ts
-class MyDemo implements IBlitTechDemo {
+class MyDemo implements IBTDemo {
   // Pre-allocate reusable objects
   private readonly tempVec = new Vector2i(0, 0);
   private readonly tempRect = new Rect2i(0, 0, 0, 0);
@@ -119,7 +119,7 @@ pre-allocation provides measurable benefits.
 
 ### Batching
 
-Blit-Tech automatically batches draw calls for optimal GPU performance:
+BLIT386 automatically batches draw calls for optimal GPU performance:
 
 - **Primitive batching:** All primitives (pixels, lines, rects) are batched together
 - **Texture batching:** Sprites from the same `SpriteSheet` are batched
@@ -213,7 +213,7 @@ for (let i = 0; i < 200; i++) {
 
 ### Fixed Timestep
 
-Blit-Tech uses a fixed **simulation** timestep by default (`targetFPS: 60` → `update()` about 60 times per second).
+BLIT386 uses a fixed **simulation** timestep by default (`targetFPS: 60` → `update()` about 60 times per second).
 `render()` still runs at the browser's refresh rate. This provides:
 
 - **Deterministic behavior:** Same inputs always produce same results
@@ -355,7 +355,7 @@ render(): void {
 
 ## Example References
 
-Demos live in the sibling **`blit-tech-demos`** repo (`src/NNN-topic.js` files). The examples below demonstrate both
+Demos live in the sibling **`blit386-demos`** repo (`src/NNN-topic.js` files). The examples below demonstrate both
 approaches:
 
 ### Clarity-First Examples (Inline Allocation)

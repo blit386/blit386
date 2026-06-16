@@ -79,7 +79,7 @@ export interface HardwareSettings {
     outputUpscaleFilter?: OutputUpscaleFilter;
 
     /**
-     * Target fixed-update rate: how often {@link IBlitTechDemo.update} runs per second.
+     * Target fixed-update rate: how often {@link IBTDemo.update} runs per second.
      *
      * Not the measured render rate shown as `Present FPS` on the overlay; `render()` follows
      * `requestAnimationFrame` and may differ (for example 60 Hz updates on a 120 Hz display).
@@ -301,7 +301,7 @@ export interface OverlayTimingChartStyle {
  *
  * Rendered as a 13 px bar stacked above the footer (palette grid + hint bar when
  * {@link HardwareSettings.isOverlayPaletteEnabled} is `true`, or the hint bar alone) with 1 px gaps.
- * Reuse the same array instance from {@link IBlitTechDemo.overlayRows} when possible to avoid
+ * Reuse the same array instance from {@link IBTDemo.overlayRows} when possible to avoid
  * per-frame allocations.
  */
 export interface OverlayRow {
@@ -325,7 +325,7 @@ export interface OverlayRow {
 }
 
 /**
- * Demo contract implemented by Blit-Tech applications.
+ * Demo contract implemented by BLIT386 applications.
  *
  * Engine lifecycle order:
  * 1. configure() - Optional; called first to set display size, output buffer, FPS, overlay
@@ -334,7 +334,7 @@ export interface OverlayRow {
  * 4. render() - Called once per requestAnimationFrame (browser refresh rate)
  * 5. (engine) overlay - When {@link HardwareSettings.isOverlayEnabled} is true, drawn after `render()` on top
  */
-export interface IBlitTechDemo {
+export interface IBTDemo {
     /**
      * Optional hook to declare display size, optional output drawing-buffer size,
      * upscale filter, target fixed-update rate, rendering backend, and overlay.
@@ -413,7 +413,7 @@ export interface IBlitTechDemo {
 /**
  * Creates a fresh default hardware configuration for quick demos.
  *
- * Matches the most common setup across Blit-Tech demos: `320x240` logical resolution,
+ * Matches the most common setup across BLIT386 demos: `320x240` logical resolution,
  * `640x480` canvas output (2x nearest upscale), `60` FPS fixed updates, and the engine
  * overlay enabled.
  *

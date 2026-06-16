@@ -1,12 +1,12 @@
-/** Matches demo registry titles: "Blit-Tech Demo 006 - Patterns". */
-const REGISTRY_TITLE_PATTERN = /^Blit-Tech Demo\s+.+?\s+-\s+(.+)$/;
+/** Matches demo registry titles: "BLIT386 Demo 006 - Patterns". */
+const REGISTRY_TITLE_PATTERN = /^BLIT386 Demo\s+.+?\s+-\s+(.+)$/;
 
 /**
  * Turns the browser page title into a short top-left overlay label.
  *
  * @param pageTitle - Browser document title when available.
  * @returns Short label for the top-left bar (registry titles such as
- *   `Blit-Tech Demo 002 - Primitives` become `Primitives Demo`).
+ *   `BLIT386 Demo 002 - Primitives` become `Primitives Demo`).
  */
 export function resolveOverlayTopLeftLabel(pageTitle: string | undefined): string {
     const raw = typeof pageTitle === 'string' ? pageTitle.trim() : '';

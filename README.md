@@ -1,7 +1,7 @@
-# Blit-Tech
+# BLIT386
 
-[![CI](https://github.com/vancura/blit-tech/actions/workflows/ci.yml/badge.svg)](https://github.com/vancura/blit-tech/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/blit-tech.svg)](https://www.npmjs.com/package/blit-tech)
+[![CI](https://github.com/blit386/blit386/actions/workflows/ci.yml/badge.svg)](https://github.com/blit386/blit386/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/blit386.svg)](https://www.npmjs.com/package/blit386)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![WebGPU](https://img.shields.io/badge/WebGPU-Enabled-green.svg)](https://www.w3.org/TR/webgpu/)
 [![pnpm](https://img.shields.io/badge/pnpm-10.26.2-yellow.svg)](https://pnpm.io/)
@@ -9,13 +9,13 @@
 A palette-first WebGPU retro engine for TypeScript, inspired by [RetroBlit](https://badcastle.itch.io/retroblit). Draw
 with palette indices, animate with palette cycling and fades, and ship authentic VGA-era effects on modern GPUs.
 
-![Blit-Tech logo](assets/logo.png)
+![BLIT386 logo](assets/logo.png)
 
 ## Inspiration
 
-Blit-Tech draws heavy inspiration from [RetroBlit](https://www.badcastle.com/retroblit/docs/doc/index.html) by Martin
+BLIT386 draws heavy inspiration from [RetroBlit](https://www.badcastle.com/retroblit/docs/doc/index.html) by Martin
 Cietwierkowski ([@daafu](https://github.com/daafu)) - a retro pixel demo framework for Unity that replaces the editor
-with a clean, low-level demo loop. Blit-Tech brings the same philosophy to the web using WebGPU: no scene graphs, no
+with a clean, low-level demo loop. BLIT386 brings the same philosophy to the web using WebGPU: no scene graphs, no
 complex frameworks, just sprites, primitives, and fonts.
 
 ## Features
@@ -41,9 +41,9 @@ complex frameworks, just sprites, primitives, and fonts.
 - **Overlay**: engine-drawn FPS, backend, resolution, and demo title (toggle with `~` or bottom-left corner; disable via
   `isOverlayEnabled: false` in `configure()`)
 
-## Why Blit-Tech?
+## Why BLIT386?
 
-| Feature                  | Blit-Tech                           | Typical 2D WebGPU engines        |
+| Feature                  | BLIT386                             | Typical 2D WebGPU engines        |
 | ------------------------ | ----------------------------------- | -------------------------------- |
 | Rendering model          | Native indexed palette pipeline     | RGBA textures and framebuffers   |
 | Color animation          | Palette cycling/fade/flash built-in | Manual sprite or shader rewrites |
@@ -71,38 +71,38 @@ The fastest way to start is the **scaffolder**. It writes a ready-to-run Vite pr
 a starter game and local docs:
 
 ```bash
-npm create blit-tech@latest my-game
+npm create blit386@latest my-game
 cd my-game
 npm run dev
 ```
 
 Works with npm, pnpm, yarn, or bun (it uses whichever you ran it with). See
-[create-blit-tech](https://github.com/vancura/create-blit-tech) for options and what the project contains.
+[create-blit386](https://github.com/blit386/create-blit386) for options and what the project contains.
 
 ### Add to an existing project
 
-Install **blit-tech** from npm ([npmjs.com/package/blit-tech](https://www.npmjs.com/package/blit-tech)):
+Install **blit386** from npm ([npmjs.com/package/blit386](https://www.npmjs.com/package/blit386)):
 
 ```bash
-pnpm add blit-tech
+pnpm add blit386
 ```
 
-`bootstrap()` expects a canvas inside `#canvas-container` (defaults: canvas id `blit-tech-canvas`, container id
+`bootstrap()` expects a canvas inside `#canvas-container` (defaults: canvas id `blit386-canvas`, container id
 `canvas-container`):
 
 ```html
-<div id="canvas-container"><canvas id="blit-tech-canvas"></canvas></div>
+<div id="canvas-container"><canvas id="blit386-canvas"></canvas></div>
 <script type="module" src="/src/main.ts"></script>
 ```
 
 ```ts
-import { bootstrap, BT, Color32, Palette, Rect2i, type IBlitTechDemo } from 'blit-tech';
+import { bootstrap, BT, Color32, Palette, Rect2i, type IBTDemo } from 'blit386';
 
 const BG = 1;
 const WATER_A = 9;
 const WATER_B = 12;
 
-class MyDemo implements IBlitTechDemo {
+class MyDemo implements IBTDemo {
   async init(): Promise<boolean> {
     const palette = Palette.c64();
     palette.set(BG, new Color32(20, 30, 40, 255));
@@ -131,7 +131,7 @@ See [API: Core](docs/api-core.md) for full `bootstrap()` options.
 
 ## Examples & Demos
 
-For interactive examples and demos, visit the [Blit-Tech Demos repository](https://github.com/vancura/blit-tech-demos).
+For interactive examples and demos, visit the [BLIT386 Demos repository](https://github.com/blit386/blit386-demos).
 
 ## Documentation
 

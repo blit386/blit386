@@ -3,7 +3,7 @@
 /**
  * BMFont to .btfont Converter
  *
- * Converts BMFont XML format (.fnt + .png) to Blit-Tech's .btfont JSON format.
+ * Converts BMFont XML format (.fnt + .png) to BLIT386's .btfont JSON format.
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -367,7 +367,7 @@ function convertBMFont(fntPath, outputPath, embedTexture = false) {
 /**
  * Main function that serves as the entry point for the BMFont to .btfont converter.
  * It processes command-line arguments, provides help instructions, and initiates the
- * conversion process from BMFont XML format to Blit-Tech's .btfont JSON format.
+ * conversion process from BMFont XML format to BLIT386's .btfont JSON format.
  *
  * Behavior:
  * - If no arguments are provided, `--help`, or `-h` is passed, usage instructions
@@ -386,7 +386,7 @@ function main() {
         console.log(`
 BMFont to .btfont Converter
 
-Converts BMFont XML format (.fnt + .png) to Blit-Tech’s .btfont JSON format.
+Converts BMFont XML format (.fnt + .png) to BLIT386’s .btfont JSON format.
 
 Usage:
   node tools/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]

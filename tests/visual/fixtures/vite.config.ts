@@ -13,7 +13,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            'blit-tech': path.resolve(__dirname, '../../../src/BlitTech.ts'),
+            blit386: path.resolve(__dirname, '../../../src/BLIT386.ts'),
         },
     },
     plugins: [

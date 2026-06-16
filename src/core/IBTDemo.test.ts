@@ -1,5 +1,5 @@
 /**
- * Unit tests for {@link defaultConfig} exported from {@link IBlitTechDemo}.
+ * Unit tests for {@link defaultConfig} exported from {@link IBTDemo}.
  *
  * Confirms the default display resolution, frame rate, and canvas sizing
  * (`defaultConfig()` includes `drawingBufferSize` by default), and verifies each
@@ -16,7 +16,7 @@ import {
     mergeHardwareSettings,
     needsOverlayRendererDiagnostics,
     resolveOverlayTimingChartDiagnostics,
-} from './IBlitTechDemo';
+} from './IBTDemo';
 
 describe('defaultConfig', () => {
     it('should return 320x240 display size', () => {

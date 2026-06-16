@@ -34,18 +34,18 @@ import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLi
 import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { Backend, HardwareSettings, IBlitTechDemo } from './IBlitTechDemo';
+import type { Backend, HardwareSettings, IBTDemo } from './IBTDemo';
 import {
     defaultConfig,
     mergeHardwareSettings,
     needsOverlayRendererDiagnostics,
     resolveOverlayTimingChartDiagnostics,
-} from './IBlitTechDemo';
+} from './IBTDemo';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { initWebGPU } from './WebGPUContext';
 
 /**
- * Central runtime facade for Blit-Tech engine services.
+ * Central runtime facade for BLIT386 engine services.
  *
  * `BTAPI` owns engine initialization, keeps references to the active renderer
  * and optional WebGPU device/context (null on the software backend), and exposes
@@ -67,8 +67,8 @@ export class BTAPI {
     /** Singleton instance of BTAPI. */
     private static _instance: BTAPI | null = null;
 
-    /** Current demo instance implementing IBlitTechDemo. */
-    private demo: IBlitTechDemo | null = null;
+    /** Current demo instance implementing IBTDemo. */
+    private demo: IBTDemo | null = null;
 
     /** Hardware configuration settings from the demo. */
     private hwSettings: HardwareSettings | null = null;
@@ -232,11 +232,11 @@ export class BTAPI {
      * - run the demo's async `init()`
      * - start the fixed-timestep game loop
      *
-     * @param demo - Demo implementing the IBlitTechDemo interface.
+     * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
      * @returns `true` when initialization succeeds; otherwise `false`.
      */
-    public async init(demo: IBlitTechDemo, canvas: HTMLCanvasElement): Promise<boolean> {
+    public async init(demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> {
         console.log(`[BT] Initializing engine v${BTAPI.VERSION_MAJOR}.${BTAPI.VERSION_MINOR}.${BTAPI.VERSION_PATCH}`);
 
         this.demo = demo;
@@ -973,10 +973,10 @@ export class BTAPI {
     /**
      * Reads and validates demo `configure()` output into resolved hardware settings.
      *
-     * @param demo - Demo implementing {@link IBlitTechDemo}.
+     * @param demo - Demo implementing {@link IBTDemo}.
      * @returns `false` when hardware settings are invalid (bad dimensions or targetFPS).
      */
-    private loadHardwareSettings(demo: IBlitTechDemo): boolean {
+    private loadHardwareSettings(demo: IBTDemo): boolean {
         try {
             this.hwSettings = mergeHardwareSettings(demo.configure?.());
         } catch (error) {
@@ -1202,14 +1202,14 @@ export class BTAPI {
     }
 
     /**
-     * Runs the demo's async {@link IBlitTechDemo.init}. On throw or
+     * Runs the demo's async {@link IBTDemo.init}. On throw or
      * `false`, clears input subsystems that were attached earlier in the init
      * sequence.
      *
      * @param demo - Active demo instance.
      * @returns `true` when the demo reports success.
      */
-    private async runDemoInit(demo: IBlitTechDemo): Promise<boolean> {
+    private async runDemoInit(demo: IBTDemo): Promise<boolean> {
         try {
             const ok = await demo.init();
 

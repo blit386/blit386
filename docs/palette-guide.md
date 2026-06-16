@@ -1,6 +1,6 @@
 # Palette Guide
 
-Blit-Tech is palette-first: every visible pixel stores a palette slot index, and final RGB color comes from the active
+BLIT386 is palette-first: every visible pixel stores a palette slot index, and final RGB color comes from the active
 `Palette`. Changing palette data changes every pixel that references those slots.
 
 This guide covers the end-to-end workflow: setup, indexed sprites, palette offsets, runtime effects, and when to call
@@ -14,7 +14,7 @@ For terminology (**slot** vs **`paletteIndex`** vs **`paletteOffset`**) and when
 ## 1) Create and activate a palette
 
 ```ts
-import { BT, Color32, Palette } from 'blit-tech';
+import { BT, Color32, Palette } from 'blit386';
 
 const palette = Palette.c64(); // or new Palette(256)
 palette.set(1, new Color32(20, 30, 40, 255)); // custom background slot
@@ -53,7 +53,7 @@ When slot `6` changes in the active palette, every pixel drawn with absolute ind
 Use this when loading sprites for normal game/demo work.
 
 ```ts
-import { SpriteSheet } from 'blit-tech';
+import { SpriteSheet } from 'blit386';
 
 const indexed = await SpriteSheet.loadIndexed('sprites/hero.png', palette, 32, { sort: 'luminance' });
 BT.paletteSet(palette);

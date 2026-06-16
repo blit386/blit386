@@ -1,5 +1,5 @@
 {
-  "name": "blit-tech",
+  "name": "blit386",
   "version": "1.1.1",
   "type": "module",
   "description": "A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit.",
@@ -10,11 +10,11 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vancura/blit-tech.git"
+    "url": "git+https://github.com/blit386/blit386.git"
   },
-  "homepage": "https://vancura.dev",
+  "homepage": "https://blit386.dev",
   "bugs": {
-    "url": "https://github.com/vancura/blit-tech/issues"
+    "url": "https://github.com/blit386/blit386/issues"
   },
   "keywords": [
     "typescript",
@@ -36,14 +36,14 @@
   "engines": {
     "node": ">=22.18.0"
   },
-  "main": "./dist/blit-tech.cjs",
-  "module": "./dist/blit-tech.js",
-  "types": "./dist/blit-tech.d.ts",
+  "main": "./dist/blit386.cjs",
+  "module": "./dist/blit386.js",
+  "types": "./dist/blit386.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/blit-tech.d.ts",
-      "import": "./dist/blit-tech.js",
-      "require": "./dist/blit-tech.cjs"
+      "types": "./dist/blit386.d.ts",
+      "import": "./dist/blit386.js",
+      "require": "./dist/blit386.cjs"
     }
   },
   "files": [

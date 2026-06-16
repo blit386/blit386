@@ -1,5 +1,5 @@
 /**
- * Shared user-facing error message strings for the Blit-Tech bootstrap and runtime paths.
+ * Shared user-facing error message strings for the BLIT386 bootstrap and runtime paths.
  *
  * Imported by {@link Bootstrap} and runtime/asset code so user-facing strings
  * stay centralized and consistent.

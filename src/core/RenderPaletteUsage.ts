@@ -1,7 +1,7 @@
 /**
  * Per-frame palette index usage tracking for debug overlays.
  *
- * BTAPI marks indices referenced by demo draw calls during {@link IBlitTechDemo.render}
+ * BTAPI marks indices referenced by demo draw calls during {@link IBTDemo.render}
  * and passes the usage mask directly to the overlay palette grid.
  */
 

@@ -34,7 +34,7 @@ import {
 describe('errorMessages', () => {
     describe('CANVAS_NOT_FOUND_MESSAGE', () => {
         it('should interpolate the canvas ID into the message', () => {
-            expect(CANVAS_NOT_FOUND_MESSAGE('blit-tech-canvas')).toContain('blit-tech-canvas');
+            expect(CANVAS_NOT_FOUND_MESSAGE('blit386-canvas')).toContain('blit386-canvas');
         });
 
         it('should produce different messages for different canvas IDs', () => {

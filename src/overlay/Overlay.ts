@@ -13,7 +13,7 @@ import type {
     OverlayStyle,
     OverlayTimingChartDiagnosticsMode,
     OverlayTimingChartStyle,
-} from '../core/IBlitTechDemo';
+} from '../core/IBTDemo';
 import type { KeyboardInput } from '../input/KeyboardInput';
 import type { PointerInput } from '../input/PointerInput';
 import { OverlayBars } from './bars/Bars';

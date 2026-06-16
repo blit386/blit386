@@ -18,11 +18,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BTAPI } from '../core/BTAPI';
-import type { IBlitTechDemo } from '../core/IBlitTechDemo';
+import type { IBTDemo } from '../core/IBTDemo';
 import { bootstrap } from './Bootstrap';
 import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID } from './BootstrapHelpers';
 
-class MockDemo implements IBlitTechDemo {
+class MockDemo implements IBTDemo {
     async init() {
         return true;
     }
@@ -140,7 +140,7 @@ describe('bootstrap', () => {
             setupDOM();
             const initSpy = vi.spyOn(BTAPI.instance, 'init');
 
-            class BrokenDemo implements IBlitTechDemo {
+            class BrokenDemo implements IBTDemo {
                 async init() {
                     return true;
                 }
@@ -153,7 +153,7 @@ describe('bootstrap', () => {
             (BrokenDemo.prototype as unknown as { update?: unknown }).update = undefined;
 
             const onError = vi.fn();
-            const result = await bootstrap(BrokenDemo as unknown as new () => IBlitTechDemo, {
+            const result = await bootstrap(BrokenDemo as unknown as new () => IBTDemo, {
                 isWaitingForDOMReady: false,
                 onError,
             });

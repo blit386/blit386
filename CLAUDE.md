@@ -1,4 +1,4 @@
-# Blit-Tech
+# BLIT386
 
 A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit. Pixel-perfect 2D rendering where primitives
 and sprites resolve through a shared indexed palette.
@@ -21,9 +21,9 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 
 | Question                                                   | Where to look                                                                                                                                                                                                                |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| What does `BT.X` do (getter vs method)?                    | `src/BlitTech.ts` JSDoc, `docs/api-core.md`, **BT API: getters vs methods** below                                                                                                                                            |
+| What does `BT.X` do (getter vs method)?                    | `src/BLIT386.ts` JSDoc, `docs/api-core.md`, **BT API: getters vs methods** below                                                                                                                                             |
 | How does a subsystem work internally?                      | The relevant `src/core/` or `src/render/` file                                                                                                                                                                               |
-| What does a demo implement?                                | `src/core/IBlitTechDemo.ts` (interface + HardwareSettings)                                                                                                                                                                   |
+| What does a demo implement?                                | `src/core/IBTDemo.ts` (interface + HardwareSettings)                                                                                                                                                                         |
 | How does palette usage tracking work for the overlay grid? | `src/core/RenderPaletteUsage.ts`, `src/overlay/palette/PaletteView.ts`                                                                                                                                                       |
 | How does the overlay work?                                 | `docs/overlay.md`, `src/overlay/` (orchestrator + `layout/layoutPlan.ts`), `docs/api-core.md` (HardwareSettings overlay flags), `HardwareSettings.isOverlayEnabled`                                                          |
 | What palette/sprite setup pattern is correct?              | `docs/palette-guide.md`, then `docs/api-assets.md`                                                                                                                                                                           |
@@ -34,48 +34,48 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Dependency security policy / CI audit gate?                | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md`                                                                                                                                                    |
 | What is the benchmark threshold?                           | `ci.yml` benchmark job (`--threshold 25` flag), not docs                                                                                                                                                                     |
 | What error message style should I use?                     | `docs/voice.md`, then `src/utils/errorMessages.ts`                                                                                                                                                                           |
-| Is this API exported publicly?                             | `src/BlitTech.ts` export block (lines 1563-1610)                                                                                                                                                                             |
+| Is this API exported publicly?                             | `src/BLIT386.ts` export block (lines 1563-1610)                                                                                                                                                                              |
 | What test mock do I need for GPU code?                     | `src/__test__/webgpu-mock.ts`                                                                                                                                                                                                |
 | Declaration tooling / TS version alignment?                | `docs/tooling.md`, `docs/developer-experience-guide.md`, `scripts/check-declaration-tooling.mjs`                                                                                                                             |
 | Should this private name repeat the class/file?            | **Internal scoped naming** below; `docs/developer-experience-guide.md` (Naming conventions)                                                                                                                                  |
 | Where do I put a new field/method in a `.ts` file?         | **TypeScript file structure** below; `.cursor/rules/ts-file-structure.mdc`; `docs/developer-experience-guide.md` (File structure and member order)                                                                           |
 | Where are Cursor agent rules and hooks?                    | `.cursor/rules/*.mdc` (always-applied + glob-scoped); `.cursor/hooks.json`; condensed mirrors in `.claude/rules/`; see [Developer Experience](docs/developer-experience-guide.md#cursor)                                     |
 | What agent skills are available for this project?          | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) — `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
-| How do users start a new project with the engine?          | `npm create blit-tech@latest` — the scaffolder lives in the sibling `create-blit-tech` repo; see **Onboarding and the scaffolder** below                                                                                     |
+| How do users start a new project with the engine?          | `npm create blit386@latest` — the scaffolder lives in the sibling `create-blit386` repo; see **Onboarding and the scaffolder** below                                                                                         |
 
 ## Onboarding and the scaffolder
 
 The recommended way for users to start a new game on top of this engine is the scaffolder:
 
 ```bash
-npm create blit-tech@latest my-game
+npm create blit386@latest my-game
 ```
 
-It lives in the sibling repo `create-blit-tech` (`packages/create-blit-tech`), generates a Vite + JavaScript project,
-installs `blit-tech`, and copies the canonical `AGENTS.md` + `docs/` from `@blit-tech/kit`. The generated `package.json`
-pins a `blit-tech` version range (`BLIT_TECH_RANGE` in `packages/create-blit-tech/src/scaffold.ts`).
+It lives in the sibling repo `create-blit386` (`packages/create-blit386`), generates a Vite + JavaScript project,
+installs `blit386`, and copies the canonical `AGENTS.md` + `docs/` from `@blit386/kit`. The generated `package.json`
+pins a `blit386` version range (`BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`).
 
 When you change the engine's onboarding surface here (the `README.md` Quick Start, `bootstrap()` signature/defaults, or
-the minimal demo shape), check whether the `create-blit-tech` templates, kit docs, and pinned version range need a
+the minimal demo shape), check whether the `create-blit386` templates, kit docs, and pinned version range need a
 matching update. That repo has its own git history and is not part of this repo's pnpm workspace.
 
 ## Architecture
 
 All engine functionality is accessed through the static `BT` namespace. The architecture is palette-first: primitives,
 sprites, and bitmap text resolve color through the active `Palette` before final RGBA output. Demos implement the
-`IBlitTechDemo` interface (`configure?`, `init`, `update`, `render`, optional `overlayRows?`).
+`IBTDemo` interface (`configure?`, `init`, `update`, `render`, optional `overlayRows?`).
 
 The file tree below is **illustrative, not exhaustive** — it highlights notable subsystems and entry points. Colocated
 `*.test.ts` / `*.bench.ts` files and small module-local `constants.ts` / `types.ts` helpers are omitted for readability.
 
 ```text
 src/
-  BlitTech.ts              # Public API (BT namespace + export block for classes, helpers, presets)
+  BLIT386.ts              # Public API (BT namespace + export block for classes, helpers, presets)
   docs/
-    consumer-doc-imports.test.ts # Guards README/docs import paths against BlitTech.ts exports
+    consumer-doc-imports.test.ts # Guards README/docs import paths against BLIT386.ts exports
   core/
     BTAPI.ts               # Internal singleton managing subsystems (lazy-loads WebGPURenderer on WebGPU init)
-    IBlitTechDemo.ts       # Demo interface + HardwareSettings
+    IBTDemo.ts       # Demo interface + HardwareSettings
     GameLoop.ts            # Fixed-timestep game loop
     WebGPUContext.ts       # WebGPU adapter/device/context setup
     RenderPaletteUsage.ts  # Per-frame palette index usage mask for overlay grid
@@ -272,7 +272,7 @@ Examples:
 - `Bloom.ts`: `FRAGMENT_WGSL` not `BLOOM_FRAGMENT_WGSL`
 - `Palette.ts`: file-local `Serialized` (or similar), not `PaletteJSON` or `JSON`
 
-**Does not apply to public API:** `BT.*`, the `BlitTech.ts` export block, public methods on exported classes, or
+**Does not apply to public API:** `BT.*`, the `BLIT386.ts` export block, public methods on exported classes, or
 documented configure field names. When JSDoc references public symbols, use their full public names (e.g. internal
 pointer wire codes map to `BT.BTN_POINTER_A`, not gamepad `BT.BTN_A`).
 

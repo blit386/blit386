@@ -1,4 +1,4 @@
-// Global test setup for blit-tech.
+// Global test setup for blit386.
 // Imported by vitest.config.ts setupFiles.
 
 type GlobalRecord = Record<string, unknown>;

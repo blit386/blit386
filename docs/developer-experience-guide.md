@@ -1,7 +1,7 @@
 # Developer Experience Guide
 
 This guide covers the contributing workflow, code style conventions, IDE setup, and maintenance checklists for the
-Blit-Tech project.
+BLIT386 project.
 
 ---
 
@@ -20,7 +20,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contributor workflow. Key
 
 ## Repository Scripts
 
-These commands apply when building or maintaining **blit-tech** from a repository checkout (not when consuming the npm
+These commands apply when building or maintaining **blit386** from a repository checkout (not when consuming the npm
 package).
 
 | Command                             | Description                                                                                     |
@@ -261,7 +261,7 @@ Public `.d.ts` output is produced by `vite-plugin-dts` with `rollupTypes: true`,
 `package.json` (not TypeScript 6.x) to avoid compiler drift warnings and keep declaration analysis deterministic.
 
 When bumping `typescript` or `vite-plugin-dts`, confirm `pnpm run build` logs **no** TS/API Extractor version mismatch
-and that `dist/blit-tech.d.ts` still rolls up cleanly. Re-run `pnpm run typecheck` after any TypeScript line change; TS
+and that `dist/blit386.d.ts` still rolls up cleanly. Re-run `pnpm run typecheck` after any TypeScript line change; TS
 5.9 stricter WebGPU typings may require small test/production fixes (for example `ArrayBuffer`-backed uniform buffers).
 
 **CI guard:** the `build-library` job runs `node scripts/check-declaration-tooling.mjs` on the `pnpm run build` log
@@ -285,7 +285,7 @@ matches `package.json`. Locally: `pnpm run build` then `node scripts/check-decla
 - [ ] Review analytics/usage (if available)
 - [ ] Update roadmap
 - [ ] Check for security advisories
-- [ ] Run MCP governance preflight for `blit-tech` and `blit-tech-demos`
+- [ ] Run MCP governance preflight for `blit386` and `blit386-demos`
       (`pnpm run security:mcp-preflight -- --governance-only`; see
       [docs/security/security-runbook.md](security/security-runbook.md))
 - [ ] Review shadow MCP flags and re-auth critical security MCPs if needed
@@ -298,8 +298,8 @@ matches `package.json`. Locally: `pnpm run build` then `node scripts/check-decla
 - [ ] Test library build
 - [ ] Test examples deployment
 - [ ] Create a GitHub release with notes
-- [ ] Publish `blit-tech` to npm (`pnpm run release` or `pnpm publish --access public` after `pnpm run build`)
-- [ ] Verify package page and install flow: https://www.npmjs.com/package/blit-tech and `npm install blit-tech`
+- [ ] Publish `blit386` to npm (`pnpm run release` or `pnpm publish --access public` after `pnpm run build`)
+- [ ] Verify package page and install flow: https://www.npmjs.com/package/blit386 and `npm install blit386`
 
 npm **provenance** is not enabled: publishing is local-only today. `pnpm publish --provenance` needs an OIDC-backed CI
 publish job; see [dependency-policy.md](security/dependency-policy.md#npm-publish-provenance).
@@ -319,7 +319,7 @@ publish job; see [dependency-policy.md](security/dependency-policy.md#npm-publis
 
 ## Planned Improvements
 
-The following items are tracked in Linear (VV team / Blit-Tech project) as low-priority `feat(dx)` tickets:
+The following items are tracked in Linear (VV team / BLIT386 project) as low-priority `feat(dx)` tickets:
 
 - GitHub issue templates (`.github/ISSUE_TEMPLATE/`)
 - Pull request template (`.github/PULL_REQUEST_TEMPLATE.md`)

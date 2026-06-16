@@ -1,11 +1,11 @@
 /**
- * DOM utility helpers for Blit-Tech bootstrap.
+ * DOM utility helpers for BLIT386 bootstrap.
  *
  * Canvas lookup and error display utilities used by the bootstrap function.
  */
 
 /** Default canvas element ID. */
-export const DEFAULT_CANVAS_ID = 'blit-tech-canvas';
+export const DEFAULT_CANVAS_ID = 'blit386-canvas';
 
 /** Default container element ID for error display. */
 export const DEFAULT_CONTAINER_ID = 'canvas-container';
@@ -134,7 +134,7 @@ export function displayError(title: string, content: ErrorContent, containerID: 
  * Retrieves a canvas element from the DOM by ID.
  * Validates that the element exists and is a canvas element.
  *
- * @param canvasID - ID of the canvas element. Default: 'blit-tech-canvas'
+ * @param canvasID - ID of the canvas element. Default: 'blit386-canvas'
  * @returns The canvas element if found and valid, null otherwise.
  *
  * @example

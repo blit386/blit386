@@ -15,14 +15,14 @@ The **1.x** release line is actively maintained. Security fixes are published as
 If you discover a security vulnerability in a supported **1.x** release, please report it responsibly.
 
 **Do not open a public issue.** Instead, email the maintainers directly or use
-[GitHub's private vulnerability reporting](https://github.com/vancura/blit-tech/security/advisories/new).
+[GitHub's private vulnerability reporting](https://github.com/blit386/blit386/security/advisories/new).
 
 We will acknowledge receipt within 48 hours and provide a timeline for a fix. Once resolved, we will publish a fix on
 the supported **1.x** line and credit you in the release notes (unless you prefer to remain anonymous).
 
 ## Scope
 
-blit-tech is a client-side WebGPU rendering library. Security concerns are primarily:
+blit386 is a client-side WebGPU rendering library. Security concerns are primarily:
 
 - Supply chain (dependencies)
 - Build pipeline integrity
