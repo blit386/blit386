@@ -389,15 +389,15 @@ BMFont to .btfont Converter
 Converts BMFont XML format (.fnt + .png) to BLIT386’s .btfont JSON format.
 
 Usage:
-  node tools/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]
+  node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]
 
 Options:
   --embed        Embed the texture as base64 instead of referencing it
   -h, --help     Show this help message
 
 Examples:
-  node tools/convert-bmfont.mjs fonts/MyFont.fnt fonts/MyFont.btfont
-  node tools/convert-bmfont.mjs fonts/MyFont.fnt fonts/MyFont.btfont --embed
+  node scripts/convert-bmfont.mjs fonts/MyFont.fnt fonts/MyFont.btfont
+  node scripts/convert-bmfont.mjs fonts/MyFont.fnt fonts/MyFont.btfont --embed
 `);
         process.exit(0);
     }
@@ -412,7 +412,7 @@ Examples:
 
     if (unknownFlags.length > 0) {
         console.error(`Error: Unknown flag(s): ${unknownFlags.join(', ')}`);
-        console.error('Usage: node tools/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
+        console.error('Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
         console.error('Run with --help for more information');
 
         process.exit(1);
@@ -420,7 +420,7 @@ Examples:
 
     if (paths.length < 2) {
         console.error('Error: Please provide input and output paths');
-        console.error('Usage: node tools/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
+        console.error('Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
 
         process.exit(1);
     }
@@ -428,7 +428,7 @@ Examples:
     // Validate no extra positional arguments.
     if (paths.length !== 2) {
         console.error(`Error: Expected 2 paths, but got ${paths.length}: ${paths.join(', ')}`);
-        console.error('Usage: node tools/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
+        console.error('Usage: node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]');
 
         process.exit(1);
     }
