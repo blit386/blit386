@@ -1,12 +1,12 @@
 /**
  * Bitmap Font Demo - load a proportional .btfont and compare it to the built-in system font.
  *
- * Demo 022 in the Blit-Tech demo series.
+ * Demo 022 in the BLIT386 demo series.
  * Prerequisites:
- *   001-Basics  https://blit-tech-demos.vancura.dev/001-basics
- *   004-Fonts   https://blit-tech-demos.vancura.dev/004-fonts
+ *   001-Basics  https://demos.blit386.dev/001-basics
+ *   004-Fonts   https://demos.blit386.dev/004-fonts
  *
- * Live version: https://blit-tech-demos.vancura.dev/022-bitmap-font
+ * Live version: https://demos.blit386.dev/022-bitmap-font
  *
  * Demos 002-020 use BT.systemPrint() - the built-in 6x14 pixel system font that needs no file.
  * This demo shows the ALTERNATIVE: loading a proportional bitmap font from a .btfont file.
@@ -31,14 +31,14 @@
  * and how to measure how wide a piece of text will be before drawing it.
  */
 
-// @pageTitle Blit-Tech Demo 022 - Bitmap Font
+// @pageTitle BLIT386 Demo 022 - Bitmap Font
 
-import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
+import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').BitmapFont} BitmapFont */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').BitmapFont} BitmapFont */
 
 // The x position where the rainbow text row starts.
 // Shared by update() (hue calculation) and renderRainbowText() (glyph drawing) so they stay in sync.
@@ -79,7 +79,7 @@ const LABEL_X = 10;
  * Shows static colors, animated rainbow effects, text measurement, and font metadata.
  * Contrast this approach with BT.systemPrint() used in the Fonts demo (004).
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // font will hold the loaded bitmap font once it is downloaded.
@@ -147,7 +147,7 @@ class Demo {
         this.labelPrefixWidth = BT.systemPrintMeasure('A: ').x;
 
         // Load the font file from the server.
-        // .btfont is Blit-Tech's custom font format that includes glyph images.
+        // .btfont is BLIT386's custom font format that includes glyph images.
         // This is the step that BT.systemPrint() skips - the system font is built in.
         try {
             this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
@@ -172,7 +172,7 @@ class Demo {
     }
 
     // Runs at a fixed rate (60 times per second).
-    // We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
+    // We learned about the demo loop in the Basics demo: https://demos.blit386.dev/001-basics
     // We advance the animation timer AND update dynamic palette colors here.
     update() {
         // Move the animation clock forward by one fixed update step in seconds.
@@ -194,7 +194,7 @@ class Demo {
         // We compute hue (color wheel position) for each character based on its x position
         // and animTime. We need the font loaded to get the correct glyph widths.
         // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
-        // https://blit-tech-demos.vancura.dev/003-colors
+        // https://demos.blit386.dev/003-colors
         if (this.font) {
             let charX = RAINBOW_ORIGIN_X; // Starting x position - same as where render() draws the rainbow text.
             for (let i = 0; i < RAINBOW_TEXT.length; i++) {
@@ -240,12 +240,12 @@ class Demo {
         // "A:" marks the bitmap font version (proportional spacing, each letter its own width).
         // "B:" marks the built-in system font (every character is a fixed 6x14 pixel block).
         BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'A:');
-        BT.printFont(this.font, new Vector2i(textX, y), 'Blit-Tech Font Demo (022)', 0);
+        BT.printFont(this.font, new Vector2i(textX, y), 'BLIT386 Font Demo (022)', 0);
         y += bitmapLineHeight;
 
         // The same title text in the system font so the visual difference is obvious.
         BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'B:');
-        BT.systemPrint(new Vector2i(textX, y), C_WHITE, 'Blit-Tech Font Demo (022)');
+        BT.systemPrint(new Vector2i(textX, y), C_WHITE, 'BLIT386 Font Demo (022)');
 
         // Move down past both title lines, with a little extra gap before the next section.
         y += systemLineHeight + 4;
@@ -399,5 +399,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

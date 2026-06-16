@@ -1,18 +1,18 @@
-// @pageTitle Blit-Tech Demo 015 - Palette Presets
+// @pageTitle BLIT386 Demo 015 - Palette Presets
 //
 // Demo 015 - Palette Presets: six built-in color sets you can load instantly.
 //
-// Demo 015 in the Blit-Tech series (written for readers about 12 years old).
+// Demo 015 in the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives https://blit-tech-demos.vancura.dev/002-primitives
-//   003-Colors     https://blit-tech-demos.vancura.dev/003-colors
-//   004-Fonts      https://blit-tech-demos.vancura.dev/004-fonts
-//     (on-canvas labels use BT.systemPrint; walkthrough: https://vancura.dev/articles/blit-tech-fonts)
+//   001-Basics     https://demos.blit386.dev/001-basics
+//   002-Primitives https://demos.blit386.dev/002-primitives
+//   003-Colors     https://demos.blit386.dev/003-colors
+//   004-Fonts      https://demos.blit386.dev/004-fonts
+//     (on-canvas labels use BT.systemPrint; walkthrough: https://vancura.dev/articles/blit386-fonts)
 //
-// Live version: https://blit-tech-demos.vancura.dev/015-palette-presets
-// Live article: https://vancura.dev/articles/blit-tech-palette-presets
+// Live version: https://demos.blit386.dev/015-palette-presets
+// Live article: https://vancura.dev/articles/blit386-palette-presets
 //
 // WHAT IS A PALETTE PRESET?
 //
@@ -20,7 +20,7 @@
 //   palette.set(1, new Color32(255, 0, 0)); // My red.
 //   palette.set(2, new Color32(0, 255, 0)); // My green.
 //
-// Blit-Tech ships with six "preset" palettes - ready-made color sets based on
+// BLIT386 ships with six "preset" palettes - ready-made color sets based on
 // real hardware from the history of video games:
 //
 //   Game Boy    4 colors   (1989 Nintendo handheld - shades of green)
@@ -42,12 +42,12 @@
 //   - Named slots: the live view uses palette.setNamed() / getNamed() to pick colors.
 //   - Current preset name and color count = engine overlay row above the FPS bar.
 
-import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // How many ticks to show each preset in the live view (2 seconds at 60 FPS = 120 ticks).
 const LIVE_SWITCH_TICKS = 120;
@@ -70,7 +70,7 @@ const C_OVERLAY_GAP = 44; // Gap between overlay rows (must match configure().ov
 /**
  * Demonstrates the six built-in palette presets and named palette slots.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The main palette used for UI and the live preview.
@@ -346,5 +346,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

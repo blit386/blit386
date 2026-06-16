@@ -1,6 +1,6 @@
-// @pageTitle Blit-Tech Demo 00a - Barebones
+// @pageTitle BLIT386 Demo 00a - Barebones
 //
-// The smallest possible Blit-Tech demo: a single square that moves and jumps.
+// The smallest possible BLIT386 demo: a single square that moves and jumps.
 // This is the "blank canvas" starter - every other demo in the series builds on this pattern.
 //
 // What you will see:
@@ -8,22 +8,22 @@
 //   - Hold the A button (or Space) to make it jump.
 //   - Press left / right to move it sideways.
 //
-// The three methods every Blit-Tech demo can have:
+// The three methods every BLIT386 demo can have:
 //   init()   - called once at startup to set up colors and load resources.
 //   update() - called 60 times per second to move things and respond to input.
 //   render() - called 60 times per second to draw everything on screen.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').Palette} Palette */
 // Footer text colors (slots 3 and 4; slots 1-2 are player and background).
 const C_FOOTER_DIM = 3;
 const C_FOOTER_WHITE = 4;
 
 /**
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The color palette holds all the colors we are allowed to draw with.
@@ -109,7 +109,7 @@ class Demo {
         this.gravity += 0.1;
 
         // Apply gravity: add the falling speed to the Y position.
-        // Y increases downward in Blit-Tech - 0 is the top edge of the screen.
+        // Y increases downward in BLIT386 - 0 is the top edge of the screen.
         this.player.y += this.gravity;
 
         // Apply jump: subtract the jump force from Y to push the square upward.
@@ -132,6 +132,6 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
-// Blit-Tech creates one instance and calls init(), then update() + render() 60 times a second.
+// Hand the Demo class to BLIT386 to start the demo loop.
+// BLIT386 creates one instance and calls init(), then update() + render() 60 times a second.
 bootstrap(Demo);

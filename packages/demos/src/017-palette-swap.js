@@ -1,20 +1,20 @@
-// @pageTitle Blit-Tech Demo 017 - Palette Swap
+// @pageTitle BLIT386 Demo 017 - Palette Swap
 //
 // Demo 017 - Palette Swap: change the active palette at runtime to switch color themes.
 //
-// Demo 017 in the Blit-Tech series (written for readers about 12 years old).
+// Demo 017 in the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
-//   008-Sprites           https://blit-tech-demos.vancura.dev/008-sprites
-//   015-Palette Presets   https://blit-tech-demos.vancura.dev/015-palette-presets
-//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
-//     (walkthroughs: https://vancura.dev/articles/blit-tech-sprites,
-//      https://vancura.dev/articles/blit-tech-palette-presets,
-//      https://vancura.dev/articles/blit-tech-palette-animation)
+//   001-Basics            https://demos.blit386.dev/001-basics
+//   008-Sprites           https://demos.blit386.dev/008-sprites
+//   015-Palette Presets   https://demos.blit386.dev/015-palette-presets
+//   016-Palette Animation https://demos.blit386.dev/016-palette-animation
+//     (walkthroughs: https://vancura.dev/articles/blit386-sprites,
+//      https://vancura.dev/articles/blit386-palette-presets,
+//      https://vancura.dev/articles/blit386-palette-animation)
 //
-// Live version: https://blit-tech-demos.vancura.dev/017-palette-swap
-// Live article: https://vancura.dev/articles/blit-tech-palette-swap
+// Live version: https://demos.blit386.dev/017-palette-swap
+// Live article: https://vancura.dev/articles/blit386-palette-swap
 //
 // WHAT IS PALETTE SWAP?
 //
@@ -45,13 +45,13 @@
 //   Center: one large sprite that changes theme every 2 seconds.
 //   Right: code snippet showing how to build and swap palettes.
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit-tech').Rect2i} Rect2i */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
 
 // How many ticks to hold each theme before switching (2 seconds at 60 FPS).
 const SWAP_PERIOD_TICKS = 120;
@@ -78,7 +78,7 @@ const C_DIM = 6;
  * Demonstrates palette swap: building multiple palettes and switching between them
  * at runtime using BT.paletteSet() and BT.spritesRefresh().
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The sprite sheet loaded from test.png.
@@ -345,7 +345,7 @@ class Demo {
      * in those slots differ.
      *
      * @param {'stone'|'fire'|'ice'|'void'} themeName - Which tint to apply.
-     * @returns {import('blit-tech').Palette} Ready-to-use Palette object.
+     * @returns {import('blit386').Palette} Ready-to-use Palette object.
      */
     buildTheme(themeName) {
         const palette = BT.paletteCreate(256);
@@ -404,5 +404,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

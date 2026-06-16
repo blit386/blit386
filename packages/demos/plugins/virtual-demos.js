@@ -184,7 +184,7 @@ function renderIndexPage(registry) {
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Blit-Tech Demos</title>
+        <title>BLIT386 Demos</title>
         <style>
             body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
             h1 { margin-bottom: 0.5rem; }
@@ -195,7 +195,7 @@ function renderIndexPage(registry) {
         </style>
     </head>
     <body>
-        <h1>Blit-Tech Demos</h1>
+        <h1>BLIT386 Demos</h1>
         <ul>
 ${items}
         </ul>

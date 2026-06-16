@@ -1,12 +1,12 @@
 // Demo 012 - Tilemap: build a grid world from a 2D array and scroll the camera across it.
 //
-// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
-// 002-Primitives (https://blit-tech-demos.vancura.dev/002-primitives),
-// 007-Camera (https://blit-tech-demos.vancura.dev/007-camera).
-// Optional background: 008-Sprites (https://blit-tech-demos.vancura.dev/008-sprites) also
+// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+// 002-Primitives (https://demos.blit386.dev/002-primitives),
+// 007-Camera (https://demos.blit386.dev/007-camera).
+// Optional background: 008-Sprites (https://demos.blit386.dev/008-sprites) also
 // places art on a grid, but this demo uses colored rectangles instead of a PNG sheet.
 //
-// Live walkthrough: https://vancura.dev/articles/blit-tech-tilemap
+// Live walkthrough: https://vancura.dev/articles/blit386-tilemap
 //
 // A "tilemap" is like a floor made of same-sized square tiles. Each cell in a 2D array
 // (a list of rows, each row a list of columns) stores a small number that means "which
@@ -22,12 +22,12 @@
 // palette slot C_WATER); the mini-map uses a separate still blue (C_MINIMAP_WATER)
 // so the overview stays calm and easy to read.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // These numbers are the "tile IDs" stored inside the 2D array.
 // Using named constants helps you remember what each number means when you read the map.
@@ -72,7 +72,7 @@ const C_WATER = 14; // DYNAMIC: the animated water tile color, updated every tic
 /**
  * Shows a scrolling tile-based landscape with a mini-map and animated water.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // tilemap is an array of rows. tilemap[row][column] is one cell.
@@ -172,7 +172,7 @@ class Demo {
 
         // Math.sin(t) wiggles forever between -1 and +1, like a gentle wave on water.
         // We scale and shift it so the camera slides horizontally across most of the map.
-        // Floor turns the float into a whole pixel position (Blit-Tech uses integer pixels).
+        // Floor turns the float into a whole pixel position (BLIT386 uses integer pixels).
         const viewSize = BT.displaySize;
         const maxCamX = WORLD_WIDTH_PX - viewSize.x;
         const maxCamY = WORLD_HEIGHT_PX - viewSize.y;

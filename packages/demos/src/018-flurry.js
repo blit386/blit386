@@ -13,7 +13,7 @@
 //
 // HOW DOES THIS VERSION DIFFER FROM THE ORIGINAL?
 // The original Flurry used "additive blending" - overlapping particles added their light
-// together to create soft glowing halos. Blit-Tech does not support that technique.
+// together to create soft glowing halos. BLIT386 does not support that technique.
 // Instead, we use palette animation: every frame, we rewrite the palette so that young
 // particles appear bright and large, while old particles appear dim and small.
 // The mesmerizing orbital motion and rainbow color cycling are fully preserved.
@@ -27,18 +27,18 @@
 //     When the frequencies are slightly different, the path never exactly repeats.
 //
 // Prerequisites:
-//   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
-//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
-//     (walkthrough: https://vancura.dev/articles/blit-tech-palette-animation)
+//   001-Basics            https://demos.blit386.dev/001-basics
+//   016-Palette Animation https://demos.blit386.dev/016-palette-animation
+//     (walkthrough: https://vancura.dev/articles/blit386-palette-animation)
 //
-// Live version: https://blit-tech-demos.vancura.dev/018-flurry
+// Live version: https://demos.blit386.dev/018-flurry
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Target frame rate for fixed update() steps (matches engine defaultConfig).
 const TARGET_FPS = 60;
@@ -184,7 +184,7 @@ const SPARK_TABLE = [
  * Twelve spark attractors trace Lissajous orbit paths; PARTICLE_COUNT particles spiral
  * around them via inverse-square gravity. Palette animation cycles a full rainbow every 15 seconds.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The 256-slot palette used for all drawing. Filled in init(), updated every tick.
@@ -806,5 +806,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the animation loop.
+// Hand the Demo class to BLIT386 to start the animation loop.
 bootstrap(Demo);

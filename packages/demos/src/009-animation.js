@@ -1,10 +1,10 @@
 // Demo 009 - Animation and timing: how to animate sprites using tick-based timing.
 //
-// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
-// 008-Sprites (https://blit-tech-demos.vancura.dev/008-sprites).
-// Live article: https://vancura.dev/articles/blit-tech-animation
+// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+// 008-Sprites (https://demos.blit386.dev/008-sprites).
+// Live article: https://vancura.dev/articles/blit386-animation
 //
-// In Blit-Tech, the tick counter goes up once per update() call at a fixed rate (targetFPS),
+// In BLIT386, the tick counter goes up once per update() call at a fixed rate (targetFPS),
 // not once per screen refresh. render() can run more often than update() on a high refresh
 // monitor, so there can be more drawn frames than ticks. This demo shows the most common
 // patterns for making things happen over time:
@@ -30,16 +30,16 @@
 // use the particle's slot number - no Color32 objects needed there.
 //
 // We used the same idea in Demo 016-Palette-Animation:
-// https://vancura.dev/articles/blit-tech-palette-animation
+// https://vancura.dev/articles/blit386-palette-animation
 
-import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
+import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit-tech').Rect2i} Rect2i */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
 
 // AnimState defines the three states the moving rock can be in.
 // Object.freeze prevents these values from being changed by accident.
@@ -105,7 +105,7 @@ async function canvasToImage(canvas) {
 /**
  * Scans canvas pixels and registers every unique opaque color into the palette.
  *
- * @param {import('blit-tech').Palette} palette
+ * @param {import('blit386').Palette} palette
  * @param {OffscreenCanvasRenderingContext2D} ctx
  * @param {number} w
  * @param {number} h
@@ -209,7 +209,7 @@ function buildWalkSheet() {
  * Shows state machines, cooldowns, periodic particle events, and jump arcs.
  * The "character" is the rock sprite from test.png.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The palette holds all colors used in this demo.
@@ -652,5 +652,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

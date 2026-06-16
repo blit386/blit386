@@ -1,15 +1,15 @@
-// @pageTitle Blit-Tech Demo 023 - PipBoy CRT
+// @pageTitle BLIT386 Demo 023 - PipBoy CRT
 //
 // Demo 023 - PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //
-// Demo 023 in the Blit-Tech demo series.
+// Demo 023 in the BLIT386 demo series.
 // Prerequisites:
-//   001-Basics      https://blit-tech-demos.vancura.dev/001-basics
-//   022-Bitmap Font https://blit-tech-demos.vancura.dev/022-bitmap-font
+//   001-Basics      https://demos.blit386.dev/001-basics
+//   022-Bitmap Font https://demos.blit386.dev/022-bitmap-font
 //
-// Live version: https://blit-tech-demos.vancura.dev/023-crt-pipboy
+// Live version: https://demos.blit386.dev/023-crt-pipboy
 //
-// Live article: https://vancura.dev/articles/blit-tech-pipboy-crt
+// Live article: https://vancura.dev/articles/blit386-pipboy-crt
 //
 // WHAT YOU WILL SEE
 // A green-on-black terminal that looks like an old curved CRT screen. Scanlines, a soft
@@ -20,7 +20,7 @@
 //
 // WHAT YOU WILL LEARN
 //   - "Post-processing": running effects on the WHOLE screen after we are done drawing it.
-//   - The two effect TIERS Blit-Tech offers, and why they exist:
+//   - The two effect TIERS BLIT386 offers, and why they exist:
 //       * pixel-tier: chunky, palette-native, runs on the logical index buffer at 320x240 (one byte per pixel).
 //       * between tiers: the engine looks up each index in your palette and upscales to RGBA at canvas size.
 //       * display-tier: smooth, simulates the physical screen, runs on that full-size RGBA image.
@@ -86,7 +86,7 @@ import {
     Scanlines,
     Vector2i,
     Vignette,
-} from 'blit-tech';
+} from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
@@ -190,9 +190,9 @@ const FLICKER_DIP = 0.6;
 const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
 /**
  * Returns a random integer in the half-open range [min, max).
@@ -263,7 +263,7 @@ function colorSlot(name) {
  *
  * If you want the same look in one line of code, use `BT.preset.crtPipBoy()` instead.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /**
@@ -337,7 +337,7 @@ class Demo {
 
         // Step 2: load the bitmap font
         // PragmataPro is a monospaced programming font - a perfect fit for a fictional
-        // terminal. The .btfont is a Blit-Tech bitmap font: a PNG glyph atlas plus a
+        // terminal. The .btfont is a BLIT386 bitmap font: a PNG glyph atlas plus a
         // small JSON describing each character's bounds.
         this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
 

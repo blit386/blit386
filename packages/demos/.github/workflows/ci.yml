@@ -1,8 +1,8 @@
 name: CI
 
-# This workflow tests Blit-Tech Demos only.
-# The Blit-Tech library is cloned and built as a dependency,
-# but is NOT tested here (it has its own CI in vancura/blit-tech).
+# This workflow tests BLIT386 Demos only.
+# The BLIT386 library is cloned and built as a dependency,
+# but is NOT tested here (it has its own CI in blit386/blit386).
 
 on:
   push:
@@ -31,27 +31,27 @@ jobs:
 
       - name: Check formatting
         run: |
-          cd blit-tech-demos
+          cd blit386-demos
           pnpm run format:check
 
       - name: Lint code
         run: |
-          cd blit-tech-demos
+          cd blit386-demos
           pnpm run lint
 
       - name: Spell check
         run: |
-          cd blit-tech-demos
+          cd blit386-demos
           pnpm run spellcheck
 
       - name: Check for unused exports
         run: |
-          cd blit-tech-demos
+          cd blit386-demos
           pnpm run knip
 
       - name: Check documentation links
         run: |
-          cd blit-tech-demos
+          cd blit386-demos
           pnpm run docs:links
 
   build:
@@ -71,7 +71,7 @@ jobs:
 
       - name: Build demos
         run: |
-          cd blit-tech-demos
+          cd blit386-demos
           pnpm run build
         env:
           NODE_ENV: production
@@ -80,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: demos-dist
-          path: blit-tech-demos/dist/
+          path: blit386-demos/dist/
           if-no-files-found: error
           retention-days: 7
           compression-level: 9
@@ -106,4 +106,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist/ --project-name=blit-tech-demos
+          command: pages deploy dist/ --project-name=blit386-demos

@@ -1,12 +1,12 @@
-// Demo 008 - Sprites: how to draw images (sprites) on screen using Blit-Tech.
+// Demo 008 - Sprites: how to draw images (sprites) on screen using BLIT386.
 //
-// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
-// 002-Primitives (https://blit-tech-demos.vancura.dev/002-primitives),
-// 003-Colors (https://blit-tech-demos.vancura.dev/003-colors).
-// Live article: https://vancura.dev/articles/blit-tech-sprites
+// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+// 002-Primitives (https://demos.blit386.dev/002-primitives),
+// 003-Colors (https://demos.blit386.dev/003-colors).
+// Live article: https://vancura.dev/articles/blit386-sprites
 //
 // A "sprite" is a 2D image used in a game - like a character, a coin, or an enemy.
-// In Blit-Tech, sprites are stored in a "sprite sheet": one big image that
+// In BLIT386, sprites are stored in a "sprite sheet": one big image that
 // contains many small sprites arranged in a grid. You draw individual sprites by
 // telling the engine which rectangular region (a Rect2i "source rect") to copy.
 //
@@ -32,16 +32,16 @@
 // This is how retro games did "team colors" and environmental lighting.
 //
 // We learned about palette setup in Demo 015-Palette-Presets:
-// https://blit-tech-demos.vancura.dev/015-palette-presets
+// https://demos.blit386.dev/015-palette-presets
 
-import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit-tech').Rect2i} Rect2i */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
 
 // Where in the palette the sprite's original colors start.
 // Everything before this (index 1..9) is used for UI colors.
@@ -85,7 +85,7 @@ async function canvasToImage(canvas) {
  * Scans canvas pixels and registers every unique opaque color into the palette.
  * Transparent pixels (alpha 0) are skipped - they map to slot 0 at draw time.
  *
- * @param {import('blit-tech').Palette} palette
+ * @param {import('blit386').Palette} palette
  * @param {OffscreenCanvasRenderingContext2D} ctx
  * @param {number} w
  * @param {number} h
@@ -239,7 +239,7 @@ function buildShapeSheet() {
 /**
  * Demonstrates sprite sheets, source rectangles, palette offsets, and opacity pulsing.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

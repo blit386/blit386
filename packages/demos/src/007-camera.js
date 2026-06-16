@@ -1,10 +1,10 @@
 // Demo 007 - Camera: shows how to scroll a view over a world larger than the screen.
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
-// (https://blit-tech-demos.vancura.dev/001-basics) and shapes in Demo 002-Primitives
-// (https://vancura.dev/articles/blit-tech-primitives).
+// (https://demos.blit386.dev/001-basics) and shapes in Demo 002-Primitives
+// (https://vancura.dev/articles/blit386-primitives).
 //
-// Live walkthrough: https://vancura.dev/articles/blit-tech-camera
+// Live walkthrough: https://vancura.dev/articles/blit386-camera
 //
 // How BT.cameraSet() works: a positive camera offset shifts the view to the right, so the
 // world appears to scroll left on the screen. A positive X offset means the camera is
@@ -24,12 +24,12 @@
 //
 // It also shows a mini-map in the corner that shows where in the world we currently are.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Every color in this demo is pre-registered in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -63,7 +63,7 @@ const C_BUILDING_BASE = 20; // building 0 is at index 20, building 1 at 21, and 
  * Demonstrates camera scrolling with a procedurally generated city.
  * Buildings and trees are randomly placed; the camera automatically scrolls.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The total size of the game world in pixels.
@@ -473,5 +473,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

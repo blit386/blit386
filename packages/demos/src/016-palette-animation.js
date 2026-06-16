@@ -1,18 +1,18 @@
-// @pageTitle Blit-Tech Demo 016 - Palette Animation
+// @pageTitle BLIT386 Demo 016 - Palette Animation
 //
 // Demo 016 - Palette Animation: change palette entries every tick for instant visual effects.
 //
-// Demo 016 in the Blit-Tech series (written for readers about 12 years old).
+// Demo 016 in the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics          https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives      https://blit-tech-demos.vancura.dev/002-primitives
-//   003-Colors          https://blit-tech-demos.vancura.dev/003-colors
-//   015-Palette Presets https://blit-tech-demos.vancura.dev/015-palette-presets
-//     (walkthrough: https://vancura.dev/articles/blit-tech-palette-presets)
+//   001-Basics          https://demos.blit386.dev/001-basics
+//   002-Primitives      https://demos.blit386.dev/002-primitives
+//   003-Colors          https://demos.blit386.dev/003-colors
+//   015-Palette Presets https://demos.blit386.dev/015-palette-presets
+//     (walkthrough: https://vancura.dev/articles/blit386-palette-presets)
 //
-// Live version: https://blit-tech-demos.vancura.dev/016-palette-animation
-// Live article: https://vancura.dev/articles/blit-tech-palette-animation
+// Live version: https://demos.blit386.dev/016-palette-animation
+// Live article: https://vancura.dev/articles/blit386-palette-animation
 //
 // WHAT IS PALETTE ANIMATION?
 //
@@ -25,7 +25,7 @@
 // repaint bucket 5. Every sky-colored spot changes instantly - without touching the painting!
 //
 // That trick is called "palette animation". Modern engines don't need it, but it's a
-// beautiful technique to understand, and Blit-Tech lets you do it the same way.
+// beautiful technique to understand, and BLIT386 lets you do it the same way.
 //
 // THE KEY RULE:
 //   render() writes palette indices (numbers) - never Color32 objects.
@@ -37,12 +37,12 @@
 //   3. Flashing health bar     - one slot alternates red / white every 8 ticks.
 //   4. Cycling water strip     - three blue-green slots ripple in sequence.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Gradient bar
 // How many color slots the scrolling gradient uses.
@@ -107,7 +107,7 @@ const C_WATER_BASE = 90; // Slots 90..92.
  * to create scrolling gradients, fire, flashing effects, and rippling water
  * all without touching the geometry drawn in render().
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The single palette used for all drawing.
@@ -495,5 +495,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

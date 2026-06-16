@@ -1,14 +1,14 @@
 /**
- * Basics Demo - Your very first Blit-Tech program!
+ * Basics Demo - Your very first BLIT386 program!
  *
  * Welcome! This demo teaches you the absolute basics of making things appear
- * on screen with the Blit-Tech engine. You will learn:
+ * on screen with the BLIT386 engine. You will learn:
  *   - How a demo is structured (init, update, and render)
  *   - How to clear the screen and load a sprite (a tiny picture)
  *   - How to make a loaded sprite move and bounce off screen edges
  *   - How to show text on the canvas (BT.systemPrint) and in the engine overlay (overlayRows)
  *
- * If you are new to Blit-Tech, read this file carefully from top to bottom.
+ * If you are new to BLIT386, read this file carefully from top to bottom.
  * Every line has a comment explaining what it does and why.
  *
  * This demo sets targetFPS to 30 in configure() (slower than the engine default of 60)
@@ -30,13 +30,13 @@
  * back, the engine catches up with a few extra update() calls (up to 8) so
  * your game does not jump forward in time by a huge amount.
  *
- * Live version: https://blit-tech-demos.vancura.dev/001-basics
+ * Live version: https://demos.blit386.dev/001-basics
  */
 
-// @pageTitle Blit-Tech Demo 001 - Basics
+// @pageTitle BLIT386 Demo 001 - Basics
 
 /**
- * "import" loads tools from the Blit-Tech engine library.
+ * "import" loads tools from the BLIT386 engine library.
  * Think of it like opening a toolbox before you start building.
  *   - bootstrap: a helper that starts the engine and connects your demo to it
  *   - BT: the main engine object - you call BT.clear(), BT.drawSprite(), etc.
@@ -44,9 +44,9 @@
  *   - SpriteSheet: a loaded image you can draw pieces of on screen (a "sprite")
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
-import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
 
-// Blit-Tech uses a "palette" - a numbered list of colors you choose BEFORE drawing.
+// BLIT386 uses a "palette" - a numbered list of colors you choose BEFORE drawing.
 // Think of it like an artist picking paint colors and laying them on a palette tray
 // before starting a painting. Each color gets a number (an "index").
 // When we draw, we say "use color number 1" instead of spelling out the color each time.
@@ -70,22 +70,22 @@ const SPRITE_BASE = 10;
 const SPRITE_URL = '/sprites/logo-1.png';
 
 /**
- * This line tells code editors that our Demo class follows the IBlitTechDemo
+ * This line tells code editors that our Demo class follows the IBTDemo
  * interface - the contract that says you need init, update, and render.
  * configure() is optional (the engine defaultConfig is 320x240 logical, 640x480
  * canvas, 60 FPS if you skip it).
  */
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit-tech').Rect2i} Rect2i */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
 
 /**
- * Bouncing-sprite demo - the simplest possible Blit-Tech demo.
+ * Bouncing-sprite demo - the simplest possible BLIT386 demo.
  *
- * Every Blit-Tech demo is a class the engine drives with three required methods
+ * Every BLIT386 demo is a class the engine drives with three required methods
  * plus one optional hook:
  *
  *   1. configure() - optional. If you define it, the engine calls it once at
@@ -106,7 +106,7 @@ const SPRITE_URL = '/sprites/logo-1.png';
  *   4. render() - called once per screen refresh to draw everything. Clear the
  *      screen, draw shapes, print text - all drawing goes here.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // - Instance properties -

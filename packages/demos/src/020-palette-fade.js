@@ -1,21 +1,21 @@
-// @pageTitle Blit-Tech Demo 020 - Palette Fade
+// @pageTitle BLIT386 Demo 020 - Palette Fade
 //
 // Demo 020 - Palette Fade & Flash: smooth color transitions and flash effects.
 //
-// Demo 020 in the Blit-Tech series (written for readers about 12 years old).
+// Demo 020 in the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives        https://blit-tech-demos.vancura.dev/002-primitives
-//   015-Palette Presets   https://blit-tech-demos.vancura.dev/015-palette-presets
-//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
-//   019-Palette Cycling   https://blit-tech-demos.vancura.dev/019-palette-cycling
-//     (walkthroughs: https://vancura.dev/articles/blit-tech-palette-presets,
-//      https://vancura.dev/articles/blit-tech-palette-animation,
-//      https://vancura.dev/articles/blit-tech-palette-cycling)
+//   001-Basics            https://demos.blit386.dev/001-basics
+//   002-Primitives        https://demos.blit386.dev/002-primitives
+//   015-Palette Presets   https://demos.blit386.dev/015-palette-presets
+//   016-Palette Animation https://demos.blit386.dev/016-palette-animation
+//   019-Palette Cycling   https://demos.blit386.dev/019-palette-cycling
+//     (walkthroughs: https://vancura.dev/articles/blit386-palette-presets,
+//      https://vancura.dev/articles/blit386-palette-animation,
+//      https://vancura.dev/articles/blit386-palette-cycling)
 //
-// Live version: https://blit-tech-demos.vancura.dev/020-palette-fade
-// Live article: https://vancura.dev/articles/blit-tech-palette-fade
+// Live version: https://demos.blit386.dev/020-palette-fade
+// Live article: https://vancura.dev/articles/blit386-palette-fade
 //
 // WHAT ARE PALETTE FADES?
 //
@@ -24,7 +24,7 @@
 // paints over several seconds, so the whole picture smoothly transitions from
 // bright to dark - like watching a sunset.
 //
-// Blit-Tech does this with BT.paletteFade(targetPalette, durationMs, easing).
+// BLIT386 does this with BT.paletteFade(targetPalette, durationMs, easing).
 // You give it the destination paint set, how long the transition should take,
 // and optionally a curve that controls how fast the change happens ("ease-in"
 // starts slow, "ease-out" starts fast, "ease-in-out" is smooth on both ends).
@@ -54,12 +54,12 @@
 //   Repeat forever.
 //   Current phase label (Day, Night, Dawn, etc.) = engine overlay row above the FPS bar.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Phase durations in ticks (at 60 FPS, 60 ticks = 1 second).
 const PHASE_DAY_HOLD = 180; // 3 seconds
@@ -150,7 +150,7 @@ function fillNight(p) {
  * A pixel-art landscape transitions between day and night with smooth fades,
  * plus a lightning flash effect.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

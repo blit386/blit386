@@ -1,14 +1,14 @@
 # Project Rules
 
-Interactive demos and examples for Blit-Tech, a palette-first WebGPU retro engine for TypeScript.
+Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript.
 
 ## Tech Stack
 
-- **Node**: >= 22.18.0 (required by cspell 10 and workspace sibling blit-tech)
+- **Node**: >= 22.18.0 (required by cspell 10 and workspace sibling blit386)
 - **Build Tool**: Vite 7 with a custom virtual-demos plugin (no templating library)
 - **Language**: JavaScript (ES2022)
 - **Styling**: Plain CSS with CSS custom properties
-- **Engine**: Blit-Tech (pixel engine: WebGPU default, optional software renderer; workspace dependency)
+- **Engine**: BLIT386 (pixel engine: WebGPU default, optional software renderer; workspace dependency)
 - **Package Manager**: pnpm
 - **Deployment**: Cloudflare Pages via GitHub Actions
 - **Linting**: Biome + ESLint + Prettier
@@ -23,7 +23,7 @@ Interactive demos and examples for Blit-Tech, a palette-first WebGPU retro engin
 ## Project Structure
 
 ```text
-blit-tech-demos/
+blit386-demos/
   src/                         # JavaScript source - one file per demo (single source of truth)
     001-basics.js
     002-primitives.js
@@ -50,7 +50,7 @@ disk.
 
 ```bash
 pnpm run dev              # Start dev server (http://localhost:5173/demos/)
-pnpm run dev:watch        # Dev server + watch Blit-Tech library for changes
+pnpm run dev:watch        # Dev server + watch BLIT386 library for changes
 pnpm run build            # Build for production (output: dist/)
 pnpm run preview          # Preview production build
 pnpm run lint             # Lint (ESLint)
@@ -70,10 +70,10 @@ pnpm run security:audit   # Run security audit on dependencies
 
 ## Workspace Integration
 
-This project depends on Blit-Tech via pnpm workspace:
+This project depends on BLIT386 via pnpm workspace:
 
 ```json
-{ "dependencies": { "blit-tech": "workspace:*" } }
+{ "dependencies": { "blit386": "workspace:*" } }
 ```
 
 Local workspace structure:
@@ -81,8 +81,8 @@ Local workspace structure:
 ```text
 parent-dir/
   pnpm-workspace.yaml
-  blit-tech/
-  blit-tech-demos/
+  blit386/
+  blit386-demos/
 ```
 
 CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.md` for details.
@@ -100,7 +100,7 @@ pattern:
  * 003 Colors - Brief description.
  */
 
-import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
 class Demo {
   // Optional: omit configure() to use engine defaultConfig (320x240 logical, 640x480 canvas, 60 FPS).
@@ -130,7 +130,7 @@ The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` 
 single step:
 
 1. Create `src/NNN-your-topic.js` (or `00a-…`) with the next free number. Retired numbers stay unused (e.g. `021`). The
-   page title defaults to `Blit-Tech Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a
+   page title defaults to `BLIT386 Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a
    `// @pageTitle Custom Title` comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or
    `src/024-crt-toggle.js` for examples).
 
@@ -140,7 +140,7 @@ No `vite.config.js` edit. No context file to update. No HTML file to create.
 
 Demos have relaxed linting compared to the library:
 
-- JSDoc not required (but class-level JSDoc with `@implements {IBlitTechDemo}` is encouraged)
+- JSDoc not required (but class-level JSDoc with `@implements {IBTDemo}` is encouraged)
 - Console logging allowed
 - Mutation allowed for demo state - demo classes may mutate instance properties in `update()` and `render()` for
   performance. The global immutability preference does not apply to per-frame demo state.
@@ -160,7 +160,7 @@ does and **why**, not just restate it.
 - Never assume the reader knows what a function does just from its name.
 - Use short sentences. Avoid jargon unless you explain it immediately after.
 - Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
-  https://blit-tech-demos.vancura.dev/001-basics"
+  https://demos.blit386.dev/001-basics"
 
 ### Example (do this)
 
@@ -191,7 +191,7 @@ if (this.pos.x >= BT.displaySize.x - this.size.x) {
 When reviewing demo files, check that comments would make sense to someone who has never written code before. If a block
 has no comment, or the comment only restates the code without explaining it, that is a quality issue.
 
-## Blit-Tech Engine API
+## BLIT386 Engine API
 
 All engine functionality via static `BT` namespace:
 
@@ -244,8 +244,8 @@ configure() {
 
 Demos use the library's public names only. **Configure flags** (Tier B): grammatical `is*` in `configure()` —
 `isOverlayEnabled`, `isDetectingDroppedFrames`, `canvasID`. **Runtime input** (Tier A): `BT.isDown`, `BT.isPressed`,
-`BT.isKeyDown`, `BT.isPointerActive`. Full policy: blit-tech
-[docs/developer-experience-guide.md](https://github.com/vancura/blit-tech/blob/main/docs/developer-experience-guide.md).
+`BT.isKeyDown`, `BT.isPointerActive`. Full policy: blit386
+[docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md).
 
 Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
 
@@ -271,8 +271,8 @@ Static helpers on those types worth knowing:
 
 Full input APIs (`BT.isKeyDown`, `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.isDown`, `BT.isPressed`, `BT.isReleased`,
 gamepad helpers, remapping) are documented in the engine
-[input guide](https://github.com/vancura/blit-tech/blob/main/docs/input.md). Post-process presets and effect tiers are
-in [post-process-effects.md](https://github.com/vancura/blit-tech/blob/main/docs/post-process-effects.md).
+[input guide](https://github.com/blit386/blit386/blob/main/docs/input.md). Post-process presets and effect tiers are in
+[post-process-effects.md](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md).
 
 ### Shared demo helpers
 
@@ -287,7 +287,7 @@ with Backquote or a primary press in the bottom-left 48x48 px corner. Use `isOve
 body on the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still
 toggles with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
 `isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem
-(see [api-core.md](https://github.com/vancura/blit-tech/blob/main/docs/api-core.md)). Set
+(see [api-core.md](https://github.com/blit386/blit386/blob/main/docs/api-core.md)). Set
 `isOverlayTimingChartEnabled: true` to opt in to the scrolling update/render timing chart band (~22 px under the title
 row). Chart renderer diagnostics default to **minimal** when the chart is on; set
 `overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to disable chart markers. Set

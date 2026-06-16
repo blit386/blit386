@@ -1,12 +1,12 @@
 /**
  * Keyboard Input Demo - face buttons, raw keys, and typed text.
  *
- * Demo 028 in the Blit-Tech demo series.
+ * Demo 028 in the BLIT386 demo series.
  * Prerequisites:
- *   001-Basics        https://blit-tech-demos.vancura.dev/001-basics
- *   025-Pointer Basics https://blit-tech-demos.vancura.dev/025-pointer-basics
+ *   001-Basics        https://demos.blit386.dev/001-basics
+ *   025-Pointer Basics https://demos.blit386.dev/025-pointer-basics
  *
- * Live version: https://blit-tech-demos.vancura.dev/028-keyboard-input
+ * Live version: https://demos.blit386.dev/028-keyboard-input
  *
  * This page shows three layers of keyboard support:
  * - Face buttons (BT.BTN_UP through BT.BTN_SELECT) for players 0 and 1. Each
@@ -30,14 +30,14 @@
  *   part of the page after you tabbed away.
  */
 
-// @pageTitle Blit-Tech Demo 028 - Keyboard Input
+// @pageTitle BLIT386 Demo 028 - Keyboard Input
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Palette indices. Slot 0 stays transparent for indexed draws we do not use here.
 const C_WHITE = 1;
@@ -61,7 +61,7 @@ const FACE_SLOT_WIDTH = 34;
 /**
  * Shows keyboard face-button maps, low-level key queries, and `inputString`.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

@@ -3,15 +3,15 @@
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Press Space to download the current frame.
 //
-// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics).
-// Live article: https://vancura.dev/articles/blit-tech-image-output
+// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics).
+// Live article: https://vancura.dev/articles/blit386-image-output
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Every color used for drawing is stored in a numbered "palette" slot.
 // Think of each slot like a labeled paint jar on an artist's shelf.
@@ -34,7 +34,7 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
  * Image output demo.
  * Draws a colorful test pattern and saves the next frame to PNG when Space is pressed.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // palette holds the list of colors the engine uses for drawing.
@@ -124,9 +124,9 @@ class Demo {
             // Most browsers open a "Save as" dialog or drop the file straight into your
             // Downloads folder (depends on your browser settings). The demo cannot pick
             // the folder for you - that is normal browser security.
-            BT.downloadFrame('blit-tech-capture.png')
+            BT.downloadFrame('blit386-capture.png')
                 .then(() => {
-                    this.lastCaptureMessage = 'Saved: blit-tech-capture.png';
+                    this.lastCaptureMessage = 'Saved: blit386-capture.png';
                     this.messageTimer = 180; // 3 seconds at 60 FPS
                     this.capturing = false;
                     return null;
@@ -231,5 +231,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

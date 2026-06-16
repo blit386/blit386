@@ -4,5 +4,5 @@
   "project": ["src/**/*.js"],
   "ignore": [],
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["blit-tech"]
+  "ignoreDependencies": ["blit386"]
 }

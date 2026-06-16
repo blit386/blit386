@@ -3,21 +3,21 @@
 // This demo brings together everything you have learned!
 //
 // Written for readers about 12 years old. Prerequisites (do these first):
-//   001-Basics       https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives   https://blit-tech-demos.vancura.dev/002-primitives
-//   003-Colors       https://blit-tech-demos.vancura.dev/003-colors
-//   004-Fonts        https://blit-tech-demos.vancura.dev/004-fonts
-//   005-Pixel Art    https://blit-tech-demos.vancura.dev/005-pixel-art
-//   006-Patterns     https://blit-tech-demos.vancura.dev/006-patterns
-//   007-Camera       https://blit-tech-demos.vancura.dev/007-camera
-//   008-Sprites      https://blit-tech-demos.vancura.dev/008-sprites
-//   009-Animation    https://blit-tech-demos.vancura.dev/009-animation
-//   010-Sprite-FX    https://blit-tech-demos.vancura.dev/010-sprite-effects
-//   011-Starfield    https://blit-tech-demos.vancura.dev/011-starfield
-//   012-Tilemap      https://blit-tech-demos.vancura.dev/012-tilemap
-//   013-Image Output https://blit-tech-demos.vancura.dev/013-image-output
+//   001-Basics       https://demos.blit386.dev/001-basics
+//   002-Primitives   https://demos.blit386.dev/002-primitives
+//   003-Colors       https://demos.blit386.dev/003-colors
+//   004-Fonts        https://demos.blit386.dev/004-fonts
+//   005-Pixel Art    https://demos.blit386.dev/005-pixel-art
+//   006-Patterns     https://demos.blit386.dev/006-patterns
+//   007-Camera       https://demos.blit386.dev/007-camera
+//   008-Sprites      https://demos.blit386.dev/008-sprites
+//   009-Animation    https://demos.blit386.dev/009-animation
+//   010-Sprite-FX    https://demos.blit386.dev/010-sprite-effects
+//   011-Starfield    https://demos.blit386.dev/011-starfield
+//   012-Tilemap      https://demos.blit386.dev/012-tilemap
+//   013-Image Output https://demos.blit386.dev/013-image-output
 //
-// Live article: https://vancura.dev/articles/blit-tech-game-scene
+// Live article: https://vancura.dev/articles/blit386-game-scene
 //
 // WHAT YOU SEE (how the pieces connect):
 //   - Sky gradient and slow-moving clouds = colors (003) + parallax idea from starfield (011).
@@ -45,14 +45,14 @@
 //
 // Think of it as updating the paint cans before the painter starts working.
 
-import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit-tech';
+import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit-tech').Rect2i} Rect2i */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
 
 // Internal game resolution.
 const DISPLAY_W = 320;
@@ -150,7 +150,7 @@ const SPRITE_BASE = 70;
  * One self-running mini scene: walking rock, following camera, HUD, day/night, sparkles.
  * All color computation happens in update(); render() uses only palette indices.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The palette holds all colors used in this demo.
@@ -362,9 +362,9 @@ class Demo {
         // Demo 013: one PNG per Space press (edge via BT.isKeyPressed).
         if (BT.isKeyPressed('Space') && !this.capturing) {
             this.capturing = true;
-            BT.downloadFrame('blit-tech-scene.png')
+            BT.downloadFrame('blit386-scene.png')
                 .then(() => {
-                    this.lastCaptureMessage = 'Saved: blit-tech-scene.png';
+                    this.lastCaptureMessage = 'Saved: blit386-scene.png';
                     this.messageTimer = 180;
                     this.capturing = false;
                     return null;

@@ -1,15 +1,15 @@
 // Demo 006 - Patterns: animated mathematical art using only primitive drawing.
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
-// (https://blit-tech-demos.vancura.dev/001-basics), shapes in Demo 002-Primitives
-// (https://blit-tech-demos.vancura.dev/002-primitives), and color in Demo 003-Colors
-// (https://blit-tech-demos.vancura.dev/003-colors).
+// (https://demos.blit386.dev/001-basics), shapes in Demo 002-Primitives
+// (https://demos.blit386.dev/002-primitives), and color in Demo 003-Colors
+// (https://demos.blit386.dev/003-colors).
 //
 // We also use the palette system introduced in Demo 015-Palette-Presets
-// (https://blit-tech-demos.vancura.dev/015-palette-presets) and demonstrated
-// further in Demo 016-Palette-Animation (https://blit-tech-demos.vancura.dev/016-palette-animation).
+// (https://demos.blit386.dev/015-palette-presets) and demonstrated
+// further in Demo 016-Palette-Animation (https://demos.blit386.dev/016-palette-animation).
 //
-// Live walkthrough: https://vancura.dev/articles/blit-tech-patterns
+// Live walkthrough: https://vancura.dev/articles/blit386-patterns
 //
 // All six patterns here are drawn using just pixels, lines, and rectangles
 // no images needed. Each pattern is based on simple math (angles, waves, circles)
@@ -34,12 +34,12 @@
 // are recalculated every tick in update() and stored back in the palette.
 // The render() function only ever uses color numbers (indices), never Color32 objects.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 //
 // These numbers are the "addresses" in the palette table.
 // Index 0 is always reserved for transparent - we never use it.
@@ -86,7 +86,7 @@ const TUNNEL_RECTS = 20;
  * Demonstrates animated mathematical patterns using primitive drawing.
  * Each section shows a different algorithmic visual effect arranged in a 2x3 grid.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // animTime counts up in seconds. We use it to make patterns move.
@@ -482,5 +482,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

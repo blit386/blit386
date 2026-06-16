@@ -1,11 +1,11 @@
 # Workflow Summary
 
-This document provides a quick overview of the CI workflow in Blit-Tech Demos.
+This document provides a quick overview of the CI workflow in BLIT386 Demos.
 
 ## Key Principle
 
-The workflow validates the **Blit-Tech Demos repository only**. The Blit-Tech library is treated as a **trusted,
-pre-tested dependency** that has its own CI pipeline in the Blit-Tech repository.
+The workflow validates the **BLIT386 Demos repository only**. The BLIT386 library is treated as a **trusted, pre-tested
+dependency** that has its own CI pipeline in the BLIT386 repository.
 
 ## CI Workflow (`ci.yml`)
 
@@ -18,7 +18,7 @@ Workspace setup is shared across jobs via the composite action at `.github/actio
 
 ### 1. quality-checks
 
-Runs all quality checks on Blit-Tech Demos:
+Runs all quality checks on BLIT386 Demos:
 
 - Format check (Biome + Prettier)
 - Lint (ESLint)
@@ -27,8 +27,8 @@ Runs all quality checks on Blit-Tech Demos:
 
 ### 2. build (depends on quality-checks)
 
-- Builds Blit-Tech library (as dependency)
-- Builds Blit-Tech Demos
+- Builds BLIT386 library (as dependency)
+- Builds BLIT386 Demos
 - Uploads build artifacts (`demos-dist`, 7-day retention, compression level 9)
 
 ### 3. deploy (depends on build, main branch only)
@@ -48,9 +48,9 @@ The workflow recreates the local workspace structure:
 ```text
 (GitHub Actions workspace root)
   pnpm-workspace.yaml          # Created at runtime
-  blit-tech/                   # Cloned from vancura/blit-tech
+  blit386/                   # Cloned from vancura/blit386
     (built as dependency)
-  blit-tech-demos/             # Cloned from current repo
+  blit386-demos/             # Cloned from current repo
     (tested and deployed)
 ```
 
@@ -58,10 +58,10 @@ This allows the `workspace:*` dependency to resolve correctly.
 
 ## Command Cheat Sheet
 
-All quality checks run from Blit-Tech Demos directory:
+All quality checks run from BLIT386 Demos directory:
 
 ```bash
-cd blit-tech-demos
+cd blit386-demos
 pnpm run format:check    # Biome + Prettier formatting
 pnpm run lint            # ESLint
 pnpm run spellcheck      # cspell
@@ -73,9 +73,9 @@ pnpm run build           # Vite build
 
 1. **Separation of concerns** - Each repo has its own CI
 2. **Efficiency** - Don't re-test already-tested code
-3. **Clear ownership** - Blit-Tech is responsible for its own quality
+3. **Clear ownership** - BLIT386 is responsible for its own quality
 4. **Faster CI** - Skip unnecessary checks
-5. **Maintainability** - Changes to Blit-Tech CI don't affect demos
+5. **Maintainability** - Changes to BLIT386 CI don't affect demos
 
 ## GitHub Actions pinning
 

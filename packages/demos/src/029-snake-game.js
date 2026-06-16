@@ -1,13 +1,13 @@
 /**
  * Snake - grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
  *
- * Demo 029 in the Blit-Tech demo series.
+ * Demo 029 in the BLIT386 demo series.
  * Prerequisites:
- *   001-Basics         https://blit-tech-demos.vancura.dev/001-basics
- *   023-PipBoy CRT     https://blit-tech-demos.vancura.dev/023-crt-pipboy
- *   028-Keyboard Input https://blit-tech-demos.vancura.dev/028-keyboard-input
+ *   001-Basics         https://demos.blit386.dev/001-basics
+ *   023-PipBoy CRT     https://demos.blit386.dev/023-crt-pipboy
+ *   028-Keyboard Input https://demos.blit386.dev/028-keyboard-input
  *
- * Live version: https://blit-tech-demos.vancura.dev/029-snake-game
+ * Live version: https://demos.blit386.dev/029-snake-game
  *
  * Move with player 1 face buttons (W, A, S, D): Up, Down, Left, Right. Each food dot grows
  * the snake. Hitting the boundary wall or your own body ends the run; the game restarts after
@@ -21,7 +21,7 @@
  * line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
  */
 
-// @pageTitle Blit-Tech Demo 029 - Snake Game
+// @pageTitle BLIT386 Demo 029 - Snake Game
 
 import {
     BarrelDistortion,
@@ -40,14 +40,14 @@ import {
     Scanlines,
     Vector2i,
     Vignette,
-} from 'blit-tech';
+} from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Palette indices (slot 0 reserved).
 const C_BG = 1;
@@ -149,7 +149,7 @@ function randPick(arr) {
 /**
  * Minimal snake with PipBoy CRT post-processing from demo 023.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */
