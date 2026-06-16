@@ -1,33 +1,43 @@
-// Keyboard Input Demo - face buttons, raw keys, and typed text.
-//
-// Demo 028 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics, 025-Pointer-Basics (pointer vs keyboard).
-//
-// This page shows three layers of keyboard support:
-// - **Face buttons** (`BT.BTN_UP` … `BT.BTN_SELECT`) for players 0 and 1. Each
-//   button can map to one or more physical keys. The engine uses
-//   `KeyboardEvent.code` strings (like `KeyW`, `ArrowUp`) so labels stay the
-//   same even when the OS keyboard layout changes (unlike `event.key`, which
-//   might print different letters).
-// - **Raw keys** (`BT.isKeyDown`, `BT.isKeyPressed`, `BT.isKeyReleased`) when you need
-//   a specific key, optional fixed-tick repeats with `BT.isKeyPressed(code, rate)`,
-//   and release edges.
-// - **Text input** (`BT.inputString`) for characters in one frame. The buffer
-//   clears after each frame, so read it during `update()` or `render()` in that
-//   same frame.
-//
-// Try this:
-// - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
-// - Hold **Q** to see `isKeyDown`; tap **F** and watch the release line.
-// - Hold **H** to see `isKeyPressed(..., 15)` fire on an edge and then every 15 ticks.
-// - Type letters into the buffer line at the bottom.
-// - If keys stop responding, click the canvas - focus may have moved to another
-//   part of the page after you tabbed away.
+/**
+ * Keyboard Input Demo - face buttons, raw keys, and typed text.
+ *
+ * Demo 028 in the Blit-Tech demo series.
+ * Prerequisites:
+ *   001-Basics        https://blit-tech-demos.vancura.dev/001-basics
+ *   025-Pointer Basics https://blit-tech-demos.vancura.dev/025-pointer-basics
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/028-keyboard-input
+ *
+ * This page shows three layers of keyboard support:
+ * - Face buttons (BT.BTN_UP through BT.BTN_SELECT) for players 0 and 1. Each
+ *   button can map to one or more physical keys. The engine uses
+ *   KeyboardEvent.code strings (like KeyW, ArrowUp) so labels stay the
+ *   same even when the OS keyboard layout changes (unlike event.key, which
+ *   might print different letters).
+ * - Raw keys (BT.isKeyDown, BT.isKeyPressed, BT.isKeyReleased) when you need
+ *   a specific key, optional fixed-tick repeats with BT.isKeyPressed(code, rate),
+ *   and release edges.
+ * - Text input (BT.inputString) for characters in one frame. The buffer
+ *   clears after each frame, so read it during update() or render() in that
+ *   same frame.
+ *
+ * Try this:
+ * - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
+ * - Hold Q to see isKeyDown; tap F and watch the release line.
+ * - Hold H to see isKeyPressed(..., 15) fire on an edge and then every 15 ticks.
+ * - Type letters into the buffer line at the bottom.
+ * - If keys stop responding, click the canvas - focus may have moved to another
+ *   part of the page after you tabbed away.
+ */
+
+// @pageTitle Blit-Tech Demo 028 - Keyboard Input
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Palette indices. Slot 0 stays transparent for indexed draws we do not use here.
 const C_WHITE = 1;
@@ -54,6 +64,7 @@ const FACE_SLOT_WIDTH = 34;
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /** @type {Palette | null} */
     palette = null;
 
     // Set when `BT.isKeyReleased('KeyF')` is true this frame (plain English message).
@@ -67,6 +78,11 @@ class Demo {
     // Text built from `BT.inputString` over time (capped).
     typedBuffer = '';
 
+    /**
+     * Timing chart on so key-release milestones show on the overlay HUD.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
     configure() {
         return {
             isOverlayTimingChartEnabled: true,
@@ -84,7 +100,9 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
-        // Start from default keyboard maps so this demo does not inherit remaps from others.
+        // inputMapReset() restores the engine's default player-1 / player-2 key bindings.
+        // Other demos (for example input-map remapping) may change those maps; we reset here
+        // so W/A/S/D and arrow keys always match what this page describes.
         BT.inputMapReset();
 
         this.palette = BT.paletteCreate(256);
@@ -106,21 +124,27 @@ class Demo {
      * Read keyboard state after the engine has updated input for this tick.
      */
     update() {
-        // Raw key: release edge for F
-        // `isKeyReleased` is true only on the frame the key goes up, like a doorbell
-        // when you let go.
+        // --- Raw keys (KeyboardEvent.code strings, layout-independent) ---
+        //
+        // BT.isKeyDown(code)     = true EVERY tick while the key is held (like holding a door shut).
+        // BT.isKeyPressed(code)  = true only on the FIRST tick the key goes down (one-shot "tap").
+        // BT.isKeyPressed(code, repeatTicks) = first tick down, then again every repeatTicks fixed
+        //     engine ticks while still held (repeat on the game clock, not the OS key-repeat rate).
+        // BT.isKeyReleased(code) = true only on the FIRST tick the key comes up (one-shot "let go").
+        //
+        // Face buttons (BT.BTN_UP, BT.isDown, …) are separate: they go through the input map.
+        // Use raw keys when you need a specific key regardless of player slot or remapping.
+
+        // Release edge for F: fires once when you let go of F.
         if (BT.isKeyReleased('KeyF')) {
             const tick = BT.ticks;
             this.lastFReleaseMessage = `isKeyReleased(KeyF) at tick ${tick}`;
             BT.assignTag('Key F released');
         }
 
-        // Raw key: Q held
-        // We only use this boolean inside render for a label; no state needed.
+        // Q held: we only read isKeyDown in render() for a live true/false label (no state here).
 
-        // Raw key: H with fixed tick repeat
-        // `isKeyPressed` with a second number repeats every N ticks after the first
-        // press (same clock as `BT.ticks`).
+        // H with tick repeat: first press counts, then every KEY_H_REPEAT_TICKS while held.
         if (BT.isKeyPressed('KeyH', KEY_H_REPEAT_TICKS)) {
             this.hPressStreak += 1;
         }
@@ -253,14 +277,18 @@ class Demo {
         BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'Raw keys (separate from face buttons)');
 
         const qHeld = BT.isKeyDown('KeyQ');
-        BT.systemPrint(new Vector2i(x + 4, y + 18), C_WHITE, 'BT.isKeyDown(KeyQ):');
-        BT.systemPrint(new Vector2i(x + 120, y + 18), qHeld ? C_LIT : C_DIM, qHeld ? 'true (held)' : 'false');
+        BT.systemPrint(new Vector2i(x + 4, y + 18), C_WHITE, 'BT.isKeyDown(KeyQ) - hold:');
+        BT.systemPrint(new Vector2i(x + 148, y + 18), qHeld ? C_LIT : C_DIM, qHeld ? 'true (held)' : 'false');
 
-        BT.systemPrint(new Vector2i(x + 4, y + 32), C_WHITE, `BT.isKeyPressed(KeyH, ${KEY_H_REPEAT_TICKS}):`);
+        BT.systemPrint(
+            new Vector2i(x + 4, y + 32),
+            C_WHITE,
+            `BT.isKeyPressed(KeyH, ${KEY_H_REPEAT_TICKS}) — tap + repeat:`,
+        );
         BT.systemPrint(
             new Vector2i(x + 4, y + 44),
             C_DIM,
-            'fires on first press and every N ticks while held; streak count:',
+            'edge on first down, then every N ticks while held; streak:',
         );
         BT.systemPrint(new Vector2i(x + 220, y + 44), this.hPressStreak > 0 ? C_ACCENT : C_DIM, `${this.hPressStreak}`);
 

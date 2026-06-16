@@ -3,8 +3,11 @@
 // Demo 024 - CRT Toggle: turn the post-process effects on and off in flight.
 //
 // Demo 024 in the Blit-Tech demo series.
-// We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
-// We learned about post-processing in the PipBoy CRT demo: https://vancura.dev/articles/blit-tech-pipboy-crt
+// Prerequisites:
+//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
+//   023-PipBoy CRT https://blit-tech-demos.vancura.dev/023-crt-pipboy
+//
+// Live version: https://blit-tech-demos.vancura.dev/024-crt-toggle
 //
 // Live article: https://vancura.dev/articles/blit-tech-crt-toggle
 //
@@ -39,8 +42,9 @@
 // In software renderer mode, post-process effects are unavailable. The bouncing
 // squares and color bars still animate; CRT toggle is disabled and a note explains why.
 //
-// Why auto-toggle and not a button? Demos in this series do not (yet) take user input
-// from the engine. Auto-toggling is the simplest way to demonstrate the dynamic API.
+// Why auto-toggle instead of a button? This page focuses on the effect API, not controls.
+// Auto-toggling keeps the ON/OFF comparison hands-free. Pointer and keyboard input are
+// covered in demos 025-028.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
@@ -104,6 +108,7 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
 
 /**
  * Toggle demo: a small animated scene with the CRT effect stack flipping on and off
@@ -124,6 +129,11 @@ class Demo {
         { leftText: 'Auto-toggles every 2s', textPaletteIndex: C_LABEL },
     ];
 
+    /**
+     * Same 320x240 logical / 1280x960 output setup as demo 023 for display-tier CRT presets.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
     configure() {
         return {
             // Internal pixel-art resolution. Game logic and draws operate at this size.
@@ -161,6 +171,9 @@ class Demo {
         };
     }
 
+    /**
+     * @returns {Promise<boolean>}
+     */
     async init() {
         // Step 1: build the palette
         // A small, colorful palette. Bright primaries make the CRT effect visually
@@ -308,6 +321,10 @@ class Demo {
         }
 
         // CRT status and hints are drawn in overlayRows() above the FPS bar.
+
+        if (!this.effectsAvailable) {
+            BT.systemPrint(new Vector2i(8, DISPLAY_H - 28), C_LABEL, SOFTWARE_FALLBACK_NOTE);
+        }
     }
 }
 

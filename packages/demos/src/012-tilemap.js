@@ -1,10 +1,10 @@
 // Demo 012 - Tilemap: build a grid world from a 2D array and scroll the camera across it.
 //
 // Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
-// 002-Primitives (https://vancura.dev/articles/blit-tech-primitives),
-// 007-Camera (https://vancura.dev/articles/blit-tech-camera),
-// 008-Sprites (https://vancura.dev/articles/blit-tech-sprites) - same idea of arranging
-// art on a grid, but here we use colored rectangles instead of a sprite sheet image.
+// 002-Primitives (https://blit-tech-demos.vancura.dev/002-primitives),
+// 007-Camera (https://blit-tech-demos.vancura.dev/007-camera).
+// Optional background: 008-Sprites (https://blit-tech-demos.vancura.dev/008-sprites) also
+// places art on a grid, but this demo uses colored rectangles instead of a PNG sheet.
 //
 // Live walkthrough: https://vancura.dev/articles/blit-tech-tilemap
 //
@@ -18,12 +18,16 @@
 // This demo uses a 30 by 20 tile world (480 by 320 pixels at 16 pixels per tile). The
 // visible screen is only 320 by 240, so the camera slowly pans so you can explore the
 // whole map. A mini-map in the corner shows the full world and the yellow box is the
-// part you are looking at right now.
+// part you are looking at right now. Pond water on the main map shimmers (animated
+// palette slot C_WATER); the mini-map uses a separate still blue (C_MINIMAP_WATER)
+// so the overview stays calm and easy to read.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // These numbers are the "tile IDs" stored inside the 2D array.
 // Using named constants helps you remember what each number means when you read the map.
@@ -56,7 +60,9 @@ const C_GRASS = 5; // Green: grass tiles
 const C_DIRT = 6; // Brown: dirt tiles
 const C_STONE = 7; // Gray: stone/rock tiles
 const C_TREE_TOP = 8; // Dark green: tree canopy tiles
-const C_MINIMAP_WATER = 9; // Static blue: water color on the mini-map (not animated)
+// C_MINIMAP_WATER is a calm, fixed blue for the corner mini-map only. The main view
+// uses C_WATER, which update() animates every tick so the pond shimmers on screen.
+const C_MINIMAP_WATER = 9; // Static blue: water on the mini-map (never animated)
 const C_MINIMAP_BG = 10; // Very dark semi-transparent: mini-map background panel
 const C_MINIMAP_BORDER = 11; // Near-white: mini-map panel border
 const C_VIEWPORT = 12; // Yellow: rectangle showing the camera view on the mini-map
@@ -80,6 +86,7 @@ class Demo {
 
     // palette holds all the colors this demo uses. We fill it in init()
     // so the engine knows every color before drawing begins.
+    /** @type {Palette | null} */
     palette = null;
 
     // One rectangle object we rewrite each time we draw a tile. Reusing it avoids
@@ -89,6 +96,9 @@ class Demo {
     // Scratch vectors for text positions and similar.
     tempVec = new Vector2i(0, 0);
 
+    /**
+     * @returns {Partial<HardwareSettings>}
+     */
     configure() {
         return {
             isOverlayTimingChartEnabled: true,
@@ -110,7 +120,7 @@ class Demo {
     }
 
     /**
-     * Runs once at startup: builds the palette, the tilemap, and loads the font file.
+     * Runs once at startup: builds the palette and fills the 2D tilemap array.
      *
      * @returns {Promise<boolean>} True when the demo is ready to run.
      */

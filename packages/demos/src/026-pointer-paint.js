@@ -1,37 +1,45 @@
-// Pointer Paint Demo - multi-touch finger painting with mouse + up to 3 touches.
-//
-// Demo 026 in the Blit-Tech demo series.
-// Prerequisites: 025-Pointer Basics
-//
-// This demo shows how all four pointer slots work side by side. Each slot
-// paints in its own colour:
-//   slot 0 = mouse        (white)
-//   slot 1 = first touch  (red)
-//   slot 2 = second touch (green)
-//   slot 3 = third touch  (blue)
-//
-// Mouse: hold the left button (BTN_POINTER_A) to paint. Right-click
-// (BTN_POINTER_B) clears the canvas. Middle-click (BTN_POINTER_C) cycles the
-// brush size between three preset thicknesses.
-//
-// Touch: each finger paints automatically while in contact. Up to three touches
-// are tracked at once; a fourth simultaneous touch is dropped silently.
-//
-// What this demonstrates:
-//   - BT.isPressed() for one-shot mouse actions (clear canvas, cycle brush size)
-//   - BT.isDown(BT.BTN_POINTER_A) while BT.isPointerActive(0) for mouse painting
-//   - BT.isPointerActive(slot) / BT.pointerPos(slot) for per-slot touch painting
-//   - lastPosX / lastPosY per-slot stamping: draws from the previous frame's
-//     position to the current one so fast strokes look continuous instead of dotted
-//
-// The painting happens on an offscreen palette layer (a 2D array of palette
-// indices) so brush strokes persist across frames even though render() clears
-// to a background colour first.
+/**
+ * Pointer Paint Demo - multi-touch finger painting with mouse + up to 3 touches.
+ *
+ * Demo 026 in the Blit-Tech demo series.
+ * Prerequisites: 025-Pointer Basics - https://blit-tech-demos.vancura.dev/025-pointer-basics
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/026-pointer-paint
+ *
+ * This demo shows how all four pointer slots work side by side. Each slot
+ * paints in its own colour:
+ *   slot 0 = mouse        (white)
+ *   slot 1 = first touch  (red)
+ *   slot 2 = second touch (green)
+ *   slot 3 = third touch  (blue)
+ *
+ * Mouse: hold the left button (BTN_POINTER_A) to paint. Right-click
+ * (BTN_POINTER_B) clears the canvas. Middle-click (BTN_POINTER_C) cycles the
+ * brush size between three preset thicknesses.
+ *
+ * Touch: each finger paints automatically while in contact. Up to three touches
+ * are tracked at once; a fourth simultaneous touch is dropped silently.
+ *
+ * What this demonstrates:
+ *   - BT.isPressed() for one-shot mouse actions (clear canvas, cycle brush size)
+ *   - BT.isDown(BT.BTN_POINTER_A) while BT.isPointerActive(0) for mouse painting
+ *   - BT.isPointerActive(slot) / BT.pointerPos(slot) for per-slot touch painting
+ *   - lastPosX / lastPosY per-slot stamping: draws from the previous frame's
+ *     position to the current one so fast strokes look continuous instead of dotted
+ *
+ * The painting happens on an offscreen palette layer (a 2D array of palette
+ * indices) so brush strokes persist across frames even though render() clears
+ * to a background colour first.
+ */
+
+// @pageTitle Blit-Tech Demo 026 - Pointer Paint
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -68,10 +76,12 @@ const BRUSH_SIZES = [0, 2, 4];
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /** @type {Palette | null} */
     palette = null;
 
     // Painting layer: one palette index per display pixel. 0 means "blank"
     // (the background colour shows through). Length = DISPLAY_W * DISPLAY_H.
+    /** @type {Uint8Array | null} */
     layer = null;
 
     // Index into BRUSH_SIZES; cycled by middle-click on the mouse.
@@ -91,7 +101,7 @@ class Demo {
     /**
      * Finger painting can spike render() when strokes are long; the chart makes that visible.
      *
-     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {

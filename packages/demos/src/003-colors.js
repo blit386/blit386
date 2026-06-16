@@ -5,7 +5,7 @@
 // Demo 003 in the Blit-Tech demo series, written for young learners (around 12)
 // who are getting comfortable with code. You will see:
 //
-//   - Named shortcut colors (red, green, blue, and friends)
+//   - Named shortcut colors (Color32.red and friends - static properties, not function calls)
 //   - How red, green, and blue light mix to make new colors
 //   - HSL: another way to pick colors (hue, saturation, lightness) and a scrolling rainbow
 //   - Alpha: the fourth number that makes colors see-through
@@ -39,6 +39,9 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit-tech').Color32} Color32 */
 
 //
 // These numbers are the palette "addresses". We name them so the code is readable.
@@ -99,44 +102,31 @@ class Demo {
 
     // The palette holds all the colors we are allowed to draw with.
     // Imagine it as a box of 256 numbered paint cans.
+    /** @type {Palette | null} */
     palette = null;
 
     // The two Color32 objects used to compute the lerp gradient.
     // We store them here so update() can call colorA.lerp(colorB, t) every tick.
+    /** @type {Color32 | null} */
     lerpColorA = null;
+    /** @type {Color32 | null} */
     lerpColorB = null;
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the
      * palette grid in the overlay with 4 visible rows (scroll for the rest).
      *
-     * @returns {{
-     *   isOverlayPaletteEnabled: boolean,
-     *   overlayPaletteRowsVisible: number,
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
             isOverlayPaletteEnabled: true,
             overlayPaletteRowsVisible: 4,
+
             overlayStyle: {
-                barPaletteIndex: 1,
-                textPaletteIndex: 2,
+                barPaletteIndex: 94,
+                textPaletteIndex: 15,
                 gapPaletteIndex: 3,
-            },
-            isOverlayTimingChartEnabled: true,
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: 1,
-                renderBarPaletteIndex: 3,
-                warningPaletteIndex: 3,
-                errorPaletteIndex: 4,
-                tagPaletteIndex: 2,
             },
         };
     }
@@ -157,7 +147,9 @@ class Demo {
         this.palette.set(C_BG, new Color32(24, 28, 40));
         this.palette.set(C_BLACK, new Color32(0, 0, 0));
 
-        // Named shortcut colors (same values as the Color32 static helpers).
+        // Named shortcut colors: Color32.red, Color32.green, etc. are static properties
+        // on the Color32 class (ready-made Color32 objects). Copy them into the palette
+        // so render() can draw with index numbers instead of passing Color32 each time.
         this.palette.set(C_RED, Color32.red);
         this.palette.set(C_GREEN_N, Color32.green);
         this.palette.set(C_BLUE_N, Color32.blue);
@@ -391,38 +383,40 @@ class Demo {
     }
 
     /**
-     * Uses lerp (linear interpolation) between two colors.
-     * colorA.lerp(colorB, t) with t between 0 and 1 returns a mix: 0 means all A, 1 means all B.
+     * Section 5: lerp (linear interpolation) between two colors.
      *
-     * The gradient uses 32 slots computed in update() that scroll over time.
-     * The pulse strip below uses a single slot that breathes A <-> B via a sine wave.
+     * Think of t like a dimmer switch between two lamps: t = 0 is only lamp A (purple),
+     * t = 1 is only lamp B (teal), and t = 0.5 is an even mix halfway between them.
+     * colorA.lerp(colorB, t) returns a new Color32 at that blend point.
      *
-     * The end swatches (small colored squares at left and right) use C_LERP_A and C_LERP_B directly.
+     * The wide bar uses 32 palette slots that slide over time (a moving gradient).
+     * The thin strip below uses one slot that breathes A <-> B with a sine wave.
      */
     drawLerpSection() {
         BT.systemPrint(new Vector2i(6, 184), C_WHITE, '5 LERP: slide + pulse (see comments)');
 
         const barY = 198;
 
-        // Small squares at the ends showing the pure A and B colors.
+        // Dimmer analogy: these end squares are the two "lamps" at full brightness (pure A and B).
         BT.drawRectFill(new Rect2i(8, barY, 12, 12), C_LERP_A);
         BT.systemPrint(new Vector2i(8, barY + 13), C_WHITE, 'A');
         BT.drawRectFill(new Rect2i(300, barY, 12, 12), C_LERP_B);
         BT.systemPrint(new Vector2i(300, barY + 13), C_WHITE, 'B');
 
-        // Middle gradient bar: 268 pixels wide, using 32 pre-computed lerp slots.
+        // Middle gradient bar: each column is another step on the dimmer between A and B.
+        // update() already wrote 32 blended colors into palette slots C_LERP_BASE.. .
         const barX = 26;
         const barW = 268;
         const barH = 8;
 
         for (let i = 0; i < barW; i++) {
-            // Map this pixel to one of the 32 lerp slots.
+            // Pick which of the 32 pre-blended "dimmer steps" this pixel column uses.
             const slot = Math.min(Math.floor((i / barW) * LERP_SLOTS), LERP_SLOTS - 1);
             BT.drawRectFill(new Rect2i(barX + i, barY, 1, barH), C_LERP_BASE + slot);
         }
 
-        // Thin strip below the gradient: the single pulsing color from C_PULSE.
-        // In update() we use a sine wave to smoothly cycle pulseT 0 -> 1 -> 0 -> ...
+        // Thin strip: one color slot whose t value waves back and forth (whole bar pulses).
+        // In update(), pulseT follows a sine wave so the dimmer slides A -> B -> A smoothly.
         BT.drawRectFill(new Rect2i(26, 212, 268, 5), C_PULSE);
     }
 }

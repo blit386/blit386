@@ -1,13 +1,19 @@
+// @pageTitle Blit-Tech Demo 017 - Palette Swap
+//
 // Demo 017 - Palette Swap: change the active palette at runtime to switch color themes.
 //
 // Demo 017 in the Blit-Tech series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   008-Sprites    https://vancura.dev/articles/blit-tech-sprites
-//   015-Palette Presets  https://vancura.dev/articles/blit-tech-palette-presets
-//   016-Palette Animation https://vancura.dev/articles/blit-tech-palette-animation
+//   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
+//   008-Sprites           https://blit-tech-demos.vancura.dev/008-sprites
+//   015-Palette Presets   https://blit-tech-demos.vancura.dev/015-palette-presets
+//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
+//     (walkthroughs: https://vancura.dev/articles/blit-tech-sprites,
+//      https://vancura.dev/articles/blit-tech-palette-presets,
+//      https://vancura.dev/articles/blit-tech-palette-animation)
 //
+// Live version: https://blit-tech-demos.vancura.dev/017-palette-swap
 // Live article: https://vancura.dev/articles/blit-tech-palette-swap
 //
 // WHAT IS PALETTE SWAP?
@@ -43,6 +49,9 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'bl
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit-tech').Rect2i} Rect2i */
 
 // How many ticks to hold each theme before switching (2 seconds at 60 FPS).
 const SWAP_PERIOD_TICKS = 120;
@@ -73,9 +82,11 @@ const C_DIM = 6;
  */
 class Demo {
     // The sprite sheet loaded from test.png.
+    /** @type {SpriteSheet | null} */
     sheet = null;
 
     // The rectangular region of the sprite within the sheet.
+    /** @type {Rect2i | null} */
     charSprite = null;
 
     // How many unique colors were extracted from the sprite image.
@@ -100,7 +111,7 @@ class Demo {
     /**
      * Timing chart helps compare CPU cost while palettes swap on a timer.
      *
-     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -121,7 +132,7 @@ class Demo {
     }
 
     /**
-     * Loads the sprite, builds four theme palettes, then loads the font.
+     * Loads the sprite, builds four theme palettes, and calls sheet.indexize().
      *
      * ORDER MATTERS:
      *   1. Extract unique colors from the sprite PNG.
@@ -129,7 +140,6 @@ class Demo {
      *   3. Build fire, ice, void palettes by tinting the base colors.
      *   4. BT.paletteSet(stonePalette) - activate the starting palette.
      *   5. SpriteSheet.load() + indexize() - link pixels to slot numbers.
-     *   6. BitmapFont.load() + indexize() - same for the font.
      *
      * @returns {Promise<boolean>} True when everything is ready.
      */

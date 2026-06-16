@@ -28,12 +28,17 @@
 //
 // Prerequisites:
 //   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
-//   016-Palette-Animation https://vancura.dev/articles/blit-tech-palette-animation
+//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
+//     (walkthrough: https://vancura.dev/articles/blit-tech-palette-animation)
+//
+// Live version: https://blit-tech-demos.vancura.dev/018-flurry
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Target frame rate for fixed update() steps (matches engine defaultConfig).
 const TARGET_FPS = 60;
@@ -183,6 +188,7 @@ const SPARK_TABLE = [
  */
 class Demo {
     // The 256-slot palette used for all drawing. Filled in init(), updated every tick.
+    /** @type {Palette | null} */
     palette = null;
 
     // Total elapsed animation time, measured in seconds.
@@ -218,24 +224,7 @@ class Demo {
     /**
      * Heavy particle physics each tick; the timing chart helps spot frame budget pressure.
      *
-     * @returns {{
-     *   targetFPS: number,
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartDiagnostics: 'rich' | false,
-     *   isOverlayRendererDiagnosticsBarEnabled: boolean,
-     *   overlayStyle: {
-     *     barPaletteIndex: number,
-     *     textPaletteIndex: number,
-     *     gapPaletteIndex: number,
-     *   },
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number,
-     *     renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number,
-     *     errorPaletteIndex: number,
-     *     tagPaletteIndex: number,
-     *   },
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -259,7 +248,7 @@ class Demo {
     }
 
     /**
-     * Builds the palette, loads the font, and creates sparks and particles.
+     * Builds the palette and creates sparks and particles.
      * Runs once before the first update() call.
      *
      * @returns {Promise<boolean>}

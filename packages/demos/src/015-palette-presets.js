@@ -1,15 +1,17 @@
+// @pageTitle Blit-Tech Demo 015 - Palette Presets
+//
 // Demo 015 - Palette Presets: six built-in color sets you can load instantly.
 //
 // Demo 015 in the Blit-Tech series (written for readers about 12 years old).
 //
 // Prerequisites:
 //   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives https://vancura.dev/articles/blit-tech-primitives
-//   003-Colors     https://vancura.dev/articles/blit-tech-colors
+//   002-Primitives https://blit-tech-demos.vancura.dev/002-primitives
+//   003-Colors     https://blit-tech-demos.vancura.dev/003-colors
+//   004-Fonts      https://blit-tech-demos.vancura.dev/004-fonts
+//     (on-canvas labels use BT.systemPrint; walkthrough: https://vancura.dev/articles/blit-tech-fonts)
 //
-// We also use fonts from Demo 004:
-//   004-Fonts      https://vancura.dev/articles/blit-tech-fonts
-//
+// Live version: https://blit-tech-demos.vancura.dev/015-palette-presets
 // Live article: https://vancura.dev/articles/blit-tech-palette-presets
 //
 // WHAT IS A PALETTE PRESET?
@@ -44,6 +46,8 @@ import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // How many ticks to show each preset in the live view (2 seconds at 60 FPS = 120 ticks).
 const LIVE_SWITCH_TICKS = 120;
@@ -61,6 +65,7 @@ const C_UI_DIM = 3;
 const C_UI_HEADER = 4;
 const C_UI_SUBTITLE = 5;
 const C_OVERLAY_BAR = 7; // Overlay row background
+const C_OVERLAY_GAP = 44; // Gap between overlay rows (must match configure().overlayStyle.gapPaletteIndex)
 
 /**
  * Demonstrates the six built-in palette presets and named palette slots.
@@ -69,6 +74,7 @@ const C_OVERLAY_BAR = 7; // Overlay row background
  */
 class Demo {
     // The main palette used for UI and the live preview.
+    /** @type {Palette | null} */
     palette = null;
 
     // The six preset palette objects, loaded in init().
@@ -90,13 +96,12 @@ class Demo {
     overlayRowData = [{ leftText: 'Current: Game Boy - 4 colors', textPaletteIndex: C_UI_HEADER }];
 
     /**
-     * Palette slots for the engine overlay bars.
+     * Wider canvas, overlay palette grid (64 columns), and timing chart colors.
      *
-     * The live palette grid at the bottom highlights slots used by this frame's
-     * swatches and live-view preset. Sixteen swatches per row, two visible rows;
-     * scroll to browse the full palette while presets auto-cycle.
+     * gapPaletteIndex uses slot {@link C_OVERLAY_GAP} - filled in init() so the
+     * spacer strip between overlay rows matches the dark UI background.
      *
-     * @returns {{ isOverlayPaletteEnabled: boolean, overlayPaletteColumns: number, overlayPaletteRowsVisible: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -107,7 +112,7 @@ class Demo {
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_UI_HEADER,
-                gapPaletteIndex: 44,
+                gapPaletteIndex: C_OVERLAY_GAP,
             },
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
@@ -121,7 +126,8 @@ class Demo {
     }
 
     /**
-     * Loads all six presets, builds the main UI palette, and loads the font.
+     * Loads all six factory presets, copies swatch colors into one UI palette,
+     * and registers named slot aliases for the live-view panel.
      *
      * @returns {Promise<boolean>}
      */
@@ -164,8 +170,9 @@ class Demo {
         // Index 6: dim FPS text.
         this.palette.set(6, new Color32(80, 80, 100));
 
-        // Overlay bar (must match configure().overlayStyle).
+        // Overlay bar and gap strip (must match configure().overlayStyle).
         this.palette.set(C_OVERLAY_BAR, new Color32(12, 12, 22, 220));
+        this.palette.set(C_OVERLAY_GAP, new Color32(12, 12, 22, 220));
 
         // Slots 10..265 hold the swatch colors for the six static swatch rows.
         // We copy each preset's colors into this palette so we can draw swatches

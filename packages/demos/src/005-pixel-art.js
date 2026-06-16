@@ -20,13 +20,14 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Every color used for drawing gets a numbered slot in the palette (like a numbered paint jar).
 // Index 0 is always transparent. Custom colors start at 1.
 const C_WHITE = 1; // Pure white: font base color
 const C_BG = 2; // Deep gray-blue: fills the screen background
 const C_LABEL = 3; // Pale blue-white: section headings
-const C_DIM = 4; // Dim gray: FPS counter
 
 // Heart sprite colors (used by HEART_PALETTE_MAP below).
 const C_HEART_OUTLINE = 5; // Dark red: the heart's outline pixels
@@ -111,6 +112,7 @@ class Demo {
     animTime = 0;
 
     // palette holds all the colors this demo uses.
+    /** @type {Palette | null} */
     palette = null;
 
     /**
@@ -118,27 +120,23 @@ class Demo {
      * palette swatches per row so the overlay grid lines up with the 8-cell-wide heart art
      * (two grid columns per art cell gives comfortable visual alignment).
      *
-     * @returns {{
-     *   isOverlayPaletteEnabled: boolean,
-     *   overlayPaletteColumns: number,
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
             isOverlayPaletteEnabled: true,
+
             overlayPaletteColumns: 16,
+            overlayTimingChartHeight: 64,
+
             overlayStyle: {
                 barPaletteIndex: 3,
                 textPaletteIndex: 2,
                 gapPaletteIndex: 2,
             },
+
             isOverlayTimingChartEnabled: true,
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: 2,
                 renderBarPaletteIndex: 3,
@@ -158,14 +156,14 @@ class Demo {
         // Set up the color palette
         // Think of this as laying out paint on an artist's palette tray before starting a painting.
         // Every color we might use gets a number. We set them all up before drawing begins.
-        // Sixteen slots are enough for this demo (we only use indices 1 through 11) and keep
-        // the stats palette grid to two short rows when configure() asks for eight per row.
+        // Sixteen slots are enough for this demo (we only use indices 1 through 11).
+        // configure() sets overlayPaletteColumns: 16 so the overlay swatch grid matches the
+        // 8-column-wide heart grid (two art cells per overlay column).
         this.palette = BT.paletteCreate(16);
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(28, 32, 48)); // deep gray-blue background
         this.palette.set(C_LABEL, new Color32(200, 210, 230)); // pale blue-white section labels
-        this.palette.set(C_DIM, new Color32(150, 150, 150)); // dim gray fps counter
 
         // Heart sprite colors.
         this.palette.set(C_HEART_OUTLINE, new Color32(110, 10, 30)); // dark red outline
@@ -209,7 +207,8 @@ class Demo {
     }
 
     /**
-     * Draws the whole frame: titles, two number-grid pictures, one math pattern, and FPS text.
+     * Draws the whole frame: section labels, two number-grid sprites, and the checker pattern.
+     * FPS and tick stats live in the engine overlay (toggle with Backquote), not on the canvas.
      */
     render() {
         // Clear to the deep gray-blue background so light pixel art pops.
@@ -323,9 +322,10 @@ class Demo {
         // Outer loop picks the row of squares; inner loop picks the column - same nested idea as the art.
         for (let row = 0; row < cells; row++) {
             for (let col = 0; col < cells; col++) {
-                // Checker rule: neighbors differ. (row + col) % 2 is 0 or 1, flipping like a chessboard.
-                // Even cells get C_CHECKER_A, odd cells get C_CHECKER_B.
-                // The colors were updated by update() this frame, so they're already the right shade.
+                // Checker rule: neighbors must look different, like a chessboard.
+                // % is "remainder after division": (row + col) % 2 is 0 for even sums, 1 for odd sums.
+                // Adding row and col flips the remainder on every step to the right or down, so no two
+                // touching squares share the same color. update() already refreshed C_CHECKER_A/B.
                 const fill = (row + col) % 2 === 0 ? C_CHECKER_A : C_CHECKER_B;
 
                 // Rect2i(x, y, width, height) describes a solid rectangle in pixel space.

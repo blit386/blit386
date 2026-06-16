@@ -3,8 +3,11 @@
 // Demo 023 - PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //
 // Demo 023 in the Blit-Tech demo series.
-// We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
-// We learned about bitmap fonts in the Bitmap Font demo: https://vancura.dev/articles/blit-tech-bitmap-font
+// Prerequisites:
+//   001-Basics      https://blit-tech-demos.vancura.dev/001-basics
+//   022-Bitmap Font https://blit-tech-demos.vancura.dev/022-bitmap-font
+//
+// Live version: https://blit-tech-demos.vancura.dev/023-crt-pipboy
 //
 // Live article: https://vancura.dev/articles/blit-tech-pipboy-crt
 //
@@ -189,6 +192,7 @@ const NOISE_BASE = 0.025;
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
 
 /**
  * Returns a random integer in the half-open range [min, max).
@@ -234,12 +238,16 @@ function randPick(arr) {
  * @returns {number}
  */
 function colorSlot(name) {
-    if (name === 'amber') return C_AMBER;
-    if (name === 'dim') return C_GREEN_DIM;
+    if (name === 'amber') {
+        return C_AMBER;
+    }
+
+    if (name === 'dim') {
+        return C_GREEN_DIM;
+    }
+
     return C_GREEN;
 }
-
-
 
 /**
  * PipBoy-style terminal showcase. Renders a tiny boot sequence + status block in green
@@ -258,6 +266,11 @@ function colorSlot(name) {
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /**
+     * Pixel-art logical size, 4x drawing buffer for display-tier CRT, overlay tuned for terminal look.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
     configure() {
         return {
             // The internal canvas is pixel-art sized. Game logic and draws write palette
@@ -307,6 +320,9 @@ class Demo {
         };
     }
 
+    /**
+     * @returns {Promise<boolean>}
+     */
     async init() {
         // Step 1: build the palette
         // Six colors. Every effect on screen comes from these.
@@ -337,6 +353,7 @@ class Demo {
 
         if (!this.effectsAvailable) {
             this.bootStartTick = BT.ticks;
+            BT.assignTag('Software renderer');
             return true;
         }
 
@@ -616,7 +633,10 @@ class Demo {
 
             // Subtract this line's ticks from the running total before moving on.
             ticksLeft -= fullLine.length * BOOT_TICKS_PER_CHAR + BOOT_LINE_SPACER_TICKS;
-            if (ticksLeft <= 0) return;
+
+            if (ticksLeft <= 0) {
+                return;
+            }
         }
     }
 

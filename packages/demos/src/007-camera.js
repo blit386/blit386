@@ -28,6 +28,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Every color in this demo is pre-registered in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -84,6 +86,7 @@ class Demo {
     trees = [];
 
     // The palette holds all the colors this demo uses.
+    /** @type {Palette | null} */
     palette = null;
 
     // Reused every frame for the engine overlay (camera position + world size).
@@ -108,17 +111,7 @@ class Demo {
      * The palette grid shows 32 swatches per row and 2 visible rows (64 colors at
      * a time); scroll the band to browse the rest of the 256-slot palette.
      *
-     * @returns {{
-     *   isOverlayPaletteEnabled: boolean,
-     *   overlayPaletteColumns: number,
-     *   overlayPaletteRowsVisible: number,
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -420,8 +413,13 @@ class Demo {
      */
     renderUI() {
         // Draw a semi-transparent black bar across the top for the title area.
-        this.tempRect.set(0, 0, 320, 40);
+        // BT.displaySize.x is the logical screen width (320 by default) - never hardcode it.
+        this.tempRect.set(0, 0, BT.displaySize.x, 40);
         BT.drawRectFill(this.tempRect, C_HUD_BG);
+
+        // Title and subtitle sit in screen space (camera was reset before renderUI()).
+        BT.systemPrint(new Vector2i(8, 6), C_WHITE, 'Camera Demo');
+        BT.systemPrint(new Vector2i(8, 22), C_TEXT_DIMMER, 'Auto-scrolling camera');
 
         // Draw the mini-map in the bottom-right corner.
         this.renderMiniMap();

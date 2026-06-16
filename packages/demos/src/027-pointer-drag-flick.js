@@ -1,37 +1,47 @@
-// Pointer Drag-and-Flick Demo - grab balls, drag them, release to throw.
-//
-// Demo 027 in the Blit-Tech demo series.
-// Prerequisites: 025-Pointer Basics, 026-Pointer Paint
-//
-// This is the action-oriented sibling of demos 025 and 026. Where 025 reads
-// pointer state and 026 paints onto a canvas, this demo couples the pointer
-// to a tiny physics simulation:
-//
-//   - Three balls bounce around inside a closed box under gravity.
-//   - Click and HOLD on a ball to grab it (the ball follows the pointer).
-//   - RELEASE to throw it - the release-frame `BT.pointerDelta` becomes the
-//     ball's launch velocity.
-//
-// On a touchscreen each finger can grab its own ball; up to three balls can
-// be dragged at once (slots 1, 2, 3). The mouse uses slot 0.
-//
-// What this demonstrates that 025 and 026 do not:
-//
-//   - `BT.isPressed(...)` as a "grab" edge: only fires the frame the
-//     button transitions to down, used to start the drag exactly once.
-//   - `BT.isReleased(...)` as a "throw" edge: only fires the frame the
-//     button transitions to up. We sample `BT.pointerDelta` *during* this
-//     edge to capture the user's release-time hand velocity.
-//   - `BT.pointerDelta` actively driving simulation, not just shown as text.
-//
-// Coordinate convention: balls store position with sub-pixel precision
-// (floats) so physics integrates smoothly, but every render call rounds to
-// integer display coordinates so pixels stay crisp.
+/**
+ * Pointer Drag-and-Flick Demo - grab balls, drag them, release to throw.
+ *
+ * Demo 027 in the Blit-Tech demo series.
+ * Prerequisites:
+ *   025-Pointer Basics - https://blit-tech-demos.vancura.dev/025-pointer-basics
+ *   026-Pointer Paint  - https://blit-tech-demos.vancura.dev/026-pointer-paint
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/027-pointer-drag-flick
+ *
+ * This is the action-oriented sibling of demos 025 and 026. Where 025 reads
+ * pointer state and 026 paints onto a canvas, this demo couples the pointer
+ * to a tiny physics simulation:
+ *
+ *   - Three balls bounce around inside a closed box under gravity.
+ *   - Click and HOLD on a ball to grab it (the ball follows the pointer).
+ *   - RELEASE to throw it - the release-frame BT.pointerDelta becomes the
+ *     ball's launch velocity.
+ *
+ * On a touchscreen each finger can grab its own ball; up to three balls can
+ * be dragged at once (slots 1, 2, 3). The mouse uses slot 0.
+ *
+ * What this demonstrates that 025 and 026 do not:
+ *
+ *   - BT.isPressed(...) as a "grab" edge: only fires the frame the
+ *     button transitions to down, used to start the drag exactly once.
+ *   - BT.isReleased(...) as a "throw" edge: only fires the frame the
+ *     button transitions to up. We sample BT.pointerDelta during this
+ *     edge to capture the user's release-time hand velocity.
+ *   - BT.pointerDelta actively driving simulation, not just shown as text.
+ *
+ * Coordinate convention: balls store position with sub-pixel precision
+ * (floats) so physics integrates smoothly, but every render call rounds to
+ * integer display coordinates so pixels stay crisp.
+ */
+
+// @pageTitle Blit-Tech Demo 027 - Pointer Drag Flick
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -83,6 +93,7 @@ const MAX_THROW_SPEED = 16;
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /** @type {Palette | null} */
     palette = null;
 
     /**
@@ -97,11 +108,7 @@ class Demo {
      * timing chart overlay. The chart shows update() and render() time side by side
      * so you can see when a ball throw causes a spike.
      *
-     * @returns {{
-     *   displaySize: import('blit-tech').Vector2i,
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, tagPaletteIndex: number }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {

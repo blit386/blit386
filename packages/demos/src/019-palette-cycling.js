@@ -1,12 +1,19 @@
+// @pageTitle Blit-Tech Demo 019 - Palette Cycling
+//
 // Demo 019 - Palette Cycling: classic retro color rotation using BT.paletteCycle().
 //
 // Demo 019 in the Blit-Tech series (written for readers about 12 years old).
 //
 // Prerequisites:
 //   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives        https://vancura.dev/articles/blit-tech-primitives
-//   015-Palette Presets   https://vancura.dev/articles/blit-tech-palette-presets
-//   016-Palette Animation https://vancura.dev/articles/blit-tech-palette-animation
+//   002-Primitives        https://blit-tech-demos.vancura.dev/002-primitives
+//   015-Palette Presets   https://blit-tech-demos.vancura.dev/015-palette-presets
+//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
+//     (walkthroughs: https://vancura.dev/articles/blit-tech-palette-presets,
+//      https://vancura.dev/articles/blit-tech-palette-animation)
+//
+// Live version: https://blit-tech-demos.vancura.dev/019-palette-cycling
+// Live article: https://vancura.dev/articles/blit-tech-palette-cycling
 //
 // WHAT IS PALETTE CYCLING?
 //
@@ -25,6 +32,14 @@
 // Call it once in init(), and the engine rotates the colors automatically
 // each frame. Positive speed = forward, negative = backward.
 //
+// UPDATE VS RENDER (palette work split):
+//   init() registers gradient colors and starts BT.paletteCycle() - the engine
+//   rotates those slot ranges automatically every frame.
+//   update() only runs the periodic BT.paletteSwap() demo and hides its label.
+//   render() draws fixed rectangles using palette index numbers; the bands
+//   appear to flow because the engine shifted slot colors, not because render()
+//   recomputes Color32 values.
+//
 // WHAT YOU WILL SEE (three horizontal bands):
 //   1. Water (bottom) - blue gradient slots cycling forward = flowing water
 //   2. Fire  (middle) - orange-yellow slots cycling backward = rising flames
@@ -36,6 +51,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Water
 // 8 blue-gradient slots cycling at 4 steps per second.
@@ -81,6 +98,7 @@ const C_WATER_BASE = 50;
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /** @type {Palette | null} */
     palette = null;
 
     // Track the last swap tick so we know when to do the next swap demo.
@@ -94,7 +112,7 @@ class Demo {
     /**
      * Palette cycling runs in the engine each frame; the chart shows update vs render time.
      *
-     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -115,8 +133,7 @@ class Demo {
     }
 
     /**
-     * Builds the palette with gradient colors, starts the cycling effects,
-     * and loads the bitmap font.
+     * Builds the palette with gradient colors and starts the cycling effects.
      *
      * @returns {Promise<boolean>}
      */

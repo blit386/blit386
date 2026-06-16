@@ -1,42 +1,54 @@
-// Gamepad Input Demo - analog sticks, triggers, and face-button masks.
-//
-// Demo 031 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics, 028-Keyboard-Input.
-//
-// This demo gives you a tiny "hover pod" toy you can steer with a gamepad:
-// - Left stick moves the pod around the arena.
-// - Right stick moves a small aim cursor.
-// - Trigger pressure changes pod size (a little "throttle" feeling).
-// - A cycles pod color, B toggles a small trail, Start resets position.
-//
-// It also shows `BT.isGamepadConnected`, `BT.gamepadCount`, `BT.getAxis`, and
-// a bitmask button check with `BT.isDown(BT.BTN_A | BT.BTN_B, player)`.
+/**
+ * Gamepad Input Demo - analog sticks, triggers, and face-button masks.
+ *
+ * Demo 031 in the Blit-Tech demo series.
+ * Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
+ * 028-Keyboard-Input (https://blit-tech-demos.vancura.dev/028-keyboard-input).
+ *
+ * This demo gives you a tiny "hover pod" toy you can steer with a gamepad:
+ * - Left stick moves the pod around the arena.
+ * - Right stick moves a small aim cursor.
+ * - Trigger pressure changes pod size (a little "throttle" feeling).
+ * - A cycles pod color, B toggles a small trail, Start resets position.
+ *
+ * It also shows `BT.isGamepadConnected`, `BT.gamepadCount`, `BT.getAxis`, and
+ * a bitmask button check with `BT.isDown(BT.BTN_A | BT.BTN_B, player)`.
+ *
+ * Try this:
+ * - Plug in a gamepad and press any button so the browser wakes it up.
+ * - Move the left stick to fly the pod; move the right stick to drag the crosshair.
+ * - Squeeze either trigger and watch the pod grow (whichever trigger reads higher wins).
+ * - Hold A and B together and read the "(A|B) mask down" line in the HUD.
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/031-gamepad-input
+ */
 
-// #region Imports
+// @pageTitle Blit-Tech Demo 031 - Gamepad Input
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
 
 const PLAYER = BT.PLAYER_ONE;
 
-const C_WHITE = 1;
-const C_BG = 2;
-const C_PANEL = 3;
-const C_PANEL_BORDER = 4;
-const C_DIM = 5;
-const C_ACCENT = 6;
-const C_POD_A = 7;
-const C_POD_B = 8;
-const C_POD_C = 9;
-const C_TRAIL = 10;
-const C_AIM = 11;
+// Palette indices. Slot 0 stays transparent; toy and HUD colors start at 1.
+const C_WHITE = 1; // Pod outline and timing-chart render bar.
+const C_BG = 2; // Screen background outside the play arena.
+const C_PANEL = 3; // Filled interior of the steering arena.
+const C_PANEL_BORDER = 4; // Arena border rectangle.
+const C_DIM = 5; // HUD hint text and timing-chart update bar.
+const C_ACCENT = 6; // "Connect a gamepad" warning and chart tags.
+const C_POD_A = 7; // First pod color (cycles with A).
+const C_POD_B = 8; // Second pod color.
+const C_POD_C = 9; // Third pod color.
+const C_TRAIL = 10; // Semi-transparent white pixels when trail is on.
+const C_AIM = 11; // Right-stick crosshair color.
 
 const POD_BASE_SIZE = 10;
 const POD_MAX_EXTRA_SIZE = 10;
@@ -50,6 +62,7 @@ const TRAIL_MAX = 28;
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /** @type {Palette | null} */
     palette = null;
 
     // Pod position in integer display pixels.
@@ -74,8 +87,14 @@ class Demo {
      * @returns {number}
      */
     currentPodColor() {
-        if (this.podColorIndex === 0) return C_POD_A;
-        if (this.podColorIndex === 1) return C_POD_B;
+        if (this.podColorIndex === 0) {
+            return C_POD_A;
+        }
+
+        if (this.podColorIndex === 1) {
+            return C_POD_B;
+        }
+
         return C_POD_C;
     }
 
@@ -131,9 +150,11 @@ class Demo {
      * Draw arena border, optional trail, pod, and aim cursor.
      */
     renderArena() {
+        // Play area: filled panel with a border so the pod has walls to bounce against visually.
         BT.drawRectFill(new Rect2i(8, 44, DISPLAY_W - 16, DISPLAY_H - 52), C_PANEL);
         BT.drawRect(new Rect2i(8, 44, DISPLAY_W - 16, DISPLAY_H - 52), C_PANEL_BORDER);
 
+        // Optional breadcrumb trail: one pixel per past pod position when B toggled it on.
         if (this.trailEnabled) {
             for (let i = 0; i < this.trail.length; i++) {
                 const p = this.trail[i];
@@ -141,14 +162,19 @@ class Demo {
             }
         }
 
+        // BT.getAxis returns a float from about -1 to +1 for sticks, 0 to +1 for triggers.
+        // The engine applies a "dead zone" first: tiny wobble near center becomes 0 so the
+        // pod does not drift when you let go of the stick.
+        // We read BOTH triggers and keep whichever is squeezed harder (Math.max).
         const throttle = Math.max(BT.getAxis(BT.AXIS_TRIGGER_L, PLAYER), BT.getAxis(BT.AXIS_TRIGGER_R, PLAYER));
         const size = this.currentPodSize(throttle);
         const half = this.currentPodHalfSize(throttle);
 
+        // Draw the pod as a square centered on podPos; white outline makes it pop on the panel.
         BT.drawRectFill(new Rect2i(this.podPos.x - half, this.podPos.y - half, size, size), this.currentPodColor());
         BT.drawRect(new Rect2i(this.podPos.x - half, this.podPos.y - half, size, size), C_WHITE);
 
-        // Small crosshair from right-stick position.
+        // Right-stick aim cursor: small crosshair so both sticks have visible jobs.
         BT.drawLine(
             new Vector2i(this.aimPos.x - 4, this.aimPos.y),
             new Vector2i(this.aimPos.x + 4, this.aimPos.y),
@@ -167,6 +193,9 @@ class Demo {
     renderHud() {
         const connected = BT.isGamepadConnected(PLAYER);
         const count = BT.gamepadCount;
+
+        // Bitmask OR: BT.BTN_A | BT.BTN_B builds one mask. isDown returns true when
+        // **either** button is held - handy for "press any of these" checks in games.
         const aOrB = BT.isDown(BT.BTN_A | BT.BTN_B, PLAYER);
         const controlsHint = 'A cycle color | B toggle trail | Start reset';
         const maskHint = `(A|B) mask down: ${aOrB ? 'true' : 'false'}`;
@@ -179,6 +208,11 @@ class Demo {
         }
     }
 
+    /**
+     * Arena size, timing chart colors, and default overlay flags.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
@@ -197,6 +231,8 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
+        // Build a small custom palette before any drawing happens.
+        // Think of each slot as a numbered paint can the engine looks up while rendering.
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_WHITE, new Color32(245, 248, 255));
@@ -211,8 +247,10 @@ class Demo {
         this.palette.set(C_TRAIL, new Color32(255, 255, 255, 120));
         this.palette.set(C_AIM, new Color32(255, 220, 130));
 
+        // Tell the engine to use this palette for every draw call from now on.
         BT.paletteSet(this.palette);
 
+        // Place the pod and aim cursor in the middle of the arena.
         this.resetPod();
         return true;
     }
@@ -285,8 +323,10 @@ class Demo {
      * Draw the toy arena and live input readouts.
      */
     render() {
+        // Erase last frame, then redraw the toy and HUD from scratch.
         BT.clear(C_BG);
 
+        // One-line control summary at the top of the logical screen.
         BT.systemPrint(new Vector2i(8, 18), C_DIM, 'Left stick move | Right stick aim | Triggers = pod size');
 
         this.renderArena();

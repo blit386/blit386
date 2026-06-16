@@ -7,9 +7,9 @@
 // Live article: https://vancura.dev/articles/blit-tech-sprite-effects
 //
 // In the palette-based rendering system, each sprite pixel stores a palette index.
-// By drawing the same sprite with a different "palette offset", every pixel shifts
-// to a different color block in the palette. This replaces what the old API called
-// "tinting" (multiplying pixels by a color).
+// By drawing the same sprite with a different palette offset (the fourth argument
+// to BT.drawSprite), every pixel shifts to a different color block in the palette.
+// This replaces what older APIs called "tinting" (multiplying pixels by a color).
 //
 // Common uses in retro games:
 //   - Damage flash: swap to a block of reds, then back to normal after 30 ticks
@@ -62,22 +62,21 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-/**
- * Hardware settings for the Orava CRT sprite-effects demo.
- *
- * @typedef {Object} SpriteEffectsConfig
- * @property {Vector2i} displaySize
- * @property {Vector2i} drawingBufferSize
- * @property {Vector2i} maxCanvasSize
- * @property {string} outputUpscaleFilter
- * @property {boolean} isOverlayPaletteEnabled
- * @property {boolean} isOverlayTimingChartEnabled
- * @property {number} overlayTimingChartHeight
- * @property {'rich'|false} overlayTimingChartDiagnostics
- * @property {boolean} isOverlayRendererDiagnosticsBarEnabled
- * @property {{ barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }} overlayStyle
- * @property {{ updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number }} overlayTimingChartStyle
- */
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit-tech').Rect2i} Rect2i */
+/** @typedef {import('blit-tech').PixelGlitch} PixelGlitch */
+/** @typedef {import('blit-tech').BarrelDistortion} BarrelDistortion */
+/** @typedef {import('blit-tech').ChromaticAberration} ChromaticAberration */
+/** @typedef {import('blit-tech').Interference} Interference */
+/** @typedef {import('blit-tech').RollLine} RollLine */
+/** @typedef {import('blit-tech').Scanlines} Scanlines */
+/** @typedef {import('blit-tech').RGBMask} RGBMask */
+/** @typedef {import('blit-tech').Vignette} Vignette */
+/** @typedef {import('blit-tech').Noise} Noise */
+/** @typedef {import('blit-tech').Flicker} Flicker */
+/** @typedef {import('blit-tech').Bloom} Bloom */
 
 // Where sprite colors start in the palette.
 // Must be above the highest UI slot (C_FPS = 11) to avoid overwriting UI colors.
@@ -235,12 +234,15 @@ function burnCpuMs(ms) {
  */
 class Demo {
     // The palette holds all colors for this demo.
+    /** @type {Palette | null} */
     palette = null;
 
     // The sprite sheet loaded from /sprites/test.png.
+    /** @type {SpriteSheet | null} */
     sheet = null;
 
     // The source rectangle for the rock sprite.
+    /** @type {Rect2i | null} */
     charRect = null;
 
     // How many unique colors the sprite has (N). Computed in init().
@@ -255,16 +257,27 @@ class Demo {
     // Which tick the last "damage event" occurred on (for the damage flash).
     damageFlashTick = 0;
 
+    /** @type {PixelGlitch | null} */
     pixelGlitch = null;
+    /** @type {BarrelDistortion | null} */
     barrel = null;
+    /** @type {ChromaticAberration | null} */
     aberration = null;
+    /** @type {Interference | null} */
     interference = null;
+    /** @type {RollLine | null} */
     rollLine = null;
+    /** @type {Scanlines | null} */
     scanlines = null;
+    /** @type {RGBMask | null} */
     mask = null;
+    /** @type {Vignette | null} */
     vignette = null;
+    /** @type {Noise | null} */
     noise = null;
+    /** @type {Flicker | null} */
     flicker = null;
+    /** @type {Bloom | null} */
     bloom = null;
 
     effectsAvailable = false;
@@ -287,7 +300,7 @@ class Demo {
     /**
      * Wider logical screen for the sprite grid; display-tier Orava CRT runs at 3x upscale.
      *
-     * @returns {SpriteEffectsConfig}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -819,8 +832,8 @@ class Demo {
     }
 
     /**
-     * Draws the first row: five static tinting effects.
-     * Normal, Silhouette, Team Red, Team Blue, Frozen.
+     * Draws the first row: six static palette-offset effects.
+     * Normal, Silhouette, Team Red/Blue/Green, Frozen.
      */
     renderStaticEffects() {
         if (!this.sheet || !this.charRect) {
@@ -828,31 +841,35 @@ class Demo {
         }
 
         const row1Y = 30;
-        const spacing = 60;
+        const spacing = 100;
 
-        // Offset 0 = block 0 = original stone. systemPrint takes (position, paletteIndex, text).
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row1Y), BLOCK_ORIGINAL * N);
         BT.systemPrint(new Vector2i(6, row1Y + 36), C_LABEL, 'Normal');
+        BT.systemPrint(new Vector2i(6, row1Y + 48), C_LABEL, 'Default look');
 
-        // Offset N = block 1 = silhouette (near-black).
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * N);
-        BT.systemPrint(new Vector2i(6 + spacing, row1Y + 36), C_LABEL, 'Shadow');
+        BT.systemPrint(new Vector2i(6 + spacing, row1Y + 36), C_LABEL, 'Silhouette');
+        BT.systemPrint(new Vector2i(6 + spacing, row1Y + 48), C_LABEL, 'Stealth / cutscene');
 
-        // Team red.
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * N);
         BT.systemPrint(new Vector2i(6 + spacing * 2, row1Y + 36), C_LABEL_RED, 'Team Red');
+        BT.systemPrint(new Vector2i(6 + spacing * 2, row1Y + 48), C_LABEL, 'Friendly fire team');
 
-        // Team blue.
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * N);
         BT.systemPrint(new Vector2i(6 + spacing * 3, row1Y + 36), C_LABEL_BLUE, 'Team Blue');
+        BT.systemPrint(new Vector2i(6 + spacing * 3, row1Y + 48), C_LABEL, 'Enemy squad color');
 
-        // Frozen.
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 4, row1Y), BLOCK_FROZEN * N);
-        BT.systemPrint(new Vector2i(6 + spacing * 4, row1Y + 36), C_LABEL_CYAN, 'Frozen');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 4, row1Y), BLOCK_TEAM_GREEN * N);
+        BT.systemPrint(new Vector2i(6 + spacing * 4, row1Y + 36), C_LABEL_GREEN, 'Team Green');
+        BT.systemPrint(new Vector2i(6 + spacing * 4, row1Y + 48), C_LABEL, 'Ally / coop team');
+
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 5, row1Y), BLOCK_FROZEN * N);
+        BT.systemPrint(new Vector2i(6 + spacing * 5, row1Y + 36), C_LABEL_CYAN, 'Frozen');
+        BT.systemPrint(new Vector2i(6 + spacing * 5, row1Y + 48), C_LABEL, 'Slow freeze status');
     }
 
     /**
-     * Draws the second row: four dynamic effects (updated in update()).
+     * Draws the second row: four dynamic palette-offset effects (updated in update()).
      * Damage Flash, Ghost, Invincibility, Poison.
      */
     renderDynamicEffects() {
@@ -860,21 +877,24 @@ class Demo {
             return;
         }
 
-        const row2Y = 90;
-        const spacing = 60;
+        const row2Y = 100;
+        const spacing = 100;
 
-        // systemPrint takes (position, paletteIndex, text).
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * N);
         BT.systemPrint(new Vector2i(6, row2Y + 36), C_LABEL_RED, 'Damage');
+        BT.systemPrint(new Vector2i(6, row2Y + 48), C_LABEL, 'Hit flash (white/red)');
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * N);
         BT.systemPrint(new Vector2i(6 + spacing, row2Y + 36), C_LABEL_CYAN, 'Ghost');
+        BT.systemPrint(new Vector2i(6 + spacing, row2Y + 48), C_LABEL, 'Spirit / low alpha');
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * N);
         BT.systemPrint(new Vector2i(6 + spacing * 2, row2Y + 36), C_LABEL, 'Invincible');
+        BT.systemPrint(new Vector2i(6 + spacing * 2, row2Y + 48), C_LABEL, 'Power-up star mode');
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * N);
         BT.systemPrint(new Vector2i(6 + spacing * 3, row2Y + 36), C_LABEL_GREEN, 'Poisoned');
+        BT.systemPrint(new Vector2i(6 + spacing * 3, row2Y + 48), C_LABEL, 'Poison over time');
     }
 
     /**
@@ -886,17 +906,17 @@ class Demo {
             return;
         }
 
-        const baseY = 162;
+        const baseY = 178;
 
-        // systemPrint takes (position, paletteIndex, text).
         BT.systemPrint(new Vector2i(10, baseY), C_LABEL_YELLOW, 'Day/Night Cycle:');
+        BT.systemPrint(new Vector2i(10, baseY + 12), C_LABEL, 'Ambient light palette offset');
 
         // Draw the sprite with the day/night block.
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 16), BLOCK_DAYNIGHT * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 28), BLOCK_DAYNIGHT * N);
 
         // Progress bar showing time of day.
         const barX = 60;
-        const barY = baseY + 24;
+        const barY = baseY + 36;
         const barWidth = 240;
         const barHeight = 10;
 

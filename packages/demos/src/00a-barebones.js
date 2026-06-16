@@ -17,6 +17,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').Palette} Palette */
 // Footer text colors (slots 3 and 4; slots 1-2 are player and background).
 const C_FOOTER_DIM = 3;
 const C_FOOTER_WHITE = 4;
@@ -27,6 +28,7 @@ const C_FOOTER_WHITE = 4;
 class Demo {
     // The color palette holds all the colors we are allowed to draw with.
     // Think of it like a numbered paint box: each slot holds one color.
+    /** @type {Palette | null} */
     palette = null;
 
     // The player's current position on screen, in pixels.

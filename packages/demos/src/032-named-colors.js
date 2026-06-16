@@ -1,35 +1,46 @@
+/**
+ * Named Colors Demo - Color32 named lookup table and custom registration APIs.
+ *
+ * Demo 032 in the Blit-Tech demo series.
+ * Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
+ * 003-Colors (https://blit-tech-demos.vancura.dev/003-colors).
+ *
+ * What this demo teaches:
+ * - How to read built-in named colors with Color32.resolveNamedColor('tomato')
+ * - How to add your own name with Color32.registerColor(...)
+ * - How to change a custom name over time with Color32.updateColor(...)
+ * - How to remove and re-add a custom name with Color32.unregisterColor(...)
+ *
+ * Think of the named-color table as a dictionary:
+ * - The "word" is a name like "cornflowerblue".
+ * - The "definition" is a Color32 value (r, g, b, a).
+ * - resolveNamedColor(name) asks the dictionary: "Do you know this word?"
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/032-named-colors
+ */
+
 // @pageTitle Blit-Tech Demo 032 - Named Colors
 //
-// Named Colors Demo - Color32 named lookup table and custom registration APIs.
-//
-// Demo 032 in the Blit-Tech demo series.
-//
-// What this demo teaches:
-// - How to read built-in named colors with Color32.resolveNamedColor('tomato')
-// - How to add your own name with Color32.registerColor(...)
-// - How to change a custom name over time with Color32.updateColor(...)
-// - How to remove and re-add a custom name with Color32.unregisterColor(...)
-//
-// Think of the named-color table as a dictionary:
-// - The "word" is a name like "cornflowerblue".
-// - The "definition" is a Color32 value (r, g, b, a).
-// - resolveNamedColor(name) asks the dictionary: "Do you know this word?"
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-const C_BG = 1;
-const C_TEXT = 2;
-const C_PANEL = 3;
-const C_PANEL_BORDER = 4;
-const C_TOMATO = 5;
-const C_CORNFLOWER = 6;
-const C_CUSTOM_DYNAMIC = 7;
-const C_OPTIONAL = 8;
-const C_OPTIONAL_FALLBACK = 9;
-const C_OK = 10;
-const C_WARN = 11;
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
+
+// Palette indices for panels, swatches, and status text. Slot 0 stays transparent.
+const C_BG = 1; // Screen background.
+const C_TEXT = 2; // Labels, tips, and panel headings.
+const C_PANEL = 3; // Filled background behind swatch rows and tips box.
+const C_PANEL_BORDER = 4; // Outlines around panels and each swatch.
+const C_TOMATO = 5; // Swatch slot for built-in name "tomato".
+const C_CORNFLOWER = 6; // Swatch slot for built-in name "cornflowerblue".
+const C_CUSTOM_DYNAMIC = 7; // Swatch slot for animated custom name "demo-dynamic".
+const C_OPTIONAL = 8; // Swatch slot for toggled custom name "demo-optional".
+const C_OPTIONAL_FALLBACK = 9; // Gray shown when demo-optional is unregistered.
+const C_OK = 10; // Green status when demo-optional is registered.
+const C_WARN = 11; // Amber status when demo-optional is missing.
 
 const CUSTOM_DYNAMIC_NAME = 'demo-dynamic';
 const CUSTOM_OPTIONAL_NAME = 'demo-optional';
@@ -43,6 +54,7 @@ const SWATCH_H = 26;
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /** @type {Palette | null} */
     palette = null;
     optionalRegistered = true;
     elapsed = 0;
@@ -89,6 +101,11 @@ class Demo {
         BT.systemPrint(new Vector2i(x, y + SWATCH_H + 2), C_TEXT, label);
     }
 
+    /**
+     * Opt in to the overlay timing chart with palette-matched bar colors.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
     configure() {
         return {
             isOverlayTimingChartEnabled: true,
@@ -118,11 +135,18 @@ class Demo {
         this.palette.set(C_WARN, new Color32(255, 193, 122));
 
         // Remove old custom names before registering fresh ones.
+        // Hot reload can leave names in memory from a previous run; unregister first
+        // so registerColor does not throw "name already exists".
         this.removeIfExists(CUSTOM_DYNAMIC_NAME);
         this.removeIfExists(CUSTOM_OPTIONAL_NAME);
 
-        // Add two custom names we can edit/remove at runtime.
+        // registerColor adds a NEW entry to the global name table.
+        // It throws if the name is already taken - that is why we cleared above.
+        // 'demo-dynamic' will be rewritten every tick with updateColor in update().
         Color32.registerColor(CUSTOM_DYNAMIC_NAME, new Color32(90, 170, 255));
+
+        // 'demo-optional' starts registered; update() will unregister and re-register
+        // it on a timer so you can watch resolveNamedColor fall back to gray.
         Color32.registerColor(CUSTOM_OPTIONAL_NAME, new Color32(255, 90, 150));
         this.optionalRegistered = true;
         this.elapsed = 0;
@@ -180,9 +204,11 @@ class Demo {
 
         BT.systemPrint(new Vector2i(8, 20), C_TEXT, 'Built-in lookups + custom register/update/unregister');
 
+        // Upper panel: background for the four color swatches.
         BT.drawRectFill(new Rect2i(6, 32, 308, 126), C_PANEL);
         BT.drawRect(new Rect2i(6, 32, 308, 126), C_PANEL_BORDER);
 
+        // Four labeled swatches in one row (tomato, cornflower, animated custom, optional custom).
         this.drawSwatch(16, 44, C_TOMATO, 'tomato');
         this.drawSwatch(96, 44, C_CORNFLOWER, 'cornflower');
         this.drawSwatch(176, 44, C_CUSTOM_DYNAMIC, 'dynamic');
@@ -196,6 +222,7 @@ class Demo {
             : 'demo-optional is missing (Color32.unregisterColor)';
         BT.systemPrint(new Vector2i(16, 132), this.optionalRegistered ? C_OK : C_WARN, optionalStateText);
 
+        // Lower panel: API tips (names are normalized; register/update/unregister rules).
         BT.drawRectFill(new Rect2i(6, 168, 308, 66), C_PANEL);
         BT.drawRect(new Rect2i(6, 168, 308, 66), C_PANEL_BORDER);
         BT.systemPrint(new Vector2i(14, 178), C_TEXT, 'Tips:');

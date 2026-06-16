@@ -1,37 +1,44 @@
-// Bitmap Font Demo - shows how to load and use a proportional bitmap font.
-//
-// Demo 022 in the Blit-Tech demo series.
-// We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
-// We learned about fonts in the Fonts demo: https://vancura.dev/articles/blit-tech-fonts
-//
-// Demos 002-020 use BT.systemPrint() - the built-in 8x8 pixel font that needs no file to load.
-// This demo shows the ALTERNATIVE approach: loading a proportional bitmap font from a .btfont file.
-//
-// A "bitmap font" is a font where every letter is pre-drawn as a small picture
-// (a grid of pixels), rather than being drawn from mathematical curves.
-// This gives text a crisp, retro look that matches pixel art perfectly.
-//
-// When would you choose a bitmap font over the system font?
-//   - You want a proportional font (each letter has its own width, like real typography).
-//   - You need a specific visual style (blocky, cursive, monospace, etc.).
-//   - You want fine control over per-character color effects (like the rainbow below).
-//   - You need to measure text width precisely before drawing it (font.measureText()).
-//
-// When should you stick with BT.systemPrint()?
-//   - You just need a quick debug overlay (FPS, position, counters).
-//   - You don't want the extra complexity of loading a font asset.
-//   - Startup speed matters more than visual style.
-//
-// This demo shows how to load a font, draw text in different colors,
-// make text that changes color over time (rainbow), text that pulses in opacity (alpha),
-// and how to measure how wide a piece of text will be before drawing it.
+/**
+ * Bitmap Font Demo - load a proportional .btfont and compare it to the built-in system font.
+ *
+ * Demo 022 in the Blit-Tech demo series.
+ * Prerequisites:
+ *   001-Basics  https://blit-tech-demos.vancura.dev/001-basics
+ *   004-Fonts   https://blit-tech-demos.vancura.dev/004-fonts
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/022-bitmap-font
+ *
+ * Demos 002-020 use BT.systemPrint() - the built-in 6x14 pixel system font that needs no file.
+ * This demo shows the ALTERNATIVE: loading a proportional bitmap font from a .btfont file.
+ *
+ * A "bitmap font" is a font where every letter is pre-drawn as a small picture
+ * (a grid of pixels), rather than being drawn from mathematical curves.
+ * This gives text a crisp, retro look that matches pixel art perfectly.
+ *
+ * When would you choose a bitmap font over the system font?
+ *   - You want a proportional font (each letter has its own width, like real typography).
+ *   - You need a specific visual style (blocky, cursive, monospace, etc.).
+ *   - You want fine control over per-character color effects (like the rainbow below).
+ *   - You need to measure text width precisely before drawing it (font.measureText()).
+ *
+ * When should you stick with BT.systemPrint()?
+ *   - You just need a quick debug overlay (FPS, position, counters).
+ *   - You don't want the extra complexity of loading a font asset.
+ *   - Startup speed matters more than visual style.
+ *
+ * This demo shows how to load a font, draw text in different colors,
+ * make text that changes color over time (rainbow), text that pulses in opacity (alpha),
+ * and how to measure how wide a piece of text will be before drawing it.
+ */
 
-// #region Imports
+// @pageTitle Blit-Tech Demo 022 - Bitmap Font
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit-tech').BitmapFont} BitmapFont */
 
 // The x position where the rainbow text row starts.
 // Shared by update() (hue calculation) and renderRainbowText() (glyph drawing) so they stay in sync.
@@ -64,31 +71,46 @@ const C_RAINBOW_BASE = 20; // first slot for the rainbow characters
 // even if RAINBOW_TEXT changes length. C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length.
 const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pulsing-text color
 
+// Left margin for labels and body text (filled in init() for the gap after "A: " / "B: ").
+const LABEL_X = 10;
 
 /**
  * Demonstrates bitmap font loading and rendering with various text effects.
  * Shows static colors, animated rainbow effects, text measurement, and font metadata.
- * Contrast this approach with BT.systemPrint() used in the other demos.
+ * Contrast this approach with BT.systemPrint() used in the Fonts demo (004).
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
     // font will hold the loaded bitmap font once it is downloaded.
     // It starts as null because nothing is loaded yet.
+    /** @type {BitmapFont | null} */
     font = null;
 
     // palette holds all the colors this demo uses.
+    /** @type {Palette | null} */
     palette = null;
 
     // animTime is a timer that counts up in seconds.
     // We use it to control the speed of color animations.
     animTime = 0;
 
-    // Sets up the color palette and downloads the bitmap font.
-    // Screen size and FPS use engine defaultConfig() (no configure() in this demo).
-    // Notice the "await" keyword - we wait here until the font file is fully downloaded.
-    // The built-in system font (BT.systemPrint) skips this step entirely.
-    // Returns true when the font has loaded successfully, or false if loading fails.
+    // Measured in init() from BT.systemPrintMeasure('M') - built-in system font is 6x14.
+    systemCharWidth = 6;
+    systemLineHeight = 14;
+
+    // Pixel width of the "A: " prefix so title text lines up after the label.
+    labelPrefixWidth = 18;
+
+    /**
+     * Sets up the color palette and downloads the bitmap font.
+     * Screen size and FPS use engine defaultConfig() (no configure() in this demo).
+     * Notice the "await" keyword - we wait here until the font file is fully downloaded.
+     * The built-in system font (BT.systemPrint) skips this step entirely.
+     * Returns true when the font has loaded successfully, or false if loading fails.
+     *
+     * @returns {Promise<boolean>}
+     */
     async init() {
         console.log('[BitmapFontDemo] Initializing...');
 
@@ -117,6 +139,12 @@ class Demo {
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
+
+        // Measure the built-in system font once (same helper as demo 004-fonts).
+        const glyphSize = BT.systemPrintMeasure('M');
+        this.systemCharWidth = glyphSize.x;
+        this.systemLineHeight = glyphSize.y;
+        this.labelPrefixWidth = BT.systemPrintMeasure('A: ').x;
 
         // Load the font file from the server.
         // .btfont is Blit-Tech's custom font format that includes glyph images.
@@ -166,7 +194,7 @@ class Demo {
         // We compute hue (color wheel position) for each character based on its x position
         // and animTime. We need the font loaded to get the correct glyph widths.
         // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
-        // https://vancura.dev/articles/blit-tech-colors
+        // https://blit-tech-demos.vancura.dev/003-colors
         if (this.font) {
             let charX = RAINBOW_ORIGIN_X; // Starting x position - same as where render() draws the rainbow text.
             for (let i = 0; i < RAINBOW_TEXT.length; i++) {
@@ -179,7 +207,7 @@ class Demo {
                 this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
 
                 // Advance charX by this character's actual pixel width in the font.
-                // This is specific to BitmapFont - the system font has fixed 8x8 glyphs.
+                // This is specific to BitmapFont - the system font advances a fixed systemCharWidth per character.
                 const glyph = this.font.getGlyph(RAINBOW_TEXT[i]);
                 charX += glyph ? glyph.advance : 7;
             }
@@ -194,38 +222,40 @@ class Demo {
         // Start drawing from near the top of the screen.
         let y = 10;
 
+        // X where title text starts after the "A: " / "B: " labels (measured in init()).
+        const textX = LABEL_X + this.labelPrefixWidth;
+
         // lineHeight tells us how many pixels tall one line of text is.
-        // This comes from the font itself - the system font always uses 8 pixels.
-        // We add 2 extra pixels as spacing between lines.
-        const lineHeight = this.font.lineHeight + 2;
+        // Bitmap font line height comes from the .btfont file; system font uses systemLineHeight.
+        const bitmapLineHeight = this.font.lineHeight + 2;
+        const systemLineHeight = this.systemLineHeight + 2;
 
         // BT.printFont() arguments: (font, position, text, colorOffset)
         // The colorOffset is a 0-based index FROM palette slot 1.
         // So offset 0 = slot 1 (C_WHITE), offset 2 = slot 3 (C_RED_TEXT), etc.
         // This is different from BT.systemPrint() which takes the palette slot number directly.
-        // We learned about palette offset math in the Palette Walkthrough demo:
-        // https://vancura.dev/articles/blit-tech-palette
+        // We learned about palette offset math in demo 015-palette-presets and the palette guides.
 
         // Draw the title in both fonts, one below the other, so you can compare them side-by-side.
         // "A:" marks the bitmap font version (proportional spacing, each letter its own width).
-        // "B:" marks the built-in system font (every character is a fixed 8x8 pixel block).
-        BT.systemPrint(new Vector2i(10, y), C_WHITE, 'A:');
-        BT.printFont(this.font, new Vector2i(26, y), 'Blit-Tech Font Demo (022)', 0);
-        y += lineHeight;
+        // "B:" marks the built-in system font (every character is a fixed 6x14 pixel block).
+        BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'A:');
+        BT.printFont(this.font, new Vector2i(textX, y), 'Blit-Tech Font Demo (022)', 0);
+        y += bitmapLineHeight;
 
         // The same title text in the system font so the visual difference is obvious.
-        BT.systemPrint(new Vector2i(10, y), C_WHITE, 'B:');
-        BT.systemPrint(new Vector2i(26, y), C_WHITE, 'Blit-Tech Font Demo (022)');
+        BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'B:');
+        BT.systemPrint(new Vector2i(textX, y), C_WHITE, 'Blit-Tech Font Demo (022)');
 
         // Move down past both title lines, with a little extra gap before the next section.
-        y += lineHeight + 4;
+        y += systemLineHeight + 4;
 
         // Draw each section in order, updating y as we go so nothing overlaps.
-        y = this.renderColoredText(y, lineHeight);
-        y = this.renderRainbowText(y, lineHeight);
-        y = this.renderPulsingText(y, lineHeight);
-        y = this.renderSpecialCharacters(y, lineHeight);
-        y = this.renderTextMeasurement(y, lineHeight);
+        y = this.renderColoredText(y, bitmapLineHeight);
+        y = this.renderRainbowText(y, bitmapLineHeight);
+        y = this.renderPulsingText(y, bitmapLineHeight);
+        y = this.renderSpecialCharacters(y, bitmapLineHeight);
+        y = this.renderTextMeasurement(y, bitmapLineHeight);
 
         // Draw one line of font metadata (name and glyph count) near the bottom of the demo area.
         // Measured FPS and the demo title are drawn by the engine overlay.
@@ -287,7 +317,7 @@ class Demo {
             // Look up how wide this character is in the font's glyph table.
             // "advance" is the number of pixels to move right before drawing the next character.
             // This is unique to BitmapFont - each letter has its own width in a proportional font.
-            // The built-in system font always advances exactly 8 pixels per character.
+            // The built-in system font always advances systemCharWidth pixels per character (6 by default).
             const glyph = this.font.getGlyph(char);
 
             // If the glyph exists, use its advance width; otherwise fall back to 7 pixels.

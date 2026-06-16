@@ -2,12 +2,12 @@
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
 // (https://blit-tech-demos.vancura.dev/001-basics), shapes in Demo 002-Primitives
-// (https://vancura.dev/articles/blit-tech-primitives), and color in Demo 003-Colors
-// (https://vancura.dev/articles/blit-tech-colors).
+// (https://blit-tech-demos.vancura.dev/002-primitives), and color in Demo 003-Colors
+// (https://blit-tech-demos.vancura.dev/003-colors).
 //
 // We also use the palette system introduced in Demo 015-Palette-Presets
-// (https://vancura.dev/articles/blit-tech-palette-presets) and demonstrated
-// further in Demo 016-Palette-Animation (https://vancura.dev/articles/blit-tech-palette-animation).
+// (https://blit-tech-demos.vancura.dev/015-palette-presets) and demonstrated
+// further in Demo 016-Palette-Animation (https://blit-tech-demos.vancura.dev/016-palette-animation).
 //
 // Live walkthrough: https://vancura.dev/articles/blit-tech-patterns
 //
@@ -38,6 +38,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 //
 // These numbers are the "addresses" in the palette table.
 // Index 0 is always reserved for transparent - we never use it.
@@ -47,7 +49,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 const C_WHITE = 1; // Pure white - title text and font base color.
 const C_BG = 2; // Very dark blue-black background.
 const C_LABEL = 3; // Dim white - section labels ("Spiral", "Wave", etc.).
-const C_DIM = 4; // Slightly dimmer - FPS counter text.
 const C_WAVE_1 = 5; // Blue - primary sine wave.
 const C_WAVE_2 = 6; // Orange - secondary cosine wave.
 const C_WAVE_3 = 7; // Green - interference (both waves combined).
@@ -93,6 +94,7 @@ class Demo {
 
     // The palette holds all the colors we are allowed to use.
     // Think of it as a box of 256 numbered paint colors.
+    /** @type {Palette | null} */
     palette = null;
 
     // These Vector2i and Rect2i objects are created once and reused every frame.
@@ -107,17 +109,7 @@ class Demo {
      * 256-slot palette in the overlay grid (default column count). Rich diagnostics and
      * the renderer diagnostics bar are enabled so GPU pipeline pressure is visible.
      *
-     * @returns {{
-     *   isOverlayPaletteEnabled: boolean,
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartDiagnostics: string,
-     *   isOverlayRendererDiagnosticsBarEnabled: boolean,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -162,7 +154,6 @@ class Demo {
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // White for title text.
         this.palette.set(C_BG, new Color32(15, 15, 25)); // Very dark blue-black background.
         this.palette.set(C_LABEL, new Color32(200, 200, 200)); // Dim white for pattern labels.
-        this.palette.set(C_DIM, new Color32(150, 150, 150)); // Dimmer gray for FPS text.
 
         // Wave pattern: three fixed colors.
         this.palette.set(C_WAVE_1, new Color32(100, 200, 255)); // Blue wave.
@@ -265,7 +256,14 @@ class Demo {
         this.drawLissajous(new Vector2i(120, 130));
         this.drawTunnel(new Vector2i(200, 130));
 
-        // Measured FPS, target FPS, and demo name (from document.title).
+        // Label each grid cell so viewers know which pattern they are looking at.
+        // systemPrint draws left-aligned text; we nudge x so short names sit under each center.
+        BT.systemPrint(new Vector2i(22, 92), C_LABEL, 'Spiral');
+        BT.systemPrint(new Vector2i(100, 92), C_LABEL, 'Radial');
+        BT.systemPrint(new Vector2i(184, 92), C_LABEL, 'Wave');
+        BT.systemPrint(new Vector2i(16, 172), C_LABEL, 'Circle');
+        BT.systemPrint(new Vector2i(88, 172), C_LABEL, 'Lissajous');
+        BT.systemPrint(new Vector2i(178, 172), C_LABEL, 'Tunnel');
     }
 
     /**
@@ -290,6 +288,11 @@ class Demo {
             const radius = (i / SPIRAL_POINTS) * maxRadius;
 
             // Convert polar coordinates (angle t, distance radius) to x,y screen positions.
+            //
+            // Math.cos and Math.sin turn an angle into how far to move on each axis.
+            // Think of a clock hand: cos is how far right/left the tip is, sin is how far up/down.
+            // Math.PI is half a full turn (180 degrees); 2*PI is one full turn (360 degrees).
+            // Multiplying radius scales that direction vector to the dot's distance from center.
             const x = center.x + Math.cos(t) * radius;
             const y = center.y + Math.sin(t) * radius;
 
