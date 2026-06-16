@@ -32,8 +32,6 @@
 
 // @pageTitle Blit-Tech Demo 001 - Basics
 
-// #region Imports
-
 /**
  * "import" loads tools from the Blit-Tech engine library.
  * Think of it like opening a toolbox before you start building.
@@ -44,10 +42,6 @@
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
-
-// #endregion
-
-// #region Configuration
 
 // Blit-Tech uses a "palette" - a numbered list of colors you choose BEFORE drawing.
 // Think of it like an artist picking paint colors and laying them on a palette tray
@@ -75,10 +69,6 @@ const SPRITE_URL = '/sprites/logo-1.png';
 // Target update rate. 30 ticks per second is slower than the engine default (60).
 const TARGET_FPS = 30;
 
-// #endregion
-
-// #region Type Definitions
-
 /**
  * This line tells code editors that our Demo class follows the IBlitTechDemo
  * interface - the contract that says you need init, update, and render.
@@ -87,9 +77,6 @@ const TARGET_FPS = 30;
  */
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Main Logic
 
 /**
  * Bouncing-sprite demo - the simplest possible Blit-Tech demo.
@@ -167,8 +154,6 @@ class Demo {
         { leftText: 'Position: 0, 0', textPaletteIndex: C_OVERLAY_GREEN },
         { leftText: 'Bounces: 0', textPaletteIndex: C_OVERLAY_AMBER },
     ];
-
-    // #region Lifecycle Methods
 
     /**
      * Called once at the very start. Tells the engine:
@@ -400,12 +385,7 @@ class Demo {
         // print those lines ourselves with BT.systemPrint().
     }
 
-    // #endregion
 }
-
-// #endregion
-
-// #region Exports
 
 // bootstrap() is the function that starts everything. You pass it your Demo
 // class, and it takes care of:
@@ -416,5 +396,3 @@ class Demo {
 //
 // After this line runs, your demo is alive and running!
 bootstrap(Demo);
-
-// #endregion

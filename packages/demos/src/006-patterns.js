@@ -38,7 +38,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 //
 // These numbers are the "addresses" in the palette table.
 // Index 0 is always reserved for transparent - we never use it.
@@ -82,10 +81,6 @@ const TUNNEL_RECTS = 20;
 
 // Engine overlay: measured FPS, target FPS, and demo name (enabled by default).
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates animated mathematical patterns using primitive drawing.
  * Each section shows a different algorithmic visual effect arranged in a 2x3 grid.
@@ -93,8 +88,6 @@ const TUNNEL_RECTS = 20;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // animTime counts up in seconds. We use it to make patterns move.
     animTime = 0;
 
@@ -102,20 +95,12 @@ class Demo {
     // Think of it as a box of 256 numbered paint colors.
     palette = null;
 
-    // #endregion
-
-    // #region Pre-allocated Reusable Objects (Performance)
-
     // These Vector2i and Rect2i objects are created once and reused every frame.
     // Creating new objects inside a loop every frame can slow things down because
     // the browser has to clean up old objects. Reusing them avoids that.
     tempVec1 = new Vector2i(0, 0);
     tempVec2 = new Vector2i(0, 0);
     tempRect = new Rect2i(0, 0, 0, 0);
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the full
@@ -282,10 +267,6 @@ class Demo {
 
         // Measured FPS, target FPS, and demo name (from document.title).
     }
-
-    // #endregion
-
-    // #region Pattern Rendering
 
     /**
      * Draws an Archimedean spiral: a coil of colored dots that expands outward
@@ -496,15 +477,7 @@ class Demo {
             BT.drawRect(this.tempRect, C_TUNNEL_BASE + i);
         }
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

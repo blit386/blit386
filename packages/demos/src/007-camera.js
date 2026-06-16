@@ -28,7 +28,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Every color in this demo is pre-registered in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -58,10 +57,6 @@ const C_OVERLAY_AMBER = 42; // Amber accent for world size in the overlay
 // We define the base index here so the code stays easy to read.
 const C_BUILDING_BASE = 20; // building 0 is at index 20, building 1 at 21, and so on
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates camera scrolling with a procedurally generated city.
  * Buildings and trees are randomly placed; the camera automatically scrolls.
@@ -69,8 +64,6 @@ const C_BUILDING_BASE = 20; // building 0 is at index 20, building 1 at 21, and 
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The total size of the game world in pixels.
     // The screen is only 320x240, but the world is much bigger.
     worldWidth = 800;
@@ -101,20 +94,12 @@ class Demo {
         { leftText: 'World: 800x600', textPaletteIndex: C_OVERLAY_AMBER },
     ];
 
-    // #endregion
-
-    // #region Pre-allocated Reusable Objects (Performance)
-
     // These objects are reused every frame instead of creating new ones in the draw loop.
     // Reusing objects is faster because the browser doesn't have to reclaim old ones.
     tempVec1 = new Vector2i(0, 0);
     tempVec2 = new Vector2i(0, 0);
     tempRect = new Rect2i(0, 0, 0, 0);
     worldSize = new Vector2i(800, 600); // matches worldWidth/worldHeight above
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Called once at the very start. Tells the engine which palette slots to use
@@ -272,10 +257,6 @@ class Demo {
         this.renderUI();
     }
 
-    // #endregion
-
-    // #region World Generation
-
     /**
      * Creates 20 buildings with random positions, sizes, and colors.
      * Each building color is registered in the palette and the index is stored on the building.
@@ -327,10 +308,6 @@ class Demo {
             });
         }
     }
-
-    // #endregion
-
-    // #region World Rendering
 
     /**
      * Draws everything in the game world: the ground grid, trees, buildings, and player.
@@ -435,10 +412,6 @@ class Demo {
         BT.drawRect(this.tempRect, C_PLAYER_OUTLINE);
     }
 
-    // #endregion
-
-    // #region UI Rendering
-
     /**
      * Draws the HUD (heads-up display) overlaid on the screen.
      * Camera position and world size are shown in overlayRows() above the bottom
@@ -500,15 +473,7 @@ class Demo {
         this.tempRect.set(playerMiniX - 1, playerMiniY - 1, 2, 2);
         BT.drawRectFill(this.tempRect, C_PLAYER);
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

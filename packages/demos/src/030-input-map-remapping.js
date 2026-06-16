@@ -24,7 +24,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 const C_WHITE = 1;
 const C_BG = 2;
@@ -66,27 +65,17 @@ const FACE_ROW_ALL = [
     { label: 'Sl', code: BT.BTN_SELECT },
 ];
 
-// #endregion
-
-// #region Demo Class
-
 /**
  * Cycles keyboard face-button maps with `BT.inputMap` / `BT.inputMapReset`.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     // Human-readable name for the active preset (we track it ourselves - the
     // engine does not expose a "get current map" API).
     presetLabel = '1 Defaults (engine tables)';
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Wider logical canvas than `defaultConfig()` so two panels of key maps fit comfortably.
@@ -190,10 +179,6 @@ class Demo {
         this.renderPlayerPanel(1, PANEL1_X, PANEL_TOP_Y);
     }
 
-    // #endregion
-
-    // #region Presets
-
     /**
      * Restore the shipped tables (`BT.DEFAULT_KEYBOARD_PLAYER1` / PLAYER2 copies).
      */
@@ -236,10 +221,6 @@ class Demo {
         this.presetLabel = '3 Cleared P0 A (BT.inputMap(0, BTN_A) with no keys)';
         BT.assignTag('Map: cleared A');
     }
-
-    // #endregion
-
-    // #region Rendering Helpers
 
     /**
      * One player's panel: title, hint, two rows of face-button pips.
@@ -295,14 +276,6 @@ class Demo {
             cx += FACE_SLOT_WIDTH;
         }
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

@@ -32,7 +32,6 @@ import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Where in the palette the sprite's original colors start.
 // Everything before this (index 1..9) is used for UI colors.
@@ -50,9 +49,7 @@ const C_BG = 2;
 const C_LABEL = 3;
 const C_CODE = 6; // Code snippet text (blue-gray). (hud_dim at 5 is used by the engine overlay.)
 
-// #endregion
 
-// #region Main Logic
 
 /**
  * Demonstrates sprite rendering using a file-loaded sprite sheet, palette indexization,
@@ -61,8 +58,6 @@ const C_CODE = 6; // Code snippet text (blue-gray). (hud_dim at 5 is used by the
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors we are allowed to draw with.
     palette = null;
 
@@ -83,10 +78,6 @@ class Demo {
 
     // animTime advances each tick to drive the alpha pulse animation.
     animTime = 0;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Enables the engine timing chart so you can compare update() vs render() cost
@@ -276,9 +267,7 @@ class Demo {
         this.renderCodeSnippet();
     }
 
-    // #endregion
 
-    // #region Helpers
 
     /**
      * Draws a short code snippet on the right side showing how to load a sprite and indexize it.
@@ -292,14 +281,10 @@ class Demo {
         BT.systemPrint(new Vector2i(170, 226), C_CODE, '   palette, 10);');
     }
 
-    // #endregion
 }
 
-// #endregion
 
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
 
-// #endregion

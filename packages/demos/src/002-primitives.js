@@ -12,8 +12,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
-
 // Every color used for drawing is pre-registered in a numbered palette slot.
 // Think of each slot like a labeled jar of paint on an art shelf.
 // Index 0 is always transparent (invisible). Custom colors start at 1.
@@ -36,10 +34,6 @@ const C_STEEL = 12; // Steel blue: background squares in the clearRect grid
 // render() then simply passes the slot number to BT.drawPixel() - no Color32 needed there!
 const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 69
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates all primitive drawing operations with animated examples.
  * Each section shows a different drawing function in action with real-time animation.
@@ -47,18 +41,12 @@ const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // animTicks counts how many update ticks have passed since the demo started.
     // We use it to make things move and change over time.
     animTicks = 0;
 
     // palette holds all the colors this demo uses.
     palette = null;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the
@@ -188,10 +176,6 @@ class Demo {
         this.renderClearRect();
         this.renderCombined();
     }
-
-    // #endregion
-
-    // #region Rendering Helpers
 
     /**
      * Shows how BT.drawPixel() works - it draws a single colored dot.
@@ -359,15 +343,7 @@ class Demo {
             BT.drawLine(new Vector2i(graphX + x, graphY + y1), new Vector2i(graphX + x + 1, graphY + y2), C_CYAN);
         }
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to the Blit-Tech engine to start running it.
 bootstrap(Demo);
-
-// #endregion

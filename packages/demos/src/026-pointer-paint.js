@@ -32,7 +32,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -57,10 +56,6 @@ const SLOT_PAINT = [
 // pixels; a radius of 0 paints a single pixel.
 const BRUSH_SIZES = [0, 2, 4];
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Multi-touch / mouse paint demo.
  *
@@ -73,8 +68,6 @@ const BRUSH_SIZES = [0, 2, 4];
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     // Painting layer: one palette index per display pixel. 0 means "blank"
@@ -94,10 +87,6 @@ class Demo {
     // True while we should be painting from this slot. For mouse this is
     // BTN_POINTER_A held. For touch this is "slot is valid" (contact down).
     painting = [false, false, false, false];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Finger painting can spike render() when strokes are long; the chart makes that visible.
@@ -216,10 +205,6 @@ class Demo {
         this.renderHUD();
     }
 
-    // #endregion
-
-    // #region Painting Helpers
-
     /**
      * Stamps the current brush along the line segment from (x0,y0) to (x1,y1),
      * writing palette index `colour` into the paint layer at every covered
@@ -271,10 +256,6 @@ class Demo {
         }
         this.layer[y * DISPLAY_W + x] = colour;
     }
-
-    // #endregion
-
-    // #region Render Helpers
 
     /**
      * Copies the persistent paint layer onto the screen. Pixels with palette
@@ -338,14 +319,6 @@ class Demo {
             `brush r=${radius} (middle-click to cycle)  |  right-click to clear`,
         );
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

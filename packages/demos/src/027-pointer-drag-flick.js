@@ -32,7 +32,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -72,10 +71,6 @@ const THROW_SCALE = 1.4;
 // flick so balls don't escape the box in a single tick.
 const MAX_THROW_SPEED = 16;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Drag-and-flick physics demo.
  *
@@ -88,8 +83,6 @@ const MAX_THROW_SPEED = 16;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     /**
@@ -98,10 +91,6 @@ class Demo {
      * @type {Array<{x: number, y: number, vx: number, vy: number, color: number, grabbedBy: number}>}
      */
     balls = [];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Tells the engine the screen size and which palette slots to use for the
@@ -208,10 +197,6 @@ class Demo {
         this.renderCursors();
     }
 
-    // #endregion
-
-    // #region Grab and Throw
-
     /**
      * Attempts to grab a ball whose centre is under this slot's pointer.
      * Skips if no live pointer, or pointer is inside the HUD strip, or if
@@ -295,10 +280,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Physics
-
     /**
      * Snaps a held ball to its owning pointer's position. If the pointer
      * went invalid mid-grab (pointer left the canvas, touch cancelled) we
@@ -366,10 +347,6 @@ class Demo {
             ball.vy = 0;
         }
     }
-
-    // #endregion
-
-    // #region Rendering
 
     /**
      * Top status strip with the title and per-slot indicators.
@@ -453,10 +430,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Drawing Primitives Helpers
-
     /**
      * Filled disc using a midpoint-style scan: for each row in the bounding
      * box, draw a horizontal line of pixels covered by the circle equation.
@@ -498,14 +471,6 @@ class Demo {
             }
         }
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

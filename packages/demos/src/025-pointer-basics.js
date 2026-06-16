@@ -18,7 +18,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Palette slots. Index 0 is always transparent.
 const C_WHITE = 1; // text and crosshair
@@ -41,10 +40,6 @@ const TRAIL_LENGTH = 24;
 // We clamp the scroll bar position to [0, displayHeight] so it stays on screen.
 const SCROLL_SENSITIVITY = 0.25;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates the basic pointer API: position, delta, scroll wheel, and the
  * four pointer buttons (A, B, C, D) on slot 0 (the mouse).
@@ -52,8 +47,6 @@ const SCROLL_SENSITIVITY = 0.25;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     // Ring-buffer of recent positions (oldest first). We push the current
@@ -65,9 +58,6 @@ class Demo {
     // Starts in the middle. BT.pointerScrollDelta pushes it up or down.
     scrollBarY = 120;
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Enables the timing chart so pointer milestones appear on the overlay HUD.
@@ -163,10 +153,6 @@ class Demo {
         this.renderTrail();
         this.renderCrosshair();
     }
-
-    // #endregion
-
-    // #region Rendering Helpers
 
     /**
      * Numeric readouts in the top-left: pointer position, delta, scroll delta,
@@ -288,14 +274,6 @@ class Demo {
 
         // The engine overlay (FPS + demo name) draws on top automatically.
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

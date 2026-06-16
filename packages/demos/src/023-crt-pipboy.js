@@ -63,8 +63,6 @@
 // `offset` to that index. So passing `C_GREEN - C_WHITE` shifts every glyph pixel from
 // the white slot to the green slot. Same trick the Sprite Effects demo uses for tints.
 
-// #region Imports
-
 // Pull in everything we need from the engine. The new two-tier post-process API exposes
 // each individual effect as its own class so we can compose them however we like.
 import {
@@ -88,10 +86,6 @@ import {
 } from 'blit-tech';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-
-// #endregion
-
-// #region Configuration
 
 // The internal pixel resolution of the demo. Small numbers keep the pixel art look.
 const DISPLAY_W = 320;
@@ -193,15 +187,8 @@ const FLICKER_DIP = 0.6;
 const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
-// #endregion
-
-// #region Type Definitions
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Helper Functions
 
 /**
  * Returns a random integer in the half-open range [min, max).
@@ -252,9 +239,7 @@ function colorSlot(name) {
     return C_GREEN;
 }
 
-// #endregion
 
-// #region Main Logic
 
 /**
  * PipBoy-style terminal showcase. Renders a tiny boot sequence + status block in green
@@ -680,5 +665,3 @@ class Demo {
 }
 
 bootstrap(Demo);
-
-// #endregion

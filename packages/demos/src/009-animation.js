@@ -36,7 +36,6 @@ import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // AnimState defines the three states the moving rock can be in.
 // Object.freeze prevents these values from being changed by accident.
@@ -73,9 +72,7 @@ const C_FPS = 15; // (100, 100, 100) dim FPS text.
 const C_OVERLAY_BAR = 70; // Bar behind overlay custom rows
 const C_OVERLAY_STATE = 71; // Status row text (state left, ticks right)
 
-// #endregion
 
-// #region Main Logic
 
 /**
  * Demonstrates tick-based animation timing and state management.
@@ -85,8 +82,6 @@ const C_OVERLAY_STATE = 71; // Status row text (state left, ticks right)
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors used in this demo.
     palette = null;
 
@@ -135,10 +130,6 @@ class Demo {
 
     // Reused every frame for the engine overlay status row (state + ticks).
     overlayRowData = [{ leftText: 'State: Idle', rightText: 'Ticks: 0', textPaletteIndex: C_OVERLAY_STATE }];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Tells the engine which palette slots to use for overlay bars and timing chart.
@@ -332,10 +323,6 @@ class Demo {
         this.renderUI();
     }
 
-    // #endregion
-
-    // #region State Machine
-
     /**
      * Automatically cycles through Idle -> Walking -> Jumping every 2 seconds each.
      * The full cycle is 6 seconds (360 ticks at 60 FPS).
@@ -390,10 +377,6 @@ class Demo {
             }
         }
     }
-
-    // #endregion
-
-    // #region Rendering
 
     /**
      * Draws the rock sprite at the correct position, with a shadow below.
@@ -520,15 +503,7 @@ class Demo {
         BT.systemPrint(new Vector2i(10, 65), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);
         BT.systemPrint(new Vector2i(10, 80), C_STAT_DIM, `Particles: ${this.particles.length}`);
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

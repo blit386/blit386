@@ -20,7 +20,6 @@ import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -51,9 +50,6 @@ const RAINBOW_TEXT = 'Rainbow Animation!';
 // We use this constant when stepping through RAINBOW_TEXT character by character.
 const SYSTEM_FONT_CHAR_W = 8;
 
-// #endregion
-
-// #region Main Logic
 
 /**
  * Demonstrates BT.systemPrint() with various text effects powered by palette animation.
@@ -63,18 +59,12 @@ const SYSTEM_FONT_CHAR_W = 8;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // palette holds all the colors this demo uses.
     palette = null;
 
     // animTime is a timer that counts up in seconds.
     // We use it to control the speed of color animations.
     animTime = 0;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the
@@ -195,10 +185,6 @@ class Demo {
         this.renderSpecialCharacters(y);
     }
 
-    // #endregion
-
-    // #region Rendering Helpers
-
     /**
      * Draws the same four words, each in a different color.
      * Pass the palette slot number directly to BT.systemPrint() to change the text color.
@@ -287,15 +273,7 @@ class Demo {
     renderSpecialCharacters(y) {
         BT.systemPrint(new Vector2i(10, y), C_GRAY_TEXT, 'Special: 3 x 4 = 12');
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

@@ -16,15 +16,10 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-// #endregion
 
-// #region Type Definitions
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Configuration
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -49,18 +44,12 @@ const POD_SPEED = 3;
 const AIM_SPEED = 4;
 const TRAIL_MAX = 28;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Tiny gamepad playground that visualizes sticks, triggers, and buttons.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     // Pod position in integer display pixels.
@@ -78,10 +67,6 @@ class Demo {
     podColorIndex = 0;
 
     wasConnected = false;
-
-    // #endregion
-
-    // #region Helper Functions
 
     /**
      * Return one of the pod palette colors.
@@ -193,10 +178,6 @@ class Demo {
             BT.systemPrint(new Vector2i(10, 34), C_ACCENT, 'Connect a gamepad and press any button to wake it.');
         }
     }
-
-    // #endregion
-
-    // #region Main Demo Logic
 
     configure() {
         return {
@@ -311,14 +292,6 @@ class Demo {
         this.renderArena();
         this.renderHud();
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region Exports
-
 bootstrap(Demo);
-
-// #endregion

@@ -36,7 +36,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Water
 // 8 blue-gradient slots cycling at 4 steps per second.
@@ -74,10 +73,6 @@ const C_FIRE_BASE = 30;
 // Water gradient: slots 50..57 (8 slots).
 const C_WATER_BASE = 50;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates BT.paletteCycle() for automatic palette rotation, plus
  * BT.paletteSwap() for instant entry exchange and BT.paletteClearEffects()
@@ -86,8 +81,6 @@ const C_WATER_BASE = 50;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     // Track the last swap tick so we know when to do the next swap demo.
@@ -97,10 +90,6 @@ class Demo {
     swappedA = 0;
     swappedB = 0;
     showSwapLabel = false;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Palette cycling runs in the engine each frame; the chart shows update vs render time.
@@ -226,10 +215,6 @@ class Demo {
         this.renderWaterPanel();
     }
 
-    // #endregion
-
-    // #region Render Helpers
-
     /**
      * Sky band: 10 horizontal stripes at the top, each using one sky slot.
      * The slow cycling makes the twilight colors gently shift.
@@ -308,14 +293,6 @@ class Demo {
         // Explanatory text.
         BT.systemPrint(new Vector2i(6, panelY + 56), C_DIM, 'BT.paletteCycle() runs automatically');
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

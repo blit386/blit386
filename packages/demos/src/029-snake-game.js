@@ -37,7 +37,6 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Palette indices (slot 0 reserved).
 const C_BG = 1;
@@ -96,10 +95,6 @@ const FLICKER_DIP = 0.6;
 const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
-// #endregion
-
-// #region Helpers
-
 /**
  * Random integer from min through max inclusive.
  *
@@ -140,18 +135,12 @@ function randPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// #endregion
-
-// #region Demo Class
-
 /**
  * Minimal snake with PipBoy CRT post-processing from demo 023.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     /** @type {{ x: number; y: number }[]} Head first, tail last (grid coords). */
@@ -223,10 +212,6 @@ class Demo {
     glitchType = 'none';
 
     glitchPeak = 0;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * 160x120 framebuffer, 4x upscale for CRT chain, 60 fixed updates per second.
@@ -522,9 +507,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Game Logic
 
     /**
      * Pixel rectangle for one grid cell at (gx, gy), inside the inner playfield.
@@ -647,14 +629,6 @@ class Demo {
         this.deathTick = BT.ticks;
         BT.assignTag('Game over');
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

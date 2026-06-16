@@ -34,7 +34,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Target frame rate for fixed update() steps (matches engine defaultConfig).
 const TARGET_FPS = 60;
@@ -175,10 +174,6 @@ const SPARK_TABLE = [
     [1.15, 0.95, 5.1, 2.1, 330],
 ];
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Retro port of the classic macOS Flurry screensaver.
  * Twelve spark attractors trace Lissajous orbit paths; PARTICLE_COUNT particles spiral
@@ -187,8 +182,6 @@ const SPARK_TABLE = [
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The 256-slot palette used for all drawing. Filled in init(), updated every tick.
     palette = null;
 
@@ -221,10 +214,6 @@ class Demo {
     //   hueIndex    - which of the 8 color families it belongs to (0..7)
     //   alive       - false means the particle is waiting to be respawned
     particles = [];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Heavy particle physics each tick; the timing chart helps spot frame budget pressure.
@@ -373,10 +362,6 @@ class Demo {
         // As huePhase advances, watch this strip cycle through the entire rainbow.
         this.renderPaletteStrip();
     }
-
-    // #endregion
-
-    // #region Physics Helpers
 
     /**
      * Creates all 12 spark objects from SPARK_TABLE and positions them at time 0.
@@ -601,10 +586,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Palette Update
-
     /**
      * Rewrites all dynamic palette slots for the current frame.
      * This is "palette animation": by changing what color each slot number means,
@@ -650,10 +631,6 @@ class Demo {
             this.palette.set(C_SPARK_HALO + i, Color32.fromHSL(sparkHue, 60, 38));
         }
     }
-
-    // #endregion
-
-    // #region Render Helpers
 
     /**
      * Draws all alive particles in two separate passes.
@@ -838,15 +815,7 @@ class Demo {
             BT.drawRectFill(new Rect2i(i * 8, PALETTE_STRIP_PART_Y, 8, PALETTE_STRIP_PART_H), C_PARTICLE_BASE + i);
         }
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the animation loop.
 bootstrap(Demo);
-
-// #endregion

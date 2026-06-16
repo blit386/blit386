@@ -37,7 +37,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Gradient bar
 // How many color slots the scrolling gradient uses.
@@ -99,10 +98,6 @@ const C_HEALTH_BAR = 80; // Slot 80.
 // Water strip: three slots that cycle.
 const C_WATER_BASE = 90; // Slots 90..92.
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates the "palette animation" technique: change palette entries every tick
  * to create scrolling gradients, fire, flashing effects, and rippling water
@@ -111,8 +106,6 @@ const C_WATER_BASE = 90; // Slots 90..92.
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The single palette used for all drawing.
     palette = null;
 
@@ -128,10 +121,6 @@ class Demo {
 
     // How many ticks since the water last advanced one step.
     waterTick = 0;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Palette slots for the engine overlay bars.
@@ -274,10 +263,6 @@ class Demo {
         this.renderWaterPanel();
     }
 
-    // #endregion
-
-    // #region Update Helpers
-
     /**
      * Scrolling gradient: rotates 32 hue slots so the rainbow appears to slide across.
      * The "base hue" advances each frame; each slot gets a hue slightly ahead of the previous.
@@ -397,10 +382,6 @@ class Demo {
             this.palette.set(C_WATER_BASE + i, color);
         }
     }
-
-    // #endregion
-
-    // #region Render Helpers
 
     /**
      * Panel 1: Scrolling gradient bar.
@@ -522,15 +503,7 @@ class Demo {
         // Label to the right.
         BT.systemPrint(new Vector2i(6 + totalTiles * tileW + 4, panelY + 28), C_DIM, 'slots 90..92');
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

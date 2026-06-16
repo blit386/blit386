@@ -28,8 +28,6 @@
 // SOFTWARE FALLBACK: when the engine uses the software renderer, the bouncing sprite
 // demo still runs but the CRT stack is not registered. Overlay rows explain the reduced mode.
 
-// #region Imports
-
 import {
     BarrelDistortion,
     Bloom,
@@ -50,10 +48,6 @@ import {
 } from 'blit-tech';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-
-// #endregion
-
-// #region Configuration
 
 // Palette slots match demo 001 (Basics) so the two demos feel like the same scene.
 const C_BG = 1; // Almost-black with a faint green tint.
@@ -93,15 +87,8 @@ const GLITCH_LABELS = {
     interference: 'INTERFERENCE',
 };
 
-// #endregion
-
-// #region Type Definitions
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Helper Functions
 
 /**
  * @param {number} min
@@ -129,10 +116,6 @@ function randFloat(min, max) {
 function randPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
-
-// #endregion
-
-// #region Main Logic
 
 /**
  * Demo 001 plus a hand-built CRT post-process chain and periodic glitch bursts.
@@ -406,10 +389,6 @@ class Demo {
     }
 }
 
-// #endregion
 
-// #region Exports
 
 bootstrap(Demo);
-
-// #endregion

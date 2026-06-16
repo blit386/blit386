@@ -35,7 +35,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Logical screen size in "game pixels".
 const DISPLAY_W = 320;
@@ -63,18 +62,12 @@ const C_TIP = 5; // Even dimmer for the tip at the bottom.
 const C_FPS = 6; // Dimmer still for the FPS counter.
 const C_STREAK = 7; // Cool white for the shooting star streak.
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Parallax starfield with three layers plus an occasional shooting star.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors used in this demo.
     palette = null;
 
@@ -98,10 +91,6 @@ class Demo {
 
     // After a shooting star finishes, wait this many ticks before planning the next one.
     nextShootDelay = 200;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Shows the timing chart while many stars move each frame (useful for spotting render spikes).
@@ -226,10 +215,6 @@ class Demo {
         this.drawLabels();
     }
 
-    // #endregion
-
-    // #region Star Creation and Movement
-
     /**
      * Build one layer's raw data: count stars with random positions and brightness.
      * Returns objects with { x, y, speed, brightness } - paletteIndex is added later
@@ -286,10 +271,6 @@ class Demo {
             }
         }
     }
-
-    // #endregion
-
-    // #region Shooting Star
 
     /**
      * Maybe start a new streak, or move the current one until it leaves the screen.
@@ -352,10 +333,6 @@ class Demo {
         BT.drawLine(new Vector2i(tailX, tailY), new Vector2i(hx, hy), C_STREAK);
     }
 
-    // #endregion
-
-    // #region Drawing Star Layers
-
     /**
      * Farthest layer: one pixel per star (BT.drawPixel), dim gray range.
      * Each star's paletteIndex was set in init() to point at its unique gray shade.
@@ -390,10 +367,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Labels
-
     /**
      * Explain the three layers using the system font (drawn last so text stays readable).
      * systemPrint takes (position, paletteIndex, text).
@@ -403,15 +376,7 @@ class Demo {
         BT.systemPrint(new Vector2i(8, 38), C_LABEL, 'MED: faster, brighter pixel');
         BT.systemPrint(new Vector2i(8, 54), C_LABEL, 'NEAR: fastest, bright 2x2 block');
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // bootstrap finds your canvas, constructs Demo, and runs the game loop for you.
 bootstrap(Demo);
-
-// #endregion

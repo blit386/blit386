@@ -43,7 +43,6 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'bl
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // How many ticks to hold each theme before switching (2 seconds at 60 FPS).
 const SWAP_PERIOD_TICKS = 120;
@@ -66,10 +65,6 @@ const C_HEADER = 4;
 const C_CODE = 5;
 const C_DIM = 6;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates palette swap: building multiple palettes and switching between them
  * at runtime using BT.paletteSet() and BT.spritesRefresh().
@@ -77,8 +72,6 @@ const C_DIM = 6;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The sprite sheet loaded from test.png.
     sheet = null;
 
@@ -103,10 +96,6 @@ class Demo {
 
     // Fires every 120 ticks (2 seconds) to switch to the next theme.
     swapTimer = new Timer(SWAP_PERIOD_TICKS);
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Timing chart helps compare CPU cost while palettes swap on a timer.
@@ -241,10 +230,6 @@ class Demo {
         this.renderCodePanel();
     }
 
-    // #endregion
-
-    // #region Render Helpers
-
     /**
      * Draws four labeled theme buttons on the left side of the screen.
      * Each button shows a color swatch (from a stable static slot) and the theme name.
@@ -336,10 +321,6 @@ class Demo {
         BT.systemPrint(new Vector2i(x, startY + 182), C_CODE, 'copy = pal.clone()');
     }
 
-    // #endregion
-
-    // #region Palette Builders
-
     /**
      * Builds a complete Palette for the given theme name.
      *
@@ -411,15 +392,7 @@ class Demo {
 
         return palette;
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

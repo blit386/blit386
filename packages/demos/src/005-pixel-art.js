@@ -20,7 +20,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Every color used for drawing gets a numbered slot in the palette (like a numbered paint jar).
 // Index 0 is always transparent. Custom colors start at 1.
@@ -86,10 +85,6 @@ const HEART_PALETTE_MAP = [null, C_HEART_OUTLINE, C_HEART_FILL];
 
 const TREE_PALETTE_MAP = [null, C_TREE_DARK, C_TREE_LIGHT, C_TRUNK];
 
-// #endregion
-
-// #region Helper Functions
-
 /**
  * Looks up the palette index for a paint code.
  * The grid only uses small integers we authored, not user input.
@@ -105,28 +100,18 @@ function indexFromPaletteMap(paletteMap, code) {
     return paletteMap[code];
 }
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Teaches pixel grids, nested loops, screen mapping, and a tiny procedural pattern.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module state
-
     // animTime counts seconds of game time if every update tick is exactly 1/60 of a second.
     // We only change it inside update(), so it stays smooth even when render() runs at odd rates.
     animTime = 0;
 
     // palette holds all the colors this demo uses.
     palette = null;
-
-    // #endregion
-
-    // #region Lifecycle
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and ask for 16
@@ -237,10 +222,6 @@ class Demo {
         // Checkerboard below, with colors that shift using animTime.
         this.renderCheckerPatternSection();
     }
-
-    // #endregion
-
-    // #region Drawing helpers
 
     /**
      * Turns a 2D number grid into chunky pixels on screen.
@@ -354,14 +335,6 @@ class Demo {
             }
         }
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

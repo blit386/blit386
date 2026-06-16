@@ -44,7 +44,6 @@ import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // How many ticks to show each preset in the live view (2 seconds at 60 FPS = 120 ticks).
 const LIVE_SWITCH_TICKS = 120;
@@ -63,18 +62,12 @@ const C_UI_HEADER = 4;
 const C_UI_SUBTITLE = 5;
 const C_OVERLAY_BAR = 7; // Overlay row background
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates the six built-in palette presets and named palette slots.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The main palette used for UI and the live preview.
     palette = null;
 
@@ -95,10 +88,6 @@ class Demo {
 
     // Reused every frame for the overlay (current live-view preset).
     overlayRowData = [{ leftText: 'Current: Game Boy - 4 colors', textPaletteIndex: C_UI_HEADER }];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Palette slots for the engine overlay bars.
@@ -280,10 +269,6 @@ class Demo {
         this.renderLivePreview();
     }
 
-    // #endregion
-
-    // #region Helpers
-
     /**
      * Copies the current preset's first 16 colors into the live-view palette slots (200..215).
      * When update() calls this, render() automatically shows the new colors next frame.
@@ -352,15 +337,7 @@ class Demo {
         BT.systemPrint(new Vector2i(6, panelY + 42), C_UI_DIM, "palette.setNamed('ui-bg', 2)");
         BT.systemPrint(new Vector2i(6, panelY + 54), C_UI_DIM, "palette.getNamed('ui-bg') => 2");
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

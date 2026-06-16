@@ -42,7 +42,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Phase durations in ticks (at 60 FPS, 60 ticks = 1 second).
 const PHASE_DAY_HOLD = 180; // 3 seconds
@@ -75,10 +74,6 @@ const C_FLOWER_2 = 20;
 const C_CLOUD = 21;
 const C_MOUNTAIN = 22;
 const C_MOUNTAIN_LIGHT = 23;
-
-// #endregion
-
-// #region Helper Functions
 
 /**
  * Builds the "day" palette - bright, saturated outdoor colors.
@@ -138,10 +133,6 @@ function fillNight(p) {
     p.set(C_MOUNTAIN_LIGHT, new Color32(45, 50, 70));
 }
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates BT.paletteFade(), BT.paletteFadeRange(), and BT.paletteFlash().
  * A pixel-art landscape transitions between day and night with smooth fades,
@@ -150,8 +141,6 @@ function fillNight(p) {
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
     day = null;
     night = null;
@@ -167,10 +156,6 @@ class Demo {
 
     // Reused every frame for the overlay (current day/night phase label).
     overlayRowData = [{ leftText: 'Day', textPaletteIndex: C_LABEL }];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Palette slots for the engine overlay bars.
@@ -306,10 +291,6 @@ class Demo {
         this.renderScene();
     }
 
-    // #endregion
-
-    // #region Phase Management
-
     /**
      * Short label for the current day/night cycle phase.
      *
@@ -339,10 +320,6 @@ class Demo {
         this.phaseStartTick = tick;
         this.effectTriggered = false;
     }
-
-    // #endregion
-
-    // #region Render Helpers
 
     /**
      * Draws the landscape: sky gradient, clouds, mountains, sun, ground, trees, flowers.
@@ -464,14 +441,6 @@ class Demo {
             BT.drawPixel(new Vector2i(fx + 1, fy + 1), slot);
         }
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

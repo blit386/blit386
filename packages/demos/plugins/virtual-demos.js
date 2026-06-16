@@ -3,13 +3,7 @@ import { isAbsolute, join, resolve } from 'node:path';
 
 import { buildRegistry } from './demo-registry.js';
 
-// #region Constants
-
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
-
-// #endregion
-
-// #region Plugin
 
 /**
  * Vite plugin that serves/generates demo HTML pages virtually from src/NNN-*.js files.
@@ -156,10 +150,6 @@ export function virtualDemos() {
     };
 }
 
-// #endregion
-
-// #region Internals
-
 function renderIndexPage(registry) {
     const items = registry
         .map(
@@ -200,5 +190,3 @@ function escapeHtml(str) {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
 }
-
-// #endregion

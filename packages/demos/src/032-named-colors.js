@@ -14,20 +14,10 @@
 // - The "word" is a name like "cornflowerblue".
 // - The "definition" is a Color32 value (r, g, b, a).
 // - resolveNamedColor(name) asks the dictionary: "Do you know this word?"
-//
-// #region Imports
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
-// #endregion
-
-// #region Type Definitions
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
-
-// #endregion
-
-// #region Configuration
 
 const C_BG = 1;
 const C_TEXT = 2;
@@ -47,25 +37,15 @@ const CUSTOM_OPTIONAL_NAME = 'demo-optional';
 const SWATCH_W = 64;
 const SWATCH_H = 26;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates built-in and custom named colors.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
     optionalRegistered = true;
     elapsed = 0;
-
-    // #endregion
-
-    // #region Helper Functions
 
     /**
      * Resolve a named color and fall back if the name is missing.
@@ -108,10 +88,6 @@ class Demo {
         BT.drawRect(new Rect2i(x, y, SWATCH_W, SWATCH_H), C_PANEL_BORDER);
         BT.systemPrint(new Vector2i(x, y + SWATCH_H + 2), C_TEXT, label);
     }
-
-    // #endregion
-
-    // #region Main Demo Logic
 
     configure() {
         return {
@@ -227,14 +203,6 @@ class Demo {
         BT.systemPrint(new Vector2i(14, 202), C_TEXT, '- registerColor throws if the name already exists.');
         BT.systemPrint(new Vector2i(14, 214), C_TEXT, '- updateColor and unregisterColor throw if missing.');
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region Exports
-
 bootstrap(Demo);
-
-// #endregion

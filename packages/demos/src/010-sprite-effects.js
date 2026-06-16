@@ -79,8 +79,6 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
  * @property {{ updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number }} overlayTimingChartStyle
  */
 
-// #region Configuration
-
 // Where sprite colors start in the palette.
 // Must be above the highest UI slot (C_FPS = 11) to avoid overwriting UI colors.
 const COLOR_BASE = 12;
@@ -229,10 +227,6 @@ function burnCpuMs(ms) {
     }
 }
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates palette-offset based sprite effects.
  * Static effects are pre-built in init(); dynamic effects update in update().
@@ -240,8 +234,6 @@ function burnCpuMs(ms) {
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors for this demo.
     palette = null;
 
@@ -291,10 +283,6 @@ class Demo {
         { leftText: 'Orava CRT: OFF', textPaletteIndex: C_LABEL },
         { leftText: 'TV fault: NONE', textPaletteIndex: C_LABEL_YELLOW },
     ];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Wider logical screen for the sprite grid; display-tier Orava CRT runs at 3x upscale.
@@ -643,10 +631,6 @@ class Demo {
         this.renderDayNightCycle();
     }
 
-    // #endregion
-
-    // #region Static Theme Block Builder
-
     /**
      * Builds the 8 static theme blocks by transforming the base colors.
      * Called once in init() - these never change after setup.
@@ -719,10 +703,6 @@ class Demo {
             );
         }
     }
-
-    // #endregion
-
-    // #region Dynamic Block Updaters (called every tick in update())
 
     /**
      * Damage flash: alternates between "all white" and "all red" every 3 ticks
@@ -838,10 +818,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Rendering
-
     /**
      * Draws the first row: five static tinting effects.
      * Normal, Silhouette, Team Red, Team Blue, Frozen.
@@ -940,15 +916,7 @@ class Demo {
         BT.systemPrint(new Vector2i(barX + 120, barY + 14), C_LABEL, 'Night');
         BT.systemPrint(new Vector2i(barX + 180, barY + 14), C_LABEL, 'Dawn');
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

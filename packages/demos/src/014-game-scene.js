@@ -48,7 +48,6 @@ import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Internal game resolution.
 const DISPLAY_W = 320;
@@ -129,10 +128,6 @@ const PARTICLE_SLOT_START = 50;
 // The ambient (lit) version of sprite colors: 70+N..70+2N-1.
 const SPRITE_BASE = 70;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * One self-running mini scene: walking rock, following camera, HUD, day/night, sparkles.
  * All color computation happens in update(); render() uses only palette indices.
@@ -140,8 +135,6 @@ const SPRITE_BASE = 70;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors used in this demo.
     palette = null;
 
@@ -218,10 +211,6 @@ class Demo {
         { leftText: 'Rock: (0,0)', textPaletteIndex: C_HUD_POS },
         { leftText: 'Dawn/Day', textPaletteIndex: C_HUD_FPS },
     ];
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Palette slots for the engine overlay bars (FPS strip uses the engine defaults).
@@ -389,9 +378,7 @@ class Demo {
         // Score, rock position, and day phase are drawn in overlayRows() above the FPS bar.
     }
 
-    // #endregion
 
-    // #region World Setup
 
     /**
      * Places buildings and clouds once at startup.
@@ -440,10 +427,6 @@ class Demo {
             { x: 600, y: 22, w: 44, h: 17 },
         ];
     }
-
-    // #endregion
-
-    // #region Ambient Light and Palette Updates
 
     /**
      * Computes the current ambient tint based on the day/night cycle.
@@ -523,10 +506,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Sky and Parallax
-
     /**
      * Draws the sky gradient and clouds using a slower fake camera for parallax depth.
      */
@@ -554,10 +533,6 @@ class Demo {
         BT.cameraReset();
     }
 
-    // #endregion
-
-    // #region Ground and Buildings
-
     /**
      * Draws the grass strip and building blocks in world space.
      */
@@ -579,9 +554,7 @@ class Demo {
         }
     }
 
-    // #endregion
 
-    // #region Hero Movement
 
     /**
      * Moves the rock left/right automatically, bouncing off world edges.
@@ -639,10 +612,6 @@ class Demo {
         BT.drawRectFill(this.tempRect, C_HERO_SHADOW);
     }
 
-    // #endregion
-
-    // #region Camera
-
     /**
      * Smoothly follows the hero, then clamps so the view never leaves the world.
      */
@@ -662,10 +631,6 @@ class Demo {
         this.cameraPos.y = clamped.y;
         this.cameraXFloat = this.cameraPos.x;
     }
-
-    // #endregion
-
-    // #region Score and Particles
 
     /**
      * +1 score every SCORE_INTERVAL_TICKS.
@@ -744,9 +709,7 @@ class Demo {
         }
     }
 
-    // #endregion
 
-    // #region Day/Night Label
 
     /**
      * Human-readable label for where we are in the day/night cycle.
@@ -771,14 +734,6 @@ class Demo {
 
         return 'Toward dawn';
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

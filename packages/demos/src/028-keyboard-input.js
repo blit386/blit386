@@ -28,7 +28,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Palette indices. Slot 0 stays transparent for indexed draws we do not use here.
 const C_WHITE = 1;
@@ -49,18 +48,12 @@ const KEY_H_REPEAT_TICKS = 15;
 // Horizontal spacing for face-button pips so four fit inside each 148px-wide panel.
 const FACE_SLOT_WIDTH = 34;
 
-// #endregion
-
-// #region Demo Class
-
 /**
  * Shows keyboard face-button maps, low-level key queries, and `inputString`.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     palette = null;
 
     // Set when `BT.isKeyReleased('KeyF')` is true this frame (plain English message).
@@ -73,10 +66,6 @@ class Demo {
 
     // Text built from `BT.inputString` over time (capped).
     typedBuffer = '';
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     configure() {
         return {
@@ -169,10 +158,6 @@ class Demo {
         this.renderRawKeyPanel(8, 118);
         this.renderTypedLine(8, 198);
     }
-
-    // #endregion
-
-    // #region Rendering Helpers
 
     /**
      * Draws one player's mapped face buttons as a row of lit/dim pips.
@@ -295,14 +280,6 @@ class Demo {
         BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'BT.inputString (typed this session)');
         BT.systemPrint(new Vector2i(x + 4, y + 12), C_WHITE, this.typedBuffer.length > 0 ? this.typedBuffer : '…');
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

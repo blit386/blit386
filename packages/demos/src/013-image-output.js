@@ -10,7 +10,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // Every color used for drawing is stored in a numbered "palette" slot.
 // Think of each slot like a labeled paint jar on an artist's shelf.
@@ -29,10 +28,6 @@ const C_GRAY = 6; // Medium gray: the frame counter at the bottom
 const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 // Stripes 1-5 follow at C_STRIPE_0 + 1 through C_STRIPE_0 + 5
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Image output demo.
  * Draws a colorful test pattern and saves the next frame to PNG when Space is pressed.
@@ -40,8 +35,6 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // palette holds the list of colors the engine uses for drawing.
     palette = null;
 
@@ -59,10 +52,6 @@ class Demo {
     // messageTimer counts down how many more frames to show lastCaptureMessage before hiding it.
     // 180 frames is 3 seconds at 60 FPS, then the message disappears.
     messageTimer = 0;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Hides the overlay toggle hint so saved screenshots stay clean.
@@ -241,15 +230,7 @@ class Demo {
         // Frame counter near the bottom so you can tell consecutive screenshots apart.
         BT.systemPrint(new Vector2i(10, screen.y - 20), C_GRAY, `Frame: ${this.tick}`);
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

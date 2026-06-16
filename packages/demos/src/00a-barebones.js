@@ -13,13 +13,7 @@
 //   update() - called 60 times per second to move things and respond to input.
 //   render() - called 60 times per second to draw everything on screen.
 
-// #region Imports
-
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
-
-// #endregion
-
-// #region Type Definitions
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
@@ -27,16 +21,10 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 const C_FOOTER_DIM = 3;
 const C_FOOTER_WHITE = 4;
 
-// #endregion
-
-// #region Demo Class
-
 /**
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The color palette holds all the colors we are allowed to draw with.
     // Think of it like a numbered paint box: each slot holds one color.
     palette = null;
@@ -53,10 +41,6 @@ class Demo {
     // How hard the player is jumping, in pixels per tick upward.
     // Set to 0.1 while the A button is held; resets to 0 when released.
     jump = 0;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Called once when the demo starts.
@@ -144,16 +128,8 @@ class Demo {
         // Slot 1 is our dark-navy player color.
         BT.drawRectFill(new Rect2i(this.player.x, this.player.y, 32, 32), 1);
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 // Blit-Tech creates one instance and calls init(), then update() + render() 60 times a second.
 bootstrap(Demo);
-
-// #endregion

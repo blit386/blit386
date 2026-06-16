@@ -42,15 +42,9 @@
 // Why auto-toggle and not a button? Demos in this series do not (yet) take user input
 // from the engine. Auto-toggling is the simplest way to demonstrate the dynamic API.
 
-// #region Imports
-
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-
-// #endregion
-
-// #region Configuration
 
 // Internal pixel resolution.
 const DISPLAY_W = 320;
@@ -108,15 +102,8 @@ const BAR_GAP = 6;
 const BAR_TOP = 60;
 const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 
-// #endregion
-
-// #region Type Definitions
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Main Logic
 
 /**
  * Toggle demo: a small animated scene with the CRT effect stack flipping on and off
@@ -325,9 +312,3 @@ class Demo {
 }
 
 bootstrap(Demo);
-
-// #endregion
-
-// #region Exports
-
-// #endregion

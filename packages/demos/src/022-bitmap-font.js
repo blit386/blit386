@@ -32,9 +32,6 @@ import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Configuration
 
 // The x position where the rainbow text row starts.
 // Shared by update() (hue calculation) and renderRainbowText() (glyph drawing) so they stay in sync.
@@ -67,9 +64,6 @@ const C_RAINBOW_BASE = 20; // first slot for the rainbow characters
 // even if RAINBOW_TEXT changes length. C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length.
 const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pulsing-text color
 
-// #endregion
-
-// #region Main Logic
 
 /**
  * Demonstrates bitmap font loading and rendering with various text effects.
@@ -79,8 +73,6 @@ const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length; // single slot for the pul
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // font will hold the loaded bitmap font once it is downloaded.
     // It starts as null because nothing is loaded yet.
     font = null;
@@ -91,10 +83,6 @@ class Demo {
     // animTime is a timer that counts up in seconds.
     // We use it to control the speed of color animations.
     animTime = 0;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     // Sets up the color palette and downloads the bitmap font.
     // Screen size and FPS use engine defaultConfig() (no configure() in this demo).
@@ -244,10 +232,6 @@ class Demo {
         this.renderFontInfo(y);
     }
 
-    // #endregion
-
-    // #region Rendering Helpers
-
     // Draws the same four words, each in a different color.
     // This shows how passing different palette offsets changes the text color.
     // Compare to BT.systemPrint() where you pass the palette slot directly.
@@ -383,15 +367,7 @@ class Demo {
             C_DIM_GRAY - 1,
         );
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

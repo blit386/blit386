@@ -7,20 +7,10 @@
  * (not BT.requestedBackend, which stays 'webgpu' when WebGPU fell back).
  */
 
-// #region Imports
-
 import { BT } from 'blit-tech';
-
-// #endregion
-
-// #region Configuration
 
 // Short on-screen note shown when effects are skipped (fits one or two systemPrint lines).
 const SOFTWARE_FALLBACK_NOTE = 'Post-process needs WebGPU. Running without CRT effects.';
-
-// #endregion
-
-// #region Helper Functions
 
 /**
  * @returns {boolean} True when fullscreen post-process effects can be registered.
@@ -29,10 +19,4 @@ function isAvailable() {
     return BT.activeBackend === 'webgpu';
 }
 
-// #endregion
-
-// #region Exports
-
 export { isAvailable, SOFTWARE_FALLBACK_NOTE };
-
-// #endregion

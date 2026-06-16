@@ -39,7 +39,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 //
 // These numbers are the palette "addresses". We name them so the code is readable.
@@ -86,10 +85,6 @@ const LERP_SLOTS = 32;
 // Pulse slot: a single color that breathes back and forth between A and B.
 const C_PULSE = 126;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Shows how Color32 works: RGB names, mixing, HSL rainbow, alpha, and lerp.
  * All animated colors are computed in update() and stored in palette slots.
@@ -98,8 +93,6 @@ const C_PULSE = 126;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Instance State
-
     // animTime is "how many seconds of game time have passed".
     // We only change it in update(), so it follows logical time, not drawing time.
     animTime = 0;
@@ -112,10 +105,6 @@ class Demo {
     // We store them here so update() can call colorA.lerp(colorB, t) every tick.
     lerpColorA = null;
     lerpColorB = null;
-
-    // #endregion
-
-    // #region Lifecycle
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the
@@ -279,10 +268,6 @@ class Demo {
         this.drawLerpSection();
     }
 
-    // #endregion
-
-    // #region Section Helpers
-
     /**
      * Paints the top row of preset Color32 colors (red(), green(), and so on).
      * Each block is a filled rectangle; the label sits above it in small text.
@@ -440,14 +425,6 @@ class Demo {
         // In update() we use a sine wave to smoothly cycle pulseT 0 -> 1 -> 0 -> ...
         BT.drawRectFill(new Rect2i(26, 212, 268, 5), C_PULSE);
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

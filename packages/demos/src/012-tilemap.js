@@ -24,7 +24,6 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
 
 // These numbers are the "tile IDs" stored inside the 2D array.
 // Using named constants helps you remember what each number means when you read the map.
@@ -64,18 +63,12 @@ const C_VIEWPORT = 12; // Yellow: rectangle showing the camera view on the mini-
 const C_FPS = 13; // Dim gray: the FPS counter text color
 const C_WATER = 14; // DYNAMIC: the animated water tile color, updated every tick in update()
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Shows a scrolling tile-based landscape with a mini-map and animated water.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // tilemap is an array of rows. tilemap[row][column] is one cell.
     // row 0 is the top of the world; column 0 is the left edge.
     // Think of it like a spreadsheet: first index is how far down, second is how far right.
@@ -89,20 +82,12 @@ class Demo {
     // so the engine knows every color before drawing begins.
     palette = null;
 
-    // #endregion
-
-    // #region Reusable draw objects
-
     // One rectangle object we rewrite each time we draw a tile. Reusing it avoids
     // making a new Rect2i for every single tile, which would stress the garbage collector.
     tileRect = new Rect2i(0, 0, TILE_SIZE, TILE_SIZE);
 
     // Scratch vectors for text positions and similar.
     tempVec = new Vector2i(0, 0);
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     configure() {
         return {
@@ -224,10 +209,6 @@ class Demo {
         this.renderHud();
     }
 
-    // #endregion
-
-    // #region Building the world
-
     /**
      * Creates the 2D array and paints a simple slice of nature: sky, ground strip, trees,
      * a pond at the bottom, and a few stone patches in the water.
@@ -313,10 +294,6 @@ class Demo {
         this.map[waterTopRow - 1][11] = TILE_STONE;
     }
 
-    // #endregion
-
-    // #region World drawing
-
     /**
      * Figures out which tile rows and columns overlap the screen and draws only those.
      * That is a simple "culling" optimization: work scales with visible tiles, not the
@@ -374,10 +351,6 @@ class Demo {
             }
         }
     }
-
-    // #endregion
-
-    // #region HUD and mini-map
 
     /**
      * Draws labels and the mini-map after the camera is reset so they stay on the screen.
@@ -451,15 +424,7 @@ class Demo {
         this.tileRect.set(vx, vy, vw, vh);
         BT.drawRect(this.tileRect, C_VIEWPORT);
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // bootstrap() wires this class into the engine: it creates an instance and runs the loop.
 bootstrap(Demo);
-
-// #endregion
