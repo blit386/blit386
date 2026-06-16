@@ -43,12 +43,6 @@
       "headers": {
         "Accept-Encoding": "zstd, br, gzip, deflate"
       }
-    },
-    {
-      "urls": ["https://blit-tech-demos.vancura.dev"],
-      "headers": {
-        "User-Agent": "Mozilla/5.0 (compatible; blit-tech-demos-link-check/1.0; +https://github.com/vancura/blit-tech-demos)"
-      }
     }
   ],
   "timeout": "20s",
