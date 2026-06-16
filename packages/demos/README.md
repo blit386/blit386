@@ -34,7 +34,8 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 ### Drawing Basics
 
-- **[001-basics](https://blit-tech-demos.vancura.dev/001-basics)** - Engine basics, lifecycle, bouncing square
+- **[001-basics](https://blit-tech-demos.vancura.dev/001-basics)** - Engine basics, lifecycle, bouncing sprite, canvas
+  text
 - **[033-basics-enhanced](https://blit-tech-demos.vancura.dev/033-basics-enhanced)** - Enhanced version of the basics
   demo with optional visual effects
 - **[002-primitives](https://blit-tech-demos.vancura.dev/002-primitives)** - All primitive drawing: pixels, lines,
@@ -45,7 +46,8 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 ### Text and Visual Art
 
-- **[004-fonts](https://blit-tech-demos.vancura.dev/004-fonts)** - Built-in system font with `BT.systemPrint()`
+- **[004-fonts](https://blit-tech-demos.vancura.dev/004-fonts)** - Built-in system font with `BT.systemPrint()` and text
+  measurement
 - **[005-pixel-art](https://blit-tech-demos.vancura.dev/005-pixel-art)** - Programmatic pixel art with nested loops
 - **[006-patterns](https://blit-tech-demos.vancura.dev/006-patterns)** - Mathematical art: spirals, Lissajous, waves,
   tunnel
@@ -55,9 +57,10 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 ### World Building
 
 - **[007-camera](https://blit-tech-demos.vancura.dev/007-camera)** - Camera scrolling, world vs screen space, mini-map
-- **[008-sprites](https://blit-tech-demos.vancura.dev/008-sprites)** - Sprite sheets, source rectangles, tinting
-- **[009-animation](https://blit-tech-demos.vancura.dev/009-animation)** - Tick-based animation, state machines,
-  particles
+- **[008-sprites](https://blit-tech-demos.vancura.dev/008-sprites)** - Programmatic sprite sheet, source rectangles,
+  palette offsets
+- **[009-animation](https://blit-tech-demos.vancura.dev/009-animation)** - Tick-based animation, walk frame cycling,
+  state machines, particles
 - **[010-sprite-effects](https://blit-tech-demos.vancura.dev/010-sprite-effects)** - Damage flash, silhouette, ghost,
   team colors, day/night
 - **[011-starfield](https://blit-tech-demos.vancura.dev/011-starfield)** - Parallax scrolling starfield
@@ -81,8 +84,8 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 ### Putting It All Together
 
 - **[013-image-output](https://blit-tech-demos.vancura.dev/013-image-output)** - Frame capture and PNG export
-- **[014-game-scene](https://blit-tech-demos.vancura.dev/014-game-scene)** - Capstone: everything combined into a mini
-  game scene
+- **[014-game-scene](https://blit-tech-demos.vancura.dev/014-game-scene)** - Capstone: tilemap ground, patterns,
+  sprites, camera, animation, and frame capture in one scene
 
 ### Input
 
@@ -147,7 +150,8 @@ These demos are thin wrappers around the library. For complete behavior, APIs, a
 - **[Performance testing](https://github.com/vancura/blit-tech/blob/main/docs/performance-testing.md)** - benchmarks and
   CI
 - **[Software fallback smoke matrix](https://github.com/vancura/blit-tech/blob/main/docs/software-fallback-smoke-matrix.md)**
-  - manual backend coverage notes
+
+- manual backend coverage notes
 
 ## How to Run
 
