@@ -824,7 +824,7 @@ class Demo {
      * Short legend for first-time viewers (screen space, top-left).
      */
     renderLegend() {
-        this.tempRect.set(4, 4, 312, 62);
+        this.tempRect.set(4, 4, 312, 84);
         BT.drawRectFill(this.tempRect, C_HUD_BAR);
 
         this.tempVec.set(10, 18);

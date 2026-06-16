@@ -180,9 +180,9 @@ function drawWalkFrame(ctx, frameIndex) {
 /**
  * Builds a horizontal strip with idle + three walk frames.
  *
- * @returns {Promise<{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D, frames: Rect2i[] }>}
+ * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D, frames: Rect2i[] }}
  */
-async function buildWalkSheet() {
+function buildWalkSheet() {
     const sheetW = WALK_FRAME_W * WALK_FRAME_COUNT;
     const sheetH = WALK_FRAME_W;
     const canvas = new OffscreenCanvas(sheetW, sheetH);
@@ -226,9 +226,6 @@ class Demo {
 
     // One Rect2i per walk-strip frame (idle + three walk poses).
     walkFrames = [];
-
-    // How many unique colors the sprite has (used to compute palette offset).
-    spriteColorCount = 0;
 
     // Animation state tracks what the rock is currently doing.
     animState = AnimState.Idle;
@@ -336,7 +333,7 @@ class Demo {
 
         // Build a four-frame walk strip on an offscreen canvas (idle + three walk poses).
         try {
-            const { canvas, ctx, frames } = await buildWalkSheet();
+            const { canvas, ctx, frames } = buildWalkSheet();
             this.walkFrames = frames;
             this.charSprite = frames[0];
 
@@ -345,7 +342,6 @@ class Demo {
             const image = await canvasToImage(canvas);
             this.spriteSheet = new SpriteSheet(image);
             this.spriteSheet.indexize(this.palette);
-            this.spriteColorCount = 2;
 
             BT.paletteSet(this.palette);
             console.log(`[AnimationDemo] Built walk sheet: ${canvas.width}x${canvas.height}px, 4 frames`);

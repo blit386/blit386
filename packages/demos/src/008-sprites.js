@@ -205,9 +205,9 @@ function drawShapeInCell(ctx, cellX, cellY, kind) {
 /**
  * Builds a 3x2 sprite sheet with six shapes on an offscreen canvas.
  *
- * @returns {Promise<{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D, rects: Rect2i[] }>}
+ * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D, rects: Rect2i[] }}
  */
-async function buildShapeSheet() {
+function buildShapeSheet() {
     const sheetW = SHAPE_COLS * SHAPE_CELL;
     const sheetH = SHAPE_ROWS * SHAPE_CELL;
     const canvas = new OffscreenCanvas(sheetW, sheetH);
@@ -291,7 +291,7 @@ class Demo {
         this.palette.applyHUD(1);
 
         try {
-            const { canvas, ctx, rects } = await buildShapeSheet();
+            const { canvas, ctx, rects } = buildShapeSheet();
             this.shapeRects = rects;
             this.themeRect = rects[3]; // Star - used for palette-offset demos.
 
