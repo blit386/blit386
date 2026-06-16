@@ -112,10 +112,10 @@ jobs:
       - name: Check bundle size
         id: size
         run: |
-          ESM_SIZE=$(stat -c%s dist/blit-tech.js 2>/dev/null || stat -f%z dist/blit-tech.js)
-          CJS_SIZE=$(stat -c%s dist/blit-tech.cjs 2>/dev/null || stat -f%z dist/blit-tech.cjs)
-          ESM_GZIP=$(gzip -c dist/blit-tech.js | wc -c | tr -d ' ')
-          CJS_GZIP=$(gzip -c dist/blit-tech.cjs | wc -c | tr -d ' ')
+          ESM_SIZE=$(stat -c%s dist/blit386.js 2>/dev/null || stat -f%z dist/blit386.js)
+          CJS_SIZE=$(stat -c%s dist/blit386.cjs 2>/dev/null || stat -f%z dist/blit386.cjs)
+          ESM_GZIP=$(gzip -c dist/blit386.js | wc -c | tr -d ' ')
+          CJS_GZIP=$(gzip -c dist/blit386.cjs | wc -c | tr -d ' ')
 
           echo "esm_size=$ESM_SIZE" >> $GITHUB_OUTPUT
           echo "cjs_size=$CJS_SIZE" >> $GITHUB_OUTPUT
