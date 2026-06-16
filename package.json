@@ -3,11 +3,14 @@
   "version": "1.1.1",
   "type": "module",
   "description": "A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit.",
-  "author": "Václav Vančura",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vancura/blit-tech.git"
+    "url": "git+https://github.com/vancura/blit-tech.git"
   },
   "homepage": "https://vancura.dev",
   "bugs": {
