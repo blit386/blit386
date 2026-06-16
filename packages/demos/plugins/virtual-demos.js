@@ -29,14 +29,18 @@ export function virtualDemos() {
 
     function findEntryByAbsPath(absPath) {
         for (const entry of registry) {
-            if (resolve(demosDir, `${entry.slug}.html`) === absPath) return entry;
+            if (resolve(demosDir, `${entry.slug}.html`) === absPath) {
+                return entry;
+            }
         }
         return null;
     }
 
     function findEntryBySlug(slug) {
         for (const entry of registry) {
-            if (entry.slug === slug) return entry;
+            if (entry.slug === slug) {
+                return entry;
+            }
         }
         return null;
     }
@@ -82,14 +86,24 @@ export function virtualDemos() {
         },
 
         resolveId(source) {
-            if (!isAbsolute(source)) return null;
-            if (findEntryByAbsPath(source)) return source;
+            if (!isAbsolute(source)) {
+                return null;
+            }
+
+            if (findEntryByAbsPath(source)) {
+                return source;
+            }
+
             return null;
         },
 
         load(id) {
             const entry = findEntryByAbsPath(id);
-            if (!entry) return null;
+
+            if (!entry) {
+                return null;
+            }
+
             return renderHtml(entry);
         },
 
@@ -120,7 +134,9 @@ export function virtualDemos() {
             });
 
             server.middlewares.use(async (req, res, next) => {
-                if (!req.url) return next();
+                if (!req.url) {
+                    return next();
+                }
 
                 const url = req.url.split('?')[0];
 
@@ -132,10 +148,16 @@ export function virtualDemos() {
                 }
 
                 const demoMatch = url.match(URL_PATTERN);
-                if (!demoMatch) return next();
+
+                if (!demoMatch) {
+                    return next();
+                }
 
                 const entry = findEntryBySlug(demoMatch[1]);
-                if (!entry) return next();
+
+                if (!entry) {
+                    return next();
+                }
 
                 try {
                     let html = renderHtml(entry);

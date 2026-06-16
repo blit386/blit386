@@ -22,7 +22,9 @@ export function buildRegistry(rootDir) {
     for (const file of files) {
         const match = file.match(FILENAME_PATTERN);
 
-        if (!match) continue;
+        if (!match) {
+            continue;
+        }
 
         const [, number, topic] = match;
         const slug = `${number}-${topic}`;
@@ -75,7 +77,9 @@ function sortKey(number) {
 function deriveTitle(number, topic, header) {
     const override = header.match(PAGE_TITLE_PATTERN);
 
-    if (override) return override[1].trim();
+    if (override) {
+        return override[1].trim();
+    }
 
     const topicTitle = topic
         .split('-')
