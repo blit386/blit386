@@ -48,7 +48,7 @@ The workflow recreates the local workspace structure:
 ```text
 (GitHub Actions workspace root)
   pnpm-workspace.yaml          # Created at runtime
-  blit386/                   # Cloned from vancura/blit386
+  blit386/                   # Cloned from blit386/blit386
     (built as dependency)
   blit386-demos/             # Cloned from current repo
     (tested and deployed)

@@ -68,7 +68,7 @@ steps:
 
 The composite action performs these steps internally:
 
-1. Checkout `vancura/blit386` into `blit386/`
+1. Checkout `blit386/blit386` into `blit386/`
 2. Checkout the current repo into `blit386-demos/`
 3. Write `pnpm-workspace.yaml` at the root listing both packages
 4. Copy `blit386/pnpm-lock.yaml` to the root
