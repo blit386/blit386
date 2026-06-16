@@ -4,8 +4,8 @@
 //
 // Prerequisites:
 //   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives https://vancura.dev/articles/blit-tech-primitives
-//   003-Colors     https://vancura.dev/articles/blit-tech-colors
+//   002-Primitives https://blit-tech-demos.vancura.dev/002-primitives
+//   003-Colors     https://blit-tech-demos.vancura.dev/003-colors
 //
 // Live article: https://vancura.dev/articles/blit-tech-starfield
 //
@@ -13,8 +13,10 @@
 // Three layers of stars scroll to the left at different speeds. Stars that are
 // "far away" move slowly and look dim and tiny. Stars that are "close" move fast
 // and look bright and a little bigger. Your brain reads that mix as depth, even
-// though the screen is flat - like looking out a car window: nearby trees zip
-// past, but faraway mountains barely seem to move.
+// though the screen is flat. Two everyday comparisons:
+//   - Car window: nearby trees zip past, but faraway mountains barely move.
+//   - Train window: the fence right beside the tracks blurs by, houses farther
+//     back drift slowly, and distant hills almost look still.
 //
 // WHAT YOU WILL LEARN
 //   - Arrays of simple objects (each star remembers x, y, speed, and a palette slot)
@@ -35,7 +37,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Logical screen size in "game pixels".
 const DISPLAY_W = 320;
@@ -57,15 +60,10 @@ const SLOT_START = 10;
 // Static color slots.
 const C_WHITE = 1; // White - font base color.
 const C_BG = 2; // Deep space background (very dark blue-black).
-const C_TITLE = 3; // Light blue-white for the title text.
+const C_TITLE = 3; // Light blue-white: overlay timing chart text and update bars.
 const C_LABEL = 4; // Dim blue-gray for the layer description lines.
-const C_TIP = 5; // Even dimmer for the tip at the bottom.
-const C_FPS = 6; // Dimmer still for the FPS counter.
+const C_TIP = 5; // Even dimmer: overlay chart tags and tips.
 const C_STREAK = 7; // Cool white for the shooting star streak.
-
-// #endregion
-
-// #region Main Logic
 
 /**
  * Parallax starfield with three layers plus an occasional shooting star.
@@ -73,9 +71,8 @@ const C_STREAK = 7; // Cool white for the shooting star streak.
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors used in this demo.
+    /** @type {Palette | null} */
     palette = null;
 
     // Three separate arrays. Each entry is a plain object:
@@ -99,14 +96,10 @@ class Demo {
     // After a shooting star finishes, wait this many ticks before planning the next one.
     nextShootDelay = 200;
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Shows the timing chart while many stars move each frame (useful for spotting render spikes).
      *
-     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -145,10 +138,9 @@ class Demo {
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255));
         this.palette.set(C_BG, new Color32(4, 6, 18)); // Deep space: very dark blue-black.
-        this.palette.set(C_TITLE, new Color32(200, 210, 230)); // Light blue-white title.
+        this.palette.set(C_TITLE, new Color32(200, 210, 230)); // Overlay chart accent.
         this.palette.set(C_LABEL, new Color32(140, 150, 170)); // Dim blue-gray labels.
-        this.palette.set(C_TIP, new Color32(110, 120, 140)); // Dimmer tip text.
-        this.palette.set(C_FPS, new Color32(90, 95, 110)); // Very dim FPS counter.
+        this.palette.set(C_TIP, new Color32(110, 120, 140)); // Dimmer overlay tags.
         this.palette.set(C_STREAK, new Color32(230, 240, 255)); // Cool white shooting streak.
 
         // Step 2: Build the three star layers
@@ -226,10 +218,6 @@ class Demo {
         this.drawLabels();
     }
 
-    // #endregion
-
-    // #region Star Creation and Movement
-
     /**
      * Build one layer's raw data: count stars with random positions and brightness.
      * Returns objects with { x, y, speed, brightness } - paletteIndex is added later
@@ -286,10 +274,6 @@ class Demo {
             }
         }
     }
-
-    // #endregion
-
-    // #region Shooting Star
 
     /**
      * Maybe start a new streak, or move the current one until it leaves the screen.
@@ -352,10 +336,6 @@ class Demo {
         BT.drawLine(new Vector2i(tailX, tailY), new Vector2i(hx, hy), C_STREAK);
     }
 
-    // #endregion
-
-    // #region Drawing Star Layers
-
     /**
      * Farthest layer: one pixel per star (BT.drawPixel), dim gray range.
      * Each star's paletteIndex was set in init() to point at its unique gray shade.
@@ -390,10 +370,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Labels
-
     /**
      * Explain the three layers using the system font (drawn last so text stays readable).
      * systemPrint takes (position, paletteIndex, text).
@@ -403,15 +379,7 @@ class Demo {
         BT.systemPrint(new Vector2i(8, 38), C_LABEL, 'MED: faster, brighter pixel');
         BT.systemPrint(new Vector2i(8, 54), C_LABEL, 'NEAR: fastest, bright 2x2 block');
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // bootstrap finds your canvas, constructs Demo, and runs the game loop for you.
 bootstrap(Demo);
-
-// #endregion

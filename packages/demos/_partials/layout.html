@@ -1,76 +1,78 @@
 <!doctype html>
 
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{title}}</title>
-        <style>
-            :root {
-                --color-accent: #5da0f2;
-            }
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>{{title}}</title>
+    <style>
+        :root {
+            --color-accent: #5da0f2;
+        }
 
-            *,
-            *::before,
-            *::after {
-                box-sizing: border-box;
-            }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
 
-            html,
-            body {
-                margin: 0;
-                height: 100%;
-                overflow: hidden;
-            }
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
 
-            body {
-                background: black;
-            }
+        body {
+            background: black;
+        }
 
-            #canvas-container {
-                width: 100dvw;
-                height: 100dvh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
+        #canvas-container {
+            width: 100dvw;
+            height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
+        #canvas-container canvas {
+            display: block;
+            image-rendering: pixelated;
+            outline: none;
+            max-width: var(--canvas-max-w, 960px);
+            max-height: var(--canvas-max-h, 720px);
+
+            /*
+             * Largest size that fits the viewport and demo max cap while keeping aspect ratio.
+             * --canvas-aspect-w/h: aspect (from drawingBufferSize or displaySize).
+             * --canvas-max-w/h: max on-screen size (from configure() maxCanvasSize).
+             */
+            width: min(
+                100dvw,
+                calc(100dvh * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
+                var(--canvas-max-w, 960px),
+                calc(var(--canvas-max-h, 720px) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480))
+            );
+            height: min(
+                100dvh,
+                calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
+                var(--canvas-max-h, 720px),
+                calc(var(--canvas-max-w, 960px) * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640))
+            );
+        }
+
+        @supports (image-rendering: crisp-edges) {
             #canvas-container canvas {
-                display: block;
-                image-rendering: pixelated;
-                outline: none;
-                max-width: var(--canvas-max-w, 960px);
-                max-height: var(--canvas-max-h, 720px);
-
-                /*
-                 * Largest size that fits the viewport and demo max cap while keeping aspect ratio.
-                 * --canvas-aspect-w/h: aspect (from drawingBufferSize or displaySize).
-                 * --canvas-max-w/h: max on-screen size (from configure() maxCanvasSize).
-                 */
-                width: min(
-                    100dvw,
-                    calc(100dvh * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
-                    var(--canvas-max-w, 960px),
-                    calc(var(--canvas-max-h, 720px) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480))
-                );
-                height: min(
-                    100dvh,
-                    calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
-                    var(--canvas-max-h, 720px),
-                    calc(var(--canvas-max-w, 960px) * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640))
-                );
+                image-rendering: crisp-edges;
             }
+        }
+    </style>
+</head>
 
-            @supports (image-rendering: crisp-edges) {
-                #canvas-container canvas {
-                    image-rendering: crisp-edges;
-                }
-            }
-        </style>
-    </head>
-
-    <body>
-        <div id="canvas-container"><canvas id="blit-tech-canvas"></canvas></div>
-        <script type="module" src="{{scriptFile}}.js"></script>
-    </body>
+<body>
+<div id="canvas-container">
+    <canvas id="blit-tech-canvas"></canvas>
+</div>
+<script src="{{scriptFile}}.js" type="module"></script>
+</body>
 </html>

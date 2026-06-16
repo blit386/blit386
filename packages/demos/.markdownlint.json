@@ -8,6 +8,7 @@
     "headings": true,
     "code_blocks": true
   },
+  "MD029": { "style": "ordered" },
   "MD033": false,
   "MD041": false
 }

@@ -1,13 +1,19 @@
+// @pageTitle Blit-Tech Demo 017 - Palette Swap
+//
 // Demo 017 - Palette Swap: change the active palette at runtime to switch color themes.
 //
 // Demo 017 in the Blit-Tech series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   008-Sprites    https://vancura.dev/articles/blit-tech-sprites
-//   015-Palette Presets  https://vancura.dev/articles/blit-tech-palette-presets
-//   016-Palette Animation https://vancura.dev/articles/blit-tech-palette-animation
+//   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
+//   008-Sprites           https://blit-tech-demos.vancura.dev/008-sprites
+//   015-Palette Presets   https://blit-tech-demos.vancura.dev/015-palette-presets
+//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
+//     (walkthroughs: https://vancura.dev/articles/blit-tech-sprites,
+//      https://vancura.dev/articles/blit-tech-palette-presets,
+//      https://vancura.dev/articles/blit-tech-palette-animation)
 //
+// Live version: https://blit-tech-demos.vancura.dev/017-palette-swap
 // Live article: https://vancura.dev/articles/blit-tech-palette-swap
 //
 // WHAT IS PALETTE SWAP?
@@ -43,7 +49,9 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'bl
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit-tech').Rect2i} Rect2i */
 
 // How many ticks to hold each theme before switching (2 seconds at 60 FPS).
 const SWAP_PERIOD_TICKS = 120;
@@ -66,10 +74,6 @@ const C_HEADER = 4;
 const C_CODE = 5;
 const C_DIM = 6;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates palette swap: building multiple palettes and switching between them
  * at runtime using BT.paletteSet() and BT.spritesRefresh().
@@ -77,12 +81,12 @@ const C_DIM = 6;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The sprite sheet loaded from test.png.
+    /** @type {SpriteSheet | null} */
     sheet = null;
 
     // The rectangular region of the sprite within the sheet.
+    /** @type {Rect2i | null} */
     charSprite = null;
 
     // How many unique colors were extracted from the sprite image.
@@ -104,14 +108,10 @@ class Demo {
     // Fires every 120 ticks (2 seconds) to switch to the next theme.
     swapTimer = new Timer(SWAP_PERIOD_TICKS);
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Timing chart helps compare CPU cost while palettes swap on a timer.
      *
-     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -132,7 +132,7 @@ class Demo {
     }
 
     /**
-     * Loads the sprite, builds four theme palettes, then loads the font.
+     * Loads the sprite, builds four theme palettes, and calls sheet.indexize().
      *
      * ORDER MATTERS:
      *   1. Extract unique colors from the sprite PNG.
@@ -140,7 +140,6 @@ class Demo {
      *   3. Build fire, ice, void palettes by tinting the base colors.
      *   4. BT.paletteSet(stonePalette) - activate the starting palette.
      *   5. SpriteSheet.load() + indexize() - link pixels to slot numbers.
-     *   6. BitmapFont.load() + indexize() - same for the font.
      *
      * @returns {Promise<boolean>} True when everything is ready.
      */
@@ -241,10 +240,6 @@ class Demo {
         this.renderCodePanel();
     }
 
-    // #endregion
-
-    // #region Render Helpers
-
     /**
      * Draws four labeled theme buttons on the left side of the screen.
      * Each button shows a color swatch (from a stable static slot) and the theme name.
@@ -336,10 +331,6 @@ class Demo {
         BT.systemPrint(new Vector2i(x, startY + 182), C_CODE, 'copy = pal.clone()');
     }
 
-    // #endregion
-
-    // #region Palette Builders
-
     /**
      * Builds a complete Palette for the given theme name.
      *
@@ -411,15 +402,7 @@ class Demo {
 
         return palette;
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

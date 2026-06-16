@@ -10,7 +10,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Every color used for drawing is stored in a numbered "palette" slot.
 // Think of each slot like a labeled paint jar on an artist's shelf.
@@ -29,10 +30,6 @@ const C_GRAY = 6; // Medium gray: the frame counter at the bottom
 const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 // Stripes 1-5 follow at C_STRIPE_0 + 1 through C_STRIPE_0 + 5
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Image output demo.
  * Draws a colorful test pattern and saves the next frame to PNG when Space is pressed.
@@ -40,9 +37,8 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // palette holds the list of colors the engine uses for drawing.
+    /** @type {Palette | null} */
     palette = null;
 
     // tick counts how many update steps have run since the demo started (goes up by 1 each update).
@@ -60,14 +56,10 @@ class Demo {
     // 180 frames is 3 seconds at 60 FPS, then the message disappears.
     messageTimer = 0;
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Hides the overlay toggle hint so saved screenshots stay clean.
      *
-     * @returns {Partial<import('blit-tech').HardwareSettings>} Demo hardware settings.
+     * @returns {Partial<HardwareSettings>} Demo hardware settings.
      */
     configure() {
         return {
@@ -83,7 +75,7 @@ class Demo {
     }
 
     /**
-     * Sets up the palette, loads the bitmap font, and wires the Space key to frame capture.
+     * Sets up the color palette. Space-to-save is handled in update() via BT.isKeyPressed.
      *
      * @returns {Promise<boolean>} Resolves to `true` when the demo is ready to run.
      */
@@ -110,35 +102,6 @@ class Demo {
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
 
-        // Step 2: wire up the Space key
-        // Listen for keyboard presses anywhere in the window for the whole time the demo runs.
-        window.addEventListener('keydown', (e) => {
-            // e.code === 'Space' means the physical Space bar was pressed (not just the letter "Space" typed).
-            // !this.capturing skips starting a second download while the first one is still in progress.
-            if (e.code === 'Space' && !this.capturing) {
-                // Mark that a capture is in flight so the UI can show "Capturing..." and block double-presses.
-                this.capturing = true;
-
-                // downloadFrame asks the engine to read the GPU frame and trigger a browser download as a PNG file.
-                BT.downloadFrame('blit-tech-capture.png')
-                    // .then() runs when the download step finished successfully (the file was offered to the user).
-                    .then(() => {
-                        this.lastCaptureMessage = 'Saved: blit-tech-capture.png';
-                        this.messageTimer = 180; // 3 seconds at 60 FPS
-                        this.capturing = false;
-                        return null;
-                    })
-                    // .catch() runs if something went wrong (for example WebGPU readback failed).
-                    // err is the error object with a .message you can show to the user.
-                    .catch((err) => {
-                        this.lastCaptureMessage = `Error: ${err.message}`;
-                        this.messageTimer = 180;
-                        this.capturing = false;
-                        console.error('[Demo] Capture failed:', err);
-                    });
-            }
-        });
-
         return true;
     }
 
@@ -150,6 +113,31 @@ class Demo {
     update() {
         // Bump the frame counter so animations and the on-screen "Frame: N" label keep changing.
         this.tick++;
+
+        // Space bar: save the current frame as a PNG (same idea as Demo 013 in the series).
+        // BT.isKeyPressed('Space') is true only on the frame the key goes down (edge),
+        // so holding Space does not spam downloads.
+        if (BT.isKeyPressed('Space') && !this.capturing) {
+            this.capturing = true;
+
+            // BT.downloadFrame() reads the canvas and asks the browser to save a file.
+            // Most browsers open a "Save as" dialog or drop the file straight into your
+            // Downloads folder (depends on your browser settings). The demo cannot pick
+            // the folder for you - that is normal browser security.
+            BT.downloadFrame('blit-tech-capture.png')
+                .then(() => {
+                    this.lastCaptureMessage = 'Saved: blit-tech-capture.png';
+                    this.messageTimer = 180; // 3 seconds at 60 FPS
+                    this.capturing = false;
+                    return null;
+                })
+                .catch((err) => {
+                    this.lastCaptureMessage = `Error: ${err.message}`;
+                    this.messageTimer = 180;
+                    this.capturing = false;
+                    console.error('[Demo] Capture failed:', err);
+                });
+        }
 
         // If we are showing a success or error message, count down until it should disappear.
         if (this.messageTimer > 0) {
@@ -241,15 +229,7 @@ class Demo {
         // Frame counter near the bottom so you can tell consecutive screenshots apart.
         BT.systemPrint(new Vector2i(10, screen.y - 20), C_GRAY, `Frame: ${this.tick}`);
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

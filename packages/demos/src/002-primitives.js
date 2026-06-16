@@ -1,18 +1,25 @@
-// Primitives Demo - shows all the basic shapes you can draw with Blit-Tech.
-//
-// Demo 002 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
-// Live version: https://vancura.dev/articles/blit-tech-primitives
-//
-// "Primitives" means the simplest building blocks of drawing:
-// pixels (single dots), lines, rectangles, and filled rectangles.
-// This demo shows each one with a live animation so you can see them in action.
+/**
+ * Primitives Demo - shows all the basic shapes you can draw with Blit-Tech.
+ *
+ * Demo 002 in the Blit-Tech demo series.
+ * Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
+ * Live version: https://blit-tech-demos.vancura.dev/002-primitives
+ *
+ * "Primitives" means the simplest building blocks of drawing:
+ * pixels (single dots), lines, rectangles, and filled rectangles.
+ * This demo shows each one with a live animation so you can see them in action.
+ *
+ * update() advances animTicks (logical time). render() reads animTicks to spin and slide shapes.
+ * FPS and tick stats appear in the engine overlay automatically - this file does not draw them.
+ */
+
+// @pageTitle Blit-Tech Demo 002 - Primitives
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
-
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Every color used for drawing is pre-registered in a numbered palette slot.
 // Think of each slot like a labeled jar of paint on an art shelf.
@@ -27,18 +34,13 @@ const C_YELLOW = 7; // Yellow: the pulsing and sliding rectangles
 const C_CYAN = 8; // Cyan (bright blue-green): sine wave graph line
 const C_GRAY_BORDER = 9; // Gray: the graph outline border
 const C_DARK = 10; // Very dark blue: graph background fill
-const C_DIM = 11; // Dim gray: FPS and tick counter text
-const C_STEEL = 12; // Steel blue: background squares in the clearRect grid
+const C_STEEL = 11; // Steel blue: background squares in the clearRect grid
 
 // Dynamic palette slots for the rainbow pixel animation.
 // Each of the 50 animated pixels needs its own slot so they can all be different colors.
 // update() will compute and store each pixel's current color in slots 20..69 every tick.
 // render() then simply passes the slot number to BT.drawPixel() - no Color32 needed there!
 const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 69
-
-// #endregion
-
-// #region Main Logic
 
 /**
  * Demonstrates all primitive drawing operations with animated examples.
@@ -47,35 +49,19 @@ const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // animTicks counts how many update ticks have passed since the demo started.
     // We use it to make things move and change over time.
     animTicks = 0;
 
     // palette holds all the colors this demo uses.
+    /** @type {Palette | null} */
     palette = null;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
 
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the
      * palette grid in the overlay with 24 swatches per row and 3 visible rows.
      *
-     * @returns {{
-     *   isOverlayPaletteEnabled: boolean,
-     *   overlayPaletteColumns: number,
-     *   overlayPaletteRowsVisible: number,
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartHeight: number,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number, gridPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -84,21 +70,9 @@ class Demo {
             overlayPaletteRowsVisible: 3,
 
             overlayStyle: {
-                barPaletteIndex: 1,
-                textPaletteIndex: 2,
-                gapPaletteIndex: 2,
-            },
-
-            isOverlayTimingChartEnabled: true,
-            overlayTimingChartHeight: 50,
-
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_CYAN,
-                renderBarPaletteIndex: C_AMBER,
-                warningPaletteIndex: C_YELLOW,
-                errorPaletteIndex: C_RED,
-                tagPaletteIndex: 2,
-                gridPaletteIndex: 12,
+                barPaletteIndex: C_WHITE,
+                textPaletteIndex: C_DARK,
+                gapPaletteIndex: C_BG,
             },
         };
     }
@@ -116,7 +90,7 @@ class Demo {
 
         // Static colors (these never change from frame to frame).
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
-        this.palette.set(C_BG, new Color32(20, 30, 50)); // dark blue-gray background
+        this.palette.set(C_BG, new Color32(40, 50, 80)); // dark blue-gray background
         this.palette.set(C_AMBER, new Color32(255, 200, 100)); // amber for section headers
         this.palette.set(C_RED, new Color32(255, 100, 100)); // red shapes
         this.palette.set(C_GREEN_SHAPE, new Color32(100, 255, 100)); // green shapes
@@ -125,7 +99,6 @@ class Demo {
         this.palette.set(C_CYAN, new Color32(100, 255, 255)); // cyan sine wave line
         this.palette.set(C_GRAY_BORDER, new Color32(100, 100, 100)); // graph border gray
         this.palette.set(C_DARK, new Color32(10, 15, 25)); // very dark background for graph area
-        this.palette.set(C_DIM, new Color32(150, 150, 150)); // dim gray for FPS counter
         this.palette.set(C_STEEL, new Color32(100, 150, 200)); // steel blue clearRect grid squares
 
         // Pre-fill the 50 rainbow pixel slots with a placeholder color so no slot is empty
@@ -189,18 +162,16 @@ class Demo {
         this.renderCombined();
     }
 
-    // #endregion
-
-    // #region Rendering Helpers
-
     /**
      * Shows how BT.drawPixel() works - it draws a single colored dot.
      * We draw 50 dots in a pattern, each with a different rainbow color.
      * The colors shift over time because update() rotates them each tick.
      */
     renderPixel() {
+        const anchor = new Vector2i(10, 7);
+
         // Print the section label in amber (orange-yellow) color.
-        BT.systemPrint(new Vector2i(10, 30), C_AMBER, 'Pixels:');
+        BT.systemPrint(anchor, C_AMBER, 'Pixels');
 
         // Draw 50 pixels scattered across a small area.
         // The colors were already computed in update() and stored in palette slots 20..69.
@@ -208,11 +179,12 @@ class Demo {
         for (let i = 0; i < 50; i++) {
             // Use a formula to spread the pixels out so they don't all overlap.
             // Multiplying by 13 and 7 spreads them without an obvious pattern.
-            const x = 10 + ((i * 13) % 60);
-            const y = 45 + ((i * 7) % 20);
+            const x = anchor.x + ((i * 13) % 60);
+            const y = anchor.y + ((i * 7) % 20) + 15;
+            const pos = new Vector2i(x, y);
 
             // C_PIXEL_BASE + i is the palette slot for pixel i (slot 20, 21, ..., 69).
-            BT.drawPixel(new Vector2i(x, y), C_PIXEL_BASE + i);
+            BT.drawPixel(pos, C_PIXEL_BASE + i);
         }
     }
 
@@ -221,16 +193,26 @@ class Demo {
      * We show three static lines (horizontal, vertical, diagonal) plus one that spins.
      */
     renderLine() {
-        BT.systemPrint(new Vector2i(10, 75), C_AMBER, 'Lines:');
+        const anchor = new Vector2i(10, 75);
+
+        BT.systemPrint(anchor, C_AMBER, 'Lines');
 
         // A horizontal line goes straight left-to-right. Color: red.
-        BT.drawLine(new Vector2i(10, 90), new Vector2i(70, 90), C_RED);
+        BT.drawLine(new Vector2i(anchor.x, anchor.y + 15), new Vector2i(anchor.x + 60, anchor.y + 15), C_RED);
 
         // A vertical line goes straight up-and-down. Color: green.
-        BT.drawLine(new Vector2i(20, 95), new Vector2i(20, 115), C_GREEN_SHAPE);
+        BT.drawLine(
+            new Vector2i(anchor.x + 10, anchor.y + 20),
+            new Vector2i(anchor.x + 10, anchor.y + 40),
+            C_GREEN_SHAPE,
+        );
 
         // A diagonal line goes from top-left to bottom-right. Color: blue.
-        BT.drawLine(new Vector2i(30, 95), new Vector2i(60, 115), C_BLUE_SHAPE);
+        BT.drawLine(
+            new Vector2i(anchor.x + 20, anchor.y + 20),
+            new Vector2i(anchor.x + 50, anchor.y + 40),
+            C_BLUE_SHAPE,
+        );
 
         // A spinning line that rotates from the center point.
         // Math.PI * 2 is a full circle in radians. We divide by 180 to convert
@@ -238,8 +220,8 @@ class Demo {
         const angle = (this.animTicks * 2 * Math.PI) / 180;
 
         // The center of the spinning line.
-        const centerX = 50;
-        const centerY = 105;
+        const centerX = anchor.x + 40;
+        const centerY = anchor.y + 30;
         const radius = 15;
 
         // Math.cos and Math.sin convert an angle into X and Y distances.
@@ -257,12 +239,14 @@ class Demo {
      * We draw three static rectangles in different colors plus one that pulses in size.
      */
     renderRectOutline() {
-        BT.systemPrint(new Vector2i(90, 30), C_AMBER, 'Rect Outlines:');
+        const anchor = new Vector2i(90, 30);
+
+        BT.systemPrint(anchor, C_AMBER, 'Rect Outlines');
 
         // Three rectangles with different colors. Rect2i takes (x, y, width, height).
-        BT.drawRect(new Rect2i(90, 45, 40, 25), C_RED); // Red outline.
-        BT.drawRect(new Rect2i(140, 45, 30, 30), C_GREEN_SHAPE); // Green outline.
-        BT.drawRect(new Rect2i(180, 45, 25, 35), C_BLUE_SHAPE); // Blue outline.
+        BT.drawRect(new Rect2i(anchor.x, anchor.y + 15, 40, 25), C_RED); // Red outline.
+        BT.drawRect(new Rect2i(anchor.x + 50, anchor.y + 15, 30, 30), C_GREEN_SHAPE); // Green outline.
+        BT.drawRect(new Rect2i(anchor.x + 90, anchor.y + 15, 25, 35), C_BLUE_SHAPE); // Blue outline.
 
         // A yellow rectangle that pulses - it grows and shrinks over time.
         // Math.sin goes smoothly between -1 and +1, so adding 10 to 5*sin gives
@@ -271,7 +255,7 @@ class Demo {
 
         // Draw a square using pulse as both the width and height.
         // We multiply by 2 so the pulsing is more visible.
-        BT.drawRect(new Rect2i(220, 45, pulse * 2, pulse * 2), C_YELLOW);
+        BT.drawRect(new Rect2i(anchor.x + 130, anchor.y + 15, pulse * 2, pulse * 2), C_YELLOW);
     }
 
     /**
@@ -279,19 +263,21 @@ class Demo {
      * Same as the outline demo but these rectangles are filled in.
      */
     renderRectFill() {
-        BT.systemPrint(new Vector2i(90, 90), C_AMBER, 'Rect Fills:');
+        const anchor = new Vector2i(90, 90);
+
+        BT.systemPrint(anchor, C_AMBER, 'Rect Fills');
 
         // Three filled rectangles in different colors.
-        BT.drawRectFill(new Rect2i(90, 105, 40, 25), C_RED); // Red fill.
-        BT.drawRectFill(new Rect2i(140, 105, 30, 30), C_GREEN_SHAPE); // Green fill.
-        BT.drawRectFill(new Rect2i(180, 105, 25, 35), C_BLUE_SHAPE); // Blue fill.
+        BT.drawRectFill(new Rect2i(anchor.x, anchor.y + 15, 40, 25), C_RED); // Red fill.
+        BT.drawRectFill(new Rect2i(anchor.x + 50, anchor.y + 15, 30, 30), C_GREEN_SHAPE); // Green fill.
+        BT.drawRectFill(new Rect2i(anchor.x + 90, anchor.y + 15, 25, 35), C_BLUE_SHAPE); // Blue fill.
 
         // A yellow square that slides back and forth.
         // Math.sin oscillates between -1 and 1. Multiplying by 20 makes it slide
-        // 20 pixels left and right from the starting position (220).
-        const slideX = 220 + Math.floor(Math.sin(this.animTicks * 0.05) * 20);
+        // 20 pixels left and right from the starting position (anchor.x + 130).
+        const slideX = anchor.x + 130 + Math.floor(Math.sin(this.animTicks * 0.05) * 20);
 
-        BT.drawRectFill(new Rect2i(slideX, 105, 20, 20), C_YELLOW);
+        BT.drawRectFill(new Rect2i(slideX, anchor.y + 15, 20, 20), C_YELLOW);
     }
 
     /**
@@ -304,26 +290,28 @@ class Demo {
      * is special because it "paints over" the existing content with a solid color.
      */
     renderClearRect() {
-        BT.systemPrint(new Vector2i(10, 135), C_AMBER, 'Clear Rect:');
+        const anchor = new Vector2i(10, 135);
+
+        BT.systemPrint(anchor, C_AMBER, 'Clear Rect');
 
         // Draw a background grid of steel-blue squares.
         // The outer loop goes across (i = 0 to 9), the inner loop goes down (j = 0 to 4).
         for (let i = 0; i < 10; i++) {
             for (let j = 0; j < 5; j++) {
                 // Each square is 8x8 pixels with a 2-pixel gap (placed every 10 pixels).
-                BT.drawRectFill(new Rect2i(10 + i * 10, 150 + j * 10, 8, 8), C_STEEL);
+                BT.drawRectFill(new Rect2i(anchor.x + i * 10, anchor.y + 15 + j * 10, 8, 8), C_STEEL);
             }
         }
 
         // Calculate a moving X position for the clear area.
-        // It slides between 15 and 45 (oscillating around 30).
-        const clearX = 30 + Math.floor(Math.sin(this.animTicks * 0.03) * 15);
+        // It slides between anchor.x + 5 and anchor.x + 35 (oscillating around anchor.x + 20).
+        const clearX = anchor.x + 20 + Math.floor(Math.sin(this.animTicks * 0.03) * 15);
 
         // Erase a 40x30 rectangle back to the background color.
         // This makes it look like a window is moving across the grid.
         // Note: clearRect takes (rectangle, paletteIndex) - rectangle FIRST, then index.
         // This is different from the old API which put the color first!
-        BT.clearRect(new Rect2i(clearX, 160, 40, 30), C_BG);
+        BT.clearRect(new Rect2i(clearX, anchor.y + 25, 40, 30), C_BG);
     }
 
     /**
@@ -332,11 +320,13 @@ class Demo {
      * and lines that trace a wave across the graph.
      */
     renderCombined() {
-        BT.systemPrint(new Vector2i(120, 150), C_AMBER, 'Combined:');
+        const anchor = new Vector2i(130, 165);
 
-        // The graph's position and size on screen.
-        const graphX = 120;
-        const graphY = 170;
+        BT.systemPrint(anchor, C_AMBER, 'Combined');
+
+        // The graph's position and size on screen (offset from the section anchor).
+        const graphX = anchor.x;
+        const graphY = anchor.y + 15;
         const graphW = 180;
         const graphH = 50;
 
@@ -359,15 +349,7 @@ class Demo {
             BT.drawLine(new Vector2i(graphX + x, graphY + y1), new Vector2i(graphX + x + 1, graphY + y2), C_CYAN);
         }
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to the Blit-Tech engine to start running it.
 bootstrap(Demo);
-
-// #endregion

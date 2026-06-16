@@ -5,22 +5,25 @@
  * on screen with the Blit-Tech engine. You will learn:
  *   - How a demo is structured (init, update, and render)
  *   - How to clear the screen and load a sprite (a tiny picture)
- *   - How to make something move and bounce off walls
- *   - How to display text on screen
+ *   - How to make a loaded sprite move and bounce off screen edges
+ *   - How to show text on the canvas (BT.systemPrint) and in the engine overlay (overlayRows)
  *
  * If you are new to Blit-Tech, read this file carefully from top to bottom.
  * Every line has a comment explaining what it does and why.
  *
+ * This demo sets targetFPS to 30 in configure() (slower than the engine default of 60)
+ * so motion is easy to follow. update() therefore runs about 30 times per second.
+ *
  * IMPORTANT - update() vs. render():
  *
- * update() runs at a FIXED rate (the targetFPS you set, usually 60 times per
- * second). It is where you do all your game logic: move things, check collisions,
- * count scores. It may run multiple times per screen refresh if the computer
- * needs to catch up, but never more than 8 times in a row.
+ * update() runs at a FIXED rate (targetFPS from configure()). It is where you do
+ * all game logic: move things, check wall collisions, count bounces. It may run
+ * multiple times per screen refresh if the computer needs to catch up, but never
+ * more than 8 times in a row.
  *
- * render() runs ONCE per screen refresh (usually 60 times per second, but it
- * can be faster on monitors that refresh at 120 Hz or more). It is where you
- * draw everything. NEVER put game logic here - only drawing code.
+ * render() runs ONCE per screen refresh (often 60 Hz on a laptop screen, but it
+ * can be faster on 120 Hz or 144 Hz monitors). It is where you draw everything.
+ * NEVER put game logic here - only drawing code.
  *
  * When you switch to a different browser tab, BOTH update() and render() pause
  * completely. The browser stops calling them to save battery. When you come
@@ -32,8 +35,6 @@
 
 // @pageTitle Blit-Tech Demo 001 - Basics
 
-// #region Imports
-
 /**
  * "import" loads tools from the Blit-Tech engine library.
  * Think of it like opening a toolbox before you start building.
@@ -44,10 +45,6 @@
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit-tech';
-
-// #endregion
-
-// #region Configuration
 
 // Blit-Tech uses a "palette" - a numbered list of colors you choose BEFORE drawing.
 // Think of it like an artist picking paint colors and laying them on a palette tray
@@ -72,13 +69,6 @@ const SPRITE_BASE = 10;
 // site root, so /sprites/logo-1.png maps to public/sprites/logo-1.png on disk.
 const SPRITE_URL = '/sprites/logo-1.png';
 
-// Target update rate. 30 ticks per second is slower than the engine default (60).
-const TARGET_FPS = 30;
-
-// #endregion
-
-// #region Type Definitions
-
 /**
  * This line tells code editors that our Demo class follows the IBlitTechDemo
  * interface - the contract that says you need init, update, and render.
@@ -87,9 +77,10 @@ const TARGET_FPS = 30;
  */
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Main Logic
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit-tech').Rect2i} Rect2i */
 
 /**
  * Bouncing-sprite demo - the simplest possible Blit-Tech demo.
@@ -107,9 +98,9 @@ const TARGET_FPS = 30;
  *      takes time, and we need to wait for them to finish (like waiting for a
  *      web page to load).
  *
- *   3. update() - called many times per second (at the targetFPS rate you set).
- *      This is where you move things, check for collisions, and update scores.
- *      It runs at a FIXED pace so your game behaves the same on fast and slow
+ *   3. update() - called at the targetFPS rate (30 per second in this demo).
+ *      This is where you move the sprite, flip speed when it hits a wall, and
+ *      count bounces. It runs at a FIXED pace so motion matches on fast and slow
  *      computers. See the file header for the full explanation.
  *
  *   4. render() - called once per screen refresh to draw everything. Clear the
@@ -149,15 +140,18 @@ class Demo {
 
     // "palette" holds the list of colors the engine will use for drawing.
     // We create it in init() once we know what colors we need.
+    /** @type {Palette | null} */
     palette = null;
 
     // "spriteSheet" is the loaded image we will draw on screen.
     // It stays null until init() finishes loading the PNG file.
+    /** @type {SpriteSheet | null} */
     spriteSheet = null;
 
     // "spriteRect" tells the engine WHICH rectangular piece of the image to draw.
     // A sprite sheet can hold many sprites in one big picture. Our PNG only has
     // one sprite, so the rectangle covers the whole image: (x=0, y=0, full width, full height).
+    /** @type {Rect2i | null} */
     spriteRect = null;
 
     // Reused every frame for the engine overlay (position + bounces).
@@ -168,21 +162,20 @@ class Demo {
         { leftText: 'Bounces: 0', textPaletteIndex: C_OVERLAY_AMBER },
     ];
 
-    // #region Lifecycle Methods
-
     /**
      * Called once at the very start. Tells the engine:
      * - How many pixels wide and tall the drawing area should be.
      * - How big the canvas element should appear on the web page.
      * - How many times per second update() should run.
      *
-     * @returns {{ targetFPS: number, isOverlayPaletteEnabled: boolean, isOverlayTimingChartEnabled: boolean, overlayTimingChartHeight: number, overlayStyle: { barPaletteIndex: number, textPaletteIndex: number }, overlayTimingChartStyle: { updateBarPaletteIndex: number, renderBarPaletteIndex: number, warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         // Only override the tick rate; the engine fills in displaySize,
         // drawingBufferSize, and the rest from defaultConfig().
         return {
-            targetFPS: TARGET_FPS,
+            // Target update rate. 30 ticks per second is slower than the engine default (60).
+            targetFPS: 30,
 
             // Live palette grid at the bottom: every palette slot as a tiny swatch.
             // Slots your demo draws this frame show their color; unused slots show a dim marker.
@@ -310,18 +303,18 @@ class Demo {
      * have happened since the demo started with BT.ticks.
      */
     update() {
+        // --- Bounce logic (game rules live only in update(), never in render()) ---
         // Move the sprite by adding its speed to its position.
         // Think of it like taking steps: if you are standing at position 160
         // and your speed is 2, after one step you are at 162.
         // .add() creates a new Vector2i with both numbers added together.
         this.pos = this.pos.add(this.speed);
 
-        // Check if the sprite has gone past the left or right edge of the screen.
-        // BT.displaySize.x is how wide the screen is.
-        // We subtract the sprite's width because the position is the TOP-LEFT
-        // corner - the right edge of the sprite is at pos.x + size.x.
+        // Wall test for left/right: pos is the sprite's TOP-LEFT corner.
+        // The right edge of the sprite is at pos.x + size.x, so we compare against
+        // displaySize.x - size.x (the last legal x for the top-left corner).
         if (this.pos.x <= 0 || this.pos.x >= BT.displaySize.x - this.size.x) {
-            // Flip the horizontal speed so the sprite bounces back.
+            // Bounce: multiply speed.x by -1 to reverse horizontal direction.
             // If speed.x was 2 (going right), it becomes -2 (going left).
             this.speed.x = -this.speed.x;
 
@@ -346,12 +339,12 @@ class Demo {
     }
 
     /**
-     * Optional hook: tells the engine what extra lines to draw in the overlay.
+     * Optional hook: feeds extra text rows into the engine overlay (not the game canvas).
      *
-     * The overlay is the thin bars at the top and bottom (FPS, demo title, timing chart,
-     * palette grid, etc.). Custom rows stack upward from just above the bottom palette band.
-     * Colors come from palette slots we set in init() and from configure().overlayStyle.
-     * We return the same overlayRowData array every time and only change the text.
+     * The overlay is the HUD the engine draws after render(): FPS, demo title, timing chart,
+     * palette grid, and these custom rows. Toggle the overlay body with Backquote (or the
+     * bottom-left hint). Each row here is plain text plus a palette index for its color.
+     * We reuse overlayRowData every frame and only rewrite the strings - no new arrays.
      *
      * @returns {readonly { leftText: string }[]}
      */
@@ -369,9 +362,8 @@ class Demo {
      * positions and scores are already calculated. render() just reads
      * those values and draws the picture.
      *
-     * IMPORTANT: render() runs once per screen refresh, which is usually
-     * 60 times per second but can be different on monitors with higher
-     * refresh rates (120 Hz, 144 Hz, etc.). Do NOT put game logic here
+     * IMPORTANT: render() runs once per screen refresh (your monitor's Hz -
+     * often 60, but 120 or 144 on gaming displays). Do NOT put game logic here
      * because it would run at different speeds on different monitors.
      *
      * Every frame you must clear the screen and redraw everything from
@@ -395,17 +387,15 @@ class Demo {
         //     alternate "team colors" - you will see this trick in a future demo.
         BT.drawSprite(this.spriteSheet, this.spriteRect, this.pos, 0);
 
-        // Position and bounce count are shown in overlayRows() above the bottom
-        // FPS bar. The engine draws FPS and the demo title there too - no need to
-        // print those lines ourselves with BT.systemPrint().
+        // On-canvas label using the built-in system font (6x14 pixels per character).
+        // BT.systemPrint(position, paletteIndex, text) draws directly on the game surface.
+        BT.systemPrint(new Vector2i(3, 0), C_OVERLAY_GREEN, 'Press ~ or click/tap the symbol below');
+
+        // Live stats (position, bounce count) come from overlayRows() in the engine HUD.
+        // The overlay also shows FPS, backend, and this demo's page title - we do not
+        // duplicate those strings here.
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region Exports
 
 // bootstrap() is the function that starts everything. You pass it your Demo
 // class, and it takes care of:
@@ -416,5 +406,3 @@ class Demo {
 //
 // After this line runs, your demo is alive and running!
 bootstrap(Demo);
-
-// #endregion

@@ -1,7 +1,15 @@
-// Input Map Remapping Demo - runtime `BT.inputMap` and `BT.inputMapReset`.
+/**
+ * Input Map Remapping Demo - runtime `BT.inputMap` and `BT.inputMapReset`.
+ *
+ * Demo 030 in the Blit-Tech demo series.
+ * Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
+ * 028-Keyboard-Input (https://blit-tech-demos.vancura.dev/028-keyboard-input).
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/030-input-map-remapping
+ */
+
+// @pageTitle Blit-Tech Demo 030 - Input Map Remapping
 //
-// Demo 030 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics, 028-Keyboard-Input (face buttons vs raw keys).
 //
 // The engine stores **two** runtime keyboard tables (players 0 and 1). Each
 // **face button** (`BT.BTN_UP` through `BT.BTN_SELECT`) can list zero or more
@@ -24,16 +32,18 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
-const C_WHITE = 1;
-const C_BG = 2;
-const C_AMBER = 3;
-const C_DIM = 4;
-const C_LIT = 5;
-const C_PANEL = 6;
-const C_PANEL_BORDER = 7;
-const C_ACCENT = 8;
+// Palette indices. Slot 0 stays transparent; our UI colors start at 1.
+const C_WHITE = 1; // Primary labels and bright panel titles.
+const C_BG = 2; // Full-screen background behind both player panels.
+const C_AMBER = 3; // Player panel headings ("Player 0", "Player 1").
+const C_DIM = 4; // Secondary hint text and idle face-button labels.
+const C_LIT = 5; // Bright green when a face button is held down.
+const C_PANEL = 6; // Filled rectangle behind each player's key map.
+const C_PANEL_BORDER = 7; // Outline around each panel and idle button pips.
+const C_ACCENT = 8; // Preset name line and timing-chart warning accents.
 
 // Layout for a 640x480 logical framebuffer (set in configure(); wider than engine default).
 const DISPLAY_W = 640;
@@ -66,34 +76,25 @@ const FACE_ROW_ALL = [
     { label: 'Sl', code: BT.BTN_SELECT },
 ];
 
-// #endregion
-
-// #region Demo Class
-
 /**
  * Cycles keyboard face-button maps with `BT.inputMap` / `BT.inputMapReset`.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
+    /** @type {Palette | null} */
     palette = null;
 
     // Human-readable name for the active preset (we track it ourselves - the
     // engine does not expose a "get current map" API).
     presetLabel = '1 Defaults (engine tables)';
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Wider logical canvas than `defaultConfig()` so two panels of key maps fit comfortably.
      * No post-process effects, so we upscale 2x in the browser (maxCanvasSize) instead
      * of allocating a larger drawing buffer (drawingBufferSize).
      *
-     * @returns {{displaySize: Vector2i, maxCanvasSize: Vector2i, targetFPS: number}}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -190,10 +191,6 @@ class Demo {
         this.renderPlayerPanel(1, PANEL1_X, PANEL_TOP_Y);
     }
 
-    // #endregion
-
-    // #region Presets
-
     /**
      * Restore the shipped tables (`BT.DEFAULT_KEYBOARD_PLAYER1` / PLAYER2 copies).
      */
@@ -237,10 +234,6 @@ class Demo {
         BT.assignTag('Map: cleared A');
     }
 
-    // #endregion
-
-    // #region Rendering Helpers
-
     /**
      * One player's panel: title, hint, two rows of face-button pips.
      *
@@ -278,31 +271,36 @@ class Demo {
      * @param {number} y
      */
     renderFaceRow(row, player, x, y) {
+        // Walk left-to-right across the row. cx is the x position of the current pip.
         let cx = x;
 
         for (let i = 0; i < row.length; i++) {
             const { label, code } = row[i];
+
+            // Ask the engine whether this logical face button is held for this player.
+            // `code` is a BT.BTN_* constant (Up, A, Start, ...), not a raw key string.
+            // The runtime map (changed by BT.inputMap) decides which physical keys feed it.
             const held = BT.isDown(code, player);
+
+            // Small 8x8 square beside each label - lit when the button is down.
             const pip = new Rect2i(cx, y, 8, 8);
 
             if (held) {
+                // Filled square = "this button is active right now".
                 BT.drawRectFill(pip, C_LIT);
             } else {
+                // Hollow square = idle; you can still see where the indicator lives.
                 BT.drawRect(pip, C_PANEL_BORDER);
             }
 
+            // Short label (Up, Dn, A, ...) just to the right of the pip.
+            // Bright text when held so the whole slot reads as "on".
             BT.systemPrint(new Vector2i(cx + 12, y - 2), held ? C_LIT : C_DIM, label);
+
+            // Step right to the next face-button slot (fixed width keeps columns aligned).
             cx += FACE_SLOT_WIDTH;
         }
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

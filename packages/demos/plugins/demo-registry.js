@@ -1,16 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// #region Constants
-
 // Three digits (`001-topic`) or special prefix `00a-topic`.
 const FILENAME_PATTERN = /^(00a|[0-9]{3})-([a-z0-9-]+)\.js$/;
 const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
 const HEADER_SCAN_BYTES = 2000;
-
-// #endregion
-
-// #region Public API
 
 /**
  * Build the list of demos by scanning src/*.js for files matching NNN-topic.js or 00a-topic.js.
@@ -28,7 +22,9 @@ export function buildRegistry(rootDir) {
     for (const file of files) {
         const match = file.match(FILENAME_PATTERN);
 
-        if (!match) continue;
+        if (!match) {
+            continue;
+        }
 
         const [, number, topic] = match;
         const slug = `${number}-${topic}`;
@@ -49,10 +45,6 @@ export function buildRegistry(rootDir) {
 
     return entries;
 }
-
-// #endregion
-
-// #region Internals
 
 /**
  * Read the first HEADER_SCAN_BYTES of a file as UTF-8 text.
@@ -85,7 +77,9 @@ function sortKey(number) {
 function deriveTitle(number, topic, header) {
     const override = header.match(PAGE_TITLE_PATTERN);
 
-    if (override) return override[1].trim();
+    if (override) {
+        return override[1].trim();
+    }
 
     const topicTitle = topic
         .split('-')
@@ -94,5 +88,3 @@ function deriveTitle(number, topic, header) {
 
     return `Blit-Tech Demo ${number} - ${topicTitle}`;
 }
-
-// #endregion

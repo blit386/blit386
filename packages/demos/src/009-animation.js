@@ -1,7 +1,7 @@
 // Demo 009 - Animation and timing: how to animate sprites using tick-based timing.
 //
 // Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
-// 008-Sprites (https://vancura.dev/articles/blit-tech-sprites).
+// 008-Sprites (https://blit-tech-demos.vancura.dev/008-sprites).
 // Live article: https://vancura.dev/articles/blit-tech-animation
 //
 // In Blit-Tech, the tick counter goes up once per update() call at a fixed rate (targetFPS),
@@ -36,7 +36,10 @@ import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit-tech').Rect2i} Rect2i */
 
 // AnimState defines the three states the moving rock can be in.
 // Object.freeze prevents these values from being changed by accident.
@@ -54,6 +57,10 @@ const PARTICLE_SLOT_START = 50;
 
 // Where the sprite's colors start (slots 20..20+N-1, where N is extracted at runtime).
 const SPRITE_BASE = 20;
+
+// Walk animation: four source rects in one horizontal strip (idle + three walk poses).
+const WALK_FRAME_W = 18;
+const WALK_FRAME_COUNT = 4;
 
 // UI color slots (1..18).
 const C_WHITE = 1;
@@ -73,9 +80,129 @@ const C_FPS = 15; // (100, 100, 100) dim FPS text.
 const C_OVERLAY_BAR = 70; // Bar behind overlay custom rows
 const C_OVERLAY_STATE = 71; // Status row text (state left, ticks right)
 
-// #endregion
+/**
+ * Turns an offscreen canvas into a loaded HTMLImageElement for SpriteSheet.
+ *
+ * @param {OffscreenCanvas} canvas
+ * @returns {Promise<HTMLImageElement>}
+ */
+async function canvasToImage(canvas) {
+    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const url = URL.createObjectURL(blob);
 
-// #region Main Logic
+    try {
+        return await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+        });
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
+/**
+ * Scans canvas pixels and registers every unique opaque color into the palette.
+ *
+ * @param {import('blit-tech').Palette} palette
+ * @param {OffscreenCanvasRenderingContext2D} ctx
+ * @param {number} w
+ * @param {number} h
+ * @param {number} startSlot
+ * @returns {Color32[]}
+ */
+function registerCanvasColors(palette, ctx, w, h, startSlot) {
+    const data = ctx.getImageData(0, 0, w, h).data;
+    const seen = new Map();
+    const colors = [];
+
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+
+        if (a === 0) {
+            continue;
+        }
+
+        const key = `${r},${g},${b}`;
+
+        if (!seen.has(key)) {
+            const slot = startSlot + colors.length;
+            seen.set(key, slot);
+            const color = new Color32(r, g, b, 255);
+            palette.set(slot, color);
+            colors.push(color);
+        }
+    }
+
+    return colors;
+}
+
+/**
+ * Draws one character pose into a walk-strip cell.
+ * Frame 0 = idle; frames 1-3 = walk cycle with alternating leg positions.
+ *
+ * @param {OffscreenCanvasRenderingContext2D} ctx
+ * @param {number} frameIndex
+ */
+function drawWalkFrame(ctx, frameIndex) {
+    const ox = frameIndex * WALK_FRAME_W;
+    const bodyColor = '#b0b0c8';
+    const legColor = '#8080a0';
+
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(ox + 5, 4, 8, 8);
+
+    ctx.fillStyle = legColor;
+
+    if (frameIndex === 0) {
+        // Idle: feet together under the body.
+        ctx.fillRect(ox + 6, 12, 3, 4);
+        ctx.fillRect(ox + 9, 12, 3, 4);
+    } else if (frameIndex === 1) {
+        // Left foot forward.
+        ctx.fillRect(ox + 4, 12, 3, 4);
+        ctx.fillRect(ox + 10, 13, 3, 3);
+    } else if (frameIndex === 2) {
+        // Mid stride: feet under hips.
+        ctx.fillRect(ox + 6, 12, 3, 4);
+        ctx.fillRect(ox + 9, 12, 3, 4);
+    } else {
+        // Right foot forward.
+        ctx.fillRect(ox + 5, 13, 3, 3);
+        ctx.fillRect(ox + 11, 12, 3, 4);
+    }
+}
+
+/**
+ * Builds a horizontal strip with idle + three walk frames.
+ *
+ * @returns {{ canvas: OffscreenCanvas, ctx: OffscreenCanvasRenderingContext2D, frames: Rect2i[] }}
+ */
+function buildWalkSheet() {
+    const sheetW = WALK_FRAME_W * WALK_FRAME_COUNT;
+    const sheetH = WALK_FRAME_W;
+    const canvas = new OffscreenCanvas(sheetW, sheetH);
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+        throw new Error('Could not create 2D context for walk sheet');
+    }
+
+    ctx.clearRect(0, 0, sheetW, sheetH);
+
+    const frames = [];
+
+    for (let f = 0; f < WALK_FRAME_COUNT; f++) {
+        drawWalkFrame(ctx, f);
+        frames.push(new Rect2i(f * WALK_FRAME_W, 0, WALK_FRAME_W, WALK_FRAME_W));
+    }
+
+    return { canvas, ctx, frames };
+}
 
 /**
  * Demonstrates tick-based animation timing and state management.
@@ -85,19 +212,20 @@ const C_OVERLAY_STATE = 71; // Status row text (state left, ticks right)
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors used in this demo.
+    /** @type {Palette | null} */
     palette = null;
 
     // The sprite sheet loaded from /sprites/test.png.
+    /** @type {SpriteSheet | null} */
     spriteSheet = null;
 
     // The source rectangle for the rock sprite (set after loading).
+    /** @type {Rect2i | null} */
     charSprite = null;
 
-    // How many unique colors the sprite has (used to compute palette offset).
-    spriteColorCount = 0;
+    // One Rect2i per walk-strip frame (idle + three walk poses).
+    walkFrames = [];
 
     // Animation state tracks what the rock is currently doing.
     animState = AnimState.Idle;
@@ -136,21 +264,10 @@ class Demo {
     // Reused every frame for the engine overlay status row (state + ticks).
     overlayRowData = [{ leftText: 'State: Idle', rightText: 'Ticks: 0', textPaletteIndex: C_OVERLAY_STATE }];
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Tells the engine which palette slots to use for overlay bars and timing chart.
      *
-     * @returns {{
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -214,24 +331,22 @@ class Demo {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }
 
-        // Extract sprite colors and register in palette at SPRITE_BASE
-        // Ask the engine to scan the PNG and add every unique color it finds into our palette,
-        // starting at SPRITE_BASE. The returned array is the same colors in palette-write order.
-        // We only need the count here - the sprite is later linked to these slots by indexize().
-        const baseColors = await SpriteSheet.loadColorsIntoPalette('/sprites/test.png', this.palette, SPRITE_BASE);
-        this.spriteColorCount = baseColors.length;
-
-        // Load sprite
+        // Build a four-frame walk strip on an offscreen canvas (idle + three walk poses).
         try {
-            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
-                sort: 'none',
-            });
-            this.spriteSheet = indexed.sheet;
-            this.charSprite = this.spriteSheet.fullRect();
+            const { canvas, ctx, frames } = buildWalkSheet();
+            this.walkFrames = frames;
+            this.charSprite = frames[0];
+
+            registerCanvasColors(this.palette, ctx, canvas.width, canvas.height, SPRITE_BASE);
+
+            const image = await canvasToImage(canvas);
+            this.spriteSheet = new SpriteSheet(image);
+            this.spriteSheet.indexize(this.palette);
+
             BT.paletteSet(this.palette);
-            console.log(`[AnimationDemo] Loaded sprite: ${this.charSprite.width}x${this.charSprite.height}px`);
+            console.log(`[AnimationDemo] Built walk sheet: ${canvas.width}x${canvas.height}px, 4 frames`);
         } catch (error) {
-            console.error('[AnimationDemo] Failed to load sprite:', error);
+            console.error('[AnimationDemo] Failed to build walk sheet:', error);
             return false;
         }
 
@@ -322,8 +437,11 @@ class Demo {
         // Green ground strip the rock stands on.
         BT.drawRectFill(new Rect2i(0, 150, 320, 90), C_GROUND);
 
-        // Draw the rock with a shadow below it.
+        // Draw the character with a shadow below it.
         this.renderCharacter();
+
+        // Large on-screen state indicator (overlay row also shows state + ticks).
+        this.renderStateIndicator();
 
         // Draw any active particles.
         this.renderParticles();
@@ -331,10 +449,6 @@ class Demo {
         // Draw the info panel.
         this.renderUI();
     }
-
-    // #endregion
-
-    // #region State Machine
 
     /**
      * Automatically cycles through Idle -> Walking -> Jumping every 2 seconds each.
@@ -391,42 +505,58 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Rendering
-
     /**
-     * Draws the rock sprite at the correct position, with a shadow below.
-     * During a jump the sprite moves up in an arc while the shadow stays on the ground.
-     *
-     * The sprite is drawn with paletteOffset=0, meaning it uses its original colors
-     * (whatever palette[SPRITE_BASE..] was filled with from the PNG).
+     * Draws the character sprite at the correct position, with a shadow below.
+     * During Walking, srcRect cycles through walk frames based on distance from walkStartX.
+     * During Jumping, the sprite moves up in an arc while the shadow stays on the ground.
      */
     renderCharacter() {
-        if (!this.spriteSheet || !this.charSprite) {
+        if (!this.spriteSheet || this.walkFrames.length === 0) {
             return;
+        }
+
+        let srcRect = this.walkFrames[0];
+
+        if (this.animState === AnimState.Walking) {
+            // walkStartX is where the walk began; every few pixels, advance to the next frame.
+            const steps = Math.abs(this.charPos.x - this.walkStartX);
+            const walkFrame = 1 + (Math.floor(steps / 3) % 3);
+            srcRect = this.walkFrames[walkFrame];
         }
 
         // Calculate the vertical offset for the jump arc.
         let yOffset = 0;
 
         if (this.animState === AnimState.Jumping) {
-            // jumpProgress goes 0 (just launched) to 1 (landing).
             const jumpProgress = (BT.ticks - this.jumpStartTick) / this.jumpDuration;
-
-            // Math.sin(0) = 0, Math.sin(PI/2) = 1, Math.sin(PI) = 0.
-            // Multiplying by PI gives an arc that starts and ends at 0.
-            // Negative means "up" (y=0 is the top of the screen).
             yOffset = -Math.abs(Math.sin(jumpProgress * Math.PI) * 35);
         }
 
-        // Draw the rock sprite. paletteOffset=0 uses the original stone colors.
         const drawPos = new Vector2i(this.charPos.x, this.charPos.y + Math.floor(yOffset));
-        BT.drawSprite(this.spriteSheet, this.charSprite, drawPos, 0);
+        BT.drawSprite(this.spriteSheet, srcRect, drawPos, 0);
 
-        // Shadow: a dark semi-transparent rectangle that always stays on the ground.
-        const shadowY = this.charPos.y + this.charSprite.height - 4;
-        BT.drawRectFill(new Rect2i(this.charPos.x + 4, shadowY, this.charSprite.width - 8, 4), C_SHADOW);
+        const shadowY = this.charPos.y + srcRect.height - 4;
+        BT.drawRectFill(new Rect2i(this.charPos.x + 3, shadowY, srcRect.width - 6, 4), C_SHADOW);
+    }
+
+    /**
+     * Draws a colored state badge so the Idle / Walking / Jumping cycle is obvious on screen.
+     */
+    renderStateIndicator() {
+        let badgeColor = C_STAT_DIM;
+
+        if (this.animState === AnimState.Walking) {
+            badgeColor = C_COOLDOWN_READY;
+        } else if (this.animState === AnimState.Jumping) {
+            badgeColor = C_COOLDOWN_ACTIVE;
+        }
+
+        BT.drawRectFill(new Rect2i(218, 6, 96, 18), C_COOLDOWN_BG);
+        BT.drawRect(new Rect2i(218, 6, 96, 18), badgeColor);
+        BT.systemPrint(new Vector2i(224, 9), badgeColor, this.animState);
+
+        BT.drawRectFill(new Rect2i(218, 152, 96, 6), badgeColor);
+        BT.systemPrint(new Vector2i(218, 162), C_INFO_TEXT, 'State machine');
     }
 
     /**
@@ -474,7 +604,7 @@ class Demo {
 
         // Concept summary.
         BT.systemPrint(new Vector2i(10, 168), C_INFO_HEADER, 'Tick-based timing:');
-        BT.systemPrint(new Vector2i(10, 182), C_INFO_TEXT, '- Deterministic frame timing');
+        BT.systemPrint(new Vector2i(10, 182), C_INFO_TEXT, '- Tick-based timing (update rate)');
         BT.systemPrint(new Vector2i(10, 196), C_INFO_TEXT, '- Cooldown & event scheduling');
         BT.systemPrint(new Vector2i(10, 210), C_INFO_TEXT, '- State machine transitions');
     }
@@ -520,15 +650,7 @@ class Demo {
         BT.systemPrint(new Vector2i(10, 65), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);
         BT.systemPrint(new Vector2i(10, 80), C_STAT_DIM, `Particles: ${this.particles.length}`);
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

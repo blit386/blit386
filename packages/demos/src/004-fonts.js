@@ -1,26 +1,31 @@
-// Fonts Demo - shows the built-in system font and palette-animated text effects.
-//
-// Demo 004 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
-// Live version: https://vancura.dev/articles/blit-tech-fonts
-//
-// BT.systemPrint() is the simplest way to draw text in Blit-Tech.
-// It uses a built-in 8x8 pixel monospace font that is always available
-// no file loading, no await, no font object to manage.
-//
-// This demo shows:
-//   - How to print text in different colors using the palette.
-//   - Rainbow text: calling BT.systemPrint() once per character with a unique palette slot.
-//   - Pulsing text: animating a palette slot in update() so the color changes each frame.
-//
-// If you need a proportional (variable-width) font or want to measure text width before
-// drawing it, see Demo 022 - Bitmap Font for the BitmapFont / BT.printFont() approach.
+/**
+ * Fonts Demo - built-in system font and palette-animated text.
+ *
+ * Demo 004 in the Blit-Tech demo series.
+ * Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
+ * Live version: https://blit-tech-demos.vancura.dev/004-fonts
+ *
+ * BT.systemPrint() draws text with the engine's built-in system font (6 pixels wide,
+ * 14 pixels tall per character). No file loading, no await, no font object.
+ *
+ * This demo shows:
+ *   - Colored lines via palette indices passed to BT.systemPrint()
+ *   - Measuring text with BT.systemPrintMeasure() before placing it
+ *   - Rainbow text: one systemPrint call per character with its own palette slot
+ *   - Pulsing text: animating alpha in update() on a single palette slot
+ *
+ * For custom bitmap fonts loaded from disk, variable glyph widths, and BT.printFont(),
+ * see Demo 022 - Bitmap Font: https://blit-tech-demos.vancura.dev/022-bitmap-font
+ */
+
+// @pageTitle Blit-Tech Demo 004 - Fonts
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -31,8 +36,6 @@ const C_GREEN_TEXT = 4; // Soft green: "Green Text" sample line
 const C_BLUE_TEXT = 5; // Soft blue: "Blue Text" sample line
 const C_YELLOW_TEXT = 6; // Yellow: "Yellow Text" sample line
 const C_GRAY_TEXT = 7; // Light gray: secondary info lines
-// Slot 8 is intentionally skipped to keep C_DIM_GRAY at index 9.
-const C_DIM_GRAY = 9; // Dim gray: FPS/tick counter
 
 // Dynamic slots: the rainbow text has 18 characters that each need a unique animated color.
 // We reserve palette slots 20..37 - one slot per character in RAINBOW_TEXT.
@@ -47,68 +50,41 @@ const C_PULSE = 38; // single slot for the pulsing-text color
 // If you change this string, update() will compute the right number of palette colors automatically.
 const RAINBOW_TEXT = 'Rainbow Animation!';
 
-// The system font draws each character at a fixed 8 pixels wide.
-// We use this constant when stepping through RAINBOW_TEXT character by character.
-const SYSTEM_FONT_CHAR_W = 8;
-
-// #endregion
-
-// #region Main Logic
+// Filled in init() from BT.systemPrintMeasure - width of one monospace system glyph.
+let systemCharWidth = 6;
 
 /**
  * Demonstrates BT.systemPrint() with various text effects powered by palette animation.
  * Shows static colors, per-character rainbow animation, and pulsing brightness.
- * Compare with Demo 022 - Bitmap Font for the loaded-font approach.
+ * Compare with Demo 022 - Bitmap Font for BitmapFont.load() and BT.printFont().
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // palette holds all the colors this demo uses.
+    /** @type {Palette | null} */
     palette = null;
 
     // animTime is a timer that counts up in seconds.
     // We use it to control the speed of color animations.
     animTime = 0;
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the
      * palette grid in the overlay with 32 swatches per row and 2 visible rows.
      *
-     * @returns {{
-     *   isOverlayPaletteEnabled: boolean,
-     *   overlayPaletteColumns: number,
-     *   overlayPaletteRowsVisible: number,
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
             isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 2,
+
             overlayStyle: {
                 barPaletteIndex: 1,
                 textPaletteIndex: 2,
                 gapPaletteIndex: 2,
-            },
-            isOverlayTimingChartEnabled: true,
-            overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_GREEN_TEXT,
-                renderBarPaletteIndex: C_YELLOW_TEXT,
-                warningPaletteIndex: C_YELLOW_TEXT,
-                errorPaletteIndex: C_RED_TEXT,
-                tagPaletteIndex: C_BLUE_TEXT,
             },
         };
     }
@@ -132,7 +108,11 @@ class Demo {
         this.palette.set(C_BLUE_TEXT, new Color32(100, 100, 255)); // soft blue
         this.palette.set(C_YELLOW_TEXT, new Color32(255, 255, 100)); // yellow
         this.palette.set(C_GRAY_TEXT, new Color32(200, 200, 200)); // light gray
-        this.palette.set(C_DIM_GRAY, new Color32(100, 100, 100)); // dim gray
+
+        // Measure the built-in system font once. systemPrintMeasure returns Vector2i(width, height).
+        // The system font is monospace: every character is the same width (6) and height (14).
+        const glyphSize = BT.systemPrintMeasure('M');
+        systemCharWidth = glyphSize.x;
 
         // Pre-fill dynamic rainbow slots with gray so they're not empty on the first frame.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
@@ -152,7 +132,7 @@ class Demo {
      * We advance the animation timer AND update dynamic palette colors here.
      */
     update() {
-        // Move the animation clock forward by one update tick's worth of time (1/60 second).
+        // Move the animation clock forward using deltaSeconds (works at any targetFPS).
         this.animTime += BT.deltaSeconds;
 
         // Update the pulsing text color
@@ -166,7 +146,7 @@ class Demo {
 
         // Update the rainbow text character colors
         // Each character gets a hue based on its horizontal position and the current time.
-        // The system font is monospace: every character is SYSTEM_FONT_CHAR_W pixels wide.
+        // systemCharWidth comes from systemPrintMeasure in init() (6 pixels for this font).
         let charX = 10; // Starting x position - same as where render() draws the rainbow text.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
@@ -174,7 +154,7 @@ class Demo {
             // Adding animTime*100 scrolls the rainbow to the left over time.
             const hue = (charX * 3 + this.animTime * 100) % 360;
             this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
-            charX += SYSTEM_FONT_CHAR_W;
+            charX += systemCharWidth;
         }
     }
 
@@ -195,10 +175,6 @@ class Demo {
         this.renderSpecialCharacters(y);
     }
 
-    // #endregion
-
-    // #region Rendering Helpers
-
     /**
      * Draws the same four words, each in a different color.
      * Pass the palette slot number directly to BT.systemPrint() to change the text color.
@@ -213,28 +189,29 @@ class Demo {
         let currentY = y;
 
         // BT.systemPrint(position, paletteSlot, text) - the slot number IS the color directly.
-        // Compare to BT.printFont() which uses a 0-based offset: slot 3 needs offset 2 there.
+        // Compare to BT.printFont() in Demo 022 which uses a 0-based palette offset per glyph.
         BT.systemPrint(new Vector2i(10, currentY), C_RED_TEXT, 'Red Text');
-        currentY += 10;
+        const lineAdvance = BT.systemPrintMeasure('Red Text').y + 4;
+        currentY += lineAdvance;
 
         BT.systemPrint(new Vector2i(10, currentY), C_GREEN_TEXT, 'Green Text');
-        currentY += 10;
+        currentY += lineAdvance;
 
         BT.systemPrint(new Vector2i(10, currentY), C_BLUE_TEXT, 'Blue Text');
-        currentY += 10;
+        currentY += lineAdvance;
 
         BT.systemPrint(new Vector2i(10, currentY), C_YELLOW_TEXT, 'Yellow Text');
 
-        // Add extra space after this section.
-        currentY += 14;
+        // Extra gap after this block (a bit more than one line height).
+        currentY += lineAdvance;
 
         return currentY;
     }
 
     /**
      * Draws text where each character has a different animated color.
-     * The system font is monospace (8px wide per character), so we can step exactly
-     * SYSTEM_FONT_CHAR_W pixels per character. The colors were pre-computed in update().
+     * The system font is monospace, so we step systemCharWidth pixels per character.
+     * Colors were pre-computed in update().
      *
      * @param {number} y - The Y position to start drawing at.
      * @returns {number} The Y position after the text.
@@ -251,13 +228,13 @@ class Demo {
             // That slot was updated with a fresh color in update() this tick.
             BT.systemPrint(new Vector2i(x, y), C_RAINBOW_BASE + slotIndex, char);
 
-            // Step right by exactly SYSTEM_FONT_CHAR_W (8) pixels for the next character.
-            // In a proportional font (see Demo 022) each character has its own advance width.
-            x += SYSTEM_FONT_CHAR_W;
+            // Step right by the measured glyph width (6 px for the built-in system font).
+            // Demo 022 uses BitmapFont metrics per character instead of a fixed step.
+            x += systemCharWidth;
             slotIndex++;
         }
 
-        return y + 14;
+        return y + BT.systemPrintMeasure('M').y + 4;
     }
 
     /**
@@ -275,7 +252,7 @@ class Demo {
         // background at draw time, which is what gives the pulse its smooth look.
         BT.systemPrint(new Vector2i(10, y), C_PULSE, 'Pulsing Text');
 
-        return y + 14;
+        return y + BT.systemPrintMeasure('M').y + 4;
     }
 
     /**
@@ -287,15 +264,7 @@ class Demo {
     renderSpecialCharacters(y) {
         BT.systemPrint(new Vector2i(10, y), C_GRAY_TEXT, 'Special: 3 x 4 = 12');
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

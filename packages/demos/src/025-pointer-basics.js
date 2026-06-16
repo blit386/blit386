@@ -1,24 +1,31 @@
-// Pointer Basics Demo - shows how to read mouse, touch, and scroll-wheel input.
-//
-// Demo 025 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics
-//
-// This demo is the simplest introduction to BT's pointer API. It draws a
-// crosshair that follows your mouse, lights up indicator boxes when you press
-// mouse buttons, and shows a moving bar that follows the scroll wheel.
-//
-// Try this:
-// - Move the mouse over the demo to see the crosshair track your cursor.
-// - Click left, right, or middle to light up the A, B, or C button indicator.
-// - Spin the scroll wheel to nudge the scroll bar up or down.
-// - On a touchscreen: tap and drag to move the crosshair on slot 0. (See
-//   demo 026 for the full multi-touch paint version with all four slots.)
+/**
+ * Pointer Basics Demo - read mouse position, buttons, delta, and scroll wheel.
+ *
+ * Demo 025 in the Blit-Tech demo series.
+ * Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/025-pointer-basics
+ *
+ * This demo is the simplest introduction to BT's pointer API. It draws a
+ * crosshair that follows your mouse, lights up indicator boxes when you press
+ * mouse buttons, and shows a moving bar that follows the scroll wheel.
+ *
+ * Try this:
+ * - Move the mouse over the demo to see the crosshair track your cursor.
+ * - Click left, right, or middle to light up the A, B, or C button indicator.
+ * - Spin the scroll wheel to nudge the scroll bar up or down.
+ * - On a touchscreen: tap and drag to move the crosshair on slot 0. (See
+ *   demo 026 for the full multi-touch paint version with all four slots.)
+ */
+
+// @pageTitle Blit-Tech Demo 025 - Pointer Basics
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Palette slots. Index 0 is always transparent.
 const C_WHITE = 1; // text and crosshair
@@ -41,10 +48,6 @@ const TRAIL_LENGTH = 24;
 // We clamp the scroll bar position to [0, displayHeight] so it stays on screen.
 const SCROLL_SENSITIVITY = 0.25;
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates the basic pointer API: position, delta, scroll wheel, and the
  * four pointer buttons (A, B, C, D) on slot 0 (the mouse).
@@ -52,8 +55,7 @@ const SCROLL_SENSITIVITY = 0.25;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
+    /** @type {Palette | null} */
     palette = null;
 
     // Ring-buffer of recent positions (oldest first). We push the current
@@ -62,17 +64,13 @@ class Demo {
     trail = [];
 
     // Vertical position of the on-screen scroll-bar handle (in display pixels).
-    // Starts in the middle. BT.pointerScrollDelta pushes it up or down.
-    scrollBarY = 120;
-
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
+    // Centered in init() from BT.displaySize. BT.pointerScrollDelta pushes it up or down.
+    scrollBarY = 0;
 
     /**
      * Enables the timing chart so pointer milestones appear on the overlay HUD.
      *
-     * @returns {{ isOverlayTimingChartEnabled: boolean, overlayTimingChartStyle: { tagPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -107,6 +105,9 @@ class Demo {
 
         BT.paletteSet(this.palette);
 
+        const screen = BT.displaySize;
+        this.scrollBarY = Math.floor(screen.y / 2);
+
         // Hide the native OS cursor so the drawn crosshair is the only cursor
         // visible while the pointer is over the canvas.
         BT.hideCursor();
@@ -114,7 +115,7 @@ class Demo {
         // Prefill the trail with the centre point so the very first frame has
         // something to draw without a special-case "no history yet" path.
         for (let i = 0; i < TRAIL_LENGTH; i++) {
-            this.trail.push([160, 120]);
+            this.trail.push([Math.floor(screen.x / 2), Math.floor(screen.y / 2)]);
         }
         return true;
     }
@@ -140,11 +141,12 @@ class Demo {
         // instead of jumping a full screen height.
         this.scrollBarY += BT.pointerScrollDelta * SCROLL_SENSITIVITY;
 
-        // Keep the scroll bar inside the visible area.
+        // Keep the scroll bar inside the visible area (use display height, not a hard-coded 240).
+        const maxScrollY = BT.displaySize.y;
         if (this.scrollBarY < 0) {
             this.scrollBarY = 0;
-        } else if (this.scrollBarY > 240) {
-            this.scrollBarY = 240;
+        } else if (this.scrollBarY > maxScrollY) {
+            this.scrollBarY = maxScrollY;
         }
     }
 
@@ -163,10 +165,6 @@ class Demo {
         this.renderTrail();
         this.renderCrosshair();
     }
-
-    // #endregion
-
-    // #region Rendering Helpers
 
     /**
      * Numeric readouts in the top-left: pointer position, delta, scroll delta,
@@ -237,7 +235,7 @@ class Demo {
     renderScrollBar() {
         const trackX = 300;
         const trackY = 0;
-        const trackH = 240;
+        const trackH = BT.displaySize.y;
         const trackW = 12;
         const handleH = 16;
 
@@ -271,10 +269,7 @@ class Demo {
      * pointer is over the canvas (slot 0 valid).
      */
     renderCrosshair() {
-        if (!BT.isPointerActive(0)) {
-            // Show a hint in the centre of the screen instead.
-            BT.systemPrint(new Vector2i(80, 120), C_DIM, 'Move pointer over canvas');
-        } else {
+        if (BT.isPointerActive(0)) {
             const pos = BT.pointerPos(0);
             const size = 6;
 
@@ -284,18 +279,18 @@ class Demo {
             BT.drawLine(new Vector2i(pos.x, pos.y - size), new Vector2i(pos.x, pos.y + size), C_WHITE);
             // Centre dot.
             BT.drawPixel(pos, C_WHITE);
+        } else {
+            // Show a hint in the centre of the screen instead.
+            const center = BT.displaySize;
+            BT.systemPrint(
+                new Vector2i(Math.floor(center.x / 2) - 60, Math.floor(center.y / 2) - 7),
+                C_DIM,
+                'Move pointer over canvas',
+            );
         }
 
         // The engine overlay (FPS + demo name) draws on top automatically.
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

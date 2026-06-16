@@ -1,18 +1,27 @@
-// Snake - grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
-//
-// Demo 029 in the Blit-Tech demo series.
-// Prerequisites: 001-Basics, 023-PipBoy-CRT (effect stack), 028-Keyboard-Input (face buttons).
-//
-// Move with player 1 face buttons (W, A, S, D): Up, Down, Left, Right. Each food dot grows
-// the snake. Hitting the boundary wall or your own body ends the run; the game restarts after
-// two seconds. Everything is drawn with rectangles only (no text).
-//
-// Post-processing matches demo 023 when WebGPU is active. In software fallback mode the
-// snake game still runs; CRT effects are skipped and a short note is shown.
-//
-// WebGPU path: PixelGlitch on the logical index buffer, then palette resolve + upscale,
-// then display-tier barrel distortion, chromatic aberration, interference, rolling scan
-// line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
+/**
+ * Snake - grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
+ *
+ * Demo 029 in the Blit-Tech demo series.
+ * Prerequisites:
+ *   001-Basics         https://blit-tech-demos.vancura.dev/001-basics
+ *   023-PipBoy CRT     https://blit-tech-demos.vancura.dev/023-crt-pipboy
+ *   028-Keyboard Input https://blit-tech-demos.vancura.dev/028-keyboard-input
+ *
+ * Live version: https://blit-tech-demos.vancura.dev/029-snake-game
+ *
+ * Move with player 1 face buttons (W, A, S, D): Up, Down, Left, Right. Each food dot grows
+ * the snake. Hitting the boundary wall or your own body ends the run; the game restarts after
+ * two seconds. Gameplay uses rectangles; a short systemPrint note appears in software mode.
+ *
+ * Post-processing matches demo 023 when WebGPU is active. In software fallback mode the
+ * snake game still runs; CRT effects are skipped and a short note is shown on canvas.
+ *
+ * WebGPU path: PixelGlitch on the logical index buffer, then palette resolve + upscale,
+ * then display-tier barrel distortion, chromatic aberration, interference, rolling scan
+ * line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
+ */
+
+// @pageTitle Blit-Tech Demo 029 - Snake Game
 
 import {
     BarrelDistortion,
@@ -37,7 +46,8 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Palette indices (slot 0 reserved).
 const C_BG = 1;
@@ -96,10 +106,6 @@ const FLICKER_DIP = 0.6;
 const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
-// #endregion
-
-// #region Helpers
-
 /**
  * Random integer from min through max inclusive.
  *
@@ -140,18 +146,13 @@ function randPick(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-// #endregion
-
-// #region Demo Class
-
 /**
  * Minimal snake with PipBoy CRT post-processing from demo 023.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
+    /** @type {Palette | null} */
     palette = null;
 
     /** @type {{ x: number; y: number }[]} Head first, tail last (grid coords). */
@@ -177,6 +178,7 @@ class Demo {
     gameOver = false;
 
     /** Tick index when the snake died (`BT.ticks`); null while playing. */
+    /** @type {number | null} */
     deathTick = null;
 
     // CRT effects (initialized in init())
@@ -224,14 +226,10 @@ class Demo {
 
     glitchPeak = 0;
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * 160x120 framebuffer, 4x upscale for CRT chain, 60 fixed updates per second.
      *
-     * @returns {{displaySize: Vector2i, drawingBufferSize: Vector2i, maxCanvasSize: Vector2i, targetFPS: number, outputUpscaleFilter: string}}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -286,7 +284,6 @@ class Demo {
         this.effectsAvailable = isAvailable();
 
         if (!this.effectsAvailable) {
-            BT.assignTag(SOFTWARE_FALLBACK_NOTE);
             this.startRound();
             return true;
         }
@@ -410,23 +407,32 @@ class Demo {
 
     /**
      * Reads player 1 face buttons and updates pending direction (no instant reverse).
+     *
+     * We use BT.isPressed (edge: up -> down this tick), not BT.isDown (held every tick).
+     * That way one tap per direction per move interval feels like a classic D-pad.
+     * The `this.dy !== 1` checks block a 180-degree turn: you cannot go straight back
+     * into your body on the next step.
      */
     pollDirectionInput() {
+        // Up: only if we are not currently moving down (would reverse into the tail).
         if (BT.isPressed(BT.BTN_UP, 0) && this.dy !== 1) {
             this.pendingDx = 0;
             this.pendingDy = -1;
         }
 
+        // Down: only if we are not currently moving up.
         if (BT.isPressed(BT.BTN_DOWN, 0) && this.dy !== -1) {
             this.pendingDx = 0;
             this.pendingDy = 1;
         }
 
+        // Left: only if we are not currently moving right.
         if (BT.isPressed(BT.BTN_LEFT, 0) && this.dx !== 1) {
             this.pendingDx = -1;
             this.pendingDy = 0;
         }
 
+        // Right: only if we are not currently moving left.
         if (BT.isPressed(BT.BTN_RIGHT, 0) && this.dx !== -1) {
             this.pendingDx = 1;
             this.pendingDy = 0;
@@ -520,11 +526,11 @@ class Demo {
             const seg = this.snake[i];
             BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
         }
+
+        if (!this.effectsAvailable) {
+            BT.systemPrint(new Vector2i(INNER_X0, DISPLAY_H - 16), C_FOOTER_DIM, SOFTWARE_FALLBACK_NOTE);
+        }
     }
-
-    // #endregion
-
-    // #region Game Logic
 
     /**
      * Pixel rectangle for one grid cell at (gx, gy), inside the inner playfield.
@@ -647,14 +653,6 @@ class Demo {
         this.deathTick = BT.ticks;
         BT.assignTag('Game over');
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

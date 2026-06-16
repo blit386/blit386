@@ -4,28 +4,29 @@
 //
 // Written for readers about 12 years old. Prerequisites (do these first):
 //   001-Basics       https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives   https://vancura.dev/articles/blit-tech-primitives
-//   003-Colors       https://vancura.dev/articles/blit-tech-colors
-//   004-Fonts        https://vancura.dev/articles/blit-tech-fonts
-//   005-Pixel Art    https://vancura.dev/articles/blit-tech-pixel-art
-//   006-Patterns     https://vancura.dev/articles/blit-tech-patterns
-//   007-Camera       https://vancura.dev/articles/blit-tech-camera
-//   008-Sprites      https://vancura.dev/articles/blit-tech-sprites
-//   009-Animation    https://vancura.dev/articles/blit-tech-animation
-//   010-Sprite-FX    https://vancura.dev/articles/blit-tech-sprite-effects
-//   011-Starfield    https://vancura.dev/articles/blit-tech-starfield
-//   012-Tilemap      https://vancura.dev/articles/blit-tech-tilemap
-//   013-Image Output https://vancura.dev/articles/blit-tech-image-output
+//   002-Primitives   https://blit-tech-demos.vancura.dev/002-primitives
+//   003-Colors       https://blit-tech-demos.vancura.dev/003-colors
+//   004-Fonts        https://blit-tech-demos.vancura.dev/004-fonts
+//   005-Pixel Art    https://blit-tech-demos.vancura.dev/005-pixel-art
+//   006-Patterns     https://blit-tech-demos.vancura.dev/006-patterns
+//   007-Camera       https://blit-tech-demos.vancura.dev/007-camera
+//   008-Sprites      https://blit-tech-demos.vancura.dev/008-sprites
+//   009-Animation    https://blit-tech-demos.vancura.dev/009-animation
+//   010-Sprite-FX    https://blit-tech-demos.vancura.dev/010-sprite-effects
+//   011-Starfield    https://blit-tech-demos.vancura.dev/011-starfield
+//   012-Tilemap      https://blit-tech-demos.vancura.dev/012-tilemap
+//   013-Image Output https://blit-tech-demos.vancura.dev/013-image-output
 //
 // Live article: https://vancura.dev/articles/blit-tech-game-scene
 //
 // WHAT YOU SEE (how the pieces connect):
 //   - Sky gradient and slow-moving clouds = colors (003) + parallax idea from starfield (011).
-//   - Scrolling ground and blocky buildings = camera over a bigger world (007).
+//   - Scrolling ground, tile-ID sidewalk strip (012), checker buildings (006) = camera (007).
 //   - Moving rock hero = sprites (008) and timing (009).
 //   - Sparkles near the rock = small fading squares, like the particles in animation (009).
 //   - Day and night = palette-based ambient lighting (010); the world dims at night.
 //   - Score, rock position, and day phase = engine overlay rows (004 + built-in FPS bar).
+//   - Press Space to save a PNG snapshot (013). On-screen legend explains the mix.
 //
 // HOW THE DAY/NIGHT PALETTE WORKS:
 //
@@ -48,7 +49,10 @@ import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit-tech').Rect2i} Rect2i */
 
 // Internal game resolution.
 const DISPLAY_W = 320;
@@ -59,6 +63,14 @@ const WORLD_H = 240;
 
 // Where the sidewalk / grass starts.
 const GROUND_Y = 188;
+
+// One row of 16 px tiles along the sidewalk (012-Tilemap idea: small tile IDs in an array).
+const GROUND_TILE_SIZE = 16;
+const TILE_GRASS_ID = 1;
+const TILE_DIRT_ID = 2;
+
+// Checker squares inside buildings (006-Patterns idea: repeating blocks, no images).
+const BUILDING_PATTERN_CELL = 4;
 
 // Rock sprite size in world pixels.
 const HERO_W = 16; // Adjusted to a reasonable display size; actual sprite may differ.
@@ -122,16 +134,17 @@ const C_HERO_SHADOW = 45;
 // Overlay bar fill (text slots reuse C_HUD_SCORE / C_HUD_POS / C_HUD_FPS below).
 const C_OVERLAY_BAR = 46;
 
+// In-canvas legend (screen space, drawn after cameraReset).
+const C_LEGEND = 47;
+const C_LEGEND_DIM = 48;
+const C_CAPTURE_MSG = 49;
+
 // Particle slots: 50..69 (MAX_PARTICLES=20).
 const PARTICLE_SLOT_START = 50;
 
 // Sprite base colors extracted from test.png: 70..70+N-1.
 // The ambient (lit) version of sprite colors: 70+N..70+2N-1.
 const SPRITE_BASE = 70;
-
-// #endregion
-
-// #region Main Logic
 
 /**
  * One self-running mini scene: walking rock, following camera, HUD, day/night, sparkles.
@@ -140,15 +153,16 @@ const SPRITE_BASE = 70;
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The palette holds all colors used in this demo.
+    /** @type {Palette | null} */
     palette = null;
 
     // Sprite sheet for the rock hero, loaded from /sprites/test.png.
+    /** @type {SpriteSheet | null} */
     heroSheet = null;
 
     // The full source rectangle for the hero sprite.
+    /** @type {Rect2i | null} */
     heroSprite = null;
 
     // How many unique colors the sprite has (N).
@@ -190,6 +204,14 @@ class Demo {
     buildings = [];
     clouds = [];
 
+    // Tile IDs for one sidewalk row (012): each entry is TILE_GRASS_ID or TILE_DIRT_ID.
+    groundTileIds = [];
+
+    // PNG capture state (013): Space triggers BT.downloadFrame once per press.
+    capturing = false;
+    lastCaptureMessage = '';
+    messageTimer = 0;
+
     // Base colors for buildings and clouds (used in update() for ambient multiplication).
     buildingFills = [];
     buildingOutlines = [];
@@ -219,10 +241,6 @@ class Demo {
         { leftText: 'Dawn/Day', textPaletteIndex: C_HUD_FPS },
     ];
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Palette slots for the engine overlay bars (FPS strip uses the engine defaults).
      *
@@ -230,7 +248,7 @@ class Demo {
      * use (helpful for day/night tinting and sprite palette blocks). Sixteen swatches
      * per row, two visible rows; scroll to browse the full 256-slot palette.
      *
-     * @returns {Partial<import('blit-tech').HardwareSettings>}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -263,7 +281,7 @@ class Demo {
     }
 
     /**
-     * Loads font, loads sprite, builds palette, places buildings and clouds.
+     * Loads the hero sprite sheet, builds the palette, and places buildings and clouds.
      *
      * @returns {Promise<boolean>}
      */
@@ -280,14 +298,18 @@ class Demo {
         this.palette.set(C_BLACK, new Color32(0, 0, 0));
         this.palette.set(C_HUD_BAR, new Color32(0, 0, 0, 150));
         this.palette.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 180)); // overlay row backgrounds
+        this.palette.set(C_LEGEND, new Color32(255, 230, 180));
+        this.palette.set(C_LEGEND_DIM, new Color32(180, 200, 220));
+        this.palette.set(C_CAPTURE_MSG, new Color32(120, 220, 160));
 
         // Pre-fill particle slots as transparent.
         for (let i = 0; i < MAX_PARTICLES; i++) {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }
 
-        // Build world decoration
+        // Build world decoration and the sidewalk tile-ID row (Demo 012).
         this.buildWorldDecor();
+        this.buildGroundTileStrip();
 
         // Extract sprite colors and register in palette
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
@@ -336,6 +358,28 @@ class Demo {
      */
     update() {
         const tick = BT.ticks;
+
+        // Demo 013: one PNG per Space press (edge via BT.isKeyPressed).
+        if (BT.isKeyPressed('Space') && !this.capturing) {
+            this.capturing = true;
+            BT.downloadFrame('blit-tech-scene.png')
+                .then(() => {
+                    this.lastCaptureMessage = 'Saved: blit-tech-scene.png';
+                    this.messageTimer = 180;
+                    this.capturing = false;
+                    return null;
+                })
+                .catch((err) => {
+                    this.lastCaptureMessage = `Error: ${err.message}`;
+                    this.messageTimer = 180;
+                    this.capturing = false;
+                    console.error('[GameSceneDemo] Capture failed:', err);
+                });
+        }
+
+        if (this.messageTimer > 0) {
+            this.messageTimer--;
+        }
 
         this.updateHeroMovement();
         this.updateWalkStep(tick);
@@ -386,12 +430,24 @@ class Demo {
         this.renderHero();
         BT.cameraReset();
 
+        // First-time legend and capture hint (screen space, not scrolled with the world).
+        this.renderLegend();
+
         // Score, rock position, and day phase are drawn in overlayRows() above the FPS bar.
     }
 
-    // #endregion
+    /**
+     * Fills groundTileIds with alternating grass/dirt tile IDs for one 16 px row (Demo 012).
+     */
+    buildGroundTileStrip() {
+        const cols = Math.ceil(WORLD_W / GROUND_TILE_SIZE);
+        this.groundTileIds = [];
 
-    // #region World Setup
+        for (let col = 0; col < cols; col++) {
+            // Simple pattern: two grass tiles, then two dirt tiles, repeat.
+            this.groundTileIds.push(col % 4 < 2 ? TILE_GRASS_ID : TILE_DIRT_ID);
+        }
+    }
 
     /**
      * Places buildings and clouds once at startup.
@@ -440,10 +496,6 @@ class Demo {
             { x: 600, y: 22, w: 44, h: 17 },
         ];
     }
-
-    // #endregion
-
-    // #region Ambient Light and Palette Updates
 
     /**
      * Computes the current ambient tint based on the day/night cycle.
@@ -509,6 +561,8 @@ class Demo {
         this.palette.set(C_HUD_SCORE, this.hudScoreBase.multiply(ambient));
         this.palette.set(C_HUD_POS, this.hudPosBase.multiply(ambient));
         this.palette.set(C_HUD_FPS, this.hudFpsBase.multiply(ambient));
+        this.palette.set(C_LEGEND, this.hudTitleBase.multiply(ambient));
+        this.palette.set(C_LEGEND_DIM, this.hudPosBase.multiply(ambient));
 
         // Hero shadow
         const shadowAlpha = Math.floor(60 + (ambient.r / 255) * 60); // Softer at night.
@@ -522,10 +576,6 @@ class Demo {
             this.palette.set(SPRITE_BASE + this.spriteColorCount + i, base.multiply(ambient));
         }
     }
-
-    // #endregion
-
-    // #region Sky and Parallax
 
     /**
      * Draws the sky gradient and clouds using a slower fake camera for parallax depth.
@@ -554,10 +604,6 @@ class Demo {
         BT.cameraReset();
     }
 
-    // #endregion
-
-    // #region Ground and Buildings
-
     /**
      * Draws the grass strip and building blocks in world space.
      */
@@ -570,18 +616,56 @@ class Demo {
         this.tempRect.set(0, GROUND_Y, WORLD_W, 3);
         BT.drawRectFill(this.tempRect, C_DIRTLINE);
 
-        // Buildings.
+        // Sidewalk tile row: each cell is a tile ID mapped to a palette color (Demo 012).
+        this.renderGroundTileStrip();
+
+        // Buildings: checker fill (Demo 006) plus outline frame.
         for (let i = 0; i < this.buildings.length; i++) {
             const b = this.buildings[i];
+            const fillIdx = C_BUILDING_BASE + i * 2;
+            const outlineIdx = fillIdx + 1;
+            this.renderBuildingChecker(b, fillIdx, outlineIdx);
             this.tempRect.set(b.x, b.y, b.w, b.h);
-            BT.drawRectFill(this.tempRect, C_BUILDING_BASE + i * 2);
-            BT.drawRect(this.tempRect, C_BUILDING_BASE + i * 2 + 1);
+            BT.drawRect(this.tempRect, outlineIdx);
         }
     }
 
-    // #endregion
+    /**
+     * Draws one 16 px tall row of tiles above the grass using tile IDs from groundTileIds.
+     */
+    renderGroundTileStrip() {
+        const rowY = GROUND_Y - GROUND_TILE_SIZE;
 
-    // #region Hero Movement
+        for (let col = 0; col < this.groundTileIds.length; col++) {
+            const tileId = this.groundTileIds[col];
+            const colorIndex = tileId === TILE_GRASS_ID ? C_GRASS : C_DIRTLINE;
+            const worldX = col * GROUND_TILE_SIZE;
+
+            this.tempRect.set(worldX, rowY, GROUND_TILE_SIZE, GROUND_TILE_SIZE);
+            BT.drawRectFill(this.tempRect, colorIndex);
+        }
+    }
+
+    /**
+     * Fills a building with alternating 4x4 blocks (checker pattern from Demo 006).
+     *
+     * @param {{ x: number, y: number, w: number, h: number }} building
+     * @param {number} fillIdx palette index for "light" squares
+     * @param {number} outlineIdx palette index for "dark" squares
+     */
+    renderBuildingChecker(building, fillIdx, outlineIdx) {
+        const cell = BUILDING_PATTERN_CELL;
+
+        for (let py = building.y; py < building.y + building.h; py += cell) {
+            for (let px = building.x; px < building.x + building.w; px += cell) {
+                const useFill = ((px >> 2) + (py >> 2)) % 2 === 0;
+                const colorIndex = useFill ? fillIdx : outlineIdx;
+
+                this.tempRect.set(px, py, cell, cell);
+                BT.drawRectFill(this.tempRect, colorIndex);
+            }
+        }
+    }
 
     /**
      * Moves the rock left/right automatically, bouncing off world edges.
@@ -628,20 +712,16 @@ class Demo {
         // Tiny vertical bob based on walkStep (steps 0,2 are up; 1,3 are at rest).
         const bob = this.walkStep % 2 === 0 ? -1 : 0;
 
-        const drawPos = new Vector2i(this.heroPos.x, this.heroPos.y + bob);
+        this.tempVec.set(this.heroPos.x, this.heroPos.y + bob);
 
         // The ambient offset shifts all pixel indices into the pre-lit block.
-        BT.drawSprite(this.heroSheet, this.heroSprite, drawPos, this.spriteColorCount);
+        BT.drawSprite(this.heroSheet, this.heroSprite, this.tempVec, this.spriteColorCount);
 
         // Shadow underfoot.
         const shadowY = this.heroPos.y + this.heroSprite.height - 2;
         this.tempRect.set(this.heroPos.x + 2, shadowY, this.heroSprite.width - 4, 3);
         BT.drawRectFill(this.tempRect, C_HERO_SHADOW);
     }
-
-    // #endregion
-
-    // #region Camera
 
     /**
      * Smoothly follows the hero, then clamps so the view never leaves the world.
@@ -662,10 +742,6 @@ class Demo {
         this.cameraPos.y = clamped.y;
         this.cameraXFloat = this.cameraPos.x;
     }
-
-    // #endregion
-
-    // #region Score and Particles
 
     /**
      * +1 score every SCORE_INTERVAL_TICKS.
@@ -744,9 +820,30 @@ class Demo {
         }
     }
 
-    // #endregion
+    /**
+     * Short legend for first-time viewers (screen space, top-left).
+     */
+    renderLegend() {
+        this.tempRect.set(4, 4, 312, 84);
+        BT.drawRectFill(this.tempRect, C_HUD_BAR);
 
-    // #region Day/Night Label
+        this.tempVec.set(10, 18);
+        BT.systemPrint(this.tempVec, C_LEGEND, 'Capstone: scroll, tiles, sprite, day/night');
+
+        this.tempVec.set(10, 32);
+        BT.systemPrint(this.tempVec, C_LEGEND_DIM, 'Tiles + checker = demos 012 + 006');
+
+        this.tempVec.set(10, 46);
+        BT.systemPrint(this.tempVec, C_LEGEND_DIM, 'Space = save PNG (demo 013)');
+
+        if (this.capturing) {
+            this.tempVec.set(10, 72);
+            BT.systemPrint(this.tempVec, C_CAPTURE_MSG, 'Capturing...');
+        } else if (this.messageTimer > 0) {
+            this.tempVec.set(10, 72);
+            BT.systemPrint(this.tempVec, C_CAPTURE_MSG, this.lastCaptureMessage);
+        }
+    }
 
     /**
      * Human-readable label for where we are in the day/night cycle.
@@ -771,14 +868,6 @@ class Demo {
 
         return 'Toward dawn';
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion

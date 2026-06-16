@@ -1,13 +1,17 @@
+// @pageTitle Blit-Tech Demo 016 - Palette Animation
+//
 // Demo 016 - Palette Animation: change palette entries every tick for instant visual effects.
 //
 // Demo 016 in the Blit-Tech series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives https://vancura.dev/articles/blit-tech-primitives
-//   003-Colors     https://vancura.dev/articles/blit-tech-colors
-//   015-Palette Presets https://vancura.dev/articles/blit-tech-palette-presets
+//   001-Basics          https://blit-tech-demos.vancura.dev/001-basics
+//   002-Primitives      https://blit-tech-demos.vancura.dev/002-primitives
+//   003-Colors          https://blit-tech-demos.vancura.dev/003-colors
+//   015-Palette Presets https://blit-tech-demos.vancura.dev/015-palette-presets
+//     (walkthrough: https://vancura.dev/articles/blit-tech-palette-presets)
 //
+// Live version: https://blit-tech-demos.vancura.dev/016-palette-animation
 // Live article: https://vancura.dev/articles/blit-tech-palette-animation
 //
 // WHAT IS PALETTE ANIMATION?
@@ -37,7 +41,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Gradient bar
 // How many color slots the scrolling gradient uses.
@@ -78,12 +83,10 @@ const HEALTH_DRAIN_TICKS = 360; // ~6 seconds to drain completely.
 // Each section owns a range of slots that it fills in update() every tick.
 
 // Slot 0:   always transparent - reserved by the engine.
-const C_WHITE = 1; // Font base color.
 const C_BG = 2; // Screen background.
 const C_PANEL = 3; // Panel background (slightly lighter than screen).
 const C_LABEL = 4; // Section heading text.
 const C_DIM = 5; // Dimmer subtitle / tip text.
-const C_FPS = 6; // Tiny FPS counter in the corner.
 
 // Gradient section: 32 slots, one per swatch column.
 // We update all 32 every tick to scroll the hue.
@@ -99,10 +102,6 @@ const C_HEALTH_BAR = 80; // Slot 80.
 // Water strip: three slots that cycle.
 const C_WATER_BASE = 90; // Slots 90..92.
 
-// #endregion
-
-// #region Main Logic
-
 /**
  * Demonstrates the "palette animation" technique: change palette entries every tick
  * to create scrolling gradients, fire, flashing effects, and rippling water
@@ -111,9 +110,8 @@ const C_WATER_BASE = 90; // Slots 90..92.
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
     // The single palette used for all drawing.
+    /** @type {Palette | null} */
     palette = null;
 
     // Counts up by 1/60 every frame (in seconds).
@@ -129,29 +127,11 @@ class Demo {
     // How many ticks since the water last advanced one step.
     waterTick = 0;
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
-     * Palette slots for the engine overlay bars.
+     * Wider canvas, overlay palette grid (64 columns), and timing chart colors
+     * tied to the four animated panel slot ranges.
      *
-     * The live palette grid at the bottom highlights slots used by this frame's
-     * swatches and live-view preset. Sixty-four swatches per row; scroll to browse
-     * the full palette while presets auto-cycle.
-     *
-     * @returns {{
-     *   displaySize: import('blit-tech').Vector2i,
-     *   maxCanvasSize: import('blit-tech').Vector2i,
-     *   isOverlayPaletteEnabled: boolean,
-     *   overlayPaletteColumns: number,
-     *   overlayStyle: { barPaletteIndex: number, textPaletteIndex: number, gapPaletteIndex: number },
-     *   isOverlayTimingChartEnabled: boolean,
-     *   overlayTimingChartStyle: {
-     *     updateBarPaletteIndex: number, renderBarPaletteIndex: number,
-     *     warningPaletteIndex: number, errorPaletteIndex: number, tagPaletteIndex: number
-     *   }
-     * }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -176,7 +156,8 @@ class Demo {
     }
 
     /**
-     * Builds the palette with all static slots and zeroed dynamic slots, then loads the font.
+     * Builds the palette with static UI slots and zeroed dynamic slots, then
+     * primes one update() so every animated slot has real colors before render().
      *
      * @returns {Promise<boolean>}
      */
@@ -191,12 +172,10 @@ class Demo {
         this.palette = BT.paletteCreate(256);
 
         // Static UI colors.
-        this.palette.set(C_WHITE, new Color32(255, 255, 255)); // Pure white for font.
         this.palette.set(C_BG, new Color32(10, 12, 20)); // Very dark navy background.
         this.palette.set(C_PANEL, new Color32(20, 24, 36)); // Slightly lighter for panel backgrounds.
         this.palette.set(C_LABEL, new Color32(255, 210, 80)); // Golden yellow for section headings.
         this.palette.set(C_DIM, new Color32(120, 130, 160)); // Cool gray-blue for subtitles.
-        this.palette.set(C_FPS, new Color32(70, 70, 90)); // Very dim for the FPS counter.
 
         // Initialize all dynamic slots to black (invisible for now).
         // They will be filled with real colors on the very first update() call.
@@ -273,10 +252,6 @@ class Demo {
         this.renderHealthPanel();
         this.renderWaterPanel();
     }
-
-    // #endregion
-
-    // #region Update Helpers
 
     /**
      * Scrolling gradient: rotates 32 hue slots so the rainbow appears to slide across.
@@ -398,10 +373,6 @@ class Demo {
         }
     }
 
-    // #endregion
-
-    // #region Render Helpers
-
     /**
      * Panel 1: Scrolling gradient bar.
      * 32 thin rectangles in a row; each uses a different palette slot.
@@ -522,15 +493,7 @@ class Demo {
         // Label to the right.
         BT.systemPrint(new Vector2i(6 + totalTiles * tileW + 4, panelY + 28), C_DIM, 'slots 90..92');
     }
-
-    // #endregion
 }
-
-// #endregion
-
-// #region App Lifecycle
 
 // Hand the Demo class to Blit-Tech to start the demo loop.
 bootstrap(Demo);
-
-// #endregion

@@ -3,8 +3,11 @@
 // Demo 023 - PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //
 // Demo 023 in the Blit-Tech demo series.
-// We learned about the demo loop in the Basics demo: https://blit-tech-demos.vancura.dev/001-basics
-// We learned about bitmap fonts in the Bitmap Font demo: https://vancura.dev/articles/blit-tech-bitmap-font
+// Prerequisites:
+//   001-Basics      https://blit-tech-demos.vancura.dev/001-basics
+//   022-Bitmap Font https://blit-tech-demos.vancura.dev/022-bitmap-font
+//
+// Live version: https://blit-tech-demos.vancura.dev/023-crt-pipboy
 //
 // Live article: https://vancura.dev/articles/blit-tech-pipboy-crt
 //
@@ -63,8 +66,6 @@
 // `offset` to that index. So passing `C_GREEN - C_WHITE` shifts every glyph pixel from
 // the white slot to the green slot. Same trick the Sprite Effects demo uses for tints.
 
-// #region Imports
-
 // Pull in everything we need from the engine. The new two-tier post-process API exposes
 // each individual effect as its own class so we can compose them however we like.
 import {
@@ -88,10 +89,6 @@ import {
 } from 'blit-tech';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-
-// #endregion
-
-// #region Configuration
 
 // The internal pixel resolution of the demo. Small numbers keep the pixel art look.
 const DISPLAY_W = 320;
@@ -193,15 +190,9 @@ const FLICKER_DIP = 0.6;
 const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
-// #endregion
-
-// #region Type Definitions
-
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #endregion
-
-// #region Helper Functions
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
 
 /**
  * Returns a random integer in the half-open range [min, max).
@@ -247,14 +238,16 @@ function randPick(arr) {
  * @returns {number}
  */
 function colorSlot(name) {
-    if (name === 'amber') return C_AMBER;
-    if (name === 'dim') return C_GREEN_DIM;
+    if (name === 'amber') {
+        return C_AMBER;
+    }
+
+    if (name === 'dim') {
+        return C_GREEN_DIM;
+    }
+
     return C_GREEN;
 }
-
-// #endregion
-
-// #region Main Logic
 
 /**
  * PipBoy-style terminal showcase. Renders a tiny boot sequence + status block in green
@@ -273,6 +266,11 @@ function colorSlot(name) {
  * @implements {IBlitTechDemo}
  */
 class Demo {
+    /**
+     * Pixel-art logical size, 4x drawing buffer for display-tier CRT, overlay tuned for terminal look.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
     configure() {
         return {
             // The internal canvas is pixel-art sized. Game logic and draws write palette
@@ -322,6 +320,9 @@ class Demo {
         };
     }
 
+    /**
+     * @returns {Promise<boolean>}
+     */
     async init() {
         // Step 1: build the palette
         // Six colors. Every effect on screen comes from these.
@@ -352,6 +353,7 @@ class Demo {
 
         if (!this.effectsAvailable) {
             this.bootStartTick = BT.ticks;
+            BT.assignTag('Software renderer');
             return true;
         }
 
@@ -631,7 +633,10 @@ class Demo {
 
             // Subtract this line's ticks from the running total before moving on.
             ticksLeft -= fullLine.length * BOOT_TICKS_PER_CHAR + BOOT_LINE_SPACER_TICKS;
-            if (ticksLeft <= 0) return;
+
+            if (ticksLeft <= 0) {
+                return;
+            }
         }
     }
 
@@ -680,5 +685,3 @@ class Demo {
 }
 
 bootstrap(Demo);
-
-// #endregion

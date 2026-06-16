@@ -1,13 +1,21 @@
+// @pageTitle Blit-Tech Demo 020 - Palette Fade
+//
 // Demo 020 - Palette Fade & Flash: smooth color transitions and flash effects.
 //
 // Demo 020 in the Blit-Tech series (written for readers about 12 years old).
 //
 // Prerequisites:
 //   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives        https://vancura.dev/articles/blit-tech-primitives
-//   015-Palette Presets   https://vancura.dev/articles/blit-tech-palette-presets
-//   016-Palette Animation https://vancura.dev/articles/blit-tech-palette-animation
-//   019-Palette Cycling   https://vancura.dev/articles/blit-tech-palette-cycling
+//   002-Primitives        https://blit-tech-demos.vancura.dev/002-primitives
+//   015-Palette Presets   https://blit-tech-demos.vancura.dev/015-palette-presets
+//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
+//   019-Palette Cycling   https://blit-tech-demos.vancura.dev/019-palette-cycling
+//     (walkthroughs: https://vancura.dev/articles/blit-tech-palette-presets,
+//      https://vancura.dev/articles/blit-tech-palette-animation,
+//      https://vancura.dev/articles/blit-tech-palette-cycling)
+//
+// Live version: https://blit-tech-demos.vancura.dev/020-palette-fade
+// Live article: https://vancura.dev/articles/blit-tech-palette-fade
 //
 // WHAT ARE PALETTE FADES?
 //
@@ -27,6 +35,14 @@
 // lightning) for a short moment, then snaps everything back to normal.
 // BT.paletteFlash(color, durationMs) does this in one call.
 //
+// UPDATE VS RENDER (palette work split):
+//   init() builds separate day and night Palette objects and activates the day set.
+//   update() runs the day/night state machine and calls BT.paletteFade() or
+//   BT.paletteFlash() once per phase - the engine blends active palette slots over time.
+//   render() draws the same landscape geometry every frame using palette indices only;
+//   sky, trees, and ground change color because the engine updated the palette, not
+//   because render() passes new Color32 values to draw calls.
+//
 // WHAT YOU WILL SEE:
 //   A pixel-art landscape (sky, ground, trees, sun) that loops through:
 //   1. Day (bright)   - hold 3 seconds
@@ -42,7 +58,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
 
 /** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
 
-// #region Configuration
+/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit-tech').Palette} Palette */
 
 // Phase durations in ticks (at 60 FPS, 60 ticks = 1 second).
 const PHASE_DAY_HOLD = 180; // 3 seconds
@@ -53,11 +70,9 @@ const PHASE_NIGHT_HOLD_2 = 120; // 2 seconds
 const PHASE_FADE_TO_DAY = 120; // 2 seconds
 
 // Slot 0: always transparent.
-const C_WHITE = 1;
 const C_BG = 2; // Not used for scene, but available.
 const C_LABEL = 3;
 const C_DIM = 4;
-const C_FPS = 5;
 const C_OVERLAY_BAR = 6; // Overlay row background (same in day and night palettes)
 
 // Scene colors: sky, sun, ground, tree trunk, tree leaves, flowers.
@@ -76,21 +91,15 @@ const C_CLOUD = 21;
 const C_MOUNTAIN = 22;
 const C_MOUNTAIN_LIGHT = 23;
 
-// #endregion
-
-// #region Helper Functions
-
 /**
  * Builds the "day" palette - bright, saturated outdoor colors.
  *
  * @param {Palette} p - Palette to fill.
  */
 function fillDay(p) {
-    p.set(C_WHITE, new Color32(255, 255, 255));
     p.set(C_BG, new Color32(10, 12, 20));
     p.set(C_LABEL, new Color32(255, 210, 80));
     p.set(C_DIM, new Color32(120, 130, 160));
-    p.set(C_FPS, new Color32(70, 70, 90));
     p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
 
     p.set(C_SKY, new Color32(100, 170, 255));
@@ -115,11 +124,9 @@ function fillDay(p) {
  * @param {Palette} p - Palette to fill.
  */
 function fillNight(p) {
-    p.set(C_WHITE, new Color32(200, 200, 220));
     p.set(C_BG, new Color32(5, 5, 15));
     p.set(C_LABEL, new Color32(180, 160, 100));
     p.set(C_DIM, new Color32(80, 80, 110));
-    p.set(C_FPS, new Color32(40, 40, 60));
     p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
 
     p.set(C_SKY, new Color32(15, 20, 50));
@@ -138,22 +145,19 @@ function fillNight(p) {
     p.set(C_MOUNTAIN_LIGHT, new Color32(45, 50, 70));
 }
 
-// #endregion
-
-// #region Main Logic
-
 /**
- * Demonstrates BT.paletteFade(), BT.paletteFadeRange(), and BT.paletteFlash().
+ * Demonstrates BT.paletteFade() and BT.paletteFlash().
  * A pixel-art landscape transitions between day and night with smooth fades,
  * plus a lightning flash effect.
  *
  * @implements {IBlitTechDemo}
  */
 class Demo {
-    // #region Module State
-
+    /** @type {Palette | null} */
     palette = null;
+    /** @type {Palette | null} */
     day = null;
+    /** @type {Palette | null} */
     night = null;
 
     // Which phase of the day/night cycle we are in.
@@ -168,14 +172,10 @@ class Demo {
     // Reused every frame for the overlay (current day/night phase label).
     overlayRowData = [{ leftText: 'Day', textPaletteIndex: C_LABEL }];
 
-    // #endregion
-
-    // #region IBlitTechDemo Implementation
-
     /**
      * Palette slots for the engine overlay bars.
      *
-     * @returns {{ overlayStyle: { barPaletteIndex: number, textPaletteIndex: number } }}
+     * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
@@ -196,7 +196,7 @@ class Demo {
     }
 
     /**
-     * Creates day and night palettes, activates the day palette, loads font.
+     * Creates day and night palettes and activates the day palette.
      *
      * @returns {Promise<boolean>}
      */
@@ -296,8 +296,8 @@ class Demo {
     }
 
     /**
-     * Draws the pixel-art landscape. The scene geometry never changes
-     * only the palette colors shift via the fade/flash effects.
+     * Draws the pixel-art landscape. The scene geometry never changes; only the
+     * palette colors shift via the fade/flash effects running in update().
      */
     render() {
         // Sky fills the whole screen as background.
@@ -305,10 +305,6 @@ class Demo {
 
         this.renderScene();
     }
-
-    // #endregion
-
-    // #region Phase Management
 
     /**
      * Short label for the current day/night cycle phase.
@@ -339,10 +335,6 @@ class Demo {
         this.phaseStartTick = tick;
         this.effectTriggered = false;
     }
-
-    // #endregion
-
-    // #region Render Helpers
 
     /**
      * Draws the landscape: sky gradient, clouds, mountains, sun, ground, trees, flowers.
@@ -464,14 +456,6 @@ class Demo {
             BT.drawPixel(new Vector2i(fx + 1, fy + 1), slot);
         }
     }
-
-    // #endregion
 }
 
-// #endregion
-
-// #region App Lifecycle
-
 bootstrap(Demo);
-
-// #endregion
