@@ -3,13 +3,16 @@
   "private": true,
   "type": "module",
   "description": "Interactive demos for Blit-Tech, a palette-first WebGPU retro engine for TypeScript.",
-  "author": "Václav Vančura",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vancura/blit-tech-demos.git"
+    "url": "git+https://github.com/vancura/blit-tech-demos.git"
   },
-  "homepage": "https://vancura.dev",
+  "homepage": "https://blit-tech-demos.vancura.dev",
   "keywords": [
     "blit-tech",
     "webgpu",
