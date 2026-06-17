@@ -54,22 +54,22 @@ function flattenDemosPlugin() {
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-const blitTechDistEntry = resolve(__dirname, '../blit-tech/dist/blit-tech.js');
+const blit386DistEntry = resolve(__dirname, '../blit386/dist/blit386.js');
 
 /**
- * Full-reload the dev server when the linked blit-tech library rebuilds.
+ * Full-reload the dev server when the linked blit386 library rebuilds.
  * Vite pre-bundles dependencies once; without this, configure() API changes
  * in the workspace package do not show up until you restart `pnpm dev`.
  * @returns {import('vite').Plugin}
  */
-function blitTechWatchReload() {
+function blit386WatchReload() {
     return {
-        name: 'blit-tech-watch-reload',
+        name: 'blit386-watch-reload',
         apply: 'serve',
         configureServer(server) {
-            server.watcher.add(blitTechDistEntry);
+            server.watcher.add(blit386DistEntry);
             server.watcher.on('change', (file) => {
-                if (file === blitTechDistEntry) {
+                if (file === blit386DistEntry) {
                     server.ws.send({ type: 'full-reload' });
                 }
             });
@@ -84,19 +84,19 @@ export default defineConfig(({ command }) => {
     return {
         base: './',
 
-        // Dev only: point at ../blit-tech/dist so dev:watch picks up library rebuilds.
-        // Production build resolves blit-tech via node_modules (workspace package).
+        // Dev only: point at ../blit386/dist so dev:watch picks up library rebuilds.
+        // Production build resolves blit386 via node_modules (workspace package).
         resolve: {
             alias: isServe
                 ? {
-                      'blit-tech': blitTechDistEntry,
+                      blit386: blit386DistEntry,
                   }
                 : {},
         },
 
         plugins: [
             virtualDemos(),
-            ...(isServe ? [blitTechWatchReload()] : []),
+            ...(isServe ? [blit386WatchReload()] : []),
             viteStaticCopy({
                 targets: [
                     {
@@ -133,15 +133,15 @@ export default defineConfig(({ command }) => {
 
         optimizeDeps: {
             // Load the workspace package from dist on each refresh instead of a frozen pre-bundle.
-            exclude: ['blit-tech'],
+            exclude: ['blit386'],
         },
 
         server: {
             open: '/demos/001-basics.html',
             hmr: true,
             watch: {
-                // pnpm links ../blit-tech; watch its dist output during `dev:watch`.
-                ignored: ['**/node_modules/**', '!**/blit-tech/dist/**'],
+                // pnpm links ../blit386; watch its dist output during `dev:watch`.
+                ignored: ['**/node_modules/**', '!**/blit386/dist/**'],
             },
         },
 

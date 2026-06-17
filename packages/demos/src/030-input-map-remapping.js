@@ -1,14 +1,14 @@
 /**
  * Input Map Remapping Demo - runtime `BT.inputMap` and `BT.inputMapReset`.
  *
- * Demo 030 in the Blit-Tech demo series.
- * Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
- * 028-Keyboard-Input (https://blit-tech-demos.vancura.dev/028-keyboard-input).
+ * Demo 030 in the BLIT386 demo series.
+ * Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+ * 028-Keyboard-Input (https://demos.blit386.dev/028-keyboard-input).
  *
- * Live version: https://blit-tech-demos.vancura.dev/030-input-map-remapping
+ * Live version: https://demos.blit386.dev/030-input-map-remapping
  */
 
-// @pageTitle Blit-Tech Demo 030 - Input Map Remapping
+// @pageTitle BLIT386 Demo 030 - Input Map Remapping
 //
 //
 // The engine stores **two** runtime keyboard tables (players 0 and 1). Each
@@ -28,12 +28,12 @@
 // - Press **0** or **R** anytime to restore defaults (same idea as **1**).
 // - Click the canvas if preset keys stop responding (focus left the page).
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Palette indices. Slot 0 stays transparent; our UI colors start at 1.
 const C_WHITE = 1; // Primary labels and bright panel titles.
@@ -79,7 +79,7 @@ const FACE_ROW_ALL = [
 /**
  * Cycles keyboard face-button maps with `BT.inputMap` / `BT.inputMapReset`.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

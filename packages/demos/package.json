@@ -1,8 +1,8 @@
 {
-  "name": "blit-tech-demos",
+  "name": "blit386-demos",
   "private": true,
   "type": "module",
-  "description": "Interactive demos for Blit-Tech, a palette-first WebGPU retro engine for TypeScript.",
+  "description": "Interactive demos for BLIT386, a palette-first WebGPU retro engine for TypeScript.",
   "author": {
     "name": "Václav Vančura",
     "url": "https://github.com/vancura"
@@ -10,11 +10,11 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vancura/blit-tech-demos.git"
+    "url": "git+https://github.com/blit386/blit386-demos.git"
   },
-  "homepage": "https://blit-tech-demos.vancura.dev",
+  "homepage": "https://demos.blit386.dev",
   "keywords": [
-    "blit-tech",
+    "blit386",
     "webgpu",
     "javascript",
     "demos",
@@ -33,7 +33,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:watch": "pnpm --filter blit-tech run build && concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit-tech run build --watch\" \"pnpm run dev\"",
+    "dev:watch": "pnpm --filter blit386 run build && concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit386 run build --watch\" \"pnpm run dev\"",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -51,7 +51,7 @@
     "prepare": "husky",
     "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:fix": "pnpm audit --fix",
-    "security:mcp-preflight": "node ../blit-tech/scripts/security/mcp-preflight.mjs"
+    "security:mcp-preflight": "node ../blit386/scripts/security/mcp-preflight.mjs"
   },
   "packageManager": "pnpm@10.26.2",
   "pnpm": {
@@ -60,7 +60,7 @@
     }
   },
   "dependencies": {
-    "blit-tech": "workspace:*"
+    "blit386": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",

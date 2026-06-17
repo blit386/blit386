@@ -1,8 +1,8 @@
-// @pageTitle Blit-Tech Demo 003 - Colors
+// @pageTitle BLIT386 Demo 003 - Colors
 //
-// Colors Demo - a deep dive into Color32 and palettes in Blit-Tech.
+// Colors Demo - a deep dive into Color32 and palettes in BLIT386.
 //
-// Demo 003 in the Blit-Tech demo series, written for young learners (around 12)
+// Demo 003 in the BLIT386 demo series, written for young learners (around 12)
 // who are getting comfortable with code. You will see:
 //
 //   - Named shortcut colors (Color32.red and friends - static properties, not function calls)
@@ -12,9 +12,9 @@
 //   - Lerp: smoothly sliding between two colors (like a dimmer between two lights)
 //
 // We learned about the demo lifecycle, Vector2i, Rect2i, and clearing the screen in the Basics demo:
-// https://blit-tech-demos.vancura.dev/001-basics
+// https://demos.blit386.dev/001-basics
 //
-// Live version: https://vancura.dev/articles/blit-tech-colors
+// Live version: https://vancura.dev/articles/blit386-colors
 //
 // IMPORTANT - palettes and how they changed from older demos:
 //
@@ -35,13 +35,13 @@
 //   not in how often the monitor redraws. render() can run a different number of times
 //   per second on high-refresh screens, but animTime still only changes inside update().
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').Color32} Color32 */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').Color32} Color32 */
 
 //
 // These numbers are the palette "addresses". We name them so the code is readable.
@@ -93,7 +93,7 @@ const C_PULSE = 126;
  * All animated colors are computed in update() and stored in palette slots.
  * render() uses only palette index numbers - no Color32 objects there.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // animTime is "how many seconds of game time have passed".

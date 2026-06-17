@@ -1,15 +1,15 @@
 /**
  * Demo 033 - Basics Enhanced.
  *
- * Same bouncing-sprite behavior as demo 001 (https://blit-tech-demos.vancura.dev/001-basics),
+ * Same bouncing-sprite behavior as demo 001 (https://demos.blit386.dev/001-basics),
  * with the same PipBoy palette and overlay rows for position and bounces. Every
  * frame is also routed through a hand-built CRT stack on WebGPU. If 001 was "the engine
  * works", this demo is "the engine works, and here is the kind of finish you can layer
  * on top once you understand the post-process pipeline".
  *
- * Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
- * 023-PipBoy-CRT (https://blit-tech-demos.vancura.dev/023-crt-pipboy),
- * 024-CRT-Toggle (https://blit-tech-demos.vancura.dev/024-crt-toggle).
+ * Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+ * 023-PipBoy-CRT (https://demos.blit386.dev/023-crt-pipboy),
+ * 024-CRT-Toggle (https://demos.blit386.dev/024-crt-toggle).
  *
  * The pipeline has two tiers. Both come from the engine's post-process system we
  * explored in 023 and 024:
@@ -17,7 +17,7 @@
  *   1. Pixel tier - runs ON the logical index buffer (320x240, palette indices, BEFORE
  *      the palette is resolved into RGB). Effects here distort the indexed image itself.
  *      Only PixelGlitch sits here. See:
- *      https://vancura.dev/articles/blit-tech-crt-toggle
+ *      https://vancura.dev/articles/blit386-crt-toggle
  *
  *   2. Display tier - runs AFTER the palette is resolved and the image is upscaled to
  *      the canvas. Effects here work in full-colour RGB and can blur, warp, tint, and
@@ -31,10 +31,10 @@
  * SOFTWARE FALLBACK: when the engine uses the software renderer, the bouncing sprite
  * demo still runs but the CRT stack is not registered. Overlay rows explain the reduced mode.
  *
- * Live version: https://blit-tech-demos.vancura.dev/033-basics-enhanced
+ * Live version: https://demos.blit386.dev/033-basics-enhanced
  */
 
-// @pageTitle Blit-Tech Demo 033 - Basics Enhanced
+// @pageTitle BLIT386 Demo 033 - Basics Enhanced
 
 import {
     BarrelDistortion,
@@ -53,7 +53,7 @@ import {
     SpriteSheet,
     Vector2i,
     Vignette,
-} from 'blit-tech';
+} from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
@@ -95,23 +95,23 @@ const GLITCH_LABELS = {
     interference: 'INTERFERENCE',
 };
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit-tech').Rect2i} Rect2i */
-/** @typedef {import('blit-tech').PixelGlitch} PixelGlitch */
-/** @typedef {import('blit-tech').BarrelDistortion} BarrelDistortion */
-/** @typedef {import('blit-tech').ChromaticAberration} ChromaticAberration */
-/** @typedef {import('blit-tech').Interference} Interference */
-/** @typedef {import('blit-tech').RollLine} RollLine */
-/** @typedef {import('blit-tech').Scanlines} Scanlines */
-/** @typedef {import('blit-tech').RGBMask} RGBMask */
-/** @typedef {import('blit-tech').Vignette} Vignette */
-/** @typedef {import('blit-tech').Noise} Noise */
-/** @typedef {import('blit-tech').Flicker} Flicker */
-/** @typedef {import('blit-tech').Bloom} Bloom */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
+/** @typedef {import('blit386').PixelGlitch} PixelGlitch */
+/** @typedef {import('blit386').BarrelDistortion} BarrelDistortion */
+/** @typedef {import('blit386').ChromaticAberration} ChromaticAberration */
+/** @typedef {import('blit386').Interference} Interference */
+/** @typedef {import('blit386').RollLine} RollLine */
+/** @typedef {import('blit386').Scanlines} Scanlines */
+/** @typedef {import('blit386').RGBMask} RGBMask */
+/** @typedef {import('blit386').Vignette} Vignette */
+/** @typedef {import('blit386').Noise} Noise */
+/** @typedef {import('blit386').Flicker} Flicker */
+/** @typedef {import('blit386').Bloom} Bloom */
 
 /**
  * @param {number} min
@@ -143,7 +143,7 @@ function randPick(arr) {
 /**
  * Demo 001 plus a hand-built CRT post-process chain and periodic glitch bursts.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // --- Bouncing sprite (same roles as demo 001) ---

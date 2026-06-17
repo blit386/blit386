@@ -1,8 +1,7 @@
 # Security headers (Cloudflare Pages)
 
-Deployed demos are static HTML, JS, fonts, and sprites on
-[blit-tech-demos.vancura.dev](https://blit-tech-demos.vancura.dev/). HTTP response headers are defined in
-[`public/_headers`](../public/_headers) and copied into `dist/` at build time.
+Deployed demos are static HTML, JS, fonts, and sprites on [demos.blit386.dev](https://demos.blit386.dev/). HTTP response
+headers are defined in [`public/_headers`](../public/_headers) and copied into `dist/` at build time.
 
 ## Baseline
 
@@ -46,7 +45,7 @@ Deployed demos are static HTML, JS, fonts, and sprites on
 ### Build
 
 ```bash
-cd blit-tech-demos
+cd blit386-demos
 pnpm run build
 test -f dist/_headers
 ```
@@ -66,14 +65,14 @@ After deploy, use production `curl` (below) and browser smoke tests.
 ### Production
 
 ```bash
-curl -sI 'https://blit-tech-demos.vancura.dev/001-basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
+curl -sI 'https://demos.blit386.dev/001-basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
 ```
 
 Smoke-test in a browser:
 
-1. [001-basics](https://blit-tech-demos.vancura.dev/001-basics) — WebGPU + sprite load.
-2. [013-image-output](https://blit-tech-demos.vancura.dev/013-image-output) — Space triggers PNG download (`blob:`).
-3. [023-crt-pipboy](https://blit-tech-demos.vancura.dev/023-crt-pipboy) — WebGPU post-process chain.
+1. [001-basics](https://demos.blit386.dev/001-basics) — WebGPU + sprite load.
+2. [013-image-output](https://demos.blit386.dev/013-image-output) — Space triggers PNG download (`blob:`).
+3. [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) — WebGPU post-process chain.
 4. Embed check — demo iframe on [vancura.dev](https://vancura.dev) articles still loads (`frame-ancestors`).
 
 Check the browser console for CSP violations after deploy.
@@ -82,5 +81,5 @@ Check the browser console for CSP violations after deploy.
 
 - Parent hardening: security program.
 - Runbook row:
-  [`blit-tech/docs/security/security-runbook.md`](https://github.com/vancura/blit-tech/blob/main/docs/security/security-runbook.md)
+  [`blit386/docs/security/security-runbook.md`](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md)
   (deploy headers evidence).

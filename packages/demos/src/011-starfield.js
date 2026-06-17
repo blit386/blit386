@@ -1,13 +1,13 @@
 // Demo 011 - Starfield: parallax scrolling stars that feel like 3D depth.
 //
-// Demo 011 in the Blit-Tech demo series (written for readers about 12 years old).
+// Demo 011 in the BLIT386 demo series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives https://blit-tech-demos.vancura.dev/002-primitives
-//   003-Colors     https://blit-tech-demos.vancura.dev/003-colors
+//   001-Basics     https://demos.blit386.dev/001-basics
+//   002-Primitives https://demos.blit386.dev/002-primitives
+//   003-Colors     https://demos.blit386.dev/003-colors
 //
-// Live article: https://vancura.dev/articles/blit-tech-starfield
+// Live article: https://vancura.dev/articles/blit386-starfield
 //
 // WHAT YOU WILL SEE
 // Three layers of stars scroll to the left at different speeds. Stars that are
@@ -31,14 +31,14 @@
 // render() just reads that slot number - no Color32 objects needed per frame.
 //
 // The engine splits work the usual way: update() moves things; render() only draws.
-// See the Basics demo for the full story: https://blit-tech-demos.vancura.dev/001-basics
+// See the Basics demo for the full story: https://demos.blit386.dev/001-basics
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Logical screen size in "game pixels".
 const DISPLAY_W = 320;
@@ -68,7 +68,7 @@ const C_STREAK = 7; // Cool white for the shooting star streak.
 /**
  * Parallax starfield with three layers plus an occasional shooting star.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The palette holds all colors used in this demo.

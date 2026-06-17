@@ -8,7 +8,7 @@ const HEADER_SCAN_BYTES = 2000;
 
 /**
  * Build the list of demos by scanning src/*.js for files matching NNN-topic.js or 00a-topic.js.
- * Each entry's title defaults to "Blit-Tech Demo NNN - Title Cased Topic" and
+ * Each entry's title defaults to "BLIT386 Demo NNN - Title Cased Topic" and
  * may be overridden by a `@pageTitle ...` tag in the JS file header.
  * @param {string} rootDir - Absolute path to the project root (Vite's config.root).
  * @returns {Array<{number: string, slug: string, scriptFile: string, title: string, urlPath: string, sourcePath: string}>}
@@ -86,5 +86,5 @@ function deriveTitle(number, topic, header) {
         .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1) : word))
         .join(' ');
 
-    return `Blit-Tech Demo ${number} - ${topicTitle}`;
+    return `BLIT386 Demo ${number} - ${topicTitle}`;
 }

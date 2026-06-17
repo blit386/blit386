@@ -1,19 +1,19 @@
-// @pageTitle Blit-Tech Demo 019 - Palette Cycling
+// @pageTitle BLIT386 Demo 019 - Palette Cycling
 //
 // Demo 019 - Palette Cycling: classic retro color rotation using BT.paletteCycle().
 //
-// Demo 019 in the Blit-Tech series (written for readers about 12 years old).
+// Demo 019 in the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics            https://blit-tech-demos.vancura.dev/001-basics
-//   002-Primitives        https://blit-tech-demos.vancura.dev/002-primitives
-//   015-Palette Presets   https://blit-tech-demos.vancura.dev/015-palette-presets
-//   016-Palette Animation https://blit-tech-demos.vancura.dev/016-palette-animation
-//     (walkthroughs: https://vancura.dev/articles/blit-tech-palette-presets,
-//      https://vancura.dev/articles/blit-tech-palette-animation)
+//   001-Basics            https://demos.blit386.dev/001-basics
+//   002-Primitives        https://demos.blit386.dev/002-primitives
+//   015-Palette Presets   https://demos.blit386.dev/015-palette-presets
+//   016-Palette Animation https://demos.blit386.dev/016-palette-animation
+//     (walkthroughs: https://vancura.dev/articles/blit386-palette-presets,
+//      https://vancura.dev/articles/blit386-palette-animation)
 //
-// Live version: https://blit-tech-demos.vancura.dev/019-palette-cycling
-// Live article: https://vancura.dev/articles/blit-tech-palette-cycling
+// Live version: https://demos.blit386.dev/019-palette-cycling
+// Live article: https://vancura.dev/articles/blit386-palette-cycling
 //
 // WHAT IS PALETTE CYCLING?
 //
@@ -28,7 +28,7 @@
 // like Sonic, Secret of Mana, and Chrono Trigger - all without redrawing a
 // single pixel.
 //
-// Blit-Tech gives you BT.paletteCycle(start, end, speed) to do exactly that.
+// BLIT386 gives you BT.paletteCycle(start, end, speed) to do exactly that.
 // Call it once in init(), and the engine rotates the colors automatically
 // each frame. Positive speed = forward, negative = backward.
 //
@@ -47,12 +47,12 @@
 //
 // Plus a palette swap demonstration every few seconds.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Water
 // 8 blue-gradient slots cycling at 4 steps per second.
@@ -95,7 +95,7 @@ const C_WATER_BASE = 50;
  * BT.paletteSwap() for instant entry exchange and BT.paletteClearEffects()
  * for stopping all running effects.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

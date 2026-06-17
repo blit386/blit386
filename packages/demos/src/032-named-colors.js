@@ -1,9 +1,9 @@
 /**
  * Named Colors Demo - Color32 named lookup table and custom registration APIs.
  *
- * Demo 032 in the Blit-Tech demo series.
- * Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
- * 003-Colors (https://blit-tech-demos.vancura.dev/003-colors).
+ * Demo 032 in the BLIT386 demo series.
+ * Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+ * 003-Colors (https://demos.blit386.dev/003-colors).
  *
  * What this demo teaches:
  * - How to read built-in named colors with Color32.resolveNamedColor('tomato')
@@ -16,18 +16,18 @@
  * - The "definition" is a Color32 value (r, g, b, a).
  * - resolveNamedColor(name) asks the dictionary: "Do you know this word?"
  *
- * Live version: https://blit-tech-demos.vancura.dev/032-named-colors
+ * Live version: https://demos.blit386.dev/032-named-colors
  */
 
-// @pageTitle Blit-Tech Demo 032 - Named Colors
+// @pageTitle BLIT386 Demo 032 - Named Colors
 //
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Palette indices for panels, swatches, and status text. Slot 0 stays transparent.
 const C_BG = 1; // Screen background.
@@ -51,7 +51,7 @@ const SWATCH_H = 26;
 /**
  * Demonstrates built-in and custom named colors.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

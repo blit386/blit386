@@ -1,9 +1,9 @@
 /**
  * Fonts Demo - built-in system font and palette-animated text.
  *
- * Demo 004 in the Blit-Tech demo series.
- * Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
- * Live version: https://blit-tech-demos.vancura.dev/004-fonts
+ * Demo 004 in the BLIT386 demo series.
+ * Prerequisites: 001-Basics - https://demos.blit386.dev/001-basics
+ * Live version: https://demos.blit386.dev/004-fonts
  *
  * BT.systemPrint() draws text with the engine's built-in system font (6 pixels wide,
  * 14 pixels tall per character). No file loading, no await, no font object.
@@ -15,17 +15,17 @@
  *   - Pulsing text: animating alpha in update() on a single palette slot
  *
  * For custom bitmap fonts loaded from disk, variable glyph widths, and BT.printFont(),
- * see Demo 022 - Bitmap Font: https://blit-tech-demos.vancura.dev/022-bitmap-font
+ * see Demo 022 - Bitmap Font: https://demos.blit386.dev/022-bitmap-font
  */
 
-// @pageTitle Blit-Tech Demo 004 - Fonts
+// @pageTitle BLIT386 Demo 004 - Fonts
 
-import { bootstrap, BT, Color32, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
@@ -58,7 +58,7 @@ let systemCharWidth = 6;
  * Shows static colors, per-character rainbow animation, and pulsing brightness.
  * Compare with Demo 022 - Bitmap Font for BitmapFont.load() and BT.printFont().
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // palette holds all the colors this demo uses.
@@ -128,7 +128,7 @@ class Demo {
 
     /**
      * Runs at a fixed rate (60 times per second). See the Basics demo for the full explanation:
-     * https://blit-tech-demos.vancura.dev/001-basics
+     * https://demos.blit386.dev/001-basics
      * We advance the animation timer AND update dynamic palette colors here.
      */
     update() {
@@ -266,5 +266,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

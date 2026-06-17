@@ -1,10 +1,10 @@
 /**
  * Pointer Basics Demo - read mouse position, buttons, delta, and scroll wheel.
  *
- * Demo 025 in the Blit-Tech demo series.
- * Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
+ * Demo 025 in the BLIT386 demo series.
+ * Prerequisites: 001-Basics - https://demos.blit386.dev/001-basics
  *
- * Live version: https://blit-tech-demos.vancura.dev/025-pointer-basics
+ * Live version: https://demos.blit386.dev/025-pointer-basics
  *
  * This demo is the simplest introduction to BT's pointer API. It draws a
  * crosshair that follows your mouse, lights up indicator boxes when you press
@@ -18,14 +18,14 @@
  *   demo 026 for the full multi-touch paint version with all four slots.)
  */
 
-// @pageTitle Blit-Tech Demo 025 - Pointer Basics
+// @pageTitle BLIT386 Demo 025 - Pointer Basics
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Palette slots. Index 0 is always transparent.
 const C_WHITE = 1; // text and crosshair
@@ -52,7 +52,7 @@ const SCROLL_SENSITIVITY = 0.25;
  * Demonstrates the basic pointer API: position, delta, scroll wheel, and the
  * four pointer buttons (A, B, C, D) on slot 0 (the mouse).
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

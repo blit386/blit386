@@ -8,7 +8,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "blit-tech": ["../blit-tech/src/BlitTech.ts"]
+      "blit386": ["../blit386/src/BLIT386.ts"]
     }
   },
   "include": ["src/**/*"],

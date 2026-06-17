@@ -1,10 +1,10 @@
 /**
  * Pointer Paint Demo - multi-touch finger painting with mouse + up to 3 touches.
  *
- * Demo 026 in the Blit-Tech demo series.
- * Prerequisites: 025-Pointer Basics - https://blit-tech-demos.vancura.dev/025-pointer-basics
+ * Demo 026 in the BLIT386 demo series.
+ * Prerequisites: 025-Pointer Basics - https://demos.blit386.dev/025-pointer-basics
  *
- * Live version: https://blit-tech-demos.vancura.dev/026-pointer-paint
+ * Live version: https://demos.blit386.dev/026-pointer-paint
  *
  * This demo shows how all four pointer slots work side by side. Each slot
  * paints in its own colour:
@@ -32,14 +32,14 @@
  * to a background colour first.
  */
 
-// @pageTitle Blit-Tech Demo 026 - Pointer Paint
+// @pageTitle BLIT386 Demo 026 - Pointer Paint
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -73,7 +73,7 @@ const BRUSH_SIZES = [0, 2, 4];
  * checking BT.isPointerActive() / BT.isDown() / BT.pointerPos() on each
  * of the four slots in update().
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

@@ -2,9 +2,9 @@
 //
 // Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
 //
-// Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
-// 008-Sprites (https://vancura.dev/articles/blit-tech-sprites).
-// Live article: https://vancura.dev/articles/blit-tech-sprite-effects
+// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+// 008-Sprites (https://demos.blit386.dev/008-sprites).
+// Live article: https://vancura.dev/articles/blit386-sprite-effects
 //
 // In the palette-based rendering system, each sprite pixel stores a palette index.
 // By drawing the same sprite with a different palette offset (the fourth argument
@@ -26,7 +26,7 @@
 // we update the color block in update() every tick and draw with that offset in render().
 //
 // We learned about palette offsets in Demo 008-Sprites:
-// https://vancura.dev/articles/blit-tech-sprites
+// https://demos.blit386.dev/008-sprites
 //
 // FULLSCREEN CRT (Tesla Orava TV)
 // The sprite grid is drawn at 640x400, then the engine resolves and upscales it and runs
@@ -56,27 +56,27 @@ import {
     SpriteSheet,
     Vector2i,
     Vignette,
-} from 'blit-tech';
+} from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
-/** @typedef {import('blit-tech').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit-tech').Rect2i} Rect2i */
-/** @typedef {import('blit-tech').PixelGlitch} PixelGlitch */
-/** @typedef {import('blit-tech').BarrelDistortion} BarrelDistortion */
-/** @typedef {import('blit-tech').ChromaticAberration} ChromaticAberration */
-/** @typedef {import('blit-tech').Interference} Interference */
-/** @typedef {import('blit-tech').RollLine} RollLine */
-/** @typedef {import('blit-tech').Scanlines} Scanlines */
-/** @typedef {import('blit-tech').RGBMask} RGBMask */
-/** @typedef {import('blit-tech').Vignette} Vignette */
-/** @typedef {import('blit-tech').Noise} Noise */
-/** @typedef {import('blit-tech').Flicker} Flicker */
-/** @typedef {import('blit-tech').Bloom} Bloom */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
+/** @typedef {import('blit386').PixelGlitch} PixelGlitch */
+/** @typedef {import('blit386').BarrelDistortion} BarrelDistortion */
+/** @typedef {import('blit386').ChromaticAberration} ChromaticAberration */
+/** @typedef {import('blit386').Interference} Interference */
+/** @typedef {import('blit386').RollLine} RollLine */
+/** @typedef {import('blit386').Scanlines} Scanlines */
+/** @typedef {import('blit386').RGBMask} RGBMask */
+/** @typedef {import('blit386').Vignette} Vignette */
+/** @typedef {import('blit386').Noise} Noise */
+/** @typedef {import('blit386').Flicker} Flicker */
+/** @typedef {import('blit386').Bloom} Bloom */
 
 // Where sprite colors start in the palette.
 // Must be above the highest UI slot (C_FPS = 11) to avoid overwriting UI colors.
@@ -230,7 +230,7 @@ function burnCpuMs(ms) {
  * Demonstrates palette-offset based sprite effects.
  * Static effects are pre-built in init(); dynamic effects update in update().
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // The palette holds all colors for this demo.
@@ -938,5 +938,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to Blit-Tech to start the demo loop.
+// Hand the Demo class to BLIT386 to start the demo loop.
 bootstrap(Demo);

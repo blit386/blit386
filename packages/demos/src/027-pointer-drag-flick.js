@@ -1,12 +1,12 @@
 /**
  * Pointer Drag-and-Flick Demo - grab balls, drag them, release to throw.
  *
- * Demo 027 in the Blit-Tech demo series.
+ * Demo 027 in the BLIT386 demo series.
  * Prerequisites:
- *   025-Pointer Basics - https://blit-tech-demos.vancura.dev/025-pointer-basics
- *   026-Pointer Paint  - https://blit-tech-demos.vancura.dev/026-pointer-paint
+ *   025-Pointer Basics - https://demos.blit386.dev/025-pointer-basics
+ *   026-Pointer Paint  - https://demos.blit386.dev/026-pointer-paint
  *
- * Live version: https://blit-tech-demos.vancura.dev/027-pointer-drag-flick
+ * Live version: https://demos.blit386.dev/027-pointer-drag-flick
  *
  * This is the action-oriented sibling of demos 025 and 026. Where 025 reads
  * pointer state and 026 paints onto a canvas, this demo couples the pointer
@@ -34,14 +34,14 @@
  * integer display coordinates so pixels stay crisp.
  */
 
-// @pageTitle Blit-Tech Demo 027 - Pointer Drag Flick
+// @pageTitle BLIT386 Demo 027 - Pointer Drag Flick
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -90,7 +90,7 @@ const MAX_THROW_SPEED = 16;
  * each frame. On release we read `BT.pointerDelta(slot)` and convert it to
  * the ball's launch velocity.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

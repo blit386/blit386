@@ -1,31 +1,31 @@
 name: Workspace Setup
-description: Checkout repos, create pnpm workspace, install dependencies, and build the Blit-Tech library.
+description: Checkout repos, create pnpm workspace, install dependencies, and build the BLIT386 library.
 
 runs:
   using: composite
 
   steps:
-    - name: Checkout Blit-Tech library
+    - name: Checkout BLIT386 library
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       with:
-        repository: vancura/blit-tech
+        repository: blit386/blit386
         ref: main
-        path: blit-tech
+        path: blit386
 
-    - name: Checkout Blit-Tech Demos
+    - name: Checkout BLIT386 Demos
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       with:
-        path: blit-tech-demos
+        path: blit386-demos
 
     - name: Create workspace config
       shell: bash
       run: |
         cat > pnpm-workspace.yaml << EOF
         packages:
-          - 'blit-tech'
-          - 'blit-tech-demos'
+          - 'blit386'
+          - 'blit386-demos'
         EOF
-        cp blit-tech/pnpm-lock.yaml pnpm-lock.yaml
+        cp blit386/pnpm-lock.yaml pnpm-lock.yaml
 
     - name: Setup pnpm
       uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
@@ -42,8 +42,8 @@ runs:
       shell: bash
       run: pnpm install --no-frozen-lockfile
 
-    - name: Build Blit-Tech library
+    - name: Build BLIT386 library
       shell: bash
       run: |
-        cd blit-tech
+        cd blit386
         pnpm run build

@@ -1,12 +1,12 @@
 // Pixel Art Demo - draw tiny pictures from number grids and from math patterns.
 //
-// Demo 005 in the Blit-Tech demo series for young learners (around 12).
+// Demo 005 in the BLIT386 demo series for young learners (around 12).
 //
 // We learned about the demo lifecycle, coordinates, and clearing the screen in the Basics demo:
-// https://blit-tech-demos.vancura.dev/001-basics
+// https://demos.blit386.dev/001-basics
 //
 // Prerequisites: 001-Basics, 002-Primitives, 003-Colors
-// Live version: https://vancura.dev/articles/blit-tech-pixel-art
+// Live version: https://demos.blit386.dev/005-pixel-art
 //
 // This demo shows:
 //   - A 2D array (grid) of small numbers that stand for colors, like a paint-by-number on graph paper
@@ -16,12 +16,12 @@
 //   - Why we sometimes draw many BT.drawPixel calls in a small block to make one "big" chunky pixel
 //   - A pattern drawn only with loops and math (no picture array), with colors that move over time
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Every color used for drawing gets a numbered slot in the palette (like a numbered paint jar).
 // Index 0 is always transparent. Custom colors start at 1.
@@ -104,7 +104,7 @@ function indexFromPaletteMap(paletteMap, code) {
 /**
  * Teaches pixel grids, nested loops, screen mapping, and a tiny procedural pattern.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // animTime counts seconds of game time if every update tick is exactly 1/60 of a second.
@@ -190,7 +190,7 @@ class Demo {
     /**
      * Fixed-step clock. Advances animTime and updates the animated checker colors in the palette.
      * See the Basics article for why update() and render() are separate steps:
-     * https://blit-tech-demos.vancura.dev/001-basics
+     * https://demos.blit386.dev/001-basics
      */
     update() {
         // Add one tick's worth of time. If targetFPS is 60, each tick is about 1/60 second.

@@ -1,22 +1,21 @@
 # Quick Start Guide for External Developers
 
-This guide is for developers who want to run Blit-Tech Demos locally with the latest Blit-Tech source.
+This guide is for developers who want to run BLIT386 Demos locally with the latest BLIT386 source.
 
 ## Why This Setup Is Needed
 
-Blit-Tech Demos depends on Blit-Tech via a pnpm workspace dependency:
+BLIT386 Demos depends on BLIT386 via a pnpm workspace dependency:
 
 ```json
 {
   "dependencies": {
-    "blit-tech": "workspace:*"
+    "blit386": "workspace:*"
   }
 }
 ```
 
-Blit-Tech is published to npm, but this demos repository intentionally depends on `blit-tech` via `workspace:*` so the
-demos can track the local sibling repo during development. That means you still need both repositories in one pnpm
-workspace.
+BLIT386 is published to npm, but this demos repository intentionally depends on `blit386` via `workspace:*` so the demos
+can track the local sibling repo during development. That means you still need both repositories in one pnpm workspace.
 
 ## Browser and Renderer
 
@@ -28,7 +27,7 @@ demos still boot and run their core scene without the CRT stack; an on-screen no
 demos run fully in software mode for core 2D.
 
 **WebGPU** is supported in current versions of Chrome/Edge, recent Firefox and Safari as listed in the
-[Blit-Tech README](https://github.com/vancura/blit-tech/blob/main/README.md#prerequisites) and the demos
+[BLIT386 README](https://github.com/blit386/blit386/blob/main/README.md#prerequisites) and the demos
 [README](../README.md#browser-and-renderer).
 
 ## One-Time Setup
@@ -36,15 +35,15 @@ demos run fully in software mode for core 2D.
 ### 1. Create Workspace Directory
 
 ```bash
-mkdir blit-tech-workspace
-cd blit-tech-workspace
+mkdir blit386-workspace
+cd blit386-workspace
 ```
 
 ### 2. Clone Both Repositories
 
 ```bash
-git clone https://github.com/vancura/blit-tech.git
-git clone https://github.com/vancura/blit-tech-demos.git
+git clone https://github.com/blit386/blit386.git
+git clone https://github.com/blit386/blit386-demos.git
 ```
 
 ### 3. Create Workspace Configuration
@@ -54,8 +53,8 @@ Create a `pnpm-workspace.yaml` file in the workspace root:
 ```bash
 cat > pnpm-workspace.yaml << 'EOF'
 packages:
-  - "blit-tech"
-  - "blit-tech-demos"
+  - "blit386"
+  - "blit386-demos"
 EOF
 ```
 
@@ -70,15 +69,15 @@ pnpm install
 After setup, your directory should look like this:
 
 ```text
-blit-tech-workspace/          # Your workspace root
+blit386-workspace/          # Your workspace root
 ├── pnpm-workspace.yaml       # Links the two packages
 ├── package.json              # Optional (see below)
 ├── node_modules/             # Shared dependencies
-├── blit-tech/                # The library
+├── blit386/                # The library
 │   ├── src/
 │   ├── dist/                 # Built output
 │   └── package.json
-└── blit-tech-demos/          # The demos
+└── blit386-demos/          # The demos
     ├── src/                  # One JS file per demo (single source of truth)
     ├── _partials/            # Shared HTML template
     ├── plugins/              # virtual-demos Vite plugin
@@ -89,11 +88,11 @@ blit-tech-workspace/          # Your workspace root
 
 You can optionally create a `package.json` in the workspace root:
 
-Prerequisite: Node.js >= 22.18.0 is required for this workspace because the sibling `blit-tech` package requires it.
+Prerequisite: Node.js >= 22.18.0 is required for this workspace because the sibling `blit386` package requires it.
 
 ```json
 {
-  "name": "blit-tech-workspace",
+  "name": "blit386-workspace",
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@10.26.2"
@@ -107,7 +106,7 @@ This is not required but can help with pnpm version pinning.
 ### Standard Development
 
 ```bash
-cd blit-tech-demos
+cd blit386-demos
 pnpm run dev
 ```
 
@@ -115,24 +114,24 @@ Opens the browser at `http://localhost:5173/demos/001-basics.html` (or visit `/d
 
 ### Development with Auto-Rebuild
 
-If you want to edit the Blit-Tech library and see changes instantly:
+To edit the BLIT386 library and see changes instantly:
 
 ```bash
-cd blit-tech-demos
+cd blit386-demos
 pnpm run dev:watch
 ```
 
 This runs two processes concurrently:
 
-- Watches `blit-tech/src` and rebuilds on changes
+- Watches `blit386/src` and rebuilds on changes
 - Runs Vite dev server with hot module reload
 
 ## Building from Scratch
 
-If you want to rebuild the library:
+To rebuild the library from scratch:
 
 ```bash
-cd blit-tech
+cd blit386
 pnpm run build
 ```
 
@@ -140,7 +139,7 @@ Then the demos will use the newly built version.
 
 ## Troubleshooting
 
-### Error: "Cannot find package 'blit-tech'"
+### Error: "Cannot find package 'blit386'"
 
 **Cause**: Workspace structure not set up correctly
 
@@ -150,37 +149,37 @@ Then the demos will use the newly built version.
 - `pnpm-workspace.yaml` in the parent directory
 - Ran `pnpm install` from the workspace root
 
-### Error: "No matching version found for blit-tech@workspace:\*"
+### Error: "No matching version found for blit386@workspace:\*"
 
 **Cause**: pnpm can't find the workspace
 
 **Fix**: Check that:
 
 - `pnpm-workspace.yaml` exists in the parent directory
-- Both Blit-Tech and Blit-Tech Demos are listed in the config
+- Both BLIT386 and BLIT386 Demos are listed in the config
 - You're running commands from inside the workspace structure
 
 ### Demos won't start - "TypeError: Cannot read properties..."
 
-**Cause**: Blit-Tech library not built
+**Cause**: BLIT386 library not built
 
 **Fix**:
 
 ```bash
-cd blit-tech
+cd blit386
 pnpm install
 pnpm run build
-cd ../blit-tech-demos
+cd ../blit386-demos
 pnpm run dev
 ```
 
-## Alternative: Use Blit-Tech from npm
+## Alternative: Use BLIT386 from npm
 
 If you only want to build your own standalone app with the published package (instead of working on this demos repo),
-you can install Blit-Tech directly from npm:
+you can install BLIT386 directly from npm:
 
 ```bash
 pnpm create vite my-demo --template vanilla-ts
 cd my-demo
-pnpm add blit-tech
+pnpm add blit386
 ```

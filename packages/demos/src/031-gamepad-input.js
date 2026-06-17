@@ -1,9 +1,9 @@
 /**
  * Gamepad Input Demo - analog sticks, triggers, and face-button masks.
  *
- * Demo 031 in the Blit-Tech demo series.
- * Prerequisites: 001-Basics (https://blit-tech-demos.vancura.dev/001-basics),
- * 028-Keyboard-Input (https://blit-tech-demos.vancura.dev/028-keyboard-input).
+ * Demo 031 in the BLIT386 demo series.
+ * Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
+ * 028-Keyboard-Input (https://demos.blit386.dev/028-keyboard-input).
  *
  * This demo gives you a tiny "hover pod" toy you can steer with a gamepad:
  * - Left stick moves the pod around the arena.
@@ -20,17 +20,17 @@
  * - Squeeze either trigger and watch the pod grow (whichever trigger reads higher wins).
  * - Hold A and B together and read the "(A|B) mask down" line in the HUD.
  *
- * Live version: https://blit-tech-demos.vancura.dev/031-gamepad-input
+ * Live version: https://demos.blit386.dev/031-gamepad-input
  */
 
-// @pageTitle Blit-Tech Demo 031 - Gamepad Input
+// @pageTitle BLIT386 Demo 031 - Gamepad Input
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
@@ -59,7 +59,7 @@ const TRAIL_MAX = 28;
 /**
  * Tiny gamepad playground that visualizes sticks, triggers, and buttons.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     /** @type {Palette | null} */

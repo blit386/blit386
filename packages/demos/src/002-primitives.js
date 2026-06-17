@@ -1,9 +1,9 @@
 /**
- * Primitives Demo - shows all the basic shapes you can draw with Blit-Tech.
+ * Primitives Demo - shows all the basic shapes you can draw with BLIT386.
  *
- * Demo 002 in the Blit-Tech demo series.
- * Prerequisites: 001-Basics - https://blit-tech-demos.vancura.dev/001-basics
- * Live version: https://blit-tech-demos.vancura.dev/002-primitives
+ * Demo 002 in the BLIT386 demo series.
+ * Prerequisites: 001-Basics - https://demos.blit386.dev/001-basics
+ * Live version: https://demos.blit386.dev/002-primitives
  *
  * "Primitives" means the simplest building blocks of drawing:
  * pixels (single dots), lines, rectangles, and filled rectangles.
@@ -13,13 +13,13 @@
  * FPS and tick stats appear in the engine overlay automatically - this file does not draw them.
  */
 
-// @pageTitle Blit-Tech Demo 002 - Primitives
+// @pageTitle BLIT386 Demo 002 - Primitives
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit-tech').Palette} Palette */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
 
 // Every color used for drawing is pre-registered in a numbered palette slot.
 // Think of each slot like a labeled jar of paint on an art shelf.
@@ -46,7 +46,7 @@ const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 
  * Demonstrates all primitive drawing operations with animated examples.
  * Each section shows a different drawing function in action with real-time animation.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // animTicks counts how many update ticks have passed since the demo started.
@@ -115,7 +115,7 @@ class Demo {
 
     /**
      * Runs at a fixed rate (60 times per second). See the Basics demo for the full explanation:
-     * https://blit-tech-demos.vancura.dev/001-basics
+     * https://demos.blit386.dev/001-basics
      * We count ticks AND pre-compute the rainbow pixel colors here so render() stays fast.
      */
     update() {
@@ -351,5 +351,5 @@ class Demo {
     }
 }
 
-// Hand the Demo class to the Blit-Tech engine to start running it.
+// Hand the Demo class to the BLIT386 engine to start running it.
 bootstrap(Demo);

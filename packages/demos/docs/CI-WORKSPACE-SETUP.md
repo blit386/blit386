@@ -1,15 +1,15 @@
 # CI Workspace Setup
 
-This document explains how the CI pipeline handles the workspace dependency between Blit-Tech Demos and Blit-Tech.
+This document explains how the CI pipeline handles the workspace dependency between BLIT386 Demos and BLIT386.
 
 ## Context
 
-The Blit-Tech Demos project depends on Blit-Tech using a pnpm workspace dependency:
+The BLIT386 Demos project depends on BLIT386 using a pnpm workspace dependency:
 
 ```json
 {
   "dependencies": {
-    "blit-tech": "workspace:*"
+    "blit386": "workspace:*"
   }
 }
 ```
@@ -18,7 +18,7 @@ This works perfectly for local development but creates a challenge in CI:
 
 1. Both projects are in **separate Git repositories**
 2. CI workflows need to resolve the workspace dependency
-3. This demos repo intentionally tracks a sibling workspace build of Blit-Tech
+3. This demos repo intentionally tracks a sibling workspace build of BLIT386
 
 ## Solution: Recreate Workspace Structure in CI
 
@@ -27,20 +27,20 @@ The CI workflow recreates the exact workspace structure that exists locally by:
 1. Cloning both repositories into the correct relative paths
 2. Creating a `pnpm-workspace.yaml` at the root
 3. Running `pnpm install` to link the workspace dependencies
-4. Building Blit-Tech (as a trusted dependency)
-5. Running checks **only on Blit-Tech Demos**
+4. Building BLIT386 (as a trusted dependency)
+5. Running checks **only on BLIT386 Demos**
 
-### Important: No Testing of Blit-Tech in CI
+### Important: No Testing of BLIT386 in CI
 
-The Blit-Tech library has **its own CI pipeline** in the Blit-Tech repository.
+The BLIT386 library has **its own CI pipeline** in the BLIT386 repository.
 
-In the Blit-Tech Demos workflow, we:
+In the BLIT386 Demos workflow, we:
 
-- Clone and build Blit-Tech (as a dependency)
-- Do NOT run quality checks on Blit-Tech (linting, formatting, etc.)
-- Do NOT run tests on Blit-Tech
+- Clone and build BLIT386 (as a dependency)
+- Do NOT run quality checks on BLIT386 (linting, formatting, etc.)
+- Do NOT run tests on BLIT386
 
-We treat Blit-Tech as a **trusted, pre-tested dependency** that is already validated by its own CI.
+We treat BLIT386 as a **trusted, pre-tested dependency** that is already validated by its own CI.
 
 ### Workflow Pattern
 
@@ -59,22 +59,22 @@ steps:
     uses: ./.github/actions/workspace-setup
 
   # Now both packages are available and linked.
-  # Run checks ONLY on Blit-Tech Demos.
-  - name: Check formatting (Blit-Tech Demos only)
+  # Run checks ONLY on BLIT386 Demos.
+  - name: Check formatting (BLIT386 Demos only)
     run: |
-      cd blit-tech-demos
+      cd blit386-demos
       pnpm run format:check
 ```
 
 The composite action performs these steps internally:
 
-1. Checkout `vancura/blit-tech` into `blit-tech/`
-2. Checkout the current repo into `blit-tech-demos/`
+1. Checkout `blit386/blit386` into `blit386/`
+2. Checkout the current repo into `blit386-demos/`
 3. Write `pnpm-workspace.yaml` at the root listing both packages
-4. Copy `blit-tech/pnpm-lock.yaml` to the root
+4. Copy `blit386/pnpm-lock.yaml` to the root
 5. Install pnpm and Node.js (with pnpm cache)
 6. Run `pnpm install --no-frozen-lockfile`
-7. Build the Blit-Tech library
+7. Build the BLIT386 library
 
 ## CI Job Flow
 
@@ -92,21 +92,21 @@ Local development remains unchanged. The workspace structure is already set up i
 ```text
 parent-dir/
   pnpm-workspace.yaml
-  blit-tech/
-  blit-tech-demos/
+  blit386/
+  blit386-demos/
 ```
 
 Hot reloading works perfectly with:
 
 ```bash
-cd blit-tech-demos
+cd blit386-demos
 pnpm run dev:watch
 ```
 
 This script uses `concurrently` to watch both projects:
 
-- Watches Blit-Tech for changes and rebuilds automatically
-- Runs Vite dev server for Blit-Tech Demos with HMR
+- Watches BLIT386 for changes and rebuilds automatically
+- Runs Vite dev server for BLIT386 Demos with HMR
 
 ## Why This Works
 
@@ -120,12 +120,12 @@ This script uses `concurrently` to watch both projects:
 
 If this demos repo ever switches from `workspace:*` to an npm semver dependency:
 
-1. Update `blit-tech-demos/package.json`:
+1. Update `blit386-demos/package.json`:
 
    ```json
    {
      "dependencies": {
-       "blit-tech": "^1.0.0"
+       "blit386": "^1.0.0"
      }
    }
    ```
@@ -135,19 +135,19 @@ If this demos repo ever switches from `workspace:*` to an npm semver dependency:
 
 ## Troubleshooting
 
-### CI Error: "Cannot find package 'blit-tech'"
+### CI Error: "Cannot find package 'blit386'"
 
 **Cause**: Workspace structure not created before `pnpm install`
 
 **Fix**: Ensure the workflow includes all checkout/workspace steps before installing
 
-### CI Error: "No matching version found for blit-tech@workspace:\*"
+### CI Error: "No matching version found for blit386@workspace:\*"
 
 **Cause**: `pnpm-workspace.yaml` not created or packages not listed correctly
 
 **Fix**: Verify the workspace config creation step runs and lists both packages
 
-### Local Error: "Cannot find module 'blit-tech'"
+### Local Error: "Cannot find module 'blit386'"
 
 **Cause**: Not running from within the workspace root
 

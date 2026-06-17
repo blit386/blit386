@@ -1,5 +1,5 @@
 /**
- * Prettier configuration for Blit-Tech
+ * Prettier configuration for BLIT386
  *
  * NOTE: Prettier is used for Markdown and YAML files only.
  * TypeScript, JavaScript, JSON, and CSS are formatted by Biome.

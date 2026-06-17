@@ -1,15 +1,15 @@
-// @pageTitle Blit-Tech Demo 024 - CRT Toggle
+// @pageTitle BLIT386 Demo 024 - CRT Toggle
 //
 // Demo 024 - CRT Toggle: turn the post-process effects on and off in flight.
 //
-// Demo 024 in the Blit-Tech demo series.
+// Demo 024 in the BLIT386 demo series.
 // Prerequisites:
-//   001-Basics     https://blit-tech-demos.vancura.dev/001-basics
-//   023-PipBoy CRT https://blit-tech-demos.vancura.dev/023-crt-pipboy
+//   001-Basics     https://demos.blit386.dev/001-basics
+//   023-PipBoy CRT https://demos.blit386.dev/023-crt-pipboy
 //
-// Live version: https://blit-tech-demos.vancura.dev/024-crt-toggle
+// Live version: https://demos.blit386.dev/024-crt-toggle
 //
-// Live article: https://vancura.dev/articles/blit-tech-crt-toggle
+// Live article: https://vancura.dev/articles/blit386-crt-toggle
 //
 // WHAT YOU WILL SEE
 // A colorful, simple scene - bouncing squares and a few horizontal bars. Every two seconds
@@ -46,7 +46,7 @@
 // Auto-toggling keeps the ON/OFF comparison hands-free. Pointer and keyboard input are
 // covered in demos 025-028.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 
@@ -106,9 +106,9 @@ const BAR_GAP = 6;
 const BAR_TOP = 60;
 const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @typedef {import('blit-tech').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
 /**
  * Toggle demo: a small animated scene with the CRT effect stack flipping on and off
@@ -120,7 +120,7 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
  * that way the GPU pipelines stay alive across toggles instead of being torn down and
  * rebuilt every two seconds.
  *
- * @implements {IBlitTechDemo}
+ * @implements {IBTDemo}
  */
 class Demo {
     // Reused every frame for the overlay (CRT status + hint).

@@ -7,7 +7,7 @@
  * (not BT.requestedBackend, which stays 'webgpu' when WebGPU fell back).
  */
 
-import { BT } from 'blit-tech';
+import { BT } from 'blit386';
 
 // Short on-screen note shown when effects are skipped (fits one or two systemPrint lines).
 const SOFTWARE_FALLBACK_NOTE = 'Post-process needs WebGPU. Running without CRT effects.';

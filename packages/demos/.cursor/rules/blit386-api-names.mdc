@@ -1,19 +1,19 @@
 ---
-description: Use blit-tech API and boolean naming when editing demos
+description: Use BLIT386 API and boolean naming when editing demos
 alwaysApply: true
 ---
 
-# Blit-Tech API names in demos
+# BLIT386 API names in demos
 
-Demos call the library through `BT` and `configure()` — use the **same public names** as blit-tech.
+Demos call the library through `BT` and `configure()` — use the **same public names** as blit386.
 
 Canonical references (read before adding or renaming API usage):
 
-- [blit-tech/CLAUDE.md](https://github.com/vancura/blit-tech/blob/main/CLAUDE.md) — **Boolean naming**, **BT API:
+- [blit386/CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) — **Boolean naming**, **BT API:
   getters vs methods**, **Input conventions**
-- [blit-tech/docs/developer-experience-guide.md](https://github.com/vancura/blit-tech/blob/main/docs/developer-experience-guide.md) —
+- [blit386/docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md) —
   full three-tier boolean table
-- [blit-tech/docs/input.md](https://github.com/vancura/blit-tech/blob/main/docs/input.md) — input examples
+- [blit386/docs/input.md](https://github.com/blit386/blit386/blob/main/docs/input.md) — input examples
 
 ## Configure flags (Tier B)
 
