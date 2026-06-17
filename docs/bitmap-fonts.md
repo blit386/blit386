@@ -1,6 +1,6 @@
-# Bitmap Fonts in Blit-Tech
+# Bitmap Fonts in BLIT386
 
-Blit-Tech ships with a built-in system font and supports custom `.btfont` bitmap fonts with variable-width glyphs,
+BLIT386 ships with a built-in system font and supports custom `.btfont` bitmap fonts with variable-width glyphs,
 per-character offsets, Unicode characters, and either embedded or external textures.
 
 ## Built-in System Font
@@ -36,7 +36,7 @@ For proportional fonts, Unicode support, or custom aesthetics, load a `.btfont` 
 ## Quick Start
 
 ```ts
-import { BitmapFont, BT, Palette, Vector2i } from 'blit-tech';
+import { BitmapFont, BT, Palette, Vector2i } from 'blit386';
 
 // Load a font and register its colors in the palette
 const palette = new Palette(256);
@@ -171,21 +171,21 @@ The conversion script works best when run directly in your terminal:
 **macOS/Linux:**
 
 ```bash
-cd /path/to/blit-tech
+cd /path/to/blit386
 node scripts/convert-bmfont.mjs input.fnt output.btfont --embed
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
-cd D:\path\to\blit-tech
+cd D:\path\to\blit386
 node scripts/convert-bmfont.mjs input.fnt output.btfont --embed
 ```
 
 **Windows (CMD):**
 
 ```cmd
-cd D:\path\to\blit-tech
+cd D:\path\to\blit386
 node scripts\convert-bmfont.mjs input.fnt output.btfont --embed
 ```
 
@@ -237,7 +237,7 @@ If you prefer to convert manually:
 
 4. **Custom Font Editor** (Coming Soon)
 
-- Blit-Tech will include its own font editor.
+- BLIT386 will include its own font editor.
 - Native `.btfont` export with embedded textures.
 
 ### Tips for Creating Fonts

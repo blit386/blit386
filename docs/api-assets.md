@@ -36,7 +36,7 @@ sheets. Prefer separate PNG files for large atlases so the JSON payload stays un
 soon as the browser reports decoded dimensions.
 
 ```ts
-import { AssetLoader } from 'blit-tech';
+import { AssetLoader } from 'blit386';
 
 // Load a single image (cached by URL)
 const image = await AssetLoader.loadImage('sprites.png');
@@ -58,7 +58,7 @@ Use `SpriteSheet.loadIndexed()` for all standard sprite setup. It combines color
 palette indexization in one call.
 
 ```ts
-import { SpriteSheet, Palette } from 'blit-tech';
+import { SpriteSheet, Palette } from 'blit386';
 
 const palette = new Palette(256);
 
@@ -128,7 +128,7 @@ Load `.btfont` files for proportional, palette-indexed bitmap fonts. After loadi
 indexize the font's internal sprite sheet before drawing (same pattern as manual sprite setup).
 
 ```ts
-import { BitmapFont, Palette } from 'blit-tech';
+import { BitmapFont, Palette } from 'blit386';
 
 const palette = new Palette(256);
 const font = await BitmapFont.load('fonts/MyFont.btfont');

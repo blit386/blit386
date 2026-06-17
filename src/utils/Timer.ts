@@ -1,10 +1,10 @@
 import { BTAPI } from '../core/BTAPI';
 
 /**
- * Fixed-tick interval helper for {@link IBlitTechDemo.update} loops.
+ * Fixed-tick interval helper for {@link IBTDemo.update} loops.
  *
  * Counts engine ticks ({@link BT.ticks}), which advance once per fixed update at
- * {@link HardwareSettings.targetFPS}, not once per {@link IBlitTechDemo.render} frame.
+ * {@link HardwareSettings.targetFPS}, not once per {@link IBTDemo.render} frame.
  * Convert ticks to seconds with `intervalTicks / BT.targetFPS`.
  *
  * Tracks a "last fired" tick and reports when a configured interval has elapsed.

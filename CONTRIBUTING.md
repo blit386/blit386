@@ -1,6 +1,6 @@
-# Contributing to Blit-Tech
+# Contributing to BLIT386
 
-Thank you for your interest in contributing to the Blit-Tech project.
+Thank you for your interest in contributing to the BLIT386 project.
 
 ## Developer Certificate of Origin (DCO)
 

@@ -11,7 +11,7 @@ All preset hex values are lowercase `RRGGBB` (no `#`), matching `src/assets/pale
 
 ## Slot mapping note (important)
 
-Blit-Tech reserves palette slot `0` for transparency. Preset factories therefore write colors starting at slot `1`.
+BLIT386 reserves palette slot `0` for transparency. Preset factories therefore write colors starting at slot `1`.
 
 That means:
 

@@ -1,8 +1,8 @@
 /**
  * Regression tests for package-consumer documentation imports.
  *
- * README and docs guides must import from the published `blit-tech` package,
- * not from repository source paths such as `../src/BlitTech`.
+ * README and docs guides must import from the published `blit386` package,
+ * not from repository source paths such as `../src/BLIT386`.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -14,10 +14,10 @@ import { describe, expect, it } from 'vitest';
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 /** Imports that bypass the published package entry point. */
-const FORBIDDEN_SOURCE_IMPORT = /from\s+['"]\.\.\/src\/BlitTech['"]/;
+const FORBIDDEN_SOURCE_IMPORT = /from\s+['"]\.\.\/src\/BLIT386['"]/;
 
 /** Deep package subpath imports not exposed in package.json exports. */
-const FORBIDDEN_DEEP_PACKAGE_IMPORT = /from\s+['"]blit-tech\/render\//;
+const FORBIDDEN_DEEP_PACKAGE_IMPORT = /from\s+['"]blit386\/render\//;
 
 /**
  * Recursively collects markdown file paths under a directory.
@@ -46,14 +46,14 @@ const CONSUMER_DOC_FILES = ['README.md', ...collectMarkdownFiles(join(REPO_ROOT,
 
 describe('consumer documentation imports', () => {
     for (const relativePath of CONSUMER_DOC_FILES) {
-        it(`${relativePath} must not import from ../src/BlitTech`, () => {
+        it(`${relativePath} must not import from ../src/BLIT386`, () => {
             const content = readFileSync(join(REPO_ROOT, relativePath), 'utf8');
             const match = FORBIDDEN_SOURCE_IMPORT.exec(content);
 
             expect(match, `found forbidden source import in ${relativePath}: ${match?.[0] ?? ''}`).toBeNull();
         });
 
-        it(`${relativePath} must not deep-import blit-tech/render/...`, () => {
+        it(`${relativePath} must not deep-import blit386/render/...`, () => {
             const content = readFileSync(join(REPO_ROOT, relativePath), 'utf8');
             const match = FORBIDDEN_DEEP_PACKAGE_IMPORT.exec(content);
 

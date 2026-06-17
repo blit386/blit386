@@ -14,6 +14,8 @@
     "biomejs",
     "bitwise",
     "blit",
+    "blit386",
+    "BLIT386",
     "blits",
     "bmfont",
     "Bresenham",

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 /**
- * Unit tests for the public `BT` facade exported from `BlitTech.ts`.
+ * Unit tests for the public `BT` facade exported from `BLIT386.ts`.
  *
  * Covers delegation from top-level `BT.*` calls into `BTAPI.instance`,
  * default return behavior for hardware-dependent queries, and the warning
@@ -10,8 +10,8 @@
 
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import type { BitmapFont, HardwareSettings } from './BlitTech';
-import { BT, Palette, Rect2i, SpriteSheet, Vector2i } from './BlitTech';
+import type { BitmapFont, HardwareSettings } from './BLIT386';
+import { BT, Palette, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import type { FaceButtonCode } from './input/defaultKeyboardMap';
 import { DEFAULT_CONTAINER_ID } from './utils/BootstrapHelpers';
@@ -1171,7 +1171,7 @@ describe('BT.downloadFrame', () => {
 
         await BT.downloadFrame();
 
-        expect(mockAnchor.download).toBe('blit-tech-capture.png');
+        expect(mockAnchor.download).toBe('blit386-capture.png');
     });
 });
 

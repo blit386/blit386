@@ -139,7 +139,7 @@ for (const fx of BT.preset.amber()) BT.effectAdd(fx);
 for (const fx of BT.preset.green()) BT.effectAdd(fx);
 
 // Equivalent standalone imports also work:
-import { crtPipBoy, amber, green } from 'blit-tech';
+import { crtPipBoy, amber, green } from 'blit386';
 for (const fx of crtPipBoy()) BT.effectAdd(fx);
 ```
 
@@ -150,8 +150,8 @@ for (const fx of crtPipBoy()) BT.effectAdd(fx);
 | Pixel   | `PixelGlitch`, `PixelMosaic`                                                                                                           |
 | Display | `BarrelDistortion`, `Scanlines`, `RGBMask`, `Vignette`, `ChromaticAberration`, `Flicker`, `RollLine`, `Interference`, `Noise`, `Bloom` |
 
-All effect classes are exported from `'blit-tech'`. Each instance owns its own GPU resources and may be mutated each
-frame from demo code.
+All effect classes are exported from `'blit386'`. Each instance owns its own GPU resources and may be mutated each frame
+from demo code.
 
 See [Post-Process Effects Guide](post-process-effects.md) for parameter reference, the `Effect` interface, `EffectTier`,
 the `FullscreenEffect` base class, and how to write a custom effect.
@@ -175,7 +175,7 @@ await BT.downloadFrame('screenshot-001.png'); // custom filename
 ### Internal implementation note
 
 `BT.captureFrame()` uses the internal `FrameCapture` class (`src/utils/FrameCapture.ts`), which is **not** exported from
-`'blit-tech'`. Demos should use `BT.captureFrame()` and `BT.downloadFrame()` only.
+`'blit386'`. Demos should use `BT.captureFrame()` and `BT.downloadFrame()` only.
 
 ---
 

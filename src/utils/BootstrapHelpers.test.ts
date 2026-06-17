@@ -6,8 +6,8 @@ import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError, getCanvas } from
 
 describe('BootstrapHelpers', () => {
     describe('Constants', () => {
-        it('should have DEFAULT_CANVAS_ID equal to blit-tech-canvas', () => {
-            expect(DEFAULT_CANVAS_ID).toBe('blit-tech-canvas');
+        it('should have DEFAULT_CANVAS_ID equal to blit386-canvas', () => {
+            expect(DEFAULT_CANVAS_ID).toBe('blit386-canvas');
         });
 
         it('should have DEFAULT_CONTAINER_ID equal to canvas-container', () => {

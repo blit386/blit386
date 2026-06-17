@@ -1,7 +1,7 @@
 # Performance Testing
 
-Blit-Tech has CPU micro-benchmarks for hot methods. This guide explains when to use them, how to add a new benchmark,
-and how CI uses the results.
+BLIT386 has CPU micro-benchmarks for hot methods. This guide explains when to use them, how to add a new benchmark, and
+how CI uses the results.
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@ and how CI uses the results.
 
 ## Overview
 
-Blit-Tech uses Vitest bench for CPU micro-benchmarks. These measure isolated methods, hot loops, cache lookups, math
+BLIT386 uses Vitest bench for CPU micro-benchmarks. These measure isolated methods, hot loops, cache lookups, math
 helpers, and allocation patterns.
 
 For visual correctness (not performance), use the visual regression tests: `pnpm run test:visual`. They run Playwright

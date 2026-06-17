@@ -1,4 +1,4 @@
-import type { OverlayStyle, OverlayTimingChartStyle } from '../../core/IBlitTechDemo';
+import type { OverlayStyle, OverlayTimingChartStyle } from '../../core/IBTDemo';
 import type { Rect2i } from '../../utils/Rect2i';
 import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from '../constants';
 import {

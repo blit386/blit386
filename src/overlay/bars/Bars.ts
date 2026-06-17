@@ -1,5 +1,5 @@
 import type { BitmapFont } from '../../assets/BitmapFont';
-import type { OverlayRow } from '../../core/IBlitTechDemo';
+import type { OverlayRow } from '../../core/IBTDemo';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
 import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from '../layout/constants';

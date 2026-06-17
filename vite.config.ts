@@ -16,7 +16,7 @@ export default defineConfig(() => {
                 exclude: ['src/main.ts'],
                 rollupTypes: true,
                 beforeWriteFile: (filePath, content) => ({
-                    filePath: filePath.replace(/BlitTech\.d\.ts$/, 'blit-tech.d.ts'),
+                    filePath: filePath.replace(/BLIT386\.d\.ts$/, 'blit386.d.ts'),
                     content,
                 }),
             }),
@@ -28,9 +28,9 @@ export default defineConfig(() => {
         build: {
             // Library build configuration
             lib: {
-                entry: 'src/BlitTech.ts',
-                name: 'BlitTech',
-                fileName: 'blit-tech',
+                entry: 'src/BLIT386.ts',
+                name: 'BLIT386',
+                fileName: 'blit386',
                 formats: ['es', 'cjs'] as LibraryFormats[],
             },
             target: 'es2022',

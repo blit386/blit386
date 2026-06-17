@@ -5,7 +5,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BT } from '../BlitTech';
+import { BT } from '../BLIT386';
 import { DEFAULT_GAMEPAD_DEAD_ZONE, GamepadInput } from './GamepadInput';
 
 interface PadState {

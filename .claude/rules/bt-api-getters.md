@@ -2,7 +2,7 @@
 
 Canonical reference: [CLAUDE.md](../../CLAUDE.md) (**BT API: getters vs methods**, **Boolean naming**).
 
-Quick rules when changing `src/BlitTech.ts` or demos:
+Quick rules when changing `src/BLIT386.ts` or demos:
 
 - **Getter:** zero-arg read-only snapshot (`BT.displaySize`, `BT.targetFPS`, `BT.ticks`, `BT.activeBackend`)
 - **Method:** mutation, parameters, or async (`BT.cameraSet`, `BT.pointerPos(0)`, `await BT.captureFrame()`)

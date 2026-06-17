@@ -2,9 +2,9 @@
 
 Bootstrap, initialization, game loop timing, camera, and core types.
 
-> **Starting a new project?** The quickest path is the scaffolder: `npm create blit-tech@latest my-game` (works with
-> npm, pnpm, yarn, or bun). It generates a ready-to-run Vite project with the engine installed, a starter game, and
-> local docs. See [create-blit-tech](https://github.com/vancura/create-blit-tech). The rest of this page documents the
+> **Starting a new project?** The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm,
+> pnpm, yarn, or bun). It generates a ready-to-run Vite project with the engine installed, a starter game, and local
+> docs. See [create-blit386](https://github.com/blit386/create-blit386). The rest of this page documents the
 > `bootstrap()` API for hand-wired or existing projects.
 
 ---
@@ -15,9 +15,9 @@ The `bootstrap()` function is the recommended entry point. It handles DOM ready,
 (WebGPU or software fallback), and error display automatically.
 
 ```ts
-import { bootstrap, type BootstrapOptions } from 'blit-tech';
+import { bootstrap, type BootstrapOptions } from 'blit386';
 
-// One-liner - canvas id defaults to 'blit-tech-canvas', container to 'canvas-container'
+// One-liner - canvas id defaults to 'blit386-canvas', container to 'canvas-container'
 bootstrap(MyDemo);
 
 // With options
@@ -34,7 +34,7 @@ bootstrap(MyDemo, {
 
 | Field                  | Type                     | Default              | Description                    |
 | ---------------------- | ------------------------ | -------------------- | ------------------------------ |
-| `canvasID`             | `string`                 | `'blit-tech-canvas'` | Canvas element id              |
+| `canvasID`             | `string`                 | `'blit386-canvas'`   | Canvas element id              |
 | `containerID`          | `string`                 | `'canvas-container'` | Container id for error display |
 | `onSuccess`            | `() => void`             | -                    | Called after successful init   |
 | `onError`              | `(error: Error) => void` | -                    | Called on any init failure     |
@@ -43,7 +43,7 @@ bootstrap(MyDemo, {
 **Manual utilities** (for custom initialization flows):
 
 ```ts
-import { displayError, getCanvas } from 'blit-tech';
+import { displayError, getCanvas } from 'blit386';
 
 const canvas = getCanvas('my-canvas'); // returns null on missing element
 displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
@@ -71,7 +71,7 @@ set `canvas.tabIndex = 0` and call `canvas.focus()` so keyboard events reach the
 
 ### Resolution model
 
-Blit-Tech tracks several related pixel dimensions. Public configure/getter names (`displaySize`, `drawingBufferSize`,
+BLIT386 tracks several related pixel dimensions. Public configure/getter names (`displaySize`, `drawingBufferSize`,
 `maxCanvasSize`) map to the layers below; **display-tier** is a separate post-process term.
 
 | Term               | What it is                                                                                         | Configure field             | `BT` getter               |
@@ -219,9 +219,8 @@ the system font metrics.
 always-visible metrics should opt back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choose
 otherwise.
 
-- **Top row 1 (left):** short demo title derived from `document.title` (registry pages titled
-  `Blit-Tech Demo NNN - Topic` show as `Topic Demo`); **top row 1 (right):** active backend and logical resolution (for
-  example `webgpu | 320x240`)
+- **Top row 1 (left):** short demo title derived from `document.title` (registry pages titled `BLIT386 Demo NNN - Topic`
+  show as `Topic Demo`); **top row 1 (right):** active backend and logical resolution (for example `webgpu | 320x240`)
 - **Timing chart (optional):** when `isOverlayTimingChartEnabled: true`, a scrolling band of **one-pixel dots** shows
   raw per-frame `update()` vs `render()` CPU time (one column per present frame, not per fixed `update()` tick). Band
   height defaults to **22 px**; override with `overlayTimingChartHeight`. Dot height scales linearly so about **16 ms**
@@ -276,13 +275,13 @@ otherwise.
 - **Custom rows (optional):** extra bars from `overlayRows()` stacked above the bottom band, **1 px** filled gaps apart,
   each with left text and optional right text (same 13 px bar style as the built-in rows)
 
-Demos may implement optional `overlayRows()` on `IBlitTechDemo`. The engine calls it once per render frame after
-`render()` when the overlay is enabled and the **body** is visible (not hidden with Backquote or the corner toggle).
-Return `undefined` or an empty array when no custom rows are needed. Reuse the same array and row objects when possible;
-update `leftText` / `rightText` in place to avoid per-frame allocations.
+Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it once per render frame after `render()`
+when the overlay is enabled and the **body** is visible (not hidden with Backquote or the corner toggle). Return
+`undefined` or an empty array when no custom rows are needed. Reuse the same array and row objects when possible; update
+`leftText` / `rightText` in place to avoid per-frame allocations.
 
 ```ts
-/** @implements {IBlitTechDemo} */
+/** @implements {IBTDemo} */
 class Demo {
   readonly #overlayRows = [{ leftText: 'Position: 0, 0' }, { leftText: 'Score: 0', rightText: 'ready' }];
 
@@ -382,7 +381,7 @@ configure() {
 
 ## Game Loop Timing
 
-Blit-Tech runs two independent cadences:
+BLIT386 runs two independent cadences:
 
 | Concept             | Where                                                      | Meaning                                                        |
 | ------------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
@@ -443,7 +442,7 @@ const clamped = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
 Standalone helper (same math as `BT.cameraClamp`):
 
 ```ts
-import { clampCameraToWorld } from 'blit-tech';
+import { clampCameraToWorld } from 'blit386';
 
 const clamped = clampCameraToWorld(desired, worldSize, viewSize);
 ```
@@ -455,7 +454,7 @@ const clamped = clampCameraToWorld(desired, worldSize, viewSize);
 Import `defaultConfig` and `mergeHardwareSettings` when building custom configure flows outside `bootstrap()`:
 
 ```ts
-import { defaultConfig, mergeHardwareSettings } from 'blit-tech';
+import { defaultConfig, mergeHardwareSettings } from 'blit386';
 
 const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });
 ```
@@ -470,7 +469,7 @@ enabled, WebGPU backend, and other defaults documented in the table above).
 Palette fade effects accept an `EasingFunction`. Use `applyEasing` to evaluate named curves:
 
 ```ts
-import { applyEasing } from 'blit-tech';
+import { applyEasing } from 'blit386';
 
 const t = applyEasing('ease-in-out', 0.5); // 0..1 progress → eased value
 ```

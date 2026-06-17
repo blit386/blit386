@@ -1,5 +1,5 @@
 /**
- * Public Blit-Tech entrypoint.
+ * Public BLIT386 entrypoint.
  *
  * This module re-exports the main runtime types and exposes the `BT` facade
  * used by demos for rendering, timing, bootstrap, and input (pointer, keyboard, gamepad).
@@ -22,12 +22,12 @@ import {
     type Backend,
     defaultConfig,
     type HardwareSettings,
-    type IBlitTechDemo,
+    type IBTDemo,
     mergeHardwareSettings,
     type OverlayRow,
     type OverlayStyle,
     type OverlayTimingChartStyle,
-} from './core/IBlitTechDemo';
+} from './core/IBTDemo';
 import {
     createDefaultKeyboardRuntimeMaps,
     DEFAULT_KEYBOARD_PLAYER1,
@@ -238,7 +238,7 @@ function pointerFlagToPointerCode(pointerFlag: number): number | null {
     }
 }
 
-/** Main Blit-Tech API namespace used by runtime demos. */
+/** Main BLIT386 API namespace used by runtime demos. */
 export const BT = {
     /** Horizontal flip flag for sprite rendering. */
     FLIP_H: 1,
@@ -386,7 +386,7 @@ export const BT = {
      * @param canvas - Canvas used as the engine render target.
      * @returns `true` when initialization succeeds; otherwise `false`.
      */
-    init: async (demo: IBlitTechDemo, canvas: HTMLCanvasElement): Promise<boolean> => {
+    init: async (demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> => {
         return await BTAPI.instance.init(demo, canvas);
     },
 
@@ -1469,7 +1469,7 @@ export const BT = {
      * await BT.downloadFrame();
      * await BT.downloadFrame('screenshot-001.png');
      */
-    downloadFrame: async (filename: string = 'blit-tech-capture.png'): Promise<void> => {
+    downloadFrame: async (filename: string = 'blit386-capture.png'): Promise<void> => {
         const blob = await BTAPI.instance.captureFrame();
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -1600,7 +1600,7 @@ export type {
     Effect,
     EffectTier,
     HardwareSettings,
-    IBlitTechDemo,
+    IBTDemo,
     OverlayRow,
     OverlayStyle,
     OverlayTimingChartStyle,

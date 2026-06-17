@@ -47,9 +47,9 @@ subsystem entirely (for example release builds or full-screen custom HUD demos).
 
 ## Custom rows (`overlayRows`)
 
-Demos may implement optional `overlayRows()` on `IBlitTechDemo`. The engine calls it once per frame after `render()`
-when the overlay body is visible. Return a **reused** array of row objects when possible — avoid allocating new strings
-every frame.
+Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it once per frame after `render()` when the
+overlay body is visible. Return a **reused** array of row objects when possible — avoid allocating new strings every
+frame.
 
 ```javascript
 class Demo {

@@ -4,10 +4,10 @@ import { fileURLToPath } from 'node:url';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_JSON_PATH = path.join(REPO_ROOT, 'package.json');
-const DECLARATION_OUTPUT = path.join(REPO_ROOT, 'dist', 'blit-tech.d.ts');
+const DECLARATION_OUTPUT = path.join(REPO_ROOT, 'dist', 'blit386.d.ts');
 
 /**
- * Public `BT` getters that must appear in rolled-up `dist/blit-tech.d.ts`.
+ * Public `BT` getters that must appear in rolled-up `dist/blit386.d.ts`.
  * Add entries here when shipping new configure/runtime getters on the facade.
  */
 export const REQUIRED_BT_DECLARATION_MEMBERS = ['requestedBackend', 'activeBackend'];
@@ -85,7 +85,7 @@ export function findAlignmentFailures(logText, expectedVersion) {
     return failures;
 }
 
-/** Opening forms for the rolled-up `BT` object type in `dist/blit-tech.d.ts`. */
+/** Opening forms for the rolled-up `BT` object type in `dist/blit386.d.ts`. */
 const BT_DECLARATION_OPENERS = [
     /(?:export\s+)?declare\s+const\s+BT\s*:\s*\{/,
     /(?:export\s+)?declare\s+namespace\s+BT\s*\{/,
@@ -97,7 +97,7 @@ const BT_DECLARATION_OPENERS = [
 /**
  * Extracts the `{ ... }` body of the public `BT` declaration from rolled-up `.d.ts` text.
  *
- * @param {string} dtsText Contents of `dist/blit-tech.d.ts`.
+ * @param {string} dtsText Contents of `dist/blit386.d.ts`.
  * @returns {string | null} Balanced brace block for `BT`, or null when not found.
  */
 export function extractBtDeclarationBlock(dtsText) {
@@ -133,7 +133,7 @@ export function extractBtDeclarationBlock(dtsText) {
 /**
  * Verifies rolled-up declarations export required `BT` facade members.
  *
- * @param {string} dtsText Contents of `dist/blit-tech.d.ts`.
+ * @param {string} dtsText Contents of `dist/blit386.d.ts`.
  * @param {readonly string[]} [requiredMembers] Getter names that must be present.
  * @returns {string[]} Human-readable failure messages (empty when all members are found).
  */
@@ -141,7 +141,7 @@ export function findMissingBtDeclarationMembers(dtsText, requiredMembers = REQUI
     const btBlock = extractBtDeclarationBlock(dtsText);
     if (!btBlock) {
         return requiredMembers.map(
-            (member) => `dist/blit-tech.d.ts is missing BT declaration block (cannot verify getter: ${member})`,
+            (member) => `dist/blit386.d.ts is missing BT declaration block (cannot verify getter: ${member})`,
         );
     }
 
@@ -150,7 +150,7 @@ export function findMissingBtDeclarationMembers(dtsText, requiredMembers = REQUI
     for (const member of requiredMembers) {
         const pattern = new RegExp(`\\breadonly\\s+${member}\\s*:`, 'm');
         if (!pattern.test(btBlock)) {
-            failures.push(`dist/blit-tech.d.ts is missing BT getter: ${member}`);
+            failures.push(`dist/blit386.d.ts is missing BT getter: ${member}`);
         }
     }
 

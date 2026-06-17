@@ -41,6 +41,9 @@
     },
     {
       "pattern": "^https?://github\\.com/[^/]+/[^/]+/compare/"
+    },
+    {
+      "pattern": "^https?://github\\.com/blit386/"
     }
   ],
   "replacementPatterns": [

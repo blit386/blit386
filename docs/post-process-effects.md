@@ -1,6 +1,6 @@
 # Post-Process Effects
 
-Blit-Tech ships a **two-tier post-process system** that runs between the scene render and the swap-chain present. It is
+BLIT386 ships a **two-tier post-process system** that runs between the scene render and the swap-chain present. It is
 opt-in and adds zero cost while no effect is registered. Effects are organized into two chains by what they operate on:
 
 - **Pixel tier** - runs at the logical render resolution (e.g. `320x240`) on an **`r8uint` index framebuffer** (one byte
@@ -22,7 +22,7 @@ see [Resolution model](api-core.md#resolution-model) in the core API docs.
 ## Quick start
 
 ```ts
-import { BT, Vector2i, BarrelDistortion, Scanlines, RGBMask, Bloom, PixelGlitch } from 'blit-tech';
+import { BT, Vector2i, BarrelDistortion, Scanlines, RGBMask, Bloom, PixelGlitch } from 'blit386';
 
 class Demo {
   configure() {
@@ -110,7 +110,7 @@ Removes every effect in both tiers and destroys all offscreen GPU resources. Thr
 ### `Effect` interface
 
 ```ts
-import type { Effect, EffectTier, Vector2i } from 'blit-tech';
+import type { Effect, EffectTier, Vector2i } from 'blit386';
 
 export class MyEffect implements Effect {
   public readonly tier: EffectTier = 'display'; // or 'pixel'
@@ -315,7 +315,7 @@ Extend `FullscreenEffect` when sampling RGBA at output resolution. Subclasses pr
 `sampler`), declare `tier = 'display'`, set `uniformBytes`, and implement `writeUniforms`.
 
 ```ts
-import { FullscreenEffect, type Vector2i } from 'blit-tech';
+import { FullscreenEffect, type Vector2i } from 'blit386';
 
 export class GammaEffect extends FullscreenEffect {
   public readonly tier = 'display' as const;
@@ -409,7 +409,7 @@ extensions until the upstream source and license have been identified.
 
 The individual building blocks (hash-based pseudo-random, sin/cos roll line, band-noise glitch shifts, chromatic
 aberration via offset sampling) are common shader patterns and not original to any one author, but the specific
-composition mirrors the PipBoy fork. The Blit-Tech port is original WGSL.
+composition mirrors the PipBoy fork. The BLIT386 port is original WGSL.
 
 If you intend to reuse `Interference`, `RollLine`, or `PixelGlitch` in a context with stricter licensing requirements,
 confirm provenance first. The license audit is still open. If you can identify the upstream PipBoy fork, please open a

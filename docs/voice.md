@@ -3,7 +3,7 @@
 ## Why This Exists
 
 Error messages, canvas banners, and console output that reach a developer or end user define the first impression of the
-engine. Blit-Tech targets two distinct audiences, and mixing their styles produces confusing output for both.
+engine. BLIT386 targets two distinct audiences, and mixing their styles produces confusing output for both.
 
 This guide defines the rules. Before writing any `throw`, `console.error`, `displayError`, or canvas-visible string,
 read the relevant section below.

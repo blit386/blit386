@@ -1,6 +1,6 @@
 # Input Guide
 
-Blit-Tech provides DOM-backed input: **pointer** (mouse, touch, pen), **keyboard** (`KeyboardEvent.code` tracking and
+BLIT386 provides DOM-backed input: **pointer** (mouse, touch, pen), **keyboard** (`KeyboardEvent.code` tracking and
 virtual face buttons), **gamepad** (up to four players via `navigator.getGamepads()`), and **text accumulation** for UI
 entry (`BT.inputString`).
 
@@ -271,7 +271,7 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 
 ## Implementation Notes
 
-- `PointerInput`, `KeyboardInput`, and `GamepadInput` are internal; import from `blit-tech` and access through `BT.*`
+- `PointerInput`, `KeyboardInput`, and `GamepadInput` are internal; import from `blit386` and access through `BT.*`
   methods.
 - Default keyboard tables live in `defaultKeyboardMap.ts`; runtime remaps are stored in the `BT` facade and reset with
   `BT.inputMapReset()`.
