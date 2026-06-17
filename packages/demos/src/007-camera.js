@@ -2,7 +2,7 @@
 //
 // Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
 // (https://demos.blit386.dev/001-basics) and shapes in Demo 002-Primitives
-// (https://vancura.dev/articles/blit386-primitives).
+// (https://demos.blit386.dev/002-primitives).
 //
 // Live walkthrough: https://vancura.dev/articles/blit386-camera
 //

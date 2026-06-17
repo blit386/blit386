@@ -30,7 +30,7 @@
 // use the particle's slot number - no Color32 objects needed there.
 //
 // We used the same idea in Demo 016-Palette-Animation:
-// https://vancura.dev/articles/blit386-palette-animation
+// https://demos.blit386.dev/016-palette-animation
 
 import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 

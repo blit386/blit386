@@ -114,7 +114,7 @@ Opens the browser at `http://localhost:5173/demos/001-basics.html` (or visit `/d
 
 ### Development with Auto-Rebuild
 
-If you want to edit the BLIT386 library and see changes instantly:
+To edit the BLIT386 library and see changes instantly:
 
 ```bash
 cd blit386-demos
@@ -128,7 +128,7 @@ This runs two processes concurrently:
 
 ## Building from Scratch
 
-If you want to rebuild the library:
+To rebuild the library from scratch:
 
 ```bash
 cd blit386

@@ -6,7 +6,7 @@
 // https://demos.blit386.dev/001-basics
 //
 // Prerequisites: 001-Basics, 002-Primitives, 003-Colors
-// Live version: https://vancura.dev/articles/blit386-pixel-art
+// Live version: https://demos.blit386.dev/005-pixel-art
 //
 // This demo shows:
 //   - A 2D array (grid) of small numbers that stand for colors, like a paint-by-number on graph paper

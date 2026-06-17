@@ -3,7 +3,7 @@
 // Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
 //
 // Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
-// 008-Sprites (https://vancura.dev/articles/blit386-sprites).
+// 008-Sprites (https://demos.blit386.dev/008-sprites).
 // Live article: https://vancura.dev/articles/blit386-sprite-effects
 //
 // In the palette-based rendering system, each sprite pixel stores a palette index.
@@ -26,7 +26,7 @@
 // we update the color block in update() every tick and draw with that offset in render().
 //
 // We learned about palette offsets in Demo 008-Sprites:
-// https://vancura.dev/articles/blit386-sprites
+// https://demos.blit386.dev/008-sprites
 //
 // FULLSCREEN CRT (Tesla Orava TV)
 // The sprite grid is drawn at 640x400, then the engine resolves and upscales it and runs

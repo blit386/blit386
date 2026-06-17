@@ -14,7 +14,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const MLC_BIN = require.resolve('markdown-link-check/markdown-link-check');
 const CONFIG = join(ROOT, '.github/markdown-link-check.json');
-const HOSTED_DEMOS_PATTERN = '^https://blit386-demos\\.vancura\\.dev(/|$)';
+const HOSTED_DEMOS_PATTERN = '^https://demos\\.blit386\\.dev(/|$)';
 const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', 'coverage', 'coverage-visual', '.nyc_output', 'tmp']);
 
 /**
