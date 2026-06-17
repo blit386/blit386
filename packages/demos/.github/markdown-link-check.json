@@ -31,7 +31,7 @@
       "pattern": "^https?://www\\.npmjs\\.com/package/[^\\s]+$"
     },
     {
-      "pattern": "^https?://github\\.com/blit386/"
+      "pattern": "^https?://github\\.com/blit386/(blit386|blit386-demos)(/|$)"
     },
     {
       "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
