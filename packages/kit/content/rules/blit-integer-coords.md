@@ -1,5 +1,5 @@
 ---
-description: Integer coordinates for all Blit-Tech rendering
+description: Integer coordinates for all BLIT386 rendering
 alwaysApply: true
 ---
 
@@ -11,7 +11,7 @@ cause off-by-one rendering glitches.
 ## Use Vector2i for points
 
 ```js
-import { Vector2i } from 'blit-tech';
+import { Vector2i } from 'blit386';
 
 const pos = new Vector2i(10, 20); // correct - integer point
 const pos = { x: 10.5, y: 20.7 }; // wrong   - plain object with floats
@@ -22,7 +22,7 @@ const pos = { x: 10.5, y: 20.7 }; // wrong   - plain object with floats
 ## Use Rect2i for rectangles
 
 ```js
-import { Rect2i } from 'blit-tech';
+import { Rect2i } from 'blit386';
 
 const r = new Rect2i(x, y, width, height); // correct
 ```

@@ -55,6 +55,10 @@ function patternFor(rename: Rename): RegExp {
         return new RegExp(`(?<![\\w$])${from}(?=\\s*:)`, 'g');
     }
 
+    if (rename.kind === 'importPath') {
+        return new RegExp(`(?<=['"])${from}(?=['"])`, 'g');
+    }
+
     return new RegExp(`\\.${from}(?=\\s*\\()`, 'g');
 }
 
@@ -64,7 +68,7 @@ function replacementFor(rename: Rename): string {
         return `${rename.receiver ?? ''}.${rename.to}`;
     }
 
-    if (rename.kind === 'objectKey') {
+    if (rename.kind === 'objectKey' || rename.kind === 'importPath') {
         return rename.to;
     }
 

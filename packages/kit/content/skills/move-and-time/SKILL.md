@@ -35,7 +35,7 @@ update() {
 ## Timer helper
 
 ```js
-import { Timer } from 'blit-tech';
+import { Timer } from 'blit386';
 
 // in init():
 this.fireTimer = new Timer(20); // fires every 20 ticks
@@ -49,7 +49,7 @@ if (this.fireTimer.fireIfElapsed(BT.ticks)) {
 ## Easing for smooth motion
 
 ```js
-import { applyEasing } from 'blit-tech';
+import { applyEasing } from 'blit386';
 
 const t = (BT.ticks % 60) / 60; // 0..1
 const eased = applyEasing(t, 'ease-in-out');

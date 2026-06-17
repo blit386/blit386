@@ -12,9 +12,10 @@
       "packages/*/*.ts",
       "packages/*/*.json",
       "packages/*/*.mjs",
-      "packages/create-blit-tech/templates/**/*.js",
+      "packages/create-blit386/templates/**/*.js",
       "scripts/**/*.mjs",
       ".claude/**/*.json",
+      ".github/**/*.json",
       "*.json",
       "*.js",
       "commitlint.config.js"

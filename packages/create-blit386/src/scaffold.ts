@@ -5,7 +5,7 @@
  *   - ../templates/base  (language-agnostic: index.html, vite config, README, .editorconfig, biome.json)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
  *   - ../templates/optional/* (wizard opt-in: CI, Cursor rules, Claude guide)
- *   - @blit-tech/kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
+ *   - /kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
  *
  * After emitting all files, scaffold writes `.blit/manifest.json` (the ownership manifest) and
  * `.blit/base/` (pristine copies of kit-owned and shared files) so future `blit agents sync` runs
@@ -20,8 +20,8 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 
-/** blit-tech version range written into the generated package.json. */
-const BLIT_TECH_RANGE = '^1.1.1';
+/** blit386 version range written into the generated package.json. */
+const BLIT386_RANGE = '^1.1.1';
 
 /** Output directory names for optional wizard templates. */
 const GITHUB_DIR = '.github';
@@ -127,7 +127,7 @@ function templatesDir(): string {
 }
 
 function kitRoot(): string {
-    return dirname(require.resolve('@blit-tech/kit/package.json'));
+    return dirname(require.resolve('@blit386/kit/package.json'));
 }
 
 function kitVersionRange(): string {
@@ -328,12 +328,12 @@ function generateClaudeAdapter(
         `- \`${vars.pmRunFormat}\` - format the code`,
         `- \`${vars.pmRunLint}\` - check code style`,
         '- `npx blit doctor` - check your setup',
-        '- `npx blit upgrade` - update Blit-Tech',
+        '- `npx blit upgrade` - update BLIT386',
     ].join('\n');
 
     const claudeMd = [
         '<!-- blit-kit:managed:start -->',
-        '<!-- This block is managed by @blit-tech/kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
+        '<!-- This block is managed by /kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
         '',
         managedBody,
         commandsBlock,
@@ -582,7 +582,7 @@ export function scaffold(options: ScaffoldOptions): void {
     const vars: TemplateVars = {
         projectName: options.projectName,
         packageName: toPackageName(options.projectName),
-        blitTechVersion: BLIT_TECH_RANGE,
+        blit386Version: BLIT386_RANGE,
         kitVersion: kitVersionRange(),
         pmInstall: options.pmInstall,
         pmRunDev: options.pmRunDev,

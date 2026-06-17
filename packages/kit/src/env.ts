@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
-/** Minimum Node version the engine supports (matches blit-tech `engines`). */
+/** Minimum Node version the engine supports (matches blit386 `engines`). */
 const MIN_NODE: readonly [number, number, number] = [22, 18, 0];
 
 /** True when the running Node is at least the minimum supported version. */
@@ -104,6 +104,11 @@ export function pmRunArgs(pm: PackageManager, script: string): string[] {
 /** Argument list to add/update a dependency (npm uses `install`, the others use `add`). */
 export function pmAddArgs(pm: PackageManager, pkg: string): string[] {
     return pm === 'npm' ? ['install', pkg] : ['add', pkg];
+}
+
+/** Argument list to remove a dependency (npm uses `uninstall`, the others use `remove`). */
+export function pmRemoveArgs(pm: PackageManager, pkg: string): string[] {
+    return pm === 'npm' ? ['uninstall', pkg] : ['remove', pkg];
 }
 
 /** Spawn the package manager inheriting stdio. Returns the exit code (1 if it could not start). */
@@ -204,7 +209,7 @@ export function exceedsCaretRange(version: string, caretRange: string): boolean 
 }
 
 /**
- * Read the `blitTech.engineRange` field from the kit's own package.json, or null if absent.
+ * Read the `blit386.engineRange` field from the kit's own package.json, or null if absent.
  *
  * The kit's package.json ships alongside this file in the npm package, so we locate it relative
  * to this module's URL rather than looking in `node_modules`.
@@ -213,9 +218,9 @@ export function kitEngineRange(): string | null {
     try {
         const kitPkgPath = fileURLToPath(new URL('../package.json', import.meta.url));
         const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
-            blitTech?: { engineRange?: unknown };
+            blit386?: { engineRange?: unknown };
         };
-        const range = pkg.blitTech?.engineRange;
+        const range = pkg.blit386?.engineRange;
         return typeof range === 'string' ? range : null;
     } catch {
         return null;

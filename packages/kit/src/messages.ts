@@ -1,7 +1,7 @@
 /**
  * Centralized user-facing strings and a tiny color helper for the `blit` CLI.
  *
- * Voice follows the Blit-Tech Tier-1 guide: plain English, one idea per line, a concrete next step, no jargon,
+ * Voice follows the BLIT386 Tier-1 guide: plain English, one idea per line, a concrete next step, no jargon,
  * no emoji. The audience may be a complete beginner.
  */
 
@@ -32,9 +32,9 @@ export const ui = {
 /** Friendly, non-scary nudge shown when a project is not under version control. */
 export const NO_GIT_NAG = [
     'Your game is not saved with version control yet.',
-    'If a Blit-Tech update ever changes something, you could lose your work.',
+    'If a BLIT386 update ever changes something, you could lose your work.',
     'Run `git init` to start saving snapshots, or keep a copy of your folder somewhere safe before upgrading.',
 ].join('\n');
 
 /** Pointer used after a major version bump, where commands may have been renamed. */
-export const DEPRECATIONS_URL = 'https://github.com/vancura/blit-tech/blob/main/docs/deprecations.md';
+export const DEPRECATIONS_URL = 'https://github.com/blit386/blit386/blob/main/docs/deprecations.md';

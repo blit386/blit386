@@ -7,7 +7,7 @@ export default defineConfig([
         target: 'node22',
         clean: true,
         sourcemap: true,
-        // The bin entry needs a shebang so it runs directly via `npm create blit-tech`.
+        // The bin entry needs a shebang so it runs directly via `npm create blit386`.
         banner: { js: '#!/usr/bin/env node' },
     },
     {

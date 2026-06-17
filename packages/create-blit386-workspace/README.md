@@ -1,17 +1,17 @@
-# create-blit-tech
+# create-blit386
 
-Scaffolder and kit for [Blit-Tech](https://www.npmjs.com/package/blit-tech) games. This monorepo holds two published
+Scaffolder and kit for [BLIT386](https://www.npmjs.com/package/blit386) games. This monorepo holds two published
 packages:
 
-- **`create-blit-tech`** (`packages/create-blit-tech`) - the `npm create blit-tech` scaffolder. Asks a couple of quick
+- **`create-blit386`** (`packages/create-blit386`) - the `npm create blit386` scaffolder. Asks a couple of quick
   questions, then writes a ready-to-run game project.
-- **`@blit-tech/kit`** (`packages/kit`) - the canonical AI docs (`AGENTS.md` + local `docs/`) plus the project-local
-  `blit` CLI (`run`, `doctor`, `upgrade`, `agents sync`, `agents add`).
+- **`/kit`** (`packages/kit`) - the canonical AI docs (`AGENTS.md` + local `docs/`) plus the project-local `blit` CLI
+  (`run`, `doctor`, `upgrade`, `agents sync`, `agents add`).
 
 ## Quick start (for users)
 
 ```bash
-npm create blit-tech@latest my-game
+npm create blit386@latest my-game
 cd my-game
 npm install
 npm run dev
@@ -39,7 +39,7 @@ Starting someone else off? Copy and paste this message:
 
 > Want to make a little pixel game? First install Node.js: go to nodejs.org, download the LTS button, and install it
 > like any app. Then open the terminal inside your editor and type these three lines, pressing Enter after each:
-> `npm create blit-tech@latest my-game`, then `cd my-game`, then `npm run dev`. A web address appears - open it in your
+> `npm create blit386@latest my-game`, then `cd my-game`, then `npm run dev`. A web address appears - open it in your
 > browser and you are playing your own game. Open `src/game.js` to change it; every line has a comment that explains
 > itself.
 

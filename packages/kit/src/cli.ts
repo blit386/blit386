@@ -1,5 +1,5 @@
 /**
- * `blit` - the project-local Blit-Tech helper CLI.
+ * `blit` - the project-local BLIT386 helper CLI.
  *
  * Commands: run | doctor | upgrade | agents | help. Kept tiny and beginner-friendly; see ./messages for the voice.
  */
@@ -11,15 +11,15 @@ import { runDev } from './commands/run';
 import { runUpgrade } from './commands/upgrade';
 import { color, ui } from './messages';
 
-const HELP = `${color.bold('blit')} - the Blit-Tech helper
+const HELP = `${color.bold('blit')} - the BLIT386 helper
 
 Usage: blit <command>
 
 Commands:
   ${color.cyan('run')}        Start your game in the browser
-  ${color.cyan('doctor')}     Check your setup (Node, git, blit-tech version)
-  ${color.cyan('upgrade')}    Update blit-tech to the latest version
-  ${color.cyan('migrate')}    Update old Blit-Tech names in your game (--write to apply)
+  ${color.cyan('doctor')}     Check your setup (Node, git, blit386 version)
+  ${color.cyan('upgrade')}    Update blit386 to the latest version
+  ${color.cyan('migrate')}    Update old BLIT386 names in your game (--write to apply)
   ${color.cyan('agents')}     Manage AI-assistant files (sync, add)
   ${color.cyan('help')}       Show this help
 `;

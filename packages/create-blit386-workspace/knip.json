@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
-    "packages/create-blit-tech": {
+    "packages/create-blit386": {
       "project": ["src/**/*.ts"]
     },
     "packages/kit": {
@@ -10,6 +10,6 @@
   },
   "ignoreExportsUsedInFile": true,
   "typescript": {
-    "config": ["packages/create-blit-tech/tsconfig.json", "packages/kit/tsconfig.json"]
+    "config": ["packages/create-blit386/tsconfig.json", "packages/kit/tsconfig.json"]
   }
 }

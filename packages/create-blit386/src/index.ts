@@ -1,5 +1,5 @@
 /**
- * `create-blit-tech` entry point.
+ * `create-blit386` entry point.
  *
  * Flow: check Node -> greet -> pick a folder -> short wizard -> scaffold -> git init -> install -> print next steps.
  * Flags: --yes/-y (skip prompts), --ts (TypeScript template), --no-install, --no-git.
@@ -24,7 +24,7 @@ function tryGitInit(dir: string): boolean {
     try {
         execFileSync('git', ['init', '-q'], { cwd: dir, stdio: 'ignore' });
         execFileSync('git', ['add', '-A'], { cwd: dir, stdio: 'ignore' });
-        execFileSync('git', ['commit', '-q', '-m', 'Initial commit from create-blit-tech'], {
+        execFileSync('git', ['commit', '-q', '-m', 'Initial commit from create-blit386'], {
             cwd: dir,
             stdio: 'ignore',
         });
@@ -68,7 +68,7 @@ async function resolveTargetDir(positional: string | undefined, yes: boolean): P
 async function main(): Promise<void> {
     if (!meetsNodeFloor(process.versions.node)) {
         log.error(
-            `Blit-Tech needs Node ${NODE_FLOOR} or newer, and you have ${process.versions.node}. ` +
+            `BLIT386 needs Node ${NODE_FLOOR} or newer, and you have ${process.versions.node}. ` +
                 'Install the latest LTS from https://nodejs.org and run this again.',
         );
         process.exit(1);
@@ -93,7 +93,7 @@ async function main(): Promise<void> {
         );
     }
 
-    intro('create-blit-tech');
+    intro('create-blit386');
 
     const dirArg = await resolveTargetDir(positional[0], yes);
     const targetDir = resolve(process.cwd(), dirArg);

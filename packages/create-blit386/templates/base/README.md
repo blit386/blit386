@@ -1,6 +1,6 @@
 # {{projectName}}
 
-A little pixel game built with [Blit-Tech](https://www.npmjs.com/package/blit-tech).
+A little pixel game built with [BLIT386](https://www.npmjs.com/package/blit386).
 
 ## Run it
 
@@ -32,7 +32,7 @@ your browser updates by itself. A few things to try:
 - `{{pmRunDev}}` - start the game (the everyday command).
 - `npx blit run` - the same thing, the friendly way.
 - `npx blit doctor` - check your setup if something seems off.
-- `npx blit upgrade` - update Blit-Tech to the latest version.
+- `npx blit upgrade` - update BLIT386 to the latest version.
 
 The `blit` helper is installed inside this project, not on your whole computer, so it needs `npx` in front (it means
 "run the helper that lives in this project"). Typing plain `blit` would say "command not found."
@@ -44,7 +44,7 @@ active.
 
 - **Keyboard:** press the key just below Esc, in the very top-left corner of your keyboard. On US keyboards it is
   printed with `` ` `` and `~`. Classic PC games like Quake used that exact key to open their command console, and
-  Blit-Tech keeps the tradition. The engine listens for the key's **position**, not the symbol printed on it - on some
+  BLIT386 keeps the tradition. The engine listens for the key's **position**, not the symbol printed on it - on some
   keyboard layouts the `~` symbol sits somewhere else entirely, but the overlay key is still the one below Esc.
 - **No keyboard, or can't find the key?** Click or tap the bottom-left corner of the game screen instead. That works
   everywhere: phones, tablets, the Steam Deck.

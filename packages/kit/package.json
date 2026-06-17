@@ -1,7 +1,7 @@
 {
-  "name": "@blit-tech/kit",
+  "name": "@blit386/kit",
   "version": "1.1.0",
-  "description": "Canonical Blit-Tech AI docs (AGENTS.md + local docs) and the blit project CLI.",
+  "description": "Canonical BLIT386 AI docs (AGENTS.md + local docs) and the blit project CLI.",
   "author": {
     "name": "Václav Vančura",
     "url": "https://github.com/vancura"
@@ -9,18 +9,18 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vancura/create-blit-tech.git",
+    "url": "git+https://github.com/blit386/create-blit386.git",
     "directory": "packages/kit"
   },
   "bugs": {
-    "url": "https://github.com/vancura/create-blit-tech/issues"
+    "url": "https://github.com/blit386/create-blit386/issues"
   },
-  "homepage": "https://github.com/vancura/create-blit-tech#readme",
+  "homepage": "https://github.com/blit386/create-blit386#readme",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
   },
-  "blitTech": {
+  "blit386": {
     "engineRange": "^1.1.1"
   },
   "bin": {
@@ -31,7 +31,7 @@
     "content"
   ],
   "keywords": [
-    "blit-tech",
+    "blit386",
     "cli",
     "scaffold",
     "agents",

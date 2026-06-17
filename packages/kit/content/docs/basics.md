@@ -1,10 +1,10 @@
 # Basics: the game loop
 
-Every Blit-Tech game is one class with up to four methods. You hand the class to `bootstrap()` and the engine takes care
+Every BLIT386 game is one class with up to four methods. You hand the class to `bootstrap()` and the engine takes care
 of the rest.
 
 ```js
-import { bootstrap, BT, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Vector2i } from 'blit386';
 
 class Game {
   configure() {

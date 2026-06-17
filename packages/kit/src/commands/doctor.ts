@@ -1,4 +1,4 @@
-/** `blit doctor` - a friendly checkup of the things a Blit-Tech game needs. */
+/** `blit doctor` - a friendly checkup of the things a BLIT386 game needs. */
 
 import {
     detectPackageManager,
@@ -19,7 +19,7 @@ export function runDoctor(): void {
         process.stdout.write(`${line}\n`);
     };
 
-    out(ui.heading('Blit-Tech checkup'));
+    out(ui.heading('BLIT386 checkup'));
     out('');
 
     if (nodeVersionOk()) {
@@ -49,30 +49,30 @@ export function runDoctor(): void {
         out('');
     }
 
-    const version = installedVersion(root, 'blit-tech');
+    const version = installedVersion(root, 'blit386');
     if (version) {
-        out(ui.success(`blit-tech ${version} installed`));
+        out(ui.success(`blit386 ${version} installed`));
     } else {
-        out(ui.warn('blit-tech is not installed yet. Run your install command (for example `npm install`).'));
+        out(ui.warn('blit386 is not installed yet. Run your install command (for example `npm install`).'));
     }
 
     // Kit-engine compatibility (D14): compare the engine range this kit was written for against what is installed.
     const engineRange = kitEngineRange();
     if (version && engineRange) {
         if (satisfiesCaretRange(version, engineRange)) {
-            out(ui.success(`blit-tech ${version} is compatible with this kit (${engineRange})`));
+            out(ui.success(`blit386 ${version} is compatible with this kit (${engineRange})`));
         } else if (exceedsCaretRange(version, engineRange)) {
             out('');
             out(
                 ui.warn(
-                    `Your local guides were written for an older Blit-Tech (${engineRange}), but ${version} is installed.`,
+                    `Your local guides were written for an older BLIT386 (${engineRange}), but ${version} is installed.`,
                 ),
             );
-            out(ui.info('Update @blit-tech/kit to get guides that match your engine: run `npx blit upgrade`.'));
+            out(ui.info('Update /kit to get guides that match your engine: run `npx blit upgrade`.'));
         } else {
             out('');
-            out(ui.warn(`This kit needs blit-tech ${engineRange}, but ${version} is installed.`));
-            out(ui.info('Update blit-tech to match: run `npm update blit-tech` (or `npx blit upgrade`).'));
+            out(ui.warn(`This kit needs blit386 ${engineRange}, but ${version} is installed.`));
+            out(ui.info('Update blit386 to match: run `npm update blit386` (or `npx blit upgrade`).'));
         }
     }
 

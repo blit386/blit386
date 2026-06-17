@@ -25,7 +25,7 @@ Work through this list in order:
 1. **Is the dev server still running?** Look at the terminal. If it shows a normal prompt (waiting for you to type), the
    server stopped. Start it again with `npm run dev`.
 2. **Is there a red error in the browser console?** Open it (see above) and read the first red line.
-3. **Did you forget `await`?** This is the most common Blit-Tech beginner bug. Anything that loads something (a sprite
+3. **Did you forget `await`?** This is the most common BLIT386 beginner bug. Anything that loads something (a sprite
    sheet, a font) returns a _promise_ - an "I owe you" note for a thing that is not ready yet. If you forget `await`,
    your code keeps going with the IOU instead of the real thing, and drawing fails or draws nothing.
 
@@ -91,7 +91,7 @@ When the problem feels like it is about your computer rather than your code, run
 npx blit doctor
 ```
 
-It checks your Node version, whether your work is saved with git, and which Blit-Tech version you have, then tells you
+It checks your Node version, whether your work is saved with git, and which BLIT386 version you have, then tells you
 what to do in plain language.
 
 ## Still stuck?

@@ -114,16 +114,29 @@ test('is idempotent: a second pass changes nothing', () => {
 });
 
 test('migrationsThrough includes the 1.x rename migration and excludes future ones', () => {
-    assert.equal(migrationsThrough('1.0.0').length, 1, 'the 2026-05-31 migration applies from 1.0.0');
-    assert.equal(migrationsThrough('1.5.0').length, 1, 'still applies on a newer 1.x');
+    assert.equal(migrationsThrough('1.0.0').length, 1, 'the 2026-05-31 api-naming migration applies from 1.0.0');
+    assert.equal(migrationsThrough('1.1.0').length, 2, 'both migrations apply from 1.1.0');
+    assert.equal(migrationsThrough('1.5.0').length, 2, 'both still apply on a newer 1.x');
     assert.equal(migrationsThrough('0.9.0').length, 0, 'does not apply below its since version');
+});
+
+test('applyRenames rewrites importPath specifiers without a leading dot', () => {
+    const importPathRename = [{ from: 'blit-tech', to: 'blit386', kind: 'importPath', safety: 'auto' }];
+
+    const esm = "import { BT } from 'blit-tech';";
+    const cjs = "const bt = require('blit-tech');";
+    const scoped = "import { BT } from 'blit-tech-extra';";
+
+    assert.equal(applyRenames(esm, importPathRename).text, "import { BT } from 'blit386';", 'ESM import rewrites');
+    assert.equal(applyRenames(cjs, importPathRename).text, "const bt = require('blit386');", 'CJS require rewrites');
+    assert.equal(applyRenames(scoped, importPathRename).text, scoped, 'longer package name is not touched');
 });
 
 test('every rename declares the fields the engine needs', () => {
     for (const migration of MIGRATIONS) {
         for (const rename of migration.renames) {
             assert.ok(rename.from && rename.to, 'from/to are required');
-            assert.ok(['memberCall', 'objectKey', 'method'].includes(rename.kind), 'kind must be known');
+            assert.ok(['memberCall', 'objectKey', 'method', 'importPath'].includes(rename.kind), 'kind must be known');
             assert.ok(['auto', 'review'].includes(rename.safety), 'safety must be known');
             if (rename.kind === 'memberCall') {
                 assert.ok(rename.receiver, 'memberCall renames need a receiver');

@@ -1,14 +1,14 @@
 ---
 name: use-palette
 description:
-  Set up and change colors with Blit-Tech's palette-first system of numbered color slots. Use whenever the user sets up
+  Set up and change colors with BLIT386's palette-first system of numbered color slots. Use whenever the user sets up
   colors, mentions colors, themes, or palettes, or wants to recolor things at runtime by changing a slot.
 ---
 
 # Use the palette (colors)
 
-Blit-Tech is palette-first: fill numbered color slots once, then draw with the slot numbers. Change a slot and
-everything drawn with it changes.
+BLIT386 is palette-first: fill numbered color slots once, then draw with the slot numbers. Change a slot and everything
+drawn with it changes.
 
 ## When to use
 

@@ -1,14 +1,14 @@
 ---
 name: run
 description:
-  Start the Blit-Tech dev server and open the game in a browser. Use this whenever the user wants to run, start, launch,
+  Start the BLIT386 dev server and open the game in a browser. Use this whenever the user wants to run, start, launch,
   or preview the game, see what it looks like, or test a change live, even if they just say 'run the game', 'start the
   server', or 'show me'.
 ---
 
 # Run the game
 
-Start the Blit-Tech dev server and open the game in a browser.
+Start the BLIT386 dev server and open the game in a browser.
 
 ## When to use
 

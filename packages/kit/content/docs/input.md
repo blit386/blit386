@@ -1,6 +1,6 @@
 # Input
 
-Read input inside `update()`. Blit-Tech gives every player simple, named buttons that work the same whether the player
+Read input inside `update()`. BLIT386 gives every player simple, named buttons that work the same whether the player
 uses a keyboard or a gamepad.
 
 ## Face buttons and the D-pad

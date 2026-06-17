@@ -1,11 +1,11 @@
-# create-blit-tech
+# create-blit386
 
-Scaffold a new [Blit-Tech](https://www.npmjs.com/package/blit-tech) game in seconds.
+Scaffold a new [BLIT386](https://www.npmjs.com/package/blit386) game in seconds.
 
 ## Usage
 
 ```bash
-npm create blit-tech@latest my-game
+npm create blit386@latest my-game
 cd my-game
 npm install
 npm run dev
@@ -21,8 +21,7 @@ Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it wi
 - Local guides (`docs/`) and an `AGENTS.md` so you - or an AI assistant - can learn the engine without leaving the
   project.
 - The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`, `npx blit agents sync`), provided by
-  [`@blit-tech/kit`](https://www.npmjs.com/package/@blit-tech/kit). It is a project-local bin, so invoke it through
-  `npx`.
+  [`@blit386/kit`](https://www.npmjs.com/package/@blit386/kit). It is a project-local bin, so invoke it through `npx`.
 
 If you pick an AI assistant in the wizard, the scaffolder also generates its config (Claude: `CLAUDE.md` + `.claude/`;
 Cursor: `.cursor/`) from the kit's canonical content, and `npx blit agents sync` keeps it current. Did not pick one at
@@ -31,10 +30,10 @@ the start? Run `npx blit agents add claude` or `npx blit agents add cursor` late
 ## Options
 
 ```bash
-npm create blit-tech@latest my-game -- --yes         # skip the prompts (JavaScript, no AI files)
-npm create blit-tech@latest my-game -- --ts          # use the TypeScript starter instead of JavaScript
-npm create blit-tech@latest my-game -- --no-install  # do not install dependencies
-npm create blit-tech@latest my-game -- --no-git      # do not initialize a git repository
+npm create blit386@latest my-game -- --yes         # skip the prompts (JavaScript, no AI files)
+npm create blit386@latest my-game -- --ts          # use the TypeScript starter instead of JavaScript
+npm create blit386@latest my-game -- --no-install  # do not install dependencies
+npm create blit386@latest my-game -- --no-git      # do not initialize a git repository
 ```
 
 ## Requirements

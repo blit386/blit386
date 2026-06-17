@@ -1,8 +1,8 @@
 # Colors and the palette
 
-Blit-Tech is "palette-first". Instead of drawing with a color directly, you fill a small set of numbered slots with
-colors once, then draw using the slot numbers. This is how old game consoles worked, and it unlocks tricks like
-recoloring the whole screen by changing one slot.
+BLIT386 is "palette-first". Instead of drawing with a color directly, you fill a small set of numbered slots with colors
+once, then draw using the slot numbers. This is how old game consoles worked, and it unlocks tricks like recoloring the
+whole screen by changing one slot.
 
 ## Make a palette in init()
 

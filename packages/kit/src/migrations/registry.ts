@@ -1,7 +1,7 @@
 /**
  * The known engine migrations, in date order.
  *
- * This is the structured form of `blit-tech`'s `docs/deprecations.md`: each entry mirrors one dated section of that
+ * This is the structured form of `blit386`'s `docs/deprecations.md`: each entry mirrors one dated section of that
  * timeline. Keep the two in sync until the engine generates `deprecations.md` from this data (see the design doc,
  * section 4.6). New games rarely need these, but a project that upgrades across the rename can use `blit migrate`.
  */
@@ -18,6 +18,22 @@ import type { Migration } from './types';
  * located and reported with a suggestion, but never rewritten automatically.
  */
 export const MIGRATIONS: readonly Migration[] = [
+    {
+        id: '2026-06-16-package-rename',
+        date: '2026-06-16',
+        since: '1.1.0',
+        summary:
+            'The engine package was renamed from blit-tech to blit386. Update the import path and package.json dependency.',
+        renames: [
+            {
+                from: 'blit-tech',
+                to: 'blit386',
+                kind: 'importPath',
+                safety: 'auto',
+                note: 'Package rename: update the import/require string and your package.json dependency key.',
+            },
+        ],
+    },
     {
         id: '2026-05-31-api-naming',
         date: '2026-05-31',

@@ -1,7 +1,7 @@
 ---
 name: read-pointer
 description:
-  Read mouse, touch, and pen input through Blit-Tech's unified pointer API with up to four slots. Use for clicking,
+  Read mouse, touch, and pen input through BLIT386's unified pointer API with up to four slots. Use for clicking,
   dragging, painting, aiming, scrolling, or touch controls.
 ---
 

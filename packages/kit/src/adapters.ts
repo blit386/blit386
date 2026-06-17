@@ -7,7 +7,7 @@
  * to update a project without clobbering user edits.
  *
  * The transforms here MUST stay byte-for-byte identical to the scaffolder's adapters in
- * `create-blit-tech/src/scaffold.ts`. The "sync a freshly scaffolded project changes nothing" test
+ * `create-blit386/src/scaffold.ts`. The "sync a freshly scaffolded project changes nothing" test
  * guards that contract.
  */
 
@@ -168,12 +168,12 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
         `- \`${vars.pmRunFormat}\` - format the code`,
         `- \`${vars.pmRunLint}\` - check code style`,
         '- `npx blit doctor` - check your setup',
-        '- `npx blit upgrade` - update Blit-Tech',
+        '- `npx blit upgrade` - update BLIT386',
     ].join('\n');
 
     const claudeMd = [
         MANAGED_START,
-        '<!-- This block is managed by @blit-tech/kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
+        '<!-- This block is managed by /kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
         '',
         managedBody,
         commandsBlock,

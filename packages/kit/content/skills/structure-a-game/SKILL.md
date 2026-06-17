@@ -1,15 +1,15 @@
 ---
 name: structure-a-game
 description:
-  Show the shape of a Blit-Tech game (configure, init, update, render) and set the expectation that the engine renders
-  and reads input while you write physics, collision, enemies, scenes, and sound yourself. Use when starting a new game
-  or when the user asks how to add a player, collision, or enemies and might expect built-in systems.
+  Show the shape of a BLIT386 game (configure, init, update, render) and set the expectation that the engine renders and
+  reads input while you write physics, collision, enemies, scenes, and sound yourself. Use when starting a new game or
+  when the user asks how to add a player, collision, or enemies and might expect built-in systems.
 ---
 
 # Structure a game
 
-Blit-Tech draws pixels and reads input. It does NOT include physics, collision, enemies, scenes, or sound - you write
-that game logic yourself. This skill shows the shape to put it in.
+BLIT386 draws pixels and reads input. It does NOT include physics, collision, enemies, scenes, or sound - you write that
+game logic yourself. This skill shows the shape to put it in.
 
 ## When to use
 
@@ -19,7 +19,7 @@ built-in systems. Set the expectation early: the engine renders and reads input;
 ## The shape of a game
 
 ```js
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 class Game {
   // configure() {}            // optional; omit for a 320x240 screen at 60 FPS

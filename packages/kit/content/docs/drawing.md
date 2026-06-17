@@ -38,7 +38,7 @@ BT.drawPixel(new Vector2i(50, 50), 4); // a single pixel
 
 ## Text (no font file needed)
 
-Blit-Tech has a small built-in font, so you can show text with no setup. The order is **position, color slot, text**:
+BLIT386 has a small built-in font, so you can show text with no setup. The order is **position, color slot, text**:
 
 ```js
 BT.systemPrint(new Vector2i(8, 8), 4, `Score: ${this.score}`);

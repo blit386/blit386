@@ -78,8 +78,8 @@ test('scaffolds a runnable game project', () => {
 
         const manifest = JSON.parse(manifestRaw);
         assert.equal(manifest.name, 'my-game', 'package name should match the folder');
-        assert.ok(manifest.dependencies?.['blit-tech'], 'blit-tech dependency is missing');
-        assert.ok(manifest.devDependencies?.['@blit-tech/kit'], '@blit-tech/kit devDependency is missing');
+        assert.ok(manifest.dependencies?.['blit386'], 'blit386 dependency is missing');
+        assert.ok(manifest.devDependencies?.['@blit386/kit'], '@blit386/kit devDependency is missing');
         assert.ok(manifest.devDependencies?.['@biomejs/biome'], '@biomejs/biome devDependency is missing');
         assert.ok(manifest.scripts?.format, 'format script is missing');
         assert.ok(manifest.scripts?.lint, 'lint script is missing');
@@ -873,7 +873,8 @@ test('scaffolds a TypeScript project when language is ts', () => {
         const pkg = JSON.parse(readFileSync(join(project, 'package.json'), 'utf8'));
         assert.ok(pkg.devDependencies?.typescript, 'typescript should be a devDependency for TS projects');
         assert.ok(pkg.scripts?.typecheck, 'typecheck script should be present for TS projects');
-        assert.ok(!pkg.dependencies?.['blit-tech']?.includes('workspace:*'), 'no workspace:* in package.json');
+        assert.ok(pkg.dependencies?.['blit386'], 'blit386 should be a dependency');
+        assert.ok(!pkg.dependencies['blit386'].includes('workspace:*'), 'no workspace:* in blit386 dependency');
 
         // Entry file references should point to the .ts file.
         const html = readFileSync(join(project, 'index.html'), 'utf8');

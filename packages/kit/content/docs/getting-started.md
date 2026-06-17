@@ -22,7 +22,7 @@ Make sure the terminal is sitting in your game's folder (the one with `package.j
 
 ## 3. Install the game's parts
 
-Type this and press Enter. It downloads the Blit-Tech engine. Wait for it to finish.
+Type this and press Enter. It downloads the BLIT386 engine. Wait for it to finish.
 
 ```bash
 npm install
@@ -48,7 +48,7 @@ whole loop: change a little, look, repeat.
 
 ## If something seems wrong
 
-Run `npx blit doctor`. It checks your Node version, whether your work is saved with git, and which version of Blit-Tech
+Run `npx blit doctor`. It checks your Node version, whether your work is saved with git, and which version of BLIT386
 you have, then tells you what to do in plain language.
 
 If the game itself misbehaves - a blank screen, red errors, a change that did something strange - open

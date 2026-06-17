@@ -1,7 +1,7 @@
 /**
  * Package-manager detection for the scaffolder.
  *
- * When a user runs `npm create blit-tech` / `pnpm create blit-tech` / `yarn create blit-tech`, the invoking manager
+ * When a user runs `npm create blit386` / `pnpm create blit386` / `yarn create blit386`, the invoking manager
  * is reported in `npm_config_user_agent`. We use it so the generated project, lockfile, and printed commands match
  * whatever the user already has.
  */

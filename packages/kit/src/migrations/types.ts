@@ -1,5 +1,5 @@
 /**
- * Data model for engine migrations - the structured, machine-applicable form of `blit-tech`'s `docs/deprecations.md`.
+ * Data model for engine migrations - the structured, machine-applicable form of `blit386`'s `docs/deprecations.md`.
  *
  * A migration bundles a set of one-to-one identifier renames (a codemod) plus a human-readable summary of intent.
  * `blit migrate` and `blit upgrade` consume this to rewrite a game's source from old API names to current ones.
@@ -14,8 +14,10 @@
  *   trailing colon.
  * - `method`: a method call on an unknown receiver, e.g. `.intersectionTo(` -> `.intersectTo(`. Only safe when the old
  *   name is distinctive enough to not collide with unrelated code.
+ * - `importPath`: a quoted module specifier, e.g. `from 'blit-tech'` -> `from 'blit386'` and
+ *   `require('blit-tech')` -> `require('blit386')`. Matches any occurrence of the string inside single or double quotes.
  */
-export type RenameKind = 'memberCall' | 'objectKey' | 'method';
+export type RenameKind = 'memberCall' | 'objectKey' | 'method' | 'importPath';
 
 /**
  * Whether a rename can be applied automatically.

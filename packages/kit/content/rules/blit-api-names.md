@@ -1,11 +1,11 @@
 ---
-description: Blit-Tech public API names for game projects
+description: BLIT386 public API names for game projects
 alwaysApply: true
 ---
 
-# Blit-Tech API names
+# BLIT386 API names
 
-Use the public `BT` namespace and `configure()` field names from the blit-tech engine.
+Use the public `BT` namespace and `configure()` field names from the blit386 engine.
 
 ## Namespace
 

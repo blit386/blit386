@@ -1,11 +1,11 @@
-// {{projectName}} - a tiny Blit-Tech game called "Catcher".
+// {{projectName}} - a tiny BLIT386 game called "Catcher".
 //
 // Move the paddle to catch the blocks falling from the top.
 // On a phone or tablet: drag or tap - the paddle centers under your finger.
 // On a computer: move the mouse, or use the left and right arrow keys as a fallback.
 // Catch one: +1 point. Miss one: lose a life. Run out of lives and the game starts over.
 //
-// Every Blit-Tech game is one class with up to four methods. We use three of them here:
+// Every BLIT386 game is one class with up to four methods. We use three of them here:
 //   init()   - runs once at the start (we set up our colors here).
 //   update() - runs about 60 times a second (we move things and check for catches here).
 //   render() - runs about 60 times a second (we draw everything here).
@@ -13,7 +13,7 @@
 // We do not write a configure() method, so we get the default screen: 320 by 240 pixels at 60 frames per second.
 // Want to learn more? Read AGENTS.md or the docs/ folder next to this file.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 // Color slot numbers. We put real colors into these slots in init(), then draw using the numbers.
 // Slot 0 is always transparent, so we start counting at 1.
@@ -68,7 +68,7 @@ class Game {
     }
 
     update(): void {
-        // Blit-Tech supports two ways to move the paddle: pointer input (mouse and touch) and arrow keys.
+        // BLIT386 supports two ways to move the paddle: pointer input (mouse and touch) and arrow keys.
         // We check the pointer first because it works on phones, tablets, and any computer with a mouse.
         // The "0" you see in BT.isPointerActive(0) and BT.pointerPos(0) means "the first pointer slot."
         // A phone can track several fingers at once; slot 0 is always the first (or only) one.
@@ -154,5 +154,5 @@ class Game {
     }
 }
 
-// Hand the Game class to Blit-Tech. It builds one game, runs init() once, then update() and render() about 60 times a second.
+// Hand the Game class to BLIT386. It builds one game, runs init() once, then update() and render() about 60 times a second.
 bootstrap(Game);

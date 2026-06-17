@@ -1,6 +1,6 @@
-# Contributing to create-blit-tech
+# Contributing to create-blit386
 
-Thank you for helping improve the Blit-Tech scaffolder and kit.
+Thank you for helping improve the BLIT386 scaffolder and kit.
 
 ## Development setup
 
@@ -35,7 +35,7 @@ Sign-off with `-s` adds a `Signed-off-by:` line to the commit message. CI verifi
 
 ## Packages
 
-| Package            | Path                        | Purpose                                     |
-| ------------------ | --------------------------- | ------------------------------------------- |
-| `create-blit-tech` | `packages/create-blit-tech` | npm `create-*` CLI and templates            |
-| `@blit-tech/kit`   | `packages/kit`              | Canonical `AGENTS.md`, docs, and `blit` CLI |
+| Package          | Path                      | Purpose                                     |
+| ---------------- | ------------------------- | ------------------------------------------- |
+| `create-blit386` | `packages/create-blit386` | npm `create-*` CLI and templates            |
+| `/kit`           | `packages/kit`            | Canonical `AGENTS.md`, docs, and `blit` CLI |

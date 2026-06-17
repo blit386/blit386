@@ -61,7 +61,7 @@ BT.effectClear();
   `PixelGlitch`, `PixelMosaic`.
 
 ```js
-import { Scanlines } from 'blit-tech';
+import { Scanlines } from 'blit386';
 const lines = new Scanlines();
 lines.strength = 0.4;
 BT.effectAdd(lines);

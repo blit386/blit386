@@ -1,6 +1,14 @@
-/** `blit upgrade` - update blit-tech to the latest version, with a kind nudge if the project is not under git. */
+/** `blit upgrade` - update blit386 to the latest version, with a kind nudge if the project is not under git. */
 
-import { detectPackageManager, findProjectRoot, installedVersion, isGitRepo, pmAddArgs, runPm } from '../env';
+import {
+    detectPackageManager,
+    findProjectRoot,
+    installedVersion,
+    isGitRepo,
+    pmAddArgs,
+    pmRemoveArgs,
+    runPm,
+} from '../env';
 import { DEPRECATIONS_URL, NO_GIT_NAG, ui } from '../messages';
 import { confirm } from '../prompt';
 import { migrateProject } from './migrate';
@@ -36,25 +44,30 @@ export async function runUpgrade(): Promise<void> {
         }
     }
 
-    const before = installedVersion(root, 'blit-tech');
+    const before = installedVersion(root, 'blit386');
     const pm = detectPackageManager(root);
-    out(ui.info(`Updating blit-tech with ${pm}...`));
+    out(ui.info(`Updating blit386 with ${pm}...`));
 
-    const status = runPm(root, pm, pmAddArgs(pm, 'blit-tech@latest'));
+    if (installedVersion(root, 'blit-tech')) {
+        out(ui.info('Removing legacy blit-tech package...'));
+        runPm(root, pm, pmRemoveArgs(pm, 'blit-tech'));
+    }
+
+    const status = runPm(root, pm, pmAddArgs(pm, 'blit386@latest'));
     if (status !== 0) {
         out(ui.error('The update did not finish. Check the messages above and try again.'));
         process.exitCode = status;
         return;
     }
 
-    const after = installedVersion(root, 'blit-tech');
+    const after = installedVersion(root, 'blit386');
 
     if (!(before && after && before !== after)) {
-        out(ui.success(after ? `blit-tech is already up to date (${after}).` : 'blit-tech updated.'));
+        out(ui.success(after ? `blit386 is already up to date (${after}).` : 'blit386 updated.'));
         return;
     }
 
-    out(ui.success(`blit-tech ${before} -> ${after}`));
+    out(ui.success(`blit386 ${before} -> ${after}`));
 
     if (majorChanged(before, after)) {
         out(ui.warn('This was a big update, so some names may have changed.'));
@@ -62,7 +75,7 @@ export async function runUpgrade(): Promise<void> {
     }
 
     out('');
-    out(ui.info('Checking your game for old Blit-Tech names...'));
+    out(ui.info('Checking your game for old BLIT386 names...'));
 
     const summary = await migrateProject(root, out, { write: false });
 

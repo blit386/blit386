@@ -1,7 +1,7 @@
 {
-  "name": "create-blit-tech",
+  "name": "create-blit386",
   "version": "1.1.0",
-  "description": "Scaffold a new Blit-Tech game in seconds.",
+  "description": "Scaffold a new BLIT386 game in seconds.",
   "author": {
     "name": "Václav Vančura",
     "url": "https://github.com/vancura"
@@ -9,27 +9,27 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vancura/create-blit-tech.git",
-    "directory": "packages/create-blit-tech"
+    "url": "git+https://github.com/blit386/create-blit386.git",
+    "directory": "packages/create-blit386"
   },
   "bugs": {
-    "url": "https://github.com/vancura/create-blit-tech/issues"
+    "url": "https://github.com/blit386/create-blit386/issues"
   },
-  "homepage": "https://github.com/vancura/create-blit-tech#readme",
+  "homepage": "https://github.com/blit386/create-blit386#readme",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
   },
   "bin": {
-    "create-blit-tech": "./dist/index.js"
+    "create-blit386": "./dist/index.js"
   },
   "files": [
     "dist",
     "templates"
   ],
   "keywords": [
-    "blit-tech",
-    "create-blit-tech",
+    "blit386",
+    "create-blit386",
     "scaffold",
     "starter",
     "game-engine",
@@ -48,7 +48,7 @@
     "test": "node --test 'test/**/*.test.mjs'"
   },
   "dependencies": {
-    "@blit-tech/kit": "workspace:*",
+    "@blit386/kit": "workspace:*",
     "@clack/prompts": "^0.10.0"
   },
   "devDependencies": {

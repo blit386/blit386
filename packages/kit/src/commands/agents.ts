@@ -94,7 +94,7 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
-        out(ui.info('Scaffold with `npm create blit-tech` to enable sync support.'));
+        out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
         return 0;
     }
 
@@ -342,7 +342,7 @@ export function runFullSync(
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
-        out(ui.info('Scaffold with `npm create blit-tech` to enable sync support.'));
+        out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
         return 0;
     }
 
@@ -600,7 +600,7 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
-        out(ui.info('Scaffold with `npm create blit-tech` to enable agent setup.'));
+        out(ui.info('Scaffold with `npm create blit386` to enable agent setup.'));
         return { ok: false, exitCode: 0 };
     }
 

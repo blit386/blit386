@@ -8,7 +8,7 @@ importers:
 
   .:
     dependencies:
-      '@blit-tech/kit':
+      '@blit386/kit':
         specifier: workspace:*
         version: link:../kit
       '@clack/prompts':

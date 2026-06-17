@@ -1,5 +1,5 @@
 /**
- * `blit migrate` - rewrite a game's source from old Blit-Tech API names to the current ones.
+ * `blit migrate` - rewrite a game's source from old BLIT386 API names to the current ones.
  *
  * Safe renames are applied; ambiguous ones are reported for review. Previews by default; writes only with `--write`
  * (and a kind nudge first if the project is not saved with git). See `../migrations` for the data and codemod engine.
@@ -101,11 +101,11 @@ export async function migrateProject(
     out: (line: string) => void,
     options: { write: boolean; skipGitNag?: boolean },
 ): Promise<MigrateSummary> {
-    const installed = installedVersion(root, 'blit-tech');
+    const installed = installedVersion(root, 'blit386');
     const migrations = installed ? migrationsThrough(installed) : [...MIGRATIONS];
 
     if (migrations.length === 0) {
-        out(ui.success('No migrations apply to your Blit-Tech version. Nothing to change.'));
+        out(ui.success('No migrations apply to your BLIT386 version. Nothing to change.'));
         return { filesChanged: 0, appliedCount: 0, reviewCount: 0, wrote: false };
     }
 
@@ -131,7 +131,7 @@ export async function migrateProject(
     const filesChanged = changes.filter((c) => c.applied.length > 0).length;
 
     if (appliedCount === 0 && reviewCount === 0) {
-        out(ui.success('Your game already uses the current Blit-Tech names. Nothing to change.'));
+        out(ui.success('Your game already uses the current BLIT386 names. Nothing to change.'));
         return { filesChanged: 0, appliedCount: 0, reviewCount: 0, wrote: false };
     }
 
@@ -218,6 +218,6 @@ export async function runMigrate(args: string[]): Promise<void> {
         return;
     }
 
-    out(ui.info('Checking your game for old Blit-Tech names...'));
+    out(ui.info('Checking your game for old BLIT386 names...'));
     await migrateProject(root, out, { write });
 }
