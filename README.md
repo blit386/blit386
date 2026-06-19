@@ -4,71 +4,162 @@
 [![npm version](https://img.shields.io/npm/v/blit386.svg)](https://www.npmjs.com/package/blit386)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![WebGPU](https://img.shields.io/badge/WebGPU-Enabled-green.svg)](https://www.w3.org/TR/webgpu/)
-[![pnpm](https://img.shields.io/badge/pnpm-10.26.2-yellow.svg)](https://pnpm.io/)
 
-A palette-first WebGPU retro engine for TypeScript, inspired by [RetroBlit](https://badcastle.itch.io/retroblit). Draw
-with palette indices, animate with palette cycling and fades, and ship authentic VGA-era effects on modern GPUs.
+A palette-first retro engine for the web. You draw with numbered colors instead of RGBA pixels – the same trick that
+made VGA games shimmer – and a modern GPU does the rest. Roll the palette and water flows, fire rises, the sky drifts at
+dusk, all without redrawing a single pixel. WebGPU when your browser has it, an automatic Canvas 2D fallback when it
+does not.
 
-![BLIT386 logo](assets/logo.png)
+It is small, it is fast, and it is built to feel like a toy. That is the whole point.
 
-## Inspiration
+![BLIT386 logo](https://github.com/blit386/blit386/raw/main/assets/logo.png)
 
-BLIT386 draws heavy inspiration from [RetroBlit](https://www.badcastle.com/retroblit/docs/doc/index.html) by Martin
-Cietwierkowski ([@daafu](https://github.com/daafu)) - a retro pixel demo framework for Unity that replaces the editor
-with a clean, low-level demo loop. BLIT386 brings the same philosophy to the web using WebGPU: no scene graphs, no
-complex frameworks, just sprites, primitives, and fonts.
+## Quick overview
 
-## Features
+```js
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-- **True indexed rendering**: primitives and sprites write palette indices, not RGBA pixels
-- **Palette effects built-in**: cycling, fade, flash, and swap run per frame with no per-sprite rewrites
-- **Built-in retro palettes**: VGA, CGA, C64, Game Boy, PICO-8, and NES preset factories
-- **Palette offset variants**: recolor one sprite sheet into team colors, states, or themes without duplicate textures
-- **Performance-first data model**: tiny palette uploads (4 KB), smaller sprite textures, and compact primitive vertices
-- **WebGPU rendering** with dual-pipeline architecture (primitives + sprites); automatic Canvas 2D software fallback
-- **Post-process effects**: two-tier system - pixel tier on the `r8uint` index framebuffer; display tier on upscaled
-  RGBA; bundled CRT presets
-- **Primitive drawing**: pixels, lines, rectangles (outline and filled)
-- **Sprite system**: palette-indexed textures, palette offset, automatic texture batching
-- **Bitmap fonts**: variable-width rendering from `.btfont` files with palette offset support
-- **Camera system**: scrolling with offset/reset and world-bounds clamping via `BT.cameraClamp`
-- **Asset loading**: sprite sheets and bitmap fonts with automatic caching
-- **Pointer input**: mouse, touch, and pen unified under four slots; scroll delta; cursor control
-- **Keyboard input**: raw keys via `KeyboardEvent.code`, virtual face buttons, remapping, text accumulation
-- **Gamepad input**: up to four players via standard Gamepad API, stick dead zone, face buttons
-- **Fixed timestep**: deterministic update loop with tick counter, `Timer`, and timing helpers
-- **Frame capture**: `BT.captureFrame()` and `BT.downloadFrame()` for PNG export
-- **Overlay**: engine-drawn FPS, backend, resolution, and demo title (toggle with `~` or bottom-left corner; disable via
-  `isOverlayEnabled: false` in `configure()`)
+class Game {
+  // The box position, in pixels. update() changes it; render() only reads it.
+  x = 140;
+  speed = 1;
 
-## Why BLIT386?
+  // init() runs once at startup. Set up your colors and load things here.
+  // Slot 0 is always transparent, so we start numbering at 1.
+  // Think of the palette as a numbered paint box.
+  async init() {
+    const palette = BT.paletteCreate(16); // room for 16 colors
 
-| Feature                  | BLIT386                             | Typical 2D WebGPU engines        |
-| ------------------------ | ----------------------------------- | -------------------------------- |
-| Rendering model          | Native indexed palette pipeline     | RGBA textures and framebuffers   |
-| Color animation          | Palette cycling/fade/flash built-in | Manual sprite or shader rewrites |
-| Global recolor/fade cost | One palette update                  | Scene redraw and blend passes    |
-| Color variants           | Palette offsets                     | Duplicate assets or tint logic   |
-| Retro palette presets    | C64, NES, Game Boy, CGA, VGA, etc.  | Usually custom/manual only       |
+    palette.set(1, new Color32(32, 0, 128)); // a deep blue background
+    palette.set(2, new Color32(255, 220, 90)); // a warm yellow
 
-## Prerequisites
+    BT.paletteSet(palette); // make this the palette the engine draws with
 
-**Runtime (browser)**
+    return true; // tell the engine setup went fine
+  }
 
-- A **WebGPU-compatible browser** (the engine falls back to Canvas 2D software rendering when WebGPU is unavailable):
-  - Chrome/Edge 113+ (Windows, macOS, Linux, Android)
-  - Firefox 141+ on Windows; 145+/147+ on macOS; Nightly on Linux and Android
-  - Safari 26+ (macOS Tahoe / iOS 26); or Safari 18-25 with WebGPU enabled via Feature Flags
+  // update() is the THINKING step: change the world here (move things, read
+  // input, run physics), but never draw. It runs at a FIXED rate - targetFPS,
+  // 60 times a second by default - no matter how fast the screen is. The engine
+  // runs it as many times per frame as it needs to hold that pace, so your game
+  // moves at the same speed on every machine.
+  update() {
+    this.x += this.speed; // slide the box sideways
 
-**App toolchain**
+    if (this.x < 0 || this.x > 280) {
+      this.speed = -this.speed; // bounce off the screen edges
+    }
+  }
 
-- **Node.js** >=22.18.0 (LTS)
-- An **ESM bundler** (Vite, webpack, esbuild, and similar) to load the published package in the browser
+  // render() is the DRAWING step: only paint the world as it is right now,
+  // never change state. It runs ONCE PER SCREEN REFRESH - way faster on a
+  // high-refresh monitor, slower on a struggling machine - so it is not locked
+  // to update().
+  render() {
+    // Draw with slot numbers, not colors.
+    BT.clear(1); // fill the screen with slot 1
+    BT.drawRectFill(new Rect2i(this.x, 100, 40, 40), 2); // the moving box
+    BT.systemPrint(new Vector2i(108, 160), 2, 'HELLO BLIT386'); // built-in font; bitmap fonts work too
+  }
+}
 
-## Quick Start
+bootstrap(Game); // hand the class to the engine and start the loop
+```
 
-The fastest way to start is the **scaffolder**. It writes a ready-to-run Vite project, installs the engine, and includes
-a starter game and local docs:
+That is a whole game on a 320×240 screen: `update()` thinks, `render()` draws, and the box slides back and forth at the
+same speed on every machine – because `update()` ticks at a fixed rate while `render()` just follows your screen. No
+config, no scene graph, no ceremony.
+
+### Load a sprite and draw it
+
+```js
+import { bootstrap, BT, Color32, Palette, SpriteSheet, Vector2i } from 'blit386';
+
+class Game {
+  async init() {
+    this.palette = new Palette(256);
+    this.palette.set(1, new Color32(20, 20, 40)); // background
+
+    // loadIndexed() scans the PNG, drops its colors into the palette starting
+    // at slot 10, and hands you back the sheet plus a rect for the whole image.
+    this.hero = await SpriteSheet.loadIndexed('/sprites/hero.png', this.palette, 10);
+
+    BT.paletteSet(this.palette); // activate AFTER loadIndexed returns
+
+    return true;
+  }
+
+  update() {}
+
+  render() {
+    BT.clear(1);
+    BT.drawSprite(this.hero.sheet, this.hero.srcRect, new Vector2i(140, 100));
+  }
+}
+
+bootstrap(Game);
+```
+
+### Make an ocean out of one palette
+
+This is the party trick. Build eight shades of blue, then tell the engine to rotate them. The pixels never change – only
+the paint-box labels shuffle – and the whole sea starts to move, exactly like it did in DeluxePaint.
+
+```js
+import { bootstrap, BT, Color32, Rect2i } from 'blit386';
+
+const OCEAN_START = 1; // eight blue slots live in 1..8
+const OCEAN_END = 8;
+
+class Game {
+  async init() {
+    const palette = BT.paletteCreate(16);
+
+    // A gradient from deep navy to bright cyan across the eight slots.
+    for (let i = 0; i < 8; i++) {
+      const t = i / 7; // 0..1
+      palette.set(OCEAN_START + i, new Color32(0, Math.floor(40 + t * 160), Math.floor(100 + t * 155)));
+    }
+
+    BT.paletteSet(palette);
+
+    // Roll those eight slots forward, ~4 steps a second. The engine keeps
+    // doing this every frame on its own. We never touch a pixel again.
+    BT.paletteCycle(OCEAN_START, OCEAN_END, 4);
+
+    return true;
+  }
+
+  update() {}
+
+  render() {
+    // Eight horizontal bands, one per ocean slot. As the palette rolls, the
+    // colors slide down the screen like a calm, glittering sea.
+    for (let i = 0; i < 8; i++) {
+      BT.drawRectFill(new Rect2i(0, i * 30, 320, 30), OCEAN_START + i);
+    }
+  }
+}
+
+bootstrap(Game);
+```
+
+## What makes it fun
+
+- **Draw with numbers, not pixels:** A 256-color paint box; every primitive and sprite is just a slot index.
+- **Animate colors, not geometry:** Cycle, fade, flash, and swap give you water, lava, and lightning for the cost of one
+  tiny palette upload.
+- **Retro palettes in the box:** VGA, CGA, C64, Game Boy, PICO-8, and NES presets.
+- **Recolor without redrawing:** Palette offsets turn one sprite sheet into team colors, day and night, or power-up
+  states – no duplicate textures.
+- **CRT when you want it:** A two-tier post-process chain with bundled CRT presets for that curved-glass glow.
+- **Everything a tiny engine needs:** Pointer, keyboard, and gamepad input, a fixed-timestep loop, bitmap fonts, a
+  camera, and one-call PNG frame capture.
+
+## Get started
+
+The fastest way – easy enough that a pigeon would skip its dinner to try it – is the scaffolder. It writes a
+ready-to-run Vite project, installs the engine, and drops in a starter game plus local docs.
 
 ```bash
 npm create blit386@latest my-game
@@ -76,107 +167,65 @@ cd my-game
 npm run dev
 ```
 
-Works with npm, pnpm, yarn, or bun (it uses whichever you ran it with). See
-[create-blit386](https://github.com/blit386/create-blit386) for options and what the project contains.
+Works with npm, pnpm, yarn, or bun – it uses whichever you ran it with. Open the address it prints and edit
+`src/game.js`. See [create-blit386](https://github.com/blit386/create-blit386) for the options and what lands in the
+project.
 
-### Add to an existing project
-
-Install **blit386** from npm ([npmjs.com/package/blit386](https://www.npmjs.com/package/blit386)):
+### Add it to a project you already have
 
 ```bash
 pnpm add blit386
 ```
 
-`bootstrap()` expects a canvas inside `#canvas-container` (defaults: canvas id `blit386-canvas`, container id
-`canvas-container`):
+`bootstrap()` looks for a canvas inside `#canvas-container`:
 
 ```html
 <div id="canvas-container"><canvas id="blit386-canvas"></canvas></div>
-<script type="module" src="/src/main.ts"></script>
+<script type="module" src="/src/main.js"></script>
 ```
 
-```ts
-import { bootstrap, BT, Color32, Palette, Rect2i, type IBTDemo } from 'blit386';
+You need an ESM bundler (Vite, esbuild, webpack, and friends) and Node 22+. The engine wants a WebGPU browser and
+quietly falls back to Canvas 2D when there is not one – see [Browser support](docs/api-core.md#browser-support) for the
+version details.
 
-const BG = 1;
-const WATER_A = 9;
-const WATER_B = 12;
+## Demos
 
-class MyDemo implements IBTDemo {
-  async init(): Promise<boolean> {
-    const palette = Palette.c64();
-    palette.set(BG, new Color32(20, 30, 40, 255));
-    BT.paletteSet(palette);
-
-    // Animate every pixel that uses slots 9..12 (water/lava style cycling).
-    BT.paletteCycle(WATER_A, WATER_B, 6);
-
-    return true;
-  }
-
-  update(): void {
-    // fixed-step logic here
-  }
-
-  render(): void {
-    BT.clear(BG);
-    BT.drawRectFill(new Rect2i(100, 100, 50, 50), WATER_A);
-  }
-}
-
-bootstrap(MyDemo);
-```
-
-See [API: Core](docs/api-core.md) for full `bootstrap()` options.
-
-## Examples & Demos
-
-For interactive examples and demos, visit the [BLIT386 Demos repository](https://github.com/blit386/blit386-demos) or
-browse the [hosted demos at demos.blit386.dev](https://demos.blit386.dev). To start a new project, use the
-[create-blit386](https://github.com/blit386/create-blit386) scaffolder (see [Quick Start](#quick-start)).
+Play the [hosted demos at demos.blit386.dev](https://demos.blit386.dev), or read the source in the
+[blit386-demos repo](https://github.com/blit386/blit386-demos) – 34 small, heavily commented examples from a single
+moving square up to a full Snake game.
 
 ## Documentation
 
-See [API: Core](docs/api-core.md) for `bootstrap()` options.
+Start with [API: Core](docs/api-core.md) for `bootstrap()`, the game loop, and core types. The rest of the important
+pages:
 
 | Guide                                                | What it covers                                         |
 | ---------------------------------------------------- | ------------------------------------------------------ |
 | [API: Core](docs/api-core.md)                        | bootstrap, game loop, camera, Timer, core types        |
-| [Overlay Guide](docs/overlay.md)                     | engine HUD subsystem, toggle, custom rows, layout      |
 | [API: Rendering](docs/api-rendering.md)              | primitives, sprites, text, post-process, frame capture |
 | [API: Palette](docs/api-palette.md)                  | palette setup, presets, effects, serialization         |
 | [API: Assets](docs/api-assets.md)                    | sprite sheets, bitmap fonts, asset loading             |
 | [Input Guide](docs/input.md)                         | pointer, keyboard, gamepad                             |
-| [Palette Guide](docs/palette-guide.md)               | palette-first workflow, offsets, effects               |
-| [Palette Presets](docs/palette-presets.md)           | built-in preset reference and exact color data         |
-| [Post-Process Effects](docs/post-process-effects.md) | effect chain, built-in effects, custom effects         |
-| [Bitmap Fonts](docs/bitmap-fonts.md)                 | `.btfont` format and BMFont conversion                 |
+| [Palette Guide](docs/palette-guide.md)               | the palette-first workflow, offsets, and effects       |
+| [Post-Process Effects](docs/post-process-effects.md) | the effect chain, built-in effects, CRT presets        |
 
-## Browser Compatibility
+The full index – overlay HUD, palette presets, bitmap fonts, performance, testing, security – lives in [`docs/`](docs/).
 
-WebGPU support varies by browser:
+## Inspiration
 
-| Browser     | Version        | Status                                                           |
-| ----------- | -------------- | ---------------------------------------------------------------- |
-| Chrome/Edge | 113+           | Enabled by default                                               |
-| Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
-| Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags     |
+BLIT386 owes its whole philosophy to [RetroBlit](https://www.badcastle.com/retroblit/docs/doc/index.html) by Martin
+Cietwierkowski ([@daafu](https://github.com/daafu)) – a retro pixel framework for Unity that throws out the scene graph
+and hands you a clean, low-level demo loop. BLIT386 brings that same feeling to the web with WebGPU: no frameworks, just
+sprites, primitives, fonts, and a palette.
 
-When WebGPU is unavailable the engine falls back to the Canvas 2D software renderer automatically. The software path
-also works on browsers that do not expose WebGPU globals at all (for example Firefox on Linux without Nightly); the
-WebGPU renderer is loaded only when WebGPU init succeeds. By default the engine draws a stats overlay after each frame:
-measured FPS, configured target FPS, the active backend name (via `BT.activeBackend`), logical resolution, and a short
-demo title derived from `document.title`. The overlay **body starts hidden** with a bitmap toggle hint in the
-bottom-left corner; toggle it with `~` (Backquote) or a primary press in the bottom-left corner. Use
-`isOverlayVisibleAtStart: true` to show the body on the first frame, `isOverlayToggleHintVisible: false` to hide the
-hint icon on immersive demos, or `isOverlayEnabled: false` to disable the overlay entirely in `configure()`. Use
-`BT.activeBackend` to read which backend is running (`'webgpu'`, `'software'`, or `null` before init).
+## Made by
 
-## Contributors
+BLIT386 is built by Václav Vančura ([@vancura](https://github.com/vancura)) – one person, so far. I am not a player, I
+am an engine maker.
 
-Contributor workflow, scripts, release process, and repository tooling docs live in
+Want to help? The contributor workflow, scripts, and release process live in
 [Developer Experience](docs/developer-experience-guide.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-ISC
+ISC.

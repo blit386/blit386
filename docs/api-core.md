@@ -570,6 +570,24 @@ c.isEqual(other)              // boolean - all RGBA channels match
 
 ---
 
+## Browser support
+
+The WebGPU renderer is the default. When WebGPU is unavailable the engine falls back to the Canvas 2D software renderer
+automatically; it also runs on browsers that do not expose WebGPU globals at all (for example Firefox on Linux without
+Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
+init).
+
+| Browser     | Version        | Status                                                           |
+| ----------- | -------------- | ---------------------------------------------------------------- |
+| Chrome/Edge | 113+           | Enabled by default                                               |
+| Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
+| Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags     |
+
+**Build toolchain:** Node.js >= 22.18.0 (LTS) and an ESM bundler (Vite, webpack, esbuild, or similar) to load the
+published package in the browser.
+
+---
+
 ## See Also
 
 | Guide                                           | What it covers                                         |
