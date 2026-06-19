@@ -1,12 +1,12 @@
 ---
 name: demos-security-run
-description: Run MCP security preflight and documented fallbacks for blit-tech-demos security workflows.
+description: Run MCP security preflight and documented fallbacks for blit386-demos security workflows.
 ---
 
-# Security Run (blit-tech-demos)
+# Security Run (blit386-demos)
 
 Same deterministic security workflow as the library repo, with demos-specific paths. Canonical runbook and script live
-in `blit-tech`.
+in `blit386`.
 
 ## Usage
 
@@ -29,7 +29,7 @@ in `blit-tech`.
    Or via the library script:
 
    ```bash
-   node ../blit-tech/scripts/security/mcp-preflight.mjs \
+   node ../blit386/scripts/security/mcp-preflight.mjs \
      --mcps-dir "<cursor-project-mcps-path>" \
      --repo-root . \
      --allow-fallback \
@@ -47,7 +47,7 @@ in `blit-tech`.
 3. **MCP scans** - only when corresponding servers are `healthy` (see library runbook).
 
 4. **Report** - use template in
-   [blit-tech/docs/security/security-runbook.md](https://github.com/vancura/blit-tech/blob/main/docs/security/security-runbook.md).
+   [blit386/docs/security/security-runbook.md](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md).
 
 ## Periodic governance (monthly)
 
@@ -62,5 +62,5 @@ pnpm run security:mcp-preflight -- \
 
 ## References
 
-- [blit-tech/docs/security/security-runbook.md](https://github.com/vancura/blit-tech/blob/main/docs/security/security-runbook.md)
-- [blit-tech/.claude/skills/bt-security-run/SKILL.md](https://github.com/vancura/blit-tech/blob/main/.claude/skills/bt-security-run/SKILL.md)
+- [blit386/docs/security/security-runbook.md](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md)
+- [blit386/.claude/skills/bt-security-run/SKILL.md](https://github.com/blit386/blit386/blob/main/.claude/skills/bt-security-run/SKILL.md)
