@@ -44,6 +44,9 @@
     },
     {
       "pattern": "^https?://github\\.com/blit386/"
+    },
+    {
+      "pattern": "^https?://demos\\.blit386\\.dev"
     }
   ],
   "replacementPatterns": [
