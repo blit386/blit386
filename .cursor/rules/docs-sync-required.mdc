@@ -16,6 +16,6 @@ alwaysApply: false
   `.cursor/rules/*.mdc` cross-references.
 - Update `README.md` only when quick start, prerequisites, feature list, or compatibility is affected.
 - When the onboarding surface changes (`README.md` Quick Start, `bootstrap()` signature/defaults, or the minimal demo
-  shape), check whether the sibling `create-blit-tech` scaffolder templates, `@blit-tech/kit` docs, and the pinned
-  `blit-tech` version range need a matching update (see **Onboarding and the scaffolder** in `CLAUDE.md`).
+  shape), check whether the sibling `create-blit386` scaffolder templates, `@blit386/kit` docs, and the pinned `blit386`
+  version range need a matching update (see **Onboarding and the scaffolder** in `CLAUDE.md`).
 - If no docs update is needed, state why explicitly in the final response.

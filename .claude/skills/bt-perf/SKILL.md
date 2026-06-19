@@ -1,6 +1,6 @@
 ---
 name: bt-perf
-description: Add or update Blit-Tech CPU benchmarks and explain the CI benchmark workflow.
+description: Add or update BLIT386 CPU benchmarks and explain the CI benchmark workflow.
 ---
 
 # Performance Testing

@@ -77,7 +77,7 @@ body:
     attributes:
       label: Linked remediation issue
       description: GitHub issue URL that tracks the fix
-      placeholder: https://github.com/vancura/blit-tech/issues/...
+      placeholder: https://github.com/blit386/blit386/issues/...
     validations:
       required: true
 
