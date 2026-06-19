@@ -6,7 +6,10 @@ TypeScript.
 Each demo shows a different feature of the engine. Source files in `src/` use plain JavaScript with lots of comments
 explaining how everything works.
 
-There are **33** demo modules today (32 numbered demos plus `00a-barebones`). Each one lives in a single file under
+Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
+scaffolder (`npm create blit386@latest my-game`).
+
+There are **34** demo modules today (33 numbered demos plus `00a-barebones`). Each one lives in a single file under
 `src/` (for example `src/001-basics.js`). During development, Vite serves the matching page at `/demos/001-basics.html`
 (no HTML file is committed; the build wires a shared layout to each script).
 
@@ -143,9 +146,8 @@ These demos are thin wrappers around the library. For complete behavior, APIs, a
 - **[Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md)** - unit, integration, and visual tests
 - **[Performance testing](https://github.com/blit386/blit386/blob/main/docs/performance-testing.md)** - benchmarks and
   CI
-- **[Software fallback smoke matrix](https://github.com/blit386/blit386/blob/main/docs/software-fallback-smoke-matrix.md)**
-
-- manual backend coverage notes
+- **[Software fallback smoke matrix](https://github.com/blit386/blit386/blob/main/docs/software-fallback-smoke-matrix.md)** -
+  manual backend coverage notes
 
 ## How to Run
 

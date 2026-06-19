@@ -5,7 +5,7 @@ Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine 
 ## Tech Stack
 
 - **Node**: >= 22.18.0 (required by cspell 10 and workspace sibling blit386)
-- **Build Tool**: Vite 7 with a custom virtual-demos plugin (no templating library)
+- **Build Tool**: Vite 8 with a custom virtual-demos plugin (no templating library)
 - **Language**: JavaScript (ES2022)
 - **Styling**: Plain CSS with CSS custom properties
 - **Engine**: BLIT386 (pixel engine: WebGPU default, optional software renderer; workspace dependency)
