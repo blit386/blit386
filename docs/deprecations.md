@@ -57,3 +57,12 @@ These aliases were introduced to preserve backward compatibility after the API n
 
 **Scope:** This tracker lists **public** compatibility aliases only. Internal deprecated helpers (overlay layout
 functions, `RenderPaletteUsage` re-exports, etc.) are omitted — search `@deprecated` in `src/` for the full set.
+
+## See Also
+
+| Guide                                                 | What it covers                                     |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| [API: Core](api-core.md)                              | current `BT` getters and `HardwareSettings` fields |
+| [Input Guide](input.md)                               | current input API names                            |
+| [Overlay Guide](overlay.md)                           | current overlay configure flags                    |
+| [Developer Experience](developer-experience-guide.md) | boolean naming and migration policy                |

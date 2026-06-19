@@ -20,7 +20,7 @@ BLIT386 uses Vitest bench for CPU micro-benchmarks. These measure isolated metho
 helpers, and allocation patterns.
 
 For visual correctness (not performance), use the visual regression tests: `pnpm run test:visual`. They run Playwright
-with Chromium + WebGPU and produce PNG snapshots. See `docs/testing.md` for details.
+with Chromium + WebGPU and produce PNG snapshots. See [Testing](testing.md) for details.
 
 ### When to Use CPU Benchmarks
 
@@ -238,3 +238,11 @@ If you are unsure where to start:
 - use **CPU benchmarking** with Vitest bench
 
 It is simple, fast, and already supported by the label-gated benchmark CI.
+
+## See Also
+
+| Guide                                                       | What it covers                           |
+| ----------------------------------------------------------- | ---------------------------------------- |
+| [Testing](testing.md)                                       | unit, integration, and visual test tiers |
+| [Performance Best Practices](performance-best-practices.md) | when and how to optimize hot paths       |
+| [Developer Experience](developer-experience-guide.md)       | `pnpm run bench` and CI workflow         |

@@ -58,7 +58,7 @@ Use `SpriteSheet.loadIndexed()` for all standard sprite setup. It combines color
 palette indexization in one call.
 
 ```ts
-import { SpriteSheet, Palette } from 'blit386';
+import { BT, Palette, SpriteSheet, Vector2i } from 'blit386';
 
 const palette = new Palette(256);
 
@@ -89,6 +89,10 @@ Use this only when you need fine-grained control over the palette layout or want
 palette sequentially.
 
 ```ts
+import { BT, Palette, SpriteSheet } from 'blit386';
+
+const palette = new Palette(256);
+
 // Step 1: register colors from each image into the palette
 const colors = await SpriteSheet.loadColorsIntoPalette('hero.png', palette, 10);
 const tileColors = await SpriteSheet.loadColorsIntoPalette('tiles.png', palette, 10 + colors.length);
@@ -177,3 +181,5 @@ target FPS, draw calls, frame/update()/render() timings, backend, resolution, de
 | [Palette Guide](palette-guide.md)     | palette-first setup, offsets, refresh   |
 | [Palette Presets](palette-presets.md) | built-in preset reference               |
 | [Bitmap Fonts](bitmap-fonts.md)       | .btfont format, BMFont conversion       |
+| [Overlay Guide](overlay.md)           | system font for HUD text                |
+| [Testing](testing.md)                 | SpriteSheet and BitmapFont tests        |

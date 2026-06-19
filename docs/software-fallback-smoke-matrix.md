@@ -52,3 +52,12 @@ affect pixel output.
 - All rows in the matrix pass in software mode.
 - Software output is visually stable run-to-run for the same scene.
 - Effect API failures are clear and actionable.
+
+## See Also
+
+| Guide                                                | What it covers                                  |
+| ---------------------------------------------------- | ----------------------------------------------- |
+| [API: Core](api-core.md#requested-vs-active-backend) | requested vs active backend, `BT.activeBackend` |
+| [Post-Process Effects](post-process-effects.md)      | effects excluded in the software backend        |
+| [Testing](testing.md)                                | automated visual parity tests                   |
+| [Overlay Guide](overlay.md)                          | backend name shown on the overlay top bar       |

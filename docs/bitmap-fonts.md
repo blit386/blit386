@@ -355,3 +355,12 @@ for (let i = 0; i < text.length; i++) {
 
 - Make sure the canvas is using nearest-neighbor scaling (CSS `image-rendering: pixelated`).
 - Use integer positions for `BT.printFont()`.
+
+## See Also
+
+| Guide                              | What it covers                          |
+| ---------------------------------- | --------------------------------------- |
+| [API: Assets](api-assets.md)       | `BitmapFont` loading and asset limits   |
+| [API: Rendering](api-rendering.md) | `BT.printFont` and palette offset       |
+| [Palette Guide](palette-guide.md)  | indexize and `paletteOffset` for glyphs |
+| [API: Palette](api-palette.md)     | palette addressing for text colors      |

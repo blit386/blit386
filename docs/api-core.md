@@ -570,13 +570,37 @@ c.isEqual(other)              // boolean - all RGBA channels match
 
 ---
 
+## Browser support
+
+The WebGPU renderer is the default. When WebGPU is unavailable the engine falls back to the Canvas 2D software renderer
+automatically; it also runs on browsers that do not expose WebGPU globals at all (for example Firefox on Linux without
+Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
+init).
+
+| Browser     | Version        | Status                                                           |
+| ----------- | -------------- | ---------------------------------------------------------------- |
+| Chrome/Edge | 113+           | Enabled by default                                               |
+| Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
+| Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags     |
+
+> **Note:** WebGPU rollout is still moving across browsers. Treat this matrix as a point-in-time snapshot and re-check
+> the vendor release notes periodically.
+
+**Build toolchain:** Node.js >= 22.18.0 (LTS) and an ESM bundler (Vite, webpack, esbuild, or similar) to load the
+published package in the browser.
+
+---
+
 ## See Also
 
-| Guide                              | What it covers                                         |
-| ---------------------------------- | ------------------------------------------------------ |
-| [API: Rendering](api-rendering.md) | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](api-palette.md)     | palette setup, presets, effects                        |
-| [Palette Guide](palette-guide.md)  | palette-first workflow and practical patterns          |
-| [API: Assets](api-assets.md)       | sprite sheets, bitmap fonts, asset loading             |
-| [Input Guide](input.md)            | pointer, keyboard, gamepad                             |
-| [Testing](testing.md)              | test tiers, WebGPU mocks                               |
+| Guide                                           | What it covers                                         |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| [API: Rendering](api-rendering.md)              | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](api-palette.md)                  | palette setup, presets, effects                        |
+| [Palette Guide](palette-guide.md)               | palette-first workflow and practical patterns          |
+| [API: Assets](api-assets.md)                    | sprite sheets, bitmap fonts, asset loading             |
+| [Input Guide](input.md)                         | pointer, keyboard, gamepad                             |
+| [Testing](testing.md)                           | test tiers, WebGPU mocks                               |
+| [Overlay Guide](overlay.md)                     | engine HUD subsystem, toggle, layout                   |
+| [Post-Process Effects](post-process-effects.md) | effect chain and tiers                                 |
+| [Deprecation Timeline](deprecations.md)         | renamed configure flags and getters                    |

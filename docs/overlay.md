@@ -119,3 +119,5 @@ Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot 
 | [API: Palette](api-palette.md)                         | `applyHUD`, preset factories, effects            |
 | [Input Guide](input.md)                                | Pointer slots for corner toggle                  |
 | [Palette Presets](palette-presets.md)                  | Exact HUD slot colors                            |
+| [Testing](testing.md)                                  | Overlay integration tests                        |
+| [Deprecation Timeline](deprecations.md)                | `overlayEnabled` -> `isOverlayEnabled` rename    |
