@@ -583,6 +583,9 @@ init).
 | Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
 | Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags     |
 
+> **Note:** WebGPU rollout is still moving across browsers. Treat this matrix as a point-in-time snapshot and re-check
+> the vendor release notes periodically.
+
 **Build toolchain:** Node.js >= 22.18.0 (LTS) and an ESM bundler (Vite, webpack, esbuild, or similar) to load the
 published package in the browser.
 

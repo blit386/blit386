@@ -76,7 +76,8 @@ Do not merge with a failing audit unless the finding is formally accepted:
 
 1. Open a [security risk acceptance](../../.github/ISSUE_TEMPLATE/security-risk-acceptance.yml) issue.
 2. Record the GHSA in [audit-exceptions.md](./audit-exceptions.md).
-3. Add the GHSA to `pnpm.auditConfig.ignoreGhsas` in `package.json` (review and remove by the expiry date).
+3. Add the GHSA via the `--ignore <GHSA>` flag in the `security:audit` script in `package.json` (review and remove by
+   the expiry date). Do not use `pnpm.auditConfig.ignoreGhsas` — it does not work in pnpm 10.x.
 
 See [audit-exceptions.md](./audit-exceptions.md) for the full playbook.
 
