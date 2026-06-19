@@ -1,14 +1,14 @@
 ---
 name: demos-new
 description:
-  Scaffold a new blit-tech-demos demo file with the correct next NNN slug, the standard demo class pattern, and
+  Scaffold a new blit386-demos demo file with the correct next NNN slug, the standard demo class pattern, and
   beginner-friendly comments. Use when the user wants to add, create, or scaffold a new demo or example, or says 'make a
   demo for X' or 'add a demo that shows Y'.
 ---
 
 # New Demo
 
-Create a new demo in `blit-tech-demos` following the project's slug, structure, and documentation rules. The
+Create a new demo in `blit386-demos` following the project's slug, structure, and documentation rules. The
 `virtual-demos` plugin discovers the file automatically - there is no registry or `demos/` directory to edit.
 
 ## Usage
@@ -35,7 +35,7 @@ File name is `src/NNN-topic.js` with the kebab-cased topic (e.g. `src/034-sprite
 demo shape:
 
 ```js
-// @pageTitle Blit-Tech Demo NNN - Title Cased Topic
+// @pageTitle BLIT386 Demo NNN - Title Cased Topic
 //
 // Demo NNN - Topic: one-sentence summary of what this shows.
 // Written for readers about 12 years old.
@@ -43,9 +43,9 @@ demo shape:
 // What you will see:
 //   - ...
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit-tech';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit-tech').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBlitTechDemo} IBlitTechDemo */
 
 /** @implements {IBlitTechDemo} */
 class Demo {
@@ -65,7 +65,7 @@ class Demo {
 bootstrap(Demo);
 ```
 
-- The page title defaults to `Blit-Tech Demo NNN - Title Cased Topic`. Only add the `// @pageTitle Custom Title` comment
+- The page title defaults to `BLIT386 Demo NNN - Title Cased Topic`. Only add the `// @pageTitle Custom Title` comment
   (in the first ~20 lines) when that default is wrong for the demo.
 - If the demo builds on earlier ones, list them as prerequisites in the header comment the way existing numbered demos
   do (slug plus hosted URL).
@@ -86,7 +86,7 @@ by `src/00a-barebones.js`; see `CLAUDE.md` (Documentation Style) for the full ru
 ### 5. Update the docs
 
 - Add the demo to the `## Demos` list in `README.md` under the right category (e.g. Drawing Basics, Input, Palette
-  System), matching the existing `- **[NNN-slug](https://blit-tech-demos.vancura.dev/NNN-slug)** - description` format.
+  System), matching the existing `- **[NNN-slug](https://blit386-demos.vancura.dev/NNN-slug)** - description` format.
 
 ### 6. Review
 

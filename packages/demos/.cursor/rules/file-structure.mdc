@@ -12,7 +12,7 @@ every demo reads the same way. **Never use `// #region` / `// #endregion`** — 
 ## File layout (top to bottom)
 
 1. **Header comment** — the `// Demo NNN - …` block: what the demo teaches, prerequisites, and links to earlier demos.
-2. **Imports** — `import { … } from 'blit-tech';` (members sorted).
+2. **Imports** — `import { … } from 'blit386';` (members sorted).
 3. **Type definitions** — `@typedef` JSDoc imports (`IBlitTechDemo`, `HardwareSettings`, …).
 4. **Configuration constants** — `const` values that tune the demo (`MAX_PARTICLES`, palette slot indices). Each with a
    beginner-friendly comment.

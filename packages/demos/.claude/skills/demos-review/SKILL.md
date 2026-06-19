@@ -42,7 +42,7 @@ Review current changes against project rules and quality standards.
 - New demo files follow the slug naming rule: `NNN-topic.js` with the next free three-digit prefix; retired numbers stay
   unused (e.g. `021` is retired and must not be reused); `00a-*` is the lone non-numeric exception
 - New demo files use `// @pageTitle Custom Title` in the first 20 lines when the default title
-  (`Blit-Tech Demo NNN - Title Cased Topic`) is not appropriate; check existing demos for examples
+  (`BLIT386 Demo NNN - Title Cased Topic`) is not appropriate; check existing demos for examples
 
 4. **Summarize findings**
 

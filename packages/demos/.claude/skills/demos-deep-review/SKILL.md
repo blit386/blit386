@@ -23,7 +23,7 @@ pushing significant changes or creating pull requests.
 - Run `/demos-security-run` or `pnpm run security:mcp-preflight` with the session MCP descriptor path and
   `--allow-fallback`
 - See
-  [blit-tech/docs/security/security-runbook.md](https://github.com/vancura/blit-tech/blob/main/docs/security/security-runbook.md)
+  [blit386/docs/security/security-runbook.md](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md)
 - Do not skip scans when Opsera/JFrog/Semgrep MCP is degraded; use documented fallbacks
 
 2. **Run preflight checks**
