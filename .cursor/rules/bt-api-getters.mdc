@@ -5,7 +5,7 @@ alwaysApply: true
 
 # BT API: getters vs methods
 
-When editing `src/BlitTech.ts`, demos, or API docs:
+When editing `src/BLIT386.ts`, demos, or API docs:
 
 ## Prefer getters (no parentheses)
 
