@@ -7,7 +7,7 @@ description:
 
 # Format Code
 
-Format every file in the create-blit-tech monorepo and verify the result.
+Format every file in the create-blit386 monorepo and verify the result.
 
 ## Usage
 
@@ -50,4 +50,4 @@ Format every file in the create-blit-tech monorepo and verify the result.
 ## Notes
 
 - This repo has no ESLint; Biome handles linting. Use `pnpm run lint:fix` for lint auto-fixes beyond formatting.
-- Files under `packages/create-blit-tech/templates/**` are scaffolder output but follow the same formatting rules.
+- Files under `packages/create-blit386/templates/**` are scaffolder output but follow the same formatting rules.

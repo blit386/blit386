@@ -7,7 +7,7 @@ description:
 
 # Review Changes
 
-Review current changes against create-blit-tech conventions and quality standards.
+Review current changes against create-blit386 conventions and quality standards.
 
 ## Usage
 
@@ -36,9 +36,9 @@ Review current changes against create-blit-tech conventions and quality standard
 - Beginner-friendly comments in scaffold templates and kit content
 - Scaffold templates: placeholders render (no leftover `{{tokens}}`); optional wizard flags copy the right
   `templates/optional/` trees; generated `package.json` must not leak `workspace:*`
-- Kit content is self-contained: skills and docs reference only `blit-tech` and other local kit files, never the
-  `blit-tech-demos` repo
-- Generated game code uses public `BT` names from the sibling `blit-tech` repo
+- Kit content is self-contained: skills and docs reference only `blit386` and other local kit files, never the
+  `blit386-demos` repo
+- Generated game code uses public `BT` names from the sibling `blit386` repo
 - Docs and kit content updated when workflow or architecture changes (see `.claude/rules/docs-sync-required.md`)
 
 4. **Summarize findings**

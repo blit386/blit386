@@ -181,536 +181,738 @@ test('scaffold copies optional CI and agent files when requested', () => {
         // The description may be inline or folded across lines, so match the key only.
         assert.ok(/\ndescription:/.test(runSkill), 'Claude skill frontmatter should include a description');
 
-        const cursorProject = join(work, 'cursor-game');
-        scaffold({
-            targetDir: cursorProject,
-            projectName: 'cursor-game',
-            pmInstall: 'pnpm install',
-            pmRunDev: 'pnpm run dev',
-            pmRunBuild: 'pnpm run build',
-            pmRunFormat: 'pnpm run format',
-            pmRunLint: 'pnpm run lint',
-            includeCi: false,
-            agent: 'cursor',
-        });
+		const cursorProject = join(work, "cursor-game");
+		scaffold({
+			targetDir: cursorProject,
+			projectName: "cursor-game",
+			pmInstall: "pnpm install",
+			pmRunDev: "pnpm run dev",
+			pmRunBuild: "pnpm run build",
+			pmRunFormat: "pnpm run format",
+			pmRunLint: "pnpm run lint",
+			includeCi: false,
+			agent: "cursor",
+		});
 
-        // Cursor adapter: rules, hooks, and commands should all be generated.
-        assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'rules', 'blit-api-names.mdc')),
-            'Cursor rule blit-api-names.mdc should be generated',
-        );
-        assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'rules', 'blit-integer-coords.mdc')),
-            'Cursor rule blit-integer-coords.mdc should be generated',
-        );
-        assert.ok(existsSync(join(cursorProject, '.cursor', 'hooks.json')), '.cursor/hooks.json should be generated');
-        assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'hooks', 'shell-safety.sh')),
-            '.cursor/hooks/shell-safety.sh should be generated',
-        );
-        assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'commands', 'run.md')),
-            '.cursor/commands/run.md should be generated',
-        );
-        assert.ok(
-            existsSync(join(cursorProject, '.cursor', 'commands', 'fix.md')),
-            '.cursor/commands/fix.md should be generated',
-        );
+		// Cursor adapter: rules, hooks, and commands should all be generated.
+		assert.ok(
+			existsSync(join(cursorProject, ".cursor", "rules", "blit-api-names.mdc")),
+			"Cursor rule blit-api-names.mdc should be generated",
+		);
+		assert.ok(
+			existsSync(
+				join(cursorProject, ".cursor", "rules", "blit-integer-coords.mdc"),
+			),
+			"Cursor rule blit-integer-coords.mdc should be generated",
+		);
+		assert.ok(
+			existsSync(join(cursorProject, ".cursor", "hooks.json")),
+			".cursor/hooks.json should be generated",
+		);
+		assert.ok(
+			existsSync(join(cursorProject, ".cursor", "hooks", "shell-safety.sh")),
+			".cursor/hooks/shell-safety.sh should be generated",
+		);
+		assert.ok(
+			existsSync(join(cursorProject, ".cursor", "commands", "run.md")),
+			".cursor/commands/run.md should be generated",
+		);
+		assert.ok(
+			existsSync(join(cursorProject, ".cursor", "commands", "fix.md")),
+			".cursor/commands/fix.md should be generated",
+		);
 
-        // Cursor commands are invoked by filename, so the skill frontmatter is stripped.
-        const runCommand = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
-        assert.ok(!runCommand.startsWith('---'), 'Cursor command files should not have YAML frontmatter');
-        assert.ok(runCommand.includes('# Run the game'), 'Cursor command should contain the skill body');
+		// Cursor commands are invoked by filename, so the skill frontmatter is stripped.
+		const runCommand = readFileSync(
+			join(cursorProject, ".cursor", "commands", "run.md"),
+			"utf8",
+		);
+		assert.ok(
+			!runCommand.startsWith("---"),
+			"Cursor command files should not have YAML frontmatter",
+		);
+		assert.ok(
+			runCommand.includes("# Run the game"),
+			"Cursor command should contain the skill body",
+		);
 
-        // Cursor rule files should keep their MDC frontmatter (Cursor reads alwaysApply from it).
-        const apiRule = readFileSync(join(cursorProject, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8');
-        assert.ok(apiRule.startsWith('---'), 'Cursor rule files should keep YAML frontmatter');
-        assert.ok(apiRule.includes('alwaysApply: true'), 'Cursor rule should include alwaysApply flag');
+		// Cursor rule files should keep their MDC frontmatter (Cursor reads alwaysApply from it).
+		const apiRule = readFileSync(
+			join(cursorProject, ".cursor", "rules", "blit-api-names.mdc"),
+			"utf8",
+		);
+		assert.ok(
+			apiRule.startsWith("---"),
+			"Cursor rule files should keep YAML frontmatter",
+		);
+		assert.ok(
+			apiRule.includes("alwaysApply: true"),
+			"Cursor rule should include alwaysApply flag",
+		);
 
-        // hooks.json should have the expected structure with afterFileEdit and beforeShellExecution.
-        const hooksJson = JSON.parse(readFileSync(join(cursorProject, '.cursor', 'hooks.json'), 'utf8'));
-        assert.equal(hooksJson.version, 1, 'hooks.json version should be 1');
-        assert.ok(Array.isArray(hooksJson.hooks.afterFileEdit), 'hooks.json should have afterFileEdit entries');
-        assert.ok(hooksJson.hooks.afterFileEdit.length > 0, 'afterFileEdit should contain at least one entry');
-        assert.ok(
-            Array.isArray(hooksJson.hooks.beforeShellExecution),
-            'hooks.json should have beforeShellExecution entries',
-        );
-        assert.ok(
-            hooksJson.hooks.beforeShellExecution.length > 0,
-            'beforeShellExecution should contain at least one entry',
-        );
-        const safetyHook = hooksJson.hooks.beforeShellExecution[0];
-        assert.ok(safetyHook.failClosed === true, 'shell safety hook should be failClosed');
+		// hooks.json should have the expected structure with afterFileEdit and beforeShellExecution.
+		const hooksJson = JSON.parse(
+			readFileSync(join(cursorProject, ".cursor", "hooks.json"), "utf8"),
+		);
+		assert.equal(hooksJson.version, 1, "hooks.json version should be 1");
+		assert.ok(
+			Array.isArray(hooksJson.hooks.afterFileEdit),
+			"hooks.json should have afterFileEdit entries",
+		);
+		assert.ok(
+			hooksJson.hooks.afterFileEdit.length > 0,
+			"afterFileEdit should contain at least one entry",
+		);
+		assert.ok(
+			Array.isArray(hooksJson.hooks.beforeShellExecution),
+			"hooks.json should have beforeShellExecution entries",
+		);
+		assert.ok(
+			hooksJson.hooks.beforeShellExecution.length > 0,
+			"beforeShellExecution should contain at least one entry",
+		);
+		const safetyHook = hooksJson.hooks.beforeShellExecution[0];
+		assert.ok(
+			safetyHook.failClosed === true,
+			"shell safety hook should be failClosed",
+		);
 
-        // Template vars should be rendered in hooks.json.
-        const formatHook = hooksJson.hooks.afterFileEdit[0];
-        assert.ok(formatHook.command.includes('format'), 'format hook should reference the format command');
-        assert.ok(!formatHook.command.includes('{{'), 'format hook should not have unrendered placeholders');
+		// Template vars should be rendered in hooks.json.
+		const formatHook = hooksJson.hooks.afterFileEdit[0];
+		assert.ok(
+			formatHook.command.includes("format"),
+			"format hook should reference the format command",
+		);
+		assert.ok(
+			!formatHook.command.includes("{{"),
+			"format hook should not have unrendered placeholders",
+		);
 
-        // Commands should have template vars rendered.
-        const runCmd = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
-        assert.ok(!runCmd.includes('{{'), 'run command should not have unrendered placeholders');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		// Commands should have template vars rendered.
+		const runCmd = readFileSync(
+			join(cursorProject, ".cursor", "commands", "run.md"),
+			"utf8",
+		);
+		assert.ok(
+			!runCmd.includes("{{"),
+			"run command should not have unrendered placeholders",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents sync --check exits 0 when no files have drifted', () => {
-    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+test("blit agents sync --check exits 0 when no files have drifted", () => {
+	assert.ok(
+		existsSync(blitCli),
+		"packages/kit/dist/cli.js must be built before running tests",
+	);
 
-    const work = mkdtempSync(join(tmpdir(), 'cbt-sync-ok-'));
+	const work = mkdtempSync(join(tmpdir(), "cbt-sync-ok-"));
 
-    try {
-        const project = join(work, 'sync-game');
-        scaffold({
-            targetDir: project,
-            projectName: 'sync-game',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-        });
+	try {
+		const project = join(work, "sync-game");
+		scaffold({
+			targetDir: project,
+			projectName: "sync-game",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+		});
 
-        // Nothing has been modified — check should pass with exit code 0.
-        const result = execFileSync(process.execPath, [blitCli, 'agents', 'sync', '--check'], {
-            cwd: project,
-            encoding: 'utf8',
-        });
+		// Nothing has been modified — check should pass with exit code 0.
+		const result = execFileSync(
+			process.execPath,
+			[blitCli, "agents", "sync", "--check"],
+			{
+				cwd: project,
+				encoding: "utf8",
+			},
+		);
 
-        assert.ok(result.includes('up to date'), 'sync --check should report files are up to date');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		assert.ok(
+			result.includes("up to date"),
+			"sync --check should report files are up to date",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents sync --check exits non-zero when a kit-managed file is modified', () => {
-    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+test("blit agents sync --check exits non-zero when a kit-managed file is modified", () => {
+	assert.ok(
+		existsSync(blitCli),
+		"packages/kit/dist/cli.js must be built before running tests",
+	);
 
-    const work = mkdtempSync(join(tmpdir(), 'cbt-sync-drift-'));
+	const work = mkdtempSync(join(tmpdir(), "cbt-sync-drift-"));
 
-    try {
-        const project = join(work, 'drift-game');
-        scaffold({
-            targetDir: project,
-            projectName: 'drift-game',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-            agent: 'claude',
-        });
+	try {
+		const project = join(work, "drift-game");
+		scaffold({
+			targetDir: project,
+			projectName: "drift-game",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+			agent: "claude",
+		});
 
-        // Simulate a user (or an AI agent) editing a kit-owned rule file.
-        writeFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), '# edited by user\n');
+		// Simulate a user (or an AI agent) editing a kit-owned rule file.
+		writeFileSync(
+			join(project, ".claude", "rules", "blit-api-names.md"),
+			"# edited by user\n",
+		);
 
-        let exitCode = 0;
-        let output = '';
+		let exitCode = 0;
+		let output = "";
 
-        try {
-            execFileSync(process.execPath, [blitCli, 'agents', 'sync', '--check'], {
-                cwd: project,
-                encoding: 'utf8',
-            });
-        } catch (err) {
-            exitCode = err.status ?? 1;
-            output = err.stdout ?? '';
-        }
+		try {
+			execFileSync(process.execPath, [blitCli, "agents", "sync", "--check"], {
+				cwd: project,
+				encoding: "utf8",
+			});
+		} catch (err) {
+			exitCode = err.status ?? 1;
+			output = err.stdout ?? "";
+		}
 
-        assert.ok(exitCode !== 0, 'sync --check should exit non-zero when a kit-managed file has drifted');
-        assert.ok(output.includes('blit-api-names.md'), 'output should name the drifted file');
-        assert.ok(output.includes('drifted'), 'output should mention drift');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		assert.ok(
+			exitCode !== 0,
+			"sync --check should exit non-zero when a kit-managed file has drifted",
+		);
+		assert.ok(
+			output.includes("blit-api-names.md"),
+			"output should name the drifted file",
+		);
+		assert.ok(output.includes("drifted"), "output should mention drift");
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
 function runBlit(project, args) {
-    let exitCode = 0;
-    let output = '';
-    try {
-        output = execFileSync(process.execPath, [blitCli, ...args], { cwd: project, encoding: 'utf8' });
-    } catch (err) {
-        exitCode = err.status ?? 1;
-        output = (err.stdout ?? '') + (err.stderr ?? '');
-    }
-    return { exitCode, output };
+	let exitCode = 0;
+	let output = "";
+	try {
+		output = execFileSync(process.execPath, [blitCli, ...args], {
+			cwd: project,
+			encoding: "utf8",
+		});
+	} catch (err) {
+		exitCode = err.status ?? 1;
+		output = (err.stdout ?? "") + (err.stderr ?? "");
+	}
+	return { exitCode, output };
 }
 
-test('blit agents sync (full) changes nothing on a freshly scaffolded Claude project', () => {
-    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+test("blit agents sync (full) changes nothing on a freshly scaffolded Claude project", () => {
+	assert.ok(
+		existsSync(blitCli),
+		"packages/kit/dist/cli.js must be built before running tests",
+	);
 
-    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-claude-'));
+	const work = mkdtempSync(join(tmpdir(), "cbt-fullsync-claude-"));
 
-    try {
-        const project = join(work, 'sync-claude');
-        scaffold({
-            targetDir: project,
-            projectName: 'sync-claude',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-            agent: 'claude',
-        });
+	try {
+		const project = join(work, "sync-claude");
+		scaffold({
+			targetDir: project,
+			projectName: "sync-claude",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+			agent: "claude",
+		});
 
-        const ruleBefore = readFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), 'utf8');
-        const claudeBefore = readFileSync(join(project, 'CLAUDE.md'), 'utf8');
+		const ruleBefore = readFileSync(
+			join(project, ".claude", "rules", "blit-api-names.md"),
+			"utf8",
+		);
+		const claudeBefore = readFileSync(join(project, "CLAUDE.md"), "utf8");
 
-        const { exitCode, output } = runBlit(project, ['agents', 'sync']);
+		const { exitCode, output } = runBlit(project, ["agents", "sync"]);
 
-        // The kit regenerator must reproduce the scaffolder's bytes, so nothing changes.
-        assert.equal(exitCode, 0, 'full sync on a clean project should exit 0');
-        assert.ok(output.includes('up to date'), 'output should report everything is up to date');
-        assert.equal(
-            readFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), 'utf8'),
-            ruleBefore,
-            'kit-owned rule should be byte-identical after sync',
-        );
-        assert.equal(
-            readFileSync(join(project, 'CLAUDE.md'), 'utf8'),
-            claudeBefore,
-            'shared CLAUDE.md should be byte-identical after sync',
-        );
-        assert.ok(!existsSync(join(project, 'CLAUDE.md.new')), 'no .new conflict file should be created');
+		// The kit regenerator must reproduce the scaffolder's bytes, so nothing changes.
+		assert.equal(exitCode, 0, "full sync on a clean project should exit 0");
+		assert.ok(
+			output.includes("up to date"),
+			"output should report everything is up to date",
+		);
+		assert.equal(
+			readFileSync(
+				join(project, ".claude", "rules", "blit-api-names.md"),
+				"utf8",
+			),
+			ruleBefore,
+			"kit-owned rule should be byte-identical after sync",
+		);
+		assert.equal(
+			readFileSync(join(project, "CLAUDE.md"), "utf8"),
+			claudeBefore,
+			"shared CLAUDE.md should be byte-identical after sync",
+		);
+		assert.ok(
+			!existsSync(join(project, "CLAUDE.md.new")),
+			"no .new conflict file should be created",
+		);
 
-        // The manifest still matches the files on disk.
-        const drift = runBlit(project, ['agents', 'sync', '--check']);
-        assert.equal(drift.exitCode, 0, 'sync --check should be clean after a full sync of an unmodified project');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		// The manifest still matches the files on disk.
+		const drift = runBlit(project, ["agents", "sync", "--check"]);
+		assert.equal(
+			drift.exitCode,
+			0,
+			"sync --check should be clean after a full sync of an unmodified project",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents sync (full) changes nothing on a freshly scaffolded Cursor project', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-cursor-'));
+test("blit agents sync (full) changes nothing on a freshly scaffolded Cursor project", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-fullsync-cursor-"));
 
-    try {
-        const project = join(work, 'sync-cursor');
-        scaffold({
-            targetDir: project,
-            projectName: 'sync-cursor',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-            agent: 'cursor',
-        });
+	try {
+		const project = join(work, "sync-cursor");
+		scaffold({
+			targetDir: project,
+			projectName: "sync-cursor",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+			agent: "cursor",
+		});
 
-        const hooksBefore = readFileSync(join(project, '.cursor', 'hooks.json'), 'utf8');
-        const ruleBefore = readFileSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8');
+		const hooksBefore = readFileSync(
+			join(project, ".cursor", "hooks.json"),
+			"utf8",
+		);
+		const ruleBefore = readFileSync(
+			join(project, ".cursor", "rules", "blit-api-names.mdc"),
+			"utf8",
+		);
 
-        const { exitCode, output } = runBlit(project, ['agents', 'sync']);
+		const { exitCode, output } = runBlit(project, ["agents", "sync"]);
 
-        assert.equal(exitCode, 0, 'full sync on a clean Cursor project should exit 0');
-        assert.ok(output.includes('up to date'), 'output should report everything is up to date');
-        assert.equal(
-            readFileSync(join(project, '.cursor', 'hooks.json'), 'utf8'),
-            hooksBefore,
-            'generated hooks.json should be byte-identical after sync',
-        );
-        assert.equal(
-            readFileSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8'),
-            ruleBefore,
-            'generated cursor rule should be byte-identical after sync',
-        );
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		assert.equal(
+			exitCode,
+			0,
+			"full sync on a clean Cursor project should exit 0",
+		);
+		assert.ok(
+			output.includes("up to date"),
+			"output should report everything is up to date",
+		);
+		assert.equal(
+			readFileSync(join(project, ".cursor", "hooks.json"), "utf8"),
+			hooksBefore,
+			"generated hooks.json should be byte-identical after sync",
+		);
+		assert.equal(
+			readFileSync(
+				join(project, ".cursor", "rules", "blit-api-names.mdc"),
+				"utf8",
+			),
+			ruleBefore,
+			"generated cursor rule should be byte-identical after sync",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents sync --force restores the kit version of a user-edited kit file', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-force-'));
+test("blit agents sync --force restores the kit version of a user-edited kit file", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-fullsync-force-"));
 
-    try {
-        const project = join(work, 'force-game');
-        scaffold({
-            targetDir: project,
-            projectName: 'force-game',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-            agent: 'claude',
-        });
+	try {
+		const project = join(work, "force-game");
+		scaffold({
+			targetDir: project,
+			projectName: "force-game",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+			agent: "claude",
+		});
 
-        const rulePath = join(project, '.claude', 'rules', 'blit-api-names.md');
-        writeFileSync(rulePath, '# wrecked by user\n');
+		const rulePath = join(project, ".claude", "rules", "blit-api-names.md");
+		writeFileSync(rulePath, "# wrecked by user\n");
 
-        const { exitCode } = runBlit(project, ['agents', 'sync', '--force']);
-        assert.equal(exitCode, 0, 'forced sync should exit 0');
+		const { exitCode } = runBlit(project, ["agents", "sync", "--force"]);
+		assert.equal(exitCode, 0, "forced sync should exit 0");
 
-        const restored = readFileSync(rulePath, 'utf8');
-        assert.ok(restored.includes('BT'), 'forced sync should restore the kit content');
-        assert.ok(!restored.includes('wrecked'), 'forced sync should discard the user edit');
+		const restored = readFileSync(rulePath, "utf8");
+		assert.ok(
+			restored.includes("BT"),
+			"forced sync should restore the kit content",
+		);
+		assert.ok(
+			!restored.includes("wrecked"),
+			"forced sync should discard the user edit",
+		);
 
-        // After a force, the project is back in sync.
-        const drift = runBlit(project, ['agents', 'sync', '--check']);
-        assert.equal(drift.exitCode, 0, 'project should be clean after --force');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		// After a force, the project is back in sync.
+		const drift = runBlit(project, ["agents", "sync", "--check"]);
+		assert.equal(drift.exitCode, 0, "project should be clean after --force");
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents sync preserves user notes outside the managed region of CLAUDE.md', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-shared-'));
+test("blit agents sync preserves user notes outside the managed region of CLAUDE.md", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-fullsync-shared-"));
 
-    try {
-        const project = join(work, 'shared-game');
-        scaffold({
-            targetDir: project,
-            projectName: 'shared-game',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-            agent: 'claude',
-        });
+	try {
+		const project = join(work, "shared-game");
+		scaffold({
+			targetDir: project,
+			projectName: "shared-game",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+			agent: "claude",
+		});
 
-        const claudePath = join(project, 'CLAUDE.md');
-        const marker = 'MY-OWN-NOTE-12345';
-        writeFileSync(claudePath, `${readFileSync(claudePath, 'utf8')}\n${marker}\n`);
+		const claudePath = join(project, "CLAUDE.md");
+		const marker = "MY-OWN-NOTE-12345";
+		writeFileSync(
+			claudePath,
+			`${readFileSync(claudePath, "utf8")}\n${marker}\n`,
+		);
 
-        const { exitCode } = runBlit(project, ['agents', 'sync']);
-        assert.equal(exitCode, 0, 'shared-file sync should exit 0 (managed-region merge, no conflict)');
+		const { exitCode } = runBlit(project, ["agents", "sync"]);
+		assert.equal(
+			exitCode,
+			0,
+			"shared-file sync should exit 0 (managed-region merge, no conflict)",
+		);
 
-        const after = readFileSync(claudePath, 'utf8');
-        assert.ok(after.includes(marker), 'user note below the managed region must be preserved');
-        assert.ok(after.includes('<!-- blit-kit:managed:start -->'), 'managed start marker should remain');
-        assert.ok(after.includes('<!-- blit-kit:managed:end -->'), 'managed end marker should remain');
+		const after = readFileSync(claudePath, "utf8");
+		assert.ok(
+			after.includes(marker),
+			"user note below the managed region must be preserved",
+		);
+		assert.ok(
+			after.includes("<!-- blit-kit:managed:start -->"),
+			"managed start marker should remain",
+		);
+		assert.ok(
+			after.includes("<!-- blit-kit:managed:end -->"),
+			"managed end marker should remain",
+		);
 
-        // The manifest should now treat the file (with the note) as in sync.
-        const drift = runBlit(project, ['agents', 'sync', '--check']);
-        assert.equal(drift.exitCode, 0, 'a preserved note should not count as drift after sync');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		// The manifest should now treat the file (with the note) as in sync.
+		const drift = runBlit(project, ["agents", "sync", "--check"]);
+		assert.equal(
+			drift.exitCode,
+			0,
+			"a preserved note should not count as drift after sync",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents sync keeps a shared-file note across repeated syncs', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-fullsync-shared-twice-'));
+test("blit agents sync keeps a shared-file note across repeated syncs", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-fullsync-shared-twice-"));
 
-    try {
-        const project = join(work, 'shared-twice');
-        scaffold({
-            targetDir: project,
-            projectName: 'shared-twice',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-            agent: 'claude',
-        });
+	try {
+		const project = join(work, "shared-twice");
+		scaffold({
+			targetDir: project,
+			projectName: "shared-twice",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+			agent: "claude",
+		});
 
-        const claudePath = join(project, 'CLAUDE.md');
-        const marker = 'MY-OWN-NOTE-67890';
-        writeFileSync(claudePath, `${readFileSync(claudePath, 'utf8')}\n${marker}\n`);
+		const claudePath = join(project, "CLAUDE.md");
+		const marker = "MY-OWN-NOTE-67890";
+		writeFileSync(
+			claudePath,
+			`${readFileSync(claudePath, "utf8")}\n${marker}\n`,
+		);
 
-        // Two consecutive syncs: the note must survive both. A baseline that recorded the merged
-        // result would make the second sync misread the file as unmodified and overwrite the note.
-        const first = runBlit(project, ['agents', 'sync']);
-        assert.equal(first.exitCode, 0, 'the first sync should exit 0');
-        const second = runBlit(project, ['agents', 'sync']);
-        assert.equal(second.exitCode, 0, 'the second sync should exit 0');
+		// Two consecutive syncs: the note must survive both. A baseline that recorded the merged
+		// result would make the second sync misread the file as unmodified and overwrite the note.
+		const first = runBlit(project, ["agents", "sync"]);
+		assert.equal(first.exitCode, 0, "the first sync should exit 0");
+		const second = runBlit(project, ["agents", "sync"]);
+		assert.equal(second.exitCode, 0, "the second sync should exit 0");
 
-        const after = readFileSync(claudePath, 'utf8');
-        assert.ok(after.includes(marker), 'user note must survive a second sync');
-        assert.ok(after.includes('<!-- blit-kit:managed:start -->'), 'managed start marker should remain');
+		const after = readFileSync(claudePath, "utf8");
+		assert.ok(after.includes(marker), "user note must survive a second sync");
+		assert.ok(
+			after.includes("<!-- blit-kit:managed:start -->"),
+			"managed start marker should remain",
+		);
 
-        const drift = runBlit(project, ['agents', 'sync', '--check']);
-        assert.equal(drift.exitCode, 0, 'the note should still not count as drift after two syncs');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		const drift = runBlit(project, ["agents", "sync", "--check"]);
+		assert.equal(
+			drift.exitCode,
+			0,
+			"the note should still not count as drift after two syncs",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents add claude sets up Claude files in a project that did not pick an agent', () => {
-    assert.ok(existsSync(blitCli), 'packages/kit/dist/cli.js must be built before running tests');
+test("blit agents add claude sets up Claude files in a project that did not pick an agent", () => {
+	assert.ok(
+		existsSync(blitCli),
+		"packages/kit/dist/cli.js must be built before running tests",
+	);
 
-    const work = mkdtempSync(join(tmpdir(), 'cbt-add-claude-'));
+	const work = mkdtempSync(join(tmpdir(), "cbt-add-claude-"));
 
-    try {
-        const project = join(work, 'add-claude');
-        scaffold({
-            targetDir: project,
-            projectName: 'add-claude',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-        });
+	try {
+		const project = join(work, "add-claude");
+		scaffold({
+			targetDir: project,
+			projectName: "add-claude",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+		});
 
-        // No agent was chosen, so none of the Claude files exist yet.
-        assert.ok(!existsSync(join(project, 'CLAUDE.md')), 'CLAUDE.md should be absent before add');
+		// No agent was chosen, so none of the Claude files exist yet.
+		assert.ok(
+			!existsSync(join(project, "CLAUDE.md")),
+			"CLAUDE.md should be absent before add",
+		);
 
-        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
-        assert.equal(exitCode, 0, 'add claude should exit 0');
-        assert.ok(output.includes('Set up Claude Code'), 'output should confirm the assistant was set up');
+		const { exitCode, output } = runBlit(project, ["agents", "add", "claude"]);
+		assert.equal(exitCode, 0, "add claude should exit 0");
+		assert.ok(
+			output.includes("Set up Claude Code"),
+			"output should confirm the assistant was set up",
+		);
 
-        assert.ok(existsSync(join(project, 'CLAUDE.md')), 'CLAUDE.md should be created');
-        assert.ok(
-            existsSync(join(project, '.claude', 'rules', 'blit-api-names.md')),
-            '.claude/rules should be created',
-        );
-        assert.ok(existsSync(join(project, '.claude', 'skills', 'run', 'SKILL.md')), '.claude/skills should be created');
+		assert.ok(
+			existsSync(join(project, "CLAUDE.md")),
+			"CLAUDE.md should be created",
+		);
+		assert.ok(
+			existsSync(join(project, ".claude", "rules", "blit-api-names.md")),
+			".claude/rules should be created",
+		);
+		assert.ok(
+			existsSync(join(project, ".claude", "skills", "run", "SKILL.md")),
+			".claude/skills should be created",
+		);
 
-        // The new files are recorded in the manifest, so a drift check is clean.
-        const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
-        assert.ok(
-            manifest.files.some((f) => f.path === 'CLAUDE.md'),
-            'CLAUDE.md should be recorded in the manifest',
-        );
-        assert.ok(existsSync(join(project, '.blit', 'base', 'CLAUDE.md')), 'a pristine base copy should be written');
+		// The new files are recorded in the manifest, so a drift check is clean.
+		const manifest = JSON.parse(
+			readFileSync(join(project, ".blit", "manifest.json"), "utf8"),
+		);
+		assert.ok(
+			manifest.files.some((f) => f.path === "CLAUDE.md"),
+			"CLAUDE.md should be recorded in the manifest",
+		);
+		assert.ok(
+			existsSync(join(project, ".blit", "base", "CLAUDE.md")),
+			"a pristine base copy should be written",
+		);
 
-        const drift = runBlit(project, ['agents', 'sync', '--check']);
-        assert.equal(drift.exitCode, 0, 'sync --check should be clean right after add');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		const drift = runBlit(project, ["agents", "sync", "--check"]);
+		assert.equal(
+			drift.exitCode,
+			0,
+			"sync --check should be clean right after add",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents add cursor sets up Cursor files and a later sync is clean', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-add-cursor-'));
+test("blit agents add cursor sets up Cursor files and a later sync is clean", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-add-cursor-"));
 
-    try {
-        const project = join(work, 'add-cursor');
-        scaffold({
-            targetDir: project,
-            projectName: 'add-cursor',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-        });
+	try {
+		const project = join(work, "add-cursor");
+		scaffold({
+			targetDir: project,
+			projectName: "add-cursor",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+		});
 
-        const { exitCode } = runBlit(project, ['agents', 'add', 'cursor']);
-        assert.equal(exitCode, 0, 'add cursor should exit 0');
+		const { exitCode } = runBlit(project, ["agents", "add", "cursor"]);
+		assert.equal(exitCode, 0, "add cursor should exit 0");
 
-        assert.ok(existsSync(join(project, '.cursor', 'hooks.json')), '.cursor/hooks.json should be created');
-        assert.ok(
-            existsSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc')),
-            '.cursor/rules should be created',
-        );
-        assert.ok(existsSync(join(project, '.cursor', 'commands', 'run.md')), '.cursor/commands should be created');
+		assert.ok(
+			existsSync(join(project, ".cursor", "hooks.json")),
+			".cursor/hooks.json should be created",
+		);
+		assert.ok(
+			existsSync(join(project, ".cursor", "rules", "blit-api-names.mdc")),
+			".cursor/rules should be created",
+		);
+		assert.ok(
+			existsSync(join(project, ".cursor", "commands", "run.md")),
+			".cursor/commands should be created",
+		);
 
-        // A full sync on the freshly added agent changes nothing.
-        const sync = runBlit(project, ['agents', 'sync']);
-        assert.equal(sync.exitCode, 0, 'full sync after add should exit 0');
-        assert.ok(sync.output.includes('up to date'), 'full sync after add should report up to date');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		// A full sync on the freshly added agent changes nothing.
+		const sync = runBlit(project, ["agents", "sync"]);
+		assert.equal(sync.exitCode, 0, "full sync after add should exit 0");
+		assert.ok(
+			sync.output.includes("up to date"),
+			"full sync after add should report up to date",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents add is a friendly no-op when the assistant is already set up', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-add-present-'));
+test("blit agents add is a friendly no-op when the assistant is already set up", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-add-present-"));
 
-    try {
-        const project = join(work, 'present-game');
-        scaffold({
-            targetDir: project,
-            projectName: 'present-game',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-            agent: 'claude',
-        });
+	try {
+		const project = join(work, "present-game");
+		scaffold({
+			targetDir: project,
+			projectName: "present-game",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+			agent: "claude",
+		});
 
-        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
-        assert.equal(exitCode, 0, 'adding an already-present assistant should exit 0');
-        assert.ok(output.includes('already set up'), 'output should say the assistant is already set up');
-        assert.ok(output.includes('sync'), 'output should point the user at sync');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		const { exitCode, output } = runBlit(project, ["agents", "add", "claude"]);
+		assert.equal(
+			exitCode,
+			0,
+			"adding an already-present assistant should exit 0",
+		);
+		assert.ok(
+			output.includes("already set up"),
+			"output should say the assistant is already set up",
+		);
+		assert.ok(output.includes("sync"), "output should point the user at sync");
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents add rejects an unknown assistant name', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-add-unknown-'));
+test("blit agents add rejects an unknown assistant name", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-add-unknown-"));
 
-    try {
-        const project = join(work, 'unknown-game');
-        scaffold({
-            targetDir: project,
-            projectName: 'unknown-game',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-        });
+	try {
+		const project = join(work, "unknown-game");
+		scaffold({
+			targetDir: project,
+			projectName: "unknown-game",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+		});
 
-        const { exitCode, output } = runBlit(project, ['agents', 'add', 'emacs']);
-        assert.notEqual(exitCode, 0, 'an unknown assistant should exit non-zero');
-        assert.ok(output.includes('emacs'), 'output should name the unknown assistant');
-        assert.ok(output.includes('claude') && output.includes('cursor'), 'output should list supported assistants');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		const { exitCode, output } = runBlit(project, ["agents", "add", "emacs"]);
+		assert.notEqual(exitCode, 0, "an unknown assistant should exit non-zero");
+		assert.ok(
+			output.includes("emacs"),
+			"output should name the unknown assistant",
+		);
+		assert.ok(
+			output.includes("claude") && output.includes("cursor"),
+			"output should list supported assistants",
+		);
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
-test('blit agents add never clobbers an existing untracked file; it writes a .new copy', () => {
-    const work = mkdtempSync(join(tmpdir(), 'cbt-add-collision-'));
+test("blit agents add never clobbers an existing untracked file; it writes a .new copy", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-add-collision-"));
 
-    try {
-        const project = join(work, 'collision-game');
-        scaffold({
-            targetDir: project,
-            projectName: 'collision-game',
-            pmInstall: 'npm install',
-            pmRunDev: 'npm run dev',
-            pmRunBuild: 'npm run build',
-            pmRunFormat: 'npm run format',
-            pmRunLint: 'npm run lint',
-        });
+	try {
+		const project = join(work, "collision-game");
+		scaffold({
+			targetDir: project,
+			projectName: "collision-game",
+			pmInstall: "npm install",
+			pmRunDev: "npm run dev",
+			pmRunBuild: "npm run build",
+			pmRunFormat: "npm run format",
+			pmRunLint: "npm run lint",
+		});
 
-        // The user hand-wrote their own CLAUDE.md before asking to add Claude.
-        const claudePath = join(project, 'CLAUDE.md');
-        const userContent = '# my own CLAUDE notes\n';
-        writeFileSync(claudePath, userContent);
+		// The user hand-wrote their own CLAUDE.md before asking to add Claude.
+		const claudePath = join(project, "CLAUDE.md");
+		const userContent = "# my own CLAUDE notes\n";
+		writeFileSync(claudePath, userContent);
 
-        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
+		const { exitCode, output } = runBlit(project, ["agents", "add", "claude"]);
 
-        // The user's file is preserved; the kit version lands beside it as CLAUDE.md.new.
-        assert.equal(readFileSync(claudePath, 'utf8'), userContent, 'the user CLAUDE.md must not be overwritten');
-        assert.ok(existsSync(`${claudePath}.new`), 'the kit version should be saved as CLAUDE.md.new');
-        assert.ok(output.includes('CLAUDE.md.new'), 'output should mention the .new copy');
-        assert.notEqual(exitCode, 0, 'a needs-review collision should exit non-zero');
+		// The user's file is preserved; the kit version lands beside it as CLAUDE.md.new.
+		assert.equal(
+			readFileSync(claudePath, "utf8"),
+			userContent,
+			"the user CLAUDE.md must not be overwritten",
+		);
+		assert.ok(
+			existsSync(`${claudePath}.new`),
+			"the kit version should be saved as CLAUDE.md.new",
+		);
+		assert.ok(
+			output.includes("CLAUDE.md.new"),
+			"output should mention the .new copy",
+		);
+		assert.notEqual(
+			exitCode,
+			0,
+			"a needs-review collision should exit non-zero",
+		);
 
-        // All-or-nothing: a collision must NOT half-activate the assistant. None of the other Claude
-        // files should be written, and the manifest must not gain any Claude entries.
-        assert.ok(
-            !existsSync(join(project, '.claude', 'rules', 'blit-api-names.md')),
-            'add must not write other Claude files when it aborts on a collision',
-        );
-        const manifestAfterAdd = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
-        assert.ok(
-            !manifestAfterAdd.files.some((f) => f.path === 'CLAUDE.md' || f.path.startsWith('.claude/')),
-            'an aborted add must not record any Claude files in the manifest',
-        );
+		// All-or-nothing: a collision must NOT half-activate the assistant. None of the other Claude
+		// files should be written, and the manifest must not gain any Claude entries.
+		assert.ok(
+			!existsSync(join(project, ".claude", "rules", "blit-api-names.md")),
+			"add must not write other Claude files when it aborts on a collision",
+		);
+		const manifestAfterAdd = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+		assert.ok(
+			!manifestAfterAdd.files.some((f) => f.path === 'CLAUDE.md' || f.path.startsWith('.claude/')),
+			'an aborted add must not record any Claude files in the manifest',
+		);
 
-        // The real regression: a later sync must not regenerate CLAUDE.md and clobber the user file.
-        const sync = runBlit(project, ['agents', 'sync']);
-        assert.equal(
-            readFileSync(claudePath, 'utf8'),
-            userContent,
-            'a later sync must not overwrite the user CLAUDE.md after an aborted add',
-        );
-        assert.equal(sync.exitCode, 0, 'sync should still succeed after an aborted add');
-    } finally {
-        rmSync(work, { recursive: true, force: true });
-    }
+		// The real regression: a later sync must not regenerate CLAUDE.md and clobber the user file.
+		const sync = runBlit(project, ['agents', 'sync']);
+		assert.equal(
+			readFileSync(claudePath, 'utf8'),
+			userContent,
+			'a later sync must not overwrite the user CLAUDE.md after an aborted add',
+		);
+		assert.equal(sync.exitCode, 0, 'sync should still succeed after an aborted add');
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
 });
 
 // The clean-merge path uses `git merge-file`; skip the test where git is unavailable.
@@ -761,7 +963,7 @@ test('blit agents sync does not flag a clean-merged kit file as drift', { skip: 
 });
 
 const GAME_WITH_OLD_NAMES = [
-    "import { bootstrap, BT } from 'blit-tech';",
+    "import { bootstrap, BT } from 'blit386';",
     '',
     'class Game {',
     '    configure() {',

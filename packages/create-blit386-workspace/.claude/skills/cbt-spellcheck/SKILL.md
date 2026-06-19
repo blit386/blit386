@@ -53,6 +53,5 @@ Run the project-wide spellcheck, then fix all reported errors.
 
 ## Notes
 
-- Template files under `packages/create-blit-tech/templates/**` are ignored by cspell (see `ignorePaths` in
-  `cspell.json`)
+- Template files under `packages/create-blit386/templates/**` are ignored by cspell (see `ignorePaths` in `cspell.json`)
 - Compound words are allowed (`allowCompoundWords: true`)

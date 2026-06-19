@@ -3,7 +3,7 @@ description: Require docs and kit content updates for scaffold and API-facing ch
 globs:
   {
     packages/**/src/**/*.ts,
-    packages/create-blit-tech/templates/**,
+    packages/create-blit386/templates/**,
     packages/kit/content/**,
     README.md,
     CLAUDE.md,
@@ -20,15 +20,15 @@ alwaysApply: false
   (`AGENTS.md`, `docs/*.md`) and template READMEs in the same change when user-facing behavior shifts.
 - When `bootstrap()` usage, starter game code, or public `BT` API names in generated games change, review kit
   `content/docs/basics.md`, `drawing.md`, `input.md`, and `palette.md` for stale examples.
-- When the pinned engine range in `packages/create-blit-tech/src/scaffold.ts` (`BLIT_TECH_RANGE`) changes, note it in
-  commit/PR text and check whether sibling repo `blit-tech` onboarding docs need a matching mention.
+- When the pinned engine range in `packages/create-blit386/src/scaffold.ts` (`BLIT386_RANGE`) changes, note it in
+  commit/PR text and check whether sibling repo `blit386` onboarding docs need a matching mention.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected
   `.cursor/rules/*.mdc` cross-references.
 - Update root `README.md` or `CLAUDE.md` when commands, package layout, or wizard flow changes.
 - When the `blit` CLI, agent adapters (`packages/kit/src/adapters.ts`), or `blit agents sync`
   (`packages/kit/src/commands/agents.ts`) change, update `packages/kit/README.md`,
-  `packages/create-blit-tech/README.md`, and the design doc (`CREATE_BLIT_TECH_DESIGN.md`).
-- When blit-tech public API changes in the sibling engine repo, audit kit `content/docs/` and the kit rule sources
+  `packages/create-blit386/README.md`, and the design doc (`CREATE_BLIT386_DESIGN.md`).
+- When blit386 public API changes in the sibling engine repo, audit kit `content/docs/` and the kit rule sources
   `packages/kit/content/rules/blit-api-names.md` and `packages/kit/content/rules/blit-integer-coords.md` for stale
   names (`isDown`, `isOverlayEnabled`, etc.).
 - If no docs update is needed, state why explicitly in the final response.

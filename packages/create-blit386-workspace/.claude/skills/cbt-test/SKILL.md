@@ -7,8 +7,8 @@ description:
 
 # Tests
 
-This repo has one automated test: a scaffold smoke test that verifies `npm create blit-tech` output builds and runs.
-There is no Vitest suite, Playwright suite, or `tests/` directory.
+This repo has one automated test: a scaffold smoke test that verifies `npm create blit386` output builds and runs. There
+is no Vitest suite, Playwright suite, or `tests/` directory.
 
 ## Usage
 
@@ -39,7 +39,7 @@ There is no Vitest suite, Playwright suite, or `tests/` directory.
 ## What the smoke test covers
 
 - Wizard/scaffold path writes expected files
-- Generated project resolves `blit-tech` and `@blit-tech/kit`
+- Generated project resolves `blit386` and `@blit386/kit`
 - The Catcher starter game builds under Vite
 
 ## What it does not cover

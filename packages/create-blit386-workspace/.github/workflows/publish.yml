@@ -37,36 +37,36 @@ jobs:
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           KIT_VERSION=$(node -p "require('./packages/kit/package.json').version")
-          CBT_VERSION=$(node -p "require('./packages/create-blit-tech/package.json').version")
+          CBT_VERSION=$(node -p "require('./packages/create-blit386/package.json').version")
 
           if [ "$KIT_VERSION" != "$TAG_VERSION" ] || [ "$CBT_VERSION" != "$TAG_VERSION" ]; then
             echo "Tag v${TAG_VERSION} does not match package.json versions."
-            echo "  @blit-tech/kit: ${KIT_VERSION}"
-            echo "  create-blit-tech: ${CBT_VERSION}"
+            echo "  @blit386/kit: ${KIT_VERSION}"
+            echo "  create-blit386: ${CBT_VERSION}"
             exit 1
           fi
 
       - name: Build packages
         run: pnpm run build
 
-      - name: Publish @blit-tech/kit
+      - name: Publish @blit386/kit
         run: |
           VERSION=$(node -p "require('./packages/kit/package.json').version")
-          if npm view "@blit-tech/kit@${VERSION}" version >/dev/null 2>&1; then
-            echo "@blit-tech/kit@${VERSION} already published; skipping."
+          if npm view "@blit386/kit@${VERSION}" version >/dev/null 2>&1; then
+            echo "@blit386/kit@${VERSION} already published; skipping."
           else
-            pnpm publish --filter @blit-tech/kit --access public --no-git-checks
+            pnpm publish --filter @blit386/kit --access public --no-git-checks
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish create-blit-tech
+      - name: Publish create-blit386
         run: |
-          VERSION=$(node -p "require('./packages/create-blit-tech/package.json').version")
-          if npm view "create-blit-tech@${VERSION}" version >/dev/null 2>&1; then
-            echo "create-blit-tech@${VERSION} already published; skipping."
+          VERSION=$(node -p "require('./packages/create-blit386/package.json').version")
+          if npm view "create-blit386@${VERSION}" version >/dev/null 2>&1; then
+            echo "create-blit386@${VERSION} already published; skipping."
           else
-            pnpm publish --filter create-blit-tech --access public --no-git-checks
+            pnpm publish --filter create-blit386 --access public --no-git-checks
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

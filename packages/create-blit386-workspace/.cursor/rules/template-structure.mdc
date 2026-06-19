@@ -1,6 +1,6 @@
 ---
 description: Template and scaffold file layout conventions
-globs: packages/create-blit-tech/templates/**/*
+globs: packages/create-blit386/templates/**/*
 alwaysApply: false
 ---
 
@@ -11,7 +11,7 @@ alwaysApply: false
 - **`templates/ts/`** — TypeScript layer (`package.json.tmpl`, `tsconfig.json`, `src/game.ts`). Same Catcher game logic as the JS layer, typed.
 - **`templates/optional/`** — wizard opt-in extras (currently only the GitHub Actions CI workflow). Cursor and Claude
   configs are **not** static templates: they are generated from the kit IR (`packages/kit/content/` via
-  `packages/create-blit-tech/src/scaffold.ts` and `packages/kit/src/adapters.ts`) at scaffold time and refreshed by
+  `packages/create-blit386/src/scaffold.ts` and `packages/kit/src/adapters.ts`) at scaffold time and refreshed by
   `blit agents sync`.
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
 - Rename `gitignore` → `.gitignore` and strip `.tmpl` extensions during scaffold copy.
