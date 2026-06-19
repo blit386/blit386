@@ -181,7 +181,7 @@ Commits pushed directly to main (not via pull request):
 End with a blank line then:
 
 ```
-**Full Changelog**: https://github.com/vancura/blit-tech/compare/LAST_TAG...NEW_VERSION
+**Full Changelog**: https://github.com/blit386/blit386/compare/LAST_TAG...NEW_VERSION
 ```
 
 #### Example output
@@ -215,7 +215,7 @@ Supply-chain posture tightened across CI.
 - Render dimension limit tests expanded to cover `NaN` in `maxCanvasSize`, adapter limit rejection, and device limit
   rejection without software fallback. (#169)
 
-**Full Changelog**: https://github.com/vancura/blit-tech/compare/1.0.4...1.0.5
+**Full Changelog**: https://github.com/blit386/blit386/compare/1.0.4...1.0.5
 ```
 
 ### 9. Report to the user

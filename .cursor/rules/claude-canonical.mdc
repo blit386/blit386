@@ -1,11 +1,11 @@
 ---
-description: Use blit-tech CLAUDE.md as canonical engineering rules
+description: Use blit386 CLAUDE.md as canonical engineering rules
 alwaysApply: true
 ---
 
-# blit-tech CLAUDE Is Canonical
+# blit386 CLAUDE Is Canonical
 
-- Treat `/Users/vancura/Repos/_BLIT_TECH_/blit-tech/CLAUDE.md` as canonical for implementation in this repo.
+- Treat `CLAUDE.md` (repo root) as canonical for implementation in this repo.
 - Follow its API conventions (especially BT getters vs methods), architecture map, command set, internal scoped naming,
   and docs-update rules.
 - Subsystem guides: `docs/overlay.md` (engine HUD), `docs/api-*.md` (public API), `docs/deprecations.md` (aliases).

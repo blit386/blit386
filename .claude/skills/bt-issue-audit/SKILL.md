@@ -7,7 +7,7 @@ description:
 
 # Issue Audit Pass
 
-Walk every open issue on `vancura/blit-tech`, compare its last recorded audit comment against the current state of the
+Walk every open issue on `blit386/blit386`, compare its last recorded audit comment against the current state of the
 code, and post a fresh audit-update comment **only** for issues whose situation is now materially different. Issues
 whose feature area has seen no relevant change get nothing.
 
@@ -50,9 +50,9 @@ no emoji.
 ## Steps
 
 1. **List open issues and their last audit.**
-   - `gh issue list --repo vancura/blit-tech --state open --limit 100 --json number,title,labels,updatedAt`
+   - `gh issue list --repo blit386/blit386 --state open --limit 100 --json number,title,labels,updatedAt`
    - For each issue, pull the most recent audit comment:
-     `gh issue view <n> --repo vancura/blit-tech --json comments --jq '.comments[] | select(.body | startswith("## Audit update")) | .body'`
+     `gh issue view <n> --repo blit386/blit386 --json comments --jq '.comments[] | select(.body | startswith("## Audit update")) | .body'`
    - Note the date of the latest audit comment per issue. Issues with no audit comment have no baseline - flag them in
      the summary but do not invent a "changed" verdict for them unless the user asks for a first-time audit.
 
@@ -78,15 +78,15 @@ no emoji.
      changed verdict if it landed strictly after the issue was last audited
      (`git log --since=<issue.lastAuditDate> -- <relevant paths>`).
    - Do not trust commit subjects alone. Confirm the actual public surface with `rg` / `git grep` and by reading the
-     relevant `src/` files (e.g. confirm an API exists in `src/BlitTech.ts`, a type field in
-     `src/core/IBlitTechDemo.ts`, a metric in `src/overlay/`).
+     relevant `src/` files (e.g. confirm an API exists in `src/BLIT386.ts`, a type field in `src/core/IBTDemo.ts`, a
+     metric in `src/overlay/`).
    - Re-read the issue body so the verdict addresses what the ticket actually asked for, including partial coverage
      (some sub-points shipped, others not).
 
 5. **Decide and post.**
    - If the bucket / evidence / recommended status is unchanged: post nothing.
    - If it changed: post one audit-update comment in the format above, dated today.
-     `gh issue comment <n> --repo vancura/blit-tech --body '<comment>'`
+     `gh issue comment <n> --repo blit386/blit386 --body '<comment>'`
    - Be precise about what shipped and what is still missing; name the residual gap so the ticket can be re-scoped or
      closed.
 

@@ -1,11 +1,11 @@
 ---
 name: bt-security-run
-description: Run MCP security preflight, governance checks, and documented fallbacks for Blit-Tech security workflows.
+description: Run MCP security preflight, governance checks, and documented fallbacks for BLIT386 security workflows.
 ---
 
 # Security Run
 
-Deterministic security workflow for `blit-tech` and cross-repo assessments. Use before comprehensive security scans,
+Deterministic security workflow for `blit386` and cross-repo assessments. Use before comprehensive security scans,
 hardening passes, or when MCP scanner availability is uncertain.
 
 ## Usage
@@ -52,7 +52,7 @@ hardening passes, or when MCP scanner availability is uncertain.
 
 4. **Cross-repo (when assessing both repos)**
 
-- Repeat step 2 in `blit-tech-demos` using paths from the runbook.
+- Repeat step 2 in `blit386-demos` using paths from the runbook.
 - Use the same `--mcps-dir` for both repos.
 
 5. **Report**

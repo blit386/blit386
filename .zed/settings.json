@@ -1,5 +1,5 @@
 {
-  // Project-level Zed settings for blit-tech.
+  // Project-level Zed settings for blit386.
   // Global settings live in ~/.config/zed/settings.json.
   "agent": {
     "tool_permissions": {
@@ -28,7 +28,9 @@
             { "pattern": "^pnpm\\s+" },
             { "pattern": "^npx\\s+" },
             { "pattern": "^node\\s+" },
-            { "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$" },
+            {
+              "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$"
+            },
             { "pattern": "^cat\\s+" },
             { "pattern": "^ls\\s+" },
             { "pattern": "^echo\\s+" }
