@@ -32,9 +32,13 @@
   ],
   "keywords": [
     "blit386",
+    "blit",
     "cli",
-    "scaffold",
     "agents",
+    "ai",
+    "claude",
+    "cursor",
+    "documentation",
     "game-engine",
     "gamedev",
     "webgpu"
