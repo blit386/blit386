@@ -45,9 +45,9 @@ demo shape:
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-/** @typedef {import('blit386').IBlitTechDemo} IBlitTechDemo */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
 
-/** @implements {IBlitTechDemo} */
+/** @implements {IBTDemo} */
 class Demo {
   // configure() {}            // optional; omit for the 320x240 / 640x480 / 60 FPS default
   async init() {
