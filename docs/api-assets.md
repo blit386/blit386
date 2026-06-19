@@ -177,3 +177,5 @@ target FPS, draw calls, frame/update()/render() timings, backend, resolution, de
 | [Palette Guide](palette-guide.md)     | palette-first setup, offsets, refresh   |
 | [Palette Presets](palette-presets.md) | built-in preset reference               |
 | [Bitmap Fonts](bitmap-fonts.md)       | .btfont format, BMFont conversion       |
+| [Overlay Guide](overlay.md)           | system font for HUD text                |
+| [Testing](testing.md)                 | SpriteSheet and BitmapFont tests        |

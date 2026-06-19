@@ -101,3 +101,10 @@ guarantees.
 5. **Sentence case?** "Slot 0 is always transparent" not "Slot 0 Is Always Transparent".
 6. **Centralized?** Is the string in `errorMessages.ts`, or must it go there?
 7. **Tier correct?** Is this reachable from demo code? If yes, it must be Tier 1.
+
+## See Also
+
+| Guide                                                 | What it covers                                  |
+| ----------------------------------------------------- | ----------------------------------------------- |
+| [Developer Experience](developer-experience-guide.md) | contributor workflow and naming conventions     |
+| [API: Core](api-core.md)                              | public `BT` surface and bootstrap error display |

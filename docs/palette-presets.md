@@ -241,5 +241,7 @@ slots keep their constructor default (black).
 | --------------------------------- | ------------------------------------------------------- |
 | [Palette Guide](palette-guide.md) | workflow for setup, offsets, effects, and refresh rules |
 | [API: Palette](api-palette.md)    | runtime palette APIs and effect signatures              |
+| [Overlay Guide](overlay.md)       | HUD preset and `applyHUD` slot colors                   |
+| [API: Assets](api-assets.md)      | sprites and fonts that use preset colors                |
 
 <!-- cspell:enable -->

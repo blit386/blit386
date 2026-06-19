@@ -572,11 +572,14 @@ c.isEqual(other)              // boolean - all RGBA channels match
 
 ## See Also
 
-| Guide                              | What it covers                                         |
-| ---------------------------------- | ------------------------------------------------------ |
-| [API: Rendering](api-rendering.md) | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](api-palette.md)     | palette setup, presets, effects                        |
-| [Palette Guide](palette-guide.md)  | palette-first workflow and practical patterns          |
-| [API: Assets](api-assets.md)       | sprite sheets, bitmap fonts, asset loading             |
-| [Input Guide](input.md)            | pointer, keyboard, gamepad                             |
-| [Testing](testing.md)              | test tiers, WebGPU mocks                               |
+| Guide                                           | What it covers                                         |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| [API: Rendering](api-rendering.md)              | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](api-palette.md)                  | palette setup, presets, effects                        |
+| [Palette Guide](palette-guide.md)               | palette-first workflow and practical patterns          |
+| [API: Assets](api-assets.md)                    | sprite sheets, bitmap fonts, asset loading             |
+| [Input Guide](input.md)                         | pointer, keyboard, gamepad                             |
+| [Testing](testing.md)                           | test tiers, WebGPU mocks                               |
+| [Overlay Guide](overlay.md)                     | engine HUD subsystem, toggle, layout                   |
+| [Post-Process Effects](post-process-effects.md) | effect chain and tiers                                 |
+| [Deprecation Timeline](deprecations.md)         | renamed configure flags and getters                    |

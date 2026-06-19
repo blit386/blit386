@@ -44,3 +44,8 @@ Do **not** use exceptions for low-severity findings (CI does not gate on them).
   `security:audit` script instead.
 - After any exception, still run `pnpm run security:audit:prod` — production dependencies must remain clean unless
   explicitly documented otherwise.
+
+## Related docs
+
+- [dependency-policy.md](./dependency-policy.md) — when an exception is allowed and the CI audit gate
+- [security-runbook.md](./security-runbook.md) — monthly security runs and incident triage

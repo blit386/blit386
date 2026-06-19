@@ -392,3 +392,12 @@ These demonstrate **when and how to optimize** for performance-critical scenario
 4. Keep UI and one-time code simple
 
 Remember: **Clear code that runs at 60 FPS is better than complex code that runs at 65 FPS.**
+
+## See Also
+
+| Guide                                         | What it covers                             |
+| --------------------------------------------- | ------------------------------------------ |
+| [Performance Testing](performance-testing.md) | measure before optimizing (CPU benchmarks) |
+| [API: Rendering](api-rendering.md)            | batching and draw-call performance         |
+| [Palette Guide](palette-guide.md)             | palette-offset performance patterns        |
+| [Overlay Guide](overlay.md)                   | reading the on-screen FPS and timing chart |

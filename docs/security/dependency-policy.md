@@ -84,4 +84,5 @@ See [audit-exceptions.md](./audit-exceptions.md) for the full playbook.
 
 - [security-runbook.md](./security-runbook.md) — MCP preflight, fallback matrix, maintainers / incident triage, report
   template
+- [audit-exceptions.md](./audit-exceptions.md) — temporary GHSA acceptance playbook
 - [developer-experience-guide.md](../developer-experience-guide.md) — script reference

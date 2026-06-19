@@ -71,7 +71,7 @@ documented in [Performance Testing](performance-testing.md).
 ## Declaration tooling checks
 
 Public types are rolled up during `pnpm run build` via `vite-plugin-dts` and API Extractor. The workspace pins
-TypeScript to the same version API Extractor bundles (see `docs/developer-experience-guide.md`).
+TypeScript to the same version API Extractor bundles (see [Developer Experience](developer-experience-guide.md)).
 
 - **`pnpm run test:declarations`** - Node test runner for `scripts/check-declaration-tooling.mjs` (drift patterns,
   required `BT` getters in rolled-up `.d.ts`, and alignment log parsing). Included in `pnpm run preflight`.
@@ -301,9 +301,15 @@ See also [CLAUDE.md](../CLAUDE.md) (**Known Testing Quirks**):
 
 ## See Also
 
-| Guide                                 | What it covers                             |
-| ------------------------------------- | ------------------------------------------ |
-| [API: Palette](api-palette.md)        | palette APIs and effect signatures         |
-| [Palette Guide](palette-guide.md)     | palette-first workflow and refresh rules   |
-| [Palette Presets](palette-presets.md) | exact built-in preset and HUD color values |
-| [API: Assets](api-assets.md)          | indexed sprite setup and palette offsets   |
+| Guide                                                               | What it covers                             |
+| ------------------------------------------------------------------- | ------------------------------------------ |
+| [API: Palette](api-palette.md)                                      | palette APIs and effect signatures         |
+| [Palette Guide](palette-guide.md)                                   | palette-first workflow and refresh rules   |
+| [Palette Presets](palette-presets.md)                               | exact built-in preset and HUD color values |
+| [API: Assets](api-assets.md)                                        | indexed sprite setup and palette offsets   |
+| [API: Core](api-core.md)                                            | backend, overlay, and bootstrap tests      |
+| [Overlay Guide](overlay.md)                                         | overlay integration test inventory         |
+| [Post-Process Effects](post-process-effects.md)                     | visual regression for the effect chain     |
+| [Tooling](tooling.md)                                               | declaration tooling checks                 |
+| [Performance Testing](performance-testing.md)                       | CPU benchmarks (test tier 4)               |
+| [Software Fallback Smoke Matrix](software-fallback-smoke-matrix.md) | manual software backend matrix             |

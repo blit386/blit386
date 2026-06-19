@@ -181,11 +181,13 @@ await BT.downloadFrame('screenshot-001.png'); // custom filename
 
 ## See Also
 
-| Guide                                           | What it covers                             |
-| ----------------------------------------------- | ------------------------------------------ |
-| [API: Core](api-core.md)                        | bootstrap, init, camera, core types        |
-| [API: Palette](api-palette.md)                  | palette setup, presets, effects            |
-| [Palette Guide](palette-guide.md)               | palette-first workflow and offset patterns |
-| [API: Assets](api-assets.md)                    | sprite sheets, bitmap fonts, asset loading |
-| [Post-Process Effects](post-process-effects.md) | effect chain, custom effects               |
-| [Bitmap Fonts](bitmap-fonts.md)                 | .btfont format, BMFont conversion          |
+| Guide                                                       | What it covers                             |
+| ----------------------------------------------------------- | ------------------------------------------ |
+| [API: Core](api-core.md)                                    | bootstrap, init, camera, core types        |
+| [API: Palette](api-palette.md)                              | palette setup, presets, effects            |
+| [Palette Guide](palette-guide.md)                           | palette-first workflow and offset patterns |
+| [API: Assets](api-assets.md)                                | sprite sheets, bitmap fonts, asset loading |
+| [Post-Process Effects](post-process-effects.md)             | effect chain, custom effects               |
+| [Bitmap Fonts](bitmap-fonts.md)                             | .btfont format, BMFont conversion          |
+| [Testing](testing.md)                                       | visual regression for rendering            |
+| [Performance Best Practices](performance-best-practices.md) | batching and draw-call performance         |

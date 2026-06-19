@@ -414,3 +414,13 @@ composition mirrors the PipBoy fork. The BLIT386 port is original WGSL.
 If you intend to reuse `Interference`, `RollLine`, or `PixelGlitch` in a context with stricter licensing requirements,
 confirm provenance first. The license audit is still open. If you can identify the upstream PipBoy fork, please open a
 PR to add a verifiable author / URL / license header.
+
+## See Also
+
+| Guide                                                               | What it covers                                           |
+| ------------------------------------------------------------------- | -------------------------------------------------------- |
+| [API: Rendering](api-rendering.md)                                  | `effectAdd` / `effectRemove` / `effectClear` and presets |
+| [API: Core](api-core.md#resolution-model)                           | resolution model, requested vs active backend            |
+| [API: Palette](api-palette.md)                                      | pixel-tier effects run on palette indices                |
+| [Testing](testing.md)                                               | visual regression for the effect chain                   |
+| [Software Fallback Smoke Matrix](software-fallback-smoke-matrix.md) | effects unsupported in the software backend              |

@@ -28,3 +28,10 @@ CI runs the checker after `pnpm run build` in:
 - `.github/workflows/pr-checks.yml` - `bundle-size` job
 
 More context: [Testing - Declaration tooling checks](testing.md#declaration-tooling-checks).
+
+## See Also
+
+| Guide                                                 | What it covers                                 |
+| ----------------------------------------------------- | ---------------------------------------------- |
+| [Developer Experience](developer-experience-guide.md) | TypeScript pin rationale, declaration rollup   |
+| [Testing](testing.md)                                 | declaration tooling test (`test:declarations`) |

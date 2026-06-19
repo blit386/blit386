@@ -131,7 +131,9 @@ See [API: Core](docs/api-core.md) for full `bootstrap()` options.
 
 ## Examples & Demos
 
-For interactive examples and demos, visit the [BLIT386 Demos repository](https://github.com/blit386/blit386-demos).
+For interactive examples and demos, visit the [BLIT386 Demos repository](https://github.com/blit386/blit386-demos) or
+browse the [hosted demos at demos.blit386.dev](https://demos.blit386.dev). To start a new project, use the
+[create-blit386](https://github.com/blit386/create-blit386) scaffolder (see [Quick Start](#quick-start)).
 
 ## Documentation
 

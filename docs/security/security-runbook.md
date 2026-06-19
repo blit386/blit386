@@ -195,3 +195,10 @@ Use this structure in agent output or issue/PR comments:
 - Shadow MCPs: <count / none>
 - Config paths scanned: <list>
 ```
+
+## Related docs
+
+- [dependency-policy.md](./dependency-policy.md) — CI audit gate, severity threshold, refresh cadence
+- [audit-exceptions.md](./audit-exceptions.md) — temporary GHSA acceptance playbook
+- [developer-experience-guide.md](../developer-experience-guide.md) — script reference
+- [testing.md](../testing.md) — preflight and CI smoke checks

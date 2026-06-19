@@ -178,10 +178,12 @@ For benchmark workflow and CI thresholds, see [Performance Testing](performance-
 
 ## See Also
 
-| Guide                                 | What it covers                                     |
-| ------------------------------------- | -------------------------------------------------- |
-| [API: Palette](api-palette.md)        | API reference for palette methods and effect calls |
-| [API: Assets](api-assets.md)          | `SpriteSheet.loadIndexed`, fonts, and asset flow   |
-| [API: Rendering](api-rendering.md)    | sprite offset semantics and draw APIs              |
-| [Palette Presets](palette-presets.md) | exact built-in palette color data                  |
-| [Testing](testing.md)                 | palette testing patterns and visual regression     |
+| Guide                                                       | What it covers                                     |
+| ----------------------------------------------------------- | -------------------------------------------------- |
+| [API: Palette](api-palette.md)                              | API reference for palette methods and effect calls |
+| [API: Assets](api-assets.md)                                | `SpriteSheet.loadIndexed`, fonts, and asset flow   |
+| [API: Rendering](api-rendering.md)                          | sprite offset semantics and draw APIs              |
+| [Palette Presets](palette-presets.md)                       | exact built-in palette color data                  |
+| [Testing](testing.md)                                       | palette testing patterns and visual regression     |
+| [Post-Process Effects](post-process-effects.md)             | pixel-tier effects on palette indices              |
+| [Performance Best Practices](performance-best-practices.md) | palette-offset performance patterns                |

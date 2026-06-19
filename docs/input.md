@@ -280,3 +280,12 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 - `PointerInput`, `KeyboardInput`, and `GamepadInput` are created and attached inside `BTAPI.init()`, so they are ready
   before `demo.init()` runs.
 - `stop()` calls `detach()` on all three input subsystems and clears references to prevent listener leaks.
+
+## See Also
+
+| Guide                                                 | What it covers                                        |
+| ----------------------------------------------------- | ----------------------------------------------------- |
+| [API: Core](api-core.md)                              | `BT.isDown` / `isPressed` / `isKeyDown` and configure |
+| [Overlay Guide](overlay.md)                           | Backquote and bottom-left corner toggle               |
+| [Deprecation Timeline](deprecations.md)               | renamed input aliases (`buttonDown` -> `isDown`)      |
+| [Developer Experience](developer-experience-guide.md) | boolean naming (hold vs edge)                         |
