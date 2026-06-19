@@ -1,6 +1,6 @@
 {
   "name": "@blit386/kit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Canonical BLIT386 AI docs (AGENTS.md + local docs) and the blit project CLI.",
   "author": {
     "name": "Václav Vančura",
@@ -21,7 +21,7 @@
     "node": ">=22.18.0"
   },
   "blit386": {
-    "engineRange": "^1.1.1"
+    "engineRange": "^1.2.0"
   },
   "bin": {
     "blit": "./dist/cli.js"
