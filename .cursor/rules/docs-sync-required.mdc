@@ -1,6 +1,15 @@
 ---
 description: Require docs updates for API and behavior changes
-globs: { src/**/*.ts, docs/**/*.md, README.md, CLAUDE.md, .claude/skills/**/SKILL.md, .cursor/rules/*.mdc }
+globs:
+  {
+    src/**/*.ts,
+    docs/**/*.md,
+    docs/_sitemap.json,
+    README.md,
+    CLAUDE.md,
+    .claude/skills/**/SKILL.md,
+    .cursor/rules/*.mdc,
+  }
 alwaysApply: false
 ---
 
@@ -10,6 +19,11 @@ alwaysApply: false
 - When public API changes, update relevant `docs/api-*.md` and related examples in the same change.
 - When runtime behavior changes, update affected guides under `docs/` (including `docs/overlay.md` for overlay subsystem
   changes).
+- When you add, remove, or rename a `docs/*.md` page that should appear on the public site (blit386.dev), update
+  `docs/_sitemap.json` in the same change (entry order = sidebar order; contract in `docs/_sitemap.schema.json`). The
+  sibling `blit386-dev-fumapress` mirror generates only the docs listed there; contributor-only pages (developer
+  experience, voice, tooling, `security/*`) are intentionally omitted, so leaving a page out keeps it link-only on
+  GitHub.
 - When architecture or subsystem structure changes, update `CLAUDE.md` architecture sections and the **Where to Find
   Information** table when paths change.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected
