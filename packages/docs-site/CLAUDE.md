@@ -30,7 +30,7 @@ Documentation site for [blit386.dev](https://blit386.dev), built with Fumapress,
 
 ```text
 blit386-dev-fumapress/
-  content/              MDX docs (folder URLs: content/test/index.mdx -> /test)
+  content/              MDX docs (folder URLs: content/guide/index.mdx -> /guide)
   press.config.tsx      Fumapress site config, plugins, MDX adapter
   source.config.ts      Fumadocs MDX collection (dir, schemas, async)
   waku.config.ts        Waku Vite plugins (fumapress, fumadocs-mdx, tailwind)
