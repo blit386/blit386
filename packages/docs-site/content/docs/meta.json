@@ -2,6 +2,8 @@
   "title": "Documentation",
   "pages": [
     "index",
+    "---Getting started---",
+    "getting-started",
     "---API---",
     "api",
     "---Guides---",
@@ -9,6 +11,8 @@
     "---Performance---",
     "performance",
     "---Reference---",
-    "reference"
+    "reference",
+    "---Contributing---",
+    "contributing"
   ]
 }
