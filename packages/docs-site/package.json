@@ -40,7 +40,7 @@
   "sideEffects": false,
   "scripts": {
     "dev": "waku dev",
-    "build": "fumadocs-mdx && CLOUDFLARE=1 waku build",
+    "build": "fumadocs-mdx && cross-env CLOUDFLARE=1 waku build",
     "start": "waku start",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "types:check": "pnpm run typecheck",
@@ -80,7 +80,7 @@
     "waku": "1.0.0-beta.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.15",
+    "@biomejs/biome": "^2.5.0",
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@tailwindcss/vite": "^4.3.0",
@@ -88,6 +88,7 @@
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "cross-env": "^7.0.3",
     "cspell": "^10.0.0",
     "husky": "^9.1.7",
     "knip": "^6.14.2",
