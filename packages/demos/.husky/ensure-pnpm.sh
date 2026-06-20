@@ -6,8 +6,10 @@
 # Try to find pnpm in common locations
 if [ -z "$(command -v pnpm)" ]; then
     # Try nvm
-    if [ -s "$HOME/.nvm/nvm.sh" ]; then
-        . "$HOME/.nvm/nvm.sh"
+    if [ -n "$BASH_VERSION" ] || [ -n "$ZSH_VERSION" ]; then
+        if [ -s "$HOME/.nvm/nvm.sh" ]; then
+            . "$HOME/.nvm/nvm.sh"
+        fi
     fi
 
     # Try fnm (default installation path)
