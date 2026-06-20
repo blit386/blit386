@@ -1,0 +1,74 @@
+---
+title: Getting Started
+description: Create a new BLIT386 game with the scaffolder, or add the engine to an existing project.
+---
+
+There are two ways to start with BLIT386: the scaffolder (recommended) or a manual install into an existing project.
+
+## Scaffolder (recommended)
+
+The quickest path is the scaffolder. It works with npm, pnpm, yarn, or bun and generates a ready-to-run Vite project
+with the engine installed, a starter game, local docs, and the `blit` CLI:
+
+```bash
+npm create blit386@latest my-game
+```
+
+Then start the dev server:
+
+```bash
+cd my-game
+npm install
+npm run dev
+```
+
+The generated project includes a playable starter, an `index.html`, a Vite config, and a kid-friendly `README.md`. See
+[create-blit386](https://github.com/blit386/create-blit386) for the scaffolder and the `blit` project CLI (`blit run`,
+`blit doctor`, `blit upgrade`).
+
+## Manual install
+
+To add BLIT386 to an existing Vite (or other ESM bundler) project, install the package:
+
+```bash
+npm install blit386
+```
+
+Then implement a demo and start it with `bootstrap()`, which handles DOM ready, canvas lookup, backend selection (WebGPU
+with an automatic Canvas 2D fallback), and error display:
+
+```ts
+import { bootstrap, BT, Vector2i } from 'blit386';
+
+class MyGame {
+  init() {
+    BT.paletteCreate();
+  }
+
+  update() {}
+
+  render() {
+    BT.clear(0);
+    BT.drawRectFill(new Vector2i(10, 10), new Vector2i(40, 24), 1);
+  }
+}
+
+bootstrap(MyGame);
+```
+
+`bootstrap()` defaults to a canvas with id `blit386-canvas` inside a `canvas-container` element. See
+[API: Core](/docs/api/core) for `BootstrapOptions`, the resolution model, the game loop, and the full configure surface.
+
+## Where to go next
+
+- [API: Core](/docs/api/core) - bootstrap, the game loop, camera, `Timer`, and core types.
+- [API: Rendering](/docs/api/rendering) - primitives, sprites, text, post-process, and frame capture.
+- [Palette Guide](/docs/guides/palette) - the palette-first workflow.
+- [Input Guide](/docs/guides/input) - pointer, keyboard, and gamepad.
+- [Interactive demos](https://demos.blit386.dev) - runnable examples for every subsystem.
+
+## Requirements
+
+- Node.js >= 22.18.0 and an ESM bundler (Vite, webpack, esbuild, or similar).
+- A browser with WebGPU for the default backend; the engine falls back to a Canvas 2D software renderer otherwise. See
+  [API: Core](/docs/api/core#browser-support) for the support matrix.
