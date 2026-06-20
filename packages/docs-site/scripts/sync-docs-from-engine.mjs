@@ -15,7 +15,7 @@
  * engine repo); locally it defaults to the sibling workspace path
  * `../blit386/docs`.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -87,6 +87,13 @@ const sitePathFor = (source) => {
     return sitePath;
 };
 
+/**
+ * Site paths actually published in this phase (the pages in `PAGES`). Links to
+ * mapped-but-not-yet-published docs fall back to GitHub so the mirror never
+ * emits a dead `/docs/...` route; they upgrade automatically once added here.
+ */
+const PUBLISHED_SITE_PATHS = new Set(PAGES.map(({ source }) => sitePathFor(source)));
+
 /** Split a link target into its path and (optional) `#fragment` suffix. */
 const splitFragment = (target) => {
     const hashIndex = target.indexOf('#');
@@ -102,9 +109,9 @@ const splitFragment = (target) => {
  * Rewrite a single Markdown link target found in a source file.
  *
  * - External, anchor-only, and mail links pass through unchanged.
- * - Links to other ported docs become site-relative paths (`/docs/...`).
- * - Everything else (contributor-only docs, repo config, source files) becomes
- *   an absolute GitHub URL resolved against the engine repo root.
+ * - Links to docs published in this phase become site-relative (`/docs/...`).
+ * - Everything else (not-yet-published docs, contributor-only docs, repo config,
+ *   source files) becomes an absolute GitHub URL resolved against the repo root.
  */
 const rewriteTarget = (target, sourceRepoDir) => {
     const trimmed = target.trim();
@@ -122,7 +129,7 @@ const rewriteTarget = (target, sourceRepoDir) => {
     const repoRelative = posix.normalize(posix.join(sourceRepoDir, path));
     const sitePath = SITE_PATHS[repoRelative];
 
-    if (sitePath) {
+    if (sitePath && PUBLISHED_SITE_PATHS.has(sitePath)) {
         return `${sitePath}${fragment}`;
     }
 
@@ -226,6 +233,13 @@ const groupBySection = () => {
 const main = () => {
     const sections = groupBySection();
     const written = [];
+
+    // Clear generator-managed section directories so renamed or removed pages do
+    // not linger. Hand-authored files (content/docs/index.mdx, the root
+    // meta.json) live directly under content/docs and are left untouched.
+    for (const section of Object.keys(SECTION_TITLES)) {
+        rmSync(join(CONTENT_DOCS, section), { recursive: true, force: true });
+    }
 
     for (const [section, entries] of sections) {
         const sectionDir = join(CONTENT_DOCS, section);

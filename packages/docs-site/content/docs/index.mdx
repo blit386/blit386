@@ -7,40 +7,43 @@ This is the public documentation for the BLIT386 engine. Start with [API: Core](
 game loop, camera, `Timer`, and the core types. The pages below mirror the canonical engine documentation maintained in
 the [blit386 repository](https://github.com/blit386/blit386).
 
+Migration is in progress: pages already on this site link here; pages not yet mirrored link to their source on GitHub
+and will move here as they are ported.
+
 ## API reference
 
-| Guide                                 | What it covers                                         |
-| ------------------------------------- | ------------------------------------------------------ |
-| [API: Core](/docs/api/core)           | bootstrap, game loop, camera, Timer, core types        |
-| [API: Rendering](/docs/api/rendering) | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](/docs/api/palette)     | palette setup, presets, effects, serialization         |
-| [API: Assets](/docs/api/assets)       | sprite sheets, bitmap fonts, asset loading             |
+| Guide                                                                                | What it covers                                         |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| [API: Core](/docs/api/core)                                                          | bootstrap, game loop, camera, Timer, core types        |
+| [API: Rendering](https://github.com/blit386/blit386/blob/main/docs/api-rendering.md) | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](https://github.com/blit386/blit386/blob/main/docs/api-palette.md)     | palette setup, presets, effects, serialization         |
+| [API: Assets](https://github.com/blit386/blit386/blob/main/docs/api-assets.md)       | sprite sheets, bitmap fonts, asset loading             |
 
 ## Guides
 
-| Guide                                                     | What it covers                                   |
-| --------------------------------------------------------- | ------------------------------------------------ |
-| [Input Guide](/docs/guides/input)                         | pointer, keyboard, gamepad                       |
-| [Palette Guide](/docs/guides/palette)                     | the palette-first workflow, offsets, and effects |
-| [Palette Presets](/docs/guides/palette-presets)           | built-in preset palettes and HUD preset          |
-| [Overlay Guide](/docs/guides/overlay)                     | engine HUD subsystem, toggle, layout             |
-| [Post-Process Effects](/docs/guides/post-process-effects) | the effect chain, built-in effects, CRT presets  |
-| [Bitmap Fonts](/docs/guides/bitmap-fonts)                 | bitmap font system and rendering                 |
+| Guide                                                                                             | What it covers                                   |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| [Input Guide](/docs/guides/input)                                                                 | pointer, keyboard, gamepad                       |
+| [Palette Guide](https://github.com/blit386/blit386/blob/main/docs/palette-guide.md)               | the palette-first workflow, offsets, and effects |
+| [Palette Presets](https://github.com/blit386/blit386/blob/main/docs/palette-presets.md)           | built-in preset palettes and HUD preset          |
+| [Overlay Guide](https://github.com/blit386/blit386/blob/main/docs/overlay.md)                     | engine HUD subsystem, toggle, layout             |
+| [Post-Process Effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md) | the effect chain, built-in effects, CRT presets  |
+| [Bitmap Fonts](https://github.com/blit386/blit386/blob/main/docs/bitmap-fonts.md)                 | bitmap font system and rendering                 |
 
 ## Performance
 
-| Guide                                                            | What it covers                              |
-| ---------------------------------------------------------------- | ------------------------------------------- |
-| [Best Practices](/docs/performance/best-practices)               | allocation, batching, and hot-path guidance |
-| [Performance Testing](/docs/performance/testing)                 | benchmarks and throughput measurement       |
-| [Software Fallback Smoke Matrix](/docs/performance/smoke-matrix) | backend smoke-test coverage                 |
+| Guide                                                                                                                 | What it covers                              |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| [Best Practices](https://github.com/blit386/blit386/blob/main/docs/performance-best-practices.md)                     | allocation, batching, and hot-path guidance |
+| [Performance Testing](https://github.com/blit386/blit386/blob/main/docs/performance-testing.md)                       | benchmarks and throughput measurement       |
+| [Software Fallback Smoke Matrix](https://github.com/blit386/blit386/blob/main/docs/software-fallback-smoke-matrix.md) | backend smoke-test coverage                 |
 
 ## Reference
 
-| Guide                                                | What it covers                                  |
-| ---------------------------------------------------- | ----------------------------------------------- |
-| [Deprecation Timeline](/docs/reference/deprecations) | renamed configure flags, getters, and aliases   |
-| [Testing](/docs/reference/testing)                   | test tiers, WebGPU mocks, and visual regression |
+| Guide                                                                   | What it covers                                  |
+| ----------------------------------------------------------------------- | ----------------------------------------------- |
+| [Deprecation Timeline](/docs/reference/deprecations)                    | renamed configure flags, getters, and aliases   |
+| [Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md) | test tiers, WebGPU mocks, and visual regression |
 
 Contributor-only documentation - the developer experience guide, voice guide, tooling notes, and security runbook -
 stays in the [engine repository on GitHub](https://github.com/blit386/blit386/tree/main/docs).

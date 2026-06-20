@@ -66,6 +66,12 @@ Never hand-edit a generated page — edit the engine source and re-run `sync:doc
 runbook) are not mirrored and stay on GitHub in the [engine repo](https://github.com/blit386/blit386/tree/main/docs).
 For interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
 
+**Pilot scope:** only the pages listed in the script's `PAGES` are mirrored so far (currently `api/core`,
+`guides/input`, `reference/deprecations`). Links to engine docs that are mapped in `SITE_PATHS` but not yet in `PAGES`
+resolve to their GitHub source instead of a site path, so the mirror never emits a dead `/docs/...` route; each upgrades
+to a site link automatically once added to `PAGES`. Expanding coverage means adding entries to `PAGES` (and `SITE_PATHS`
+for any new doc) and re-running `sync:docs`.
+
 ## Agent policy
 
 See [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md) for contributor and agent conventions.
