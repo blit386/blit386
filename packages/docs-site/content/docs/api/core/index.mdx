@@ -106,7 +106,7 @@ the logical pixel grid. Display-tier registration throws when `drawingBufferSize
 `drawingBufferSize` is omitted, logical and drawing buffer match (1:1). Each read returns a clone. There is no
 `HardwareSettings.outputSize` field — only the runtime getter.
 
-See [Post-Process Effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md) for tier routing and presets.
+See [Post-Process Effects](/docs/guides/post-process-effects) for tier routing and presets.
 
 **`HardwareSettings`** (resolved after `configure()`; the hook may return a partial object):
 
@@ -600,10 +600,10 @@ published package in the browser.
 | ----------------------------------------------- | ------------------------------------------------------ |
 | [API: Rendering](/docs/api/rendering)              | primitives, sprites, text, post-process, frame capture |
 | [API: Palette](/docs/api/palette)                  | palette setup, presets, effects                        |
-| [Palette Guide](https://github.com/blit386/blit386/blob/main/docs/palette-guide.md)               | palette-first workflow and practical patterns          |
+| [Palette Guide](/docs/guides/palette)               | palette-first workflow and practical patterns          |
 | [API: Assets](/docs/api/assets)                    | sprite sheets, bitmap fonts, asset loading             |
 | [Input Guide](/docs/guides/input)                         | pointer, keyboard, gamepad                             |
 | [Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md)                           | test tiers, WebGPU mocks                               |
-| [Overlay Guide](https://github.com/blit386/blit386/blob/main/docs/overlay.md)                     | engine HUD subsystem, toggle, layout                   |
-| [Post-Process Effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md) | effect chain and tiers                                 |
+| [Overlay Guide](/docs/guides/overlay)                     | engine HUD subsystem, toggle, layout                   |
+| [Post-Process Effects](/docs/guides/post-process-effects) | effect chain and tiers                                 |
 | [Deprecation Timeline](/docs/reference/deprecations)         | renamed configure flags and getters                    |

@@ -1,0 +1,250 @@
+---
+# Generated from blit386/docs/palette-presets.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Palette Presets"
+description: "Exact color data for the built-in Palette presets and the HUD preset."
+---
+
+Exact built-in color data for `Palette` preset factories and `palette.applyHUD()`.
+
+All preset hex values are lowercase `RRGGBB` (no `#`), matching `src/assets/palettes/presetData.ts` and
+`src/assets/palettes/hudData.ts`.
+
+---
+
+
+
+## Slot mapping note (important)
+
+BLIT386 reserves palette slot `0` for transparency. Preset factories therefore write colors starting at slot `1`.
+
+That means:
+
+- the source array's index `0` value is reserved/ignored for rendering
+- slot `1` receives source index `1`
+- slot `2` receives source index `2`
+- etc.
+
+---
+
+## `Palette.vga()` (256 slots)
+
+VGA preset data is generated in three exact blocks:
+
+1. **16-color base**
+2. **6x6x6 RGB cube** using channel steps `[0, 95, 135, 175, 215, 255]`
+3. **24 grayscale values** with level formula `8 + i * 10` for `i = 0..23`
+
+### VGA base 16 (`VGA_HEX[0..15]`)
+
+```ts
+[
+  '000000',
+  '800000',
+  '008000',
+  '808000',
+  '000080',
+  '800080',
+  '008080',
+  'c0c0c0',
+  '808080',
+  'ff0000',
+  '00ff00',
+  'ffff00',
+  '0000ff',
+  'ff00ff',
+  '00ffff',
+  'ffffff',
+];
+```
+
+### VGA cube steps
+
+```ts
+[0, 95, 135, 175, 215, 255];
+```
+
+### VGA grayscale ramp (`8..238`, step 10)
+
+```ts
+[8, 18, 28, 38, 48, 58, 68, 78, 88, 98, 108, 118, 128, 138, 148, 158, 168, 178, 188, 198, 208, 218, 228, 238];
+```
+
+---
+
+## `Palette.cga()` (16 slots)
+
+```ts
+[
+  '000000',
+  '0000aa',
+  '00aa00',
+  '00aaaa',
+  'aa0000',
+  'aa00aa',
+  'aa5500',
+  'aaaaaa',
+  '555555',
+  '5555ff',
+  '55ff55',
+  '55ffff',
+  'ff5555',
+  'ff55ff',
+  'ffff55',
+  'ffffff',
+];
+```
+
+---
+
+## `Palette.c64()` (16 slots)
+
+```ts
+[
+  '000000',
+  'ffffff',
+  '813338',
+  '75cec8',
+  '8e3c97',
+  '56ac4d',
+  '2e2c9b',
+  'edf171',
+  '8e5029',
+  '553800',
+  'c46c71',
+  '4a4a4a',
+  '7b7b7b',
+  'a9ff9f',
+  '706deb',
+  'b2b2b2',
+];
+```
+
+---
+
+## `Palette.gameboy()` (4 slots)
+
+```ts
+['0f380f', '306230', '8bac0f', '9bbc0f'];
+```
+
+---
+
+## `Palette.pico8()` (16 slots)
+
+```ts
+[
+  '000000',
+  '1d2b53',
+  '7e2553',
+  '008751',
+  'ab5236',
+  '5f574f',
+  'c2c3c7',
+  'fff1e8',
+  'ff004d',
+  'ffa300',
+  'ffec27',
+  '00e436',
+  '29adff',
+  '83769c',
+  'ff77a8',
+  'ffccaa',
+];
+```
+
+---
+
+## `Palette.nes()` (64 slots)
+
+`NES_HEX` currently defines 56 source entries. After transparent slot reservation and preset copy, remaining palette
+slots keep their constructor default (black).
+
+```ts
+[
+  '7c7c7c',
+  '0000fc',
+  '0000bc',
+  '4428bc',
+  '940084',
+  'a80020',
+  'a81000',
+  '881400',
+  '503000',
+  '007800',
+  '006800',
+  '005800',
+  '004058',
+  '000000',
+  '000000',
+  '000000',
+  'bcbcbc',
+  '0078f8',
+  '0058f8',
+  '6844fc',
+  'd800cc',
+  'e40058',
+  'f83800',
+  'e45c10',
+  'ac7c00',
+  '00b800',
+  '00a800',
+  '00a844',
+  '008888',
+  '000000',
+  '000000',
+  '000000',
+  'f8f8f8',
+  '3cbcfc',
+  '6888fc',
+  '9878f8',
+  'f878f8',
+  'f85898',
+  'f87858',
+  'fca044',
+  'f8b800',
+  'b8f818',
+  '58d854',
+  '58f898',
+  '00e8d8',
+  '787878',
+  '000000',
+  '000000',
+  'fcfcfc',
+  'a4e4fc',
+  'b8b8f8',
+  'd8b8f8',
+  'f8b8f8',
+  'f8a4c0',
+  'f0d0b0',
+  'fce0a8',
+];
+```
+
+---
+
+## HUD preset (`palette.applyHUD`)
+
+`palette.applyHUD(startSlot = 1)` writes six consecutive slots:
+
+```ts
+[
+  { hex: 'ffffff', name: 'hud_white' },
+  { hex: '1e1428', name: 'hud_bg' },
+  { hex: 'c8c8c8', name: 'hud_label' },
+  { hex: 'ffdc64', name: 'hud_header' },
+  { hex: '646464', name: 'hud_dim' },
+  { hex: '6496c8', name: 'hud_code' },
+];
+```
+
+---
+
+## See Also
+
+| Guide                             | What it covers                                          |
+| --------------------------------- | ------------------------------------------------------- |
+| [Palette Guide](/docs/guides/palette) | workflow for setup, offsets, effects, and refresh rules |
+| [API: Palette](/docs/api/palette)    | runtime palette APIs and effect signatures              |
+| [Overlay Guide](/docs/guides/overlay)       | HUD preset and `applyHUD` slot colors                   |
+| [API: Assets](/docs/api/assets)      | sprites and fonts that use preset colors                |

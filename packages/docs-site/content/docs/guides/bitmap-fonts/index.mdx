@@ -1,0 +1,371 @@
+---
+# Generated from blit386/docs/bitmap-fonts.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Bitmap Fonts in BLIT386"
+description: "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
+---
+
+BLIT386 ships with a built-in system font and supports custom `.btfont` bitmap fonts with variable-width glyphs,
+per-character offsets, Unicode characters, and either embedded or external textures.
+
+## Built-in System Font
+
+The engine includes a 6x14 monospace bitmap font covering printable ASCII (characters 32-126). It requires no file
+loading and is available immediately after initialization:
+
+```ts
+// Draw text with the system font (palette index selects the color)
+BT.systemPrint(new Vector2i(10, 10), 1, 'Hello World!');
+
+// Measure text dimensions
+const size = BT.systemPrintMeasure('Hello'); // returns Vector2i(width, height)
+```
+
+### Editing the System Font
+
+The glyph data is stored as bit patterns in `src/assets/fonts/systemFontData.ts`. To edit it visually:
+
+```bash
+pnpm run system-font:export   # exports current data to assets/system-font.png (96x84, 16x6 grid of 6x14 cells)
+# open assets/system-font.png in a pixel editor and redraw glyphs
+pnpm run system-font:convert  # reads the PNG and regenerates systemFontData.ts
+```
+
+White pixels become foreground (palette index 1), black pixels become transparent (palette index 0). Only the top 6 bits
+of each byte are used (6-pixel glyph width within an 8-bit row).
+
+## Custom Bitmap Fonts (.btfont)
+
+For proportional fonts, Unicode support, or custom aesthetics, load a `.btfont` file:
+
+## Quick Start
+
+```ts
+import { BitmapFont, BT, Palette, Vector2i } from 'blit386';
+
+// Load a font and register its colors in the palette
+const palette = new Palette(256);
+const font = await BitmapFont.load('fonts/MyFont.btfont');
+font.getSpriteSheet().indexize(palette); // required before draw
+BT.paletteSet(palette);
+
+// Render text (optional 4th arg is paletteOffset, not a Color32)
+BT.printFont(font, new Vector2i(10, 10), 'Hello World!');
+BT.printFont(font, new Vector2i(10, 30), 'Team B', 16); // shift glyph indices by 16
+
+// Measure text width
+const width = font.measureText('Hello');
+const size = font.measureTextSize('Hello'); // { width, height } (TextSize)
+
+// Access font properties
+console.log(font.name); // "MyFont"
+console.log(font.size); // 14
+console.log(font.lineHeight); // 15
+console.log(font.glyphCount); // 98
+```
+
+## Font File Format (.btfont)
+
+The `.btfont` format is a JSON file with the following structure:
+
+```json
+{
+  "name": "PragmataPro",
+  "size": 14,
+  "lineHeight": 15,
+  "baseline": 13,
+  "texture": "PragmataPro14.png",
+  "glyphs": {
+    " ": { "x": 169, "y": 54, "w": 5, "h": 17, "ox": -2, "oy": -1, "adv": 7 },
+    "A": { "x": 80, "y": 18, "w": 9, "h": 17, "ox": -1, "oy": -1, "adv": 7 },
+    "×": { "x": 0, "y": 54, "w": 9, "h": 17, "ox": -1, "oy": -1, "adv": 7 }
+  }
+}
+```
+
+### Properties
+
+| Property     | Type   | Description                                                  |
+| ------------ | ------ | ------------------------------------------------------------ |
+| `name`       | string | Font display name                                            |
+| `size`       | number | Original font size in points                                 |
+| `lineHeight` | number | Pixels between baselines for multi-line text                 |
+| `baseline`   | number | Pixels from top of line to baseline (for vertical alignment) |
+| `texture`    | string | Texture source (see [Texture Options](#texture-options))     |
+| `glyphs`     | object | Map of character → glyph data                                |
+
+### Glyph Properties
+
+| Property | Type   | Description                                                   |
+| -------- | ------ | ------------------------------------------------------------- |
+| `x`      | number | X position in texture atlas                                   |
+| `y`      | number | Y position in texture atlas                                   |
+| `w`      | number | Width of glyph in pixels                                      |
+| `h`      | number | Height of glyph in pixels                                     |
+| `ox`     | number | Horizontal offset when rendering (pen position adjustment)    |
+| `oy`     | number | Vertical offset when rendering                                |
+| `adv`    | number | Horizontal advance after drawing (distance to next character) |
+
+## Texture Options
+
+The `texture` field supports two formats:
+
+### 1. Relative Path (Recommended for Development)
+
+```json
+{
+  "texture": "MyFont.png"
+}
+```
+
+The path is resolved relative to the `.btfont` file location. This is convenient during development as you can update
+the PNG without regenerating the JSON.
+
+### 2. Embedded Base64 (Recommended for Production)
+
+```json
+{
+  "texture": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+}
+```
+
+The entire texture is embedded as a base64-encoded PNG data URI (`data:image/png;base64,...`). This creates a single
+self-contained file, ideal for distribution. Other embedded formats (for example `data:image/jpeg`) are rejected.
+
+## Loading limits
+
+`BitmapFont.load()` enforces the same resource limits as sprite sheets. See [API: Assets](/docs/api/assets) for the full
+table. In short:
+
+- `.btfont` JSON must be `1 MiB` or smaller; glyph maps are capped at `8192` entries.
+- Embedded PNG payloads must stay within `512 KiB` of base64 data (after the `data:image/png;base64,` prefix).
+- Font atlas textures obey the `8192` per-side and `16,777,216` total-pixel decoded limits.
+- Invalid glyph metrics (non-integer values, negative sizes, rectangles outside the atlas) throw `AssetLimitError`
+  before rendering.
+
+When validation fails, loading throws `AssetLimitError` with a beginner-friendly message. Prefer a separate PNG texture
+for large atlases instead of embedding multi-megabyte base64 in the JSON file.
+
+## Converting from BMFont Format
+
+Most bitmap font tools export to the [BMFont format](https://www.angelcode.com/products/bmfont/) (`.fnt` + `.png`). Use
+the included conversion script to convert these to `.btfont`:
+
+### Using the Conversion Script
+
+```bash
+# From project root
+node scripts/convert-bmfont.mjs <input.fnt> <output.btfont> [--embed]
+
+# Or via pnpm:
+pnpm run convert-font <input.fnt> <output.btfont> [--embed]
+
+# Examples:
+node scripts/convert-bmfont.mjs tmp/MyFont.fnt examples/fonts/MyFont.btfont
+node scripts/convert-bmfont.mjs tmp/MyFont.fnt examples/fonts/MyFont.btfont --embed
+```
+
+Options:
+
+- `--embed` - Embed the texture as base64 (recommended for production)
+
+### Running on Different Platforms
+
+The conversion script works best when run directly in your terminal:
+
+**macOS/Linux:**
+
+```bash
+cd /path/to/blit386
+node scripts/convert-bmfont.mjs input.fnt output.btfont --embed
+```
+
+**Windows (PowerShell):**
+
+```powershell
+cd D:\path\to\blit386
+node scripts/convert-bmfont.mjs input.fnt output.btfont --embed
+```
+
+**Windows (CMD):**
+
+```cmd
+cd D:\path\to\blit386
+node scripts\convert-bmfont.mjs input.fnt output.btfont --embed
+```
+
+> **Note:** For best results with file I/O operations, running Node.js scripts directly from the terminal (not through
+> an IDE’s embedded shell) is recommended.
+
+### Manual Conversion
+
+If you prefer to convert manually:
+
+1. **Parse the `.fnt` XML file** to extract:
+
+- Font info: `face`, `size` from `<info>`.
+- Metrics: `lineHeight`, `base` from `<common>`.
+- Glyphs: All `<char>` elements.
+
+2. **For each `<char>` element**, create a glyph entry:
+
+   ```xml
+   <char id="65" x="80" y="18" width="9" height="17" xoffset="-1" yoffset="-1" xadvance="7" />
+   ```
+
+   Becomes:
+
+   ```json
+   "A": { "x": 80, "y": 18, "w": 9, "h": 17, "ox": -1, "oy": -1, "adv": 7 }
+   ```
+
+3. **Set the texture path** to the PNG filename or embed it as base64.
+
+## Creating Bitmap Fonts
+
+### Recommended Tools
+
+1. **[BMFont](https://www.angelcode.com/products/bmfont/)** (Windows)
+
+- The original bitmap font generator.
+- Export as XML format, then convert to `.btfont`.
+
+2. **[Hiero](https://libgdx.com/wiki/tools/hiero)** (Cross-platform)
+
+- Java-based, works on Mac/Linux/Windows.
+- Export as BMFont format.
+
+3. **[ShoeBox](https://renderhjs.net/shoebox/)** (Cross-platform)
+
+- Adobe AIR application.
+- Can create bitmap fonts from existing images.
+
+4. **Custom Font Editor** (Coming Soon)
+
+- BLIT386 will include its own font editor.
+- Native `.btfont` export with embedded textures.
+
+### Tips for Creating Fonts
+
+1. **Use power-of-two texture sizes** (256×128, 512×256, etc.) for best GPU compatibility.
+
+2. **Include an outline** (1-2px) for better readability on varied backgrounds.
+
+3. **Export with padding** between characters to prevent bleeding artifacts.
+
+4. **Use white glyphs** on a transparent background — palette slots are assigned at indexize time; recolor at draw time
+   via `paletteOffset` on `BT.printFont()`, not RGBA tinting.
+
+5. **Include common symbols** beyond ASCII: `×`, `÷`, `·`, `-`, `…`, etc.
+
+## API Reference
+
+### BitmapFont
+
+```ts
+class BitmapFont {
+  // Load from .btfont file
+  static async load(url: string): Promise<BitmapFont>;
+
+  // Properties
+  readonly name: string;
+  readonly size: number;
+  readonly lineHeight: number;
+  readonly baseline: number;
+  readonly glyphCount: number;
+
+  // Methods
+  getGlyph(char: string): Glyph | null;
+  measureText(text: string): number;
+  measureTextSize(text: string): { width: number; height: number };
+  measureTextSizeInto(text: string, out: { width: number; height: number }): void;
+  hasGlyph(char: string): boolean;
+  getSpriteSheet(): SpriteSheet;
+}
+```
+
+Exported type `TextSize` is `{ width: number; height: number }`.
+
+### BT.printFont()
+
+```ts
+BT.printFont(
+  font: BitmapFont,       // The loaded font (sprite sheet must be indexized)
+  pos: Vector2i,          // Position (top-left corner)
+  text: string,           // Text to render
+  paletteOffset?: number // Per-draw index shift (default 0); not a Color32
+): void;
+```
+
+## Examples
+
+### Multi-line Text
+
+```ts
+const lines = ['Line 1', 'Line 2', 'Line 3'];
+let y = 10;
+
+for (const line of lines) {
+  BT.printFont(font, new Vector2i(10, y), line);
+  y += font.lineHeight;
+}
+```
+
+### Centered Text
+
+```ts
+const text = 'Centered';
+const textWidth = font.measureText(text);
+const screenWidth = BT.displaySize.x;
+const x = Math.floor((screenWidth - textWidth) / 2);
+
+BT.printFont(font, new Vector2i(x, 10), text);
+```
+
+### Per-character palette offsets
+
+```ts
+let x = 10;
+for (let i = 0; i < text.length; i++) {
+  const char = text[i];
+  const offset = i % 2 === 0 ? 0 : 16; // alternate palette ranges
+
+  BT.printFont(font, new Vector2i(x, 10), char, offset);
+
+  const glyph = font.getGlyph(char);
+  x += glyph ? glyph.advance : font.size;
+}
+```
+
+## Troubleshooting
+
+### Font not loading
+
+- Check the browser console for error messages.
+- Verify the `.btfont` path is correct (relative to the HTML file).
+- Make sure the texture file exists and is accessible.
+
+### Characters appear in wrong positions
+
+- Verify `ox` and `oy` (offset) values are correct
+- Check the texture coordinates match the actual glyph positions in the PNG.
+
+### Missing characters
+
+- Check if the character is in the font’s glyph map.
+- Use `font.hasGlyph('×')` to test.
+- Characters not in the font are silently skipped.
+
+### Blurry text
+
+- Make sure the canvas is using nearest-neighbor scaling (CSS `image-rendering: pixelated`).
+- Use integer positions for `BT.printFont()`.
+
+## See Also
+
+| Guide                              | What it covers                          |
+| ---------------------------------- | --------------------------------------- |
+| [API: Assets](/docs/api/assets)       | `BitmapFont` loading and asset limits   |
+| [API: Rendering](/docs/api/rendering) | `BT.printFont` and palette offset       |
+| [Palette Guide](/docs/guides/palette)  | indexize and `paletteOffset` for glyphs |
+| [API: Palette](/docs/api/palette)     | palette addressing for text colors      |

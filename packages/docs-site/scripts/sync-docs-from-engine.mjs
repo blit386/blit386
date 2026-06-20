@@ -82,6 +82,26 @@ const PAGES = [
         description: 'Pointer, keyboard, gamepad, and text-accumulation input in BLIT386.',
     },
     {
+        source: 'palette-guide.md',
+        description: 'The palette-first rendering workflow: setup, slot offsets, and palette effects.',
+    },
+    {
+        source: 'palette-presets.md',
+        description: 'Exact color data for the built-in Palette presets and the HUD preset.',
+    },
+    {
+        source: 'overlay.md',
+        description: 'The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout.',
+    },
+    {
+        source: 'post-process-effects.md',
+        description: 'The two-tier post-process effect system, built-in effects, and CRT presets.',
+    },
+    {
+        source: 'bitmap-fonts.md',
+        description: 'The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion.',
+    },
+    {
         source: 'deprecations.md',
         description: 'Central tracker for public API compatibility aliases and planned removals.',
     },
@@ -150,9 +170,15 @@ const rewriteTarget = (target, sourceRepoDir) => {
     return `${GITHUB_BASE}/${kind}/main/${repoRelative}${fragment}`;
 };
 
-/** Rewrite every Markdown link on lines outside fenced code blocks. */
-const rewriteLinks = (markdown, sourceRepoDir) => {
+/**
+ * Transform body lines outside fenced code blocks: strip HTML comments (MDX
+ * does not support them, and source comments such as cspell directives are
+ * meaningless in the mirror) and rewrite Markdown links. Fenced code is left
+ * untouched so example snippets keep their literal content.
+ */
+const transformBody = (markdown, sourceRepoDir) => {
     const linkPattern = /(\[[^\]]*\])\(([^)]+)\)/gu;
+    const htmlCommentPattern = /<!--[\s\S]*?-->/gu;
     let isInFence = false;
 
     const lines = markdown.split('\n').map((line) => {
@@ -166,7 +192,9 @@ const rewriteLinks = (markdown, sourceRepoDir) => {
             return line;
         }
 
-        return line.replace(
+        const withoutComments = line.replace(htmlCommentPattern, '');
+
+        return withoutComments.replace(
             linkPattern,
             (_match, label, target) => `${label}(${rewriteTarget(target, sourceRepoDir)})`,
         );
@@ -212,7 +240,7 @@ const renderPage = ({ source, description }) => {
     const { title, body } = extractTitleAndBody(raw, source);
     const sourceRepoDir = posix.dirname(`docs/${source}`);
     const trimmedBody = dropDuplicateIntro(body, description);
-    const rewritten = rewriteLinks(trimmedBody, sourceRepoDir);
+    const rewritten = transformBody(trimmedBody, sourceRepoDir);
     const banner = [
         `# Generated from blit386/docs/${source} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',

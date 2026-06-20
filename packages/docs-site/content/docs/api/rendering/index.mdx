@@ -107,7 +107,7 @@ BT.printFont(font, pos, text);
 BT.printFont(font, pos, text, paletteOffset); // palette-swap variant
 ```
 
-See [Bitmap Fonts Guide](https://github.com/blit386/blit386/blob/main/docs/bitmap-fonts.md) for the `.btfont` format spec and BMFont conversion.
+See [Bitmap Fonts Guide](/docs/guides/bitmap-fonts) for the `.btfont` format spec and BMFont conversion.
 
 ---
 
@@ -156,7 +156,7 @@ for (const fx of crtPipBoy()) BT.effectAdd(fx);
 All effect classes are exported from `'blit386'`. Each instance owns its own GPU resources and may be mutated each frame
 from demo code.
 
-See [Post-Process Effects Guide](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md) for parameter reference, the `Effect` interface, `EffectTier`,
+See [Post-Process Effects Guide](/docs/guides/post-process-effects) for parameter reference, the `Effect` interface, `EffectTier`,
 the `FullscreenEffect` base class, and how to write a custom effect.
 
 ---
@@ -188,9 +188,9 @@ await BT.downloadFrame('screenshot-001.png'); // custom filename
 | ----------------------------------------------------------- | ------------------------------------------ |
 | [API: Core](/docs/api/core)                                    | bootstrap, init, camera, core types        |
 | [API: Palette](/docs/api/palette)                              | palette setup, presets, effects            |
-| [Palette Guide](https://github.com/blit386/blit386/blob/main/docs/palette-guide.md)                           | palette-first workflow and offset patterns |
+| [Palette Guide](/docs/guides/palette)                           | palette-first workflow and offset patterns |
 | [API: Assets](/docs/api/assets)                                | sprite sheets, bitmap fonts, asset loading |
-| [Post-Process Effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md)             | effect chain, custom effects               |
-| [Bitmap Fonts](https://github.com/blit386/blit386/blob/main/docs/bitmap-fonts.md)                             | .btfont format, BMFont conversion          |
+| [Post-Process Effects](/docs/guides/post-process-effects)             | effect chain, custom effects               |
+| [Bitmap Fonts](/docs/guides/bitmap-fonts)                             | .btfont format, BMFont conversion          |
 | [Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md)                                       | visual regression for rendering            |
 | [Performance Best Practices](https://github.com/blit386/blit386/blob/main/docs/performance-best-practices.md) | batching and draw-call performance         |
