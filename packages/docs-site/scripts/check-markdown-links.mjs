@@ -26,6 +26,21 @@ const IGNORED_DIRS = new Set([
     '.wrangler',
 ]);
 
+/**
+ * Repo-relative path patterns to skip. Generated doc pages
+ * (`content/docs/<section>/**`) are mirrored from blit386/docs, where they are
+ * already link-checked; the hand-authored hub (`content/docs/index.mdx`) and
+ * root meta stay in scope.
+ */
+const IGNORED_PATH_PATTERNS = [/^content\/docs\/[^/]+\//u];
+
+/** @param {string} filePath */
+function isIgnoredFile(filePath) {
+    const rel = relative(ROOT, filePath).split('\\').join('/');
+
+    return IGNORED_PATH_PATTERNS.some((pattern) => pattern.test(rel));
+}
+
 /** @param {string} dir @param {string[]} files */
 function walkMarkdownFiles(dir, files) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -36,7 +51,7 @@ function walkMarkdownFiles(dir, files) {
             walkMarkdownFiles(join(dir, entry.name), files);
             continue;
         }
-        if (/\.(md|mdx)$/u.test(entry.name)) {
+        if (/\.(md|mdx)$/u.test(entry.name) && !isIgnoredFile(join(dir, entry.name))) {
             files.push(join(dir, entry.name));
         }
     }

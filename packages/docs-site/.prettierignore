@@ -22,3 +22,8 @@ dist/
 
 # JSON is handled by Biome
 *.json
+
+# Generated docs mirror (produced by scripts/sync-docs-from-engine.mjs from
+# blit386/docs). Artifacts: not subject to this repo's format gate. The
+# hand-authored hub (content/docs/index.mdx) and root meta stay formatted.
+content/docs/*/**

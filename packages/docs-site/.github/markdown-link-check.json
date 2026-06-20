@@ -50,6 +50,9 @@
     },
     {
       "pattern": "^https?://blit386\\.dev(/|$)"
+    },
+    {
+      "pattern": "^/docs(/|$)"
     }
   ],
   "replacementPatterns": [

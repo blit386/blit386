@@ -14,17 +14,18 @@ Documentation site for [blit386.dev](https://blit386.dev), built with Fumapress,
 
 ## Where to Find Information
 
-| Question                  | Where to look                                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------- |
-| How is content organized? | `content/`, optional `meta.json` per folder                                                       |
-| Site and plugin config?   | `press.config.tsx`                                                                                |
-| MDX collection config?    | `source.config.ts`                                                                                |
-| Waku / Vite plugins?      | `waku.config.ts`                                                                                  |
-| Global styles?            | `src/app.css`                                                                                     |
-| Generated MDX loader?     | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`)                               |
-| Engine API truth?         | [blit386 GitHub docs](https://github.com/blit386/blit386/tree/main/docs) — link, do not duplicate |
-| CI and deploy?            | `.github/workflows/ci.yml`                                                                        |
-| Agent skills?             | `.claude/skills/` (`fp-*` prefix)                                                                 |
+| Question                  | Where to look                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| How is content organized? | `content/`, optional `meta.json` per folder                                                          |
+| Site and plugin config?   | `press.config.tsx`                                                                                   |
+| MDX collection config?    | `source.config.ts`                                                                                   |
+| Waku / Vite plugins?      | `waku.config.ts`                                                                                     |
+| Global styles?            | `src/app.css`                                                                                        |
+| Generated MDX loader?     | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`)                                  |
+| Engine API truth?         | Canonical source is `blit386/docs/`; public pages are **generated** into `content/docs/` (see below) |
+| How is the mirror built?  | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` (Documentation mirror below)            |
+| CI and deploy?            | `.github/workflows/ci.yml`                                                                           |
+| Agent skills?             | `.claude/skills/` (`fp-*` prefix)                                                                    |
 
 ## Architecture
 
@@ -48,14 +49,35 @@ blit386-dev-fumapress/
 
 - Doc files: `content/**/*.mdx` (or `.md`) with required frontmatter `title`; optional `description`, `icon`, `full`
 - Sidebar: optional `meta.json` or `meta.yaml` per folder (`title`, `pages`, `root`, `icon`, …)
-- Prefer linking to the [blit386 engine repo](https://github.com/blit386/blit386) for API details instead of copying
-  tables that will drift
+- Public engine docs under `content/docs/**` are **generated** from `blit386/docs/` (see Documentation mirror); never
+  hand-edit a generated page. Hand-authored content (the landing page, `content/docs/index.mdx` hub, and the root
+  `content/docs/meta.json`) lives outside the generator's output.
 - No emoji in content, code, commits, or UI strings
+
+## Documentation mirror
+
+The public API and guide pages on this site are **generated** from the canonical engine docs. `blit386/docs/*.md`
+(engine repo) is the single source of truth; `scripts/sync-docs-from-engine.mjs` reads that subset and writes the
+matching MDX into `content/docs/`. The migration plan and source-to-URL map live in
+[`DOCUMENTATION_MIGRATION.md`](DOCUMENTATION_MIGRATION.md).
+
+- **Run it:** `pnpm run sync:docs` (formats output too). `pnpm run sync:docs:check` regenerates and fails on drift; CI
+  uses it to keep the mirror in sync. The engine docs source resolves from `ENGINE_DOCS_DIR` (default sibling
+  `../blit386/docs`); CI points it at a checked-out engine repo.
+- **Generated, do not hand-edit:** every `content/docs/<section>/<topic>/index.mdx` and each section `meta.json` carry a
+  "generated" banner in their frontmatter. To change them, edit the engine source and re-run `sync:docs`.
+- **What the generator does:** drops the source H1 (title comes from it), drops a lead paragraph that duplicates the
+  description, rewrites intra-doc links to site paths (`/docs/...`) and all other links to absolute GitHub URLs, and
+  adds frontmatter (`title`, `description`).
+- **Adding a page:** add an entry to `PAGES` (and, if new, `SITE_PATHS`) in the script, then run `sync:docs`.
+  Contributor-only pages (developer experience, voice, tooling, `security/*`) are intentionally not mirrored and stay
+  link-only on GitHub.
 
 ## Critical Rules
 
 1. **Documentation ships with changes** — update `content/` and run `pnpm run docs:links` when adding links
-2. **Engine API lives in blit386** — this site summarizes and links; canonical API docs stay in the engine repo
+2. **Public engine docs are generated, not authored here** — edit the canonical copy in `blit386/docs/`, then run
+   `pnpm run sync:docs`. Never hand-edit a generated page under `content/docs/**`. See Documentation mirror.
 3. **Use pnpm run** — `pnpm run preflight`, not bare `pnpm preflight` (RTK hooks)
 4. **Conventional Commits + DCO** — `git commit -s`
 5. **Cloudflare build** — production builds require `CLOUDFLARE=1` (included in `pnpm run build`)
@@ -73,6 +95,8 @@ pnpm run format           # Biome + Prettier
 pnpm run format:check     # Verify formatting
 pnpm run spellcheck       # cspell on content and src
 pnpm run docs:links       # Markdown link checker
+pnpm run sync:docs        # Regenerate content/docs from blit386/docs (engine repo)
+pnpm run sync:docs:check  # Regenerate and fail if the mirror drifted (CI)
 pnpm run knip             # Unused exports/deps
 pnpm run security:audit   # pnpm audit (moderate+)
 pnpm run preflight        # All quality checks + build

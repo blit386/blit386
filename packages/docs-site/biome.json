@@ -17,7 +17,8 @@
       "*.json",
       "*.jsonc",
       "commitlint.config.js",
-      "prettier.config.js"
+      "prettier.config.js",
+      "!content/docs/*"
     ]
   },
   "formatter": {

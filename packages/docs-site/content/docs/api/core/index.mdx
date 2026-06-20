@@ -1,0 +1,609 @@
+---
+# Generated from blit386/docs/api-core.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "API: Core"
+description: "Bootstrap, initialization, game loop timing, camera, and core types."
+---
+
+> **Starting a new project?** The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm,
+> pnpm, yarn, or bun). It generates a ready-to-run Vite project with the engine installed, a starter game, and local
+> docs. See [create-blit386](https://github.com/blit386/create-blit386). The rest of this page documents the
+> `bootstrap()` API for hand-wired or existing projects.
+
+---
+
+## Bootstrap
+
+The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
+(WebGPU or software fallback), and error display automatically.
+
+```ts
+import { bootstrap, type BootstrapOptions } from 'blit386';
+
+// One-liner - canvas id defaults to 'blit386-canvas', container to 'canvas-container'
+bootstrap(MyDemo);
+
+// With options
+bootstrap(MyDemo, {
+  canvasID: 'my-canvas',
+  containerID: 'error-wrapper',
+  onSuccess: () => console.log('started'),
+  onError: (err) => trackError(err),
+  isWaitingForDOMReady: true, // default true; set false in Electron after DOMContentLoaded
+});
+```
+
+**`BootstrapOptions` fields:**
+
+| Field                  | Type                     | Default              | Description                    |
+| ---------------------- | ------------------------ | -------------------- | ------------------------------ |
+| `canvasID`             | `string`                 | `'blit386-canvas'`   | Canvas element id              |
+| `containerID`          | `string`                 | `'canvas-container'` | Container id for error display |
+| `onSuccess`            | `() => void`             | -                    | Called after successful init   |
+| `onError`              | `(error: Error) => void` | -                    | Called on any init failure     |
+| `isWaitingForDOMReady` | `boolean`                | `true`               | Wait for `DOMContentLoaded`    |
+
+**Manual utilities** (for custom initialization flows):
+
+```ts
+import { displayError, getCanvas } from 'blit386';
+
+const canvas = getCanvas('my-canvas'); // returns null on missing element
+displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
+```
+
+`bootstrap()` applies canvas layout CSS custom properties via `CanvasLayoutStyles` (logical size, CSS cap, pixelated
+scaling). Custom hosts can reuse the same helper when not using `bootstrap()`.
+
+---
+
+## Initialization
+
+```ts
+const ok = await BT.init(demo, canvas); // low-level init; prefer bootstrap()
+BT.displaySize; // Vector2i - configured logical resolution (clone per read)
+BT.drawingBufferSize; // Vector2i | null - output buffer when set in configure()
+BT.outputSize; // Vector2i - effective drawing-buffer size (clone per read)
+BT.targetFPS; // number - fixed update() rate (simulation), not measured present FPS
+BT.requestedBackend; // 'webgpu' | 'software' | null - resolved request (see below)
+BT.activeBackend; // 'webgpu' | 'software' | null - backend that actually started
+```
+
+`BT.init()` selects WebGPU or falls back to the Canvas 2D software renderer automatically. When not using `bootstrap()`,
+set `canvas.tabIndex = 0` and call `canvas.focus()` so keyboard events reach the canvas.
+
+### Resolution model
+
+BLIT386 tracks several related pixel dimensions. Public configure/getter names (`displaySize`, `drawingBufferSize`,
+`maxCanvasSize`) map to the layers below; **display-tier** is a separate post-process term.
+
+| Term               | What it is                                                                                         | Configure field             | `BT` getter               |
+| ------------------ | -------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------- |
+| **Logical**        | Game/simulation coordinate space; where `render()` draws palette-indexed pixels                    | `displaySize`               | `BT.displaySize`          |
+| **Drawing buffer** | GPU/canvas backing-store resolution; upscale target and display-tier post-process resolution       | `drawingBufferSize`         | `BT.drawingBufferSize`    |
+| _(derived)_        | Effective drawing-buffer size (`drawingBufferSize` when set, otherwise logical 1:1)                | —                           | `BT.outputSize`           |
+| **CSS cap**        | Maximum on-screen canvas size in CSS pixels (layout scales to the viewport, not beyond this)       | `maxCanvasSize`             | _(no getter)_             |
+| **Effect tier**    | Post-process chain stage: **pixel tier** at logical resolution; **display tier** at drawing buffer | _(requires drawing buffer)_ | _(see post-process docs)_ |
+
+Typical WebGPU flow at default `320×240` logical with `640×480` drawing buffer:
+
+```text
+render() @ logical (320×240)
+  → pixel-tier effects @ logical
+  → palette resolve + upscale @ drawing buffer (640×480)  ← BT.outputSize
+  → display-tier effects @ drawing buffer
+  → swap chain → browser scales canvas (up to CSS cap 960×720)
+```
+
+**Which size for CRT?** CRT-style effects (scanlines, barrel distortion, RGB mask, bloom) are **display-tier**. They run
+at the **drawing buffer** — use **`BT.outputSize`**, not `BT.displaySize`. Set `drawingBufferSize` larger than
+`displaySize` (for example `320×240` logical and `1280×960` buffer) so curvature and scanlines are not quantized onto
+the logical pixel grid. Display-tier registration throws when `drawingBufferSize` is unset. Pixel-native effects
+(`PixelGlitch`, `PixelMosaic`) are **pixel-tier** and run at **`BT.displaySize`** (logical).
+
+**What is `BT.outputSize`?** The effective **drawing-buffer** width and height in pixels:
+`drawingBufferSize ?? displaySize`. Palette resolve/upscale and the display-tier chain both operate at this size. When
+`drawingBufferSize` is omitted, logical and drawing buffer match (1:1). Each read returns a clone. There is no
+`HardwareSettings.outputSize` field — only the runtime getter.
+
+See [Post-Process Effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md) for tier routing and presets.
+
+**`HardwareSettings`** (resolved after `configure()`; the hook may return a partial object):
+
+`configure()` may return only the fields you want to override. The engine merges them with `defaultConfig()` via
+`mergeHardwareSettings()` (also exported). Omit `displaySize` to inherit the full default resolution and `640×480`
+output buffer. Include `displaySize` when you want a custom logical size; optional fields you omit then stay unset (for
+example no `drawingBufferSize` means a 1:1 drawing buffer).
+
+| Field                                    | Type                           | Default     | Description                                                                                        |
+| ---------------------------------------- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------- |
+| `displaySize`                            | `Vector2i`                     | `320×240`   | **Logical** render resolution                                                                      |
+| `drawingBufferSize`                      | `Vector2i`                     | `640×480`   | **Drawing buffer** size; enables **display-tier** effects when set                                 |
+| `maxCanvasSize`                          | `Vector2i`                     | `960×720`   | **CSS cap** — maximum on-screen canvas size                                                        |
+| `targetFPS`                              | `number`                       | `60`        | Fixed `update()` rate (simulation ticks per second)                                                |
+| `backend`                                | `'webgpu' \| 'software'`       | `'webgpu'`  | Force rendering backend                                                                            |
+| `outputUpscaleFilter`                    | `'nearest' \| 'linear'`        | `'nearest'` | Upscale filter                                                                                     |
+| `isDetectingDroppedFrames`               | `boolean`                      | `false`     | Log a console warning on missed vsync                                                              |
+| `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                           |
+| `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                     |
+| `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                 |
+| `isOverlayToggleEnabled`                 | `boolean`                      | `true`      | Enable Backquote and bottom-left corner toggle input                                               |
+| `isOverlayPaletteEnabled`                | `boolean`                      | `false`     | Live palette swatch grid in the overlay bottom band (opt-in)                                       |
+| `overlayPaletteColumns`                  | `number`                       | _unset_     | Max palette swatches per grid row (default: widest fit)                                            |
+| `overlayPaletteRowsVisible`              | `number`                       | _unset_     | Max visible palette grid rows (default: all rows; band height capped)                              |
+| `overlayStyle`                           | `OverlayStyle`                 | _unset_     | Optional bar/text/gap palette indices for overlay                                                  |
+| `isOverlayTimingChartEnabled`            | `boolean`                      | `false`     | Scrolling update/render timing chart between title and metrics rows                                |
+| `overlayTimingChartHeight`               | `number`                       | `22`        | Timing chart band height in pixels when the chart is enabled                                       |
+| `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                               |
+| `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted) |
+| `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                       |
+
+`displaySize`, `drawingBufferSize`, and `maxCanvasSize` must be positive whole-number pixel dimensions. Each size is
+capped at `8192×8192` per axis and `16,777,216` total pixels (`4096×4096`). Invalid sizes make initialization fail
+before the engine applies canvas layout, sets canvas backing dimensions, or allocates renderer buffers. `BT.init()`
+returns `false` and logs a specific `[BT]` message to the browser console (press F12); the on-canvas bootstrap error
+stays a generic init failure message. In WebGPU mode, the requested logical and output sizes must also fit the active
+adapter/device `maxTextureDimension2D` limit. GPU limit failures do not fall back to the software renderer.
+
+**`BT` getters vs `configure()` fields:**
+
+| Kind        | `BT` getter                                       | `HardwareSettings` field |
+| ----------- | ------------------------------------------------- | ------------------------ |
+| **Mirror**  | `displaySize`, `drawingBufferSize`, `targetFPS`   | same names               |
+| **Mirror**  | `requestedBackend`                                | `backend`                |
+| **Derived** | `outputSize` (`drawingBufferSize ?? displaySize`) | _(none)_                 |
+
+`activeBackend` is runtime state (what actually started; may differ from `requestedBackend` after WebGPU fallback). See
+[Resolution model](#resolution-model) for drawing-buffer vocabulary.
+
+### Requested vs active backend
+
+Two getters disambiguate **what you asked for** from **what is running**:
+
+| Getter                | When set                                                                                         | Meaning                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `BT.requestedBackend` | After hardware settings load (`configure()` merge + URL override), before or after renderer init | Backend the engine will try / tried to start (`'webgpu'` default when omitted) |
+| `BT.activeBackend`    | After successful renderer init only                                                              | Backend that actually started (`null` before init or on init failure)          |
+
+**`configure().backend`** and **`BT.requestedBackend`** both describe the request, but only the getter reflects
+post-merge resolution:
+
+- `demo.configure()` may return a partial object; the engine merges it with `defaultConfig()`.
+- `?backend=software` mutates the resolved `HardwareSettings.backend` **before** `initRenderer()` runs (during
+  `loadHardwareSettings()`). A page opened as `/demos/023-crt-pipboy.html?backend=software` therefore reports
+  `BT.requestedBackend === 'software'` even when `configure()` asked for WebGPU.
+
+**Fallback:** When `requestedBackend` is `'webgpu'` (explicit or default) and WebGPU init fails, the engine logs a
+warning and starts the software renderer. Then `activeBackend === 'software'` while `requestedBackend` stays `'webgpu'`.
+
+The WebGPU renderer module is loaded lazily during init (only after a successful adapter/device setup). Browsers without
+WebGPU globals (for example Firefox on Linux without Nightly) can therefore start the software backend or auto-fallback
+without hitting module-load errors from WebGPU-only code.
+
+**Runtime checks (post-process, capture, etc.):** use `activeBackend`, not `requestedBackend`:
+
+```ts
+// Correct: gate on the backend that actually started; BT.effectAdd takes one effect
+if (BT.activeBackend === 'webgpu') {
+  for (const fx of BT.preset.crtPipBoy()) {
+    BT.effectAdd(fx);
+  }
+}
+
+// Misleading after fallback: requestedBackend may still be 'webgpu'
+if (BT.requestedBackend === 'webgpu') {
+  for (const fx of BT.preset.crtPipBoy()) {
+    BT.effectAdd(fx); // throws once activeBackend is software
+  }
+}
+```
+
+Forcing software up front avoids the fallback path entirely:
+
+```ts
+configure() {
+  return { backend: 'software', /* ... */ };
+}
+// requestedBackend === activeBackend === 'software' after init
+```
+
+### Overlay
+
+When `isOverlayEnabled` is `true` (default), the engine draws a screen-space HUD after each demo `render()` call, on top
+of all demo content. The **overlay body** (title, metrics, timing chart, palette grid, custom rows) starts **hidden**
+unless `isOverlayVisibleAtStart: true`. While the body is hidden, the engine may still draw the **toggle hint icon**
+when `isOverlayToggleHintVisible` is `true` (default), without the footer hint bar background. Bar bands and text
+anchors for the full body are computed each frame by the internal layout planner in `src/overlay/layout/layoutPlan.ts`
+from `displaySize`, custom row count, and optional feature flags (timing chart default off; palette grid opt-in via
+`isOverlayPaletteEnabled`). Init still caches stable values such as the bottom-left toggle rect and text baselines from
+the system font metrics.
+
+**Migration note:** Upgrading demos now starts with the overlay body hidden. Teaching demos that relied on
+always-visible metrics should opt back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choose
+otherwise.
+
+- **Top row 1 (left):** short demo title derived from `document.title` (registry pages titled `BLIT386 Demo NNN - Topic`
+  show as `Topic Demo`); **top row 1 (right):** active backend and logical resolution (for example `webgpu | 320x240`)
+- **Timing chart (optional):** when `isOverlayTimingChartEnabled: true`, a scrolling band of **one-pixel dots** shows
+  raw per-frame `update()` vs `render()` CPU time (one column per present frame, not per fixed `update()` tick). Band
+  height defaults to **22 px**; override with `overlayTimingChartHeight`. Dot height scales linearly so about **16 ms**
+  fills the band; any non-zero sample draws at least one pixel (sub-millisecond work shows as a baseline dot). **Grid
+  lines:** faint horizontal reference rows at **5**, **10**, and **33.33** ms plus a frame-budget line at
+  **`1000 / targetFPS`** ms are drawn behind the dots (qualitative scale on a ~22 px band, not a precision ruler). The
+  band bottom row is the zero baseline (sub-ms / light samples); top- and bottom-edge rows are not drawn as grid lines.
+  Grid color defaults to `overlayStyle.gapPaletteIndex` (then `barPaletteIndex`); override with
+  `overlayTimingChartStyle.gridPaletteIndex`. The band background uses `overlayStyle.barPaletteIndex`; dot colors
+  default to `overlayStyle.barPaletteIndex` / `textPaletteIndex`; override with `overlayTimingChartStyle`. **Semantic
+  tints:** when a column is classified as a runtime risk, both update and render dots use the warning or error palette
+  index instead of the normal bar colors. Classification uses the prior frame's `Frame` wall time against
+  `1000 / targetFPS` (warning at **1.10x** budget, error at **1.50x**) and dropped-frame events from the game loop (one
+  dropped frame = warning, two or more = error; error wins when both apply). Default warning/error/event palette indices
+  are **3**, **4**, and **5** when not overridden. Drop detection for the chart runs whenever
+  `isOverlayTimingChartEnabled: true` (independent of `isDetectingDroppedFrames`, which only controls console warnings).
+  **Event tags:** call `BT.assignTag(label?)` from `update()` or `init()` to anchor a short label on the scrolling chart
+  at the current `BT.ticks`. Empty or omitted labels become `"Untitled"`. Each tag column draws a tick row (relative
+  ticks since chart reset, capped at **100000**) and stacked label rows above the chart band; spacing is fixed in
+  `tags.ts` (`TIMING_CHART_TAG_LABEL_Y_GAP`, `TIMING_CHART_TAG_LABEL_STACK_SPACING`). Tick and label text share the same
+  horizontal offset from the timing column. A faint vertical grid-colored line marks the column on the chart band. Tag
+  columns follow timing **samples** (one per rendered frame), not `BT.ticks`, which can advance multiple fixed-update
+  steps per frame: they fill from the left while the ring buffer is not full, then scroll left one column per sample
+  once full, in lockstep with the dots. Tags are removed when they scroll one full chart width past the left edge (text
+  keeps drawing at negative x until the display clips it); pruning runs on each timing sample while the chart is
+  enabled. Chart width resets (for example on resize) clear tags and add an automatic `"Start"` marker. Tint tags with
+  `overlayTimingChartStyle.tagPaletteIndex` (default **5**). **Renderer diagnostics (optional):** when the chart is
+  enabled, `overlayTimingChartDiagnostics` defaults to **`'minimal'`** (set `false` to disable chart markers).
+  **Minimal** mode bumps semantic severity when either pipeline overflowed that frame and draws a baseline overflow
+  marker (palette index from `overlayTimingChartStyle.overflowPaletteIndex`, defaulting to the warning index).
+  **`'rich'`** adds per-column vertex-pressure dots in the lower third of the band (primitive vs sprite submitted counts
+  scaled to the 50k vertex cap). Set **`isOverlayRendererDiagnosticsBarEnabled: true`** for a dedicated text row
+  (`Prim Nv ov: X | Spr Nv ov: X`) below the frame timing line; collection runs when either the chart diagnostics mode
+  is not `false` or the diagnostics bar is enabled. Overflow counts apply on WebGPU; the software backend reports
+  `ov: 0` with GPU-equivalent vertex totals for primitive and sprite work.
+- **Top row 2 (left):** `Present: N FPS | Target: T FPS | Draw Calls: C`
+- **Top row 3 (left):** `Frame: Xms | update(): Yms | render(): Zms` (shows `xN` on `update()` when multiple fixed
+  updates ran this frame)
+- **Bottom band:** default **13 px** hint bar with a bottom-left **bitmap toggle icon** (over the toggle hit region).
+  Set `isOverlayPaletteEnabled: true` to stack a live palette swatch grid **above** a **1 px** filled gap and that hint
+  bar; slots referenced by demo draw calls this frame are filled with their color, and unused slots render as empty
+  squares with a small centered marker. When `overlayPaletteRowsVisible` is set, only that many rows are shown in a
+  scrollable viewport with a right-side scrollbar thumb (proportional to visible vs total rows, minimum 4 px, inset 1 px
+  from the band top, right, and bottom); wheel input over the palette band scrolls rows and does not reach
+  `BT.pointerScrollDelta` outside that region. The timing chart and palette grid bands use the same
+  `overlayStyle.barPaletteIndex` fill as the other overlay rows (bars draw first; chart dots and swatches render on
+  top). **1 px row gaps** between stacked overlay bands and **cluster separators** (below the top metrics cluster and
+  above the bottom footer cluster) are filled with `overlayStyle.gapPaletteIndex`, defaulting to
+  `overlayStyle.barPaletteIndex` when omitted. Palette usage tracking (sprite and bitmap-text pixel scans) runs only
+  when the overlay is enabled, `isOverlayPaletteEnabled` is true, **and** the overlay body is visible (not hidden with
+  Backquote or the corner toggle). Default demos do not pay that scanning cost while the overlay is hidden.
+- **Custom rows (optional):** extra bars from `overlayRows()` stacked above the bottom band, **1 px** filled gaps apart,
+  each with left text and optional right text (same 13 px bar style as the built-in rows)
+
+Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it once per render frame after `render()`
+when the overlay is enabled and the **body** is visible (not hidden with Backquote or the corner toggle). Return
+`undefined` or an empty array when no custom rows are needed. Reuse the same array and row objects when possible; update
+`leftText` / `rightText` in place to avoid per-frame allocations.
+
+```ts
+/** @implements {IBTDemo} */
+class Demo {
+  readonly #overlayRows = [{ leftText: 'Position: 0, 0' }, { leftText: 'Score: 0', rightText: 'ready' }];
+
+  overlayRows() {
+    this.#overlayRows[0].leftText = `Position: ${this.pos.x}, ${this.pos.y}`;
+    this.#overlayRows[1].leftText = `Score: ${this.score}`;
+    return this.#overlayRows;
+  }
+}
+```
+
+Toggle overlay **body** visibility at runtime with **Backquote** (`~`) or a primary pointer press in the **bottom-left
+48x48 px** corner when `isOverlayToggleEnabled` is `true` (default). Set `isOverlayToggleHintVisible: false` to hide the
+hint icon while the body stays hidden. Set `isOverlayToggleEnabled: false` to lock body visibility at
+`isOverlayVisibleAtStart`. Set `isOverlayEnabled: false` in `configure()` to disable the overlay subsystem and all
+toggle input (for example release builds). On WebGPU, the engine draws the overlay HUD after your `render()` call,
+composited above demo sprites via internal overlay draw batches (not available on `BT`).
+
+Overlay colors follow one path: use `overlayStyle` when set, otherwise defaults `1` (bar and gap) and `2` (text). You
+can override globally in `configure()` with `overlayStyle: { barPaletteIndex, textPaletteIndex, gapPaletteIndex }`, or
+per custom row on `OverlayRow` (`barPaletteIndex`, `textPaletteIndex`). `gapPaletteIndex` fills inter-band row gaps and
+cluster separators; when omitted it matches `barPaletteIndex`.
+
+The overlay label `Present: N FPS` is **not** the same as `BT.targetFPS`: present FPS reflects how often `render()` runs
+(browser refresh rate), while `Target` is the fixed `update()` rate. Present FPS is sampled only while the overlay body
+is visible. `Frame`, `update()`, and `render()` timings are smoothed CPU wall-time samples from `performance.now()`
+shown in the text row; the optional timing chart uses **raw** per-frame `updateMs` / `renderMs` from the prior frame.
+Those demo-only timings **exclude** overlay draw (overlay runs after `render()` is timed); `Frame` includes the full
+present frame including overlay and GPU present. When the overlay body is hidden, chart history still records demo
+`update()` / `render()` samples, the toggle hint icon may still draw, and palette usage tracking is off. `Draw Calls`
+counts demo-issued draw API calls during the rendered frame. Do not use present FPS for simulation timing—use
+`BT.ticks`, `BT.deltaSeconds`, or `Timer` instead.
+
+Demos should not duplicate engine overlay text; the overlay provides it. Reserve about **14 px** per custom overlay row
+above the bottom band (13 px bar + 1 px filled gap). When drawing custom top or bottom HUD panels, leave about **43 px**
+clear at the top (three built-in text rows + filled gaps + separator below the top cluster; add
+`overlayTimingChartHeight` or **22 px** when `isOverlayTimingChartEnabled: true`; add **14 px** when
+`isOverlayRendererDiagnosticsBarEnabled: true`). Leave about **14 px** clear at the bottom by default (1 px separator +
+13 px hint bar). When `isOverlayPaletteEnabled: true`, reserve additional space for the palette grid, the **1 px**
+filled row gap, and the **13 px** hint bar—for example about **83 px** on the default `320×240` layout with a 256-slot
+palette (32 columns × 8 rows of 7 px swatches with 1 px gaps, plus the gap and hint bar). Column count is chosen by
+halving from `palette.size` until the row fits `displayWidth - 2 * edgeMargin`. Implementation lives in
+`src/overlay/palette/PaletteView.ts` (`computeGrid`, `pickGridColumnCount`, `resolveGridVisibleRows`). The footer band
+height matches `resolveOverlayFooterHeight()` in `layoutPlan.ts`:
+
+```text
+cols = pickGridColumnCount(displayWidth, swatchSize, gap, palette.size, maxColumns?)
+rows = ceil(palette.size / cols)
+visibleRows = resolveGridVisibleRows(rows, overlayPaletteRowsVisible)
+paletteGridHeight = gridRowStackHeight(visibleRows, swatchSize, gap) + 2 * PALETTE_GRID_PADDING_PX
+bottomReserve = paletteGridHeight + 1 + 13
+```
+
+When `overlayPaletteRowsVisible` is unset, `visibleRows` equals `rows` (full palette). Wheel scrolling applies only
+while the pointer is over the palette footer band (grid or scrollbar); demos reading `BT.pointerScrollDelta` elsewhere
+are unaffected.
+
+Default swatch size is **7 px** with **1 px** gaps and **3 px** padding above and below the grid. Set
+`isOverlayPaletteEnabled: true` to enable the grid, or `isOverlayEnabled: false` for full-screen layouts (for example
+terminal-style demos).
+
+```ts
+// Overlay off (release build or custom full-screen HUD).
+configure() {
+  return {
+    displaySize: new Vector2i(320, 240),
+    isOverlayEnabled: false,
+  };
+}
+
+// Overlay on with palette grid and timing chart.
+configure() {
+  return {
+    displaySize: new Vector2i(320, 240),
+    isOverlayEnabled: true,
+    isOverlayPaletteEnabled: true,
+    overlayPaletteRowsVisible: 3,
+    isOverlayTimingChartEnabled: true,
+    overlayTimingChartHeight: 32, // optional; default 22
+    overlayTimingChartDiagnostics: 'rich', // optional; default 'minimal' when chart enabled
+    isOverlayRendererDiagnosticsBarEnabled: true, // optional; default false
+    overlayStyle: { barPaletteIndex: 2, textPaletteIndex: 3, gapPaletteIndex: 2 },
+    overlayTimingChartStyle: {
+      updateBarPaletteIndex: 2, // defaults to barPaletteIndex when omitted
+      renderBarPaletteIndex: 3, // defaults to textPaletteIndex when omitted
+      gridPaletteIndex: 2, // horizontal grid lines; defaults to gapPaletteIndex
+      warningPaletteIndex: 3, // soft over-budget / single drop; default 3
+      errorPaletteIndex: 4, // hard over-budget / 2+ drops; default 4
+      tagPaletteIndex: 5, // tag and tick text; default 5
+      overflowPaletteIndex: 3, // overflow baseline marker; defaults to warningPaletteIndex
+    },
+  };
+}
+```
+
+---
+
+## Game Loop Timing
+
+BLIT386 runs two independent cadences:
+
+| Concept             | Where                                                      | Meaning                                                        |
+| ------------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| **Simulation rate** | `targetFPS`, `BT.targetFPS`, `BT.deltaSeconds`, `BT.ticks` | Fixed `update()` step; game logic and `Timer` use ticks        |
+| **Render rate**     | Overlay `Present: N FPS`                                   | Measured `requestAnimationFrame` cadence; `render()` runs here |
+
+`render()` may run more or fewer times per second than `update()` (for example 120 Hz display with `targetFPS: 60`). Use
+tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks.
+
+```ts
+BT.deltaSeconds; // seconds per fixed tick (1 / BT.targetFPS)
+BT.timeSeconds; // elapsed seconds since init (ticks × deltaSeconds)
+BT.ticks; // current tick counter (increments each update)
+BT.ticksReset(); // reset tick counter to 0
+BT.assignTag('Round start'); // timing chart event tag at current tick (requires isOverlayTimingChartEnabled)
+```
+
+### Timer
+
+`Timer` counts **fixed update ticks**, not render frames. Intervals are in ticks; convert to seconds with
+`intervalTicks / BT.targetFPS`. Use it in `update()` for periodic events: particle spawns, score ticks, palette swaps.
+
+```ts
+const spawn = new Timer(180); // every 180 ticks (3 s when BT.targetFPS === 60)
+
+// Inside update():
+if (spawn.fireIfElapsed()) {
+  spawnEnemy();
+}
+
+// Additional API:
+spawn.reset(); // restart interval from now
+spawn.elapsedTicks(); // ticks since last fire/reset
+spawn.remainingTicks(); // ticks until next fire
+spawn.intervalTicks; // readonly interval size
+```
+
+`Timer.fireIfElapsed()` advances the internal baseline on each true return. Pass `BT.ticks` explicitly only when you
+need a specific snapshot; the default is the engine tick counter.
+
+---
+
+## Camera
+
+The camera applies a global pixel offset to all subsequent draw calls. Integer only - pass `Vector2i`, never floats.
+
+```ts
+BT.cameraSet(new Vector2i(scrollX, scrollY)); // apply offset
+BT.camera; // Vector2i - current offset
+BT.cameraReset(); // set back to (0, 0)
+
+// Clamp a camera origin so the viewport stays within a world:
+const clamped = BT.cameraClamp(desired, worldSize);
+// Optional third argument overrides the viewport size (default: BT.displaySize):
+const clamped = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
+```
+
+Standalone helper (same math as `BT.cameraClamp`):
+
+```ts
+import { clampCameraToWorld } from 'blit386';
+
+const clamped = clampCameraToWorld(desired, worldSize, viewSize);
+```
+
+---
+
+## Default configuration
+
+Import `defaultConfig` and `mergeHardwareSettings` when building custom configure flows outside `bootstrap()`:
+
+```ts
+import { defaultConfig, mergeHardwareSettings } from 'blit386';
+
+const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });
+```
+
+`defaultConfig()` returns a full `HardwareSettings` object (`320×240` logical, `640×480` drawing buffer, overlay
+enabled, WebGPU backend, and other defaults documented in the table above).
+
+---
+
+## Easing helper
+
+Palette fade effects accept an `EasingFunction`. Use `applyEasing` to evaluate named curves:
+
+```ts
+import { applyEasing } from 'blit386';
+
+const t = applyEasing('ease-in-out', 0.5); // 0..1 progress → eased value
+```
+
+---
+
+## Core Types
+
+### Vector2i
+
+Integer 2D vector. Constructor auto-truncates floats toward zero. Used for all positions, sizes, and camera offsets.
+
+```ts
+const v = new Vector2i(10, 20);
+v.x;
+v.y; // direct access
+v.width;
+v.height; // aliases for x / y (useful when treating the vector as a size)
+
+// Static factories
+Vector2i.zero(); // (0, 0) - cached frozen singleton
+Vector2i.one(); // (1, 1) - cached frozen singleton
+Vector2i.up(); // (0, -1)
+Vector2i.down(); // (0, 1)
+Vector2i.left(); // (-1, 0)
+Vector2i.right(); // (1, 0)
+Vector2i.fromFloat(x, y); // truncate floats → integer vector
+
+// Math utilities
+Vector2i.distance(a, b); // Euclidean distance (float)
+Vector2i.sqrDistance(a, b); // squared distance (avoids sqrt)
+Vector2i.dotProduct(a, b); // scalar dot product
+Vector2i.lerp(a, b, t); // interpolate, t clamped [0,1], result truncated
+Vector2i.lerpTo(a, b, t, out); // zero-allocation lerp into existing vector
+```
+
+Instance methods: `.add()`, `.sub()`, `.scale()`, `.dot()`, `.clone()`, `.isEqual(other)`, `.isEqualXY(x, y)`,
+`.isZero()`, `.negate()`, `.abs()`, `.min()`, `.max()`, etc. See `src/utils/Vector2i.ts` for the full list.
+
+### Rect2i
+
+Integer rectangle with `x, y, width, height` fields.
+
+```ts
+const r = new Rect2i(x, y, width, height);
+
+// Static factories
+Rect2i.zero(); // (0,0,0,0) - cached frozen singleton
+Rect2i.fromMinMax(min, max); // from corner vectors
+Rect2i.fromMinMaxXY(minX, minY, maxX, maxY); // zero-allocation variant
+Rect2i.fromCenterSize(center, size); // centered rectangle
+Rect2i.fromCenterSizeXY(cx, cy, w, h); // zero-allocation variant
+
+// Instance methods
+r.isContaining(point); // boolean - point inside rect
+r.isContainingXY(px, py); // boolean - raw coordinates, no Vector2i alloc
+r.isIntersecting(other); // boolean - rects overlap
+r.isEqual(other); // boolean - same position and size
+r.intersection(other); // Rect2i | null - overlap area
+r.intersectTo(other, out); // boolean - write overlap into out when it exists
+r.center; // Vector2i getter
+r.min; // Vector2i getter (top-left)
+r.max; // Vector2i getter (bottom-right)
+```
+
+### Color32
+
+32-bit RGBA color (channels 0-255).
+
+```ts
+const c = new Color32(r, g, b, a);
+
+// Cached color constants (static getters; frozen singletons)
+Color32.white       Color32.black       Color32.transparent
+Color32.red         Color32.green       Color32.blue
+Color32.yellow      Color32.cyan        Color32.magenta
+Color32.gray(value)   // grayscale, value 0-255
+
+// Hex parsing
+Color32.fromHex('#ff8800')    // returns Color32
+
+// Named color registry (global, case-insensitive)
+Color32.registerColor('brand', new Color32(255, 128, 0, 255));
+Color32.resolveNamedColor('brand');   // → Color32 | undefined
+Color32.updateColor('brand', newColor);
+Color32.unregisterColor('brand');
+
+// Interpolation
+Color32.lerp(a, b, t);       // blend a→b; t clamped [0,1]; RGBA independent; truncates like instance lerp
+c.lerp(other, t);            // same semantics as static helper
+
+// Conversion
+c.toFloat32Array()            // [r/255, g/255, b/255, a/255]
+c.luminance                   // perceived brightness: 0.299r + 0.587g + 0.114b
+c.toHex()                     // '#rrggbb' string
+c.isEqual(other)              // boolean - all RGBA channels match
+```
+
+---
+
+## Browser support
+
+The WebGPU renderer is the default. When WebGPU is unavailable the engine falls back to the Canvas 2D software renderer
+automatically; it also runs on browsers that do not expose WebGPU globals at all (for example Firefox on Linux without
+Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
+init).
+
+| Browser     | Version        | Status                                                           |
+| ----------- | -------------- | ---------------------------------------------------------------- |
+| Chrome/Edge | 113+           | Enabled by default                                               |
+| Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
+| Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags     |
+
+> **Note:** WebGPU rollout is still moving across browsers. Treat this matrix as a point-in-time snapshot and re-check
+> the vendor release notes periodically.
+
+**Build toolchain:** Node.js >= 22.18.0 (LTS) and an ESM bundler (Vite, webpack, esbuild, or similar) to load the
+published package in the browser.
+
+---
+
+## See Also
+
+| Guide                                           | What it covers                                         |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| [API: Rendering](https://github.com/blit386/blit386/blob/main/docs/api-rendering.md)              | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](https://github.com/blit386/blit386/blob/main/docs/api-palette.md)                  | palette setup, presets, effects                        |
+| [Palette Guide](https://github.com/blit386/blit386/blob/main/docs/palette-guide.md)               | palette-first workflow and practical patterns          |
+| [API: Assets](https://github.com/blit386/blit386/blob/main/docs/api-assets.md)                    | sprite sheets, bitmap fonts, asset loading             |
+| [Input Guide](/docs/guides/input)                         | pointer, keyboard, gamepad                             |
+| [Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md)                           | test tiers, WebGPU mocks                               |
+| [Overlay Guide](https://github.com/blit386/blit386/blob/main/docs/overlay.md)                     | engine HUD subsystem, toggle, layout                   |
+| [Post-Process Effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md) | effect chain and tiers                                 |
+| [Deprecation Timeline](/docs/reference/deprecations)         | renamed configure flags and getters                    |

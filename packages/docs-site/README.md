@@ -51,11 +51,26 @@ pnpm run deploy   # wrangler deploy --config dist/server/wrangler.json --name bl
 
 ## Content
 
-Documentation lives in `content/` as MDX files. Real pages are coming soon — the scaffold includes placeholder routes
-only.
+Documentation lives in `content/` as MDX files. The public API and guide pages under `content/docs/**` are **generated**
+from the canonical engine docs in the [blit386 repository](https://github.com/blit386/blit386) (`docs/`), which remains
+the single source of truth. `scripts/sync-docs-from-engine.mjs` produces the mirror:
 
-For engine API reference, see the [blit386 repository](https://github.com/blit386/blit386/tree/main/docs). For
-interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
+```bash
+pnpm run sync:docs         # regenerate content/docs from ../blit386/docs
+pnpm run sync:docs:check   # regenerate and fail if the mirror drifted (CI)
+```
+
+Never hand-edit a generated page — edit the engine source and re-run `sync:docs`. See
+[`DOCUMENTATION_MIGRATION.md`](DOCUMENTATION_MIGRATION.md) for the full plan and source-to-URL map, and `CLAUDE.md`
+(Documentation mirror) for the conventions. Contributor-only docs (developer experience guide, voice, tooling, security
+runbook) are not mirrored and stay on GitHub in the [engine repo](https://github.com/blit386/blit386/tree/main/docs).
+For interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
+
+**Pilot scope:** only the pages listed in the script's `PAGES` are mirrored so far (currently `api/core`,
+`guides/input`, `reference/deprecations`). Links to engine docs that are mapped in `SITE_PATHS` but not yet in `PAGES`
+resolve to their GitHub source instead of a site path, so the mirror never emits a dead `/docs/...` route; each upgrades
+to a site link automatically once added to `PAGES`. Expanding coverage means adding entries to `PAGES` (and `SITE_PATHS`
+for any new doc) and re-running `sync:docs`.
 
 ## Agent policy
 

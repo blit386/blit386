@@ -50,6 +50,8 @@
     "format:check": "biome check . && prettier --check \"**/*.{md,mdx,mdc,yml,yaml}\"",
     "spellcheck": "cspell \"content/**/*.{md,mdx,mdc}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx,mdc}\" \"CLAUDE.md\" --no-progress",
     "docs:links": "node scripts/check-markdown-links.mjs",
+    "sync:docs": "node scripts/sync-docs-from-engine.mjs",
+    "sync:docs:check": "pnpm run sync:docs && git diff --exit-code -- content/docs",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "security:audit": "pnpm audit --audit-level=moderate",
