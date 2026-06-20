@@ -7,6 +7,6 @@
   ],
   "*.{json,jsonc}": ["biome format --write --no-errors-on-unmatched"],
   "*.css": ["biome format --write --no-errors-on-unmatched"],
-  "*.{md,mdx}": ["prettier --write", "cspell --no-progress --no-must-find-files"],
+  "*.{md,mdx,mdc}": ["prettier --write", "cspell --no-progress --no-must-find-files"],
   "*.{yaml,yml}": ["prettier --write"]
 }

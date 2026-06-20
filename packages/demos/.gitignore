@@ -10,7 +10,10 @@ node_modules/
 dist/
 build/
 
-# Environment variables
+# Package-manager caches
+.pnpm-store/
+
+# Local env and secrets
 .env
 .env.*
 !.env.example
@@ -53,7 +56,8 @@ ai-rules/
 !.vscode/extensions.json
 .idea/
 *.iml
-.zed/
+.zed/*
+!.zed/settings.json
 .cursor/*
 !.cursor/hooks.json
 !.cursor/hooks/
@@ -64,7 +68,7 @@ ai-rules/
 *.swo
 *~
 
-# Logs
+# Logs and scratch
 *.log
 pnpm-debug.log*
 
