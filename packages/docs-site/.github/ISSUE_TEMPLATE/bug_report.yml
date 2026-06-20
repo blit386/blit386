@@ -22,7 +22,7 @@ body:
       label: Steps to reproduce
       placeholder: |
         1. pnpm run dev
-        2. Open /test
+        2. Open /
         3. See error
     validations:
       required: true
