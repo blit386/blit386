@@ -193,6 +193,21 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
+    it('ignores keyup for keys that were not held', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        kb.endUpdate(0);
+
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyX', bubbles: true }));
+
+        expect(kb.isKeyReleased('KeyX')).toBe(false);
+
+        kb.detach();
+    });
+
     it('accumulates insertText into input string and clears on endFrame', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();

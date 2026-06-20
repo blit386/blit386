@@ -361,7 +361,10 @@ export class KeyboardInput {
     private handleKeyUp(event: KeyboardEvent): void {
         const code = event.code;
 
-        this.held.delete(code);
+        if (!this.held.delete(code)) {
+            return;
+        }
+
         this.firstPressTick.delete(code);
         this.pendingRelease.add(code);
     }
