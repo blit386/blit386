@@ -1,0 +1,30 @@
+name: Documentation
+description: Report incorrect, missing, or unclear documentation content
+title: '[docs]: '
+labels: ['documentation']
+body:
+  - type: markdown
+    attributes:
+      value: Report content issues on blit386.dev. For engine API bugs, use the blit386 repository instead.
+
+  - type: input
+    id: page
+    attributes:
+      label: Page URL or path
+      placeholder: https://blit386.dev/guide or content/guide/index.mdx
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+      placeholder: The page says X but the engine docs say Y…
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix (optional)
+      placeholder: Update the paragraph to…
