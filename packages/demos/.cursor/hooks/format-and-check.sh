@@ -88,7 +88,7 @@ case "$TARGET_FILE" in
 esac
 
 case "$TARGET_FILE" in
-*.md | *.mdx | *.yml | *.yaml)
+*.md | *.mdx | *.mdc | *.yml | *.yaml)
     (cd "$REPO_ROOT" && $RUNNER prettier --write "$TARGET_FILE" >/dev/null 2>&1) || true
     ;;
 esac
