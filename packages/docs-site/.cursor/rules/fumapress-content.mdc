@@ -1,0 +1,15 @@
+---
+description: MDX content, frontmatter, and linking conventions for Fumapress docs
+globs: content/**
+alwaysApply: false
+---
+
+# Fumapress Content
+
+- Every doc page needs frontmatter with at least `title`; add `description` for SEO and OG images.
+- Folder URLs: `content/guide/index.mdx` maps to `/guide`.
+- Optional sidebar: `meta.json` or `meta.yaml` per folder (`title`, `pages`, `root`, `icon`, …).
+- Link to [blit386 engine docs on GitHub](https://github.com/blit386/blit386/tree/main/docs) for API reference; summarize
+  here, do not copy full API tables.
+- No emoji in content or UI strings.
+- After editing links, run `pnpm run docs:links`.

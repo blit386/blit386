@@ -1,0 +1,16 @@
+---
+description: Require docs and README updates when content or site behavior changes
+globs: { content/**, src/**, press.config.tsx, source.config.ts, README.md, CLAUDE.md, .claude/skills/**/SKILL.md, .cursor/rules/*.mdc }
+alwaysApply: false
+---
+
+# Docs Sync Required
+
+- Documentation is part of the implementation, not a follow-up task.
+- When adding or changing MDX pages, update frontmatter and run `pnpm run docs:links`.
+- When site config, plugins, or routing behavior changes, update `CLAUDE.md` and `README.md` if commands or deploy flow
+  shift.
+- When linking to engine APIs, prefer [blit386 GitHub docs](https://github.com/blit386/blit386/tree/main/docs) over
+  copying tables that will drift.
+- When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and affected `.cursor/rules/*.mdc`.
+- If no docs update is needed, state why explicitly in the final response.

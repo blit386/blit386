@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "rtk hook cursor",
+        "matcher": "Shell"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "sh .cursor/hooks/format-and-check.sh",
+        "matcher": "Write|TabWrite",
+        "timeout": 30
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "sh .cursor/hooks/shell-safety.sh",
+        "timeout": 10,
+        "failClosed": true
+      }
+    ]
+  }
+}

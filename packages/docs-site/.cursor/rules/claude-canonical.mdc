@@ -1,0 +1,11 @@
+---
+description: Use blit386-dev-fumapress CLAUDE.md as canonical repo rules
+alwaysApply: true
+---
+
+# CLAUDE Is Canonical
+
+- Treat `CLAUDE.md` at the repository root as canonical for work in this repo.
+- Follow its Fumapress/Waku architecture, content conventions, and command set.
+- Engine API truth lives in sibling repo `blit386` — link to GitHub docs, do not duplicate stale API tables here.
+- Use repo commands exactly as documented in `CLAUDE.md` (`pnpm run preflight`, not bare `pnpm preflight`).
