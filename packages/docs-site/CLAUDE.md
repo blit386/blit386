@@ -81,10 +81,10 @@ pnpm run deploy           # Deploy to Cloudflare (requires build + wrangler auth
 
 ## Toolchain
 
-| File types                     | Tool     |
-| ------------------------------ | -------- |
-| `.ts`, `.tsx`, `.json`, `.css` | Biome    |
-| `.md`, `.mdx`, `.yml`, `.yaml` | Prettier |
+| File types                             | Tool     |
+| -------------------------------------- | -------- |
+| `.ts`, `.tsx`, `.json`, `.css`         | Biome    |
+| `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier |
 
 No ESLint in this repo (Biome-only, like create-blit386).
 

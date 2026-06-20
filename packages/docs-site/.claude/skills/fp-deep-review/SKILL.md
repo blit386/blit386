@@ -17,4 +17,6 @@ description: Pre-push review with preflight and security audit. Use before mergi
 2. Run `pnpm run security:audit`
 3. Summarize: content changes, config/deploy impact, link integrity, ready for PR
 
+## Notes
+
 No MCP security preflight in this repo (unlike blit386 engine).

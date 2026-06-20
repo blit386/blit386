@@ -38,12 +38,12 @@ if [ -z "$COMMAND_TEXT" ]; then
     exit 0
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+clean[[:space:]]+-[^[:cntrl:]]*f|git[[:space:]]+checkout[[:space:]]+--'; then
+if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[^[:cntrl:]]*[[:space:]]reset[^[:cntrl:]]*--hard|git[^[:cntrl:]]*[[:space:]]clean[^[:cntrl:]]*-[^[:cntrl:]]*f|git[^[:cntrl:]]*[[:space:]]checkout[^[:cntrl:]]*--'; then
     printf '{"permission":"deny","user_message":"Blocked risky destructive git command.","agent_message":"Use safer git operations or ask for explicit approval."}\n'
     exit 0
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+push[^[:cntrl:]]*--force|git[[:space:]]+push[^[:cntrl:]]*-f'; then
+if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[^[:cntrl:]]*[[:space:]]push[^[:cntrl:]]*--force|git[^[:cntrl:]]*[[:space:]]push[^[:cntrl:]]*-f'; then
     printf '{"permission":"ask","user_message":"Force push detected. Confirm before continuing.","agent_message":"Potential history rewrite command requires confirmation."}\n'
     exit 0
 fi
