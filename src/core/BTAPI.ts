@@ -310,6 +310,12 @@ export class BTAPI {
                 this.demo?.update();
                 this.pendingUpdateMs += Math.max(0, performance.now() - updateStartMs);
                 this.pendingUpdateSteps++;
+
+                const tick = this.loop?.getTicks() ?? 0;
+
+                // Keyboard edges and text buffer align with fixed update rate, not display
+                // refresh rate (render may run 2x update on 120 Hz / 60 FPS setups).
+                this.keyboard?.endUpdate(tick);
             },
             () => {
                 const frameStartMs = performance.now();
@@ -361,7 +367,6 @@ export class BTAPI {
 
                 const tick = this.loop?.getTicks() ?? 0;
 
-                this.keyboard?.endFrame(tick);
                 this.gamepad?.endFrame(tick);
 
                 this.overlayTiming.frameMs = Math.max(0, performance.now() - frameStartMs);

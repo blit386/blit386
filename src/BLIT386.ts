@@ -1370,11 +1370,11 @@ export const BT = {
     },
 
     /**
-     * Text accumulated since the last end-of-frame flush from filtered `beforeinput`
-     * (and Tab / Escape where `beforeinput` is unreliable). Read during `update()` /
-     * `render()`; the buffer clears after each frame.
+     * Text accumulated since the last fixed-update flush from filtered `beforeinput`
+     * (and Tab / Escape where `beforeinput` is unreliable). Read during `update()`;
+     * the buffer clears at the end of each fixed update step.
      *
-     * @returns Characters typed since the last frame flush.
+     * @returns Characters typed since the last fixed-update flush.
      */
     get inputString(): string {
         return BTAPI.instance.getKeyboard()?.getInputString() ?? '';

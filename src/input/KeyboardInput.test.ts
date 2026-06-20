@@ -148,6 +148,66 @@ describe('KeyboardInput', () => {
         kb.detach();
     });
 
+    it('buffers press and release edges across render-only gaps', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        kb.endUpdate(0);
+
+        canvas.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', bubbles: true }));
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyJ', bubbles: true }));
+
+        expect(kb.isKeyPressed('KeyJ', undefined, 0)).toBe(true);
+        expect(kb.isKeyReleased('KeyJ')).toBe(true);
+
+        kb.endUpdate(1);
+
+        expect(kb.isKeyPressed('KeyJ', undefined, 1)).toBe(false);
+        expect(kb.isKeyReleased('KeyJ')).toBe(false);
+
+        kb.detach();
+    });
+
+    it('retains inputString until endUpdate', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        canvas.dispatchEvent(
+            new InputEvent('beforeinput', {
+                inputType: 'insertText',
+                data: 'z',
+                bubbles: true,
+            }),
+        );
+
+        expect(kb.getInputString()).toBe('z');
+
+        kb.endUpdate(0);
+
+        expect(kb.getInputString()).toBe('');
+
+        kb.detach();
+    });
+
+    it('ignores keyup for keys that were not held', () => {
+        const canvas = createCanvas();
+        const kb = new KeyboardInput();
+
+        kb.attach(canvas, { getTicks: () => tick });
+
+        kb.endUpdate(0);
+
+        canvas.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyX', bubbles: true }));
+
+        expect(kb.isKeyReleased('KeyX')).toBe(false);
+
+        kb.detach();
+    });
+
     it('accumulates insertText into input string and clears on endFrame', () => {
         const canvas = createCanvas();
         const kb = new KeyboardInput();
