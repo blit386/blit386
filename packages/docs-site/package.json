@@ -46,9 +46,9 @@
     "types:check": "pnpm run typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
-    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
-    "spellcheck": "cspell \"content/**/*.{md,mdx}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx}\" \"CLAUDE.md\" --no-progress",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,mdc,yml,yaml}\"",
+    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,mdc,yml,yaml}\"",
+    "spellcheck": "cspell \"content/**/*.{md,mdx,mdc}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx,mdc}\" \"CLAUDE.md\" --no-progress",
     "docs:links": "node scripts/check-markdown-links.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix",
@@ -62,10 +62,10 @@
     "*.{ts,tsx,js,json,jsonc,css}": [
       "biome check --write"
     ],
-    "*.{md,mdx,yml,yaml}": [
+    "*.{md,mdx,mdc,yml,yaml}": [
       "prettier --write"
     ],
-    "*.{ts,tsx,md,mdx}": [
+    "*.{ts,tsx,md,mdx,mdc}": [
       "cspell --no-progress --no-must-find-files"
     ]
   },
