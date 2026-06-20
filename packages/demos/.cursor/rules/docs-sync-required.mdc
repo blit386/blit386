@@ -1,6 +1,6 @@
 ---
 description: Require docs updates for demo behavior and workflow changes
-globs: {src/**/*.js,docs/**/*.md,README.md,CLAUDE.md}
+globs: { src/**/*.js, docs/**/*.md, README.md, CLAUDE.md }
 alwaysApply: false
 ---
 

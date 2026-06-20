@@ -9,10 +9,10 @@ Demos call the library through `BT` and `configure()` — use the **same public 
 
 Canonical references (read before adding or renaming API usage):
 
-- [blit386/CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) — **Boolean naming**, **BT API:
-  getters vs methods**, **Input conventions**
-- [blit386/docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md) —
-  full three-tier boolean table
+- [blit386/CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) — **Boolean naming**, **BT API: getters vs
+  methods**, **Input conventions**
+- [blit386/docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md)
+  — full three-tier boolean table
 - [blit386/docs/input.md](https://github.com/blit386/blit386/blob/main/docs/input.md) — input examples
 
 ## Configure flags (Tier B)
