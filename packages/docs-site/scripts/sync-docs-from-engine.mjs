@@ -102,8 +102,24 @@ const PAGES = [
         description: 'The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion.',
     },
     {
+        source: 'performance-best-practices.md',
+        description: 'When and how to optimize demos: object allocation, batching, and hot-path guidance.',
+    },
+    {
+        source: 'performance-testing.md',
+        description: 'CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate.',
+    },
+    {
+        source: 'software-fallback-smoke-matrix.md',
+        description: 'Manual smoke-test checklist for the Canvas 2D software renderer.',
+    },
+    {
         source: 'deprecations.md',
         description: 'Central tracker for public API compatibility aliases and planned removals.',
+    },
+    {
+        source: 'testing.md',
+        description: 'Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks.',
     },
 ];
 
@@ -171,13 +187,23 @@ const rewriteTarget = (target, sourceRepoDir) => {
 };
 
 /**
+ * Escape characters that MDX would otherwise parse as JSX or expressions. The
+ * mirror is plain prose plus code, never intentional JSX, so a bare `<` (for
+ * example `<50`) or `{` in text must render literally. Applied only to text
+ * outside inline code and fenced blocks.
+ */
+const escapeMdxText = (text) => text.replaceAll('<', '&lt;').replaceAll('{', '&#123;').replaceAll('}', '&#125;');
+
+/**
  * Transform body lines outside fenced code blocks: strip HTML comments (MDX
  * does not support them, and source comments such as cspell directives are
- * meaningless in the mirror) and rewrite Markdown links. Fenced code is left
- * untouched so example snippets keep their literal content.
+ * meaningless in the mirror), rewrite Markdown links, and escape MDX-hostile
+ * characters in prose. Fenced blocks and inline code spans are left untouched
+ * so example snippets keep their literal content.
  */
 const transformBody = (markdown, sourceRepoDir) => {
     const linkPattern = /(\[[^\]]*\])\(([^)]+)\)/gu;
+    const inlineCodePattern = /(`[^`]*`)/u;
     let isInFence = false;
     let isInHtmlComment = false;
 
@@ -226,10 +252,23 @@ const transformBody = (markdown, sourceRepoDir) => {
             return line;
         }
 
-        return stripComments(line).replace(
-            linkPattern,
-            (_match, label, target) => `${label}(${rewriteTarget(target, sourceRepoDir)})`,
-        );
+        // Split on inline code spans (odd indices) so links and escaping apply
+        // only to prose, leaving `code` spans such as `texture_2d<u32>` intact.
+        return stripComments(line)
+            .split(inlineCodePattern)
+            .map((segment, index) => {
+                if (index % 2 === 1) {
+                    return segment;
+                }
+
+                const linked = segment.replace(
+                    linkPattern,
+                    (_match, label, target) => `${label}(${rewriteTarget(target, sourceRepoDir)})`,
+                );
+
+                return escapeMdxText(linked);
+            })
+            .join('');
     });
 
     return lines.join('\n');

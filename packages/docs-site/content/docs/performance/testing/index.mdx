@@ -1,0 +1,253 @@
+---
+# Generated from blit386/docs/performance-testing.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Performance Testing"
+description: "CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate."
+---
+
+BLIT386 has CPU micro-benchmarks for hot methods. This guide explains when to use them, how to add a new benchmark, and
+how CI uses the results.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [CPU Benchmarks](#cpu-benchmarks)
+- [Adding a New CPU Benchmark](#adding-a-new-cpu-benchmark)
+- [Commands](#commands)
+- [CI Benchmark Workflow](#ci-benchmark-workflow)
+- [Recommended Workflow for New Performance Work](#recommended-workflow-for-new-performance-work)
+
+---
+
+## Overview
+
+BLIT386 uses Vitest bench for CPU micro-benchmarks. These measure isolated methods, hot loops, cache lookups, math
+helpers, and allocation patterns.
+
+For visual correctness (not performance), use the visual regression tests: `pnpm run test:visual`. They run Playwright
+with Chromium + WebGPU and produce PNG snapshots. See [Testing](/docs/reference/testing) for details.
+
+### When to Use CPU Benchmarks
+
+Use CPU benchmarks when you want to measure a single method, hot loop, cache lookup, math helper, allocation pattern, or
+batching helper in isolation.
+
+Examples:
+
+- `Vector2i.add()` vs `Vector2i.addInPlace()`
+- `Color32.toFloat32Array()` vs `Color32.writeToFloat32Array()`
+- `BitmapFont.measureText()` cold vs warm cache
+- `Rect2i.isContainingXY()` vs `Rect2i.isContaining()`
+
+---
+
+## CPU Benchmarks
+
+CPU benchmarks are implemented with Vitest bench and colocated next to the source as `*.bench.ts` files.
+
+Current benchmark files:
+
+- `src/utils/Vector2i.bench.ts`
+- `src/utils/Color32.bench.ts`
+- `src/utils/Rect2i.bench.ts`
+- `src/assets/BitmapFont.bench.ts`
+- `src/assets/PaletteEffect.bench.ts`
+- `src/assets/SpriteSheet.bench.ts`
+- `src/assets/SystemFont.bench.ts`
+- `src/overlay/palette/PaletteView.bench.ts`
+
+### Overlay palette grid
+
+These benchmarks guard perf follow-ups for the live palette swatch grid:
+
+| File                   | Cases                                                         |
+| ---------------------- | ------------------------------------------------------------- |
+| `SpriteSheet.bench.ts` | `markPaletteIndicesInRect` on 8x8 glyph vs 64x64 sprite rects |
+| `PaletteView.bench.ts` | Palette grid `draw()` for 16 vs 256 slots                     |
+
+They run in the same Vitest bench suite as the rest of the repo and are included in `benchmark-results.json` for CI. No
+separate registration step is required; the next successful `main` push refreshes the baseline artifact with these
+entries.
+
+### Metrics
+
+CPU benchmarks report **ops/sec**. Higher numbers are better.
+
+If one benchmark shows:
+
+- `20,000,000 ops/sec`
+
+and another shows:
+
+- `10,000,000 ops/sec`
+
+the first one is roughly twice as fast.
+
+### Why This Is the Default Choice
+
+CPU benchmarks are:
+
+- faster to run locally
+- easier to write
+- easier to reason about
+- already integrated into CI regression checks when the PR is labeled `perf`
+
+If you add a new hot method and want immediate automated regression protection, this is the first tool to use.
+
+---
+
+## Adding a New CPU Benchmark
+
+If you add a new method and it can run without a browser, start here.
+
+### File Location
+
+Create or extend a `*.bench.ts` file near the code being measured.
+
+Examples:
+
+```text
+src/utils/MyType.bench.ts
+src/render/SpritePipeline.bench.ts
+```
+
+### Basic Structure
+
+```ts
+import { bench, describe } from 'vitest';
+
+import { MyType } from './MyType';
+
+describe('MyType hot paths', () => {
+  const instance = new MyType();
+
+  bench('newMethod()', () => {
+    instance.newMethod();
+  });
+
+  bench('oldMethod()', () => {
+    instance.oldMethod();
+  });
+});
+```
+
+### What to Compare
+
+Good benchmark comparisons usually measure one meaningful tradeoff:
+
+- new method vs previous method
+- allocating vs in-place
+- small input vs large input
+- cold cache vs warm cache
+- vector argument vs raw `x, y` argument
+
+### Benchmark Design Rules
+
+- keep the benchmark focused on one hot behavior
+- use realistic inputs, not absurd synthetic values unless stress testing is intentional
+- compare alternatives in the same file so the relative result is obvious
+- prefer stable setup outside the `bench(...)` callback
+- if mutation is involved, reset state inside the benchmark or in setup so each iteration is valid
+
+### Run CPU Benchmarks
+
+```bash
+pnpm run bench
+pnpm run bench:json
+```
+
+`pnpm run bench` gives the terminal report.
+
+`pnpm run bench:json` writes `benchmark-results.json`, which is what CI uses.
+
+---
+
+## Commands
+
+```bash
+pnpm run bench       # Run all CPU benchmarks
+pnpm run bench:json  # Run benchmarks and write benchmark-results.json
+```
+
+### Which Command Should I Use?
+
+- **New hot method:** `pnpm run bench`
+- **Need machine-readable result for comparison:** `pnpm run bench:json`
+
+---
+
+## CI Benchmark Workflow
+
+CPU benchmark regression detection is wired into GitHub Actions.
+
+### What Happens on `main`
+
+On pushes to `main`, CI:
+
+1. runs `pnpm run bench:json`
+2. produces `benchmark-results.json`
+3. uploads that file as the latest benchmark baseline artifact
+
+That artifact becomes the reference point for future pull requests.
+
+### What Happens on a Pull Request
+
+On PRs targeting `main` with the `perf` label, CI:
+
+1. runs the normal `quality` job first
+2. runs the `benchmark` job
+3. runs `pnpm run bench:json`
+4. downloads the latest successful `main` benchmark baseline artifact
+5. compares PR results against the `main` baseline
+6. posts or updates a PR comment with a benchmark comparison table
+7. fails the job if any benchmark is more than **25% slower**
+
+PRs without the `perf` label skip the benchmark job to reduce CI cost.
+
+### What the PR Comment Contains
+
+The comparison comment includes:
+
+- benchmark name
+- baseline ops/sec
+- current ops/sec
+- delta percent
+- pass/fail status
+
+### What Counts as Failure
+
+The benchmark CI job fails if:
+
+- any benchmark regresses by more than 25%
+- a previously existing benchmark disappears from the PR run
+
+---
+
+## Recommended Workflow for New Performance Work
+
+If you add a new sprite operation, follow this order:
+
+1. **Write the code clearly first.**
+2. **Add a CPU benchmark** if the method can run in Node.
+3. **Run `pnpm run bench` locally** to compare the new method against the old behavior or an alternative implementation.
+4. **Run `pnpm run bench:json`** if you want to inspect the machine-readable output used by CI.
+5. **Open a PR** and add the `perf` label for CPU benchmark comparison.
+
+For overlay palette usage or grid draw changes, include steps 2-5 so `SpriteSheet.bench.ts` and `PaletteView.bench.ts`
+are compared against `main`.
+
+### Best Default
+
+If you are unsure where to start:
+
+- use **CPU benchmarking** with Vitest bench
+
+It is simple, fast, and already supported by the label-gated benchmark CI.
+
+## See Also
+
+| Guide                                                       | What it covers                           |
+| ----------------------------------------------------------- | ---------------------------------------- |
+| [Testing](/docs/reference/testing)                                       | unit, integration, and visual test tiers |
+| [Performance Best Practices](/docs/performance/best-practices) | when and how to optimize hot paths       |
+| [Developer Experience](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md)       | `pnpm run bench` and CI workflow         |

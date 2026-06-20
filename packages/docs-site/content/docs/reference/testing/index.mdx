@@ -1,0 +1,320 @@
+---
+# Generated from blit386/docs/testing.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Testing"
+description: "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
+---
+
+BLIT386 uses three primary testing tiers (unit, integration, visual) plus a benchmark tier for CPU performance
+regression tracking.
+
+## Architecture
+
+### Tier 1: Unit Tests (Vitest, Node.js)
+
+Pure logic with no GPU dependencies. Tests run in Node.js for maximum speed. The list below is **illustrative** — see
+`src/**/*.test.ts` for the full set (~60+ files).
+
+- **Vector2i** - all arithmetic, distance, comparison, factory methods
+- **Rect2i** - intersection, containment, computed properties
+- **Color32** - color math, conversions, blending
+- **Palette** - construction, set/get, named aliases, serialization, GPU float layout, preset factories
+- **PaletteEffect** - manager lifecycle, CycleEffect rotation, FadeEffect/FadeRangeEffect lerp, FlashEffect, paletteSwap
+- **Easing** - boundary values, monotonicity, midpoint checks for all easing curves
+- **GameLoop** - constructor validation, tick counter
+- **IBTDemo** - `defaultConfig()` and optional `configure()`
+
+### Tier 2: Integration Tests (Vitest, Node + GPU mocks)
+
+Code that requires WebGPU objects or DOM APIs. Most tests run in Node with `src/__test__/webgpu-mock.ts` for GPU stubs
+and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, BootstrapHelpers) opt into `happy-dom` via the
+`// @vitest-environment happy-dom` directive. Inventory is **illustrative** — not exhaustive.
+
+- **AssetLoader** - image caching and deduplication (Node + vi stubs for `Image`)
+- **SpriteSheet** - UV calculation, lazy texture creation, indexization, `loadIndexed()` convenience flow, and
+  `getIndexedPixels()` defensive-copy semantics (Node + GPU mocks)
+- **BitmapFont** - glyph lookup, text measurement (Node + vi stubs)
+- **BootstrapHelpers** - WebGPU support detection, canvas lookup (happy-dom)
+- **Bootstrap** - full bootstrap lifecycle, including `?backend=software` WebGPU-skip path (happy-dom)
+- **WebGPURenderer** - frame lifecycle, camera, pipeline delegation (Node + GPU mocks)
+- **SoftwareRenderer** - frame lifecycle, palette enforcement, camera offsets, indexed sprite blits, bitmap text,
+  `captureFrame()` semantics, and unsupported-effects assertions (Node + 2D canvas mocks)
+- **PrimitivePipeline** - vertex buffer math, line algorithm (Node + GPU mocks)
+- **SpritePipeline** - texture batching, UV coordinates (Node + GPU mocks)
+- **WebGPUContext** - initialization with mock adapter/device (Node + GPU mocks)
+- **BTAPI** - singleton coordinator; lazy-loads `WebGPURenderer` after WebGPU init succeeds; includes software-mode
+  init, `?backend=software` URL override, `BT.requestedBackend` vs `BT.activeBackend` after WebGPU fallback,
+  `captureFrame()` in software mode, and overlay render path (Node + GPU mocks + 2D canvas mocks)
+- **Overlay** - colocated tests under `src/overlay/*.test.ts`: label parsing, layout helpers, `layoutPlan` golden Y
+  positions for 320x240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
+  `PaletteView.computeGrid` width/size matrix, `PaletteInteraction` hit-test/scroll/tooltip helpers,
+  `RenderPaletteUsage` mask helpers (`markIndexUsed`, `collectUsedIndices`), toggle hit-testing, and `updateAndRender`
+  integration (Node)
+- **FrameCapture** - GPU readback, PNG conversion (Node + GPU mocks + browser stubs)
+- **consumer-doc-imports** - `src/docs/consumer-doc-imports.test.ts` guards README/docs import paths against
+  `BLIT386.ts` exports
+
+### Tier 3: Visual Regression (Playwright, Chromium)
+
+Actual GPU rendering verified via screenshot comparison. Requires Chrome with WebGPU flags enabled.
+
+Most specs cover both the default WebGPU backend and the `?backend=software` software backend, producing separate
+baseline screenshots for each. **`post-process.spec.ts` is WebGPU-only** (software backend throws on effects).
+
+- **Primitives** - pixel, line, and rectangle rendering (WebGPU + software)
+- **Sprites** - palette-indexed sprite rendering, palette offsets, batching
+- **Camera** - camera offset transforms applied to all geometry
+- **Fonts** - placeholder text rendering at known positions
+- **Mixed** - primitives and sprites combined with correct layering
+- **Post-process** - baseline scene, pixel/display-tier effects, CRT preset stacks, upscale filters
+
+### Tier 4: CPU Benchmarks (Vitest bench)
+
+Hot-path performance checks for methods and allocation patterns. Benchmarks are tracked in CI benchmark jobs and
+documented in [Performance Testing](/docs/performance/testing).
+
+## Declaration tooling checks
+
+Public types are rolled up during `pnpm run build` via `vite-plugin-dts` and API Extractor. The workspace pins
+TypeScript to the same version API Extractor bundles (see [Developer Experience](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md)).
+
+- **`pnpm run test:declarations`** - Node test runner for `scripts/check-declaration-tooling.mjs` (drift patterns,
+  required `BT` getters in rolled-up `.d.ts`, and alignment log parsing). Included in `pnpm run preflight`.
+- **CI** - after `pnpm run build`, `node scripts/check-declaration-tooling.mjs build.log` runs in both
+  `.github/workflows/ci.yml` (build-library job) and `.github/workflows/pr-checks.yml` (bundle-size job) to fail on
+  drift warnings and version mismatch.
+- **Manual** - `pnpm run build 2>&1 | tee build.log && node scripts/check-declaration-tooling.mjs build.log`
+
+## Commands
+
+```bash
+pnpm run test                # Run all unit tests (alias for test:unit)
+pnpm run test:unit           # Run all unit tests
+pnpm run test:unit:watch     # Watch mode for development
+pnpm run test:unit:coverage  # Coverage report (80% minimum threshold)
+pnpm run test:declarations   # Declaration tooling log checker (Node test)
+pnpm run test:visual            # Playwright visual regression (requires Chrome)
+pnpm run test:visual:update     # Update visual test baselines
+pnpm run test:visual:coverage   # Visual tests with Istanbul coverage report
+pnpm run bench                  # Run CPU benchmarks (Vitest bench)
+pnpm run bench:json             # Run CPU benchmarks and write benchmark-results.json
+```
+
+## Test File Location
+
+Tests are colocated next to their source files:
+
+```text
+src/utils/Vector2i.ts       # Source
+src/utils/Vector2i.test.ts  # Test
+```
+
+Visual regression tests live in a separate directory:
+
+```text
+tests/visual/
+  fixtures/              # HTML pages and Vite config
+  __snapshots__/         # Git-tracked reference screenshots
+  coverage-fixture.ts    # Playwright fixture for Istanbul coverage
+  primitives.spec.ts     # Primitive rendering visual test
+  sprites.spec.ts        # Sprite rendering visual test
+  camera.spec.ts         # Camera transform visual test
+  fonts.spec.ts          # Text rendering visual test
+  mixed.spec.ts          # Combined rendering visual test
+  post-process.spec.ts   # Post-process effect chain visual test
+```
+
+## Writing a New Test
+
+```ts
+import { describe, expect, it } from 'vitest';
+
+import { MyClass } from './MyClass';
+
+describe('MyClass', () => {
+  describe('myMethod', () => {
+    it('should do something', () => {
+      const instance = new MyClass();
+      expect(instance.myMethod()).toBe(expected);
+    });
+  });
+});
+```
+
+Conventions:
+
+- Use `describe`/`it` (not `test`)
+- Follow source code style (4-space indent, single quotes, semicolons)
+- No emoji in test descriptions
+- No JSDoc required in test files
+
+## Palette Testing Patterns
+
+Use these patterns when adding or reviewing palette-related features:
+
+- **Slot-zero invariants**: assert slot `0` remains transparent and draw paths treat it as discarded/clear.
+- **Preset correctness**: verify preset factories (`Palette.vga`, `cga`, `c64`, `gameboy`, `pico8`, `nes`) and
+  `palette.applyHUD()` produce expected hex values at known slots.
+- **Effect determinism**: for `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFlash`, and `paletteSwap`,
+  assert both mid-effect and completion states under fixed timestep progression.
+- **Dirty flag contract**: assert `set()` / `copyFrom()` / effect updates mark palettes dirty and renderer upload paths
+  clear the flag after upload.
+- **Offset rendering behavior**: add visual assertions that `BT.drawSprite(..., paletteOffset)` remaps the same indexed
+  sprite data to different slot ranges without duplicating textures.
+- **Layout-swap safety**: after swapping to a different index layout, assert `BT.spritesRefresh()` re-indexes tracked
+  sheets and catches missing-color cases.
+
+## WebGPU Mock Usage
+
+For tests that need GPU objects, import from the mock factory:
+
+```ts
+import { createMockGPUDevice, createMockGPUTexture } from '../__test__/webgpu-mock';
+
+const device = createMockGPUDevice();
+const texture = createMockGPUTexture(256, 256);
+```
+
+Available mocks:
+
+- `createMockGPUDevice()` - returns a stub GPUDevice
+- `createMockGPUTexture(width, height)` - returns a stub GPUTexture
+- `createMockGPUCanvasContext()` - returns a stub GPUCanvasContext
+- `createMockRenderPassEncoder()` - returns a stub GPURenderPassEncoder
+- `createMockPaletteBuffer()` - returns a 4096-byte stub GPUBuffer for palette uniform tests
+- `installMockNavigatorGPU()` / `uninstallMockNavigatorGPU()` - install/remove global navigator.gpu
+
+For software-renderer tests that need a Canvas 2D context, use the `makeMock2DCanvas()` helper defined in
+`src/core/BTAPI.test.ts`. It returns an `HTMLCanvasElement` stub whose `getContext('2d')` yields a minimal
+`CanvasRenderingContext2D` mock (with `createImageData`, `putImageData`, `drawImage`, and `toBlob` stubs).
+
+`src/__test__/setup.ts` also installs a global `OffscreenCanvas` stub in Node.js (returns zero-filled pixel data from
+`getImageData`). This is needed by `SpriteSheet.indexize()` tests that run outside a browser environment.
+
+## Coverage
+
+Minimum thresholds enforced in `vitest.config.ts`:
+
+- Statements: 80%
+- Branches: 80%
+- Functions: 80%
+- Lines: 80%
+
+Run `pnpm run test:unit:coverage` to check. Coverage reports are generated in `coverage/`.
+
+### Visual Test Coverage
+
+Visual test coverage uses Istanbul instrumentation via `vite-plugin-istanbul`. It is separate from unit test coverage
+(different provider: Istanbul vs V8) and generates reports in `coverage-visual/`.
+
+```bash
+pnpm run test:visual:coverage  # Runs visual tests with instrumented code, then generates lcov report
+```
+
+Coverage is collected via a custom Playwright fixture (`tests/visual/coverage-fixture.ts`) that captures
+`window.__coverage__` from each page after tests complete. The `VISUAL_COVERAGE=1` env var activates instrumentation.
+
+## Visual Test Workflow
+
+1. Create a fixture HTML page in `tests/visual/fixtures/`
+2. Write a Playwright spec in `tests/visual/`
+3. Run `pnpm run test:visual` to generate baseline screenshots
+4. Screenshots are committed to `tests/visual/__snapshots__/`
+5. After intentional rendering changes, run `pnpm run test:visual:update`
+
+## IDE Setup
+
+### Cursor / VS Code
+
+Install the recommended extensions (prompted on first open):
+
+- **Vitest** (`vitest.explorer`) - inline test running, debugging, coverage gutter
+- **Playwright** (`ms-playwright.playwright`) - visual test runner
+
+### WebStorm
+
+Built-in Vitest support since 2023.3. Auto-detects `vitest.config.ts` and shows run gutters next to each test.
+
+### Zed
+
+Use the Tasks system. Create `.zed/tasks.json`:
+
+```json
+[
+  {
+    "label": "Test: Run All",
+    "command": "pnpm run test",
+    "cwd": "$ZED_WORKTREE_ROOT"
+  },
+  {
+    "label": "Test: Current File",
+    "command": "pnpm exec vitest run $ZED_FILE",
+    "cwd": "$ZED_WORKTREE_ROOT"
+  }
+]
+```
+
+## CI Integration
+
+GitHub Actions runs unit tests and quality gates in CI. Visual regression is local-only today (see below).
+
+### `ci.yml` (`CI` workflow)
+
+Triggers on push to `main` and on pull requests targeting `main`. `labeled` / `unlabeled` PR events skip the `quality`,
+`build-library`, and `test` jobs unless the added label is `perf` (which enables the benchmark job).
+
+| Job              | What it runs                                                                                       |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| `quality`        | `format:check`, `lint`, `typecheck`, `spellcheck`, **`docs:links`**                                |
+| `build-library`  | `pnpm run build`, declaration tooling check, uploads `dist/` artifact                              |
+| `test`           | `pnpm run test:unit:coverage`, Codecov upload                                                      |
+| `security-audit` | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate)                 |
+| `benchmark`      | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold) |
+
+On pull requests, **`ci.yml` and `pr-checks.yml` overlap** on format/lint/typecheck/spellcheck/docs:links; `pr-checks`
+adds knip and bundle-size gates.
+
+### `pr-checks.yml` (`PR Checks` workflow)
+
+Runs only on pull requests to `main`. Complements `ci.yml` with commit linting, bundle size limits, knip, and doc link
+checks. It does **not** run unit or visual tests. There is **no separate `docs-links` job** — link checking runs inside
+the `quality` job.
+
+| Job           | What it runs                                                              |
+| ------------- | ------------------------------------------------------------------------- |
+| `quality`     | `format:check`, `lint`, `typecheck`, `spellcheck`, **`docs:links`**, knip |
+| `commitlint`  | Conventional Commits validation for PR commits                            |
+| `bundle-size` | `pnpm run build`, declaration tooling check, gzipped ESM size gate        |
+
+### Visual regression (not in CI)
+
+`pnpm run test:visual` requires Chrome with WebGPU and is **not** executed in GitHub Actions. Run it locally before
+merging renderer, palette, or post-process changes; use `pnpm run test:visual:update` when baselines change
+intentionally. `pnpm run preflight` does not include visual tests.
+
+### Known quirks
+
+See also [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) (**Known Testing Quirks**):
+
+- **`// @vitest-environment happy-dom`** — required at the top of test files that touch DOM APIs without GPU mocks.
+- **AssetLoader** — tests stub `Image` with `vi`; do not rely on happy-dom data-URI `onload` behavior.
+- **`Vector2i -0` vs `0`** — use `result.x + 0` in assertions when sign is meaningless.
+- **`docs:links` scope** — `scripts/check-markdown-links.mjs` walks all repo-root `*.md` / `*.mdx` files (excluding
+  ignored dirs), not only `docs/` and README.
+
+---
+
+## See Also
+
+| Guide                                                               | What it covers                             |
+| ------------------------------------------------------------------- | ------------------------------------------ |
+| [API: Palette](/docs/api/palette)                                      | palette APIs and effect signatures         |
+| [Palette Guide](/docs/guides/palette)                                   | palette-first workflow and refresh rules   |
+| [Palette Presets](/docs/guides/palette-presets)                               | exact built-in preset and HUD color values |
+| [API: Assets](/docs/api/assets)                                        | indexed sprite setup and palette offsets   |
+| [API: Core](/docs/api/core)                                            | backend, overlay, and bootstrap tests      |
+| [Overlay Guide](/docs/guides/overlay)                                         | overlay integration test inventory         |
+| [Post-Process Effects](/docs/guides/post-process-effects)                     | visual regression for the effect chain     |
+| [Tooling](https://github.com/blit386/blit386/blob/main/docs/tooling.md)                                               | declaration tooling checks                 |
+| [Performance Testing](/docs/performance/testing)                       | CPU benchmarks (test tier 4)               |
+| [Software Fallback Smoke Matrix](/docs/performance/smoke-matrix) | manual software backend matrix             |
