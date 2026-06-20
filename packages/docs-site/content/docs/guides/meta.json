@@ -1,6 +1,11 @@
 {
   "title": "Guides",
   "pages": [
-    "input"
+    "input",
+    "palette",
+    "palette-presets",
+    "overlay",
+    "post-process-effects",
+    "bitmap-fonts"
   ]
 }

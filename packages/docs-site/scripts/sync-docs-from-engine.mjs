@@ -82,6 +82,26 @@ const PAGES = [
         description: 'Pointer, keyboard, gamepad, and text-accumulation input in BLIT386.',
     },
     {
+        source: 'palette-guide.md',
+        description: 'The palette-first rendering workflow: setup, slot offsets, and palette effects.',
+    },
+    {
+        source: 'palette-presets.md',
+        description: 'Exact color data for the built-in Palette presets and the HUD preset.',
+    },
+    {
+        source: 'overlay.md',
+        description: 'The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout.',
+    },
+    {
+        source: 'post-process-effects.md',
+        description: 'The two-tier post-process effect system, built-in effects, and CRT presets.',
+    },
+    {
+        source: 'bitmap-fonts.md',
+        description: 'The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion.',
+    },
+    {
         source: 'deprecations.md',
         description: 'Central tracker for public API compatibility aliases and planned removals.',
     },
@@ -150,10 +170,50 @@ const rewriteTarget = (target, sourceRepoDir) => {
     return `${GITHUB_BASE}/${kind}/main/${repoRelative}${fragment}`;
 };
 
-/** Rewrite every Markdown link on lines outside fenced code blocks. */
-const rewriteLinks = (markdown, sourceRepoDir) => {
+/**
+ * Transform body lines outside fenced code blocks: strip HTML comments (MDX
+ * does not support them, and source comments such as cspell directives are
+ * meaningless in the mirror) and rewrite Markdown links. Fenced code is left
+ * untouched so example snippets keep their literal content.
+ */
+const transformBody = (markdown, sourceRepoDir) => {
     const linkPattern = /(\[[^\]]*\])\(([^)]+)\)/gu;
     let isInFence = false;
+    let isInHtmlComment = false;
+
+    // Remove HTML comments by consuming `<!--` ... `-->` delimiters, tracking
+    // open state across lines so multi-line comments are fully stripped. Walking
+    // the delimiters (rather than a single regex replace) leaves no partial
+    // `<!--` / `-->` behind.
+    const stripComments = (line) => {
+        let result = '';
+        let rest = line;
+
+        while (rest.length > 0) {
+            if (isInHtmlComment) {
+                const end = rest.indexOf('-->');
+
+                if (end === -1) {
+                    return result;
+                }
+
+                rest = rest.slice(end + 3);
+                isInHtmlComment = false;
+            } else {
+                const start = rest.indexOf('<!--');
+
+                if (start === -1) {
+                    return result + rest;
+                }
+
+                result += rest.slice(0, start);
+                rest = rest.slice(start + 4);
+                isInHtmlComment = true;
+            }
+        }
+
+        return result;
+    };
 
     const lines = markdown.split('\n').map((line) => {
         if (/^\s*```/u.test(line)) {
@@ -166,7 +226,7 @@ const rewriteLinks = (markdown, sourceRepoDir) => {
             return line;
         }
 
-        return line.replace(
+        return stripComments(line).replace(
             linkPattern,
             (_match, label, target) => `${label}(${rewriteTarget(target, sourceRepoDir)})`,
         );
@@ -212,7 +272,7 @@ const renderPage = ({ source, description }) => {
     const { title, body } = extractTitleAndBody(raw, source);
     const sourceRepoDir = posix.dirname(`docs/${source}`);
     const trimmedBody = dropDuplicateIntro(body, description);
-    const rewritten = rewriteLinks(trimmedBody, sourceRepoDir);
+    const rewritten = transformBody(trimmedBody, sourceRepoDir);
     const banner = [
         `# Generated from blit386/docs/${source} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',
