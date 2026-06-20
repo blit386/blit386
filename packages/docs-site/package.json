@@ -35,7 +35,10 @@
       "esbuild",
       "sharp",
       "workerd"
-    ]
+    ],
+    "overrides": {
+      "yaml@>=2.0.0 <2.8.3": "^2.8.3"
+    }
   },
   "sideEffects": false,
   "scripts": {

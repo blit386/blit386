@@ -21,9 +21,11 @@ alwaysApply: false
 - When site config, plugins, or routing behavior changes, update `CLAUDE.md` and `README.md` if commands or deploy flow
   shift.
 - Public engine docs under `content/docs/**` are generated from `blit386/docs/` by `scripts/sync-docs-from-engine.mjs`.
-  Never hand-edit a generated page: edit the canonical source in the engine repo and run `pnpm run sync:docs`. Add a
-  page via the script's `PAGES`/`SITE_PATHS`. Contributor-only pages stay link-only on GitHub. See `CLAUDE.md`
-  (Documentation mirror) and `DOCUMENTATION_MIGRATION.md`.
+  Never hand-edit a generated page: edit the canonical source in the engine repo and run `pnpm run sync:docs`. Which
+  docs publish (and their URL, sidebar order, and subtitle) live in the engine repo's `blit386/docs/_sitemap.json`
+  manifest, not in this repo's script; add, remove, or reorder a published page by editing that manifest, then run
+  `pnpm run sync:docs`. Pages omitted from the manifest stay link-only on GitHub. See `CLAUDE.md` (Documentation mirror)
+  and `DOCUMENTATION_MIGRATION.md`.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and affected
   `.cursor/rules/*.mdc`.
 - If no docs update is needed, state why explicitly in the final response.

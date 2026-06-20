@@ -57,9 +57,10 @@ blit386-dev-fumapress/
 ## Documentation mirror
 
 The public API and guide pages on this site are **generated** from the canonical engine docs. `blit386/docs/*.md`
-(engine repo) is the single source of truth; `scripts/sync-docs-from-engine.mjs` reads that subset and writes the
-matching MDX into `content/docs/`. The migration plan and source-to-URL map live in
-[`DOCUMENTATION_MIGRATION.md`](DOCUMENTATION_MIGRATION.md).
+(engine repo) is the single source of truth; `scripts/sync-docs-from-engine.mjs` reads the subset listed in the engine
+repo's sitemap manifest (`blit386/docs/_sitemap.json`) and writes the matching MDX into `content/docs/`. The manifest -
+not this script - owns which docs publish, their URL, sidebar order, and subtitle; the script carries no per-page
+knowledge. The migration plan and source-to-URL map live in [`DOCUMENTATION_MIGRATION.md`](DOCUMENTATION_MIGRATION.md).
 
 - **Run it:** `pnpm run sync:docs` (formats output too). `pnpm run sync:docs:check` regenerates and fails on drift; CI
   uses it to keep the mirror in sync. The engine docs source resolves from `ENGINE_DOCS_DIR` (default sibling
@@ -69,9 +70,10 @@ matching MDX into `content/docs/`. The migration plan and source-to-URL map live
 - **What the generator does:** drops the source H1 (title comes from it), drops a lead paragraph that duplicates the
   description, rewrites intra-doc links to site paths (`/docs/...`) and all other links to absolute GitHub URLs, and
   adds frontmatter (`title`, `description`).
-- **Adding a page:** add an entry to `PAGES` (and, if new, `SITE_PATHS`) in the script, then run `sync:docs`.
-  Contributor-only pages (developer experience, voice, tooling, `security/*`) are intentionally not mirrored and stay
-  link-only on GitHub.
+- **Adding a page:** add an entry to `pages` in `blit386/docs/_sitemap.json` (the array order is the sidebar order; add
+  the section to `sections` if it is new), then run `pnpm run sync:docs`. No change to this repo's script is needed.
+  Contributor-only pages (developer experience, voice, tooling, `security/*`) are intentionally not mirrored - just
+  leave them out of the manifest and they stay link-only on GitHub.
 
 ## Critical Rules
 
