@@ -19,6 +19,7 @@
       "CSS": "language_server:biome",
       "Markdown": "prettier",
       "MDX": "prettier",
+      "MDC": "prettier",
       "YAML": "prettier"
     }
   }

@@ -10,6 +10,7 @@
     "includes": [
       "src/**/*.{ts,tsx,css}",
       "*.{ts,tsx}",
+      "content/**/meta.json",
       "scripts/**/*.mjs",
       ".claude/**/*.json",
       ".github/**/*.json",

@@ -1,7 +1,7 @@
 /**
  * Prettier configuration for blit386-dev-fumapress.
  *
- * Prettier formats Markdown and YAML only. TypeScript, JSON, and CSS use Biome.
+ * Prettier formats Markdown, MDX, Cursor rules (.mdc), and YAML only. TypeScript, JSON, and CSS use Biome.
  *
  * @type {import('prettier').Config}
  */
@@ -19,7 +19,7 @@ export default {
 
     overrides: [
         {
-            files: ['*.md', '*.mdx'],
+            files: ['*.md', '*.mdx', '*.mdc'],
             options: {
                 parser: 'markdown',
                 tabWidth: 2,
