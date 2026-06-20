@@ -5,6 +5,7 @@
 # Lock files (never format)
 pnpm-lock.yaml
 package-lock.json
+yarn.lock
 
 # Dependencies
 node_modules/

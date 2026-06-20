@@ -28,9 +28,7 @@
             { "pattern": "^pnpm\\s+" },
             { "pattern": "^npx\\s+" },
             { "pattern": "^node\\s+" },
-            {
-              "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$"
-            },
+            { "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$" },
             { "pattern": "^cat\\s+" },
             { "pattern": "^ls\\s+" },
             { "pattern": "^echo\\s+" }
