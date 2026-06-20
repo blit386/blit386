@@ -178,8 +178,42 @@ const rewriteTarget = (target, sourceRepoDir) => {
  */
 const transformBody = (markdown, sourceRepoDir) => {
     const linkPattern = /(\[[^\]]*\])\(([^)]+)\)/gu;
-    const htmlCommentPattern = /<!--[\s\S]*?-->/gu;
     let isInFence = false;
+    let isInHtmlComment = false;
+
+    // Remove HTML comments by consuming `<!--` ... `-->` delimiters, tracking
+    // open state across lines so multi-line comments are fully stripped. Walking
+    // the delimiters (rather than a single regex replace) leaves no partial
+    // `<!--` / `-->` behind.
+    const stripComments = (line) => {
+        let result = '';
+        let rest = line;
+
+        while (rest.length > 0) {
+            if (isInHtmlComment) {
+                const end = rest.indexOf('-->');
+
+                if (end === -1) {
+                    return result;
+                }
+
+                rest = rest.slice(end + 3);
+                isInHtmlComment = false;
+            } else {
+                const start = rest.indexOf('<!--');
+
+                if (start === -1) {
+                    return result + rest;
+                }
+
+                result += rest.slice(0, start);
+                rest = rest.slice(start + 4);
+                isInHtmlComment = true;
+            }
+        }
+
+        return result;
+    };
 
     const lines = markdown.split('\n').map((line) => {
         if (/^\s*```/u.test(line)) {
@@ -192,9 +226,7 @@ const transformBody = (markdown, sourceRepoDir) => {
             return line;
         }
 
-        const withoutComments = line.replace(htmlCommentPattern, '');
-
-        return withoutComments.replace(
+        return stripComments(line).replace(
             linkPattern,
             (_match, label, target) => `${label}(${rewriteTarget(target, sourceRepoDir)})`,
         );
