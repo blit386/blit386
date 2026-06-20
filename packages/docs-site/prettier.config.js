@@ -22,7 +22,6 @@ export default {
             files: ['*.md', '*.mdx'],
             options: {
                 parser: 'markdown',
-                proseWrap: 'always',
                 tabWidth: 2,
             },
         },

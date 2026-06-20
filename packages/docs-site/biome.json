@@ -14,6 +14,7 @@
       ".claude/**/*.json",
       ".github/**/*.json",
       "*.json",
+      "*.jsonc",
       "commitlint.config.js",
       "prettier.config.js"
     ]
@@ -45,7 +46,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         "useConst": "error",
         "useImportType": "error",
