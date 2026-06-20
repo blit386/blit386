@@ -32,7 +32,7 @@
     },
     {
       "description": "TypeScript type definitions",
-      "matchPackageNames": ["^@types/"],
+      "matchPackagePatterns": ["/^@types/"],
       "groupName": "type definitions"
     },
     {
