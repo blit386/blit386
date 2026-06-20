@@ -1,7 +1,12 @@
 {
+  // Project-level Zed settings for blit386.
+  // Global settings live in ~/.config/zed/settings.json.
   "agent": {
     "tool_permissions": {
+      // Global default is "allow"; tighten specific tools below.
       "tools": {
+        // Block the agent from silently editing lock files or secrets.
+        // Mirrors the PreToolUse file-block hook in .claude/settings.json.
         "edit_file": {
           "always_deny": [
             { "pattern": "pnpm-lock\\.yaml$" },
@@ -16,13 +21,17 @@
             { "pattern": "\\.env(\\..*)?$" }
           ]
         },
+        // Require confirmation for destructive or side-effecting terminal commands.
         "terminal": {
           "default": "allow",
           "always_allow": [
             { "pattern": "^pnpm\\s+" },
             { "pattern": "^npx\\s+" },
             { "pattern": "^node\\s+" },
-            { "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$" }
+            { "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$" },
+            { "pattern": "^cat\\s+" },
+            { "pattern": "^ls\\s+" },
+            { "pattern": "^echo\\s+" }
           ],
           "always_confirm": [
             { "pattern": "^git\\s+(push|tag|release)" },
@@ -34,8 +43,18 @@
       }
     }
   },
+
+  // Editor formatting mirrors the repo toolchain: Biome for TS/JS/JSON, Prettier for MD/YAML.
+  // Biome runs via its Zed extension (language server); Prettier is built in and reads
+  // prettier.config.js. organizeImports is intentionally omitted - ESLint perfectionist owns
+  // import ordering here.
   "languages": {
     "TypeScript": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "code_actions_on_format": { "source.fixAll.biome": true },
+      "format_on_save": "on"
+    },
+    "TSX": {
       "formatter": { "language_server": { "name": "biome" } },
       "code_actions_on_format": { "source.fixAll.biome": true },
       "format_on_save": "on"
@@ -46,6 +65,10 @@
       "format_on_save": "on"
     },
     "JSON": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "format_on_save": "on"
+    },
+    "JSONC": {
       "formatter": { "language_server": { "name": "biome" } },
       "format_on_save": "on"
     },

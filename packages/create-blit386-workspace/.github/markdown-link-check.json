@@ -13,6 +13,18 @@
       "pattern": "^#"
     },
     {
+      "pattern": "^https?://www\\.w3\\.org(?:[/?#]|$)"
+    },
+    {
+      "pattern": "^https?://fsd\\.it(?:[/?#]|$)"
+    },
+    {
+      "pattern": "^https?://www\\.angelcode\\.com(?:[/?#]|$)"
+    },
+    {
+      "pattern": "^https?://renderhjs\\.net(?:[/?#]|$)"
+    },
+    {
       "pattern": "^https?://github\\.com/[^/]+/[^/]+/actions(/|$)"
     },
     {
@@ -34,7 +46,7 @@
       "pattern": "^https?://github\\.com/blit386/(blit386|create-blit386)(/|$)"
     },
     {
-      "pattern": "^https?://demos\\.blit386\\.dev"
+      "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
     }
   ],
   "replacementPatterns": [

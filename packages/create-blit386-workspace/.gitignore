@@ -1,5 +1,10 @@
+# System files
+.DS_Store
+Thumbs.db
+
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build output (rebuilt on publish via each package's prepack; shipped via the "files" allowlist)
 dist/
@@ -11,14 +16,57 @@ dist/
 # Local env and secrets
 .env
 .env.*
+!.env.example
 
-# Editors
+# Claude Code (skills, rules, settings.json are tracked)
+.claude/settings.local.json
+.claude/memory/
+.claude/worktrees/
+
+# MCP configs (local secrets; project MCP also lives under ~/.cursor/projects/)
+.mcp.json
+mcp.json
+
+# Other AI assistants (local only)
+.codex/
+.aider*
+.continue/
+.windsurf/
+ai-rules/
+.rules
+
+# IDE and editor files
+.vscode/launch.json
+.vscode/*.code-workspace
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
+*.iml
+.zed/*
+!.zed/settings.json
+.cursor/*
+!.cursor/hooks.json
+!.cursor/hooks/
+!.cursor/hooks/**
+!.cursor/rules/
+!.cursor/rules/**
 *.swp
-
-# OS files
-.DS_Store
+*.swo
+*~
 
 # Logs and scratch
 *.log
-.tmp/
+pnpm-debug.log*
+
+# Cache
+.eslintcache
+.cache/
+.knip-output.json
+
+# Temporary folders
+tmp/
+temp/
+
+
+# Husky runtime
+.husky/_/

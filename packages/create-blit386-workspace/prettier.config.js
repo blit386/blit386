@@ -1,7 +1,7 @@
 /**
  * Prettier configuration.
  *
- * NOTE: Prettier handles Markdown and YAML only. TypeScript, JavaScript, and JSON are formatted by Biome.
+ * NOTE: Prettier handles Markdown, Cursor rules (`.mdc`), and YAML only. TypeScript, JavaScript, and JSON are formatted by Biome.
  *
  * @type {import('prettier').Config}
  */
@@ -17,7 +17,7 @@ export default {
 
     overrides: [
         {
-            files: ['*.md', '*.mdx'],
+            files: ['*.md', '*.mdx', '*.mdc'],
             options: {
                 parser: 'markdown',
                 proseWrap: 'always',

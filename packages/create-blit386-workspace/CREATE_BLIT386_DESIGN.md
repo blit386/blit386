@@ -1,6 +1,6 @@
 # create-blit386 - Design and Roadmap
 
-> Status: latest published npm release is **1.1.0** (`/kit@1.1.0` + `create-blit386@1.1.0`; dist-tag `latest`). History:
+> Status: latest published npm release is **1.2.0** (`/kit@1.2.0` + `create-blit386@1.2.0`; dist-tag `latest`). History:
 > first published as `/kit@0.1.0` + `create-blit386@0.1.1` (section 11); **1.0.0** shipped 2026-06-14 (see below). All
 > Phase 1.x code items merged to `main` (PRs #7–#10). **All Phase 2 "Agents on tap" work is merged to `main`** — the
 > full `blit agents sync` write path (PR #15) plus the review-driven bug fixes (sync baseline / manifest pruning / vars
@@ -32,6 +32,14 @@
 > `main`; annotated git tag **`1.1.0`** (no `v` prefix) on merged commit `a9e77fd`. `engineRange` and `BLIT386_RANGE`
 > stay `^1.1.1`. Release notes: GitHub Release at <https://github.com/blit386/create-blit386/releases/tag/1.1.0> and
 > `RELEASE.md` in the repo.
+>
+> **Release status: 1.2.0 SHIPPED (2026-06-19).** Both packages published to npm at `1.2.0` (dist-tag `latest`):
+> `/kit@1.2.0` + `create-blit386@1.2.0`. Headline change: the package/repo rename from `create-blit-tech` +
+> `@blit-tech/kit` to **`create-blit386`** + **`@blit386/kit`** (GitHub repo `blit386/create-blit386`), plus a Claude
+> skills/rules refresh and the design doc landing in-repo (PR #34). This release also moves the engine pin forward:
+> `engineRange` and `BLIT386_RANGE` are now **`^1.2.0`** (was `^1.1.1`), tracking engine `blit386@1.2.0`. Landed via
+> **PR #39** (`chore(release): 1.2.0`) on merged commit `ec563aa`; annotated git tag **`1.2.0`** (no `v` prefix).
+> Release notes: GitHub Release at <https://github.com/blit386/create-blit386/releases/tag/1.2.0>.
 >
 > **Dogfood finding (Round 15, still holds):** the kit IR is game-author altitude; the `blit386` / `blit386-demos` repos
 > are the kit's upstream maintainers, not consumer games — regenerating their `.cursor/`/`.claude/` from the current IR

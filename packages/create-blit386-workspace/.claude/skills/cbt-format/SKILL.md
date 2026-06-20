@@ -21,7 +21,7 @@ Format every file in the create-blit386 monorepo and verify the result.
 
 - Execute `pnpm run format` from the repository root, which runs:
   - Biome for TypeScript/JavaScript/JSON (`.ts`, `.js`, `.json`, `.jsonc`)
-  - Prettier for Markdown/YAML (`.md`, `.mdx`, `.yml`, `.yaml`)
+  - Prettier for Markdown/YAML/Cursor rules (`.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`)
 
 2. **Show what changed**
 
@@ -34,10 +34,10 @@ Format every file in the create-blit386 monorepo and verify the result.
 
 ## Formatter Configuration
 
-| File Types                      | Tool     | Config               |
-| ------------------------------- | -------- | -------------------- |
-| `.ts`, `.js`, `.json`, `.jsonc` | Biome    | `biome.json`         |
-| `.md`, `.mdx`, `.yml`, `.yaml`  | Prettier | `prettier.config.js` |
+| File Types                             | Tool     | Config               |
+| -------------------------------------- | -------- | -------------------- |
+| `.ts`, `.js`, `.json`, `.jsonc`        | Biome    | `biome.json`         |
+| `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
 
 ## Formatting Rules
 

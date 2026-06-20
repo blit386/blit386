@@ -26,9 +26,9 @@ alwaysApply: false
   `.cursor/rules/*.mdc` cross-references.
 - Update root `README.md` or `CLAUDE.md` when commands, package layout, or wizard flow changes.
 - When the `blit` CLI, agent adapters (`packages/kit/src/adapters.ts`), or `blit agents sync`
-  (`packages/kit/src/commands/agents.ts`) change, update `packages/kit/README.md`,
-  `packages/create-blit386/README.md`, and the design doc (`CREATE_BLIT386_DESIGN.md`).
+  (`packages/kit/src/commands/agents.ts`) change, update `packages/kit/README.md`, `packages/create-blit386/README.md`,
+  and the design doc (`CREATE_BLIT386_DESIGN.md`).
 - When blit386 public API changes in the sibling engine repo, audit kit `content/docs/` and the kit rule sources
-  `packages/kit/content/rules/blit-api-names.md` and `packages/kit/content/rules/blit-integer-coords.md` for stale
-  names (`isDown`, `isOverlayEnabled`, etc.).
+  `packages/kit/content/rules/blit-api-names.md` and `packages/kit/content/rules/blit-integer-coords.md` for stale names
+  (`isDown`, `isOverlayEnabled`, etc.).
 - If no docs update is needed, state why explicitly in the final response.

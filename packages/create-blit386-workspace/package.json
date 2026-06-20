@@ -1,11 +1,22 @@
 {
   "name": "create-blit386-workspace",
-  "version": "0.0.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "Monorepo for the BLIT386 scaffolder (create-blit386) and kit (@blit386/kit).",
-  "author": "Václav Vančura",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blit386/create-blit386.git"
+  },
+  "homepage": "https://blit386.dev",
+  "bugs": {
+    "url": "https://github.com/blit386/blit386/issues"
+  },
   "packageManager": "pnpm@10.26.2",
   "engines": {
     "node": ">=22.18.0"
@@ -24,8 +35,8 @@
     "test": "pnpm -r test",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
-    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,mdc,yml,yaml}\"",
+    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,mdc,yml,yaml}\"",
     "spellcheck": "cspell \"packages/*/src/**/*.ts\" \"packages/kit/content/**/*.md\" \"README.md\" \"CLAUDE.md\" --no-progress",
     "docs:links": "node scripts/check-markdown-links.mjs",
     "knip": "knip",
@@ -40,10 +51,10 @@
     "*.{ts,js,json,jsonc}": [
       "biome check --write"
     ],
-    "*.{md,mdx,yml,yaml}": [
+    "*.{md,mdx,mdc,yml,yaml}": [
       "prettier --write"
     ],
-    "*.{ts,js,md,mdx}": [
+    "*.{ts,js,md,mdx,mdc}": [
       "cspell --no-progress --no-must-find-files"
     ]
   },
