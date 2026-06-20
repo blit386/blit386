@@ -1,0 +1,231 @@
+---
+# Generated from blit386/docs/api-palette.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "API: Palette"
+description: "Palette setup, built-in presets, HUD preset, serialization, and palette effects."
+---
+
+The palette is the single color authority for all rendering. Index `0` is always transparent and is never drawn. Set an
+active palette with `BT.paletteSet()` before any draw calls. Valid sizes: `2, 4, 16, 32, 64, 128, 256`.
+
+---
+
+## Palette Addressing
+
+A palette is a fixed-size table of color **slots** (positions `0` through `size - 1`). Docs and APIs use three related
+terms; they are not interchangeable.
+
+| Term                | Role                                                                  | Typical APIs                                            |
+| ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------- |
+| **slot**            | Prose name for a position in the palette table                        | `palette.set()`, `palette.get()`, `applyHUD()`, effects |
+| **`paletteIndex`**  | **Absolute** slot number written to the framebuffer                   | `BT.clear`, primitives, `BT.systemPrint`                |
+| **`paletteOffset`** | **Per-draw shift** added to each **stored** texel index before lookup | `BT.drawSprite`, `BT.printFont`                         |
+
+**Slot** and **`paletteIndex`** mean the same integer: which entry in the active palette a pixel uses. Parameter names
+use `paletteIndex` on draw calls; guides may say "slot" when reserving ranges or editing colors with `palette.set()`.
+
+### Absolute index (`paletteIndex`)
+
+The draw call picks the slot directly. Slot `0` stays transparent (not drawn).
+
+```ts
+BT.drawRectFill(rect, 6); // every pixel uses palette slot 6 (absolute)
+BT.systemPrint(pos, 3, 'Score'); // glyphs use absolute slot 3
+```
+
+### Per-draw offset (`paletteOffset`)
+
+Indexed sprites and bitmap fonts store small indices in the texture (starting at `1`; stored `0` is transparent). At
+draw time the WebGPU sprite shader computes `combined = storedIndex + paletteOffset`, then `index = min(combined, 255u)`
+before palette lookup.
+
+```ts
+BT.drawSprite(sheet, src, pos, 0); // stored 1 → palette[1], stored 2 → palette[2]
+BT.drawSprite(sheet, src, pos, 16); // stored 1 → palette[17], stored 2 → palette[18]
+```
+
+Use offsets for team colors, tints, and variants without duplicating art. When `combined` exceeds `255`, lookup uses
+palette slot `255` from the clamp, not an inherent error color.
+
+### Active palette: `BT.paletteSet()` vs `BT.palette`
+
+| Action                                                         | Use                                                                             |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| First activation or swap to a **different** `Palette` instance | `BT.paletteSet(palette)`                                                        |
+| Edit colors on the **current** active palette                  | `BT.palette.set(slot, color)` — live reference, no second `paletteSet()` needed |
+| Read the active palette                                        | `BT.palette` (throws if none set)                                               |
+
+`BT.palette` returns the same object the engine draws with. Mutating slots updates colors on the next frame. Call
+`BT.paletteSet()` again only when replacing the whole palette object (for example a prebuilt day vs night palette), or
+after a **layout swap** when colors moved to different slot numbers (then also call `BT.spritesRefresh()`). See
+[Palette Guide](https://github.com/blit386/blit386/blob/main/docs/palette-guide.md) section 6.
+
+---
+
+## Palette Setup
+
+```ts
+// Create
+const palette = new Palette(256);
+const palette = BT.paletteCreate(256); // equivalent BT-namespace shorthand
+
+// Set and get colors (slot = absolute palette index; see Palette addressing above)
+palette.set(1, new Color32(255, 0, 0, 255)); // red at absolute slot 1
+palette.get(1); // → Color32 (defensive copy)
+palette.getRef(1); // → Color32 (live reference - do not store)
+
+// Activate for rendering
+BT.paletteSet(palette);
+BT.palette; // → active Palette; throws if none set
+```
+
+---
+
+## Built-in Presets
+
+Each preset returns a fully populated `Palette` instance.
+
+```ts
+Palette.vga(); // VGA 256-color
+Palette.cga(); // CGA 16-color
+Palette.c64(); // Commodore 64 16-color
+Palette.gameboy(); // Game Boy 4-shade
+Palette.pico8(); // PICO-8 16-color
+Palette.nes(); // NES 64-color
+```
+
+---
+
+## HUD Preset
+
+Fills six consecutive UI-purpose slots into an existing palette and registers `hud_*` name aliases.
+
+```ts
+palette.applyHUD(); // fills slots 1-6 (default startSlot = 1)
+palette.applyHUD(10); // fills slots 10-15
+BT.paletteSet(palette);
+```
+
+The six slots in order, by alias:
+
+| Alias        | Purpose                 |
+| ------------ | ----------------------- |
+| `hud_white`  | Foreground / label text |
+| `hud_bg`     | Panel background        |
+| `hud_label`  | Secondary label         |
+| `hud_header` | Header / title text     |
+| `hud_dim`    | Dimmed / inactive text  |
+| `hud_code`   | Code / monospace text   |
+
+Override individual slots after `applyHUD()`:
+
+```ts
+palette.applyHUD(1);
+palette.set(2, new Color32(20, 16, 32)); // override hud_bg
+BT.paletteSet(palette);
+```
+
+---
+
+## Named Slot Aliases
+
+```ts
+palette.setNamed('player', 3); // alias 'player' → slot 3
+palette.getNamed('player'); // → 3 (the slot index)
+palette.getNamedColor('player'); // → Color32 at that slot
+```
+
+`hud_*` aliases are registered automatically by `applyHUD()`.
+
+---
+
+## Serialization
+
+```ts
+// JSON round-trip (preserves colors and named aliases)
+const json = palette.toJSON();
+const restored = Palette.fromJSON(json);
+
+// Raw byte arrays (RGB triplets, no alpha channel)
+const bytes = palette.toUint8Array(); // Uint8Array, 3 bytes per slot
+const floats = palette.toFloat32Array(); // Float32Array, 4 floats per slot (RGBA 0..1)
+palette.toFloat32ArrayInto(out); // zero-allocation variant into existing buffer
+const p = Palette.fromUint8Array(bytes); // auto-detect size
+const p = Palette.fromUint8Array(bytes, 16); // explicit size
+
+// Clone
+const copy = palette.clone();
+
+// Search
+const slot = palette.findColor(color); // → index, or -1 if not found
+```
+
+---
+
+## Palette Effects
+
+Animated effects run automatically each frame in the engine's end-of-frame pass (after `demo.render()`, before the GPU
+upload). Multiple effects can run simultaneously on different palette ranges and will not conflict. The public
+`Palette.isDirty` getter reflects whether slots changed since the last GPU upload — effects set this flag; no polling
+needed.
+
+```ts
+// Cycle a range of slots (water, fire, plasma)
+BT.paletteCycle(start, end, speed);
+// speed: steps/second, positive = forward, negative = backward
+
+// Fade entire palette toward a target
+BT.paletteFade(targetPalette, durationMs);
+BT.paletteFade(targetPalette, durationMs, 'ease-in-out');
+
+// Fade a sub-range only
+BT.paletteFadeRange(start, end, targetPalette, durationMs);
+BT.paletteFadeRange(start, end, targetPalette, durationMs, 'ease-out');
+
+// Flash all non-zero slots to a color then restore (lightning, damage)
+BT.paletteFlash(Color32.white, 200); // 200 ms
+
+// Instant swap of two slots
+BT.paletteSwap(indexA, indexB);
+
+// Cancel all active effects (palette stays at its current state)
+BT.paletteClearEffects();
+```
+
+---
+
+## Easing Functions
+
+Used by `paletteFade` and `paletteFadeRange`. Type: `EasingFunction`.
+
+| Value           | Curve                                |
+| --------------- | ------------------------------------ |
+| `'linear'`      | Constant rate (default when omitted) |
+| `'ease-in'`     | Slow start, fast end                 |
+| `'ease-out'`    | Fast start, slow end                 |
+| `'ease-in-out'` | Slow start and end                   |
+
+---
+
+## Timing Note
+
+Effects are applied after `demo.render()` but before the GPU palette upload in `Renderer.endFrame()`. This means user
+draw calls and palette effects see the same consistent snapshot within a frame - they never interleave mid-frame.
+
+Effects that auto-remove (fade, flash) clean up when their duration elapses. `paletteCycle` runs indefinitely until
+`paletteClearEffects()` is called.
+
+---
+
+## See Also
+
+| Guide                                           | What it covers                                   |
+| ----------------------------------------------- | ------------------------------------------------ |
+| [API: Core](/docs/api/core)                        | bootstrap, init, game loop, core types           |
+| [API: Rendering](/docs/api/rendering)              | primitives, sprites, text, post-process          |
+| [API: Assets](/docs/api/assets)                    | sprite sheets, bitmap fonts, asset loading       |
+| [Palette Guide](https://github.com/blit386/blit386/blob/main/docs/palette-guide.md)               | end-to-end workflow; links to Palette addressing |
+| [Palette Presets](https://github.com/blit386/blit386/blob/main/docs/palette-presets.md)           | exact built-in palette and HUD color data        |
+| [Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md)                           | test tiers and palette testing patterns          |
+| [Post-Process Effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md) | pixel-tier effects on palette indices            |
+| [Overlay Guide](https://github.com/blit386/blit386/blob/main/docs/overlay.md)                     | `applyHUD` and HUD slot colors                   |

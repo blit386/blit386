@@ -1,6 +1,9 @@
 {
   "title": "API",
   "pages": [
-    "core"
+    "core",
+    "rendering",
+    "palette",
+    "assets"
   ]
 }

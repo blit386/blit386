@@ -66,6 +66,18 @@ const PAGES = [
         description: 'Bootstrap, initialization, game loop timing, camera, and core types.',
     },
     {
+        source: 'api-rendering.md',
+        description: 'Primitives, sprites, text, post-process effects, and frame capture.',
+    },
+    {
+        source: 'api-palette.md',
+        description: 'Palette setup, built-in presets, HUD preset, serialization, and palette effects.',
+    },
+    {
+        source: 'api-assets.md',
+        description: 'Sprite sheets, bitmap fonts, and asset loading.',
+    },
+    {
         source: 'input.md',
         description: 'Pointer, keyboard, gamepad, and text-accumulation input in BLIT386.',
     },
