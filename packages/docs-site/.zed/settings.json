@@ -1,0 +1,25 @@
+{
+  "agent": {
+    "tool_permissions": {
+      "edit": {
+        "deny": ["pnpm-lock.yaml", "package-lock.json", "yarn.lock", ".env", ".env.*"]
+      },
+      "shell": {
+        "confirm": ["git push", "gh", "rm -rf"]
+      }
+    }
+  },
+  "formatter": {
+    "language": {
+      "TypeScript": "language_server:biome",
+      "TSX": "language_server:biome",
+      "JavaScript": "language_server:biome",
+      "JSON": "language_server:biome",
+      "JSONC": "language_server:biome",
+      "CSS": "language_server:biome",
+      "Markdown": "prettier",
+      "MDX": "prettier",
+      "YAML": "prettier"
+    }
+  }
+}

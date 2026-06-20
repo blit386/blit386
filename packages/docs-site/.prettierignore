@@ -1,0 +1,24 @@
+# Prettier ignore - Markdown and YAML only (TS/JSON/CSS use Biome)
+
+# Lock files (never format)
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.source/
+
+# Git
+.git/
+.remember/
+
+# Generated/minified files
+**/*.min.css
+
+# JSON is handled by Biome
+*.json

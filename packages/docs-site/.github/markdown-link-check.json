@@ -1,0 +1,74 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^https?://localhost"
+    },
+    {
+      "pattern": "^https?://127\\.0\\.0\\.1"
+    },
+    {
+      "pattern": "^https?://0\\.0\\.0\\.0"
+    },
+    {
+      "pattern": "^#"
+    },
+    {
+      "pattern": "^https?://www\\.w3\\.org(/|$)"
+    },
+    {
+      "pattern": "^https?://fsd\\.it(/|$)"
+    },
+    {
+      "pattern": "^https?://www\\.angelcode\\.com(/|$)"
+    },
+    {
+      "pattern": "^https?://renderhjs\\.net(/|$)"
+    },
+    {
+      "pattern": "^https?://github\\.com/[^/]+/[^/]+/actions(/|$)"
+    },
+    {
+      "pattern": "^https?://github\\.com/[^/]+/[^/]+/security(/|$)"
+    },
+    {
+      "pattern": "^https?://www\\.npmjs\\.com/package/[^\\s]+$"
+    },
+    {
+      "pattern": "^https?://www\\.contributor-covenant\\.org(/|$)"
+    },
+    {
+      "pattern": "^https?://www\\.conventionalcommits\\.org(/|$)"
+    },
+    {
+      "pattern": "^https?://github\\.com/[^/]+/[^/]+/compare/"
+    },
+    {
+      "pattern": "^https?://github\\.com/blit386/(blit386|create-blit386)(/|$)"
+    },
+    {
+      "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
+    },
+    {
+      "pattern": "^https?://blit386\\.dev(/|$)"
+    }
+  ],
+  "replacementPatterns": [
+    {
+      "pattern": "^/",
+      "replacement": "{{BASEURL}}/"
+    }
+  ],
+  "httpHeaders": [
+    {
+      "urls": ["https://github.com/", "https://raw.githubusercontent.com/"],
+      "headers": {
+        "Accept-Encoding": "zstd, br, gzip, deflate"
+      }
+    }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 202, 206]
+}
