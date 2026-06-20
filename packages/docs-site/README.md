@@ -69,8 +69,8 @@ For interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
 **Coverage:** which docs publish, and their sidebar order, are defined by the engine repo's `blit386/docs/_sitemap.json`
 manifest — not by this repo's script. Links to engine docs not in the manifest resolve to their GitHub source instead of
 a site path, so the mirror never emits a dead `/docs/...` route; each upgrades to a site link automatically once the doc
-is added. Expanding coverage means adding an entry to that manifest (in the engine repo) and re-running `sync:docs`; no
-change to this repo's script is needed.
+is added. Expanding coverage means adding an entry to that manifest (in the engine repo) and re-running
+`pnpm run sync:docs`; no change to this repo's script is needed.
 
 ## Agent policy
 

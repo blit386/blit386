@@ -71,7 +71,7 @@ knowledge. The migration plan and source-to-URL map live in [`DOCUMENTATION_MIGR
   description, rewrites intra-doc links to site paths (`/docs/...`) and all other links to absolute GitHub URLs, and
   adds frontmatter (`title`, `description`).
 - **Adding a page:** add an entry to `pages` in `blit386/docs/_sitemap.json` (the array order is the sidebar order; add
-  the section to `sections` if it is new), then run `sync:docs`. No change to this repo's script is needed.
+  the section to `sections` if it is new), then run `pnpm run sync:docs`. No change to this repo's script is needed.
   Contributor-only pages (developer experience, voice, tooling, `security/*`) are intentionally not mirrored - just
   leave them out of the manifest and they stay link-only on GitHub.
 

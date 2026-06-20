@@ -77,11 +77,15 @@ const loadSitemap = () => {
             }
         }
 
-        if (page.path.split('/').length !== 2) {
-            throw new Error(`Sitemap ${where} path "${page.path}" must be "<section>/<topic>".`);
+        const segments = page.path.split('/');
+
+        if (segments.length !== 2 || segments.some((segment) => segment === '')) {
+            throw new Error(
+                `Sitemap ${where} path "${page.path}" must be "<section>/<topic>" with both parts non-empty.`,
+            );
         }
 
-        const [section] = page.path.split('/');
+        const [section] = segments;
 
         if (!sections[section]) {
             throw new Error(
