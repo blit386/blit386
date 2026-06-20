@@ -1,0 +1,64 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "src/**/*.{ts,tsx,css}",
+      "*.{ts,tsx}",
+      "scripts/**/*.mjs",
+      ".claude/**/*.json",
+      ".github/**/*.json",
+      "*.json",
+      "commitlint.config.js",
+      "prettier.config.js"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 4,
+    "lineWidth": 120,
+    "lineEnding": "lf"
+  },
+  "assist": { "actions": { "source": { "organizeImports": "off" } } },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "arrowParentheses": "always",
+      "bracketSpacing": true,
+      "quoteProperties": "asNeeded"
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentWidth": 2,
+      "trailingCommas": "none"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "useConst": "error",
+        "useImportType": "error",
+        "noNonNullAssertion": "warn"
+      },
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noConsole": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error"
+      }
+    }
+  }
+}

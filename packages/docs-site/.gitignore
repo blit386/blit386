@@ -1,6 +1,74 @@
+# System files
 .DS_Store
-/node_modules/
+Thumbs.db
 
-dist
-.source
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+
+# Fumapress / Fumadocs generated
+.source/
 src/pages.gen.ts
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+
+# Generated files
+vite.config.*.timestamp-*
+
+# TypeScript
+*.tsbuildinfo
+
+# Claude Code (skills, rules, settings.json are tracked)
+.claude/settings.local.json
+.claude/memory/
+.claude/worktrees/
+
+# MCP configs (local secrets)
+.mcp.json
+mcp.json
+
+# Other AI assistants (local only)
+.codex/
+.aider*
+.continue/
+.windsurf/
+ai-rules/
+.rules
+
+# IDE and editor files
+.vscode/launch.json
+.vscode/*.code-workspace
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.iml
+.zed/*
+!.zed/settings.json
+.cursor/*
+!.cursor/hooks.json
+!.cursor/hooks/
+!.cursor/hooks/**
+!.cursor/rules/
+!.cursor/rules/**
+*.swp
+*.swo
+*~
+
+# Logs and scratch
+*.log
+pnpm-debug.log*
+
+# Cache
+.cache/
+.knip-output.json
+.wrangler/
+
+# Wrangler local state
+.dev.vars

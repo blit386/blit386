@@ -1,0 +1,26 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "allowCompoundWords": true,
+  "useGitignore": true,
+  "words": [
+    "blit386",
+    "biomejs",
+    "commitlint",
+    "fumadocs",
+    "fumapress",
+    "flexsearch",
+    "knip",
+    "llms",
+    "mdx",
+    "pnpm",
+    "tailwindcss",
+    "takumi",
+    "typecheck",
+    "vancura",
+    "waku",
+    "webgpu",
+    "wrangler"
+  ],
+  "ignorePaths": ["node_modules", "dist", ".source", "pnpm-lock.yaml", "src/pages.gen.ts"]
+}

@@ -1,13 +1,73 @@
 {
   "name": "blit386-dev-fumapress",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "Documentation site for BLIT386 (blit386.dev), built with Fumapress, Waku, and Fumadocs.",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blit386/blit386-dev-fumapress.git"
+  },
+  "homepage": "https://blit386.dev",
+  "bugs": {
+    "url": "https://github.com/blit386/blit386-dev-fumapress/issues"
+  },
+  "keywords": [
+    "blit386",
+    "documentation",
+    "fumadocs",
+    "fumapress",
+    "mdx",
+    "technical-docs",
+    "waku"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "packageManager": "pnpm@10.26.2",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  },
   "sideEffects": false,
   "scripts": {
     "dev": "waku dev",
-    "build": "waku build",
+    "build": "fumadocs-mdx && CLOUDFLARE=1 waku build",
     "start": "waku start",
-    "types:check": "fumadocs-mdx && tsc --noEmit"
+    "typecheck": "fumadocs-mdx && tsc --noEmit",
+    "types:check": "pnpm run typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
+    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
+    "spellcheck": "cspell \"content/**/*.{md,mdx}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx}\" \"CLAUDE.md\" --no-progress",
+    "docs:links": "node scripts/check-markdown-links.mjs",
+    "knip": "knip",
+    "knip:fix": "knip --fix",
+    "security:audit": "pnpm audit --audit-level=moderate",
+    "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run build",
+    "deploy": "wrangler deploy --config dist/server/wrangler.json --name blit386",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,json,jsonc,css}": [
+      "biome check --write"
+    ],
+    "*.{md,mdx,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx,md,mdx}": [
+      "cspell --no-progress --no-must-find-files"
+    ]
   },
   "dependencies": {
     "fumadocs-core": "^16.10.2",
@@ -20,12 +80,22 @@
     "waku": "1.0.0-beta.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
     "@tailwindcss/vite": "^4.3.0",
     "@types/mdx": "^2.0.14",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "cspell": "^10.0.0",
+    "husky": "^9.1.7",
+    "knip": "^6.14.2",
+    "lint-staged": "^16.4.0",
+    "markdown-link-check": "^3.14.2",
+    "prettier": "^3.8.3",
     "tailwindcss": "^4.3.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.67.0"
   }
 }
