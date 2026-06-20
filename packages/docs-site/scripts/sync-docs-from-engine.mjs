@@ -3,9 +3,16 @@
  * Generate the public documentation mirror from the canonical engine docs.
  *
  * The engine repository (`blit386`) is the single source of truth for public
- * API and guide prose under `docs/`. This script reads that subset and writes
- * the matching Fumadocs MDX pages into `content/docs/`, applying frontmatter,
- * dropping the source H1, and rewriting links to site-relative or GitHub URLs.
+ * API and guide prose under `docs/`. This script reads the subset listed in the
+ * engine repo's sitemap manifest (`docs/_sitemap.json`) and writes the matching
+ * Fumadocs MDX pages into `content/docs/`, applying frontmatter, dropping the
+ * source H1, and rewriting links to site-relative or GitHub URLs.
+ *
+ * The manifest is the single source of truth for which docs publish, their site
+ * URL, sidebar order, and subtitle. This script carries no per-page knowledge:
+ * editing doc prose, adding a page, or reordering the sidebar is done entirely
+ * in the engine repo (`docs/_sitemap.json`), never here. See that file's schema
+ * (`docs/_sitemap.schema.json`) for the contract.
  *
  * The generated files are committed artifacts: never hand-edit them. Edit the
  * canonical source in `blit386/docs/` and re-run `pnpm run sync:docs`. CI uses
@@ -23,124 +30,100 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ENGINE_DOCS = resolve(ROOT, process.env.ENGINE_DOCS_DIR ?? '../blit386/docs');
 const CONTENT_DOCS = join(ROOT, 'content', 'docs');
 const GITHUB_BASE = 'https://github.com/blit386/blit386';
+const SITEMAP_FILE = join(ENGINE_DOCS, '_sitemap.json');
 
 /**
- * Canonical engine doc (repo-relative path) to published site path. This is the
- * single source of truth for URLs: it drives both link rewriting and the set of
- * pages that may be generated. Keep it in sync with the migration plan URL map.
+ * Load and validate the sitemap manifest from the engine repo. Presence in
+ * `pages` means a doc publishes; array order is the sidebar order. Validation is
+ * fail-fast with a precise message so a malformed manifest never produces a
+ * silently broken mirror.
  */
-const SITE_PATHS = {
-    'docs/api-core.md': '/docs/api/core',
-    'docs/api-rendering.md': '/docs/api/rendering',
-    'docs/api-palette.md': '/docs/api/palette',
-    'docs/api-assets.md': '/docs/api/assets',
-    'docs/input.md': '/docs/guides/input',
-    'docs/palette-guide.md': '/docs/guides/palette',
-    'docs/palette-presets.md': '/docs/guides/palette-presets',
-    'docs/overlay.md': '/docs/guides/overlay',
-    'docs/post-process-effects.md': '/docs/guides/post-process-effects',
-    'docs/bitmap-fonts.md': '/docs/guides/bitmap-fonts',
-    'docs/performance-best-practices.md': '/docs/performance/best-practices',
-    'docs/performance-testing.md': '/docs/performance/testing',
-    'docs/software-fallback-smoke-matrix.md': '/docs/performance/smoke-matrix',
-    'docs/deprecations.md': '/docs/reference/deprecations',
-    'docs/testing.md': '/docs/reference/testing',
+const loadSitemap = () => {
+    let raw;
+
+    try {
+        raw = readFileSync(SITEMAP_FILE, 'utf8');
+    } catch {
+        throw new Error(`Cannot read sitemap manifest at ${SITEMAP_FILE}. Expected it in the engine docs directory.`);
+    }
+
+    let manifest;
+
+    try {
+        manifest = JSON.parse(raw);
+    } catch (error) {
+        throw new Error(`Sitemap manifest ${SITEMAP_FILE} is not valid JSON: ${error.message}`);
+    }
+
+    const { sections, pages } = manifest;
+
+    if (!sections || typeof sections !== 'object') {
+        throw new Error('Sitemap manifest must define a "sections" object (section id -> title).');
+    }
+
+    if (!Array.isArray(pages) || pages.length === 0) {
+        throw new Error('Sitemap manifest must define a non-empty "pages" array.');
+    }
+
+    const seenSrc = new Set();
+    const seenPath = new Set();
+
+    pages.forEach((page, index) => {
+        const where = `pages[${index}]`;
+
+        for (const field of ['src', 'path', 'description']) {
+            if (typeof page[field] !== 'string' || page[field].trim() === '') {
+                throw new Error(`Sitemap ${where} is missing a non-empty "${field}".`);
+            }
+        }
+
+        if (page.path.split('/').length !== 2) {
+            throw new Error(`Sitemap ${where} path "${page.path}" must be "<section>/<topic>".`);
+        }
+
+        const [section] = page.path.split('/');
+
+        if (!sections[section]) {
+            throw new Error(
+                `Sitemap ${where} path "${page.path}" uses unknown section "${section}". Add it to "sections".`,
+            );
+        }
+
+        if (seenSrc.has(page.src)) {
+            throw new Error(`Sitemap ${where} repeats src "${page.src}".`);
+        }
+
+        if (seenPath.has(page.path)) {
+            throw new Error(`Sitemap ${where} repeats path "${page.path}".`);
+        }
+
+        seenSrc.add(page.src);
+        seenPath.add(page.path);
+    });
+
+    return { sections, pages };
 };
 
-/** Human-readable titles for the generated section `meta.json` sidebars. */
-const SECTION_TITLES = {
-    api: 'API',
-    guides: 'Guides',
-    performance: 'Performance',
-    reference: 'Reference',
-};
+const { sections: SECTION_TITLES, pages: PAGES } = loadSitemap();
 
 /**
- * Pages to generate, in sidebar order within each section. Descriptions are the
- * page subtitle (frontmatter `description`); titles come from the source H1.
- * Enable more pages by adding entries here as each migration phase lands.
+ * Canonical engine doc (repo-relative path) to published site path, derived from
+ * the manifest. Drives link rewriting: a link resolving to one of these keys
+ * upgrades to a site-relative `/docs/...` URL; everything else falls back to
+ * GitHub. Only published docs appear here, so there is no dead-route risk.
  */
-const PAGES = [
-    {
-        source: 'api-core.md',
-        description: 'Bootstrap, initialization, game loop timing, camera, and core types.',
-    },
-    {
-        source: 'api-rendering.md',
-        description: 'Primitives, sprites, text, post-process effects, and frame capture.',
-    },
-    {
-        source: 'api-palette.md',
-        description: 'Palette setup, built-in presets, HUD preset, serialization, and palette effects.',
-    },
-    {
-        source: 'api-assets.md',
-        description: 'Sprite sheets, bitmap fonts, and asset loading.',
-    },
-    {
-        source: 'input.md',
-        description: 'Pointer, keyboard, gamepad, and text-accumulation input in BLIT386.',
-    },
-    {
-        source: 'palette-guide.md',
-        description: 'The palette-first rendering workflow: setup, slot offsets, and palette effects.',
-    },
-    {
-        source: 'palette-presets.md',
-        description: 'Exact color data for the built-in Palette presets and the HUD preset.',
-    },
-    {
-        source: 'overlay.md',
-        description: 'The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout.',
-    },
-    {
-        source: 'post-process-effects.md',
-        description: 'The two-tier post-process effect system, built-in effects, and CRT presets.',
-    },
-    {
-        source: 'bitmap-fonts.md',
-        description: 'The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion.',
-    },
-    {
-        source: 'performance-best-practices.md',
-        description: 'When and how to optimize demos: object allocation, batching, and hot-path guidance.',
-    },
-    {
-        source: 'performance-testing.md',
-        description: 'CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate.',
-    },
-    {
-        source: 'software-fallback-smoke-matrix.md',
-        description: 'Manual smoke-test checklist for the Canvas 2D software renderer.',
-    },
-    {
-        source: 'deprecations.md',
-        description: 'Central tracker for public API compatibility aliases and planned removals.',
-    },
-    {
-        source: 'testing.md',
-        description: 'Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks.',
-    },
-];
+const SITE_PATHS = Object.fromEntries(PAGES.map((page) => [`docs/${page.src}`, `/docs/${page.path}`]));
 
 /** Resolve the published site path for a source file, or throw if unmapped. */
-const sitePathFor = (source) => {
-    const key = `docs/${source}`;
-    const sitePath = SITE_PATHS[key];
+const sitePathFor = (src) => {
+    const sitePath = SITE_PATHS[`docs/${src}`];
 
     if (!sitePath) {
-        throw new Error(`No site path mapped for engine doc "${key}". Add it to SITE_PATHS.`);
+        throw new Error(`No site path mapped for engine doc "${src}". Add it to the sitemap manifest.`);
     }
 
     return sitePath;
 };
-
-/**
- * Site paths actually published in this phase (the pages in `PAGES`). Links to
- * mapped-but-not-yet-published docs fall back to GitHub so the mirror never
- * emits a dead `/docs/...` route; they upgrade automatically once added here.
- */
-const PUBLISHED_SITE_PATHS = new Set(PAGES.map(({ source }) => sitePathFor(source)));
 
 /** Split a link target into its path and (optional) `#fragment` suffix. */
 const splitFragment = (target) => {
@@ -157,8 +140,9 @@ const splitFragment = (target) => {
  * Rewrite a single Markdown link target found in a source file.
  *
  * - External, anchor-only, and mail links pass through unchanged.
- * - Links to docs published in this phase become site-relative (`/docs/...`).
- * - Everything else (not-yet-published docs, contributor-only docs, repo config,
+ * - Links to published docs (those in the manifest) become site-relative
+ *   (`/docs/...`).
+ * - Everything else (unpublished docs, contributor-only docs, repo config,
  *   source files) becomes an absolute GitHub URL resolved against the repo root.
  */
 const rewriteTarget = (target, sourceRepoDir) => {
@@ -177,7 +161,7 @@ const rewriteTarget = (target, sourceRepoDir) => {
     const repoRelative = posix.normalize(posix.join(sourceRepoDir, path));
     const sitePath = SITE_PATHS[repoRelative];
 
-    if (sitePath && PUBLISHED_SITE_PATHS.has(sitePath)) {
+    if (sitePath) {
         return `${sitePath}${fragment}`;
     }
 
@@ -305,15 +289,15 @@ const dropDuplicateIntro = (body, description) => {
 };
 
 /** Build the MDX file contents for one page. */
-const renderPage = ({ source, description }) => {
-    const sourcePath = join(ENGINE_DOCS, source);
+const renderPage = ({ src, description }) => {
+    const sourcePath = join(ENGINE_DOCS, src);
     const raw = readFileSync(sourcePath, 'utf8');
-    const { title, body } = extractTitleAndBody(raw, source);
-    const sourceRepoDir = posix.dirname(`docs/${source}`);
+    const { title, body } = extractTitleAndBody(raw, src);
+    const sourceRepoDir = posix.dirname(`docs/${src}`);
     const trimmedBody = dropDuplicateIntro(body, description);
     const rewritten = transformBody(trimmedBody, sourceRepoDir);
     const banner = [
-        `# Generated from blit386/docs/${source} by scripts/sync-docs-from-engine.mjs.`,
+        `# Generated from blit386/docs/${src} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',
     ].join('\n');
     const frontmatter = `---\n${banner}\ntitle: ${JSON.stringify(title)}\ndescription: ${JSON.stringify(description)}\n---`;
@@ -321,12 +305,12 @@ const renderPage = ({ source, description }) => {
     return `${frontmatter}\n\n${rewritten.trimEnd()}\n`;
 };
 
-/** Group generated pages by their top-level section, preserving PAGES order. */
+/** Group generated pages by their top-level section, preserving manifest order. */
 const groupBySection = () => {
     const sections = new Map();
 
     for (const page of PAGES) {
-        const sitePath = sitePathFor(page.source);
+        const sitePath = sitePathFor(page.src);
         const segments = sitePath.replace(/^\/docs\//u, '').split('/');
         const [section, topic] = segments;
 

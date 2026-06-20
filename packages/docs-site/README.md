@@ -66,11 +66,11 @@ Never hand-edit a generated page — edit the engine source and re-run `sync:doc
 runbook) are not mirrored and stay on GitHub in the [engine repo](https://github.com/blit386/blit386/tree/main/docs).
 For interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
 
-**Pilot scope:** only the pages listed in the script's `PAGES` are mirrored so far (currently `api/core`,
-`guides/input`, `reference/deprecations`). Links to engine docs that are mapped in `SITE_PATHS` but not yet in `PAGES`
-resolve to their GitHub source instead of a site path, so the mirror never emits a dead `/docs/...` route; each upgrades
-to a site link automatically once added to `PAGES`. Expanding coverage means adding entries to `PAGES` (and `SITE_PATHS`
-for any new doc) and re-running `sync:docs`.
+**Coverage:** which docs publish, and their sidebar order, are defined by the engine repo's `blit386/docs/_sitemap.json`
+manifest — not by this repo's script. Links to engine docs not in the manifest resolve to their GitHub source instead of
+a site path, so the mirror never emits a dead `/docs/...` route; each upgrades to a site link automatically once the doc
+is added. Expanding coverage means adding an entry to that manifest (in the engine repo) and re-running `sync:docs`; no
+change to this repo's script is needed.
 
 ## Agent policy
 
