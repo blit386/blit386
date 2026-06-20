@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Check all Markdown files for dead links using markdown-link-check.
- * Scans README, docs/, .claude/, and any other tracked-style paths (skips build artifacts).
+ * Recursively scans all directories from the repo root, skipping only those
+ * listed in IGNORED_DIRS (node_modules, dist, .git, and other build artifacts).
  */
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
@@ -45,7 +46,7 @@ for (const filePath of files) {
         cwd: ROOT,
         stdio: 'inherit',
     });
-    if (result.status !== 0) {
+    if (result.error || result.status !== 0) {
         failed += 1;
     }
 }
