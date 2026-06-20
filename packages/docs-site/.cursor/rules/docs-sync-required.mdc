@@ -20,8 +20,10 @@ alwaysApply: false
 - When adding or changing MDX pages, update frontmatter and run `pnpm run docs:links`.
 - When site config, plugins, or routing behavior changes, update `CLAUDE.md` and `README.md` if commands or deploy flow
   shift.
-- When linking to engine APIs, prefer [blit386 GitHub docs](https://github.com/blit386/blit386/tree/main/docs) over
-  copying tables that will drift.
+- Public engine docs under `content/docs/**` are generated from `blit386/docs/` by `scripts/sync-docs-from-engine.mjs`.
+  Never hand-edit a generated page: edit the canonical source in the engine repo and run `pnpm run sync:docs`. Add a
+  page via the script's `PAGES`/`SITE_PATHS`. Contributor-only pages stay link-only on GitHub. See `CLAUDE.md`
+  (Documentation mirror) and `DOCUMENTATION_MIGRATION.md`.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and affected
   `.cursor/rules/*.mdc`.
 - If no docs update is needed, state why explicitly in the final response.

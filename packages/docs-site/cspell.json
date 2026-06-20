@@ -6,6 +6,7 @@
   "words": [
     "blit386",
     "biomejs",
+    "btfont",
     "commitlint",
     "fumadocs",
     "fumapress",
@@ -13,7 +14,9 @@
     "knip",
     "llms",
     "mdx",
+    "metas",
     "pnpm",
+    "scaffolder",
     "tailwindcss",
     "takumi",
     "typecheck",
@@ -22,5 +25,5 @@
     "webgpu",
     "wrangler"
   ],
-  "ignorePaths": ["node_modules", "dist", ".source", "pnpm-lock.yaml", "src/pages.gen.ts"]
+  "ignorePaths": ["node_modules", "dist", ".source", "pnpm-lock.yaml", "src/pages.gen.ts", "content/docs/*/**"]
 }
