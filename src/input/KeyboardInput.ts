@@ -14,20 +14,33 @@ export interface KeyboardAttachOptions {
 
 /**
  * Tracks held keys using `KeyboardEvent.code`, snapshots once per frame for
- * edge detection (aligned with {@link PointerInput.endFrame} timing), and
+ * edge detection (aligned with fixed-update timing via {@link endUpdate}), and
  * accumulates filtered text from `beforeinput`.
  */
 export class KeyboardInput {
     /** Keys currently held (`keydown`, cleared on `keyup` / blur). */
     private readonly held: Set<string> = new Set();
 
-    /** Snapshot of `held` at the last {@link endFrame} (previous frame). */
+    /** Snapshot of `held` at the last {@link endUpdate} (previous fixed tick). */
     private readonly prevHeld: Set<string> = new Set();
+
+    /**
+     * Key codes that received a `keydown` since the last {@link endUpdate}.
+     * Buffered so press edges survive render-only frames (for example 120 Hz display
+     * with `targetFPS: 60`).
+     */
+    private readonly pendingPress: Set<string> = new Set();
+
+    /**
+     * Key codes that received a `keyup` since the last {@link endUpdate}.
+     * Paired with {@link pendingPress} for the same high-refresh edge case.
+     */
+    private readonly pendingRelease: Set<string> = new Set();
 
     /** Tick index when each code first went down (for repeat). */
     private readonly firstPressTick: Map<string, number> = new Map();
 
-    /** Characters queued for {@link getInputString}; cleared in {@link endFrame}. */
+    /** Characters queued for {@link getInputString}; cleared in {@link endUpdate}. */
     private inputBuffer: string = '';
 
     private canvas: HTMLCanvasElement | null = null;
@@ -97,12 +110,15 @@ export class KeyboardInput {
     }
 
     /**
-     * Snapshots held keys into `prevHeld` for next frame's edge detection.
-     * Clears the text buffer after the frame (call after demo has read {@link getInputString}).
+     * Ends a fixed update step: snapshots `prevHeld`, clears pending edges and
+     * {@link getInputString}. Call once per `demo.update()` (not once per render frame).
      *
-     * @param _currentTick - Fixed-update tick count after this frame's updates (`BT.ticks`).
+     * @param _currentTick - Reserved for future use; fixed-update tick when the demo read input.
      */
-    public endFrame(_currentTick: number): void {
+    public endUpdate(_currentTick: number): void {
+        this.pendingPress.clear();
+        this.pendingRelease.clear();
+
         this.prevHeld.clear();
 
         for (const code of this.held) {
@@ -110,6 +126,16 @@ export class KeyboardInput {
         }
 
         this.inputBuffer = '';
+    }
+
+    /**
+     * Alias for {@link endUpdate}; kept for tests and callers that still use the old name.
+     *
+     * @deprecated Call {@link endUpdate} once per fixed update instead.
+     * @param currentTick - Passed through to {@link endUpdate}.
+     */
+    public endFrame(currentTick: number): void {
+        this.endUpdate(currentTick);
     }
 
     /**
@@ -131,7 +157,7 @@ export class KeyboardInput {
      * @returns `true` on the initial press edge or on repeat ticks when configured.
      */
     public isKeyPressed(code: string, repeatRate: number | undefined, currentTick: number): boolean {
-        const isPressEdge = this.held.has(code) && !this.prevHeld.has(code);
+        const isPressEdge = this.pendingPress.has(code) || (this.held.has(code) && !this.prevHeld.has(code));
 
         if (repeatRate === undefined || repeatRate <= 0) {
             return isPressEdge;
@@ -163,6 +189,10 @@ export class KeyboardInput {
      * @returns `true` on the frame the key transitions from down to up.
      */
     public isKeyReleased(code: string): boolean {
+        if (this.pendingRelease.has(code)) {
+            return true;
+        }
+
         return !this.held.has(code) && this.prevHeld.has(code);
     }
 
@@ -210,6 +240,10 @@ export class KeyboardInput {
             return false;
         }
 
+        if (codes.some((c) => this.pendingPress.has(c))) {
+            return true;
+        }
+
         const isDown = this.isButtonDown(codes);
         const isPrevDown = codes.some((c) => this.prevHeld.has(c));
 
@@ -247,6 +281,10 @@ export class KeyboardInput {
             return false;
         }
 
+        if (codes.some((c) => this.pendingRelease.has(c))) {
+            return true;
+        }
+
         if (this.isButtonDown(codes)) {
             return false;
         }
@@ -282,6 +320,8 @@ export class KeyboardInput {
     private clearAllState(): void {
         this.held.clear();
         this.prevHeld.clear();
+        this.pendingPress.clear();
+        this.pendingRelease.clear();
         this.firstPressTick.clear();
         this.inputBuffer = '';
     }
@@ -299,6 +339,7 @@ export class KeyboardInput {
         }
 
         this.held.add(code);
+        this.pendingPress.add(code);
 
         const tick = this.getTicks?.() ?? 0;
 
@@ -322,6 +363,7 @@ export class KeyboardInput {
 
         this.held.delete(code);
         this.firstPressTick.delete(code);
+        this.pendingRelease.add(code);
     }
 
     /**

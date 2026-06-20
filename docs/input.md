@@ -199,7 +199,8 @@ change this value today.
 ### Text input buffer
 
 `BT.inputString` returns characters accumulated from filtered `beforeinput` (and Tab / Escape where needed). The buffer
-clears after each frame once the engine flushes input at end-of-frame. See public JSDoc on `BT.inputString` for details.
+clears at the end of each fixed update step (read it during `update()`). See public JSDoc on `BT.inputString` for
+details.
 
 ## Scroll Delta
 
@@ -234,17 +235,20 @@ Both are no-ops before the engine is initialized. The cursor is restored automat
 
 ## Frame-Timing Semantics
 
-State is snapshotted at the **end** of each animation frame, after `demo.update()` and `demo.render()` have run. This
-means:
+Pointer and gamepad previous-state rollover happens at the **end** of each animation frame, after `demo.update()` and
+`demo.render()` have run. Keyboard press/release edges and `BT.inputString` align with the **fixed update** rate
+(`targetFPS`), not the display refresh rate:
 
-- Any pointer event that fires between two frames is visible as a transition on the **next** `update()` call.
+- On a 120 Hz monitor with `targetFPS: 60`, `render()` may run twice per `update()`. Keyboard edges are buffered on DOM
+  events and consumed on the next fixed update so fast taps are not dropped between render-only frames.
 - `pointerDelta()` reflects movement between the last `update()` and the current one.
-- Keyboard-held keys and edges follow the same end-of-frame snapshot timing as pointer input (`KeyboardInput.endFrame`
-  aligns with pointer flush).
-- Gamepad previous-state rollover also happens at end-of-frame, while current gamepad state is polled from the Gamepad
-  API during button/axis queries.
-- `isPressed()` / `isReleased()` edges are never lost even when a press and release both arrive in the same inter-frame
-  gap (they appear as pressed-then-released across consecutive frames).
+- Gamepad current state is polled from the Gamepad API during button/axis queries; previous-state rollover still happens
+  at end-of-render-frame.
+- Read `BT.inputString` during `update()`; the buffer clears at the end of each fixed update step.
+
+Pointer transitions:
+
+- Any pointer event that fires between two animation frames is visible as a transition on the **next** `update()` call.
 
 ## Page-Interaction Guards
 
