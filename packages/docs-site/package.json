@@ -62,7 +62,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,json,jsonc,css}": [
-      "biome check --write"
+      "biome check --write --no-errors-on-unmatched"
     ],
     "*.{md,mdx,mdc,yml,yaml}": [
       "prettier --write"

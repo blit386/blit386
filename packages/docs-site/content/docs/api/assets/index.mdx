@@ -1,0 +1,188 @@
+---
+# Generated from blit386/docs/api-assets.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "API: Assets"
+description: "Sprite sheets, bitmap fonts, and asset loading."
+---
+
+---
+
+## Asset size limits
+
+Sprite sheets, font atlases, and raw indexed buffers share the same decoded-size policy as render configuration (`8192`
+pixels per side, `16,777,216` total pixels). Limits are enforced before canvas readback, CPU buffer retention, GPU
+texture creation, and software sprite loops.
+
+| Limit                        | Default                      | Applies to                                                       |
+| ---------------------------- | ---------------------------- | ---------------------------------------------------------------- |
+| Max width / height           | `8192`                       | Decoded PNGs, font atlas textures, `fromIndexedPixels()`         |
+| Max total pixels             | `16,777,216` (`4096 × 4096`) | Same sources                                                     |
+| Max `.btfont` JSON size      | `1,048,576` bytes (`1 MiB`)  | `BitmapFont.load()` before `JSON.parse()`                        |
+| Max embedded texture payload | `524,288` bytes (`512 KiB`)  | Base64 data in `texture` when using `data:image/png;base64,...`  |
+| Max glyph count              | `8192`                       | Glyph map entries in a `.btfont` file                            |
+| Max software blit area       | `16,777,216` pixels          | Software renderer source rectangles (clipped to the sheet first) |
+
+When a limit is exceeded, loading throws an `AssetLimitError` with a beginner-friendly message. The software renderer
+skips sprite blits whose source rectangle is empty, non-integer, fully outside the sheet, or still too large after
+clipping.
+
+`.btfont` files may reference either a relative PNG path or an embedded PNG data URI. Embedded textures must use
+`data:image/png;base64,...` and stay within the embedded payload cap above. Other `data:` schemes (for example JPEG) are
+rejected before image decode. Decoded atlas dimensions use the same width, height, and pixel-area limits as sprite
+sheets. Prefer separate PNG files for large atlases so the JSON payload stays under the JSON size limit.
+
+---
+
+## Loading Assets
+
+`AssetLoader` caches images by URL so repeated loads share the same `HTMLImageElement`. Oversized images are rejected as
+soon as the browser reports decoded dimensions.
+
+```ts
+import { AssetLoader } from 'blit386';
+
+// Load a single image (cached by URL)
+const image = await AssetLoader.loadImage('sprites.png');
+
+// Load multiple images in parallel
+const images = await AssetLoader.loadImages(['sprites.png', 'tiles.png']);
+
+// Check cache before loading
+if (AssetLoader.isLoaded('sprites.png')) {
+  // already cached
+}
+```
+
+---
+
+## Sprite Setup - Preferred Path
+
+Use `SpriteSheet.loadIndexed()` for all standard sprite setup. It combines color registration, image loading, and
+palette indexization in one call.
+
+```ts
+import { BT, Palette, SpriteSheet, Vector2i } from 'blit386';
+
+const palette = new Palette(256);
+
+const indexed = await SpriteSheet.loadIndexed(
+  'sprites/hero.png', // URL
+  palette, // palette to populate
+  10, // startSlot - first palette slot to write colors into
+  { sort: 'luminance' }, // optional: color order in palette ('luminance' | 'none')
+);
+
+BT.paletteSet(palette); // activate AFTER loadIndexed returns
+
+// Draw using the returned sheet and source rectangle:
+BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
+
+// indexed.colors - list of Color32 values registered into the palette
+// indexed.srcRect - Rect2i spanning the full image
+```
+
+Colors are sorted by perceived luminance (darkest-first) by default. Pass `{ sort: 'none' }` to preserve row-major scan
+order. Slot 0 is never touched - transparent pixels in the image map to slot 0 at draw time.
+
+---
+
+## Sprite Setup - Manual Path
+
+Use this only when you need fine-grained control over the palette layout or want to load several sheets into the same
+palette sequentially.
+
+```ts
+import { BT, Palette, SpriteSheet } from 'blit386';
+
+const palette = new Palette(256);
+
+// Step 1: register colors from each image into the palette
+const colors = await SpriteSheet.loadColorsIntoPalette('hero.png', palette, 10);
+const tileColors = await SpriteSheet.loadColorsIntoPalette('tiles.png', palette, 10 + colors.length);
+
+// Step 2: load the image into a SpriteSheet
+const sheet = await SpriteSheet.load('hero.png');
+
+// Step 3: convert RGBA pixels to palette indices
+sheet.indexize(palette);
+
+BT.paletteSet(palette);
+```
+
+To create a sheet from raw palette-indexed pixel data (advanced / test use):
+
+```ts
+const sheet = SpriteSheet.fromIndexedPixels(width, height, indexedPixels);
+```
+
+---
+
+## Palette Offset
+
+Pass a **`paletteOffset`** (per-draw shift, not an absolute slot) to `BT.drawSprite()` and `BT.printFont()` to remap
+stored texel indices before palette lookup. Useful for team-color variations and damage flashes. Terminology and
+examples: [Palette addressing](/docs/api/palette#palette-addressing). Draw semantics: [API: Rendering](/docs/api/rendering).
+
+```ts
+BT.drawSprite(sheet, srcRect, pos, 16); // render in "blue team" color range
+```
+
+---
+
+## Bitmap Fonts
+
+Load `.btfont` files for proportional, palette-indexed bitmap fonts. After loading, register colors in the palette and
+indexize the font's internal sprite sheet before drawing (same pattern as manual sprite setup).
+
+```ts
+import { BitmapFont, Palette } from 'blit386';
+
+const palette = new Palette(256);
+const font = await BitmapFont.load('fonts/MyFont.btfont');
+font.getSpriteSheet().indexize(palette);
+BT.paletteSet(palette);
+
+BT.printFont(font, new Vector2i(10, 10), 'Hello!');
+BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw index shift
+```
+
+Font rendering goes through the same sprite pipeline as `BT.drawSprite()` and is auto-batched.
+
+**SpriteSheet helpers** (after indexize): `isIndexed()`, `getIndexedPixels()` (defensive copy for software renderer),
+`reindexize(palette)` when palette layout changes. `SpriteSheet.loadIndexed()` returns `IndexedSpriteLoadResult`
+(`{ sheet, srcRect, colors }`).
+
+See [Bitmap Fonts Guide](https://github.com/blit386/blit386/blob/main/docs/bitmap-fonts.md) for the `.btfont` format specification and the BMFont conversion workflow
+(`pnpm run convert-font`).
+
+---
+
+## System Font
+
+A built-in 6×14 monospace font covering printable ASCII (characters 32-126). No load step needed.
+
+```ts
+BT.systemPrint(new Vector2i(10, 10), paletteIndex, 'Score: 100');
+BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
+```
+
+Use `BT.systemPrint()` for demo-specific HUD panels and labels. Call `palette.applyHUD()` at init so overlay and demo
+HUD share the same label/header/dim slot conventions — see [API: Palette](/docs/api/palette) and
+[Palette Presets — HUD](https://github.com/blit386/blit386/blob/main/docs/palette-presets.md#hud-preset-paletteapplyhud). The engine draws its own overlay (present FPS,
+target FPS, draw calls, frame/update()/render() timings, backend, resolution, demo title) after each `render()` when
+`isOverlayEnabled` is true; see [Overlay Guide](https://github.com/blit386/blit386/blob/main/docs/overlay.md). For styled variable-width text, use a bitmap font instead.
+
+---
+
+## See Also
+
+| Guide                                 | What it covers                          |
+| ------------------------------------- | --------------------------------------- |
+| [API: Core](/docs/api/core)              | bootstrap, init, game loop, core types  |
+| [API: Rendering](/docs/api/rendering)    | primitives, sprites, text, post-process |
+| [API: Palette](/docs/api/palette)        | palette setup, presets, effects         |
+| [Palette Guide](https://github.com/blit386/blit386/blob/main/docs/palette-guide.md)     | palette-first setup, offsets, refresh   |
+| [Palette Presets](https://github.com/blit386/blit386/blob/main/docs/palette-presets.md) | built-in preset reference               |
+| [Bitmap Fonts](https://github.com/blit386/blit386/blob/main/docs/bitmap-fonts.md)       | .btfont format, BMFont conversion       |
+| [Overlay Guide](https://github.com/blit386/blit386/blob/main/docs/overlay.md)           | system font for HUD text                |
+| [Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md)                 | SpriteSheet and BitmapFont tests        |
