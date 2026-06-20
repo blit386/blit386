@@ -3,4 +3,4 @@
 # Load Node.js environment and ensure pnpm is available
 . "$(dirname "$0")/ensure-pnpm.sh"
 
-pnpm commitlint --edit $1
+pnpm commitlint --edit "$1"

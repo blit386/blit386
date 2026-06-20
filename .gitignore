@@ -4,13 +4,15 @@ Thumbs.db
 
 # Dependencies
 node_modules/
-.pnpm-store/
 
 # Build output
 dist/
 build/
 
-# Environment variables
+# Package-manager caches
+.pnpm-store/
+
+# Local env and secrets
 .env
 .env.*
 !.env.example
@@ -67,7 +69,7 @@ ai-rules/
 *.swo
 *~
 
-# Logs
+# Logs and scratch
 *.log
 pnpm-debug.log*
 
