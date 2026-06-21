@@ -23,7 +23,10 @@ alwaysApply: false
   `docs/_sitemap.json` in the same change (entry order = sidebar order; contract in `docs/_sitemap.schema.json`). The
   sibling `blit386-dev-fumapress` mirror generates only the docs listed there; contributor-only pages (developer
   experience, voice, tooling, `security/*`) are intentionally omitted, so leaving a page out keeps it link-only on
-  GitHub.
+  GitHub. After a sitemap change, run `pnpm run sync:doc-banners` so each published doc's blit386.dev banner is current.
+- Never hand-edit or hand-add the `<!-- blit386.dev-banner -->` block in a doc; it is generated and owned by
+  `scripts/sync-doc-banners.mjs` (URLs derived from the sitemap) and stripped from the public mirror. Edit banner prose
+  in that script, not the docs.
 - When architecture or subsystem structure changes, update `CLAUDE.md` architecture sections and the **Where to Find
   Information** table when paths change.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected

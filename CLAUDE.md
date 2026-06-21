@@ -41,6 +41,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Where do I put a new field/method in a `.ts` file?         | **TypeScript file structure** below; `.cursor/rules/ts-file-structure.mdc`; `docs/developer-experience-guide.md` (File structure and member order)                                                                           |
 | Where are Cursor agent rules and hooks?                    | `.cursor/rules/*.mdc` (always-applied + glob-scoped); `.cursor/hooks.json`; condensed mirrors in `.claude/rules/`; see [Developer Experience](docs/developer-experience-guide.md#cursor)                                     |
 | Where is the public docs site (blit386.dev)?               | Sibling repo `blit386-dev-fumapress` (Fumapress + Waku) generates it from this repo's `docs/`; `docs/_sitemap.json` (schema `docs/_sitemap.schema.json`) controls which docs publish, their URL, sidebar order, and subtitle |
+| Why does each published doc have a blit386.dev banner?     | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see **Public docs site banner** below                           |
 | What agent skills are available for this project?          | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) — `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
 | How do users start a new project with the engine?          | `npm create blit386@latest` — the scaffolder lives in the sibling `create-blit386` repo; see **Onboarding and the scaffolder** below                                                                                         |
 
@@ -59,6 +60,21 @@ pins a `blit386` version range (`BLIT386_RANGE` in `packages/create-blit386/src/
 When you change the engine's onboarding surface here (the `README.md` Quick Start, `bootstrap()` signature/defaults, or
 the minimal demo shape), check whether the `create-blit386` templates, kit docs, and pinned version range need a
 matching update. That repo has its own git history and is not part of this repo's pnpm workspace.
+
+## Public docs site banner
+
+Every doc that publishes to blit386.dev (those listed in `docs/_sitemap.json`) carries a short banner just below its H1,
+pointing GitHub readers at the typeset copy on the site. It is wrapped in `<!-- blit386.dev-banner:start -->` /
+`<!-- blit386.dev-banner:end -->` sentinels.
+
+- **Do not hand-edit or hand-add the banner block.** It is generated and owned entirely by
+  `scripts/sync-doc-banners.mjs`, which derives each `https://blit386.dev/docs/<path>` URL from the sitemap so the link
+  can never drift.
+- Run `pnpm run sync:doc-banners` after adding a doc to the sitemap or changing a doc's `path`; the banner is inserted
+  if missing and rewritten if stale. `pnpm run sync:doc-banners:check` reports drift without writing (for CI).
+- The banner is a GitHub-only signpost: the public mirror generator (`blit386-dev-fumapress`) strips the whole block, so
+  it never appears on the live site. Editing banner prose means editing the template in `scripts/sync-doc-banners.mjs`,
+  not the docs.
 
 ## Architecture
 
