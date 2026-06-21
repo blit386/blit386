@@ -58,6 +58,7 @@ the single source of truth. `scripts/sync-docs-from-engine.mjs` produces the mir
 ```bash
 pnpm run sync:docs         # regenerate content/docs from ../blit386/docs
 pnpm run sync:docs:check   # regenerate and fail if the mirror drifted (CI)
+pnpm run sync:docs:watch   # watch blit386/docs and re-sync on every change (run alongside pnpm run dev)
 ```
 
 Never hand-edit a generated page — edit the engine source and re-run `sync:docs`. See

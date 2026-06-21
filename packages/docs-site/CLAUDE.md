@@ -107,6 +107,7 @@ pnpm run spellcheck       # cspell on content and src
 pnpm run docs:links       # Markdown link checker
 pnpm run sync:docs        # Regenerate content/docs from blit386/docs (engine repo)
 pnpm run sync:docs:check  # Regenerate and fail if the mirror drifted (CI)
+pnpm run sync:docs:watch  # Watch blit386/docs and re-sync on every change (run alongside pnpm run dev)
 pnpm run knip             # Unused exports/deps
 pnpm run security:audit   # pnpm audit (moderate+)
 pnpm run preflight        # All quality checks + build

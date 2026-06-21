@@ -55,6 +55,7 @@
     "docs:links": "node scripts/check-markdown-links.mjs",
     "sync:docs": "node scripts/sync-docs-from-engine.mjs",
     "sync:docs:check": "pnpm run sync:docs && git diff --exit-code -- content/docs",
+    "sync:docs:watch": "node scripts/watch-engine-docs.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "security:audit": "pnpm audit --audit-level=moderate",
