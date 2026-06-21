@@ -60,7 +60,7 @@ The public API and guide pages on this site are **generated** from the canonical
 (engine repo) is the single source of truth; `scripts/sync-docs-from-engine.mjs` reads the subset listed in the engine
 repo's sitemap manifest (`blit386/docs/_sitemap.json`) and writes the matching MDX into `content/docs/`. The manifest -
 not this script - owns which docs publish, their URL, sidebar order, and subtitle; the script carries no per-page
-knowledge. The migration plan and source-to-URL map live in [`DOCUMENTATION_MIGRATION.md`](DOCUMENTATION_MIGRATION.md).
+knowledge.
 
 - **Run it:** `pnpm run sync:docs` (formats output too). `pnpm run sync:docs:check` regenerates and fails on drift; CI
   uses it to keep the mirror in sync. The engine docs source resolves from `ENGINE_DOCS_DIR` (default sibling
