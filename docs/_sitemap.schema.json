@@ -30,8 +30,8 @@
         "properties": {
           "src": {
             "type": "string",
-            "description": "Engine doc filename relative to docs/ (for example 'api-core.md').",
-            "pattern": "\\.md$"
+            "description": "Engine doc filename relative to docs/ (for example 'api-core.md'). Bare filename only: no path separators or parent references, so a src can never escape docs/.",
+            "pattern": "^[a-z0-9-]+\\.md$"
           },
           "path": {
             "type": "string",

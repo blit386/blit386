@@ -30,8 +30,8 @@ const SITE_BASE = 'https://blit386.dev/docs';
 const BANNER_START = '<!-- blit386.dev-banner:start -->';
 const BANNER_END = '<!-- blit386.dev-banner:end -->';
 
-/** Match an existing banner block plus the blank lines that surround it. */
-const BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/u;
+/** Match every banner block plus the blank lines that surround it (global: strips duplicates too). */
+const BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/gu;
 
 /** Load the published-page list (src + site path) from the sitemap manifest. */
 const loadPages = () => {
