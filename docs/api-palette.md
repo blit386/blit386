@@ -214,7 +214,7 @@ Used by `paletteFade` and `paletteFadeRange`. Type: `EasingFunction`.
 
 ---
 
-## Timing Note
+<Callout title="Timing">
 
 Effects are applied after `demo.render()` but before the GPU palette upload in `Renderer.endFrame()`. This means user
 draw calls and palette effects see the same consistent snapshot within a frame - they never interleave mid-frame.
@@ -222,17 +222,19 @@ draw calls and palette effects see the same consistent snapshot within a frame -
 Effects that auto-remove (fade, flash) clean up when their duration elapses. `paletteCycle` runs indefinitely until
 `paletteClearEffects()` is called.
 
+</Callout>
+
 ---
 
 ## See Also
 
-| Guide                                           | What it covers                                   |
-| ----------------------------------------------- | ------------------------------------------------ |
-| [API: Core](api-core.md)                        | bootstrap, init, game loop, core types           |
-| [API: Rendering](api-rendering.md)              | primitives, sprites, text, post-process          |
-| [API: Assets](api-assets.md)                    | sprite sheets, bitmap fonts, asset loading       |
-| [Palette Guide](palette-guide.md)               | end-to-end workflow; links to Palette addressing |
-| [Palette Presets](palette-presets.md)           | exact built-in palette and HUD color data        |
-| [Testing](testing.md)                           | test tiers and palette testing patterns          |
-| [Post-Process Effects](post-process-effects.md) | pixel-tier effects on palette indices            |
-| [Overlay Guide](overlay.md)                     | `applyHUD` and HUD slot colors                   |
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, game loop, core types.</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">Primitives, sprites, text, post-process.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">Sprite sheets, bitmap fonts, asset loading.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">End-to-end workflow; links to palette addressing.</Card>
+  <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact built-in palette and HUD color data.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Test tiers and palette testing patterns.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Pixel-tier effects on palette indices.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">applyHUD and HUD slot colors.</Card>
+</Cards>

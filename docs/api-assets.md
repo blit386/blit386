@@ -29,9 +29,13 @@ texture creation, and software sprite loops.
 | Max glyph count              | `8192`                       | Glyph map entries in a `.btfont` file                            |
 | Max software blit area       | `16,777,216` pixels          | Software renderer source rectangles (clipped to the sheet first) |
 
+<Callout title="What happens on overflow">
+
 When a limit is exceeded, loading throws an `AssetLimitError` with a beginner-friendly message. The software renderer
 skips sprite blits whose source rectangle is empty, non-integer, fully outside the sheet, or still too large after
 clipping.
+
+</Callout>
 
 `.btfont` files may reference either a relative PNG path or an embedded PNG data URI. Embedded textures must use
 `data:image/png;base64,...` and stay within the embedded payload cap above. Other `data:` schemes (for example JPEG) are
@@ -102,19 +106,36 @@ palette sequentially.
 import { BT, Palette, SpriteSheet } from 'blit386';
 
 const palette = new Palette(256);
+```
 
-// Step 1: register colors from each image into the palette
+<Steps>
+
+### Register colors into the palette
+
+Each call appends the image's colors starting at the given slot; chain them with running offsets to pack several sheets
+into one palette.
+
+```ts
 const colors = await SpriteSheet.loadColorsIntoPalette('hero.png', palette, 10);
 const tileColors = await SpriteSheet.loadColorsIntoPalette('tiles.png', palette, 10 + colors.length);
+```
 
-// Step 2: load the image into a SpriteSheet
+### Load the image into a SpriteSheet
+
+```ts
 const sheet = await SpriteSheet.load('hero.png');
+```
 
-// Step 3: convert RGBA pixels to palette indices
+### Convert RGBA pixels to palette indices
+
+`indexize()` maps every pixel to its palette slot; activate the palette afterward.
+
+```ts
 sheet.indexize(palette);
-
 BT.paletteSet(palette);
 ```
+
+</Steps>
 
 To create a sheet from raw palette-indexed pixel data (advanced / test use):
 
@@ -183,13 +204,13 @@ target FPS, draw calls, frame/update()/render() timings, backend, resolution, de
 
 ## See Also
 
-| Guide                                 | What it covers                          |
-| ------------------------------------- | --------------------------------------- |
-| [API: Core](api-core.md)              | bootstrap, init, game loop, core types  |
-| [API: Rendering](api-rendering.md)    | primitives, sprites, text, post-process |
-| [API: Palette](api-palette.md)        | palette setup, presets, effects         |
-| [Palette Guide](palette-guide.md)     | palette-first setup, offsets, refresh   |
-| [Palette Presets](palette-presets.md) | built-in preset reference               |
-| [Bitmap Fonts](bitmap-fonts.md)       | .btfont format, BMFont conversion       |
-| [Overlay Guide](overlay.md)           | system font for HUD text                |
-| [Testing](testing.md)                 | SpriteSheet and BitmapFont tests        |
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, game loop, core types.</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">Primitives, sprites, text, post-process.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Palette setup, presets, effects.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">Palette-first setup, offsets, refresh.</Card>
+  <Card title="Palette Presets" href="/docs/guides/palette-presets">Built-in preset reference.</Card>
+  <Card title="Bitmap Fonts" href="/docs/guides/bitmap-fonts">.btfont format, BMFont conversion.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">System font for HUD text.</Card>
+  <Card title="Testing" href="/docs/reference/testing">SpriteSheet and BitmapFont tests.</Card>
+</Cards>

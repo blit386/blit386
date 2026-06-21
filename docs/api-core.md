@@ -12,10 +12,12 @@
 
 Bootstrap, initialization, game loop timing, camera, and core types.
 
-> **Starting a new project?** The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm,
-> pnpm, yarn, or bun). It generates a ready-to-run Vite project with the engine installed, a starter game, and local
-> docs. See [create-blit386](https://github.com/blit386/create-blit386). The rest of this page documents the
-> `bootstrap()` API for hand-wired or existing projects.
+<Callout title="Starting a new project?">
+  The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm, pnpm, yarn, or bun).
+  It generates a ready-to-run Vite project with the engine installed, a starter game, and local docs.
+  See [create-blit386](https://github.com/blit386/create-blit386). The rest of this page documents the `bootstrap()`
+  API for hand-wired or existing projects.
+</Callout>
 
 ---
 
@@ -42,13 +44,13 @@ bootstrap(MyDemo, {
 
 **`BootstrapOptions` fields:**
 
-| Field                  | Type                     | Default              | Description                    |
-| ---------------------- | ------------------------ | -------------------- | ------------------------------ |
-| `canvasID`             | `string`                 | `'blit386-canvas'`   | Canvas element id              |
-| `containerID`          | `string`                 | `'canvas-container'` | Container id for error display |
-| `onSuccess`            | `() => void`             | -                    | Called after successful init   |
-| `onError`              | `(error: Error) => void` | -                    | Called on any init failure     |
-| `isWaitingForDOMReady` | `boolean`                | `true`               | Wait for `DOMContentLoaded`    |
+<TypeTable type={{
+    canvasID: { type: 'string', default: "'blit386-canvas'", description: 'Canvas element id' },
+    containerID: { type: 'string', default: "'canvas-container'", description: 'Container id for error display' },
+    onSuccess: { type: '() => void', description: 'Called after successful init' },
+    onError: { type: '(error: Error) => void', description: 'Called on any init failure' },
+    isWaitingForDOMReady: { type: 'boolean', default: 'true', description: 'Wait for DOMContentLoaded' },
+  }} />
 
 **Manual utilities** (for custom initialization flows):
 
@@ -102,11 +104,15 @@ render() @ logical (320×240)
   → swap chain → browser scales canvas (up to CSS cap 960×720)
 ```
 
-**Which size for CRT?** CRT-style effects (scanlines, barrel distortion, RGB mask, bloom) are **display-tier**. They run
-at the **drawing buffer** — use **`BT.outputSize`**, not `BT.displaySize`. Set `drawingBufferSize` larger than
-`displaySize` (for example `320×240` logical and `1280×960` buffer) so curvature and scanlines are not quantized onto
-the logical pixel grid. Display-tier registration throws when `drawingBufferSize` is unset. Pixel-native effects
-(`PixelGlitch`, `PixelMosaic`) are **pixel-tier** and run at **`BT.displaySize`** (logical).
+<Callout title="Which size for CRT?">
+
+CRT-style effects (scanlines, barrel distortion, RGB mask, bloom) are **display-tier**. They run at the **drawing
+buffer** — use **`BT.outputSize`**, not `BT.displaySize`. Set `drawingBufferSize` larger than `displaySize` (for example
+`320×240` logical and `1280×960` buffer) so curvature and scanlines are not quantized onto the logical pixel grid.
+Display-tier registration throws when `drawingBufferSize` is unset. Pixel-native effects (`PixelGlitch`, `PixelMosaic`)
+are **pixel-tier** and run at **`BT.displaySize`** (logical).
+
+</Callout>
 
 **What is `BT.outputSize`?** The effective **drawing-buffer** width and height in pixels:
 `drawingBufferSize ?? displaySize`. Palette resolve/upscale and the display-tier chain both operate at this size. When
@@ -225,9 +231,12 @@ from `displaySize`, custom row count, and optional feature flags (timing chart d
 `isOverlayPaletteEnabled`). Init still caches stable values such as the bottom-left toggle rect and text baselines from
 the system font metrics.
 
-**Migration note:** Upgrading demos now starts with the overlay body hidden. Teaching demos that relied on
-always-visible metrics should opt back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choose
-otherwise.
+<Callout type="warn" title="Migration note">
+
+Upgrading demos now starts with the overlay body hidden. Teaching demos that relied on always-visible metrics should opt
+back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choose otherwise.
+
+</Callout>
 
 - **Top row 1 (left):** short demo title derived from `document.title` (registry pages titled `BLIT386 Demo NNN - Topic`
   show as `Topic Demo`); **top row 1 (right):** active backend and logical resolution (for example `webgpu | 320x240`)
@@ -593,8 +602,12 @@ init).
 | Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
 | Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags     |
 
-> **Note:** WebGPU rollout is still moving across browsers. Treat this matrix as a point-in-time snapshot and re-check
-> the vendor release notes periodically.
+<Callout title="Point-in-time snapshot">
+
+WebGPU rollout is still moving across browsers. Treat this matrix as a snapshot and re-check the vendor release notes
+periodically.
+
+</Callout>
 
 **Build toolchain:** Node.js >= 22.18.0 (LTS) and an ESM bundler (Vite, webpack, esbuild, or similar) to load the
 published package in the browser.
@@ -603,14 +616,14 @@ published package in the browser.
 
 ## See Also
 
-| Guide                                           | What it covers                                         |
-| ----------------------------------------------- | ------------------------------------------------------ |
-| [API: Rendering](api-rendering.md)              | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](api-palette.md)                  | palette setup, presets, effects                        |
-| [Palette Guide](palette-guide.md)               | palette-first workflow and practical patterns          |
-| [API: Assets](api-assets.md)                    | sprite sheets, bitmap fonts, asset loading             |
-| [Input Guide](input.md)                         | pointer, keyboard, gamepad                             |
-| [Testing](testing.md)                           | test tiers, WebGPU mocks                               |
-| [Overlay Guide](overlay.md)                     | engine HUD subsystem, toggle, layout                   |
-| [Post-Process Effects](post-process-effects.md) | effect chain and tiers                                 |
-| [Deprecation Timeline](deprecations.md)         | renamed configure flags and getters                    |
+<Cards>
+  <Card title="API: Rendering" href="/docs/api/rendering">Primitives, sprites, text, post-process, frame capture.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Palette setup, presets, effects.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">Palette-first workflow and practical patterns.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">Sprite sheets, bitmap fonts, asset loading.</Card>
+  <Card title="Input Guide" href="/docs/guides/input">Pointer, keyboard, gamepad.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Test tiers, WebGPU mocks.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Engine HUD subsystem, toggle, layout.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effect chain and tiers.</Card>
+  <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed configure flags and getters.</Card>
+</Cards>

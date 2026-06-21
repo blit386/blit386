@@ -13,15 +13,6 @@
 BLIT386 has CPU micro-benchmarks for hot methods. This guide explains when to use them, how to add a new benchmark, and
 how CI uses the results.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [CPU Benchmarks](#cpu-benchmarks)
-- [Adding a New CPU Benchmark](#adding-a-new-cpu-benchmark)
-- [Commands](#commands)
-- [CI Benchmark Workflow](#ci-benchmark-workflow)
-- [Recommended Workflow for New Performance Work](#recommended-workflow-for-new-performance-work)
-
 ---
 
 ## Overview
@@ -232,11 +223,27 @@ The benchmark CI job fails if:
 
 If you add a new sprite operation, follow this order:
 
-1. **Write the code clearly first.**
-2. **Add a CPU benchmark** if the method can run in Node.
-3. **Run `pnpm run bench` locally** to compare the new method against the old behavior or an alternative implementation.
-4. **Run `pnpm run bench:json`** if you want to inspect the machine-readable output used by CI.
-5. **Open a PR** and add the `perf` label for CPU benchmark comparison.
+<Steps>
+
+### Write the code clearly first
+
+### Add a CPU benchmark
+
+If the method can run in Node.
+
+### Run `pnpm run bench` locally
+
+Compare the new method against the old behavior or an alternative implementation.
+
+### Run `pnpm run bench:json`
+
+If you want to inspect the machine-readable output used by CI.
+
+### Open a PR
+
+Add the `perf` label for CPU benchmark comparison.
+
+</Steps>
 
 For overlay palette usage or grid draw changes, include steps 2-5 so `SpriteSheet.bench.ts` and `PaletteView.bench.ts`
 are compared against `main`.
@@ -251,8 +258,8 @@ It is simple, fast, and already supported by the label-gated benchmark CI.
 
 ## See Also
 
-| Guide                                                       | What it covers                           |
-| ----------------------------------------------------------- | ---------------------------------------- |
-| [Testing](testing.md)                                       | unit, integration, and visual test tiers |
-| [Performance Best Practices](performance-best-practices.md) | when and how to optimize hot paths       |
-| [Developer Experience](developer-experience-guide.md)       | `pnpm run bench` and CI workflow         |
+<Cards>
+  <Card title="Testing" href="/docs/reference/testing">Unit, integration, and visual test tiers.</Card>
+  <Card title="Performance Best Practices" href="/docs/performance/best-practices">When and how to optimize hot paths.</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">pnpm run bench and CI workflow.</Card>
+</Cards>

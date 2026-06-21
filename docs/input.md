@@ -200,11 +200,15 @@ Player constants:
 - `PLAYER_THREE` (`2`)
 - `PLAYER_FOUR` (`3`)
 
+<Callout type="warn" title="The default dead zone is large">
+
 Default stick dead zone is **`0.75`** (`GamepadInput.DEFAULT_GAMEPAD_DEAD_ZONE` internally; not a public export).
 Filtering is **per axis**, not radial: each stick axis is zeroed when `Math.abs(axis) <= deadZone`, then the remaining
 range is re-normalized with `(abs - deadZone) / (1 - deadZone)`. At the default `0.75`, a stick axis must exceed ~75%
 deflection before movement registers — much larger than typical `0.1`–`0.2` dead zones. There is no public `BT` API to
 change this value today.
+
+</Callout>
 
 ### Text input buffer
 
@@ -285,6 +289,10 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 
 ## Implementation Notes
 
+<Accordions>
+
+<Accordion title="Internal wiring (advanced)">
+
 - `PointerInput`, `KeyboardInput`, and `GamepadInput` are internal; import from `blit386` and access through `BT.*`
   methods.
 - Default keyboard tables live in `defaultKeyboardMap.ts`; runtime remaps are stored in the `BT` facade and reset with
@@ -295,11 +303,15 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
   before `demo.init()` runs.
 - `stop()` calls `detach()` on all three input subsystems and clears references to prevent listener leaks.
 
+</Accordion>
+
+</Accordions>
+
 ## See Also
 
-| Guide                                                 | What it covers                                        |
-| ----------------------------------------------------- | ----------------------------------------------------- |
-| [API: Core](api-core.md)                              | `BT.isDown` / `isPressed` / `isKeyDown` and configure |
-| [Overlay Guide](overlay.md)                           | Backquote and bottom-left corner toggle               |
-| [Deprecation Timeline](deprecations.md)               | renamed input aliases (`buttonDown` -> `isDown`)      |
-| [Developer Experience](developer-experience-guide.md) | boolean naming (hold vs edge)                         |
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">BT.isDown / isPressed / isKeyDown and configure.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Backquote and bottom-left corner toggle.</Card>
+  <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed input aliases (buttonDown to isDown).</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">Boolean naming (hold vs edge).</Card>
+</Cards>

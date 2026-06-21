@@ -51,11 +51,17 @@ affect pixel output.
 
 ## Known exclusions (expected in MVP)
 
-- Calling fullscreen effects APIs in software mode should fail clearly:
-  - `BT.effectAdd(...)`
-  - `BT.effectRemove(...)`
-  - `BT.effectClear()`
-- Expected message intent: software mode does not support fullscreen effects and suggests switching to WebGPU.
+<Callout type="warn" title="Effects APIs fail in software mode">
+
+Calling fullscreen effects APIs in software mode should fail clearly:
+
+- `BT.effectAdd(...)`
+- `BT.effectRemove(...)`
+- `BT.effectClear()`
+
+Expected message intent: software mode does not support fullscreen effects and suggests switching to WebGPU.
+
+</Callout>
 
 ## Pass criteria
 
@@ -65,9 +71,9 @@ affect pixel output.
 
 ## See Also
 
-| Guide                                                | What it covers                                  |
-| ---------------------------------------------------- | ----------------------------------------------- |
-| [API: Core](api-core.md#requested-vs-active-backend) | requested vs active backend, `BT.activeBackend` |
-| [Post-Process Effects](post-process-effects.md)      | effects excluded in the software backend        |
-| [Testing](testing.md)                                | automated visual parity tests                   |
-| [Overlay Guide](overlay.md)                          | backend name shown on the overlay top bar       |
+<Cards>
+  <Card title="API: Core" href="/docs/api/core#requested-vs-active-backend">Requested vs active backend, BT.activeBackend.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effects excluded in the software backend.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Automated visual parity tests.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Backend name shown on the overlay top bar.</Card>
+</Cards>

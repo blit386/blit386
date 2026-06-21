@@ -58,7 +58,9 @@ When slot `6` changes in the active palette, every pixel drawn with absolute ind
 
 ## 3) Index sprites (preferred and manual flows)
 
-### Preferred: `SpriteSheet.loadIndexed(...)`
+<Tabs items={['Preferred: loadIndexed', 'Manual: low-level']}>
+
+<Tab value="Preferred: loadIndexed">
 
 Use this when loading sprites for normal game/demo work.
 
@@ -77,7 +79,9 @@ What it does:
 3. Loads the sheet
 4. Converts source pixels to palette indices
 
-### Manual: low-level control
+</Tab>
+
+<Tab value="Manual: low-level">
 
 Use this when you need custom slot planning across multiple images.
 
@@ -87,6 +91,10 @@ const sheet = await SpriteSheet.load('sprites/hero.png');
 sheet.indexize(palette);
 BT.paletteSet(palette);
 ```
+
+</Tab>
+
+</Tabs>
 
 ---
 
@@ -139,7 +147,12 @@ BT.paletteClearEffects();
 
 ## 6) Layout swap vs value swap (`BT.spritesRefresh()`)
 
-This distinction is critical.
+<Callout type="warn" title="This distinction is critical">
+
+Refresh sprites only when slot **positions** change, never when only slot **values** change. Refreshing after a
+value-only change is wasteful and can fail reindexing if the original RGBA is gone.
+
+</Callout>
 
 ### Value swap (no sprite refresh)
 
@@ -188,12 +201,12 @@ For benchmark workflow and CI thresholds, see [Performance Testing](performance-
 
 ## See Also
 
-| Guide                                                       | What it covers                                     |
-| ----------------------------------------------------------- | -------------------------------------------------- |
-| [API: Palette](api-palette.md)                              | API reference for palette methods and effect calls |
-| [API: Assets](api-assets.md)                                | `SpriteSheet.loadIndexed`, fonts, and asset flow   |
-| [API: Rendering](api-rendering.md)                          | sprite offset semantics and draw APIs              |
-| [Palette Presets](palette-presets.md)                       | exact built-in palette color data                  |
-| [Testing](testing.md)                                       | palette testing patterns and visual regression     |
-| [Post-Process Effects](post-process-effects.md)             | pixel-tier effects on palette indices              |
-| [Performance Best Practices](performance-best-practices.md) | palette-offset performance patterns                |
+<Cards>
+  <Card title="API: Palette" href="/docs/api/palette">API reference for palette methods and effect calls.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">SpriteSheet.loadIndexed, fonts, and asset flow.</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">Sprite offset semantics and draw APIs.</Card>
+  <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact built-in palette color data.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Palette testing patterns and visual regression.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Pixel-tier effects on palette indices.</Card>
+  <Card title="Performance Best Practices" href="/docs/performance/best-practices">Palette-offset performance patterns.</Card>
+</Cards>

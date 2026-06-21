@@ -65,14 +65,18 @@ These aliases were introduced to preserve backward compatibility after the API n
 - Search for `@deprecated Deprecated since 2026-05-31` in `src/`.
 - Remove aliases only after confirming downstream demos/apps have migrated.
 
-**Scope:** This tracker lists **public** compatibility aliases only. Internal deprecated helpers (overlay layout
-functions, `RenderPaletteUsage` re-exports, etc.) are omitted — search `@deprecated` in `src/` for the full set.
+<Callout title="Public aliases only">
+
+This tracker lists **public** compatibility aliases only. Internal deprecated helpers (overlay layout functions,
+`RenderPaletteUsage` re-exports, etc.) are omitted — search `@deprecated` in `src/` for the full set.
+
+</Callout>
 
 ## See Also
 
-| Guide                                                 | What it covers                                     |
-| ----------------------------------------------------- | -------------------------------------------------- |
-| [API: Core](api-core.md)                              | current `BT` getters and `HardwareSettings` fields |
-| [Input Guide](input.md)                               | current input API names                            |
-| [Overlay Guide](overlay.md)                           | current overlay configure flags                    |
-| [Developer Experience](developer-experience-guide.md) | boolean naming and migration policy                |
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Current BT getters and HardwareSettings fields.</Card>
+  <Card title="Input Guide" href="/docs/guides/input">Current input API names.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Current overlay configure flags.</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">Boolean naming and migration policy.</Card>
+</Cards>
