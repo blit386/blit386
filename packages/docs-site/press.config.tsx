@@ -19,6 +19,18 @@ export default defineConfig({
         name: 'BLIT386',
         baseUrl: 'https://blit386.dev',
     },
+    meta: {
+        root: () => (
+            <>
+                <script async={true} src="https://plausible.io/js/pa-T01y19zS6cj7d9y8uQnqw.js" />
+                <script>
+                    {
+                        'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()'
+                    }
+                </script>
+            </>
+        ),
+    },
 })
     .plugins(flexsearchPlugin(), llmsPlugin(), takumiPlugin())
     .adapters(
