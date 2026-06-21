@@ -50,11 +50,17 @@ const loadPages = () => {
     return manifest.pages;
 };
 
-/** Build the banner block (sentinels included, no surrounding blank lines) for one site URL. */
+/**
+ * Build the banner block (sentinels included, no surrounding blank lines) for
+ * one site URL. The `<!-- prettier-ignore -->` directive keeps Prettier's
+ * `proseWrap: always` from reflowing the GitHub alert: without it, Prettier
+ * pulls `[!TIP]` onto the prose line and the callout stops rendering on GitHub.
+ */
 const buildBanner = (url) =>
     [
         BANNER_START,
         '',
+        '<!-- prettier-ignore -->',
         '> [!TIP]',
         `> You're reading the raw source on GitHub. The same page lives at ${url}, typeset like an`,
         '> actual docs site and easier on the eyes. Probably the nicer place to read it, but same',
