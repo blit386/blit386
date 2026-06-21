@@ -1,8 +1,9 @@
 ---
 name: bt-preflight
 description:
-  Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, test:unit, test:declarations) before
-  committing or pushing. Use when the user wants to verify the code is ready to commit or run every check at once.
+  Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, sync:doc-banners:check, test:unit,
+  test:declarations) before committing or pushing. Use when the user wants to verify the code is ready to commit or run
+  every check at once.
 ---
 
 # Preflight Checks
@@ -31,6 +32,7 @@ Run comprehensive quality checks before committing or pushing code.
   - `spellcheck` - Check spelling in code and docs
   - `knip` - Find unused exports and dependencies
   - `docs:links` - Verify Markdown links (all repo-root `*.md` / `*.mdx`)
+  - `sync:doc-banners:check` - Verify the blit386.dev banner is current in every published doc
   - `test:unit` - Run all unit tests
   - `test:declarations` - Declaration tooling log checker tests
 

@@ -376,7 +376,7 @@ pnpm run typecheck          # TypeScript type checking
 pnpm run spellcheck         # cspell check
 pnpm run knip               # Find unused exports/deps
 pnpm run docs:links         # Check Markdown links (all repo-root *.md / *.mdx)
-pnpm run preflight          # All checks (format + lint + typecheck + spellcheck + knip + docs:links + test:unit + test:declarations)
+pnpm run preflight          # All checks (format + lint + typecheck + spellcheck + knip + docs:links + sync:doc-banners:check + test:unit + test:declarations)
 ```
 
 **RTK:** Shell commands are rewritten via `rtk hook cursor` (Cursor) / `rtk hook claude` (Claude Code). Use `pnpm run …`
