@@ -27,6 +27,14 @@ alwaysApply: false
 - Never hand-edit or hand-add the `<!-- blit386.dev-banner -->` block in a doc; it is generated and owned by
   `scripts/sync-doc-banners.mjs` (URLs derived from the sitemap) and stripped from the public mirror. Edit banner prose
   in that script, not the docs.
+- Published docs are MDX-capable and **site-first**: use Fumadocs components (`Callout`, `TypeTable`, `Steps`, `Tabs`,
+  `Accordions`, `Cards`, `Files`) where they improve the page. Full guidance — which components, when to use them, and
+  the authoring rules — is in `CLAUDE.md` (**Fumadocs components in published docs**). Key rules: author in block form
+  (blank lines around children) so Prettier stays stable; `Card href` must be a site-absolute `/docs/...` path (the
+  mirror rewrites Markdown links, not JSX props); do not add a manual or `InlineTOC` table of contents (the site renders
+  its own); components render only on the live site, so leave contributor-only docs as plain Markdown. Any component
+  used must be registered in `blit386-dev-fumapress/press.config.tsx` (`getMdxComponents`) or the build fails — verify
+  with `pnpm run sync:docs` + `pnpm run build` (or `typecheck`) in that repo.
 - When architecture or subsystem structure changes, update `CLAUDE.md` architecture sections and the **Where to Find
   Information** table when paths change.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected
