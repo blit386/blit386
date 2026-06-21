@@ -14,8 +14,6 @@ Central tracker for public API compatibility aliases and planned removals.
 
 Use this file as the single source of truth when pruning old names.
 
----
-
 ## 2026-05-31 - compatibility aliases added
 
 These aliases were introduced to preserve backward compatibility after the API naming refactor.

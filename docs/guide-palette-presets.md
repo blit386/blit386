@@ -123,7 +123,7 @@ That means:
 ];
 ```
 
-## Gameboy (4 slots)
+## Game Boy (4 slots)
 
 `Palette.gameboy()`:
 

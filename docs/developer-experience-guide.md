@@ -73,12 +73,14 @@ exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 | [API: Game Loop](api-game-loop.md)                            | tick timing, present FPS, Timer                        |
 | [API: Camera](api-camera.md)                                  | global pixel offset, world-clamp helpers               |
 | [API: Core Types](api-core-types.md)                          | Vector2i, Rect2i, Color32                              |
+| [API: Easing](api-easing.md)                                  | named easing curves for palette fades                  |
 | [Overlay Guide](guide-overlay.md)                             | engine HUD subsystem, toggle, custom rows, layout      |
 | [API: Rendering](api-rendering.md)                            | primitives, sprites, text, post-process, frame capture |
 | [API: Palette](api-palette.md)                                | palette setup, presets, effects, serialization         |
 | [Palette Guide](guide-palette.md)                             | palette-first workflow, offsets, effects, performance  |
 | [Palette Presets](guide-palette-presets.md)                   | built-in preset reference and exact color data         |
 | [API: Assets](api-assets.md)                                  | sprite sheets, bitmap fonts, asset loading             |
+| [API: Browser Support](api-browser-support.md)                | WebGPU support matrix, automatic fallback              |
 | [Input Guide](guide-input.md)                                 | pointer, keyboard, gamepad                             |
 | [Post-Process Effects](guide-post-process-effects.md)         | effect chain, built-in effects, custom effects         |
 | [Bitmap Fonts](guide-bitmap-fonts.md)                         | .btfont format, BMFont conversion                      |

@@ -86,7 +86,7 @@ Overlay chrome uses palette indices from `overlayStyle` (defaults: bar/gap 1, te
 text with `BT.systemPrint`, call `palette.applyHUD(startSlot?)` once at init to fill the six common UI slots (white,
 background, label, header, dim, FPS) and register `hud_*` name aliases. See
 [API: Palette – applyHUD](api-palette.md#built-in-presets) and
-[Palette Presets – HUD](guide-palette-presets.md#hud-preset-paletteapplyhud).
+[Palette Presets – HUD](guide-palette-presets.md#hud-preset).
 
 ```ts
 const palette = Palette.vga();

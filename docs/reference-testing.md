@@ -321,8 +321,6 @@ See also [CLAUDE.md](../CLAUDE.md) (Known Testing Quirks):
 - `docs:links` scope – `scripts/check-markdown-links.mjs` walks all repo-root `*.md` / `*.mdx` files (excluding ignored
   dirs), not only `docs/` and README.
 
----
-
 ## See also
 
 <Cards>

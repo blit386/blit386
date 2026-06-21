@@ -200,7 +200,7 @@ The full, typeset documentation lives at **[blit386.dev](https://blit386.dev)**.
 [`docs/`](docs/) – start with [API: Core](docs/api-core.md) for `bootstrap()` and initialization. The rest of the
 important pages:
 
-| Guide                                                      | What it covers                                         |
+| Documentation                                              | What it covers                                         |
 | ---------------------------------------------------------- | ------------------------------------------------------ |
 | [API: Core](docs/api-core.md)                              | bootstrap, init, default configuration                 |
 | [API: Game Loop](docs/api-game-loop.md)                    | tick timing, present FPS, Timer                        |

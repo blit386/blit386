@@ -194,7 +194,7 @@ BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
 
 - Use `BT.systemPrint()` for demo-specific HUD panels and labels. Call `palette.applyHUD()` at init so overlay and demo
   HUD share the same label/header/dim slot conventions – see [API: Palette](api-palette.md) and
-  [Palette Presets – HUD](guide-palette-presets.md#hud-preset-paletteapplyhud).
+  [Palette Presets – HUD](guide-palette-presets.md#hud-preset).
 - The engine draws its own overlay (present FPS, target FPS, draw calls, frame/update()/render() timings, backend,
   resolution, demo title) after each `render()` when `isOverlayEnabled` is true; see [Overlay Guide](guide-overlay.md).
 - For styled variable-width text, use a bitmap font instead.
@@ -202,7 +202,7 @@ BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
 ## See also
 
 <Cards>
-  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, game loop, core types.</Card>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
   <Card title="API: Rendering" href="/docs/api/rendering">Primitives, sprites, text, post-process.</Card>
   <Card title="API: Palette" href="/docs/api/palette">Palette setup, presets, effects.</Card>
   <Card title="Palette Guide" href="/docs/guides/palette">Palette-first setup, offsets, refresh.</Card>

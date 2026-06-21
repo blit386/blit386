@@ -125,7 +125,8 @@ See [Bitmap Fonts Guide](guide-bitmap-fonts.md) for the `.btfont` format spec an
 
 ## Post-process effects
 
-Two-tier fullscreen pipeline running between scene render and swap-chain present:
+Two-tier fullscreen effect pipeline – a pixel tier and a display tier – running between scene render and swap-chain
+present, with a palette-resolve-and-upscale step bridging the two:
 
 1. Pixel tier – operates on the logical `r8uint` framebuffer (one palette index per pixel). Effects here stay
    palette-native (chunky glitch, mosaic).
