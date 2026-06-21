@@ -301,13 +301,25 @@ const dropDuplicateIntro = (body, description) => {
     return breakIndex === -1 ? '' : body.slice(breakIndex).replace(/^\n+/u, '');
 };
 
+/**
+ * Match the "read this on blit386.dev" banner block (sentinels and all) that the
+ * engine repo injects below each published doc's H1, plus the blank lines around
+ * it. The banner is a GitHub-only signpost; the live site must never tell its
+ * own readers to go to the site, so it is stripped before anything else runs.
+ * Owned upstream by `blit386/scripts/sync-doc-banners.mjs`.
+ */
+const SITE_BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/u;
+
+/** Remove the engine's GitHub-only site banner, leaving the body flush at its first real line. */
+const stripSiteBanner = (markdown) => markdown.replace(SITE_BANNER_REGION, '\n').replace(/^\n+/u, '');
+
 /** Build the MDX file contents for one page, plus any HTML comments stripped from it. */
 const renderPage = ({ src, description }) => {
     const sourcePath = join(ENGINE_DOCS, src);
     const raw = readFileSync(sourcePath, 'utf8');
     const { title, body } = extractTitleAndBody(raw, src);
     const sourceRepoDir = posix.dirname(`docs/${src}`);
-    const trimmedBody = dropDuplicateIntro(body, description);
+    const trimmedBody = dropDuplicateIntro(stripSiteBanner(body), description);
     const { body: rewritten, comments } = transformBody(trimmedBody, sourceRepoDir);
     const banner = [
         `# Generated from blit386/docs/${src} by scripts/sync-docs-from-engine.mjs.`,
