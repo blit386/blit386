@@ -187,13 +187,17 @@ const escapeMdxText = (text) => text.replaceAll('<', '&lt;').replaceAll('{', '&#
  * does not support them, and source comments such as cspell directives are
  * meaningless in the mirror), rewrite Markdown links, and escape MDX-hostile
  * characters in prose. Fenced blocks and inline code spans are left untouched
- * so example snippets keep their literal content.
+ * so example snippets keep their literal content. Returns the transformed body
+ * together with the text of every stripped comment, so the caller can warn
+ * about comments that look like real content rather than tooling directives.
  */
 const transformBody = (markdown, sourceRepoDir) => {
     const linkPattern = /(\[[^\]]*\])\(([^)]+)\)/gu;
     const inlineCodePattern = /(`[^`]*`)/u;
+    const strippedComments = [];
     let isInFence = false;
     let isInHtmlComment = false;
+    let commentBuffer = '';
 
     // Remove HTML comments by consuming `<!--` ... `-->` delimiters, tracking
     // open state across lines so multi-line comments are fully stripped. Walking
@@ -208,9 +212,14 @@ const transformBody = (markdown, sourceRepoDir) => {
                 const end = rest.indexOf('-->');
 
                 if (end === -1) {
+                    commentBuffer += `${rest}\n`;
+
                     return result;
                 }
 
+                commentBuffer += rest.slice(0, end);
+                strippedComments.push(commentBuffer);
+                commentBuffer = '';
                 rest = rest.slice(end + 3);
                 isInHtmlComment = false;
             } else {
@@ -259,7 +268,7 @@ const transformBody = (markdown, sourceRepoDir) => {
             .join('');
     });
 
-    return lines.join('\n');
+    return { body: lines.join('\n'), comments: strippedComments };
 };
 
 /** Strip the leading H1 and return the title plus the remaining body. */
@@ -292,21 +301,33 @@ const dropDuplicateIntro = (body, description) => {
     return breakIndex === -1 ? '' : body.slice(breakIndex).replace(/^\n+/u, '');
 };
 
-/** Build the MDX file contents for one page. */
+/**
+ * Match the "read this on blit386.dev" banner block (sentinels and all) that the
+ * engine repo injects below each published doc's H1, plus the blank lines around
+ * it. The banner is a GitHub-only signpost; the live site must never tell its
+ * own readers to go to the site, so it is stripped before anything else runs.
+ * Owned upstream by `blit386/scripts/sync-doc-banners.mjs`.
+ */
+const SITE_BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/u;
+
+/** Remove the engine's GitHub-only site banner, leaving the body flush at its first real line. */
+const stripSiteBanner = (markdown) => markdown.replace(SITE_BANNER_REGION, '\n').replace(/^\n+/u, '');
+
+/** Build the MDX file contents for one page, plus any HTML comments stripped from it. */
 const renderPage = ({ src, description }) => {
     const sourcePath = join(ENGINE_DOCS, src);
     const raw = readFileSync(sourcePath, 'utf8');
     const { title, body } = extractTitleAndBody(raw, src);
     const sourceRepoDir = posix.dirname(`docs/${src}`);
-    const trimmedBody = dropDuplicateIntro(body, description);
-    const rewritten = transformBody(trimmedBody, sourceRepoDir);
+    const trimmedBody = dropDuplicateIntro(stripSiteBanner(body), description);
+    const { body: rewritten, comments } = transformBody(trimmedBody, sourceRepoDir);
     const banner = [
         `# Generated from blit386/docs/${src} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',
     ].join('\n');
     const frontmatter = `---\n${banner}\ntitle: ${JSON.stringify(title)}\ndescription: ${JSON.stringify(description)}\n---`;
 
-    return `${frontmatter}\n\n${rewritten.trimEnd()}\n`;
+    return { contents: `${frontmatter}\n\n${rewritten.trimEnd()}\n`, comments };
 };
 
 /** Group generated pages by their top-level section, preserving manifest order. */
@@ -329,9 +350,52 @@ const groupBySection = () => {
     return sections;
 };
 
+/**
+ * Comments that are lint/spell/format tooling directives, not prose. These are
+ * meaningless in the mirror and expected to be dropped, so they are suppressed
+ * from the stripped-comment warning.
+ */
+const TOOLING_DIRECTIVE_PATTERN =
+    /^(?:cspell|prettier-ignore|prettier|markdownlint(?:-disable|-enable)?|eslint|stylelint|vale|noqa)\b/iu;
+
+/** Whether a stripped comment is a tooling directive rather than real content. */
+const isToolingDirective = (text) => TOOLING_DIRECTIVE_PATTERN.test(text.trim());
+
+/** Collapse a (possibly multi-line) comment to a single trimmed, truncated line. */
+const summarizeComment = (text) => {
+    const collapsed = text.replace(/\s+/gu, ' ').trim();
+
+    return collapsed.length > 120 ? `${collapsed.slice(0, 117)}...` : collapsed;
+};
+
+/**
+ * Warn (console only) about HTML comments dropped from the mirror that look like
+ * real content rather than tooling directives. HTML comments render nowhere -
+ * not on GitHub, not on the site - so this is a maintainer heads-up, never a
+ * user-facing marker, for the rare case where prose was hidden in a comment and
+ * silently left out of blit386.dev. Recognized lint/spell directives are
+ * suppressed so the warning only fires on comments worth a second look.
+ */
+const warnStrippedComments = (strippedComments) => {
+    const meaningful = strippedComments.filter(({ text }) => !isToolingDirective(text));
+
+    if (meaningful.length === 0) {
+        return;
+    }
+
+    console.warn(`\nwarning: ${meaningful.length} HTML comment(s) stripped; they will not appear on blit386.dev:`);
+
+    for (const { src, text } of meaningful) {
+        console.warn(`  docs/${src}: ${summarizeComment(text)}`);
+    }
+
+    console.warn('If any held real content, move it into the page body; otherwise ignore this notice.');
+};
+
 const main = () => {
     const sections = groupBySection();
     const written = [];
+    const strippedComments = [];
 
     // Clear generator-managed section directories so renamed or removed pages do
     // not linger. Hand-authored files (content/docs/index.mdx, the root
@@ -354,8 +418,13 @@ const main = () => {
             mkdirSync(pageDir, { recursive: true });
 
             const pagePath = join(pageDir, 'index.mdx');
-            writeFileSync(pagePath, renderPage(page));
+            const { contents, comments } = renderPage(page);
+            writeFileSync(pagePath, contents);
             written.push(pagePath);
+
+            for (const text of comments) {
+                strippedComments.push({ src: page.src, text });
+            }
         }
     }
 
@@ -364,6 +433,8 @@ const main = () => {
     }
 
     console.log(`\n${written.length} file(s) generated from ${relative(ROOT, ENGINE_DOCS)}.`);
+
+    warnStrippedComments(strippedComments);
 };
 
 main();
