@@ -44,6 +44,7 @@
   "scripts": {
     "dev": "waku dev",
     "build": "fumadocs-mdx && cross-env CLOUDFLARE=1 waku build",
+    "postbuild": "node scripts/patch-wrangler.mjs",
     "start": "waku start",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "types:check": "pnpm run typecheck",
