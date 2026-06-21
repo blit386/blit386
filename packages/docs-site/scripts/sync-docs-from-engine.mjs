@@ -183,7 +183,7 @@ const rewriteTarget = (target, sourceRepoDir) => {
  */
 const escapeMdxText = (text) =>
     text
-        .replace(/<(?![A-Z/])/gu, '&lt;')
+        .replace(/<(?![A-Z]|\/[A-Z])/gu, '&lt;')
         .replaceAll('{', '&#123;')
         .replaceAll('}', '&#125;');
 
