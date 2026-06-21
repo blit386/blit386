@@ -1,0 +1,21 @@
+---
+# Generated from blit386/docs/api-easing.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Easing"
+description: "Named easing curves for palette fade effects via applyEasing."
+---
+
+Palette fade effects accept an `EasingFunction`. Use `applyEasing` to evaluate named curves:
+
+```ts
+import { applyEasing } from 'blit386';
+
+const t = applyEasing('ease-in-out', 0.5); // 0..1 progress → eased value
+```
+
+## See also
+
+<Cards>
+  <Card title="API: Palette" href="/docs/api/palette">Palette fade effects that consume easing curves.</Card>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
+</Cards>

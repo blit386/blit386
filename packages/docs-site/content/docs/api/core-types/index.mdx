@@ -1,0 +1,106 @@
+---
+# Generated from blit386/docs/api-core-types.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Core Types"
+description: "The integer core types: Vector2i, Rect2i, and Color32."
+---
+
+The integer-coordinate primitives shared across the engine: `Vector2i`, `Rect2i`, and `Color32`.
+
+## Vector2i
+
+Integer 2D vector. Constructor auto-truncates floats toward zero. Used for all positions, sizes, and camera offsets.
+
+```ts
+const v = new Vector2i(10, 20);
+v.x;
+v.y; // direct access
+v.width;
+v.height; // aliases for x / y (useful when treating the vector as a size)
+
+// Static factories
+Vector2i.zero(); // (0, 0) - cached frozen singleton
+Vector2i.one(); // (1, 1) - cached frozen singleton
+Vector2i.up(); // (0, -1)
+Vector2i.down(); // (0, 1)
+Vector2i.left(); // (-1, 0)
+Vector2i.right(); // (1, 0)
+Vector2i.fromFloat(x, y); // truncate floats → integer vector
+
+// Math utilities
+Vector2i.distance(a, b); // Euclidean distance (float)
+Vector2i.sqrDistance(a, b); // squared distance (avoids sqrt)
+Vector2i.dotProduct(a, b); // scalar dot product
+Vector2i.lerp(a, b, t); // interpolate, t clamped [0,1], result truncated
+Vector2i.lerpTo(a, b, t, out); // zero-allocation lerp into existing vector
+```
+
+Instance methods: `.add()`, `.sub()`, `.scale()`, `.dot()`, `.clone()`, `.isEqual(other)`, `.isEqualXY(x, y)`,
+`.isZero()`, `.negate()`, `.abs()`, `.min()`, `.max()`, etc. See `src/utils/Vector2i.ts` for the full list.
+
+## Rect2i
+
+Integer rectangle with `x, y, width, height` fields.
+
+```ts
+const r = new Rect2i(x, y, width, height);
+
+// Static factories
+Rect2i.zero(); // (0,0,0,0) - cached frozen singleton
+Rect2i.fromMinMax(min, max); // from corner vectors
+Rect2i.fromMinMaxXY(minX, minY, maxX, maxY); // zero-allocation variant
+Rect2i.fromCenterSize(center, size); // centered rectangle
+Rect2i.fromCenterSizeXY(cx, cy, w, h); // zero-allocation variant
+
+// Instance methods
+r.isContaining(point); // boolean - point inside rect
+r.isContainingXY(px, py); // boolean - raw coordinates, no Vector2i alloc
+r.isIntersecting(other); // boolean - rects overlap
+r.isEqual(other); // boolean - same position and size
+r.intersection(other); // Rect2i | null - overlap area
+r.intersectTo(other, out); // boolean - write overlap into out when it exists
+r.center; // Vector2i getter
+r.min; // Vector2i getter (top-left)
+r.max; // Vector2i getter (bottom-right)
+```
+
+## Color32
+
+32-bit RGBA color (channels 0-255).
+
+```ts
+const c = new Color32(r, g, b, a);
+
+// Cached color constants (static getters; frozen singletons)
+Color32.white       Color32.black       Color32.transparent
+Color32.red         Color32.green       Color32.blue
+Color32.yellow      Color32.cyan        Color32.magenta
+Color32.gray(value) // grayscale, value 0-255
+
+// Hex parsing
+Color32.fromHex('#ff8800') // returns Color32
+
+// Named color registry (global, case-insensitive)
+Color32.registerColor('brand', new Color32(255, 128, 0, 255));
+Color32.resolveNamedColor('brand'); // → Color32 | undefined
+Color32.updateColor('brand', newColor);
+Color32.unregisterColor('brand');
+
+// Interpolation
+Color32.lerp(a, b, t); // blend a→b; t clamped [0,1]; RGBA independent; truncates like instance lerp
+c.lerp(other, t); // same semantics as static helper
+
+// Conversion
+c.toFloat32Array() // [r/255, g/255, b/255, a/255]
+c.luminance // perceived brightness: 0.299r + 0.587g + 0.114b
+c.toHex() // '#rrggbb' string
+c.isEqual(other) // boolean - all RGBA channels match
+```
+
+## See also
+
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
+  <Card title="API: Camera" href="/docs/api/camera">Vector2i offsets for draw calls.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Palette and Color32 in the palette-first workflow.</Card>
+</Cards>
