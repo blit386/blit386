@@ -70,6 +70,14 @@ knowledge. The migration plan and source-to-URL map live in [`DOCUMENTATION_MIGR
 - **What the generator does:** drops the source H1 (title comes from it), drops a lead paragraph that duplicates the
   description, rewrites intra-doc links to site paths (`/docs/...`) and all other links to absolute GitHub URLs, and
   adds frontmatter (`title`, `description`).
+- **MDX components in engine docs:** the engine `.md` sources may use Fumadocs components (`Callout`, `TypeTable`,
+  `Steps`, `Tabs`, `Accordions`, `Cards`, `Files`, etc.). The generator passes PascalCase tags through verbatim and is
+  MDX-aware: it escapes stray braces in prose but leaves JSX expression props (`type={{ ... }}`, `items={[ ... ]}`)
+  intact inside component blocks. Any component the docs use **must be registered** in `press.config.tsx`
+  (`fumadocsMdx({ getMdxComponents })`) — `Callout`, `Card`/`Cards`, and code blocks come from `defaultMdxComponents`;
+  the rest are added explicitly there. Registering a new one means importing it from `fumadocs-ui/components/*` and
+  adding it to that map. Note `Card href` is a JSX prop and is **not** link-rewritten, so engine docs must use
+  site-absolute `/docs/...` href values.
 - **Adding a page:** add an entry to `pages` in `blit386/docs/_sitemap.json` (the array order is the sidebar order; add
   the section to `sections` if it is new), then run `pnpm run sync:docs`. No change to this repo's script is needed.
   Contributor-only pages (developer experience, voice, tooling, `security/*`) are intentionally not mirrored - just

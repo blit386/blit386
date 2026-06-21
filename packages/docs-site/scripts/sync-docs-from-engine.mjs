@@ -175,12 +175,17 @@ const rewriteTarget = (target, sourceRepoDir) => {
 };
 
 /**
- * Escape characters that MDX would otherwise parse as JSX or expressions. The
- * mirror is plain prose plus code, never intentional JSX, so a bare `<` (for
- * example `<50`) or `{` in text must render literally. Applied only to text
- * outside inline code and fenced blocks.
+ * Escape characters that MDX would otherwise parse as JSX or expressions. A
+ * bare `<` (e.g. `<50`) or `{` in prose must render literally, but MDX
+ * component tags (PascalCase opening tags such as `<Callout>` and their
+ * closing counterparts `</Callout>`) are intentional and must pass through
+ * unchanged. Applied only to text outside inline code and fenced blocks.
  */
-const escapeMdxText = (text) => text.replaceAll('<', '&lt;').replaceAll('{', '&#123;').replaceAll('}', '&#125;');
+const escapeMdxText = (text) =>
+    text
+        .replace(/<(?![A-Z]|\/[A-Z])/gu, '&lt;')
+        .replaceAll('{', '&#123;')
+        .replaceAll('}', '&#125;');
 
 /**
  * Transform body lines outside fenced code blocks: strip HTML comments (MDX
@@ -238,6 +243,20 @@ const transformBody = (markdown, sourceRepoDir) => {
         return result;
     };
 
+    // Depth of open MDX component blocks (PascalCase elements such as <Callout>,
+    // <Tabs>, <TypeTable>). Inside a component, JSX expression attributes like
+    // `type={{ ... }}` and `items={[ ... ]}` must pass through verbatim; escaping
+    // their braces as prose would corrupt the JSX. Counted on prose segments only
+    // so tags inside `inline code` never affect the depth.
+    let mdxDepth = 0;
+
+    /** Count opening, closing, and self-closing PascalCase tags in a prose segment. */
+    const countMdxTags = (segment) => ({
+        opens: (segment.match(/<[A-Z][A-Za-z0-9]*/gu) ?? []).length,
+        closes: (segment.match(/<\/[A-Z][A-Za-z0-9]*/gu) ?? []).length,
+        selfCloses: (segment.match(/\/>/gu) ?? []).length,
+    });
+
     const lines = markdown.split('\n').map((line) => {
         if (/^\s*```/u.test(line)) {
             isInFence = !isInFence;
@@ -251,8 +270,27 @@ const transformBody = (markdown, sourceRepoDir) => {
 
         // Split on inline code spans (odd indices) so links and escaping apply
         // only to prose, leaving `code` spans such as `texture_2d<u32>` intact.
-        return stripComments(line)
-            .split(inlineCodePattern)
+        const segments = stripComments(line).split(inlineCodePattern);
+
+        let opens = 0;
+        let closes = 0;
+        let selfCloses = 0;
+
+        for (let index = 0; index < segments.length; index += 1) {
+            if (index % 2 === 0) {
+                const counts = countMdxTags(segments[index]);
+                opens += counts.opens;
+                closes += counts.closes;
+                selfCloses += counts.selfCloses;
+            }
+        }
+
+        // A line is "inside MDX" when an enclosing block is still open or when the
+        // line itself opens or closes a component. Such lines keep their braces and
+        // angle brackets verbatim; only plain prose gets MDX-escaped.
+        const isMdxLine = mdxDepth > 0 || opens > 0 || closes > 0;
+
+        const rendered = segments
             .map((segment, index) => {
                 if (index % 2 === 1) {
                     return segment;
@@ -263,9 +301,13 @@ const transformBody = (markdown, sourceRepoDir) => {
                     (_match, label, target) => `${label}(${rewriteTarget(target, sourceRepoDir)})`,
                 );
 
-                return escapeMdxText(linked);
+                return isMdxLine ? linked : escapeMdxText(linked);
             })
             .join('');
+
+        mdxDepth = Math.max(0, mdxDepth + opens - closes - selfCloses);
+
+        return rendered;
     });
 
     return { body: lines.join('\n'), comments: strippedComments };

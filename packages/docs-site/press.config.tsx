@@ -3,6 +3,14 @@ import { fumadocsMdx } from 'fumapress/adapters/mdx';
 import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
 import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
+import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+import { File, Files, Folder } from 'fumadocs-ui/components/files';
+import { GithubInfo } from 'fumadocs-ui/components/github-info';
+import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { docs } from './.source/server';
 
 export default defineConfig({
@@ -13,4 +21,30 @@ export default defineConfig({
     },
 })
     .plugins(flexsearchPlugin(), llmsPlugin(), takumiPlugin())
-    .adapters(fumadocsMdx());
+    .adapters(
+        // Extend the default MDX component map so the engine docs can use the full
+        // Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,
+        // GithubInfo, InlineTOC). Callout, Card/Cards, and code blocks already ship
+        // in `defaultMdxComponents`. The relative-link override mirrors the adapter
+        // default so in-page links keep resolving.
+        fumadocsMdx({
+            async getMdxComponents(page) {
+                return {
+                    ...defaultMdxComponents,
+                    a: createRelativeLink(await this.getLoader(), page),
+                    Accordion,
+                    Accordions,
+                    File,
+                    Files,
+                    Folder,
+                    GithubInfo,
+                    InlineTOC,
+                    Step,
+                    Steps,
+                    Tab,
+                    Tabs,
+                    TypeTable,
+                };
+            },
+        }),
+    );
