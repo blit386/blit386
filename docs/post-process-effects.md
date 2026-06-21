@@ -181,20 +181,20 @@ sizing.
 Per-row horizontal glitch: every Nth row of source **palette indices** gets a random horizontal shift in index space
 (integer texel steps), so output stays on valid palette slots without RGB remapping.
 
-| Field        | Default | Purpose                                                             |
-| ------------ | ------- | ------------------------------------------------------------------- |
-| `intensity`  | `0`     | Glitch strength `[0, 1]`. Drives band-shift magnitude / probability |
-| `bandHeight` | `4`     | Height of each glitch band in source pixels                         |
-| `seed`       | `0`     | Per-glitch seed; change between bursts to vary the band noise       |
+<TypeTable type={{
+    intensity: { type: 'number', default: '0', description: 'Glitch strength [0, 1]. Drives band-shift magnitude / probability' },
+    bandHeight: { type: 'number', default: '4', description: 'Height of each glitch band in source pixels' },
+    seed: { type: 'number', default: '0', description: 'Per-glitch seed; change between bursts to vary the band noise' },
+  }} />
 
 ### `PixelMosaic` - block down-quantize
 
 Replaces each `blockSize x blockSize` group of source pixels with a single sample. Useful for transitions, dream
 sequences, and "low-res mode" effects.
 
-| Field       | Default | Purpose                             |
-| ----------- | ------- | ----------------------------------- |
-| `blockSize` | `4`     | Side length of each block in pixels |
+<TypeTable type={{
+    blockSize: { type: 'number', default: '4', description: 'Side length of each block in pixels' },
+  }} />
 
 ---
 
@@ -205,90 +205,90 @@ sequences, and "low-res mode" effects.
 `warp(uv) = uv + delta * d2 * curvature`. Operates at output resolution so the curve has enough pixels to express
 smoothly - no stepping artifacts on diagonals.
 
-| Field       | Default | Purpose                                                             |
-| ----------- | ------- | ------------------------------------------------------------------- |
-| `curvature` | `0.05`  | Curve strength. `0.02` flat panel, `0.05` desktop, `0.10` pocket TV |
+<TypeTable type={{
+    curvature: { type: 'number', default: '0.05', description: 'Curve strength. 0.02 flat panel, 0.05 desktop, 0.10 pocket TV' },
+  }} />
 
 ### `Scanlines` - bright/dark horizontal bands
 
 Gaussian-weighted scanline pattern matched to source pixel rows.
 
-| Field      | Default | Purpose                                                   |
-| ---------- | ------- | --------------------------------------------------------- |
-| `amount`   | `0.55`  | Mix factor `[0, 1]`. 0 disables                           |
-| `strength` | `-8`    | Negative gaussian falloff; more negative = sharper bands  |
-| `density`  | `240`   | Cycles per view (set to your logical vertical resolution) |
+<TypeTable type={{
+    amount: { type: 'number', default: '0.55', description: 'Mix factor [0, 1]. 0 disables' },
+    strength: { type: 'number', default: '-8', description: 'Negative gaussian falloff; more negative = sharper bands' },
+    density: { type: 'number', default: '240', description: 'Cycles per view (set to your logical vertical resolution)' },
+  }} />
 
 ### `RGBMask` - CRT shadow mask
 
 R/G/B vertical-stripe pattern with darkened cell borders, simulating an aperture-grille CRT.
 
-| Field       | Default | Purpose                               |
-| ----------- | ------- | ------------------------------------- |
-| `intensity` | `0.18`  | Mask brightness mix `[0, 1]`. 0 hides |
-| `size`      | `6`     | Mask cell pitch in source pixels      |
-| `border`    | `0.5`   | Border darkening within each cell     |
+<TypeTable type={{
+    intensity: { type: 'number', default: '0.18', description: 'Mask brightness mix [0, 1]. 0 hides' },
+    size: { type: 'number', default: '6', description: 'Mask cell pitch in source pixels' },
+    border: { type: 'number', default: '0.5', description: 'Border darkening within each cell' },
+  }} />
 
 ### `Vignette` - edge darkening
 
 Smooth radial fade. `pow(edge.x * edge.y, amount)`.
 
-| Field    | Default | Purpose                                         |
-| -------- | ------- | ----------------------------------------------- |
-| `amount` | `0.35`  | Darkening exponent. Higher = stronger / sharper |
+<TypeTable type={{
+    amount: { type: 'number', default: '0.35', description: 'Darkening exponent. Higher = stronger / sharper' },
+  }} />
 
 ### `ChromaticAberration` - RGB channel offset
 
 Red samples left of the fragment, blue samples right. Cheap CRT optics produce a tiny version of this naturally.
 
-| Field        | Default | Purpose                         |
-| ------------ | ------- | ------------------------------- |
-| `aberration` | `1.0`   | Channel offset in source pixels |
+<TypeTable type={{
+    aberration: { type: 'number', default: '1.0', description: 'Channel offset in source pixels' },
+  }} />
 
 ### `Flicker` - brightness multiplier
 
 The simplest CRT animation knob. `color *= amount`. Demo drives it per-frame.
 
-| Field    | Default | Purpose                              |
-| -------- | ------- | ------------------------------------ |
-| `amount` | `1.0`   | Brightness multiplier. 1 unmodulated |
+<TypeTable type={{
+    amount: { type: 'number', default: '1.0', description: 'Brightness multiplier. 1 unmodulated' },
+  }} />
 
 ### `RollLine` - scrolling interference band
 
 A horizontal bright stripe slowly scrolls down the screen.
 
-| Field    | Default | Purpose                                         |
-| -------- | ------- | ----------------------------------------------- |
-| `amount` | `0.1`   | Strength of the bright band                     |
-| `speed`  | `1.0`   | Scroll velocity multiplier                      |
-| `time`   | `0`     | Wall-clock seconds; demos drive this each frame |
+<TypeTable type={{
+    amount: { type: 'number', default: '0.1', description: 'Strength of the bright band' },
+    speed: { type: 'number', default: '1.0', description: 'Scroll velocity multiplier' },
+    time: { type: 'number', default: '0', description: 'Wall-clock seconds; demos drive this each frame' },
+  }} />
 
 ### `Interference` - per-row analog jitter
 
 Each row gets a random horizontal offset reseeded each frame.
 
-| Field    | Default | Purpose                                |
-| -------- | ------- | -------------------------------------- |
-| `amount` | `0.06`  | Maximum offset as a UV fraction        |
-| `time`   | `0`     | Wall-clock seconds; reseeds each frame |
+<TypeTable type={{
+    amount: { type: 'number', default: '0.06', description: 'Maximum offset as a UV fraction' },
+    time: { type: 'number', default: '0', description: 'Wall-clock seconds; reseeds each frame' },
+  }} />
 
 ### `Noise` - additive pseudo-random noise
 
 Per-pixel film grain. Reseeds each frame from `time`.
 
-| Field    | Default | Purpose                                              |
-| -------- | ------- | ---------------------------------------------------- |
-| `amount` | `0.025` | Noise amplitude as `[-amount, +amount]` perturbation |
-| `time`   | `0`     | Wall-clock seconds                                   |
+<TypeTable type={{
+    amount: { type: 'number', default: '0.025', description: 'Noise amplitude as [-amount, +amount] perturbation' },
+    time: { type: 'number', default: '0', description: 'Wall-clock seconds' },
+  }} />
 
 ### `Bloom` - soft phosphor glow
 
 Single-pass 5x5 box blur (25 taps) mixed with the original color.
 
-| Field    | Default | Purpose                                                  |
-| -------- | ------- | -------------------------------------------------------- |
-| `spread` | `3.0`   | Texel offset multiplier for the box-blur kernel          |
-| `glow`   | `0.18`  | Mix factor between original sample and blurred neighbors |
+<TypeTable type={{
+    spread: { type: 'number', default: '3.0', description: 'Texel offset multiplier for the box-blur kernel' },
+    glow: { type: 'number', default: '0.18', description: 'Mix factor between original sample and blurred neighbors' },
+  }} />
 
 A future optimisation would be a two-pass separable Gaussian (5+5 = 10 taps); we will revisit when GPU perf tests demand
 it.
@@ -308,18 +308,26 @@ Demos that want the full kitchen-sink effect should use this.
 
 ### `BT.preset.amber()`
 
-Amber monochrome PC monitor (think IBM 5151 / Hercules). Currently ships as a parameter-only set - the actual amber tint
-quantization is planned but not yet implemented.
+Amber monochrome PC monitor (think IBM 5151 / Hercules).
 
 ### `BT.preset.green()`
 
-Green monochrome PC monitor (think IBM monochrome / VT100). Same caveat as `amber()`.
+Green monochrome PC monitor (think IBM monochrome / VT100).
+
+<Callout title="Monochrome presets are incomplete">
+
+`amber()` and `green()` currently ship as parameter-only sets - the actual amber/green tint quantization is planned but
+not yet implemented.
+
+</Callout>
 
 ---
 
 ## Writing a custom effect
 
-### Display tier (`FullscreenEffect`)
+<Tabs items={['Display tier (FullscreenEffect)', 'Pixel tier (FullscreenPixelEffect)']}>
+
+<Tab value="Display tier (FullscreenEffect)">
 
 Extend `FullscreenEffect` when sampling RGBA at output resolution. Subclasses provide one WGSL fragment shader (`src` +
 `sampler`), declare `tier = 'display'`, set `uniformBytes`, and implement `writeUniforms`.
@@ -367,7 +375,9 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   `src/render/effects/fullscreenVS.ts` is concatenated automatically, giving you
   `VsOut { pos: vec4<f32>, uv: vec2<f32> }`.
 
-### Pixel tier (`FullscreenPixelEffect`)
+</Tab>
+
+<Tab value="Pixel tier (FullscreenPixelEffect)">
 
 Extend `FullscreenPixelEffect` for logical `r8uint` chains. Provide **both** `fragmentShaderUint` (sample
 `texture_2d<u32>` at `@group(0) @binding(1)`, output `vec4<u32>`) and `fragmentShaderRgba` (only used if a float pixel
@@ -377,6 +387,10 @@ format is ever passed to `init`; keep it minimal). Implement `writeUniforms` lik
 - For data-dependent control flow that calls `textureSample`, switch to `textureSampleLevel(..., 0.0)` - WGSL forbids
   `textureSample` outside uniform control flow because of mip derivative requirements.
 - Reuse the inherited `uniformData` `Float32Array` - never allocate per frame.
+
+</Tab>
+
+</Tabs>
 
 ---
 
@@ -399,6 +413,10 @@ pixel + display:  scene -> texA -> [px...] -> sceneTex -> paletteResolve -> texA
 ---
 
 ## Attribution
+
+<Accordions>
+
+<Accordion title="Upstream provenance and license audit (open)">
 
 The core CRT helper functions (`fetchPixel`, `dist`, `gaus`, `horz3`, `scan`, `tri`, `warp`) used in the original
 `PipBoyEffect` were direct ports of Timothy Lottes's
@@ -425,12 +443,16 @@ If you intend to reuse `Interference`, `RollLine`, or `PixelGlitch` in a context
 confirm provenance first. The license audit is still open. If you can identify the upstream PipBoy fork, please open a
 PR to add a verifiable author / URL / license header.
 
+</Accordion>
+
+</Accordions>
+
 ## See Also
 
-| Guide                                                               | What it covers                                           |
-| ------------------------------------------------------------------- | -------------------------------------------------------- |
-| [API: Rendering](api-rendering.md)                                  | `effectAdd` / `effectRemove` / `effectClear` and presets |
-| [API: Core](api-core.md#resolution-model)                           | resolution model, requested vs active backend            |
-| [API: Palette](api-palette.md)                                      | pixel-tier effects run on palette indices                |
-| [Testing](testing.md)                                               | visual regression for the effect chain                   |
-| [Software Fallback Smoke Matrix](software-fallback-smoke-matrix.md) | effects unsupported in the software backend              |
+<Cards>
+  <Card title="API: Rendering" href="/docs/api/rendering">effectAdd / effectRemove / effectClear and presets.</Card>
+  <Card title="API: Core" href="/docs/api/core#resolution-model">Resolution model, requested vs active backend.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Pixel-tier effects run on palette indices.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Visual regression for the effect chain.</Card>
+  <Card title="Software Fallback Smoke Matrix" href="/docs/performance/smoke-matrix">Effects unsupported in the software backend.</Card>
+</Cards>

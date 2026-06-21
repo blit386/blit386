@@ -19,31 +19,32 @@ and sprites resolve through a shared indexed palette.
 
 Before writing new code, reviewing existing code, or preflighting, check here first:
 
-| Question                                                   | Where to look                                                                                                                                                                                                                |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| What does `BT.X` do (getter vs method)?                    | `src/BLIT386.ts` JSDoc, `docs/api-core.md`, **BT API: getters vs methods** below                                                                                                                                             |
-| How does a subsystem work internally?                      | The relevant `src/core/` or `src/render/` file                                                                                                                                                                               |
-| What does a demo implement?                                | `src/core/IBTDemo.ts` (interface + HardwareSettings)                                                                                                                                                                         |
-| How does palette usage tracking work for the overlay grid? | `src/core/RenderPaletteUsage.ts`, `src/overlay/palette/PaletteView.ts`                                                                                                                                                       |
-| How does the overlay work?                                 | `docs/overlay.md`, `src/overlay/` (orchestrator + `layout/layoutPlan.ts`), `docs/api-core.md` (HardwareSettings overlay flags), `HardwareSettings.isOverlayEnabled`                                                          |
-| What palette/sprite setup pattern is correct?              | `docs/palette-guide.md`, then `docs/api-assets.md`                                                                                                                                                                           |
-| What are the render/asset dimension limits?                | `src/utils/RenderLimits.ts` (constants), `src/utils/AssetLimits.ts` (asset + glyph limits), `docs/api-assets.md` (asset size limits table), `docs/api-core.md` (HardwareSettings dimension constraints)                      |
-| Which preset has which exact color values?                 | `docs/palette-presets.md`                                                                                                                                                                                                    |
-| How do post-process effects work?                          | `docs/post-process-effects.md`                                                                                                                                                                                               |
-| What does the CI do on this file?                          | `.github/workflows/ci.yml`                                                                                                                                                                                                   |
-| Dependency security policy / CI audit gate?                | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md`                                                                                                                                                    |
-| What is the benchmark threshold?                           | `ci.yml` benchmark job (`--threshold 25` flag), not docs                                                                                                                                                                     |
-| What error message style should I use?                     | `docs/voice.md`, then `src/utils/errorMessages.ts`                                                                                                                                                                           |
-| Is this API exported publicly?                             | `src/BLIT386.ts` export block (lines 1563-1610)                                                                                                                                                                              |
-| What test mock do I need for GPU code?                     | `src/__test__/webgpu-mock.ts`                                                                                                                                                                                                |
-| Declaration tooling / TS version alignment?                | `docs/tooling.md`, `docs/developer-experience-guide.md`, `scripts/check-declaration-tooling.mjs`                                                                                                                             |
-| Should this private name repeat the class/file?            | **Internal scoped naming** below; `docs/developer-experience-guide.md` (Naming conventions)                                                                                                                                  |
-| Where do I put a new field/method in a `.ts` file?         | **TypeScript file structure** below; `.cursor/rules/ts-file-structure.mdc`; `docs/developer-experience-guide.md` (File structure and member order)                                                                           |
-| Where are Cursor agent rules and hooks?                    | `.cursor/rules/*.mdc` (always-applied + glob-scoped); `.cursor/hooks.json`; condensed mirrors in `.claude/rules/`; see [Developer Experience](docs/developer-experience-guide.md#cursor)                                     |
-| Where is the public docs site (blit386.dev)?               | Sibling repo `blit386-dev-fumapress` (Fumapress + Waku) generates it from this repo's `docs/`; `docs/_sitemap.json` (schema `docs/_sitemap.schema.json`) controls which docs publish, their URL, sidebar order, and subtitle |
-| Why does each published doc have a blit386.dev banner?     | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see **Public docs site banner** below                           |
-| What agent skills are available for this project?          | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) — `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
-| How do users start a new project with the engine?          | `npm create blit386@latest` — the scaffolder lives in the sibling `create-blit386` repo; see **Onboarding and the scaffolder** below                                                                                         |
+| Question                                                       | Where to look                                                                                                                                                                                                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| What does `BT.X` do (getter vs method)?                        | `src/BLIT386.ts` JSDoc, `docs/api-core.md`, **BT API: getters vs methods** below                                                                                                                                             |
+| How does a subsystem work internally?                          | The relevant `src/core/` or `src/render/` file                                                                                                                                                                               |
+| What does a demo implement?                                    | `src/core/IBTDemo.ts` (interface + HardwareSettings)                                                                                                                                                                         |
+| How does palette usage tracking work for the overlay grid?     | `src/core/RenderPaletteUsage.ts`, `src/overlay/palette/PaletteView.ts`                                                                                                                                                       |
+| How does the overlay work?                                     | `docs/overlay.md`, `src/overlay/` (orchestrator + `layout/layoutPlan.ts`), `docs/api-core.md` (HardwareSettings overlay flags), `HardwareSettings.isOverlayEnabled`                                                          |
+| What palette/sprite setup pattern is correct?                  | `docs/palette-guide.md`, then `docs/api-assets.md`                                                                                                                                                                           |
+| What are the render/asset dimension limits?                    | `src/utils/RenderLimits.ts` (constants), `src/utils/AssetLimits.ts` (asset + glyph limits), `docs/api-assets.md` (asset size limits table), `docs/api-core.md` (HardwareSettings dimension constraints)                      |
+| Which preset has which exact color values?                     | `docs/palette-presets.md`                                                                                                                                                                                                    |
+| How do post-process effects work?                              | `docs/post-process-effects.md`                                                                                                                                                                                               |
+| What does the CI do on this file?                              | `.github/workflows/ci.yml`                                                                                                                                                                                                   |
+| Dependency security policy / CI audit gate?                    | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md`                                                                                                                                                    |
+| What is the benchmark threshold?                               | `ci.yml` benchmark job (`--threshold 25` flag), not docs                                                                                                                                                                     |
+| What error message style should I use?                         | `docs/voice.md`, then `src/utils/errorMessages.ts`                                                                                                                                                                           |
+| Is this API exported publicly?                                 | `src/BLIT386.ts` export block (lines 1563-1610)                                                                                                                                                                              |
+| What test mock do I need for GPU code?                         | `src/__test__/webgpu-mock.ts`                                                                                                                                                                                                |
+| Declaration tooling / TS version alignment?                    | `docs/tooling.md`, `docs/developer-experience-guide.md`, `scripts/check-declaration-tooling.mjs`                                                                                                                             |
+| Should this private name repeat the class/file?                | **Internal scoped naming** below; `docs/developer-experience-guide.md` (Naming conventions)                                                                                                                                  |
+| Where do I put a new field/method in a `.ts` file?             | **TypeScript file structure** below; `.cursor/rules/ts-file-structure.mdc`; `docs/developer-experience-guide.md` (File structure and member order)                                                                           |
+| Where are Cursor agent rules and hooks?                        | `.cursor/rules/*.mdc` (always-applied + glob-scoped); `.cursor/hooks.json`; condensed mirrors in `.claude/rules/`; see [Developer Experience](docs/developer-experience-guide.md#cursor)                                     |
+| Where is the public docs site (blit386.dev)?                   | Sibling repo `blit386-dev-fumapress` (Fumapress + Waku) generates it from this repo's `docs/`; `docs/_sitemap.json` (schema `docs/_sitemap.schema.json`) controls which docs publish, their URL, sidebar order, and subtitle |
+| Why does each published doc have a blit386.dev banner?         | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see **Public docs site banner** below                           |
+| Can I use Fumadocs components (Callout, TypeTable, …) in docs? | Yes, in published docs only (site-first). Which ones, when to use them, and the authoring rules: **Fumadocs components in published docs** below                                                                             |
+| What agent skills are available for this project?              | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) — `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
+| How do users start a new project with the engine?              | `npm create blit386@latest` — the scaffolder lives in the sibling `create-blit386` repo; see **Onboarding and the scaffolder** below                                                                                         |
 
 ## Onboarding and the scaffolder
 
@@ -75,6 +76,48 @@ pointing GitHub readers at the typeset copy on the site. It is wrapped in `<!-- 
 - The banner is a GitHub-only signpost: the public mirror generator (`blit386-dev-fumapress`) strips the whole block, so
   it never appears on the live site. Editing banner prose means editing the template in `scripts/sync-doc-banners.mjs`,
   not the docs.
+
+## Fumadocs components in published docs
+
+Published docs (those in `docs/_sitemap.json`) are authored as **MDX-capable Markdown**: you may use Fumadocs/Fumapress
+components directly in the `.md` source. The mirror generator passes PascalCase tags through verbatim, and the live site
+renders them. **These docs are site-first** — components do not render on GitHub (they degrade to plain text or
+disappear), so the blit386.dev banner points GitHub readers to the typeset copy. **Contributor-only docs** (not in the
+sitemap: `developer-experience-guide.md`, `voice.md`, `tooling.md`, `security/*`) stay plain Markdown — components there
+would render nowhere.
+
+**Registered components** (wired up in `blit386-dev-fumapress/press.config.tsx`): `Callout`, `Card` / `Cards`, `Tabs` /
+`Tab`, `Steps` / `Step`, `Accordion` / `Accordions`, `Files` / `File` / `Folder`, `TypeTable`, `GithubInfo`,
+`InlineTOC`. Fenced code blocks already get the styled Fumadocs code block (copy button, `title="..."`). Adding a new
+component means registering it in that `getMdxComponents` map first, or the build throws.
+
+**When to use which:**
+
+- **`Callout`** — notes, tips, warnings, migration notes, important gotchas. `<Callout type="warn" title="...">` for
+  warnings; default type for notes. Replaces `> **Note:**` blockquotes.
+- **`TypeTable`** — option / field / parameter reference tables (name, type, default, description). Replaces Markdown
+  tables whose columns are field/type/default/purpose.
+- **`Steps`** — sequential procedures (setup flows, manual conversions). One `### heading` per step.
+- **`Tabs`** — genuine alternatives: per-OS commands, npm/pnpm, preferred-vs-manual paths, display-vs-pixel tiers.
+- **`Accordions`** — collapsible advanced detail or troubleshooting (one `Accordion` per item).
+- **`Cards`** — the trailing **See Also** section (one `Card` per link).
+- **`Files`** — directory trees **without** inline comments (it has no per-file description slot; keep comment-annotated
+  trees as ` ```text ` blocks).
+- **Do not add a manual or `InlineTOC` table of contents** — the site renders its own right-hand TOC panel.
+
+**Authoring rules (learned the hard way; keep the build green):**
+
+- **Block form only.** Put blank lines around component children (`<Callout>` ⏎ ⏎ body ⏎ ⏎ `</Callout>`). Inline
+  children get reflowed by Prettier into a less-readable single line; block form is stable under `pnpm run format`.
+- **JSX expression props work** (`TypeTable type={{ ... }}`, `Tabs items={[ ... ]}`). The mirror generator is MDX-aware
+  and leaves braces verbatim inside component blocks; in plain prose a bare `{` is still escaped, so keep object/array
+  props on component lines.
+- **`Card href` is a JSX prop the mirror does NOT rewrite.** Use **site-absolute** paths from the sitemap
+  (`/docs/<section>/<topic>`, e.g. `/docs/api/core#overlay`), not relative `*.md` links. For unpublished docs, link to
+  the full GitHub URL.
+- **Validate before considering it done:** in `blit386-dev-fumapress`, run `pnpm run sync:docs` then `pnpm run build`
+  (or at least `pnpm run typecheck`). An undefined component or malformed prop fails the build, which would break the
+  deploy.
 
 ## Architecture
 

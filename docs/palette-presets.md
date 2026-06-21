@@ -19,7 +19,7 @@ All preset hex values are lowercase `RRGGBB` (no `#`), matching `src/assets/pale
 
 <!-- cspell:disable -->
 
-## Slot mapping note (important)
+<Callout type="warn" title="Slot mapping (important)">
 
 BLIT386 reserves palette slot `0` for transparency. Preset factories therefore write colors starting at slot `1`.
 
@@ -29,6 +29,8 @@ That means:
 - slot `1` receives source index `1`
 - slot `2` receives source index `2`
 - etc.
+
+</Callout>
 
 ---
 
@@ -247,11 +249,11 @@ slots keep their constructor default (black).
 
 ## See Also
 
-| Guide                             | What it covers                                          |
-| --------------------------------- | ------------------------------------------------------- |
-| [Palette Guide](palette-guide.md) | workflow for setup, offsets, effects, and refresh rules |
-| [API: Palette](api-palette.md)    | runtime palette APIs and effect signatures              |
-| [Overlay Guide](overlay.md)       | HUD preset and `applyHUD` slot colors                   |
-| [API: Assets](api-assets.md)      | sprites and fonts that use preset colors                |
+<Cards>
+  <Card title="Palette Guide" href="/docs/guides/palette">Workflow for setup, offsets, effects, and refresh rules.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Runtime palette APIs and effect signatures.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">HUD preset and applyHUD slot colors.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">Sprites and fonts that use preset colors.</Card>
+</Cards>
 
 <!-- cspell:enable -->

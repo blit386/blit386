@@ -196,8 +196,9 @@ moving square up to a full Snake game.
 
 ## Documentation
 
-Start with [API: Core](docs/api-core.md) for `bootstrap()`, the game loop, and core types. The rest of the important
-pages:
+The full, typeset documentation lives at **[blit386.dev](https://blit386.dev)**. The Markdown sources are in
+[`docs/`](docs/) – start with [API: Core](docs/api-core.md) for `bootstrap()`, the game loop, and core types. The rest
+of the important pages:
 
 | Guide                                                | What it covers                                         |
 | ---------------------------------------------------- | ------------------------------------------------------ |

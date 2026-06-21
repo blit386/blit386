@@ -122,12 +122,12 @@ Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot 
 
 ## See Also
 
-| Guide                                                  | What it covers                                   |
-| ------------------------------------------------------ | ------------------------------------------------ |
-| [API: Core — Overlay](api-core.md#overlay)             | Full configure table, style objects, layout math |
-| [API: Assets — System Font](api-assets.md#system-font) | `BT.systemPrint` for demo HUD text               |
-| [API: Palette](api-palette.md)                         | `applyHUD`, preset factories, effects            |
-| [Input Guide](input.md)                                | Pointer slots for corner toggle                  |
-| [Palette Presets](palette-presets.md)                  | Exact HUD slot colors                            |
-| [Testing](testing.md)                                  | Overlay integration tests                        |
-| [Deprecation Timeline](deprecations.md)                | `overlayEnabled` -> `isOverlayEnabled` rename    |
+<Cards>
+  <Card title="API: Core — Overlay" href="/docs/api/core#overlay">Full configure table, style objects, layout math.</Card>
+  <Card title="API: Assets — System Font" href="/docs/api/assets#system-font">BT.systemPrint for demo HUD text.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">applyHUD, preset factories, effects.</Card>
+  <Card title="Input Guide" href="/docs/guides/input">Pointer slots for corner toggle.</Card>
+  <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact HUD slot colors.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Overlay integration tests.</Card>
+  <Card title="Deprecation Timeline" href="/docs/reference/deprecations">overlayEnabled to isOverlayEnabled rename.</Card>
+</Cards>

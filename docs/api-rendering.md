@@ -86,10 +86,14 @@ BT.paletteSet(newLayoutPalette);
 BT.spritesRefresh(); // re-maps all tracked sheets to the new slot positions
 ```
 
+<Callout type="warn" title="Layout swap only">
+
 Call `spritesRefresh()` only after a **palette-layout swap** - when the same colors have moved to different slot
 indices. Do NOT call it after a palette-value swap (when you changed what color a slot holds). In the value-swap case
 the fragment shader picks up the new color automatically; calling `spritesRefresh()` is wasteful and will fail
 reindexing if original RGBA values are gone.
+
+</Callout>
 
 ---
 
@@ -129,8 +133,14 @@ Two-tier fullscreen pipeline running between scene render and swap-chain present
 3. **Display tier** - operates on the RGBA output image. Hosts CRT scanlines, barrel distortion, bloom, etc. Requires
    `drawingBufferSize` in hardware settings.
 
-Both chains add zero cost when empty. Post-process is unsupported by the Canvas 2D software backend - calling
-`effectAdd` in software mode throws a clear error.
+Both chains add zero cost when empty.
+
+<Callout type="warn" title="WebGPU only">
+
+Post-process is unsupported by the Canvas 2D software backend - calling `effectAdd` in software mode throws a clear
+error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
+
+</Callout>
 
 ```ts
 // Add effect - routed to pixel or display chain by Effect.tier automatically
@@ -182,22 +192,24 @@ await BT.downloadFrame();
 await BT.downloadFrame('screenshot-001.png'); // custom filename
 ```
 
-### Internal implementation note
+<Callout title="Internal implementation note">
 
 `BT.captureFrame()` uses the internal `FrameCapture` class (`src/utils/FrameCapture.ts`), which is **not** exported from
 `'blit386'`. Demos should use `BT.captureFrame()` and `BT.downloadFrame()` only.
+
+</Callout>
 
 ---
 
 ## See Also
 
-| Guide                                                       | What it covers                             |
-| ----------------------------------------------------------- | ------------------------------------------ |
-| [API: Core](api-core.md)                                    | bootstrap, init, camera, core types        |
-| [API: Palette](api-palette.md)                              | palette setup, presets, effects            |
-| [Palette Guide](palette-guide.md)                           | palette-first workflow and offset patterns |
-| [API: Assets](api-assets.md)                                | sprite sheets, bitmap fonts, asset loading |
-| [Post-Process Effects](post-process-effects.md)             | effect chain, custom effects               |
-| [Bitmap Fonts](bitmap-fonts.md)                             | .btfont format, BMFont conversion          |
-| [Testing](testing.md)                                       | visual regression for rendering            |
-| [Performance Best Practices](performance-best-practices.md) | batching and draw-call performance         |
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, camera, core types.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Palette setup, presets, effects.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">Palette-first workflow and offset patterns.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">Sprite sheets, bitmap fonts, asset loading.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effect chain, custom effects.</Card>
+  <Card title="Bitmap Fonts" href="/docs/guides/bitmap-fonts">.btfont format, BMFont conversion.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Visual regression for rendering.</Card>
+  <Card title="Performance Best Practices" href="/docs/performance/best-practices">Batching and draw-call performance.</Card>
+</Cards>

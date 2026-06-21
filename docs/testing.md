@@ -229,18 +229,24 @@ Coverage is collected via a custom Playwright fixture (`tests/visual/coverage-fi
 
 ## IDE Setup
 
-### Cursor / VS Code
+<Tabs items={['Cursor / VS Code', 'WebStorm', 'Zed']}>
+
+<Tab value="Cursor / VS Code">
 
 Install the recommended extensions (prompted on first open):
 
 - **Vitest** (`vitest.explorer`) - inline test running, debugging, coverage gutter
 - **Playwright** (`ms-playwright.playwright`) - visual test runner
 
-### WebStorm
+</Tab>
+
+<Tab value="WebStorm">
 
 Built-in Vitest support since 2023.3. Auto-detects `vitest.config.ts` and shows run gutters next to each test.
 
-### Zed
+</Tab>
+
+<Tab value="Zed">
 
 Use the Tasks system. Create `.zed/tasks.json`:
 
@@ -258,6 +264,10 @@ Use the Tasks system. Create `.zed/tasks.json`:
   }
 ]
 ```
+
+</Tab>
+
+</Tabs>
 
 ## CI Integration
 
@@ -293,9 +303,13 @@ the `quality` job.
 
 ### Visual regression (not in CI)
 
+<Callout type="warn" title="Visual tests run locally only">
+
 `pnpm run test:visual` requires Chrome with WebGPU and is **not** executed in GitHub Actions. Run it locally before
 merging renderer, palette, or post-process changes; use `pnpm run test:visual:update` when baselines change
 intentionally. `pnpm run preflight` does not include visual tests.
+
+</Callout>
 
 ### Known quirks
 
@@ -311,15 +325,15 @@ See also [CLAUDE.md](../CLAUDE.md) (**Known Testing Quirks**):
 
 ## See Also
 
-| Guide                                                               | What it covers                             |
-| ------------------------------------------------------------------- | ------------------------------------------ |
-| [API: Palette](api-palette.md)                                      | palette APIs and effect signatures         |
-| [Palette Guide](palette-guide.md)                                   | palette-first workflow and refresh rules   |
-| [Palette Presets](palette-presets.md)                               | exact built-in preset and HUD color values |
-| [API: Assets](api-assets.md)                                        | indexed sprite setup and palette offsets   |
-| [API: Core](api-core.md)                                            | backend, overlay, and bootstrap tests      |
-| [Overlay Guide](overlay.md)                                         | overlay integration test inventory         |
-| [Post-Process Effects](post-process-effects.md)                     | visual regression for the effect chain     |
-| [Tooling](tooling.md)                                               | declaration tooling checks                 |
-| [Performance Testing](performance-testing.md)                       | CPU benchmarks (test tier 4)               |
-| [Software Fallback Smoke Matrix](software-fallback-smoke-matrix.md) | manual software backend matrix             |
+<Cards>
+  <Card title="API: Palette" href="/docs/api/palette">Palette APIs and effect signatures.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">Palette-first workflow and refresh rules.</Card>
+  <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact built-in preset and HUD color values.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">Indexed sprite setup and palette offsets.</Card>
+  <Card title="API: Core" href="/docs/api/core">Backend, overlay, and bootstrap tests.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Overlay integration test inventory.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Visual regression for the effect chain.</Card>
+  <Card title="Tooling" href="https://github.com/blit386/blit386/blob/main/docs/tooling.md">Declaration tooling checks.</Card>
+  <Card title="Performance Testing" href="/docs/performance/testing">CPU benchmarks (test tier 4).</Card>
+  <Card title="Software Fallback Smoke Matrix" href="/docs/performance/smoke-matrix">Manual software backend matrix.</Card>
+</Cards>

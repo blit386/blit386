@@ -13,24 +13,19 @@
 This guide explains when and how to optimize your BLIT386 demos for performance, with a focus on object allocation
 patterns and rendering efficiency.
 
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Object Allocation Patterns](#object-allocation-patterns)
-- [Drawing Performance](#drawing-performance)
-- [Loop Best Practices](#loop-best-practices)
-- [Common Pitfalls](#common-pitfalls)
-- [Performance Rules of Thumb](#performance-rules-of-thumb)
-- [Example References](#example-references)
-
 ---
 
 ## Introduction
 
 ### When to Optimize
 
-**Profile first, optimize second.** Premature optimization often leads to complex, hard-to-maintain code without
-meaningful performance gains. Follow this approach:
+<Callout title="Profile first, optimize second">
+
+Premature optimization often leads to complex, hard-to-maintain code without meaningful performance gains.
+
+</Callout>
+
+Follow this approach:
 
 1. **Write clear, simple code first** - Use inline object creation (`new Vector2i(x, y)`)
 2. **Measure performance** - Use browser dev tools to identify bottlenecks
@@ -56,7 +51,9 @@ a 60 Hz simulation on a 120 Hz monitor still has a ~8.33 ms render budget per rA
 JavaScript's garbage collector can cause frame hitches if you allocate many objects per frame. BLIT386 provides two
 patterns for managing allocations:
 
-### Inline Allocation (Simple & Clear)
+<Tabs items={['Inline (simple & clear)', 'Pre-allocation (performance)']}>
+
+<Tab value="Inline (simple & clear)">
 
 **When to use:** UI code, one-time operations, and anywhere readability matters more than performance.
 
@@ -79,7 +76,9 @@ BT.printFont(font, new Vector2i(10, 20), 'Hello');
 - Creates new objects each call
 - Can cause GC pressure in tight loops
 
-### Pre-allocation with `.set()` (Performance-Focused)
+</Tab>
+
+<Tab value="Pre-allocation (performance)">
 
 **When to use:** Tight loops that run 50+ times per frame.
 
@@ -110,6 +109,10 @@ class MyDemo implements IBTDemo {
 - More boilerplate
 - Harder to read
 - Must track object reuse
+
+</Tab>
+
+</Tabs>
 
 ### Comparison
 
@@ -265,7 +268,9 @@ If your `update()` or `render()` takes too long:
 
 ## Common Pitfalls
 
-### 1. Premature Optimization
+<Accordions>
+
+<Accordion title="1. Premature optimization">
 
 ```ts
 // BAD: Over-engineering simple UI code
@@ -282,7 +287,9 @@ drawUI(): void {
 }
 ```
 
-### 2. Ignoring the Profiler
+</Accordion>
+
+<Accordion title="2. Ignoring the profiler">
 
 Don't guess what's slow - **measure it**. Use:
 
@@ -291,7 +298,9 @@ Don't guess what's slow - **measure it**. Use:
 - Simulation rate: `BT.targetFPS` and `BT.ticks`
 - Render rate: overlay `Present: N FPS` when `isOverlayEnabled` is true (measured rAF cadence, not `targetFPS`)
 
-### 3. Allocating in Hot Paths
+</Accordion>
+
+<Accordion title="3. Allocating in hot paths">
 
 ```ts
 // BAD: Allocating Vector2i in a tight loop (see pre-allocation section)
@@ -307,7 +316,9 @@ for (let i = 0; i < 1000; i++) {
 }
 ```
 
-### 4. Excessive String Concatenation
+</Accordion>
+
+<Accordion title="4. Excessive string concatenation">
 
 ```ts
 // BAD: Creates new string every frame
@@ -329,6 +340,10 @@ render(): void {
     BT.printFont(font, pos, this.scoreText); // Reuse string
 }
 ```
+
+</Accordion>
+
+</Accordions>
 
 ---
 
@@ -401,13 +416,17 @@ These demonstrate **when and how to optimize** for performance-critical scenario
 3. Optimize hot paths with pre-allocation
 4. Keep UI and one-time code simple
 
-Remember: **Clear code that runs at 60 FPS is better than complex code that runs at 65 FPS.**
+<Callout title="Remember">
+
+Clear code that runs at 60 FPS is better than complex code that runs at 65 FPS.
+
+</Callout>
 
 ## See Also
 
-| Guide                                         | What it covers                             |
-| --------------------------------------------- | ------------------------------------------ |
-| [Performance Testing](performance-testing.md) | measure before optimizing (CPU benchmarks) |
-| [API: Rendering](api-rendering.md)            | batching and draw-call performance         |
-| [Palette Guide](palette-guide.md)             | palette-offset performance patterns        |
-| [Overlay Guide](overlay.md)                   | reading the on-screen FPS and timing chart |
+<Cards>
+  <Card title="Performance Testing" href="/docs/performance/testing">Measure before optimizing (CPU benchmarks).</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">Batching and draw-call performance.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">Palette-offset performance patterns.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Reading the on-screen FPS and timing chart.</Card>
+</Cards>

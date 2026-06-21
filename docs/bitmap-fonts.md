@@ -90,32 +90,34 @@ The `.btfont` format is a JSON file with the following structure:
 
 ### Properties
 
-| Property     | Type   | Description                                                  |
-| ------------ | ------ | ------------------------------------------------------------ |
-| `name`       | string | Font display name                                            |
-| `size`       | number | Original font size in points                                 |
-| `lineHeight` | number | Pixels between baselines for multi-line text                 |
-| `baseline`   | number | Pixels from top of line to baseline (for vertical alignment) |
-| `texture`    | string | Texture source (see [Texture Options](#texture-options))     |
-| `glyphs`     | object | Map of character → glyph data                                |
+<TypeTable type={{
+    name: { type: 'string', description: 'Font display name' },
+    size: { type: 'number', description: 'Original font size in points' },
+    lineHeight: { type: 'number', description: 'Pixels between baselines for multi-line text' },
+    baseline: { type: 'number', description: 'Pixels from top of line to baseline (for vertical alignment)' },
+    texture: { type: 'string', description: 'Texture source (relative path or embedded base64 data URI)' },
+    glyphs: { type: 'object', description: 'Map of character to glyph data' },
+  }} />
 
 ### Glyph Properties
 
-| Property | Type   | Description                                                   |
-| -------- | ------ | ------------------------------------------------------------- |
-| `x`      | number | X position in texture atlas                                   |
-| `y`      | number | Y position in texture atlas                                   |
-| `w`      | number | Width of glyph in pixels                                      |
-| `h`      | number | Height of glyph in pixels                                     |
-| `ox`     | number | Horizontal offset when rendering (pen position adjustment)    |
-| `oy`     | number | Vertical offset when rendering                                |
-| `adv`    | number | Horizontal advance after drawing (distance to next character) |
+<TypeTable type={{
+    x: { type: 'number', description: 'X position in texture atlas' },
+    y: { type: 'number', description: 'Y position in texture atlas' },
+    w: { type: 'number', description: 'Width of glyph in pixels' },
+    h: { type: 'number', description: 'Height of glyph in pixels' },
+    ox: { type: 'number', description: 'Horizontal offset when rendering (pen position adjustment)' },
+    oy: { type: 'number', description: 'Vertical offset when rendering' },
+    adv: { type: 'number', description: 'Horizontal advance after drawing (distance to next character)' },
+  }} />
 
 ## Texture Options
 
 The `texture` field supports two formats:
 
-### 1. Relative Path (Recommended for Development)
+<Tabs items={['Relative path (development)', 'Embedded base64 (production)']}>
+
+<Tab value="Relative path (development)">
 
 ```json
 {
@@ -126,7 +128,9 @@ The `texture` field supports two formats:
 The path is resolved relative to the `.btfont` file location. This is convenient during development as you can update
 the PNG without regenerating the JSON.
 
-### 2. Embedded Base64 (Recommended for Production)
+</Tab>
+
+<Tab value="Embedded base64 (production)">
 
 ```json
 {
@@ -136,6 +140,10 @@ the PNG without regenerating the JSON.
 
 The entire texture is embedded as a base64-encoded PNG data URI (`data:image/png;base64,...`). This creates a single
 self-contained file, ideal for distribution. Other embedded formats (for example `data:image/jpeg`) are rejected.
+
+</Tab>
+
+</Tabs>
 
 ## Loading limits
 
@@ -178,53 +186,75 @@ Options:
 
 The conversion script works best when run directly in your terminal:
 
-**macOS/Linux:**
+<Tabs items={['macOS/Linux', 'Windows (PowerShell)', 'Windows (CMD)']}>
+
+<Tab value="macOS/Linux">
 
 ```bash
 cd /path/to/blit386
 node scripts/convert-bmfont.mjs input.fnt output.btfont --embed
 ```
 
-**Windows (PowerShell):**
+</Tab>
+
+<Tab value="Windows (PowerShell)">
 
 ```powershell
 cd D:\path\to\blit386
 node scripts/convert-bmfont.mjs input.fnt output.btfont --embed
 ```
 
-**Windows (CMD):**
+</Tab>
+
+<Tab value="Windows (CMD)">
 
 ```cmd
 cd D:\path\to\blit386
 node scripts\convert-bmfont.mjs input.fnt output.btfont --embed
 ```
 
-> **Note:** For best results with file I/O operations, running Node.js scripts directly from the terminal (not through
-> an IDE’s embedded shell) is recommended.
+</Tab>
+
+</Tabs>
+
+<Callout title="Run from a real terminal">
+
+For best results with file I/O operations, run Node.js scripts directly from the terminal (not through an IDE's embedded
+shell).
+
+</Callout>
 
 ### Manual Conversion
 
 If you prefer to convert manually:
 
-1. **Parse the `.fnt` XML file** to extract:
+<Steps>
+
+### Parse the `.fnt` XML file
+
+Extract:
 
 - Font info: `face`, `size` from `<info>`.
 - Metrics: `lineHeight`, `base` from `<common>`.
-- Glyphs: All `<char>` elements.
+- Glyphs: all `<char>` elements.
 
-2. **For each `<char>` element**, create a glyph entry:
+### Convert each `<char>` element to a glyph entry
 
-   ```xml
-   <char id="65" x="80" y="18" width="9" height="17" xoffset="-1" yoffset="-1" xadvance="7" />
-   ```
+```xml
+<char id="65" x="80" y="18" width="9" height="17" xoffset="-1" yoffset="-1" xadvance="7" />
+```
 
-   Becomes:
+Becomes:
 
-   ```json
-   "A": { "x": 80, "y": 18, "w": 9, "h": 17, "ox": -1, "oy": -1, "adv": 7 }
-   ```
+```json
+"A": { "x": 80, "y": 18, "w": 9, "h": 17, "ox": -1, "oy": -1, "adv": 7 }
+```
 
-3. **Set the texture path** to the PNG filename or embed it as base64.
+### Set the texture path
+
+Point it at the PNG filename, or embed it as base64.
+
+</Steps>
 
 ## Creating Bitmap Fonts
 
@@ -344,33 +374,45 @@ for (let i = 0; i < text.length; i++) {
 
 ## Troubleshooting
 
-### Font not loading
+<Accordions>
+
+<Accordion title="Font not loading">
 
 - Check the browser console for error messages.
 - Verify the `.btfont` path is correct (relative to the HTML file).
 - Make sure the texture file exists and is accessible.
 
-### Characters appear in wrong positions
+</Accordion>
 
-- Verify `ox` and `oy` (offset) values are correct
+<Accordion title="Characters appear in wrong positions">
+
+- Verify `ox` and `oy` (offset) values are correct.
 - Check the texture coordinates match the actual glyph positions in the PNG.
 
-### Missing characters
+</Accordion>
 
-- Check if the character is in the font’s glyph map.
+<Accordion title="Missing characters">
+
+- Check if the character is in the font's glyph map.
 - Use `font.hasGlyph('×')` to test.
 - Characters not in the font are silently skipped.
 
-### Blurry text
+</Accordion>
+
+<Accordion title="Blurry text">
 
 - Make sure the canvas is using nearest-neighbor scaling (CSS `image-rendering: pixelated`).
 - Use integer positions for `BT.printFont()`.
 
+</Accordion>
+
+</Accordions>
+
 ## See Also
 
-| Guide                              | What it covers                          |
-| ---------------------------------- | --------------------------------------- |
-| [API: Assets](api-assets.md)       | `BitmapFont` loading and asset limits   |
-| [API: Rendering](api-rendering.md) | `BT.printFont` and palette offset       |
-| [Palette Guide](palette-guide.md)  | indexize and `paletteOffset` for glyphs |
-| [API: Palette](api-palette.md)     | palette addressing for text colors      |
+<Cards>
+  <Card title="API: Assets" href="/docs/api/assets">BitmapFont loading and asset limits.</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">BT.printFont and palette offset.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">indexize and paletteOffset for glyphs.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Palette addressing for text colors.</Card>
+</Cards>
