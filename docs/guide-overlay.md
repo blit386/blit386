@@ -1,4 +1,4 @@
-# Engine Overlay
+# Overlay
 
 <!-- blit386.dev-banner:start -->
 
@@ -10,14 +10,12 @@
 
 <!-- blit386.dev-banner:end -->
 
-The engine overlay is a screen-space HUD drawn **after** each demo `render()` when `HardwareSettings.isOverlayEnabled`
-is `true` (default). It shows present FPS, target FPS, draw calls, frame timings, active backend, resolution, and demo
+The engine overlay is a screen-space HUD drawn after each demo `render()` when `HardwareSettings.isOverlayEnabled` is
+`true` (default). It shows present FPS, target FPS, draw calls, frame timings, active backend, resolution, and demo
 title. Demos should not duplicate this text.
 
-Configure-time flags, style objects, and worked examples live in [API: Core — Overlay](api-core.md#overlay). This guide
-maps the **internal subsystem** and common integration patterns.
-
----
+Configure-time flags, style objects, and worked examples live in [API: Overlay](api-overlay.md). This guide maps the
+internal subsystem and common integration patterns.
 
 ## Subsystem layout
 
@@ -36,30 +34,25 @@ src/overlay/
 Palette index usage for the swatch grid is tracked in `src/core/RenderPaletteUsage.ts` (only when the overlay body is
 visible and `isOverlayPaletteEnabled` is true).
 
----
-
 ## Visibility model
 
-| State                     | What draws                                                                                      |
-| ------------------------- | ----------------------------------------------------------------------------------------------- |
-| Body **hidden** (default) | Optional bottom-left **toggle hint icon** when `isOverlayToggleHintVisible`                     |
-| Body **visible**          | Title, metrics, optional timing chart, optional palette grid, optional custom rows, footer hint |
+| State                 | What draws                                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------------- |
+| Body hidden (default) | Optional bottom-left toggle hint icon when `isOverlayToggleHintVisible`                         |
+| Body visible          | Title, metrics, optional timing chart, optional palette grid, optional custom rows, footer hint |
 
 Toggle the body at runtime:
 
-- **Backquote** (`~`) when `isOverlayToggleEnabled` is true
-- Primary pointer press in the **bottom-left 48×48 px** corner
+- Backquote (`~`) when `isOverlayToggleEnabled` is true
+- Primary pointer press in the bottom-left 48×48 px corner
 
 Set `isOverlayVisibleAtStart: true` to show the body on the first frame. Set `isOverlayEnabled: false` to disable the
 subsystem entirely (for example release builds or full-screen custom HUD demos).
 
----
-
-## Custom rows (`overlayRows`)
+## Custom rows
 
 Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it once per frame after `render()` when the
-overlay body is visible. Return a **reused** array of row objects when possible — avoid allocating new strings every
-frame.
+overlay body is visible. Return a reused array of row objects when possible – avoid allocating new strings every frame.
 
 ```javascript
 class Demo {
@@ -73,9 +66,7 @@ class Demo {
 ```
 
 Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-row `barPaletteIndex` /
-`textPaletteIndex`. Rows stack upward from the footer with **1 px** gaps.
-
----
+`textPaletteIndex`. Rows stack upward from the footer with 1 px gaps.
 
 ## Optional bands
 
@@ -86,19 +77,16 @@ Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-ro
 | GPU diagnostics row | `isOverlayRendererDiagnosticsBarEnabled` | Text row below frame metrics                                              |
 | Chart GPU markers   | `overlayTimingChartDiagnostics`          | `'minimal'` (default when chart on), `'rich'`, or `false`                 |
 
-Reserve vertical space in demo layouts: ~**42 px** top, ~**14 px** per custom row, timing chart height (default **22
-px**), palette grid height when enabled, and ~**13 px** footer hint bar. See [API: Core — Overlay](api-core.md#overlay)
-for layout formulas.
-
----
+Reserve vertical space in demo layouts: ~42 px top, ~14 px per custom row, timing chart height (default 22 px), palette
+grid height when enabled, and ~13 px footer hint bar. See [API: Overlay](api-overlay.md) for layout formulas.
 
 ## Colors and HUD palette slots
 
-Overlay chrome uses palette indices from `overlayStyle` (defaults: bar/gap **1**, text **2**). For demos that draw their
-own HUD text with `BT.systemPrint`, call `palette.applyHUD(startSlot?)` once at init to fill the six common UI slots
-(white, background, label, header, dim, FPS) and register `hud_*` name aliases. See
-[API: Palette — applyHUD](api-palette.md#built-in-presets) and
-[Palette Presets — HUD](palette-presets.md#hud-preset-paletteapplyhud).
+Overlay chrome uses palette indices from `overlayStyle` (defaults: bar/gap 1, text 2). For demos that draw their own HUD
+text with `BT.systemPrint`, call `palette.applyHUD(startSlot?)` once at init to fill the six common UI slots (white,
+background, label, header, dim, FPS) and register `hud_*` name aliases. See
+[API: Palette – applyHUD](api-palette.md#built-in-presets) and
+[Palette Presets – HUD](guide-palette-presets.md#hud-preset).
 
 ```ts
 const palette = Palette.vga();
@@ -108,23 +96,18 @@ BT.paletteSet(palette);
 BT.systemPrint(new Vector2i(8, 8), palette.getIndex('hud_label'), 'Custom row');
 ```
 
----
+## Present FPS vs. target FPS
 
-## Present FPS vs target FPS
-
-- **`Target`** in the overlay = `BT.targetFPS` (fixed `update()` rate).
-- **`Present: N FPS`** = measured browser refresh cadence while the overlay body is visible — not the same as target
-  FPS.
+- `Target` in the overlay = `BT.targetFPS` (fixed `update()` rate).
+- `Present: N FPS` = measured browser refresh cadence while the overlay body is visible – not the same as target FPS.
 
 Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot GPU or draw-call bottlenecks.
 
----
-
-## See Also
+## See also
 
 <Cards>
-  <Card title="API: Core — Overlay" href="/docs/api/core#overlay">Full configure table, style objects, layout math.</Card>
-  <Card title="API: Assets — System Font" href="/docs/api/assets#system-font">BT.systemPrint for demo HUD text.</Card>
+  <Card title="API: Overlay" href="/docs/api/overlay">Full configure table, style objects, layout math.</Card>
+  <Card title="API: Assets – System Font" href="/docs/api/assets#system-font">BT.systemPrint for demo HUD text.</Card>
   <Card title="API: Palette" href="/docs/api/palette">applyHUD, preset factories, effects.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Pointer slots for corner toggle.</Card>
   <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact HUD slot colors.</Card>

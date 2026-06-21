@@ -5,8 +5,8 @@ Build, declaration, and quality-tooling notes for contributors. For the full con
 
 ## TypeScript version
 
-The workspace pins **TypeScript 5.9.3** in `package.json` to match the compiler bundled with **API Extractor** (invoked
-by `vite-plugin-dts` when `rollupTypes: true`). This avoids TS/API Extractor drift warnings during `pnpm run build` and
+The workspace pins TypeScript 5.9.3 in `package.json` to match the compiler bundled with API Extractor (invoked by
+`vite-plugin-dts` when `rollupTypes: true`). This avoids TS/API Extractor drift warnings during `pnpm run build` and
 keeps rolled-up `dist/blit386.d.ts` deterministic.
 
 When bumping `typescript` or `vite-plugin-dts`, confirm the build log reports the same bundled version and that
@@ -24,14 +24,14 @@ CI details.
 
 CI runs the checker after `pnpm run build` in:
 
-- `.github/workflows/ci.yml` - `build-library` job
-- `.github/workflows/pr-checks.yml` - `bundle-size` job
+- `.github/workflows/ci.yml` – `build-library` job
+- `.github/workflows/pr-checks.yml` – `bundle-size` job
 
-More context: [Testing - Declaration tooling checks](testing.md#declaration-tooling-checks).
+More context: [Testing – Declaration tooling checks](reference-testing.md#declaration-tooling-checks).
 
-## See Also
+## See also
 
 | Guide                                                 | What it covers                                 |
 | ----------------------------------------------------- | ---------------------------------------------- |
 | [Developer Experience](developer-experience-guide.md) | TypeScript pin rationale, declaration rollup   |
-| [Testing](testing.md)                                 | declaration tooling test (`test:declarations`) |
+| [Testing](reference-testing.md)                       | declaration tooling test (`test:declarations`) |

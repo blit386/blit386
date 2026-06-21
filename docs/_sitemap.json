@@ -10,7 +10,37 @@
     {
       "src": "api-core.md",
       "path": "api/core",
-      "description": "Bootstrap, initialization, game loop timing, camera, and core types."
+      "description": "Bootstrap, initialization, and default configuration."
+    },
+    {
+      "src": "api-overlay.md",
+      "path": "api/overlay",
+      "description": "Engine overlay HUD configure flags, style objects, and worked examples."
+    },
+    {
+      "src": "api-game-loop.md",
+      "path": "api/game-loop",
+      "description": "Fixed-timestep simulation timing, tick counters, and the Timer helper."
+    },
+    {
+      "src": "api-camera.md",
+      "path": "api/camera",
+      "description": "The camera's global pixel offset and world-clamp helpers."
+    },
+    {
+      "src": "api-easing.md",
+      "path": "api/easing",
+      "description": "Named easing curves for palette fade effects via applyEasing."
+    },
+    {
+      "src": "api-core-types.md",
+      "path": "api/core-types",
+      "description": "The integer core types: Vector2i, Rect2i, and Color32."
+    },
+    {
+      "src": "api-browser-support.md",
+      "path": "api/browser-support",
+      "description": "WebGPU support matrix, automatic software fallback, and build toolchain."
     },
     {
       "src": "api-rendering.md",
@@ -28,32 +58,32 @@
       "description": "Sprite sheets, bitmap fonts, and asset loading."
     },
     {
-      "src": "input.md",
+      "src": "guide-input.md",
       "path": "guides/input",
       "description": "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
     },
     {
-      "src": "palette-guide.md",
+      "src": "guide-palette.md",
       "path": "guides/palette",
       "description": "The palette-first rendering workflow: setup, slot offsets, and palette effects."
     },
     {
-      "src": "palette-presets.md",
+      "src": "guide-palette-presets.md",
       "path": "guides/palette-presets",
       "description": "Exact color data for the built-in Palette presets and the HUD preset."
     },
     {
-      "src": "overlay.md",
+      "src": "guide-overlay.md",
       "path": "guides/overlay",
       "description": "The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout."
     },
     {
-      "src": "post-process-effects.md",
+      "src": "guide-post-process-effects.md",
       "path": "guides/post-process-effects",
       "description": "The two-tier post-process effect system, built-in effects, and CRT presets."
     },
     {
-      "src": "bitmap-fonts.md",
+      "src": "guide-bitmap-fonts.md",
       "path": "guides/bitmap-fonts",
       "description": "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
     },
@@ -68,19 +98,24 @@
       "description": "CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate."
     },
     {
-      "src": "software-fallback-smoke-matrix.md",
+      "src": "performance-smoke-matrix.md",
       "path": "performance/smoke-matrix",
       "description": "Manual smoke-test checklist for the Canvas 2D software renderer."
     },
     {
-      "src": "deprecations.md",
+      "src": "reference-deprecations.md",
       "path": "reference/deprecations",
       "description": "Central tracker for public API compatibility aliases and planned removals."
     },
     {
-      "src": "testing.md",
+      "src": "reference-testing.md",
       "path": "reference/testing",
       "description": "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
+    },
+    {
+      "src": "reference-authors.md",
+      "path": "reference/authors",
+      "description": "Who made this. So far, just one person."
     }
   ]
 }

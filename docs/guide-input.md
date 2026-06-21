@@ -1,4 +1,4 @@
-# Input Guide
+# Input
 
 <!-- blit386.dev-banner:start -->
 
@@ -10,14 +10,14 @@
 
 <!-- blit386.dev-banner:end -->
 
-BLIT386 provides DOM-backed input: **pointer** (mouse, touch, pen), **keyboard** (`KeyboardEvent.code` tracking and
-virtual face buttons), **gamepad** (up to four players via `navigator.getGamepads()`), and **text accumulation** for UI
-entry (`BT.inputString`).
+BLIT386 provides DOM-backed input: pointer (mouse, touch, pen), keyboard (`KeyboardEvent.code` tracking and virtual face
+buttons), gamepad (up to four players via `navigator.getGamepads()`), and text accumulation for UI entry
+(`BT.inputString`).
 
 All pointer coordinates are returned in logical display space (the `displaySize` from `configure()` or
 `defaultConfig()`), independent of the canvas's CSS or backing-buffer size.
 
-## Pointer Slot Model
+## Pointer slot model
 
 The engine tracks up to four simultaneous pointers:
 
@@ -28,7 +28,7 @@ The engine tracks up to four simultaneous pointers:
 | 2    | Second touch / pen contact                   |
 | 3    | Third touch / pen contact                    |
 
-The engine tracks **four** pointer slots (indices `0`–`3`). Overflow contacts beyond slot 3 are dropped silently.
+The engine tracks four pointer slots (indices `0`–`3`). Overflow contacts beyond slot 3 are dropped silently.
 
 ### Mouse slot (slot 0)
 
@@ -44,7 +44,7 @@ The engine tracks **four** pointer slots (indices `0`–`3`). Overflow contacts 
 - Position and delta are preserved on release so release-frame code can read the final position and flick velocity.
 - The engine calls `setPointerCapture` so off-canvas drags continue delivering events.
 
-## Position and Delta
+## Position and delta
 
 ```ts
 // Current position in display coordinates
@@ -57,10 +57,11 @@ const td = BT.pointerDelta(1); // slot 1
 
 // Validity check - false means no live pointer in this slot
 if (BT.isPointerActive()) {
-  /* mouse is over the canvas */
+  // Mouse is over the canvas
 }
+
 if (BT.isPointerActive(1)) {
-  /* touch slot 1 is active */
+  // Touch slot 1 is active
 }
 ```
 
@@ -92,7 +93,8 @@ BT.isDown(BT.BTN_POINTER_A | BT.BTN_POINTER_B); // left or right mouse button he
 
 ### Mouse button mapping
 
-The mapping follows the RetroBlit canonical order, not the DOM `PointerEvent.button` index:
+The mapping follows the [RetroBlit](https://www.badcastle.com/retroblit.html) canonical order, not the DOM
+`PointerEvent.button` index:
 
 | Button constant | Mouse button         | DOM button index |
 | --------------- | -------------------- | ---------------- |
@@ -100,6 +102,13 @@ The mapping follows the RetroBlit canonical order, not the DOM `PointerEvent.but
 | `BTN_POINTER_B` | Right                | 2                |
 | `BTN_POINTER_C` | Middle / wheel click | 1                |
 | `BTN_POINTER_D` | Back or forward      | 3 or 4           |
+
+<Callout title="Credit">
+
+The button order and much of BLIT386's input model come from [RetroBlit](https://www.badcastle.com/retroblit.html), a
+retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://github.com/daafu)).
+
+</Callout>
 
 ## Keyboard
 
@@ -114,27 +123,27 @@ Use these for direct key checks:
 ```ts
 // Held state
 if (BT.isKeyDown('KeyW')) {
-  /* W key held */
+  // W key held
 }
 
 // Edge and optional tick-based repeat (repeat interval in fixed-update ticks)
 if (BT.isKeyPressed('ArrowUp', 10)) {
-  /* first press or repeat every 10 ticks while held */
+  // first press or repeat every 10 ticks while held
 }
 
 // Release edge
 if (BT.isKeyReleased('Escape')) {
-  /* Escape released this frame */
+  // Escape released this frame
 }
 ```
 
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 
-Face button constants are bit flags. You can pass a single button or a combined mask; matching uses **ANY** semantics:
+Face button constants are bit flags. You can pass a single button or a combined mask; matching uses ANY semantics:
 `BT.isDown(BT.BTN_A | BT.BTN_B)` is true when either A or B is down.
 
-For **player 0** and **player 1**, face-button reads merge keyboard maps and gamepad state (logical OR). For **player
-2** and **player 3**, face-button reads use gamepad only.
+For player 0 and player 1, face-button reads merge keyboard maps and gamepad state (logical OR). For player 2 and player
+3, face-button reads use gamepad only.
 
 `BT.isPressed` supports optional tick-based repeat via `repeatRate` (`0` or omitted = edge only), matching
 `BT.isKeyPressed` semantics.
@@ -159,7 +168,7 @@ Built-in defaults are exposed as read-only tables (same values the engine starts
 
 ### Remapping (`BT.inputMap` / `BT.inputMapReset`)
 
-Override bindings at runtime. The first argument is the **zero-based player index** (`0` or `1` only; other values are
+Override bindings at runtime. The first argument is the zero-based player index (`0` or `1` only; other values are
 ignored). The second is the face button constant. Remaining arguments are `KeyboardEvent.code` strings.
 
 ```ts
@@ -171,7 +180,7 @@ BT.inputMap(1, BT.BTN_START, 'Enter', 'NumpadEnter');
 BT.inputMapReset();
 ```
 
-Pass **no** key codes to clear keyboard bindings for that player and button until you map again:
+Pass no key codes to clear keyboard bindings for that player and button until you map again:
 
 ```ts
 BT.inputMap(0, BT.BTN_X); // player 0 X has no keyboard keys until remapped
@@ -202,11 +211,11 @@ Player constants:
 
 <Callout type="warn" title="The default dead zone is large">
 
-Default stick dead zone is **`0.75`** (`GamepadInput.DEFAULT_GAMEPAD_DEAD_ZONE` internally; not a public export).
-Filtering is **per axis**, not radial: each stick axis is zeroed when `Math.abs(axis) <= deadZone`, then the remaining
-range is re-normalized with `(abs - deadZone) / (1 - deadZone)`. At the default `0.75`, a stick axis must exceed ~75%
-deflection before movement registers — much larger than typical `0.1`–`0.2` dead zones. There is no public `BT` API to
-change this value today.
+Default stick dead zone is `0.75` (`GamepadInput.DEFAULT_GAMEPAD_DEAD_ZONE` internally; not a public export). Filtering
+is per axis, not radial: each stick axis is zeroed when `Math.abs(axis) <= deadZone`, then the remaining range is
+re-normalized with `(abs - deadZone) / (1 - deadZone)`. At the default `0.75`, a stick axis must exceed ~75% deflection
+before movement registers – much larger than typical `0.1`–`0.2` dead zones. There is no public `BT` API to change this
+value today.
 
 </Callout>
 
@@ -216,17 +225,17 @@ change this value today.
 clears at the end of each fixed update step (read it during `update()`). See public JSDoc on `BT.inputString` for
 details.
 
-## Scroll Delta
+## Scroll delta
 
 ```ts
 // Accumulated vertical scroll for the current frame, in pixels
 const scroll = BT.pointerScrollDelta;
 
 if (scroll > 0) {
-  /* scrolled down */
+  // Scrolled down
 }
 if (scroll < 0) {
-  /* scrolled up   */
+  // Scrolled up
 }
 ```
 
@@ -234,7 +243,7 @@ The value aggregates all `WheelEvent.deltaY` values received since the last fram
 to pixels. It resets to zero each frame. The engine also calls `preventDefault()` on wheel events so the page does not
 scroll while the canvas has focus.
 
-## Cursor Control
+## Cursor control
 
 ```ts
 // In init(): hide the OS cursor and draw your own crosshair / sprite
@@ -247,10 +256,10 @@ BT.showCursor();
 `hideCursor()` sets `canvas.style.cursor = 'none'`. `showCursor()` restores whatever the cursor was at `attach()` time.
 Both are no-ops before the engine is initialized. The cursor is restored automatically when the engine stops.
 
-## Frame-Timing Semantics
+## Frame-timing semantics
 
-Pointer and gamepad previous-state rollover happens at the **end** of each animation frame, after `demo.update()` and
-`demo.render()` have run. Keyboard press/release edges and `BT.inputString` align with the **fixed update** rate
+Pointer and gamepad previous-state rollover happens at the end of each animation frame, after `demo.update()` and
+`demo.render()` have run. Keyboard press/release edges and `BT.inputString` align with the fixed update rate
 (`targetFPS`), not the display refresh rate:
 
 - On a 120 Hz monitor with `targetFPS: 60`, `render()` may run twice per `update()`. Keyboard edges are buffered on DOM
@@ -262,20 +271,20 @@ Pointer and gamepad previous-state rollover happens at the **end** of each anima
 
 Pointer transitions:
 
-- Any pointer event that fires between two animation frames is visible as a transition on the **next** `update()` call.
+- Any pointer event that fires between two animation frames is visible as a transition on the next `update()` call.
 
-## Page-Interaction Guards
+## Page-interaction guards
 
 `attach()` installs three guards on the canvas to prevent browser defaults from interfering:
 
-- `wheel` with `{ passive: false }` and `preventDefault()` - prevents page scroll on wheel events.
-- `canvas.style.touchAction = 'none'` - prevents iOS Safari pinch-zoom and double-tap-zoom.
-- `contextmenu` with `preventDefault()` - prevents the OS context menu on right-click so `BTN_POINTER_B` works.
+- `wheel` with `{ passive: false }` and `preventDefault()` – prevents page scroll on wheel events.
+- `canvas.style.touchAction = 'none'` – prevents iOS Safari pinch-zoom and double-tap-zoom.
+- `contextmenu` with `preventDefault()` – prevents the OS context menu on right-click so `BTN_POINTER_B` works.
 
 `detach()` reverses all three and removes all event listeners. This happens automatically when the engine stops or when
 `demo.init()` throws.
 
-## Coordinate Conversion
+## Coordinate conversion
 
 Client coordinates from DOM events are converted to display space using the canvas bounding rect:
 
@@ -287,7 +296,7 @@ display_y = floor((clientY - rect.top)  / rect.height * displaySize.y)
 Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion is skipped when the canvas has zero size
 (no layout yet) to avoid NaN coordinates.
 
-## Implementation Notes
+## Implementation notes
 
 <Accordions>
 
@@ -297,8 +306,8 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
   methods.
 - Default keyboard tables live in `defaultKeyboardMap.ts`; runtime remaps are stored in the `BT` facade and reset with
   `BT.inputMapReset()`.
-- Pointer slot count is **4** (indices `0`–`3`); iterate with a literal loop or constant in demo code — there is no
-  public `POINTER_SLOT_COUNT` export.
+- Pointer slot count is 4 (indices `0`–`3`); iterate with a literal loop or constant in demo code – there is no public
+  `POINTER_SLOT_COUNT` export.
 - `PointerInput`, `KeyboardInput`, and `GamepadInput` are created and attached inside `BTAPI.init()`, so they are ready
   before `demo.init()` runs.
 - `stop()` calls `detach()` on all three input subsystems and clears references to prevent listener leaks.
@@ -307,11 +316,11 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 
 </Accordions>
 
-## See Also
+## See also
 
 <Cards>
   <Card title="API: Core" href="/docs/api/core">BT.isDown / isPressed / isKeyDown and configure.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Backquote and bottom-left corner toggle.</Card>
   <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed input aliases (buttonDown to isDown).</Card>
-  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">Boolean naming (hold vs edge).</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">Boolean naming (hold vs. edge).</Card>
 </Cards>

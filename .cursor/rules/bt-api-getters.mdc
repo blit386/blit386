@@ -39,7 +39,7 @@ Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use prope
 - **Side-effect booleans** (Tier C): `Timer.fireIfElapsed()` — not `is*` because the call advances state
 - **Async**: `captureFrame`, `downloadFrame`
 
-**Deprecated aliases** still on `BT` (do not use in new code): see `docs/deprecations.md` (`pointerPosValid`,
+**Deprecated aliases** still on `BT` (do not use in new code): see `docs/reference-deprecations.md` (`pointerPosValid`,
 `buttonDown`, `keyDown`, …).
 
 ## Boolean naming (three tiers)
@@ -68,7 +68,7 @@ Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use prope
 2. Takes args or mutates → **method**
 3. Mirrors configure? → **same field name** as `HardwareSettings` (exception: derived getters like `outputSize` have no
    field)
-4. Update `docs/api-*.md`, `CLAUDE.md`, demos if public; overlay behavior also updates `docs/overlay.md`
+4. Update `docs/api-*.md`, `CLAUDE.md`, demos if public; overlay behavior also updates `docs/guide-overlay.md`
 
 See `CLAUDE.md` section **BT API: getters vs methods**, **Boolean naming**, **Internal scoped naming**, and
 `docs/api-core.md`.

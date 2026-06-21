@@ -1,4 +1,4 @@
-# API: Rendering
+# Rendering
 
 <!-- blit386.dev-banner:start -->
 
@@ -13,13 +13,10 @@
 Primitives, sprites, text, post-process effects, and frame capture.
 
 All draw calls require a palette to be active (`BT.paletteSet(palette)` before the first `BT.drawSprite`,
-`BT.drawRectFill`, etc.). All coordinates are integer pixels - use `Vector2i` and `Rect2i`, never floats.
+`BT.drawRectFill`, etc.). All coordinates are integer pixels – use `Vector2i` and `Rect2i`, never floats.
 
-**Palette addressing:** primitives and `BT.systemPrint` use an absolute **`paletteIndex`**. Sprites and `BT.printFont`
-use an optional **`paletteOffset`** added to stored texel indices. See
-[Palette addressing](api-palette.md#palette-addressing).
-
----
+Palette addressing: primitives and `BT.systemPrint` use an absolute `paletteIndex`. Sprites and `BT.printFont` use an
+optional `paletteOffset` added to stored texel indices. See [Palette addressing](api-palette.md#palette-addressing).
 
 ## Primitives
 
@@ -35,9 +32,7 @@ BT.drawRect(rect, paletteIndex); // outline only
 BT.drawRectFill(rect, paletteIndex); // filled
 ```
 
-All primitives write palette indices, not RGBA - the active palette resolves colors at frame end.
-
----
+All primitives write palette indices, not RGBA – the active palette resolves colors at frame end.
 
 ## Sprites
 
@@ -48,17 +43,27 @@ BT.drawSprite(sheet, srcRect, destPos);
 BT.drawSprite(sheet, srcRect, destPos, paletteOffset);
 ```
 
-- `sheet` - an indexed `SpriteSheet` (must have been prepared via `loadIndexed` or `indexize`).
-- `srcRect` - source region within the sheet in pixels.
-- `destPos` - top-left destination in display coordinates.
-- `paletteOffset` - shift added to every stored pixel index before palette lookup (default `0`).
+- `sheet` – an indexed `SpriteSheet` (must have been prepared via `loadIndexed` or `indexize`).
+- `srcRect` – source region within the sheet in pixels.
+- `destPos` – top-left destination in display coordinates.
+- `paletteOffset` – shift added to every stored pixel index before palette lookup (default `0`).
 
-**Palette offset semantics:** Stored sprite indices start at `1` (index `0` is always transparent and discarded). With
-`paletteOffset = N`, a pixel stored at index `1` renders as `palette[1 + N]`, a pixel at index `2` renders as
-`palette[2 + N]`, and so on. Use this for palette-swap effects such as team colors or damage flashes. The WebGPU sprite
-shader clamps with `index = min(combined, 255u)` where `combined = storedIndex + paletteOffset`, so oversized sums map
-to palette slot `255`. The `paletteOffset` argument must be a non-negative integer below the active palette size;
-otherwise the draw throws.
+Palette offset semantics
+
+Stored sprite indices start at `1`; index `0` is always transparent and discarded. The offset shifts every stored index
+before the palette lookup, so a pixel stored at index `i` renders as `palette[i + paletteOffset]`:
+
+| Stored index | `paletteOffset = 0` | `paletteOffset = N` |
+| ------------ | ------------------- | ------------------- |
+| `1`          | `palette[1]`        | `palette[1 + N]`    |
+| `2`          | `palette[2]`        | `palette[2 + N]`    |
+
+This drives palette-swap effects such as team colors or damage flashes — point the same sprite at a different band of
+the palette without re-uploading texels.
+
+- Validation: `paletteOffset` must be a non-negative integer below the active palette size, or the draw throws.
+- Clamping: the WebGPU sprite shader computes `combined = storedIndex + paletteOffset` and clamps with
+  `index = min(combined, 255u)`, so any sum past `255` maps to palette slot `255`.
 
 ```ts
 BT.drawSprite(sheet, srcRect, new Vector2i(10, 10)); // normal
@@ -88,14 +93,12 @@ BT.spritesRefresh(); // re-maps all tracked sheets to the new slot positions
 
 <Callout type="warn" title="Layout swap only">
 
-Call `spritesRefresh()` only after a **palette-layout swap** - when the same colors have moved to different slot
-indices. Do NOT call it after a palette-value swap (when you changed what color a slot holds). In the value-swap case
-the fragment shader picks up the new color automatically; calling `spritesRefresh()` is wasteful and will fail
-reindexing if original RGBA values are gone.
+Call `spritesRefresh()` only after a palette-layout swap – when the same colors have moved to different slot indices. Do
+NOT call it after a palette-value swap (when you changed what color a slot holds). In the value-swap case the fragment
+shader picks up the new color automatically; calling `spritesRefresh()` is wasteful and will fail reindexing if original
+RGBA values are gone.
 
 </Callout>
-
----
 
 ## Text
 
@@ -118,26 +121,25 @@ BT.printFont(font, pos, text);
 BT.printFont(font, pos, text, paletteOffset); // palette-swap variant
 ```
 
-See [Bitmap Fonts Guide](bitmap-fonts.md) for the `.btfont` format spec and BMFont conversion.
+See [Bitmap Fonts Guide](guide-bitmap-fonts.md) for the `.btfont` format spec and BMFont conversion.
 
----
+## Post-process effects
 
-## Post-Process Effects
+Two-tier fullscreen effect pipeline – a pixel tier and a display tier – running between scene render and swap-chain
+present, with a palette-resolve-and-upscale step bridging the two:
 
-Two-tier fullscreen pipeline running between scene render and swap-chain present:
-
-1. **Pixel tier** - operates on the logical `r8uint` framebuffer (one palette index per pixel). Effects here stay
+1. Pixel tier – operates on the logical `r8uint` framebuffer (one palette index per pixel). Effects here stay
    palette-native (chunky glitch, mosaic).
-2. **Palette resolve + upscale** - `PaletteResolveUpscalePass` converts indices to RGBA through the active palette LUT
-   and upscales to `drawingBufferSize`.
-3. **Display tier** - operates on the RGBA output image. Hosts CRT scanlines, barrel distortion, bloom, etc. Requires
+2. Palette resolve + upscale – `PaletteResolveUpscalePass` converts indices to RGBA through the active palette LUT and
+   upscales to `drawingBufferSize`.
+3. Display tier – operates on the RGBA output image. Hosts CRT scanlines, barrel distortion, bloom, etc. Requires
    `drawingBufferSize` in hardware settings.
 
 Both chains add zero cost when empty.
 
 <Callout type="warn" title="WebGPU only">
 
-Post-process is unsupported by the Canvas 2D software backend - calling `effectAdd` in software mode throws a clear
+Post-process is unsupported by the Canvas 2D software backend – calling `effectAdd` in software mode throws a clear
 error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
 
 </Callout>
@@ -163,7 +165,7 @@ import { crtPipBoy, amber, green } from 'blit386';
 for (const fx of crtPipBoy()) BT.effectAdd(fx);
 ```
 
-**Built-in effects:**
+Built-in effects:
 
 | Tier    | Classes                                                                                                                                |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -173,12 +175,10 @@ for (const fx of crtPipBoy()) BT.effectAdd(fx);
 All effect classes are exported from `'blit386'`. Each instance owns its own GPU resources and may be mutated each frame
 from demo code.
 
-See [Post-Process Effects Guide](post-process-effects.md) for parameter reference, the `Effect` interface, `EffectTier`,
-the `FullscreenEffect` base class, and how to write a custom effect.
+See [Post-Process Effects Guide](guide-post-process-effects.md) for parameter reference, the `Effect` interface,
+`EffectTier`, the `FullscreenEffect` base class, and how to write a custom effect.
 
----
-
-## Frame Capture
+## Frame capture
 
 Capture the current rendered frame as a PNG.
 
@@ -194,14 +194,12 @@ await BT.downloadFrame('screenshot-001.png'); // custom filename
 
 <Callout title="Internal implementation note">
 
-`BT.captureFrame()` uses the internal `FrameCapture` class (`src/utils/FrameCapture.ts`), which is **not** exported from
+`BT.captureFrame()` uses the internal `FrameCapture` class (`src/utils/FrameCapture.ts`), which is not exported from
 `'blit386'`. Demos should use `BT.captureFrame()` and `BT.downloadFrame()` only.
 
 </Callout>
 
----
-
-## See Also
+## See also
 
 <Cards>
   <Card title="API: Core" href="/docs/api/core">Bootstrap, init, camera, core types.</Card>

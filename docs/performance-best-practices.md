@@ -13,11 +13,9 @@
 This guide explains when and how to optimize your BLIT386 demos for performance, with a focus on object allocation
 patterns and rendering efficiency.
 
----
-
 ## Introduction
 
-### When to Optimize
+### When to optimize
 
 <Callout title="Profile first, optimize second">
 
@@ -27,15 +25,38 @@ Premature optimization often leads to complex, hard-to-maintain code without mea
 
 Follow this approach:
 
-1. **Write clear, simple code first** - Use inline object creation (`new Vector2i(x, y)`)
-2. **Measure performance** - Use browser dev tools to identify bottlenecks
-3. **Optimize hot paths only** - Focus on code that runs 50+ times per frame
-4. **Keep it simple elsewhere** - Clarity matters more than micro-optimizations in UI code
+<Steps>
 
-### Frame Budget
+<Step>
 
-Each **render frame** (one `requestAnimationFrame` callback) must finish before the next vsync. On a 60 Hz display that
-is about **16.66 ms** per frame (`1000 / 60`). That budget covers:
+Write clear, simple code first – Use inline object creation (`new Vector2i(x, y)`)
+
+</Step>
+
+<Step>
+
+Measure performance – Use browser dev tools to identify bottlenecks
+
+</Step>
+
+<Step>
+
+Optimize hot paths only – Focus on code that runs 50+ times per frame
+
+</Step>
+
+<Step>
+
+Keep it simple elsewhere – Clarity matters more than micro-optimizations in UI code
+
+</Step>
+
+</Steps>
+
+### Frame budget
+
+Each render frame (one `requestAnimationFrame` callback) must finish before the next vsync. On a 60 Hz display that is
+about 16.66 ms per frame (`1000 / 60`). That budget covers:
 
 - Zero or more fixed `update()` steps at `BT.targetFPS` (~2-4 ms total when one step runs)
 - One `render()` pass (~8-12 ms)
@@ -44,9 +65,7 @@ is about **16.66 ms** per frame (`1000 / 60`). That budget covers:
 If work exceeds the display's render cadence, you drop frames and see stuttering. That is independent of `BT.targetFPS`:
 a 60 Hz simulation on a 120 Hz monitor still has a ~8.33 ms render budget per rAF callback.
 
----
-
-## Object Allocation Patterns
+## Object allocation patterns
 
 JavaScript's garbage collector can cause frame hitches if you allocate many objects per frame. BLIT386 provides two
 patterns for managing allocations:
@@ -55,23 +74,23 @@ patterns for managing allocations:
 
 <Tab value="Inline (simple & clear)">
 
-**When to use:** UI code, one-time operations, and anywhere readability matters more than performance.
+When to use: UI code, one-time operations, and anywhere readability matters more than performance.
 
 ```ts
-// Clear and readable — palette indices, not Color32
+// Clear and readable – palette indices, not Color32
 const WHITE = 1;
 BT.drawPixel(new Vector2i(x, y), WHITE);
 BT.drawRect(new Rect2i(10, 10, 50, 50), WHITE);
 BT.printFont(font, new Vector2i(10, 20), 'Hello');
 ```
 
-**Pros:**
+Pros:
 
 - Easy to read and understand
 - No boilerplate
 - Self-documenting code
 
-**Cons:**
+Cons:
 
 - Creates new objects each call
 - Can cause GC pressure in tight loops
@@ -80,7 +99,7 @@ BT.printFont(font, new Vector2i(10, 20), 'Hello');
 
 <Tab value="Pre-allocation (performance)">
 
-**When to use:** Tight loops that run 50+ times per frame.
+When to use: Tight loops that run 50+ times per frame.
 
 ```ts
 class MyDemo implements IBTDemo {
@@ -98,13 +117,13 @@ class MyDemo implements IBTDemo {
 }
 ```
 
-**Pros:**
+Pros:
 
 - Zero allocations in hot paths
 - Reduces GC pressure
 - Predictable performance
 
-**Cons:**
+Cons:
 
 - More boilerplate
 - Harder to read
@@ -123,22 +142,20 @@ For a loop drawing 200 pixels per frame at 60 FPS:
 | Inline         | 12,000/sec      | Moderate GC pauses every ~1 second |
 | Pre-allocation | 0/sec           | Minimal GC activity                |
 
-**Real-world impact:** On modern browsers, inline allocation is fine for <50 operations/frame. Beyond that,
-pre-allocation provides measurable benefits.
+Real-world impact: On modern browsers, inline allocation is fine for <50 operations/frame. Beyond that, pre-allocation
+provides measurable benefits.
 
----
-
-## Drawing Performance
+## Drawing performance
 
 ### Batching
 
 BLIT386 automatically batches draw calls for optimal GPU performance:
 
-- **Primitive batching:** All primitives (pixels, lines, rects) are batched together
-- **Texture batching:** Sprites from the same `SpriteSheet` are batched
-- **Batch breaks:** Changing sprite sheets breaks batching
+- Primitive batching: All primitives (pixels, lines, rects) are batched together
+- Texture batching: Sprites from the same `SpriteSheet` are batched
+- Batch breaks: Changing sprite sheets breaks batching
 
-**Optimization tips:**
+Optimization tips:
 
 ```ts
 // Good: All sprites from same sheet
@@ -152,9 +169,9 @@ BT.drawSprite(playerSheet, sprite2, pos2); // Batch break!
 BT.drawSprite(enemySheet, sprite3, pos3); // Batch break!
 ```
 
-### Sprite Sheet Organization
+### Sprite sheet organization
 
-**Pack related sprites into single sheets:**
+Pack related sprites into single sheets:
 
 ```text
 Good:
@@ -168,18 +185,18 @@ Less optimal:
 
 ### Palette offset performance
 
-**Changing `paletteOffset` per draw is cheap** — it shifts stored texel indices before palette lookup, not RGBA tint
+Changing `paletteOffset` per draw is cheap – it shifts stored texel indices before palette lookup, not RGBA tint
 multiplication:
 
 ```ts
-// Same performance — offset is a uniform add, not per-pixel color math
+// Same performance – offset is a uniform add, not per-pixel color math
 BT.drawSprite(sheet, sprite, pos);
 BT.drawSprite(sheet, sprite, pos, 16); // team-color range
 ```
 
-Use palette offsets liberally for team colors and damage flashes — batching cost dominates, not the offset itself.
+Use palette offsets liberally for team colors and damage flashes – batching cost dominates, not the offset itself.
 
-### Line Rendering Costs
+### Line rendering costs
 
 The Renderer has been optimized to reduce vertex overhead: axis-aligned lines now render as single quads (6 vertices),
 while diagonal lines use Bresenham's algorithm. This section explains the cost tradeoffs and when optimization matters.
@@ -191,12 +208,12 @@ Line rendering performance varies significantly based on line orientation:
 | Horizontal / Vertical | 6 (single quad)         | 6 vertices           |
 | Diagonal              | 6 per pixel (Bresenham) | ~600 vertices        |
 
-**Why diagonal lines cost more:**
+Why diagonal lines cost more:
 
 Diagonal lines use Bresenham's algorithm to achieve authentic pixel-art rendering where each pixel is a discrete unit.
 This produces the classic "staircase" look expected in retro demos but requires rendering each pixel as a separate quad.
 
-**Optimization tips for diagonal lines:**
+Optimization tips for diagonal lines:
 
 ```ts
 // GOOD: Grid lines (axis-aligned) are very cheap
@@ -214,26 +231,24 @@ for (let i = 0; i < 200; i++) {
 // Or pre-render complex patterns to a texture
 ```
 
-**When diagonal line cost matters:**
+When diagonal line cost matters:
 
 - Drawing 10-20 short diagonal lines per frame: Fine
 - Drawing 100+ diagonal line segments (curves, circles): Consider alternatives
 - Static complex patterns: Pre-render to a sprite sheet
 
----
+## Loop best practices
 
-## Loop Best Practices
+### Fixed timestep
 
-### Fixed Timestep
+BLIT386 uses a fixed simulation timestep by default (`targetFPS: 60` → `update()` about 60 times per second). `render()`
+still runs at the browser's refresh rate. This provides:
 
-BLIT386 uses a fixed **simulation** timestep by default (`targetFPS: 60` → `update()` about 60 times per second).
-`render()` still runs at the browser's refresh rate. This provides:
+- Deterministic behavior: Same inputs always produce same results
+- Predictable physics: Use `BT.ticks` and `BT.deltaSeconds` instead of render-frame timing
+- Simplified logic: Tick-based counters and `Timer` intervals
 
-- **Deterministic behavior:** Same inputs always produce same results
-- **Predictable physics:** Use `BT.ticks` and `BT.deltaSeconds` instead of render-frame timing
-- **Simplified logic:** Tick-based counters and `Timer` intervals
-
-### Using Ticks for Timing
+### Using ticks for timing
 
 ```ts
 // Frame-based timer (recommended)
@@ -250,23 +265,21 @@ if (elapsedTime >= 1.0) {
 }
 ```
 
-**Ticks are simpler and more deterministic** for most demo logic.
+Ticks are simpler and more deterministic for most demo logic.
 
-### Frame Budget Management
+### Frame budget management
 
 If your `update()` or `render()` takes too long:
 
-1. **Confirm the symptom** - Set `isDetectingDroppedFrames: true` in `configure()` to log a console warning whenever the
+1. Confirm the symptom – Set `isDetectingDroppedFrames: true` in `configure()` to log a console warning whenever the
    browser misses a vsync deadline. The detector auto-calibrates to the actual rAF cadence so it works on any refresh
    rate (60 / 120 / 144 Hz, etc.) and on Firefox where rAF often fires at the display rate rather than at `targetFPS`.
-2. **Profile with browser dev tools** - Find the actual bottleneck
-3. **Reduce draw calls** - Cull off-screen objects
-4. **Optimize hot loops** - Use pre-allocation in tight loops
-5. **Simplify logic** - Can you defer expensive operations?
+2. Profile with browser dev tools – Find the actual bottleneck
+3. Reduce draw calls – Cull off-screen objects
+4. Optimize hot loops – Use pre-allocation in tight loops
+5. Simplify logic – Can you defer expensive operations?
 
----
-
-## Common Pitfalls
+## Common pitfalls
 
 <Accordions>
 
@@ -291,7 +304,7 @@ drawUI(): void {
 
 <Accordion title="2. Ignoring the profiler">
 
-Don't guess what's slow - **measure it**. Use:
+Don't guess what's slow – measure it. Use:
 
 - Chrome DevTools Performance tab
 - `console.time()` / `console.timeEnd()`
@@ -345,11 +358,9 @@ render(): void {
 
 </Accordions>
 
----
+## Performance rules of thumb
 
-## Performance Rules of Thumb
-
-### Object Allocation Guidelines
+### Object allocation guidelines
 
 | Operations/Frame | Recommendation             | Example                                   |
 | ---------------- | -------------------------- | ----------------------------------------- |
@@ -358,9 +369,9 @@ render(): void {
 | 50-100           | Consider pre-allocation    | Complex scenes, medium particle systems   |
 | 100+             | Definitely pre-allocate    | Pattern demos, large particle systems     |
 
-### When to Use Each Pattern
+### When to use each pattern
 
-**Use inline allocation for:**
+Use inline allocation for:
 
 - UI rendering (< 10 operations)
 - Menu systems
@@ -368,7 +379,7 @@ render(): void {
 - Debug rendering
 - Anything that runs once or rarely
 
-**Use pre-allocation for:**
+Use pre-allocation for:
 
 - Particle systems (100+ particles)
 - Complex pattern rendering
@@ -376,40 +387,36 @@ render(): void {
 - Per-entity operations with 50+ entities
 - Physics simulations
 
----
+## Example references
 
-## Example References
-
-Demos live in the sibling **`blit386-demos`** repo (`src/NNN-topic.js` files). The examples below demonstrate both
+Demos live in the sibling `blit386-demos` repo (`src/NNN-topic.js` files). The examples below demonstrate both
 approaches:
 
-### Clarity-First Examples (Inline Allocation)
+### Clarity-first examples (inline allocation)
 
-- **`001-basics.js`** - Entry-level example teaching core concepts
-- **`022-bitmap-font.js`** - Bitmap font loading and palette indexize workflow
-- **`002-primitives.js`** - Drawing primitive shapes
-- **`008-sprites.js`** - Sprite rendering and palette offsets
-- **`004-fonts.js`** - System font and text rendering
+- `001-basics.js` – Entry-level example teaching core concepts
+- `022-bitmap-font.js` – Bitmap font loading and palette indexize workflow
+- `002-primitives.js` – Drawing primitive shapes
+- `008-sprites.js` – Sprite rendering and palette offsets
+- `004-fonts.js` – System font and text rendering
 
-These prioritize **readability and learning** over micro-optimizations.
+These prioritize readability and learning over micro-optimizations.
 
-### Performance-Optimized Examples (Pre-allocation)
+### Performance-optimized examples (pre-allocation)
 
-- **`006-patterns.js`** - Complex animations with 200+ operations/frame
-- **`007-camera.js`** - Scrolling world with many buildings
+- `006-patterns.js` – Complex animations with 200+ operations/frame
+- `007-camera.js` – Scrolling world with many buildings
 
-These demonstrate **when and how to optimize** for performance-critical scenarios.
+These demonstrate when and how to optimize for performance-critical scenarios.
 
-### Effect and Animation Examples
+### Effect and animation examples
 
-- **`009-animation.js`** - Tick-based timing (inline allocation, focus on clarity)
-- **`010-sprite-effects.js`** - Palette offset effects for team colors and flashes
-
----
+- `009-animation.js` – Tick-based timing (inline allocation, focus on clarity)
+- `010-sprite-effects.js` – Palette offset effects for team colors and flashes
 
 ## Conclusion
 
-**Start simple, optimize when needed:**
+Start simple, optimize when needed:
 
 1. Write clear code with inline allocation
 2. Profile to find actual bottlenecks
@@ -422,7 +429,7 @@ Clear code that runs at 60 FPS is better than complex code that runs at 65 FPS.
 
 </Callout>
 
-## See Also
+## See also
 
 <Cards>
   <Card title="Performance Testing" href="/docs/performance/testing">Measure before optimizing (CPU benchmarks).</Card>

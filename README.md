@@ -185,7 +185,7 @@ pnpm add blit386
 ```
 
 You need an ESM bundler (Vite, esbuild, webpack, and friends) and Node 22+. The engine wants a WebGPU browser and
-quietly falls back to Canvas 2D when there is not one – see [Browser support](docs/api-core.md#browser-support) for the
+quietly falls back to Canvas 2D when there is not one – see [Browser support](docs/api-browser-support.md) for the
 version details.
 
 ## Demos
@@ -197,27 +197,30 @@ moving square up to a full Snake game.
 ## Documentation
 
 The full, typeset documentation lives at **[blit386.dev](https://blit386.dev)**. The Markdown sources are in
-[`docs/`](docs/) – start with [API: Core](docs/api-core.md) for `bootstrap()`, the game loop, and core types. The rest
-of the important pages:
+[`docs/`](docs/) – start with [API: Core](docs/api-core.md) for `bootstrap()` and initialization. The rest of the
+important pages:
 
-| Guide                                                | What it covers                                         |
-| ---------------------------------------------------- | ------------------------------------------------------ |
-| [API: Core](docs/api-core.md)                        | bootstrap, game loop, camera, Timer, core types        |
-| [API: Rendering](docs/api-rendering.md)              | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](docs/api-palette.md)                  | palette setup, presets, effects, serialization         |
-| [API: Assets](docs/api-assets.md)                    | sprite sheets, bitmap fonts, asset loading             |
-| [Input Guide](docs/input.md)                         | pointer, keyboard, gamepad                             |
-| [Palette Guide](docs/palette-guide.md)               | the palette-first workflow, offsets, and effects       |
-| [Post-Process Effects](docs/post-process-effects.md) | the effect chain, built-in effects, CRT presets        |
+| Documentation                                              | What it covers                                         |
+| ---------------------------------------------------------- | ------------------------------------------------------ |
+| [API: Core](docs/api-core.md)                              | bootstrap, init, default configuration                 |
+| [API: Game Loop](docs/api-game-loop.md)                    | tick timing, present FPS, Timer                        |
+| [API: Camera](docs/api-camera.md)                          | global pixel offset, world-clamp helpers               |
+| [API: Core Types](docs/api-core-types.md)                  | Vector2i, Rect2i, Color32                              |
+| [API: Rendering](docs/api-rendering.md)                    | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](docs/api-palette.md)                        | palette setup, presets, effects, serialization         |
+| [API: Assets](docs/api-assets.md)                          | sprite sheets, bitmap fonts, asset loading             |
+| [Input Guide](docs/guide-input.md)                         | pointer, keyboard, gamepad                             |
+| [Palette Guide](docs/guide-palette.md)                     | the palette-first workflow, offsets, and effects       |
+| [Post-Process Effects](docs/guide-post-process-effects.md) | the effect chain, built-in effects, CRT presets        |
 
 The full index – overlay HUD, palette presets, bitmap fonts, performance, testing, security – lives in [`docs/`](docs/).
 
 ## Inspiration
 
-BLIT386 owes its whole philosophy to [RetroBlit](https://www.badcastle.com/retroblit/docs/doc/index.html) by Martin
-Cietwierkowski ([@daafu](https://github.com/daafu)) – a retro pixel framework for Unity that throws out the scene graph
-and hands you a clean, low-level demo loop. BLIT386 brings that same feeling to the web with WebGPU: no frameworks, just
-sprites, primitives, fonts, and a palette.
+BLIT386 owes its whole philosophy to [RetroBlit](https://www.badcastle.com/retroblit.html) by Martin Cietwierkowski
+([@daafu](https://github.com/daafu)) – a retro pixel framework for Unity that throws out the scene graph and hands you a
+clean, low-level demo loop. BLIT386 brings that same feeling to the web with WebGPU: no frameworks, just sprites,
+primitives, fonts, and a palette.
 
 ## Made by
 

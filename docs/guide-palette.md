@@ -1,4 +1,4 @@
-# Palette Guide
+# Palette
 
 <!-- blit386.dev-banner:start -->
 
@@ -16,12 +16,14 @@ BLIT386 is palette-first: every visible pixel stores a palette slot index, and f
 This guide covers the end-to-end workflow: setup, indexed sprites, palette offsets, runtime effects, and when to call
 `BT.spritesRefresh()`.
 
-For terminology (**slot** vs **`paletteIndex`** vs **`paletteOffset`**) and when to call `BT.paletteSet()` vs mutating
+For terminology (slot vs. `paletteIndex` vs. `paletteOffset`) and when to call `BT.paletteSet()` vs. mutating
 `BT.palette`, see [Palette addressing](api-palette.md#palette-addressing) in the API palette reference.
 
----
+<Steps>
 
-## 1) Create and activate a palette
+<Step>
+
+## Create and activate a palette
 
 ```ts
 import { BT, Color32, Palette } from 'blit386';
@@ -39,12 +41,14 @@ Key rules:
 - After activation, edit colors with `BT.palette.set(...)`; you do not need to call `paletteSet()` again for value-only
   changes (see [Palette addressing](api-palette.md#palette-addressing)).
 
----
+</Step>
 
-## 2) Draw using absolute palette indices
+<Step>
 
-Primitive and clear APIs take an absolute **`paletteIndex`** (the exact slot written to the framebuffer), not direct
-RGBA values. See [Palette addressing](api-palette.md#palette-addressing).
+## Draw using absolute palette indices
+
+Primitive and clear APIs take an absolute `paletteIndex` (the exact slot written to the framebuffer), not direct RGBA
+values. See [Palette addressing](api-palette.md#palette-addressing).
 
 ```ts
 BT.clear(1); // absolute paletteIndex 1
@@ -54,9 +58,11 @@ BT.drawLine(start, end, 12); // absolute paletteIndex 12
 
 When slot `6` changes in the active palette, every pixel drawn with absolute index `6` changes automatically.
 
----
+</Step>
 
-## 3) Index sprites (preferred and manual flows)
+<Step>
+
+## Index sprites (preferred and manual flows)
 
 <Tabs items={['Preferred: loadIndexed', 'Manual: low-level']}>
 
@@ -96,12 +102,14 @@ BT.paletteSet(palette);
 
 </Tabs>
 
----
+</Step>
 
-## 4) Per-draw palette offsets (zero-cost color variants)
+<Step>
 
-`BT.drawSprite(..., paletteOffset)` adds a shift to each **stored** sprite index before lookup (not an absolute slot).
-See [Palette addressing](api-palette.md#palette-addressing).
+## Per-draw palette offsets (zero-cost color variants)
+
+`BT.drawSprite(..., paletteOffset)` adds a shift to each stored sprite index before lookup (not an absolute slot). See
+[Palette addressing](api-palette.md#palette-addressing).
 
 ```ts
 BT.drawSprite(heroSheet, heroSrc, leftTeamPos, 0); // base range
@@ -117,9 +125,11 @@ Use this for:
 
 No duplicate textures required.
 
----
+</Step>
 
-## 5) Runtime palette effects
+<Step>
+
+## Runtime palette effects
 
 Palette effects mutate slots over time and are applied in the engine frame pipeline.
 
@@ -143,20 +153,22 @@ BT.paletteSwap(10, 11);
 BT.paletteClearEffects();
 ```
 
----
+</Step>
 
-## 6) Layout swap vs value swap (`BT.spritesRefresh()`)
+<Step>
+
+## Layout swap vs. value swap
 
 <Callout type="warn" title="This distinction is critical">
 
-Refresh sprites only when slot **positions** change, never when only slot **values** change. Refreshing after a
-value-only change is wasteful and can fail reindexing if the original RGBA is gone.
+Refresh sprites only when slot positions change, never when only slot values change. Refreshing after a value-only
+change is wasteful and can fail reindexing if the original RGBA is gone.
 
 </Callout>
 
 ### Value swap (no sprite refresh)
 
-If slot numbers stay the same and only RGB values change, do **not** refresh sprites.
+If slot numbers stay the same and only RGB values change, do not refresh sprites.
 
 Examples:
 
@@ -175,19 +187,23 @@ BT.spritesRefresh();
 
 Why: sprite textures store indices. If your palette layout changes, old indices point to wrong colors until re-indexed.
 
----
+</Step>
 
-## 7) Practical palette-first patterns
+<Step>
 
-- **Cycling water:** reserve 8 contiguous slots and run `paletteCycle`.
-- **Damage flash:** trigger `paletteFlash(Color32.white, durationMs)`.
-- **Day/night:** prebuild day/night palettes and use `paletteFade`.
-- **HUD stability:** reserve a dedicated slot range and avoid cycling over it.
-- **Variant economy:** organize palette in fixed ranges and use sprite offsets instead of duplicate art.
+## Practical palette-first patterns
 
----
+- Cycling water: reserve 8 contiguous slots and run `paletteCycle`.
+- Damage flash: trigger `paletteFlash(Color32.white, durationMs)`.
+- Day/night: prebuild day/night palettes and use `paletteFade`.
+- HUD stability: reserve a dedicated slot range and avoid cycling over it.
+- Variant economy: organize palette in fixed ranges and use sprite offsets instead of duplicate art.
 
-## 8) Performance notes
+</Step>
+
+<Step>
+
+## Performance notes
 
 Palette-first rendering minimizes color-update cost:
 
@@ -197,9 +213,11 @@ Palette-first rendering minimizes color-update cost:
 
 For benchmark workflow and CI thresholds, see [Performance Testing](performance-testing.md).
 
----
+</Step>
 
-## See Also
+</Steps>
+
+## See also
 
 <Cards>
   <Card title="API: Palette" href="/docs/api/palette">API reference for palette methods and effect calls.</Card>
