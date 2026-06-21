@@ -94,6 +94,9 @@ jobs:
       - name: Check documentation links
         run: pnpm run docs:links
 
+      - name: Check doc site banners
+        run: pnpm run sync:doc-banners:check
+
   build-library:
     name: Build Library
     runs-on: ubuntu-latest

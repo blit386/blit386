@@ -1,5 +1,15 @@
 # API: Core
 
+<!-- blit386.dev-banner:start -->
+
+<!-- prettier-ignore -->
+> [!TIP]
+> You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/api/core, typeset like an
+> actual docs site and easier on the eyes. Probably the nicer place to read it, but same
+> words either way.
+
+<!-- blit386.dev-banner:end -->
+
 Bootstrap, initialization, game loop timing, camera, and core types.
 
 > **Starting a new project?** The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm,

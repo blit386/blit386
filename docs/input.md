@@ -1,5 +1,15 @@
 # Input Guide
 
+<!-- blit386.dev-banner:start -->
+
+<!-- prettier-ignore -->
+> [!TIP]
+> You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/guides/input, typeset like an
+> actual docs site and easier on the eyes. Probably the nicer place to read it, but same
+> words either way.
+
+<!-- blit386.dev-banner:end -->
+
 BLIT386 provides DOM-backed input: **pointer** (mouse, touch, pen), **keyboard** (`KeyboardEvent.code` tracking and
 virtual face buttons), **gamepad** (up to four players via `navigator.getGamepads()`), and **text accumulation** for UI
 entry (`BT.inputString`).

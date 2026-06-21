@@ -47,6 +47,9 @@
     },
     {
       "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
+    },
+    {
+      "pattern": "^https?://blit386\\.dev(/|$)"
     }
   ],
   "replacementPatterns": [

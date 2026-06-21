@@ -1,0 +1,86 @@
+{
+  "$schema": "./_sitemap.schema.json",
+  "sections": {
+    "api": "API",
+    "guides": "Guides",
+    "performance": "Performance",
+    "reference": "Reference"
+  },
+  "pages": [
+    {
+      "src": "api-core.md",
+      "path": "api/core",
+      "description": "Bootstrap, initialization, game loop timing, camera, and core types."
+    },
+    {
+      "src": "api-rendering.md",
+      "path": "api/rendering",
+      "description": "Primitives, sprites, text, post-process effects, and frame capture."
+    },
+    {
+      "src": "api-palette.md",
+      "path": "api/palette",
+      "description": "Palette setup, built-in presets, HUD preset, serialization, and palette effects."
+    },
+    {
+      "src": "api-assets.md",
+      "path": "api/assets",
+      "description": "Sprite sheets, bitmap fonts, and asset loading."
+    },
+    {
+      "src": "input.md",
+      "path": "guides/input",
+      "description": "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
+    },
+    {
+      "src": "palette-guide.md",
+      "path": "guides/palette",
+      "description": "The palette-first rendering workflow: setup, slot offsets, and palette effects."
+    },
+    {
+      "src": "palette-presets.md",
+      "path": "guides/palette-presets",
+      "description": "Exact color data for the built-in Palette presets and the HUD preset."
+    },
+    {
+      "src": "overlay.md",
+      "path": "guides/overlay",
+      "description": "The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout."
+    },
+    {
+      "src": "post-process-effects.md",
+      "path": "guides/post-process-effects",
+      "description": "The two-tier post-process effect system, built-in effects, and CRT presets."
+    },
+    {
+      "src": "bitmap-fonts.md",
+      "path": "guides/bitmap-fonts",
+      "description": "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
+    },
+    {
+      "src": "performance-best-practices.md",
+      "path": "performance/best-practices",
+      "description": "When and how to optimize demos: object allocation, batching, and hot-path guidance."
+    },
+    {
+      "src": "performance-testing.md",
+      "path": "performance/testing",
+      "description": "CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate."
+    },
+    {
+      "src": "software-fallback-smoke-matrix.md",
+      "path": "performance/smoke-matrix",
+      "description": "Manual smoke-test checklist for the Canvas 2D software renderer."
+    },
+    {
+      "src": "deprecations.md",
+      "path": "reference/deprecations",
+      "description": "Central tracker for public API compatibility aliases and planned removals."
+    },
+    {
+      "src": "testing.md",
+      "path": "reference/testing",
+      "description": "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
+    }
+  ]
+}

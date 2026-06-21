@@ -1,5 +1,15 @@
 # Software Fallback Smoke Matrix
 
+<!-- blit386.dev-banner:start -->
+
+<!-- prettier-ignore -->
+> [!TIP]
+> You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/performance/smoke-matrix, typeset like an
+> actual docs site and easier on the eyes. Probably the nicer place to read it, but same
+> words either way.
+
+<!-- blit386.dev-banner:end -->
+
 This checklist is for quick manual verification of the software renderer. Originally written for the software-renderer
 MVP; updated for auto-fallback and the engine overlay (backend shown on the top bar when `isOverlayEnabled` is true).
 

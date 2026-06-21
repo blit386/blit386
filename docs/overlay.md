@@ -1,5 +1,15 @@
 # Engine Overlay
 
+<!-- blit386.dev-banner:start -->
+
+<!-- prettier-ignore -->
+> [!TIP]
+> You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/guides/overlay, typeset like an
+> actual docs site and easier on the eyes. Probably the nicer place to read it, but same
+> words either way.
+
+<!-- blit386.dev-banner:end -->
+
 The engine overlay is a screen-space HUD drawn **after** each demo `render()` when `HardwareSettings.isOverlayEnabled`
 is `true` (default). It shows present FPS, target FPS, draw calls, frame timings, active backend, resolution, and demo
 title. Demos should not duplicate this text.
