@@ -44,6 +44,11 @@ npx blit agents add cursor
 
 - Node.js 22.18.0 or newer.
 
+## Learn more
+
+- Docs: [blit386.dev](https://blit386.dev)
+- Source and issues: [github.com/blit386/create-blit386](https://github.com/blit386/create-blit386)
+
 ## License
 
 ISC. Copyright (c) Václav Vančura. See [LICENSE](./LICENSE).

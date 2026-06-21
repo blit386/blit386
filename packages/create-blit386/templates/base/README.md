@@ -70,3 +70,4 @@ the usual suspects: blank screens, "command not found," forgotten `await`, and m
 
 - `AGENTS.md` - a short home base for you or an AI assistant.
 - `docs/` - friendly guides: getting started, the game loop, drawing, input, colors, and fixing problems.
+- [blit386.dev](https://blit386.dev) - the full BLIT386 documentation site.
