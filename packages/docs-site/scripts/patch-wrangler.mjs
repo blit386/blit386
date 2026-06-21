@@ -24,9 +24,10 @@ writeFileSync(WRANGLER_CONFIG, `${JSON.stringify(config, null, 2)}\n`);
 
 // Cloudflare Workers does not set import.meta.url for bundled sub-modules, so
 // createRequire(import.meta.url) throws at module init. Fall back to a dummy
-// file URL; the __require helper is never actually called in a bundled Worker.
+// file URL so createRequire succeeds; the resulting require function is never
+// invoked in practice within a fully bundled Worker.
 const ASSETS_DIR = 'dist/server/assets';
-const PATTERN = 'createRequire(import.meta.url)';
+const PATTERN = /createRequire\s*\(\s*import\s*\.\s*meta\s*\.\s*url\s*\)/g;
 const REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
 
 let files;
@@ -40,8 +41,10 @@ for (const file of files) {
     if (!file.startsWith('chunk-') || !file.endsWith('.js')) continue;
     const filePath = join(ASSETS_DIR, file);
     const content = readFileSync(filePath, 'utf8');
-    if (!content.includes(PATTERN)) continue;
-    writeFileSync(filePath, content.replaceAll(PATTERN, REPLACEMENT));
+    const patched = content.replace(PATTERN, REPLACEMENT);
+    if (patched === content) continue;
+    console.log(`patched: ${filePath}`);
+    writeFileSync(filePath, patched);
 }
 
 // #endregion
