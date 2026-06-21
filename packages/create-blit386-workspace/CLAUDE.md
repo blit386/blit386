@@ -97,6 +97,8 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 - `cbt-spellcheck` — fix cspell errors and extend the dictionary
 - `cbt-test` — run the scaffold smoke test
 - `cbt-release` — npm publish procedure (`../PUBLISHING.md` in the local workspace layout)
+- `cbt-kit-audit` — re-audit shipped kit docs and skills against the current engine API (see **Kit content vs engine
+  docs**)
 
 ## Kit content vs engine docs
 
@@ -126,6 +128,13 @@ When blit386 public API or naming changes in the sibling repo, audit these kit f
 
 Also check `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine
 version.
+
+**Shipping an engine feature is the trigger to come here.** Nothing syncs this repo from `blit386` automatically: the
+kit docs and the shipped game-author skills are hand-authored beginner prose, so they drift silently when the engine
+changes. When you add or rename public API in the sibling `blit386` repo, review this repo in the **same** pass, not
+later: the kit docs in the table above, the shipped skills in `packages/kit/content/skills/` (for example `use-palette`,
+`read-gamepad`, `add-crt-effect`, `show-debug-overlay`) which demonstrate engine APIs the same way the docs do and stale
+the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to walk this checklist.
 
 ## Where to find information
 
