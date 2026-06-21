@@ -1,0 +1,57 @@
+---
+# Generated from blit386/docs/api-game-loop.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Game Loop"
+description: "Fixed-timestep simulation timing, tick counters, and the Timer helper."
+---
+
+Fixed-timestep simulation timing, tick counters, and the `Timer` helper.
+
+BLIT386 runs two independent cadences:
+
+| Concept         | Where                                                      | Meaning                                                        |
+| --------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| Simulation rate | `targetFPS`, `BT.targetFPS`, `BT.deltaSeconds`, `BT.ticks` | Fixed `update()` step; game logic and `Timer` use ticks        |
+| Render rate     | Overlay `Present: N FPS`                                   | Measured `requestAnimationFrame` cadence; `render()` runs here |
+
+`render()` may run more or fewer times per second than `update()` (for example 120 Hz display with `targetFPS: 60`). Use
+tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks.
+
+```ts
+BT.deltaSeconds; // seconds per fixed tick (1 / BT.targetFPS)
+BT.timeSeconds; // elapsed seconds since init (ticks × deltaSeconds)
+BT.ticks; // current tick counter (increments each update)
+BT.ticksReset(); // reset tick counter to 0
+BT.assignTag('Round start'); // timing chart event tag at current tick (requires isOverlayTimingChartEnabled)
+```
+
+## Timer
+
+`Timer` counts fixed update ticks, not render frames. Intervals are in ticks; convert to seconds with
+`intervalTicks / BT.targetFPS`. Use it in `update()` for periodic events: particle spawns, score ticks, palette swaps.
+
+```ts
+const spawn = new Timer(180); // every 180 ticks (3 s when BT.targetFPS === 60)
+
+// Inside update():
+if (spawn.fireIfElapsed()) {
+  spawnEnemy();
+}
+
+// Additional API:
+spawn.reset(); // restart interval from now
+spawn.elapsedTicks(); // ticks since last fire/reset
+spawn.remainingTicks(); // ticks until next fire
+spawn.intervalTicks; // readonly interval size
+```
+
+`Timer.fireIfElapsed()` advances the internal baseline on each true return. Pass `BT.ticks` explicitly only when you
+need a specific snapshot; the default is the engine tick counter.
+
+## See also
+
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
+  <Card title="API: Overlay" href="/docs/api/overlay">Present FPS, timing chart, event tags.</Card>
+  <Card title="API: Camera" href="/docs/api/camera">Global pixel offset for draw calls.</Card>
+</Cards>

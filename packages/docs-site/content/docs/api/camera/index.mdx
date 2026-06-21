@@ -1,0 +1,36 @@
+---
+# Generated from blit386/docs/api-camera.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Camera"
+description: "The camera's global pixel offset and world-clamp helpers."
+---
+
+The camera applies a global pixel offset to all subsequent draw calls. Integer only – pass `Vector2i`, never floats.
+
+```ts
+BT.cameraSet(new Vector2i(scrollX, scrollY)); // apply offset
+BT.camera; // Vector2i - current offset
+BT.cameraReset(); // set back to (0, 0)
+
+// Clamp a camera origin so the viewport stays within a world:
+const clamped = BT.cameraClamp(desired, worldSize);
+
+// Optional third argument overrides the viewport size (default: BT.displaySize):
+const clamped = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
+```
+
+Standalone helper (same math as `BT.cameraClamp`):
+
+```ts
+import { clampCameraToWorld } from 'blit386';
+
+const clamped = clampCameraToWorld(desired, worldSize, viewSize);
+```
+
+## See also
+
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, displaySize, default configuration.</Card>
+  <Card title="API: Core Types" href="/docs/api/core-types">Vector2i for offsets and sizes.</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">Primitives, sprites, text the camera offsets.</Card>
+</Cards>
