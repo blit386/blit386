@@ -78,8 +78,9 @@ not automated here). The full roadmap lives in [`CREATE_BLIT386_DESIGN.md`](CREA
 
 ## Related
 
+- **Docs:** [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site.
 - **Engine:** [blit386](https://github.com/blit386/blit386) – the palette-first WebGPU retro engine these games run on
-  ([npm](https://www.npmjs.com/package/blit386), [docs](https://github.com/blit386/blit386/tree/main/docs)).
+  ([npm](https://www.npmjs.com/package/blit386), [docs](https://blit386.dev)).
 - **Demos:** [demos.blit386.dev](https://demos.blit386.dev) – 34 small, commented examples.
 
 ## Made by

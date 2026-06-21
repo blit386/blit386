@@ -42,6 +42,11 @@ npm create blit386@latest my-game -- --no-git      # do not initialize a git rep
 - A modern browser. WebGPU is used when available; otherwise the engine falls back to Canvas 2D automatically, so the
   game always runs.
 
+## Learn more
+
+- Docs: [blit386.dev](https://blit386.dev)
+- Source and issues: [github.com/blit386/create-blit386](https://github.com/blit386/create-blit386)
+
 ## License
 
 ISC. Copyright (c) Václav Vančura. See [LICENSE](./LICENSE).
