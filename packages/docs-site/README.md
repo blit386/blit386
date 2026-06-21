@@ -61,11 +61,10 @@ pnpm run sync:docs:check   # regenerate and fail if the mirror drifted (CI)
 pnpm run sync:docs:watch   # watch blit386/docs and re-sync on every change (run alongside pnpm run dev)
 ```
 
-Never hand-edit a generated page — edit the engine source and re-run `sync:docs`. See
-[`DOCUMENTATION_MIGRATION.md`](DOCUMENTATION_MIGRATION.md) for the full plan and source-to-URL map, and `CLAUDE.md`
-(Documentation mirror) for the conventions. Contributor-only docs (developer experience guide, voice, tooling, security
-runbook) are not mirrored and stay on GitHub in the [engine repo](https://github.com/blit386/blit386/tree/main/docs).
-For interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
+Never hand-edit a generated page — edit the engine source and re-run `sync:docs`. See `CLAUDE.md` (Documentation mirror)
+for the conventions. Contributor-only docs (developer experience guide, voice, tooling, security runbook) are not
+mirrored and stay on GitHub in the [engine repo](https://github.com/blit386/blit386/tree/main/docs). For interactive
+examples, visit [demos.blit386.dev](https://demos.blit386.dev).
 
 **Coverage:** which docs publish, and their sidebar order, are defined by the engine repo's `blit386/docs/_sitemap.json`
 manifest — not by this repo's script. Links to engine docs not in the manifest resolve to their GitHub source instead of
