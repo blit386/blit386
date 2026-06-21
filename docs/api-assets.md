@@ -1,4 +1,4 @@
-# API: Assets
+# Assets
 
 <!-- blit386.dev-banner:start -->
 
@@ -11,8 +11,6 @@
 <!-- blit386.dev-banner:end -->
 
 Sprite sheets, bitmap fonts, and asset loading.
-
----
 
 ## Asset size limits
 
@@ -37,14 +35,13 @@ clipping.
 
 </Callout>
 
-`.btfont` files may reference either a relative PNG path or an embedded PNG data URI. Embedded textures must use
-`data:image/png;base64,...` and stay within the embedded payload cap above. Other `data:` schemes (for example JPEG) are
-rejected before image decode. Decoded atlas dimensions use the same width, height, and pixel-area limits as sprite
-sheets. Prefer separate PNG files for large atlases so the JSON payload stays under the JSON size limit.
+- `.btfont` files may reference either a relative PNG path or an embedded PNG data URI.
+- Embedded textures must use `data:image/png;base64,...` and stay within the embedded payload cap above.
+- Other `data:` schemes (for example JPEG) are rejected before image decode.
+- Decoded atlas dimensions use the same width, height, and pixel-area limits as sprite sheets.
+- Prefer separate PNG files for large atlases so the JSON payload stays under the JSON size limit.
 
----
-
-## Loading Assets
+## Loading assets
 
 `AssetLoader` caches images by URL so repeated loads share the same `HTMLImageElement`. Oversized images are rejected as
 soon as the browser reports decoded dimensions.
@@ -64,9 +61,7 @@ if (AssetLoader.isLoaded('sprites.png')) {
 }
 ```
 
----
-
-## Sprite Setup - Preferred Path
+## Sprite setup – preferred path
 
 Use `SpriteSheet.loadIndexed()` for all standard sprite setup. It combines color registration, image loading, and
 palette indexization in one call.
@@ -92,12 +87,11 @@ BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
 // indexed.srcRect - Rect2i spanning the full image
 ```
 
-Colors are sorted by perceived luminance (darkest-first) by default. Pass `{ sort: 'none' }` to preserve row-major scan
-order. Slot 0 is never touched - transparent pixels in the image map to slot 0 at draw time.
+- Colors are sorted by perceived luminance (darkest-first) by default.
+- Pass `{ sort: 'none' }` to preserve row-major scan order.
+- Slot `0` is never touched – transparent pixels in the image map to slot 0 at draw time.
 
----
-
-## Sprite Setup - Manual Path
+## Sprite setup – manual path
 
 Use this only when you need fine-grained control over the palette layout or want to load several sheets into the same
 palette sequentially.
@@ -110,6 +104,8 @@ const palette = new Palette(256);
 
 <Steps>
 
+<Step>
+
 ### Register colors into the palette
 
 Each call appends the image's colors starting at the given slot; chain them with running offsets to pack several sheets
@@ -120,11 +116,19 @@ const colors = await SpriteSheet.loadColorsIntoPalette('hero.png', palette, 10);
 const tileColors = await SpriteSheet.loadColorsIntoPalette('tiles.png', palette, 10 + colors.length);
 ```
 
-### Load the image into a SpriteSheet
+</Step>
+
+<Step>
+
+### Load the image into a sprite sheet
 
 ```ts
 const sheet = await SpriteSheet.load('hero.png');
 ```
+
+</Step>
+
+<Step>
 
 ### Convert RGBA pixels to palette indices
 
@@ -135,6 +139,8 @@ sheet.indexize(palette);
 BT.paletteSet(palette);
 ```
 
+</Step>
+
 </Steps>
 
 To create a sheet from raw palette-indexed pixel data (advanced / test use):
@@ -143,21 +149,17 @@ To create a sheet from raw palette-indexed pixel data (advanced / test use):
 const sheet = SpriteSheet.fromIndexedPixels(width, height, indexedPixels);
 ```
 
----
+## Palette offset
 
-## Palette Offset
-
-Pass a **`paletteOffset`** (per-draw shift, not an absolute slot) to `BT.drawSprite()` and `BT.printFont()` to remap
-stored texel indices before palette lookup. Useful for team-color variations and damage flashes. Terminology and
-examples: [Palette addressing](api-palette.md#palette-addressing). Draw semantics: [API: Rendering](api-rendering.md).
+Pass a `paletteOffset` (per-draw shift, not an absolute slot) to `BT.drawSprite()` and `BT.printFont()` to remap stored
+texel indices before palette lookup. Useful for team-color variations and damage flashes. Terminology and examples:
+[Palette addressing](api-palette.md#palette-addressing). Draw semantics: [API: Rendering](api-rendering.md).
 
 ```ts
 BT.drawSprite(sheet, srcRect, pos, 16); // render in "blue team" color range
 ```
 
----
-
-## Bitmap Fonts
+## Bitmap fonts
 
 Load `.btfont` files for proportional, palette-indexed bitmap fonts. After loading, register colors in the palette and
 indexize the font's internal sprite sheet before drawing (same pattern as manual sprite setup).
@@ -174,18 +176,14 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!');
 BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw index shift
 ```
 
-Font rendering goes through the same sprite pipeline as `BT.drawSprite()` and is auto-batched.
+- Font rendering goes through the same sprite pipeline as `BT.drawSprite()` and is auto-batched.
+- SpriteSheet helpers (after indexize): `isIndexed()`, `getIndexedPixels()` (defensive copy for software renderer),
+  `reindexize(palette)` when palette layout changes. `SpriteSheet.loadIndexed()` returns `IndexedSpriteLoadResult`
+  (`{ sheet, srcRect, colors }`).
+- See [Bitmap Fonts Guide](guide-bitmap-fonts.md) for the `.btfont` format specification and the BMFont conversion
+  workflow (`pnpm run convert-font`).
 
-**SpriteSheet helpers** (after indexize): `isIndexed()`, `getIndexedPixels()` (defensive copy for software renderer),
-`reindexize(palette)` when palette layout changes. `SpriteSheet.loadIndexed()` returns `IndexedSpriteLoadResult`
-(`{ sheet, srcRect, colors }`).
-
-See [Bitmap Fonts Guide](bitmap-fonts.md) for the `.btfont` format specification and the BMFont conversion workflow
-(`pnpm run convert-font`).
-
----
-
-## System Font
+## System font
 
 A built-in 6×14 monospace font covering printable ASCII (characters 32-126). No load step needed.
 
@@ -194,15 +192,14 @@ BT.systemPrint(new Vector2i(10, 10), paletteIndex, 'Score: 100');
 BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
 ```
 
-Use `BT.systemPrint()` for demo-specific HUD panels and labels. Call `palette.applyHUD()` at init so overlay and demo
-HUD share the same label/header/dim slot conventions — see [API: Palette](api-palette.md) and
-[Palette Presets — HUD](palette-presets.md#hud-preset-paletteapplyhud). The engine draws its own overlay (present FPS,
-target FPS, draw calls, frame/update()/render() timings, backend, resolution, demo title) after each `render()` when
-`isOverlayEnabled` is true; see [Overlay Guide](overlay.md). For styled variable-width text, use a bitmap font instead.
+- Use `BT.systemPrint()` for demo-specific HUD panels and labels. Call `palette.applyHUD()` at init so overlay and demo
+  HUD share the same label/header/dim slot conventions – see [API: Palette](api-palette.md) and
+  [Palette Presets – HUD](guide-palette-presets.md#hud-preset-paletteapplyhud).
+- The engine draws its own overlay (present FPS, target FPS, draw calls, frame/update()/render() timings, backend,
+  resolution, demo title) after each `render()` when `isOverlayEnabled` is true; see [Overlay Guide](guide-overlay.md).
+- For styled variable-width text, use a bitmap font instead.
 
----
-
-## See Also
+## See also
 
 <Cards>
   <Card title="API: Core" href="/docs/api/core">Bootstrap, init, game loop, core types.</Card>

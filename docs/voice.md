@@ -1,6 +1,6 @@
 # User-Facing Voice Guide
 
-## Why This Exists
+## Why this exists
 
 Error messages, canvas banners, and console output that reach a developer or end user define the first impression of the
 engine. BLIT386 targets two distinct audiences, and mixing their styles produces confusing output for both.
@@ -10,9 +10,9 @@ read the relevant section below.
 
 ---
 
-## Two Audience Tiers
+## Two audience tiers
 
-### Tier 1 - User-facing (canvas-visible or public API errors)
+### Tier 1 – user-facing (canvas-visible or public API errors)
 
 Audience: demo authors using the `BT` namespace, beginners who may not know TypeScript internals.
 
@@ -30,14 +30,14 @@ Where it appears: `showBeginnerRuntimeError()`, `displayError()`, canvas banners
 API path (anything reachable from demo code via `BT.*` or a public constructor). All such messages must live in
 `src/utils/errorMessages.ts`.
 
-### Tier 2 - Internal invariants (developer-only)
+### Tier 2 – Internal invariants (developer-only)
 
 Audience: engine contributors reading a stack trace.
 
 Rules:
 
 - Terse. Include the relevant values.
-- No need to explain next steps - the reader can read the source.
+- No need to explain next steps – the reader can read the source.
 - Still no emoji.
 
 Where it appears: `throw new Error()` inside private engine methods, guard checks inside `src/core/`, `src/render/`, and
@@ -45,7 +45,7 @@ non-public `src/assets/` paths.
 
 ---
 
-## Examples: Before and After
+## Examples: before and after
 
 | Context                                | Before (avoid)                  | After (Tier 1 style)                                                                                                                                                   |
 | -------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -62,13 +62,13 @@ non-public `src/assets/` paths.
 
 ---
 
-## Console Output Rules
+## Console output rules
 
 - Prefix engine console output with `[BT]`: `console.error('[BT] Palette Error: ...')`.
 - Use `console.error` for failures, `console.warn` for degraded-but-continuing states.
 - Never use `console.log` in production code paths (benchmarks and debug utilities excepted).
 - Canvas-visible errors (`displayError`) and console output must say the same thing. Do not show a terse console message
-  and a friendly canvas message - they must match.
+  and a friendly canvas message – they must match.
 
 ---
 
@@ -87,22 +87,22 @@ Steps when adding a new Tier 1 message:
 2. Import and call it at the throw or display site.
 3. Do not inline the string at the call site.
 
-Tier 2 strings (internal invariants) may be inlined - they are never user-visible and do not need the same stability
+Tier 2 strings (internal invariants) may be inlined – they are never user-visible and do not need the same stability
 guarantees.
 
 ---
 
-## Quick Self-Check Before Committing a New Message
+## Quick self-check before committing a new message
 
-1. **Plain English?** Could a junior developer understand it without reading engine source?
-2. **Next action?** Does it tell the reader what to do, not just what failed?
-3. **No trailing period?** Thrown strings land mid-sentence in stack traces.
-4. **No emoji?** Nowhere in the engine - not in throws, not in banners, not in console output.
-5. **Sentence case?** "Slot 0 is always transparent" not "Slot 0 Is Always Transparent".
-6. **Centralized?** Is the string in `errorMessages.ts`, or must it go there?
-7. **Tier correct?** Is this reachable from demo code? If yes, it must be Tier 1.
+1. Plain English? Could a junior developer understand it without reading engine source?
+2. Next action? Does it tell the reader what to do, not just what failed?
+3. No trailing period? Thrown strings land mid-sentence in stack traces.
+4. No emoji? Nowhere in the engine – not in throws, not in banners, not in console output.
+5. Sentence case? "Slot 0 is always transparent" not "Slot 0 Is Always Transparent".
+6. Centralized? Is the string in `errorMessages.ts`, or must it go there?
+7. Tier correct? Is this reachable from demo code? If yes, it must be Tier 1.
 
-## See Also
+## See also
 
 | Guide                                                 | What it covers                                  |
 | ----------------------------------------------------- | ----------------------------------------------- |

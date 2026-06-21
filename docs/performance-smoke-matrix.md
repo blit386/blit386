@@ -17,7 +17,7 @@ MVP; updated for auto-fallback and the engine overlay (backend shown on the top 
 
 - Backend under test: `software` (auto-fallback when WebGPU unavailable, `?backend=software`, or
   `configure().backend = 'software'`)
-- Resolution target: low-res scenes (for example `320x240`)
+- Resolution target: low-res scenes (for example `320×240`)
 - In scope: auto-fallback detection, overlay backend line, clear, clearRect, primitives, sprites, system text, bitmap
   text, camera offset, frame capture
 - Out of scope: fullscreen shader/post-process effects (`effectAdd`, `effectRemove`, `effectClear`) in software mode
@@ -69,10 +69,10 @@ Expected message intent: software mode does not support fullscreen effects and s
 - Software output is visually stable run-to-run for the same scene.
 - Effect API failures are clear and actionable.
 
-## See Also
+## See also
 
 <Cards>
-  <Card title="API: Core" href="/docs/api/core#requested-vs-active-backend">Requested vs active backend, BT.activeBackend.</Card>
+  <Card title="API: Core" href="/docs/api/core#requested-vs-active-backend">Requested vs. active backend, BT.activeBackend.</Card>
   <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effects excluded in the software backend.</Card>
   <Card title="Testing" href="/docs/reference/testing">Automated visual parity tests.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Backend name shown on the overlay top bar.</Card>

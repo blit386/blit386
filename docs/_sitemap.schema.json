@@ -12,7 +12,7 @@
     },
     "sections": {
       "type": "object",
-      "description": "Map of section id (the first path segment) to its sidebar title. Acronym casing (for example 'api' -> 'API') is why titles are explicit rather than derived.",
+      "description": "Map of section id (the first path segment) to its sidebar title. Acronym casing (for example 'api' → 'API') is why titles are explicit rather than derived.",
       "minProperties": 1,
       "additionalProperties": {
         "type": "string",

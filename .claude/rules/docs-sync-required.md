@@ -4,7 +4,8 @@ Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
 
 - Documentation is part of the implementation, not a follow-up task.
 - Public API changes: update relevant `docs/api-*.md` and related examples.
-- Runtime behavior changes: update affected guides under `docs/` (including `docs/overlay.md` for overlay changes).
+- Runtime behavior changes: update affected guides under `docs/` (including `docs/guide-overlay.md` for overlay
+  changes).
 - Adding/removing/renaming a public `docs/*.md` page (one that should appear on blit386.dev): update
   `docs/_sitemap.json` in the same change (entry order = sidebar order; contract in `docs/_sitemap.schema.json`). The
   `blit386-dev-fumapress` mirror generates only the docs listed there; contributor-only pages (developer experience,
@@ -19,6 +20,12 @@ Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
   of contents (the site provides one); components only render on the site, so keep contributor-only docs plain Markdown.
   Adding a component the site does not register (`blit386-dev-fumapress/press.config.tsx`) breaks the build — register
   it there first, then verify with `pnpm run sync:docs` + `pnpm run build` in that repo.
+- Doc prose house style (see `CLAUDE.md` **Documentation authoring style**): no bold (`**`) in prose, no `---`
+  separators, `×` (not `x`) for dimensions except literal program output, break up walls of text, every `###` needs a
+  parent `##`, credit external inspirations with link + author. Published-doc filenames mirror the sitemap section
+  (`api-*`, `guide-*`, `performance-*`, `reference-*`). Renames use `git mv`, update `_sitemap.json` `src`, rewrite
+  inbound links with a `(?<![\w-])` guard, then `sync:doc-banners` + `docs:links` + `format`. New proper nouns go in
+  `cspell.json` (and the fumapress one for hand-authored content).
 - Architecture changes: update `CLAUDE.md` architecture sections and the **Where to Find Information** table.
 - Script or preflight changes: update `.claude/skills/*/SKILL.md` and affected `.cursor/rules/*.mdc` cross-references.
 - Onboarding surface changes (`README.md` Quick Start, `bootstrap()` defaults, minimal demo shape): check sibling

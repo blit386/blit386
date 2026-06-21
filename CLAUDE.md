@@ -25,11 +25,11 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How does a subsystem work internally?                          | The relevant `src/core/` or `src/render/` file                                                                                                                                                                               |
 | What does a demo implement?                                    | `src/core/IBTDemo.ts` (interface + HardwareSettings)                                                                                                                                                                         |
 | How does palette usage tracking work for the overlay grid?     | `src/core/RenderPaletteUsage.ts`, `src/overlay/palette/PaletteView.ts`                                                                                                                                                       |
-| How does the overlay work?                                     | `docs/overlay.md`, `src/overlay/` (orchestrator + `layout/layoutPlan.ts`), `docs/api-core.md` (HardwareSettings overlay flags), `HardwareSettings.isOverlayEnabled`                                                          |
-| What palette/sprite setup pattern is correct?                  | `docs/palette-guide.md`, then `docs/api-assets.md`                                                                                                                                                                           |
+| How does the overlay work?                                     | `docs/guide-overlay.md`, `src/overlay/` (orchestrator + `layout/layoutPlan.ts`), `docs/api-overlay.md` (overlay configure flags and style), `HardwareSettings.isOverlayEnabled`                                              |
+| What palette/sprite setup pattern is correct?                  | `docs/guide-palette.md`, then `docs/api-assets.md`                                                                                                                                                                           |
 | What are the render/asset dimension limits?                    | `src/utils/RenderLimits.ts` (constants), `src/utils/AssetLimits.ts` (asset + glyph limits), `docs/api-assets.md` (asset size limits table), `docs/api-core.md` (HardwareSettings dimension constraints)                      |
-| Which preset has which exact color values?                     | `docs/palette-presets.md`                                                                                                                                                                                                    |
-| How do post-process effects work?                              | `docs/post-process-effects.md`                                                                                                                                                                                               |
+| Which preset has which exact color values?                     | `docs/guide-palette-presets.md`                                                                                                                                                                                              |
+| How do post-process effects work?                              | `docs/guide-post-process-effects.md`                                                                                                                                                                                         |
 | What does the CI do on this file?                              | `.github/workflows/ci.yml`                                                                                                                                                                                                   |
 | Dependency security policy / CI audit gate?                    | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md`                                                                                                                                                    |
 | What is the benchmark threshold?                               | `ci.yml` benchmark job (`--threshold 25` flag), not docs                                                                                                                                                                     |
@@ -43,6 +43,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Where is the public docs site (blit386.dev)?                   | Sibling repo `blit386-dev-fumapress` (Fumapress + Waku) generates it from this repo's `docs/`; `docs/_sitemap.json` (schema `docs/_sitemap.schema.json`) controls which docs publish, their URL, sidebar order, and subtitle |
 | Why does each published doc have a blit386.dev banner?         | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see **Public docs site banner** below                           |
 | Can I use Fumadocs components (Callout, TypeTable, …) in docs? | Yes, in published docs only (site-first). Which ones, when to use them, and the authoring rules: **Fumadocs components in published docs** below                                                                             |
+| How do I write/rename/split a `docs/` page?                    | **Documentation authoring style** below (prose rules: no bold, no `---`, `×` for dimensions; filename mirrors sitemap section; rename/split checklist). For runtime strings see `docs/voice.md` instead                      |
 | What agent skills are available for this project?              | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) — `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
 | How do users start a new project with the engine?              | `npm create blit386@latest` — the scaffolder lives in the sibling `create-blit386` repo; see **Onboarding and the scaffolder** below                                                                                         |
 
@@ -118,6 +119,49 @@ component means registering it in that `getMdxComponents` map first, or the buil
 - **Validate before considering it done:** in `blit386-dev-fumapress`, run `pnpm run sync:docs` then `pnpm run build`
   (or at least `pnpm run typecheck`). An undefined component or malformed prop fails the build, which would break the
   deploy.
+
+## Documentation authoring style
+
+House style for the Markdown under `docs/` (the published reference and guides). This is about authoring the docs
+themselves, not runtime user-facing strings — for throws, console output, and canvas banners see `docs/voice.md`.
+
+Prose rules:
+
+- No bold (`**`) in doc prose. Lead a paragraph or bullet with a strong sentence, not a bolded label; promote a
+  recurring label to a real `###` subsection instead. A `**` that sits inside inline code or a fenced block (a glob such
+  as `src/**/*.ts`, or a JSDoc comment opener) is not bold, so leave it.
+- No `---` horizontal-rule separators between sections. Let headings do the separating.
+- Dimensions use the multiplication sign `×`, not the letter `x`: `320×240`, `6×14`, `8192×8192`. The one exception is
+  literal program output quoted verbatim (for example the overlay's on-screen `webgpu | 320x240`, which the engine
+  renders with a lowercase `x`).
+- No walls of text. Break long paragraphs into short ones, bullet lists, `###` subsections, or `Callout`s. Every `###`
+  subsection needs a parent `##`; give orphaned ones a heading.
+- Credit external inspirations with a link and the author's name (for example RetroBlit at
+  `https://www.badcastle.com/retroblit.html` by Martin Cietwierkowski, `@daafu`).
+
+Filenames mirror the sitemap section: a doc whose `path` is `api/<topic>` is `api-<topic>.md`; `guides/<topic>` is
+`guide-<topic>.md`; `performance/<topic>` is `performance-<topic>.md`; `reference/<topic>` is `reference-<topic>.md`.
+New published docs follow this so the filename and URL stay legible together.
+
+Renaming or splitting a published doc:
+
+1. `git mv` the file (plain `mv` if it is still untracked).
+2. Update its `src` in `docs/_sitemap.json`. Keep `path` stable unless the topic name itself changed, so URLs and
+   banners do not move; if the filename topic changes, update `path` to match (filename mirrors section).
+3. Rewrite every inbound link. Guard substring matches so a compound name is not hit by accident — renaming `overlay.md`
+   must not touch `api-overlay.md` (use a `(?<![\w-])` lookbehind or equivalent).
+4. When splitting, keep in the original file any anchor other docs link to (`#resolution-model`,
+   `#requested-vs-active-backend`, …); move the rest. Add a `See also` `Cards` block to each new page.
+5. Run `pnpm run sync:doc-banners`, then `pnpm run docs:links`, then `pnpm run format` (longer filenames shift Markdown
+   table padding, so tables usually need reflowing).
+
+After any doc change:
+
+- Add new proper nouns / coined words to `cspell.json` (and to `blit386-dev-fumapress/cspell.json` if they land in that
+  repo's hand-authored content, e.g. the landing page — its `content/docs/**` is spell-ignored as generated).
+- The site mirrors `docs/` via the sibling `blit386-dev-fumapress` (`pnpm run sync:docs`); `content/docs/**` there is
+  generated, never hand-edit it. Adding, renaming, or removing a sitemap entry means that mirror needs a re-sync. See
+  **Docs sync required** rule and the sibling repo's `CLAUDE.md` (Documentation mirror).
 
 ## Architecture
 
@@ -216,7 +260,7 @@ Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
   3. **Framebuffer & post-process** - the logical composite is an **`r8uint`** attachment at `displaySize` (one palette
      slot per pixel). **Pixel-tier** effects (`PostProcessChain`, `FullscreenPixelEffect`) run on that index buffer.
      **`PaletteResolveUpscalePass`** LUT-resolves indices to RGBA and upscales to `drawingBufferSize`. **Display-tier**
-     effects run on that RGBA before present (see `docs/post-process-effects.md`).
+     effects run on that RGBA before present (see `docs/guide-post-process-effects.md`).
 - **Software** (`'software'`): Canvas 2D fallback. Supports palette rendering, rects, Bresenham lines, indexed sprite
   blits, and bitmap text. Post-process/fullscreen effects throw a clear error directing users to the WebGPU backend.
   Activates automatically when WebGPU init fails; force explicitly via `HardwareSettings.backend: 'software'` or the
@@ -288,8 +332,8 @@ Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBac
 - **Utilities with arguments:** `cameraClamp(camera, worldSize, viewSize?)`, `systemPrintMeasure(text)`.
 - **Async:** `captureFrame`, `downloadFrame`.
 
-**Deprecated aliases still on `BT` (see `docs/deprecations.md`):** `pointerPosValid`, `buttonDown`, `buttonPressed`,
-`buttonReleased`, `gamepadConnected`, `keyDown`, `keyPressed`, `keyReleased`.
+**Deprecated aliases still on `BT` (see `docs/reference-deprecations.md`):** `pointerPosValid`, `buttonDown`,
+`buttonPressed`, `buttonReleased`, `gamepadConnected`, `keyDown`, `keyPressed`, `keyReleased`.
 
 **Top-level package exports** (outside the `BT` namespace): `bootstrap`, `defaultConfig`, `mergeHardwareSettings`,
 `applyEasing`, `clampCameraToWorld`, `displayError`, `getCanvas`, `Timer`, effect classes (`BarrelDistortion`, `Bloom`,
@@ -470,7 +514,7 @@ CRT+bloom, and individual display/pixel effects such as Vignette, Scanlines, Blo
 BarrelDistortion, upscale passes, and more).
 
 **WebGPU mocks:** Use `src/__test__/webgpu-mock.ts` for tests needing GPUDevice, GPUTexture, etc. See
-[docs/testing.md](docs/testing.md) for full details.
+[docs/reference-testing.md](docs/reference-testing.md) for full details.
 
 ### Known Testing Quirks
 

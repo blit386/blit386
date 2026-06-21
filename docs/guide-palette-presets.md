@@ -15,8 +15,6 @@ Exact built-in color data for `Palette` preset factories and `palette.applyHUD()
 All preset hex values are lowercase `RRGGBB` (no `#`), matching `src/assets/palettes/presetData.ts` and
 `src/assets/palettes/hudData.ts`.
 
----
-
 <!-- cspell:disable -->
 
 <Callout type="warn" title="Slot mapping (important)">
@@ -32,15 +30,13 @@ That means:
 
 </Callout>
 
----
+## VGA (256 slots)
 
-## `Palette.vga()` (256 slots)
+`Palette.vga()` preset data is generated in three exact blocks:
 
-VGA preset data is generated in three exact blocks:
-
-1. **16-color base**
-2. **6x6x6 RGB cube** using channel steps `[0, 95, 135, 175, 215, 255]`
-3. **24 grayscale values** with level formula `8 + i * 10` for `i = 0..23`
+1. 16-color base
+2. 6×6×6 RGB cube using channel steps `[0, 95, 135, 175, 215, 255]`
+3. 24 grayscale values with level formula `8 + i * 10` for `i = 0..23`
 
 ### VGA base 16 (`VGA_HEX[0..15]`)
 
@@ -77,9 +73,9 @@ VGA preset data is generated in three exact blocks:
 [8, 18, 28, 38, 48, 58, 68, 78, 88, 98, 108, 118, 128, 138, 148, 158, 168, 178, 188, 198, 208, 218, 228, 238];
 ```
 
----
+## CGA (16 slots)
 
-## `Palette.cga()` (16 slots)
+`Palette.cga()`:
 
 ```ts
 [
@@ -102,9 +98,9 @@ VGA preset data is generated in three exact blocks:
 ];
 ```
 
----
+## C64 (16 slots)
 
-## `Palette.c64()` (16 slots)
+`Palette.c64()`:
 
 ```ts
 [
@@ -127,17 +123,17 @@ VGA preset data is generated in three exact blocks:
 ];
 ```
 
----
+## Gameboy (4 slots)
 
-## `Palette.gameboy()` (4 slots)
+`Palette.gameboy()`:
 
 ```ts
 ['0f380f', '306230', '8bac0f', '9bbc0f'];
 ```
 
----
+## Pico8 (16 slots)
 
-## `Palette.pico8()` (16 slots)
+`Palette.pico8()`:
 
 ```ts
 [
@@ -160,9 +156,9 @@ VGA preset data is generated in three exact blocks:
 ];
 ```
 
----
+## NES (64 slots)
 
-## `Palette.nes()` (64 slots)
+`Palette.nes()`:
 
 `NES_HEX` currently defines 56 source entries. After transparent slot reservation and preset copy, remaining palette
 slots keep their constructor default (black).
@@ -228,9 +224,7 @@ slots keep their constructor default (black).
 ];
 ```
 
----
-
-## HUD preset (`palette.applyHUD`)
+## HUD preset
 
 `palette.applyHUD(startSlot = 1)` writes six consecutive slots:
 
@@ -245,9 +239,7 @@ slots keep their constructor default (black).
 ];
 ```
 
----
-
-## See Also
+## See also
 
 <Cards>
   <Card title="Palette Guide" href="/docs/guides/palette">Workflow for setup, offsets, effects, and refresh rules.</Card>

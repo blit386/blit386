@@ -8,7 +8,8 @@ alwaysApply: true
 - Treat `CLAUDE.md` (repo root) as canonical for implementation in this repo.
 - Follow its API conventions (especially BT getters vs methods), architecture map, command set, internal scoped naming,
   and docs-update rules.
-- Subsystem guides: `docs/overlay.md` (engine HUD), `docs/api-*.md` (public API), `docs/deprecations.md` (aliases).
+- Subsystem guides: `docs/guide-overlay.md` (engine HUD), `docs/api-*.md` (public API), `docs/reference-deprecations.md`
+  (aliases).
 - Cursor-specific policy lives in `.cursor/rules/*.mdc` and `.cursor/hooks/`; condensed mirrors in `.claude/rules/`.
 - Do not invent alternate conventions when `CLAUDE.md` provides project-specific direction.
 - Public API or behavior changes must include matching docs updates in `docs/` as described in `CLAUDE.md`.

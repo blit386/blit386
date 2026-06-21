@@ -1,4 +1,4 @@
-# Bitmap Fonts in BLIT386
+# Bitmap Fonts
 
 <!-- blit386.dev-banner:start -->
 
@@ -13,9 +13,9 @@
 BLIT386 ships with a built-in system font and supports custom `.btfont` bitmap fonts with variable-width glyphs,
 per-character offsets, Unicode characters, and either embedded or external textures.
 
-## Built-in System Font
+## Built-in system font
 
-The engine includes a 6x14 monospace bitmap font covering printable ASCII (characters 32-126). It requires no file
+The engine includes a 6×14 monospace bitmap font covering printable ASCII (characters 32-126). It requires no file
 loading and is available immediately after initialization:
 
 ```ts
@@ -26,12 +26,12 @@ BT.systemPrint(new Vector2i(10, 10), 1, 'Hello World!');
 const size = BT.systemPrintMeasure('Hello'); // returns Vector2i(width, height)
 ```
 
-### Editing the System Font
+### Editing the system font
 
 The glyph data is stored as bit patterns in `src/assets/fonts/systemFontData.ts`. To edit it visually:
 
 ```bash
-pnpm run system-font:export   # exports current data to assets/system-font.png (96x84, 16x6 grid of 6x14 cells)
+pnpm run system-font:export   # exports current data to assets/system-font.png (96×84, 16×6 grid of 6×14 cells)
 # open assets/system-font.png in a pixel editor and redraw glyphs
 pnpm run system-font:convert  # reads the PNG and regenerates systemFontData.ts
 ```
@@ -39,11 +39,11 @@ pnpm run system-font:convert  # reads the PNG and regenerates systemFontData.ts
 White pixels become foreground (palette index 1), black pixels become transparent (palette index 0). Only the top 6 bits
 of each byte are used (6-pixel glyph width within an 8-bit row).
 
-## Custom Bitmap Fonts (.btfont)
+## Custom bitmap fonts (.btfont)
 
 For proportional fonts, Unicode support, or custom aesthetics, load a `.btfont` file:
 
-## Quick Start
+## Quick start
 
 ```ts
 import { BitmapFont, BT, Palette, Vector2i } from 'blit386';
@@ -69,7 +69,7 @@ console.log(font.lineHeight); // 15
 console.log(font.glyphCount); // 98
 ```
 
-## Font File Format (.btfont)
+## Font file format (.btfont)
 
 The `.btfont` format is a JSON file with the following structure:
 
@@ -99,7 +99,7 @@ The `.btfont` format is a JSON file with the following structure:
     glyphs: { type: 'object', description: 'Map of character to glyph data' },
   }} />
 
-### Glyph Properties
+### Glyph properties
 
 <TypeTable type={{
     x: { type: 'number', description: 'X position in texture atlas' },
@@ -111,7 +111,7 @@ The `.btfont` format is a JSON file with the following structure:
     adv: { type: 'number', description: 'Horizontal advance after drawing (distance to next character)' },
   }} />
 
-## Texture Options
+## Texture options
 
 The `texture` field supports two formats:
 
@@ -159,12 +159,12 @@ table. In short:
 When validation fails, loading throws `AssetLimitError` with a beginner-friendly message. Prefer a separate PNG texture
 for large atlases instead of embedding multi-megabyte base64 in the JSON file.
 
-## Converting from BMFont Format
+## Converting from BMFont format
 
 Most bitmap font tools export to the [BMFont format](https://www.angelcode.com/products/bmfont/) (`.fnt` + `.png`). Use
 the included conversion script to convert these to `.btfont`:
 
-### Using the Conversion Script
+### Using the conversion script
 
 ```bash
 # From project root
@@ -180,9 +180,9 @@ node scripts/convert-bmfont.mjs tmp/MyFont.fnt examples/fonts/MyFont.btfont --em
 
 Options:
 
-- `--embed` - Embed the texture as base64 (recommended for production)
+- `--embed` – Embed the texture as base64 (recommended for production)
 
-### Running on Different Platforms
+### Running on different platforms
 
 The conversion script works best when run directly in your terminal:
 
@@ -224,13 +224,15 @@ shell).
 
 </Callout>
 
-### Manual Conversion
+### Manual conversion
 
 If you prefer to convert manually:
 
 <Steps>
 
-### Parse the `.fnt` XML file
+<Step>
+
+### Parse the .fnt XML file
 
 Extract:
 
@@ -238,7 +240,11 @@ Extract:
 - Metrics: `lineHeight`, `base` from `<common>`.
 - Glyphs: all `<char>` elements.
 
-### Convert each `<char>` element to a glyph entry
+</Step>
+
+<Step>
+
+### Convert each character element to a glyph entry
 
 ```xml
 <char id="65" x="80" y="18" width="9" height="17" xoffset="-1" yoffset="-1" xadvance="7" />
@@ -250,50 +256,56 @@ Becomes:
 "A": { "x": 80, "y": 18, "w": 9, "h": 17, "ox": -1, "oy": -1, "adv": 7 }
 ```
 
+</Step>
+
+<Step>
+
 ### Set the texture path
 
 Point it at the PNG filename, or embed it as base64.
 
+</Step>
+
 </Steps>
 
-## Creating Bitmap Fonts
+## Creating bitmap fonts
 
-### Recommended Tools
+### Recommended tools
 
-1. **[BMFont](https://www.angelcode.com/products/bmfont/)** (Windows)
+#### [BMFont](https://www.angelcode.com/products/bmfont/) (Windows)
 
 - The original bitmap font generator.
 - Export as XML format, then convert to `.btfont`.
 
-2. **[Hiero](https://libgdx.com/wiki/tools/hiero)** (Cross-platform)
+#### [Hiero](https://libgdx.com/wiki/tools/hiero) (cross-platform)
 
 - Java-based, works on Mac/Linux/Windows.
 - Export as BMFont format.
 
-3. **[ShoeBox](https://renderhjs.net/shoebox/)** (Cross-platform)
+#### [ShoeBox](https://renderhjs.net/shoebox/) (cross-platform)
 
 - Adobe AIR application.
 - Can create bitmap fonts from existing images.
 
-4. **Custom Font Editor** (Coming Soon)
+#### Custom Font Editor (coming soon)
 
 - BLIT386 will include its own font editor.
 - Native `.btfont` export with embedded textures.
 
-### Tips for Creating Fonts
+### Tips for creating fonts
 
-1. **Use power-of-two texture sizes** (256×128, 512×256, etc.) for best GPU compatibility.
+1. Use power-of-two texture sizes (256×128, 512×256, etc.) for best GPU compatibility.
 
-2. **Include an outline** (1-2px) for better readability on varied backgrounds.
+2. Include an outline (1-2px) for better readability on varied backgrounds.
 
-3. **Export with padding** between characters to prevent bleeding artifacts.
+3. Export with padding between characters to prevent bleeding artifacts.
 
-4. **Use white glyphs** on a transparent background — palette slots are assigned at indexize time; recolor at draw time
-   via `paletteOffset` on `BT.printFont()`, not RGBA tinting.
+4. Use white glyphs on a transparent background – palette slots are assigned at indexize time; recolor at draw time via
+   `paletteOffset` on `BT.printFont()`, not RGBA tinting.
 
-5. **Include common symbols** beyond ASCII: `×`, `÷`, `·`, `-`, `…`, etc.
+5. Include common symbols beyond ASCII: `×`, `÷`, `·`, `-`, `…`, etc.
 
-## API Reference
+## API reference
 
 ### BitmapFont
 
@@ -334,7 +346,7 @@ BT.printFont(
 
 ## Examples
 
-### Multi-line Text
+### Multi-line text
 
 ```ts
 const lines = ['Line 1', 'Line 2', 'Line 3'];
@@ -346,7 +358,7 @@ for (const line of lines) {
 }
 ```
 
-### Centered Text
+### Centered text
 
 ```ts
 const text = 'Centered';
@@ -408,7 +420,7 @@ for (let i = 0; i < text.length; i++) {
 
 </Accordions>
 
-## See Also
+## See also
 
 <Cards>
   <Card title="API: Assets" href="/docs/api/assets">BitmapFont loading and asset limits.</Card>
