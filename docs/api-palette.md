@@ -1,5 +1,12 @@
 # API: Palette
 
+<!-- blit386.dev-banner:start -->
+
+> [!TIP] You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/api/palette, typeset
+> like an actual docs site and easier on the eyes. Probably the nicer place to read it, but same words either way.
+
+<!-- blit386.dev-banner:end -->
+
 Palette setup, built-in presets, HUD preset, serialization, and palette effects.
 
 The palette is the single color authority for all rendering. Index `0` is always transparent and is never drawn. Set an

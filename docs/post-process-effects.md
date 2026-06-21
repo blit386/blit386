@@ -1,5 +1,13 @@
 # Post-Process Effects
 
+<!-- blit386.dev-banner:start -->
+
+> [!TIP] You're reading the raw source on GitHub. The same page lives at
+> https://blit386.dev/docs/guides/post-process-effects, typeset like an actual docs site and easier on the eyes.
+> Probably the nicer place to read it, but same words either way.
+
+<!-- blit386.dev-banner:end -->
+
 BLIT386 ships a **two-tier post-process system** that runs between the scene render and the swap-chain present. It is
 opt-in and adds zero cost while no effect is registered. Effects are organized into two chains by what they operate on:
 

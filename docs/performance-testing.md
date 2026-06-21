@@ -1,5 +1,13 @@
 # Performance Testing
 
+<!-- blit386.dev-banner:start -->
+
+> [!TIP] You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/performance/testing,
+> typeset like an actual docs site and easier on the eyes. Probably the nicer place to read it, but same words either
+> way.
+
+<!-- blit386.dev-banner:end -->
+
 BLIT386 has CPU micro-benchmarks for hot methods. This guide explains when to use them, how to add a new benchmark, and
 how CI uses the results.
 

@@ -1,5 +1,13 @@
 # Palette Guide
 
+<!-- blit386.dev-banner:start -->
+
+> [!TIP] You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/guides/palette,
+> typeset like an actual docs site and easier on the eyes. Probably the nicer place to read it, but same words either
+> way.
+
+<!-- blit386.dev-banner:end -->
+
 BLIT386 is palette-first: every visible pixel stores a palette slot index, and final RGB color comes from the active
 `Palette`. Changing palette data changes every pixel that references those slots.
 

@@ -1,5 +1,13 @@
 # Palette Presets
 
+<!-- blit386.dev-banner:start -->
+
+> [!TIP] You're reading the raw source on GitHub. The same page lives at
+> https://blit386.dev/docs/guides/palette-presets, typeset like an actual docs site and easier on the eyes. Probably the
+> nicer place to read it, but same words either way.
+
+<!-- blit386.dev-banner:end -->
+
 Exact built-in color data for `Palette` preset factories and `palette.applyHUD()`.
 
 All preset hex values are lowercase `RRGGBB` (no `#`), matching `src/assets/palettes/presetData.ts` and

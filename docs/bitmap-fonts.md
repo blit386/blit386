@@ -1,5 +1,13 @@
 # Bitmap Fonts in BLIT386
 
+<!-- blit386.dev-banner:start -->
+
+> [!TIP] You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/guides/bitmap-fonts,
+> typeset like an actual docs site and easier on the eyes. Probably the nicer place to read it, but same words either
+> way.
+
+<!-- blit386.dev-banner:end -->
+
 BLIT386 ships with a built-in system font and supports custom `.btfont` bitmap fonts with variable-width glyphs,
 per-character offsets, Unicode characters, and either embedded or external textures.
 

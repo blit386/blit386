@@ -1,5 +1,12 @@
 # API: Rendering
 
+<!-- blit386.dev-banner:start -->
+
+> [!TIP] You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/api/rendering, typeset
+> like an actual docs site and easier on the eyes. Probably the nicer place to read it, but same words either way.
+
+<!-- blit386.dev-banner:end -->
+
 Primitives, sprites, text, post-process effects, and frame capture.
 
 All draw calls require a palette to be active (`BT.paletteSet(palette)` before the first `BT.drawSprite`,
