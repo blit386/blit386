@@ -1,0 +1,82 @@
+---
+title: MCP Server
+description: Connect AI coding assistants to the BLIT386 documentation via the Model Context Protocol.
+---
+
+The BLIT386 docs site exposes a [Model Context Protocol](https://modelcontextprotocol.io) server at `/mcp`. AI coding
+assistants that support MCP can use it to search the documentation and retrieve summaries without leaving their chat
+interface.
+
+## Endpoint
+
+```
+https://blit386.dev/mcp
+```
+
+Transport: streamable-HTTP (JSON-RPC 2.0 over POST). No authentication required.
+
+## Tools
+
+| Tool               | Description                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| `search_docs`      | Full-text search across the documentation. Returns matching page titles, URLs, and excerpts.   |
+| `get_docs_summary` | Returns the `llms.txt` summary of the site — a compact index suitable for LLM context windows. |
+
+## Setup
+
+### Claude Code
+
+Add the server to `~/.claude/settings.json` (global) or `.claude/settings.json` (per project):
+
+```json
+{
+  "mcpServers": {
+    "blit386-docs": {
+      "type": "http",
+      "url": "https://blit386.dev/mcp"
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Add the same block to `claude_desktop_config.json`.
+
+### Cursor
+
+Add to `.cursor/mcp.json` in your project:
+
+```json
+{
+  "mcpServers": {
+    "blit386-docs": {
+      "url": "https://blit386.dev/mcp"
+    }
+  }
+}
+```
+
+## Testing with curl
+
+```bash
+# List available tools
+curl -s https://blit386.dev/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+# Search the docs
+curl -s https://blit386.dev/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_docs","arguments":{"query":"palette animation"}}}'
+
+# Fetch the llms.txt summary
+curl -s https://blit386.dev/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_docs_summary"}}'
+```
+
+## Discovery
+
+The server publishes a discovery card at `/.well-known/mcp/server-card.json` for clients that support automatic MCP
+server discovery.
