@@ -47,6 +47,9 @@
     },
     {
       "pattern": "^/docs(/|$)"
+    },
+    {
+      "pattern": "^https://blit386\\.dev/sitemap\\.xml$"
     }
   ],
   "replacementPatterns": [
