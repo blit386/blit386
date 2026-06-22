@@ -22,6 +22,9 @@
                 required: ['path'],
             },
             execute: async ({ path }) => {
+                if (typeof path !== 'string' || !path.startsWith('/') || /^\/\//i.test(path) || /javascript:/i.test(path)) {
+                    return { error: 'Invalid path: must be a site-relative path starting with /' };
+                }
                 window.location.assign(path);
                 return { navigating: true, path };
             },
@@ -46,6 +49,7 @@
             },
             execute: async ({ query }) => {
                 const res = await fetch('/api/search?query=' + encodeURIComponent(query));
+                if (!res.ok) return { error: 'Search request failed: ' + res.status };
                 return await res.json();
             },
             annotations: { readOnlyHint: true },
@@ -61,6 +65,7 @@
             inputSchema: { type: 'object', properties: {} },
             execute: async () => {
                 const res = await fetch('/llms.txt');
+                if (!res.ok) return { error: 'Failed to fetch documentation summary: ' + res.status };
                 return { content: await res.text() };
             },
             annotations: { readOnlyHint: true },
