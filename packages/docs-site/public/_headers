@@ -2,6 +2,7 @@
 # Copied to dist/public/ when present in public/.
 
 /*
+  Link: </llms.txt>; rel="describedby", </sitemap.xml>; rel="sitemap", </docs>; rel="service-doc"
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), usb=()
