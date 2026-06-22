@@ -107,8 +107,9 @@ When to use which:
 
 Authoring rules (learned the hard way; keep the build green):
 
-- Block form only. Put blank lines around component children (`<Callout>` ⏎ ⏎ body ⏎ ⏎ `</Callout>`). Inline children
-  get reflowed by Prettier into a less-readable single line; block form is stable under `pnpm run format`.
+- Block form only. Put blank lines around component children (`<Callout>`, blank line, body, blank line, `</Callout>`).
+  Inline children get reflowed by Prettier into a less-readable single line; block form is stable under
+  `pnpm run format`.
 - JSX expression props work (`TypeTable type={{ ... }}`, `Tabs items={[ ... ]}`). The mirror generator is MDX-aware and
   leaves braces verbatim inside component blocks; in plain prose a bare `{` is still escaped, so keep object/array props
   on component lines.
@@ -125,10 +126,9 @@ themselves, not runtime user-facing strings — for throws, console output, and 
 
 Prose rules:
 
-- No bold
-  (``) in doc prose. Lead a paragraph or bullet with a strong sentence, not a bolded label; promote a recurring label to a real `###` subsection instead. A ``
-  that sits inside inline code or a fenced block (a glob such as `src/**/*.ts`, or a JSDoc comment opener) is not bold,
-  so leave it.
+- No bold (`**`) in doc prose. Lead a paragraph or bullet with a strong sentence, not a bolded label; promote a
+  recurring label to a real `###` subsection instead. A `**` that sits inside inline code or a fenced block (a glob such
+  as `src/**/*.ts`, or a JSDoc comment opener) is not bold, so leave it.
 - No `---` horizontal-rule separators between sections. Let headings do the separating.
 - Dimensions use the multiplication sign `×`, not the letter `x`: `320×240`, `6×14`, `8192×8192`. The one exception is
   literal program output quoted verbatim (for example the overlay's on-screen `webgpu | 320x240`, which the engine
