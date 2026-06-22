@@ -4,6 +4,7 @@ import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
 import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
+import { mcpServerPlugin } from './src/mcp-server';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
@@ -34,7 +35,7 @@ export default defineConfig({
         ),
     },
 })
-    .plugins(flexsearchPlugin(), llmsPlugin(), sitemapPlugin(), takumiPlugin())
+    .plugins(flexsearchPlugin(), llmsPlugin(), sitemapPlugin(), mcpServerPlugin(), takumiPlugin())
     .adapters(
         // Extend the default MDX component map so the engine docs can use the full
         // Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,

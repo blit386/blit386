@@ -1,0 +1,14 @@
+{
+  "serverInfo": {
+    "name": "blit386-docs",
+    "version": "1.0.0"
+  },
+  "description": "Documentation server for the BLIT386 palette-first WebGPU pixel engine library. Exposes search and content access tools for AI agents navigating the docs at blit386.dev.",
+  "url": "https://blit386.dev/mcp",
+  "transport": {
+    "type": "streamable-http"
+  },
+  "capabilities": {
+    "tools": true
+  }
+}
