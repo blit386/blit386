@@ -19,24 +19,24 @@ The description after `/bt-pr` becomes the commit subject.
 
 ## Steps
 
-1. **Verify branch**
+1. Verify branch
 
 - Confirm the current branch is not `main` or `master`
 - Run `git status` to see all changes
 
-2. **Run quality checks**
+2. Run quality checks
 
 - Execute `pnpm run preflight` (all checks)
 - If any check fails, stop and report errors
 - Don't proceed with failing checks
 
-3. **Review changes**
+3. Review changes
 
 - Run `git diff` to review all modifications
 - Run `git log origin/main..HEAD` to see commits
 - Verify changes align with the description
 
-4. **Create commit**
+4. Create commit
 
 - Stage relevant files with `git add`
 - Generate a conventional commit message:
@@ -47,7 +47,7 @@ The description after `/bt-pr` becomes the commit subject.
   - `Signed-off-by: ...` (DCO required)
   - `Co-Authored-By: Claude <noreply@anthropic.com>`
 
-5. **Push and create PR**
+5. Push and create PR
 
 - Push to remote: `git push -u origin HEAD`
 - Create PR using `gh pr create` with:
@@ -55,7 +55,7 @@ The description after `/bt-pr` becomes the commit subject.
   - Body with summary and test plan
   - Link to related issues if any
 
-6. **Return PR URL**
+6. Return PR URL
 
 - Display the GitHub PR URL for review
 

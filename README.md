@@ -146,15 +146,15 @@ bootstrap(Game);
 
 ## What makes it fun
 
-- **Draw with numbers, not pixels:** A 256-color paint box; every primitive and sprite is just a slot index.
-- **Animate colors, not geometry:** Cycle, fade, flash, and swap give you water, lava, and lightning for the cost of one
+- Draw with numbers, not pixels: A 256-color paint box; every primitive and sprite is just a slot index.
+- Animate colors, not geometry: Cycle, fade, flash, and swap give you water, lava, and lightning for the cost of one
   tiny palette upload.
-- **Retro palettes in the box:** VGA, CGA, C64, Game Boy, PICO-8, and NES presets.
-- **Recolor without redrawing:** Palette offsets turn one sprite sheet into team colors, day and night, or power-up
-  states – no duplicate textures.
-- **CRT when you want it:** A two-tier post-process chain with bundled CRT presets for that curved-glass glow.
-- **Everything a tiny engine needs:** Pointer, keyboard, and gamepad input, a fixed-timestep loop, bitmap fonts, a
-  camera, and one-call PNG frame capture.
+- Retro palettes in the box: VGA, CGA, C64, Game Boy, PICO-8, and NES presets.
+- Recolor without redrawing: Palette offsets turn one sprite sheet into team colors, day and night, or power-up states –
+  no duplicate textures.
+- CRT when you want it: A two-tier post-process chain with bundled CRT presets for that curved-glass glow.
+- Everything a tiny engine needs: Pointer, keyboard, and gamepad input, a fixed-timestep loop, bitmap fonts, a camera,
+  and one-call PNG frame capture.
 
 ## Get started
 
@@ -196,7 +196,7 @@ moving square up to a full Snake game.
 
 ## Documentation
 
-The full, typeset documentation lives at **[blit386.dev](https://blit386.dev)**. The Markdown sources are in
+The full, typeset documentation lives at [blit386.dev/docs](https://blit386.dev/docs). The Markdown sources are in
 [`docs/`](docs/) – start with [API: Core](docs/api-core.md) for `bootstrap()` and initialization. The rest of the
 important pages:
 
