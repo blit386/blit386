@@ -6,7 +6,7 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 
 ## What's inside
 
-- **The `blit` CLI** - a small helper you run inside a BLIT386 game:
+- The `blit` CLI - a small helper you run inside a BLIT386 game:
   - `blit run` - start the dev server and open the game.
   - `blit doctor` - check Node, git, and the installed `blit386` version.
   - `blit upgrade` - update `blit386` to the latest version, with a friendly nudge if your work is not under git. After
@@ -23,8 +23,8 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit agents add <claude|cursor>` - set up the files for one AI assistant in a game that did not pick it at the
     start. It writes the new files and records them so `blit agents sync` keeps them fresh. It never overwrites a file
     you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
-- **`content/`** - the canonical `AGENTS.md` and `docs/` that scaffolded projects ship, so a person or an AI assistant
-  can learn the engine from inside the project.
+- `content/` - the canonical `AGENTS.md` and `docs/` that scaffolded projects ship, so a person or an AI assistant can
+  learn the engine from inside the project.
 
 ## Usage
 

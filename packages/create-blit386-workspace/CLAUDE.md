@@ -11,12 +11,12 @@ Monorepo for the BLIT386 game scaffolder and project kit.
 
 ## Tech stack
 
-- **Language:** TypeScript 5.9.3 (strict)
-- **Build:** tsup (ESM, Node 22)
-- **Formatting:** Biome (TS/JS/JSON) + Prettier (MD/YAML)
-- **Linting:** Biome (no ESLint in this repo)
-- **Package manager:** pnpm 10.26.2
-- **Node:** >= 22.18.0
+- Language: TypeScript 5.9.3 (strict)
+- Build: tsup (ESM, Node 22)
+- Formatting: Biome (TS/JS/JSON) + Prettier (MD/YAML)
+- Linting: Biome (no ESLint in this repo)
+- Package manager: pnpm 10.26.2
+- Node: >= 22.18.0
 
 ## Commands
 
@@ -37,7 +37,7 @@ pnpm run preflight      # All quality checks before commit
 pnpm run security:audit # Dependency audit (moderate+)
 ```
 
-Use **`pnpm run <script>`** (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands.
+Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands.
 
 ## Scaffold flow
 
@@ -71,13 +71,13 @@ generate-to-memory copies in `packages/kit/src/adapters.ts`.
 
 ## Critical rules
 
-1. **No emoji** in code, docs, commits, or user-facing strings
-2. **JavaScript by default in scaffolds** — generated games are plain JS unless the user picks TypeScript (`--ts`)
-3. **Beginner-friendly** — scaffold output and kit docs assume no prior coding experience
-4. **Integer coordinates** — generated games use `Vector2i` / `Rect2i` via blit386
-5. **Use `BT` namespace** in generated game code — never `BTAPI`
-6. **Named exports only** in library TypeScript; no default exports
-7. **Documentation is part of every feature** — update this file when workflow or architecture changes
+1. No emoji in code, docs, commits, or user-facing strings
+2. JavaScript by default in scaffolds — generated games are plain JS unless the user picks TypeScript (`--ts`)
+3. Beginner-friendly — scaffold output and kit docs assume no prior coding experience
+4. Integer coordinates — generated games use `Vector2i` / `Rect2i` via blit386
+5. Use `BT` namespace in generated game code — never `BTAPI`
+6. Named exports only in library TypeScript; no default exports
+7. Documentation is part of every feature — update this file when workflow or architecture changes
 
 ## Git
 
@@ -97,18 +97,17 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 - `cbt-spellcheck` — fix cspell errors and extend the dictionary
 - `cbt-test` — run the scaffold smoke test
 - `cbt-release` — npm publish procedure (`../PUBLISHING.md` in the local workspace layout)
-- `cbt-kit-audit` — re-audit shipped kit docs and skills against the current engine API (see **Kit content vs engine
-  docs**)
+- `cbt-kit-audit` — re-audit shipped kit docs and skills against the current engine API (see Kit content vs engine docs)
 
 ## Kit content vs engine docs
 
 Generated games receive `AGENTS.md`, six beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
 `drawing`, `input`, `palette`, `when-something-breaks`), and the game-author skills in `packages/kit/content/skills/`
-(emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`). They are **not** copies of blit386's
-full `docs/` tree — they teach the starter game and point to GitHub for deep API reference.
+(emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`). They are not copies of blit386's full
+`docs/` tree — they teach the starter game and point to GitHub for deep API reference.
 
-**Kit content must be self-contained.** Skills and docs may reference only `blit386` (the engine) and other local kit
-files (`docs/*.md`, `AGENTS.md`). Do **not** reference the `blit386-demos` repo (demo slugs like `029-snake-game` or
+Kit content must be self-contained. Skills and docs may reference only `blit386` (the engine) and other local kit files
+(`docs/*.md`, `AGENTS.md`). Do not reference the `blit386-demos` repo (demo slugs like `029-snake-game` or
 `blit386-demos.vancura.dev` URLs) — that repo may be archived in favor of kit-based demos, and shipped content must not
 break with it.
 
@@ -129,10 +128,10 @@ When blit386 public API or naming changes in the sibling repo, audit these kit f
 Also check `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine
 version.
 
-**Shipping an engine feature is the trigger to come here.** Nothing syncs this repo from `blit386` automatically: the
-kit docs and the shipped game-author skills are hand-authored beginner prose, so they drift silently when the engine
-changes. When you add or rename public API in the sibling `blit386` repo, review this repo in the **same** pass, not
-later: the kit docs in the table above, the shipped skills in `packages/kit/content/skills/` (for example `use-palette`,
+Shipping an engine feature is the trigger to come here. Nothing syncs this repo from `blit386` automatically: the kit
+docs and the shipped game-author skills are hand-authored beginner prose, so they drift silently when the engine
+changes. When you add or rename public API in the sibling `blit386` repo, review this repo in the same pass, not later:
+the kit docs in the table above, the shipped skills in `packages/kit/content/skills/` (for example `use-palette`,
 `read-gamepad`, `add-crt-effect`, `show-debug-overlay`) which demonstrate engine APIs the same way the docs do and stale
 the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to walk this checklist.
 

@@ -36,17 +36,17 @@ bootstrap(Game);
 
 ## Hard rules (do not break these)
 
-- **Whole numbers for positions and sizes.** Use `Vector2i(x, y)` for points and `Rect2i(x, y, w, h)` for boxes. Never
-  pass raw floats as screen coordinates.
-- **Use the `BT` namespace** for everything the engine does (`BT.clear`, `BT.drawRectFill`, `BT.isDown`, ...). Do not
-  reach for internal classes.
-- **Colors are palette slots.** Create a palette, put colors in numbered slots (slot 0 is always transparent, so start
-  at 1), and draw with those numbers. See `docs/palette.md`.
-- **`await` async loads.** Anything that loads (fonts, sprites) returns a promise; forgetting `await` is the most common
+- Whole numbers for positions and sizes. Use `Vector2i(x, y)` for points and `Rect2i(x, y, w, h)` for boxes. Never pass
+  raw floats as screen coordinates.
+- Use the `BT` namespace for everything the engine does (`BT.clear`, `BT.drawRectFill`, `BT.isDown`, ...). Do not reach
+  for internal classes.
+- Colors are palette slots. Create a palette, put colors in numbered slots (slot 0 is always transparent, so start at
+  1), and draw with those numbers. See `docs/palette.md`.
+- `await` async loads. Anything that loads (fonts, sprites) returns a promise; forgetting `await` is the most common
   beginner bug.
-- **No fullscreen post-process effects in a starter.** Effects like CRT need WebGPU and do not run on the Canvas 2D
+- No fullscreen post-process effects in a starter. Effects like CRT need WebGPU and do not run on the Canvas 2D
   fallback. Keep starters working everywhere.
-- **No emoji** anywhere in code, comments, or text.
+- No emoji anywhere in code, comments, or text.
 
 ## When you need detail, open the right doc
 
@@ -83,12 +83,12 @@ it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works ins
 
 ## Working with an AI assistant
 
-If you use **Claude Code**, open `CLAUDE.md` for the full project guide. Rules loaded automatically from
-`.claude/rules/` tell Claude the engine's naming conventions. Skills in `.claude/skills/` are loaded on demand.
+If you use Claude Code, open `CLAUDE.md` for the full project guide. Rules loaded automatically from `.claude/rules/`
+tell Claude the engine's naming conventions. Skills in `.claude/skills/` are loaded on demand.
 
-If you use **Cursor**, `.cursor/rules/` loads rules automatically when you open the project.
+If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project.
 
-For **other assistants** (Zed, Copilot, Windsurf, and others), this file is your assistant's home base.
+For other assistants (Zed, Copilot, Windsurf, and others), this file is your assistant's home base.
 
 Did not set up an assistant when you started the game? Run `npx blit agents add claude` or `npx blit agents add cursor`
 to add its files now.

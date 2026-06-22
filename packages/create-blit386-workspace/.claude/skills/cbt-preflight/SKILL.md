@@ -17,12 +17,12 @@ Run comprehensive quality checks before committing or pushing code.
 
 ## Prerequisites
 
-- **Node.js** >= 22.18.0 (`engines` in `package.json`)
-- **pnpm** (see `packageManager` in `package.json`)
+- Node.js >= 22.18.0 (`engines` in `package.json`)
+- pnpm (see `packageManager` in `package.json`)
 
 ## Steps
 
-1. **Run all checks**
+1. Run all checks
 
    Execute `pnpm run preflight` which runs:
    - `format:check` - Verify all files are formatted
@@ -34,11 +34,11 @@ Run comprehensive quality checks before committing or pushing code.
    - `build` - Build both packages
    - `test` - Scaffold smoke test
 
-2. **Report results**
+2. Report results
    - If all checks pass: Confirm code is ready for commit
    - If any check fails: Report specific failures with file locations
 
-3. **Suggest fixes**
+3. Suggest fixes
    - Formatting: `pnpm run format`
    - Lint: `pnpm run lint:fix`
    - Spelling: Add words to `cspell.json` or fix typos

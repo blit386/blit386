@@ -38,6 +38,6 @@ update, or when the user says "update my game to the new version" or "fix the re
 ## Notes
 
 - The full, authoritative list of old -> new names is the engine's deprecation timeline:
-  https://github.com/blit386/blit386/blob/main/docs/deprecations.md
+  https://blit386.dev/docs/reference/deprecations
 - `blit migrate` previews by default and only changes files with `--write`, so it is always safe to run and read first.
 - If the project is not saved with git, save a copy before writing - `blit migrate --write` warns about this first.

@@ -25,20 +25,20 @@ It works with npm, pnpm, yarn, or bun – the scaffolder quietly uses whichever 
 
 The wizard asks two quick questions (language, and whether you want an AI assistant set up), then writes:
 
-- A **Catcher** starter game – a tiny, complete, heavily commented game you can read top to bottom.
-- A **Vite project** that builds and runs with one command.
-- **JavaScript by default**, or **TypeScript** if you ask for it (`--ts`).
-- **Local docs** and an `AGENTS.md`, so your editor's AI actually knows how the engine works.
-- The **`blit` CLI**: `blit run`, `blit doctor`, `blit upgrade`, and `blit agents` for keeping assistant files current.
-- Optional **Claude or Cursor** config, generated from the kit's canonical content – pick one in the wizard, or add it
-  later with `npx blit agents add`.
+- A Catcher starter game – a tiny, complete, heavily commented game you can read top to bottom.
+- A Vite project that builds and runs with one command.
+- JavaScript by default, or TypeScript if you ask for it (`--ts`).
+- Local docs and an `AGENTS.md`, so your editor's AI actually knows how the engine works.
+- The `blit` CLI: `blit run`, `blit doctor`, `blit upgrade`, and `blit agents` for keeping assistant files current.
+- Optional Claude or Cursor config, generated from the kit's canonical content – pick one in the wizard, or add it later
+  with `npx blit agents add`.
 
 ## Never used Node.js before?
 
-The command above needs **Node.js** – a free program that runs JavaScript on your computer. These instructions live here
-on purpose: a brand-new project cannot teach you to install the thing it needs to exist. One-time setup:
+The command above needs Node.js – a free program that runs JavaScript on your computer. These instructions live here on
+purpose: a brand-new project cannot teach you to install the thing it needs to exist. One-time setup:
 
-1. Go to [nodejs.org](https://nodejs.org) and download the button marked **LTS** ("the stable one").
+1. Go to [nodejs.org](https://nodejs.org) and download the button marked LTS ("the stable one").
 2. Install it like any other app: keep clicking Next or Continue.
 3. Open a terminal (your editor has one built in – in Zed or VS Code, look for "Terminal" in the menu). If the editor
    was already open, quit and reopen it first so it notices Node.
@@ -58,10 +58,10 @@ Starting someone else off? Copy and paste this:
 
 A pnpm monorepo with two published packages:
 
-- **`create-blit386`** (`packages/create-blit386`) – the `npm create blit386` scaffolder: the wizard and the project
+- `create-blit386` (`packages/create-blit386`) – the `npm create blit386` scaffolder: the wizard and the project
   templates.
-- **`@blit386/kit`** (`packages/kit`) – the canonical AI docs (`AGENTS.md` + local `docs/`) and the project-local `blit`
-  CLI (`run`, `doctor`, `upgrade`, `agents sync`, `agents add`).
+- `@blit386/kit` (`packages/kit`) – the canonical AI docs (`AGENTS.md` + local `docs/`) and the project-local `blit` CLI
+  (`run`, `doctor`, `upgrade`, `agents sync`, `agents add`).
 
 ### Working on it
 
@@ -78,10 +78,10 @@ not automated here). The full roadmap lives in [`CREATE_BLIT386_DESIGN.md`](CREA
 
 ## Related
 
-- **Docs:** [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site.
-- **Engine:** [blit386](https://github.com/blit386/blit386) – the palette-first WebGPU retro engine these games run on
+- Docs: [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site.
+- Engine: [blit386](https://github.com/blit386/blit386) – the palette-first WebGPU retro engine these games run on
   ([npm](https://www.npmjs.com/package/blit386), [docs](https://blit386.dev)).
-- **Demos:** [demos.blit386.dev](https://demos.blit386.dev) – 34 small, commented examples.
+- Demos: [demos.blit386.dev](https://demos.blit386.dev) – 34 small, commented examples.
 
 ## Made by
 

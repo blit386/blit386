@@ -4,10 +4,9 @@ This is everything you need to go from a fresh computer to a running game.
 
 ## 1. Install Node.js (one time)
 
-Your computer needs a free program called **Node.js**. It runs your game's code on your machine. You only install it
-once.
+Your computer needs a free program called Node.js. It runs your game's code on your machine. You only install it once.
 
-1. Go to **nodejs.org** and download the button marked **LTS** (it means "the stable one").
+1. Go to nodejs.org and download the button marked LTS (it means "the stable one").
 2. Install it like any other app: keep clicking Next or Continue.
 3. Quit and reopen your editor so it notices the new program.
 
@@ -15,8 +14,8 @@ once.
 
 A terminal is a place to type commands. Most editors have one built in:
 
-- **Zed:** open the bottom panel, or use the menu to show the terminal.
-- **VS Code / Cursor:** the menu has "Terminal".
+- Zed: open the bottom panel, or use the menu to show the terminal.
+- VS Code / Cursor: the menu has "Terminal".
 
 Make sure the terminal is sitting in your game's folder (the one with `package.json` in it).
 
