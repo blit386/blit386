@@ -21,7 +21,7 @@ Run the test suite with various options.
 
 ## Steps
 
-1. **Determine test scope** from the user’s arguments:
+1. Determine test scope from the user’s arguments:
 
 - No arguments: Run `pnpm run test:unit` (all Vitest tests)
 - `coverage`: Run `pnpm run test:unit:coverage` (with coverage thresholds)
@@ -29,13 +29,13 @@ Run the test suite with various options.
 - `visual`: Run `pnpm run test:visual` (Playwright visual regression)
 - File path: Run `pnpm exec vitest run <path>`
 
-2. **Report results**
+2. Report results
 
 - If all tests pass: Confirm success with pass count
 - If tests fail: Report specific failures with file locations and assertion details
 - If coverage: Report coverage percentages vs. 80% threshold
 
-3. **Suggest fixes for failures**
+3. Suggest fixes for failures
 
 - For assertion errors: Show expected vs. actual values
 - For type errors in tests: Check test imports and types

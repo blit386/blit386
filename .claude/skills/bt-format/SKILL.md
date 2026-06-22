@@ -17,19 +17,19 @@ Format all code files using the project's formatters and verify results.
 
 ## Steps
 
-1. **Run formatters**
+1. Run formatters
 
 - Execute `pnpm run format` which runs:
   - Biome for TypeScript/JavaScript/JSON/JSONC/CSS (`.ts`, `.tsx`, `.js`, `.jsx`, `.cjs`, `.mjs`, `.json`, `.jsonc`,
     `.css`)
   - Prettier for Markdown/YAML/Cursor rules (`.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`)
 
-2. **Show what changed**
+2. Show what changed
 
 - Run `git diff --stat` to show summary of reformatted files
 - List the number of files modified
 
-3. **Verify formatting**
+3. Verify formatting
 
 - Run `pnpm run format:check` to confirm all files pass
 - Report any files that still have formatting issues

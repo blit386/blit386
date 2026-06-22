@@ -50,7 +50,7 @@ CPU benchmark regression checks run in CI with the `perf` label.
 - PRs labeled `perf` run `pnpm run bench:json`
 - CI compares against the latest successful `main` baseline artifact
 - CI posts or updates a PR comment with the comparison table
-- CI fails if any benchmark regresses by more than **25%** (see `ci.yml` `--threshold 25`)
+- CI fails if any benchmark regresses by more than 25% (see `ci.yml` `--threshold 25`)
 
 New `*.bench.ts` files are picked up automatically on the next `main` baseline upload. No allowlist change is required.
 After adding benchmarks for overlay work, label the PR `perf` if you want regression feedback before merge.

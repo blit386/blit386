@@ -18,12 +18,12 @@ Run comprehensive quality checks before committing or pushing code.
 
 ## Prerequisites
 
-- **Node.js** >=22.18.0 (`engines` in `package.json`)
-- **pnpm** 10.26.2+ (`packageManager` in `package.json`)
+- Node.js >=22.18.0 (`engines` in `package.json`)
+- pnpm 10.26.2+ (`packageManager` in `package.json`)
 
 ## Steps
 
-1. **Run all checks**
+1. Run all checks
 
 - Execute `pnpm run preflight` which runs:
   - `format:check` - Verify formatting (Biome for TS/JS/JSON/CSS, Prettier for MD/YAML)
@@ -36,12 +36,12 @@ Run comprehensive quality checks before committing or pushing code.
   - `test:unit` - Run all unit tests
   - `test:declarations` - Declaration tooling log checker tests
 
-2. **Report results**
+2. Report results
 
 - If all checks pass: Confirm code is ready for commit
 - If any check fails: Report specific failures with file locations
 
-3. **Suggest fixes**
+3. Suggest fixes
 
 - For formatting issues: Suggest `pnpm run format`
 - For lint errors: Suggest `pnpm run lint:fix`

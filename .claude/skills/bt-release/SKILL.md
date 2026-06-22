@@ -98,9 +98,9 @@ Exclude merge commits (subjects starting with `Merge `).
 
 For each PR in the list from step 4, build a content object:
 
-- **title**: the PR title as-is (conventional commit format, e.g. `feat(assets): cap sprite dimensions`)
-- **number**: the PR number
-- **description**: extracted from `.body` as follows:
+- title: the PR title as-is (conventional commit format, e.g. `feat(assets): cap sprite dimensions`)
+- number: the PR number
+- description: extracted from `.body` as follows:
   1. Take everything before the HTML comment
      `<!-- This is an auto-generated comment: release notes by coderabbit.ai -->`. Strip leading/trailing whitespace.
      This is the human-written description.
@@ -118,19 +118,19 @@ For each PR in the list from step 4, build a content object:
 Assign each PR to exactly one group based on its conventional commit type/scope. Use these groups in this order (omit
 any group with zero PRs):
 
-| Group heading      | Match pattern                                                                |
-| ------------------ | ---------------------------------------------------------------------------- |
-| **API Changes**    | `feat(api)`, `fix(api)`, `refactor(api)`, BREAKING CHANGE in body            |
-| **Asset System**   | `feat(assets)`, `fix(assets)`, `refactor(assets)`, `chore(assets)`           |
-| **Security**       | `feat(security)`, `fix(security)`, `ci(security)`, `chore(security)`         |
-| **CI and Tooling** | `ci(*)`, `chore(ci)`, `chore(deps)`, `chore` (tool upgrades, config changes) |
-| **Rendering**      | `feat(renderer)`, `fix(renderer)`, `refactor(renderer)`                      |
-| **Core and Utils** | `feat(utils)`, `fix(utils)`, `refactor(utils)`, `feat(core)`, `fix(core)`    |
-| **Tests**          | `test(*)`                                                                    |
-| **Documentation**  | `docs(*)`                                                                    |
-| **Examples**       | `feat(examples)`, `fix(examples)`                                            |
+| Group heading  | Match pattern                                                                |
+| -------------- | ---------------------------------------------------------------------------- |
+| API Changes    | `feat(api)`, `fix(api)`, `refactor(api)`, BREAKING CHANGE in body            |
+| Asset System   | `feat(assets)`, `fix(assets)`, `refactor(assets)`, `chore(assets)`           |
+| Security       | `feat(security)`, `fix(security)`, `ci(security)`, `chore(security)`         |
+| CI and Tooling | `ci(*)`, `chore(ci)`, `chore(deps)`, `chore` (tool upgrades, config changes) |
+| Rendering      | `feat(renderer)`, `fix(renderer)`, `refactor(renderer)`                      |
+| Core and Utils | `feat(utils)`, `fix(utils)`, `refactor(utils)`, `feat(core)`, `fix(core)`    |
+| Tests          | `test(*)`                                                                    |
+| Documentation  | `docs(*)`                                                                    |
+| Examples       | `feat(examples)`, `fix(examples)`                                            |
 
-If a PR does not match any group, add it to a final **Other** section.
+If a PR does not match any group, add it to a final Other section.
 
 ### 8. Write the RELEASE.md narrative
 
@@ -160,7 +160,7 @@ Then one bullet per PR:
 - End with the PR number as a bare GitHub auto-link reference: `(#153)`. GitHub renders `#N` as a clickable link to the
   PR - use this format, not a full URL and not a Markdown link.
 - Never mention the author (`@vancura` or any username).
-- For breaking changes, lead the bullet: `**Breaking:** <description> (#N)`
+- For breaking changes, lead the bullet: `Breaking: <description> (#N)`
 
 Do not repeat the commit type prefix (`feat:`, `fix:`) in the bullet text.
 
@@ -181,7 +181,7 @@ Commits pushed directly to main (not via pull request):
 End with a blank line then:
 
 ```
-**Full Changelog**: https://github.com/blit386/blit386/compare/LAST_TAG...NEW_VERSION
+Full Changelog: https://github.com/blit386/blit386/compare/LAST_TAG...NEW_VERSION
 ```
 
 #### Example output
@@ -215,7 +215,7 @@ Supply-chain posture tightened across CI.
 - Render dimension limit tests expanded to cover `NaN` in `maxCanvasSize`, adapter limit rejection, and device limit
   rejection without software fallback. (#169)
 
-**Full Changelog**: https://github.com/blit386/blit386/compare/1.0.4...1.0.5
+Full Changelog: https://github.com/blit386/blit386/compare/1.0.4...1.0.5
 ```
 
 ### 9. Report to the user

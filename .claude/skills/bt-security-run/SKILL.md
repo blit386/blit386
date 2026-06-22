@@ -21,7 +21,7 @@ hardening passes, or when MCP scanner availability is uncertain.
 
 ## Steps
 
-1. **MCP preflight (required)**
+1. MCP preflight (required)
 
 - Read tool schemas before any MCP tool calls (per environment rules).
 - Run:
@@ -35,27 +35,27 @@ hardening passes, or when MCP scanner availability is uncertain.
   ```
 
 - Record each security MCP status: `healthy`, `auth_required`, `errored`, or `absent`.
-- If Opsera (`plugin-opsera-devsecops-opsera`) is not `healthy`, do **not** skip scans; continue with fallbacks from
+- If Opsera (`plugin-opsera-devsecops-opsera`) is not `healthy`, do not skip scans; continue with fallbacks from
   [docs/security/security-runbook.md](../../../docs/security/security-runbook.md).
 
-2. **Repo-native checks (this repo)**
+2. Repo-native checks (this repo)
 
 - `pnpm run security:audit`
 - `pnpm audit --prod --audit-level=moderate`
 - `pnpm audit --dev --audit-level=moderate`
 - `pnpm run preflight`
 
-3. **Optional MCP-backed scans (only when healthy)**
+3. Optional MCP-backed scans (only when healthy)
 
 - Opsera: `architecture-analyze`, `security-scan`, `compliance-audit` (inspect plugin tool schemas first).
 - JFrog / Semgrep: only when server status is `healthy`.
 
-4. **Cross-repo (when assessing both repos)**
+4. Cross-repo (when assessing both repos)
 
 - Repeat step 2 in `blit386-demos` using paths from the runbook.
 - Use the same `--mcps-dir` for both repos.
 
-5. **Report**
+5. Report
 
 - Emit the report template from the runbook.
 - List every fallback executed and why.

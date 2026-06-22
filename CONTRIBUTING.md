@@ -90,7 +90,7 @@ Signed-off-by: Your Name <your.email@example.com>
 - `chore` - Other changes
 - `revert` - Revert a previous commit
 
-Suggested scopes are **conventions only** — commitlint does not enforce a scope enum.
+Suggested scopes are conventions only — commitlint does not enforce a scope enum.
 
 ### Suggested Scopes
 
@@ -129,16 +129,16 @@ Signed-off-by: John Doe <john@example.com>
 
 All code must follow the project's style guidelines:
 
-- **No emoji** anywhere in code, comments, or documentation
-- **TypeScript strict mode** - All code must pass strict TypeScript checks
-- **Formatting** - Code is automatically formatted by Biome and Prettier
-- **Linting** - Code must pass all linting checks
-- **JSDoc** - Required for public APIs
+- No emoji anywhere in code, comments, or documentation
+- TypeScript strict mode - All code must pass strict TypeScript checks
+- Formatting - Code is automatically formatted by Biome and Prettier
+- Linting - Code must pass all linting checks
+- JSDoc - Required for public APIs
 
 ### Development environment
 
-- **Node.js** >=22.18.0 (`engines` in `package.json`)
-- **pnpm** 10.26.2+ (`packageManager` in `package.json`)
+- Node.js >=22.18.0 (`engines` in `package.json`)
+- pnpm 10.26.2+ (`packageManager` in `package.json`)
 
 ### Pre-commit Checks
 

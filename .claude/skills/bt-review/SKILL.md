@@ -17,19 +17,19 @@ Review current changes against project rules and quality standards.
 
 ## Steps
 
-1. **Gather changes**
+1. Gather changes
 
 - Run `git diff` to see all unstaged modifications
 - Run `git diff --cached` to see staged changes
 - List which files were modified and what changed
 
-2. **Run automated checks**
+2. Run automated checks
 
 - `pnpm run lint` - Report any lint issues
 - `pnpm run typecheck` - Report any type errors
 - `pnpm run spellcheck` - Check for spelling issues
 
-3. **Check against project rules**
+3. Check against project rules
 
 - No emoji anywhere (code, comments, docs, commits)
 - Integer coordinates (Vector2i, Rect2i) for rendering
@@ -37,14 +37,14 @@ Review current changes against project rules and quality standards.
 - Type imports use `import type` syntax
 - Proper error handling (guard clauses, null checks)
 - Consistent naming conventions
-- **Internal scoped naming:** private/protected/module-local names must not repeat class or file name (`request()` on
-  `FrameCapture`, not `requestCapture()`). Public `BT.*` and barrel exports stay unchanged. See `CLAUDE.md` (**Internal
-  scoped naming**).
-- **BT API shape:** read-only zero-arg snapshots use getters (`BT.displaySize`, `BT.targetFPS`), not `BT.foo()`. Actions
-  and parameterized queries stay methods. New configure mirrors use `HardwareSettings` field names (`targetFPS`, not
-  `fps`). Derived getters (e.g. `outputSize`) have no matching field. See `CLAUDE.md` (**BT API: getters vs methods**).
+- Internal scoped naming: private/protected/module-local names must not repeat class or file name (`request()` on
+  `FrameCapture`, not `requestCapture()`). Public `BT.*` and barrel exports stay unchanged. See `CLAUDE.md` (Internal
+  scoped naming).
+- BT API shape: read-only zero-arg snapshots use getters (`BT.displaySize`, `BT.targetFPS`), not `BT.foo()`. Actions and
+  parameterized queries stay methods. New configure mirrors use `HardwareSettings` field names (`targetFPS`, not `fps`).
+  Derived getters (e.g. `outputSize`) have no matching field. See `CLAUDE.md` (BT API: getters vs methods).
 
-4. **Summarize findings**
+4. Summarize findings
 
 - List critical issues that must be fixed
 - List warnings and suggestions for improvement
