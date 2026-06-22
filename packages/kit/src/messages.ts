@@ -37,4 +37,4 @@ export const NO_GIT_NAG = [
 ].join('\n');
 
 /** Pointer used after a major version bump, where commands may have been renamed. */
-export const DEPRECATIONS_URL = 'https://github.com/blit386/blit386/blob/main/docs/deprecations.md';
+export const DEPRECATIONS_URL = 'https://blit386.dev/docs/reference/deprecations';

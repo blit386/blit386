@@ -7,7 +7,7 @@ description:
 
 # Release (npm publish)
 
-Guide a deliberate npm publish of `@blit386/kit` and `create-blit386`. This skill does **not** auto-publish or auto-bump
+Guide a deliberate npm publish of `@blit386/kit` and `create-blit386`. This skill does not auto-publish or auto-bump
 versions unless the user explicitly requests those steps.
 
 Canonical procedure: workspace parent `PUBLISHING.md` (from this repo root: `../PUBLISHING.md` when the three repos
@@ -21,10 +21,10 @@ share the `_BLIT386_` parent folder).
 
 ## Golden rules (never skip)
 
-1. **Always `pnpm publish`, never `npm publish`** - only pnpm rewrites `workspace:*` to a real version.
-2. **Publish `@blit386/kit` before `create-blit386`** - the scaffolder depends on the kit.
-3. **Versions are permanent** - bump before republishing; never reuse a published version.
-4. **2FA:** publish one package at a time with a fresh `--otp` when required.
+1. Always `pnpm publish`, never `npm publish` - only pnpm rewrites `workspace:*` to a real version.
+2. Publish `@blit386/kit` before `create-blit386` - the scaffolder depends on the kit.
+3. Versions are permanent - bump before republishing; never reuse a published version.
+4. 2FA: publish one package at a time with a fresh `--otp` when required.
 
 ## Steps
 
@@ -78,7 +78,7 @@ pnpm --filter @blit386/kit publish    # add --otp=123456 if 2FA is on
 pnpm --filter create-blit386 publish --dry-run
 ```
 
-In the dry-run output, confirm the manifest shows `"@blit386/kit": "<version>"`, **not** `"workspace:*"`. Then:
+In the dry-run output, confirm the manifest shows `"@blit386/kit": "<version>"`, not `"workspace:*"`. Then:
 
 ```bash
 pnpm --filter create-blit386 publish   # --otp=... if 2FA
@@ -104,7 +104,7 @@ npx blit doctor
 
 ## Troubleshooting
 
-See **Troubleshooting** in `PUBLISHING.md` for 404 propagation lag, E401, dirty tree, version reuse (402), and scoped
+See Troubleshooting in `PUBLISHING.md` for 404 propagation lag, E401, dirty tree, version reuse (402), and scoped
 package access issues.
 
 ## Report to the user
