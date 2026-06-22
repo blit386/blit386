@@ -1,7 +1,5 @@
 {
   "resource": "https://blit386.dev/",
   "resource_name": "BLIT386 Documentation",
-  "authorization_servers": ["https://blit386.dev/"],
-  "scopes_supported": [],
-  "bearer_methods_supported": ["header"]
+  "scopes_supported": []
 }
