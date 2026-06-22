@@ -10,7 +10,7 @@ This documentation site is pre-1.0. Security fixes ship on the default branch an
 
 ## Reporting a Vulnerability
 
-**Do not open a public issue** for security vulnerabilities.
+Do not open a public issue for security vulnerabilities.
 
 Use [GitHub private vulnerability reporting](https://github.com/blit386/blit386-dev-fumapress/security/advisories/new)
 or contact the maintainers directly.
