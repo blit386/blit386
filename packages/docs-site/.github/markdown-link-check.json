@@ -46,12 +46,6 @@
       "pattern": "^https?://github\\.com/blit386/(blit386|create-blit386)(/|$)"
     },
     {
-      "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
-    },
-    {
-      "pattern": "^https?://blit386\\.dev(/|$)"
-    },
-    {
       "pattern": "^/docs(/|$)"
     }
   ],
