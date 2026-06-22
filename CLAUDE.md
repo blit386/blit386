@@ -304,14 +304,17 @@ work. Do not add new zero-argument `BT.foo()` functions when a getter is appropr
 
 ### Use getters (property access, no `()`)
 
-| Category                                                     | Members                                             | Notes                                                                                                                       |
-| ------------------------------------------------------------ | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Configure-time (mirror {@link HardwareSettings} field names) | `displaySize`, `drawingBufferSize`, `targetFPS`     | Clone per read for `Vector2i` getters.                                                                                      |
-| Derived                                                      | `outputSize`                                        | Effective drawing buffer (`drawingBufferSize ?? displaySize`). No `HardwareSettings` field; clone per read.                 |
-| Loop timing                                                  | `deltaSeconds`, `timeSeconds`, `ticks`              | `targetFPS` is configured rate, not measured FPS.                                                                           |
-| Configure-time (backend)                                     | `requestedBackend`                                  | Mirrors resolved `HardwareSettings.backend` after merge and `?backend=software`; `null` before init.                        |
-| Runtime state                                                | `activeBackend`, `camera`, `palette`                | `activeBackend` is what actually started (after fallback); `null` before init or on failure. `palette` is a live reference. |
-| Per-frame input                                              | `pointerScrollDelta`, `inputString`, `gamepadCount` | Read once per frame when needed.                                                                                            |
+Full table in `docs/api-core.md` and `.claude/rules/bt-api-getters.md`. The categories:
+
+- Configure-time (mirror `HardwareSettings` field names): `displaySize`, `drawingBufferSize`, `targetFPS` (clone
+  `Vector2i` getters per read; `targetFPS` is the configured rate, not measured FPS).
+- Derived: `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field; clone per read).
+- Configure-time (backend): `requestedBackend` (resolved `HardwareSettings.backend` after merge and `?backend=software`;
+  `null` before init).
+- Loop timing: `deltaSeconds`, `timeSeconds`, `ticks`.
+- Runtime state: `activeBackend` (what actually started after fallback; `null` before init or on failure), `camera`,
+  `palette` (live reference).
+- Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount` (read once per frame).
 
 Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBackend === 'software')`.
 
@@ -330,35 +333,30 @@ Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBac
 - Utilities with arguments: `cameraClamp(camera, worldSize, viewSize?)`, `systemPrintMeasure(text)`.
 - Async: `captureFrame`, `downloadFrame`.
 
-Deprecated aliases still on `BT` (see `docs/reference-deprecations.md`): `pointerPosValid`, `buttonDown`,
-`buttonPressed`, `buttonReleased`, `gamepadConnected`, `keyDown`, `keyPressed`, `keyReleased`.
-
-Top-level package exports (outside the `BT` namespace): `bootstrap`, `defaultConfig`, `mergeHardwareSettings`,
-`applyEasing`, `clampCameraToWorld`, `displayError`, `getCanvas`, `Timer`, effect classes (`BarrelDistortion`, `Bloom`,
-…), preset functions (`crtPipBoy`, `amber`, `green`), core types (`Vector2i`, `Rect2i`, `Color32`, `Palette`, …), and
-`IndexedSpriteLoadResult`.
+Deprecated aliases still on `BT` are enumerated in `docs/reference-deprecations.md` (`pointerPosValid`, `buttonDown`,
+`keyDown`, …). Top-level package exports outside the `BT` namespace (`bootstrap`, `defaultConfig`,
+`mergeHardwareSettings`, effect classes, preset functions, core types, `IndexedSpriteLoadResult`, …) are listed in the
+`BLIT386.ts` export block.
 
 ### Naming when adding getters
 
-- Same name as `HardwareSettings` when exposing configure values (`targetFPS`, not `fps` or `targetFps`).
-- Derived getters when the value is computed from configure fields (`outputSize` from
-  `drawingBufferSize ?? displaySize`); do not add a matching `HardwareSettings` field.
-- Descriptive runtime names when there is no configure field (`activeBackend`, not `renderer`).
-- `requestedBackend` vs `activeBackend`: use `requestedBackend` for the resolved init request; use `activeBackend` for
-  runtime gates (post-process, capture). They differ when WebGPU was requested but fell back to software.
+Match the `HardwareSettings` field name for configure values (`targetFPS`, not `fps` or `targetFps`); use a derived
+getter when the value is computed from configure fields (`outputSize`, no matching field); use a runtime-descriptive
+name when no configure field exists (`activeBackend`, not `renderer`). `requestedBackend` is the resolved init request,
+`activeBackend` is for runtime gates (post-process, capture) and differs after a WebGPU→software fallback.
 
 Full tables: `docs/api-core.md`. Style guide: `docs/developer-experience-guide.md` (Naming conventions).
 
 ## Boolean naming
 
-Runtime queries use `is*` / `has*` (`isPointerActive`, `isIndexed`, `hasGlyph`, `isDirty`). Configure flags in
-`HardwareSettings` and `BootstrapOptions` also use grammatical `is*` (`isOverlayEnabled`, `isDetectingDroppedFrames`).
-Side-effect or operation-result booleans use imperative verbs, not `is*` (`Timer.fireIfElapsed()`,
-`intersectTo(other, out): boolean`, `remove(): boolean`).
+Runtime queries and configure flags (`HardwareSettings`, `BootstrapOptions`) use grammatical `is*` / `has*`
+(`isPointerActive`, `hasGlyph`, `isOverlayEnabled`, `isDetectingDroppedFrames`). Side-effect or operation-result
+booleans use imperative verbs, not `is*` (`Timer.fireIfElapsed()`, `intersectTo(other, out): boolean`,
+`remove(): boolean`).
 
 Input hold vs edge on `BT`: `BT.isDown` / `BT.isKeyDown` (held), `BT.isPressed` / `BT.isReleased` (button masks),
 `BT.isKeyPressed` / `BT.isKeyReleased` (keyboard codes). Internal input classes mirror those names; never embed a second
-`Is` (`isKeyPressed`). Audit: `\bis[A-Za-z]+Is[A-Z]`. Identifier acronyms: `canvasID`, `containerID`.
+`Is`. Audit: `\bis[A-Za-z]+Is[A-Z]`. Identifier acronyms: `canvasID`, `containerID`.
 
 Full tiers: `docs/developer-experience-guide.md` (Boolean naming).
 
@@ -367,12 +365,9 @@ Full tiers: `docs/developer-experience-guide.md` (Boolean naming).
 Private fields, private methods, protected members, and module-local constants/types must not repeat the enclosing class
 or file name. The type or file already provides scope; strip redundant prefixes from internal identifiers.
 
-Examples:
-
-- `FrameCapture.request()` not `requestCapture()`; `width` not `captureWidth`
-- `GamepadInput.poll()` not `pollGamepads()`
-- `Bloom.ts`: `FRAGMENT_WGSL` not `BLOOM_FRAGMENT_WGSL`
-- `Palette.ts`: file-local `Serialized` (or similar), not `PaletteJSON` or `JSON`
+Examples: `FrameCapture.request()` not `requestCapture()` (and `width` not `captureWidth`); `GamepadInput.poll()` not
+`pollGamepads()`; `FRAGMENT_WGSL` not `BLOOM_FRAGMENT_WGSL` in `Bloom.ts`; file-local `Serialized` not `PaletteJSON` or
+`JSON` in `Palette.ts`.
 
 Does not apply to public API: `BT.*`, the `BLIT386.ts` export block, public methods on exported classes, or documented
 configure field names. When JSDoc references public symbols, use their full public names (e.g. internal pointer wire
@@ -383,17 +378,15 @@ or drive breaking changes through consumers for naming-only cleanup.
 
 ## API Conventions
 
-- Prefer `SpriteSheet.loadIndexed(...)` for demo/game sprite setup; use manual `loadColorsIntoPalette` + `load` +
-  `indexize` only for advanced flows
-- Use `SpriteSheet.getIndexedPixels()` when the software renderer needs CPU-side pixel data; it returns a defensive copy
-  of the internal palette-indexed `Uint8Array` (throws if the sheet has not been indexized)
-- Prefer `Color32#luminance` for perceived brightness calculations instead of duplicating `0.299*r + 0.587*g + 0.114*b`
-  at call sites
-- Prefer fixed-step helpers `BT.deltaSeconds` / `BT.timeSeconds` over hardcoded `1 / TARGET_FPS` in update loops
+- Prefer `SpriteSheet.loadIndexed(...)` for demo/game sprite setup; manual `loadColorsIntoPalette` + `load` + `indexize`
+  only for advanced flows
+- Use `SpriteSheet.getIndexedPixels()` for CPU-side pixel data in the software renderer (defensive copy of the indexed
+  `Uint8Array`; throws if not yet indexized)
+- Prefer `Color32#luminance` over duplicating `0.299*r + 0.587*g + 0.114*b` at call sites
+- Prefer `BT.deltaSeconds` / `BT.timeSeconds` over hardcoded `1 / TARGET_FPS` in update loops
 - Prefer `BT.cameraClamp(...)` (or `clampCameraToWorld(...)` in utility code) over ad-hoc clamp math
-- Prefer `palette.applyHUD(startSlot?)` (default `1`) to fill the six common UI slots (white, bg, label, header, dim,
-  FPS) and register their `hud_*` name aliases, rather than six manual `palette.set()` calls; override individual slots
-  afterward for demo-specific colors
+- Prefer `palette.applyHUD(startSlot?)` (default `1`) to fill the six common UI slots and register their `hud_*`
+  aliases, rather than six manual `palette.set()` calls; override individual slots afterward
 
 ## Code Style
 
@@ -407,10 +400,9 @@ or drive breaking changes through consumers for naming-only cleanup.
 
 ## TypeScript file structure
 
-Applies to library TypeScript in `src/`. Class member order is enforced by `perfectionist/sort-classes` (and import
-order by `simple-import-sort`); the rule is auto-fixable with `pnpm run lint:fix`. It uses `type: 'unsorted'`, so it
-enforces only the group order below and preserves the hand-tuned order within each group (e.g. logical method families
-stay as written). Match this layout when adding or moving code. Never use `// #region` / `// #endregion` — region
+Applies to library TypeScript in `src/`. Class member order is enforced by `perfectionist/sort-classes` (imports by
+`simple-import-sort`); auto-fix with `pnpm run lint:fix`. It uses `type: 'unsorted'`, so it enforces only the group
+order below and preserves the hand-tuned order within each group. Never use `// #region` / `// #endregion` — region
 markers are banned everywhere.
 
 ### File layout (top to bottom)
@@ -419,32 +411,29 @@ markers are banned everywhere.
 2. Imports — `import type` for type-only imports; inline `type` modifiers inside mixed imports
    (`import { type Backend, defaultConfig } from …`). Ordering is auto-fixed by `pnpm run lint:fix`
    (`simple-import-sort`).
-3. Leading module members — constants that act as configuration or inputs (`MAX_VERTICES`, `INV_255`), validators/lookup
-   tables (`HEX_TOKEN_PATTERN`, `HEX_TABLE`), and type aliases (`type EffectTier`, `type Resolve`). Module-level init
-   loops (e.g. filling a lookup table) live here too.
+3. Leading module members — config/input constants (`MAX_VERTICES`, `INV_255`), validators/lookup tables
+   (`HEX_TOKEN_PATTERN`, `HEX_TABLE`), type aliases (`type EffectTier`), and module-level init loops.
 4. Primary export — the class / interface / function the file is named for.
-5. Trailing module members — large WGSL/template-literal constants (`const FRAGMENT_WGSL`) and pure helper functions
-   placed after the class. Exported helpers come before private ones.
+5. Trailing module members — large WGSL/template-literal constants (`const FRAGMENT_WGSL`) and pure helpers after the
+   class (exported helpers before private ones).
 
 ### Class member order
 
 1. Static fields — cached singletons (`_zero`, `_white`), registries (`namedColors`).
-2. Instance fields — public, then protected, then private (`#field` or `private`). Group `readonly` together. Each field
-   gets its own JSDoc and is separated by a blank line (no packed field blocks).
+2. Instance fields — public → protected → private (`#field` or `private`); `readonly` grouped; each gets its own JSDoc
+   and a blank line (no packed field blocks).
 3. Constructor — parameter-properties carry inline `/** … */` JSDoc.
 4. Accessors — static getters first, then instance getters/setters.
 5. Static methods — public before private.
-6. Instance methods — public, then protected, then private. Private helpers (`cleanup`, `getOrCreateBindGroup`) come
-   last.
+6. Instance methods — public → protected → private; private helpers last.
 
 ### Cross-cutting
 
-- Keep a deprecated alias next to its canonical member (`equals` after `isEqual`; `handleToggle` after `handleInput`).
-- Cluster related instance-method families in a deliberate sub-order: new-allocating methods (`add`, `sub`) → `*To`
-  zero-alloc variants → `*InPlace` variants → queries (`isEqual`, `isZero`) → `clone` / `toString` last.
-- One blank line between members; a blank line before `return` and between logical blocks inside method bodies.
-- JSDoc on every member, including private fields and methods.
-- Named exports only; no default exports.
+- Keep a deprecated alias next to its canonical member (`equals` after `isEqual`).
+- Cluster related instance-method families in a deliberate sub-order: new-allocating (`add`, `sub`) → `*To` zero-alloc →
+  `*InPlace` → queries (`isEqual`, `isZero`) → `clone` / `toString` last.
+- One blank line between members; a blank line before `return` and between logical blocks.
+- JSDoc on every member (including private); named exports only, no default exports.
 
 See `docs/developer-experience-guide.md` (File structure and member order) and `.cursor/rules/ts-file-structure.mdc`.
 
@@ -506,11 +495,10 @@ Use it when implementing or changing:
 Run `pnpm run test:visual:update` to regenerate baselines after an intentional visual change. Snapshots live in
 `tests/visual/__snapshots__/`.
 
-The suite covers: camera, fonts, mixed (primitives + sprites), primitives, sprites, and post-process (baseline, CRT,
-CRT+bloom, and individual display/pixel effects such as Vignette, Scanlines, Bloom, PixelGlitch, ChromaticAberration,
-BarrelDistortion, upscale passes, and more).
+The suite covers camera, fonts, mixed (primitives + sprites), primitives, sprites, and post-process (baseline, CRT,
+CRT+bloom, and individual display/pixel effects).
 
-WebGPU mocks: Use `src/__test__/webgpu-mock.ts` for tests needing GPUDevice, GPUTexture, etc. See
+WebGPU mocks: use `src/__test__/webgpu-mock.ts` for tests needing GPUDevice, GPUTexture, etc. See
 [docs/reference-testing.md](docs/reference-testing.md) for full details.
 
 ### Known Testing Quirks
