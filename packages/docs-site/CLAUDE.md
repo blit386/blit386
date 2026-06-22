@@ -26,7 +26,7 @@ Documentation site for [blit386.dev](https://blit386.dev), built with Fumapress,
 | How is the mirror built?  | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` (Documentation mirror below)        |
 | CI and deploy?            | `.github/workflows/ci.yml`                                                                       |
 | Agent skills?             | `.claude/skills/` (`fp-*` prefix)                                                                |
-| MCP server?               | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp/index.mdx`          |
+| MCP server?               | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server/index.mdx`   |
 
 ## Architecture
 
@@ -151,8 +151,8 @@ Two tools:
 - `search_docs` - full-text search (proxies `/api/search`)
 - `get_docs_summary` - returns `/llms.txt`
 
-Agent discovery card: `public/.well-known/mcp/server-card.json`. User-facing setup docs: `content/mcp/index.mdx` (served
-at `/mcp`).
+Agent discovery card: `public/.well-known/mcp/server-card.json`. User-facing setup docs: `content/mcp-server/index.mdx`
+(served at `/mcp-server`).
 
 ## Working with Claude
 
