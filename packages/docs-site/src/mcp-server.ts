@@ -6,7 +6,7 @@ const MCP_SERVER_NAME = 'blit386-docs';
 const MCP_SERVER_VERSION = '1.0.0';
 
 interface RpcRequest {
-    id: string | number | null | undefined;
+    id?: string | number | null;
     method: string;
     params?: unknown;
 }
@@ -60,17 +60,15 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                     try {
                         body = await c.req.json<unknown>();
                     } catch {
-                        return c.json(
-                            { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } },
-                            400,
-                        );
+                        return c.json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
                     }
 
                     if (!isRpcRequest(body)) {
-                        return c.json(
-                            { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid Request' } },
-                            400,
-                        );
+                        return c.json({
+                            jsonrpc: '2.0',
+                            id: null,
+                            error: { code: -32600, message: 'Invalid Request' },
+                        });
                     }
 
                     const { id, method, params } = body;
@@ -97,10 +95,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
 
                     if (method === 'tools/call') {
                         if (!isToolCallParams(params)) {
-                            return c.json(
-                                { jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params' } },
-                                400,
-                            );
+                            return c.json({ jsonrpc: '2.0', id, error: { code: -32602, message: 'Invalid params' } });
                         }
 
                         const { name, arguments: args = {} } = params;
@@ -111,36 +106,54 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             const query = typeof queryValue === 'string' ? queryValue : '';
                             const searchUrl = new URL('/api/search', origin);
                             searchUrl.searchParams.set('query', query);
-                            const res = await fetch(searchUrl.href);
-                            const results: unknown = await res.json();
-                            return c.json({
-                                jsonrpc: '2.0',
-                                id,
-                                result: { content: [{ type: 'text', text: JSON.stringify(results) }] },
-                            });
+                            try {
+                                const res = await fetch(searchUrl.href);
+                                const results: unknown = await res.json();
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    result: { content: [{ type: 'text', text: JSON.stringify(results) }] },
+                                });
+                            } catch {
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: { code: -32603, message: 'Internal error: search unavailable' },
+                                });
+                            }
                         }
 
                         if (name === 'get_docs_summary') {
                             const summaryUrl = new URL('/llms.txt', origin);
-                            const res = await fetch(summaryUrl.href);
-                            const text = await res.text();
-                            return c.json({
-                                jsonrpc: '2.0',
-                                id,
-                                result: { content: [{ type: 'text', text }] },
-                            });
+                            try {
+                                const res = await fetch(summaryUrl.href);
+                                const text = await res.text();
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    result: { content: [{ type: 'text', text }] },
+                                });
+                            } catch {
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: { code: -32603, message: 'Internal error: summary unavailable' },
+                                });
+                            }
                         }
 
-                        return c.json(
-                            { jsonrpc: '2.0', id, error: { code: -32601, message: `Unknown tool: ${name}` } },
-                            404,
-                        );
+                        return c.json({
+                            jsonrpc: '2.0',
+                            id,
+                            error: { code: -32601, message: `Unknown tool: ${name}` },
+                        });
                     }
 
-                    return c.json(
-                        { jsonrpc: '2.0', id, error: { code: -32601, message: `Method not found: ${method}` } },
-                        404,
-                    );
+                    return c.json({
+                        jsonrpc: '2.0',
+                        id,
+                        error: { code: -32601, message: `Method not found: ${method}` },
+                    });
                 },
             ];
         },
