@@ -16,7 +16,7 @@ in `blit386`.
 
 ## Steps
 
-1. **MCP preflight (required)**
+1. MCP preflight (required)
 
    ```bash
    pnpm run security:mcp-preflight -- \
@@ -36,7 +36,7 @@ in `blit386`.
      --output-json security-reports/mcp-preflight-latest.json
    ```
 
-2. **Repo-native checks**
+2. Repo-native checks
 
 - `pnpm run security:audit`
 - `pnpm audit --prod --audit-level=moderate`
@@ -44,9 +44,9 @@ in `blit386`.
 - `pnpm run preflight`
 - `pnpm run build` (after dependency/toolchain changes)
 
-3. **MCP scans** - only when corresponding servers are `healthy` (see library runbook).
+3. MCP scans - only when corresponding servers are `healthy` (see library runbook).
 
-4. **Report** - use template in
+4. Report - use template in
    [blit386/docs/security/security-runbook.md](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md).
 
 ## Periodic governance (monthly)

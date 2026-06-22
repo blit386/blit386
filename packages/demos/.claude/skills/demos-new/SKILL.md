@@ -86,7 +86,7 @@ by `src/00a-barebones.js`; see `CLAUDE.md` (Documentation Style) for the full ru
 ### 5. Update the docs
 
 - Add the demo to the `## Demos` list in `README.md` under the right category (e.g. Drawing Basics, Input, Palette
-  System), matching the existing `- **[NNN-slug](https://blit386-demos.vancura.dev/NNN-slug)** - description` format.
+  System), matching the existing `- [NNN-slug](https://blit386-demos.vancura.dev/NNN-slug) - description` format.
 
 ### 6. Review
 

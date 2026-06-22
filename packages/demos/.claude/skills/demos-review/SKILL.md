@@ -17,19 +17,19 @@ Review current changes against project rules and quality standards.
 
 ## Steps
 
-1. **Gather changes**
+1. Gather changes
 
 - Run `git diff` to see all unstaged modifications
 - Run `git diff --cached` to see staged changes
 - List which files were modified and what changed
 
-2. **Run automated checks**
+2. Run automated checks
 
 - `pnpm run lint` - Report any lint issues
 - `pnpm run spellcheck` - Check for spelling issues
 - `pnpm run build` - Confirm the production build succeeds (deployment gate for Cloudflare Pages)
 
-3. **Check against project rules**
+3. Check against project rules
 
 - No emoji anywhere (code, comments, docs, commits)
 - Integer coordinates (Vector2i, Rect2i) for rendering
@@ -44,7 +44,7 @@ Review current changes against project rules and quality standards.
 - New demo files use `// @pageTitle Custom Title` in the first 20 lines when the default title
   (`BLIT386 Demo NNN - Title Cased Topic`) is not appropriate; check existing demos for examples
 
-4. **Summarize findings**
+4. Summarize findings
 
 - List critical issues that must be fixed
 - List warnings and suggestions for improvement

@@ -29,7 +29,7 @@ what the library's own test suite (`blit386`) already covers.
 
 ## What to do instead
 
-- **Verify a new demo works**: `pnpm run dev`, open `/demos/<slug>.html`, exercise the demo manually
-- **Confirm no build regression**: `pnpm run build`
-- **Check code quality**: `/demos-preflight` or `/demos-review`
-- **Full pre-push audit**: `/demos-deep-review`
+- Verify a new demo works: `pnpm run dev`, open `/demos/<slug>.html`, exercise the demo manually
+- Confirm no build regression: `pnpm run build`
+- Check code quality: `/demos-preflight` or `/demos-review`
+- Full pre-push audit: `/demos-deep-review`

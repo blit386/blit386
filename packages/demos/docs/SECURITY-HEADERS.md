@@ -33,12 +33,12 @@ headers are defined in [`public/_headers`](../public/_headers) and copied into `
 
 ### Intentionally not in this pass
 
-- **`script-src` nonces / hashes** — would require build-time CSP injection or moving all JS external (layout already
+- `script-src` nonces / hashes — would require build-time CSP injection or moving all JS external (layout already
   external; not worth nonce plumbing for demos).
-- **`style-src` without `'unsafe-inline'`** — would require extracting layout CSS to a file (separate refactor).
-- **`Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy`** — not required for WebGPU here; may affect
-  third-party embed debugging.
-- **`X-Frame-Options`** — superseded by `frame-ancestors`; avoid conflicting duplicate framing policy.
+- `style-src` without `'unsafe-inline'` — would require extracting layout CSS to a file (separate refactor).
+- `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` — not required for WebGPU here; may affect third-party
+  embed debugging.
+- `X-Frame-Options` — superseded by `frame-ancestors`; avoid conflicting duplicate framing policy.
 
 ## Verification
 
@@ -52,7 +52,7 @@ test -f dist/_headers
 
 ### Local preview (headers are not applied by Vite preview)
 
-`vite preview` serves files but does **not** parse Cloudflare `_headers`. To exercise the real header rules locally:
+`vite preview` serves files but does not parse Cloudflare `_headers`. To exercise the real header rules locally:
 
 ```bash
 pnpm run build
