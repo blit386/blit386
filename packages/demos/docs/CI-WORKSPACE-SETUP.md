@@ -16,7 +16,7 @@ The BLIT386 Demos project depends on BLIT386 using a pnpm workspace dependency:
 
 This works perfectly for local development but creates a challenge in CI:
 
-1. Both projects are in **separate Git repositories**
+1. Both projects are in separate Git repositories
 2. CI workflows need to resolve the workspace dependency
 3. This demos repo intentionally tracks a sibling workspace build of BLIT386
 
@@ -28,11 +28,11 @@ The CI workflow recreates the exact workspace structure that exists locally by:
 2. Creating a `pnpm-workspace.yaml` at the root
 3. Running `pnpm install` to link the workspace dependencies
 4. Building BLIT386 (as a trusted dependency)
-5. Running checks **only on BLIT386 Demos**
+5. Running checks only on BLIT386 Demos
 
 ### Important: No Testing of BLIT386 in CI
 
-The BLIT386 library has **its own CI pipeline** in the BLIT386 repository.
+The BLIT386 library has its own CI pipeline in the BLIT386 repository.
 
 In the BLIT386 Demos workflow, we:
 
@@ -40,7 +40,7 @@ In the BLIT386 Demos workflow, we:
 - Do NOT run quality checks on BLIT386 (linting, formatting, etc.)
 - Do NOT run tests on BLIT386
 
-We treat BLIT386 as a **trusted, pre-tested dependency** that is already validated by its own CI.
+We treat BLIT386 as a trusted, pre-tested dependency that is already validated by its own CI.
 
 ### Workflow Pattern
 
@@ -80,10 +80,10 @@ The composite action performs these steps internally:
 
 The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across its jobs:
 
-- **quality-checks** - Code quality (format, lint, spellcheck, knip)
-- **build** - Build demos and upload artifacts
-- **deploy** - Deploy to Cloudflare Pages (main branch only; depends on `build`)
-- **docs-links** - Markdown link check on `README.md` (no workspace needed; runs only on main push after deploy)
+- quality-checks - Code quality (format, lint, spellcheck, knip)
+- build - Build demos and upload artifacts
+- deploy - Deploy to Cloudflare Pages (main branch only; depends on `build`)
+- docs-links - Markdown link check on `README.md` (no workspace needed; runs only on main push after deploy)
 
 ## Local Development
 
@@ -110,11 +110,11 @@ This script uses `concurrently` to watch both projects:
 
 ## Why This Works
 
-1. **No npm publish required** - Dependencies are linked via pnpm workspace protocol
-2. **Identical to local** - CI uses the exact same workspace structure as development
-3. **Fast builds** - pnpm workspace linking is instantaneous
-4. **Type safety** - TypeScript resolves imports correctly in both environments
-5. **Hot reload** - Local dev:watch script provides excellent DX
+1. No npm publish required - Dependencies are linked via pnpm workspace protocol
+2. Identical to local - CI uses the exact same workspace structure as development
+3. Fast builds - pnpm workspace linking is instantaneous
+4. Type safety - TypeScript resolves imports correctly in both environments
+5. Hot reload - Local dev:watch script provides excellent DX
 
 ## Future Option: Switch Demos to npm Dependency
 
@@ -137,18 +137,18 @@ If this demos repo ever switches from `workspace:*` to an npm semver dependency:
 
 ### CI Error: "Cannot find package 'blit386'"
 
-**Cause**: Workspace structure not created before `pnpm install`
+Cause: Workspace structure not created before `pnpm install`
 
-**Fix**: Ensure the workflow includes all checkout/workspace steps before installing
+Fix: Ensure the workflow includes all checkout/workspace steps before installing
 
 ### CI Error: "No matching version found for blit386@workspace:\*"
 
-**Cause**: `pnpm-workspace.yaml` not created or packages not listed correctly
+Cause: `pnpm-workspace.yaml` not created or packages not listed correctly
 
-**Fix**: Verify the workspace config creation step runs and lists both packages
+Fix: Verify the workspace config creation step runs and lists both packages
 
 ### Local Error: "Cannot find module 'blit386'"
 
-**Cause**: Not running from within the workspace root
+Cause: Not running from within the workspace root
 
-**Fix**: Ensure parent `pnpm-workspace.yaml` exists and lists both packages, then run `pnpm install` from the root
+Fix: Ensure parent `pnpm-workspace.yaml` exists and lists both packages, then run `pnpm install` from the root

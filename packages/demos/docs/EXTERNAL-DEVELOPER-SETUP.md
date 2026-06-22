@@ -19,14 +19,14 @@ can track the local sibling repo during development. That means you still need b
 
 ## Browser and Renderer
 
-The engine prefers **WebGPU** and falls back to a **Canvas 2D software renderer** when WebGPU is missing or fails to
-start (optional `?backend=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
+The engine prefers WebGPU and falls back to a Canvas 2D software renderer when WebGPU is missing or fails to start
+(optional `?backend=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
 
-**WebGPU** is required for post-process / fullscreen effect demos (CRT stacks, two-tier chains). In software mode those
+WebGPU is required for post-process / fullscreen effect demos (CRT stacks, two-tier chains). In software mode those
 demos still boot and run their core scene without the CRT stack; an on-screen note explains the limitation. Most other
 demos run fully in software mode for core 2D.
 
-**WebGPU** is supported in current versions of Chrome/Edge, recent Firefox and Safari as listed in the
+WebGPU is supported in current versions of Chrome/Edge, recent Firefox and Safari as listed in the
 [BLIT386 README](https://github.com/blit386/blit386/blob/main/README.md#prerequisites) and the demos
 [README](../README.md#browser-and-renderer).
 
@@ -141,9 +141,9 @@ Then the demos will use the newly built version.
 
 ### Error: "Cannot find package 'blit386'"
 
-**Cause**: Workspace structure not set up correctly
+Cause: Workspace structure not set up correctly
 
-**Fix**: Ensure you have:
+Fix: Ensure you have:
 
 - Both repos cloned as siblings
 - `pnpm-workspace.yaml` in the parent directory
@@ -151,9 +151,9 @@ Then the demos will use the newly built version.
 
 ### Error: "No matching version found for blit386@workspace:\*"
 
-**Cause**: pnpm can't find the workspace
+Cause: pnpm can't find the workspace
 
-**Fix**: Check that:
+Fix: Check that:
 
 - `pnpm-workspace.yaml` exists in the parent directory
 - Both BLIT386 and BLIT386 Demos are listed in the config
@@ -161,9 +161,9 @@ Then the demos will use the newly built version.
 
 ### Demos won't start - "TypeError: Cannot read properties..."
 
-**Cause**: BLIT386 library not built
+Cause: BLIT386 library not built
 
-**Fix**:
+Fix:
 
 ```bash
 cd blit386

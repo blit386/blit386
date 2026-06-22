@@ -4,21 +4,21 @@ Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine 
 
 ## Tech Stack
 
-- **Node**: >= 22.18.0 (required by cspell 10 and workspace sibling blit386)
-- **Build Tool**: Vite 8 with a custom virtual-demos plugin (no templating library)
-- **Language**: JavaScript (ES2022)
-- **Styling**: Plain CSS with CSS custom properties
-- **Engine**: BLIT386 (pixel engine: WebGPU default, optional software renderer; workspace dependency)
-- **Package Manager**: pnpm
-- **Deployment**: Cloudflare Pages via GitHub Actions
-- **Linting**: Biome + ESLint + Prettier
+- Node: >= 22.18.0 (required by cspell 10 and workspace sibling blit386)
+- Build Tool: Vite 8 with a custom virtual-demos plugin (no templating library)
+- Language: JavaScript (ES2022)
+- Styling: Plain CSS with CSS custom properties
+- Engine: BLIT386 (pixel engine: WebGPU default, optional software renderer; workspace dependency)
+- Package Manager: pnpm
+- Deployment: Cloudflare Pages via GitHub Actions
+- Linting: Biome + ESLint + Prettier
 
 ## Critical Rules
 
-- **No emoji** - no emoji in code, commits, docs, or UI strings (no exceptions)
-- **Integer coordinates** - all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
-- **Plain JavaScript** - demos use ES2022 JS for simplicity (no TypeScript)
-- **Beginner-friendly comments** - see Documentation Style section below
+- No emoji - no emoji in code, commits, docs, or UI strings (no exceptions)
+- Integer coordinates - all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
+- Plain JavaScript - demos use ES2022 JS for simplicity (no TypeScript)
+- Beginner-friendly comments - see Documentation Style section below
 
 ## Project Structure
 
@@ -65,7 +65,7 @@ pnpm run clean            # Clean build artifacts
 pnpm run security:audit   # Run security audit on dependencies
 ```
 
-**RTK:** Use `pnpm run …` for scripts. Cursor `.cursor/hooks.json` runs `rtk hook cursor` on Shell; Claude Code uses
+RTK: Use `pnpm run …` for scripts. Cursor `.cursor/hooks.json` runs `rtk hook cursor` on Shell; Claude Code uses
 `rtk hook claude` on Bash. Prefer shell + RTK over native Read/Grep for exploration. See `~/.claude/RTK.md`.
 
 ## Workspace Integration
@@ -124,7 +124,7 @@ bootstrap(Demo);
 
 ### Adding a New Demo
 
-Demos use kebab-case slugs: **`NNN-topic`** with three digits, e.g. `023-particles`.
+Demos use kebab-case slugs: `NNN-topic` with three digits, e.g. `023-particles`.
 
 The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` for this pattern. Adding a demo is a
 single step:
@@ -149,8 +149,8 @@ Focus on clarity and readability over strict documentation.
 
 ## Documentation Style
 
-Demo source files are written for readers with little or no coding experience. Comments must explain **what** the code
-does and **why**, not just restate it.
+Demo source files are written for readers with little or no coding experience. Comments must explain what the code does
+and why, not just restate it.
 
 ### Rules
 
@@ -242,8 +242,8 @@ configure() {
 
 ## Boolean naming
 
-Demos use the library's public names only. **Configure flags** (Tier B): grammatical `is*` in `configure()` —
-`isOverlayEnabled`, `isDetectingDroppedFrames`, `canvasID`. **Runtime input** (Tier A): `BT.isDown`, `BT.isPressed`,
+Demos use the library's public names only. Configure flags (Tier B): grammatical `is*` in `configure()` —
+`isOverlayEnabled`, `isDetectingDroppedFrames`, `canvasID`. Runtime input (Tier A): `BT.isDown`, `BT.isPressed`,
 `BT.isKeyDown`, `BT.isPointerActive`. Full policy: blit386
 [docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md).
 
@@ -270,9 +270,9 @@ Static helpers on those types worth knowing:
   UI text colors. Call in `init()` before `BT.paletteSet()`.
 
 Full input APIs (`BT.isKeyDown`, `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.isDown`, `BT.isPressed`, `BT.isReleased`,
-gamepad helpers, remapping) are documented in the engine
-[input guide](https://github.com/blit386/blit386/blob/main/docs/input.md). Post-process presets and effect tiers are in
-[post-process-effects.md](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md).
+gamepad helpers, remapping) are documented in the engine [input guide](https://blit386.dev/docs/guides/input).
+Post-process presets and effect tiers are in the
+[post-process effects guide](https://blit386.dev/docs/guides/post-process-effects).
 
 ### Shared demo helpers
 
@@ -282,20 +282,19 @@ CRT and post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` f
 `SOFTWARE_FALLBACK_NOTE` on the overlay or in demo HUD text.
 
 The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
-The overlay **body starts hidden**; a bitmap toggle hint sits in the **bottom-left** corner by default. Toggle the body
-with Backquote or a primary press in the bottom-left 48x48 px corner. Use `isOverlayVisibleAtStart: true` to show the
-body on the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still
-toggles with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
+The overlay body starts hidden; a bitmap toggle hint sits in the bottom-left corner by default. Toggle the body with
+Backquote or a primary press in the bottom-left 48x48 px corner. Use `isOverlayVisibleAtStart: true` to show the body on
+the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still toggles
+with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
 `isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem
-(see [api-core.md](https://github.com/blit386/blit386/blob/main/docs/api-core.md)). Set
-`isOverlayTimingChartEnabled: true` to opt in to the scrolling update/render timing chart band (~22 px under the title
-row). Chart renderer diagnostics default to **minimal** when the chart is on; set
-`overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to disable chart markers. Set
-`isOverlayRendererDiagnosticsBarEnabled: true` for a GPU pipeline text row below frame timings (off by default). Bar
+(see [API: Core](https://blit386.dev/docs/api/core)). Set `isOverlayTimingChartEnabled: true` to opt in to the scrolling
+update/render timing chart band (~22 px under the title row). Chart renderer diagnostics default to minimal when the
+chart is on; set `overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to disable chart markers.
+Set `isOverlayRendererDiagnosticsBarEnabled: true` for a GPU pipeline text row below frame timings (off by default). Bar
 colors default to `overlayStyle` indices; override with `overlayTimingChartStyle`. Milestone labels use
-`overlayTimingChartStyle.tagPaletteIndex` (engine default **5**). The engine adds a **Start** tag when the chart resets
-(first layout and on resize). For gameplay events, call `BT.assignTag('...')` from `update()` or `init()` when the chart
-is enabled in `configure()`.
+`overlayTimingChartStyle.tagPaletteIndex` (engine default 5). The engine adds a Start tag when the chart resets (first
+layout and on resize). For gameplay events, call `BT.assignTag('...')` from `update()` or `init()` when the chart is
+enabled in `configure()`.
 
 ## File Organization
 
@@ -309,11 +308,10 @@ Standard section order:
 6. Main Logic
 7. Exports
 
-**Demo class member order:** instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
+Demo class member order: instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
 methods. Keep `bootstrap(Demo);` as the last statement in the file.
 
-**Never use `// #region` / `// #endregion`** — region markers are banned everywhere. See
-`.cursor/rules/file-structure.mdc`.
+Never use `// #region` / `// #endregion` — region markers are banned everywhere. See `.cursor/rules/file-structure.mdc`.
 
 ## Formatting Rules
 
@@ -334,8 +332,8 @@ AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
 
 Managed by Husky (auto-installed via `prepare` script).
 
-- **Pre-commit** (lint-staged): auto-formats and lints staged files
-- **Pre-push**: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, build)
+- Pre-commit (lint-staged): auto-formats and lints staged files
+- Pre-push: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, build)
 
 ## Deployment
 
