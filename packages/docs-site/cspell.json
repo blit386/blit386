@@ -19,6 +19,7 @@
     "metas",
     "numstat",
     "pnpm",
+    "rgba",
     "scaffolder",
     "unported",
     "tailwindcss",
@@ -27,6 +28,7 @@
     "vancura",
     "waku",
     "webgpu",
+    "webmcp",
     "wrangler"
   ],
   "ignorePaths": ["node_modules", "dist", ".source", "pnpm-lock.yaml", "src/pages.gen.ts", "content/docs/*/**"]

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "blit386-docs",
+      "type": "skill-md",
+      "description": "Navigate and query the BLIT386 documentation site at blit386.dev. Use when helping a developer learn the BLIT386 JavaScript/TypeScript library, find API references, or locate guides.",
+      "url": "/.well-known/agent-skills/blit386-docs/SKILL.md",
+      "digest": "sha256:5c8ab04379dec489e3ddecac9c92587d54997b62f0882308559ede2ced391f51"
+    }
+  ]
+}

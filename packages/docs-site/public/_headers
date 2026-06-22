@@ -2,7 +2,23 @@
 # Copied to dist/public/ when present in public/.
 
 /*
+  Link: </llms.txt>; rel="describedby", </sitemap.xml>; rel="sitemap", </docs>; rel="service-doc", </.well-known/api-catalog>; rel="api-catalog", </auth.md>; rel="auth-md"
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), usb=()
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://plausible.io; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://plausible.io; media-src 'none'; worker-src 'self' blob:; child-src 'none'; frame-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+
+/.well-known/api-catalog
+  Content-Type: application/linkset+json
+
+/.well-known/agent-skills/*/SKILL.md
+  Content-Type: text/markdown
+
+/auth.md
+  Content-Type: text/markdown
+
+/.well-known/oauth-protected-resource
+  Content-Type: application/json
+
+/.well-known/oauth-authorization-server
+  Content-Type: application/json
