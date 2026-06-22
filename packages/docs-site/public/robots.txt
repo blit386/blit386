@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://blit386.dev/sitemap.xml
