@@ -1,9 +1,10 @@
 import type { ConfigContext } from 'fumapress';
 import type { ServerPlugin } from 'fumapress';
 
-const MCP_PROTOCOL_VERSION = '2025-03-26';
+const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';
 const MCP_SERVER_VERSION = '1.0.0';
+const SITE_ORIGIN = process.env.SITE_ORIGIN ?? 'https://blit386.dev';
 
 interface RpcRequest {
     id?: string | number | null;
@@ -99,12 +100,11 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         }
 
                         const { name, arguments: args = {} } = params;
-                        const origin = new URL(c.req.url).origin;
 
                         if (name === 'search_docs') {
                             const queryValue = args.query;
                             const query = typeof queryValue === 'string' ? queryValue : '';
-                            const searchUrl = new URL('/api/search', origin);
+                            const searchUrl = new URL('/api/search', SITE_ORIGIN);
                             searchUrl.searchParams.set('query', query);
                             try {
                                 const res = await fetch(searchUrl.href);
@@ -124,7 +124,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         }
 
                         if (name === 'get_docs_summary') {
-                            const summaryUrl = new URL('/llms.txt', origin);
+                            const summaryUrl = new URL('/llms.txt', SITE_ORIGIN);
                             try {
                                 const res = await fetch(summaryUrl.href);
                                 const text = await res.text();
