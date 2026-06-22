@@ -2,7 +2,7 @@
 # Copied to dist/public/ when present in public/.
 
 /*
-  Link: </llms.txt>; rel="describedby", </sitemap.xml>; rel="sitemap", </docs>; rel="service-doc", </.well-known/api-catalog>; rel="api-catalog"
+  Link: </llms.txt>; rel="describedby", </sitemap.xml>; rel="sitemap", </docs>; rel="service-doc", </.well-known/api-catalog>; rel="api-catalog", </auth.md>; rel="auth-md"
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), usb=()
@@ -13,3 +13,12 @@
 
 /.well-known/agent-skills/*/SKILL.md
   Content-Type: text/markdown
+
+/auth.md
+  Content-Type: text/markdown
+
+/.well-known/oauth-protected-resource
+  Content-Type: application/json
+
+/.well-known/oauth-authorization-server
+  Content-Type: application/json
