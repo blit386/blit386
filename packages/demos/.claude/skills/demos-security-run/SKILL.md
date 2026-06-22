@@ -37,12 +37,11 @@ in `blit386`.
    ```
 
 2. Repo-native checks
-
-- `pnpm run security:audit`
-- `pnpm audit --prod --audit-level=moderate`
-- `pnpm audit --dev --audit-level=moderate`
-- `pnpm run preflight`
-- `pnpm run build` (after dependency/toolchain changes)
+   - `pnpm run security:audit`
+   - `pnpm audit --prod --audit-level=moderate`
+   - `pnpm audit --dev --audit-level=moderate`
+   - `pnpm run preflight`
+   - `pnpm run build` (after dependency/toolchain changes)
 
 3. MCP scans - only when corresponding servers are `healthy` (see library runbook).
 
