@@ -137,19 +137,18 @@ WebGPU support (for the full experience) is typical in:
 
 ## Engine documentation
 
-These demos are thin wrappers around the library. For complete behavior, APIs, and internals, use the BLIT386 repo:
+These demos are thin wrappers around the library. For complete behavior, APIs, and internals, read the full docs at
+[blit386.dev](https://blit386.dev):
 
-- **[README](https://github.com/blit386/blit386/blob/main/README.md)** - features list, quick start, bootstrap helpers,
-  manual `BT.init`, project layout
-- **[Input](https://github.com/blit386/blit386/blob/main/docs/input.md)** - pointer slots, keyboard, gamepad, remapping
-- **[Post-process effects](https://github.com/blit386/blit386/blob/main/docs/post-process-effects.md)** - pixel vs
-  display tiers, presets, writing effects
-- **[Bitmap fonts](https://github.com/blit386/blit386/blob/main/docs/bitmap-fonts.md)** - `.btfont` format and tooling
-- **[Testing](https://github.com/blit386/blit386/blob/main/docs/testing.md)** - unit, integration, and visual tests
-- **[Performance testing](https://github.com/blit386/blit386/blob/main/docs/performance-testing.md)** - benchmarks and
-  CI
-- **[Software fallback smoke matrix](https://github.com/blit386/blit386/blob/main/docs/software-fallback-smoke-matrix.md)** -
-  manual backend coverage notes
+- [Engine README](https://github.com/blit386/blit386/blob/main/README.md) - features list, quick start, bootstrap
+  helpers, manual `BT.init`, project layout
+- [Input](https://blit386.dev/docs/guides/input) - pointer slots, keyboard, gamepad, remapping
+- [Post-process effects](https://blit386.dev/docs/guides/post-process-effects) - pixel vs display tiers, presets,
+  writing effects
+- [Bitmap fonts](https://blit386.dev/docs/guides/bitmap-fonts) - `.btfont` format and tooling
+- [Testing](https://blit386.dev/docs/reference/testing) - unit, integration, and visual tests
+- [Performance testing](https://blit386.dev/docs/performance/testing) - benchmarks and CI
+- [Software fallback smoke matrix](https://blit386.dev/docs/performance/smoke-matrix) - manual backend coverage notes
 
 ## How to Run
 

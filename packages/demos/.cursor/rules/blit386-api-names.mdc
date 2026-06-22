@@ -13,7 +13,7 @@ Canonical references (read before adding or renaming API usage):
   methods**, **Input conventions**
 - [blit386/docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md)
   — full three-tier boolean table
-- [blit386/docs/input.md](https://github.com/blit386/blit386/blob/main/docs/input.md) — input examples
+- [input guide](https://blit386.dev/docs/guides/input) — input examples
 
 ## Configure flags (Tier B)
 
