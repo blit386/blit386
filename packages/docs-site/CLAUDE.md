@@ -4,28 +4,28 @@ Documentation site for [blit386.dev](https://blit386.dev), built with Fumapress,
 
 ## Tech Stack
 
-- **Framework:** [Fumapress](https://press.fumadocs.dev/) 0.6.x on [Waku](https://waku.gg/) (React 19 RSC)
-- **Content:** MDX via Fumadocs MDX (`content/`)
-- **Styling:** Tailwind CSS v4 + Fumadocs/Fumapress presets
-- **Language:** TypeScript 6 (strict)
-- **Package manager:** pnpm 10.26.2
-- **Node:** >= 22.18.0
-- **Deploy:** Cloudflare Workers (Wrangler) to `blit386.dev`
+- Framework: [Fumapress](https://press.fumadocs.dev/) 0.6.x on [Waku](https://waku.gg/) (React 19 RSC)
+- Content: MDX via Fumadocs MDX (`content/`)
+- Styling: Tailwind CSS v4 + Fumadocs/Fumapress presets
+- Language: TypeScript 6 (strict)
+- Package manager: pnpm 10.26.2
+- Node: >= 22.18.0
+- Deploy: Cloudflare Workers (Wrangler) to `blit386.dev`
 
 ## Where to Find Information
 
-| Question                  | Where to look                                                                                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------- |
-| How is content organized? | `content/`, optional `meta.json` per folder                                                          |
-| Site and plugin config?   | `press.config.tsx`                                                                                   |
-| MDX collection config?    | `source.config.ts`                                                                                   |
-| Waku / Vite plugins?      | `waku.config.ts`                                                                                     |
-| Global styles?            | `src/app.css`                                                                                        |
-| Generated MDX loader?     | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`)                                  |
-| Engine API truth?         | Canonical source is `blit386/docs/`; public pages are **generated** into `content/docs/` (see below) |
-| How is the mirror built?  | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` (Documentation mirror below)            |
-| CI and deploy?            | `.github/workflows/ci.yml`                                                                           |
-| Agent skills?             | `.claude/skills/` (`fp-*` prefix)                                                                    |
+| Question                  | Where to look                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------ |
+| How is content organized? | `content/`, optional `meta.json` per folder                                                      |
+| Site and plugin config?   | `press.config.tsx`                                                                               |
+| MDX collection config?    | `source.config.ts`                                                                               |
+| Waku / Vite plugins?      | `waku.config.ts`                                                                                 |
+| Global styles?            | `src/app.css`                                                                                    |
+| Generated MDX loader?     | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`)                              |
+| Engine API truth?         | Canonical source is `blit386/docs/`; public pages are generated into `content/docs/` (see below) |
+| How is the mirror built?  | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` (Documentation mirror below)        |
+| CI and deploy?            | `.github/workflows/ci.yml`                                                                       |
+| Agent skills?             | `.claude/skills/` (`fp-*` prefix)                                                                |
 
 ## Architecture
 
@@ -41,56 +41,55 @@ blit386-dev-fumapress/
   dist/                 Build output (public/ static + server/ worker)
 ```
 
-**Enabled plugins:** FlexSearch (client search), `llms.txt`, Takumi (OG images).
+Enabled plugins: FlexSearch (client search), `llms.txt`, Takumi (OG images).
 
-**Custom Waku pages:** optional `src/pages/**/*.{ts,tsx}` (not used in scaffold).
+Custom Waku pages: optional `src/pages/**/*.{ts,tsx}` (not used in scaffold).
 
 ## Content Conventions
 
 - Doc files: `content/**/*.mdx` (or `.md`) with required frontmatter `title`; optional `description`, `icon`, `full`
 - Sidebar: optional `meta.json` or `meta.yaml` per folder (`title`, `pages`, `root`, `icon`, …)
-- Public engine docs under `content/docs/**` are **generated** from `blit386/docs/` (see Documentation mirror); never
+- Public engine docs under `content/docs/` are generated from `blit386/docs/` (see Documentation mirror); never
   hand-edit a generated page. Hand-authored content (the landing page, `content/docs/index.mdx` hub, and the root
   `content/docs/meta.json`) lives outside the generator's output.
 - No emoji in content, code, commits, or UI strings
 
 ## Documentation mirror
 
-The public API and guide pages on this site are **generated** from the canonical engine docs. `blit386/docs/*.md`
-(engine repo) is the single source of truth; `scripts/sync-docs-from-engine.mjs` reads the subset listed in the engine
-repo's sitemap manifest (`blit386/docs/_sitemap.json`) and writes the matching MDX into `content/docs/`. The manifest -
-not this script - owns which docs publish, their URL, sidebar order, and subtitle; the script carries no per-page
-knowledge.
+The public API and guide pages on this site are generated from the canonical engine docs. `blit386/docs/*.md` (engine
+repo) is the single source of truth; `scripts/sync-docs-from-engine.mjs` reads the subset listed in the engine repo's
+sitemap manifest (`blit386/docs/_sitemap.json`) and writes the matching MDX into `content/docs/`. The manifest - not
+this script - owns which docs publish, their URL, sidebar order, and subtitle; the script carries no per-page knowledge.
 
-- **Run it:** `pnpm run sync:docs` (formats output too). `pnpm run sync:docs:check` regenerates and fails on drift; CI
-  uses it to keep the mirror in sync. The engine docs source resolves from `ENGINE_DOCS_DIR` (default sibling
+- Run it: `pnpm run sync:docs` (formats output too). `pnpm run sync:docs:check` regenerates and fails on drift; CI uses
+  it to keep the mirror in sync. The engine docs source resolves from `ENGINE_DOCS_DIR` (default sibling
   `../blit386/docs`); CI points it at a checked-out engine repo.
-- **Generated, do not hand-edit:** every `content/docs/<section>/<topic>/index.mdx` and each section `meta.json` carry a
+- Generated, do not hand-edit: every `content/docs/<section>/<topic>/index.mdx` and each section `meta.json` carry a
   "generated" banner in their frontmatter. To change them, edit the engine source and re-run `sync:docs`.
-- **What the generator does:** drops the source H1 (title comes from it), drops a lead paragraph that duplicates the
+- What the generator does: drops the source H1 (title comes from it), drops a lead paragraph that duplicates the
   description, rewrites intra-doc links to site paths (`/docs/...`) and all other links to absolute GitHub URLs, and
   adds frontmatter (`title`, `description`).
-- **MDX components in engine docs:** the engine `.md` sources may use Fumadocs components (`Callout`, `TypeTable`,
-  `Steps`, `Tabs`, `Accordions`, `Cards`, `Files`, etc.). The generator passes PascalCase tags through verbatim and is
-  MDX-aware: it escapes stray braces in prose but leaves JSX expression props (`type={{ ... }}`, `items={[ ... ]}`)
-  intact inside component blocks. Any component the docs use **must be registered** in `press.config.tsx`
+- MDX components in engine docs: the engine `.md` sources may use Fumadocs components (`Callout`, `TypeTable`, `Steps`,
+  `Tabs`, `Accordions`, `Cards`, `Files`, etc.). The generator passes PascalCase tags through verbatim and is MDX-aware:
+  it escapes stray braces in prose but leaves JSX expression props (`type={{ ... }}`, `items={[ ... ]}`) intact inside
+  component blocks. Any component the docs use must be registered in `press.config.tsx`
   (`fumadocsMdx({ getMdxComponents })`) — `Callout`, `Card`/`Cards`, and code blocks come from `defaultMdxComponents`;
   the rest are added explicitly there. Registering a new one means importing it from `fumadocs-ui/components/*` and
-  adding it to that map. Note `Card href` is a JSX prop and is **not** link-rewritten, so engine docs must use
-  site-absolute `/docs/...` href values.
-- **Adding a page:** add an entry to `pages` in `blit386/docs/_sitemap.json` (the array order is the sidebar order; add
-  the section to `sections` if it is new), then run `pnpm run sync:docs`. No change to this repo's script is needed.
+  adding it to that map. Note `Card href` is a JSX prop and is not link-rewritten, so engine docs must use site-absolute
+  `/docs/...` href values.
+- Adding a page: add an entry to `pages` in `blit386/docs/_sitemap.json` (the array order is the sidebar order; add the
+  section to `sections` if it is new), then run `pnpm run sync:docs`. No change to this repo's script is needed.
   Contributor-only pages (developer experience, voice, tooling, `security/*`) are intentionally not mirrored - just
   leave them out of the manifest and they stay link-only on GitHub.
 
 ## Critical Rules
 
-1. **Documentation ships with changes** — update `content/` and run `pnpm run docs:links` when adding links
-2. **Public engine docs are generated, not authored here** — edit the canonical copy in `blit386/docs/`, then run
-   `pnpm run sync:docs`. Never hand-edit a generated page under `content/docs/**`. See Documentation mirror.
-3. **Use pnpm run** — `pnpm run preflight`, not bare `pnpm preflight` (RTK hooks)
-4. **Conventional Commits + DCO** — `git commit -s`
-5. **Cloudflare build** — production builds require `CLOUDFLARE=1` (included in `pnpm run build`)
+1. Documentation ships with changes — update `content/` and run `pnpm run docs:links` when adding links
+2. Public engine docs are generated, not authored here — edit the canonical copy in `blit386/docs/`, then run
+   `pnpm run sync:docs`. Never hand-edit a generated page under `content/docs/`. See Documentation mirror.
+3. Use pnpm run — `pnpm run preflight`, not bare `pnpm preflight` (RTK hooks)
+4. Conventional Commits + DCO — `git commit -s`
+5. Cloudflare build — production builds require `CLOUDFLARE=1` (included in `pnpm run build`)
 
 ## Commands
 
