@@ -18,19 +18,16 @@ Format every file in the create-blit386 monorepo and verify the result.
 ## Steps
 
 1. Run formatters
-
-- Execute `pnpm run format` from the repository root, which runs:
-  - Biome for TypeScript/JavaScript/JSON (`.ts`, `.js`, `.json`, `.jsonc`)
-  - Prettier for Markdown/YAML/Cursor rules (`.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`)
+   - Execute `pnpm run format` from the repository root, which runs:
+     - Biome for TypeScript/JavaScript/JSON (`.ts`, `.js`, `.json`, `.jsonc`)
+     - Prettier for Markdown/YAML/Cursor rules (`.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`)
 
 2. Show what changed
-
-- Run `git diff --stat` to summarize the reformatted files
+   - Run `git diff --stat` to summarize the reformatted files
 
 3. Verify formatting
-
-- Run `pnpm run format:check` to confirm all files pass
-- Report any files that still have formatting issues
+   - Run `pnpm run format:check` to confirm all files pass
+   - Report any files that still have formatting issues
 
 ## Formatter Configuration
 
