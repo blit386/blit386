@@ -39,6 +39,14 @@
       "quoteProperties": "asNeeded"
     }
   },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    },
+    "formatter": {
+      "quoteStyle": "single"
+    }
+  },
   "json": {
     "formatter": {
       "indentWidth": 2,
