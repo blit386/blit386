@@ -35,6 +35,21 @@ interface SearchResult {
     excerpt: string;
 }
 
+// One extracted, search-ready record per documentation page. Building this is the
+// expensive part (markdown extraction via the get-text adapter), so it is cached
+// per loader instance and reused across requests within the same Worker isolate.
+interface CorpusEntry {
+    title: string;
+    url: string;
+    description: string;
+    // Lowercased `${title} ${description}`, pre-computed for scoring.
+    heading: string;
+    // Original-case body text, used to build excerpts.
+    body: string;
+    // Lowercased body text, pre-computed for scoring.
+    bodyLower: string;
+}
+
 // Cloudflare Static Assets binding (declared as `ASSETS` in dist/server/wrangler.json).
 // Waku forwards the Worker `env` into the Hono app, so it is reachable via `c.env`.
 // Mirrors the same shape used by `markdown-negotiation.ts`.
@@ -126,11 +141,12 @@ function buildExcerpt(text: string, terms: readonly string[]): string {
 /**
  * Fumapress ServerPlugin exposing a JSON-RPC 2.0 MCP endpoint at POST /mcp.
  *
- * search_docs scans the loader pages in-process. It deliberately does NOT build a
- * FlexSearch index: in static mode that index ships as an 8.4 MB asset and rebuilding
- * it per cold Worker isolate exceeds the Worker CPU limit (Cloudflare error 1102) -
- * the same reason the site itself moved search client-side (see press.config.tsx).
- * For ~30 pages a substring scan is well within the Worker budget.
+ * search_docs scans the loader pages in-process, scoring substring matches against a
+ * corpus that is extracted once per loader and cached for the isolate. It deliberately
+ * does NOT build a FlexSearch index: in static mode that index ships as an 8.4 MB asset
+ * and rebuilding it per cold Worker isolate exceeds the Worker CPU limit (Cloudflare
+ * error 1102) - the same reason the site itself moved search client-side (see
+ * press.config.tsx). For ~30 pages a substring scan is well within the Worker budget.
  *
  * get_docs_summary returns /llms.txt via the ASSETS binding rather than fetching the
  * public origin: a Worker fetching its own zone hostname times out (Cloudflare 522),
@@ -140,6 +156,48 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
     return {
         name: 'mcp-server',
         createMiddlewares(this: AppContext<C>) {
+            // Cache the extracted corpus per loader instance. Markdown extraction
+            // never changes for a given loader, so this runs once per isolate; a new
+            // loader (for example after a content edit in dev) gets a fresh corpus.
+            // The promise is cached so concurrent first requests share one extraction.
+            const corpusCache = new WeakMap<object, Promise<CorpusEntry[]>>();
+
+            const getCorpus = async (): Promise<CorpusEntry[]> => {
+                const loader = await this.getLoader();
+                let corpus = corpusCache.get(loader);
+                if (!corpus) {
+                    corpus = Promise.all(
+                        loader.getPages().map(async (page) => {
+                            const title = page.data.title ?? '';
+                            const description = page.data.description ?? '';
+
+                            // Reuse the same runtime markdown extraction the markdown
+                            // negotiation plugin relies on, so the body text matches the
+                            // pages agents actually receive.
+                            let body = '';
+                            for (const adapter of this.adapters) {
+                                const text = await adapter['core:get-text']?.call(this, page);
+                                if (text !== undefined) {
+                                    body = text;
+                                    break;
+                                }
+                            }
+
+                            return {
+                                title,
+                                url: page.url,
+                                description,
+                                heading: `${title} ${description}`.toLowerCase(),
+                                body,
+                                bodyLower: body.toLowerCase(),
+                            };
+                        }),
+                    );
+                    corpusCache.set(loader, corpus);
+                }
+                return corpus;
+            };
+
             const searchDocs = async (query: string): Promise<SearchResult[]> => {
                 const terms = query
                     .toLowerCase()
@@ -149,46 +207,26 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                     return [];
                 }
 
-                const loader = await this.getLoader();
-                const scored = await Promise.all(
-                    loader.getPages().map(async (page) => {
-                        const title = page.data.title ?? '';
-                        const description = page.data.description ?? '';
-
-                        // Reuse the same runtime markdown extraction the markdown
-                        // negotiation plugin relies on, so the body text matches the
-                        // pages agents actually receive.
-                        let body = '';
-                        for (const adapter of this.adapters) {
-                            const text = await adapter['core:get-text']?.call(this, page);
-                            if (text !== undefined) {
-                                body = text;
-                                break;
-                            }
-                        }
-
-                        const heading = `${title} ${description}`.toLowerCase();
-                        const bodyLower = body.toLowerCase();
+                // Per request, only the cheap substring matching and scoring run;
+                // the corpus extraction above is amortized across the isolate.
+                const corpus = await getCorpus();
+                return corpus
+                    .map((entry) => {
                         let score = 0;
                         for (const term of terms) {
-                            score += countMatches(heading, term) * TITLE_WEIGHT;
-                            score += countMatches(bodyLower, term);
+                            score += countMatches(entry.heading, term) * TITLE_WEIGHT;
+                            score += countMatches(entry.bodyLower, term);
                         }
-
-                        return {
-                            title,
-                            url: page.url,
-                            excerpt: buildExcerpt(body, terms) || description,
-                            score,
-                        };
-                    }),
-                );
-
-                return scored
-                    .filter((entry) => entry.score > 0)
+                        return { entry, score };
+                    })
+                    .filter((scored) => scored.score > 0)
                     .sort((a, b) => b.score - a.score)
                     .slice(0, MAX_RESULTS)
-                    .map((entry) => ({ title: entry.title, url: entry.url, excerpt: entry.excerpt }));
+                    .map(({ entry }) => ({
+                        title: entry.title,
+                        url: entry.url,
+                        excerpt: buildExcerpt(entry.body, terms) || entry.description,
+                    }));
             };
 
             return [
