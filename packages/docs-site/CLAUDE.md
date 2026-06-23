@@ -149,7 +149,8 @@ in `src/mcp-server.ts` and registered in `press.config.tsx`.
 
 Two tools:
 
-- `search_docs` - full-text search (proxies `/api/search`)
+- `search_docs` - full-text search (queries the FlexSearch index in-process via `flexsearchFromSource`, since in static
+  mode `/api/search` serves the raw serialized index for the client dialog rather than query results)
 - `get_docs_summary` - returns `/llms.txt`
 
 Agent discovery card: `public/.well-known/mcp/server-card.json`. User-facing setup docs: `content/mcp-server/index.mdx`

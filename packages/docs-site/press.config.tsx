@@ -18,10 +18,19 @@ import { docs } from './.source/server';
 
 export default defineConfig({
     content: docs.toFumadocsSource(),
+
+    // Build a fully static site. On Cloudflare Workers the dynamic FlexSearch
+    // endpoint rebuilt the entire index per cold isolate, exceeding the Worker
+    // resource limits (error 1102) and intermittently 503-ing /api/search - so
+    // search only ever worked on localhost. In static mode the index is built
+    // at build time, shipped as a static asset, and queried client-side.
+    mode: 'static',
+
     site: {
         name: 'BLIT386',
         baseUrl: 'https://blit386.dev',
     },
+
     meta: {
         root: () => (
             <>
