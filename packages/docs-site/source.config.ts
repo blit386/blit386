@@ -6,7 +6,7 @@ export default defineConfig({
     mdxOptions: {
         rehypeCodeOptions: {
             langs: ['js', 'jsx', 'ts', 'tsx'],
-            transformers: [transformerTwoslash()],
+            transformers: [transformerTwoslash({ throws: false })],
         },
     },
 });
