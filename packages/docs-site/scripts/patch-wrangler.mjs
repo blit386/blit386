@@ -33,8 +33,12 @@ const REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
 let entries;
 try {
     entries = readdirSync(SERVER_DIR, { recursive: true });
-} catch {
-    entries = [];
+} catch (error) {
+    if (error.code === 'ENOENT') {
+        entries = [];
+    } else {
+        throw error;
+    }
 }
 
 for (const entry of entries) {
