@@ -149,8 +149,11 @@ in `src/mcp-server.ts` and registered in `press.config.tsx`.
 
 Two tools:
 
-- `search_docs` - full-text search (queries the FlexSearch index in-process via `flexsearchFromSource`, since in static
-  mode `/api/search` serves the raw serialized index for the client dialog rather than query results)
+- `search_docs` - full-text search via an in-process scan of the loader pages. Page title, description, and body text
+  (extracted through the `core:get-text` adapter and cached per loader instance) are scored with `countMatches`,
+  weighting heading (title + description) matches by `TITLE_WEIGHT` over body matches; results are filtered to a
+  positive score, sorted descending, and capped at `MAX_RESULTS`. It deliberately avoids building a FlexSearch index
+  in-process, which exceeds the Worker CPU limit (error 1102) - the same reason the site moved search to static mode
 - `get_docs_summary` - returns `/llms.txt`
 
 Agent discovery card: `public/.well-known/mcp/server-card.json`. User-facing setup docs: `content/mcp-server/index.mdx`
