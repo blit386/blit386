@@ -1,18 +1,9 @@
 {
   "linkset": [
     {
-      "anchor": "https://blit386.dev/.well-known/api-catalog",
-      "item": [
-        {"href": "https://blit386.dev/docs"}
-      ]
-    },
-    {
-      "anchor": "https://blit386.dev/docs",
+      "anchor": "https://blit386.dev/mcp",
       "service-doc": [
-        {"href": "https://blit386.dev/docs", "type": "text/html"}
-      ],
-      "describedby": [
-        {"href": "https://blit386.dev/llms.txt", "type": "text/plain"}
+        {"href": "https://blit386.dev/mcp-server", "type": "text/html"}
       ]
     }
   ]
