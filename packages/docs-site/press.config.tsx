@@ -4,6 +4,7 @@ import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
 import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
+import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
@@ -35,7 +36,17 @@ export default defineConfig({
         ),
     },
 })
-    .plugins(flexsearchPlugin(), llmsPlugin(), sitemapPlugin(), mcpServerPlugin(), takumiPlugin())
+    // markdownNegotiationPlugin runs before llmsPlugin so canonical doc URLs return a
+    // direct `text/markdown` 200 (with x-markdown-tokens); autoRedirect is disabled to
+    // avoid the llms middleware issuing a 302 to the `.md` file instead.
+    .plugins(
+        flexsearchPlugin(),
+        markdownNegotiationPlugin(),
+        llmsPlugin({ autoRedirect: false }),
+        sitemapPlugin(),
+        mcpServerPlugin(),
+        takumiPlugin(),
+    )
     .adapters(
         // Extend the default MDX component map so the engine docs can use the full
         // Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,
