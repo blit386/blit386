@@ -101,7 +101,7 @@ this script - owns which docs publish, their URL, sidebar order, and subtitle; t
 ```bash
 pnpm run dev              # Local dev server
 pnpm run build            # Production build (fumadocs-mdx + CLOUDFLARE=1 waku build)
-pnpm run start            # Serve production build locally
+pnpm run start            # Preview production build via Wrangler (runs Cloudflare Worker locally)
 pnpm run typecheck        # Generate MDX types + tsc --noEmit
 pnpm run lint             # Biome check
 pnpm run lint:fix         # Biome auto-fix
@@ -188,6 +188,14 @@ from `src/app.css` (`@import "fumadocs-twoslash/twoslash.css"`).
 crashing the build. The canonical engine docs (`blit386/docs/`) are responsible for Twoslash correctness: every
 ` ```ts twoslash ` block there must be self-contained or use a `// ---cut---` preamble (see `blit386/CLAUDE.md`,
 Twoslash in published docs). After editing engine docs, run `pnpm run sync:docs && pnpm run build` here to verify.
+
+**Dev-mode skip (memory constraint):** The transformer is gated on `!!process.env.CLOUDFLARE` in `source.config.ts`.
+`blit386.d.ts` is ~192 KB and imports WebGPU types; with 18 MDX files the TypeScript language service accumulates over 4
+GB during `waku dev` and the process OOMs. `NODE_ENV` is not a reliable signal because `source.config.ts` is evaluated
+by the fumadocs-mdx Vite plugin before Vite writes `NODE_ENV=production` into the process environment. `CLOUDFLARE=1` is
+set by `cross-env` in the build script, which is deterministic. Twoslash therefore only runs during `pnpm run build`.
+Type-on-hover popups are absent in the local dev server — use `pnpm run build && pnpm run start` to preview the full
+production build locally (served via Wrangler).
 
 ## Working with Claude
 
