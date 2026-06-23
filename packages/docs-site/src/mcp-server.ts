@@ -1,5 +1,7 @@
-import type { ConfigContext } from 'fumapress';
+import type { AppContext, ConfigContext } from 'fumapress';
 import type { ServerPlugin } from 'fumapress';
+import { flexsearchFromSource } from 'fumadocs-core/search/flexsearch';
+import type { LoaderConfig, LoaderOutput } from 'fumadocs-core/source';
 
 const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';
@@ -50,7 +52,19 @@ function isToolCallParams(v: unknown): v is ToolCallParams {
 export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): ServerPlugin<C> {
     return {
         name: 'mcp-server',
-        createMiddlewares() {
+        createMiddlewares(this: AppContext<C>) {
+            // Query the FlexSearch index in-process rather than fetching the
+            // /api/search endpoint: in static mode that endpoint serves the raw
+            // serialized index (for the client-side dialog), not query results.
+            // flexsearchFromSource is lazy - the index is built on first search
+            // and cached per loader instance, so MCP calls reuse the warm index.
+            // fumapress types getLoader over ConfigContext; flexsearchFromSource
+            // expects a LoaderConfig loader. They resolve to the same fumadocs-core
+            // LoaderOutput at runtime, so bridge the generic mismatch explicitly.
+            const getLoader = this.getLoader as unknown as () => Promise<LoaderOutput<LoaderConfig>>;
+
+            const searchServer = flexsearchFromSource(getLoader);
+
             return [
                 async (c, next) => {
                     if (c.req.path !== '/mcp' || c.req.method !== 'POST') {
@@ -104,11 +118,8 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         if (name === 'search_docs') {
                             const queryValue = args.query;
                             const query = typeof queryValue === 'string' ? queryValue : '';
-                            const searchUrl = new URL('/api/search', SITE_ORIGIN);
-                            searchUrl.searchParams.set('query', query);
                             try {
-                                const res = await fetch(searchUrl.href);
-                                const results: unknown = await res.json();
+                                const results = await searchServer.search(query);
                                 return c.json({
                                     jsonrpc: '2.0',
                                     id,
