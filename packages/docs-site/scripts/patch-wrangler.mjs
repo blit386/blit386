@@ -14,6 +14,14 @@ if (!config.compatibility_flags.includes(REQUIRED_FLAG)) {
     config.compatibility_flags.push(REQUIRED_FLAG);
 }
 
+// Run the Worker before the Static Assets layer so markdown content negotiation
+// (Accept: text/markdown) can intercept canonical doc URLs. Without this, Cloudflare
+// serves pre-rendered HTML directly and the Worker never sees the request. The Worker
+// re-implements assets-first via the ASSETS binding (see src/markdown-negotiation.ts).
+if (config.assets && config.assets.run_worker_first !== true) {
+    config.assets = { ...config.assets, run_worker_first: true };
+}
+
 writeFileSync(WRANGLER_CONFIG, `${JSON.stringify(config, null, 2)}\n`);
 
 // Cloudflare Workers does not set import.meta.url for bundled sub-modules, so
