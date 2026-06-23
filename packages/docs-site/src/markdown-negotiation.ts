@@ -61,6 +61,9 @@ export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContex
                                     headers: {
                                         'content-type': 'text/markdown; charset=utf-8',
                                         'x-markdown-tokens': String(estimateTokens(markdown)),
+                                        // This URL serves HTML or markdown depending on Accept,
+                                        // so shared caches must key on that header.
+                                        vary: 'Accept',
                                     },
                                 });
                             }
