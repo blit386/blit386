@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { defineConfig } from 'fumapress';
 import { fumadocsMdx } from 'fumapress/adapters/mdx';
 import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
+import { linkValidationPlugin } from 'fumapress/plugins/link-validation';
 import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
@@ -130,6 +131,8 @@ export default defineConfig({
                 };
             },
         }),
+
+        linkValidationPlugin(),
     )
 
     .adapters(
