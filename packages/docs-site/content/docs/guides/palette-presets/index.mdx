@@ -35,7 +35,7 @@ That means:
 
 ### VGA base 16 (`VGA_HEX[0..15]`)
 
-```ts
+```ts twoslash
 [
   '000000',
   '800000',
@@ -58,13 +58,13 @@ That means:
 
 ### VGA cube steps
 
-```ts
+```ts twoslash
 [0, 95, 135, 175, 215, 255];
 ```
 
 ### VGA grayscale ramp (`8..238`, step 10)
 
-```ts
+```ts twoslash
 [8, 18, 28, 38, 48, 58, 68, 78, 88, 98, 108, 118, 128, 138, 148, 158, 168, 178, 188, 198, 208, 218, 228, 238];
 ```
 
@@ -72,7 +72,7 @@ That means:
 
 `Palette.cga()`:
 
-```ts
+```ts twoslash
 [
   '000000',
   '0000aa',
@@ -97,7 +97,7 @@ That means:
 
 `Palette.c64()`:
 
-```ts
+```ts twoslash
 [
   '000000',
   'ffffff',
@@ -122,7 +122,7 @@ That means:
 
 `Palette.gameboy()`:
 
-```ts
+```ts twoslash
 ['0f380f', '306230', '8bac0f', '9bbc0f'];
 ```
 
@@ -130,7 +130,7 @@ That means:
 
 `Palette.pico8()`:
 
-```ts
+```ts twoslash
 [
   '000000',
   '1d2b53',
@@ -158,7 +158,7 @@ That means:
 `NES_HEX` currently defines 56 source entries. After transparent slot reservation and preset copy, remaining palette
 slots keep their constructor default (black).
 
-```ts
+```ts twoslash
 [
   '7c7c7c',
   '0000fc',
@@ -223,7 +223,7 @@ slots keep their constructor default (black).
 
 `palette.applyHUD(startSlot = 1)` writes six consecutive slots:
 
-```ts
+```ts twoslash
 [
   { hex: 'ffffff', name: 'hud_white' },
   { hex: '1e1428', name: 'hud_bg' },

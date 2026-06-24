@@ -21,9 +21,11 @@ The rest of the core API surface lives in dedicated pages: [Overlay](/docs/api/o
 The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
 (WebGPU or software fallback), and error display automatically.
 
-```ts
-import { bootstrap, type BootstrapOptions } from 'blit386';
-
+```ts twoslash
+import { bootstrap, type IBTDemo, type BootstrapOptions } from 'blit386';
+declare const MyDemo: new () => IBTDemo;
+declare function trackError(err: Error): void;
+// ---cut---
 // One-liner - canvas id defaults to 'blit386-canvas', container to 'canvas-container'
 bootstrap(MyDemo);
 
@@ -49,7 +51,7 @@ bootstrap(MyDemo, {
 
 Manual utilities (for custom initialization flows):
 
-```ts
+```ts twoslash
 import { displayError, getCanvas } from 'blit386';
 
 const canvas = getCanvas('my-canvas'); // returns null on missing element
@@ -61,7 +63,11 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 
 ## Initialization
 
-```ts
+```ts twoslash
+import { BT, type IBTDemo } from 'blit386';
+declare const demo: IBTDemo;
+declare const canvas: HTMLCanvasElement;
+// ---cut---
 const ok = await BT.init(demo, canvas); // low-level init; prefer bootstrap()
 BT.displaySize; // Vector2i - configured logical resolution (clone per read)
 BT.drawingBufferSize; // Vector2i | null - output buffer when set in configure()
@@ -201,7 +207,9 @@ without hitting module-load errors from WebGPU-only code.
 
 Use `activeBackend`, not `requestedBackend`:
 
-```ts
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // Correct: gate on the backend that actually started; BT.effectAdd takes one effect
 if (BT.activeBackend === 'webgpu') {
   for (const fx of BT.preset.crtPipBoy()) {
@@ -219,9 +227,11 @@ if (BT.requestedBackend === 'webgpu') {
 
 Forcing software up front avoids the fallback path entirely:
 
-```ts
-configure() {
-  return { backend: 'software', /* ... */ };
+```ts twoslash
+import { type HardwareSettings } from 'blit386';
+// ---cut---
+function configure(): Partial<HardwareSettings> {
+  return { backend: 'software' /* ... */ };
 }
 // requestedBackend === activeBackend === 'software' after init
 ```
@@ -230,7 +240,7 @@ configure() {
 
 Import `defaultConfig` and `mergeHardwareSettings` when building custom configure flows outside `bootstrap()`:
 
-```ts
+```ts twoslash
 import { defaultConfig, mergeHardwareSettings } from 'blit386';
 
 const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });

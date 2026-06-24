@@ -24,15 +24,17 @@ For how logical, drawing buffer, CSS cap, and effect tier map to `HardwareSettin
 
 ## Quick start
 
-```ts
+```ts twoslash
 import { BT, Vector2i, BarrelDistortion, Scanlines, RGBMask, Bloom, PixelGlitch } from 'blit386';
-
+// ---cut---
 class Demo {
+  glitch: PixelGlitch | null = null;
+
   configure() {
     return {
       displaySize: new Vector2i(320, 240), // logical pixel-art resolution
       drawingBufferSize: new Vector2i(1280, 960), // output drawing-buffer size
-      outputUpscaleFilter: 'nearest', // 'nearest' | 'linear'
+      outputUpscaleFilter: 'nearest' as const, // 'nearest' | 'linear'
       targetFPS: 60,
     };
   }
@@ -108,7 +110,7 @@ Removes every effect in both tiers and destroys all offscreen GPU resources. Thr
 
 ### `Effect` interface
 
-```ts
+```ts twoslash
 import type { Effect, EffectTier, Vector2i } from 'blit386';
 
 export class MyEffect implements Effect {
@@ -141,7 +143,9 @@ vs. RGBA paths – see [Writing a custom effect](#writing-a-custom-effect) below
 
 ### `HardwareSettings`
 
-```ts
+```ts twoslash
+import type { Vector2i } from 'blit386';
+// ---cut---
 interface HardwareSettings {
   displaySize: Vector2i;
   drawingBufferSize?: Vector2i; // drives drawing buffer + CSS, enables display tier
@@ -312,7 +316,7 @@ not yet implemented.
 Extend `FullscreenEffect` when sampling RGBA at output resolution. Subclasses provide one WGSL fragment shader (`src` +
 `sampler`), declare `tier = 'display'`, set `uniformBytes`, and implement `writeUniforms`.
 
-```ts
+```ts twoslash
 import { FullscreenEffect, type Vector2i } from 'blit386';
 
 export class GammaEffect extends FullscreenEffect {
