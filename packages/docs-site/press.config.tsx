@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { defineConfig } from 'fumapress';
 import { fumadocsMdx } from 'fumapress/adapters/mdx';
 import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
@@ -17,18 +19,33 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
 import { docs } from './.source/server';
 
+let _departureMono: Buffer | undefined;
+const getDepartureMono = () =>
+    (_departureMono ??= readFileSync(join(process.cwd(), 'public/fonts/DepartureMono-Regular.otf')));
+
+let _ogLogo: string | undefined;
+const getOgLogoDataUrl = () => {
+    if (_ogLogo) return _ogLogo;
+    const data = readFileSync(join(process.cwd(), 'public/og-logo.png'));
+    _ogLogo = `data:image/png;base64,${data.toString('base64')}`;
+    return _ogLogo;
+};
+
 export default defineConfig({
     content: docs.toFumadocsSource(),
+
     // Build a fully static site. On Cloudflare Workers the dynamic FlexSearch
     // endpoint rebuilt the entire index per cold isolate, exceeding the Worker
     // resource limits (error 1102) and intermittently 503-ing /api/search - so
     // search only ever worked on localhost. In static mode the index is built
     // at build time, shipped as a static asset, and queried client-side.
     mode: 'static',
+
     site: {
         name: 'BLIT386',
         baseUrl: 'https://blit386.dev',
     },
+
     meta: {
         root: () => (
             <>
@@ -48,12 +65,73 @@ export default defineConfig({
     // avoid the llms middleware issuing a 302 to the `.md` file instead.
     .plugins(
         flexsearchPlugin(),
+
         markdownNegotiationPlugin(),
+
         llmsPlugin({ autoRedirect: false }),
         sitemapPlugin(),
         mcpServerPlugin(),
-        takumiPlugin(),
+
+        takumiPlugin({
+            generate(page) {
+                return {
+                    options: {
+                        fonts: [{ name: 'DepartureMono', data: getDepartureMono() }],
+                    },
+                    node: (
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                padding: '60px 72px',
+                                width: '100%',
+                                height: '100%',
+                                background: '#c2c3c7',
+                                fontFamily: 'DepartureMono',
+                            }}
+                        >
+                            <img
+                                src={getOgLogoDataUrl()}
+                                width={180}
+                                height={156}
+                                style={{ display: 'flex', marginTop: '10px' }}
+                                alt="BLIT386 Logo"
+                            />
+
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <div
+                                    style={{
+                                        fontSize: 64,
+                                        color: '#000000',
+                                        lineHeight: 1.1,
+                                        marginBottom: 24,
+                                    }}
+                                >
+                                    {page.data.title}
+                                </div>
+
+                                {page.data.description && (
+                                    <div
+                                        style={{
+                                            fontSize: 22,
+                                            color: '#555',
+                                            lineHeight: 1.4,
+                                            textWrap: 'balance',
+                                            marginLeft: '-2px',
+                                        }}
+                                    >
+                                        {page.data.description}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ),
+                };
+            },
+        }),
     )
+
     .adapters(
         // Extend the default MDX component map so the engine docs can use the full
         // Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,
