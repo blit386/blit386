@@ -76,7 +76,12 @@ patterns for managing allocations:
 
 When to use: UI code, one-time operations, and anywhere readability matters more than performance.
 
-```ts
+```ts twoslash
+import { BT, type BitmapFont, Rect2i, Vector2i } from 'blit386';
+declare const x: number;
+declare const y: number;
+declare const font: BitmapFont;
+// ---cut---
 // Clear and readable – palette indices, not Color32
 const WHITE = 1;
 BT.drawPixel(new Vector2i(x, y), WHITE);
@@ -101,7 +106,12 @@ Cons:
 
 When to use: Tight loops that run 50+ times per frame.
 
-```ts
+```ts twoslash
+import { BT, type IBTDemo, Rect2i, Vector2i } from 'blit386';
+declare const x: number;
+declare const y: number;
+declare const color: number;
+// ---cut---
 class MyDemo implements IBTDemo {
   // Pre-allocate reusable objects
   private readonly tempVec = new Vector2i(0, 0);
@@ -157,7 +167,23 @@ BLIT386 automatically batches draw calls for optimal GPU performance:
 
 Optimization tips:
 
-```ts
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const enemySheet: SpriteSheet;
+declare const playerSheet: SpriteSheet;
+interface Enemy {
+  sprite: Rect2i;
+  pos: Vector2i;
+  paletteOffset: number;
+}
+declare const enemies: Enemy[];
+const sprite1 = new Rect2i(0, 0, 16, 16);
+const sprite2 = new Rect2i(0, 0, 16, 16);
+const sprite3 = new Rect2i(0, 0, 16, 16);
+const pos1 = new Vector2i(0, 0);
+const pos2 = new Vector2i(16, 0);
+const pos3 = new Vector2i(32, 0);
+// ---cut---
 // Good: All sprites from same sheet
 for (const enemy of enemies) {
   BT.drawSprite(enemySheet, enemy.sprite, enemy.pos, enemy.paletteOffset);
@@ -188,7 +214,12 @@ Less optimal:
 Changing `paletteOffset` per draw is cheap – it shifts stored texel indices before palette lookup, not RGBA tint
 multiplication:
 
-```ts
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+const sprite = new Rect2i(0, 0, 16, 16);
+const pos = new Vector2i(0, 0);
+// ---cut---
 // Same performance – offset is a uniform add, not per-pixel color math
 BT.drawSprite(sheet, sprite, pos);
 BT.drawSprite(sheet, sprite, pos, 16); // team-color range
@@ -215,7 +246,12 @@ This produces the classic "staircase" look expected in retro demos but requires 
 
 Optimization tips for diagonal lines:
 
-```ts
+```ts twoslash
+import { BT, Vector2i } from 'blit386';
+declare const color: number;
+const p1 = new Vector2i(0, 0);
+const p2 = new Vector2i(100, 100);
+// ---cut---
 // GOOD: Grid lines (axis-aligned) are very cheap
 for (let x = 0; x < 800; x += 40) {
   BT.drawLine(new Vector2i(x, 0), new Vector2i(x, 600), color); // 6 vertices each
@@ -250,7 +286,13 @@ still runs at the browser's refresh rate. This provides:
 
 ### Using ticks for timing
 
-```ts
+```ts twoslash
+import { BT } from 'blit386';
+declare function performAction(): void;
+declare let lastActionTick: number;
+declare let elapsedTime: number;
+declare const deltaTime: number;
+// ---cut---
 // Frame-based timer (recommended)
 if (BT.ticks - lastActionTick >= 60) {
   performAction();
@@ -285,18 +327,25 @@ If your `update()` or `render()` takes too long:
 
 <Accordion title="1. Premature optimization">
 
-```ts
+```ts twoslash
+import { BT, type BitmapFont, Vector2i } from 'blit386';
+declare const font: BitmapFont;
+// ---cut---
 // BAD: Over-engineering simple UI code
-private readonly uiVec = new Vector2i(0, 0);
+class BadDemo {
+  private readonly uiVec = new Vector2i(0, 0);
 
-drawUI(): void {
+  drawUI(): void {
     this.uiVec.set(10, 10);
-    BT.printFont(font, this.uiVec, "Score: 0"); // Only called once per frame!
+    BT.printFont(font, this.uiVec, 'Score: 0'); // Only called once per frame!
+  }
 }
 
 // GOOD: Keep it simple
-drawUI(): void {
-    BT.printFont(font, new Vector2i(10, 10), "Score: 0");
+class GoodDemo {
+  drawUI(): void {
+    BT.printFont(font, new Vector2i(10, 10), 'Score: 0');
+  }
 }
 ```
 
@@ -315,7 +364,9 @@ Don't guess what's slow – measure it. Use:
 
 <Accordion title="3. Allocating in hot paths">
 
-```ts
+```ts twoslash
+import { BT, Vector2i } from 'blit386';
+// ---cut---
 // BAD: Allocating Vector2i in a tight loop (see pre-allocation section)
 for (let i = 0; i < 1000; i++) {
   BT.drawPixel(new Vector2i(i, 0), 1); // 60,000 Vector2i allocations/sec!
@@ -333,24 +384,40 @@ for (let i = 0; i < 1000; i++) {
 
 <Accordion title="4. Excessive string concatenation">
 
-```ts
+```ts twoslash
+import { BT, type BitmapFont, Vector2i } from 'blit386';
+declare const font: BitmapFont;
+const pos = new Vector2i(10, 10);
+// ---cut---
 // BAD: Creates new string every frame
-render(): void {
-    BT.printFont(font, pos, "Score: " + this.score); // String allocation!
+class BadStringDemo {
+  score = 0;
+
+  render(): void {
+    BT.printFont(font, pos, 'Score: ' + this.score); // String allocation!
+  }
 }
 
 // BETTER: Template strings (still allocates, but cleaner)
-render(): void {
+class BetterStringDemo {
+  score = 0;
+
+  render(): void {
     BT.printFont(font, pos, `Score: ${this.score}`);
+  }
 }
 
 // BEST: Only update when score changes
-updateScore(newScore: number): void {
-    this.scoreText = `Score: ${newScore}`;
-}
+class BestStringDemo {
+  scoreText = 'Score: 0';
 
-render(): void {
+  updateScore(newScore: number): void {
+    this.scoreText = `Score: ${newScore}`;
+  }
+
+  render(): void {
     BT.printFont(font, pos, this.scoreText); // Reuse string
+  }
 }
 ```
 

@@ -18,7 +18,9 @@ per-character offsets, Unicode characters, and either embedded or external textu
 The engine includes a 6×14 monospace bitmap font covering printable ASCII (characters 32-126). It requires no file
 loading and is available immediately after initialization:
 
-```ts
+```ts twoslash
+import { BT, Vector2i } from 'blit386';
+// ---cut---
 // Draw text with the system font (palette index selects the color)
 BT.systemPrint(new Vector2i(10, 10), 1, 'Hello World!');
 
@@ -45,7 +47,7 @@ For proportional fonts, Unicode support, or custom aesthetics, load a `.btfont` 
 
 ## Quick start
 
-```ts
+```ts twoslash
 import { BitmapFont, BT, Palette, Vector2i } from 'blit386';
 
 // Load a font and register its colors in the palette
@@ -309,23 +311,26 @@ Point it at the PNG filename, or embed it as base64.
 
 ### BitmapFont
 
-```ts
-class BitmapFont {
-  // Load from .btfont file
-  static async load(url: string): Promise<BitmapFont>;
-
-  // Properties
+```ts twoslash
+import { type Rect2i, type TextSize, type SpriteSheet } from 'blit386';
+interface Glyph {
+  rect: Rect2i;
+  offsetX: number;
+  offsetY: number;
+  advance: number;
+}
+// ---cut---
+declare class BitmapFont {
+  static load(url: string): Promise<BitmapFont>;
   readonly name: string;
   readonly size: number;
   readonly lineHeight: number;
   readonly baseline: number;
   readonly glyphCount: number;
-
-  // Methods
   getGlyph(char: string): Glyph | null;
   measureText(text: string): number;
-  measureTextSize(text: string): { width: number; height: number };
-  measureTextSizeInto(text: string, out: { width: number; height: number }): void;
+  measureTextSize(text: string): TextSize;
+  measureTextSizeInto(text: string, out: TextSize): TextSize;
   hasGlyph(char: string): boolean;
   getSpriteSheet(): SpriteSheet;
 }
@@ -335,20 +340,25 @@ Exported type `TextSize` is `{ width: number; height: number }`.
 
 ### BT.printFont()
 
-```ts
-BT.printFont(
-  font: BitmapFont,       // The loaded font (sprite sheet must be indexized)
-  pos: Vector2i,          // Position (top-left corner)
-  text: string,           // Text to render
-  paletteOffset?: number // Per-draw index shift (default 0); not a Color32
-): void;
+```ts twoslash
+import { BT, type BitmapFont, type Vector2i } from 'blit386';
+declare const font: BitmapFont;
+declare const pos: Vector2i;
+declare const text: string;
+declare const paletteOffset: number;
+// ---cut---
+BT.printFont(font, pos, text);
+BT.printFont(font, pos, text, paletteOffset); // Per-draw index shift (default 0); not a Color32
 ```
 
 ## Examples
 
 ### Multi-line text
 
-```ts
+```ts twoslash
+import { BT, type BitmapFont, Vector2i } from 'blit386';
+declare const font: BitmapFont;
+// ---cut---
 const lines = ['Line 1', 'Line 2', 'Line 3'];
 let y = 10;
 
@@ -360,7 +370,10 @@ for (const line of lines) {
 
 ### Centered text
 
-```ts
+```ts twoslash
+import { BT, type BitmapFont, Vector2i } from 'blit386';
+declare const font: BitmapFont;
+// ---cut---
 const text = 'Centered';
 const textWidth = font.measureText(text);
 const screenWidth = BT.displaySize.x;
@@ -371,7 +384,11 @@ BT.printFont(font, new Vector2i(x, 10), text);
 
 ### Per-character palette offsets
 
-```ts
+```ts twoslash
+import { BT, type BitmapFont, Vector2i } from 'blit386';
+declare const font: BitmapFont;
+declare const text: string;
+// ---cut---
 let x = 10;
 for (let i = 0; i < text.length; i++) {
   const char = text[i];

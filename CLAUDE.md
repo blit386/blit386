@@ -119,6 +119,44 @@ Authoring rules (learned the hard way; keep the build green):
 - Validate before considering it done: in `blit386-dev-fumapress`, run `pnpm run sync:docs` then `pnpm run build` (or at
   least `pnpm run typecheck`). An undefined component or malformed prop fails the build, which would break the deploy.
 
+## Twoslash in published docs
+
+All TypeScript code blocks in published docs (`docs/api-*.md`, `docs/guide-*.md`, `docs/performance-*.md`,
+`docs/reference-*.md`) must use ` ```ts twoslash `. Plain ` ```ts ` is never acceptable in published docs. This is
+non-negotiable — the live site (blit386.dev) uses fumadocs-twoslash for type-on-hover popups.
+
+Every block must compile cleanly on its own. Two patterns:
+
+Self-contained block — full imports at the top, no cut needed:
+
+```ts twoslash
+import { BT, Color32, Palette } from 'blit386';
+const palette = Palette.c64();
+BT.paletteSet(palette);
+```
+
+Fragment block — shows a partial snippet whose variables come from surrounding prose — add a hidden preamble then
+`// ---cut---`. Everything above the cut is compiled but hidden from the reader:
+
+```ts twoslash
+import { BT, Palette } from 'blit386';
+const nightPalette = Palette.vga();
+// ---cut---
+BT.paletteFade(nightPalette, 2000, 'ease-in-out');
+```
+
+Preamble rules:
+
+- One `import { ... } from 'blit386'` line covering all engine names used in the block.
+- `const x = new Type(...)` for constructible types: `Palette`, `Vector2i`, `Rect2i`, `Color32`.
+- `declare const x: Type` for non-constructible types: `SpriteSheet`, `BitmapFont`.
+- `declare const indexed: { sheet: SpriteSheet; srcRect: Rect2i };` for `indexed.sheet` / `indexed.srcRect` patterns.
+- Named palette vars (`nightPalette`, `dangerPalette`, etc.): `const nightPalette = Palette.vga();`
+- Generic position/rect context vars: `const pos = new Vector2i(0, 0);`, `const rect = new Rect2i(0, 0, 320, 240);`
+
+After adding or editing a block, always verify: in `blit386-dev-fumapress` run `pnpm run sync:docs && pnpm run build`. A
+Twoslash compilation error fails the production build. Fix the preamble rather than adding `// @noErrors`.
+
 ## Documentation authoring style
 
 House style for the Markdown under `docs/` (the published reference and guides). This is about authoring the docs
