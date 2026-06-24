@@ -4,8 +4,29 @@
 @import 'fumapress/css/preset.css';
 @import 'fumadocs-twoslash/twoslash.css';
 
+@font-face {
+    font-family: 'SwearDeck';
+    src: url('https://fonts.vancura.dev/SwearDeck-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PragmataPro';
+    src: url('https://fonts.vancura.dev/PragmataPro-R.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-    --font-mono: 'PragmataPro Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-heading: 'SwearDeck', serif;
+    --font-mono: 'PragmataPro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-heading);
 }
 
 .shiki code {
