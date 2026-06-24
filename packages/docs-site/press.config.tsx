@@ -70,7 +70,26 @@ export default defineConfig({
         markdownNegotiationPlugin(),
 
         llmsPlugin({ autoRedirect: false }),
-        sitemapPlugin(),
+
+        sitemapPlugin({
+            getEntry(page) {
+                const url = page.url;
+                let priority = 0.7;
+                let changefreq: 'weekly' | 'monthly' = 'monthly';
+
+                if (url === '/') {
+                    priority = 1.0;
+                    changefreq = 'weekly';
+                } else if (url === '/docs/getting-started') {
+                    priority = 0.9;
+                } else if (url.startsWith('/docs') && !url.includes('/api/')) {
+                    priority = 0.8;
+                }
+
+                return { loc: `${this.siteConfig.baseUrl}${url}`, priority, changefreq };
+            },
+        }),
+
         mcpServerPlugin(),
 
         takumiPlugin({
