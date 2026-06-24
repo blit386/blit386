@@ -20,6 +20,9 @@ Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
   of contents (the site provides one); components only render on the site, so keep contributor-only docs plain Markdown.
   Adding a component the site does not register (`blit386-dev-fumapress/press.config.tsx`) breaks the build — register
   it there first, then verify with `pnpm run sync:docs` + `pnpm run build` in that repo.
+- TypeScript code blocks in published docs must use ` ```ts twoslash ` (never plain ` ```ts `). Each block must compile
+  on its own: self-contained blocks carry their own imports; fragment blocks add a hidden preamble above `// ---cut---`.
+  Full rules in `CLAUDE.md` (Twoslash in published docs) and `.claude/rules/twoslash-docs.md`.
 - Doc prose house style (see `CLAUDE.md` Documentation authoring style): no bold (`**`) in prose, no `---` separators,
   `×` (not `x`) for dimensions except literal program output, break up walls of text, every `###` needs a parent `##`,
   credit external inspirations with link + author. Published-doc filenames mirror the sitemap section (`api-*`,

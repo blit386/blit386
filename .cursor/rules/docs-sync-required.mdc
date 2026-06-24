@@ -35,6 +35,9 @@ alwaysApply: false
   its own); components render only on the live site, so leave contributor-only docs as plain Markdown. Any component
   used must be registered in `blit386-dev-fumapress/press.config.tsx` (`getMdxComponents`) or the build fails — verify
   with `pnpm run sync:docs` + `pnpm run build` (or `typecheck`) in that repo.
+- TypeScript code blocks in published docs must use ` ```ts twoslash ` (never plain ` ```ts `). Each block must compile
+  on its own: self-contained blocks carry their own imports; fragment blocks add a hidden preamble above `// ---cut---`.
+  Full rules in `CLAUDE.md` (**Twoslash in published docs**) and `.cursor/rules/twoslash-docs.mdc`.
 - Follow the doc prose house style (`CLAUDE.md` **Documentation authoring style**): no bold (`**`) in prose, no `---`
   separators, the `×` sign (not `x`) for dimensions except literal program output, break up walls of text, every `###`
   has a parent `##`, and credit external inspirations with a link and author. Published-doc filenames mirror the sitemap
