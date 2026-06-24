@@ -126,7 +126,7 @@ tests/visual/
 
 ## Writing a new test
 
-```ts
+```ts twoslash
 import { describe, expect, it } from 'vitest';
 
 import { MyClass } from './MyClass';
@@ -168,7 +168,7 @@ Use these patterns when adding or reviewing palette-related features:
 
 For tests that need GPU objects, import from the mock factory:
 
-```ts
+```ts twoslash
 import { createMockGPUDevice, createMockGPUTexture } from '../__test__/webgpu-mock';
 
 const device = createMockGPUDevice();

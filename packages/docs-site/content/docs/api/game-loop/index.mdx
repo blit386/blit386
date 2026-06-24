@@ -17,7 +17,9 @@ BLIT386 runs two independent cadences:
 `render()` may run more or fewer times per second than `update()` (for example 120 Hz display with `targetFPS: 60`). Use
 tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks.
 
-```ts
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 BT.deltaSeconds; // seconds per fixed tick (1 / BT.targetFPS)
 BT.timeSeconds; // elapsed seconds since init (ticks × deltaSeconds)
 BT.ticks; // current tick counter (increments each update)
@@ -30,7 +32,10 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 `Timer` counts fixed update ticks, not render frames. Intervals are in ticks; convert to seconds with
 `intervalTicks / BT.targetFPS`. Use it in `update()` for periodic events: particle spawns, score ticks, palette swaps.
 
-```ts
+```ts twoslash
+import { Timer } from 'blit386';
+declare function spawnEnemy(): void;
+// ---cut---
 const spawn = new Timer(180); // every 180 ticks (3 s when BT.targetFPS === 60)
 
 // Inside update():

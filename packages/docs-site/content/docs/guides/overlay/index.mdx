@@ -83,12 +83,14 @@ background, label, header, dim, FPS) and register `hud_*` name aliases. See
 [API: Palette – applyHUD](/docs/api/palette#built-in-presets) and
 [Palette Presets – HUD](/docs/guides/palette-presets#hud-preset).
 
-```ts
+```ts twoslash
+import { BT, Palette, Vector2i } from 'blit386';
+// ---cut---
 const palette = Palette.vga();
 palette.applyHUD(1); // slots 1-6 + hud_* aliases
 BT.paletteSet(palette);
 
-BT.systemPrint(new Vector2i(8, 8), palette.getIndex('hud_label'), 'Custom row');
+BT.systemPrint(new Vector2i(8, 8), palette.getNamed('hud_label'), 'Custom row');
 ```
 
 ## Present FPS vs. target FPS

@@ -141,10 +141,14 @@ custom rows, and the bottom band (palette grid plus hint bar).
 - Reuse the same array and row objects when possible; update `leftText` / `rightText` in place to avoid per-frame
   allocations.
 
-```ts
+```ts twoslash
+import { type IBTDemo } from 'blit386';
+// ---cut---
 /** @implements {IBTDemo} */
 class Demo {
   readonly #overlayRows = [{ leftText: 'Position: 0, 0' }, { leftText: 'Score: 0', rightText: 'ready' }];
+  pos = { x: 0, y: 0 };
+  score = 0;
 
   overlayRows() {
     this.#overlayRows[0].leftText = `Position: ${this.pos.x}, ${this.pos.y}`;
@@ -235,17 +239,23 @@ bottomReserve = paletteGridHeight + 1 + 13
 - Implementation lives in `src/overlay/palette/PaletteView.ts` (`computeGrid`, `pickGridColumnCount`,
   `resolveGridVisibleRows`).
 
-```ts
+```ts twoslash
+import { type HardwareSettings, Vector2i } from 'blit386';
+// ---cut---
 // Overlay off (release build or custom full-screen HUD).
-configure() {
+function configure(): Partial<HardwareSettings> {
   return {
     displaySize: new Vector2i(320, 240),
     isOverlayEnabled: false,
   };
 }
+```
 
+```ts twoslash
+import { type HardwareSettings, Vector2i } from 'blit386';
+// ---cut---
 // Overlay on with palette grid and timing chart.
-configure() {
+function configure(): Partial<HardwareSettings> {
   return {
     displaySize: new Vector2i(320, 240),
     isOverlayEnabled: true,
