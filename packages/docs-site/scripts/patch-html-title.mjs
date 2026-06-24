@@ -12,7 +12,7 @@ const PREFIX = 'BLIT386 – ';
 function patchFile(filePath) {
     const original = readFileSync(filePath, 'utf8');
 
-    let patched = original
+    const patched = original
         // <title> - one per page, no prefix guard needed (script skips root)
         .replace(/<title>([^<]+)<\/title>/, `<title>${PREFIX}$1</title>`)
 
