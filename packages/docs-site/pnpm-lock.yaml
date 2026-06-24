@@ -60,12 +60,18 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
+      blit386:
+        specifier: ^1.2.0
+        version: 1.2.1
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
       cspell:
         specifier: ^10.0.0
         version: 10.0.1
+      fumadocs-twoslash:
+        specifier: ^3.2.0
+        version: 3.2.0(eb3f5fde131951a75d56ddc2a5bb9518)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -1621,6 +1627,12 @@ packages:
     resolution: {integrity: sha512-RX8IHYeLv8Cu2W6ruc3RxUqWn0IYCqSrMBzi/uRGAmfyDNOnNO5BF/Px7o97n4XTpmFTo5GbRaazuOWj+2ak2w==}
     engines: {node: '>=20'}
 
+  '@shikijs/twoslash@4.2.0':
+    resolution: {integrity: sha512-PG/F0tMyt4zAvHVBL7Ehtk/ZpI2Rq3PwaXRYJaOO41eIK/iV9GOO/20jZhQkScOdcP6aFwHC2/x/GxmeR4tMlA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      typescript: '>=5.5.0'
+
   '@shikijs/types@4.2.0':
     resolution: {integrity: sha512-VT/MKtlpOhEPZloSH3Pb9WCZEBDoQVMa9jedp5UAwmJOar1DVc9DRODAxmYPW9M93IK4ryuqRejFfmlvlVDemw==}
     engines: {node: '>=20'}
@@ -1852,6 +1864,11 @@ packages:
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
+  '@typescript/vfs@1.6.4':
+    resolution: {integrity: sha512-PJFXFS4ZJKiJ9Qiuix6Dz/OwEIqHD7Dme1UwZhTK11vR+5dqW2ACbdndWQexBzCx+CPuMe5WBYQWCsFyGlQLlQ==}
+    peerDependencies:
+      typescript: '*'
+
   '@ungap/structured-clone@1.3.1':
     resolution: {integrity: sha512-mUFwbeTqrVgDQxFveS+df2yfap6iuP20NAKAsBt5jDEoOTDew+zwLAOilHCeQJOVSvmgCX4ogqIrA0mnyr08yQ==}
 
@@ -2028,6 +2045,10 @@ packages:
 
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
+
+  blit386@1.2.1:
+    resolution: {integrity: sha512-6x4Yl0xQKAMN+zhmeNFz0VyTY4DcTvAmq4NWsTB8eUCTMOAS46idG7I8Ikaokvup3gv2IZFM+PbF93YB/hAH4w==}
+    engines: {node: '>=22.18.0'}
 
   boolbase@1.0.0:
     resolution: {integrity: sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==}
@@ -2568,6 +2589,19 @@ packages:
       rolldown:
         optional: true
       vite:
+        optional: true
+
+  fumadocs-twoslash@3.2.0:
+    resolution: {integrity: sha512-hzoxc2HR9dw2z5T1NNLYCbMY1DFiSF71+X2KJS4t/BalRyiBxpCcP9zAyzofba07YkrGhZ6xW3B105EcpNI2Vw==}
+    peerDependencies:
+      '@types/react': '*'
+      fumadocs-core: ^16.7.16
+      fumadocs-ui: ^16.7.16
+      react: ^19.2.0
+      react-dom: ^19.2.0
+      shiki: 4.x.x
+    peerDependenciesMeta:
+      '@types/react':
         optional: true
 
   fumadocs-ui@16.10.4:
@@ -3622,6 +3656,14 @@ packages:
 
   turbo-stream@3.2.0:
     resolution: {integrity: sha512-EK+bZ9UVrVh7JLslVFOV0GEMsociOqVOvEMTAd4ixMyffN5YNIEdLZWXUx5PJqDbTxSIBWw04HS9gCY4frYQDQ==}
+
+  twoslash-protocol@0.3.9:
+    resolution: {integrity: sha512-9/iwp+CXOnjFMPQuPL5PkuRbZnDoNpBvtJCLs9t8kDYkL3YHujbvnHfZA1i5fApDftVEdBw+T/4F+dH5kIzpYQ==}
+
+  twoslash@0.3.9:
+    resolution: {integrity: sha512-rDclk+OtzuTX+tnea7DYLCkqGQ3eP0IyfD+kzUJ7t46X/NzlaxwrhecmEBNuSCuEn3V+n1PhcjUUQQ7gUJzX5Q==}
+    peerDependencies:
+      typescript: ^5.5.0 || ^6.0.0
 
   typescript@6.0.3:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
@@ -5202,6 +5244,15 @@ snapshots:
     dependencies:
       '@shikijs/types': 4.2.0
 
+  '@shikijs/twoslash@4.2.0(typescript@6.0.3)':
+    dependencies:
+      '@shikijs/core': 4.2.0
+      '@shikijs/types': 4.2.0
+      twoslash: 0.3.9(typescript@6.0.3)
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@shikijs/types@4.2.0':
     dependencies:
       '@shikijs/vscode-textmate': 10.0.2
@@ -5395,6 +5446,13 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
+  '@typescript/vfs@1.6.4(typescript@6.0.3)':
+    dependencies:
+      debug: 4.4.3
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@ungap/structured-clone@1.3.1': {}
 
   '@vitejs/plugin-react@6.0.2(vite@8.0.16(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0))':
@@ -5569,6 +5627,8 @@ snapshots:
   basic-ftp@5.3.1: {}
 
   blake3-wasm@2.1.5: {}
+
+  blit386@1.2.1: {}
 
   boolbase@1.0.0: {}
 
@@ -6131,6 +6191,27 @@ snapshots:
       vite: 8.0.16(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(yaml@2.9.0)
     transitivePeerDependencies:
       - supports-color
+
+  fumadocs-twoslash@3.2.0(eb3f5fde131951a75d56ddc2a5bb9518):
+    dependencies:
+      '@radix-ui/react-popover': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@shikijs/twoslash': 4.2.0(typescript@6.0.3)
+      fumadocs-core: 16.10.4(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.4)(@types/mdast@4.0.4)(@types/react@19.2.17)(flexsearch@0.8.212)(lucide-react@1.21.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(waku@1.0.0-beta.3(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.107.2(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(yaml@2.9.0))(zod@4.4.3)
+      fumadocs-ui: 16.10.4(@tailwindcss/oxide@4.3.1)(@takumi-rs/image-response@1.8.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.10.4(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.4)(@types/mdast@4.0.4)(@types/react@19.2.17)(flexsearch@0.8.212)(lucide-react@1.21.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(waku@1.0.0-beta.3(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.107.2(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(yaml@2.9.0))(zod@4.4.3))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
+      mdast-util-from-markdown: 2.0.3
+      mdast-util-gfm: 3.1.0
+      mdast-util-to-hast: 13.2.1
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      shiki: 4.2.0
+      tailwind-merge: 3.6.0
+      twoslash: 0.3.9(typescript@6.0.3)
+    optionalDependencies:
+      '@types/react': 19.2.17
+    transitivePeerDependencies:
+      - '@types/react-dom'
+      - supports-color
+      - typescript
 
   fumadocs-ui@16.10.4(@tailwindcss/oxide@4.3.1)(@takumi-rs/image-response@1.8.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/mdx@2.0.14)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(fumadocs-core@16.10.4(@mdx-js/mdx@3.1.1)(@types/estree-jsx@1.0.5)(@types/hast@3.0.4)(@types/mdast@4.0.4)(@types/react@19.2.17)(flexsearch@0.8.212)(lucide-react@1.21.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(waku@1.0.0-beta.3(@types/node@25.9.4)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react-server-dom-webpack@19.2.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(webpack@5.107.2(esbuild@0.28.1)))(react@19.2.7)(terser@5.48.0)(yaml@2.9.0))(zod@4.4.3))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1):
     dependencies:
@@ -7640,6 +7721,16 @@ snapshots:
   tslib@2.8.1: {}
 
   turbo-stream@3.2.0: {}
+
+  twoslash-protocol@0.3.9: {}
+
+  twoslash@0.3.9(typescript@6.0.3):
+    dependencies:
+      '@typescript/vfs': 1.6.4(typescript@6.0.3)
+      twoslash-protocol: 0.3.9
+      typescript: 6.0.3
+    transitivePeerDependencies:
+      - supports-color
 
   typescript@6.0.3: {}
 

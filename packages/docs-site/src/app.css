@@ -1,4 +1,13 @@
-@import "tailwindcss";
-@import "fumadocs-ui/css/neutral.css";
-@import "fumadocs-ui/css/preset.css";
-@import "fumapress/css/preset.css";
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+@import 'fumapress/css/preset.css';
+@import 'fumadocs-twoslash/twoslash.css';
+
+@theme {
+    --font-mono: 'PragmataPro Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.shiki code {
+    line-height: 2;
+}

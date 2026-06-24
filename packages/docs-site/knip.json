@@ -4,6 +4,6 @@
   "project": ["src/**/*.css", "scripts/**/*.mjs"],
   "ignore": [".source/**", "src/pages.gen.ts", "dist/**"],
   "ignoreFiles": ["src/app.css"],
-  "ignoreDependencies": ["react-server-dom-webpack", "tailwindcss"],
+  "ignoreDependencies": ["blit386", "react-server-dom-webpack", "tailwindcss"],
   "ignoreExportsUsedInFile": true
 }

@@ -45,7 +45,7 @@
     "dev": "waku dev",
     "build": "fumadocs-mdx && cross-env CLOUDFLARE=1 waku build",
     "postbuild": "node scripts/patch-wrangler.mjs",
-    "start": "waku start",
+    "start": "wrangler dev --config dist/server/wrangler.json",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "types:check": "pnpm run typecheck",
     "lint": "biome check .",
@@ -88,6 +88,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
+    "blit386": "^1.2.0",
+    "fumadocs-twoslash": "^3.2.0",
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@tailwindcss/vite": "^4.3.0",

@@ -14,6 +14,7 @@ import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
 import { docs } from './.source/server';
 
 export default defineConfig({
@@ -76,6 +77,9 @@ export default defineConfig({
                     Tab,
                     Tabs,
                     TypeTable,
+                    Popup,
+                    PopupContent,
+                    PopupTrigger,
                 };
             },
         }),
