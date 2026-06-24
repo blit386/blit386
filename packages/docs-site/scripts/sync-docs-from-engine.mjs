@@ -197,7 +197,11 @@ const escapeMdxText = (text) =>
  * about comments that look like real content rather than tooling directives.
  */
 const transformBody = (markdown, sourceRepoDir) => {
-    const linkPattern = /(\[[^\]]*\])\(([^)]+)\)/gu;
+    // Matches an inline code span (group 1) OR a full markdown link whose label
+    // may itself contain inline code, e.g. [`code`](url) (groups 2+3). Processing
+    // left-to-right means code spans are consumed first, so link-like text inside
+    // a code span is never mistaken for a real link target.
+    const linkTokenPattern = /(`[^`]*`)|(\[(?:`[^`]*`|[^\]])*\])\(([^)]+)\)/gu;
     const inlineCodePattern = /(`[^`]*`)/u;
     const strippedComments = [];
     let isInFence = false;
@@ -268,9 +272,17 @@ const transformBody = (markdown, sourceRepoDir) => {
             return line;
         }
 
-        // Split on inline code spans (odd indices) so links and escaping apply
+        // Rewrite links on the full line first (before the code-span split) so
+        // that labels containing inline code, e.g. [`code`](url), are matched
+        // correctly. Code spans are consumed by the combined pattern and left
+        // unchanged; only complete link targets are rewritten.
+        const withLinks = stripComments(line).replace(linkTokenPattern, (match, codeSpan, label, target) =>
+            codeSpan ? match : `${label}(${rewriteTarget(target, sourceRepoDir)})`,
+        );
+
+        // Split on inline code spans (odd indices) so MDX escaping applies
         // only to prose, leaving `code` spans such as `texture_2d<u32>` intact.
-        const segments = stripComments(line).split(inlineCodePattern);
+        const segments = withLinks.split(inlineCodePattern);
 
         let opens = 0;
         let closes = 0;
@@ -296,12 +308,7 @@ const transformBody = (markdown, sourceRepoDir) => {
                     return segment;
                 }
 
-                const linked = segment.replace(
-                    linkPattern,
-                    (_match, label, target) => `${label}(${rewriteTarget(target, sourceRepoDir)})`,
-                );
-
-                return isMdxLine ? linked : escapeMdxText(linked);
+                return isMdxLine ? segment : escapeMdxText(segment);
             })
             .join('');
 
