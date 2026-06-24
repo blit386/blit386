@@ -12,7 +12,7 @@
 
 Palette fade effects accept an `EasingFunction`. Use `applyEasing` to evaluate named curves:
 
-```ts
+```ts twoslash
 import { applyEasing } from 'blit386';
 
 const t = applyEasing('ease-in-out', 0.5); // 0..1 progress → eased value

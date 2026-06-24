@@ -103,7 +103,7 @@ src/render/SpritePipeline.bench.ts
 
 ### Basic structure
 
-```ts
+```ts twoslash
 import { bench, describe } from 'vitest';
 
 import { MyType } from './MyType';

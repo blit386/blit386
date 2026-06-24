@@ -20,7 +20,16 @@ optional `paletteOffset` added to stored texel indices. See [Palette addressing]
 
 ## Primitives
 
-```ts
+```ts twoslash
+import { BT, Rect2i, Vector2i } from 'blit386';
+declare const paletteIndex: number;
+const rect = new Rect2i(0, 0, 320, 240);
+const pos = new Vector2i(0, 0);
+declare const x: number;
+declare const y: number;
+const p0 = new Vector2i(0, 0);
+const p1 = new Vector2i(100, 100);
+// ---cut---
 BT.clear(paletteIndex); // fill entire display
 BT.clearRect(rect, paletteIndex); // fill rectangular region
 
@@ -38,7 +47,13 @@ All primitives write palette indices, not RGBA – the active palette resolves c
 
 ### Drawing
 
-```ts
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+const srcRect = new Rect2i(0, 0, 32, 32);
+const destPos = new Vector2i(0, 0);
+declare const paletteOffset: number;
+// ---cut---
 BT.drawSprite(sheet, srcRect, destPos);
 BT.drawSprite(sheet, srcRect, destPos, paletteOffset);
 ```
@@ -65,7 +80,11 @@ the palette without re-uploading texels.
 - Clamping: the WebGPU sprite shader computes `combined = storedIndex + paletteOffset` and clamps with
   `index = min(combined, 255u)`, so any sum past `255` maps to palette slot `255`.
 
-```ts
+```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+const srcRect = new Rect2i(0, 0, 32, 32);
+// ---cut---
 BT.drawSprite(sheet, srcRect, new Vector2i(10, 10)); // normal
 BT.drawSprite(sheet, srcRect, new Vector2i(10, 10), 16); // blue-team shift
 ```
@@ -76,7 +95,9 @@ Draws are auto-batched by texture. Group draws from the same sheet to minimize G
 
 The following flags are defined for future use. They are not yet accepted by `BT.drawSprite()`:
 
-```ts
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 BT.FLIP_H; // horizontal flip
 BT.FLIP_V; // vertical flip
 BT.ROT_90_CW; // rotate 90° clockwise
@@ -86,7 +107,10 @@ BT.ROT_270_CW; // rotate 270° clockwise
 
 ### Refreshing after a palette-layout swap
 
-```ts
+```ts twoslash
+import { BT, Palette } from 'blit386';
+const newLayoutPalette = Palette.vga();
+// ---cut---
 BT.paletteSet(newLayoutPalette);
 BT.spritesRefresh(); // re-maps all tracked sheets to the new slot positions
 ```
@@ -106,7 +130,12 @@ RGBA values are gone.
 
 Built-in 6×14 monospace font covering printable ASCII (characters 32-126).
 
-```ts
+```ts twoslash
+import { BT, Vector2i } from 'blit386';
+const pos = new Vector2i(0, 0);
+declare const paletteIndex: number;
+declare const text: string;
+// ---cut---
 BT.systemPrint(pos, paletteIndex, text); // draw text at pos
 BT.systemPrintMeasure(text); // → Vector2i (pixel width × height)
 ```
@@ -115,7 +144,12 @@ BT.systemPrintMeasure(text); // → Vector2i (pixel width × height)
 
 Variable-width fonts from `.btfont` files. The font's sprite sheet must be indexized before use.
 
-```ts
+```ts twoslash
+import { BitmapFont, BT, Vector2i } from 'blit386';
+const pos = new Vector2i(0, 0);
+declare const text: string;
+declare const paletteOffset: number;
+// ---cut---
 const font = await BitmapFont.load('fonts/MyFont.btfont');
 BT.printFont(font, pos, text);
 BT.printFont(font, pos, text, paletteOffset); // palette-swap variant
@@ -144,7 +178,10 @@ error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
 
 </Callout>
 
-```ts
+```ts twoslash
+import { BT, BarrelDistortion, Scanlines, Bloom, PixelGlitch, type Effect } from 'blit386';
+declare const effect: Effect;
+// ---cut---
 // Add effect - routed to pixel or display chain by Effect.tier automatically
 BT.effectAdd(new BarrelDistortion());
 BT.effectAdd(new Scanlines());
@@ -182,7 +219,9 @@ See [Post-Process Effects Guide](guide-post-process-effects.md) for parameter re
 
 Capture the current rendered frame as a PNG.
 
-```ts
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // Resolves after the next render pass completes
 const blob = await BT.captureFrame();
 const url = URL.createObjectURL(blob);
