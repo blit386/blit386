@@ -1,6 +1,7 @@
 import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
 import { blogMetaSchema, blogPageSchema, metaSchema, pageSchema } from 'fumapress/adapters/mdx/schema';
 import { transformerTwoslash } from 'fumadocs-twoslash';
+import { z } from 'zod';
 
 // Twoslash spins up a TypeScript language service that loads blit386.d.ts plus
 // WebGPU types for every MDX file. With 18 files the cumulative heap exceeds
@@ -49,7 +50,7 @@ export const blog = defineDocs({
 
     docs: {
         async: true,
-        schema: blogPageSchema,
+        schema: blogPageSchema.extend({ author: z.string().optional() }),
         postprocess: {
             includeProcessedMarkdown: true,
         },

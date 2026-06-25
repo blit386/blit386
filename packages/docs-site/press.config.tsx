@@ -11,6 +11,7 @@ import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
+import { AuthorByline } from './src/components/author-byline';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
@@ -237,6 +238,7 @@ export default defineConfig({
                     Popup,
                     PopupContent,
                     PopupTrigger,
+                    AuthorByline,
                 };
             },
         }),
