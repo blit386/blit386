@@ -8,6 +8,7 @@ import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
+import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
@@ -144,6 +145,8 @@ export default defineConfig({
         }),
 
         mcpServerPlugin(),
+
+        feedPlugin(),
 
         takumiPlugin({
             generate(page) {
