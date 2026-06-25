@@ -99,7 +99,12 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
                     ].join('\n');
                 })();
 
+                promise.catch(() => {
+                    feedCache.delete(loader);
+                });
+
                 feedCache.set(loader, promise);
+
                 return promise;
             };
 
