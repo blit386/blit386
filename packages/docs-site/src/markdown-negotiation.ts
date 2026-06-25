@@ -71,7 +71,7 @@ export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContex
                     }
 
                     // Otherwise emulate assets-first: serve the pre-built static asset.
-                    const assets = (c.env as { ASSETS?: AssetsBinding }).ASSETS;
+                    const assets = (c.env as { ASSETS?: AssetsBinding } | undefined)?.ASSETS;
                     if (assets) {
                         const response = await assets.fetch(c.req.raw);
                         if (response.status !== 404) {
