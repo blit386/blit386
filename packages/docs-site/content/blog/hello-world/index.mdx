@@ -1,16 +1,59 @@
 ---
-title: Hello World
-description: First BLIT386 blog post — a placeholder for testing the blog collection.
+title: Introducing BLIT386
+description:
+  BLIT386 is a palette-first WebGPU retro engine for the browser — here is what it does, how it works, and where it is
+  heading.
+date: 2026-06-25
 tags: [announcement]
 ---
 
-This is a placeholder blog post created to verify that the blog content collection, `blogPlugin`, and the multi-source
-`content` config are all wired up correctly.
+BLIT386 is a pixel-art rendering engine for TypeScript. It is palette-indexed by default, targets WebGPU, and falls back
+to a Canvas 2D software renderer when WebGPU is unavailable. The engine runs entirely in the browser, no server
+required.
 
-## What this tests
+## What BLIT386 gives you
 
-- `content/blog/**` is owned by the `blog` collection (type `'blog'`), not `docs`
-- The `blogPlugin` renders an index at `/blog` and a per-post layout
-- The `docs` collection explicit-include list excludes `content/blog/**`
+A fixed 256-entry color palette and integer coordinates throughout. Sprites are loaded as `SpriteSheet` instances, fonts
+as `.btfont` bitmaps, and all draw calls go through the static `BT` namespace — `BT.drawSprite`, `BT.drawText`,
+`BT.drawRect`, and so on.
 
-Delete this file once a real post exists.
+The dual-backend design means the same demo code runs on WebGPU hardware and on older or locked-down devices without any
+changes. The active backend is queryable at runtime via `BT.activeBackend`.
+
+## Getting started
+
+The quickest path is the scaffolder:
+
+```bash
+npm create blit386@latest my-game
+```
+
+That drops a ready-to-run Catcher starter, a Vite config, and the `blit` CLI into a new directory. Run `blit run` to
+start the dev server.
+
+For manual setup, add the package and call `bootstrap`:
+
+```ts
+import { bootstrap, BT } from 'blit386';
+
+class MyDemo {
+  async init() {
+    await BT.loadPalette('vga');
+  }
+  render() {
+    BT.clearScreen();
+    BT.drawText({ x: 8, y: 8 }, 'Hello, BLIT386', 15);
+  }
+}
+
+bootstrap(MyDemo);
+```
+
+## What is next
+
+The interactive demo collection at [demos.blit386.dev](https://demos.blit386.dev) covers primitives, sprites, palette
+effects, tilemap rendering, pointer and keyboard input, and a small Snake game. Each demo is a single self-contained
+JavaScript file.
+
+The docs on this site are generated directly from the engine source — if something is missing or wrong, the fix goes
+into the engine repo and propagates here on the next sync.
