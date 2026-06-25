@@ -6,6 +6,7 @@ import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
 import { linkValidationPlugin } from 'fumapress/plugins/link-validation';
 import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { sitemapPlugin } from 'fumapress/plugins/sitemap';
+import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
@@ -18,7 +19,7 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
-import { docs } from './.source/server';
+import { blog, docs } from './.source/server';
 
 let _departureMono: Buffer | undefined;
 const getDepartureMono = () =>
@@ -33,7 +34,10 @@ const getOgLogoDataUrl = () => {
 };
 
 export default defineConfig({
-    content: docs.toFumadocsSource(),
+    content: {
+        docs: docs.toFumadocsSource(),
+        blog: blog.toFumadocsSource({ baseDir: 'blog' }),
+    },
 
     // Build a fully static site. On Cloudflare Workers the dynamic FlexSearch
     // endpoint rebuilt the entire index per cold isolate, exceeding the Worker
@@ -110,6 +114,8 @@ export default defineConfig({
     // avoid the llms middleware issuing a 302 to the `.md` file instead.
     .plugins(
         flexsearchPlugin(),
+
+        blogPlugin(),
 
         markdownNegotiationPlugin(),
 

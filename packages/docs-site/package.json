@@ -77,6 +77,7 @@
     ]
   },
   "dependencies": {
+    "@fuma-translate/react": "^1.0.2",
     "fumadocs-core": "^16.10.2",
     "fumadocs-mdx": "^15.0.12",
     "fumadocs-ui": "^16.10.2",
@@ -88,8 +89,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
-    "blit386": "^1.2.0",
-    "fumadocs-twoslash": "^3.2.0",
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@tailwindcss/vite": "^4.3.0",
@@ -97,8 +96,10 @@
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "blit386": "^1.2.0",
     "cross-env": "^7.0.3",
     "cspell": "^10.0.0",
+    "fumadocs-twoslash": "^3.2.0",
     "husky": "^9.1.7",
     "knip": "^6.14.2",
     "lint-staged": "^16.4.0",

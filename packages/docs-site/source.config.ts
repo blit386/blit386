@@ -1,5 +1,5 @@
 import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
-import { metaSchema, pageSchema } from 'fumapress/adapters/mdx/schema';
+import { blogMetaSchema, blogPageSchema, metaSchema, pageSchema } from 'fumapress/adapters/mdx/schema';
 import { transformerTwoslash } from 'fumadocs-twoslash';
 
 // Twoslash spins up a TypeScript language service that loads blit386.d.ts plus
@@ -23,14 +23,39 @@ export default defineConfig({
 
 export const docs = defineDocs({
     dir: 'content',
+
     docs: {
         async: true,
         schema: pageSchema,
         postprocess: {
             includeProcessedMarkdown: true,
         },
+
+        // Explicit include list so content/blog/** is owned solely by the blog
+        // collection. Negation patterns don't work in this codegen (normalizeViteGlobPath
+        // prepends "./" before "!", turning "!blog/**" into "./!blog/**" which is a
+        // literal path match instead of a negation).
+        files: ['*.{mdx,md}', 'docs/**/*.{mdx,md}', 'mcp-server/**/*.{mdx,md}'],
     },
+
     meta: {
         schema: metaSchema,
+        files: ['docs/**/*.{json,yaml}', 'mcp-server/**/*.{json,yaml}'],
+    },
+});
+
+export const blog = defineDocs({
+    dir: 'content/blog',
+
+    docs: {
+        async: true,
+        schema: blogPageSchema,
+        postprocess: {
+            includeProcessedMarkdown: true,
+        },
+    },
+
+    meta: {
+        schema: blogMetaSchema,
     },
 });
