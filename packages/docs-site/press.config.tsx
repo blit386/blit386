@@ -118,7 +118,7 @@ export default defineConfig({
     .plugins(
         flexsearchPlugin(),
 
-        blogPlugin(),
+        blogPlugin({ paths: { tags: '/blog/tags' } }),
 
         markdownNegotiationPlugin(),
 
