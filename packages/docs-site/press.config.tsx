@@ -62,6 +62,7 @@ export default defineConfig({
                     }
                 </script>
                 <script defer={true} src="/webmcp.js" />
+                <link rel="alternate" type="application/rss+xml" title="BLIT386 Blog" href="/feed.xml" />
             </>
         ),
 
