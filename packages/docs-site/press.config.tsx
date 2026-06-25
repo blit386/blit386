@@ -69,6 +69,8 @@ export default defineConfig({
             const ogType = page.url === '/' ? 'website' : 'article';
             const prefixedTitle = ogType === 'website' ? title : `BLIT386 – ${title}`;
 
+            // Escape </ so a field value containing "</script>" cannot terminate the tag.
+            // `\/` is a valid JSON escape, so parsers handle the output correctly.
             const jsonLd = JSON.stringify({
                 '@context': 'https://schema.org',
                 '@type': ogType === 'website' ? 'WebSite' : 'TechArticle',
@@ -79,7 +81,7 @@ export default defineConfig({
                 ...(ogType === 'article' && {
                     isPartOf: { '@type': 'WebSite', name: siteName, url: base },
                 }),
-            });
+            }).replaceAll('</', '<\\/');
 
             return (
                 <>

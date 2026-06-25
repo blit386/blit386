@@ -201,7 +201,7 @@ const transformBody = (markdown, sourceRepoDir) => {
     // may itself contain inline code, e.g. [`code`](url) (groups 2+3). Processing
     // left-to-right means code spans are consumed first, so link-like text inside
     // a code span is never mistaken for a real link target.
-    const linkTokenPattern = /(`[^`]*`)|(\[(?:`[^`]*`|[^\]])*\])\(([^)]+)\)/gu;
+    const linkTokenPattern = /(`[^`]*`)|(\[(?:`[^`]*`|[^\]`])*\])\(([^)]+)\)/gu;
     const inlineCodePattern = /(`[^`]*`)/u;
     const strippedComments = [];
     let isInFence = false;

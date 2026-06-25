@@ -13,8 +13,8 @@ function patchFile(filePath) {
     const original = readFileSync(filePath, 'utf8');
 
     const patched = original
-        // <title> - one per page, no prefix guard needed (script skips root)
-        .replace(/<title>([^<]+)<\/title>/, `<title>${PREFIX}$1</title>`)
+        // <title> - skip if already prefixed (idempotent)
+        .replace(/<title>(?!BLIT386)([^<]+)<\/title>/, `<title>${PREFIX}$1</title>`)
 
         // first <meta property="og:title"> - skip if already prefixed (idempotent)
         .replace(
