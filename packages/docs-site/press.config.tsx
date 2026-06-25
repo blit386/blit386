@@ -134,6 +134,9 @@ export default defineConfig({
                     priority = 0.9;
                 } else if (url.startsWith('/docs') && !url.includes('/api/')) {
                     priority = 0.8;
+                } else if (url.startsWith('/blog')) {
+                    priority = 0.7;
+                    changefreq = 'monthly';
                 }
 
                 return { loc: `${this.siteConfig.baseUrl}${url}`, priority, changefreq };
