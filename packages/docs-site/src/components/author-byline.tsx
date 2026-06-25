@@ -26,6 +26,8 @@ export function AuthorByline({ author }: AuthorBylineProps) {
                     width={32}
                     height={32}
                     className="rounded-full size-8 object-cover"
+                    loading="lazy"
+                    decoding="async"
                 />
             )}
 
@@ -49,7 +51,7 @@ export function AuthorByline({ author }: AuthorBylineProps) {
                 <span className="flex flex-row items-center gap-2">
                     {entry.socials.map((social) => (
                         <a
-                            key={social.platform}
+                            key={`${social.platform}:${social.url}`}
                             href={social.url}
                             className="hover:underline"
                             target="_blank"
