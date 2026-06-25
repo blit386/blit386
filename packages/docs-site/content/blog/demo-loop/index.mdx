@@ -1,0 +1,108 @@
+---
+title: The BLIT386 demo loop
+description:
+  Every BLIT386 demo follows four lifecycle methods — configure, init, update, and render. Here is how they fit together
+  and what each one is for.
+date: 2026-06-25
+tags: [tutorial]
+author: vancura
+---
+
+<AuthorByline author="vancura" />
+
+A BLIT386 demo is a plain class with up to four lifecycle methods. Pass the class to `bootstrap` and the engine handles
+the rest — canvas setup, the game loop, palette loading, and backend detection.
+
+## The four lifecycle methods
+
+### configure (optional)
+
+`configure` runs before anything else. Return a partial `HardwareSettings` object to override the canvas resolution,
+target frame rate, or rendering backend. Omit any field to keep the default.
+
+```ts
+import { bootstrap, BT, Vector2i } from 'blit386';
+import type { HardwareSettings } from 'blit386';
+
+class MyDemo {
+  configure(): Partial<HardwareSettings> {
+    return { displaySize: new Vector2i(160, 120), targetFPS: 30 };
+  }
+}
+
+bootstrap(MyDemo);
+```
+
+Omit `configure` entirely and the engine uses 320x240 at 60 FPS with WebGPU.
+
+### init (async)
+
+`init` runs once after the canvas is ready. Load palettes, sprite sheets, and fonts here. The engine waits for the
+returned promise to settle before starting the loop, so every `await` is safe.
+
+```ts
+async init() {
+  await BT.loadPalette('vga');
+}
+```
+
+### update
+
+`update` runs on every frame before rendering. Advance game state, read input, and move objects here. Do not issue draw
+calls from `update` — those belong in `render`.
+
+```ts
+update() {
+  this.x = (this.x + 2) % 320;
+}
+```
+
+### render
+
+`render` runs after `update` on every frame. Clear the screen and issue all draw calls here.
+
+```ts
+render() {
+  BT.clearScreen();
+  BT.drawRect({ x: this.x, y: 112 }, { x: 16, y: 16 }, 15);
+}
+```
+
+## A complete example
+
+```ts
+import { bootstrap, BT, Vector2i } from 'blit386';
+import type { HardwareSettings } from 'blit386';
+
+class SliderDemo {
+  private x = 0;
+
+  configure(): Partial<HardwareSettings> {
+    return { displaySize: new Vector2i(320, 240), targetFPS: 60 };
+  }
+
+  async init() {
+    await BT.loadPalette('vga');
+  }
+
+  update() {
+    this.x = (this.x + 2) % 320;
+  }
+
+  render() {
+    BT.clearScreen();
+    BT.drawRect({ x: this.x, y: 112 }, { x: 16, y: 16 }, 15);
+  }
+}
+
+bootstrap(SliderDemo);
+```
+
+Pass the class itself to `bootstrap` — not an instance. The engine constructs it, calls `configure`, sets up the canvas,
+resolves `init`, then loops `update` and `render` at the target frame rate.
+
+## Going further
+
+The demo collection at [demos.blit386.dev](https://demos.blit386.dev) has over 30 self-contained examples covering
+sprites, palette cycling, pointer and keyboard input, and a Snake game. Each file is a single self-contained JavaScript
+source you can read alongside the docs.
