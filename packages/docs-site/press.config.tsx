@@ -9,10 +9,13 @@ import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
+import { createHomeLayoutPage } from 'fumapress/layouts/home';
+import { createDocsLayoutPage } from 'fumapress/layouts/docs';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
+import { HomeHero } from './src/components/home-hero';
 import { SiteFooter } from './src/components/site-footer';
 import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
@@ -46,6 +49,8 @@ const getOgLogoDataUrl = () => {
 // the theme provider (Fumadocs design tokens resolve) as the last child of the
 // `flex flex-col min-h-screen` body, sitting below the `flex-1` page content.
 const rootLayout = createRootLayout();
+const homePageLayout = createHomeLayoutPage();
+const docsPageLayout = createDocsLayoutPage();
 
 export default defineConfig({
     content: {
@@ -255,6 +260,7 @@ export default defineConfig({
                     PopupContent,
                     PopupTrigger,
                     AuthorByline,
+                    HomeHero,
                 };
             },
         }),
@@ -283,5 +289,13 @@ export default defineConfig({
                     { type: 'custom', children: <GithubInfo owner="blit386" repo="blit386" /> },
                 ],
             };
+        },
+
+        page: async ({ lang, slugs, page }) => {
+            if (page.url === '/') {
+                return homePageLayout({ lang, slugs, page });
+            }
+
+            return docsPageLayout({ lang, slugs, page });
         },
     });
