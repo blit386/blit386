@@ -1,5 +1,4 @@
-import type { AppContext, ConfigContext } from 'fumapress';
-import type { ServerPlugin } from 'fumapress';
+import type { AppContext, ConfigContext, ServerPlugin } from 'fumapress';
 
 const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';

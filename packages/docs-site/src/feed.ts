@@ -1,5 +1,4 @@
-import type { AppContext, ConfigContext } from 'fumapress';
-import type { ServerPlugin } from 'fumapress';
+import type { AppContext, ConfigContext, ServerPlugin } from 'fumapress';
 
 const FEED_URL = '/feed.xml';
 const CHANNEL_TITLE = 'BLIT386 Blog';

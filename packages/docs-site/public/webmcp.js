@@ -22,7 +22,12 @@
                 required: ['path'],
             },
             execute: async ({ path }) => {
-                if (typeof path !== 'string' || !path.startsWith('/') || /^\/\//i.test(path) || /javascript:/i.test(path)) {
+                if (
+                    typeof path !== 'string' ||
+                    !path.startsWith('/') ||
+                    /^\/\//i.test(path) ||
+                    /javascript:/i.test(path)
+                ) {
                     return { error: 'Invalid path: must be a site-relative path starting with /' };
                 }
                 window.location.assign(path);
@@ -36,7 +41,8 @@
         {
             name: 'search_documentation',
             title: 'Search documentation',
-            description: 'Full-text search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts.',
+            description:
+                'Full-text search across the BLIT386 documentation. Returns matching page titles, URLs, and excerpts.',
             inputSchema: {
                 type: 'object',
                 properties: {
@@ -61,7 +67,8 @@
         {
             name: 'get_documentation_summary',
             title: 'Get documentation summary',
-            description: 'Return the llms.txt summary of the BLIT386 documentation site: available sections, key pages, and links.',
+            description:
+                'Return the llms.txt summary of the BLIT386 documentation site: available sections, key pages, and links.',
             inputSchema: { type: 'object', properties: {} },
             execute: async () => {
                 const res = await fetch('/llms.txt');

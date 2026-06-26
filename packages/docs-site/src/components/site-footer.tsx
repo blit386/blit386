@@ -3,8 +3,6 @@ import type { FooterLink, FooterSocialPlatform } from '../data/footer';
 import { footerColumns, footerSocials, footerUtilityLinks, getCopyright } from '../data/footer';
 import { SITE_NAME } from '../data/site';
 
-// #region Brand icons
-
 /**
  * Minimal inline brand SVGs, keyed by footer social platform. Kept inline to
  * avoid adding an icon-library dependency. Each path is a single-color glyph
@@ -37,10 +35,6 @@ const SOCIAL_ICONS: Record<FooterSocialPlatform, ReactNode> = {
     ),
 };
 
-// #endregion
-
-// #region Link primitives
-
 function FooterAnchor({ link }: { link: FooterLink }) {
     const externalProps = link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
 
@@ -50,8 +44,6 @@ function FooterAnchor({ link }: { link: FooterLink }) {
         </a>
     );
 }
-
-// #endregion
 
 /**
  * Site-wide footer: a social-icon row, navigation columns, utility links, and a

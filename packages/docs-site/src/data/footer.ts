@@ -1,7 +1,5 @@
 import { SITE_NAME } from './site';
 
-// #region Site identity
-
 /**
  * Builds the footer copyright line from the shared site name (`./site`).
  *
@@ -11,10 +9,6 @@ import { SITE_NAME } from './site';
 export function getCopyright(year: number): string {
     return `(c) ${year} ${SITE_NAME}`;
 }
-
-// #endregion
-
-// #region Navigation links
 
 export type FooterLink = {
     label: string;
@@ -43,6 +37,10 @@ export const footerColumns: FooterColumn[] = [
         links: [{ label: 'Demos', href: 'https://demos.blit386.dev', external: true }],
     },
     {
+        title: 'Showcase',
+        links: [{ label: 'Showcase', href: '/showcase' }],
+    },
+    {
         title: 'Community',
         links: [{ label: 'Community', href: '/community' }],
     },
@@ -53,10 +51,6 @@ export const footerUtilityLinks: FooterLink[] = [
     { label: 'llms.txt', href: '/llms.txt' },
     { label: 'sitemap.xml', href: '/sitemap.xml' },
 ];
-
-// #endregion
-
-// #region Social destinations
 
 /**
  * Footer-scoped social platforms. Intentionally separate from
@@ -106,5 +100,3 @@ export const footerSocials: FooterSocialDestination[] = [
         url: 'https://github.com/blit386/blit386',
     },
 ];
-
-// #endregion
