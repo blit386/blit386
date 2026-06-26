@@ -14,6 +14,7 @@ import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
 import { SiteFooter } from './src/components/site-footer';
+import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
@@ -60,7 +61,7 @@ export default defineConfig({
     mode: 'static',
 
     site: {
-        name: 'BLIT386',
+        name: SITE_NAME,
         baseUrl: 'https://blit386.dev',
     },
 
@@ -80,7 +81,7 @@ export default defineConfig({
 
         page(page) {
             const base = this.siteConfig.baseUrl ?? 'https://blit386.dev';
-            const siteName = this.siteConfig.name ?? 'BLIT386';
+            const siteName = this.siteConfig.name ?? SITE_NAME;
             const title = page.data.title;
             const description = page.data.description ?? '';
             const url = `${base}${page.url}`;

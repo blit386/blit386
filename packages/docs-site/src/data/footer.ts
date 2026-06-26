@@ -1,13 +1,9 @@
+import { SITE_NAME } from './site';
+
 // #region Site identity
 
 /**
- * Canonical site name, mirrored from `press.config.tsx` (`siteConfig.name`).
- * The copyright line is derived from this so the two stay in sync.
- */
-export const SITE_NAME = 'BLIT386';
-
-/**
- * Builds the footer copyright line from the site name.
+ * Builds the footer copyright line from the shared site name (`./site`).
  *
  * @param year - Four-digit year to stamp into the notice.
  * @returns A plain-text copyright string, e.g. `(c) 2026 BLIT386`.

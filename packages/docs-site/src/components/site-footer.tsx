@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { FooterLink, FooterSocialPlatform } from '../data/footer';
-import { footerColumns, footerSocials, footerUtilityLinks, getCopyright, SITE_NAME } from '../data/footer';
+import { footerColumns, footerSocials, footerUtilityLinks, getCopyright } from '../data/footer';
+import { SITE_NAME } from '../data/site';
 
 // #region Brand icons
 
@@ -65,24 +66,24 @@ export function SiteFooter() {
                 {/* Social-icon row */}
                 <nav className="flex flex-row flex-wrap items-center gap-4" aria-label="Social">
                     {footerSocials.map((social) => {
+                        // The interactive element owns the accessible name; the
+                        // SVG is decorative so assistive tech announces the link
+                        // once, not the icon and the link separately.
                         const icon = (
-                            <svg
-                                viewBox="0 0 24 24"
-                                width={20}
-                                height={20}
-                                role="img"
-                                aria-label={social.label}
-                                className="size-5"
-                            >
+                            <svg viewBox="0 0 24 24" width={20} height={20} aria-hidden="true" className="size-5">
                                 {SOCIAL_ICONS[social.platform]}
                             </svg>
                         );
 
                         if (social.comingSoon || !social.url) {
+                            // No interactive element to name here, so the inert
+                            // placeholder span itself carries the label via
+                            // role="img"; it has no href, so it stays non-navigable.
                             return (
                                 <span
                                     key={social.platform}
-                                    aria-disabled="true"
+                                    role="img"
+                                    aria-label={`${social.label} (coming soon)`}
                                     title={`${social.label} (coming soon)`}
                                     className="opacity-40"
                                 >
@@ -95,6 +96,7 @@ export function SiteFooter() {
                             <a
                                 key={social.platform}
                                 href={social.url}
+                                aria-label={social.label}
                                 className="transition-colors hover:text-fd-foreground"
                                 target="_blank"
                                 rel="noopener noreferrer"
