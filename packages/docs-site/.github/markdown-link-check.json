@@ -25,6 +25,9 @@
       "pattern": "^https?://renderhjs\\.net(/|$)"
     },
     {
+      "pattern": "^https?://x\\.com(/|$)"
+    },
+    {
       "pattern": "^https?://github\\.com/[^/]+/[^/]+/actions(/|$)"
     },
     {

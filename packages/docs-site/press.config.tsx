@@ -86,7 +86,7 @@ export default defineConfig({
             const description = page.data.description ?? '';
             const url = `${base}${page.url}`;
             const ogType = page.url === '/' ? 'website' : 'article';
-            const prefixedTitle = ogType === 'website' ? title : `BLIT386 – ${title}`;
+            const prefixedTitle = ogType === 'website' ? title : `${siteName} – ${title}`;
 
             // Escape </ so a field value containing "</script>" cannot terminate the tag.
             // `\/` is a valid JSON escape, so parsers handle the output correctly.
