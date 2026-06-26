@@ -15,7 +15,8 @@ describe('patchWranglerConfig', () => {
 
     test('does not duplicate nodejs_compat when already present', () => {
         const result = patchWranglerConfig({ compatibility_flags: ['nodejs_compat'] });
-        assert.equal(result.compatibility_flags.filter((f) => f === 'nodejs_compat').length, 1);
+        const flags = /** @type {string[]} */ (result.compatibility_flags);
+        assert.equal(flags.filter((f) => f === 'nodejs_compat').length, 1);
     });
 
     test('preserves existing flags alongside nodejs_compat', () => {

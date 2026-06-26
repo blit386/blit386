@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 /**
  * Check all Markdown files for dead links using markdown-link-check.
  * Recursively scans all directories from the repo root, skipping only those

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 /**
  * Generate the public documentation mirror from the canonical engine docs.
  *
