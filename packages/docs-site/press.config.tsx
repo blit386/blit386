@@ -8,10 +8,13 @@ import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
+import { createRootLayout } from 'fumapress/layouts/root';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
+import { SiteFooter } from './src/components/site-footer';
+import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
@@ -35,6 +38,15 @@ const getOgLogoDataUrl = () => {
     return _ogLogo;
 };
 
+// Fumapress/Fumadocs expose no layout-level `footer` key and no `footer` slot
+// (BaseLayoutProps, BaseSlots, HomeSlots, DocsSlots have none), so the shared
+// `defaultProps()` cannot carry one. The root layout FC is the single surface
+// that wraps every page across all layout types, so we compose the default root
+// and append SiteFooter to the provider's children: the footer renders inside
+// the theme provider (Fumadocs design tokens resolve) as the last child of the
+// `flex flex-col min-h-screen` body, sitting below the `flex-1` page content.
+const rootLayout = createRootLayout();
+
 export default defineConfig({
     content: {
         docs: docs.toFumadocsSource(),
@@ -49,7 +61,7 @@ export default defineConfig({
     mode: 'static',
 
     site: {
-        name: 'BLIT386',
+        name: SITE_NAME,
         baseUrl: 'https://blit386.dev',
     },
 
@@ -69,12 +81,12 @@ export default defineConfig({
 
         page(page) {
             const base = this.siteConfig.baseUrl ?? 'https://blit386.dev';
-            const siteName = this.siteConfig.name ?? 'BLIT386';
+            const siteName = this.siteConfig.name ?? SITE_NAME;
             const title = page.data.title;
             const description = page.data.description ?? '';
             const url = `${base}${page.url}`;
             const ogType = page.url === '/' ? 'website' : 'article';
-            const prefixedTitle = ogType === 'website' ? title : `BLIT386 – ${title}`;
+            const prefixedTitle = ogType === 'website' ? title : `${siteName} – ${title}`;
 
             // Escape </ so a field value containing "</script>" cannot terminate the tag.
             // `\/` is a valid JSON escape, so parsers handle the output correctly.
@@ -249,6 +261,18 @@ export default defineConfig({
     )
 
     .layouts({
+        root({ lang, children }) {
+            return rootLayout({
+                lang,
+                children: (
+                    <>
+                        {children}
+                        <SiteFooter />
+                    </>
+                ),
+            });
+        },
+
         defaultProps() {
             return {
                 links: [
