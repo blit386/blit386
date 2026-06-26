@@ -242,4 +242,12 @@ export default defineConfig({
                 };
             },
         }),
-    );
+    )
+
+    .layouts({
+        defaultProps() {
+            return {
+                links: [{ type: 'main', text: 'Community', url: '/community', active: 'nested-url' }],
+            };
+        },
+    });
