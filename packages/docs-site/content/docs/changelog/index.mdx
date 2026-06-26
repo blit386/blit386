@@ -1,0 +1,134 @@
+---
+title: Changelog
+description: Release history for the BLIT386 engine library.
+---
+
+Each entry below summarizes what changed in that release. The [GitHub releases page](https://github.com/blit386/blit386/releases)
+is the authoritative source: every version bump ships a full release note there, including dependency updates and CI
+changes omitted here for brevity.
+
+<Callout title="Future direction">
+
+This page may be superseded by blog-driven release notes as the project grows. For now, the GitHub releases page
+remains the primary home for detailed changelogs.
+
+</Callout>
+
+## 1.2.1 – 2026-06-20
+
+Keyboard edge buffering fix for high-refresh displays, plus docs cross-referencing.
+
+- `KeyboardInput` now buffers press and release edges into `pendingPress`/`pendingRelease` queues, consumed by
+  `endUpdate()` at the fixed update boundary. On 120+ Hz displays with a 60 FPS target, fast taps between fixed
+  steps were previously dropped silently.
+- Stray `keyup` events for keys that were not held no longer fire a released edge.
+- `endUpdate()` is the canonical update boundary going forward; `endFrame` is deprecated and forwards to it.
+- "See Also" cross-reference sections added or expanded across 16 documentation files and the README rewritten
+  with a beginner-first voice.
+
+## 1.2.0 – 2026-06-19
+
+Package and API rename — the engine is now published as `blit386` (was `blit-tech`).
+
+- **Breaking:** npm package renamed from `blit-tech` to `blit386`. Update import paths and `package.json`
+  dependencies.
+- **Breaking:** Public demo interface renamed from `IBlitTechDemo` to `IBTDemo`.
+- **Breaking:** Default canvas ID changed from `blit-tech-canvas` to `blit386-canvas`; default frame-capture
+  filename changed to `blit386-capture.png`.
+- Renderer fix: `GPUTextureUsage` was evaluated at module load time via a static import, crashing non-WebGPU
+  browsers (including Firefox) before the software fallback could activate. Access is now inlined at call sites.
+
+## 1.1.1 – 2026-06-07
+
+Boolean naming normalization across the `BT` namespace, a crash fix for non-WebGPU browsers, and a structural
+asset-system refactor.
+
+- **Crash fix:** `WebGPURenderer` was imported statically, which caused `GPUTextureUsage` to be evaluated at
+  module load time. Firefox and any other environment without WebGPU globals would crash before the Canvas 2D
+  fallback had a chance to run.
+- Boolean queries and predicate methods normalized to `is*`/`has*` conventions: `isDown`, `isPressed`,
+  `isPointerActive`, `isEqual`, `isContaining`, `isIntersecting`. `HardwareSettings` config flags renamed to
+  `isOverlayEnabled`, `isDetectingDroppedFrames`, and so on. Deprecated aliases keep the previous names alive
+  for backward compatibility — see [Deprecation Timeline](/docs/reference/deprecations).
+- Asset system structural refactor across `BitmapFont`, `SpriteSheet`, `Palette`, `PaletteEffect`, and
+  `SystemFont`.
+- Documentation corrected and expanded across 45+ files; a new overlay guide added.
+
+## 1.1.0 – 2026-05-30
+
+Overlay release: the old software-mode ticker is replaced by a full engine HUD subsystem.
+
+- New `src/overlay/` subsystem: toggle-able bar stack with a live palette swatch grid.
+- Scrolling timing chart with configurable grid lines (`gridPaletteIndex`), severity tints for dropped frames
+  and high-latency spikes, and scrolling event tags via `BT.assignTag()`.
+- Renderer pipeline timing breakdown in the timing snapshot.
+- Software renderer diagnostics bar in the overlay.
+- **Breaking:** `HardwareSettings.renderer` renamed to `backend`.
+- **Breaking:** `canvasDisplaySize`/`maxCanvasDisplaySize` replaced by `drawingBufferSize`/`maxCanvasSize`.
+- **Breaking:** `statsOverlay*` settings drop the `stats` prefix.
+
+## 1.0.5 – 2026-05-21
+
+btfont validation hardening and partial configure support.
+
+- btfont embedded textures must now use `data:image/png;base64` with a 512 KiB payload cap; glyph metrics are
+  validated before atlas decode begins. New `AssetLimits` module centralizes these constants.
+- `configure()` now accepts a partial `HardwareSettings` object — demos can override just `targetFPS` without
+  spelling out every field.
+- MCP preflight infrastructure added with documented offline fallbacks.
+- CI dependency audit added to every PR.
+
+## 1.0.4 – 2026-05-17
+
+`BT` namespace read-only properties changed from methods to ES getters — a breaking shape change.
+
+- **Breaking:** Remove call parentheses from all `BT` read-only accessors: `BT.displaySize()` becomes
+  `BT.displaySize`, `BT.ticks()` becomes `BT.ticks`, and so on across `deltaSeconds`, `timeSeconds`,
+  `pointerScrollDelta`, `gamepadCount`, and `inputString`.
+- **Breaking:** Four accessors renamed: `fps()` → `BT.targetFPS`, `getActiveBackend()` → `BT.activeBackend`,
+  `paletteGet()` → `BT.palette`, `cameraGet()` → `BT.camera`.
+- New getters: `BT.canvasDisplaySize` and `BT.outputSize`.
+- Security hardening: `RenderLimits` and `AssetLimits` cap dimensions before GPU allocation; pnpm 10
+  supply-chain hardening enabled; CI action tags pinned to commit SHAs.
+
+## 1.0.3 – 2026-05-16
+
+First stable release of the BLIT386 engine.
+
+- **Breaking:** `IBlitTechGame` renamed to `IBlitTechDemo`; `bootstrap()` accepts a demo class.
+- **Breaking:** `BT.initialize()` and `IBlitTechDemo.initialize()` shortened to `init()` across the engine
+  lifecycle.
+- **Breaking:** `IBlitTechDemo.queryHardware()` renamed to `configure()` and made optional; omitting it falls
+  back to `defaultConfig()` (320x240 display, 640x480 canvas, 60 FPS, nearest-neighbor upscale).
+- `BTAPI` split into three focused modules: `GameLoop` (fixed-timestep accumulator), `WebGPUContext`
+  (adapter/device/context setup), and `BTAPI` (delegating to both).
+- Palette-first rendering pipeline: `r8uint` framebuffer with `PaletteResolveUpscalePass` converting to RGBA
+  just before output; Canvas 2D `SoftwareRenderer` activates automatically when WebGPU is unavailable.
+- Input system complete: pointer, keyboard, and gamepad sharing the `BTN_*` bitmask API.
+
+## 0.2.0 – 2025-12-25
+
+Pre-release published under the original `blit-tech` package name.
+
+- Bootstrap utilities for streamlined game initialization.
+- CI checks: commit linting, bundle size monitoring, and documentation link validation.
+- Spell checking with cspell added to CI and pre-commit hooks.
+
+## 0.1.0 – 2025-12-25
+
+Initial pre-release published under the original `blit-tech` package name.
+
+- Display size and tick counter APIs added to Core.
+- Cache checking APIs in `AssetLoader`.
+- Variable-width bitmap font system with the `.btfont` format.
+- `ImageBitmap` support and `destroy()` added to `SpriteSheet`.
+- Enhancements to `Color32`, `Rect2i`, and `Vector2i`.
+
+## See also
+
+<Cards>
+  <Card title="GitHub Releases" href="https://github.com/blit386/blit386/releases">Full release notes with dependency details.</Card>
+  <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed API flags and removal schedule.</Card>
+  <Card title="Getting Started" href="/docs/getting-started">Install the current version.</Card>
+  <Card title="API: Core" href="/docs/api/core">Current bootstrap and BT namespace reference.</Card>
+</Cards>

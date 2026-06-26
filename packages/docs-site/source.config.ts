@@ -36,7 +36,13 @@ export const docs = defineDocs({
         // collection. Negation patterns don't work in this codegen (normalizeViteGlobPath
         // prepends "./" before "!", turning "!blog/**" into "./!blog/**" which is a
         // literal path match instead of a negation).
-        files: ['*.{mdx,md}', 'docs/**/*.{mdx,md}', 'mcp-server/**/*.{mdx,md}', 'community/**/*.{mdx,md}'],
+        files: [
+            '*.{mdx,md}',
+            'docs/**/*.{mdx,md}',
+            'mcp-server/**/*.{mdx,md}',
+            'community/**/*.{mdx,md}',
+            'showcase/**/*.{mdx,md}',
+        ],
     },
 
     meta: {
