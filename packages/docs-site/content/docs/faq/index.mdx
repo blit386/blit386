@@ -1,0 +1,100 @@
+---
+title: FAQ
+description: Common questions about BLIT386 — WebGPU availability, software fallback, and setup.
+---
+
+Answers to the questions that come up most often. For live discussion, see the
+[Community](/community) page.
+
+## WebGPU availability and browser support
+
+### Which browsers support WebGPU?
+
+Chrome and Edge 113 or later have WebGPU enabled by default on desktop. Firefox added default support starting with
+version 141 on Windows, 145 or later on macOS, and Nightly on Linux and Android. Safari 26 and later have it on by
+default; Safari 18-25 can enable it via Feature Flags.
+
+See [Browser Support](/docs/api/browser-support) for the current compatibility matrix.
+
+### What happens in a browser where WebGPU is not available?
+
+The engine detects the missing API at startup and switches to the Canvas 2D software renderer automatically. No code
+change is required. Use `BT.activeBackend` at runtime to check which backend is running (`webgpu` or `software`).
+
+### Can I force the software renderer even in a WebGPU-capable browser?
+
+Yes. Pass `backend: 'software'` in `HardwareSettings` when calling `bootstrap()`, or append `?backend=software` to the
+page URL during development.
+
+### Does BLIT386 use WebGL instead of WebGPU?
+
+No. The two backends are WebGPU and Canvas 2D. There is no WebGL backend. WebGPU and WebGL can coexist in the same
+browser, but BLIT386 does not use WebGL.
+
+## Software fallback
+
+### Are all features available in the software renderer?
+
+Most are. The notable exception is post-process effects: calling `BT.effectAdd()` in software mode throws an error
+because the effect pipeline requires WebGPU compute and render passes. Gate effect registration on
+`BT.activeBackend === 'webgpu'`. See [API: Rendering](/docs/api/rendering) for the full list.
+
+### Does the software renderer look different from the WebGPU renderer?
+
+Palette resolution, integer coordinates, and sprite rendering are designed to match. The software renderer does not
+support post-process effects (CRT scanlines, bloom, barrel distortion, etc.), so scenes that rely on those effects will
+look different when the fallback is active. The engine overlay shows the active backend in its renderer diagnostics bar.
+
+### How do I test fallback behavior locally?
+
+Append `?backend=software` to the dev-server URL, or set `backend: 'software'` in `HardwareSettings`. The
+[Software Fallback Smoke Matrix](/docs/performance/smoke-matrix) lists the manual checklist used to verify parity.
+
+## Setup and installation
+
+### What is the minimum Node.js version?
+
+Node.js >= 22.18.0 (LTS). The engine is published as an ESM package and requires a bundler such as Vite, webpack, or
+esbuild to serve it in a browser.
+
+### What is the quickest way to start a new project?
+
+Use the scaffolder:
+
+```bash
+npm create blit386@latest my-game
+```
+
+This generates a ready-to-run Vite project with the engine, a starter game, and the `blit` project CLI. See
+[Getting Started](/docs/getting-started) for the full walkthrough.
+
+**The demo page is blank and there is no error in the console. What should I check?**
+
+- Verify that `bootstrap()` is called and that the canvas element ID matches `BootstrapOptions.canvasID` (default:
+  `blit386-canvas`).
+- Check that `BT.paletteSet()` is called in `init()` before any draw calls in `render()`.
+- Open the browser DevTools Network tab and confirm that sprite sheets and font files loaded successfully.
+- Check `BT.activeBackend` - if it is `null`, the engine has not finished initializing yet.
+
+### I am getting a TypeScript error about unknown properties on `HardwareSettings`. What is happening?
+
+Some configuration fields were renamed in 1.2.0 to follow the boolean-naming convention. The old names are available as
+compatibility aliases until the next major release. See the [Deprecation Timeline](/docs/reference/deprecations) for
+the full mapping.
+
+### Where do I report bugs or ask questions?
+
+Open an issue on [GitHub](https://github.com/blit386/blit386/issues) or start a thread in
+[GitHub Discussions](https://github.com/blit386/blit386/discussions). Please include your browser version, operating
+system, and a minimal reproduction.
+
+## See also
+
+<Cards>
+  <Card title="Getting Started" href="/docs/getting-started">Scaffolder and manual install walkthrough.</Card>
+  <Card title="Browser Support" href="/docs/api/browser-support">WebGPU compatibility matrix and build toolchain.</Card>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap options, backend selection, and BT namespace.</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">Post-process effects and software renderer limits.</Card>
+  <Card title="Software Fallback Smoke Matrix" href="/docs/performance/smoke-matrix">Manual Canvas 2D fallback checklist.</Card>
+  <Card title="Community" href="/community">Ask questions and report bugs.</Card>
+</Cards>

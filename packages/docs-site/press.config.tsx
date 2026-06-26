@@ -285,6 +285,7 @@ export default defineConfig({
                     { type: 'main', text: 'Docs', url: '/docs', active: 'nested-url' },
                     { type: 'main', text: 'Blog', url: '/blog', active: 'nested-url' },
                     { type: 'main', text: 'Demos', url: 'https://demos.blit386.dev', external: true },
+                    { type: 'main', text: 'Showcase', url: '/showcase', active: 'nested-url' },
                     { type: 'main', text: 'Community', url: '/community', active: 'nested-url' },
                     { type: 'custom', children: <GithubInfo owner="blit386" repo="blit386" /> },
                 ],
