@@ -17,11 +17,11 @@ const PREFIX = 'BLIT386 – ';
  */
 export const patchTitleHtml = (html) =>
     html
-        // <title> - skip if already prefixed
-        .replace(/<title>(?!BLIT386)([^<]+)<\/title>/, `<title>${PREFIX}$1</title>`)
-        // first <meta property="og:title"> - skip if already prefixed
+        // <title> - skip only if the exact prefix is already present
+        .replace(/<title>(?!BLIT386 – )([^<]+)<\/title>/, `<title>${PREFIX}$1</title>`)
+        // first <meta property="og:title"> - skip only if the exact prefix is already present
         .replace(
-            /<meta property="og:title" content="(?!BLIT386)([^"]+)"/,
+            /<meta property="og:title" content="(?!BLIT386 – )([^"]+)"/,
             `<meta property="og:title" content="${PREFIX}$1"`,
         );
 

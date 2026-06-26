@@ -2,7 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isIgnoredFile } from '../check-markdown-links.mjs';
+import { isIgnoredFile, normalizeRelSep } from '../check-markdown-links.mjs';
 
 // ROOT as computed by check-markdown-links.mjs: resolve(dirname(scriptUrl), '..')
 // From scripts/__tests__/, two levels up gives us the project root.
@@ -40,11 +40,11 @@ describe('isIgnoredFile', () => {
     });
 
     test('handles Windows-style backslash normalization', () => {
-        // On Windows, path.relative() returns backslash-separated paths.
-        // The function normalizes them with split('\\').join('/') before matching.
-        // Verify the normalization step directly using the same regex the function uses.
+        // On Windows, path.relative() returns backslash-separated paths;
+        // isIgnoredFile delegates to normalizeRelSep before matching.
+        // path.relative() never produces backslashes on POSIX, so we test
+        // normalizeRelSep directly — the helper that isIgnoredFile calls.
         const windowsRel = 'content\\docs\\api\\renderer\\index.mdx';
-        const normalized = windowsRel.split('\\').join('/');
-        assert.equal(/^content\/docs\/[^/]+\//u.test(normalized), true);
+        assert.equal(normalizeRelSep(windowsRel), 'content/docs/api/renderer/index.mdx');
     });
 });

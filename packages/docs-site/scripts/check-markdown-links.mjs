@@ -35,9 +35,12 @@ const IGNORED_DIRS = new Set([
  */
 const IGNORED_PATH_PATTERNS = [/^content\/docs\/[^/]+\//u];
 
+/** @param {string} rel */
+export const normalizeRelSep = (rel) => rel.split('\\').join('/');
+
 /** @param {string} filePath */
 export function isIgnoredFile(filePath) {
-    const rel = relative(ROOT, filePath).split('\\').join('/');
+    const rel = normalizeRelSep(relative(ROOT, filePath));
 
     return IGNORED_PATH_PATTERNS.some((pattern) => pattern.test(rel));
 }
@@ -86,6 +89,6 @@ const main = () => {
     console.log(`\n${files.length} markdown file(s) checked.`);
 };
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     main();
 }
