@@ -4,6 +4,8 @@
     "index",
     "---Getting started---",
     "getting-started",
+    "---FAQ---",
+    "faq",
     "---API---",
     "api",
     "---Guides---",
@@ -12,6 +14,8 @@
     "performance",
     "---Reference---",
     "reference",
+    "---Changelog---",
+    "changelog",
     "---Contributing---",
     "contributing"
   ]
