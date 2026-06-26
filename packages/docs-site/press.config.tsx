@@ -137,6 +137,9 @@ export default defineConfig({
                     priority = 0.9;
                 } else if (url.startsWith('/docs') && !url.includes('/api/')) {
                     priority = 0.8;
+                } else if (url.startsWith('/community')) {
+                    priority = 0.6;
+                    changefreq = 'monthly';
                 } else if (url.startsWith('/blog')) {
                     priority = 0.7;
                     changefreq = 'monthly';
