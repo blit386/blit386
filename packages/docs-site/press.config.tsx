@@ -8,10 +8,12 @@ import { llmsPlugin } from 'fumapress/plugins/llms.txt';
 import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
+import { createRootLayout } from 'fumapress/layouts/root';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
+import { SiteFooter } from './src/components/site-footer';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
@@ -34,6 +36,15 @@ const getOgLogoDataUrl = () => {
     _ogLogo = `data:image/png;base64,${data.toString('base64')}`;
     return _ogLogo;
 };
+
+// Fumapress/Fumadocs expose no layout-level `footer` key and no `footer` slot
+// (BaseLayoutProps, BaseSlots, HomeSlots, DocsSlots have none), so the shared
+// `defaultProps()` cannot carry one. The root layout FC is the single surface
+// that wraps every page across all layout types, so we compose the default root
+// and append SiteFooter to the provider's children: the footer renders inside
+// the theme provider (Fumadocs design tokens resolve) as the last child of the
+// `flex flex-col min-h-screen` body, sitting below the `flex-1` page content.
+const rootLayout = createRootLayout();
 
 export default defineConfig({
     content: {
@@ -249,6 +260,18 @@ export default defineConfig({
     )
 
     .layouts({
+        root({ lang, children }) {
+            return rootLayout({
+                lang,
+                children: (
+                    <>
+                        {children}
+                        <SiteFooter />
+                    </>
+                ),
+            });
+        },
+
         defaultProps() {
             return {
                 links: [
