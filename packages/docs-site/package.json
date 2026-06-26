@@ -61,6 +61,7 @@
     "knip:fix": "knip --fix",
     "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
+    "test": "node --test scripts/__tests__/*.test.mjs",
     "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run build",
     "deploy": "wrangler deploy --config dist/server/wrangler.json --name blit386",
     "prepare": "husky"

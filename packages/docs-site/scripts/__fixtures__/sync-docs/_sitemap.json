@@ -1,0 +1,10 @@
+{
+  "sections": {
+    "api": "API Reference",
+    "guide": "Guide"
+  },
+  "pages": [
+    { "src": "api/renderer.md", "path": "api/renderer", "description": "Renderer API" },
+    { "src": "guide/getting-started.md", "path": "guide/getting-started", "description": "Getting Started" }
+  ]
+}
