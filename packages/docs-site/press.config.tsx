@@ -16,6 +16,7 @@ import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
 import { CommunityConnect } from './src/components/community-connect';
+import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
 import { SiteFooter } from './src/components/site-footer';
 import { SITE_NAME } from './src/data/site';
@@ -269,6 +270,7 @@ export default defineConfig({
                     PopupTrigger,
                     AuthorByline,
                     CommunityConnect,
+                    DemoShowcase,
                     HomeHero,
                 };
             },
