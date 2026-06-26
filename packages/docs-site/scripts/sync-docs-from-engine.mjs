@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 /**
  * Generate the public documentation mirror from the canonical engine docs.
  *
@@ -24,7 +25,7 @@
  */
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, posix, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ENGINE_DOCS = resolve(ROOT, process.env.ENGINE_DOCS_DIR ?? '../blit386/docs');
@@ -149,7 +150,7 @@ const splitFragment = (target) => {
  * - Everything else (unpublished docs, contributor-only docs, repo config,
  *   source files) becomes an absolute GitHub URL resolved against the repo root.
  */
-const rewriteTarget = (target, sourceRepoDir) => {
+const rewriteTarget = (target, sourceRepoDir, sitePaths = SITE_PATHS) => {
     const trimmed = target.trim();
 
     if (/^(https?:|mailto:|#)/u.test(trimmed)) {
@@ -163,7 +164,7 @@ const rewriteTarget = (target, sourceRepoDir) => {
     }
 
     const repoRelative = posix.normalize(posix.join(sourceRepoDir, path));
-    const sitePath = SITE_PATHS[repoRelative];
+    const sitePath = sitePaths[repoRelative];
 
     if (sitePath) {
         return `${sitePath}${fragment}`;
@@ -486,4 +487,18 @@ const main = () => {
     warnStrippedComments(strippedComments);
 };
 
-main();
+export {
+    splitFragment,
+    rewriteTarget,
+    escapeMdxText,
+    transformBody,
+    extractTitleAndBody,
+    dropDuplicateIntro,
+    stripSiteBanner,
+    isToolingDirective,
+    summarizeComment,
+};
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    main();
+}

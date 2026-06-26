@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 /**
  * Check all Markdown files for dead links using markdown-link-check.
  * Recursively scans all directories from the repo root, skipping only those
@@ -7,7 +8,7 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -34,9 +35,12 @@ const IGNORED_DIRS = new Set([
  */
 const IGNORED_PATH_PATTERNS = [/^content\/docs\/[^/]+\//u];
 
+/** @param {string} rel */
+export const normalizeRelSep = (rel) => rel.split('\\').join('/');
+
 /** @param {string} filePath */
-function isIgnoredFile(filePath) {
-    const rel = relative(ROOT, filePath).split('\\').join('/');
+export function isIgnoredFile(filePath) {
+    const rel = normalizeRelSep(relative(ROOT, filePath));
 
     return IGNORED_PATH_PATTERNS.some((pattern) => pattern.test(rel));
 }
@@ -57,28 +61,34 @@ function walkMarkdownFiles(dir, files) {
     }
 }
 
-/** @type {string[]} */
-const files = [];
-walkMarkdownFiles(ROOT, files);
-files.sort((a, b) => a.localeCompare(b));
+const main = () => {
+    /** @type {string[]} */
+    const files = [];
+    walkMarkdownFiles(ROOT, files);
+    files.sort((a, b) => a.localeCompare(b));
 
-let failed = 0;
+    let failed = 0;
 
-for (const filePath of files) {
-    const rel = relative(ROOT, filePath);
-    console.log(`\nFILE: ./${rel}`);
-    const result = spawnSync(process.execPath, [MLC_BIN, rel, '-c', CONFIG], {
-        cwd: ROOT,
-        stdio: 'inherit',
-    });
-    if (result.error || result.status !== 0) {
-        failed += 1;
+    for (const filePath of files) {
+        const rel = relative(ROOT, filePath);
+        console.log(`\nFILE: ./${rel}`);
+        const result = spawnSync(process.execPath, [MLC_BIN, rel, '-c', CONFIG], {
+            cwd: ROOT,
+            stdio: 'inherit',
+        });
+        if (result.error || result.status !== 0) {
+            failed += 1;
+        }
     }
-}
 
-if (failed > 0) {
-    console.error(`\nERROR: ${failed} file(s) with dead links found!`);
-    process.exit(1);
-}
+    if (failed > 0) {
+        console.error(`\nERROR: ${failed} file(s) with dead links found!`);
+        process.exit(1);
+    }
 
-console.log(`\n${files.length} markdown file(s) checked.`);
+    console.log(`\n${files.length} markdown file(s) checked.`);
+};
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    main();
+}

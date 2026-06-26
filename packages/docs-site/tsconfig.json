@@ -15,6 +15,6 @@
     "noUncheckedIndexedAccess": true,
     "noEmit": true
   },
-  "include": ["src", "content", "*.ts", "*.tsx"],
+  "include": ["src", "content", "*.ts", "*.tsx", "scripts/__tests__"],
   "exclude": ["node_modules", "dist", ".source"]
 }

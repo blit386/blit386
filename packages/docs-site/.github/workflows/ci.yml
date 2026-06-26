@@ -78,6 +78,9 @@ jobs:
       - name: Type check
         run: pnpm run typecheck
 
+      - name: Run tests
+        run: pnpm run test
+
       - name: Spell check
         run: pnpm run spellcheck
 
