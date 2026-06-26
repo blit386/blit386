@@ -28,10 +28,10 @@ export function CommunityConnect({ title = 'Connect', className }: CommunityConn
                 {upcoming.map((dest) => (
                     <Card
                         key={`${dest.platform}:${dest.label}`}
-                        href="#"
                         title={dest.label}
                         description={dest.description}
-                        className="opacity-50 pointer-events-none select-none"
+                        className="opacity-50 select-none"
+                        aria-disabled="true"
                     />
                 ))}
             </Cards>
