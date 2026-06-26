@@ -11,6 +11,34 @@ Primitives, sprites, and bitmap text all resolve color through a shared 256-entr
 rendering. WebGPU is the default backend; when it is unavailable the engine automatically falls back to a Canvas 2D
 software renderer.
 
+## Features
+
+<Cards>
+  <Card title="Palette-first indexed color" href="/docs/guides/palette">
+    All rendering resolves through a shared 256-entry indexed palette for pixel-perfect, palette-swap-friendly output.
+  </Card>
+  
+  <Card title="WebGPU with Canvas 2D fallback" href="/docs/api/rendering">
+    WebGPU is the default backend; the engine silently falls back to a Canvas 2D software renderer when unavailable.
+  </Card>
+  
+  <Card title="Sprites, primitives & bitmap text" href="/docs/api/assets">
+    Draw textured sprites, colored geometry, and bitmap-font glyphs through a single unified draw API.
+  </Card>
+  
+  <Card title="Overlay HUD" href="/docs/api/overlay">
+    A built-in debug HUD displays frame timing, palette state, and the active renderer backend at a keypress.
+  </Card>
+  
+  <Card title="Palette effects" href="/docs/guides/post-process-effects">
+    Cycle, fade, flash, and swap palette entries at runtime for classic retro visual effects.
+  </Card>
+  
+  <Card title="Input: pointer, keyboard & gamepad" href="/docs/guides/input">
+    Unified input layer covering mouse, touch, pen, keyboard, and gamepad across all modern browsers.
+  </Card>
+</Cards>
+
 ## Quick start
 
 The fastest way to begin is the scaffolder. It works with npm, pnpm, yarn, or bun and generates a ready-to-run Vite
