@@ -1,8 +1,6 @@
 import type { AppContext, ConfigContext } from 'fumapress';
 import type { ServerPlugin } from 'fumapress';
 
-// #region Constants
-
 const MCP_PROTOCOL_VERSION = '2025-11-25';
 const MCP_SERVER_NAME = 'blit386-docs';
 const MCP_SERVER_VERSION = '1.0.0';
@@ -13,10 +11,6 @@ const TITLE_WEIGHT = 10;
 const MAX_RESULTS = 10;
 // Characters of context to show on each side of the first matched term.
 const EXCERPT_RADIUS = 80;
-
-// #endregion
-
-// #region Types
 
 interface RpcRequest {
     id?: string | number | null;
@@ -57,10 +51,6 @@ interface AssetsBinding {
     fetch: (request: Request) => Promise<Response>;
 }
 
-// #endregion
-
-// #region Tool definitions
-
 const MCP_TOOLS = [
     {
         name: 'search_docs',
@@ -80,10 +70,6 @@ const MCP_TOOLS = [
         inputSchema: { type: 'object', properties: {} },
     },
 ] as const;
-
-// #endregion
-
-// #region Guards and helpers
 
 function isRpcRequest(v: unknown): v is RpcRequest {
     return (
@@ -135,8 +121,6 @@ function buildExcerpt(text: string, terms: readonly string[]): string {
     const suffix = end < trimmed.length ? '...' : '';
     return `${prefix}${trimmed.slice(start, end).trim()}${suffix}`;
 }
-
-// #endregion
 
 /**
  * Fumapress ServerPlugin exposing a JSON-RPC 2.0 MCP endpoint at POST /mcp.
