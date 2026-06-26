@@ -30,14 +30,21 @@ import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
 import { blog, docs } from './.source/server';
 
 let _departureMono: Buffer | undefined;
+
 const getDepartureMono = () =>
     (_departureMono ??= readFileSync(join(process.cwd(), 'public/fonts/DepartureMono-Regular.otf')));
 
 let _ogLogo: string | undefined;
+
 const getOgLogoDataUrl = () => {
-    if (_ogLogo) return _ogLogo;
+    if (_ogLogo) {
+        return _ogLogo;
+    }
+
     const data = readFileSync(join(process.cwd(), 'public/og-logo.png'));
+
     _ogLogo = `data:image/png;base64,${data.toString('base64')}`;
+
     return _ogLogo;
 };
 

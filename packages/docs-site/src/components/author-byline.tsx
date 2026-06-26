@@ -15,7 +15,9 @@ const PLATFORM_LABELS: Record<string, string> = {
 export function AuthorByline({ author }: AuthorBylineProps) {
     const entry: AuthorEntry | undefined = typeof author === 'string' ? getAuthor(author) : author;
 
-    if (!entry) return null;
+    if (!entry) {
+        return null;
+    }
 
     return (
         <div className="not-prose flex flex-row flex-wrap items-center gap-3 text-sm text-fd-muted-foreground border-b pb-4 mb-6">

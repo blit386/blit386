@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { patchWranglerConfig, patchRequireMetaUrl } from '../patch-wrangler.mjs';
+import { patchRequireMetaUrl, patchWranglerConfig } from '../patch-wrangler.mjs';
 
 describe('patchWranglerConfig', () => {
     test('adds nodejs_compat when compatibility_flags is an empty array', () => {
