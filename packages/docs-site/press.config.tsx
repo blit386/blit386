@@ -187,9 +187,10 @@ export default defineConfig({
                                         color: '#000000',
                                         lineHeight: 1.1,
                                         marginBottom: 24,
+                                        textWrap: 'balance',
                                     }}
                                 >
-                                    {page.data.title}
+                                    {page.data.title ?? 'BLIT386'}
                                 </div>
 
                                 {page.data.description && (
@@ -250,7 +251,13 @@ export default defineConfig({
     .layouts({
         defaultProps() {
             return {
-                links: [{ type: 'main', text: 'Community', url: '/community', active: 'nested-url' }],
+                links: [
+                    { type: 'main', text: 'Docs', url: '/docs', active: 'nested-url' },
+                    { type: 'main', text: 'Blog', url: '/blog', active: 'nested-url' },
+                    { type: 'main', text: 'Demos', url: 'https://demos.blit386.dev', external: true },
+                    { type: 'main', text: 'Community', url: '/community', active: 'nested-url' },
+                    { type: 'custom', children: <GithubInfo owner="blit386" repo="blit386" /> },
+                ],
             };
         },
     });
