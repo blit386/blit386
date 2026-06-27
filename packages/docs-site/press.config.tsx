@@ -57,7 +57,12 @@ const getOgLogoDataUrl = () => {
 // and append SiteFooter to the provider's children: the footer renders inside
 // the theme provider (Fumadocs design tokens resolve) as the last child of the
 // `flex flex-col min-h-screen` body, sitting below the `flex-1` page content.
-const rootLayout = createRootLayout();
+const rootLayout = createRootLayout({
+    providerProps: {
+        theme: { defaultTheme: 'system' },
+    },
+});
+
 const homePageLayout = createHomeLayoutPage();
 const docsPageLayout = createDocsLayoutPage();
 
@@ -319,6 +324,8 @@ export default defineConfig({
 
         defaultProps() {
             return {
+                themeSwitch: { enabled: false },
+
                 links: [
                     { type: 'main', text: 'Docs', url: '/docs', active: 'nested-url' },
                     { type: 'main', text: 'Blog', url: '/blog', active: 'nested-url' },
