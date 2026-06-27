@@ -4,8 +4,47 @@
 @import 'fumapress/css/preset.css';
 @import 'fumadocs-twoslash/twoslash.css';
 
+@font-face {
+    font-family: 'DepartureMono';
+    src: url('/fonts/DepartureMono-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'essential_pragmatapro';
+    src: url('https://fonts.vancura.dev/PragmataPro-R.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DegularText';
+    src: url('https://fonts.vancura.dev/DegularText-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DegularText';
+    src: url('https://fonts.vancura.dev/DegularText-Semibold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-    --font-mono: 'PragmataPro Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-sans: 'DegularText', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: 'DepartureMono', monospace;
+    --font-mono: 'essential_pragmatapro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:where(h1, h2, h3, h4, h5, h6) {
+    font-family: var(--font-heading);
+    font-weight: normal;
 }
 
 .shiki code {

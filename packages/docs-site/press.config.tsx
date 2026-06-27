@@ -82,12 +82,39 @@ export default defineConfig({
     meta: {
         root: () => (
             <>
+                <link rel="preconnect" href="https://fonts.vancura.dev" crossOrigin="" />
+                <link rel="dns-prefetch" href="https://fonts.vancura.dev" />
+                <link
+                    rel="preload"
+                    href="https://fonts.vancura.dev/PragmataPro-R.woff2"
+                    as="font"
+                    type="font/woff2"
+                    crossOrigin=""
+                />
+                <link
+                    rel="preload"
+                    href="https://fonts.vancura.dev/DegularText-Regular.woff2"
+                    as="font"
+                    type="font/woff2"
+                    crossOrigin=""
+                />
+                <link
+                    rel="preload"
+                    href="https://fonts.vancura.dev/DegularText-Semibold.woff2"
+                    as="font"
+                    type="font/woff2"
+                    crossOrigin=""
+                />
+
+                <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" />
+
                 <script async={true} src="https://plausible.io/js/pa-T01y19zS6cj7d9y8uQnqw.js" />
                 <script>
                     {
                         'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()'
                     }
                 </script>
+
                 <script defer={true} src="/webmcp.js" />
                 <link rel="alternate" type="application/rss+xml" title="BLIT386 Blog" href="/feed.xml" />
             </>
