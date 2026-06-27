@@ -31,7 +31,7 @@
 @font-face {
     font-family: 'DegularText';
     src: url('https://fonts.vancura.dev/DegularText-Semibold.woff2') format('woff2');
-    font-weight: 600 900;
+    font-weight: 600;
     font-style: normal;
     font-display: swap;
 }
@@ -44,6 +44,7 @@
 
 :where(h1, h2, h3, h4, h5, h6) {
     font-family: var(--font-heading);
+    font-weight: normal;
 }
 
 .shiki code {
