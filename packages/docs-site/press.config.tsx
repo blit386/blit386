@@ -90,7 +90,7 @@ const GLOBAL_HEAD = (
             crossOrigin=""
         />
 
-        <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" />
+        <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossOrigin="" />
 
         <script async={true} src="https://plausible.io/js/pa-T01y19zS6cj7d9y8uQnqw.js" />
         <script>
@@ -279,7 +279,7 @@ export default defineConfig({
     .adapters(
         // Extend the default MDX component map so the engine docs can use the full
         // Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,
-        // GithubInfo, InlineTOC). Callout, Card/Cards, and code blocks already ship
+        // InlineTOC). Callout, Card/Cards, and code blocks already ship
         // in `defaultMdxComponents`. The relative-link override mirrors the adapter
         // default so in-page links keep resolving.
         fumadocsMdx({
