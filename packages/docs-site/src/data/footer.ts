@@ -13,6 +13,7 @@ export function getCopyright(year: number): string {
 export type FooterLink = {
     label: string;
     href: string;
+
     /** External destinations open in a new tab with a safe `rel` attribute. */
     external?: boolean;
 };
@@ -57,17 +58,19 @@ export const footerUtilityLinks: FooterLink[] = [
  * `SocialPlatform` in `./authors` so the footer and author bylines can evolve
  * their supported networks independently.
  */
-export type FooterSocialPlatform = 'discord' | 'x' | 'mastodon' | 'github';
+export type FooterSocialPlatform = 'discord' | 'x' | 'github';
 
 export type FooterSocialDestination = {
     platform: FooterSocialPlatform;
     label: string;
+
     /**
      * Destination URL, or `null` when the destination is not live yet. A `null`
      * url marks the entry as a TBD placeholder (see `comingSoon`) and must not
      * be rendered as a navigable link.
      */
     url: string | null;
+
     /** True for not-yet-live destinations rendered as inert placeholders. */
     comingSoon?: boolean;
 };
@@ -87,12 +90,6 @@ export const footerSocials: FooterSocialDestination[] = [
         platform: 'x',
         label: 'X',
         url: 'https://x.com/blit386',
-    },
-    {
-        platform: 'mastodon',
-        label: 'Mastodon',
-        url: null,
-        comingSoon: true,
     },
     {
         platform: 'github',

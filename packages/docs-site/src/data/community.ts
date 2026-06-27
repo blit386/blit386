@@ -32,7 +32,7 @@ export const communityDestinations: CommunityDestination[] = [
         external: true,
     },
     {
-        label: 'X / Twitter',
+        label: 'X',
         platform: 'x',
         url: 'https://x.com/blit386',
         description: 'Releases, new demos, and project news',
@@ -44,19 +44,5 @@ export const communityDestinations: CommunityDestination[] = [
         url: 'https://github.com/blit386/blit386/releases',
         description: 'Every version bump gets a release note with a changelog',
         external: true,
-    },
-    {
-        label: 'Bluesky',
-        platform: 'bluesky',
-        url: '',
-        description: 'Coming soon',
-        comingSoon: true,
-    },
-    {
-        label: 'Mastodon',
-        platform: 'mastodon',
-        url: '',
-        description: 'Coming soon',
-        comingSoon: true,
     },
 ];
