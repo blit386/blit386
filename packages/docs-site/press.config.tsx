@@ -86,11 +86,13 @@ export default defineConfig({
                 <link rel="dns-prefetch" href="https://fonts.vancura.dev" />
                 <link
                     rel="preload"
-                    href="https://fonts.vancura.dev/SwearDeck-Medium.woff2"
+                    href="https://fonts.vancura.dev/PragmataPro-R.woff2"
                     as="font"
                     type="font/woff2"
                     crossOrigin=""
                 />
+
+                <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" />
 
                 <script async={true} src="https://plausible.io/js/pa-T01y19zS6cj7d9y8uQnqw.js" />
                 <script>
