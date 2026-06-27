@@ -91,6 +91,20 @@ export default defineConfig({
                     type="font/woff2"
                     crossOrigin=""
                 />
+                <link
+                    rel="preload"
+                    href="https://fonts.vancura.dev/DegularText-Regular.woff2"
+                    as="font"
+                    type="font/woff2"
+                    crossOrigin=""
+                />
+                <link
+                    rel="preload"
+                    href="https://fonts.vancura.dev/DegularText-Semibold.woff2"
+                    as="font"
+                    type="font/woff2"
+                    crossOrigin=""
+                />
 
                 <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" />
 

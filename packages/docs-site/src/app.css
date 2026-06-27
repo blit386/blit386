@@ -20,7 +20,24 @@
     font-display: swap;
 }
 
+@font-face {
+    font-family: 'DegularText';
+    src: url('https://fonts.vancura.dev/DegularText-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DegularText';
+    src: url('https://fonts.vancura.dev/DegularText-Semibold.woff2') format('woff2');
+    font-weight: 600 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
+    --font-sans: 'DegularText', ui-sans-serif, system-ui, sans-serif;
     --font-heading: 'DepartureMono', monospace;
     --font-mono: 'essential_pragmatapro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
