@@ -9,21 +9,20 @@ import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
-import { createHomeLayoutPage } from 'fumapress/layouts/home';
 import { createDocsLayoutPage } from 'fumapress/layouts/docs';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
+import { BlogLayout } from './src/components/blog-layout';
+import { SidebarSocials } from './src/components/sidebar-socials';
 import { CommunityConnect } from './src/components/community-connect';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
-import { SiteFooter } from './src/components/site-footer';
 import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
-import { GithubInfo } from 'fumadocs-ui/components/github-info';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
@@ -31,35 +30,132 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
 import { blog, docs } from './.source/server';
 
-let _departureMono: Buffer | undefined;
+const SITE_BASE_URL = 'https://blit386.dev';
 
-const getDepartureMono = () =>
-    (_departureMono ??= readFileSync(join(process.cwd(), 'public/fonts/DepartureMono-Regular.otf')));
+// Lazy-load and cache heavy binary assets that are only needed during build (OG image generation).
+// Each getter reads from disk once on first call; subsequent calls return the cached value.
 
-let _ogLogo: string | undefined;
+const getDepartureMono = (() => {
+    let cache: Buffer | undefined;
+    return () => (cache ??= readFileSync(join(process.cwd(), 'public/fonts/DepartureMono-Regular.otf')));
+})();
 
-const getOgLogoDataUrl = () => {
-    if (_ogLogo) {
-        return _ogLogo;
-    }
+const getOgLogoDataUrl = (() => {
+    let cache: string | undefined;
+    return () => {
+        if (!cache) {
+            const data = readFileSync(join(process.cwd(), 'public/og-logo.png'));
+            cache = `data:image/png;base64,${data.toString('base64')}`;
+        }
+        return cache;
+    };
+})();
 
-    const data = readFileSync(join(process.cwd(), 'public/og-logo.png'));
+const rootLayout = createRootLayout({
+    providerProps: {
+        theme: { defaultTheme: 'system' },
+    },
+});
 
-    _ogLogo = `data:image/png;base64,${data.toString('base64')}`;
+const docsPageLayout = createDocsLayoutPage({
+    render() {
+        return { layoutProps: { sidebar: { footer: <SidebarSocials /> } } };
+    },
+});
 
-    return _ogLogo;
-};
+// Font preloads, analytics, and feed link injected into every page's <head>.
+const GLOBAL_HEAD = (
+    <>
+        <link rel="preconnect" href="https://fonts.vancura.dev" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://fonts.vancura.dev" />
+        <link
+            rel="preload"
+            href="https://fonts.vancura.dev/PragmataPro-R.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+        />
+        <link
+            rel="preload"
+            href="https://fonts.vancura.dev/DegularText-Regular.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+        />
+        <link
+            rel="preload"
+            href="https://fonts.vancura.dev/DegularText-Semibold.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin=""
+        />
 
-// Fumapress/Fumadocs expose no layout-level `footer` key and no `footer` slot
-// (BaseLayoutProps, BaseSlots, HomeSlots, DocsSlots have none), so the shared
-// `defaultProps()` cannot carry one. The root layout FC is the single surface
-// that wraps every page across all layout types, so we compose the default root
-// and append SiteFooter to the provider's children: the footer renders inside
-// the theme provider (Fumadocs design tokens resolve) as the last child of the
-// `flex flex-col min-h-screen` body, sitting below the `flex-1` page content.
-const rootLayout = createRootLayout();
-const homePageLayout = createHomeLayoutPage();
-const docsPageLayout = createDocsLayoutPage();
+        <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" crossOrigin="" />
+
+        <script async={true} src="https://plausible.io/js/pa-T01y19zS6cj7d9y8uQnqw.js" />
+        <script>
+            {
+                'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()'
+            }
+        </script>
+
+        <script defer={true} src="/webmcp.js" />
+        <link rel="alternate" type="application/rss+xml" title="BLIT386 Blog" href="/feed.xml" />
+    </>
+);
+
+function buildOgNode(title: string | undefined, description: string | undefined) {
+    return (
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '60px 72px',
+                width: '100%',
+                height: '100%',
+                background: '#c2c3c7',
+                fontFamily: 'DepartureMono',
+            }}
+        >
+            <img
+                src={getOgLogoDataUrl()}
+                width={180}
+                height={156}
+                style={{ display: 'flex', marginTop: '10px' }}
+                alt="BLIT386 Logo"
+            />
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div
+                    style={{
+                        fontSize: 64,
+                        color: '#000000',
+                        lineHeight: 1.1,
+                        marginBottom: 24,
+                        textWrap: 'balance',
+                    }}
+                >
+                    {title ?? 'BLIT386'}
+                </div>
+
+                {description && (
+                    <div
+                        style={{
+                            fontSize: 22,
+                            color: '#555',
+                            lineHeight: 1.4,
+                            textWrap: 'balance',
+                            marginLeft: '-2px',
+                        }}
+                    >
+                        {description}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default defineConfig({
     content: {
@@ -76,70 +172,30 @@ export default defineConfig({
 
     site: {
         name: SITE_NAME,
-        baseUrl: 'https://blit386.dev',
+        baseUrl: SITE_BASE_URL,
     },
 
     meta: {
-        root: () => (
-            <>
-                <link rel="preconnect" href="https://fonts.vancura.dev" crossOrigin="" />
-                <link rel="dns-prefetch" href="https://fonts.vancura.dev" />
-                <link
-                    rel="preload"
-                    href="https://fonts.vancura.dev/PragmataPro-R.woff2"
-                    as="font"
-                    type="font/woff2"
-                    crossOrigin=""
-                />
-                <link
-                    rel="preload"
-                    href="https://fonts.vancura.dev/DegularText-Regular.woff2"
-                    as="font"
-                    type="font/woff2"
-                    crossOrigin=""
-                />
-                <link
-                    rel="preload"
-                    href="https://fonts.vancura.dev/DegularText-Semibold.woff2"
-                    as="font"
-                    type="font/woff2"
-                    crossOrigin=""
-                />
-
-                <link rel="preload" href="/fonts/DepartureMono-Regular.woff2" as="font" type="font/woff2" />
-
-                <script async={true} src="https://plausible.io/js/pa-T01y19zS6cj7d9y8uQnqw.js" />
-                <script>
-                    {
-                        'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()'
-                    }
-                </script>
-
-                <script defer={true} src="/webmcp.js" />
-                <link rel="alternate" type="application/rss+xml" title="BLIT386 Blog" href="/feed.xml" />
-            </>
-        ),
+        root: () => GLOBAL_HEAD,
 
         page(page) {
-            const base = this.siteConfig.baseUrl ?? 'https://blit386.dev';
-            const siteName = this.siteConfig.name ?? SITE_NAME;
             const title = page.data.title;
             const description = page.data.description ?? '';
-            const url = `${base}${page.url}`;
+            const url = `${SITE_BASE_URL}${page.url}`;
             const ogType = page.url === '/' ? 'website' : 'article';
-            const prefixedTitle = ogType === 'website' ? title : `${siteName} – ${title}`;
+            const prefixedTitle = ogType === 'website' ? title : `${SITE_NAME} - ${title}`;
 
             // Escape </ so a field value containing "</script>" cannot terminate the tag.
             // `\/` is a valid JSON escape, so parsers handle the output correctly.
             const jsonLd = JSON.stringify({
                 '@context': 'https://schema.org',
                 '@type': ogType === 'website' ? 'WebSite' : 'TechArticle',
-                name: ogType === 'website' ? siteName : undefined,
+                name: ogType === 'website' ? SITE_NAME : undefined,
                 headline: ogType === 'website' ? undefined : prefixedTitle,
                 ...(description && { description }),
                 url,
                 ...(ogType === 'article' && {
-                    isPartOf: { '@type': 'WebSite', name: siteName, url: base },
+                    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_BASE_URL },
                 }),
             }).replaceAll('</', '<\\/');
 
@@ -151,7 +207,7 @@ export default defineConfig({
 
                     <meta property="og:url" content={url} />
                     <meta property="og:type" content={ogType} />
-                    <meta property="og:site_name" content={siteName} />
+                    <meta property="og:site_name" content={SITE_NAME} />
 
                     <meta name="twitter:title" content={prefixedTitle} />
                     {description && <meta name="twitter:description" content={description} />}
@@ -171,7 +227,7 @@ export default defineConfig({
     .plugins(
         flexsearchPlugin(),
 
-        blogPlugin({ paths: { tags: '/blog/tags' } }),
+        blogPlugin({ paths: { tags: '/blog/tags' }, layouts: { layout: BlogLayout } }),
 
         markdownNegotiationPlugin(),
 
@@ -198,7 +254,7 @@ export default defineConfig({
                     changefreq = 'monthly';
                 }
 
-                return { loc: `${this.siteConfig.baseUrl}${url}`, priority, changefreq };
+                return { loc: `${SITE_BASE_URL}${url}`, priority, changefreq };
             },
         }),
 
@@ -212,56 +268,7 @@ export default defineConfig({
                     options: {
                         fonts: [{ name: 'DepartureMono', data: getDepartureMono() }],
                     },
-                    node: (
-                        <div
-                            style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                                padding: '60px 72px',
-                                width: '100%',
-                                height: '100%',
-                                background: '#c2c3c7',
-                                fontFamily: 'DepartureMono',
-                            }}
-                        >
-                            <img
-                                src={getOgLogoDataUrl()}
-                                width={180}
-                                height={156}
-                                style={{ display: 'flex', marginTop: '10px' }}
-                                alt="BLIT386 Logo"
-                            />
-
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <div
-                                    style={{
-                                        fontSize: 64,
-                                        color: '#000000',
-                                        lineHeight: 1.1,
-                                        marginBottom: 24,
-                                        textWrap: 'balance',
-                                    }}
-                                >
-                                    {page.data.title ?? 'BLIT386'}
-                                </div>
-
-                                {page.data.description && (
-                                    <div
-                                        style={{
-                                            fontSize: 22,
-                                            color: '#555',
-                                            lineHeight: 1.4,
-                                            textWrap: 'balance',
-                                            marginLeft: '-2px',
-                                        }}
-                                    >
-                                        {page.data.description}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ),
+                    node: buildOgNode(page.data.title, page.data.description),
                 };
             },
         }),
@@ -272,7 +279,7 @@ export default defineConfig({
     .adapters(
         // Extend the default MDX component map so the engine docs can use the full
         // Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,
-        // GithubInfo, InlineTOC). Callout, Card/Cards, and code blocks already ship
+        // InlineTOC). Callout, Card/Cards, and code blocks already ship
         // in `defaultMdxComponents`. The relative-link override mirrors the adapter
         // default so in-page links keep resolving.
         fumadocsMdx({
@@ -285,7 +292,6 @@ export default defineConfig({
                     File,
                     Files,
                     Folder,
-                    GithubInfo,
                     InlineTOC,
                     Step,
                     Steps,
@@ -306,35 +312,16 @@ export default defineConfig({
 
     .layouts({
         root({ lang, children }) {
-            return rootLayout({
-                lang,
-                children: (
-                    <>
-                        {children}
-                        <SiteFooter />
-                    </>
-                ),
-            });
+            return rootLayout({ lang, children });
         },
 
         defaultProps() {
             return {
-                links: [
-                    { type: 'main', text: 'Docs', url: '/docs', active: 'nested-url' },
-                    { type: 'main', text: 'Blog', url: '/blog', active: 'nested-url' },
-                    { type: 'main', text: 'Demos', url: 'https://demos.blit386.dev', external: true },
-                    { type: 'main', text: 'Showcase', url: '/showcase', active: 'nested-url' },
-                    { type: 'main', text: 'Community', url: '/community', active: 'nested-url' },
-                    { type: 'custom', children: <GithubInfo owner="blit386" repo="blit386" /> },
-                ],
+                themeSwitch: { enabled: false },
             };
         },
 
         page: async ({ lang, slugs, page }) => {
-            if (page.url === '/') {
-                return homePageLayout({ lang, slugs, page });
-            }
-
             return docsPageLayout({ lang, slugs, page });
         },
     });
