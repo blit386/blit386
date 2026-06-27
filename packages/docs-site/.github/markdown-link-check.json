@@ -52,6 +52,9 @@
       "pattern": "^/docs(/|$)"
     },
     {
+      "pattern": "^/community(/|$)"
+    },
+    {
       "pattern": "^https://blit386\\.dev/sitemap\\.xml$"
     }
   ],
