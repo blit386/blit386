@@ -2,21 +2,13 @@
   "title": "Documentation",
   "pages": [
     "index",
-    "---Getting started---",
     "getting-started",
-    "---FAQ---",
     "faq",
-    "---API---",
     "api",
-    "---Guides---",
     "guides",
-    "---Performance---",
     "performance",
-    "---Reference---",
     "reference",
-    "---Changelog---",
     "changelog",
-    "---Contributing---",
     "contributing"
   ]
 }

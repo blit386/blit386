@@ -464,10 +464,7 @@ const main = () => {
         written.push(metaPath);
 
         for (const { topic, page } of entries) {
-            const pageDir = join(sectionDir, topic);
-            mkdirSync(pageDir, { recursive: true });
-
-            const pagePath = join(pageDir, 'index.mdx');
+            const pagePath = join(sectionDir, `${topic}.mdx`);
             const { contents, comments } = renderPage(page);
             writeFileSync(pagePath, contents);
             written.push(pagePath);

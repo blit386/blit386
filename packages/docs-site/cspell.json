@@ -38,7 +38,7 @@
     ".source",
     "pnpm-lock.yaml",
     "src/pages.gen.ts",
-    "content/docs/*/**",
+    "content/docs/**",
     "public/fonts"
   ]
 }
