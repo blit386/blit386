@@ -27,23 +27,37 @@ export type FooterColumn = {
 export const footerColumns: FooterColumn[] = [
     {
         title: 'Documentation',
-        links: [{ label: 'Docs', href: '/docs' }],
-    },
-    {
-        title: 'Blog',
-        links: [{ label: 'Blog', href: '/blog' }],
-    },
-    {
-        title: 'Demos',
-        links: [{ label: 'Demos', href: 'https://demos.blit386.dev', external: true }],
-    },
-    {
-        title: 'Showcase',
-        links: [{ label: 'Showcase', href: '/showcase' }],
+        links: [
+            { label: 'Getting Started', href: '/docs/getting-started' },
+            { label: 'API Reference', href: '/docs/api/core' },
+            { label: 'Guides', href: '/docs/guides/input' },
+            { label: 'FAQ', href: '/docs/faq' },
+        ],
     },
     {
         title: 'Community',
-        links: [{ label: 'Community', href: '/community' }],
+        links: [
+            { label: 'Discord', href: 'https://discord.gg/tC2wGt88Uj', external: true },
+            { label: 'GitHub', href: 'https://github.com/blit386/blit386', external: true },
+            { label: 'X', href: 'https://x.com/blit386', external: true },
+            { label: 'Community', href: '/community' },
+        ],
+    },
+    {
+        title: 'Resources',
+        links: [
+            { label: 'Blog', href: '/blog' },
+            { label: 'Demos', href: 'https://demos.blit386.dev', external: true },
+            { label: 'Showcase', href: '/showcase' },
+        ],
+    },
+    {
+        title: 'Project',
+        links: [
+            { label: 'Changelog', href: '/docs/changelog' },
+            { label: 'Contributing', href: '/docs/contributing' },
+            { label: 'MCP Server', href: '/mcp-server' },
+        ],
     },
 ];
 
@@ -77,7 +91,7 @@ export type FooterSocialDestination = {
 
 /**
  * Social destinations. Concrete URLs are sourced from
- * `content/community/index.mdx`. Mastodon is flagged `comingSoon` with a `null`
+ * `content/community.mdx`. Mastodon is flagged `comingSoon` with a `null`
  * url until the account is live.
  */
 export const footerSocials: FooterSocialDestination[] = [

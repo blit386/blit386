@@ -1,4 +1,6 @@
+'use client';
 import type { ReactNode } from 'react';
+import { useRouter } from 'waku';
 import type { FooterLink, FooterSocialPlatform } from '../data/footer';
 import { footerColumns, footerSocials, footerUtilityLinks, getCopyright } from '../data/footer';
 import { SITE_NAME } from '../data/site';
@@ -44,11 +46,16 @@ function FooterAnchor({ link }: { link: FooterLink }) {
  * copyright line. Pure presentation driven entirely by `../data/footer`.
  */
 export function SiteFooter() {
+    const { path } = useRouter();
     const year = new Date().getFullYear();
+
+    if (path.startsWith('/docs')) {
+        return null;
+    }
 
     return (
         <footer className="border-t bg-fd-background text-fd-muted-foreground">
-            <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10">
+            <div className="mx-auto flex w-full max-w-(--fd-layout-width) flex-col gap-8 px-4 py-10">
                 {/* Social-icon row */}
                 <nav className="flex flex-row flex-wrap items-center gap-4" aria-label="Social">
                     {footerSocials.map((social) => {

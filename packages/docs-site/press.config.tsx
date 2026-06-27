@@ -9,12 +9,13 @@ import { sitemapPlugin } from 'fumapress/plugins/sitemap';
 import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
-import { createHomeLayoutPage } from 'fumapress/layouts/home';
 import { createDocsLayoutPage } from 'fumapress/layouts/docs';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
+import { BlogLayout } from './src/components/blog-layout';
+import { SidebarSocials } from './src/components/sidebar-socials';
 import { CommunityConnect } from './src/components/community-connect';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
@@ -23,7 +24,6 @@ import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
-import { GithubInfo } from 'fumadocs-ui/components/github-info';
 import { InlineTOC } from 'fumadocs-ui/components/inline-toc';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
@@ -63,8 +63,11 @@ const rootLayout = createRootLayout({
     },
 });
 
-const homePageLayout = createHomeLayoutPage();
-const docsPageLayout = createDocsLayoutPage();
+const docsPageLayout = createDocsLayoutPage({
+    render() {
+        return { layoutProps: { sidebar: { footer: <SidebarSocials /> } } };
+    },
+});
 
 export default defineConfig({
     content: {
@@ -176,7 +179,7 @@ export default defineConfig({
     .plugins(
         flexsearchPlugin(),
 
-        blogPlugin({ paths: { tags: '/blog/tags' } }),
+        blogPlugin({ paths: { tags: '/blog/tags' }, layouts: { layout: BlogLayout } }),
 
         markdownNegotiationPlugin(),
 
@@ -290,7 +293,6 @@ export default defineConfig({
                     File,
                     Files,
                     Folder,
-                    GithubInfo,
                     InlineTOC,
                     Step,
                     Steps,
@@ -325,23 +327,10 @@ export default defineConfig({
         defaultProps() {
             return {
                 themeSwitch: { enabled: false },
-
-                links: [
-                    { type: 'main', text: 'Docs', url: '/docs', active: 'nested-url' },
-                    { type: 'main', text: 'Blog', url: '/blog', active: 'nested-url' },
-                    { type: 'main', text: 'Demos', url: 'https://demos.blit386.dev', external: true },
-                    { type: 'main', text: 'Showcase', url: '/showcase', active: 'nested-url' },
-                    { type: 'main', text: 'Community', url: '/community', active: 'nested-url' },
-                    { type: 'custom', children: <GithubInfo owner="blit386" repo="blit386" /> },
-                ],
             };
         },
 
         page: async ({ lang, slugs, page }) => {
-            if (page.url === '/') {
-                return homePageLayout({ lang, slugs, page });
-            }
-
             return docsPageLayout({ lang, slugs, page });
         },
     });
