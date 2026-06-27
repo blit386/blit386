@@ -19,7 +19,6 @@ import { SidebarSocials } from './src/components/sidebar-socials';
 import { CommunityConnect } from './src/components/community-connect';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
-import { SiteFooter } from './src/components/site-footer';
 import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
@@ -50,13 +49,6 @@ const getOgLogoDataUrl = () => {
     return _ogLogo;
 };
 
-// Fumapress/Fumadocs expose no layout-level `footer` key and no `footer` slot
-// (BaseLayoutProps, BaseSlots, HomeSlots, DocsSlots have none), so the shared
-// `defaultProps()` cannot carry one. The root layout FC is the single surface
-// that wraps every page across all layout types, so we compose the default root
-// and append SiteFooter to the provider's children: the footer renders inside
-// the theme provider (Fumadocs design tokens resolve) as the last child of the
-// `flex flex-col min-h-screen` body, sitting below the `flex-1` page content.
 const rootLayout = createRootLayout({
     providerProps: {
         theme: { defaultTheme: 'system' },
@@ -313,15 +305,7 @@ export default defineConfig({
 
     .layouts({
         root({ lang, children }) {
-            return rootLayout({
-                lang,
-                children: (
-                    <>
-                        {children}
-                        <SiteFooter />
-                    </>
-                ),
-            });
+            return rootLayout({ lang, children });
         },
 
         defaultProps() {

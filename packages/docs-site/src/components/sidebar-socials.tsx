@@ -1,8 +1,21 @@
-import { footerSocials } from '../data/footer';
-import type { FooterSocialPlatform } from '../data/footer';
 import type { ReactNode } from 'react';
 
-const ICONS: Record<FooterSocialPlatform, ReactNode> = {
+type SocialPlatform = 'discord' | 'x' | 'github';
+
+type SocialDestination = {
+    platform: SocialPlatform;
+    label: string;
+    url: string | null;
+    comingSoon?: boolean;
+};
+
+const SOCIALS: SocialDestination[] = [
+    { platform: 'discord', label: 'Discord', url: 'https://discord.gg/tC2wGt88Uj' },
+    { platform: 'x', label: 'X', url: 'https://x.com/blit386' },
+    { platform: 'github', label: 'GitHub', url: 'https://github.com/blit386/blit386' },
+];
+
+const ICONS: Record<SocialPlatform, ReactNode> = {
     discord: (
         <path
             fill="currentColor"
@@ -26,7 +39,7 @@ const ICONS: Record<FooterSocialPlatform, ReactNode> = {
 export function SidebarSocials() {
     return (
         <div className="flex items-center gap-0.5 border bg-fd-secondary/50 rounded-lg p-0.5 text-fd-muted-foreground">
-            {footerSocials.map((social) =>
+            {SOCIALS.map((social) =>
                 social.url ? (
                     <a
                         key={social.platform}
