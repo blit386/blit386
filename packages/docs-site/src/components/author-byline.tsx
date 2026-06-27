@@ -10,6 +10,8 @@ const PLATFORM_LABELS: Record<string, string> = {
     mastodon: 'Mastodon',
     bluesky: 'Bluesky',
     website: 'Website',
+    x: 'X',
+    linkedin: 'LinkedIn',
 };
 
 export function AuthorByline({ author }: AuthorBylineProps) {

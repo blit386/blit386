@@ -1,4 +1,4 @@
-export type SocialPlatform = 'github' | 'mastodon' | 'bluesky' | 'website';
+export type SocialPlatform = 'github' | 'website';
 
 export type SocialDestination = {
     platform: SocialPlatform;
