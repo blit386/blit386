@@ -81,21 +81,29 @@ jobs:
 
       - name: Check formatting
         run: pnpm run format:check
+        background: true
 
       - name: Lint code
         run: pnpm run lint
+        background: true
 
       - name: Type check
         run: pnpm run typecheck
+        background: true
 
       - name: Spell check
         run: pnpm run spellcheck
+        background: true
 
       - name: Check documentation links
         run: pnpm run docs:links
+        background: true
 
       - name: Check doc site banners
         run: pnpm run sync:doc-banners:check
+        background: true
+
+      - wait-all:
 
   build-library:
     name: Build Library
