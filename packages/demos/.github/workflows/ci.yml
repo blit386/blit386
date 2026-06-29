@@ -33,26 +33,33 @@ jobs:
         run: |
           cd blit386-demos
           pnpm run format:check
+        background: true
 
       - name: Lint code
         run: |
           cd blit386-demos
           pnpm run lint
+        background: true
 
       - name: Spell check
         run: |
           cd blit386-demos
           pnpm run spellcheck
+        background: true
 
       - name: Check for unused exports
         run: |
           cd blit386-demos
           pnpm run knip
+        background: true
 
       - name: Check documentation links
         run: |
           cd blit386-demos
           pnpm run docs:links
+        background: true
+
+      - wait-all:
 
   build:
     name: Build
