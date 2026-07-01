@@ -1,4 +1,5 @@
 import type { AppContext, ConfigContext, ServerPlugin } from 'fumapress';
+import { getPostDate } from './blog-post-date';
 
 const FEED_URL = '/feed.xml';
 const CHANNEL_TITLE = 'BLIT386 Blog';
@@ -18,8 +19,8 @@ function toRfc822(date: Date): string {
  * Fumapress ServerPlugin serving an RSS 2.0 feed at GET /feed.xml.
  *
  * Blog pages are identified by page.type === 'blog' (the default isBlog predicate used
- * by blogPlugin). Dates are retrieved via the core:get-creation-date adapter, which reads
- * the `date` frontmatter field from blog MDX files. Items are sorted newest-first.
+ * by blogPlugin). Dates come from the `date` frontmatter field via `getPostDate`. Items are
+ * sorted newest-first.
  *
  * The built feed is cached per loader instance (same WeakMap pattern as mcp-server.ts),
  * so it is generated once per Worker isolate and reused across requests.
@@ -30,6 +31,26 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
         createMiddlewares(this: AppContext<C>) {
             const feedCache = new WeakMap<object, Promise<string>>();
 
+            /**
+             * Generates an RSS feed in XML format.
+             *
+             * This asynchronous function constructs an RSS feed based on the blog pages
+             * retrieved from the loader. If a cached version exists for the loader, it is
+             * returned instead of generating a new feed. The RSS feed includes metadata about
+             * the channel and individual blog items formatted in the RSS 2.0 specification.
+             *
+             * The generated feed includes the following for each blog post:
+             * - Title
+             * - Description
+             * - Link to the post
+             * - Publication date formatted in RFC 822
+             *
+             * The generated feed is cached to optimize performance and avoid redundant computations.
+             * If any error occurs during the generation process, the cache is invalidated for the
+             * current loader.
+             *
+             * @returns {Promise<string>} A promise that resolves to the generated RSS feed as a string in XML format.
+             */
             const buildFeed = async (): Promise<string> => {
                 const loader = await this.getLoader();
                 const cached = feedCache.get(loader);
@@ -45,27 +66,22 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
 
                     const blogPages = loader.getPages().filter((page) => page.type === 'blog');
 
-                    const items = await Promise.all(
-                        blogPages.map(async (page) => {
-                            let date: Date | undefined;
+                    const items = blogPages.map((page) => {
+                        const date = getPostDate(page);
 
-                            for (const adapter of this.adapters) {
-                                const d = await adapter['core:get-creation-date']?.call(this, page);
+                        if (!date) {
+                            console.warn(
+                                `feed: missing or invalid date for blog post "${page.data.title}" (${page.url})`,
+                            );
+                        }
 
-                                if (d instanceof Date) {
-                                    date = d;
-                                    break;
-                                }
-                            }
-
-                            return {
-                                title: page.data.title ?? '',
-                                description: page.data.description ?? '',
-                                link: `${baseUrl}${page.url}`,
-                                date: date ?? new Date(0),
-                            };
-                        }),
-                    );
+                        return {
+                            title: page.data.title ?? '',
+                            description: page.data.description ?? '',
+                            link: `${baseUrl}${page.url}`,
+                            date: date ?? new Date(0),
+                        };
+                    });
 
                     items.sort((a, b) => b.date.getTime() - a.date.getTime());
 
