@@ -105,9 +105,6 @@ Each call appends the image's colors starting at the given slot; chain them with
 into one palette.
 
 ```ts twoslash
-import { Palette, SpriteSheet } from 'blit386';
-const palette = new Palette(256);
-// ---cut---
 const colors = await SpriteSheet.loadColorsIntoPalette('hero.png', palette, 10);
 const tileColors = await SpriteSheet.loadColorsIntoPalette('tiles.png', palette, 10 + colors.length);
 ```
@@ -119,8 +116,6 @@ const tileColors = await SpriteSheet.loadColorsIntoPalette('tiles.png', palette,
 ### Load the image into a sprite sheet
 
 ```ts twoslash
-import { SpriteSheet } from 'blit386';
-// ---cut---
 const sheet = await SpriteSheet.load('hero.png');
 ```
 
@@ -133,10 +128,6 @@ const sheet = await SpriteSheet.load('hero.png');
 `indexize()` maps every pixel to its palette slot; activate the palette afterward.
 
 ```ts twoslash
-import { BT, Palette, SpriteSheet } from 'blit386';
-const palette = new Palette(256);
-declare const sheet: SpriteSheet;
-// ---cut---
 sheet.indexize(palette);
 BT.paletteSet(palette);
 ```
@@ -148,11 +139,6 @@ BT.paletteSet(palette);
 To create a sheet from raw palette-indexed pixel data (advanced / test use):
 
 ```ts twoslash
-import { SpriteSheet } from 'blit386';
-declare const width: number;
-declare const height: number;
-declare const indexedPixels: Uint8Array;
-// ---cut---
 const sheet = SpriteSheet.fromIndexedPixels(width, height, indexedPixels);
 ```
 
@@ -163,11 +149,6 @@ texel indices before palette lookup. Useful for team-color variations and damage
 [Palette addressing](/docs/api/palette#palette-addressing). Draw semantics: [API: Rendering](/docs/api/rendering).
 
 ```ts twoslash
-import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
-declare const sheet: SpriteSheet;
-const srcRect = new Rect2i(0, 0, 32, 32);
-const pos = new Vector2i(0, 0);
-// ---cut---
 BT.drawSprite(sheet, srcRect, pos, 16); // render in "blue team" color range
 ```
 
@@ -177,9 +158,6 @@ Load `.btfont` files for proportional, palette-indexed bitmap fonts. After loadi
 indexize the font's internal sprite sheet before drawing (same pattern as manual sprite setup).
 
 ```ts twoslash
-import { BitmapFont, BT, Palette, Vector2i } from 'blit386';
-declare const paletteOffset: number;
-// ---cut---
 const palette = new Palette(256);
 const font = await BitmapFont.load('fonts/MyFont.btfont');
 font.getSpriteSheet().indexize(palette);
@@ -201,9 +179,6 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
 A built-in 6×14 monospace font covering printable ASCII (characters 32-126). No load step needed.
 
 ```ts twoslash
-import { BT, Vector2i } from 'blit386';
-declare const paletteIndex: number;
-// ---cut---
 BT.systemPrint(new Vector2i(10, 10), paletteIndex, 'Score: 100');
 BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
 ```

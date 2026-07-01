@@ -8,12 +8,6 @@ description: "The camera's global pixel offset and world-clamp helpers."
 The camera applies a global pixel offset to all subsequent draw calls. Integer only – pass `Vector2i`, never floats.
 
 ```ts twoslash
-import { BT, Vector2i } from 'blit386';
-declare const scrollX: number;
-declare const scrollY: number;
-declare const desired: Vector2i;
-declare const worldSize: Vector2i;
-// ---cut---
 BT.cameraSet(new Vector2i(scrollX, scrollY)); // apply offset
 BT.camera; // Vector2i - current offset
 BT.cameraReset(); // set back to (0, 0)
@@ -28,11 +22,6 @@ const clamped2 = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
 Standalone helper (same math as `BT.cameraClamp`):
 
 ```ts twoslash
-import { clampCameraToWorld, Vector2i } from 'blit386';
-declare const desired: Vector2i;
-declare const worldSize: Vector2i;
-declare const viewSize: Vector2i;
-// ---cut---
 const clamped = clampCameraToWorld(desired, worldSize, viewSize);
 ```
 

@@ -12,14 +12,6 @@ The integer-coordinate primitives shared across the engine: `Vector2i`, `Rect2i`
 Integer 2D vector. Constructor auto-truncates floats toward zero. Used for all positions, sizes, and camera offsets.
 
 ```ts twoslash
-import { Vector2i } from 'blit386';
-declare const x: number;
-declare const y: number;
-declare const a: Vector2i;
-declare const b: Vector2i;
-declare const t: number;
-declare const out: Vector2i;
-// ---cut---
 const v = new Vector2i(10, 20);
 v.x;
 v.y; // direct access
@@ -51,29 +43,6 @@ Instance methods: `.add()`, `.sub()`, `.scale()`, `.dot()`, `.clone()`, `.isEqua
 Integer rectangle with `x, y, width, height` fields.
 
 ```ts twoslash
-import { Rect2i, Vector2i } from 'blit386';
-declare const x: number;
-declare const y: number;
-declare const width: number;
-declare const height: number;
-declare const min: Vector2i;
-declare const max: Vector2i;
-declare const minX: number;
-declare const minY: number;
-declare const maxX: number;
-declare const maxY: number;
-declare const center: Vector2i;
-declare const size: Vector2i;
-declare const cx: number;
-declare const cy: number;
-declare const w: number;
-declare const h: number;
-declare const point: Vector2i;
-declare const px: number;
-declare const py: number;
-declare const other: Rect2i;
-declare const out: Rect2i;
-// ---cut---
 const r = new Rect2i(x, y, width, height);
 
 // Static factories
@@ -100,18 +69,6 @@ r.max; // Vector2i getter (bottom-right)
 32-bit RGBA color (channels 0-255).
 
 ```ts twoslash
-import { Color32 } from 'blit386';
-declare const r: number;
-declare const g: number;
-declare const b: number;
-declare const a: number;
-declare const value: number;
-declare const newColor: Color32;
-declare const ca: Color32;
-declare const cb: Color32;
-declare const t: number;
-declare const other: Color32;
-// ---cut---
 const c = new Color32(r, g, b, a);
 
 // Cached color constants (static getters; frozen singletons)

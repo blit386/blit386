@@ -84,8 +84,6 @@ background, label, header, dim, FPS) and register `hud_*` name aliases. See
 [Palette Presets – HUD](/docs/guides/palette-presets#hud-preset).
 
 ```ts twoslash
-import { BT, Palette, Vector2i } from 'blit386';
-// ---cut---
 const palette = Palette.vga();
 palette.applyHUD(1); // slots 1-6 + hud_* aliases
 BT.paletteSet(palette);
