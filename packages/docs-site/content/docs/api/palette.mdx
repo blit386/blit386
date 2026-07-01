@@ -27,10 +27,6 @@ Slot and `paletteIndex` mean the same integer: which entry in the active palette
 The draw call picks the slot directly. Slot `0` stays transparent (not drawn).
 
 ```ts twoslash
-import { BT, Rect2i, Vector2i } from 'blit386';
-const rect = new Rect2i(0, 0, 320, 240);
-const pos = new Vector2i(0, 0);
-// ---cut---
 BT.drawRectFill(rect, 6); // every pixel uses palette slot 6 (absolute)
 BT.systemPrint(pos, 3, 'Score'); // glyphs use absolute slot 3
 ```
@@ -42,11 +38,6 @@ draw time the WebGPU sprite shader computes `combined = storedIndex + paletteOff
 before palette lookup.
 
 ```ts twoslash
-import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
-declare const sheet: SpriteSheet;
-const src = new Rect2i(0, 0, 32, 32);
-const pos = new Vector2i(0, 0);
-// ---cut---
 BT.drawSprite(sheet, src, pos, 0); // stored 1 → palette[1], stored 2 → palette[2]
 BT.drawSprite(sheet, src, pos, 16); // stored 1 → palette[17], stored 2 → palette[18]
 ```
@@ -70,8 +61,6 @@ after a layout swap when colors moved to different slot numbers (then also call 
 ## Palette setup
 
 ```ts twoslash
-import { BT, Color32, Palette } from 'blit386';
-// ---cut---
 // Create
 const palette = new Palette(256);
 // const palette2 = BT.paletteCreate(256); // equivalent BT-namespace shorthand
@@ -91,8 +80,6 @@ BT.palette; // → active Palette; throws if none set
 Each preset returns a fully populated `Palette` instance.
 
 ```ts twoslash
-import { Palette } from 'blit386';
-// ---cut---
 Palette.vga(); // VGA 256-color
 Palette.cga(); // CGA 16-color
 Palette.c64(); // Commodore 64 16-color
@@ -106,9 +93,6 @@ Palette.nes(); // NES 64-color
 Fills six consecutive UI-purpose slots into an existing palette and registers `hud_*` name aliases.
 
 ```ts twoslash
-import { BT, Palette } from 'blit386';
-const palette = new Palette(256);
-// ---cut---
 palette.applyHUD(); // fills slots 1-6 (default startSlot = 1)
 palette.applyHUD(10); // fills slots 10-15
 BT.paletteSet(palette);
@@ -128,9 +112,6 @@ The six slots in order, by alias:
 Override individual slots after `applyHUD()`:
 
 ```ts twoslash
-import { BT, Color32, Palette } from 'blit386';
-const palette = new Palette(256);
-// ---cut---
 palette.applyHUD(1);
 palette.set(2, new Color32(20, 16, 32)); // override hud_bg
 BT.paletteSet(palette);
@@ -139,9 +120,6 @@ BT.paletteSet(palette);
 ## Named slot aliases
 
 ```ts twoslash
-import { Palette } from 'blit386';
-const palette = new Palette(256);
-// ---cut---
 palette.setNamed('player', 3); // alias 'player' → slot 3
 palette.getNamed('player'); // → 3 (the slot index)
 palette.getNamedColor('player'); // → Color32 at that slot
@@ -152,11 +130,6 @@ palette.getNamedColor('player'); // → Color32 at that slot
 ## Serialization
 
 ```ts twoslash
-import { Color32, Palette } from 'blit386';
-const palette = new Palette(256);
-declare const out: Float32Array;
-declare const color: Color32;
-// ---cut---
 // JSON round-trip (preserves colors and named aliases)
 const json = palette.toJSON();
 const restored = Palette.fromJSON(json);
@@ -183,15 +156,6 @@ upload). Multiple effects can run simultaneously on different palette ranges and
 needed.
 
 ```ts twoslash
-import { BT, Color32, Palette } from 'blit386';
-declare const start: number;
-declare const end: number;
-declare const speed: number;
-const targetPalette = Palette.vga();
-declare const durationMs: number;
-declare const indexA: number;
-declare const indexB: number;
-// ---cut---
 // Cycle a range of slots (water, fire, plasma)
 BT.paletteCycle(start, end, speed);
 // speed: steps/second, positive = forward, negative = backward

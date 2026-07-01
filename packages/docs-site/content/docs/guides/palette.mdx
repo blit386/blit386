@@ -46,11 +46,6 @@ Primitive and clear APIs take an absolute `paletteIndex` (the exact slot written
 values. See [Palette addressing](/docs/api/palette#palette-addressing).
 
 ```ts twoslash
-import { BT, Rect2i, Vector2i } from 'blit386';
-const rect = new Rect2i(0, 0, 320, 240);
-const start = new Vector2i(0, 0);
-const end = new Vector2i(100, 100);
-// ---cut---
 BT.clear(1); // absolute paletteIndex 1
 BT.drawRectFill(rect, 6); // absolute paletteIndex 6
 BT.drawLine(start, end, 12); // absolute paletteIndex 12
@@ -71,10 +66,6 @@ When slot `6` changes in the active palette, every pixel drawn with absolute ind
 Use this when loading sprites for normal game/demo work.
 
 ```ts twoslash
-import { BT, Palette, SpriteSheet, Vector2i } from 'blit386';
-const palette = new Palette(256);
-const pos = new Vector2i(0, 0);
-// ---cut---
 const indexed = await SpriteSheet.loadIndexed('sprites/hero.png', palette, 32, { sort: 'luminance' });
 BT.paletteSet(palette);
 BT.drawSprite(indexed.sheet, indexed.srcRect, pos);
@@ -94,9 +85,6 @@ What it does:
 Use this when you need custom slot planning across multiple images.
 
 ```ts twoslash
-import { BT, Palette, SpriteSheet } from 'blit386';
-const palette = new Palette(256);
-// ---cut---
 await SpriteSheet.loadColorsIntoPalette('sprites/hero.png', palette, 32);
 const sheet = await SpriteSheet.load('sprites/hero.png');
 sheet.indexize(palette);
@@ -117,12 +105,6 @@ BT.paletteSet(palette);
 [Palette addressing](/docs/api/palette#palette-addressing).
 
 ```ts twoslash
-import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
-declare const heroSheet: SpriteSheet;
-const heroSrc = new Rect2i(0, 0, 32, 32);
-const leftTeamPos = new Vector2i(0, 0);
-const rightTeamPos = new Vector2i(100, 0);
-// ---cut---
 BT.drawSprite(heroSheet, heroSrc, leftTeamPos, 0); // base range
 BT.drawSprite(heroSheet, heroSrc, rightTeamPos, 16); // same art, shifted color range
 ```
@@ -145,10 +127,6 @@ No duplicate textures required.
 Palette effects mutate slots over time and are applied in the engine frame pipeline.
 
 ```ts twoslash
-import { BT, Color32, Palette } from 'blit386';
-const nightPalette = Palette.vga();
-const dangerPalette = Palette.vga();
-// ---cut---
 // Cycling: water/lava/plasma
 BT.paletteCycle(240, 248, 4);
 
@@ -196,9 +174,6 @@ Examples:
 If the same colors move to different slot indices, call:
 
 ```ts twoslash
-import { BT, Palette } from 'blit386';
-const newLayoutPalette = Palette.vga();
-// ---cut---
 BT.paletteSet(newLayoutPalette);
 BT.spritesRefresh();
 ```
