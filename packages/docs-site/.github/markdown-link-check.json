@@ -28,6 +28,9 @@
       "pattern": "^https?://x\\.com(/|$)"
     },
     {
+      "pattern": "^https?://(www\\.)?badcastle\\.com(/|$)"
+    },
+    {
       "pattern": "^https?://github\\.com/[^/]+/[^/]+/actions(/|$)"
     },
     {
