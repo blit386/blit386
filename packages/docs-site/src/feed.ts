@@ -66,12 +66,22 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
 
                     const blogPages = loader.getPages().filter((page) => page.type === 'blog');
 
-                    const items = blogPages.map((page) => ({
-                        title: page.data.title ?? '',
-                        description: page.data.description ?? '',
-                        link: `${baseUrl}${page.url}`,
-                        date: getPostDate(page) ?? new Date(0),
-                    }));
+                    const items = blogPages.map((page) => {
+                        const date = getPostDate(page);
+
+                        if (!date) {
+                            console.warn(
+                                `feed: missing or invalid date for blog post "${page.data.title}" (${page.url})`,
+                            );
+                        }
+
+                        return {
+                            title: page.data.title ?? '',
+                            description: page.data.description ?? '',
+                            link: `${baseUrl}${page.url}`,
+                            date: date ?? new Date(0),
+                        };
+                    });
 
                     items.sort((a, b) => b.date.getTime() - a.date.getTime());
 

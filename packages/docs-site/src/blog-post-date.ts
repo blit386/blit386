@@ -13,7 +13,7 @@ export function getPostDate(page: { data: unknown }): Date | undefined {
     const raw = (page.data as { date?: unknown } | null | undefined)?.date;
 
     if (raw instanceof Date) {
-        return raw;
+        return Number.isNaN(raw.getTime()) ? undefined : raw;
     }
 
     if (typeof raw === 'string' || typeof raw === 'number') {
