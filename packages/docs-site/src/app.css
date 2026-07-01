@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/style/noDescendingSpecificity: Too noisy */
+
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
@@ -40,13 +42,429 @@
     --font-sans: 'DegularText', ui-sans-serif, system-ui, sans-serif;
     --font-heading: 'DepartureMono', monospace;
     --font-mono: 'essential_pragmatapro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-departure: 'DepartureMono', monospace;
+}
+
+:root {
+    --fd-layout-width: 1400px;
+}
+
+@theme {
+    --color-fd-background: oklch(98.5% 0 0); /* zinc-50 */
+    --color-fd-foreground: oklch(21% 0.006 285.885); /* zinc-900 */
+
+    --color-fd-muted: rgba(0, 0, 0, 0.06);
+    --color-fd-muted-foreground: oklch(21% 0.006 285.885); /* zinc-900 */
+
+    --color-fd-popover: white;
+    --color-fd-popover-foreground: oklch(27.4% 0.006 286.033); /* zinc-800 */
+
+    --color-fd-card: #ebebed;
+    --color-fd-card-foreground: oklch(21% 0.006 285.885); /* zinc-900 */
+
+    --color-fd-secondary: rgba(0, 0, 0, 0.15);
+    --color-fd-secondary-foreground: rgba(0, 0, 0, 0.75);
+
+    --color-fd-primary: oklch(54.1% 0.281 293.009); /* violet-600 */
+    --color-fd-primary-foreground: white;
+
+    --color-fd-border: transparent;
+    --color-fd-accent: oklch(54.1% 0.281 293.009); /* violet-600 */
+
+    --color-fd-accent-foreground: oklch(54.1% 0.281 293.009); /* violet-600 */
+}
+
+.dark {
+    --color-fd-background: oklch(14.1% 0.005 285.823); /* zinc-950 */
+    --color-fd-foreground: oklch(92% 0.004 286.32); /* zinc-200 */
+
+    --color-fd-muted: rgba(255, 255, 255, 0.15);
+    --color-fd-muted-foreground: oklch(92% 0.004 286.32); /* zinc-200 */
+
+    --color-fd-popover: black;
+    --color-fd-popover-foreground: oklch(92% 0.004 286.32); /* zinc-200 */
+
+    --color-fd-card: oklch(21% 0.006 285.885); /* zinc-900 */
+    --color-fd-card-foreground: oklch(92% 0.004 286.32); /* zinc-200 */
+
+    --color-fd-secondary: rgba(255, 255, 255, 0.15);
+    --color-fd-secondary-foreground: rgba(255, 255, 255, 0.75);
+
+    --color-fd-primary: oklch(82.8% 0.189 84.429); /* amber-400 */
+    --color-fd-primary-foreground: black;
+
+    --color-fd-border: transparent;
+    --color-fd-accent: oklch(82.8% 0.189 84.429); /* amber-400 */
+
+    --color-fd-accent-foreground: oklch(82.8% 0.189 84.429); /* amber-400 */
 }
 
 :where(h1, h2, h3, h4, h5, h6) {
-    font-family: var(--font-heading);
-    font-weight: normal;
+    @apply font-heading font-normal;
 }
 
 .shiki code {
-    line-height: 2;
+    @apply leading-loose rounded-none;
+}
+
+#nd-sidebar,
+#nd-toc {
+    @apply select-none;
+}
+
+#nd-sidebar,
+#nd-sidebar-mobile {
+    @apply border-none bg-zinc-300 dark:bg-zinc-900;
+
+    & a {
+        @apply py-1.5 rounded-none transition-none text-fd-foreground text-balance hover:bg-fd-primary hover:text-white dark:hover:text-black;
+
+        &.font-medium {
+            @apply h-auto font-heading text-[22px] antialiased hover:bg-transparent hover:text-inherit;
+        }
+
+        &[data-active='true'] {
+            @apply font-bold bg-fd-foreground text-white dark:text-black before:hidden;
+        }
+    }
+
+    & button {
+        @apply rounded-none border-none transition-none cursor-pointer! text-fd-foreground hover:bg-fd-primary hover:text-white dark:hover:text-black;
+
+        & kbd {
+            @apply rounded-none border-none font-departure antialiased text-[11px] leading-5 bg-fd-foreground text-fd-background;
+        }
+
+        &:hover {
+            & kbd {
+                @apply bg-white text-fd-primary dark:bg-black;
+            }
+        }
+    }
+
+    & > div:first-child {
+        @apply gap-4 pt-4;
+    }
+}
+
+/* Logo in the navbar is 64px; bump the header body past the default h-14 (56px). */
+[data-header-body] {
+    @apply h-24;
+}
+
+#nd-subnav {
+    --fd-header-height: 80px;
+
+    & button {
+        @apply rounded-none transition-none cursor-pointer hover:text-white dark:hover:text-black;
+    }
+}
+
+#nd-page {
+    /* Targets the breadcrumb trail only (a direct child of #nd-page). Callout
+       and Card also render `text-sm` on nested divs; a descendant selector
+       here would collaterally hide their icons/spans too. */
+    & > div.text-sm {
+        @apply -mb-5;
+
+        & a {
+            @apply py-1.5 px-3 mt-0 opacity-100 text-fd-foreground;
+        }
+
+        & svg,
+        & span {
+            @apply hidden;
+        }
+    }
+
+    & h1 {
+        @apply text-[66px] antialiased uppercase mt-7 leading-16;
+    }
+}
+
+#nd-toc {
+    @apply pt-5;
+
+    & h3 {
+        @apply hidden;
+    }
+}
+
+/* Fumadocs renders this collapse affordance even when sidebar.collapsible is false. */
+[data-sidebar-panel] {
+    @apply hidden;
+}
+
+[role='dialog'] {
+    @apply rounded-none border-none;
+
+    & code {
+        @apply bg-fd-card text-fd-foreground;
+    }
+
+    & [aria-selected='true'],
+    & [data-selected='true'] {
+        @apply -mx-1 px-3.5 rounded-none text-white;
+
+        & div,
+        & svg,
+        & span {
+            @apply text-white dark:text-black;
+        }
+
+        & code {
+            @apply bg-white text-fd-primary dark:bg-black;
+        }
+    }
+}
+
+button[aria-label='Close Search'] {
+    @apply rounded-none border-none font-departure antialiased text-[11px] leading-4 bg-fd-foreground text-fd-background;
+}
+
+code {
+    @apply py-px rounded-none;
+}
+
+/* page-actions bar: Copy Markdown + Open buttons */
+.border-b.pt-2.pb-6 {
+    & button {
+        @apply transition-none;
+
+        &,
+        & svg {
+            @apply rounded-none transition-none select-none cursor-pointer text-fd-secondary-foreground;
+        }
+
+        &:hover {
+            &,
+            & svg {
+                @apply text-white dark:text-black;
+            }
+        }
+    }
+
+    & [data-state='open'] {
+        &,
+        & svg {
+            @apply text-white dark:text-black;
+        }
+    }
+}
+
+/* page-actions Open popover rows */
+[data-side] {
+    @apply p-0 shadow-2xl;
+
+    & a {
+        @apply rounded-none select-none hover:text-white hover:dark:text-black;
+
+        &:hover {
+            & svg {
+                @apply text-white dark:text-black;
+            }
+        }
+    }
+}
+
+.prose {
+    @apply border-l-0 border-r-0;
+
+    &.flex-1 {
+        @apply border-t-fd-card border-2 pt-8;
+    }
+
+    & a {
+        @apply opacity-100 decoration-fd-foreground hover:text-fd-primary hover:decoration-fd-primary;
+    }
+
+    & h1,
+    & h2,
+    & h3,
+    & h4 {
+        & a {
+            @apply cursor-pointer hover:bg-fd-background! hover:text-fd-foreground!;
+        }
+
+        & button {
+            @apply rounded-none transition-none cursor-pointer text-fd-foreground hover:text-white hover:dark:text-black;
+        }
+    }
+
+    & h1 {
+        @apply text-[33px] uppercase antialiased leading-6;
+    }
+
+    & h2,
+    & h3,
+    & h4 {
+        @apply font-sans;
+    }
+
+    & table {
+        @apply rounded-none border-2 border-fd-card;
+
+        & th {
+            @apply bg-fd-card;
+        }
+
+        & td {
+            @apply bg-fd-background border-b-fd-card;
+        }
+    }
+
+    & figure {
+        @apply rounded-none shadow-none;
+
+        & svg {
+            @apply cursor-pointer -mt-0.5;
+        }
+    }
+
+    & [data-card] {
+        @apply rounded-none pb-9 transition-none hover:bg-fd-accent hover:text-white;
+        @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
+        @apply hover:shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
+
+        & h3,
+        & h4 {
+            @apply pb-2 font-departure text-[22px] uppercase antialiased leading-6;
+        }
+
+        &:hover {
+            & p,
+            & h3,
+            & h4 {
+                @apply text-white dark:text-black;
+            }
+        }
+    }
+
+    & h2,
+    & h3,
+    & h4 {
+        & [data-card] {
+            @apply pb-0 shadow-none hover:shadow-none;
+        }
+    }
+
+    & .grid {
+        @apply gap-4;
+
+        & a {
+            &:hover {
+                & div {
+                    @apply text-white dark:text-black;
+                }
+            }
+        }
+    }
+
+    & .fd-steps .fd-step:before {
+        @apply rounded-none bg-fd-foreground text-fd-background w-8 h-8 -my-0.5 font-departure text-[22px] uppercase antialiased leading-6;
+    }
+
+    & [style*='--callout-color'] {
+        @apply p-4 pb-5 rounded-none shadow-none mb-4!;
+
+        & div:first-child {
+            @apply hidden;
+        }
+
+        & svg {
+            @apply text-fd-card;
+        }
+
+        & .font-medium {
+            @apply font-bold;
+        }
+    }
+
+    & div:has(> div.not-prose) {
+        @apply rounded-none p-0 bg-fd-background border-2 border-fd-card;
+
+        & div:first-child {
+            @apply bg-fd-card px-3 pt-2.5 pb-4 font-bold;
+        }
+
+        & div:not(:first-child) {
+            @apply border-fd-card transition-none;
+
+            & code {
+                @apply text-fd-foreground;
+            }
+
+            &:hover button {
+                @apply bg-fd-background cursor-pointer;
+            }
+
+            & [data-state='open'] {
+                & div {
+                    @apply pb-7;
+                }
+            }
+        }
+    }
+
+    & div:has(> div.not-prose) > [data-state] {
+        @apply rounded-none;
+    }
+
+    & [data-orientation='horizontal'],
+    & [data-orientation='vertical'] {
+        @apply rounded-none border border-fd-card;
+
+        & button {
+            @apply hover:text-fd-foreground transition-none;
+        }
+    }
+
+    & [role='tab'] {
+        @apply cursor-pointer font-bold text-fd-foreground;
+
+        &[data-state='active'] {
+            @apply border-none text-fd-primary! pt-2.25;
+        }
+    }
+
+    & [role='tablist'] {
+        @apply h-11 bg-fd-card;
+    }
+
+    & [role='tabpanel'] {
+        @apply rounded-none;
+    }
+}
+
+/* Prev/next footer nav: match card style */
+#nd-page > div:has(> a) > a {
+    @apply mb-3 mt-8 rounded-none transition-none select-none;
+    @apply bg-fd-card shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
+    @apply hover:bg-fd-primary hover:shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
+
+    & div {
+        & svg {
+            @apply hidden;
+        }
+
+        & p {
+            @apply font-departure text-[22px] uppercase antialiased leading-6;
+        }
+    }
+
+    &:hover {
+        &,
+        & p,
+        & div {
+            @apply text-white dark:text-black;
+        }
+    }
+
+    &:not(.text-end) div p {
+        @apply before:content-['←'] before:pr-1;
+    }
+
+    &.text-end div p {
+        @apply after:content-['→'] after:pl-1;
+    }
 }
