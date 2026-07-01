@@ -16,6 +16,7 @@ import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
 import { BlogLayout } from './src/components/blog-layout';
 import { SidebarSocials } from './src/components/sidebar-socials';
+import { SidebarLogo } from './src/components/sidebar-logo';
 import { CommunityConnect } from './src/components/community-connect';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
@@ -44,7 +45,7 @@ const getOgLogoDataUrl = (() => {
     let cache: string | undefined;
     return () => {
         if (!cache) {
-            const data = readFileSync(join(process.cwd(), 'public/og-logo.png'));
+            const data = readFileSync(join(process.cwd(), 'public/logo/og.png'));
             cache = `data:image/png;base64,${data.toString('base64')}`;
         }
         return cache;
@@ -59,13 +60,23 @@ const rootLayout = createRootLayout({
 
 const docsPageLayout = createDocsLayoutPage({
     render() {
-        return { layoutProps: { sidebar: { footer: <SidebarSocials /> } } };
+        return {
+            layoutProps: {
+                nav: { title: <SidebarLogo /> },
+                sidebar: {
+                    collapsible: false,
+                    footer: <SidebarSocials />,
+                },
+            },
+        };
     },
 });
 
 // Font preloads, analytics, and feed link injected into every page's <head>.
 const GLOBAL_HEAD = (
     <>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
         <link rel="preconnect" href="https://fonts.vancura.dev" crossOrigin="" />
         <link rel="dns-prefetch" href="https://fonts.vancura.dev" />
         <link
@@ -318,6 +329,7 @@ export default defineConfig({
         defaultProps() {
             return {
                 themeSwitch: { enabled: false },
+                sidebar: { collapsible: false },
             };
         },
 
