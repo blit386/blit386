@@ -33,14 +33,15 @@ import { blog, docs } from './.source/server';
 
 const SITE_BASE_URL = 'https://blit386.dev';
 
-// Lazy-load and cache heavy binary assets that are only needed during build (OG image generation).
-// Each getter reads from disk once on first call; subsequent calls return the cached value.
-
+// Reads and caches the Departure Mono font file used for Open Graph image generation
+// (`takumiPlugin` below), so disk access happens once per Worker isolate rather than per request.
 const getDepartureMono = (() => {
     let cache: Buffer | undefined;
     return () => (cache ??= readFileSync(join(process.cwd(), 'public/fonts/DepartureMono-Regular.otf')));
 })();
 
+// Reads and caches the Open Graph logo as a base64 data URL, for the same reason as
+// `getDepartureMono` above - Takumi needs it inline, not as a file path.
 const getOgLogoDataUrl = (() => {
     let cache: string | undefined;
     return () => {
@@ -72,7 +73,11 @@ const docsPageLayout = createDocsLayoutPage({
     },
 });
 
-// Font preloads, analytics, and feed link injected into every page's <head>.
+/**
+ * Global head.
+ *
+ * Font preloads, analytics, and feed link injected into every page's <head>.
+ */
 const GLOBAL_HEAD = (
     <>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -115,6 +120,12 @@ const GLOBAL_HEAD = (
     </>
 );
 
+/**
+ * Builds the Open Graph image content rendered by `takumiPlugin` below.
+ *
+ * Takumi renders this tree through a Satori-like layout engine, not a browser, so only inline
+ * styles work here - Tailwind classes and `src/app.css` do not apply.
+ */
 function buildOgNode(title: string | undefined, description: string | undefined) {
     return (
         <div
@@ -168,17 +179,21 @@ function buildOgNode(title: string | undefined, description: string | undefined)
     );
 }
 
+// Top-level Fumapress config: content sources, build mode, and SEO meta here; plugins,
+// MDX adapters, and layouts are chained on below via `.plugins()`, `.adapters()`, `.layouts()`.
 export default defineConfig({
     content: {
         docs: docs.toFumadocsSource(),
         blog: blog.toFumadocsSource({ baseDir: 'blog' }),
     },
 
-    // Build a fully static site. On Cloudflare Workers the dynamic FlexSearch
-    // endpoint rebuilt the entire index per cold isolate, exceeding the Worker
-    // resource limits (error 1102) and intermittently 503-ing /api/search - so
-    // search only ever worked on localhost. In static mode the index is built
-    // at build time, shipped as a static asset, and queried client-side.
+    /**
+     * Build a fully static site. On Cloudflare Workers the dynamic FlexSearch
+     * endpoint rebuilt the entire index per cold isolate, exceeding the Worker
+     * resource limits (error 1102) and intermittently 503-ing /api/search - so
+     * search only ever worked on localhost. In static mode the index is built
+     * at build time, shipped as a static asset, and queried client-side.
+     */
     mode: 'static',
 
     site: {
@@ -288,11 +303,13 @@ export default defineConfig({
     )
 
     .adapters(
-        // Extend the default MDX component map so the engine docs can use the full
-        // Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,
-        // InlineTOC). Callout, Card/Cards, and code blocks already ship
-        // in `defaultMdxComponents`. The relative-link override mirrors the adapter
-        // default so in-page links keep resolving.
+        /**
+         * Extend the default MDX component map so the engine docs can use the full
+         * Fumadocs component set (Steps, Tabs, Accordions, Files, TypeTable,
+         * InlineTOC). Callout, Card/Cards, and code blocks already ship
+         * in `defaultMdxComponents`. The relative-link override mirrors the adapter
+         * default so in-page links keep resolving.
+         */
         fumadocsMdx({
             async getMdxComponents(page) {
                 return {
