@@ -72,6 +72,11 @@ a site path, so the mirror never emits a dead `/docs/...` route; each upgrades t
 is added. Expanding coverage means adding an entry to that manifest (in the engine repo) and re-running
 `pnpm run sync:docs`; no change to this repo's script is needed.
 
+## Credits
+
+- [Departure Mono](https://departuremono.com) by Helena Zhang - font used for headings and UI chrome throughout the
+  site, licensed under the [SIL Open Font License](public/fonts/DepartureMono-LICENSE.txt)
+
 ## Agent policy
 
 See [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md) for contributor and agent conventions.

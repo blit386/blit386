@@ -486,3 +486,23 @@ code {
         @apply after:content-['→'] after:pl-1;
     }
 }
+
+/* Twoslash hover popover: replace the imported soft rounded style with the
+   site's hard-edge card language (rounded-none, border-fd-card) so it reads
+   as part of this site rather than a library default. The stepped shadow
+   lives on the Radix positioning wrapper, not this element: .fd-twoslash-popover
+   sets overflow:auto for its own scroll region, and overflow other than
+   visible clips a box-shadow painted on the same box. */
+.fd-twoslash-popover {
+    @apply rounded-none bg-fd-popover p-4;
+
+    & .twoslash-popup-docs,
+    & .twoslash-popup-docs-tags {
+        @apply mt-3! pt-3 border-t-2 border-fd-card;
+    }
+
+    & code,
+    & .shiki {
+        @apply bg-fd-popover;
+    }
+}
