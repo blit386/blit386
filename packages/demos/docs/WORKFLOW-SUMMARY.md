@@ -71,11 +71,11 @@ pnpm run build           # Vite build
 
 ## Why This Approach?
 
-1. Separation of concerns - Each repo has its own CI
-2. Efficiency - Don't re-test already-tested code
-3. Clear ownership - BLIT386 is responsible for its own quality
-4. Faster CI - Skip unnecessary checks
-5. Maintainability - Changes to BLIT386 CI don't affect demos
+1. Separation of concerns – Each repo has its own CI
+2. Efficiency – Don't re-test already-tested code
+3. Clear ownership – BLIT386 is responsible for its own quality
+4. Faster CI – Skip unnecessary checks
+5. Maintainability – Changes to BLIT386 CI don't affect demos
 
 ## GitHub Actions pinning
 
@@ -86,7 +86,7 @@ references are not used.
 
 | Path    | Who refreshes pins                                                                             |
 | ------- | ---------------------------------------------------------------------------------------------- |
-| Routine | [Renovate](../renovate.json) `github-actions` manager — grouped PRs,                           |
+| Routine | [Renovate](../renovate.json) `github-actions` manager – grouped PRs,                           |
 |         | 3-day `minimumReleaseAge`, patch automerge                                                     |
 | Manual  | Resolve the tag to a commit on the action repository                                           |
 |         | (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), replace the SHA, update the `# vN` comment |
@@ -96,4 +96,4 @@ check on `main`).
 
 ## Related Documentation
 
-- [CI-WORKSPACE-SETUP.md](CI-WORKSPACE-SETUP.md) - Detailed explanation of the workspace setup
+- [CI-WORKSPACE-SETUP.md](CI-WORKSPACE-SETUP.md) – Detailed explanation of the workspace setup

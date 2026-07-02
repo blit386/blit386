@@ -9,7 +9,7 @@ description:
 # New Demo
 
 Create a new demo in `blit386-demos` following the project's slug, structure, and documentation rules. The
-`virtual-demos` plugin discovers the file automatically - there is no registry or `demos/` directory to edit.
+`virtual-demos` plugin discovers the file automatically – there is no registry or `demos/` directory to edit.
 
 ## Usage
 
@@ -26,7 +26,7 @@ title.
 
 - List existing demos: `ls src/*.js`.
 - Take the highest three-digit prefix and add 1, zero-padded to three digits (e.g. `034`).
-- Retired numbers stay retired - never reuse one. `021` is retired (it was `021-error-preview`); skip it.
+- Retired numbers stay retired – never reuse one. `021` is retired (it was `021-error-preview`); skip it.
 - The only non-numeric slug is the lone `00a-barebones`. Do not create more `00a-*` files.
 
 ### 2. Create src/NNN-topic.js
@@ -35,9 +35,9 @@ File name is `src/NNN-topic.js` with the kebab-cased topic (e.g. `src/034-sprite
 demo shape:
 
 ```js
-// @pageTitle BLIT386 Demo NNN - Title Cased Topic
+// @pageTitle BLIT386 Demo NNN – Title Cased Topic
 //
-// Demo NNN - Topic: one-sentence summary of what this shows.
+// Demo NNN – Topic: one-sentence summary of what this shows.
 // Written for readers about 12 years old.
 //
 // What you will see:
@@ -65,7 +65,7 @@ class Demo {
 bootstrap(Demo);
 ```
 
-- The page title defaults to `BLIT386 Demo NNN - Title Cased Topic`. Only add the `// @pageTitle Custom Title` comment
+- The page title defaults to `BLIT386 Demo NNN – Title Cased Topic`. Only add the `// @pageTitle Custom Title` comment
   (in the first ~20 lines) when that default is wrong for the demo.
 - If the demo builds on earlier ones, list them as prerequisites in the header comment the way existing numbered demos
   do (slug plus hosted URL).
@@ -86,7 +86,7 @@ by `src/00a-barebones.js`; see `CLAUDE.md` (Documentation Style) for the full ru
 ### 5. Update the docs
 
 - Add the demo to the `## Demos` list in `README.md` under the right category (e.g. Drawing Basics, Input, Palette
-  System), matching the existing `- [NNN-slug](https://blit386-demos.vancura.dev/NNN-slug) - description` format.
+  System), matching the existing `- [NNN-slug](https://blit386-demos.vancura.dev/NNN-slug) – description` format.
 
 ### 6. Review
 

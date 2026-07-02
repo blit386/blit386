@@ -4,7 +4,7 @@ Thanks for trying Departure Mono (departuremono.com), licensed under the SIL OFL
 hello@helenazhang.com or DM me on Twitter/X: @minor_axis. Donations much appreciated at: buymeacoffee.com/helenazhang.
 Enjoy!
 
-— Helena Zhang (helenazhang.com)
+– Helena Zhang (helenazhang.com)
 
 # Font Information
 

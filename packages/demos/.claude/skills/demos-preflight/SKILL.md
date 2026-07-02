@@ -25,12 +25,12 @@ Run comprehensive quality checks before committing or pushing code.
 1. Run all checks
 
 - Execute `pnpm run preflight` which runs:
-  - `format:check` - Verify all files are formatted
-  - `lint` - Check for lint errors (ESLint)
-  - `spellcheck` - Check spelling in code and docs
-  - `knip` - Find unused exports and dependencies
-  - `docs:links` - Verify Markdown links (README, docs/, skills)
-  - `build` - Confirm the production build succeeds (CI and Cloudflare Pages depend on this)
+  - `format:check` – Verify all files are formatted
+  - `lint` – Check for lint errors (ESLint)
+  - `spellcheck` – Check spelling in code and docs
+  - `knip` – Find unused exports and dependencies
+  - `docs:links` – Verify Markdown links (README, docs/, skills)
+  - `build` – Confirm the production build succeeds (CI and Cloudflare Pages depend on this)
 
 2. Report results
 

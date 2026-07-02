@@ -37,83 +37,83 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 ### Drawing Basics
 
-- [001-basics](https://demos.blit386.dev/001-basics) - Engine basics, lifecycle, bouncing sprite, canvas text
-- [033-basics-enhanced](https://demos.blit386.dev/033-basics-enhanced) - Enhanced version of the basics demo with
+- [001-basics](https://demos.blit386.dev/001-basics) – Engine basics, lifecycle, bouncing sprite, canvas text
+- [033-basics-enhanced](https://demos.blit386.dev/033-basics-enhanced) – Enhanced version of the basics demo with
   optional visual effects
-- [034-logo-lowres](https://demos.blit386.dev/034-logo-lowres) - Logo sprite centered on a 160x120 screen, upscaled 4x
+- [034-logo-lowres](https://demos.blit386.dev/034-logo-lowres) – Logo sprite centered on a 160x120 screen, upscaled 4x
   with nearest-neighbor filtering for a chunky retro look
-- [002-primitives](https://demos.blit386.dev/002-primitives) - All primitive drawing: pixels, lines, rectangles
-- [003-colors](https://demos.blit386.dev/003-colors) - Color32 deep dive: named, HSL, alpha, lerp
-- [032-named-colors](https://demos.blit386.dev/032-named-colors) - Color32 named registry APIs: resolve, register,
+- [002-primitives](https://demos.blit386.dev/002-primitives) – All primitive drawing: pixels, lines, rectangles
+- [003-colors](https://demos.blit386.dev/003-colors) – Color32 deep dive: named, HSL, alpha, lerp
+- [032-named-colors](https://demos.blit386.dev/032-named-colors) – Color32 named registry APIs: resolve, register,
   update, unregister
 
 ### Text and Visual Art
 
-- [004-fonts](https://demos.blit386.dev/004-fonts) - Built-in system font with `BT.systemPrint()` and text measurement
-- [005-pixel-art](https://demos.blit386.dev/005-pixel-art) - Programmatic pixel art with nested loops
-- [006-patterns](https://demos.blit386.dev/006-patterns) - Mathematical art: spirals, Lissajous, waves, tunnel
-- [022-bitmap-font](https://demos.blit386.dev/022-bitmap-font) - Load a proportional `.btfont` file and draw rainbow,
+- [004-fonts](https://demos.blit386.dev/004-fonts) – Built-in system font with `BT.systemPrint()` and text measurement
+- [005-pixel-art](https://demos.blit386.dev/005-pixel-art) – Programmatic pixel art with nested loops
+- [006-patterns](https://demos.blit386.dev/006-patterns) – Mathematical art: spirals, Lissajous, waves, tunnel
+- [022-bitmap-font](https://demos.blit386.dev/022-bitmap-font) – Load a proportional `.btfont` file and draw rainbow,
   alpha-pulsing, and measured text
 
 ### World Building
 
-- [007-camera](https://demos.blit386.dev/007-camera) - Camera scrolling, world vs screen space, mini-map
-- [008-sprites](https://demos.blit386.dev/008-sprites) - Programmatic sprite sheet, source rectangles, palette offsets
-- [009-animation](https://demos.blit386.dev/009-animation) - Tick-based animation, walk frame cycling, state machines,
+- [007-camera](https://demos.blit386.dev/007-camera) – Camera scrolling, world vs screen space, mini-map
+- [008-sprites](https://demos.blit386.dev/008-sprites) – Programmatic sprite sheet, source rectangles, palette offsets
+- [009-animation](https://demos.blit386.dev/009-animation) – Tick-based animation, walk frame cycling, state machines,
   particles
-- [010-sprite-effects](https://demos.blit386.dev/010-sprite-effects) - Damage flash, silhouette, ghost, team colors,
+- [010-sprite-effects](https://demos.blit386.dev/010-sprite-effects) – Damage flash, silhouette, ghost, team colors,
   day/night
-- [011-starfield](https://demos.blit386.dev/011-starfield) - Parallax scrolling starfield
-- [012-tilemap](https://demos.blit386.dev/012-tilemap) - Grid-based tile world with camera
+- [011-starfield](https://demos.blit386.dev/011-starfield) – Parallax scrolling starfield
+- [012-tilemap](https://demos.blit386.dev/012-tilemap) – Grid-based tile world with camera
 
 ### Palette System
 
-- [015-palette-presets](https://demos.blit386.dev/015-palette-presets) - Six built-in color sets (VGA, CGA, C64, etc.)
+- [015-palette-presets](https://demos.blit386.dev/015-palette-presets) – Six built-in color sets (VGA, CGA, C64, etc.)
   you can load instantly
-- [016-palette-animation](https://demos.blit386.dev/016-palette-animation) - Change palette entries every tick for
+- [016-palette-animation](https://demos.blit386.dev/016-palette-animation) – Change palette entries every tick for
   instant visual effects
-- [017-palette-swap](https://demos.blit386.dev/017-palette-swap) - Switch the active palette at runtime to change color
+- [017-palette-swap](https://demos.blit386.dev/017-palette-swap) – Switch the active palette at runtime to change color
   themes
-- [018-flurry](https://demos.blit386.dev/018-flurry) - Retro screensaver: particle physics and palette animation (port
+- [018-flurry](https://demos.blit386.dev/018-flurry) – Retro screensaver: particle physics and palette animation (port
   of macOS Flurry)
-- [019-palette-cycling](https://demos.blit386.dev/019-palette-cycling) - Classic retro color rotation using palette
+- [019-palette-cycling](https://demos.blit386.dev/019-palette-cycling) – Classic retro color rotation using palette
   cycling
-- [020-palette-fade](https://demos.blit386.dev/020-palette-fade) - Smooth color transitions and flash effects with
+- [020-palette-fade](https://demos.blit386.dev/020-palette-fade) – Smooth color transitions and flash effects with
   palette fade
 
 ### Putting It All Together
 
-- [013-image-output](https://demos.blit386.dev/013-image-output) - Frame capture and PNG export
-- [014-game-scene](https://demos.blit386.dev/014-game-scene) - Capstone: tilemap ground, patterns, sprites, camera,
+- [013-image-output](https://demos.blit386.dev/013-image-output) – Frame capture and PNG export
+- [014-game-scene](https://demos.blit386.dev/014-game-scene) – Capstone: tilemap ground, patterns, sprites, camera,
   animation, and frame capture in one scene
 
 ### Input
 
-- [025-pointer-basics](https://demos.blit386.dev/025-pointer-basics) - Mouse position, delta, scroll wheel, and four
+- [025-pointer-basics](https://demos.blit386.dev/025-pointer-basics) – Mouse position, delta, scroll wheel, and four
   pointer buttons (A/B/C/D) on slot 0 with a live crosshair, button indicators, and a wheel-driven scroll bar
-- [026-pointer-paint](https://demos.blit386.dev/026-pointer-paint) - Multi-touch finger painting using all four pointer
+- [026-pointer-paint](https://demos.blit386.dev/026-pointer-paint) – Multi-touch finger painting using all four pointer
   slots (mouse + up to three touches), with edge-triggered clear / brush-cycle on right and middle click
-- [027-pointer-drag-flick](https://demos.blit386.dev/027-pointer-drag-flick) - Drag-and-flick physics: grab one of three
+- [027-pointer-drag-flick](https://demos.blit386.dev/027-pointer-drag-flick) – Drag-and-flick physics: grab one of three
   bouncing balls, release with `pointerDelta` as launch velocity. Multi-touch grabs one ball per finger.
-- [028-keyboard-input](https://demos.blit386.dev/028-keyboard-input) - Keyboard face buttons for two players
+- [028-keyboard-input](https://demos.blit386.dev/028-keyboard-input) – Keyboard face buttons for two players
   (`BT.BTN_UP` … `BT.BTN_SELECT`), raw `BT.isKeyDown` / `BT.isKeyPressed` (optional tick repeat) / `BT.isKeyReleased`,
   and typed text via `BT.inputString`
-- [035-keyboard-diagnostic](https://demos.blit386.dev/035-keyboard-diagnostic) - Full on-screen keyboard layout with
+- [035-keyboard-diagnostic](https://demos.blit386.dev/035-keyboard-diagnostic) – Full on-screen keyboard layout with
   press / hold / release color feedback; use to verify fast taps on high-refresh displays
-- [029-snake-game](https://demos.blit386.dev/029-snake-game) - Grid snake with walls, food, keyboard steering, and
+- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard steering, and
   PipBoy-style CRT post-processing
-- [030-input-map-remapping](https://demos.blit386.dev/030-input-map-remapping) - Runtime face-button remapping with
+- [030-input-map-remapping](https://demos.blit386.dev/030-input-map-remapping) – Runtime face-button remapping with
   `BT.inputMap` / `BT.inputMapReset` (defaults, custom OR keys, clearing a binding); complements demo 028
-- [031-gamepad-input](https://demos.blit386.dev/031-gamepad-input) - Tiny hover-pod playground showing gamepad connect
+- [031-gamepad-input](https://demos.blit386.dev/031-gamepad-input) – Tiny hover-pod playground showing gamepad connect
   status, analog sticks, triggers, and face button masks (`BT.BTN_A | BT.BTN_B`) with `BT.getAxis` /
   `BT.isGamepadConnected` / `BT.gamepadCount`
 
 ### Post-Process Effects
 
-- [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) - Faux Fallout terminal with the full CRT stack (barrel,
+- [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) – Faux Fallout terminal with the full CRT stack (barrel,
   scanlines, mask, bloom, glitch state machine) built from individual decomposed effects
-- [024-crt-toggle](https://demos.blit386.dev/024-crt-toggle) - Toggle the entire `BT.preset.crtPipBoy()` CRT stack on
-  and off at runtime - auto-switches between clean and CRT output every two seconds
+- [024-crt-toggle](https://demos.blit386.dev/024-crt-toggle) – Toggle the entire `BT.preset.crtPipBoy()` CRT stack on
+  and off at runtime – auto-switches between clean and CRT output every two seconds
 
 ## Browser and Renderer
 
@@ -133,22 +133,22 @@ WebGPU support (for the full experience) is typical in:
 | ----------- | -------------- | ------------------------------------------------------------ |
 | Chrome/Edge | 113+           | Enabled by default                                           |
 | Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux     |
-| Safari      | 26+            | Enabled by default; Safari 18-25 available via Feature Flags |
+| Safari      | 26+            | Enabled by default; Safari 18–25 available via Feature Flags |
 
 ## Engine documentation
 
 These demos are thin wrappers around the library. For complete behavior, APIs, and internals, read the full docs at
 [blit386.dev](https://blit386.dev):
 
-- [Engine README](https://github.com/blit386/blit386/blob/main/README.md) - features list, quick start, bootstrap
+- [Engine README](https://github.com/blit386/blit386/blob/main/README.md) – features list, quick start, bootstrap
   helpers, manual `BT.init`, project layout
-- [Input](https://blit386.dev/docs/guides/input) - pointer slots, keyboard, gamepad, remapping
-- [Post-process effects](https://blit386.dev/docs/guides/post-process-effects) - pixel vs display tiers, presets,
+- [Input](https://blit386.dev/docs/guides/input) – pointer slots, keyboard, gamepad, remapping
+- [Post-process effects](https://blit386.dev/docs/guides/post-process-effects) – pixel vs display tiers, presets,
   writing effects
-- [Bitmap fonts](https://blit386.dev/docs/guides/bitmap-fonts) - `.btfont` format and tooling
-- [Testing](https://blit386.dev/docs/reference/testing) - unit, integration, and visual tests
-- [Performance testing](https://blit386.dev/docs/performance/testing) - benchmarks and CI
-- [Software fallback smoke matrix](https://blit386.dev/docs/performance/smoke-matrix) - manual backend coverage notes
+- [Bitmap fonts](https://blit386.dev/docs/guides/bitmap-fonts) – `.btfont` format and tooling
+- [Testing](https://blit386.dev/docs/reference/testing) – unit, integration, and visual tests
+- [Performance testing](https://blit386.dev/docs/performance/testing) – benchmarks and CI
+- [Software fallback smoke matrix](https://blit386.dev/docs/performance/smoke-matrix) – manual backend coverage notes
 
 ## How to Run
 
@@ -177,7 +177,7 @@ This opens the demo index at `http://localhost:5173/demos/` and each page at `ht
 
 ## Credits
 
-- [Departure Mono](https://departuremono.com) by Helena Zhang - font used in the demo navigation banner, licensed under
+- [Departure Mono](https://departuremono.com) by Helena Zhang – font used in the demo navigation banner, licensed under
   the [SIL Open Font License](public/fonts/DepartureMono/LICENSE)
 
 ## License

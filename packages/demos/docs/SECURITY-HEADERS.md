@@ -33,12 +33,12 @@ headers are defined in [`public/_headers`](../public/_headers) and copied into `
 
 ### Intentionally not in this pass
 
-- `script-src` nonces / hashes — would require build-time CSP injection or moving all JS external (layout already
+- `script-src` nonces / hashes – would require build-time CSP injection or moving all JS external (layout already
   external; not worth nonce plumbing for demos).
-- `style-src` without `'unsafe-inline'` — would require extracting layout CSS to a file (separate refactor).
-- `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` — not required for WebGPU here; may affect third-party
+- `style-src` without `'unsafe-inline'` – would require extracting layout CSS to a file (separate refactor).
+- `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy` – not required for WebGPU here; may affect third-party
   embed debugging.
-- `X-Frame-Options` — superseded by `frame-ancestors`; avoid conflicting duplicate framing policy.
+- `X-Frame-Options` – superseded by `frame-ancestors`; avoid conflicting duplicate framing policy.
 
 ## Verification
 
@@ -70,10 +70,10 @@ curl -sI 'https://demos.blit386.dev/001-basics' | rg -i '^(content-security-poli
 
 Smoke-test in a browser:
 
-1. [001-basics](https://demos.blit386.dev/001-basics) — WebGPU + sprite load.
-2. [013-image-output](https://demos.blit386.dev/013-image-output) — Space triggers PNG download (`blob:`).
-3. [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) — WebGPU post-process chain.
-4. Embed check — demo iframe on [vancura.dev](https://vancura.dev) articles still loads (`frame-ancestors`).
+1. [001-basics](https://demos.blit386.dev/001-basics) – WebGPU + sprite load.
+2. [013-image-output](https://demos.blit386.dev/013-image-output) – Space triggers PNG download (`blob:`).
+3. [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) – WebGPU post-process chain.
+4. Embed check – demo iframe on [vancura.dev](https://vancura.dev) articles still loads (`frame-ancestors`).
 
 Check the browser console for CSP violations after deploy.
 

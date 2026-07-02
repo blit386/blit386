@@ -159,7 +159,7 @@ Fix: Check that:
 - Both BLIT386 and BLIT386 Demos are listed in the config
 - You're running commands from inside the workspace structure
 
-### Demos won't start - "TypeError: Cannot read properties..."
+### Demos won't start – "TypeError: Cannot read properties..."
 
 Cause: BLIT386 library not built
 

@@ -80,10 +80,10 @@ The composite action performs these steps internally:
 
 The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across its jobs:
 
-- quality-checks - Code quality (format, lint, spellcheck, knip)
-- build - Build demos and upload artifacts
-- deploy - Deploy to Cloudflare Pages (main branch only; depends on `build`)
-- docs-links - Markdown link check on `README.md` (no workspace needed; runs only on main push after deploy)
+- quality-checks – Code quality (format, lint, spellcheck, knip)
+- build – Build demos and upload artifacts
+- deploy – Deploy to Cloudflare Pages (main branch only; depends on `build`)
+- docs-links – Markdown link check on `README.md` (no workspace needed; runs only on main push after deploy)
 
 ## Local Development
 
@@ -110,11 +110,11 @@ This script uses `concurrently` to watch both projects:
 
 ## Why This Works
 
-1. No npm publish required - Dependencies are linked via pnpm workspace protocol
-2. Identical to local - CI uses the exact same workspace structure as development
-3. Fast builds - pnpm workspace linking is instantaneous
-4. Type safety - TypeScript resolves imports correctly in both environments
-5. Hot reload - Local dev:watch script provides excellent DX
+1. No npm publish required – Dependencies are linked via pnpm workspace protocol
+2. Identical to local – CI uses the exact same workspace structure as development
+3. Fast builds – pnpm workspace linking is instantaneous
+4. Type safety – TypeScript resolves imports correctly in both environments
+5. Hot reload – Local dev:watch script provides excellent DX
 
 ## Future Option: Switch Demos to npm Dependency
 

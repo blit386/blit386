@@ -15,16 +15,16 @@ Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine 
 
 ## Critical Rules
 
-- No emoji - no emoji in code, commits, docs, or UI strings (no exceptions)
-- Integer coordinates - all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
-- Plain JavaScript - demos use ES2022 JS for simplicity (no TypeScript)
-- Beginner-friendly comments - see Documentation Style section below
+- No emoji – no emoji in code, commits, docs, or UI strings (no exceptions)
+- Integer coordinates – all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
+- Plain JavaScript – demos use ES2022 JS for simplicity (no TypeScript)
+- Beginner-friendly comments – see Documentation Style section below
 
 ## Project Structure
 
 ```text
 blit386-demos/
-  src/                         # JavaScript source - one file per demo (single source of truth)
+  src/                         # JavaScript source – one file per demo (single source of truth)
     001-basics.js
     002-primitives.js
     ...                        # numbered demos under src/*.js (plugin discovers all)
@@ -97,7 +97,7 @@ pattern:
 
 ```js
 /**
- * 003 Colors - Brief description.
+ * 003 Colors – Brief description.
  */
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
@@ -130,7 +130,7 @@ The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` 
 single step:
 
 1. Create `src/NNN-your-topic.js` (or `00a-…`) with the next free number. Retired numbers stay unused (e.g. `021`). The
-   page title defaults to `BLIT386 Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a
+   page title defaults to `BLIT386 Demo NNN – Your Topic` (topic title-cased from the slug). To override, add a
    `// @pageTitle Custom Title` comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or
    `src/024-crt-toggle.js` for examples).
 
@@ -142,7 +142,7 @@ Demos have relaxed linting compared to the library:
 
 - JSDoc not required (but class-level JSDoc with `@implements {IBTDemo}` is encouraged)
 - Console logging allowed
-- Mutation allowed for demo state - demo classes may mutate instance properties in `update()` and `render()` for
+- Mutation allowed for demo state – demo classes may mutate instance properties in `update()` and `render()` for
   performance. The global immutability preference does not apply to per-frame demo state.
 
 Focus on clarity and readability over strict documentation.
@@ -218,7 +218,7 @@ BT.ticksReset();
 BT.targetFPS;
 BT.deltaSeconds;
 BT.timeSeconds;
-BT.activeBackend; // 'webgpu' | 'software' | null - after successful init
+BT.activeBackend; // 'webgpu' | 'software' | null – after successful init
 BT.isPointerActive(0); // pointer slot active (mouse hover or touch contact)
 BT.isDown(BT.BTN_A, 0); // button held (ANY-match for masks)
 BT.isPressed(BT.BTN_A, 0); // edge: up -> down this frame
@@ -230,7 +230,7 @@ await BT.downloadFrame(filename); // optional filename; default PNG name if omit
 
 Read keyboard edges (`BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
 `BT.isPressed` / `BT.isReleased` for players 0/1) from `update()`, never `render()`. They clear once per fixed-update
-tick, which always runs before that frame's `render()` - reading them from `render()` intermittently drops presses under
+tick, which always runs before that frame's `render()` – reading them from `render()` intermittently drops presses under
 rapid input (the tick already consumed and cleared the edge before render saw it). `BT.isKeyDown` / `BT.isDown` (held
 state, not edges) have no such restriction and are safe from either lifecycle method.
 
@@ -248,7 +248,7 @@ configure() {
 
 ## Boolean naming
 
-Demos use the library's public names only. Configure flags (Tier B): grammatical `is*` in `configure()` —
+Demos use the library's public names only. Configure flags (Tier B): grammatical `is*` in `configure()` –
 `isOverlayEnabled`, `isDetectingDroppedFrames`, `canvasID`. Runtime input (Tier A): `BT.isDown`, `BT.isPressed`,
 `BT.isKeyDown`, `BT.isPointerActive`. Full policy: blit386
 [docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md).
@@ -257,20 +257,20 @@ Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
 
 Static helpers on those types worth knowing:
 
-- `await SpriteSheet.load(url)` - loads a PNG as a GPU texture.
-- `sheet.width` / `sheet.height` - sprite-sheet dimensions in pixels.
-- `sheet.fullRect()` - returns `Rect2i(0, 0, sheet.width, sheet.height)` for whole-sheet draw calls.
-- `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` - scans a PNG and registers every unique
+- `await SpriteSheet.load(url)` – loads a PNG as a GPU texture.
+- `sheet.width` / `sheet.height` – sprite-sheet dimensions in pixels.
+- `sheet.fullRect()` – returns `Rect2i(0, 0, sheet.width, sheet.height)` for whole-sheet draw calls.
+- `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` – scans a PNG and registers every unique
   opaque color into `palette` starting at `startSlot`. Returns the registered `Color32[]` in palette-write order (sorted
   darkest-first by luminance by default; pass `{ sort: 'none' }` to keep raster scan order). Use this whenever a demo
   needs a sprite's colors in the palette so subsequent `sheet.indexize(palette)` resolves.
-- `Color32#luminance` - perceived (Rec.601) brightness in the 0..255 range. Use this instead of writing inline
+- `Color32#luminance` – perceived (Rec.601) brightness in the 0..255 range. Use this instead of writing inline
   `0.299*r + 0.587*g + 0.114*b` formulas in demos.
-- `Color32#multiply(other)` - component-wise color multiply, returns a new Color32. Use this for ambient tints and
+- `Color32#multiply(other)` – component-wise color multiply, returns a new Color32. Use this for ambient tints and
   team-color modulation instead of writing your own helper.
-- `Color32.fromHex('#ff8800')` and `Color32.resolveNamedColor('cornflowerblue')` - use these when a demo needs to parse
+- `Color32.fromHex('#ff8800')` and `Color32.resolveNamedColor('cornflowerblue')` – use these when a demo needs to parse
   user/authored string colors. You can extend names with `registerColor`, `updateColor`, and `unregisterColor`.
-- `palette.applyHUD(startSlot?)` - fills six contiguous slots starting at `startSlot` (default 1) with the canonical HUD
+- `palette.applyHUD(startSlot?)` – fills six contiguous slots starting at `startSlot` (default 1) with the canonical HUD
   colors (white, background, label gray, header gold, dim gray, code blue) and registers named aliases (`hud_white`,
   `hud_bg`, `hud_label`, `hud_header`, `hud_dim`, `hud_code`). Eliminates the repetitive `palette.set()` boilerplate for
   UI text colors. Call in `init()` before `BT.paletteSet()`.
@@ -317,7 +317,7 @@ Standard section order:
 Demo class member order: instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
 methods. Keep `bootstrap(Demo);` as the last statement in the file.
 
-Never use `// #region` / `// #endregion` — region markers are banned everywhere. See `.cursor/rules/file-structure.mdc`.
+Never use `// #region` / `// #endregion` – region markers are banned everywhere. See `.cursor/rules/file-structure.mdc`.
 
 ## Formatting Rules
 
