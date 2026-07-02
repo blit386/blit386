@@ -16,31 +16,41 @@ interface BlogPageProps {
 }
 
 /**
- * Renders a blog post's body through whichever adapter owns it (mirrors fumapress's own
- * `renderBody`/`renderToc`, which are not part of the public API - `ctx.adapters` is).
+ * Calls each adapter's hook in order and returns the first defined result (mirrors fumapress's
+ * own `renderBody`/`renderToc`, which are not part of the public API - `ctx.adapters` is).
  */
-async function renderBody(ctx: AppContext, page: BlogPost): Promise<ReactNode> {
+async function callFirstAdapter<T>(
+    ctx: AppContext,
+    page: BlogPost,
+    hook: (
+        adapter: AppContext['adapters'][number],
+    ) => ((this: AppContext, page: BlogPost) => T | Promise<T>) | undefined,
+): Promise<Awaited<T> | undefined> {
     for (const adapter of ctx.adapters) {
-        const body = await adapter['core:render-body']?.call(ctx, page);
+        const result = await hook(adapter)?.call(ctx, page);
 
-        if (body !== undefined) {
-            return body;
+        if (result !== undefined) {
+            return result;
         }
     }
 
-    throw new Error('[blog-page] No adapter rendered a body for this post.');
+    return undefined;
+}
+
+async function renderBody(ctx: AppContext, page: BlogPost): Promise<ReactNode> {
+    const body = await callFirstAdapter(ctx, page, (adapter) => adapter['core:render-body']);
+
+    if (body === undefined) {
+        throw new Error('[blog-page] No adapter rendered a body for this post.');
+    }
+
+    return body;
 }
 
 async function renderToc(ctx: AppContext, page: BlogPost): Promise<TOCItemType[]> {
-    for (const adapter of ctx.adapters) {
-        const toc = await adapter['core:render-toc']?.call(ctx, page);
+    const toc = await callFirstAdapter(ctx, page, (adapter) => adapter['core:render-toc']);
 
-        if (toc !== undefined) {
-            return toc;
-        }
-    }
-
-    return [];
+    return toc ?? [];
 }
 
 /**
