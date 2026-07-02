@@ -1,13 +1,23 @@
 <!doctype html>
 
 <html lang="en">
+
 <head>
     <meta charset="UTF-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>{{title}}</title>
     <style>
+        @font-face {
+            font-family: "DepartureMono";
+            src: url("/fonts/DepartureMono/DepartureMono-Regular.woff2") format("woff2");
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
         :root {
             --color-accent: #5da0f2;
+            --banner-height: 80px;
         }
 
         *,
@@ -29,7 +39,7 @@
 
         #canvas-container {
             width: 100dvw;
-            height: 100dvh;
+            height: calc(100dvh - var(--banner-height));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -43,18 +53,19 @@
             max-height: var(--canvas-max-h, 720px);
 
             /*
-             * Largest size that fits the viewport and demo max cap while keeping aspect ratio.
+             * Largest size that fits the viewport (minus the banner) and demo max cap while keeping aspect ratio.
              * --canvas-aspect-w/h: aspect (from drawingBufferSize or displaySize).
              * --canvas-max-w/h: max on-screen size (from configure() maxCanvasSize).
              */
             width: min(
                 100dvw,
-                calc(100dvh * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
+                calc((100dvh - var(--banner-height)) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
                 var(--canvas-max-w, 960px),
                 calc(var(--canvas-max-h, 720px) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480))
             );
+
             height: min(
-                100dvh,
+                calc(100dvh - var(--banner-height)),
                 calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
                 var(--canvas-max-h, 720px),
                 calc(var(--canvas-max-w, 960px) * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640))
@@ -66,18 +77,333 @@
                 image-rendering: crisp-edges;
             }
         }
+
+        #demo-banner {
+            height: var(--banner-height);
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 8px 12px;
+            overflow: hidden;
+            background: oklch(97% 0 0);
+            color: oklch(20.5% 0 0);
+            font-family: "DepartureMono", monospace;
+            font-size: 22px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            #demo-banner {
+                background: #222;
+                color: oklch(97% 0 0);
+            }
+        }
+
+        #demo-banner:empty {
+            padding: 0;
+        }
+
+        #demo-banner .demo-banner-logo {
+            grid-column: 1;
+            justify-self: start;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        #demo-banner .demo-banner-logo-light,
+        #demo-banner .demo-banner-logo-dark {
+            image-rendering: pixelated;
+        }
+
+        #demo-banner .demo-banner-logo-light {
+            display: block;
+        }
+
+        #demo-banner .demo-banner-logo-dark {
+            display: none;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            #demo-banner .demo-banner-logo-light {
+                display: none;
+            }
+
+            #demo-banner .demo-banner-logo-dark {
+                display: block;
+            }
+        }
+
+        #demo-banner .demo-banner-nav {
+            grid-column: 2;
+            justify-self: center;
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+
+        #demo-banner button {
+            background: transparent;
+            color: inherit;
+            border: none;
+            width: 37px;
+            height: 37px;
+            cursor: pointer;
+            font: inherit;
+            font-size: 22px;
+            line-height: 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #demo-banner button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        #demo-banner select {
+            background: transparent;
+            color: inherit;
+            border: 2px solid currentColor;
+            border-radius: 0;
+            padding: 1px 10px 2px;
+            font: inherit;
+            max-width: 50vw;
+        }
     </style>
 </head>
 
-<body>
+<body data-slug="{{slug}}">
+
+<div id="demo-banner"></div>
+
+<script id="demo-list" type="application/json">{{demoList}}</script>
+
+<script>
+    (function () {
+        /**
+         * True when the page is being embedded (e.g. an iframe on blit386.dev) via a
+         * `?embed` query-string flag. Embedded pages never show the navigation banner.
+         * @returns {boolean}
+         */
+        function isEmbedded() {
+            return new URLSearchParams(location.search).has('embed');
+        }
+
+        /**
+         * Reserve (or collapse) the vertical space the banner occupies. Runs before
+         * #canvas-container is parsed, so the canvas sizing calc() chain in <style> picks
+         * up the correct value on first layout.
+         * @param {boolean} embedded
+         * @returns {void}
+         */
+        function setBannerHeight(embedded) {
+            document.documentElement.style.setProperty('--banner-height', embedded ? '0px' : '80px');
+        }
+
+        /**
+         * Parse the demo list serialized into the page by the build (see plugins/virtual-demos.js).
+         * Already filtered to nav-visible demos, in canonical order.
+         * @returns {Array<{slug: string, navLabel: string}>}
+         */
+        function readDemoList() {
+            return JSON.parse(document.getElementById('demo-list').textContent);
+        }
+
+        /**
+         * Index of the current page's demo within `demos`, or -1 if this demo is nav-hidden
+         * (e.g. 00a-barebones, excluded from the dropdown/prev-next chain).
+         * @param {Array<{slug: string}>} demos
+         * @returns {number}
+         */
+        function findCurrentIndex(demos) {
+            var currentSlug = document.body.dataset.slug;
+
+            return demos.findIndex(function (demo) {
+                return demo.slug === currentSlug;
+            });
+        }
+
+        /**
+         * Build a same-directory link to another demo page. The directory is derived from
+         * the current page's own pathname, so this resolves correctly under both dev
+         * (/demos/<slug>.html) and the flattened production build (/<slug>.html).
+         * @param {string} slug - Demo slug, e.g. "001-basics"
+         * @returns {string}
+         */
+        function urlFor(slug) {
+            var dir = location.pathname.slice(0, location.pathname.lastIndexOf('/') + 1);
+
+            return dir + slug + '.html';
+        }
+
+        /**
+         * Build the light/dark BLIT386 logo link. Both images are always in the DOM;
+         * CSS toggles which one is visible via `prefers-color-scheme`.
+         * @returns {HTMLAnchorElement}
+         */
+        function buildLogo() {
+            var logoLink = document.createElement('a');
+
+            logoLink.className = 'demo-banner-logo';
+            logoLink.href = 'https://blit386.dev';
+            logoLink.setAttribute('aria-label', 'BLIT386');
+
+            var logoLight = document.createElement('img');
+
+            logoLight.className = 'demo-banner-logo-light';
+            logoLight.src = '/sprites/favicon-light-32.png';
+            logoLight.width = 64;
+            logoLight.height = 64;
+            logoLight.alt = 'BLIT386';
+
+            logoLink.appendChild(logoLight);
+
+            var logoDark = document.createElement('img');
+
+            logoDark.className = 'demo-banner-logo-dark';
+            logoDark.src = '/sprites/favicon-dark-32.png';
+            logoDark.width = 64;
+            logoDark.height = 64;
+            logoDark.alt = 'BLIT386';
+
+            logoLink.appendChild(logoDark);
+
+            return logoLink;
+        }
+
+        /**
+         * Build the "previous demo" arrow button, disabled at the start of the nav chain.
+         * @param {Array<{slug: string}>} demos
+         * @param {number} currentIndex
+         * @returns {HTMLButtonElement}
+         */
+        function buildPrevButton(demos, currentIndex) {
+            var prevButton = document.createElement('button');
+
+            prevButton.type = 'button';
+            prevButton.setAttribute('aria-label', 'Previous demo');
+            prevButton.textContent = '‹';
+            prevButton.disabled = currentIndex <= 0;
+
+            if (!prevButton.disabled) {
+                prevButton.addEventListener('click', function () {
+                    location.href = urlFor(demos[currentIndex - 1].slug);
+                });
+            }
+
+            return prevButton;
+        }
+
+        /**
+         * Build the "next demo" arrow button, disabled at the end of the nav chain.
+         * @param {Array<{slug: string}>} demos
+         * @param {number} currentIndex
+         * @returns {HTMLButtonElement}
+         */
+        function buildNextButton(demos, currentIndex) {
+            var nextButton = document.createElement('button');
+
+            nextButton.type = 'button';
+            nextButton.setAttribute('aria-label', 'Next demo');
+            nextButton.textContent = '›';
+            nextButton.disabled = currentIndex === -1 || currentIndex >= demos.length - 1;
+
+            if (!nextButton.disabled) {
+                nextButton.addEventListener('click', function () {
+                    location.href = urlFor(demos[currentIndex + 1].slug);
+                });
+            }
+
+            return nextButton;
+        }
+
+        /**
+         * Build the demo-jump dropdown, pre-selected to the current demo (left unselected
+         * when the current demo is nav-hidden and so isn't in `demos` at all).
+         * @param {Array<{slug: string, navLabel: string}>} demos
+         * @param {number} currentIndex
+         * @returns {HTMLSelectElement}
+         */
+        function buildSelect(demos, currentIndex) {
+            var select = document.createElement('select');
+
+            select.setAttribute('aria-label', 'Jump to demo');
+
+            demos.forEach(function (demo, index) {
+                var option = document.createElement('option');
+
+                option.value = demo.slug;
+                option.textContent = demo.navLabel;
+
+                if (index === currentIndex) {
+                    option.selected = true;
+                }
+
+                select.appendChild(option);
+            });
+
+            select.addEventListener('change', function (event) {
+                location.href = urlFor(event.target.value);
+            });
+
+            return select;
+        }
+
+        /**
+         * Build the prev/select/next navigation group.
+         * @param {Array<{slug: string, navLabel: string}>} demos
+         * @param {number} currentIndex
+         * @returns {HTMLDivElement}
+         */
+        function buildNav(demos, currentIndex) {
+            var nav = document.createElement('div');
+
+            nav.className = 'demo-banner-nav';
+            nav.appendChild(buildPrevButton(demos, currentIndex));
+            nav.appendChild(buildSelect(demos, currentIndex));
+            nav.appendChild(buildNextButton(demos, currentIndex));
+
+            return nav;
+        }
+
+        /**
+         * Populate the (initially empty) #demo-banner with the logo and nav group.
+         * @returns {void}
+         */
+        function renderBanner() {
+            var demos = readDemoList();
+            var currentIndex = findCurrentIndex(demos);
+            var banner = document.getElementById('demo-banner');
+
+            banner.appendChild(buildLogo());
+            banner.appendChild(buildNav(demos, currentIndex));
+        }
+
+        var embedded = isEmbedded();
+
+        setBannerHeight(embedded);
+
+        if (!embedded) {
+            renderBanner();
+        }
+    })();
+</script>
+
 <div id="canvas-container">
     <canvas id="blit386-canvas"></canvas>
 </div>
+
 <script async src="https://plausible.io/js/pa-Jy-1Ffqwh5Zpp2YOMEBr5.js"></script>
 <script>
     window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
     plausible.init()
 </script>
+
 <script src="{{scriptFile}}.js" type="module"></script>
+
 </body>
+
 </html>
