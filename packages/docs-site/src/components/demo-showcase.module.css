@@ -1,0 +1,55 @@
+@reference '../app.css';
+
+.showcase {
+    @apply my-8;
+}
+
+.heading {
+    @apply mt-10 mb-6 text-2xl text-fd-foreground;
+}
+
+.grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+.thumbnail {
+    @apply aspect-video w-full overflow-hidden bg-fd-muted;
+}
+
+.thumbnailImage {
+    @apply h-full w-full object-cover;
+}
+
+.info {
+    @apply flex flex-col gap-1 p-4;
+}
+
+.cardTitle {
+    @apply font-departure text-[22px] uppercase antialiased leading-6;
+}
+
+.cardDescription {
+    @apply text-sm text-balance;
+}
+
+.footer {
+    @apply mt-6 text-center;
+}
+
+.viewAllButton {
+    @apply inline-flex items-center px-4 pt-1.5 pb-2 transition-none!;
+    @apply font-semibold;
+    @apply border-fd-card-foreground border-6 text-fd-card-foreground!;
+    @apply hover:bg-fd-accent hover:border-fd-accent hover:text-fd-background!;
+}
+
+.card {
+    @apply flex flex-col overflow-hidden bg-fd-card hover:bg-fd-accent;
+
+    &:hover {
+        & .cardTitle,
+        & .cardDescription {
+            @apply text-fd-background;
+        }
+    }
+}

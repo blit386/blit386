@@ -1,49 +1,56 @@
 import { flagshipDemos } from '../data/demos';
+import styles from './demo-showcase.module.css';
+
+// Thumbnails and the footer link are paused pending a layout revisit; flip these to re-enable.
+const SHOW_THUMBNAILS = false;
+const SHOW_FOOTER_LINK = false;
 
 export function DemoShowcase() {
     return (
-        <div className="not-prose my-8">
-            <h2 className="mb-6 text-2xl font-bold tracking-tight text-fd-foreground">Featured demos</h2>
+        <div className={`not-prose ${styles.showcase}`}>
+            <h2 className={styles.heading}>Featured demos</h2>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={styles.grid}>
                 {flagshipDemos.map((demo) => (
                     <a
                         key={demo.href}
                         href={demo.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group flex flex-col overflow-hidden rounded-lg border border-fd-border bg-fd-card transition-colors hover:bg-fd-accent"
+                        className={`group ${styles.card}`}
                     >
-                        <div className="aspect-video w-full overflow-hidden bg-fd-muted">
-                            <img
-                                src={demo.thumbnail}
-                                alt={demo.title}
-                                width={320}
-                                height={180}
-                                className="h-full w-full object-cover"
-                            />
-                        </div>
+                        {SHOW_THUMBNAILS && (
+                            <div className={styles.thumbnail}>
+                                <img
+                                    src={demo.thumbnail}
+                                    alt={demo.title}
+                                    width={320}
+                                    height={180}
+                                    className={styles.thumbnailImage}
+                                />
+                            </div>
+                        )}
 
-                        <div className="flex flex-col gap-1 p-4">
-                            <span className="text-sm font-semibold text-fd-foreground group-hover:text-fd-primary">
-                                {demo.title}
-                            </span>
-                            <span className="text-xs text-fd-muted-foreground">{demo.description}</span>
+                        <div className={styles.info}>
+                            <span className={styles.cardTitle}>{demo.title}</span>
+                            <span className={styles.cardDescription}>{demo.description}</span>
                         </div>
                     </a>
                 ))}
             </div>
 
-            <div className="mt-6 text-center">
-                <a
-                    href="https://demos.blit386.dev"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center rounded-md border border-fd-border bg-fd-background px-5 py-2.5 text-sm font-semibold text-fd-foreground transition-colors hover:bg-fd-accent"
-                >
-                    View all demos
-                </a>
-            </div>
+            {SHOW_FOOTER_LINK && (
+                <div className={styles.footer}>
+                    <a
+                        href="https://demos.blit386.dev"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.viewAllButton}
+                    >
+                        View all demos
+                    </a>
+                </div>
+            )}
         </div>
     );
 }

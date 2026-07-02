@@ -135,9 +135,11 @@
             @apply rounded-none border-none font-departure antialiased text-[11px] leading-5 bg-fd-foreground text-fd-background;
         }
 
-        &:hover {
-            & kbd {
-                @apply bg-white text-fd-primary dark:bg-black;
+        @media (hover: hover) {
+            &:hover {
+                & kbd {
+                    @apply bg-white text-fd-primary dark:bg-black;
+                }
             }
         }
     }
@@ -236,10 +238,12 @@ code {
             @apply rounded-none transition-none select-none cursor-pointer text-fd-secondary-foreground;
         }
 
-        &:hover {
-            &,
-            & svg {
-                @apply text-white dark:text-black;
+        @media (hover: hover) {
+            &:hover {
+                &,
+                & svg {
+                    @apply text-white dark:text-black;
+                }
             }
         }
     }
@@ -257,11 +261,15 @@ code {
     @apply p-0 shadow-2xl;
 
     & a {
-        @apply rounded-none select-none hover:text-white hover:dark:text-black;
+        @apply rounded-none select-none;
 
-        &:hover {
-            & svg {
+        @media (hover: hover) {
+            &:hover {
                 @apply text-white dark:text-black;
+
+                & svg {
+                    @apply text-white dark:text-black;
+                }
             }
         }
     }
@@ -322,20 +330,24 @@ code {
     }
 
     & [data-card] {
-        @apply rounded-none pb-9 transition-none hover:bg-fd-accent hover:text-white;
+        @apply rounded-none pb-9 transition-none;
         @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
-        @apply hover:shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
 
         & h3,
         & h4 {
             @apply pb-2 font-departure text-[22px] uppercase antialiased leading-6;
         }
 
-        &:hover {
-            & p,
-            & h3,
-            & h4 {
-                @apply text-white dark:text-black;
+        @media (hover: hover) {
+            &:hover {
+                @apply bg-fd-accent text-white;
+                @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
+
+                & p,
+                & h3,
+                & h4 {
+                    @apply text-white dark:text-black;
+                }
             }
         }
     }
@@ -352,9 +364,11 @@ code {
         @apply gap-4;
 
         & a {
-            &:hover {
-                & div {
-                    @apply text-white dark:text-black;
+            @media (hover: hover) {
+                &:hover {
+                    & div {
+                        @apply text-white dark:text-black;
+                    }
                 }
             }
         }
@@ -394,8 +408,10 @@ code {
                 @apply text-fd-foreground;
             }
 
-            &:hover button {
-                @apply bg-fd-background cursor-pointer;
+            @media (hover: hover) {
+                &:hover button {
+                    @apply bg-fd-background cursor-pointer;
+                }
             }
 
             & [data-state='open'] {
@@ -452,11 +468,13 @@ code {
         }
     }
 
-    &:hover {
-        &,
-        & p,
-        & div {
-            @apply text-white dark:text-black;
+    @media (hover: hover) {
+        &:hover {
+            &,
+            & p,
+            & div {
+                @apply text-white dark:text-black;
+            }
         }
     }
 

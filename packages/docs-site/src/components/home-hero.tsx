@@ -1,35 +1,36 @@
+import styles from './home-hero.module.css';
+
+// The demos.blit386.dev link is paused pending a layout revisit; flip this to re-enable.
+const SHOW_DEMOS_LINK = false;
+
 export function HomeHero() {
     return (
-        <div className="not-prose flex flex-col items-center gap-6 py-16 text-center">
-            <h1 className="text-6xl font-bold tracking-tight text-fd-foreground">BLIT386</h1>
+        <div className={`not-prose ${styles.hero}`}>
+            <h1 className={styles.title}>BLIT386</h1>
 
-            <p className="max-w-xl text-lg text-fd-muted-foreground">
+            <p className={styles.subtitle}>
                 A palette-first WebGPU retro engine for TypeScript, with automatic Canvas 2D fallback.
             </p>
 
-            <div className="flex flex-wrap justify-center gap-3">
-                <a
-                    href="/docs/getting-started"
-                    className="inline-flex items-center rounded-md bg-fd-primary px-5 py-2.5 text-sm font-semibold text-fd-primary-foreground transition-opacity hover:opacity-90"
-                >
+            <div className={styles.actions}>
+                <a href="/docs/getting-started" className={styles.primaryButton}>
                     Get started
                 </a>
 
-                <a
-                    href="/docs"
-                    className="inline-flex items-center rounded-md border border-fd-border bg-fd-background px-5 py-2.5 text-sm font-semibold text-fd-foreground transition-colors hover:bg-fd-accent"
-                >
-                    Docs
+                <a href="/docs" className={styles.secondaryButton}>
+                    Documentation
                 </a>
 
-                <a
-                    href="https://demos.blit386.dev"
-                    className="inline-flex items-center rounded-md border border-fd-border bg-fd-background px-5 py-2.5 text-sm font-semibold text-fd-foreground transition-colors hover:bg-fd-accent"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Demos
-                </a>
+                {SHOW_DEMOS_LINK && (
+                    <a
+                        href="https://demos.blit386.dev"
+                        className={styles.secondaryButton}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        Demos
+                    </a>
+                )}
             </div>
         </div>
     );
