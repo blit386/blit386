@@ -70,6 +70,8 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 
 ## Initialization
 
+<DemoEmbed demo="001-basics" title="BLIT386 basics demo" />
+
 ```ts twoslash
 import { BT, type IBTDemo } from 'blit386';
 declare const demo: IBTDemo;
@@ -255,6 +257,10 @@ const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });
 
 `defaultConfig()` returns a full `HardwareSettings` object (`320×240` logical, `640×480` drawing buffer, overlay
 enabled, WebGPU backend, and other defaults documented in the table above).
+
+## Putting it together
+
+<DemoEmbed demo="014-game-scene" title="BLIT386 game scene capstone demo" />
 
 ## See also
 
