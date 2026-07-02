@@ -4,6 +4,10 @@
     @apply aspect-4/3 w-full overflow-hidden;
 }
 
+.embedFill {
+    @apply absolute inset-0 h-full w-full overflow-hidden;
+}
+
 .frame {
     @apply block h-full w-full;
 }
