@@ -43,13 +43,13 @@ The description after `/demos-pr` becomes the commit subject.
   - Format: `<type>(<scope>): <description>`
   - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
   - Scopes:
-    - `examples` - demo JS source (`src/NNN-name.js`)
-    - `plugin` - virtual-demos plugin and demo-registry (`plugins/`)
-    - `assets` - static assets in `public/` (sprites, fonts, Cloudflare headers/redirects)
-    - `ci` - GitHub Actions and CI config
-    - `docs` - documentation
-    - `config` - tooling config (Vite, Biome, ESLint, etc.)
-    - `deps` - dependency updates
+    - `examples` – demo JS source (`src/NNN-name.js`)
+    - `plugin` – virtual-demos plugin and demo-registry (`plugins/`)
+    - `assets` – static assets in `public/` (sprites, fonts, Cloudflare headers/redirects)
+    - `ci` – GitHub Actions and CI config
+    - `docs` – documentation
+    - `config` – tooling config (Vite, Biome, ESLint, etc.)
+    - `deps` – dependency updates
 - Include trailer: `Co-Authored-By: Claude <noreply@anthropic.com>`
 
 5. Push and create PR

@@ -21,8 +21,8 @@ none of these exist here.
 Demos are interactive, visual, and authored for a single developer. Correctness is verified by:
 
 1. Running the dev server (`pnpm run dev`) and opening the demo in a browser
-2. The production build (`pnpm run build`) - a build failure surfaces broken imports or plugin errors
-3. Preflight checks (`pnpm run preflight`) - lint, format, spellcheck, knip, docs:links
+2. The production build (`pnpm run build`) – a build failure surfaces broken imports or plugin errors
+3. Preflight checks (`pnpm run preflight`) – lint, format, spellcheck, knip, docs:links
 
 Automated unit or E2E tests would require a headless WebGPU runtime (not broadly available) and would largely duplicate
 what the library's own test suite (`blit386`) already covers.

@@ -24,7 +24,7 @@ Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine 
 
 ```text
 blit386-demos/
-  src/                         # JavaScript source - one file per demo (single source of truth)
+  src/                         # JavaScript source – one file per demo (single source of truth)
     001-basics.js
     002-primitives.js
     ...                        # numbered demos under src/*.js (plugin discovers all)
@@ -97,7 +97,7 @@ pattern:
 
 ```js
 /**
- * 003 Colors - Brief description.
+ * 003 Colors – Brief description.
  */
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
@@ -130,7 +130,7 @@ The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` 
 single step:
 
 1. Create `src/NNN-your-topic.js` (or `00a-…`) with the next free number. Retired numbers stay unused (e.g. `021`). The
-   page title defaults to `BLIT386 Demo NNN - Your Topic` (topic title-cased from the slug). To override, add a
+   page title defaults to `BLIT386 Demo NNN – Your Topic` (topic title-cased from the slug). To override, add a
    `// @pageTitle Custom Title` comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or
    `src/024-crt-toggle.js` for examples).
 
@@ -218,7 +218,7 @@ BT.ticksReset();
 BT.targetFPS;
 BT.deltaSeconds;
 BT.timeSeconds;
-BT.activeBackend; // 'webgpu' | 'software' | null - after successful init
+BT.activeBackend; // 'webgpu' | 'software' | null – after successful init
 BT.isPointerActive(0); // pointer slot active (mouse hover or touch contact)
 BT.isDown(BT.BTN_A, 0); // button held (ANY-match for masks)
 BT.isPressed(BT.BTN_A, 0); // edge: up -> down this frame
