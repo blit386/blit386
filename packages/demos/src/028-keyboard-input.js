@@ -67,6 +67,24 @@ const PRESS_COUNTER_KEYS = [
 const FACE_SLOT_WIDTH = 34;
 
 /**
+ * Turns `KeyH` into `H`, `Digit5` into `5`, and leaves other codes readable.
+ *
+ * @param {string} code - KeyboardEvent.code value.
+ * @returns {string}
+ */
+function formatKeyCode(code) {
+    if (code.startsWith('Key')) {
+        return code.slice(3);
+    }
+
+    if (code.startsWith('Digit')) {
+        return code.slice(5);
+    }
+
+    return code;
+}
+
+/**
  * Shows keyboard face-button maps, low-level key queries, and `inputString`.
  *
  * @implements {IBTDemo}
@@ -339,24 +357,6 @@ class Demo {
         BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'BT.inputString (typed this session)');
         BT.systemPrint(new Vector2i(x + 4, y + 12), C_WHITE, this.typedBuffer.length > 0 ? this.typedBuffer : '…');
     }
-}
-
-/**
- * Turns `KeyH` into `H`, `Digit5` into `5`, and leaves other codes readable.
- *
- * @param {string} code - KeyboardEvent.code value.
- * @returns {string}
- */
-function formatKeyCode(code) {
-    if (code.startsWith('Key')) {
-        return code.slice(3);
-    }
-
-    if (code.startsWith('Digit')) {
-        return code.slice(5);
-    }
-
-    return code;
 }
 
 bootstrap(Demo);

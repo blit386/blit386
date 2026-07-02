@@ -126,11 +126,11 @@ const GLITCH_LABELS = {
 // --- Occasional subtle band-wobble (pixel-tier PixelGlitch) ---
 // This is separate from the bigger TV fault bursts. A real CRT sometimes has a
 // tiny horizontal jitter on random scan lines that is too mild to call a fault.
-const BAND_WOBBLE_COOLDOWN_MIN = 100;
-const BAND_WOBBLE_COOLDOWN_MAX = 280;
-const BAND_WOBBLE_ACTIVE_MIN = 3;
-const BAND_WOBBLE_ACTIVE_MAX = 10;
-const BAND_WOBBLE_INTENSITY = 0.11;
+const BAND_WOBBLE_COOLDOWN_MIN = 100; // At least ~1.7 seconds between wobbles (at 60 FPS).
+const BAND_WOBBLE_COOLDOWN_MAX = 280; // Up to ~4.7 seconds between wobbles.
+const BAND_WOBBLE_ACTIVE_MIN = 3; // Wobble lasts at least 3 ticks (~0.05 s).
+const BAND_WOBBLE_ACTIVE_MAX = 10; // Wobble lasts up to 10 ticks (~0.17 s).
+const BAND_WOBBLE_INTENSITY = 0.11; // Peak strength - much milder than a full TV fault.
 
 // --- Helper functions ---
 
@@ -294,7 +294,7 @@ class Demo {
         this.palette = BT.paletteCreate(256);
 
         // Color32(Red, Green, Blue) - each value is 0 (none) to 255 (maximum).
-        this.palette.set(C_BG, new Color32(160, 160, 160)); // Very dark navy background.
+        this.palette.set(C_BG, new Color32(160, 160, 160)); // Light gray background.
         this.palette.set(C_LABEL, new Color32(160, 200, 160)); // Soft green for overlay text.
 
         // Read every unique color in the logo PNG and store them starting at SPRITE_BASE.
@@ -362,7 +362,7 @@ class Demo {
 
         // Scanlines darken alternate rows to recreate the gaps between phosphor lines.
         // density = DISPLAY_H aligns one scanline pair per logical pixel row (every 4 output pixels).
-        // strength = negative values darken; -7 is a moderate darkening.
+        // strength = negative values darken; -40 is a strong darkening (built-in CRT presets use -7 to -8).
         this.scanlines = new Scanlines();
         this.scanlines.amount = 0.05;
         this.scanlines.strength = -40;
@@ -584,6 +584,10 @@ class Demo {
             // H-HOLD: horizontal band shift in the pixel-tier index buffer.
             // The image looks like it slipped sideways on the tube.
             this.pixelGlitch.intensity = peak;
+
+            // The torn edges also pick up a faint red/blue fringe, like a real set
+            // struggling to keep the picture aligned during a horizontal-hold fault.
+            this.aberration.aberration = ABERRATION_BASE + peak * 4;
         } else if (this.glitchType === 'noise') {
             // SNOW: extra random grain on top of the base noise.
             this.noise.amount = NOISE_BASE + peak * 0.1;
