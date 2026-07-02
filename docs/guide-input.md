@@ -57,7 +57,7 @@ const touch = BT.pointerPos(1); // slot 1 (first touch)
 const delta = BT.pointerDelta(); // slot 0 (mouse)
 const td = BT.pointerDelta(1); // slot 1
 
-// Validity check - false means no live pointer in this slot
+// Validity check – false means no live pointer in this slot
 if (BT.isPointerActive()) {
   // Mouse is over the canvas
 }

@@ -182,7 +182,7 @@ error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
 import { BT, BarrelDistortion, Scanlines, Bloom, PixelGlitch, type Effect } from 'blit386';
 declare const effect: Effect;
 // ---cut---
-// Add effect - routed to pixel or display chain by Effect.tier automatically
+// Add effect – routed to pixel or display chain by Effect.tier automatically
 BT.effectAdd(new BarrelDistortion());
 BT.effectAdd(new Scanlines());
 BT.effectAdd(new Bloom());

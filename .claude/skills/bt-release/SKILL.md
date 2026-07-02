@@ -158,7 +158,7 @@ Then one bullet per PR:
 - Name the actual thing changed: function name, constant name, file type, error class name.
 - State user impact: what breaks, what is new, what improves, what is fixed.
 - End with the PR number as a bare GitHub auto-link reference: `(#153)`. GitHub renders `#N` as a clickable link to the
-  PR - use this format, not a full URL and not a Markdown link.
+  PR – use this format, not a full URL and not a Markdown link.
 - Never mention the author (`@vancura` or any username).
 - For breaking changes, lead the bullet: `Breaking: <description> (#N)`
 
@@ -223,6 +223,6 @@ Full Changelog: https://github.com/blit386/blit386/compare/1.0.4...1.0.5
 After writing RELEASE.md, report:
 
 - "Wrote `RELEASE.md` covering N PRs across M sections" (and how many direct commits if any)
-- "Last tag: LAST_TAG - New version: NEW_VERSION"
+- "Last tag: LAST_TAG – New version: NEW_VERSION"
 - "Review, edit as needed, then delete RELEASE.md after you paste it into GitHub Releases."
 - "To bump the version in `package.json` and `src/core/BTAPI.ts`, do that manually or I can do it if you ask."

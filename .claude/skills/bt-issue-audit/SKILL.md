@@ -26,9 +26,9 @@ bucket, evidence, or recommended status has changed). When in doubt, do not comm
 
 ## Audit buckets
 
-- `not implemented` - no shipped code addresses the ticket
-- `partial` - some of the requested surface shipped; concrete gaps remain
-- `implemented` - the requested behavior is shipped (candidate to close)
+- `not implemented` – no shipped code addresses the ticket
+- `partial` – some of the requested surface shipped; concrete gaps remain
+- `implemented` – the requested behavior is shipped (candidate to close)
 
 ## Comment format
 

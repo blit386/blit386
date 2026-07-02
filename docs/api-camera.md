@@ -20,7 +20,7 @@ declare const desired: Vector2i;
 declare const worldSize: Vector2i;
 // ---cut---
 BT.cameraSet(new Vector2i(scrollX, scrollY)); // apply offset
-BT.camera; // Vector2i - current offset
+BT.camera; // Vector2i – current offset
 BT.cameraReset(); // set back to (0, 0)
 
 // Clamp a camera origin so the viewport stays within a world:

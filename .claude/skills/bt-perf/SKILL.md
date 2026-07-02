@@ -11,7 +11,7 @@ Use this skill when the task involves:
 - benchmarking a new hot method or allocation pattern
 - working on benchmark CI behavior
 
-For visual correctness verification (not performance), use `pnpm run test:visual` - see the Visual Regression Tests
+For visual correctness verification (not performance), use `pnpm run test:visual` – see the Visual Regression Tests
 section in CLAUDE.md.
 
 ## CPU Benchmarks

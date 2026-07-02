@@ -39,7 +39,7 @@ custom rows, and the bottom band (palette grid plus hint bar).
 
 ### Top row 1 (left)
 
-- Short demo title derived from `document.title` (registry pages titled `BLIT386 Demo NNN - Topic` show as
+- Short demo title derived from `document.title` (registry pages titled `BLIT386 Demo NNN – Topic` show as
   `Topic Demo`).
 
 ### Top row 1 (right)
@@ -224,7 +224,7 @@ Demos should not duplicate engine overlay text; the overlay provides it. Leave r
 
 ### Palette grid sizing
 
-Column count is chosen by halving from `palette.size` until the row fits `displayWidth - 2 * edgeMargin`. The footer
+Column count is chosen by halving from `palette.size` until the row fits `displayWidth – 2 * edgeMargin`. The footer
 band height matches `resolveOverlayFooterHeight()` in `layoutPlan.ts`:
 
 ```text

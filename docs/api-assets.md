@@ -74,7 +74,7 @@ const palette = new Palette(256);
 const indexed = await SpriteSheet.loadIndexed(
   'sprites/hero.png', // URL
   palette, // palette to populate
-  10, // startSlot - first palette slot to write colors into
+  10, // startSlot – first palette slot to write colors into
   { sort: 'luminance' }, // optional: color order in palette ('luminance' | 'none')
 );
 
@@ -83,8 +83,8 @@ BT.paletteSet(palette); // activate AFTER loadIndexed returns
 // Draw using the returned sheet and source rectangle:
 BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
 
-// indexed.colors - list of Color32 values registered into the palette
-// indexed.srcRect - Rect2i spanning the full image
+// indexed.colors – list of Color32 values registered into the palette
+// indexed.srcRect – Rect2i spanning the full image
 ```
 
 - Colors are sorted by perceived luminance (darkest-first) by default.

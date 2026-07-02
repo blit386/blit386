@@ -13,11 +13,11 @@ template-literal constants and pure helpers, exported before private).
 Class member order:
 
 1. Static fields (cached singletons, registries).
-2. Instance fields — public → protected → private; `readonly` grouped; one JSDoc + blank line per field.
+2. Instance fields – public → protected → private; `readonly` grouped; one JSDoc + blank line per field.
 3. Constructor (parameter-properties carry inline JSDoc).
-4. Accessors — static getters, then instance getters/setters.
-5. Static methods — public before private.
-6. Instance methods — public → protected → private; private helpers last.
+4. Accessors – static getters, then instance getters/setters.
+5. Static methods – public before private.
+6. Instance methods – public → protected → private; private helpers last.
 
 Cross-cutting: deprecated aliases sit next to their canonical member; cluster method families (new-allocating → `*To` →
 `*InPlace` → queries → `clone`/`toString`); one blank line between members; JSDoc on every member including private;
