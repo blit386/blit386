@@ -27,7 +27,7 @@ update() {
 
 render() {
     BT.clear(2);
-    // Draw in WORLD coordinates - the camera offset is applied for you.
+    // Draw in WORLD coordinates – the camera offset is applied for you.
     BT.drawRectFill(new Rect2i(this.player.x, this.player.y, 16, 16), 1);
 }
 ```

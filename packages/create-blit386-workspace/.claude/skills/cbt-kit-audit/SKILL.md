@@ -23,17 +23,17 @@ so they drift silently when the engine changes. This skill walks the staleness c
    If a specific engine change prompted this (a new feature, a renamed `BT.*` member, a getter-vs-method change, new or
    removed constants), note it. Otherwise audit broadly. The sibling engine repo is `../blit386`; its public surface is
    `../blit386/src/BLIT386.ts`, `../blit386/CLAUDE.md` (BT API getters vs methods, Boolean naming), and
-   `../blit386/docs/api-*.md`. Read those for the current truth - never from memory.
+   `../blit386/docs/api-*.md`. Read those for the current truth – never from memory.
 
 2. Audit the kit docs
 
    For each file in `packages/kit/content/docs/`, check every code example and API mention against the current engine:
-   - `getting-started.md` - install/run flow, `npx blit run` / `doctor`
-   - `basics.md` - `configure()`, loop timing getters (`BT.deltaSeconds`, `BT.ticks`), `bootstrap()` shape
-   - `drawing.md` - `BT.clear`, primitives, `systemPrint` / text APIs
-   - `input.md` - `BT.isDown` / edges, keyboard, pointer, gamepad, button constants
-   - `palette.md` - `paletteCreate`, slots, `Color32`
-   - `when-something-breaks.md` - common errors, `await`, palette slot 0, `doctor`
+   - `getting-started.md` – install/run flow, `npx blit run` / `doctor`
+   - `basics.md` – `configure()`, loop timing getters (`BT.deltaSeconds`, `BT.ticks`), `bootstrap()` shape
+   - `drawing.md` – `BT.clear`, primitives, `systemPrint` / text APIs
+   - `input.md` – `BT.isDown` / edges, keyboard, pointer, gamepad, button constants
+   - `palette.md` – `paletteCreate`, slots, `Color32`
+   - `when-something-breaks.md` – common errors, `await`, palette slot 0, `doctor`
 
 3. Audit the shipped skills
 
