@@ -83,6 +83,14 @@ not automated here). The full roadmap lives in [`CREATE_BLIT386_DESIGN.md`](CREA
   ([npm](https://www.npmjs.com/package/blit386), [docs](https://blit386.dev)).
 - Demos: [demos.blit386.dev](https://demos.blit386.dev) – 34 small, commented examples.
 
+## Community
+
+- [Discord](https://discord.gg/tC2wGt88Uj)
+- [GitHub Discussions](https://github.com/blit386/blit386/discussions)
+- [X](https://x.com/blit386)
+- [Bluesky](https://bsky.app/profile/blit386.bsky.social)
+- [Mastodon](https://mastodon.gamedev.place/@blit386)
+
 ## Made by
 
 Built by Václav Vančura ([@vancura](https://github.com/vancura)) – one person, so far.
