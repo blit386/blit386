@@ -1,7 +1,8 @@
 # Input
 
-Read input inside `update()`. BLIT386 gives every player simple, named buttons that work the same whether the player
-uses a keyboard or a gamepad.
+Read input inside `update()` - button presses, key presses, and typed text are one-frame events that already reset by
+the time `render()` runs, so checking them there can miss a tap. BLIT386 gives every player simple, named buttons that
+work the same whether the player uses a keyboard or a gamepad.
 
 ## Face buttons and the D-pad
 

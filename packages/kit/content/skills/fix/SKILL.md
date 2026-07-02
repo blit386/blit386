@@ -27,6 +27,8 @@ Use when the game crashes, shows a blank screen, throws an error in the browser 
 ## What to check
 
 - `update()` is for logic only; `render()` is for drawing only. Drawing in `update()` causes visual glitches.
+- If key or button taps feel randomly missed: `isKeyPressed`/`isKeyReleased`/`inputString`/`isPressed`/`isReleased` must
+  be read in `update()`. Reading them in `render()` can miss the one-frame edge; see `docs/input.md`.
 - All screen coordinates must be whole numbers (`Vector2i`, `Rect2i`). Fractions cause off-by-one pixel issues.
 - If you see `{{` or `}}` in a file, a template placeholder was not substituted - this is a scaffolding bug, not a game
   bug.
