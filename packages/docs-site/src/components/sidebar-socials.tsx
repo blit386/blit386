@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import styles from './sidebar-socials.module.css';
 
-type SocialPlatform = 'discord' | 'github' | 'x' | 'bluesky' | 'mastodon';
+type SidebarSocialPlatform = 'discord' | 'github' | 'x' | 'bluesky' | 'mastodon';
 
 type SocialDestination = {
-    platform: SocialPlatform;
+    platform: SidebarSocialPlatform;
     label: string;
     url: string | null;
     comingSoon?: boolean;
@@ -18,7 +18,7 @@ const SOCIALS: SocialDestination[] = [
     { platform: 'github', label: 'GitHub', url: 'https://github.com/blit386/blit386' },
 ];
 
-const ICONS: Record<SocialPlatform, ReactNode> = {
+const ICONS: Record<SidebarSocialPlatform, ReactNode> = {
     discord: (
         <path
             fill="currentColor"
