@@ -33,11 +33,11 @@ update() {
 
 ## Key calls
 
-- `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` - methods. Buttons: `BTN_UP/DOWN/LEFT/RIGHT`,
+- `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` – methods. Buttons: `BTN_UP/DOWN/LEFT/RIGHT`,
   `BTN_A/B/X/Y`, `BTN_L/R` (shoulders), `BTN_START`, `BTN_SELECT`; masks `BTN_ABXY`, `BTN_SHOULDER`.
-- `BT.getAxis(axis, player?)` - method. Axes: `AXIS_LEFT_X/Y`, `AXIS_RIGHT_X/Y`, `AXIS_TRIGGER_L/R`.
-- `BT.isGamepadConnected(player?)` - method.
-- `BT.gamepadCount` - getter; number of connected pads (0-4).
+- `BT.getAxis(axis, player?)` – method. Axes: `AXIS_LEFT_X/Y`, `AXIS_RIGHT_X/Y`, `AXIS_TRIGGER_L/R`.
+- `BT.isGamepadConnected(player?)` – method.
+- `BT.gamepadCount` – getter; number of connected pads (0–4).
 - Players: `BT.PLAYER_ONE` ... `BT.PLAYER_FOUR` (or just `0`-`3`).
 
 ## Notes

@@ -72,12 +72,12 @@ generate-to-memory copies in `packages/kit/src/adapters.ts`.
 ## Critical rules
 
 1. No emoji in code, docs, commits, or user-facing strings
-2. JavaScript by default in scaffolds — generated games are plain JS unless the user picks TypeScript (`--ts`)
-3. Beginner-friendly — scaffold output and kit docs assume no prior coding experience
-4. Integer coordinates — generated games use `Vector2i` / `Rect2i` via blit386
-5. Use `BT` namespace in generated game code — never `BTAPI`
+2. JavaScript by default in scaffolds – generated games are plain JS unless the user picks TypeScript (`--ts`)
+3. Beginner-friendly – scaffold output and kit docs assume no prior coding experience
+4. Integer coordinates – generated games use `Vector2i` / `Rect2i` via blit386
+5. Use `BT` namespace in generated game code – never `BTAPI`
 6. Named exports only in library TypeScript; no default exports
-7. Documentation is part of every feature — update this file when workflow or architecture changes
+7. Documentation is part of every feature – update this file when workflow or architecture changes
 
 ## Git
 
@@ -89,26 +89,26 @@ generate-to-memory copies in `packages/kit/src/adapters.ts`.
 
 Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 
-- `cbt-preflight` — run all quality checks
-- `cbt-format` — format and verify
-- `cbt-quick-format` — format only, no verification
-- `cbt-review` — review changes against project rules
-- `cbt-pr` — create a pull request with checks
-- `cbt-spellcheck` — fix cspell errors and extend the dictionary
-- `cbt-test` — run the scaffold smoke test
-- `cbt-release` — npm publish procedure (`../PUBLISHING.md` in the local workspace layout)
-- `cbt-kit-audit` — re-audit shipped kit docs and skills against the current engine API (see Kit content vs engine docs)
+- `cbt-preflight` – run all quality checks
+- `cbt-format` – format and verify
+- `cbt-quick-format` – format only, no verification
+- `cbt-review` – review changes against project rules
+- `cbt-pr` – create a pull request with checks
+- `cbt-spellcheck` – fix cspell errors and extend the dictionary
+- `cbt-test` – run the scaffold smoke test
+- `cbt-release` – npm publish procedure (`../PUBLISHING.md` in the local workspace layout)
+- `cbt-kit-audit` – re-audit shipped kit docs and skills against the current engine API (see Kit content vs engine docs)
 
 ## Kit content vs engine docs
 
 Generated games receive `AGENTS.md`, six beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
 `drawing`, `input`, `palette`, `when-something-breaks`), and the game-author skills in `packages/kit/content/skills/`
 (emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`). They are not copies of blit386's full
-`docs/` tree — they teach the starter game and point to GitHub for deep API reference.
+`docs/` tree – they teach the starter game and point to GitHub for deep API reference.
 
 Kit content must be self-contained. Skills and docs may reference only `blit386` (the engine) and other local kit files
 (`docs/*.md`, `AGENTS.md`). Do not reference the `blit386-demos` repo (demo slugs like `029-snake-game` or
-`blit386-demos.vancura.dev` URLs) — that repo may be archived in favor of kit-based demos, and shipped content must not
+`blit386-demos.vancura.dev` URLs) – that repo may be archived in favor of kit-based demos, and shipped content must not
 break with it.
 
 When blit386 public API or naming changes in the sibling repo, audit these kit files for stale examples:

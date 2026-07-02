@@ -53,8 +53,8 @@ BT.effectClear();
 
 ## Key calls
 
-- `BT.effectAdd(effect)` / `BT.effectRemove(effect)` / `BT.effectClear()` - methods.
-- Presets (functions on `BT.preset`): `BT.preset.crtPipBoy()`, `BT.preset.amber()`, `BT.preset.green()` - each returns a
+- `BT.effectAdd(effect)` / `BT.effectRemove(effect)` / `BT.effectClear()` – methods.
+- Presets (functions on `BT.preset`): `BT.preset.crtPipBoy()`, `BT.preset.amber()`, `BT.preset.green()` – each returns a
   fresh array of effects.
 - Effect classes you can construct, tweak, then `effectAdd`: display-tier `Scanlines`, `BarrelDistortion`, `Bloom`,
   `Vignette`, `RGBMask`, `ChromaticAberration`, `Noise`, `Flicker`, `Interference`, `RollLine`; pixel-tier
@@ -71,6 +71,6 @@ BT.effectAdd(lines);
 
 - Always gate effects behind `BT.activeBackend === 'webgpu'` so the game still runs on the software fallback. Keep
   starter games effect-free.
-- Some effects animate from a `time` field - set `fx.time = BT.timeSeconds` each frame.
+- Some effects animate from a `time` field – set `fx.time = BT.timeSeconds` each frame.
 - Hold onto effect instances and reuse them; rebuilding every toggle re-allocates GPU pipelines.
 - Full effect reference lives in the engine repo (linked from `AGENTS.md`); the local docs do not cover every effect.

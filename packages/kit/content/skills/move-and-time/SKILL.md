@@ -29,8 +29,8 @@ update() {
 }
 ```
 
-- `BT.ticks`, `BT.timeSeconds`, `BT.deltaSeconds`, `BT.targetFPS` - all getters.
-- `BT.ticksReset()` (method) - zero the tick counter, e.g. on restart.
+- `BT.ticks`, `BT.timeSeconds`, `BT.deltaSeconds`, `BT.targetFPS` – all getters.
+- `BT.ticksReset()` (method) – zero the tick counter, e.g. on restart.
 
 ## Timer helper
 
@@ -59,7 +59,7 @@ this.y = Math.floor(100 + eased * 50); // round before drawing
 ## Notes
 
 - Do timing in `update()`, not `render()`.
-- Round to whole numbers before drawing (`Math.floor`) - rendering is integer-only.
+- Round to whole numbers before drawing (`Math.floor`) – rendering is integer-only.
 - `Timer.fireIfElapsed()` advances its own state, so call it once per frame.
 
 See `docs/basics.md`.

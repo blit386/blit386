@@ -7,7 +7,7 @@ description:
 
 # Save a screenshot
 
-Capture the rendered frame as a PNG - download it, or get a Blob to use yourself.
+Capture the rendered frame as a PNG – download it, or get a Blob to use yourself.
 
 ## When to use
 
@@ -35,11 +35,11 @@ async takeShot() {
 
 ## Key calls
 
-- `BT.downloadFrame(filename?)` (method, async) - capture and download.
-- `BT.captureFrame()` (method, async) - resolve to a PNG `Blob`.
+- `BT.downloadFrame(filename?)` (method, async) – capture and download.
+- `BT.captureFrame()` (method, async) – resolve to a PNG `Blob`.
 
 ## Notes
 
-- Both are async - `await` them, or call from an async handler.
+- Both are async – `await` them, or call from an async handler.
 - Capture happens after the next frame renders, so the latest draw is included.
 - Works on both the WebGPU and software backends.

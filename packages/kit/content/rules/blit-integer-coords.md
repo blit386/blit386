@@ -38,4 +38,4 @@ BT.drawPixel(new Vector2i(px, py), COLOR);
 
 ## BT getters already return integers
 
-`BT.displaySize`, `BT.pointerPos(0)`, and `BT.camera` all return `Vector2i` — no conversion needed.
+`BT.displaySize`, `BT.pointerPos(0)`, and `BT.camera` all return `Vector2i` – no conversion needed.

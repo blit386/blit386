@@ -11,14 +11,14 @@ npm install
 npm run dev
 ```
 
-Works with npm, pnpm, yarn, or bun - the scaffolder uses whichever you ran it with.
+Works with npm, pnpm, yarn, or bun – the scaffolder uses whichever you ran it with.
 
 ## What you get
 
-- A small, complete starter game (Catcher) with a comment on every line - JavaScript by default, or TypeScript with
+- A small, complete starter game (Catcher) with a comment on every line – JavaScript by default, or TypeScript with
   `--ts`.
 - A ready-to-run Vite setup: `index.html`, `src/game.js` (or `src/game.ts`), and a dev server.
-- Local guides (`docs/`) and an `AGENTS.md` so you - or an AI assistant - can learn the engine without leaving the
+- Local guides (`docs/`) and an `AGENTS.md` so you – or an AI assistant – can learn the engine without leaving the
   project.
 - The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`, `npx blit agents sync`), provided by
   [`@blit386/kit`](https://www.npmjs.com/package/@blit386/kit). It is a project-local bin, so invoke it through `npx`.

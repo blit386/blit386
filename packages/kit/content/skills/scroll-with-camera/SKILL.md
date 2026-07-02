@@ -34,10 +34,10 @@ render() {
 
 ## Key calls
 
-- `BT.cameraSet(offset)` (method) - set the global scroll offset (`Vector2i`).
-- `BT.camera` (getter) - the current offset.
-- `BT.cameraReset()` (method) - back to `(0, 0)`.
-- `BT.cameraClamp(camera, worldSize, viewSize?)` (method) - return an offset kept inside the world bounds.
+- `BT.cameraSet(offset)` (method) – set the global scroll offset (`Vector2i`).
+- `BT.camera` (getter) – the current offset.
+- `BT.cameraReset()` (method) – back to `(0, 0)`.
+- `BT.cameraClamp(camera, worldSize, viewSize?)` (method) – return an offset kept inside the world bounds.
 
 ## Notes
 

@@ -47,10 +47,10 @@ Keeping them apart keeps games predictable. Decide things in `update()`, draw th
 
 The engine gives you a few read-only values (they are properties, so no parentheses):
 
-- `BT.ticks` - how many update steps have happened since the start (a steadily rising whole number). Great for timers:
+- `BT.ticks` – how many update steps have happened since the start (a steadily rising whole number). Great for timers:
   `if (BT.ticks % 30 === 0) { ... }` does something twice a second.
-- `BT.targetFPS` - the frames-per-second you asked for (default 60).
-- `BT.deltaSeconds` - how much time one step represents, in seconds. Use it for smooth motion if you prefer
+- `BT.targetFPS` – the frames-per-second you asked for (default 60).
+- `BT.deltaSeconds` – how much time one step represents, in seconds. Use it for smooth motion if you prefer
   speed-per-second over speed-per-step.
 
 ## init returns a promise

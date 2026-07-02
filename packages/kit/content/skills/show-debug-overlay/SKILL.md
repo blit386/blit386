@@ -58,8 +58,8 @@ update() {
 
 - Configure flags (all `is*`): `isOverlayEnabled`, `isOverlayVisibleAtStart`, `isOverlayToggleHintVisible`,
   `isOverlayToggleEnabled`, `isOverlayPaletteEnabled`, `isOverlayTimingChartEnabled`.
-- `overlayRows()` - optional method on your game class returning `{ leftText, rightText? }[]`.
-- `BT.assignTag(label?)` (method) - drop a labeled marker (needs the timing chart enabled).
+- `overlayRows()` – optional method on your game class returning `{ leftText, rightText? }[]`.
+- `BT.assignTag(label?)` (method) – drop a labeled marker (needs the timing chart enabled).
 
 ## Notes
 

@@ -1,4 +1,4 @@
-# AGENTS.md - working on a BLIT386 game
+# AGENTS.md – working on a BLIT386 game
 
 <!-- blit-kit:managed:start -->
 <!-- Everything between the managed markers is owned by /kit and will be rewritten by a future
@@ -6,7 +6,7 @@
 
 This file is the home base for anyone (a person or an AI assistant) working on this game. It is short on purpose: it
 tells you how a BLIT386 game is shaped, the rules to follow, and which doc to open when you need detail. Read the linked
-doc only when the task needs it - do not load everything at once.
+doc only when the task needs it – do not load everything at once.
 
 BLIT386 is a palette-first 2D pixel engine. You draw with small whole-number coordinates and numbered colors, and the
 engine puts pixels on a `<canvas>`. It runs on WebGPU when available and falls back to plain Canvas 2D otherwise, so a
@@ -59,18 +59,18 @@ bootstrap(Game);
 | Make and use colors (palette, slots)             | `docs/palette.md`               |
 | Fix a blank screen, an error, a broken change    | `docs/when-something-breaks.md` |
 
-The full engine reference lives at https://github.com/blit386/blit386 - only go there if these local docs do not answer
+The full engine reference lives at https://github.com/blit386/blit386 – only go there if these local docs do not answer
 the question.
 
 ## Running the game
 
 From the project folder:
 
-- `npm run dev` (or `pnpm run dev`) - start the game and open it in your browser.
-- `npx blit run` - the same thing, the friendly way.
-- `npx blit doctor` - check your setup if something seems off.
-- `npx blit upgrade` - update BLIT386 to the latest version (and offer to fix any renamed API names for you).
-- `npx blit migrate` - update old BLIT386 names in your game to the current ones. Add `--write` to apply the changes.
+- `npm run dev` (or `pnpm run dev`) – start the game and open it in your browser.
+- `npx blit run` – the same thing, the friendly way.
+- `npx blit doctor` – check your setup if something seems off.
+- `npx blit upgrade` – update BLIT386 to the latest version (and offer to fix any renamed API names for you).
+- `npx blit migrate` – update old BLIT386 names in your game to the current ones. Add `--write` to apply the changes.
 
 The `blit` helper is installed inside the project (it ships with `/kit`), so it is not on the system PATH. Always invoke
 it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works inside package scripts.
@@ -99,6 +99,6 @@ Run `npx blit agents sync` after a kit update (`npx blit upgrade`) to refresh th
 
 ## Your notes
 
-Everything below the managed end marker is yours. Write down decisions, todos, or project-specific rules here - for
+Everything below the managed end marker is yours. Write down decisions, todos, or project-specific rules here – for
 yourself or for your AI assistant. Kit updates (`npx blit agents sync`) rewrite only the managed part above and never
 touch this section.

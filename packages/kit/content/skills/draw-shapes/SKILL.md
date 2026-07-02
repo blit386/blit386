@@ -7,7 +7,7 @@ description:
 
 # Draw shapes
 
-Draw rectangles, lines, and pixels, and clear the screen - all with palette slot numbers, all inside `render()`.
+Draw rectangles, lines, and pixels, and clear the screen – all with palette slot numbers, all inside `render()`.
 
 ## When to use
 
@@ -30,11 +30,11 @@ render() {
 
 ## Key calls (all methods)
 
-- `BT.clear(slot)` - paint the whole frame. Call it first every frame, or last frame's drawing shows through.
-- `BT.drawRectFill(rect, slot)` / `BT.drawRect(rect, slot)` - filled / outlined box.
-- `BT.drawLine(p0, p1, slot)` - straight line between two points.
-- `BT.drawPixel(pos, slot)` or `BT.drawPixel(x, y, slot)` - one pixel.
-- `BT.clearRect(rect, slot)` - clear only a region.
+- `BT.clear(slot)` – paint the whole frame. Call it first every frame, or last frame's drawing shows through.
+- `BT.drawRectFill(rect, slot)` / `BT.drawRect(rect, slot)` – filled / outlined box.
+- `BT.drawLine(p0, p1, slot)` – straight line between two points.
+- `BT.drawPixel(pos, slot)` or `BT.drawPixel(x, y, slot)` – one pixel.
+- `BT.clearRect(rect, slot)` – clear only a region.
 
 ## Notes
 

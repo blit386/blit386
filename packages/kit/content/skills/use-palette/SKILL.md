@@ -41,10 +41,10 @@ update() {
 
 ## Key calls
 
-- `BT.paletteCreate(size?)` (method) - new palette (default 256 slots).
-- `palette.set(index, color)` / `palette.get(index)` (methods) - write / read a slot.
-- `BT.paletteSet(palette)` (method) - make a palette active.
-- `palette.applyHUD(startSlot?)` (method) - fill six ready-made HUD colors (white, background, label, header, dim, code)
+- `BT.paletteCreate(size?)` (method) – new palette (default 256 slots).
+- `palette.set(index, color)` / `palette.get(index)` (methods) – write / read a slot.
+- `BT.paletteSet(palette)` (method) – make a palette active.
+- `palette.applyHUD(startSlot?)` (method) – fill six ready-made HUD colors (white, background, label, header, dim, code)
   in one call.
 - Built-in retro palettes: `Palette.vga()`, `Palette.cga()`, `Palette.c64()`, `Palette.nes()`, `Palette.gameboy()`,
   `Palette.pico8()`.
@@ -54,7 +54,7 @@ update() {
 
 ## Notes
 
-- Slot 0 is always transparent - start visible colors at slot 1.
+- Slot 0 is always transparent – start visible colors at slot 1.
 - `new Color32(r, g, b)` or `new Color32(r, g, b, a)` (alpha 0..255).
 - Recoloring by changing slots is cheaper than redrawing. For animated color motion see the animate-the-palette skill.
 
