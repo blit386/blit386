@@ -5,6 +5,7 @@
 export type { OverlayBarStyle } from './bars/Bars';
 export { OverlayBars } from './bars/Bars';
 export { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT, SYSTEM_CHAR_ADVANCE } from './constants';
+export { OVERLAY_TOGGLE_KEY_CODE } from './input/constants';
 export { Toggle } from './input/Toggle';
 export { resolveOverlayTopLeftLabel } from './labels';
 export {

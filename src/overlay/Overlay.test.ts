@@ -133,7 +133,7 @@ describe('Overlay', () => {
                 isButtonPressed: () => true,
                 getPos: () => new Vector2i(swatch.x + 1, swatch.y + 1),
             } as never,
-            null,
+            false,
             1,
         );
 
@@ -163,7 +163,7 @@ describe('Overlay', () => {
                 getScrollDelta: () => 0,
                 consumeScrollDelta: vi.fn(),
             } as never,
-            null,
+            false,
             1,
         );
 

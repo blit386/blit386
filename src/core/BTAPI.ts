@@ -14,7 +14,7 @@ import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { PointerInput } from '../input/PointerInput';
 import type { OverlayDrawTarget } from '../overlay';
-import { createOverlayLayout, Overlay, resolveOverlayTopLeftLabel } from '../overlay';
+import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
@@ -117,6 +117,14 @@ export class BTAPI {
 
     /** Number of demo draw API calls issued since the last rendered frame. */
     private pendingDrawCalls = 0;
+
+    /**
+     * Overlay Backquote toggle press captured during a fixed-update tick, before
+     * {@link KeyboardInput.endUpdate} clears that tick's press edge. Read and reset by
+     * {@link beginRenderFrame} so the overlay (checked during the render phase, after every
+     * update tick for the frame has already run) still observes a press that landed inside a tick.
+     */
+    private pendingOverlayTogglePress = false;
 
     /** Bitmask of palette indices referenced by demo draw calls this frame. */
     private readonly framePaletteUsageMask = new Uint8Array(USAGE_CAPACITY);
@@ -312,6 +320,13 @@ export class BTAPI {
                 this.pendingUpdateSteps++;
 
                 const tick = this.loop?.getTicks() ?? 0;
+
+                // Sample the overlay toggle key's press edge before endUpdate clears it below.
+                // The overlay itself is only checked later, during the render phase (beginRenderFrame),
+                // by which point this tick's edge would otherwise already be gone.
+                if (this.keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, tick)) {
+                    this.pendingOverlayTogglePress = true;
+                }
 
                 // Keyboard edges and text buffer align with fixed update rate, not display
                 // refresh rate (render may run 2x update on 120 Hz / 60 FPS setups).
@@ -1329,12 +1344,14 @@ export class BTAPI {
         if (this.overlay) {
             this.overlay.handleFrameInput(
                 this.pointer,
-                this.keyboard,
+                this.pendingOverlayTogglePress,
                 this.loop?.getTicks() ?? 0,
                 () => this.demo?.overlayRows?.(),
                 this.palette,
             );
         }
+
+        this.pendingOverlayTogglePress = false;
 
         resetUsage(this.framePaletteUsageMask);
     }

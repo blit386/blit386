@@ -37,15 +37,15 @@ export class Toggle {
      * Handles toggle input (Backquote and bottom-left corner press).
      *
      * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param keyboard - Keyboard subsystem, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
+     * @param isTogglePressed - Whether the Backquote toggle key edge fired this frame. Callers must
+     * sample this before the keyboard subsystem's own end-of-tick edge reset runs, so a press landing
+     * inside a fixed-update tick is not lost by the time this render-phase check runs.
      * @param toggleRect - Bottom-left toggle hit region.
      * @param isPointerPressConsumed - When true, skip pointer corner toggle (palette swatch handled the press).
      */
     handleInput(
         pointer: PointerInput | null,
-        keyboard: KeyboardInput | null,
-        currentTick: number,
+        isTogglePressed: boolean,
         toggleRect: Rect2i,
         isPointerPressConsumed = false,
     ): void {
@@ -53,7 +53,7 @@ export class Toggle {
             return;
         }
 
-        if (keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, currentTick)) {
+        if (isTogglePressed) {
             this.#isBodyVisible = !this.#isBodyVisible;
 
             return;
@@ -95,6 +95,8 @@ export class Toggle {
         toggleRect: Rect2i,
         isPointerPressConsumed = false,
     ): void {
-        this.handleInput(pointer, keyboard, currentTick, toggleRect, isPointerPressConsumed);
+        const isTogglePressed = keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, currentTick) ?? false;
+
+        this.handleInput(pointer, isTogglePressed, toggleRect, isPointerPressConsumed);
     }
 }
