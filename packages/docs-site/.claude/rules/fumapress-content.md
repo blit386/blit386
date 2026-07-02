@@ -1,7 +1,7 @@
 # Fumapress Content
 
 MDX frontmatter required (`title`, `description`). Public engine docs under `content/docs/**` are generated from
-`blit386/docs/` by `scripts/sync-docs-from-engine.mjs` (`pnpm run sync:docs`) - never hand-edit them; edit the engine
+`blit386/docs/` by `scripts/sync-docs-from-engine.mjs` (`pnpm run sync:docs`) – never hand-edit them; edit the engine
 source instead. The engine repo's `blit386/docs/_sitemap.json` manifest lists which docs publish (and their URL, order,
 and subtitle); generated pages rewrite intra-doc links to site paths (`/docs/...`), and pages omitted from the manifest
 stay link-only on GitHub. No emoji.

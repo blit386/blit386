@@ -68,7 +68,7 @@ const palette = new Palette(256);
 // Set and get colors (slot = absolute palette index; see Palette addressing above)
 palette.set(1, new Color32(255, 0, 0, 255)); // red at absolute slot 1
 palette.get(1); // → Color32 (defensive copy)
-palette.getRef(1); // → Color32 (live reference - do not store)
+palette.getRef(1); // → Color32 (live reference – do not store)
 
 // Activate for rendering
 BT.paletteSet(palette);

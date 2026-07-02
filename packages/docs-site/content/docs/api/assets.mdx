@@ -67,7 +67,7 @@ const palette = new Palette(256);
 const indexed = await SpriteSheet.loadIndexed(
   'sprites/hero.png', // URL
   palette, // palette to populate
-  10, // startSlot - first palette slot to write colors into
+  10, // startSlot – first palette slot to write colors into
   { sort: 'luminance' }, // optional: color order in palette ('luminance' | 'none')
 );
 
@@ -76,8 +76,8 @@ BT.paletteSet(palette); // activate AFTER loadIndexed returns
 // Draw using the returned sheet and source rectangle:
 BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
 
-// indexed.colors - list of Color32 values registered into the palette
-// indexed.srcRect - Rect2i spanning the full image
+// indexed.colors – list of Color32 values registered into the palette
+// indexed.srcRect – Rect2i spanning the full image
 ```
 
 - Colors are sorted by perceived luminance (darkest-first) by default.
@@ -176,7 +176,7 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
 
 ## System font
 
-A built-in 6×14 monospace font covering printable ASCII (characters 32-126). No load step needed.
+A built-in 6×14 monospace font covering printable ASCII (characters 32–126). No load step needed.
 
 ```ts twoslash
 BT.systemPrint(new Vector2i(10, 10), paletteIndex, 'Score: 100');

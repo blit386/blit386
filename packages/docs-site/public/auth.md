@@ -1,6 +1,6 @@
 # auth.md
 
-You are an agent. BLIT386 Documentation (`https://blit386.dev/`) is a **public site** — all content is freely accessible
+You are an agent. BLIT386 Documentation (`https://blit386.dev/`) is a **public site** – all content is freely accessible
 without registration or a token.
 
 ## Discovery

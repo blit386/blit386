@@ -45,4 +45,4 @@ Suggested scopes: `content`, `ci`, `config`, `deps`
 ## Engine vs Site Docs
 
 Canonical API documentation lives in the [blit386](https://github.com/blit386/blit386) repository. This site should
-summarize and link — avoid copying API tables that will drift.
+summarize and link – avoid copying API tables that will drift.

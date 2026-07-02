@@ -23,12 +23,12 @@ Run comprehensive quality checks before committing or pushing.
 ## Steps
 
 1. Run `pnpm run preflight`:
-   - `format:check` — Biome + Prettier
-   - `lint` — Biome
-   - `typecheck` — fumadocs-mdx + tsc
-   - `spellcheck` — cspell on content and src
-   - `knip` — unused exports/deps
-   - `docs:links` — Markdown link checker
-   - `build` — CLOUDFLARE=1 waku build
+   - `format:check` – Biome + Prettier
+   - `lint` – Biome
+   - `typecheck` – fumadocs-mdx + tsc
+   - `spellcheck` – cspell on content and src
+   - `knip` – unused exports/deps
+   - `docs:links` – Markdown link checker
+   - `build` – CLOUDFLARE=1 waku build
 
 2. Report results; suggest `pnpm run format`, `pnpm lint:fix`, or cspell dictionary updates on failure.

@@ -19,8 +19,8 @@ v.width;
 v.height; // aliases for x / y (useful when treating the vector as a size)
 
 // Static factories
-Vector2i.zero(); // (0, 0) - cached frozen singleton
-Vector2i.one(); // (1, 1) - cached frozen singleton
+Vector2i.zero(); // (0, 0) – cached frozen singleton
+Vector2i.one(); // (1, 1) – cached frozen singleton
 Vector2i.up(); // (0, -1)
 Vector2i.down(); // (0, 1)
 Vector2i.left(); // (-1, 0)
@@ -46,19 +46,19 @@ Integer rectangle with `x, y, width, height` fields.
 const r = new Rect2i(x, y, width, height);
 
 // Static factories
-Rect2i.zero(); // (0,0,0,0) - cached frozen singleton
+Rect2i.zero(); // (0,0,0,0) – cached frozen singleton
 Rect2i.fromMinMax(min, max); // from corner vectors
 Rect2i.fromMinMaxXY(minX, minY, maxX, maxY); // zero-allocation variant
 Rect2i.fromCenterSize(center, size); // centered rectangle
 Rect2i.fromCenterSizeXY(cx, cy, w, h); // zero-allocation variant
 
 // Instance methods
-r.isContaining(point); // boolean - point inside rect
-r.isContainingXY(px, py); // boolean - raw coordinates, no Vector2i alloc
-r.isIntersecting(other); // boolean - rects overlap
-r.isEqual(other); // boolean - same position and size
-r.intersection(other); // Rect2i | null - overlap area
-r.intersectTo(other, out); // boolean - write overlap into out when it exists
+r.isContaining(point); // boolean – point inside rect
+r.isContainingXY(px, py); // boolean – raw coordinates, no Vector2i alloc
+r.isIntersecting(other); // boolean – rects overlap
+r.isEqual(other); // boolean – same position and size
+r.intersection(other); // Rect2i | null – overlap area
+r.intersectTo(other, out); // boolean – write overlap into out when it exists
 r.center; // Vector2i getter
 r.min; // Vector2i getter (top-left)
 r.max; // Vector2i getter (bottom-right)
@@ -66,7 +66,7 @@ r.max; // Vector2i getter (bottom-right)
 
 ## Color32
 
-32-bit RGBA color (channels 0-255).
+32-bit RGBA color (channels 0–255).
 
 ```ts twoslash
 const c = new Color32(r, g, b, a);
@@ -100,7 +100,7 @@ c.lerp(other, t); // same semantics as static helper
 c.toFloat32Array(); // [r/255, g/255, b/255, a/255]
 c.luminance; // perceived brightness: 0.299r + 0.587g + 0.114b
 c.toHex(); // '#rrggbb' string
-c.isEqual(other); // boolean - all RGBA channels match
+c.isEqual(other); // boolean – all RGBA channels match
 ```
 
 ## See also
