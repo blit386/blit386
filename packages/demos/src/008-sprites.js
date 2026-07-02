@@ -89,8 +89,10 @@ async function canvasToImage(canvas) {
 // total, and this demo needs room for several recolored copies of the same shape, we snap
 // every blended edge pixel back to whichever of these two colors it is closer to. This
 // keeps the palette usage small and predictable no matter how smooth the edges look.
-const FILL_COLOR = { r: 0x55, g: 0x99, b: 0xee };
-const STROKE_COLOR = { r: 0xff, g: 0xff, b: 0xff };
+// drawShapeInCell() reads these same two Color32 values (via toHex()) for its canvas
+// fillStyle/strokeStyle, so the paint colors and the quantization targets can never drift apart.
+const FILL_COLOR = new Color32(0x55, 0x99, 0xee);
+const STROKE_COLOR = new Color32(0xff, 0xff, 0xff);
 
 /**
  * Finds whichever of FILL_COLOR/STROKE_COLOR is closer to a given pixel color.
@@ -101,7 +103,7 @@ const STROKE_COLOR = { r: 0xff, g: 0xff, b: 0xff };
  * @param {number} r
  * @param {number} g
  * @param {number} b
- * @returns {{ r: number, g: number, b: number }}
+ * @returns {Color32}
  */
 function nearestShapeColor(r, g, b) {
     const distanceToFill = (r - FILL_COLOR.r) ** 2 + (g - FILL_COLOR.g) ** 2 + (b - FILL_COLOR.b) ** 2;
@@ -201,11 +203,9 @@ function registerCanvasColors(palette, ctx, w, h, startSlot) {
 function drawShapeInCell(ctx, cellX, cellY, kind) {
     const cx = cellX + SHAPE_CELL / 2;
     const cy = cellY + SHAPE_CELL / 2;
-    const fill = '#5599ee';
-    const stroke = '#ffffff';
 
-    ctx.fillStyle = fill;
-    ctx.strokeStyle = stroke;
+    ctx.fillStyle = FILL_COLOR.toHex();
+    ctx.strokeStyle = STROKE_COLOR.toHex();
     ctx.lineWidth = 1;
 
     if (kind === 0) {
