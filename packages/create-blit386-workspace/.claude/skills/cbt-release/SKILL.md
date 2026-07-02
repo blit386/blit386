@@ -21,9 +21,9 @@ share the `_BLIT386_` parent folder).
 
 ## Golden rules (never skip)
 
-1. Always `pnpm publish`, never `npm publish` - only pnpm rewrites `workspace:*` to a real version.
-2. Publish `@blit386/kit` before `create-blit386` - the scaffolder depends on the kit.
-3. Versions are permanent - bump before republishing; never reuse a published version.
+1. Always `pnpm publish`, never `npm publish` – only pnpm rewrites `workspace:*` to a real version.
+2. Publish `@blit386/kit` before `create-blit386` – the scaffolder depends on the kit.
+3. Versions are permanent – bump before republishing; never reuse a published version.
 4. 2FA: publish one package at a time with a fresh `--otp` when required.
 
 ## Steps

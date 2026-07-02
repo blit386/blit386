@@ -8,7 +8,7 @@ description:
 
 # Structure a game
 
-BLIT386 draws pixels and reads input. It does NOT include physics, collision, enemies, scenes, or sound - you write that
+BLIT386 draws pixels and reads input. It does NOT include physics, collision, enemies, scenes, or sound – you write that
 game logic yourself. This skill shows the shape to put it in.
 
 ## When to use

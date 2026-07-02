@@ -13,8 +13,8 @@ cause off-by-one rendering glitches.
 ```js
 import { Vector2i } from 'blit386';
 
-const pos = new Vector2i(10, 20); // correct - integer point
-const pos = { x: 10.5, y: 20.7 }; // wrong   - plain object with floats
+const pos = new Vector2i(10, 20); // correct – integer point
+const pos = { x: 10.5, y: 20.7 }; // wrong   – plain object with floats
 ```
 
 `Vector2i` auto-floors its inputs, so `new Vector2i(10.9, 20.1)` becomes `(10, 20)`.
@@ -38,4 +38,4 @@ BT.drawPixel(new Vector2i(px, py), COLOR);
 
 ## BT getters already return integers
 
-`BT.displaySize`, `BT.pointerPos(0)`, and `BT.camera` all return `Vector2i` — no conversion needed.
+`BT.displaySize`, `BT.pointerPos(0)`, and `BT.camera` all return `Vector2i` – no conversion needed.

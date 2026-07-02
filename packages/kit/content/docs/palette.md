@@ -36,8 +36,8 @@ render() {
 
 ## Color32 quick reference
 
-- `new Color32(r, g, b)` - red, green, blue, each 0 to 255.
-- `new Color32(r, g, b, a)` - add alpha (0 transparent, 255 solid).
+- `new Color32(r, g, b)` – red, green, blue, each 0 to 255.
+- `new Color32(r, g, b, a)` – add alpha (0 transparent, 255 solid).
 - Handy presets are properties, not calls: `Color32.white`, `Color32.black`, `Color32.red`, `Color32.green`,
   `Color32.blue` (no parentheses).
 

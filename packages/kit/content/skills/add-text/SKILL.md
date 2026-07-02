@@ -47,16 +47,16 @@ render() {
 
 ## Key calls
 
-- `BT.systemPrint(pos, slot, text)` (method) - built-in 6x14 font.
-- `BT.systemPrintMeasure(text)` (method) - returns a `Vector2i` size for centering.
-- `BitmapFont.load(url)` (static, async) - load a `.btfont` file.
-- `BT.printFont(font, pos, text, paletteOffset?)` (method) - draw with a loaded font; `paletteOffset` shifts the glyph
+- `BT.systemPrint(pos, slot, text)` (method) – built-in 6x14 font.
+- `BT.systemPrintMeasure(text)` (method) – returns a `Vector2i` size for centering.
+- `BitmapFont.load(url)` (static, async) – load a `.btfont` file.
+- `BT.printFont(font, pos, text, paletteOffset?)` (method) – draw with a loaded font; `paletteOffset` shifts the glyph
   colors.
 
 ## Notes
 
 - Positions are whole numbers (`Vector2i`).
 - The color is a palette slot number (set up colors with the use-palette skill).
-- `await` the font load - forgetting `await` is the most common beginner bug.
+- `await` the font load – forgetting `await` is the most common beginner bug.
 
 See `docs/drawing.md`.

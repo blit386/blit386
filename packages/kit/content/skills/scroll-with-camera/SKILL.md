@@ -27,17 +27,17 @@ update() {
 
 render() {
     BT.clear(2);
-    // Draw in WORLD coordinates - the camera offset is applied for you.
+    // Draw in WORLD coordinates – the camera offset is applied for you.
     BT.drawRectFill(new Rect2i(this.player.x, this.player.y, 16, 16), 1);
 }
 ```
 
 ## Key calls
 
-- `BT.cameraSet(offset)` (method) - set the global scroll offset (`Vector2i`).
-- `BT.camera` (getter) - the current offset.
-- `BT.cameraReset()` (method) - back to `(0, 0)`.
-- `BT.cameraClamp(camera, worldSize, viewSize?)` (method) - return an offset kept inside the world bounds.
+- `BT.cameraSet(offset)` (method) – set the global scroll offset (`Vector2i`).
+- `BT.camera` (getter) – the current offset.
+- `BT.cameraReset()` (method) – back to `(0, 0)`.
+- `BT.cameraClamp(camera, worldSize, viewSize?)` (method) – return an offset kept inside the world bounds.
 
 ## Notes
 

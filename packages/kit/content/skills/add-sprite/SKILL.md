@@ -47,16 +47,16 @@ BT.drawSprite(this.hero, frame, new Vector2i(120, 90));
 
 ## Key calls
 
-- `SpriteSheet.loadIndexed(url, palette, startSlot, options?)` (static, async) - returns `{ sheet, srcRect, colors }`.
-- `BT.drawSprite(sheet, srcRect, destPos, paletteOffset?)` (method) - draw a region. `paletteOffset` shifts every
+- `SpriteSheet.loadIndexed(url, palette, startSlot, options?)` (static, async) – returns `{ sheet, srcRect, colors }`.
+- `BT.drawSprite(sheet, srcRect, destPos, paletteOffset?)` (method) – draw a region. `paletteOffset` shifts every
   pixel's slot, so you can recolor the same sprite (team colors, day/night).
-- `sheet.fullRect()` (method) - the whole-sheet `Rect2i`.
+- `sheet.fullRect()` (method) – the whole-sheet `Rect2i`.
 
 ## Notes
 
 - Slot 0 is transparent, so sprite colors start at slot 1. `loadIndexed` handles that.
 - Sprites draw at whole-number positions only.
-- There is no built-in flip or rotate at draw time yet - the `FLIP_*` / `ROT_*` constants are not accepted by
+- There is no built-in flip or rotate at draw time yet – the `FLIP_*` / `ROT_*` constants are not accepted by
   `drawSprite` today. To face the other way, author a flipped frame in the PNG.
 
 See `docs/drawing.md`.

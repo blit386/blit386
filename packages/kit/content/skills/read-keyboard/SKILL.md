@@ -50,14 +50,14 @@ BT.inputMapReset(); // back to defaults
 
 ## Key calls
 
-- `BT.isKeyDown(code)` / `BT.isKeyPressed(code, repeat?)` / `BT.isKeyReleased(code)` - methods.
-- `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` - methods (face buttons).
-- `BT.inputString` - getter (typed characters).
-- `BT.inputMap(player, button, ...keys)` / `BT.inputMapReset()` - methods (players 0-1 only).
+- `BT.isKeyDown(code)` / `BT.isKeyPressed(code, repeat?)` / `BT.isKeyReleased(code)` – methods.
+- `BT.isDown(button, player)` / `BT.isPressed(...)` / `BT.isReleased(...)` – methods (face buttons).
+- `BT.inputString` – getter (typed characters).
+- `BT.inputMap(player, button, ...keys)` / `BT.inputMapReset()` – methods (players 0–1 only).
 
 ## Notes
 
-- Read input in `update()`, not `render()` - presses, releases, and typed text are one-frame events that already reset
+- Read input in `update()`, not `render()` – presses, releases, and typed text are one-frame events that already reset
   by the time `render()` runs, so checking them there can silently drop taps under fast input.
 - "Down" means held every frame; "Pressed" / "Released" is the single edge frame.
 

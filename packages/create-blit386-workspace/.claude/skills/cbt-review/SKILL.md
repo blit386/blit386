@@ -25,9 +25,9 @@ Review current changes against create-blit386 conventions and quality standards.
 
 2. Run automated checks
 
-- `pnpm run lint` - Biome lint
-- `pnpm run typecheck` - TypeScript across all packages
-- `pnpm run spellcheck` - cspell
+- `pnpm run lint` – Biome lint
+- `pnpm run typecheck` – TypeScript across all packages
+- `pnpm run spellcheck` – cspell
 
 3. Check against project rules
 

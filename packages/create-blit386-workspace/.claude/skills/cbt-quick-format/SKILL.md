@@ -7,7 +7,7 @@ description:
 
 # Quick Format
 
-Rapidly format all code files using the project's formatters - streamlined version of `/cbt-format` that skips
+Rapidly format all code files using the project's formatters – streamlined version of `/cbt-format` that skips
 verification steps for maximum speed.
 
 ## Usage

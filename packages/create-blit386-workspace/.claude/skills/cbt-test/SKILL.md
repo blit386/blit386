@@ -20,7 +20,7 @@ is no Vitest suite, Playwright suite, or `tests/` directory.
 
 - Node.js >= 22.18.0
 - pnpm
-- A successful build (`pnpm run build`) - the smoke test imports from `dist/`
+- A successful build (`pnpm run build`) – the smoke test imports from `dist/`
 
 ## Steps
 

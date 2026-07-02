@@ -50,7 +50,7 @@ BT.paletteClearEffects();
 ## Notes
 
 - These animate the active palette; set one up first (use-palette skill).
-- A fade target is a whole `Palette` - build the "night" palette once in `init()`.
+- A fade target is a whole `Palette` – build the "night" palette once in `init()`.
 - If you change a sprite's colors as a full theme swap with `BT.paletteSet`, call `BT.spritesRefresh()` afterward so
   sprite sheets re-resolve against the new colors.
 
