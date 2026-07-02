@@ -228,6 +228,12 @@ await BT.captureFrame(); // returns a Blob
 await BT.downloadFrame(filename); // optional filename; default PNG name if omitted
 ```
 
+Read keyboard edges (`BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
+`BT.isPressed` / `BT.isReleased` for players 0/1) from `update()`, never `render()`. They clear once per fixed-update
+tick, which always runs before that frame's `render()` - reading them from `render()` intermittently drops presses under
+rapid input (the tick already consumed and cleared the edge before render saw it). `BT.isKeyDown` / `BT.isDown` (held
+state, not edges) have no such restriction and are safe from either lifecycle method.
+
 Configure example (overlay flags use grammatical `is*`):
 
 ```javascript

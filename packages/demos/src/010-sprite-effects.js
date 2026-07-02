@@ -1,4 +1,4 @@
-// @pageTitle Sprite Effects
+// @pageTitle BLIT386 Demo 010 - Sprite Effects
 //
 // Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
 //
