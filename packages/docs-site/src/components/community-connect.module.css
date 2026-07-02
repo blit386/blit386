@@ -1,0 +1,5 @@
+@reference '../app.css';
+
+.comingSoon {
+    @apply opacity-50 select-none;
+}
