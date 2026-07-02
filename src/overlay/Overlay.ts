@@ -18,6 +18,7 @@ import type { KeyboardInput } from '../input/KeyboardInput';
 import type { PointerInput } from '../input/PointerInput';
 import { OverlayBars } from './bars/Bars';
 import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from './constants';
+import { OVERLAY_TOGGLE_KEY_CODE } from './input/constants';
 import { Toggle } from './input/Toggle';
 import { buildOverlayLayoutPlan, createDefaultLayoutConfig, createOverlayLayoutPlanScratch } from './layout/layoutPlan';
 import type { OverlayLayout, OverlayLayoutConfig, OverlayLayoutPlan } from './layout/types';
@@ -226,14 +227,15 @@ export class Overlay {
      * Handles overlay frame input: palette swatch copy first, then body toggle.
      *
      * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param keyboard - Keyboard subsystem, or `null` when unavailable.
+     * @param isTogglePressed - Whether the Backquote toggle key edge fired this frame. The caller must
+     * sample this before the keyboard subsystem's end-of-tick edge reset runs; see {@link Toggle.handleInput}.
      * @param currentTick - Current fixed-update tick for keyboard edge detection.
      * @param getCustomRows - Optional supplier for demo rows (layout plan for palette hits).
      * @param palette - Active demo palette for slot count, if any.
      */
     handleFrameInput(
         pointer: PointerInput | null,
-        keyboard: KeyboardInput | null,
+        isTogglePressed: boolean,
         currentTick: number,
         getCustomRows?: () => readonly OverlayRow[] | undefined,
         palette?: Palette | null,
@@ -265,20 +267,24 @@ export class Overlay {
             }
         }
 
-        this.#toggle.handleInput(pointer, keyboard, currentTick, this.#layout.toggleRect, isPointerPressConsumed);
+        this.#toggle.handleInput(pointer, isTogglePressed, this.#layout.toggleRect, isPointerPressConsumed);
     }
 
     /**
      * Handles toggle input (Backquote and bottom-left corner press).
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link handleFrameInput} instead.
+     * @deprecated Deprecated since 2026-05-31. Use {@link handleFrameInput} instead. Unlike
+     * `handleFrameInput`, this reads the keyboard directly at call time, so it remains susceptible to
+     * missing a Backquote press that a fixed-update tick already consumed this frame.
      *
      * @param pointer - Pointer subsystem, or `null` when unavailable.
      * @param keyboard - Keyboard subsystem, or `null` when unavailable.
      * @param currentTick - Current fixed-update tick for keyboard edge detection.
      */
     handleToggle(pointer: PointerInput | null, keyboard: KeyboardInput | null, currentTick: number): void {
-        this.handleFrameInput(pointer, keyboard, currentTick);
+        const isTogglePressed = keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, currentTick) ?? false;
+
+        this.handleFrameInput(pointer, isTogglePressed, currentTick);
     }
 
     /**

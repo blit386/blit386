@@ -1724,6 +1724,52 @@ describe('BTAPI', () => {
         });
     });
 
+    describe('overlay Backquote toggle timing', () => {
+        it('registers a Backquote press consumed by the same fixed-update tick', async () => {
+            const canvas = makeMockCanvas();
+            const demo: IBTDemo = {
+                configure: () => ({
+                    displaySize: new Vector2i(320, 240),
+                    targetFPS: 60,
+                    isOverlayVisibleAtStart: false,
+                }),
+                init: vi.fn().mockResolvedValue(true),
+                update: vi.fn(),
+                render: vi.fn(),
+            };
+
+            await BTAPI.instance.init(demo, canvas);
+            BTAPI.instance.setPalette(new Palette(16));
+
+            const overlay = (BTAPI.instance as unknown as { overlay: Overlay | null }).overlay;
+
+            expect(overlay?.isBodyVisible).toBe(false);
+
+            const keydownCall = (canvas.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
+                ([type]) => type === 'keydown',
+            );
+            const keydownHandler = keydownCall?.[1] as ((event: { code: string }) => void) | undefined;
+
+            expect(keydownHandler).toBeDefined();
+
+            keydownHandler?.({ code: 'Backquote' });
+
+            // Drive one fixed-update step and the following render in a single
+            // GameLoop.tick() call, matching what a real rAF frame does: the update
+            // phase (which clears the keyboard's press edge) always runs before the
+            // render phase (where the overlay's toggle check lives).
+            const loop = (
+                BTAPI.instance as unknown as {
+                    loop: { lastUpdateTime: number; tick: (currentTime: number) => void } | null;
+                }
+            ).loop;
+
+            loop?.tick(20);
+
+            expect(overlay?.isBodyVisible).toBe(true);
+        });
+    });
+
     describe('assertPaletteIndex', () => {
         it('throws when index is negative (no palette set)', () => {
             expect(() => BTAPI.instance.drawPixel(new Vector2i(0, 0), -1)).toThrow('0 or higher');
