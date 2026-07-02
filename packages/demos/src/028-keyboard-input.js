@@ -23,8 +23,9 @@
  *
  * Try this:
  * - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
+ * - Tap the same letter repeatedly and watch the press counter climb (edge-only
+ *   BT.isKeyPressed, no repeat rate). Press a different key and the counter resets.
  * - Hold Q to see isKeyDown; tap F and watch the release line.
- * - Hold H to see isKeyPressed(..., 15) fire on an edge and then every 15 ticks.
  * - Type letters into the buffer line at the bottom.
  * - If keys stop responding, click the canvas - focus may have moved to another
  *   part of the page after you tabbed away.
@@ -52,11 +53,36 @@ const C_ACCENT = 8;
 // How many characters we keep in the typed-text demo line (rolling window).
 const TYPED_BUFFER_MAX = 80;
 
-// For `BT.isKeyPressed('KeyH', repeatRate)`, repeats happen every this many fixed ticks.
-const KEY_H_REPEAT_TICKS = 15;
+// Keys the press counter listens to (KeyboardEvent.code strings).
+const PRESS_COUNTER_KEYS = [
+    ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((letter) => `Key${letter}`),
+    'Space',
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+];
 
 // Horizontal spacing for face-button pips so four fit inside each 148px-wide panel.
 const FACE_SLOT_WIDTH = 34;
+
+/**
+ * Turns `KeyH` into `H`, `Digit5` into `5`, and leaves other codes readable.
+ *
+ * @param {string} code - KeyboardEvent.code value.
+ * @returns {string}
+ */
+function formatKeyCode(code) {
+    if (code.startsWith('Key')) {
+        return code.slice(3);
+    }
+
+    if (code.startsWith('Digit')) {
+        return code.slice(5);
+    }
+
+    return code;
+}
 
 /**
  * Shows keyboard face-button maps, low-level key queries, and `inputString`.
@@ -70,10 +96,11 @@ class Demo {
     // Set when `BT.isKeyReleased('KeyF')` is true this frame (plain English message).
     lastFReleaseMessage = 'Tap F to see isKeyReleased';
 
-    // Running count of how many times `BT.isKeyPressed('KeyH', …)` was true this run
-    // (initial edge plus tick repeats). Resets when H is not pressed for a moment - we
-    // just show the count while testing; a simple visual for repeat firing.
-    hPressStreak = 0;
+    /** @type {string | null} KeyboardEvent.code for the key we are counting presses on. */
+    activePressKey = null;
+
+    // How many edge-only `BT.isKeyPressed` events fired for `activePressKey` this run.
+    keyPressCount = 0;
 
     // Text built from `BT.inputString` over time (capped).
     typedBuffer = '';
@@ -144,14 +171,22 @@ class Demo {
 
         // Q held: we only read isKeyDown in render() for a live true/false label (no state here).
 
-        // H with tick repeat: first press counts, then every KEY_H_REPEAT_TICKS while held.
-        if (BT.isKeyPressed('KeyH', KEY_H_REPEAT_TICKS)) {
-            this.hPressStreak += 1;
-        }
+        // Edge-only press counter: tap the same key to climb; another key resets to 1.
+        for (let i = 0; i < PRESS_COUNTER_KEYS.length; i++) {
+            const code = PRESS_COUNTER_KEYS[i];
 
-        if (!BT.isKeyDown('KeyH')) {
-            // When H is not held, reset the streak so the number matches a new try.
-            this.hPressStreak = 0;
+            if (!BT.isKeyPressed(code)) {
+                continue;
+            }
+
+            if (this.activePressKey === code) {
+                this.keyPressCount += 1;
+            } else {
+                this.activePressKey = code;
+                this.keyPressCount = 1;
+            }
+
+            break;
         }
 
         // Text buffer
@@ -179,8 +214,9 @@ class Demo {
         this.renderPlayerFacePanel(0, 8, 36);
         this.renderPlayerFacePanel(1, 168, 36);
 
-        this.renderRawKeyPanel(8, 118);
-        this.renderTypedLine(8, 198);
+        this.renderPressCounter(8, 118);
+        this.renderRawKeyPanel(8, 162);
+        this.renderTypedLine(8, 218);
     }
 
     /**
@@ -265,14 +301,38 @@ class Demo {
     }
 
     /**
-     * Small panel for Q down, H repeat streak, and last F release.
+     * Large readout for edge-only press counting on one key at a time.
+     *
+     * @param {number} x
+     * @param {number} y
+     */
+    renderPressCounter(x, y) {
+        BT.drawRectFill(new Rect2i(x, y, 304, 40), C_PANEL);
+        BT.drawRect(new Rect2i(x, y, 304, 40), C_PANEL_BORDER);
+
+        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'BT.isKeyPressed(code) — press count');
+
+        const keyLabel = this.activePressKey === null ? 'none yet' : formatKeyCode(this.activePressKey);
+        const countLabel = this.activePressKey === null ? '—' : String(this.keyPressCount);
+
+        BT.systemPrint(new Vector2i(x + 4, y + 18), C_DIM, 'Key:');
+        BT.systemPrint(new Vector2i(x + 36, y + 18), this.activePressKey === null ? C_DIM : C_WHITE, keyLabel);
+
+        BT.systemPrint(new Vector2i(x + 120, y + 18), C_DIM, 'Count:');
+        BT.systemPrint(new Vector2i(x + 168, y + 18), this.keyPressCount > 0 ? C_ACCENT : C_DIM, countLabel);
+
+        BT.systemPrint(new Vector2i(x + 4, y + 32), C_DIM, 'Tap same key to add 1. Different key resets to 1.');
+    }
+
+    /**
+     * Small panel for Q down and last F release.
      *
      * @param {number} x
      * @param {number} y
      */
     renderRawKeyPanel(x, y) {
-        BT.drawRectFill(new Rect2i(x, y, 304, 72), C_PANEL);
-        BT.drawRect(new Rect2i(x, y, 304, 72), C_PANEL_BORDER);
+        BT.drawRectFill(new Rect2i(x, y, 304, 48), C_PANEL);
+        BT.drawRect(new Rect2i(x, y, 304, 48), C_PANEL_BORDER);
 
         BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'Raw keys (separate from face buttons)');
 
@@ -280,19 +340,8 @@ class Demo {
         BT.systemPrint(new Vector2i(x + 4, y + 18), C_WHITE, 'BT.isKeyDown(KeyQ) - hold:');
         BT.systemPrint(new Vector2i(x + 148, y + 18), qHeld ? C_LIT : C_DIM, qHeld ? 'true (held)' : 'false');
 
-        BT.systemPrint(
-            new Vector2i(x + 4, y + 32),
-            C_WHITE,
-            `BT.isKeyPressed(KeyH, ${KEY_H_REPEAT_TICKS}) — tap + repeat:`,
-        );
-        BT.systemPrint(
-            new Vector2i(x + 4, y + 44),
-            C_DIM,
-            'edge on first down, then every N ticks while held; streak:',
-        );
-        BT.systemPrint(new Vector2i(x + 220, y + 44), this.hPressStreak > 0 ? C_ACCENT : C_DIM, `${this.hPressStreak}`);
-
-        BT.systemPrint(new Vector2i(x + 4, y + 58), C_WHITE, this.lastFReleaseMessage);
+        BT.systemPrint(new Vector2i(x + 4, y + 32), C_WHITE, 'BT.isKeyReleased(KeyF) - tap F:');
+        BT.systemPrint(new Vector2i(x + 148, y + 32), C_DIM, this.lastFReleaseMessage);
     }
 
     /**

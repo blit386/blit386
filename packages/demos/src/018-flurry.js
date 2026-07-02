@@ -1,4 +1,4 @@
-// @pageTitle Flurry
+// @pageTitle BLIT386 Demo 018 - Flurry
 //
 // Demo 018 - Flurry: a retro screensaver built on particle physics and palette animation.
 //
