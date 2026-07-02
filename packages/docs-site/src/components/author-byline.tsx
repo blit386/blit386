@@ -1,5 +1,6 @@
 import type { AuthorEntry } from '../data/authors';
 import { getAuthor } from '../data/authors';
+import styles from './author-byline.module.css';
 
 interface AuthorBylineProps {
     author: string | AuthorEntry;
@@ -22,14 +23,14 @@ export function AuthorByline({ author }: AuthorBylineProps) {
     }
 
     return (
-        <div className="not-prose flex flex-row flex-wrap items-center gap-3 text-sm text-fd-muted-foreground border-b pb-4 mb-6">
+        <div className={`not-prose ${styles.container}`}>
             {entry.avatar && (
                 <img
                     src={entry.avatar}
                     alt={entry.name}
                     width={32}
                     height={32}
-                    className="rounded-full size-8 object-cover"
+                    className={styles.avatar}
                     loading="lazy"
                     decoding="async"
                 />
@@ -38,26 +39,21 @@ export function AuthorByline({ author }: AuthorBylineProps) {
             <span>
                 {'By '}
                 {entry.url ? (
-                    <a
-                        href={entry.url}
-                        className="text-fd-foreground font-medium hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
+                    <a href={entry.url} className={styles.nameLink} target="_blank" rel="noopener noreferrer">
                         {entry.name}
                     </a>
                 ) : (
-                    <span className="text-fd-foreground font-medium">{entry.name}</span>
+                    <span className={styles.name}>{entry.name}</span>
                 )}
             </span>
 
             {entry.socials && entry.socials.length > 0 && (
-                <span className="flex flex-row items-center gap-2">
+                <span className={styles.socials}>
                     {entry.socials.map((social) => (
                         <a
                             key={`${social.platform}:${social.url}`}
                             href={social.url}
-                            className="hover:underline"
+                            className={styles.socialLink}
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`${entry.name} on ${PLATFORM_LABELS[social.platform] ?? social.platform}`}
