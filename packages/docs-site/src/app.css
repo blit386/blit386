@@ -261,10 +261,12 @@ code {
     @apply p-0 shadow-2xl;
 
     & a {
-        @apply rounded-none select-none hover:text-white hover:dark:text-black;
+        @apply rounded-none select-none;
 
         @media (hover: hover) {
             &:hover {
+                @apply text-white dark:text-black;
+
                 & svg {
                     @apply text-white dark:text-black;
                 }
@@ -328,9 +330,8 @@ code {
     }
 
     & [data-card] {
-        @apply rounded-none pb-9 transition-none hover:bg-fd-accent hover:text-white;
+        @apply rounded-none pb-9 transition-none;
         @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
-        @apply hover:shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
 
         & h3,
         & h4 {
@@ -339,6 +340,9 @@ code {
 
         @media (hover: hover) {
             &:hover {
+                @apply bg-fd-accent text-white;
+                @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
+
                 & p,
                 & h3,
                 & h4 {
