@@ -75,7 +75,7 @@ is added. Expanding coverage means adding an entry to that manifest (in the engi
 ## Credits
 
 - [Departure Mono](https://departuremono.com) by Helena Zhang - font used for headings and UI chrome throughout the
-  site, licensed under the [SIL Open Font License](public/fonts/DepartureMono/LICENSE)
+  site, licensed under the [SIL Open Font License](public/fonts/DepartureMono-LICENSE.txt)
 
 ## Agent policy
 
