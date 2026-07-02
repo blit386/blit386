@@ -1,0 +1,9 @@
+@reference '../app.css';
+
+.embed {
+    @apply aspect-4/3 w-full overflow-hidden;
+}
+
+.frame {
+    @apply block h-full w-full;
+}

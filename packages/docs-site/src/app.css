@@ -46,7 +46,7 @@
 }
 
 :root {
-    --fd-layout-width: 1400px;
+    --fd-layout-width: 1564px;
 }
 
 @theme {
@@ -163,6 +163,11 @@
 }
 
 #nd-page {
+    /* fumadocs-ui hardcodes max-w-[900px] on this article element itself,
+       independent of --fd-layout-width (which only sizes the grid column
+       around it). Override it directly to widen the content column. */
+    @apply max-w-[1028px];
+
     /* Targets the breadcrumb trail only (a direct child of #nd-page). Callout
        and Card also render `text-sm` on nested divs; a descendant selector
        here would collaterally hide their icons/spans too. */
