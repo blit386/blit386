@@ -19,14 +19,27 @@ export function virtualDemos() {
     let registry = [];
     let layoutTemplate = '';
 
+    /**
+     * Re-read _partials/layout.html from disk into `layoutTemplate`.
+     * @returns {void}
+     */
     function reloadTemplate() {
         layoutTemplate = readFileSync(resolve(partialsDir, 'layout.html'), 'utf-8');
     }
 
+    /**
+     * Rebuild `registry` by rescanning src/*.js.
+     * @returns {void}
+     */
     function reload() {
         registry = buildRegistry(rootDir);
     }
 
+    /**
+     * Find the registry entry whose virtual HTML path matches an absolute module id.
+     * @param {string} absPath - Absolute path, e.g. resolve(demosDir, "001-basics.html")
+     * @returns {object | null}
+     */
     function findEntryByAbsPath(absPath) {
         for (const entry of registry) {
             if (resolve(demosDir, `${entry.slug}.html`) === absPath) {
@@ -36,6 +49,11 @@ export function virtualDemos() {
         return null;
     }
 
+    /**
+     * Find the registry entry for a demo slug.
+     * @param {string} slug - Demo slug, e.g. "001-basics"
+     * @returns {object | null}
+     */
     function findEntryBySlug(slug) {
         for (const entry of registry) {
             if (entry.slug === slug) {
@@ -45,10 +63,21 @@ export function virtualDemos() {
         return null;
     }
 
+    /**
+     * Render a demo entry's HTML page from the shared layout template.
+     * @param {object} entry - Registry entry (see buildRegistry's return type).
+     * @returns {string}
+     */
     function renderHtml(entry) {
+        const demoListJson = JSON.stringify(
+            registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel })),
+        ).replaceAll('<', '\\u003c');
+
         return layoutTemplate
             .replaceAll('{{title}}', escapeHtml(entry.title))
-            .replaceAll('{{scriptFile}}', entry.scriptFile);
+            .replaceAll('{{scriptFile}}', entry.scriptFile)
+            .replaceAll('{{slug}}', entry.slug)
+            .replace('{{demoList}}', () => demoListJson);
     }
 
     return {
@@ -140,6 +169,17 @@ export function virtualDemos() {
 
                 const url = req.url.split('?')[0];
 
+                if (url === '/') {
+                    const firstVisible = registry.find((entry) => !entry.isNavHidden);
+
+                    if (firstVisible) {
+                        res.statusCode = 302;
+                        res.setHeader('Location', firstVisible.urlPath);
+                        res.end();
+                        return;
+                    }
+                }
+
                 if (url === '/demos/' || url === '/demos') {
                     const html = renderIndexPage(registry);
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -172,6 +212,12 @@ export function virtualDemos() {
     };
 }
 
+/**
+ * Render the dev-only auto-generated index page listing every demo (served at /demos/).
+ * Not part of the production build; see plugins/virtual-demos.js's configureServer middleware.
+ * @param {Array<object>} registry - Full demo registry, as returned by buildRegistry.
+ * @returns {string}
+ */
 function renderIndexPage(registry) {
     const items = registry
         .map(
@@ -204,6 +250,11 @@ ${items}
 `;
 }
 
+/**
+ * Escape a string for safe interpolation into HTML text content/attributes.
+ * @param {string} str - Raw text.
+ * @returns {string}
+ */
 function escapeHtml(str) {
     return String(str)
         .replaceAll('&', '&amp;')

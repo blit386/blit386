@@ -1,2 +1,2 @@
-# Redirect root to main site
-/ https://vancura.dev 302
+# Serve the first nav-visible demo (see NAV_HIDDEN_SLUGS in plugins/demo-registry.js) as the site index.
+/ /001-basics.html 200

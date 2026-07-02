@@ -167,6 +167,11 @@ This opens the demo index at `http://localhost:5173/demos/` and each page at `ht
 (for example `http://localhost:5173/demos/001-basics.html`). For the public build, open the flat URLs on
 [demos.blit386.dev](https://demos.blit386.dev/).
 
+## Credits
+
+- [Departure Mono](https://departuremono.com) by Helena Zhang - font used in the demo navigation banner, licensed under
+  the [SIL Open Font License](public/fonts/DepartureMono/LICENSE)
+
 ## License
 
 ISC
