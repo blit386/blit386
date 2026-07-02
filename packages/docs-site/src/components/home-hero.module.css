@@ -2,7 +2,7 @@
 
 .hero {
     @apply relative flex aspect-4/3 w-full flex-col items-center justify-center gap-6 text-center text-white select-none;
-    @apply border-0!;
+    @apply border-0! bg-fd-card;
 }
 
 .embed {

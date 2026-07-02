@@ -3,7 +3,6 @@ import styles from './demo-embed.module.css';
 interface DemoEmbedProps {
     demo: string;
     title: string;
-    /** Renders as a decorative, click-through background filling its positioned parent instead of a 4:3 block. */
     fill?: boolean;
     className?: string;
 }
@@ -26,6 +25,7 @@ export function DemoEmbed({ demo, title, fill = false, className }: DemoEmbedPro
                 loading="lazy"
                 tabIndex={fill ? -1 : undefined}
                 className={styles.frame}
+                sandbox="allow-scripts allow-same-origin"
             />
         </div>
     );
