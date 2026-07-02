@@ -88,11 +88,11 @@ TypeScript to the same version API Extractor bundles (see [Developer Experience]
 ## Commands
 
 ```bash
-pnpm run test                   # Run all unit tests (alias for test:unit)
-pnpm run test:unit              # Run all unit tests
-pnpm run test:unit:watch        # Watch mode for development
-pnpm run test:unit:coverage     # Coverage report (80% minimum threshold)
-pnpm run test:declarations      # Declaration tooling log checker (Node test)
+pnpm run test                # Run all unit tests (alias for test:unit)
+pnpm run test:unit           # Run all unit tests
+pnpm run test:unit:watch     # Watch mode for development
+pnpm run test:unit:coverage  # Coverage report (80% minimum threshold)
+pnpm run test:declarations   # Declaration tooling log checker (Node test)
 pnpm run test:visual            # Playwright visual regression (requires Chrome)
 pnpm run test:visual:update     # Update visual test baselines
 pnpm run test:visual:coverage   # Visual tests with Istanbul coverage report
@@ -105,23 +105,23 @@ pnpm run bench:json             # Run CPU benchmarks and write benchmark-results
 Tests are colocated next to their source files:
 
 ```text
-src/utils/Vector2i.ts       - Source
-src/utils/Vector2i.test.ts  - Test
+src/utils/Vector2i.ts       # Source
+src/utils/Vector2i.test.ts  # Test
 ```
 
 Visual regression tests live in a separate directory:
 
 ```text
 tests/visual/
-  fixtures/             - HTML pages and Vite config
-  __snapshots__/        - Git-tracked reference screenshots
-  coverage-fixture.ts   - Playwright fixture for Istanbul coverage
-  primitives.spec.ts    - Primitive rendering visual test
-  sprites.spec.ts       - Sprite rendering visual test
-  camera.spec.ts        - Camera transform visual test
-  fonts.spec.ts         - Text rendering visual test
-  mixed.spec.ts         - Combined rendering visual test
-  post-process.spec.ts  - Post-process effect chain visual test
+  fixtures/              # HTML pages and Vite config
+  __snapshots__/         # Git-tracked reference screenshots
+  coverage-fixture.ts    # Playwright fixture for Istanbul coverage
+  primitives.spec.ts     # Primitive rendering visual test
+  sprites.spec.ts        # Sprite rendering visual test
+  camera.spec.ts         # Camera transform visual test
+  fonts.spec.ts          # Text rendering visual test
+  mixed.spec.ts          # Combined rendering visual test
+  post-process.spec.ts   # Post-process effect chain visual test
 ```
 
 ## Writing a new test

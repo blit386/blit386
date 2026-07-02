@@ -26,9 +26,9 @@ automatic Canvas 2D software fallback. All engine functionality is accessed thro
 
 Main documentation sections:
 
-- `/docs` - Documentation hub (start here)
-- `/docs/guide/getting-started` - Installation and first steps
-- `/docs/api/` - Full API reference for the `BT` namespace
+- `/docs` – Documentation hub (start here)
+- `/docs/guide/getting-started` – Installation and first steps
+- `/docs/api/` – Full API reference for the `BT` namespace
 
 Use the search API to locate specific content:
 
@@ -40,20 +40,20 @@ Returns a JSON array of matching pages with titles, URLs, and content excerpts.
 
 ## Core API concepts
 
-- `BT` - static namespace; the only public entry point from demo/application code
-- `Vector2i` - integer 2D vector (all rendering coordinates are integers)
-- `Rect2i` - integer rectangle
-- `Color32` - 32-bit RGBA color (0-255 per channel)
-- `Palette` - 256-entry indexed color palette
-- `SpriteSheet` - GPU texture wrapper
-- `BitmapFont` - bitmap font system
+- `BT` – static namespace; the only public entry point from demo/application code
+- `Vector2i` – integer 2D vector (all rendering coordinates are integers)
+- `Rect2i` – integer rectangle
+- `Color32` – 32-bit RGBA color (0–255 per channel)
+- `Palette` – 256-entry indexed color palette
+- `SpriteSheet` – GPU texture wrapper
+- `BitmapFont` – bitmap font system
 
 ## Rendering backends
 
 Select via `HardwareSettings.backend`:
 
-- `'webgpu'` (default) - dual pipeline: primitives and sprites
-- `'software'` - Canvas 2D fallback; automatic when WebGPU init fails
+- `'webgpu'` (default) – dual pipeline: primitives and sprites
+- `'software'` – Canvas 2D fallback; automatic when WebGPU init fails
 
 Query the active backend at runtime: `BT.activeBackend`
 
