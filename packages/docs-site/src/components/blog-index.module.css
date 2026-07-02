@@ -28,27 +28,17 @@
 }
 
 .cardTitle {
-    @apply font-departure text-[22px] uppercase antialiased leading-6 text-balance;
+    @apply font-departure text-[22px] uppercase antialiased leading-6 text-balance group-hover:text-fd-background;
 }
 
 .cardDescription {
-    @apply text-sm text-balance;
+    @apply text-sm text-balance group-hover:text-fd-background;
 }
 
 .cardDate {
-    @apply mt-auto text-xs;
+    @apply mt-auto text-xs group-hover:text-fd-background;
 }
 
 .card {
     @apply flex flex-col gap-4 overflow-hidden bg-fd-card p-4 hover:bg-fd-accent;
-
-    @media (hover: hover) {
-        &:hover {
-            & .cardTitle,
-            & .cardDescription,
-            & .cardDate {
-                @apply text-fd-background;
-            }
-        }
-    }
 }
