@@ -205,7 +205,7 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
 
 ## System font
 
-A built-in 6×14 monospace font covering printable ASCII (characters 32-126). No load step needed.
+A built-in 6×14 monospace font covering printable ASCII (characters 32–126). No load step needed.
 
 ```ts twoslash
 import { BT, Vector2i } from 'blit386';

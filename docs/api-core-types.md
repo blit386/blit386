@@ -102,7 +102,7 @@ r.max; // Vector2i getter (bottom-right)
 
 ## Color32
 
-32-bit RGBA color (channels 0-255).
+32-bit RGBA color (channels 0–255).
 
 ```ts twoslash
 import { Color32 } from 'blit386';

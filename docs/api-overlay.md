@@ -168,9 +168,9 @@ class Demo {
 Toggle the overlay body at runtime with backquote/tilde (`~`) or a primary pointer press in the bottom-left `48×48px`
 corner, as long as `isOverlayToggleEnabled` is `true` (default). Three flags shape that behavior:
 
-- `isOverlayToggleHintVisible: false` — hide the hint icon while the body stays hidden.
-- `isOverlayToggleEnabled: false` — lock body visibility at `isOverlayVisibleAtStart` (no key or corner input).
-- `isOverlayEnabled: false` — disable the overlay subsystem and all toggle input entirely (for example release builds).
+- `isOverlayToggleHintVisible: false` – hide the hint icon while the body stays hidden.
+- `isOverlayToggleEnabled: false` – lock body visibility at `isOverlayVisibleAtStart` (no key or corner input).
+- `isOverlayEnabled: false` – disable the overlay subsystem and all toggle input entirely (for example release builds).
 
 On WebGPU, the engine draws the HUD after your `render()` call, composited above demo sprites via internal overlay draw
 batches (not exposed on `BT`).
@@ -204,7 +204,7 @@ may still draw, and palette usage tracking is off.
 
 <Callout type="warn" title="Do not use present FPS for simulation timing">
 
-Use `BT.ticks`, `BT.deltaSeconds`, or `Timer` instead — see [Game Loop](api-game-loop.md). Present FPS varies with the
+Use `BT.ticks`, `BT.deltaSeconds`, or `Timer` instead – see [Game Loop](api-game-loop.md). Present FPS varies with the
 display refresh rate and overlay visibility.
 
 </Callout>
@@ -219,7 +219,7 @@ Demos should not duplicate engine overlay text; the overlay provides it. Leave r
   - Add `14px` when `isOverlayRendererDiagnosticsBarEnabled: true`.
 - Bottom of screen: about `14px` clear by default (`1px` separator + `13px` hint bar).
 - With the palette grid (`isOverlayPaletteEnabled: true`): add the grid height, its `1px` filled row gap, and the `13px`
-  hint bar — for example about `83px` on the default `320×240` layout with a 256-slot palette (32 columns × 8 rows of
+  hint bar – for example about `83px` on the default `320×240` layout with a 256-slot palette (32 columns × 8 rows of
   `7px` swatches with `1px` gaps, plus the gap and hint bar).
 
 ### Palette grid sizing

@@ -37,7 +37,7 @@ The engine tracks four pointer slots (indices `0`–`3`). Overflow contacts beyo
 - Tracks all four buttons (A, B, C, D).
 - Position is preserved after the mouse leaves; a new `pointermove` re-syncs it.
 
-### Touch / pen slots (slots 1-3)
+### Touch / pen slots (slots 1–3)
 
 - Allocated on `pointerdown` in the first free slot; freed on `pointerup`, `pointercancel`, or `pointerleave`.
 - Only `BTN_POINTER_A` reports true while the contact is down; B, C, D always return false.
@@ -147,7 +147,7 @@ if (BT.isKeyReleased('Escape')) {
 
 `BT.isKeyPressed` and `BT.isKeyReleased` clear once per fixed-update tick, and that tick always finishes before
 `render()` runs for the same frame. Reading either from `render()` instead of `update()` intermittently drops presses
-under rapid input — the tick already consumed and cleared the edge before render got a chance to see it. `BT.isKeyDown`
+under rapid input – the tick already consumed and cleared the edge before render got a chance to see it. `BT.isKeyDown`
 (held state) has no such restriction and is safe to call from `render()`.
 
 </Callout>
