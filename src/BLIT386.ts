@@ -1066,6 +1066,10 @@ export const BT = {
      * Same parameter semantics as {@link isDown}; returns `true` only on
      * the frame the button transitions from up to down.
      *
+     * Call from `update()`, not `render()`, for reliable detection: for keyboard-mapped
+     * face buttons (players 0 and 1), the press edge clears once per fixed-update tick,
+     * which always runs before that frame's `render()`.
+     *
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
      *                 (0-3) for `BTN_POINTER_*`.
@@ -1144,6 +1148,10 @@ export const BT = {
      *
      * Same parameter semantics as {@link isDown}; returns `true` only on
      * the frame the button transitions from down to up.
+     *
+     * Call from `update()`, not `render()`, for reliable detection: for keyboard-mapped
+     * face buttons (players 0 and 1), the release edge clears once per fixed-update tick,
+     * which always runs before that frame's `render()`.
      *
      * @param button - Button constant from the `BTN_*` set.
      * @param player - Zero-based player index for gamepads, or pointer slot
@@ -1326,6 +1334,10 @@ export const BT = {
      * edge only). When `repeatRate > 0`, repeats fire while held per
      * `(ticks - firstPressTick) > 0 && (ticks - firstPressTick) % repeatRate === 0`.
      *
+     * Call from `update()`, not `render()`: the press edge clears once per fixed-update
+     * tick, which always runs before that frame's `render()`, so a press read from
+     * `render()` can be intermittently missed under rapid input.
+     *
      * @param key - DOM keyboard code string.
      * @param repeatRate - Ticks between repeat triggers; omit or `0` for no repeat.
      * @returns `true` on the press edge (and on repeat ticks when configured).
@@ -1350,6 +1362,10 @@ export const BT = {
 
     /**
      * Checks whether a keyboard key was released on the current frame.
+     *
+     * Call from `update()`, not `render()`: the release edge clears once per fixed-update
+     * tick, which always runs before that frame's `render()`, so a release read from
+     * `render()` can be intermittently missed under rapid input.
      *
      * @param key - DOM keyboard code string.
      * @returns `true` on the release edge.

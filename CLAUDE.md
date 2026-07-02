@@ -330,7 +330,14 @@ Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
 - `BTN_*` constants are bit flags (powers of 2), not sequential integers
 - `BT.isDown` / `BT.isPressed` / `BT.isReleased` use ANY-match semantics for masks
 - Face buttons: players `0` and `1` are keyboard OR gamepad; players `2` and `3` are gamepad-only
-- Input previous-state rollover is end-of-frame aligned (same snapshot model across pointer/keyboard/gamepad)
+- Pointer and gamepad previous-state rollover is end-of-render-frame aligned. Keyboard is different: press/release edges
+  and `inputString` clear once per fixed-update tick (inside `demo.update()`), which always runs before that frame's
+  `render()`. Call `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
+  `BT.isPressed` / `BT.isReleased` (players 0/1) from `update()`, never `render()` — reading an edge from `render()`
+  races the update tick that already cleared it and intermittently misses presses under rapid input. `BT.isKeyDown` /
+  `BT.isDown` (held state, not edges) have no such restriction. See `docs/guide-input.md` (Frame-timing semantics) and
+  the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine overlay were dropped ~20% of the
+  time because the overlay itself read the toggle key's edge from the render phase.
 - Default gamepad stick dead zone is `0.75`
 - Triggers are axis-only for now (`AXIS_TRIGGER_L` / `AXIS_TRIGGER_R`); dedicated trigger button constants are not
   implemented yet
