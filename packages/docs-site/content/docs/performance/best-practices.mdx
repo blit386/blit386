@@ -53,9 +53,9 @@ Keep it simple elsewhere – Clarity matters more than micro-optimizations in UI
 Each render frame (one `requestAnimationFrame` callback) must finish before the next vsync. On a 60 Hz display that is
 about 16.66 ms per frame (`1000 / 60`). That budget covers:
 
-- Zero or more fixed `update()` steps at `BT.targetFPS` (~2-4 ms total when one step runs)
-- One `render()` pass (~8-12 ms)
-- Browser overhead (~2-4 ms)
+- Zero or more fixed `update()` steps at `BT.targetFPS` (~2–4 ms total when one step runs)
+- One `render()` pass (~8–12 ms)
+- Browser overhead (~2–4 ms)
 
 If work exceeds the display's render cadence, you drop frames and see stuttering. That is independent of `BT.targetFPS`:
 a 60 Hz simulation on a 120 Hz monitor still has a ~8.33 ms render budget per rAF callback.
@@ -228,7 +228,7 @@ for (let i = 0; i < 200; i++) {
 
 When diagonal line cost matters:
 
-- Drawing 10-20 short diagonal lines per frame: Fine
+- Drawing 10–20 short diagonal lines per frame: Fine
 - Drawing 100+ diagonal line segments (curves, circles): Consider alternatives
 - Static complex patterns: Pre-render to a sprite sheet
 
@@ -376,8 +376,8 @@ class BestStringDemo {
 | Operations/Frame | Recommendation             | Example                                   |
 | ---------------- | -------------------------- | ----------------------------------------- |
 | &lt; 10             | Inline allocation fine     | UI text, menu rendering                   |
-| 10-50            | Borderline, prefer clarity | Simple animations, small particle systems |
-| 50-100           | Consider pre-allocation    | Complex scenes, medium particle systems   |
+| 10–50            | Borderline, prefer clarity | Simple animations, small particle systems |
+| 50–100           | Consider pre-allocation    | Complex scenes, medium particle systems   |
 | 100+             | Definitely pre-allocate    | Pattern demos, large particle systems     |
 
 ### When to use each pattern
