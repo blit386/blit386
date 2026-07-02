@@ -81,9 +81,78 @@ async function canvasToImage(canvas) {
     }
 }
 
+// The exact two colors drawShapeInCell() paints with (see fill/stroke below).
+// The canvas smooths shape edges automatically (anti-aliasing), which blends these two
+// colors - and the transparent background - together one pixel at a time. Read back from
+// the canvas, that blending produces dozens of barely-different colors along every curve,
+// which would each want their own palette slot. Since our palette can only hold 256 colors
+// total, and this demo needs room for several recolored copies of the same shape, we snap
+// every blended edge pixel back to whichever of these two colors it is closer to. This
+// keeps the palette usage small and predictable no matter how smooth the edges look.
+const FILL_COLOR = { r: 0x55, g: 0x99, b: 0xee };
+const STROKE_COLOR = { r: 0xff, g: 0xff, b: 0xff };
+
+/**
+ * Finds whichever of FILL_COLOR/STROKE_COLOR is closer to a given pixel color.
+ * "Closer" here means smaller distance in RGB space - treating red, green, and blue like
+ * three coordinates and measuring the straight-line distance between two colors, the same
+ * way you would measure distance between two points on a map.
+ *
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ * @returns {{ r: number, g: number, b: number }}
+ */
+function nearestShapeColor(r, g, b) {
+    const distanceToFill = (r - FILL_COLOR.r) ** 2 + (g - FILL_COLOR.g) ** 2 + (b - FILL_COLOR.b) ** 2;
+    const distanceToStroke = (r - STROKE_COLOR.r) ** 2 + (g - STROKE_COLOR.g) ** 2 + (b - STROKE_COLOR.b) ** 2;
+
+    return distanceToFill <= distanceToStroke ? FILL_COLOR : STROKE_COLOR;
+}
+
+// Below this alpha, an anti-aliased edge pixel is mostly background - treat it as fully
+// transparent instead of a faint smudge of shape color.
+const ALPHA_OPAQUE_THRESHOLD = 128;
+
+/**
+ * Rewrites every pixel of the canvas so it is either fully transparent or one of the exact
+ * design colors (see FILL_COLOR/STROKE_COLOR above). sheet.indexize() later requires each
+ * pixel to match a palette entry exactly, so the smooth, blended edges anti-aliasing draws
+ * must be snapped to flat colors here - otherwise indexize() would reject every blended
+ * edge pixel as "not in the palette".
+ *
+ * @param {OffscreenCanvasRenderingContext2D} ctx
+ * @param {number} w
+ * @param {number} h
+ */
+function quantizeCanvasToShapeColors(ctx, w, h) {
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < ALPHA_OPAQUE_THRESHOLD) {
+            data[i] = 0;
+            data[i + 1] = 0;
+            data[i + 2] = 0;
+            data[i + 3] = 0;
+            continue;
+        }
+
+        const { r, g, b } = nearestShapeColor(data[i], data[i + 1], data[i + 2]);
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+        data[i + 3] = 255;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+}
+
 /**
  * Scans canvas pixels and registers every unique opaque color into the palette.
- * Transparent pixels (alpha 0) are skipped - they map to slot 0 at draw time.
+ * Transparent pixels (alpha 0) are skipped - they map to slot 0 at draw time. Call this only
+ * after quantizeCanvasToShapeColors(), so every pixel is already one of the two exact design
+ * colors.
  *
  * @param {import('blit386').Palette} palette
  * @param {OffscreenCanvasRenderingContext2D} ctx
@@ -232,6 +301,10 @@ function buildShapeSheet() {
         drawShapeInCell(ctx, cellX, cellY, i);
         rects.push(new Rect2i(cellX, cellY, SHAPE_CELL, SHAPE_CELL));
     }
+
+    // Flatten the smooth, anti-aliased edges into flat colors so every pixel matches a
+    // palette entry exactly (see quantizeCanvasToShapeColors() for why this is required).
+    quantizeCanvasToShapeColors(ctx, sheetW, sheetH);
 
     return { canvas, ctx, rects };
 }

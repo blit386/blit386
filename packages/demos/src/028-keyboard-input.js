@@ -17,9 +17,9 @@
  * - Raw keys (BT.isKeyDown, BT.isKeyPressed, BT.isKeyReleased) when you need
  *   a specific key, optional fixed-tick repeats with BT.isKeyPressed(code, rate),
  *   and release edges.
- * - Text input (BT.inputString) for characters in one frame. The buffer
- *   clears after each frame, so read it during update() or render() in that
- *   same frame.
+ * - Text input (BT.inputString) for characters in one frame. The buffer clears
+ *   once per fixed-update tick, and that tick always finishes before render()
+ *   runs, so read it in update(), not render(), or you can miss characters.
  *
  * Try this:
  * - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
