@@ -34,6 +34,8 @@ pnpm run system-font:convert  # reads the PNG and regenerates systemFontData.ts
 White pixels become foreground (palette index 1), black pixels become transparent (palette index 0). Only the top 6 bits
 of each byte are used (6-pixel glyph width within an 8-bit row).
 
+<DemoEmbed demo="004-fonts" title="BLIT386 fonts demo" />
+
 ## Custom bitmap fonts (.btfont)
 
 For proportional fonts, Unicode support, or custom aesthetics, load a `.btfont` file:
@@ -63,6 +65,8 @@ console.log(font.size); // 14
 console.log(font.lineHeight); // 15
 console.log(font.glyphCount); // 98
 ```
+
+<DemoEmbed demo="022-bitmap-font" title="BLIT386 bitmap font demo" />
 
 ## Font file format (.btfont)
 

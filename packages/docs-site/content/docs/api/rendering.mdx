@@ -27,6 +27,14 @@ BT.drawRectFill(rect, paletteIndex); // filled
 
 All primitives write palette indices, not RGBA – the active palette resolves colors at frame end.
 
+<DemoEmbed demo="002-primitives" title="BLIT386 primitives demo" />
+
+Two more primitive-drawing demos: pixel art from number grids, and animated mathematical patterns.
+
+<DemoEmbed demo="005-pixel-art" title="BLIT386 pixel art demo" />
+
+<DemoEmbed demo="006-patterns" title="BLIT386 patterns demo" />
+
 ## Sprites
 
 ### Drawing
@@ -40,6 +48,8 @@ BT.drawSprite(sheet, srcRect, destPos, paletteOffset);
 - `srcRect` – source region within the sheet in pixels.
 - `destPos` – top-left destination in display coordinates.
 - `paletteOffset` – shift added to every stored pixel index before palette lookup (default `0`).
+
+<DemoEmbed demo="008-sprites" title="BLIT386 sprites demo" />
 
 Palette offset semantics
 
@@ -64,6 +74,8 @@ BT.drawSprite(sheet, srcRect, new Vector2i(10, 10), 16); // blue-team shift
 ```
 
 Draws are auto-batched by texture. Group draws from the same sheet to minimize GPU state changes.
+
+<DemoEmbed demo="010-sprite-effects" title="BLIT386 sprite effects demo" />
 
 ### Sprite transform constants
 
@@ -103,6 +115,8 @@ Built-in 6×14 monospace font covering printable ASCII (characters 32–126).
 BT.systemPrint(pos, paletteIndex, text); // draw text at pos
 BT.systemPrintMeasure(text); // → Vector2i (pixel width × height)
 ```
+
+<DemoEmbed demo="004-fonts" title="BLIT386 fonts demo" />
 
 ### Bitmap fonts
 
@@ -158,6 +172,8 @@ import { crtPipBoy, amber, green } from 'blit386';
 for (const fx of crtPipBoy()) BT.effectAdd(fx);
 ```
 
+<DemoEmbed demo="023-crt-pipboy" title="BLIT386 PipBoy CRT demo" />
+
 Built-in effects:
 
 | Tier    | Classes                                                                                                                                |
@@ -184,6 +200,8 @@ const url = URL.createObjectURL(blob);
 await BT.downloadFrame();
 await BT.downloadFrame('screenshot-001.png'); // custom filename
 ```
+
+<DemoEmbed demo="013-image-output" title="BLIT386 image output demo" />
 
 <Callout title="Internal implementation note">
 
