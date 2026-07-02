@@ -47,6 +47,14 @@ npm create blit386@latest my-game -- --no-git      # do not initialize a git rep
 - Docs: [blit386.dev](https://blit386.dev)
 - Source and issues: [github.com/blit386/create-blit386](https://github.com/blit386/create-blit386)
 
+## Community
+
+- [Discord](https://discord.gg/tC2wGt88Uj)
+- [GitHub Discussions](https://github.com/blit386/blit386/discussions)
+- [X](https://x.com/blit386)
+- [Bluesky](https://bsky.app/profile/blit386.bsky.social)
+- [Mastodon](https://mastodon.gamedev.place/@blit386)
+
 ## License
 
 ISC. Copyright (c) Václav Vančura. See [LICENSE](./LICENSE).
