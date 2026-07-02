@@ -33,7 +33,7 @@ import { bootstrap, type IBTDemo, type BootstrapOptions } from 'blit386';
 declare const MyDemo: new () => IBTDemo;
 declare function trackError(err: Error): void;
 // ---cut---
-// One-liner - canvas id defaults to 'blit386-canvas', container to 'canvas-container'
+// One-liner – canvas id defaults to 'blit386-canvas', container to 'canvas-container'
 bootstrap(MyDemo);
 
 // With options
@@ -76,12 +76,12 @@ declare const demo: IBTDemo;
 declare const canvas: HTMLCanvasElement;
 // ---cut---
 const ok = await BT.init(demo, canvas); // low-level init; prefer bootstrap()
-BT.displaySize; // Vector2i - configured logical resolution (clone per read)
-BT.drawingBufferSize; // Vector2i | null - output buffer when set in configure()
-BT.outputSize; // Vector2i - effective drawing-buffer size (clone per read)
-BT.targetFPS; // number - fixed update() rate (simulation), not measured present FPS
-BT.requestedBackend; // 'webgpu' | 'software' | null - resolved request (see below)
-BT.activeBackend; // 'webgpu' | 'software' | null - backend that actually started
+BT.displaySize; // Vector2i – configured logical resolution (clone per read)
+BT.drawingBufferSize; // Vector2i | null – output buffer when set in configure()
+BT.outputSize; // Vector2i – effective drawing-buffer size (clone per read)
+BT.targetFPS; // number – fixed update() rate (simulation), not measured present FPS
+BT.requestedBackend; // 'webgpu' | 'software' | null – resolved request (see below)
+BT.activeBackend; // 'webgpu' | 'software' | null – backend that actually started
 ```
 
 - `BT.init()` selects WebGPU or falls back to the Canvas 2D software renderer automatically.

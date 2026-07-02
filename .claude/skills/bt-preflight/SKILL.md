@@ -26,15 +26,15 @@ Run comprehensive quality checks before committing or pushing code.
 1. Run all checks
 
 - Execute `pnpm run preflight` which runs:
-  - `format:check` - Verify formatting (Biome for TS/JS/JSON/CSS, Prettier for MD/YAML)
-  - `lint` - Check for lint errors (ESLint)
-  - `typecheck` - Validate TypeScript types
-  - `spellcheck` - Check spelling in code and docs
-  - `knip` - Find unused exports and dependencies
-  - `docs:links` - Verify Markdown links (all repo-root `*.md` / `*.mdx`)
-  - `sync:doc-banners:check` - Verify the blit386.dev banner is current in every published doc
-  - `test:unit` - Run all unit tests
-  - `test:declarations` - Declaration tooling log checker tests
+  - `format:check` – Verify formatting (Biome for TS/JS/JSON/CSS, Prettier for MD/YAML)
+  - `lint` – Check for lint errors (ESLint)
+  - `typecheck` – Validate TypeScript types
+  - `spellcheck` – Check spelling in code and docs
+  - `knip` – Find unused exports and dependencies
+  - `docs:links` – Verify Markdown links (all repo-root `*.md` / `*.mdx`)
+  - `sync:doc-banners:check` – Verify the blit386.dev banner is current in every published doc
+  - `test:unit` – Run all unit tests
+  - `test:declarations` – Declaration tooling log checker tests
 
 2. Report results
 

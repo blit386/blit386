@@ -73,7 +73,7 @@ before the palette lookup, so a pixel stored at index `i` renders as `palette[i 
 | `1`          | `palette[1]`        | `palette[1 + N]`    |
 | `2`          | `palette[2]`        | `palette[2 + N]`    |
 
-This drives palette-swap effects such as team colors or damage flashes — point the same sprite at a different band of
+This drives palette-swap effects such as team colors or damage flashes – point the same sprite at a different band of
 the palette without re-uploading texels.
 
 - Validation: `paletteOffset` must be a non-negative integer below the active palette size, or the draw throws.
@@ -128,7 +128,7 @@ RGBA values are gone.
 
 ### System font
 
-Built-in 6×14 monospace font covering printable ASCII (characters 32-126).
+Built-in 6×14 monospace font covering printable ASCII (characters 32–126).
 
 ```ts twoslash
 import { BT, Vector2i } from 'blit386';
@@ -182,7 +182,7 @@ error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
 import { BT, BarrelDistortion, Scanlines, Bloom, PixelGlitch, type Effect } from 'blit386';
 declare const effect: Effect;
 // ---cut---
-// Add effect - routed to pixel or display chain by Effect.tier automatically
+// Add effect – routed to pixel or display chain by Effect.tier automatically
 BT.effectAdd(new BarrelDistortion());
 BT.effectAdd(new Scanlines());
 BT.effectAdd(new Bloom());

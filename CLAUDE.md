@@ -34,7 +34,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Dependency security policy / CI audit gate?                    | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md`                                                                                                                                                    |
 | What is the benchmark threshold?                               | `ci.yml` benchmark job (`--threshold 25` flag), not docs                                                                                                                                                                     |
 | What error message style should I use?                         | `docs/voice.md`, then `src/utils/errorMessages.ts`                                                                                                                                                                           |
-| Is this API exported publicly?                                 | `src/BLIT386.ts` export block (lines 1563-1610)                                                                                                                                                                              |
+| Is this API exported publicly?                                 | `src/BLIT386.ts` export block (lines 1563–1610)                                                                                                                                                                              |
 | What test mock do I need for GPU code?                         | `src/__test__/webgpu-mock.ts`                                                                                                                                                                                                |
 | Declaration tooling / TS version alignment?                    | `docs/tooling.md`, `docs/developer-experience-guide.md`, `scripts/check-declaration-tooling.mjs`                                                                                                                             |
 | Should this private name repeat the class/file?                | Internal scoped naming below; `docs/developer-experience-guide.md` (Naming conventions)                                                                                                                                      |
@@ -44,8 +44,8 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Why does each published doc have a blit386.dev banner?         | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see Public docs site banner below                               |
 | Can I use Fumadocs components (Callout, TypeTable, …) in docs? | Yes, in published docs only (site-first). Which ones, when to use them, and the authoring rules: Fumadocs components in published docs below                                                                                 |
 | How do I write/rename/split a `docs/` page?                    | Documentation authoring style below (prose rules: no bold, no `---`, `×` for dimensions; filename mirrors sitemap section; rename/split checklist). For runtime strings see `docs/voice.md` instead                          |
-| What agent skills are available for this project?              | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) — `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
-| How do users start a new project with the engine?              | `npm create blit386@latest` — the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below                                                                                             |
+| What agent skills are available for this project?              | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) – `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
+| How do users start a new project with the engine?              | `npm create blit386@latest` – the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below                                                                                             |
 
 ## Onboarding and the scaffolder
 
@@ -81,9 +81,9 @@ pointing GitHub readers at the typeset copy on the site. It is wrapped in `<!-- 
 
 Published docs (those in `docs/_sitemap.json`) are authored as MDX-capable Markdown: you may use Fumadocs/Fumapress
 components directly in the `.md` source. The mirror generator passes PascalCase tags through verbatim, and the live site
-renders them. These docs are site-first — components do not render on GitHub (they degrade to plain text or disappear),
+renders them. These docs are site-first – components do not render on GitHub (they degrade to plain text or disappear),
 so the blit386.dev banner points GitHub readers to the typeset copy. Contributor-only docs (not in the sitemap:
-`developer-experience-guide.md`, `voice.md`, `tooling.md`, `security/*`) stay plain Markdown — components there would
+`developer-experience-guide.md`, `voice.md`, `tooling.md`, `security/*`) stay plain Markdown – components there would
 render nowhere.
 
 Registered components (wired up in `blit386-dev-fumapress/press.config.tsx`): `Callout`, `Card` / `Cards`, `Tabs` /
@@ -93,17 +93,17 @@ component means registering it in that `getMdxComponents` map first, or the buil
 
 When to use which:
 
-- `Callout` — notes, tips, warnings, migration notes, important gotchas. `<Callout type="warn" title="...">` for
+- `Callout` – notes, tips, warnings, migration notes, important gotchas. `<Callout type="warn" title="...">` for
   warnings; default type for notes. Replaces `> Note:` blockquotes.
-- `TypeTable` — option / field / parameter reference tables (name, type, default, description). Replaces Markdown tables
+- `TypeTable` – option / field / parameter reference tables (name, type, default, description). Replaces Markdown tables
   whose columns are field/type/default/purpose.
-- `Steps` — sequential procedures (setup flows, manual conversions). One `### heading` per step.
-- `Tabs` — genuine alternatives: per-OS commands, npm/pnpm, preferred-vs-manual paths, display-vs-pixel tiers.
-- `Accordions` — collapsible advanced detail or troubleshooting (one `Accordion` per item).
-- `Cards` — the trailing See Also section (one `Card` per link).
-- `Files` — directory trees without inline comments (it has no per-file description slot; keep comment-annotated trees
+- `Steps` – sequential procedures (setup flows, manual conversions). One `### heading` per step.
+- `Tabs` – genuine alternatives: per-OS commands, npm/pnpm, preferred-vs-manual paths, display-vs-pixel tiers.
+- `Accordions` – collapsible advanced detail or troubleshooting (one `Accordion` per item).
+- `Cards` – the trailing See Also section (one `Card` per link).
+- `Files` – directory trees without inline comments (it has no per-file description slot; keep comment-annotated trees
   as ` ```text ` blocks).
-- Do not add a manual or `InlineTOC` table of contents — the site renders its own right-hand TOC panel.
+- Do not add a manual or `InlineTOC` table of contents – the site renders its own right-hand TOC panel.
 
 Authoring rules (learned the hard way; keep the build green):
 
@@ -123,11 +123,11 @@ Authoring rules (learned the hard way; keep the build green):
 
 All TypeScript code blocks in published docs (`docs/api-*.md`, `docs/guide-*.md`, `docs/performance-*.md`,
 `docs/reference-*.md`) must use ` ```ts twoslash `. Plain ` ```ts ` is never acceptable in published docs. This is
-non-negotiable — the live site (blit386.dev) uses fumadocs-twoslash for type-on-hover popups.
+non-negotiable – the live site (blit386.dev) uses fumadocs-twoslash for type-on-hover popups.
 
 Every block must compile cleanly on its own. Two patterns:
 
-Self-contained block — full imports at the top, no cut needed:
+Self-contained block – full imports at the top, no cut needed:
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';
@@ -135,7 +135,7 @@ const palette = Palette.c64();
 BT.paletteSet(palette);
 ```
 
-Fragment block — shows a partial snippet whose variables come from surrounding prose — add a hidden preamble then
+Fragment block – shows a partial snippet whose variables come from surrounding prose – add a hidden preamble then
 `// ---cut---`. Everything above the cut is compiled but hidden from the reader:
 
 ```ts twoslash
@@ -160,7 +160,7 @@ Twoslash compilation error fails the production build. Fix the preamble rather t
 ## Documentation authoring style
 
 House style for the Markdown under `docs/` (the published reference and guides). This is about authoring the docs
-themselves, not runtime user-facing strings — for throws, console output, and canvas banners see `docs/voice.md`.
+themselves, not runtime user-facing strings – for throws, console output, and canvas banners see `docs/voice.md`.
 
 Prose rules:
 
@@ -185,7 +185,7 @@ Renaming or splitting a published doc:
 1. `git mv` the file (plain `mv` if it is still untracked).
 2. Update its `src` in `docs/_sitemap.json`. Keep `path` stable unless the topic name itself changed, so URLs and
    banners do not move; if the filename topic changes, update `path` to match (filename mirrors section).
-3. Rewrite every inbound link. Guard substring matches so a compound name is not hit by accident — renaming `overlay.md`
+3. Rewrite every inbound link. Guard substring matches so a compound name is not hit by accident – renaming `overlay.md`
    must not touch `api-overlay.md` (use a `(?<![\w-])` lookbehind or equivalent).
 4. When splitting, keep in the original file any anchor other docs link to (`#resolution-model`,
    `#requested-vs-active-backend`, …); move the rest. Add a `See also` `Cards` block to each new page.
@@ -195,7 +195,7 @@ Renaming or splitting a published doc:
 After any doc change:
 
 - Add new proper nouns / coined words to `cspell.json` (and to `blit386-dev-fumapress/cspell.json` if they land in that
-  repo's hand-authored content, e.g. the landing page — its `content/docs/**` is spell-ignored as generated).
+  repo's hand-authored content, e.g. the landing page – its `content/docs/**` is spell-ignored as generated).
 - The site mirrors `docs/` via the sibling `blit386-dev-fumapress` (`pnpm run sync:docs`); `content/docs/**` there is
   generated, never hand-edit it. Adding, renaming, or removing a sitemap entry means that mirror needs a re-sync. See
   Docs sync required rule and the sibling repo's `CLAUDE.md` (Documentation mirror).
@@ -206,7 +206,7 @@ All engine functionality is accessed through the static `BT` namespace. The arch
 sprites, and bitmap text resolve color through the active `Palette` before final RGBA output. Demos implement the
 `IBTDemo` interface (`configure?`, `init`, `update`, `render`, optional `overlayRows?`).
 
-The file tree below is illustrative, not exhaustive — it highlights notable subsystems and entry points. Colocated
+The file tree below is illustrative, not exhaustive – it highlights notable subsystems and entry points. Colocated
 `*.test.ts` / `*.bench.ts` files and small module-local `constants.ts` / `types.ts` helpers are omitted for readability.
 
 ```text
@@ -290,10 +290,10 @@ src/
 Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
 
 - WebGPU (`'webgpu'`): indexed, palette-first hardware renderer.
-  1. Primitives pipeline - batched geometry writing palette indices (pixels, lines, rects). Max 50k vertices/frame.
-  2. Sprites pipeline - batched palette-indexed textured quads (sprites, bitmap text). Max 50k vertices (~8333 quads).
+  1. Primitives pipeline – batched geometry writing palette indices (pixels, lines, rects). Max 50k vertices/frame.
+  2. Sprites pipeline – batched palette-indexed textured quads (sprites, bitmap text). Max 50k vertices (~8333 quads).
      Nearest-neighbor sampling. Auto-batched by texture.
-  3. Framebuffer & post-process - the logical composite is an `r8uint` attachment at `displaySize` (one palette slot per
+  3. Framebuffer & post-process – the logical composite is an `r8uint` attachment at `displaySize` (one palette slot per
      pixel). Pixel-tier effects (`PostProcessChain`, `FullscreenPixelEffect`) run on that index buffer.
      `PaletteResolveUpscalePass` LUT-resolves indices to RGBA and upscales to `drawingBufferSize`. Display-tier effects
      run on that RGBA before present (see `docs/guide-post-process-effects.md`).
@@ -305,22 +305,22 @@ Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
 
 ### Core Types
 
-- `Vector2i` - integer 2D vector. Constructor auto-floors. Has `width`/`height` aliases. Predicates: `isEqual()`,
+- `Vector2i` – integer 2D vector. Constructor auto-floors. Has `width`/`height` aliases. Predicates: `isEqual()`,
   `isEqualXY()`, `isZero()`.
-- `Rect2i` - integer rectangle. Predicates: `isContaining()`, `isContainingXY()`, `isIntersecting()`, `isEqual()`.
+- `Rect2i` – integer rectangle. Predicates: `isContaining()`, `isContainingXY()`, `isIntersecting()`, `isEqual()`.
   Geometry: `intersection()`, `intersectTo()`.
-- `Color32` - 32-bit RGBA (0-255). Static colors, hex parsing, named-color registry, float array conversion. Predicate:
+- `Color32` – 32-bit RGBA (0–255). Static colors, hex parsing, named-color registry, float array conversion. Predicate:
   `isEqual()`.
 
 ## Critical Rules
 
-1. No emoji - nowhere: code, docs, commits, PR titles, errors, logs
-2. Integer coordinates - all rendering uses `Vector2i`/`Rect2i`, never floats
-3. Performance first - minimize allocations in update/render, reuse buffers, batch draws
-4. Use BT namespace - never access `BTAPI` directly from demo code
-5. No `any` types - use `unknown` or proper types
-6. Type-only imports - `import type { ... }` for types
-7. Documentation is part of every feature - after any public API change update the relevant `docs/api-*.md`; after any
+1. No emoji – nowhere: code, docs, commits, PR titles, errors, logs
+2. Integer coordinates – all rendering uses `Vector2i`/`Rect2i`, never floats
+3. Performance first – minimize allocations in update/render, reuse buffers, batch draws
+4. Use BT namespace – never access `BTAPI` directly from demo code
+5. No `any` types – use `unknown` or proper types
+6. Type-only imports – `import type { ... }` for types
+7. Documentation is part of every feature – after any public API change update the relevant `docs/api-*.md`; after any
    behavior change update the affected `docs/` guide; after any architecture change update the `CLAUDE.md` architecture
    map. Update `README.md` only when the Quick Start, features list, prerequisites, or browser compatibility is
    affected. Never wait to be asked.
@@ -333,7 +333,7 @@ Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
 - Pointer and gamepad previous-state rollover is end-of-render-frame aligned. Keyboard is different: press/release edges
   and `inputString` clear once per fixed-update tick (inside `demo.update()`), which always runs before that frame's
   `render()`. Call `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
-  `BT.isPressed` / `BT.isReleased` (players 0/1) from `update()`, never `render()` — reading an edge from `render()`
+  `BT.isPressed` / `BT.isReleased` (players 0/1) from `update()`, never `render()` – reading an edge from `render()`
   races the update tick that already cleared it and intermittently misses presses under rapid input. `BT.isKeyDown` /
   `BT.isDown` (held state, not edges) have no such restriction. See `docs/guide-input.md` (Frame-timing semantics) and
   the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine overlay were dropped ~20% of the
@@ -447,30 +447,30 @@ or drive breaking changes through consumers for naming-only cleanup.
 
 Applies to library TypeScript in `src/`. Class member order is enforced by `perfectionist/sort-classes` (imports by
 `simple-import-sort`); auto-fix with `pnpm run lint:fix`. It uses `type: 'unsorted'`, so it enforces only the group
-order below and preserves the hand-tuned order within each group. Never use `// #region` / `// #endregion` — region
+order below and preserves the hand-tuned order within each group. Never use `// #region` / `// #endregion` – region
 markers are banned everywhere.
 
 ### File layout (top to bottom)
 
-1. Module JSDoc — a `/** … */` block describing the file's purpose.
-2. Imports — `import type` for type-only imports; inline `type` modifiers inside mixed imports
+1. Module JSDoc – a `/** … */` block describing the file's purpose.
+2. Imports – `import type` for type-only imports; inline `type` modifiers inside mixed imports
    (`import { type Backend, defaultConfig } from …`). Ordering is auto-fixed by `pnpm run lint:fix`
    (`simple-import-sort`).
-3. Leading module members — config/input constants (`MAX_VERTICES`, `INV_255`), validators/lookup tables
+3. Leading module members – config/input constants (`MAX_VERTICES`, `INV_255`), validators/lookup tables
    (`HEX_TOKEN_PATTERN`, `HEX_TABLE`), type aliases (`type EffectTier`), and module-level init loops.
-4. Primary export — the class / interface / function the file is named for.
-5. Trailing module members — large WGSL/template-literal constants (`const FRAGMENT_WGSL`) and pure helpers after the
+4. Primary export – the class / interface / function the file is named for.
+5. Trailing module members – large WGSL/template-literal constants (`const FRAGMENT_WGSL`) and pure helpers after the
    class (exported helpers before private ones).
 
 ### Class member order
 
-1. Static fields — cached singletons (`_zero`, `_white`), registries (`namedColors`).
-2. Instance fields — public → protected → private (`#field` or `private`); `readonly` grouped; each gets its own JSDoc
+1. Static fields – cached singletons (`_zero`, `_white`), registries (`namedColors`).
+2. Instance fields – public → protected → private (`#field` or `private`); `readonly` grouped; each gets its own JSDoc
    and a blank line (no packed field blocks).
-3. Constructor — parameter-properties carry inline `/** … */` JSDoc.
-4. Accessors — static getters first, then instance getters/setters.
-5. Static methods — public before private.
-6. Instance methods — public → protected → private; private helpers last.
+3. Constructor – parameter-properties carry inline `/** … */` JSDoc.
+4. Accessors – static getters first, then instance getters/setters.
+5. Static methods – public before private.
+6. Instance methods – public → protected → private; private helpers last.
 
 ### Cross-cutting
 
@@ -518,15 +518,15 @@ pnpm run bench:json          # Run benchmarks and write benchmark-results.json
 
 Test tiers:
 
-1. Unit tests (Vitest, node) - Pure logic: Vector2i, Rect2i, Color32, Palette, PaletteEffect, Easing, GameLoop
-2. Integration tests (Vitest, Node + GPU mocks; happy-dom for DOM tests) - DOM and GPU code
-3. Visual regression (Playwright, Chromium + WebGPU) - PNG snapshot verification of rendered output
-4. CPU benchmarks (Vitest bench, `*.bench.ts`) - Hot method and allocation pattern throughput
+1. Unit tests (Vitest, node) – Pure logic: Vector2i, Rect2i, Color32, Palette, PaletteEffect, Easing, GameLoop
+2. Integration tests (Vitest, Node + GPU mocks; happy-dom for DOM tests) – DOM and GPU code
+3. Visual regression (Playwright, Chromium + WebGPU) – PNG snapshot verification of rendered output
+4. CPU benchmarks (Vitest bench, `*.bench.ts`) – Hot method and allocation pattern throughput
 
 ### Visual Regression Tests
 
 `pnpm run test:visual` runs Playwright with Chromium + WebGPU and captures PNG snapshots of actual rendered frames. This
-is the primary tool for verifying that visual output is correct - not performance, but pixel-level correctness.
+is the primary tool for verifying that visual output is correct – not performance, but pixel-level correctness.
 
 Use it when implementing or changing:
 
@@ -561,7 +561,7 @@ Use the benchmark system when the user asks about performance, throughput, regre
 coverage.
 
 - Use CPU benchmarks for isolated methods, helpers, caches, and allocation patterns
-- For rendering correctness, use visual regression tests (`pnpm run test:visual`) - they produce PNG snapshots
+- For rendering correctness, use visual regression tests (`pnpm run test:visual`) – they produce PNG snapshots
 
 Recommended commands:
 

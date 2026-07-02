@@ -26,9 +26,9 @@ bucket, evidence, or recommended status has changed). When in doubt, do not comm
 
 ## Audit buckets
 
-- `not implemented` - no shipped code addresses the ticket
-- `partial` - some of the requested surface shipped; concrete gaps remain
-- `implemented` - the requested behavior is shipped (candidate to close)
+- `not implemented` – no shipped code addresses the ticket
+- `partial` – some of the requested surface shipped; concrete gaps remain
+- `implemented` – the requested behavior is shipped (candidate to close)
 
 ## Comment format
 
@@ -53,17 +53,17 @@ no emoji.
    - `gh issue list --repo blit386/blit386 --state open --limit 100 --json number,title,labels,updatedAt`
    - For each issue, pull the most recent audit comment:
      `gh issue view <n> --repo blit386/blit386 --json comments --jq '.comments[] | select(.body | startswith("## Audit update")) | .body'`
-   - Note the date of the latest audit comment per issue. Issues with no audit comment have no baseline - flag them in
+   - Note the date of the latest audit comment per issue. Issues with no audit comment have no baseline – flag them in
      the summary but do not invent a "changed" verdict for them unless the user asks for a first-time audit.
 
 2. Find what changed in the code since the last audit.
-   - Record each issue's own last-audit date from step 1 (`lastAuditDate` per issue). Audit dates differ between
-     issues - never collapse them into a single "most recent across issues" cutoff, or commits that landed between an
+   - Record each issue's own last-audit date from step 1 (`lastAuditDate` per issue). Audit dates differ between issues
+     – never collapse them into a single "most recent across issues" cutoff, or commits that landed between an
      earlier-audited issue's date and that global latest date get missed, yielding false "unchanged" verdicts.
    - For the broad prefilter, use the earliest `lastAuditDate` across all issues as the baseline so no relevant commit
      is excluded: `git log --since=<earliest-lastAuditDate> --pretty=format:'%h %ad %s' --date=short`
    - Filter to behavior-changing work: `... | grep -E '(feat|fix)\('`. Ignore `docs`, `chore`, `refactor`, `test`, `ci`,
-     and `style` commits - renames and formatting do not change an audit verdict. A breaking rename (`feat(...)!`) can
+     and `style` commits – renames and formatting do not change an audit verdict. A breaking rename (`feat(...)!`) can
      matter if it adds or removes public surface.
    - The earliest-baseline log is only a prefilter. Each candidate is judged per issue against its own `lastAuditDate`
      in step 4, not against the global baseline.

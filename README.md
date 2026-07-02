@@ -39,8 +39,8 @@ class Game {
   }
 
   // update() is the THINKING step: change the world here (move things, read
-  // input, run physics), but never draw. It runs at a FIXED rate - targetFPS,
-  // 60 times a second by default - no matter how fast the screen is. The engine
+  // input, run physics), but never draw. It runs at a FIXED rate – targetFPS,
+  // 60 times a second by default – no matter how fast the screen is. The engine
   // runs it as many times per frame as it needs to hold that pace, so your game
   // moves at the same speed on every machine.
   update() {
@@ -52,8 +52,8 @@ class Game {
   }
 
   // render() is the DRAWING step: only paint the world as it is right now,
-  // never change state. It runs ONCE PER SCREEN REFRESH - way faster on a
-  // high-refresh monitor, slower on a struggling machine - so it is not locked
+  // never change state. It runs ONCE PER SCREEN REFRESH – way faster on a
+  // high-refresh monitor, slower on a struggling machine – so it is not locked
   // to update().
   render() {
     // Draw with slot numbers, not colors.

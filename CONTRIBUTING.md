@@ -78,30 +78,30 @@ Signed-off-by: Your Name <your.email@example.com>
 
 ### Commit Types
 
-- `feat` - New feature
-- `fix` - Bug fix
-- `docs` - Documentation only
-- `style` - Formatting, no code change
-- `refactor` - Code change that neither fixes a bug nor adds a feature
-- `perf` - Performance improvement
-- `test` - Adding or updating tests
-- `build` - Build system or dependencies
-- `ci` - CI configuration
-- `chore` - Other changes
-- `revert` - Revert a previous commit
+- `feat` – New feature
+- `fix` – Bug fix
+- `docs` – Documentation only
+- `style` – Formatting, no code change
+- `refactor` – Code change that neither fixes a bug nor adds a feature
+- `perf` – Performance improvement
+- `test` – Adding or updating tests
+- `build` – Build system or dependencies
+- `ci` – CI configuration
+- `chore` – Other changes
+- `revert` – Revert a previous commit
 
-Suggested scopes are conventions only — commitlint does not enforce a scope enum.
+Suggested scopes are conventions only – commitlint does not enforce a scope enum.
 
 ### Suggested Scopes
 
-- `renderer` - Rendering system
-- `camera` - Camera system
-- `assets` - Asset loading
-- `api` - Public API (BT namespace)
-- `utils` - Utility classes
-- `examples` - Example projects
-- `ci` - CI/CD configuration
-- `docs` - Documentation
+- `renderer` – Rendering system
+- `camera` – Camera system
+- `assets` – Asset loading
+- `api` – Public API (BT namespace)
+- `utils` – Utility classes
+- `examples` – Example projects
+- `ci` – CI/CD configuration
+- `docs` – Documentation
 
 ### Example Commits
 
@@ -130,10 +130,10 @@ Signed-off-by: John Doe <john@example.com>
 All code must follow the project's style guidelines:
 
 - No emoji anywhere in code, comments, or documentation
-- TypeScript strict mode - All code must pass strict TypeScript checks
-- Formatting - Code is automatically formatted by Biome and Prettier
-- Linting - Code must pass all linting checks
-- JSDoc - Required for public APIs
+- TypeScript strict mode – All code must pass strict TypeScript checks
+- Formatting – Code is automatically formatted by Biome and Prettier
+- Linting – Code must pass all linting checks
+- JSDoc – Required for public APIs
 
 ### Development environment
 

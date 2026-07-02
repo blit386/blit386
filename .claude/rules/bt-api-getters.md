@@ -20,7 +20,7 @@ Quick rules when changing `src/BLIT386.ts` or demos:
 | Per-frame input                                  | `pointerScrollDelta`, `inputString`, `gamepadCount`                            |
 
 `Vector2i` getters return a clone per read. `activeBackend` is what actually started after fallback, not
-`configure().backend`. `palette` is a live reference - mutating slots affects rendering on the next frame.
+`configure().backend`. `palette` is a live reference – mutating slots affects rendering on the next frame.
 
 ## Boolean queries on `BT` (Tier A; always methods)
 

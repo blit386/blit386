@@ -8,7 +8,7 @@ All TypeScript code blocks in published docs (`docs/api-*.md`, `docs/guide-*.md`
 
 Every block must be self-contained for TypeScript compilation. Two patterns:
 
-**Self-contained block** (imports at the top, block compiles on its own — no cut needed):
+**Self-contained block** (imports at the top, block compiles on its own – no cut needed):
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';
@@ -16,7 +16,7 @@ const palette = Palette.c64();
 BT.paletteSet(palette);
 ```
 
-**Fragment block** (shows a partial snippet, context variables assumed from prose — use a hidden preamble +
+**Fragment block** (shows a partial snippet, context variables assumed from prose – use a hidden preamble +
 `// ---cut---`):
 
 ```ts twoslash

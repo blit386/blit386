@@ -25,9 +25,9 @@ Review current changes against project rules and quality standards.
 
 2. Run automated checks
 
-- `pnpm run lint` - Report any lint issues
-- `pnpm run typecheck` - Report any type errors
-- `pnpm run spellcheck` - Check for spelling issues
+- `pnpm run lint` – Report any lint issues
+- `pnpm run typecheck` – Report any type errors
+- `pnpm run spellcheck` – Check for spelling issues
 
 3. Check against project rules
 
