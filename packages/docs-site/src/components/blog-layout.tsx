@@ -16,7 +16,7 @@ export async function BlogLayout({ lang, children }: { lang?: string; children: 
             nav={{ title: <SidebarLogo /> }}
             sidebar={{ collapsible: false, footer: <SidebarSocials /> }}
         >
-            <div className="[grid-area:main] flex flex-col min-w-0 px-4 py-6">{children}</div>
+            {children}
         </DocsLayout>
     );
 }
