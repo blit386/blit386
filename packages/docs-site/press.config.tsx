@@ -14,7 +14,10 @@ import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { AuthorByline } from './src/components/author-byline';
+import { BlogIndexPage } from './src/components/blog-index';
 import { BlogLayout } from './src/components/blog-layout';
+import { BlogPage } from './src/components/blog-page';
+import { BlogTagPage, BlogTagsPage } from './src/components/blog-tags-page';
 import { SidebarSocials } from './src/components/sidebar-socials';
 import { SidebarLogo } from './src/components/sidebar-logo';
 import { CommunityConnect } from './src/components/community-connect';
@@ -250,10 +253,20 @@ export default defineConfig({
     // markdownNegotiationPlugin runs before llmsPlugin so canonical doc URLs return a
     // direct `text/markdown` 200 (with x-markdown-tokens); autoRedirect is disabled to
     // avoid the llms middleware issuing a 302 to the `.md` file instead.
+
     .plugins(
         flexsearchPlugin(),
 
-        blogPlugin({ paths: { tags: '/blog/tags' }, layouts: { layout: BlogLayout } }),
+        blogPlugin({
+            paths: { tags: '/blog/tags' },
+            layouts: {
+                layout: BlogLayout,
+                index: BlogIndexPage,
+                page: BlogPage,
+                tags: BlogTagsPage,
+                tag: BlogTagPage,
+            },
+        }),
 
         markdownNegotiationPlugin(),
 

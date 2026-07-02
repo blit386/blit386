@@ -50,7 +50,7 @@ export const blog = defineDocs({
 
     docs: {
         async: true,
-        schema: blogPageSchema.extend({ author: z.string().optional() }),
+        schema: blogPageSchema.extend({ author: z.string().optional(), date: z.coerce.date().optional() }),
         postprocess: {
             includeProcessedMarkdown: true,
         },
