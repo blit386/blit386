@@ -1,5 +1,6 @@
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { communityDestinations } from '../data/community';
+import styles from './community-connect.module.css';
 
 interface CommunityConnectProps {
     title?: string;
@@ -12,7 +13,7 @@ export function CommunityConnect({ title = 'Connect', className }: CommunityConn
 
     return (
         <section className={className}>
-            <h2 className="text-xl font-semibold mb-4 text-fd-foreground">{title}</h2>
+            <h2 className={styles.heading}>{title}</h2>
 
             <Cards>
                 {active.map((dest) => (
@@ -20,7 +21,6 @@ export function CommunityConnect({ title = 'Connect', className }: CommunityConn
                         key={`${dest.platform}:${dest.label}`}
                         href={dest.url}
                         title={dest.label}
-                        description={dest.description}
                         external={dest.external}
                     />
                 ))}
@@ -29,8 +29,7 @@ export function CommunityConnect({ title = 'Connect', className }: CommunityConn
                     <Card
                         key={`${dest.platform}:${dest.label}`}
                         title={dest.label}
-                        description={dest.description}
-                        className="opacity-50 select-none"
+                        className={styles.comingSoon}
                         aria-disabled="true"
                     />
                 ))}

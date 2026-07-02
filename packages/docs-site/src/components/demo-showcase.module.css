@@ -46,10 +46,12 @@
 .card {
     @apply flex flex-col overflow-hidden bg-fd-card hover:bg-fd-accent;
 
-    &:hover {
-        & .cardTitle,
-        & .cardDescription {
-            @apply text-fd-background;
+    @media (hover: hover) {
+        &:hover {
+            & .cardTitle,
+            & .cardDescription {
+                @apply text-fd-background;
+            }
         }
     }
 }
