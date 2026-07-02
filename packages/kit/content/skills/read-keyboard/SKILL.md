@@ -57,7 +57,8 @@ BT.inputMapReset(); // back to defaults
 
 ## Notes
 
-- Read input in `update()`, not `render()`.
+- Read input in `update()`, not `render()` - presses, releases, and typed text are one-frame events that already reset
+  by the time `render()` runs, so checking them there can silently drop taps under fast input.
 - "Down" means held every frame; "Pressed" / "Released" is the single edge frame.
 
 See `docs/input.md`.

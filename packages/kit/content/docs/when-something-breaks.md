@@ -43,6 +43,13 @@ Work through this list in order:
    numbers you pass to `BT.clear`, `BT.drawRectFill`, and friends against the slots you set up in `init()`. (More in
    `palette.md`.)
 
+## Key or button taps feel randomly missed
+
+If tapping a key or button sometimes does nothing, especially when you tap fast, check where you read it. `update()`
+always finishes before `render()` runs each frame, and one-frame events like `BT.isKeyPressed`, `BT.isKeyReleased`,
+`BT.inputString`, `BT.isPressed`, and `BT.isReleased` already reset by the time `render()` sees them. Read them in
+`update()`, and save what happened (in a variable on `this`) if `render()` needs to know about it later. See `input.md`.
+
 ## A big red overlay covers the page
 
 That is Vite (the dev server) telling you a file has a _syntax error_ - a typo serious enough that the code cannot be
