@@ -41,6 +41,8 @@ Key rules:
 - After activation, edit colors with `BT.palette.set(...)`; you do not need to call `paletteSet()` again for value-only
   changes (see [Palette addressing](api-palette.md#palette-addressing)).
 
+<DemoEmbed demo="003-colors" title="BLIT386 colors demo" />
+
 </Step>
 
 <Step>
@@ -172,6 +174,8 @@ BT.paletteSwap(10, 11);
 // Cancel running effects
 BT.paletteClearEffects();
 ```
+
+<DemoEmbed demo="018-flurry" title="BLIT386 Flurry demo" />
 
 </Step>
 
