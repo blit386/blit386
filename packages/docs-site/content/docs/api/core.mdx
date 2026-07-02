@@ -59,6 +59,8 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 
 ## Initialization
 
+<DemoEmbed demo="001-basics" title="BLIT386 basics demo" />
+
 ```ts twoslash
 const ok = await BT.init(demo, canvas); // low-level init; prefer bootstrap()
 BT.displaySize; // Vector2i – configured logical resolution (clone per read)
@@ -236,6 +238,10 @@ const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });
 
 `defaultConfig()` returns a full `HardwareSettings` object (`320×240` logical, `640×480` drawing buffer, overlay
 enabled, WebGPU backend, and other defaults documented in the table above).
+
+## Putting it together
+
+<DemoEmbed demo="014-game-scene" title="BLIT386 game scene capstone demo" />
 
 ## See also
 

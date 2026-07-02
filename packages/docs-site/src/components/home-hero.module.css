@@ -1,27 +1,10 @@
 @reference '../app.css';
 
 .hero {
-    @apply flex flex-col items-center gap-6 pt-16 pb-20 text-center bg-fd-card;
+    @apply relative flex aspect-4/3 w-full flex-col items-center justify-center gap-6 text-center text-white select-none;
+    @apply border-0! bg-fd-card;
 }
 
-.subtitle {
-    @apply max-w-xl text-lg text-balance;
-}
-
-.actions {
-    @apply flex flex-wrap justify-center gap-3;
-}
-
-.primaryButton {
-    @apply inline-flex items-center px-4 pt-1.5 pb-2 transition-none!;
-    @apply font-semibold;
-    @apply border-fd-card-foreground border-6 text-fd-card-foreground!;
-    @apply hover:bg-fd-accent hover:border-fd-accent hover:text-fd-background!;
-}
-
-.secondaryButton {
-    @apply inline-flex items-center px-4 pt-1.5 pb-2 transition-none!;
-    @apply font-semibold;
-    @apply border-fd-card-foreground/15 border-6 text-fd-card-foreground!;
-    @apply hover:bg-fd-accent hover:border-fd-accent hover:text-fd-background!;
+.embed {
+    @apply p-0! m-0!;
 }

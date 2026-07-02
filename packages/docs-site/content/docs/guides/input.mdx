@@ -63,6 +63,8 @@ if (BT.isPointerActive(1)) {
 `BT.pointerPos()` returns `Vector2i.zero()` when the slot index is out of `[0, 3]` or the engine is not initialized.
 `BT.pointerDelta()` similarly returns `Vector2i.zero()` for invalid slots.
 
+<DemoEmbed demo="025-pointer-basics" title="BLIT386 pointer basics demo" />
+
 ## Buttons
 
 Use `BT.isDown()`, `BT.isPressed()`, and `BT.isReleased()` with the `BTN_POINTER_*` constants. The second parameter is
@@ -105,6 +107,10 @@ retro pixel framework for Unity by Martin Cietwierkowski ([@daafu](https://githu
 
 </Callout>
 
+<DemoEmbed demo="026-pointer-paint" title="BLIT386 pointer paint demo" />
+
+<DemoEmbed demo="027-pointer-drag-flick" title="BLIT386 pointer drag-and-flick demo" />
+
 ## Keyboard
 
 Listeners attach to the canvas during `BT.init()`. For reliable delivery, ensure the canvas can receive focus (for
@@ -141,6 +147,8 @@ under rapid input – the tick already consumed and cleared the edge before rend
 
 </Callout>
 
+<DemoEmbed demo="028-keyboard-input" title="BLIT386 keyboard input demo" />
+
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 
 Face button constants are bit flags. You can pass a single button or a combined mask; matching uses ANY semantics:
@@ -171,6 +179,8 @@ Built-in defaults are exposed as read-only tables (same values the engine starts
 - `BT.DEFAULT_KEYBOARD_PLAYER1`
 - `BT.DEFAULT_KEYBOARD_PLAYER2`
 
+<DemoEmbed demo="035-keyboard-diagnostic" title="BLIT386 keyboard diagnostic demo" />
+
 ### Remapping (`BT.inputMap` / `BT.inputMapReset`)
 
 Override bindings at runtime. The first argument is the zero-based player index (`0` or `1` only; other values are
@@ -190,6 +200,8 @@ Pass no key codes to clear keyboard bindings for that player and button until yo
 ```ts twoslash
 BT.inputMap(0, BT.BTN_X); // player 0 X has no keyboard keys until remapped
 ```
+
+<DemoEmbed demo="030-input-map-remapping" title="BLIT386 input map remapping demo" />
 
 ### Gamepad API
 
@@ -213,6 +225,8 @@ Player constants:
 - `PLAYER_TWO` (`1`)
 - `PLAYER_THREE` (`2`)
 - `PLAYER_FOUR` (`3`)
+
+<DemoEmbed demo="031-gamepad-input" title="BLIT386 gamepad input demo" />
 
 <Callout type="warn" title="The default dead zone is large">
 

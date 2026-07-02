@@ -84,6 +84,8 @@ BT.drawSprite(indexed.sheet, indexed.srcRect, new Vector2i(20, 20));
 - Pass `{ sort: 'none' }` to preserve row-major scan order.
 - Slot `0` is never touched – transparent pixels in the image map to slot 0 at draw time.
 
+<DemoEmbed demo="008-sprites" title="BLIT386 sprites demo" />
+
 ## Sprite setup – manual path
 
 Use this only when you need fine-grained control over the palette layout or want to load several sheets into the same
@@ -173,6 +175,8 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
   (`{ sheet, srcRect, colors }`).
 - See [Bitmap Fonts Guide](/docs/guides/bitmap-fonts) for the `.btfont` format specification and the BMFont conversion
   workflow (`pnpm run convert-font`).
+
+<DemoEmbed demo="022-bitmap-font" title="BLIT386 bitmap font demo" />
 
 ## System font
 

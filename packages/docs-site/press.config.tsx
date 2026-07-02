@@ -18,6 +18,7 @@ import { BlogLayout } from './src/components/blog-layout';
 import { SidebarSocials } from './src/components/sidebar-socials';
 import { SidebarLogo } from './src/components/sidebar-logo';
 import { CommunityConnect } from './src/components/community-connect';
+import { DemoEmbed } from './src/components/demo-embed';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
 import { SITE_NAME } from './src/data/site';
@@ -331,6 +332,7 @@ export default defineConfig({
                     PopupTrigger,
                     AuthorByline,
                     CommunityConnect,
+                    DemoEmbed,
                     DemoShowcase,
                     HomeHero,
                 };
