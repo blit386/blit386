@@ -25,6 +25,15 @@
       "pattern": "^https?://renderhjs\\.net(?:[/?#]|$)"
     },
     {
+      "pattern": "^https?://x\\.com(/|$)"
+    },
+    {
+      "pattern": "^https?://(www\\.)?badcastle\\.com(/|$)"
+    },
+    {
+      "pattern": "^https?://mastodon\\.gamedev\\.place(/|$)"
+    },
+    {
       "pattern": "^https?://github\\.com/[^/]+/[^/]+/actions(/|$)"
     },
     {
@@ -43,7 +52,7 @@
       "pattern": "^https?://github\\.com/[^/]+/[^/]+/compare/"
     },
     {
-      "pattern": "^https?://github\\.com/blit386/(blit386|create-blit386)(/|$)"
+      "pattern": "^https?://github\\.com/blit386/[^/]+(/|$)"
     },
     {
       "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
