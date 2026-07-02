@@ -222,6 +222,14 @@ BLIT386 owes its whole philosophy to [RetroBlit](https://www.badcastle.com/retro
 clean, low-level demo loop. BLIT386 brings that same feeling to the web with WebGPU: no frameworks, just sprites,
 primitives, fonts, and a palette.
 
+## Community
+
+- [Discord](https://discord.gg/tC2wGt88Uj)
+- [GitHub Discussions](https://github.com/blit386/blit386/discussions)
+- [X](https://x.com/blit386)
+- [Bluesky](https://bsky.app/profile/blit386.bsky.social)
+- [Mastodon](https://mastodon.gamedev.place/@blit386)
+
 ## Made by
 
 BLIT386 is built by Václav Vančura ([@vancura](https://github.com/vancura)) – one person, so far. I am not a player, I
