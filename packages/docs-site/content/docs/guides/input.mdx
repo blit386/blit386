@@ -132,6 +132,15 @@ if (BT.isKeyReleased('Escape')) {
 }
 ```
 
+<Callout type="warn" title="Read edges in update(), not render()">
+
+`BT.isKeyPressed` and `BT.isKeyReleased` clear once per fixed-update tick, and that tick always finishes before
+`render()` runs for the same frame. Reading either from `render()` instead of `update()` intermittently drops presses
+under rapid input — the tick already consumed and cleared the edge before render got a chance to see it. `BT.isKeyDown`
+(held state) has no such restriction and is safe to call from `render()`.
+
+</Callout>
+
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 
 Face button constants are bit flags. You can pass a single button or a combined mask; matching uses ANY semantics:
@@ -141,7 +150,8 @@ For player 0 and player 1, face-button reads merge keyboard maps and gamepad sta
 3, face-button reads use gamepad only.
 
 `BT.isPressed` supports optional tick-based repeat via `repeatRate` (`0` or omitted = edge only), matching
-`BT.isKeyPressed` semantics.
+`BT.isKeyPressed` semantics. For players 0 and 1, the keyboard-mapped half of `isPressed` / `isReleased` shares the same
+`update()`-only edge timing as `BT.isKeyPressed` above.
 
 ```ts twoslash
 // Player 0 (default: WASD-style + Space / KeyB for A, etc.)

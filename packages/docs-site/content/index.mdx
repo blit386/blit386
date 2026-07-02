@@ -54,19 +54,20 @@ Prefer to wire it up by hand or add it to an existing project? Install the packa
 npm install blit386
 ```
 
-```ts
-import { bootstrap, BT, Vector2i } from 'blit386';
+```ts twoslash
+import { bootstrap, BT, Rect2i } from 'blit386';
 
 class MyGame {
-  init() {
+  async init() {
     BT.paletteCreate();
+    return true;
   }
 
   update() {}
 
   render() {
     BT.clear(0);
-    BT.drawRectFill(new Vector2i(10, 10), new Vector2i(40, 24), 1);
+    BT.drawRectFill(new Rect2i(10, 10, 40, 24), 1);
   }
 }
 

@@ -21,7 +21,7 @@ methods, it runs them.
 `configure` runs before anything else. Return a partial `HardwareSettings` object to override the canvas resolution,
 target frame rate, or rendering backend. Omit any field to keep the default.
 
-```ts
+```ts twoslash
 import { bootstrap, BT, Vector2i } from 'blit386';
 import type { HardwareSettings } from 'blit386';
 
@@ -42,10 +42,16 @@ Omit `configure` entirely and the engine uses 320x240 at 60 FPS with WebGPU.
 returned promise to settle before starting the loop, so every `await` is safe. Return `true` when setup succeeds, or
 `false` to abort startup.
 
-```ts
-async init() {
-  BT.paletteSet(Palette.vga());
-  return true;
+```ts twoslash
+import { BT, Palette } from 'blit386';
+
+class MyDemo {
+  // ---cut-before---
+  async init() {
+    BT.paletteSet(Palette.vga());
+    return true;
+  }
+  // ---cut-after---
 }
 ```
 
@@ -54,9 +60,14 @@ async init() {
 `update` runs on every frame before rendering. Advance game state, read input, and move objects here. Do not issue draw
 calls from `update` – those belong in `render`.
 
-```ts
-update() {
-  this.x = (this.x + 2) % 320;
+```ts twoslash
+class MyDemo {
+  private x = 0;
+  // ---cut-before---
+  update() {
+    this.x = (this.x + 2) % 320;
+  }
+  // ---cut-after---
 }
 ```
 
@@ -64,16 +75,23 @@ update() {
 
 `render` runs after `update` on every frame. Clear the screen and issue all draw calls here.
 
-```ts
-render() {
-  BT.clear(0);
-  BT.drawRectFill(new Rect2i(this.x, 112, 16, 16), 15);
+```ts twoslash
+import { BT, Rect2i } from 'blit386';
+
+class MyDemo {
+  private x = 0;
+  // ---cut-before---
+  render() {
+    BT.clear(0);
+    BT.drawRectFill(new Rect2i(this.x, 112, 16, 16), 15);
+  }
+  // ---cut-after---
 }
 ```
 
 ## A complete example
 
-```ts
+```ts twoslash
 import { bootstrap, BT, Palette, Rect2i, Vector2i } from 'blit386';
 import type { HardwareSettings } from 'blit386';
 
