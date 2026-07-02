@@ -177,7 +177,7 @@
 
 <body data-slug="{{slug}}">
 
-<div id="demo-banner"></div>
+<nav id="demo-banner" aria-label="Demo navigation"></nav>
 
 <script id="demo-list" type="application/json">{{demoList}}</script>
 
@@ -226,6 +226,13 @@
             });
         }
 
+        // Matches plugins/demo-registry.js's FILENAME_PATTERN (minus the .js extension).
+        // Every slug that reaches urlFor() is validated against this allowlist before it is
+        // used to build a `location.href` navigation target, so a corrupted or tampered
+        // demo-list payload (or select value) can never produce anything but a same-directory
+        // "<slug>.html" path -- never a "javascript:" or other unexpected URL scheme.
+        var SLUG_PATTERN = /^(00a|[0-9]{3})-[a-z0-9-]+$/;
+
         /**
          * Build a same-directory link to another demo page. The directory is derived from
          * the current page's own pathname, so this resolves correctly under both dev
@@ -234,6 +241,10 @@
          * @returns {string}
          */
         function urlFor(slug) {
+            if (!SLUG_PATTERN.test(slug)) {
+                throw new Error('Refusing to navigate to invalid demo slug: ' + slug);
+            }
+
             var dir = location.pathname.slice(0, location.pathname.lastIndexOf('/') + 1);
 
             return dir + slug + '.html';
