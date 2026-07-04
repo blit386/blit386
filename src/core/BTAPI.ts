@@ -994,7 +994,7 @@ export class BTAPI {
      * Reads and validates demo `configure()` output into resolved hardware settings.
      *
      * @param demo - Demo implementing {@link IBTDemo}.
-     * @returns `false` when hardware settings are invalid (bad dimensions or targetFPS).
+     * @returns `false` when hardware settings are invalid (bad dimensions, targetFPS, or audioVoices).
      */
     private loadHardwareSettings(demo: IBTDemo): boolean {
         try {
@@ -1019,6 +1019,14 @@ export class BTAPI {
 
         if (!Number.isFinite(targetFPS) || targetFPS <= 0) {
             console.error(`[BT] Invalid targetFPS: ${targetFPS}. Must be a finite number > 0.`);
+
+            return false;
+        }
+
+        const { audioVoices } = this.hwSettings;
+
+        if (audioVoices !== undefined && (!Number.isInteger(audioVoices) || audioVoices < 1 || audioVoices > 64)) {
+            console.error(`[BT] ${errorMessages.audioVoicesRangeError(audioVoices)}`);
 
             return false;
         }

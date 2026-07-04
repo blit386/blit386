@@ -117,6 +117,12 @@ export interface HardwareSettings {
     backend?: Backend;
 
     /**
+     * Maximum number of simultaneous audio voices (concurrently playing sounds). Defaults to
+     * `16` in {@link defaultConfig}. Valid range is `1`-`64`.
+     */
+    audioVoices?: number;
+
+    /**
      * When `true` (default), the engine draws a screen-space overlay after
      * each demo `render()` call (FPS, target rate, resolution, backend, demo title).
      * The overlay body starts hidden unless {@link isOverlayVisibleAtStart} is
@@ -427,6 +433,7 @@ export function defaultConfig(): HardwareSettings {
         targetFPS: 60,
         outputUpscaleFilter: 'nearest',
         backend: 'webgpu',
+        audioVoices: 16,
         isOverlayEnabled: true,
         isOverlayVisibleAtStart: false,
         isOverlayToggleHintVisible: true,
@@ -585,6 +592,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'outputUpscaleFilter');
     pickIfDefinedPartial(picked, partial, 'isDetectingDroppedFrames');
     pickIfDefinedPartial(picked, partial, 'backend');
+    pickIfDefinedPartial(picked, partial, 'audioVoices');
     pickDefinedOverlaySettings(picked, partial);
 
     return picked;
@@ -725,6 +733,7 @@ function assignFullDefaultMergeScalars(
         picked.isDetectingDroppedFrames ?? defaults.isDetectingDroppedFrames,
     );
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
+    assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
 
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle ?? defaults.overlayStyle));
 
@@ -822,6 +831,7 @@ function buildExplicitDisplayOptionals(
     );
     assignIfDefined(optionals, 'outputUpscaleFilter', picked.outputUpscaleFilter);
     assignIfDefined(optionals, 'isDetectingDroppedFrames', picked.isDetectingDroppedFrames);
+    assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
     assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);
     assignIfDefined(optionals, 'overlayPaletteRowsVisible', picked.overlayPaletteRowsVisible);
