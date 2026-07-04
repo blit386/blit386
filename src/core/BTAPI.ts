@@ -10,7 +10,6 @@ import {
 } from '../assets/PaletteEffect';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
-import type { AudioBus } from '../audio/AudioManager';
 import { AudioManager } from '../audio/AudioManager';
 import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
@@ -36,7 +35,7 @@ import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLi
 import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { Backend, HardwareSettings, IBTDemo } from './IBTDemo';
+import type { AudioBus, Backend, HardwareSettings, IBTDemo } from './IBTDemo';
 import {
     defaultConfig,
     mergeHardwareSettings,

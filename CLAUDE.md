@@ -358,7 +358,7 @@ Full table in `docs/api-core.md` and `.claude/rules/bt-api-getters.md`. The cate
   `null` before init).
 - Loop timing: `deltaSeconds`, `timeSeconds`, `ticks`.
 - Runtime state: `activeBackend` (what actually started after fallback; `null` before init or on failure), `camera`,
-  `palette` (live reference).
+  `palette` (live reference), `isAudioUnlocked` (`false` until the first user gesture resumes the audio context).
 - Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount` (read once per frame).
 
 Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBackend === 'software')`.
@@ -371,6 +371,7 @@ Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBac
   `paletteClearEffects`.
 - Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`,
   `green`).
+- Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`.
 - Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
   `systemPrint`, `printFont`.
 - Parameterized queries: `pointerPos(index?)`, `pointerDelta`, `isPointerActive`, `isDown`, `isPressed`, `isReleased`,

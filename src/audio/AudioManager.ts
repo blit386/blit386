@@ -7,6 +7,7 @@
  * manages the audio graph, bus volume/mute, and unlock tracking.
  */
 
+import type { AudioBus } from '../core/IBTDemo';
 import type { EasingFunction } from '../utils/Easing';
 import { applyEasing } from '../utils/Easing';
 
@@ -21,9 +22,6 @@ const MIN_BUS_VOLUME = 0;
 
 /** Maximum accepted bus volume. */
 const MAX_BUS_VOLUME = 1;
-
-/** Named buses in the audio graph: `sfx` and `music` feed into `main`, which feeds `destination`. */
-export type AudioBus = 'main' | 'music' | 'sfx';
 
 /** Per-bus value keyed the same way as the bus graph (`main`, `music`, `sfx`). */
 type PerBus<T> = Record<AudioBus, T>;

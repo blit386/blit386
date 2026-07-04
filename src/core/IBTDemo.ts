@@ -19,6 +19,14 @@ export type OutputUpscaleFilter = 'nearest' | 'linear';
 export type Backend = 'webgpu' | 'software';
 
 /**
+ * Named buses in the audio graph, used by {@link BT.audioVolumeSet},
+ * {@link BT.audioVolumeGet}, {@link BT.audioMuteSet}, and {@link BT.isAudioMuted}.
+ *
+ * `'sfx'` and `'music'` feed into `'main'`, which feeds the audio destination.
+ */
+export type AudioBus = 'main' | 'music' | 'sfx';
+
+/**
  * Engine-facing hardware configuration returned by `configure()` when a demo
  * implements that optional hook, or by {@link defaultConfig} otherwise.
  */
