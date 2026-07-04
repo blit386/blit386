@@ -1,0 +1,82 @@
+# Audio
+
+<!-- blit386.dev-banner:start -->
+
+<!-- prettier-ignore -->
+> [!TIP]
+> You're reading the raw source on GitHub. The same page lives at https://blit386.dev/docs/guides/audio, typeset like an
+> actual docs site and easier on the eyes. Probably the nicer place to read it, but same
+> words either way.
+
+<!-- blit386.dev-banner:end -->
+
+Bus volume, mute, and worked examples live in [API: Audio](api-audio.md). This guide maps the internal subsystem, the
+locked/unlocked gesture state, and the web platform constraints that shape it.
+
+## Subsystem layout
+
+```text
+src/audio/
+  AudioManager.ts   # Web Audio context, bus graph, unlock state machine, mute/volume
+```
+
+`AudioManager` is owned by the internal `BTAPI` singleton (created and torn down alongside pointer, keyboard, and
+gamepad input) and is never exposed to demo code directly - only through the `BT.audio*` methods and the
+`BT.isAudioUnlocked` getter documented in [API: Audio](api-audio.md).
+
+Tests mock the Web Audio API with `src/__test__/webaudio-mock.ts`, since neither Node.js nor happy-dom implement it.
+
+## Locked vs. unlocked
+
+| State                            | What that means                                                                                                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Locked (default until a gesture) | `BT.isAudioUnlocked` is `false`. `audioVolumeSet`/`audioMuteSet` calls still update engine-side state, but the browser's audio context is suspended, so nothing is audible yet.                |
+| Unlocked                         | `BT.isAudioUnlocked` is `true`. Set once `AudioContext.resume()` resolves after the first `pointerdown`, `keydown`, or `touchstart` on the canvas. Stays unlocked for the rest of the session. |
+
+The engine listens for all three gesture types at once and removes the listeners as soon as one of them succeeds, so
+whichever input method a player uses first (mouse, keyboard, or touch) unlocks audio.
+
+## Usage example
+
+```ts twoslash
+import { BT, type IBTDemo, Vector2i } from 'blit386';
+
+class Demo implements IBTDemo {
+  async init() {
+    BT.audioVolumeSet('music', 0.6);
+    BT.audioVolumeSet('sfx', 0.9);
+
+    return true;
+  }
+
+  update() {}
+
+  render() {
+    if (!BT.isAudioUnlocked) {
+      BT.systemPrint(new Vector2i(8, 8), 2, 'Click or press a key to enable audio');
+    }
+  }
+}
+```
+
+## Web audio constraints
+
+Every major browser enforces an autoplay policy: an `AudioContext` starts `'suspended'` and stays that way until a user
+gesture calls `resume()`. This is a platform rule, not something BLIT386 can configure around - there is no flag to
+start audio unlocked, and none is planned.
+
+- Volume and mute calls made before the gesture are not lost; they update the engine's internal bus state and take
+  effect immediately once the context resumes.
+- The gesture requirement is independent of the render backend. Unlocking audio has nothing to do with
+  `BT.activeBackend` or the WebGPU/Canvas 2D fallback described in [Browser Support](api-browser-support.md) - a demo
+  can be fully unlocked on the software renderer, or fully locked on WebGPU.
+- Actual sound triggering (loading and playing SFX/music clips) is not implemented yet. This phase covers the bus graph,
+  volume, mute, and unlock tracking that a future playback API will build on.
+
+## See also
+
+<Cards>
+  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, and the unlock getter.</Card>
+  <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
+  <Card title="Input Guide" href="/docs/guides/input">Pointer, keyboard, and gamepad input that can trigger unlock.</Card>
+</Cards>

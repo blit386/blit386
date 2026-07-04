@@ -155,6 +155,8 @@ bootstrap(Game);
 - CRT when you want it: A two-tier post-process chain with bundled CRT presets for that curved-glass glow.
 - Everything a tiny engine needs: Pointer, keyboard, and gamepad input, a fixed-timestep loop, bitmap fonts, a camera,
   and one-call PNG frame capture.
+- Audio buses that behave: A three-bus mixer (sfx, music, main) with volume, mute, and fades – tracking the browser's
+  autoplay-gesture unlock honestly instead of pretending it doesn't exist.
 
 ## Get started
 
