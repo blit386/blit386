@@ -93,3 +93,110 @@ installGlobalIfMissing(
         }
     },
 );
+
+/** Mock `AudioParam`: tracks the current value; scheduling calls apply it immediately (no real audio clock in tests). */
+class MockAudioParam {
+    /** Current (immediately applied) parameter value. */
+    public value = 1;
+
+    /**
+     * Sets `value` immediately (mock: ignores scheduling time).
+     *
+     * @param value The value to apply.
+     * @param _startTime Scheduled start time (ignored).
+     */
+    setValueAtTime(value: number, _startTime: number) {
+        this.value = value;
+
+        return this;
+    }
+
+    /**
+     * Sets `value` immediately (mock: ignores the ramp duration).
+     *
+     * @param value The target value.
+     * @param _endTime Scheduled ramp end time (ignored).
+     */
+    linearRampToValueAtTime(value: number, _endTime: number) {
+        this.value = value;
+
+        return this;
+    }
+
+    /**
+     * Jumps straight to the curve's final sample (mock: ignores intermediate samples and timing).
+     *
+     * @param values Sampled curve values.
+     * @param _startTime Scheduled start time (ignored).
+     * @param _duration Curve duration in seconds (ignored).
+     */
+    setValueCurveAtTime(values: Float32Array | readonly number[], _startTime: number, _duration: number) {
+        this.value = values[values.length - 1] ?? this.value;
+
+        return this;
+    }
+
+    /**
+     * No-op in the mock (no scheduled changes to cancel).
+     *
+     * @param _startTime Time after which scheduled changes would be cleared (ignored).
+     */
+    cancelScheduledValues(_startTime: number) {
+        return this;
+    }
+}
+
+/** Mock `AudioNode`: tracks connections without producing or routing any audio. */
+class MockAudioNode {
+    /**
+     * Records a connection to another node (mock: no-op, returns the destination).
+     *
+     * @param destination The node this node connects to.
+     */
+    connect(destination: unknown) {
+        return destination;
+    }
+
+    /** Disconnects all outputs (no-op in the mock). */
+    disconnect() {}
+}
+
+/** Mock `GainNode`: a {@link MockAudioNode} with a {@link MockAudioParam} gain. */
+class MockGainNode extends MockAudioNode {
+    /** Gain parameter (default 1, matching the real `GainNode` default). */
+    public gain = new MockAudioParam();
+}
+
+/** Provide `AudioContext` (and `GainNode`/`AudioParam` behavior) that doesn't exist in Node.js or happy-dom. */
+installGlobalIfMissing(
+    'AudioContext',
+    class {
+        /** Simulated audio clock; stays at 0 since the mock never advances time. */
+        public currentTime = 0;
+
+        /** Context lifecycle state, mirroring the real `AudioContextState` values. */
+        public state: 'suspended' | 'running' | 'closed' = 'suspended';
+
+        /** Destination node terminating the bus graph. */
+        public destination = new MockAudioNode();
+
+        /** Creates a new {@link MockGainNode}. */
+        createGain() {
+            return new MockGainNode();
+        }
+
+        /** Resolves immediately and flips {@link state} to `'running'`. */
+        resume() {
+            this.state = 'running';
+
+            return Promise.resolve();
+        }
+
+        /** Resolves immediately and flips {@link state} to `'closed'`. */
+        close() {
+            this.state = 'closed';
+
+            return Promise.resolve();
+        }
+    },
+);
