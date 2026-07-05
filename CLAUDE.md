@@ -36,6 +36,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | What error message style should I use?                         | `docs/voice.md`, then `src/utils/errorMessages.ts`                                                                                                                                                                           |
 | Is this API exported publicly?                                 | `src/BLIT386.ts` export block (lines 1563–1610)                                                                                                                                                                              |
 | What test mock do I need for GPU code?                         | `src/__test__/webgpu-mock.ts`                                                                                                                                                                                                |
+| What test mock do I need for Web Audio code?                   | `src/__test__/webaudio-mock.ts`                                                                                                                                                                                              |
 | Declaration tooling / TS version alignment?                    | `docs/tooling.md`, `docs/developer-experience-guide.md`, `scripts/check-declaration-tooling.mjs`                                                                                                                             |
 | Should this private name repeat the class/file?                | Internal scoped naming below; `docs/developer-experience-guide.md` (Naming conventions)                                                                                                                                      |
 | Where do I put a new field/method in a `.ts` file?             | TypeScript file structure below; `.cursor/rules/ts-file-structure.mdc`; `docs/developer-experience-guide.md` (File structure and member order)                                                                               |
@@ -267,6 +268,8 @@ src/
     KeyboardInput.ts       # KeyboardEvent.code state, edges, tick repeat, beforeinput text
     GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone)
     defaultKeyboardMap.ts  # Default face-button key tables; clone helpers for BT.inputMapReset
+  audio/
+    AudioManager.ts        # Web Audio context, bus graph (sfx/music -> main -> destination), unlock state, mute/volume
   utils/
     Bootstrap.ts           # Demo bootstrap utilities
     BootstrapHelpers.ts    # Canvas lookup and error display utilities
@@ -282,6 +285,7 @@ src/
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests
+    webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam)
     setup.ts               # Vitest global setup (GPU constants)
 ```
 
@@ -358,7 +362,7 @@ Full table in `docs/api-core.md` and `.claude/rules/bt-api-getters.md`. The cate
   `null` before init).
 - Loop timing: `deltaSeconds`, `timeSeconds`, `ticks`.
 - Runtime state: `activeBackend` (what actually started after fallback; `null` before init or on failure), `camera`,
-  `palette` (live reference).
+  `palette` (live reference), `isAudioUnlocked` (`false` until the first user gesture resumes the audio context).
 - Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount` (read once per frame).
 
 Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBackend === 'software')`.
@@ -371,6 +375,7 @@ Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBac
   `paletteClearEffects`.
 - Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`,
   `green`).
+- Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`.
 - Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
   `systemPrint`, `printFont`.
 - Parameterized queries: `pointerPos(index?)`, `pointerDelta`, `isPointerActive`, `isDown`, `isPressed`, `isReleased`,

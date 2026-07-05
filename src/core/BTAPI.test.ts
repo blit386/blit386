@@ -51,12 +51,13 @@ function resetSingleton(): void {
     (BTAPI as unknown as { _instance: BTAPI | null })._instance = null;
 }
 
-function makeMockDemo(targetFPS = 60, initResult = true): IBTDemo {
+function makeMockDemo(targetFPS = 60, initResult = true, audioVoices?: number): IBTDemo {
     return {
         configure: vi.fn().mockReturnValue({
             displaySize: new Vector2i(320, 240),
             drawingBufferSize: new Vector2i(640, 480),
             targetFPS,
+            ...(audioVoices === undefined ? {} : { audioVoices }),
         }),
         init: vi.fn().mockResolvedValue(initResult),
         update: vi.fn(),
@@ -357,6 +358,44 @@ describe('BTAPI', () => {
             const result = await BTAPI.instance.init(makeMockDemo(-30), makeMockCanvas());
 
             expect(result).toBe(false);
+        });
+
+        it('should return false for non-integer audioVoices', async () => {
+            const result = await BTAPI.instance.init(makeMockDemo(60, true, 1.5), makeMockCanvas());
+
+            expect(result).toBe(false);
+        });
+
+        it('should return false for audioVoices below 1', async () => {
+            const result = await BTAPI.instance.init(makeMockDemo(60, true, 0), makeMockCanvas());
+
+            expect(result).toBe(false);
+        });
+
+        it('should return false for audioVoices above 64', async () => {
+            const result = await BTAPI.instance.init(makeMockDemo(60, true, 65), makeMockCanvas());
+
+            expect(result).toBe(false);
+        });
+
+        it('should accept the default audioVoices (16)', async () => {
+            const result = await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+
+            expect(result).toBe(true);
+        });
+
+        it('should accept a valid custom audioVoices value', async () => {
+            const result = await BTAPI.instance.init(makeMockDemo(60, true, 32), makeMockCanvas());
+
+            expect(result).toBe(true);
+        });
+
+        it('should accept the boundary audioVoices values 1 and 64', async () => {
+            expect(await BTAPI.instance.init(makeMockDemo(60, true, 1), makeMockCanvas())).toBe(true);
+
+            resetSingleton();
+
+            expect(await BTAPI.instance.init(makeMockDemo(60, true, 64), makeMockCanvas())).toBe(true);
         });
 
         it('rejects invalid displaySize before layout or renderer setup', async () => {

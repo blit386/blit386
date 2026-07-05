@@ -107,6 +107,19 @@ export function renderDimensionGPULimitError(field: string, size: string, maxTex
 }
 
 /**
+ * Returns the error message for an `audioVoices` hardware setting outside the supported range.
+ *
+ * @param value - Invalid `audioVoices` value.
+ * @returns User-facing error string.
+ */
+export function audioVoicesRangeError(value: number): string {
+    return (
+        `audioVoices must be a whole number from 1 to 64 (got ${value}). ` +
+        'Update configure() to return a valid voice count'
+    );
+}
+
+/**
  * Returns the error message for an asset whose width or height is not a positive whole number.
  *
  * @param context - Asset label (for example `'sprite sheet'`).

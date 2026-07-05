@@ -58,6 +58,12 @@ describe('defaultConfig', () => {
         expect(settings.backend).toBe('webgpu');
     });
 
+    it('should default audioVoices to 16', () => {
+        const settings = defaultConfig();
+
+        expect(settings.audioVoices).toBe(16);
+    });
+
     it('should enable overlay by default', () => {
         const settings = defaultConfig();
 
@@ -134,6 +140,30 @@ describe('mergeHardwareSettings', () => {
         expect(settings.drawingBufferSize).toBeUndefined();
         expect(settings.targetFPS).toBe(60);
         expect(settings.backend).toBe('webgpu');
+    });
+
+    it('merges audioVoices-only partials with full defaults', () => {
+        const settings = mergeHardwareSettings({ audioVoices: 32 });
+
+        expect(settings.audioVoices).toBe(32);
+        expect(settings.targetFPS).toBe(60);
+    });
+
+    it('keeps audioVoices unset when displaySize is provided without an explicit audioVoices', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+        });
+
+        expect(settings.audioVoices).toBeUndefined();
+    });
+
+    it('applies an explicit audioVoices alongside displaySize', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+            audioVoices: 8,
+        });
+
+        expect(settings.audioVoices).toBe(8);
     });
 
     it('applies only provided fields when displaySize is set', () => {

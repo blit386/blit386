@@ -1,6 +1,8 @@
 // Global test setup for blit386.
 // Imported by vitest.config.ts setupFiles.
 
+import { createMockAudioContext } from './webaudio-mock';
+
 type GlobalRecord = Record<string, unknown>;
 
 /**
@@ -93,3 +95,12 @@ installGlobalIfMissing(
         }
     },
 );
+
+/**
+ * Provide `AudioContext` (and `GainNode`/`AudioParam` behavior) that doesn't exist in Node.js or happy-dom.
+ * Reuses the same factory as `webaudio-mock.ts` so there is one implementation, not two; tests that need
+ * call-tracking access install their own instance via `installMockAudioContext()`/`uninstallMockAudioContext()`.
+ */
+installGlobalIfMissing('AudioContext', function AudioContextStub() {
+    return createMockAudioContext();
+});

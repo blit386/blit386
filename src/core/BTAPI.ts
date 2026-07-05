@@ -10,6 +10,7 @@ import {
 } from '../assets/PaletteEffect';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
+import { AudioManager } from '../audio/AudioManager';
 import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { PointerInput } from '../input/PointerInput';
@@ -34,7 +35,7 @@ import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLi
 import { Vector2i } from '../utils/Vector2i';
 import type { FrameDropCallback, FrameDropEvent } from './GameLoop';
 import { GameLoop } from './GameLoop';
-import type { Backend, HardwareSettings, IBTDemo } from './IBTDemo';
+import type { AudioBus, Backend, HardwareSettings, IBTDemo } from './IBTDemo';
 import {
     defaultConfig,
     mergeHardwareSettings,
@@ -176,11 +177,14 @@ export class BTAPI {
     /** Keyboard input. Created during {@link init}. */
     private keyboard: KeyboardInput | null = null;
 
-    // TODO: Additional subsystems for future implementation:
-    // AudioManager, AssetManager
-
     /** Gamepad input. Created during {@link init}. */
     private gamepad: GamepadInput | null = null;
+
+    /** Audio context, bus graph, and unlock state. Created during {@link init}. */
+    private audio: AudioManager | null = null;
+
+    // TODO: Additional subsystems for future implementation:
+    // AssetManager
 
     /**
      * Private constructor to enforce singleton access via `BTAPI.instance`.
@@ -277,8 +281,7 @@ export class BTAPI {
         this.systemFont = createSystemFont();
         this.setupOverlay();
         this.attachInputSubsystems(canvas);
-
-        // TODO: Initialize audio subsystem when implemented.
+        this.attachAudioSubsystem(canvas);
 
         console.log('[BT] Initializing demo');
 
@@ -412,11 +415,11 @@ export class BTAPI {
     }
 
     /**
-     * Stops the active game loop and detaches input subsystems.
+     * Stops the active game loop and detaches input and audio subsystems.
      *
-     * Pointer, keyboard, and gamepad subsystems are detached so listeners and
-     * polling state do not leak across engine restarts (relevant in tests where
-     * the same DOM persists).
+     * Pointer, keyboard, gamepad, and audio subsystems are detached so listeners,
+     * polling state, and the audio context do not leak across engine restarts
+     * (relevant in tests where the same DOM persists).
      */
     public stop(): void {
         this.loop?.stop();
@@ -487,6 +490,70 @@ export class BTAPI {
      */
     public getCanvas(): HTMLCanvasElement | null {
         return this.canvas;
+    }
+
+    /**
+     * Gets the audio subsystem, internal only; never exposed via the `BT` namespace.
+     *
+     * @returns Audio manager, or null if not initialized.
+     */
+    public getAudio(): AudioManager | null {
+        return this.audio;
+    }
+
+    /**
+     * Reports whether the audio context has been unlocked by a user gesture.
+     *
+     * @returns `true` once unlocked; `false` when locked or not initialized.
+     */
+    public isAudioUnlocked(): boolean {
+        return this.audio?.isUnlocked() ?? false;
+    }
+
+    /**
+     * Sets the logical volume for an audio bus, optionally fading to it.
+     *
+     * No-op when the audio subsystem is not initialized.
+     *
+     * @param bus - Audio bus to update.
+     * @param volume - Target volume, clamped to `[0, 1]`.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param easing - Easing curve for the fade. Defaults to `'linear'`; ignored when `fadeMs` is omitted.
+     */
+    public audioVolumeSet(bus: AudioBus, volume: number, fadeMs?: number, easing?: EasingFunction): void {
+        this.audio?.volumeSet(bus, volume, fadeMs, easing);
+    }
+
+    /**
+     * Gets the logical (pre-mute) volume for an audio bus.
+     *
+     * @param bus - Audio bus to query.
+     * @returns Volume in `[0, 1]`, or `0` when the audio subsystem is not initialized.
+     */
+    public audioVolumeGet(bus: AudioBus): number {
+        return this.audio?.volumeGet(bus) ?? 0;
+    }
+
+    /**
+     * Mutes or unmutes an audio bus.
+     *
+     * No-op when the audio subsystem is not initialized.
+     *
+     * @param bus - Audio bus to mute or unmute.
+     * @param muted - `true` to mute, `false` to unmute.
+     */
+    public audioMuteSet(bus: AudioBus, muted: boolean): void {
+        this.audio?.muteSet(bus, muted);
+    }
+
+    /**
+     * Reports whether an audio bus is currently muted.
+     *
+     * @param bus - Audio bus to query.
+     * @returns `true` when muted; `false` when unmuted or not initialized.
+     */
+    public isAudioMuted(bus: AudioBus): boolean {
+        return this.audio?.isMuted(bus) ?? false;
     }
 
     /**
@@ -994,7 +1061,7 @@ export class BTAPI {
      * Reads and validates demo `configure()` output into resolved hardware settings.
      *
      * @param demo - Demo implementing {@link IBTDemo}.
-     * @returns `false` when hardware settings are invalid (bad dimensions or targetFPS).
+     * @returns `false` when hardware settings are invalid (bad dimensions, targetFPS, or audioVoices).
      */
     private loadHardwareSettings(demo: IBTDemo): boolean {
         try {
@@ -1019,6 +1086,14 @@ export class BTAPI {
 
         if (!Number.isFinite(targetFPS) || targetFPS <= 0) {
             console.error(`[BT] Invalid targetFPS: ${targetFPS}. Must be a finite number > 0.`);
+
+            return false;
+        }
+
+        const { audioVoices } = this.hwSettings;
+
+        if (audioVoices !== undefined && (!Number.isInteger(audioVoices) || audioVoices < 1 || audioVoices > 64)) {
+            console.error(`[BT] ${errorMessages.audioVoicesRangeError(audioVoices)}`);
 
             return false;
         }
@@ -1091,6 +1166,23 @@ export class BTAPI {
         this.gamepad?.detach();
         this.gamepad = new GamepadInput();
         this.gamepad.attach();
+    }
+
+    /**
+     * Attaches the audio context, bus graph, and unlock listeners to the canvas.
+     *
+     * @param canvas - Render target canvas.
+     */
+    private attachAudioSubsystem(canvas: HTMLCanvasElement): void {
+        const hw = this.hwSettings;
+
+        if (!hw) {
+            return;
+        }
+
+        this.audio?.detach();
+        this.audio = new AudioManager();
+        this.audio.attach(canvas);
     }
 
     /**
@@ -1205,10 +1297,11 @@ export class BTAPI {
     }
 
     /**
-     * Removes pointer, keyboard, and gamepad subsystems.
+     * Removes pointer, keyboard, gamepad, and audio subsystems.
      *
-     * Pointer/keyboard detach DOM listeners; gamepad detaches polling state and
-     * clears subsystem references.
+     * Pointer/keyboard detach DOM listeners; gamepad detaches polling state; audio
+     * detaches unlock listeners and closes the audio context. All subsystem
+     * references are cleared so listeners/contexts do not leak across restarts.
      */
     private clearInputSubsystems(): void {
         this.pointer?.detach();
@@ -1219,12 +1312,15 @@ export class BTAPI {
 
         this.gamepad?.detach();
         this.gamepad = null;
+
+        this.audio?.detach();
+        this.audio = null;
     }
 
     /**
      * Runs the demo's async {@link IBTDemo.init}. On throw or
-     * `false`, clears input subsystems that were attached earlier in the init
-     * sequence.
+     * `false`, clears input and audio subsystems that were attached earlier in
+     * the init sequence.
      *
      * @param demo - Active demo instance.
      * @returns `true` when the demo reports success.

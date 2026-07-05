@@ -19,6 +19,7 @@ import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
 import { SpriteSheet } from './assets/SpriteSheet';
 import { BTAPI } from './core/BTAPI';
 import {
+    type AudioBus,
     type Backend,
     defaultConfig,
     type HardwareSettings,
@@ -538,6 +539,64 @@ export const BT = {
      */
     get activeBackend(): Backend | null {
         return BTAPI.instance.getActiveBackend();
+    },
+
+    /**
+     * Whether the audio context has been unlocked by a user gesture.
+     *
+     * Browsers require a user gesture (pointer, key, or touch press) before
+     * allowing audio playback. Starts `false`; flips to `true` for the rest of
+     * the session after the first gesture successfully resumes the audio context.
+     *
+     * @returns `true` once unlocked; `false` when locked or before initialization.
+     */
+    get isAudioUnlocked(): boolean {
+        return BTAPI.instance.isAudioUnlocked();
+    },
+
+    /**
+     * Sets the logical volume for an audio bus, optionally fading to it.
+     *
+     * @param bus - Audio bus to update (`'main'`, `'music'`, or `'sfx'`).
+     * @param value - Target volume, clamped to `[0, 1]`.
+     * @param options - Optional fade behavior.
+     * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
+     * @param options.easing - Easing curve for the fade. Defaults to `'linear'`; ignored when `fadeMs` is omitted.
+     */
+    audioVolumeSet: (bus: AudioBus, value: number, options?: { fadeMs?: number; easing?: EasingFunction }): void => {
+        BTAPI.instance.audioVolumeSet(bus, value, options?.fadeMs, options?.easing);
+    },
+
+    /**
+     * Gets the logical (pre-mute) volume for an audio bus.
+     *
+     * Unaffected by {@link BT.audioMuteSet} - muting never overwrites the configured level.
+     *
+     * @param bus - Audio bus to query.
+     * @returns Volume in `[0, 1]`, or `0` before initialization.
+     */
+    audioVolumeGet: (bus: AudioBus): number => {
+        return BTAPI.instance.audioVolumeGet(bus);
+    },
+
+    /**
+     * Mutes or unmutes an audio bus.
+     *
+     * @param bus - Audio bus to mute or unmute.
+     * @param muted - `true` to mute, `false` to unmute.
+     */
+    audioMuteSet: (bus: AudioBus, muted: boolean): void => {
+        BTAPI.instance.audioMuteSet(bus, muted);
+    },
+
+    /**
+     * Reports whether an audio bus is currently muted.
+     *
+     * @param bus - Audio bus to query.
+     * @returns `true` when muted; `false` when unmuted or before initialization.
+     */
+    isAudioMuted: (bus: AudioBus): boolean => {
+        return BTAPI.instance.isAudioMuted(bus);
     },
 
     /**
@@ -1610,6 +1669,7 @@ export {
     Vignette,
 };
 export type {
+    AudioBus,
     Backend,
     BootstrapOptions,
     EasingFunction,

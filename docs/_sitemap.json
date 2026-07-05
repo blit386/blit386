@@ -58,6 +58,11 @@
       "description": "Sprite sheets, bitmap fonts, and asset loading."
     },
     {
+      "src": "api-audio.md",
+      "path": "api/audio",
+      "description": "Audio bus volume, mute, and the browser autoplay-unlock state."
+    },
+    {
       "src": "guide-input.md",
       "path": "guides/input",
       "description": "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
@@ -86,6 +91,11 @@
       "src": "guide-bitmap-fonts.md",
       "path": "guides/bitmap-fonts",
       "description": "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
+    },
+    {
+      "src": "guide-audio.md",
+      "path": "guides/audio",
+      "description": "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
     },
     {
       "src": "performance-best-practices.md",
