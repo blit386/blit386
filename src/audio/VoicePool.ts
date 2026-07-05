@@ -301,6 +301,36 @@ export class VoicePool {
     }
 
     /**
+     * Stops and disconnects every active voice, invalidating all outstanding refs.
+     *
+     * Called by {@link AudioManager.detach} before the audio context closes.
+     */
+    public stopAll(): void {
+        for (const slot of this.slots) {
+            if (slot.isActive) {
+                this.forceStopSlot(slot);
+            }
+        }
+    }
+
+    /**
+     * Stops and disconnects every active voice currently playing `buffer`, invalidating their
+     * refs.
+     *
+     * Called by the {@link AudioClip.unload} guard (via `audioDecodeContext`'s unload handler)
+     * so a released buffer can never keep playing from a stale voice.
+     *
+     * @param buffer - Buffer being released.
+     */
+    public stopVoicesUsingBuffer(buffer: AudioBuffer): void {
+        for (const slot of this.slots) {
+            if (slot.isActive && slot.buffer === buffer) {
+                this.forceStopSlot(slot);
+            }
+        }
+    }
+
+    /**
      * Returns the number of `play()` calls dropped because no slot was free or stealable.
      *
      * @returns Drop count.
@@ -437,21 +467,35 @@ export class VoicePool {
     /**
      * Immediately stops and disconnects `slot`'s current node chain, if any.
      *
-     * Clears `onended` first so the about-to-be-superseded voice's natural-completion callback
-     * never fires (its cleanup - disconnect and generation-guarded slot reset - is handled here
-     * instead, synchronously, since the caller is about to overwrite or reset this slot).
+     * Does not clear `onended` - the original callback may still fire later (asynchronously,
+     * once the browser actually ends the stopped source), but {@link handleVoiceEnded}'s
+     * generation guard safely no-ops it by then, since the caller has already reassigned or
+     * reset this slot to a new generation before that callback can run (JavaScript's
+     * single-threaded execution guarantees no interleaving between this synchronous teardown
+     * and the slot's next synchronous mutation).
      *
      * @param slot - Slot whose current node chain should be torn down.
      */
     private disconnectVoice(slot: VoiceSlot): void {
         if (slot.source !== null) {
-            slot.source.onended = null;
             slot.source.stop();
             slot.source.disconnect();
         }
 
         slot.gain?.disconnect();
         slot.panner?.disconnect();
+    }
+
+    /**
+     * Immediately stops, disconnects, and recycles `slot` if it is active. Unlike
+     * {@link stop}, this always tears the node chain down synchronously - used for teardown
+     * paths ({@link stopAll}, {@link stopVoicesUsingBuffer}) where lingering audio is not wanted.
+     *
+     * @param slot - Slot to force-stop.
+     */
+    private forceStopSlot(slot: VoiceSlot): void {
+        this.disconnectVoice(slot);
+        this.resetSlot(slot);
     }
 
     /**

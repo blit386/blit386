@@ -458,4 +458,121 @@ describe('VoicePool', () => {
             expect(() => pool.panSet(ref, 1)).not.toThrow();
         });
     });
+
+    describe('natural completion', () => {
+        it('recycles the slot when onended fires', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            const context = getMockContext(installed);
+            const source = context.createBufferSourceCalls[0];
+
+            (source?.onended as () => void)();
+
+            expect(pool.isPlaying(ref)).toBe(false);
+        });
+
+        it('disconnects the ended nodes', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer());
+
+            const context = getMockContext(installed);
+            const source = context.createBufferSourceCalls[0];
+            const disconnectSpy = vi.spyOn(source as AudioBufferSourceNode, 'disconnect');
+
+            (source?.onended as () => void)();
+
+            expect(disconnectSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('a stale onended from a stolen voice does not clobber the new occupant', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const first = pool.play(createMockAudioBuffer(), { priority: 1 });
+
+            const context = getMockContext(installed);
+            const firstSource = context.createBufferSourceCalls[0];
+
+            const second = pool.play(createMockAudioBuffer(), { priority: 5 });
+
+            (firstSource?.onended as () => void)();
+
+            expect(pool.isPlaying(second)).toBe(true);
+            expect(first.voiceIndex).toBe(second.voiceIndex);
+        });
+
+        it('frees the slot for a new play() after natural completion', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            pool.play(createMockAudioBuffer());
+
+            const context = getMockContext(installed);
+            const source = context.createBufferSourceCalls[0];
+
+            (source?.onended as () => void)();
+
+            const next = pool.play(createMockAudioBuffer());
+
+            expect(pool.getStealCount()).toBe(0);
+            expect(next.voiceIndex).toBe(0);
+        });
+    });
+
+    describe('stopAll', () => {
+        it('stops and disconnects every active voice', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const first = pool.play(createMockAudioBuffer());
+            const second = pool.play(createMockAudioBuffer());
+
+            pool.stopAll();
+
+            expect(pool.isPlaying(first)).toBe(false);
+            expect(pool.isPlaying(second)).toBe(false);
+        });
+
+        it('is a no-op on an empty pool', () => {
+            const pool = new VoicePool(audio);
+
+            expect(() => pool.stopAll()).not.toThrow();
+        });
+    });
+
+    describe('stopVoicesUsingBuffer', () => {
+        it('stops only voices referencing the released buffer', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const releasedBuffer = createMockAudioBuffer();
+            const otherBuffer = createMockAudioBuffer();
+
+            const releasedRef = pool.play(releasedBuffer);
+            const otherRef = pool.play(otherBuffer);
+
+            pool.stopVoicesUsingBuffer(releasedBuffer);
+
+            expect(pool.isPlaying(releasedRef)).toBe(false);
+            expect(pool.isPlaying(otherRef)).toBe(true);
+        });
+    });
 });
