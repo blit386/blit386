@@ -123,6 +123,21 @@ This cap exists because each slot is a real `AudioBufferSourceNode -> GainNode -
 pool grow unbounded would let a busy scene (an explosion with dozens of debris impacts, for example) spend unbounded CPU
 on nodes the player can't meaningfully hear over each other anyway.
 
+A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
+play instead:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const footstep = await AudioClip.load('audio/footstep.mp3');
+
+function playFootstep() {
+  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+
+  BT.soundPlay(footstep, { pitch, volume: 0.6 });
+}
+```
+
 ## See also
 
 <Cards>
