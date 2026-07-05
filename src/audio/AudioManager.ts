@@ -49,6 +49,9 @@ export class AudioManager {
     /** `true` once a user gesture has successfully resumed the audio context. */
     private unlocked = false;
 
+    /** `true` while a {@link resumeAndUnlock} call is in flight, guarding against concurrent resume attempts. */
+    private isUnlocking = false;
+
     /** Logical (pre-mute) volume per bus, reported by {@link volumeGet} regardless of mute state. */
     private logicalVolume: PerBus<number>;
 
@@ -94,16 +97,30 @@ export class AudioManager {
      * gesture listeners on `target`.
      *
      * Calls {@link detach} first so a repeated `attach()` (for example across
-     * engine restarts) never leaks a previous context or listener set.
+     * engine restarts) never leaks a previous context or listener set. Logs and
+     * returns without installing listeners if constructing the audio context or
+     * bus graph throws (for example a browser hitting its concurrent
+     * `AudioContext` limit), so a failure here never rejects the caller's
+     * `BTAPI.init()`.
      *
      * @param target - Canvas that receives the one-shot unlock gesture listeners.
      */
     public attach(target: HTMLCanvasElement): void {
         this.detach();
 
+        try {
+            this.context = new AudioContext();
+            this.buildBusGraph(this.context);
+        } catch (error) {
+            console.error('[BT] Failed to create the audio context', error);
+
+            this.context = null;
+            this.busNodes = null;
+
+            return;
+        }
+
         this.target = target;
-        this.context = new AudioContext();
-        this.buildBusGraph(this.context);
 
         target.addEventListener('pointerdown', this.onPointerDown);
         target.addEventListener('keydown', this.onKeyDown);
@@ -119,17 +136,16 @@ export class AudioManager {
         this.removeUnlockListeners();
 
         if (this.context !== null) {
-            try {
-                void this.context.close();
-            } catch {
-                // Context may already be closed.
-            }
+            this.context.close().catch(() => {
+                // Context may already be closed; close() rejects rather than throwing synchronously.
+            });
         }
 
         this.context = null;
         this.busNodes = null;
         this.target = null;
         this.unlocked = false;
+        this.isUnlocking = false;
         this.logicalVolume = { main: DEFAULT_BUS_VOLUME, music: DEFAULT_BUS_VOLUME, sfx: DEFAULT_BUS_VOLUME };
         this.mutedState = { main: false, music: false, sfx: false };
         this.mutedGainSnapshot = {};
@@ -204,6 +220,8 @@ export class AudioManager {
     /**
      * Mutes or unmutes `bus`.
      *
+     * Cancels any in-flight {@link volumeSet} fade before applying the mute so a
+     * scheduled ramp or curve can never override the mute/unmute value afterward.
      * Muting snapshots the bus node's current gain value and zeroes the node
      * immediately (no fade). Unmuting restores the exact snapshotted value, so
      * a mute/unmute pair never destroys the level configured by {@link volumeSet}.
@@ -219,6 +237,8 @@ export class AudioManager {
         if (node === undefined || this.mutedState[bus] === muted) {
             return;
         }
+
+        node.gain.cancelScheduledValues(this.context?.currentTime ?? 0);
 
         if (muted) {
             // eslint-disable-next-line security/detect-object-injection -- bus is keyof AudioBus union, not arbitrary input
@@ -302,17 +322,24 @@ export class AudioManager {
      * Resumes the audio context on the first successful unlock gesture and
      * removes the gesture listeners. Left attached (to retry on the next
      * gesture) when `resume()` rejects.
+     *
+     * Guarded by {@link isUnlocking} so rapid-fire gestures (for example a
+     * pointerdown and a keydown in the same frame) only trigger one concurrent
+     * `resume()` attempt.
      */
     private unlock(): void {
-        if (this.unlocked || this.context === null) {
+        if (this.unlocked || this.isUnlocking || this.context === null) {
             return;
         }
+
+        this.isUnlocking = true;
 
         void this.resumeAndUnlock(this.context);
     }
 
     /**
-     * Awaits `context.resume()` and flips {@link unlocked} on success.
+     * Awaits `context.resume()` and flips {@link unlocked} on success. Always
+     * clears {@link isUnlocking} so a failed attempt can retry on the next gesture.
      *
      * @param context - Audio context to resume.
      */
@@ -324,6 +351,8 @@ export class AudioManager {
             this.removeUnlockListeners();
         } catch (error) {
             console.error('[BT] Failed to resume the audio context', error);
+        } finally {
+            this.isUnlocking = false;
         }
     }
 

@@ -54,6 +54,13 @@ describe('AudioManager', () => {
     let audio: AudioManager;
     let installed: ReturnType<typeof installMockAudioContext>;
 
+    /**
+     * Returns the mock context most recently constructed by `installed`, cast for
+     * access to its call-tracking fields. Centralizes the cast so individual tests
+     * don't repeat it.
+     */
+    const getMockContext = (): MockAudioContext => installed.getLastInstance() as unknown as MockAudioContext;
+
     beforeEach(() => {
         installed = installMockAudioContext();
         canvas = createCanvas();
@@ -70,7 +77,7 @@ describe('AudioManager', () => {
         it('creates main, music, and sfx gain nodes on attach', () => {
             audio.attach(canvas);
 
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
 
             expect(context.createGainCalls).toHaveLength(3);
         });
@@ -78,7 +85,7 @@ describe('AudioManager', () => {
         it('wires sfx and music into main, and main into destination', () => {
             audio.attach(canvas);
 
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
 
             const main = nthGainNode(context.createGainCalls, 0);
             const music = nthGainNode(context.createGainCalls, 1);
@@ -93,9 +100,38 @@ describe('AudioManager', () => {
             audio.attach(canvas);
             audio.attach(canvas);
 
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
 
             expect(context.createGainCalls).toHaveLength(3);
+        });
+
+        it('does not throw when AudioContext construction fails', () => {
+            Object.defineProperty(globalThis, 'AudioContext', {
+                value: function ThrowingAudioContext(): never {
+                    throw new Error('AudioContext limit reached');
+                },
+                writable: true,
+                configurable: true,
+            });
+
+            expect(() => audio.attach(canvas)).not.toThrow();
+            expect(audio.isUnlocked()).toBe(false);
+        });
+    });
+
+    describe('detach', () => {
+        it('closes the audio context', () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+
+            audio.detach();
+
+            expect(context.closeCallCount).toBe(1);
+        });
+
+        it('is safe to call before attach', () => {
+            expect(() => audio.detach()).not.toThrow();
         });
     });
 
@@ -117,7 +153,7 @@ describe('AudioManager', () => {
         });
 
         it('applies the volume to the underlying gain node immediately with no fadeMs', () => {
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
             const music = nthGainNode(context.createGainCalls, 1);
 
             audio.volumeSet('music', 0.25);
@@ -138,7 +174,7 @@ describe('AudioManager', () => {
         });
 
         it('schedules a linear ramp on the gain param when fadeMs is provided', () => {
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
             const main = nthGainNode(context.createGainCalls, 0);
 
             audio.volumeSet('main', 0.5, 200);
@@ -151,7 +187,7 @@ describe('AudioManager', () => {
         });
 
         it('samples an eased curve via setValueCurveAtTime for non-linear easing', () => {
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
             const main = nthGainNode(context.createGainCalls, 0);
 
             audio.volumeSet('main', 0.8, 200, 'ease-out');
@@ -186,7 +222,7 @@ describe('AudioManager', () => {
         });
 
         it('zeroes the underlying gain node on mute and restores it on unmute', () => {
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
             const sfx = nthGainNode(context.createGainCalls, 2);
 
             audio.volumeSet('sfx', 0.4);
@@ -252,7 +288,7 @@ describe('AudioManager', () => {
         it('calls resume exactly once even if a second gesture fires after unlock', async () => {
             audio.attach(canvas);
 
-            const context = installed.getLastInstance() as unknown as MockAudioContext;
+            const context = getMockContext();
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
