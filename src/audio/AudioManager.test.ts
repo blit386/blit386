@@ -119,6 +119,45 @@ describe('AudioManager', () => {
         });
     });
 
+    describe('internal accessors', () => {
+        it('getContext returns null before attach', () => {
+            expect(audio.getContext()).toBeNull();
+        });
+
+        it('getContext returns the live context after attach', () => {
+            audio.attach(canvas);
+
+            expect(audio.getContext()).toBe(getMockContext());
+        });
+
+        it('getContext returns null after detach', () => {
+            audio.attach(canvas);
+            audio.detach();
+
+            expect(audio.getContext()).toBeNull();
+        });
+
+        it('getSfxBus returns null before attach', () => {
+            expect(audio.getSfxBus()).toBeNull();
+        });
+
+        it('getSfxBus returns the sfx bus gain node after attach', () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+            const sfx = nthGainNode(context.createGainCalls, 2);
+
+            expect(audio.getSfxBus()).toBe(sfx);
+        });
+
+        it('getSfxBus returns null after detach', () => {
+            audio.attach(canvas);
+            audio.detach();
+
+            expect(audio.getSfxBus()).toBeNull();
+        });
+    });
+
     describe('detach', () => {
         it('closes the audio context', () => {
             audio.attach(canvas);

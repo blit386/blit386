@@ -167,6 +167,28 @@ export class AudioManager {
     }
 
     /**
+     * Returns the live Web Audio context, internal only – never exposed via `BTAPI` or `BT`.
+     *
+     * Used by {@link VoicePool} to build each voice's node chain.
+     *
+     * @returns The live audio context, or `null` before {@link attach} / after {@link detach}.
+     */
+    public getContext(): AudioContext | null {
+        return this.context;
+    }
+
+    /**
+     * Returns the `sfx` bus gain node, internal only – never exposed via `BTAPI` or `BT`.
+     *
+     * Used by {@link VoicePool} to connect each per-voice node chain's terminal `StereoPannerNode`.
+     *
+     * @returns The `sfx` bus gain node, or `null` before {@link attach} / after {@link detach}.
+     */
+    public getSfxBus(): GainNode | null {
+        return this.busNodes?.sfx ?? null;
+    }
+
+    /**
      * Returns the logical (pre-mute) volume for `bus`.
      *
      * Unaffected by {@link muteSet} - muting never overwrites the configured level.
