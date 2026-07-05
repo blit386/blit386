@@ -270,6 +270,7 @@ src/
     defaultKeyboardMap.ts  # Default face-button key tables; clone helpers for BT.inputMapReset
   audio/
     AudioManager.ts        # Web Audio context, bus graph (sfx/music -> main -> destination), unlock state, mute/volume
+    audioDecodeContext.ts  # Module-scoped decode-context registry + AudioClip unload seam (Phase 2 plumbing)
   utils/
     Bootstrap.ts           # Demo bootstrap utilities
     BootstrapHelpers.ts    # Canvas lookup and error display utilities

@@ -53,6 +53,16 @@ export interface MockAudioContext {
 
     /** Number of times `close()` was called. */
     readonly closeCallCount: number;
+
+    /** `audioData` arguments recorded from every `decodeAudioData` call, in call order. */
+    readonly decodeAudioDataCalls: ArrayBuffer[];
+
+    /**
+     * Behavior invoked by `decodeAudioData`. Reassign per test to resolve with a
+     * custom buffer or reject with a decode error; defaults to resolving with a
+     * {@link createMockAudioBuffer} stub.
+     */
+    decodeAudioDataImpl: (audioData: ArrayBuffer) => Promise<AudioBuffer>;
 }
 
 /**
@@ -126,15 +136,35 @@ export function createMockGainNode(): GainNode {
 }
 
 /**
+ * Creates a fake `AudioBuffer`-shaped object for {@link createMockAudioContext}'s
+ * default `decodeAudioData` resolution.
+ *
+ * @returns Stub `AudioBuffer`, cast from a plain tracking object.
+ */
+export function createMockAudioBuffer(): AudioBuffer {
+    return {
+        sampleRate: MOCK_SAMPLE_RATE,
+        length: 0,
+        duration: 0,
+        numberOfChannels: 1,
+        getChannelData: () => new Float32Array(0),
+        copyFromChannel: () => {},
+        copyToChannel: () => {},
+    } as unknown as AudioBuffer;
+}
+
+/**
  * Creates a mock `AudioContext` whose `createGain()` returns
- * {@link createMockGainNode} stubs and whose `resume()`/`close()` resolve
- * immediately while recording call counts.
+ * {@link createMockGainNode} stubs, whose `resume()`/`close()` resolve
+ * immediately while recording call counts, and whose `decodeAudioData()`
+ * resolves with a {@link createMockAudioBuffer} stub by default.
  *
  * @returns Mock `AudioContext` stub, cast from a plain tracking object.
  */
 export function createMockAudioContext(): AudioContext {
     const createGainCalls: GainNode[] = [];
     const destination = {} as unknown as AudioNode;
+    const decodeAudioDataCalls: ArrayBuffer[] = [];
     let resumeCallCount = 0;
     let closeCallCount = 0;
 
@@ -144,6 +174,8 @@ export function createMockAudioContext(): AudioContext {
         state: 'suspended' as AudioContextState,
         destination,
         createGainCalls,
+        decodeAudioDataCalls,
+        decodeAudioDataImpl: (_audioData: ArrayBuffer) => Promise.resolve(createMockAudioBuffer()),
         get resumeCallCount() {
             return resumeCallCount;
         },
@@ -168,6 +200,11 @@ export function createMockAudioContext(): AudioContext {
             context.state = 'closed';
 
             return Promise.resolve();
+        },
+        decodeAudioData: (audioData: ArrayBuffer) => {
+            decodeAudioDataCalls.push(audioData);
+
+            return context.decodeAudioDataImpl(audioData);
         },
     };
 
