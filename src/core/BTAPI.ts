@@ -1,3 +1,4 @@
+import type { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import {
@@ -11,6 +12,7 @@ import {
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
 import { AudioManager } from '../audio/AudioManager';
+import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef } from '../audio/VoicePool';
 import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { PointerInput } from '../input/PointerInput';
@@ -554,6 +556,108 @@ export class BTAPI {
      */
     public isAudioMuted(bus: AudioBus): boolean {
         return this.audio?.isMuted(bus) ?? false;
+    }
+
+    /**
+     * Plays a loaded audio clip through the SFX voice pool.
+     *
+     * Returns {@link INVALID_SOUND_REF} without allocating a voice when the clip's buffer isn't
+     * available (not finished loading yet, or already unloaded) or when the audio subsystem is
+     * not initialized.
+     *
+     * @param clip - Loaded audio clip to play.
+     * @param options - Playback options; see {@link SoundPlayOptions}.
+     * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
+     */
+    public soundPlay(clip: AudioClip, options?: SoundPlayOptions): SoundRef {
+        if (clip.buffer === null) {
+            return INVALID_SOUND_REF;
+        }
+
+        return this.audio?.playSound(clip.buffer, options) ?? INVALID_SOUND_REF;
+    }
+
+    /**
+     * Stops a playing sound, optionally fading it out.
+     *
+     * @param ref - Sound to stop.
+     * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
+     */
+    public soundStop(ref: SoundRef, fadeOutMs?: number): void {
+        this.audio?.soundStop(ref, fadeOutMs);
+    }
+
+    /**
+     * Reports whether a sound is still playing.
+     *
+     * @param ref - Sound to query.
+     * @returns `true` when still playing; `false` on a stale ref or when the audio subsystem is not initialized.
+     */
+    public isSoundPlaying(ref: SoundRef): boolean {
+        return this.audio?.isSoundPlaying(ref) ?? false;
+    }
+
+    /**
+     * Sets a sound's gain, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target gain.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundVolumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.audio?.soundVolumeSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current gain.
+     *
+     * @param ref - Sound to query.
+     * @returns Current gain in `[0, 1]`, or `1` on a stale ref or when the audio subsystem is not initialized.
+     */
+    public soundVolumeGet(ref: SoundRef): number {
+        return this.audio?.soundVolumeGet(ref) ?? 1;
+    }
+
+    /**
+     * Sets a sound's playback rate, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target playback rate.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundPitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.audio?.soundPitchSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current playback rate.
+     *
+     * @param ref - Sound to query.
+     * @returns Current playback rate, or `1` on a stale ref or when the audio subsystem is not initialized.
+     */
+    public soundPitchGet(ref: SoundRef): number {
+        return this.audio?.soundPitchGet(ref) ?? 1;
+    }
+
+    /**
+     * Sets a sound's stereo pan, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target pan.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundPanSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.audio?.soundPanSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current stereo pan.
+     *
+     * @param ref - Sound to query.
+     * @returns Current pan, or `0` on a stale ref or when the audio subsystem is not initialized.
+     */
+    public soundPanGet(ref: SoundRef): number {
+        return this.audio?.soundPanGet(ref) ?? 0;
     }
 
     /**
