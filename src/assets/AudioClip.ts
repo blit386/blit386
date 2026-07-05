@@ -379,12 +379,10 @@ export class AudioClip {
 
     /**
      * Releases the decoded buffer, removes this clip from the resolved cache,
-     * and notifies the voice-stop hook so any future voice system can stop
-     * nodes still referencing the released buffer.
+     * and stops and invalidates any voice still playing this buffer via the
+     * registered `AudioClip` unload hook (see `audioDecodeContext.ts`).
      *
-     * Voice-stopping is currently a no-op (no voice pool exists yet); it will
-     * be fully enforced once voices exist. Safe to call more than once - the
-     * second and later calls are a no-op.
+     * Safe to call more than once - the second and later calls are a no-op.
      */
     unload(): void {
         if (this.decodedBuffer === null) {

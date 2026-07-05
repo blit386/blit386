@@ -1,16 +1,17 @@
 /**
  * Internal audio subsystem: Web Audio context, bus graph, browser autoplay-unlock
- * state machine, and pre-unlock SFX/music drop counters.
+ * state machine, SFX voice pool, and pre-unlock SFX/music drop counters.
  *
  * Owned by {@link BTAPI} (not itself a singleton) and never exposed to demo code.
- * Actual SFX/music playback methods are added in a later phase; this class only
- * manages the audio graph, bus volume/mute, and unlock tracking.
+ * Music playback is added in a later phase; this class manages the audio graph, bus
+ * volume/mute, unlock tracking, and SFX voice playback via {@link playSound}.
  */
 
 import type { AudioBus } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
-import { setAudioDecodeContext } from './audioDecodeContext';
+import { setAudioClipUnloadHandler, setAudioDecodeContext } from './audioDecodeContext';
+import { INVALID_SOUND_REF, type SoundRef, type VoicePlayOptions, VoicePool } from './VoicePool';
 
 /** Default (full) gain for a freshly created or reset bus. */
 const DEFAULT_BUS_VOLUME = 1;
@@ -31,8 +32,8 @@ type PerBus<T> = Record<AudioBus, T>;
  * Construct, then call {@link attach} with the rendering canvas. Call {@link detach}
  * to remove listeners and close the audio context (engine restarts, tests).
  *
- * Actual SFX/music playback methods are added in a later phase; this class only
- * exposes bus volume, mute, and unlock-state accessors.
+ * Music playback is added in a later phase; this class exposes bus volume, mute,
+ * unlock-state accessors, and SFX voice playback via {@link playSound}.
  */
 export class AudioManager {
     /** Live Web Audio context, or `null` before {@link attach} / after {@link detach}. */
@@ -40,6 +41,9 @@ export class AudioManager {
 
     /** Gain nodes for the bus graph, or `null` before {@link attach} / after {@link detach}. */
     private busNodes: PerBus<GainNode> | null = null;
+
+    /** SFX voice pool, or `null` before {@link attach} / after {@link detach}. */
+    private voicePool: VoicePool | null = null;
 
     /** Canvas passed to {@link attach}; the unlock gesture listener target. */
     private target: HTMLCanvasElement | null = null;
@@ -121,6 +125,9 @@ export class AudioManager {
 
         setAudioDecodeContext(this.context);
 
+        this.voicePool = new VoicePool(this);
+        setAudioClipUnloadHandler((buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer));
+
         this.target = target;
 
         target.addEventListener('pointerdown', this.onPointerDown);
@@ -136,6 +143,10 @@ export class AudioManager {
      */
     public detach(): void {
         this.removeUnlockListeners();
+
+        this.voicePool?.stopAll();
+        this.voicePool = null;
+        setAudioClipUnloadHandler(() => {});
 
         if (this.context !== null) {
             this.context.close().catch(() => {
@@ -324,6 +335,27 @@ export class AudioManager {
      */
     public clearRememberedMusicRequest(): void {
         this.isMusicRequestRemembered = false;
+    }
+
+    /**
+     * Plays `buffer` through the SFX voice pool.
+     *
+     * Drops the request (counted via {@link noteDroppedSfx}) and returns
+     * {@link INVALID_SOUND_REF} without allocating a voice while the context is locked
+     * (pre-unlock), so the pool's slots are never spent on sound that would be inaudible anyway.
+     *
+     * @param buffer - Decoded audio buffer to play.
+     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
+     */
+    public playSound(buffer: AudioBuffer, options?: VoicePlayOptions): SoundRef {
+        if (!this.unlocked) {
+            this.noteDroppedSfx();
+
+            return INVALID_SOUND_REF;
+        }
+
+        return this.voicePool?.play(buffer, options) ?? INVALID_SOUND_REF;
     }
 
     /**

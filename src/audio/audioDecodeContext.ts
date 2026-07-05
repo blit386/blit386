@@ -35,10 +35,9 @@ export function getAudioDecodeContext(): AudioContext | null {
 /**
  * Handler invoked by `AudioClip.unload()` with the buffer being released.
  *
- * This is the seam where the future voice system will stop any
- * `AudioBufferSourceNode`s still referencing the released buffer, so an
- * unloaded clip's audio can never keep playing from a stale node. Defaults to
- * a no-op since the voice pool does not exist yet.
+ * `AudioManager.attach()` registers `VoicePool.stopVoicesUsingBuffer` here so an unloaded
+ * clip's audio can never keep playing from a stale node; `AudioManager.detach()` restores the
+ * no-op default. Defaults to a no-op before the first `attach()`.
  */
 let audioClipUnloadHandler: (buffer: AudioBuffer) => void = () => {};
 
