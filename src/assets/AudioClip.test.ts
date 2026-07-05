@@ -1,16 +1,26 @@
+// @vitest-environment happy-dom
+
 /**
  * Unit tests for {@link AudioClip}.
  *
  * Exercises the load pipeline end to end:
- * - resolved-cache and in-flight dedup behavior
- * - byte-accurate download progress with and without `Content-Length`
- * - fallback-list resolution and the empty-list guard
+ * - resolved-cache and in-flight dedup behavior (single fetch/decode across
+ *   concurrent and repeated calls, referential equality of the returned clip)
+ * - fallback-list resolution (first decodable URL wins and is recorded,
+ *   later candidates are never fetched once one succeeds, and the granular
+ *   decode/format error survives when every candidate fails) and the
+ *   empty-list guard
+ * - byte-accurate download progress with and without `Content-Length`, and a
+ *   single indeterminate decode report
  * - the four failure categories: network/CORS, HTTP status, decode, and
  *   "audio isn't ready" (no decode context registered)
- * - unload() releasing the buffer, clearing the cache, and idempotency
+ * - unload() releasing the buffer, clearing the cache, invoking the
+ *   voice-stop hook, and idempotency
  *
- * `fetch` and the decode `AudioContext` are stubbed so the suite stays
- * deterministic and does not depend on network or real Web Audio decoding.
+ * `fetch` is stubbed via `vi.stubGlobal`; the decode `AudioContext` uses the
+ * Phase 1 Web Audio mock (`webaudio-mock.ts`) registered through the Phase 1
+ * decode-context registry, so the suite stays deterministic and does not
+ * depend on network or real Web Audio decoding.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,7 +40,7 @@ import { AudioClip, type AudioClipProgress } from './AudioClip';
  * @param opts.arrayBufferBytes - Byte length returned by the `arrayBuffer()` fallback path.
  * @returns Response stub accepted by the `fetch` mock.
  */
-function createFetchResponse({
+function mockAudioFetchResponse({
     ok = true,
     status = 200,
     contentLength,
@@ -86,6 +96,9 @@ describe('AudioClip', () => {
     let mockContext: MockAudioContext;
 
     beforeEach(() => {
+        // Register a Phase 1 Web Audio mock context so AudioClip can decode;
+        // AudioClip never constructs its own AudioContext, it only reads
+        // whatever is registered here.
         const context = createMockAudioContext();
 
         mockContext = context as unknown as MockAudioContext;
@@ -117,7 +130,7 @@ describe('AudioClip', () => {
 
     describe('loading a single URL', () => {
         beforeEach(() => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse()));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
         });
 
         it('should load and cache a clip under its URL', async () => {
@@ -160,7 +173,7 @@ describe('AudioClip', () => {
             vi.stubGlobal(
                 'fetch',
                 vi.fn().mockResolvedValue(
-                    createFetchResponse({
+                    mockAudioFetchResponse({
                         contentLength: 4,
                         chunks: [new Uint8Array([1, 2]), new Uint8Array([3, 4])],
                     }),
@@ -179,7 +192,7 @@ describe('AudioClip', () => {
         });
 
         it('should report a null ratio when Content-Length is absent', async () => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse()));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
 
             const events: AudioClipProgress[] = [];
 
@@ -190,10 +203,30 @@ describe('AudioClip', () => {
                 { phase: 'decoding', ratio: null },
             ]);
         });
+
+        it('should report exactly one indeterminate decode snapshot regardless of download shape', async () => {
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue(
+                    mockAudioFetchResponse({
+                        contentLength: 2,
+                        chunks: [new Uint8Array([1, 2])],
+                    }),
+                ),
+            );
+
+            const events: AudioClipProgress[] = [];
+
+            await AudioClip.load('single-chunk.mp3', { onProgress: (progress) => events.push(progress) });
+
+            const decodeEvents = events.filter((event) => event.phase === 'decoding');
+
+            expect(decodeEvents).toEqual([{ phase: 'decoding', ratio: null }]);
+        });
     });
 
     describe('fallback lists', () => {
-        it('should resolve with the first URL that downloads and decodes', async () => {
+        it('should resolve with the first URL that downloads and decodes, recording it as the winning URL', async () => {
             vi.stubGlobal(
                 'fetch',
                 vi
@@ -201,8 +234,8 @@ describe('AudioClip', () => {
                     .mockImplementation((url: string) =>
                         Promise.resolve(
                             url === 'missing.ogg'
-                                ? createFetchResponse({ ok: false, status: 404 })
-                                : createFetchResponse(),
+                                ? mockAudioFetchResponse({ ok: false, status: 404 })
+                                : mockAudioFetchResponse(),
                         ),
                     ),
             );
@@ -210,10 +243,30 @@ describe('AudioClip', () => {
             const clip = await AudioClip.load(['missing.ogg', 'present.mp3']);
 
             expect(clip.url).toBe('present.mp3');
+            expect(AudioClip.isLoaded('present.mp3')).toBe(true);
+            expect(AudioClip.isLoaded('missing.ogg')).toBe(false);
         });
 
-        it('should throw the last error when every candidate fails', async () => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse({ ok: false, status: 500 })));
+        it('should not fetch later candidates once an earlier one decodes successfully', async () => {
+            const fetchMock = vi.fn().mockResolvedValue(mockAudioFetchResponse());
+
+            vi.stubGlobal('fetch', fetchMock);
+
+            await AudioClip.load(['first.mp3', 'second.mp3', 'third.mp3']);
+
+            expect(fetchMock).toHaveBeenCalledOnce();
+            expect(fetchMock).toHaveBeenCalledWith('first.mp3');
+        });
+
+        it('should throw the granular decode error for the last candidate when every candidate fails to decode', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+            mockContext.decodeAudioDataImpl = () => Promise.reject(new Error('unsupported codec'));
+
+            await expect(AudioClip.load(['a.ogg', 'b.mp3'])).rejects.toThrow("Couldn't decode the audio file 'b.mp3'");
+        });
+
+        it('should throw the last error when every candidate fails over HTTP', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse({ ok: false, status: 500 })));
 
             await expect(AudioClip.load(['a.ogg', 'b.mp3'])).rejects.toThrow('server had a problem');
         });
@@ -231,35 +284,22 @@ describe('AudioClip', () => {
         });
 
         it('should throw a not-found error for a 404 status', async () => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse({ ok: false, status: 404 })));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse({ ok: false, status: 404 })));
 
             await expect(AudioClip.load('missing.mp3')).rejects.toThrow("Can't find the audio file");
         });
 
         it('should throw a server error for a non-404 status', async () => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse({ ok: false, status: 500 })));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse({ ok: false, status: 500 })));
 
             await expect(AudioClip.load('broken.mp3')).rejects.toThrow('server had a problem');
         });
 
         it('should throw a decode error when decodeAudioData rejects', async () => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse()));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
             mockContext.decodeAudioDataImpl = () => Promise.reject(new Error('unsupported codec'));
 
             await expect(AudioClip.load('bad-codec.mp3')).rejects.toThrow("Couldn't decode the audio file");
-        });
-
-        it('should not cache a failed load and should clear in-flight state for retries', async () => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse({ ok: false, status: 404 })));
-
-            await expect(AudioClip.load('retry.mp3')).rejects.toThrow();
-            expect(AudioClip.isLoaded('retry.mp3')).toBe(false);
-
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse()));
-
-            const clip = await AudioClip.load('retry.mp3');
-
-            expect(clip.url).toBe('retry.mp3');
         });
 
         it('should throw the not-ready error when no decode context is registered', async () => {
@@ -268,6 +308,19 @@ describe('AudioClip', () => {
 
             await expect(AudioClip.load('any.mp3')).rejects.toThrow("Audio isn't ready yet");
             expect(fetch).not.toHaveBeenCalled();
+        });
+
+        it('should not cache a failed load and should clear in-flight state for retries', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse({ ok: false, status: 404 })));
+
+            await expect(AudioClip.load('retry.mp3')).rejects.toThrow();
+            expect(AudioClip.isLoaded('retry.mp3')).toBe(false);
+
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const clip = await AudioClip.load('retry.mp3');
+
+            expect(clip.url).toBe('retry.mp3');
         });
     });
 
@@ -280,8 +333,8 @@ describe('AudioClip', () => {
                     .mockImplementation((url: string) =>
                         Promise.resolve(
                             url === 'missing.ogg'
-                                ? createFetchResponse({ ok: false, status: 404 })
-                                : createFetchResponse(),
+                                ? mockAudioFetchResponse({ ok: false, status: 404 })
+                                : mockAudioFetchResponse(),
                         ),
                     ),
             );
@@ -296,7 +349,7 @@ describe('AudioClip', () => {
 
     describe('unload', () => {
         beforeEach(() => {
-            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(createFetchResponse()));
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
         });
 
         it('should release the buffer and remove the clip from the cache', async () => {
