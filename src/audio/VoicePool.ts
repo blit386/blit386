@@ -12,10 +12,26 @@
  */
 
 import { BTAPI } from '../core/BTAPI';
+import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { AudioManager } from './AudioManager';
 
 /** Fallback voice count used when `HardwareSettings.audioVoices` is unavailable. Mirrors `defaultConfig()`. */
 const DEFAULT_VOICE_COUNT = 16;
+
+/** Default per-voice gain applied when {@link VoicePlayOptions.volume} is omitted. */
+const DEFAULT_VOLUME = 1;
+
+/** Default playback rate applied when {@link VoicePlayOptions.pitch} is omitted. */
+const DEFAULT_PITCH = 1;
+
+/** Default stereo pan applied when {@link VoicePlayOptions.pan} is omitted. */
+const DEFAULT_PAN = 0;
+
+/** Default allocation priority applied when {@link VoicePlayOptions.priority} is omitted. */
+const DEFAULT_PRIORITY = 0;
+
+/** Default loop flag applied when {@link VoicePlayOptions.loop} is omitted. */
+const DEFAULT_LOOP = false;
 
 /**
  * Opaque generational handle identifying a single pool-allocated voice.
@@ -91,14 +107,12 @@ interface VoiceSlot {
  */
 export class VoicePool {
     /** Owning audio manager; source of the live context and `sfx` bus. */
-    // @ts-expect-error TS6133: 'audioManager' will be used in play/stop methods (Tasks 5+).
     private readonly audioManager: AudioManager;
 
     /** Fixed-size slot array, sized at construction from `HardwareSettings.audioVoices`. */
     private readonly slots: VoiceSlot[];
 
     /** Monotonic counter incremented on every `play()`; used for stealing age tiebreaks. */
-    // @ts-expect-error TS6133: 'nextStartOrder' will be used in play/stop methods (Tasks 5+).
     private nextStartOrder = 0;
 
     /** Count of `play()` calls that found no free or stealable slot. */
@@ -115,6 +129,52 @@ export class VoicePool {
     constructor(audioManager: AudioManager) {
         this.audioManager = audioManager;
         this.slots = Array.from({ length: resolveVoiceCount() }, () => createEmptySlot());
+    }
+
+    /**
+     * Allocates a voice and starts playing `buffer` through it.
+     *
+     * Picks the first free slot, or steals the lowest-priority active slot at or below the
+     * incoming priority (oldest {@link VoiceSlot.startOrder} breaks ties). Returns
+     * {@link INVALID_SOUND_REF} without allocating when the audio manager has no live context
+     * or `sfx` bus (not attached, or already detached), and increments {@link getDropCount} when
+     * every active slot outranks the incoming priority.
+     *
+     * @param buffer - Decoded audio buffer to play.
+     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
+     */
+    public play(buffer: AudioBuffer, options: VoicePlayOptions = {}): SoundRef {
+        const context = this.audioManager.getContext();
+        const sfxBus = this.audioManager.getSfxBus();
+
+        if (context === null || sfxBus === null) {
+            return INVALID_SOUND_REF;
+        }
+
+        const priority = options.priority ?? DEFAULT_PRIORITY;
+        const slotIndex = this.allocateSlot(priority);
+
+        if (slotIndex === null) {
+            this.dropCount += 1;
+
+            return INVALID_SOUND_REF;
+        }
+
+        const slot = this.slots.at(slotIndex);
+
+        if (slot === undefined) {
+            return INVALID_SOUND_REF;
+        }
+
+        if (slot.isActive) {
+            this.stealCount += 1;
+            this.disconnectVoice(slot);
+        }
+
+        this.startVoice(slot, slotIndex, buffer, options, priority, context, sfxBus);
+
+        return { voiceIndex: slotIndex, generation: slot.generation };
     }
 
     /**
@@ -141,7 +201,6 @@ export class VoicePool {
      * @param priority - Allocation priority of the incoming voice.
      * @returns Slot index to use, or `null` when no free or stealable slot exists.
      */
-    // @ts-expect-error TS6133: 'allocateSlot' will be called by play() (Task 6).
     private allocateSlot(priority: number): number | null {
         const freeIndex = this.slots.findIndex((slot) => !slot.isActive);
 
@@ -182,6 +241,117 @@ export class VoicePool {
         }
 
         return candidateIndex;
+    }
+
+    /**
+     * Builds a fresh `source -> gain -> panner -> sfx bus` chain in `slot` and starts playback.
+     *
+     * Bumps `slot.generation` so the returned {@link SoundRef} (built by the caller from the
+     * post-call `slot.generation`) is unique even when reusing a stolen slot.
+     *
+     * @param slot - Slot to populate (already disconnected from any prior voice by the caller).
+     * @param slotIndex - Index of `slot`, captured for the `onended` recycle callback.
+     * @param buffer - Decoded audio buffer to play.
+     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @param priority - Resolved allocation priority (already defaulted by the caller).
+     * @param context - Live audio context (already validated non-null by the caller).
+     * @param sfxBus - Live `sfx` bus gain node (already validated non-null by the caller).
+     */
+    private startVoice(
+        slot: VoiceSlot,
+        slotIndex: number,
+        buffer: AudioBuffer,
+        options: VoicePlayOptions,
+        priority: number,
+        context: AudioContext,
+        sfxBus: GainNode,
+    ): void {
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+        const panner = context.createStereoPanner();
+
+        source.buffer = buffer;
+        source.loop = options.loop ?? DEFAULT_LOOP;
+        source.playbackRate.value = options.pitch ?? DEFAULT_PITCH;
+        panner.pan.value = options.pan ?? DEFAULT_PAN;
+
+        source.connect(gain);
+        gain.connect(panner);
+        panner.connect(sfxBus);
+
+        const generation = slot.generation + 1;
+        const startOrder = this.nextStartOrder++;
+
+        slot.source = source;
+        slot.gain = gain;
+        slot.panner = panner;
+        slot.buffer = buffer;
+        slot.isActive = true;
+        slot.priority = priority;
+        slot.startOrder = startOrder;
+        slot.generation = generation;
+
+        source.onended = () => {
+            source.disconnect();
+            gain.disconnect();
+            panner.disconnect();
+            this.handleVoiceEnded(slotIndex, generation);
+        };
+
+        const targetVolume = options.volume ?? DEFAULT_VOLUME;
+        const atTime = options.atTime ?? context.currentTime;
+
+        if (options.fadeInMs !== undefined && options.fadeInMs > 0) {
+            gain.gain.value = 0;
+            applyAudioParamRamp(gain.gain, atTime, targetVolume, options.fadeInMs, 'linear');
+        } else {
+            gain.gain.value = targetVolume;
+        }
+
+        source.start(atTime);
+    }
+
+    /**
+     * Immediately stops and disconnects `slot`'s current node chain, if any.
+     *
+     * Clears `onended` first so the about-to-be-superseded voice's natural-completion callback
+     * never fires (its cleanup - disconnect and generation-guarded slot reset - is handled here
+     * instead, synchronously, since the caller is about to overwrite or reset this slot).
+     *
+     * @param slot - Slot whose current node chain should be torn down.
+     */
+    private disconnectVoice(slot: VoiceSlot): void {
+        if (slot.source !== null) {
+            slot.source.onended = null;
+            slot.source.stop();
+            slot.source.disconnect();
+        }
+
+        slot.gain?.disconnect();
+        slot.panner?.disconnect();
+    }
+
+    /**
+     * Recycles `slotIndex` when its generation still matches `expectedGeneration` (a no-op when
+     * the slot has already been reused - see {@link disconnectVoice}). Implemented fully in a
+     * later task; for now this only exists so {@link startVoice}'s `onended` closure compiles.
+     *
+     * @param slotIndex - Index of the slot whose voice just ended.
+     * @param expectedGeneration - Generation captured when the ended voice was started.
+     */
+    private handleVoiceEnded(slotIndex: number, expectedGeneration: number): void {
+        const slot = this.slots.at(slotIndex);
+
+        if (slot === undefined || slot.generation !== expectedGeneration) {
+            return;
+        }
+
+        slot.source = null;
+        slot.gain = null;
+        slot.panner = null;
+        slot.buffer = null;
+        slot.isActive = false;
+        slot.generation += 1;
     }
 }
 

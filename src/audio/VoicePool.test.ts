@@ -10,11 +10,16 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { installMockAudioContext, uninstallMockAudioContext } from '../__test__/webaudio-mock';
+import {
+    createMockAudioBuffer,
+    installMockAudioContext,
+    type MockAudioContext,
+    uninstallMockAudioContext,
+} from '../__test__/webaudio-mock';
 import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings } from '../core/IBTDemo';
 import { AudioManager } from './AudioManager';
-import { VoicePool } from './VoicePool';
+import { INVALID_SOUND_REF, VoicePool } from './VoicePool';
 
 /**
  * Mounts a canvas for {@link AudioManager.attach}.
@@ -27,12 +32,20 @@ const createCanvas = (): HTMLCanvasElement => {
     return canvas;
 };
 
+/**
+ * Returns the mock context most recently constructed by `installed`, cast for access to its
+ * call-tracking fields.
+ */
+const getMockContext = (installed: ReturnType<typeof installMockAudioContext>): MockAudioContext =>
+    installed.getLastInstance() as unknown as MockAudioContext;
+
 describe('VoicePool', () => {
     let canvas: HTMLCanvasElement;
     let audio: AudioManager;
+    let installed: ReturnType<typeof installMockAudioContext>;
 
     beforeEach(() => {
-        installMockAudioContext();
+        installed = installMockAudioContext();
         canvas = createCanvas();
         audio = new AudioManager();
         audio.attach(canvas);
@@ -73,6 +86,172 @@ describe('VoicePool', () => {
 
             expect(pool.getDropCount()).toBe(0);
             expect(pool.getStealCount()).toBe(0);
+        });
+    });
+
+    describe('play', () => {
+        it('builds the source -> gain -> panner -> sfx bus chain', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const buffer = createMockAudioBuffer();
+
+            pool.play(buffer);
+
+            const context = getMockContext(installed);
+            const source = context.createBufferSourceCalls[0];
+            const gain = context.createGainCalls[3]; // 0-2 are main/music/sfx from buildBusGraph
+            const panner = context.createStereoPannerCalls[0];
+
+            expect((source as unknown as { connectCalls: unknown[] }).connectCalls).toEqual([gain]);
+            expect((gain as unknown as { connectCalls: unknown[] }).connectCalls).toEqual([panner]);
+            expect((panner as unknown as { connectCalls: unknown[] }).connectCalls).toEqual([audio.getSfxBus()]);
+        });
+
+        it('applies volume, pitch, and pan options to the created nodes', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const buffer = createMockAudioBuffer();
+
+            pool.play(buffer, { volume: 0.5, pitch: 1.5, pan: -0.5 });
+
+            const context = getMockContext(installed);
+            const source = context.createBufferSourceCalls[0];
+            const gain = context.createGainCalls[3];
+            const panner = context.createStereoPannerCalls[0];
+
+            expect(gain?.gain.value).toBe(0.5);
+            expect(source?.playbackRate.value).toBe(1.5);
+            expect(panner?.pan.value).toBe(-0.5);
+        });
+
+        it('defaults volume, pitch, and pan when omitted', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer());
+
+            const context = getMockContext(installed);
+            const gain = context.createGainCalls[3];
+            const source = context.createBufferSourceCalls[0];
+            const panner = context.createStereoPannerCalls[0];
+
+            expect(gain?.gain.value).toBe(1);
+            expect(source?.playbackRate.value).toBe(1);
+            expect(panner?.pan.value).toBe(0);
+        });
+
+        it('sets loop and starts at the given atTime', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer(), { loop: true, atTime: 2.5 });
+
+            const context = getMockContext(installed);
+            const source = context.createBufferSourceCalls[0];
+
+            expect(source?.loop).toBe(true);
+            expect((source as unknown as { startCalls: number[] }).startCalls).toEqual([2.5]);
+        });
+
+        it('ramps gain from silence over fadeInMs', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer(), { volume: 0.8, fadeInMs: 200 });
+
+            const context = getMockContext(installed);
+            const gain = context.createGainCalls[3];
+
+            expect(
+                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number }> })
+                    .linearRampToValueAtTimeCalls,
+            ).toEqual([{ value: 0.8, endTime: 0.2 }]);
+        });
+
+        it('returns unique, incrementing generations for sequential plays into the same slot pool', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            const first = pool.play(createMockAudioBuffer());
+            const second = pool.play(createMockAudioBuffer());
+
+            expect(first.voiceIndex).toBe(0);
+            expect(second.voiceIndex).toBe(0);
+            expect(second.generation).toBeGreaterThan(first.generation);
+        });
+
+        it('steals the lowest-priority active voice when the pool is full', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer(), { priority: 5 });
+            const low = pool.play(createMockAudioBuffer(), { priority: 1 });
+
+            const stolenRef = pool.play(createMockAudioBuffer(), { priority: 3 });
+
+            expect(stolenRef.voiceIndex).toBe(low.voiceIndex);
+            expect(pool.getStealCount()).toBe(1);
+        });
+
+        it('breaks stealing ties at equal priority by oldest start order', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            const oldest = pool.play(createMockAudioBuffer(), { priority: 2 });
+            pool.play(createMockAudioBuffer(), { priority: 2 });
+
+            const stolenRef = pool.play(createMockAudioBuffer(), { priority: 2 });
+
+            expect(stolenRef.voiceIndex).toBe(oldest.voiceIndex);
+        });
+
+        it('drops the request and returns an invalid ref when no slot qualifies to be stolen', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer(), { priority: 5 });
+            const dropped = pool.play(createMockAudioBuffer(), { priority: 1 });
+
+            expect(dropped).toEqual(INVALID_SOUND_REF);
+            expect(pool.getDropCount()).toBe(1);
+        });
+
+        it('returns an invalid ref without allocating when the manager has no live context', () => {
+            audio.detach();
+
+            const pool = new VoicePool(audio);
+
+            const ref = pool.play(createMockAudioBuffer());
+
+            expect(ref).toEqual(INVALID_SOUND_REF);
+            expect(pool.getDropCount()).toBe(0);
         });
     });
 });
