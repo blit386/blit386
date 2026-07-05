@@ -260,6 +260,7 @@ src/
     BitmapFont.ts          # Bitmap font system (.btfont)
     SystemFont.ts          # Built-in system font factory (createSystemFont; used by BT.systemPrint)
     fonts/systemFontData.ts # Glyph bitmap data backing SystemFont
+    AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists
     Palette.ts             # 256-entry indexed color palette
     PaletteEffect.ts       # Palette effect system (cycle, fade, flash, swap)
     palettes/              # Built-in preset palette data (presetData.ts, hudData.ts)

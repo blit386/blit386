@@ -492,3 +492,148 @@ export function spriteNotIndexizedError(): string {
         ' or call sheet.indexize(palette) after BT.paletteSet.'
     );
 }
+
+/** Audio file extensions considered normal in {@link buildAudioClipExtensionHint}. */
+const AUDIO_EXTENSIONS = new Set(['.mp3', '.ogg', '.wav', '.m4a', '.webm', '.aac', '.flac']);
+
+/**
+ * Returns whether a URL already points at an explicit location: an absolute
+ * URL, a special browser scheme, or a rooted/relative (`/`, `./`) path.
+ * Mirrors `BitmapFont`'s `hasExplicitLocation` check.
+ *
+ * @param url - Path or URL to inspect.
+ * @returns True when no relative-path hint is needed.
+ */
+function hasExplicitAudioLocation(url: string): boolean {
+    const lowerUrl = url.toLowerCase();
+    let explicit = lowerUrl.includes('://');
+
+    if (!explicit) {
+        explicit = ['//', 'data:', 'blob:'].some((prefix) => lowerUrl.startsWith(prefix));
+    }
+
+    if (!explicit) {
+        explicit = (['/', './'] as const).some((prefix) => url.startsWith(prefix));
+    }
+
+    return explicit;
+}
+
+/**
+ * Suggests a common `audio/` folder location when a URL looks ambiguous.
+ * Mirrors `BitmapFont`'s `buildPathHint`.
+ *
+ * @param url - Original URL string.
+ * @returns Hint text, or an empty string when the path already looks explicit.
+ */
+function buildAudioClipPathHint(url: string): string {
+    let hint = '';
+
+    if (!hasExplicitAudioLocation(url)) {
+        hint = `Did you mean '/audio/${url}' or './audio/${url}'?`;
+    }
+
+    return hint;
+}
+
+/**
+ * Suggests a common audio extension when a URL's extension does not look like
+ * an audio file. Mirrors `BitmapFont`'s `buildExtensionHint`.
+ *
+ * @param url - Original URL string.
+ * @returns Hint text, or an empty string when no hint applies.
+ */
+function buildAudioClipExtensionHint(url: string): string {
+    const fileName = url.slice(url.lastIndexOf('/') + 1).split(/[?#]/)[0] ?? url;
+    const dotIndex = fileName.lastIndexOf('.');
+    const extension = dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
+    let hint = '';
+
+    if (extension !== '' && !AUDIO_EXTENSIONS.has(extension)) {
+        hint = `The extension '${extension}' does not look like an audio file. Try .mp3, .ogg, or .wav`;
+    }
+
+    return hint;
+}
+
+/**
+ * Combines the path and extension hints for a failing audio clip URL.
+ *
+ * @param url - Failing audio clip path.
+ * @returns Combined hint text (or an empty string when no hint applies).
+ */
+function buildAudioClipHints(url: string): string {
+    const hints: string[] = [];
+    const pathHint = buildAudioClipPathHint(url);
+    const extensionHint = buildAudioClipExtensionHint(url);
+
+    if (pathHint) {
+        hints.push(pathHint);
+    }
+
+    if (extensionHint) {
+        hints.push(extensionHint);
+    }
+
+    return hints.length > 0 ? ` ${hints.join(' ')}` : '';
+}
+
+/**
+ * Returns the error message for a network- or CORS-level audio fetch failure,
+ * where the request itself never completed.
+ *
+ * @param url - Audio file path or URL that failed to load.
+ * @returns User-facing error string.
+ */
+export function audioClipNetworkError(url: string): string {
+    return (
+        `Couldn't reach the audio file '${url}'. Check your internet connection and confirm the path is correct. ` +
+        "If it's hosted on another domain, make sure that server allows cross-origin (CORS) requests" +
+        buildAudioClipHints(url)
+    );
+}
+
+/**
+ * Returns the error message for an audio fetch that completed with a
+ * non-successful HTTP status.
+ *
+ * @param url - Audio file path or URL that failed to load.
+ * @param status - HTTP status code from the fetch response.
+ * @returns User-facing error string.
+ */
+export function audioClipHttpError(url: string, status: number): string {
+    const statusMessage =
+        status === 404
+            ? `Can't find the audio file '${url}'. Check that the file exists and the path is spelled correctly`
+            : `The server had a problem loading the audio file '${url}' (status ${status}). Try refreshing the page`;
+
+    return statusMessage + buildAudioClipHints(url);
+}
+
+/**
+ * Returns the error message for an audio file that downloaded successfully
+ * but could not be decoded.
+ *
+ * @param url - Audio file path or URL that failed to decode.
+ * @returns User-facing error string.
+ */
+export function audioClipDecodeError(url: string): string {
+    return (
+        `Couldn't decode the audio file '${url}'. Your browser probably doesn't support this container or codec ` +
+        '(well-supported formats are MP3, OGG Vorbis, and WAV). Try re-exporting to one of those, ' +
+        'or pass an array of URLs to AudioClip.load() so it can fall back to another format'
+    );
+}
+
+/**
+ * Returns the error message shown when an `AudioClip` load is attempted
+ * before the engine has registered a decode audio context.
+ *
+ * @returns User-facing error string.
+ */
+export function audioClipNotReadyError(): string {
+    return (
+        "Audio isn't ready yet. Make sure the engine has finished starting (BT.init() has resolved) " +
+        'before loading an AudioClip'
+    );
+}
