@@ -8,12 +8,9 @@
  */
 
 import type { AudioBus } from '../core/IBTDemo';
+import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
-import { applyEasing } from '../utils/Easing';
 import { setAudioDecodeContext } from './audioDecodeContext';
-
-/** Number of samples used to build an eased gain ramp curve for `setValueCurveAtTime`. */
-const FADE_CURVE_SAMPLE_COUNT = 32;
 
 /** Default (full) gain for a freshly created or reset bus. */
 const DEFAULT_BUS_VOLUME = 1;
@@ -210,7 +207,7 @@ export class AudioManager {
             return;
         }
 
-        this.applyBusGain(node, clamped, fadeMs, easing);
+        applyAudioParamRamp(node.gain, this.context?.currentTime ?? 0, clamped, fadeMs, easing);
     }
 
     /**
@@ -376,72 +373,6 @@ export class AudioManager {
         this.target.removeEventListener('keydown', this.onKeyDown);
         this.target.removeEventListener('touchstart', this.onTouchStart);
     }
-
-    /**
-     * Schedules or immediately applies a gain change on `node`.
-     *
-     * With no `fadeMs` (or a non-positive one), sets `node.gain.value` immediately.
-     * With `fadeMs`, anchors the ramp to `context.currentTime`: `'linear'` easing uses
-     * `linearRampToValueAtTime`; other easings sample {@link applyEasing} into a curve
-     * fed to `setValueCurveAtTime`.
-     *
-     * @param node - Gain node to update.
-     * @param targetValue - Target gain value.
-     * @param fadeMs - Optional fade duration in milliseconds.
-     * @param easing - Easing curve applied when `fadeMs` is a positive duration.
-     */
-    private applyBusGain(
-        node: GainNode,
-        targetValue: number,
-        fadeMs: number | undefined,
-        easing: EasingFunction,
-    ): void {
-        const context = this.context;
-
-        if (context === null || fadeMs === undefined || fadeMs <= 0) {
-            node.gain.value = targetValue;
-
-            return;
-        }
-
-        const startValue = node.gain.value;
-        const now = context.currentTime;
-        const durationSeconds = fadeMs / 1000;
-
-        node.gain.cancelScheduledValues(now);
-        node.gain.setValueAtTime(startValue, now);
-
-        if (easing === 'linear') {
-            node.gain.linearRampToValueAtTime(targetValue, now + durationSeconds);
-
-            return;
-        }
-
-        node.gain.setValueCurveAtTime(sampleEasingCurve(startValue, targetValue, easing), now, durationSeconds);
-    }
-}
-
-/**
- * Samples an eased gain curve from `startValue` to `targetValue` for
- * `AudioParam.setValueCurveAtTime`.
- *
- * @param startValue - Gain value at the start of the fade.
- * @param targetValue - Gain value at the end of the fade.
- * @param easing - Easing curve to sample.
- * @returns Sampled curve of {@link FADE_CURVE_SAMPLE_COUNT} values.
- */
-function sampleEasingCurve(startValue: number, targetValue: number, easing: EasingFunction): Float32Array {
-    const curve = new Float32Array(FADE_CURVE_SAMPLE_COUNT);
-
-    for (let i = 0; i < FADE_CURVE_SAMPLE_COUNT; i++) {
-        const t = i / (FADE_CURVE_SAMPLE_COUNT - 1);
-        const eased = applyEasing(t, easing);
-
-        // eslint-disable-next-line security/detect-object-injection -- bounded loop counter
-        curve[i] = startValue + (targetValue - startValue) * eased;
-    }
-
-    return curve;
 }
 
 /**
