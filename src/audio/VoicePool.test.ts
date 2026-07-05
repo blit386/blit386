@@ -364,5 +364,21 @@ describe('VoicePool', () => {
             expect(() => pool.stop({ voiceIndex: 999, generation: 0 })).not.toThrow();
             expect(pool.isPlaying({ voiceIndex: 999, generation: 0 })).toBe(false);
         });
+
+        it('rejects a negative voiceIndex even when it would coincidentally match the last slot via Array.at(-1)', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            // A fresh pool's last slot has generation 0 - the same value `Array.at(-1)` would
+            // wrap to if the explicit bounds check in getActiveSlot were ever removed. This ref
+            // must still be rejected because voiceIndex -1 is out of range.
+            const wouldWrapToLastSlot = { voiceIndex: -1, generation: 0 };
+
+            expect(pool.isPlaying(wouldWrapToLastSlot)).toBe(false);
+            expect(() => pool.stop(wouldWrapToLastSlot)).not.toThrow();
+        });
     });
 });
