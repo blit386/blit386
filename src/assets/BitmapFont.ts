@@ -10,6 +10,7 @@ import {
 } from '../utils/AssetLimits';
 import { btfontGlyphEntryNotObjectError } from '../utils/errorMessages';
 import { Rect2i } from '../utils/Rect2i';
+import { buildPathHint, extractExtension } from '../utils/urlHints';
 import { SpriteSheet } from './SpriteSheet';
 
 /**
@@ -530,7 +531,7 @@ export class BitmapFont {
                 : `The server had a problem loading the font file '${url}'. Try refreshing the page.`;
 
         const hints: string[] = [];
-        const pathHint = BitmapFont.buildPathHint(url, 'fonts');
+        const pathHint = buildPathHint(url, 'fonts');
         const extensionHint = BitmapFont.buildExtensionHint(url, '.btfont');
 
         if (pathHint) {
@@ -545,23 +546,6 @@ export class BitmapFont {
     }
 
     /**
-     * Suggests common absolute and relative URL forms when the path looks ambiguous.
-     *
-     * @param url - Original URL string.
-     * @param folderName - Typical folder prefix to suggest.
-     * @returns Hint text or an empty string.
-     */
-    private static buildPathHint(url: string, folderName: string): string {
-        let hint = '';
-
-        if (!BitmapFont.hasExplicitLocation(url)) {
-            hint = `Did you mean '/${folderName}/${url}' or './${folderName}/${url}'?`;
-        }
-
-        return hint;
-    }
-
-    /**
      * Suggests a corrected extension when the URL uses a different file type.
      *
      * @param url - Original URL string.
@@ -569,9 +553,7 @@ export class BitmapFont {
      * @returns Hint text or an empty string.
      */
     private static buildExtensionHint(url: string, expectedExtension: string): string {
-        const fileName = url.slice(url.lastIndexOf('/') + 1).split(/[?#]/)[0] ?? url;
-        const dotIndex = fileName.lastIndexOf('.');
-        const extension = dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
+        const extension = extractExtension(url);
         let hint = '';
 
         if (extension !== '' && extension !== expectedExtension) {
@@ -605,34 +587,6 @@ export class BitmapFont {
         }
 
         return label;
-    }
-
-    /**
-     * Returns whether the URL already has an explicit scheme or protocol.
-     *
-     * @param url - URL to inspect.
-     * @returns True when no relative-path hint is needed.
-     */
-    private static isExplicitUrl(url: string): boolean {
-        const lowerUrl = url.toLowerCase();
-        let explicit = lowerUrl.includes('://');
-
-        if (!explicit) {
-            explicit = ['//', 'data:', 'blob:'].some((prefix) => lowerUrl.startsWith(prefix));
-        }
-
-        return explicit;
-    }
-
-    /**
-     * Returns whether the URL already specifies an absolute or explicit location.
-     *
-     * @param url - URL to inspect.
-     * @returns True when the URL has an explicit location.
-     */
-    private static hasExplicitLocation(url: string): boolean {
-        // '/', './' = Relative path prefixes that do not need a folder hint during load errors.
-        return BitmapFont.isExplicitUrl(url) || (['/', './'] as const).some((prefix) => url.startsWith(prefix));
     }
 
     /**

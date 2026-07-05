@@ -56,6 +56,9 @@ export interface AudioClipLoadOptions {
     onProgress?: AudioClipProgressCallback;
 }
 
+/** Maximum time to wait on a `fetch` (including body streaming) before aborting it as a network error. */
+const DOWNLOAD_TIMEOUT_MS = 15_000;
+
 /** Resolved clips keyed by their winning source URL. */
 const resolvedClips = new Map<string, AudioClip>();
 
@@ -272,28 +275,40 @@ export class AudioClip {
      * Downloads `url`, distinguishing a rejected fetch (network/CORS) from an
      * HTTP error status.
      *
+     * Aborts the request after {@link DOWNLOAD_TIMEOUT_MS} so a stalled
+     * connection can never hang {@link AudioClip.load} indefinitely; a timeout
+     * surfaces the same network error as any other rejected fetch. The
+     * timeout is always cleared once the request settles, however it settles.
+     *
      * @param url - Audio URL to download.
      * @param onProgress - Optional progress callback.
      * @returns Downloaded bytes, ready for `decodeAudioData`.
-     * @throws Error if the fetch rejects, the stream fails, or the response status is not ok.
+     * @throws Error if the fetch rejects or times out, the stream fails, or the response status is not ok.
      */
     private static async download(url: string, onProgress?: AudioClipProgressCallback): Promise<ArrayBuffer> {
-        let response: Response;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
 
         try {
-            response = await fetch(url);
-        } catch {
-            throw new Error(audioClipNetworkError(url));
-        }
+            let response: Response;
 
-        if (!response.ok) {
-            throw new Error(audioClipHttpError(url, response.status));
-        }
+            try {
+                response = await fetch(url, { signal: controller.signal });
+            } catch {
+                throw new Error(audioClipNetworkError(url));
+            }
 
-        try {
-            return await AudioClip.readResponseBody(response, onProgress);
-        } catch {
-            throw new Error(audioClipNetworkError(url));
+            if (!response.ok) {
+                throw new Error(audioClipHttpError(url, response.status));
+            }
+
+            try {
+                return await AudioClip.readResponseBody(response, onProgress);
+            } catch {
+                throw new Error(audioClipNetworkError(url));
+            }
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 

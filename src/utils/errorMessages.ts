@@ -5,6 +5,8 @@
  * stay centralized and consistent.
  */
 
+import { buildPathHint, extractExtension } from './urlHints';
+
 /**
  * Returns the canvas-not-found error message for the given canvas element ID.
  *
@@ -497,56 +499,14 @@ export function spriteNotIndexizedError(): string {
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.ogg', '.wav', '.m4a', '.webm', '.aac', '.flac']);
 
 /**
- * Returns whether a URL already points at an explicit location: an absolute
- * URL, a special browser scheme, or a rooted/relative (`/`, `./`) path.
- * Mirrors `BitmapFont`'s `hasExplicitLocation` check.
- *
- * @param url - Path or URL to inspect.
- * @returns True when no relative-path hint is needed.
- */
-function hasExplicitAudioLocation(url: string): boolean {
-    const lowerUrl = url.toLowerCase();
-    let explicit = lowerUrl.includes('://');
-
-    if (!explicit) {
-        explicit = ['//', 'data:', 'blob:'].some((prefix) => lowerUrl.startsWith(prefix));
-    }
-
-    if (!explicit) {
-        explicit = (['/', './'] as const).some((prefix) => url.startsWith(prefix));
-    }
-
-    return explicit;
-}
-
-/**
- * Suggests a common `audio/` folder location when a URL looks ambiguous.
- * Mirrors `BitmapFont`'s `buildPathHint`.
- *
- * @param url - Original URL string.
- * @returns Hint text, or an empty string when the path already looks explicit.
- */
-function buildAudioClipPathHint(url: string): string {
-    let hint = '';
-
-    if (!hasExplicitAudioLocation(url)) {
-        hint = `Did you mean '/audio/${url}' or './audio/${url}'?`;
-    }
-
-    return hint;
-}
-
-/**
  * Suggests a common audio extension when a URL's extension does not look like
- * an audio file. Mirrors `BitmapFont`'s `buildExtensionHint`.
+ * an audio file.
  *
  * @param url - Original URL string.
  * @returns Hint text, or an empty string when no hint applies.
  */
 function buildAudioClipExtensionHint(url: string): string {
-    const fileName = url.slice(url.lastIndexOf('/') + 1).split(/[?#]/)[0] ?? url;
-    const dotIndex = fileName.lastIndexOf('.');
-    const extension = dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
+    const extension = extractExtension(url);
     let hint = '';
 
     if (extension !== '' && !AUDIO_EXTENSIONS.has(extension)) {
@@ -564,7 +524,7 @@ function buildAudioClipExtensionHint(url: string): string {
  */
 function buildAudioClipHints(url: string): string {
     const hints: string[] = [];
-    const pathHint = buildAudioClipPathHint(url);
+    const pathHint = buildPathHint(url, 'audio');
     const extensionHint = buildAudioClipExtensionHint(url);
 
     if (pathHint) {

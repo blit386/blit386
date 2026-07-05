@@ -13,7 +13,8 @@
  * - byte-accurate download progress with and without `Content-Length`, and a
  *   single indeterminate decode report
  * - the four failure categories: network/CORS, HTTP status, decode, and
- *   "audio isn't ready" (no decode context registered)
+ *   "audio isn't ready" (no decode context registered), plus the download
+ *   timeout aborting a stalled fetch with the same network error
  * - unload() releasing the buffer, clearing the cache, invoking the
  *   voice-stop hook, and idempotency
  *
@@ -54,8 +55,9 @@ function mockAudioFetchResponse({
     arrayBufferBytes?: number;
 } = {}) {
     const headers = {
+        // Real `Headers.get` is case-insensitive; normalize so the mock matches that behavior.
         get: (name: string) =>
-            name === 'content-length' && contentLength !== undefined ? String(contentLength) : null,
+            name.toLowerCase() === 'content-length' && contentLength !== undefined ? String(contentLength) : null,
     };
 
     type ChunkReadResult = { done: true } | { done: false; value: Uint8Array };
@@ -255,7 +257,7 @@ describe('AudioClip', () => {
             await AudioClip.load(['first.mp3', 'second.mp3', 'third.mp3']);
 
             expect(fetchMock).toHaveBeenCalledOnce();
-            expect(fetchMock).toHaveBeenCalledWith('first.mp3');
+            expect(fetchMock.mock.calls[0]?.[0]).toBe('first.mp3');
         });
 
         it('should throw the granular decode error for the last candidate when every candidate fails to decode', async () => {
@@ -281,6 +283,33 @@ describe('AudioClip', () => {
             vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
 
             await expect(AudioClip.load('unreachable.mp3')).rejects.toThrow("Couldn't reach the audio file");
+        });
+
+        it('should abort and throw a network error when the fetch stalls past the timeout', async () => {
+            vi.useFakeTimers();
+
+            try {
+                vi.stubGlobal(
+                    'fetch',
+                    vi.fn().mockImplementation(
+                        (_url: string, init?: { signal?: AbortSignal }) =>
+                            new Promise((_resolve, reject) => {
+                                init?.signal?.addEventListener('abort', () => {
+                                    reject(new DOMException('The operation was aborted', 'AbortError'));
+                                });
+                            }),
+                    ),
+                );
+
+                const loadPromise = AudioClip.load('stalled.mp3');
+                const rejection = expect(loadPromise).rejects.toThrow("Couldn't reach the audio file");
+
+                // Must exceed AudioClip's internal download timeout so the abort fires.
+                await vi.advanceTimersByTimeAsync(20_000);
+                await rejection;
+            } finally {
+                vi.useRealTimers();
+            }
         });
 
         it('should throw a not-found error for a 404 status', async () => {
