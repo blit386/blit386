@@ -75,29 +75,16 @@ export interface VoicePlayOptions {
     atTime?: number;
 }
 
-/** Options accepted by {@link BTAPI.soundPlay} and {@link BT.soundPlay}. */
-export interface SoundPlayOptions {
-    /** Whether the clip loops. Defaults to `false`. */
-    loop?: boolean;
-
-    /** Initial gain in `[0, 1]` (unclamped). Defaults to `1`. */
-    volume?: number;
-
-    /** Initial playback rate. Defaults to `1`. */
-    pitch?: number;
-
-    /** Initial stereo pan in `[-1, 1]` (unclamped). Defaults to `0`. */
-    pan?: number;
-
-    /** Allocation priority; higher survives voice stealing longer. Defaults to `0`. */
-    priority?: number;
-
-    /** Optional linear fade-in duration in milliseconds, from silence to `volume`. */
-    fadeInMs?: number;
-
-    /** Audio-clock start time (`AudioContext.currentTime`-relative). Defaults to "now". */
-    atTime?: number;
-}
+/**
+ * Options accepted by {@link BTAPI.soundPlay} and {@link BT.soundPlay}.
+ *
+ * Identical to {@link VoicePlayOptions} by design - `soundPlay` forwards this object unchanged
+ * down to {@link AudioManager.playSound} and {@link VoicePool.play}. Declared as an `extends` of
+ * `VoicePlayOptions` (rather than redeclaring the same fields) so a future field added to either
+ * type cannot silently drift out of sync with the other.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- intentional no-op extends keeps SoundPlayOptions in lockstep with VoicePlayOptions
+export interface SoundPlayOptions extends VoicePlayOptions {}
 
 /** Options accepted by {@link BT.soundStop}. */
 export interface SoundStopOptions {
