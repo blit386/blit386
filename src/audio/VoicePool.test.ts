@@ -14,6 +14,7 @@ import {
     createMockAudioBuffer,
     installMockAudioContext,
     type MockAudioContext,
+    setMockCurrentTime,
     uninstallMockAudioContext,
 } from '../__test__/webaudio-mock';
 import { BTAPI } from '../core/BTAPI';
@@ -38,6 +39,20 @@ const createCanvas = (): HTMLCanvasElement => {
  */
 const getMockContext = (installed: ReturnType<typeof installMockAudioContext>): MockAudioContext =>
     installed.getLastInstance() as unknown as MockAudioContext;
+
+/**
+ * Returns the live mock context most recently constructed by `installed`, for use with
+ * {@link setMockCurrentTime}. Throws if called before `audio.attach()` has constructed one.
+ */
+const getLiveContext = (installed: ReturnType<typeof installMockAudioContext>): AudioContext => {
+    const context = installed.getLastInstance();
+
+    if (context === null) {
+        throw new Error('expected a live mock AudioContext; call audio.attach() first');
+    }
+
+    return context;
+};
 
 describe('VoicePool', () => {
     let canvas: HTMLCanvasElement;
@@ -175,7 +190,24 @@ describe('VoicePool', () => {
             const source = context.createBufferSourceCalls[0];
 
             expect(source?.loop).toBe(true);
-            expect((source as unknown as { startCalls: number[] }).startCalls).toEqual([2.5]);
+            expect((source as unknown as { startCalls: Array<{ when: number }> }).startCalls).toEqual([{ when: 2.5 }]);
+        });
+
+        it('defaults atTime to the current audio-clock time when omitted', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const context = getMockContext(installed);
+
+            setMockCurrentTime(getLiveContext(installed), 7);
+
+            pool.play(createMockAudioBuffer());
+
+            const source = context.createBufferSourceCalls[0];
+
+            expect((source as unknown as { startCalls: Array<{ when: number }> }).startCalls).toEqual([{ when: 7 }]);
         });
 
         it('ramps gain from silence over fadeInMs', () => {
@@ -194,6 +226,34 @@ describe('VoicePool', () => {
                 (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number }> })
                     .linearRampToValueAtTimeCalls,
             ).toEqual([{ value: 0.8, endTime: 0.2 }]);
+        });
+
+        it('anchors a fade-in ramp to a non-zero audio-clock time', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const context = getMockContext(installed);
+
+            setMockCurrentTime(getLiveContext(installed), 10);
+
+            pool.play(createMockAudioBuffer(), { volume: 0.8, fadeInMs: 200 });
+
+            const gain = context.createGainCalls[3];
+
+            expect(
+                (
+                    gain?.gain as unknown as {
+                        setValueAtTimeCalls: Array<{ value: number; startTime: number }>;
+                        linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }>;
+                    }
+                ).setValueAtTimeCalls,
+            ).toEqual([{ value: 0, startTime: 10 }]);
+            expect(
+                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                    .linearRampToValueAtTimeCalls,
+            ).toEqual([{ value: 0.8, endTime: 10.2 }]);
         });
 
         it('returns unique, incrementing generations for sequential plays into the same slot pool', () => {
@@ -336,6 +396,29 @@ describe('VoicePool', () => {
             expect((source as unknown as { stopCalls: number[] }).stopCalls).toEqual([0.5]);
         });
 
+        it('anchors a fadeOutMs ramp and the delayed stop to a non-zero audio-clock time', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
+
+            const context = getMockContext(installed);
+            const gain = context.createGainCalls[3];
+            const source = context.createBufferSourceCalls[0];
+
+            setMockCurrentTime(getLiveContext(installed), 20);
+
+            pool.stop(ref, 500);
+
+            expect(
+                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                    .linearRampToValueAtTimeCalls,
+            ).toEqual([{ value: 0, endTime: 20.5 }]);
+            expect((source as unknown as { stopCalls: number[] }).stopCalls).toEqual([20.5]);
+        });
+
         it('stop frees the slot for immediate reuse by a new play()', () => {
             vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
                 audioVoices: 1,
@@ -425,6 +508,27 @@ describe('VoicePool', () => {
             expect(
                 (gain?.gain as unknown as { linearRampToValueAtTimeCalls: unknown[] }).linearRampToValueAtTimeCalls,
             ).toHaveLength(1);
+        });
+
+        it('anchors a volumeSet fade to a non-zero audio-clock time', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
+
+            const context = getMockContext(installed);
+            const gain = context.createGainCalls[3];
+
+            setMockCurrentTime(getLiveContext(installed), 5);
+
+            pool.volumeSet(ref, 0.2, 100);
+
+            expect(
+                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                    .linearRampToValueAtTimeCalls,
+            ).toEqual([{ value: 0.2, endTime: 5.1 }]);
         });
 
         it('gets and sets pitch immediately', () => {

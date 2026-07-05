@@ -5,6 +5,7 @@ import {
     createMockAudioContext,
     createMockStereoPannerNode,
     type MockAudioContext,
+    setMockCurrentTime,
 } from './webaudio-mock';
 
 describe('createMockAudioBufferSourceNode', () => {
@@ -17,9 +18,20 @@ describe('createMockAudioBufferSourceNode', () => {
         source.stop(3);
 
         expect((source as unknown as { connectCalls: unknown[] }).connectCalls).toEqual([destination]);
-        expect((source as unknown as { startCalls: number[] }).startCalls).toEqual([1.5]);
+        expect((source as unknown as { startCalls: Array<{ when: number }> }).startCalls).toEqual([{ when: 1.5 }]);
         expect((source as unknown as { stopCalls: number[] }).stopCalls).toEqual([3]);
         expect(source.playbackRate.value).toBe(1);
+    });
+
+    it('records offset and duration arguments passed to start', () => {
+        const source = createMockAudioBufferSourceNode();
+
+        source.start(1.5, 0.25, 2);
+
+        expect(
+            (source as unknown as { startCalls: Array<{ when: number; offset?: number; duration?: number }> })
+                .startCalls,
+        ).toEqual([{ when: 1.5, offset: 0.25, duration: 2 }]);
     });
 
     it('throws when started twice', () => {
@@ -67,5 +79,21 @@ describe('createMockAudioContext', () => {
 
         expect(mockContext.createBufferSourceCalls).toEqual([source]);
         expect(mockContext.createStereoPannerCalls).toEqual([panner]);
+    });
+
+    it('starts at currentTime 0', () => {
+        const context = createMockAudioContext();
+
+        expect(context.currentTime).toBe(0);
+    });
+});
+
+describe('setMockCurrentTime', () => {
+    it('advances a mock context currentTime', () => {
+        const context = createMockAudioContext();
+
+        setMockCurrentTime(context, 12.5);
+
+        expect(context.currentTime).toBe(12.5);
     });
 });

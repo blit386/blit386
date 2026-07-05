@@ -149,7 +149,7 @@ export function createMockGainNode(): GainNode {
  */
 export function createMockAudioBufferSourceNode(): AudioBufferSourceNode {
     const connectCalls: unknown[] = [];
-    const startCalls: number[] = [];
+    const startCalls: Array<{ when: number; offset?: number; duration?: number }> = [];
     const stopCalls: number[] = [];
     let hasStarted = false;
 
@@ -167,13 +167,24 @@ export function createMockAudioBufferSourceNode(): AudioBufferSourceNode {
             return destination;
         },
         disconnect: () => {},
-        start: (when: number = 0) => {
+        start: (when: number = 0, offset?: number, duration?: number) => {
             if (hasStarted) {
                 throw new Error('cannot start an AudioBufferSourceNode more than once');
             }
 
             hasStarted = true;
-            startCalls.push(when);
+
+            const call: { when: number; offset?: number; duration?: number } = { when };
+
+            if (offset !== undefined) {
+                call.offset = offset;
+            }
+
+            if (duration !== undefined) {
+                call.duration = duration;
+            }
+
+            startCalls.push(call);
         },
         stop: (when: number = 0) => {
             stopCalls.push(when);
@@ -298,6 +309,19 @@ export function createMockAudioContext(): AudioContext {
     };
 
     return context as unknown as AudioContext;
+}
+
+/**
+ * Advances (or rewinds) a mock `AudioContext`'s `currentTime`, simulating audio-clock
+ * progression for tests exercising `atTime` scheduling or fade-timing assertions anchored to a
+ * non-zero clock.
+ *
+ * @param context - Mock context created by {@link createMockAudioContext} (or the instance
+ *   returned by {@link installMockAudioContext}'s `getLastInstance()`).
+ * @param currentTime - New `currentTime` value in seconds.
+ */
+export function setMockCurrentTime(context: AudioContext, currentTime: number): void {
+    (context as unknown as { currentTime: number }).currentTime = currentTime;
 }
 
 /**
