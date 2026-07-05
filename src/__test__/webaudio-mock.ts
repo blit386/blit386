@@ -40,10 +40,34 @@ export interface MockGainNode extends MockAudioNode {
     readonly gain: MockAudioParam;
 }
 
+/** Recorded `AudioBufferSourceNode` state: connect/start/stop tracking plus the mock playbackRate param. */
+export interface MockAudioBufferSourceNode extends MockAudioNode {
+    /** Playback rate parameter with scheduling call tracking. */
+    readonly playbackRate: MockAudioParam;
+
+    /** Arguments recorded from every `start` call, in call order. */
+    readonly startCalls: number[];
+
+    /** Arguments recorded from every `stop` call, in call order. */
+    readonly stopCalls: number[];
+}
+
+/** Recorded `StereoPannerNode` state: connect tracking plus the mock pan parameter. */
+export interface MockStereoPannerNode extends MockAudioNode {
+    /** Pan parameter with scheduling call tracking. */
+    readonly pan: MockAudioParam;
+}
+
 /** Recorded `AudioContext` state: created gain nodes plus resume/close call counts. */
 export interface MockAudioContext {
     /** Gain nodes created via `createGain()`, in call order. */
     readonly createGainCalls: readonly GainNode[];
+
+    /** Buffer source nodes created via `createBufferSource()`, in call order. */
+    readonly createBufferSourceCalls: readonly AudioBufferSourceNode[];
+
+    /** Stereo panner nodes created via `createStereoPanner()`, in call order. */
+    readonly createStereoPannerCalls: readonly StereoPannerNode[];
 
     /** Destination node passed to `main.connect(...)` in a well-wired bus graph. */
     readonly destination: AudioNode;
@@ -136,6 +160,71 @@ export function createMockGainNode(): GainNode {
 }
 
 /**
+ * Creates a mock `AudioBufferSourceNode`: a `connect`-tracking, one-shot-`start`-enforcing node
+ * with a mock {@link createMockAudioParam} `playbackRate` and a settable `onended` callback.
+ *
+ * @returns Mock `AudioBufferSourceNode` stub, cast from a plain tracking object.
+ */
+export function createMockAudioBufferSourceNode(): AudioBufferSourceNode {
+    const connectCalls: unknown[] = [];
+    const startCalls: number[] = [];
+    const stopCalls: number[] = [];
+    let hasStarted = false;
+
+    const node = {
+        buffer: null as AudioBuffer | null,
+        loop: false,
+        playbackRate: createMockAudioParam(1),
+        onended: null as (() => void) | null,
+        connectCalls,
+        startCalls,
+        stopCalls,
+        connect: (destination: unknown) => {
+            connectCalls.push(destination);
+
+            return destination;
+        },
+        disconnect: () => {},
+        start: (when: number = 0) => {
+            if (hasStarted) {
+                throw new Error('cannot start an AudioBufferSourceNode more than once');
+            }
+
+            hasStarted = true;
+            startCalls.push(when);
+        },
+        stop: (when: number = 0) => {
+            stopCalls.push(when);
+        },
+    };
+
+    return node as unknown as AudioBufferSourceNode;
+}
+
+/**
+ * Creates a mock `StereoPannerNode`: a `connect`-tracking node with a mock
+ * {@link createMockAudioParam} `pan`.
+ *
+ * @returns Mock `StereoPannerNode` stub, cast from a plain tracking object.
+ */
+export function createMockStereoPannerNode(): StereoPannerNode {
+    const connectCalls: unknown[] = [];
+
+    const node = {
+        pan: createMockAudioParam(0),
+        connectCalls,
+        connect: (destination: unknown) => {
+            connectCalls.push(destination);
+
+            return destination;
+        },
+        disconnect: () => {},
+    };
+
+    return node as unknown as StereoPannerNode;
+}
+
+/**
  * Creates a fake `AudioBuffer`-shaped object for {@link createMockAudioContext}'s
  * default `decodeAudioData` resolution.
  *
@@ -163,6 +252,8 @@ export function createMockAudioBuffer(): AudioBuffer {
  */
 export function createMockAudioContext(): AudioContext {
     const createGainCalls: GainNode[] = [];
+    const createBufferSourceCalls: AudioBufferSourceNode[] = [];
+    const createStereoPannerCalls: StereoPannerNode[] = [];
     const destination = {} as unknown as AudioNode;
     const decodeAudioDataCalls: ArrayBuffer[] = [];
     let resumeCallCount = 0;
@@ -174,6 +265,8 @@ export function createMockAudioContext(): AudioContext {
         state: 'suspended' as AudioContextState,
         destination,
         createGainCalls,
+        createBufferSourceCalls,
+        createStereoPannerCalls,
         decodeAudioDataCalls,
         decodeAudioDataImpl: (_audioData: ArrayBuffer) => Promise.resolve(createMockAudioBuffer()),
         get resumeCallCount() {
@@ -186,6 +279,20 @@ export function createMockAudioContext(): AudioContext {
             const node = createMockGainNode();
 
             createGainCalls.push(node);
+
+            return node;
+        },
+        createBufferSource: () => {
+            const node = createMockAudioBufferSourceNode();
+
+            createBufferSourceCalls.push(node);
+
+            return node;
+        },
+        createStereoPanner: () => {
+            const node = createMockStereoPannerNode();
+
+            createStereoPannerCalls.push(node);
 
             return node;
         },
