@@ -6,6 +6,7 @@
     "palette-presets",
     "overlay",
     "post-process-effects",
-    "bitmap-fonts"
+    "bitmap-fonts",
+    "audio"
   ]
 }

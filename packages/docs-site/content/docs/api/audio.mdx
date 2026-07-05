@@ -1,0 +1,92 @@
+---
+# Generated from blit386/docs/api-audio.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Audio"
+description: "Audio bus volume, mute, and the browser autoplay-unlock state."
+---
+
+Bus volume, mute, and the browser autoplay-unlock state. For the higher-level subsystem walkthrough (bus graph layout,
+locked vs. unlocked, and web autoplay constraints), see the [Audio Guide](/docs/guides/audio).
+
+The audio graph has three buses: `'sfx'` and `'music'` feed into `'main'`, which feeds the browser's audio destination.
+All three are independently controllable.
+
+```text
+sfx    ─┐
+music  ─┼─► main ─► destination
+```
+
+`AudioBus` is the type of a bus name:
+
+```ts twoslash
+declare const bus: AudioBus; // 'main' | 'music' | 'sfx'
+```
+
+## Volume
+
+`BT.audioVolumeSet` sets a bus's volume, optionally fading to it. `BT.audioVolumeGet` reads it back.
+
+```ts twoslash
+BT.audioVolumeSet('music', 0.5); // immediate change
+BT.audioVolumeSet('sfx', 0, { fadeMs: 300 }); // linear fade to silence over 300 ms
+BT.audioVolumeSet('main', 0.8, { fadeMs: 500, easing: 'ease-out' }); // eased fade
+
+BT.audioVolumeGet('music'); // 0.5
+```
+
+`options` fields:
+
+<TypeTable type={{
+    fadeMs: { type: 'number', description: 'Fade duration in milliseconds. Omit for an immediate change.' },
+    easing: { type: 'EasingFunction', default: "'linear'", description: 'Easing curve for the fade. Ignored when fadeMs is omitted.' },
+  }} />
+
+With no `fadeMs`, the bus gain changes immediately. With `fadeMs`, `'linear'` easing schedules a linear ramp; any other
+[easing curve](/docs/api/easing) is sampled into a value curve so the fade follows that curve rather than a straight line.
+
+## Mute
+
+`BT.audioMuteSet` mutes or unmutes a bus without touching its configured volume. `BT.isAudioMuted` reports the current
+mute state.
+
+```ts twoslash
+BT.audioVolumeSet('music', 0.75);
+
+BT.audioMuteSet('music', true); // silences the bus immediately (no fade)
+BT.isAudioMuted('music'); // true
+BT.audioVolumeGet('music'); // still 0.75 - muting never overwrites the configured level
+
+BT.audioMuteSet('music', false); // restores audio at 0.75
+```
+
+`BT.audioVolumeGet` always returns the logical (pre-mute) volume, so reading it while muted still reports the level you
+configured, not `0`.
+
+## Unlock state
+
+Browsers block audio playback until a user gesture. `BT.isAudioUnlocked` is `false` until the first `pointerdown`,
+`keydown`, or `touchstart` on the canvas successfully resumes the audio context, and stays `true` for the rest of the
+session.
+
+```ts twoslash
+if (!BT.isAudioUnlocked) {
+  // Show a "click or press a key to enable audio" prompt.
+}
+```
+
+See [Web audio constraints](/docs/guides/audio#web-audio-constraints) for what happens to volume/mute calls made before the
+gesture, and why no configure flag can skip this requirement.
+
+## Hardware settings
+
+`audioVoices` (default `16`, reserved for an upcoming SFX voice-limiting pass; not yet enforced) is documented in
+[Hardware settings](/docs/api/core#hardware-settings).
+
+## See also
+
+<Cards>
+  <Card title="Audio Guide" href="/docs/guides/audio">Subsystem layout, locked vs. unlocked, web audio constraints.</Card>
+  <Card title="API: Easing" href="/docs/api/easing">Named easing curves used by fadeMs.</Card>
+  <Card title="API: Core" href="/docs/api/core">Hardware settings, including audioVoices.</Card>
+  <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
+</Cards>

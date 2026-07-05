@@ -10,6 +10,7 @@
     "browser-support",
     "rendering",
     "palette",
-    "assets"
+    "assets",
+    "audio"
   ]
 }
