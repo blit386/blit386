@@ -11,7 +11,15 @@ import type { AudioBus } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
 import { setAudioClipUnloadHandler, setAudioDecodeContext } from './audioDecodeContext';
-import { INVALID_SOUND_REF, type SoundRef, type VoicePlayOptions, VoicePool } from './VoicePool';
+import {
+    DEFAULT_PAN,
+    DEFAULT_PITCH,
+    DEFAULT_VOLUME,
+    INVALID_SOUND_REF,
+    type SoundRef,
+    type VoicePlayOptions,
+    VoicePool,
+} from './VoicePool';
 
 /** Default (full) gain for a freshly created or reset bus. */
 const DEFAULT_BUS_VOLUME = 1;
@@ -360,6 +368,89 @@ export class AudioManager {
         }
 
         return this.voicePool?.play(buffer, options) ?? INVALID_SOUND_REF;
+    }
+
+    /**
+     * Stops a playing sound, optionally fading it out.
+     *
+     * @param ref - Sound to stop.
+     * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
+     */
+    public soundStop(ref: SoundRef, fadeOutMs?: number): void {
+        this.voicePool?.stop(ref, fadeOutMs);
+    }
+
+    /**
+     * Reports whether a sound is still playing.
+     *
+     * @param ref - Sound to query.
+     * @returns `true` when `ref` still identifies a live voice; `false` on a stale ref or before {@link attach}.
+     */
+    public isSoundPlaying(ref: SoundRef): boolean {
+        return this.voicePool?.isPlaying(ref) ?? false;
+    }
+
+    /**
+     * Sets a sound's gain, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target gain.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundVolumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.voicePool?.volumeSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current gain.
+     *
+     * @param ref - Sound to query.
+     * @returns Current gain, or {@link DEFAULT_VOLUME} on a stale ref or before {@link attach}.
+     */
+    public soundVolumeGet(ref: SoundRef): number {
+        return this.voicePool?.volumeGet(ref) ?? DEFAULT_VOLUME;
+    }
+
+    /**
+     * Sets a sound's playback rate, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target playback rate.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundPitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.voicePool?.pitchSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current playback rate.
+     *
+     * @param ref - Sound to query.
+     * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale ref or before {@link attach}.
+     */
+    public soundPitchGet(ref: SoundRef): number {
+        return this.voicePool?.pitchGet(ref) ?? DEFAULT_PITCH;
+    }
+
+    /**
+     * Sets a sound's stereo pan, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target pan.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundPanSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.voicePool?.panSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current stereo pan.
+     *
+     * @param ref - Sound to query.
+     * @returns Current pan, or {@link DEFAULT_PAN} on a stale ref or before {@link attach}.
+     */
+    public soundPanGet(ref: SoundRef): number {
+        return this.voicePool?.panGet(ref) ?? DEFAULT_PAN;
     }
 
     /**

@@ -19,13 +19,13 @@ import type { AudioManager } from './AudioManager';
 const DEFAULT_VOICE_COUNT = 16;
 
 /** Default per-voice gain applied when {@link VoicePlayOptions.volume} is omitted. */
-const DEFAULT_VOLUME = 1;
+export const DEFAULT_VOLUME = 1;
 
 /** Default playback rate applied when {@link VoicePlayOptions.pitch} is omitted. */
-const DEFAULT_PITCH = 1;
+export const DEFAULT_PITCH = 1;
 
 /** Default stereo pan applied when {@link VoicePlayOptions.pan} is omitted. */
-const DEFAULT_PAN = 0;
+export const DEFAULT_PAN = 0;
 
 /** Default allocation priority applied when {@link VoicePlayOptions.priority} is omitted. */
 const DEFAULT_PRIORITY = 0;
@@ -73,6 +73,42 @@ export interface VoicePlayOptions {
 
     /** Audio-clock start time (`AudioContext.currentTime`-relative). Defaults to "now". */
     atTime?: number;
+}
+
+/** Options accepted by {@link BTAPI.soundPlay} and {@link BT.soundPlay}. */
+export interface SoundPlayOptions {
+    /** Whether the clip loops. Defaults to `false`. */
+    loop?: boolean;
+
+    /** Initial gain in `[0, 1]` (unclamped). Defaults to `1`. */
+    volume?: number;
+
+    /** Initial playback rate. Defaults to `1`. */
+    pitch?: number;
+
+    /** Initial stereo pan in `[-1, 1]` (unclamped). Defaults to `0`. */
+    pan?: number;
+
+    /** Allocation priority; higher survives voice stealing longer. Defaults to `0`. */
+    priority?: number;
+
+    /** Optional linear fade-in duration in milliseconds, from silence to `volume`. */
+    fadeInMs?: number;
+
+    /** Audio-clock start time (`AudioContext.currentTime`-relative). Defaults to "now". */
+    atTime?: number;
+}
+
+/** Options accepted by {@link BT.soundStop}. */
+export interface SoundStopOptions {
+    /** Optional linear fade-out duration in milliseconds before the voice actually stops. */
+    fadeOutMs?: number;
+}
+
+/** Options accepted by {@link BT.soundVolumeSet}, {@link BT.soundPitchSet}, and {@link BT.soundPanSet}. */
+export interface SoundParamSetOptions {
+    /** Fade duration in milliseconds. Omit for an immediate change. */
+    fadeMs?: number;
 }
 
 /** Per-slot playback state. Fields are `null`/inactive when the slot holds no live voice. */

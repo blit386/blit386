@@ -375,6 +375,74 @@ describe('AudioManager', () => {
         });
     });
 
+    describe('sound playback controls', () => {
+        beforeEach(async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+        });
+
+        it('soundStop stops a playing sound', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundStop(ref);
+
+            expect(audio.isSoundPlaying(ref)).toBe(false);
+        });
+
+        it('soundStop accepts an optional fadeOutMs without throwing', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            expect(() => audio.soundStop(ref, 200)).not.toThrow();
+        });
+
+        it('isSoundPlaying reports true for a live sound and false for an invalid ref', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            expect(audio.isSoundPlaying(ref)).toBe(true);
+            expect(audio.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
+        });
+
+        it('soundVolumeSet and soundVolumeGet round-trip', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundVolumeSet(ref, 0.4);
+
+            expect(audio.soundVolumeGet(ref)).toBe(0.4);
+        });
+
+        it('soundPitchSet and soundPitchGet round-trip', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundPitchSet(ref, 1.5);
+
+            expect(audio.soundPitchGet(ref)).toBe(1.5);
+        });
+
+        it('soundPanSet and soundPanGet round-trip', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundPanSet(ref, -0.5);
+
+            expect(audio.soundPanGet(ref)).toBe(-0.5);
+        });
+
+        it('every accessor reports inert defaults on a manager that was never attached', () => {
+            const detachedAudio = new AudioManager();
+
+            expect(detachedAudio.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
+            expect(detachedAudio.soundVolumeGet(INVALID_SOUND_REF)).toBe(1);
+            expect(detachedAudio.soundPitchGet(INVALID_SOUND_REF)).toBe(1);
+            expect(detachedAudio.soundPanGet(INVALID_SOUND_REF)).toBe(0);
+            expect(() => detachedAudio.soundStop(INVALID_SOUND_REF)).not.toThrow();
+            expect(() => detachedAudio.soundVolumeSet(INVALID_SOUND_REF, 0.5)).not.toThrow();
+        });
+    });
+
     describe('voice pool lifecycle', () => {
         it('stops all voices and closes the context in the right order on detach', async () => {
             audio.attach(canvas);
