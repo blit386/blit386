@@ -58,12 +58,14 @@ describe('createMockStereoPannerNode', () => {
 
 describe('createMockAudioContext', () => {
     it('tracks createBufferSource and createStereoPanner calls', () => {
-        const context = createMockAudioContext() as unknown as MockAudioContext;
+        const context = createMockAudioContext();
 
         const source = context.createBufferSource();
         const panner = context.createStereoPanner();
 
-        expect(context.createBufferSourceCalls).toEqual([source]);
-        expect(context.createStereoPannerCalls).toEqual([panner]);
+        const mockContext = context as unknown as MockAudioContext;
+
+        expect(mockContext.createBufferSourceCalls).toEqual([source]);
+        expect(mockContext.createStereoPannerCalls).toEqual([panner]);
     });
 });
