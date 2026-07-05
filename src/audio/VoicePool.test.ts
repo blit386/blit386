@@ -381,4 +381,81 @@ describe('VoicePool', () => {
             expect(() => pool.stop(wouldWrapToLastSlot)).not.toThrow();
         });
     });
+
+    describe('volume, pitch, and pan', () => {
+        it('gets and sets volume immediately with no fadeMs', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
+
+            pool.volumeSet(ref, 0.3);
+
+            expect(pool.volumeGet(ref)).toBe(0.3);
+        });
+
+        it('ramps volume over fadeMs', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
+
+            pool.volumeSet(ref, 0.2, 100);
+
+            const context = getMockContext(installed);
+            const gain = context.createGainCalls[3];
+
+            expect(
+                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: unknown[] }).linearRampToValueAtTimeCalls,
+            ).toHaveLength(1);
+        });
+
+        it('gets and sets pitch immediately', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            pool.pitchSet(ref, 2);
+
+            expect(pool.pitchGet(ref)).toBe(2);
+        });
+
+        it('gets and sets pan immediately', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            pool.panSet(ref, -1);
+
+            expect(pool.panGet(ref)).toBe(-1);
+        });
+
+        it('returns inert defaults and no-ops for a stale ref', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            pool.stop(ref);
+
+            expect(pool.volumeGet(ref)).toBe(1);
+            expect(pool.pitchGet(ref)).toBe(1);
+            expect(pool.panGet(ref)).toBe(0);
+            expect(() => pool.volumeSet(ref, 0.1)).not.toThrow();
+            expect(() => pool.pitchSet(ref, 2)).not.toThrow();
+            expect(() => pool.panSet(ref, 1)).not.toThrow();
+        });
+    });
 });

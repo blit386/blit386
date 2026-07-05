@@ -197,7 +197,7 @@ export class VoicePool {
             return;
         }
 
-        const currentTime = this.audioManager.getContext()?.currentTime ?? 0;
+        const currentTime = this.currentTime();
 
         if (fadeOutMs !== undefined && fadeOutMs > 0 && slot.gain !== null) {
             applyAudioParamRamp(slot.gain.gain, currentTime, 0, fadeOutMs, 'linear');
@@ -217,6 +217,87 @@ export class VoicePool {
      */
     public isPlaying(ref: SoundRef): boolean {
         return this.getActiveSlot(ref) !== null;
+    }
+
+    /**
+     * Returns a voice's current gain.
+     *
+     * @param ref - Voice to query.
+     * @returns Current gain, or {@link DEFAULT_VOLUME} on a stale/invalid ref.
+     */
+    public volumeGet(ref: SoundRef): number {
+        return this.getActiveSlot(ref)?.gain?.gain.value ?? DEFAULT_VOLUME;
+    }
+
+    /**
+     * Sets a voice's gain, optionally ramping to it.
+     *
+     * @param ref - Voice to update.
+     * @param value - Target gain.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public volumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        const slot = this.getActiveSlot(ref);
+
+        if (slot === null || slot.gain === null) {
+            return;
+        }
+
+        applyAudioParamRamp(slot.gain.gain, this.currentTime(), value, fadeMs, 'linear');
+    }
+
+    /**
+     * Returns a voice's current playback rate.
+     *
+     * @param ref - Voice to query.
+     * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale/invalid ref.
+     */
+    public pitchGet(ref: SoundRef): number {
+        return this.getActiveSlot(ref)?.source?.playbackRate.value ?? DEFAULT_PITCH;
+    }
+
+    /**
+     * Sets a voice's playback rate, optionally ramping to it.
+     *
+     * @param ref - Voice to update.
+     * @param value - Target playback rate.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public pitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        const slot = this.getActiveSlot(ref);
+
+        if (slot === null || slot.source === null) {
+            return;
+        }
+
+        applyAudioParamRamp(slot.source.playbackRate, this.currentTime(), value, fadeMs, 'linear');
+    }
+
+    /**
+     * Returns a voice's current stereo pan.
+     *
+     * @param ref - Voice to query.
+     * @returns Current pan, or {@link DEFAULT_PAN} on a stale/invalid ref.
+     */
+    public panGet(ref: SoundRef): number {
+        return this.getActiveSlot(ref)?.panner?.pan.value ?? DEFAULT_PAN;
+    }
+
+    /**
+     * Sets a voice's stereo pan, optionally ramping to it.
+     *
+     * @param ref - Voice to update.
+     * @param value - Target pan.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public panSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        const slot = this.getActiveSlot(ref);
+
+        if (slot === null || slot.panner === null) {
+            return;
+        }
+
+        applyAudioParamRamp(slot.panner.pan, this.currentTime(), value, fadeMs, 'linear');
     }
 
     /**
@@ -392,6 +473,15 @@ export class VoicePool {
         }
 
         return slot;
+    }
+
+    /**
+     * Returns the live audio-clock time, or `0` when the manager has no live context.
+     *
+     * @returns `AudioContext.currentTime`, or `0` when not attached.
+     */
+    private currentTime(): number {
+        return this.audioManager.getContext()?.currentTime ?? 0;
     }
 
     /**
