@@ -95,7 +95,6 @@ export class VoicePool {
     private readonly audioManager: AudioManager;
 
     /** Fixed-size slot array, sized at construction from `HardwareSettings.audioVoices`. */
-    // @ts-expect-error TS6133: 'slots' will be used in play/stop methods (Tasks 5+).
     private readonly slots: VoiceSlot[];
 
     /** Monotonic counter incremented on every `play()`; used for stealing age tiebreaks. */
@@ -134,6 +133,55 @@ export class VoicePool {
      */
     public getStealCount(): number {
         return this.stealCount;
+    }
+
+    /**
+     * Picks a slot for a new voice: the first free slot, or the best steal candidate.
+     *
+     * @param priority - Allocation priority of the incoming voice.
+     * @returns Slot index to use, or `null` when no free or stealable slot exists.
+     */
+    // @ts-expect-error TS6133: 'allocateSlot' will be called by play() (Task 6).
+    private allocateSlot(priority: number): number | null {
+        const freeIndex = this.slots.findIndex((slot) => !slot.isActive);
+
+        if (freeIndex !== -1) {
+            return freeIndex;
+        }
+
+        return this.findStealCandidate(priority);
+    }
+
+    /**
+     * Finds the best active slot to steal for an incoming voice: the lowest-priority active
+     * slot at or below `incomingPriority`, breaking ties by oldest {@link VoiceSlot.startOrder}.
+     *
+     * @param incomingPriority - Allocation priority of the incoming voice.
+     * @returns Slot index to steal, or `null` when every active slot outranks `incomingPriority`.
+     */
+    private findStealCandidate(incomingPriority: number): number | null {
+        let candidateIndex: number | null = null;
+        let candidatePriority = Number.POSITIVE_INFINITY;
+        let candidateStartOrder = Number.POSITIVE_INFINITY;
+
+        for (let i = 0; i < this.slots.length; i++) {
+            const slot = this.slots.at(i);
+
+            if (slot === undefined || !slot.isActive || slot.priority > incomingPriority) {
+                continue;
+            }
+
+            const isLowerPriority = slot.priority < candidatePriority;
+            const isOlderAtSamePriority = slot.priority === candidatePriority && slot.startOrder < candidateStartOrder;
+
+            if (candidateIndex === null || isLowerPriority || isOlderAtSamePriority) {
+                candidateIndex = i;
+                candidatePriority = slot.priority;
+                candidateStartOrder = slot.startOrder;
+            }
+        }
+
+        return candidateIndex;
     }
 }
 
