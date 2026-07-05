@@ -7,7 +7,8 @@ description: "Bootstrap, initialization, and default configuration."
 
 The rest of the core API surface lives in dedicated pages: [Overlay](/docs/api/overlay) (HUD configure flags and style),
 [Game Loop](/docs/api/game-loop) (tick timing and `Timer`), [Camera](/docs/api/camera), [Easing](/docs/api/easing),
-[Core Types](/docs/api/core-types) (`Vector2i`, `Rect2i`, `Color32`), and [Browser Support](/docs/api/browser-support).
+[Core Types](/docs/api/core-types) (`Vector2i`, `Rect2i`, `Color32`), [Audio](/docs/api/audio) (bus volume, mute, unlock
+state), and [Browser Support](/docs/api/browser-support).
 
 <Callout title="Starting a new project?">
   The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm, pnpm, yarn, or bun).
@@ -127,28 +128,29 @@ Resolved after `configure()`; the hook may return a partial object.
 - Include `displaySize` when you want a custom logical size; optional fields you omit then stay unset (for example no
   `drawingBufferSize` means a 1:1 drawing buffer).
 
-| Field                                    | Type                           | Default     | Description                                                                                        |
-| ---------------------------------------- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------- |
-| `displaySize`                            | `Vector2i`                     | `320×240`   | Logical render resolution                                                                          |
-| `drawingBufferSize`                      | `Vector2i`                     | `640×480`   | Drawing buffer size; enables display-tier effects when set                                         |
-| `maxCanvasSize`                          | `Vector2i`                     | `960×720`   | CSS cap – maximum on-screen canvas size                                                            |
-| `targetFPS`                              | `number`                       | `60`        | Fixed `update()` rate (simulation ticks per second)                                                |
-| `backend`                                | `'webgpu' \| 'software'`       | `'webgpu'`  | Force rendering backend                                                                            |
-| `outputUpscaleFilter`                    | `'nearest' \| 'linear'`        | `'nearest'` | Upscale filter                                                                                     |
-| `isDetectingDroppedFrames`               | `boolean`                      | `false`     | Log a console warning on missed vsync                                                              |
-| `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                           |
-| `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                     |
-| `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                 |
-| `isOverlayToggleEnabled`                 | `boolean`                      | `true`      | Enable Backquote and bottom-left corner toggle input                                               |
-| `isOverlayPaletteEnabled`                | `boolean`                      | `false`     | Live palette swatch grid in the overlay bottom band (opt-in)                                       |
-| `overlayPaletteColumns`                  | `number`                       | _unset_     | Max palette swatches per grid row (default: widest fit)                                            |
-| `overlayPaletteRowsVisible`              | `number`                       | _unset_     | Max visible palette grid rows (default: all rows; band height capped)                              |
-| `overlayStyle`                           | `OverlayStyle`                 | _unset_     | Optional bar/text/gap palette indices for overlay                                                  |
-| `isOverlayTimingChartEnabled`            | `boolean`                      | `false`     | Scrolling update/render timing chart between title and metrics rows                                |
-| `overlayTimingChartHeight`               | `number`                       | `22`        | Timing chart band height in pixels when the chart is enabled                                       |
-| `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                               |
-| `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted) |
-| `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                       |
+| Field                                    | Type                           | Default     | Description                                                                                            |
+| ---------------------------------------- | ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------ |
+| `displaySize`                            | `Vector2i`                     | `320×240`   | Logical render resolution                                                                              |
+| `drawingBufferSize`                      | `Vector2i`                     | `640×480`   | Drawing buffer size; enables display-tier effects when set                                             |
+| `maxCanvasSize`                          | `Vector2i`                     | `960×720`   | CSS cap – maximum on-screen canvas size                                                                |
+| `targetFPS`                              | `number`                       | `60`        | Fixed `update()` rate (simulation ticks per second)                                                    |
+| `backend`                                | `'webgpu' \| 'software'`       | `'webgpu'`  | Force rendering backend                                                                                |
+| `audioVoices`                            | `number`                       | `16`        | Max simultaneous SFX voices, `1`-`64` (reserved for an upcoming voice-limiting pass; not yet enforced) |
+| `outputUpscaleFilter`                    | `'nearest' \| 'linear'`        | `'nearest'` | Upscale filter                                                                                         |
+| `isDetectingDroppedFrames`               | `boolean`                      | `false`     | Log a console warning on missed vsync                                                                  |
+| `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                               |
+| `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                         |
+| `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                     |
+| `isOverlayToggleEnabled`                 | `boolean`                      | `true`      | Enable Backquote and bottom-left corner toggle input                                                   |
+| `isOverlayPaletteEnabled`                | `boolean`                      | `false`     | Live palette swatch grid in the overlay bottom band (opt-in)                                           |
+| `overlayPaletteColumns`                  | `number`                       | _unset_     | Max palette swatches per grid row (default: widest fit)                                                |
+| `overlayPaletteRowsVisible`              | `number`                       | _unset_     | Max visible palette grid rows (default: all rows; band height capped)                                  |
+| `overlayStyle`                           | `OverlayStyle`                 | _unset_     | Optional bar/text/gap palette indices for overlay                                                      |
+| `isOverlayTimingChartEnabled`            | `boolean`                      | `false`     | Scrolling update/render timing chart between title and metrics rows                                    |
+| `overlayTimingChartHeight`               | `number`                       | `22`        | Timing chart band height in pixels when the chart is enabled                                           |
+| `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                                   |
+| `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted)     |
+| `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                           |
 
 - `displaySize`, `drawingBufferSize`, and `maxCanvasSize` must be positive whole-number pixel dimensions.
 - Each size is capped at `8192×8192` per axis and `16,777,216` total pixels (`4096×4096`).
@@ -172,6 +174,8 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
 
 - `activeBackend` is runtime state (what actually started; may differ from `requestedBackend` after WebGPU fallback).
   See [Resolution model](#resolution-model) for drawing-buffer vocabulary.
+- `isAudioUnlocked` is runtime state too: `false` until a user gesture resumes the audio context, `true` for the rest of
+  the session afterward. See [API: Audio](/docs/api/audio#unlock-state).
 
 ### Requested vs. active backend
 
@@ -237,7 +241,7 @@ const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });
 ```
 
 `defaultConfig()` returns a full `HardwareSettings` object (`320×240` logical, `640×480` drawing buffer, overlay
-enabled, WebGPU backend, and other defaults documented in the table above).
+enabled, WebGPU backend, `16` SFX voices, and other defaults documented in the table above).
 
 ## Putting it together
 
@@ -255,6 +259,7 @@ enabled, WebGPU backend, and other defaults documented in the table above).
   <Card title="API: Rendering" href="/docs/api/rendering">Primitives, sprites, text, post-process, frame capture.</Card>
   <Card title="API: Palette" href="/docs/api/palette">Palette setup, presets, effects.</Card>
   <Card title="API: Assets" href="/docs/api/assets">Sprite sheets, bitmap fonts, asset loading.</Card>
+  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, and the unlock getter.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Engine HUD subsystem, toggle, layout.</Card>
   <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effect chain and tiers.</Card>
   <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed configure flags and getters.</Card>
