@@ -90,6 +90,63 @@ if (!BT.isAudioUnlocked) {
 See [Web audio constraints](guide-audio.md#web-audio-constraints) for what happens to volume/mute calls made before the
 gesture, and why no configure flag can skip this requirement.
 
+## Loading
+
+`AudioClip` decodes an audio file into a reusable `AudioBuffer`, exposing the winning source URL, duration, and sample
+rate. Loading and decoding work even while the audio context is locked (suspended, pre-gesture) - only real-time
+playback needs an unlocked context. See [Preloading audio clips](guide-audio.md#preloading-audio-clips).
+
+```ts twoslash
+import { AudioClip } from 'blit386';
+
+// Load a single clip (cached by its resolved URL)
+const theme = await AudioClip.load('audio/theme.mp3');
+
+// Fallback list: tries each URL in order, resolving with the first that decodes
+const hit = await AudioClip.load(['audio/hit.ogg', 'audio/hit.mp3']);
+
+// Load multiple clips in parallel - each entry is a single URL or a fallback list
+const clips = await AudioClip.loadAll(['audio/theme.mp3', ['audio/hit.ogg', 'audio/hit.mp3']]);
+
+// Check cache before loading
+if (AudioClip.isLoaded('audio/theme.mp3')) {
+  // already cached
+}
+```
+
+Pass `onProgress` to report phased load progress:
+
+```ts twoslash
+import { AudioClip } from 'blit386';
+// ---cut---
+await AudioClip.load('audio/theme.mp3', {
+  onProgress: (progress) => {
+    console.log(progress.phase, progress.ratio);
+  },
+});
+```
+
+<TypeTable type={{
+    phase: { type: "'download' | 'decoding'", description: 'Which stage of the load this snapshot reports.' },
+    ratio: { type: 'number | null', description: 'Fraction complete in [0, 1]. null when Content-Length is unknown, or during the single, atomic decode step.' },
+  }} />
+
+Release a clip's decoded buffer with `unload()` once you no longer need it:
+
+```ts twoslash
+import { AudioClip } from 'blit386';
+declare const theme: AudioClip;
+// ---cut---
+theme.unload(); // releases the decoded buffer; safe to call more than once
+```
+
+- `AudioClip.load()` and `loadAll()` throw a beginner-friendly error covering network/CORS failures, HTTP status errors,
+  unsupported container/codec decode failures, and loading before the engine has started.
+- Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode
+  in every browser - see [Audio formats](api-browser-support.md#audio-formats).
+- Playing loaded clips back (SFX/music voices routed through the bus graph) is not implemented yet; this phase covers
+  the bus graph, volume, mute, unlock tracking, and clip loading that a future playback API will build on.
+
 ## Hardware settings
 
 `audioVoices` (default `16`, reserved for an upcoming SFX voice-limiting pass; not yet enforced) is documented in

@@ -33,7 +33,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | What does the CI do on this file?                              | `.github/workflows/ci.yml`                                                                                                                                                                                                   |
 | Dependency security policy / CI audit gate?                    | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md`                                                                                                                                                    |
 | What is the benchmark threshold?                               | `ci.yml` benchmark job (`--threshold 25` flag), not docs                                                                                                                                                                     |
-| What error message style should I use?                         | `docs/voice.md`, then `src/utils/errorMessages.ts`                                                                                                                                                                           |
+| What error message style should I use?                         | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" URL hints live in `src/utils/urlHints.ts` (used by `BitmapFont` and the `AudioClip` messages)                                              |
 | Is this API exported publicly?                                 | `src/BLIT386.ts` export block (lines 1563–1610)                                                                                                                                                                              |
 | What test mock do I need for GPU code?                         | `src/__test__/webgpu-mock.ts`                                                                                                                                                                                                |
 | What test mock do I need for Web Audio code?                   | `src/__test__/webaudio-mock.ts`                                                                                                                                                                                              |
@@ -47,6 +47,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How do I write/rename/split a `docs/` page?                    | Documentation authoring style below (prose rules: no bold, no `---`, `×` for dimensions; filename mirrors sitemap section; rename/split checklist). For runtime strings see `docs/voice.md` instead                          |
 | What agent skills are available for this project?              | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) – `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
 | How do users start a new project with the engine?              | `npm create blit386@latest` – the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below                                                                                             |
+| How do I load an audio clip?                                   | `src/assets/AudioClip.ts`, `docs/api-audio.md` (Loading section), `docs/guide-audio.md` (Preloading audio clips)                                                                                                             |
 
 ## Onboarding and the scaffolder
 
@@ -260,6 +261,7 @@ src/
     BitmapFont.ts          # Bitmap font system (.btfont)
     SystemFont.ts          # Built-in system font factory (createSystemFont; used by BT.systemPrint)
     fonts/systemFontData.ts # Glyph bitmap data backing SystemFont
+    AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists
     Palette.ts             # 256-entry indexed color palette
     PaletteEffect.ts       # Palette effect system (cycle, fade, flash, swap)
     palettes/              # Built-in preset palette data (presetData.ts, hudData.ts)
@@ -270,6 +272,7 @@ src/
     defaultKeyboardMap.ts  # Default face-button key tables; clone helpers for BT.inputMapReset
   audio/
     AudioManager.ts        # Web Audio context, bus graph (sfx/music -> main -> destination), unlock state, mute/volume
+    audioDecodeContext.ts  # Module-scoped decode-context registry + AudioClip unload seam (Phase 2 plumbing)
   utils/
     Bootstrap.ts           # Demo bootstrap utilities
     BootstrapHelpers.ts    # Canvas lookup and error display utilities
@@ -285,7 +288,7 @@ src/
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests
-    webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam)
+    webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam, decodeAudioData/AudioBuffer mocks)
     setup.ts               # Vitest global setup (GPU constants)
 ```
 

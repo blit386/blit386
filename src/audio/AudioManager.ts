@@ -10,6 +10,7 @@
 import type { AudioBus } from '../core/IBTDemo';
 import type { EasingFunction } from '../utils/Easing';
 import { applyEasing } from '../utils/Easing';
+import { setAudioDecodeContext } from './audioDecodeContext';
 
 /** Number of samples used to build an eased gain ramp curve for `setValueCurveAtTime`. */
 const FADE_CURVE_SAMPLE_COUNT = 32;
@@ -101,7 +102,8 @@ export class AudioManager {
      * returns without installing listeners if constructing the audio context or
      * bus graph throws (for example a browser hitting its concurrent
      * `AudioContext` limit), so a failure here never rejects the caller's
-     * `BTAPI.init()`.
+     * `BTAPI.init()`. Registers the new context with `audioDecodeContext` on
+     * success, so `AudioClip.load()` can later decode against the live context.
      *
      * @param target - Canvas that receives the one-shot unlock gesture listeners.
      */
@@ -120,6 +122,8 @@ export class AudioManager {
             return;
         }
 
+        setAudioDecodeContext(this.context);
+
         this.target = target;
 
         target.addEventListener('pointerdown', this.onPointerDown);
@@ -129,8 +133,9 @@ export class AudioManager {
 
     /**
      * Removes unlock gesture listeners, closes the audio context, and resets
-     * all bus, mute, and drop-counter state. Safe to call repeatedly or before
-     * {@link attach}.
+     * all bus, mute, and drop-counter state. Clears the `audioDecodeContext`
+     * registration so it never points at a closed context. Safe to call
+     * repeatedly or before {@link attach}.
      */
     public detach(): void {
         this.removeUnlockListeners();
@@ -140,6 +145,8 @@ export class AudioManager {
                 // Context may already be closed; close() rejects rather than throwing synchronously.
             });
         }
+
+        setAudioDecodeContext(null);
 
         this.context = null;
         this.busNodes = null;

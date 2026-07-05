@@ -11,6 +11,10 @@ import {
     assetDimensionInvalidError,
     assetDimensionTooLargeError,
     assetIndexedPixelLengthError,
+    audioClipDecodeError,
+    audioClipHttpError,
+    audioClipNetworkError,
+    audioClipNotReadyError,
     btfontEmbeddedTextureFormatError,
     btfontEmbeddedTextureTooLargeError,
     btfontGlyphCountTooLargeError,
@@ -267,6 +271,123 @@ describe('runtime error message helpers', () => {
 
         it('is consistent across calls', () => {
             expect(spriteNotIndexizedError()).toBe(spriteNotIndexizedError());
+        });
+    });
+});
+
+describe('audio clip error message helpers', () => {
+    describe('audioClipNetworkError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipNetworkError('music.mp3').length).toBeGreaterThan(0);
+        });
+
+        it('includes the requested URL', () => {
+            expect(audioClipNetworkError('music.mp3')).toContain('music.mp3');
+        });
+
+        it('suggests checking the connection, path, and CORS/hosting', () => {
+            const message = audioClipNetworkError('music.mp3');
+
+            expect(message).toContain('internet connection');
+            expect(message).toContain('path is correct');
+            expect(message).toContain('cross-origin (CORS)');
+        });
+
+        it('suggests a common audio extension when the URL extension looks wrong', () => {
+            expect(audioClipNetworkError('music.xyz')).toContain('.mp3');
+        });
+
+        it('is consistent across calls with the same URL', () => {
+            expect(audioClipNetworkError('music.mp3')).toBe(audioClipNetworkError('music.mp3'));
+        });
+
+        it('produces different messages for different URLs', () => {
+            expect(audioClipNetworkError('a.mp3')).not.toBe(audioClipNetworkError('b.mp3'));
+        });
+    });
+
+    describe('audioClipHttpError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipHttpError('music.mp3', 404).length).toBeGreaterThan(0);
+        });
+
+        it('includes the requested URL', () => {
+            expect(audioClipHttpError('music.mp3', 404)).toContain('music.mp3');
+        });
+
+        it("says it can't find the file for a 404 status", () => {
+            expect(audioClipHttpError('music.mp3', 404)).toContain("Can't find the audio file");
+        });
+
+        it('says the server had a problem and suggests refreshing for a non-404 status', () => {
+            const message = audioClipHttpError('music.mp3', 500);
+
+            expect(message).toContain('server had a problem');
+            expect(message).toContain('500');
+            expect(message).toContain('Try refreshing the page');
+        });
+
+        it('suggests a common audio extension when the URL extension looks wrong', () => {
+            expect(audioClipHttpError('music.xyz', 404)).toContain('.wav');
+        });
+
+        it('is consistent across calls with the same inputs', () => {
+            expect(audioClipHttpError('music.mp3', 404)).toBe(audioClipHttpError('music.mp3', 404));
+        });
+
+        it('produces different messages for a 404 versus a non-404 status', () => {
+            expect(audioClipHttpError('music.mp3', 404)).not.toBe(audioClipHttpError('music.mp3', 500));
+        });
+    });
+
+    describe('audioClipDecodeError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipDecodeError('music.mp3').length).toBeGreaterThan(0);
+        });
+
+        it('includes the requested URL', () => {
+            expect(audioClipDecodeError('music.mp3')).toContain('music.mp3');
+        });
+
+        it('mentions the browser probably not supporting the container or codec', () => {
+            expect(audioClipDecodeError('music.mp3')).toContain("doesn't support this container or codec");
+        });
+
+        it('includes a format-support hint naming well-supported formats', () => {
+            const message = audioClipDecodeError('music.mp3');
+
+            expect(message).toContain('MP3');
+            expect(message).toContain('OGG Vorbis');
+            expect(message).toContain('WAV');
+        });
+
+        it('recommends passing a fallback URL list to AudioClip.load()', () => {
+            expect(audioClipDecodeError('music.mp3')).toContain('AudioClip.load()');
+        });
+
+        it('is consistent across calls with the same URL', () => {
+            expect(audioClipDecodeError('music.mp3')).toBe(audioClipDecodeError('music.mp3'));
+        });
+
+        it('produces different messages for different URLs', () => {
+            expect(audioClipDecodeError('a.mp3')).not.toBe(audioClipDecodeError('b.mp3'));
+        });
+    });
+
+    describe('audioClipNotReadyError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipNotReadyError().length).toBeGreaterThan(0);
+        });
+
+        it('mentions waiting for BT.init() before loading an AudioClip', () => {
+            const message = audioClipNotReadyError();
+
+            expect(message).toContain('BT.init()');
+            expect(message).toContain('AudioClip');
+        });
+
+        it('is consistent across calls', () => {
+            expect(audioClipNotReadyError()).toBe(audioClipNotReadyError());
         });
     });
 });
