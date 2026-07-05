@@ -178,6 +178,48 @@ export class VoicePool {
     }
 
     /**
+     * Stops a playing voice, immediately freeing its slot for reuse.
+     *
+     * When `fadeOutMs` is given, ramps gain to `0` over that duration and schedules the
+     * underlying source to stop only once the ramp completes - the fade is still audible even
+     * though the slot itself is already free and may be reused by the very next `play()` call
+     * (the reused slot gets fresh nodes; the fading-out nodes keep playing independently until
+     * their own scheduled stop fires and their `onended` closure disconnects them). Silently
+     * no-ops when `ref` is stale, out of range, or already stopped.
+     *
+     * @param ref - Voice to stop.
+     * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
+     */
+    public stop(ref: SoundRef, fadeOutMs?: number): void {
+        const slot = this.getActiveSlot(ref);
+
+        if (slot === null) {
+            return;
+        }
+
+        const currentTime = this.audioManager.getContext()?.currentTime ?? 0;
+
+        if (fadeOutMs !== undefined && fadeOutMs > 0 && slot.gain !== null) {
+            applyAudioParamRamp(slot.gain.gain, currentTime, 0, fadeOutMs, 'linear');
+            slot.source?.stop(currentTime + fadeOutMs / 1000);
+        } else {
+            slot.source?.stop();
+        }
+
+        this.resetSlot(slot);
+    }
+
+    /**
+     * Reports whether `ref` still identifies a live voice.
+     *
+     * @param ref - Voice to query.
+     * @returns `true` when `ref`'s generation matches its slot's current generation.
+     */
+    public isPlaying(ref: SoundRef): boolean {
+        return this.getActiveSlot(ref) !== null;
+    }
+
+    /**
      * Returns the number of `play()` calls dropped because no slot was free or stealable.
      *
      * @returns Drop count.
@@ -332,9 +374,44 @@ export class VoicePool {
     }
 
     /**
+     * Returns `ref`'s slot when `ref` still identifies a live voice, or `null` when the index is
+     * out of range or the generation no longer matches (stale ref).
+     *
+     * @param ref - Voice reference to validate.
+     * @returns The live slot, or `null` on a stale/invalid ref.
+     */
+    private getActiveSlot(ref: SoundRef): VoiceSlot | null {
+        if (ref.voiceIndex < 0 || ref.voiceIndex >= this.slots.length) {
+            return null;
+        }
+
+        const slot = this.slots.at(ref.voiceIndex);
+
+        if (slot === undefined || slot.generation !== ref.generation) {
+            return null;
+        }
+
+        return slot;
+    }
+
+    /**
+     * Clears a slot's node references and marks it inactive, bumping its generation so any
+     * outstanding {@link SoundRef} pointing at it becomes stale.
+     *
+     * @param slot - Slot to reset.
+     */
+    private resetSlot(slot: VoiceSlot): void {
+        slot.source = null;
+        slot.gain = null;
+        slot.panner = null;
+        slot.buffer = null;
+        slot.isActive = false;
+        slot.generation += 1;
+    }
+
+    /**
      * Recycles `slotIndex` when its generation still matches `expectedGeneration` (a no-op when
-     * the slot has already been reused - see {@link disconnectVoice}). Implemented fully in a
-     * later task; for now this only exists so {@link startVoice}'s `onended` closure compiles.
+     * the slot has already been reused - see {@link disconnectVoice}).
      *
      * @param slotIndex - Index of the slot whose voice just ended.
      * @param expectedGeneration - Generation captured when the ended voice was started.
@@ -346,12 +423,7 @@ export class VoicePool {
             return;
         }
 
-        slot.source = null;
-        slot.gain = null;
-        slot.panner = null;
-        slot.buffer = null;
-        slot.isActive = false;
-        slot.generation += 1;
+        this.resetSlot(slot);
     }
 }
 

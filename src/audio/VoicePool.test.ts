@@ -254,4 +254,115 @@ describe('VoicePool', () => {
             expect(pool.getDropCount()).toBe(0);
         });
     });
+
+    describe('stop and isPlaying', () => {
+        it('reports isPlaying true for a freshly played voice', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            expect(pool.isPlaying(ref)).toBe(true);
+        });
+
+        it('reports isPlaying false for INVALID_SOUND_REF', () => {
+            const pool = new VoicePool(audio);
+
+            expect(pool.isPlaying(INVALID_SOUND_REF)).toBe(false);
+        });
+
+        it('stop immediately frees the slot and invalidates the ref', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            pool.stop(ref);
+
+            expect(pool.isPlaying(ref)).toBe(false);
+        });
+
+        it('stop without fadeOutMs stops the source node immediately', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            const context = getMockContext(installed);
+            const source = context.createBufferSourceCalls[0];
+
+            pool.stop(ref);
+
+            expect((source as unknown as { stopCalls: number[] }).stopCalls).toEqual([0]);
+        });
+
+        it('stop with fadeOutMs ramps gain to zero and schedules a delayed stop', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
+
+            const context = getMockContext(installed);
+            const gain = context.createGainCalls[3];
+            const source = context.createBufferSourceCalls[0];
+
+            pool.stop(ref, 500);
+
+            expect(
+                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                    .linearRampToValueAtTimeCalls,
+            ).toEqual([{ value: 0, endTime: 0.5 }]);
+            expect((source as unknown as { stopCalls: number[] }).stopCalls).toEqual([0.5]);
+        });
+
+        it('stop frees the slot for immediate reuse by a new play()', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const first = pool.play(createMockAudioBuffer());
+
+            pool.stop(first, 500);
+
+            const second = pool.play(createMockAudioBuffer());
+
+            expect(second.voiceIndex).toBe(first.voiceIndex);
+            expect(pool.getStealCount()).toBe(0);
+        });
+
+        it('is a no-op when stopping an already-stale ref', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const ref = pool.play(createMockAudioBuffer());
+
+            pool.stop(ref);
+
+            expect(() => pool.stop(ref)).not.toThrow();
+        });
+
+        it('is a no-op when stopping INVALID_SOUND_REF', () => {
+            const pool = new VoicePool(audio);
+
+            expect(() => pool.stop(INVALID_SOUND_REF)).not.toThrow();
+        });
+
+        it('is a no-op for an out-of-range voiceIndex', () => {
+            const pool = new VoicePool(audio);
+
+            expect(() => pool.stop({ voiceIndex: 999, generation: 0 })).not.toThrow();
+            expect(pool.isPlaying({ voiceIndex: 999, generation: 0 })).toBe(false);
+        });
+    });
 });
