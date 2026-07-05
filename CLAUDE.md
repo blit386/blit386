@@ -48,7 +48,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | What agent skills are available for this project?              | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) – `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
 | How do users start a new project with the engine?              | `npm create blit386@latest` – the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below                                                                                             |
 | How do I load an audio clip?                                   | `src/assets/AudioClip.ts`, `docs/api-audio.md` (Loading section), `docs/guide-audio.md` (Preloading audio clips)                                                                                                             |
-| How does the SFX voice pool allocate/steal voices?             | `src/audio/VoicePool.ts` (internal-only – not yet exposed via `BT`)                                                                                                                                                          |
+| How does the SFX voice pool allocate/steal voices?             | `src/audio/VoicePool.ts`; exposed via `BT.soundPlay` and friends (`docs/api-audio.md`, Playback (SFX) section)                                                                                                               |
 
 ## Onboarding and the scaffolder
 
@@ -381,7 +381,10 @@ Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBac
   `paletteClearEffects`.
 - Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`,
   `green`).
-- Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`.
+- Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`,
+  `soundPlay(clip, options?)`, `soundStop(ref, options?)`, `isSoundPlaying(ref)`,
+  `soundVolumeSet(ref, value, options?)`, `soundVolumeGet(ref)`, `soundPitchSet(ref, value, options?)`,
+  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`.
 - Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
   `systemPrint`, `printFont`.
 - Parameterized queries: `pointerPos(index?)`, `pointerDelta`, `isPointerActive`, `isDown`, `isPressed`, `isReleased`,
