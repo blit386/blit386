@@ -64,11 +64,15 @@ describe('VoicePool', () => {
 
             const pool = new VoicePool(audio);
 
-            expect(pool.getStealCount()).toBe(0);
-            expect(pool.getDropCount()).toBe(0);
+            for (let i = 0; i < 16; i++) {
+                pool.play(createMockAudioBuffer());
+            }
 
-            // Sizing is verified indirectly in Task 5 (allocation exhaustion); this test only
-            // establishes that construction with no hardware settings does not throw.
+            expect(pool.getStealCount()).toBe(0);
+
+            pool.play(createMockAudioBuffer());
+
+            expect(pool.getStealCount()).toBe(1);
         });
 
         it('reads the configured audioVoices count', () => {
@@ -76,7 +80,16 @@ describe('VoicePool', () => {
                 audioVoices: 2,
             } as HardwareSettings);
 
-            expect(() => new VoicePool(audio)).not.toThrow();
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer());
+            pool.play(createMockAudioBuffer());
+
+            expect(pool.getStealCount()).toBe(0);
+
+            pool.play(createMockAudioBuffer());
+
+            expect(pool.getStealCount()).toBe(1);
         });
     });
 

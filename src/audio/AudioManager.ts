@@ -344,6 +344,10 @@ export class AudioManager {
      * {@link INVALID_SOUND_REF} without allocating a voice while the context is locked
      * (pre-unlock), so the pool's slots are never spent on sound that would be inaudible anyway.
      *
+     * {@link getDroppedSfxCount} only counts these pre-unlock drops; pool-exhaustion drops (no
+     * free or stealable slot) are tracked separately by the pool's own `getDropCount()`, which is
+     * internal-only and not yet exposed through `AudioManager`.
+     *
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link VoicePlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.

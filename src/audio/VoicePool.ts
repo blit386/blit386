@@ -320,6 +320,11 @@ export class VoicePool {
      * Called by the {@link AudioClip.unload} guard (via `audioDecodeContext`'s unload handler)
      * so a released buffer can never keep playing from a stale voice.
      *
+     * A voice already mid-fade-out via {@link stop} is not affected by this call - `resetSlot`
+     * already cleared its `buffer` reference when `stop()` ran, so it is no longer tracked as
+     * using this buffer. That is safe: Web Audio keeps the decoded buffer alive as long as a
+     * source node is still using it, independent of {@link AudioClip}'s own JS-side reference.
+     *
      * @param buffer - Buffer being released.
      */
     public stopVoicesUsingBuffer(buffer: AudioBuffer): void {
