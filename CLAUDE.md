@@ -47,6 +47,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How do I write/rename/split a `docs/` page?                    | Documentation authoring style below (prose rules: no bold, no `---`, `×` for dimensions; filename mirrors sitemap section; rename/split checklist). For runtime strings see `docs/voice.md` instead                          |
 | What agent skills are available for this project?              | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) – `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format` |
 | How do users start a new project with the engine?              | `npm create blit386@latest` – the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below                                                                                             |
+| How do I load an audio clip?                                   | `src/assets/AudioClip.ts`, `docs/api-audio.md` (Loading section), `docs/guide-audio.md` (Preloading audio clips)                                                                                                             |
 
 ## Onboarding and the scaffolder
 
@@ -287,7 +288,7 @@ src/
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests
-    webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam)
+    webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam, decodeAudioData/AudioBuffer mocks)
     setup.ts               # Vitest global setup (GPU constants)
 ```
 

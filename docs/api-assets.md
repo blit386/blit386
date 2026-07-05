@@ -12,6 +12,8 @@
 
 Sprite sheets, bitmap fonts, and asset loading.
 
+Looking for audio assets? `AudioClip` loading is documented separately in [API: Audio](api-audio.md#loading).
+
 ## Asset size limits
 
 Sprite sheets, font atlases, and raw indexed buffers share the same decoded-size policy as render configuration (`8192`

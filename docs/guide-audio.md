@@ -17,14 +17,23 @@ locked/unlocked gesture state, and the web platform constraints that shape it.
 
 ```text
 src/audio/
-  AudioManager.ts   # Web Audio context, bus graph, unlock state machine, mute/volume
+  AudioManager.ts        # Web Audio context, bus graph, unlock state machine, mute/volume
+  audioDecodeContext.ts  # Decode-context registry AudioClip reads from to decode
+src/assets/
+  AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists
 ```
 
 `AudioManager` is owned by the internal `BTAPI` singleton (created and torn down alongside pointer, keyboard, and
 gamepad input) and is never exposed to demo code directly - only through the `BT.audio*` methods and the
-`BT.isAudioUnlocked` getter documented in [API: Audio](api-audio.md).
+`BT.isAudioUnlocked` getter documented in [API: Audio](api-audio.md). On `attach()`, `AudioManager` registers its Web
+Audio context in `audioDecodeContext.ts`, a small bridge that `AudioClip` reads from to decode audio data without
+needing a direct reference to `AudioManager` itself.
 
-Tests mock the Web Audio API with `src/__test__/webaudio-mock.ts`, since neither Node.js nor happy-dom implement it.
+`AudioClip` (see [Loading](api-audio.md#loading)) lives alongside the other asset loaders in `src/assets/` and uses that
+bridge to decode fetched audio bytes into a reusable `AudioBuffer`.
+
+Tests mock the Web Audio API with `src/__test__/webaudio-mock.ts` (including a configurable `decodeAudioData` for
+`AudioClip` tests), since neither Node.js nor happy-dom implement it.
 
 ## Locked vs. unlocked
 
@@ -59,6 +68,31 @@ class Demo implements IBTDemo {
 }
 ```
 
+## Preloading audio clips
+
+`AudioClip.load()` downloads and decodes audio even while the context is locked (suspended, pre-gesture) - decoding only
+needs a registered context, not an unlocked one. That makes a title screen or a loading state a good place to preload
+every clip a level needs, so they're ready the instant the player's first gesture unlocks audio.
+
+```ts twoslash
+import { AudioClip, type IBTDemo } from 'blit386';
+
+class Demo implements IBTDemo {
+  async init() {
+    // Decodes now, even before the player's first gesture unlocks the context.
+    await AudioClip.loadAll(['audio/theme.mp3', ['audio/hit.ogg', 'audio/hit.mp3']]);
+
+    return true;
+  }
+
+  update() {}
+  render() {}
+}
+```
+
+Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode in
+every browser - see [Audio formats](api-browser-support.md#audio-formats) for the current per-browser matrix.
+
 ## Web audio constraints
 
 Every major browser enforces an autoplay policy: an `AudioContext` starts `'suspended'` and stays that way until a user
@@ -70,8 +104,9 @@ start audio unlocked, and none is planned.
 - The gesture requirement is independent of the render backend. Unlocking audio has nothing to do with
   `BT.activeBackend` or the WebGPU/Canvas 2D fallback described in [Browser Support](api-browser-support.md) - a demo
   can be fully unlocked on the software renderer, or fully locked on WebGPU.
-- Actual sound triggering (loading and playing SFX/music clips) is not implemented yet. This phase covers the bus graph,
-  volume, mute, and unlock tracking that a future playback API will build on.
+- Loading and decoding clips is implemented via `AudioClip` (see [Loading](api-audio.md#loading)) and works regardless
+  of lock state. Playing them back - SFX/music voices routed through the bus graph - is not implemented yet; this phase
+  covers the bus graph, volume, mute, unlock tracking, and clip loading that a future playback API will build on.
 
 ## See also
 
