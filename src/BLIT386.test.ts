@@ -10,6 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
+import type { AudioClip } from './assets/AudioClip';
 import type { BitmapFont, HardwareSettings } from './BLIT386';
 import { BT, Palette, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
@@ -336,6 +337,130 @@ describe('BT.assignTag', () => {
         BT.assignTag('Milestone');
 
         expect(spy).toHaveBeenCalledWith('Milestone');
+    });
+});
+
+describe('BT.soundPlay', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.soundPlay', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const clip = {} as unknown as AudioClip;
+        const spy = vi.spyOn(BTAPI.instance, 'soundPlay').mockReturnValue(ref);
+
+        const result = BT.soundPlay(clip, { volume: 0.5 });
+
+        expect(spy).toHaveBeenCalledWith(clip, { volume: 0.5 });
+        expect(result).toBe(ref);
+    });
+});
+
+describe('BT.soundStop', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.soundStop, unpacking fadeOutMs', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundStop').mockReturnValue(undefined);
+
+        BT.soundStop(ref, { fadeOutMs: 200 });
+
+        expect(spy).toHaveBeenCalledWith(ref, 200);
+    });
+
+    it('passes undefined fadeOutMs when options are omitted', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundStop').mockReturnValue(undefined);
+
+        BT.soundStop(ref);
+
+        expect(spy).toHaveBeenCalledWith(ref, undefined);
+    });
+});
+
+describe('BT.isSoundPlaying', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.isSoundPlaying', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'isSoundPlaying').mockReturnValue(true);
+
+        expect(BT.isSoundPlaying(ref)).toBe(true);
+        expect(spy).toHaveBeenCalledWith(ref);
+    });
+});
+
+describe('BT.soundVolumeSet / BT.soundVolumeGet', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('soundVolumeSet delegates to BTAPI.instance.soundVolumeSet, unpacking fadeMs', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundVolumeSet').mockReturnValue(undefined);
+
+        BT.soundVolumeSet(ref, 0.5, { fadeMs: 100 });
+
+        expect(spy).toHaveBeenCalledWith(ref, 0.5, 100);
+    });
+
+    it('soundVolumeGet delegates to BTAPI.instance.soundVolumeGet', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundVolumeGet').mockReturnValue(0.5);
+
+        expect(BT.soundVolumeGet(ref)).toBe(0.5);
+        expect(spy).toHaveBeenCalledWith(ref);
+    });
+});
+
+describe('BT.soundPitchSet / BT.soundPitchGet', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('soundPitchSet delegates to BTAPI.instance.soundPitchSet, unpacking fadeMs', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundPitchSet').mockReturnValue(undefined);
+
+        BT.soundPitchSet(ref, 1.5, { fadeMs: 50 });
+
+        expect(spy).toHaveBeenCalledWith(ref, 1.5, 50);
+    });
+
+    it('soundPitchGet delegates to BTAPI.instance.soundPitchGet', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundPitchGet').mockReturnValue(1.5);
+
+        expect(BT.soundPitchGet(ref)).toBe(1.5);
+        expect(spy).toHaveBeenCalledWith(ref);
+    });
+});
+
+describe('BT.soundPanSet / BT.soundPanGet', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('soundPanSet delegates to BTAPI.instance.soundPanSet, unpacking fadeMs', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundPanSet').mockReturnValue(undefined);
+
+        BT.soundPanSet(ref, -0.5, { fadeMs: 50 });
+
+        expect(spy).toHaveBeenCalledWith(ref, -0.5, 50);
+    });
+
+    it('soundPanGet delegates to BTAPI.instance.soundPanGet', () => {
+        const ref = { voiceIndex: 0, generation: 1 };
+        const spy = vi.spyOn(BTAPI.instance, 'soundPanGet').mockReturnValue(-0.5);
+
+        expect(BT.soundPanGet(ref)).toBe(-0.5);
+        expect(spy).toHaveBeenCalledWith(ref);
     });
 });
 

@@ -12,11 +12,13 @@
  */
 
 import { AssetLoader } from './assets/AssetLoader';
+import { AudioClip } from './assets/AudioClip';
 import type { TextSize } from './assets/BitmapFont';
 import { BitmapFont } from './assets/BitmapFont';
 import { Palette } from './assets/Palette';
 import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
 import { SpriteSheet } from './assets/SpriteSheet';
+import type { SoundParamSetOptions, SoundPlayOptions, SoundRef, SoundStopOptions } from './audio/VoicePool';
 import { BTAPI } from './core/BTAPI';
 import {
     type AudioBus,
@@ -597,6 +599,110 @@ export const BT = {
      */
     isAudioMuted: (bus: AudioBus): boolean => {
         return BTAPI.instance.isAudioMuted(bus);
+    },
+
+    /**
+     * Plays a loaded audio clip through the SFX voice pool.
+     *
+     * Returns an inert {@link SoundRef} without allocating a voice when the clip hasn't finished
+     * loading yet (or was already unloaded), when the pool has no free or stealable voice at this
+     * priority, or before the engine has unlocked audio playback.
+     *
+     * @param clip - Loaded audio clip to play.
+     * @param options - Playback options.
+     * @returns A handle identifying the new voice; pass it to {@link BT.soundStop} and the other
+     *   per-sound controls. Safe to use even when playback was silently dropped - every accessor
+     *   on an inert handle is a no-op.
+     */
+    soundPlay: (clip: AudioClip, options?: SoundPlayOptions): SoundRef => {
+        return BTAPI.instance.soundPlay(clip, options);
+    },
+
+    /**
+     * Stops a playing sound, optionally fading it out.
+     *
+     * @param ref - Sound to stop, from {@link BT.soundPlay}.
+     * @param options - Optional fade behavior.
+     * @param options.fadeOutMs - Fade-out duration in milliseconds. Omit to stop immediately.
+     */
+    soundStop: (ref: SoundRef, options?: SoundStopOptions): void => {
+        BTAPI.instance.soundStop(ref, options?.fadeOutMs);
+    },
+
+    /**
+     * Reports whether a sound is still playing.
+     *
+     * @param ref - Sound to query.
+     * @returns `true` when still playing; `false` once it has stopped, been stolen, or completed.
+     */
+    isSoundPlaying: (ref: SoundRef): boolean => {
+        return BTAPI.instance.isSoundPlaying(ref);
+    },
+
+    /**
+     * Sets a sound's gain, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target gain.
+     * @param options - Optional fade behavior.
+     * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
+     */
+    soundVolumeSet: (ref: SoundRef, value: number, options?: SoundParamSetOptions): void => {
+        BTAPI.instance.soundVolumeSet(ref, value, options?.fadeMs);
+    },
+
+    /**
+     * Gets a sound's current gain.
+     *
+     * @param ref - Sound to query.
+     * @returns Current gain, or `1` once the sound has stopped.
+     */
+    soundVolumeGet: (ref: SoundRef): number => {
+        return BTAPI.instance.soundVolumeGet(ref);
+    },
+
+    /**
+     * Sets a sound's playback rate, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target playback rate.
+     * @param options - Optional fade behavior.
+     * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
+     */
+    soundPitchSet: (ref: SoundRef, value: number, options?: SoundParamSetOptions): void => {
+        BTAPI.instance.soundPitchSet(ref, value, options?.fadeMs);
+    },
+
+    /**
+     * Gets a sound's current playback rate.
+     *
+     * @param ref - Sound to query.
+     * @returns Current playback rate, or `1` once the sound has stopped.
+     */
+    soundPitchGet: (ref: SoundRef): number => {
+        return BTAPI.instance.soundPitchGet(ref);
+    },
+
+    /**
+     * Sets a sound's stereo pan, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target pan.
+     * @param options - Optional fade behavior.
+     * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
+     */
+    soundPanSet: (ref: SoundRef, value: number, options?: SoundParamSetOptions): void => {
+        BTAPI.instance.soundPanSet(ref, value, options?.fadeMs);
+    },
+
+    /**
+     * Gets a sound's current stereo pan.
+     *
+     * @param ref - Sound to query.
+     * @returns Current pan, or `0` once the sound has stopped.
+     */
+    soundPanGet: (ref: SoundRef): number => {
+        return BTAPI.instance.soundPanGet(ref);
     },
 
     /**
@@ -1638,6 +1744,7 @@ export {
     amber,
     applyEasing,
     AssetLoader,
+    AudioClip,
     BarrelDistortion,
     BitmapFont,
     Bloom,
@@ -1680,6 +1787,10 @@ export type {
     OverlayRow,
     OverlayStyle,
     OverlayTimingChartStyle,
+    SoundParamSetOptions,
+    SoundPlayOptions,
+    SoundRef,
+    SoundStopOptions,
     TextSize,
 };
 export type { IndexedSpriteLoadResult };
