@@ -40,24 +40,6 @@ export interface MockGainNode extends MockAudioNode {
     readonly gain: MockAudioParam;
 }
 
-/** Recorded `AudioBufferSourceNode` state: connect/start/stop tracking plus the mock playbackRate param. */
-export interface MockAudioBufferSourceNode extends MockAudioNode {
-    /** Playback rate parameter with scheduling call tracking. */
-    readonly playbackRate: MockAudioParam;
-
-    /** Arguments recorded from every `start` call, in call order. */
-    readonly startCalls: number[];
-
-    /** Arguments recorded from every `stop` call, in call order. */
-    readonly stopCalls: number[];
-}
-
-/** Recorded `StereoPannerNode` state: connect tracking plus the mock pan parameter. */
-export interface MockStereoPannerNode extends MockAudioNode {
-    /** Pan parameter with scheduling call tracking. */
-    readonly pan: MockAudioParam;
-}
-
 /** Recorded `AudioContext` state: created gain nodes plus resume/close call counts. */
 export interface MockAudioContext {
     /** Gain nodes created via `createGain()`, in call order. */
