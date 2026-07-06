@@ -33,7 +33,9 @@ Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use prope
 - **Post-process:** `effectAdd`, `effectRemove`, `effectClear`; preset namespace **`BT.preset`** (`crtPipBoy`, `amber`,
   `green`)
 - **Audio:** `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`,
-  `isAudioMuted(bus)`
+  `isAudioMuted(bus)`, `soundPlay(clip, options?)`, `soundStop(ref, options?)`, `isSoundPlaying(ref)`,
+  `soundVolumeSet(ref, value, options?)`, `soundVolumeGet(ref)`, `soundPitchSet(ref, value, options?)`,
+  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`
 - **Drawing / clearing:** `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
   `systemPrint`, `printFont` (4th arg is optional **`paletteOffset`**, not `Color32`)
 - Any **parameter**: `pointerPos(0)`, `isDown(BT.BTN_A)`, `cameraClamp(...)`

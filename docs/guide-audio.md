@@ -17,14 +17,15 @@ locked/unlocked gesture state, and the web platform constraints that shape it.
 
 ```text
 src/audio/
-  AudioManager.ts        # Web Audio context, bus graph, unlock state machine, mute/volume
+  AudioManager.ts        # Web Audio context, bus graph, unlock state machine, mute/volume, SFX playback
   audioDecodeContext.ts  # Decode-context registry AudioClip reads from to decode
+  VoicePool.ts           # Fixed-size SFX voice pool: allocation/stealing, generational refs, per-voice fades
 src/assets/
   AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists
 ```
 
 `AudioManager` is owned by the internal `BTAPI` singleton (created and torn down alongside pointer, keyboard, and
-gamepad input) and is never exposed to demo code directly - only through the `BT.audio*` methods and the
+gamepad input) and is never exposed to demo code directly - only through the `BT.audio*`/`BT.sound*` methods and the
 `BT.isAudioUnlocked` getter documented in [API: Audio](api-audio.md). On `attach()`, `AudioManager` registers its Web
 Audio context in `audioDecodeContext.ts`, a small bridge that `AudioClip` reads from to decode audio data without
 needing a direct reference to `AudioManager` itself.
@@ -105,8 +106,38 @@ start audio unlocked, and none is planned.
   `BT.activeBackend` or the WebGPU/Canvas 2D fallback described in [Browser Support](api-browser-support.md) - a demo
   can be fully unlocked on the software renderer, or fully locked on WebGPU.
 - Loading and decoding clips is implemented via `AudioClip` (see [Loading](api-audio.md#loading)) and works regardless
-  of lock state. Playing them back - SFX/music voices routed through the bus graph - is not implemented yet; this phase
-  covers the bus graph, volume, mute, unlock tracking, and clip loading that a future playback API will build on.
+  of lock state. `BT.soundPlay` (see [Playback (SFX)](api-audio.md#playback-sfx)) behaves differently from a pre-unlock
+  bus call: `playSound()` drops the request entirely before unlock (no voice allocated, no throw, counted as a dropped
+  SFX request), where `AudioManager.volumeSet()` (`BT.audioVolumeSet`) still updates the engine's internal bus state and
+  applies once the context resumes - it is only inaudible while locked, not dropped.
+
+## Playing SFX
+
+`BT.soundPlay` routes every SFX voice through the `'sfx'` bus (see [Subsystem layout](#subsystem-layout) above), so
+`BT.audioVolumeSet('sfx', ...)` and `BT.audioMuteSet('sfx', ...)` affect every currently-playing sound at once, on top
+of each sound's own per-voice volume from `BT.soundVolumeSet`.
+
+The pool itself (`src/audio/VoicePool.ts`) is a fixed-size array sized by `HardwareSettings.audioVoices` - it never
+grows at runtime. Each `BT.soundPlay` call either claims a free slot or steals the lowest-priority active voice at or
+below the incoming priority; see [Playback (SFX)](api-audio.md#playback-sfx) for the exact policy and a worked example.
+This cap exists because each slot is a real `AudioBufferSourceNode -> GainNode -> StereoPannerNode` chain - letting the
+pool grow unbounded would let a busy scene (an explosion with dozens of debris impacts, for example) spend unbounded CPU
+on nodes the player can't meaningfully hear over each other anyway.
+
+A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
+play instead:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const footstep = await AudioClip.load('audio/footstep.mp3');
+
+function playFootstep() {
+  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+
+  BT.soundPlay(footstep, { pitch, volume: 0.6 });
+}
+```
 
 ## See also
 

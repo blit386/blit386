@@ -144,13 +144,87 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
   unsupported container/codec decode failures, and loading before the engine has started.
 - Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode
   in every browser - see [Audio formats](api-browser-support.md#audio-formats).
-- Playing loaded clips back (SFX/music voices routed through the bus graph) is not implemented yet; this phase covers
-  the bus graph, volume, mute, unlock tracking, and clip loading that a future playback API will build on.
+- Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below. Music playback (a separate,
+  loopable player distinct from the SFX voice pool) is not implemented yet.
+
+## Playback (SFX)
+
+`BT.soundPlay` plays a loaded `AudioClip` through a fixed-size pool of SFX voices. Each call returns an opaque
+`SoundRef` handle - pass it to `BT.soundStop` and the per-sound volume, pitch, and pan controls.
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const hit = await AudioClip.load('audio/hit.mp3');
+
+const ref = BT.soundPlay(hit, { volume: 0.8 });
+
+BT.isSoundPlaying(ref); // true
+
+BT.soundStop(ref, { fadeOutMs: 200 }); // fades out over 200 ms
+```
+
+`options` fields:
+
+<TypeTable type={{
+    loop: { type: 'boolean', default: 'false', description: 'Whether the clip loops.' },
+    volume: { type: 'number', default: '1', description: 'Initial gain in [0, 1] (unclamped).' },
+    pitch: { type: 'number', default: '1', description: 'Initial playback rate.' },
+    pan: { type: 'number', default: '0', description: 'Initial stereo pan in [-1, 1] (unclamped).' },
+    priority: { type: 'number', default: '0', description: 'Allocation priority; higher survives voice stealing longer.' },
+    fadeInMs: { type: 'number', description: 'Linear fade-in duration in milliseconds, from silence to volume.' },
+    atTime: { type: 'number', description: 'Audio-clock start time. Defaults to "now".' },
+  }} />
+
+<Callout title="Voice cap and stealing">
+
+`HardwareSettings.audioVoices` (default `16`) sizes a fixed pool of voices - it never grows. When every voice is in use,
+a new `BT.soundPlay` call steals the lowest-priority active voice at or below the incoming priority (ties broken by
+whichever voice started first). If every active voice outranks the incoming priority, the new sound is dropped silently:
+no throw, and the returned `SoundRef` is inert (`BT.isSoundPlaying` reports `false` for it immediately).
+
+</Callout>
+
+A common pattern - vary pitch slightly per play so a repeated sound (footsteps, hits) doesn't sound robotic:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const footstep = await AudioClip.load('audio/footstep.mp3');
+
+function playFootstep() {
+  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+
+  BT.soundPlay(footstep, { pitch, volume: 0.6 });
+}
+```
+
+Per-sound controls, all silent no-ops on a stale or invalid `SoundRef` (already stopped, stolen, or completed - never
+throws):
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const hit = await AudioClip.load('audio/hit.mp3');
+const ref = BT.soundPlay(hit);
+// ---cut---
+BT.soundVolumeSet(ref, 0.5, { fadeMs: 100 });
+BT.soundVolumeGet(ref); // 0.5
+
+BT.soundPitchSet(ref, 1.2);
+BT.soundPitchGet(ref); // 1.2
+
+BT.soundPanSet(ref, -0.3);
+BT.soundPanGet(ref); // -0.3
+```
+
+`BT.soundPlay` also returns an inert `SoundRef` (no throw) when `clip` hasn't finished loading yet, or was already
+released with `clip.unload()`.
 
 ## Hardware settings
 
-`audioVoices` (default `16`, reserved for an upcoming SFX voice-limiting pass; not yet enforced) is documented in
-[Hardware settings](api-core.md#hardware-settings).
+`audioVoices` (default `16`) caps the number of simultaneous SFX voices - see [Playback (SFX)](#playback-sfx) for the
+allocation and stealing policy. Documented in [Hardware settings](api-core.md#hardware-settings).
 
 ## See also
 

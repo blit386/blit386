@@ -1,19 +1,25 @@
 /**
  * Internal audio subsystem: Web Audio context, bus graph, browser autoplay-unlock
- * state machine, and pre-unlock SFX/music drop counters.
+ * state machine, SFX voice pool, and pre-unlock SFX/music drop counters.
  *
  * Owned by {@link BTAPI} (not itself a singleton) and never exposed to demo code.
- * Actual SFX/music playback methods are added in a later phase; this class only
- * manages the audio graph, bus volume/mute, and unlock tracking.
+ * Music playback is added in a later phase; this class manages the audio graph, bus
+ * volume/mute, unlock tracking, and SFX voice playback via {@link playSound}.
  */
 
 import type { AudioBus } from '../core/IBTDemo';
+import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
-import { applyEasing } from '../utils/Easing';
-import { setAudioDecodeContext } from './audioDecodeContext';
-
-/** Number of samples used to build an eased gain ramp curve for `setValueCurveAtTime`. */
-const FADE_CURVE_SAMPLE_COUNT = 32;
+import { setAudioClipUnloadHandler, setAudioDecodeContext } from './audioDecodeContext';
+import {
+    DEFAULT_PAN,
+    DEFAULT_PITCH,
+    DEFAULT_VOLUME,
+    INVALID_SOUND_REF,
+    type SoundRef,
+    type VoicePlayOptions,
+    VoicePool,
+} from './VoicePool';
 
 /** Default (full) gain for a freshly created or reset bus. */
 const DEFAULT_BUS_VOLUME = 1;
@@ -34,8 +40,8 @@ type PerBus<T> = Record<AudioBus, T>;
  * Construct, then call {@link attach} with the rendering canvas. Call {@link detach}
  * to remove listeners and close the audio context (engine restarts, tests).
  *
- * Actual SFX/music playback methods are added in a later phase; this class only
- * exposes bus volume, mute, and unlock-state accessors.
+ * Music playback is added in a later phase; this class exposes bus volume, mute,
+ * unlock-state accessors, and SFX voice playback via {@link playSound}.
  */
 export class AudioManager {
     /** Live Web Audio context, or `null` before {@link attach} / after {@link detach}. */
@@ -43,6 +49,9 @@ export class AudioManager {
 
     /** Gain nodes for the bus graph, or `null` before {@link attach} / after {@link detach}. */
     private busNodes: PerBus<GainNode> | null = null;
+
+    /** SFX voice pool, or `null` before {@link attach} / after {@link detach}. */
+    private voicePool: VoicePool | null = null;
 
     /** Canvas passed to {@link attach}; the unlock gesture listener target. */
     private target: HTMLCanvasElement | null = null;
@@ -124,6 +133,9 @@ export class AudioManager {
 
         setAudioDecodeContext(this.context);
 
+        this.voicePool = new VoicePool(this);
+        setAudioClipUnloadHandler((buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer));
+
         this.target = target;
 
         target.addEventListener('pointerdown', this.onPointerDown);
@@ -139,6 +151,10 @@ export class AudioManager {
      */
     public detach(): void {
         this.removeUnlockListeners();
+
+        this.voicePool?.stopAll();
+        this.voicePool = null;
+        setAudioClipUnloadHandler(() => {});
 
         if (this.context !== null) {
             this.context.close().catch(() => {
@@ -167,6 +183,28 @@ export class AudioManager {
      */
     public isUnlocked(): boolean {
         return this.unlocked;
+    }
+
+    /**
+     * Returns the live Web Audio context, internal only – never exposed via `BTAPI` or `BT`.
+     *
+     * Used by {@link VoicePool} to build each voice's node chain.
+     *
+     * @returns The live audio context, or `null` before {@link attach} / after {@link detach}.
+     */
+    public getContext(): AudioContext | null {
+        return this.context;
+    }
+
+    /**
+     * Returns the `sfx` bus gain node, internal only – never exposed via `BTAPI` or `BT`.
+     *
+     * Used by {@link VoicePool} to connect each per-voice node chain's terminal `StereoPannerNode`.
+     *
+     * @returns The `sfx` bus gain node, or `null` before {@link attach} / after {@link detach}.
+     */
+    public getSfxBus(): GainNode | null {
+        return this.busNodes?.sfx ?? null;
     }
 
     /**
@@ -210,7 +248,7 @@ export class AudioManager {
             return;
         }
 
-        this.applyBusGain(node, clamped, fadeMs, easing);
+        applyAudioParamRamp(node.gain, this.context?.currentTime ?? 0, clamped, fadeMs, easing);
     }
 
     /**
@@ -308,6 +346,114 @@ export class AudioManager {
     }
 
     /**
+     * Plays `buffer` through the SFX voice pool.
+     *
+     * Drops the request (counted via {@link noteDroppedSfx}) and returns
+     * {@link INVALID_SOUND_REF} without allocating a voice while the context is locked
+     * (pre-unlock), so the pool's slots are never spent on sound that would be inaudible anyway.
+     *
+     * {@link getDroppedSfxCount} only counts these pre-unlock drops; pool-exhaustion drops (no
+     * free or stealable slot) are tracked separately by the pool's own `getDropCount()`, which is
+     * internal-only and not yet exposed through `AudioManager`.
+     *
+     * @param buffer - Decoded audio buffer to play.
+     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
+     */
+    public playSound(buffer: AudioBuffer, options?: VoicePlayOptions): SoundRef {
+        if (!this.unlocked) {
+            this.noteDroppedSfx();
+
+            return INVALID_SOUND_REF;
+        }
+
+        return this.voicePool?.play(buffer, options) ?? INVALID_SOUND_REF;
+    }
+
+    /**
+     * Stops a playing sound, optionally fading it out.
+     *
+     * @param ref - Sound to stop.
+     * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
+     */
+    public soundStop(ref: SoundRef, fadeOutMs?: number): void {
+        this.voicePool?.stop(ref, fadeOutMs);
+    }
+
+    /**
+     * Reports whether a sound is still playing.
+     *
+     * @param ref - Sound to query.
+     * @returns `true` when `ref` still identifies a live voice; `false` on a stale ref or before {@link attach}.
+     */
+    public isSoundPlaying(ref: SoundRef): boolean {
+        return this.voicePool?.isPlaying(ref) ?? false;
+    }
+
+    /**
+     * Sets a sound's gain, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target gain.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundVolumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.voicePool?.volumeSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current gain.
+     *
+     * @param ref - Sound to query.
+     * @returns Current gain, or {@link DEFAULT_VOLUME} on a stale ref or before {@link attach}.
+     */
+    public soundVolumeGet(ref: SoundRef): number {
+        return this.voicePool?.volumeGet(ref) ?? DEFAULT_VOLUME;
+    }
+
+    /**
+     * Sets a sound's playback rate, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target playback rate.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundPitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.voicePool?.pitchSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current playback rate.
+     *
+     * @param ref - Sound to query.
+     * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale ref or before {@link attach}.
+     */
+    public soundPitchGet(ref: SoundRef): number {
+        return this.voicePool?.pitchGet(ref) ?? DEFAULT_PITCH;
+    }
+
+    /**
+     * Sets a sound's stereo pan, optionally fading to it.
+     *
+     * @param ref - Sound to update.
+     * @param value - Target pan.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public soundPanSet(ref: SoundRef, value: number, fadeMs?: number): void {
+        this.voicePool?.panSet(ref, value, fadeMs);
+    }
+
+    /**
+     * Gets a sound's current stereo pan.
+     *
+     * @param ref - Sound to query.
+     * @returns Current pan, or {@link DEFAULT_PAN} on a stale ref or before {@link attach}.
+     */
+    public soundPanGet(ref: SoundRef): number {
+        return this.voicePool?.panGet(ref) ?? DEFAULT_PAN;
+    }
+
+    /**
      * Creates the `sfx` / `music` / `main` gain nodes and wires `sfx` and
      * `music` into `main`, which connects to `destination`.
      *
@@ -376,72 +522,6 @@ export class AudioManager {
         this.target.removeEventListener('keydown', this.onKeyDown);
         this.target.removeEventListener('touchstart', this.onTouchStart);
     }
-
-    /**
-     * Schedules or immediately applies a gain change on `node`.
-     *
-     * With no `fadeMs` (or a non-positive one), sets `node.gain.value` immediately.
-     * With `fadeMs`, anchors the ramp to `context.currentTime`: `'linear'` easing uses
-     * `linearRampToValueAtTime`; other easings sample {@link applyEasing} into a curve
-     * fed to `setValueCurveAtTime`.
-     *
-     * @param node - Gain node to update.
-     * @param targetValue - Target gain value.
-     * @param fadeMs - Optional fade duration in milliseconds.
-     * @param easing - Easing curve applied when `fadeMs` is a positive duration.
-     */
-    private applyBusGain(
-        node: GainNode,
-        targetValue: number,
-        fadeMs: number | undefined,
-        easing: EasingFunction,
-    ): void {
-        const context = this.context;
-
-        if (context === null || fadeMs === undefined || fadeMs <= 0) {
-            node.gain.value = targetValue;
-
-            return;
-        }
-
-        const startValue = node.gain.value;
-        const now = context.currentTime;
-        const durationSeconds = fadeMs / 1000;
-
-        node.gain.cancelScheduledValues(now);
-        node.gain.setValueAtTime(startValue, now);
-
-        if (easing === 'linear') {
-            node.gain.linearRampToValueAtTime(targetValue, now + durationSeconds);
-
-            return;
-        }
-
-        node.gain.setValueCurveAtTime(sampleEasingCurve(startValue, targetValue, easing), now, durationSeconds);
-    }
-}
-
-/**
- * Samples an eased gain curve from `startValue` to `targetValue` for
- * `AudioParam.setValueCurveAtTime`.
- *
- * @param startValue - Gain value at the start of the fade.
- * @param targetValue - Gain value at the end of the fade.
- * @param easing - Easing curve to sample.
- * @returns Sampled curve of {@link FADE_CURVE_SAMPLE_COUNT} values.
- */
-function sampleEasingCurve(startValue: number, targetValue: number, easing: EasingFunction): Float32Array {
-    const curve = new Float32Array(FADE_CURVE_SAMPLE_COUNT);
-
-    for (let i = 0; i < FADE_CURVE_SAMPLE_COUNT; i++) {
-        const t = i / (FADE_CURVE_SAMPLE_COUNT - 1);
-        const eased = applyEasing(t, easing);
-
-        // eslint-disable-next-line security/detect-object-injection -- bounded loop counter
-        curve[i] = startValue + (targetValue - startValue) * eased;
-    }
-
-    return curve;
 }
 
 /**

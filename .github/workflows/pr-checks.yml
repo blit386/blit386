@@ -152,12 +152,12 @@ jobs:
 
       - name: Check size limits
         run: |
-          # Fail if gzipped ESM exceeds 55 KB (adjust as needed)
+          # Fail if gzipped ESM exceeds 60 KB (adjust as needed)
           ESM_GZIP=${{ steps.size.outputs.esm_gzip }}
-          MAX_SIZE=56320  # 55 KB in bytes
+          MAX_SIZE=61440  # 60 KB in bytes
 
           if [ "$ESM_GZIP" -gt "$MAX_SIZE" ]; then
-            echo "::error::Bundle size (${{ steps.size.outputs.esm_gzip_kb }} KB gzipped) exceeds limit (55 KB)"
+            echo "::error::Bundle size (${{ steps.size.outputs.esm_gzip_kb }} KB gzipped) exceeds limit (60 KB)"
             exit 1
           fi
 

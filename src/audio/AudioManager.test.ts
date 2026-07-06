@@ -14,6 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    createMockAudioBuffer,
     installMockAudioContext,
     type MockAudioContext,
     type MockAudioParam,
@@ -21,6 +22,7 @@ import {
     uninstallMockAudioContext,
 } from '../__test__/webaudio-mock';
 import { AudioManager } from './AudioManager';
+import { INVALID_SOUND_REF } from './VoicePool';
 
 /**
  * Mounts a canvas for {@link AudioManager.attach}.
@@ -116,6 +118,45 @@ describe('AudioManager', () => {
 
             expect(() => audio.attach(canvas)).not.toThrow();
             expect(audio.isUnlocked()).toBe(false);
+        });
+    });
+
+    describe('internal accessors', () => {
+        it('getContext returns null before attach', () => {
+            expect(audio.getContext()).toBeNull();
+        });
+
+        it('getContext returns the live context after attach', () => {
+            audio.attach(canvas);
+
+            expect(audio.getContext()).toBe(getMockContext());
+        });
+
+        it('getContext returns null after detach', () => {
+            audio.attach(canvas);
+            audio.detach();
+
+            expect(audio.getContext()).toBeNull();
+        });
+
+        it('getSfxBus returns null before attach', () => {
+            expect(audio.getSfxBus()).toBeNull();
+        });
+
+        it('getSfxBus returns the sfx bus gain node after attach', () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+            const sfx = nthGainNode(context.createGainCalls, 2);
+
+            expect(audio.getSfxBus()).toBe(sfx);
+        });
+
+        it('getSfxBus returns null after detach', () => {
+            audio.attach(canvas);
+            audio.detach();
+
+            expect(audio.getSfxBus()).toBeNull();
         });
     });
 
@@ -299,6 +340,131 @@ describe('AudioManager', () => {
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
             expect(context.resumeCallCount).toBe(1);
+        });
+    });
+
+    describe('playSound', () => {
+        it('drops the request and returns an invalid ref before unlock', () => {
+            audio.attach(canvas);
+
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            expect(ref).toEqual(INVALID_SOUND_REF);
+            expect(audio.getDroppedSfxCount()).toBe(1);
+        });
+
+        it('delegates to the voice pool once unlocked', async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            expect(ref).not.toEqual(INVALID_SOUND_REF);
+            expect(audio.getDroppedSfxCount()).toBe(0);
+        });
+
+        it('returns an invalid ref when the manager has never been attached', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            expect(ref).toEqual(INVALID_SOUND_REF);
+        });
+    });
+
+    describe('sound playback controls', () => {
+        beforeEach(async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+        });
+
+        it('soundStop stops a playing sound', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundStop(ref);
+
+            expect(audio.isSoundPlaying(ref)).toBe(false);
+        });
+
+        it('soundStop accepts an optional fadeOutMs without throwing', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            expect(() => audio.soundStop(ref, 200)).not.toThrow();
+        });
+
+        it('isSoundPlaying reports true for a live sound and false for an invalid ref', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            expect(audio.isSoundPlaying(ref)).toBe(true);
+            expect(audio.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
+        });
+
+        it('soundVolumeSet and soundVolumeGet round-trip', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundVolumeSet(ref, 0.4);
+
+            expect(audio.soundVolumeGet(ref)).toBe(0.4);
+        });
+
+        it('soundPitchSet and soundPitchGet round-trip', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundPitchSet(ref, 1.5);
+
+            expect(audio.soundPitchGet(ref)).toBe(1.5);
+        });
+
+        it('soundPanSet and soundPanGet round-trip', () => {
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.soundPanSet(ref, -0.5);
+
+            expect(audio.soundPanGet(ref)).toBe(-0.5);
+        });
+
+        it('every accessor reports inert defaults on a manager that was never attached', () => {
+            const detachedAudio = new AudioManager();
+
+            expect(detachedAudio.isSoundPlaying(INVALID_SOUND_REF)).toBe(false);
+            expect(detachedAudio.soundVolumeGet(INVALID_SOUND_REF)).toBe(1);
+            expect(detachedAudio.soundPitchGet(INVALID_SOUND_REF)).toBe(1);
+            expect(detachedAudio.soundPanGet(INVALID_SOUND_REF)).toBe(0);
+            expect(() => detachedAudio.soundStop(INVALID_SOUND_REF)).not.toThrow();
+            expect(() => detachedAudio.soundVolumeSet(INVALID_SOUND_REF, 0.5)).not.toThrow();
+        });
+    });
+
+    describe('voice pool lifecycle', () => {
+        it('stops all voices and closes the context in the right order on detach', async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const ref = audio.playSound(createMockAudioBuffer());
+
+            audio.detach();
+
+            expect(audio.getSfxBus()).toBeNull();
+
+            // Re-attaching and asking the (new, empty) pool about the old ref must not throw and
+            // must report it as not playing - the old pool instance was discarded on detach.
+            audio.attach(canvas);
+            expect(() => audio.playSound(createMockAudioBuffer())).not.toThrow();
+            expect(ref).not.toEqual(INVALID_SOUND_REF);
+            expect(audio.isSoundPlaying(ref)).toBe(false);
         });
     });
 });
