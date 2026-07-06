@@ -12,7 +12,11 @@
 
 The integer-coordinate primitives shared across the engine: `Vector2i`, `Rect2i`, and `Color32`.
 
+<ApiAvailability page="api/core-types" />
+
 ## Vector2i
+
+<Since symbol="Vector2i" />
 
 Integer 2D vector. Constructor auto-truncates floats toward zero. Used for all positions, sizes, and camera offsets.
 
@@ -52,6 +56,8 @@ Instance methods: `.add()`, `.sub()`, `.scale()`, `.dot()`, `.clone()`, `.isEqua
 `.isZero()`, `.negate()`, `.abs()`, `.min()`, `.max()`, etc. See `src/utils/Vector2i.ts` for the full list.
 
 ## Rect2i
+
+<Since symbol="Rect2i" />
 
 Integer rectangle with `x, y, width, height` fields.
 
@@ -104,6 +110,8 @@ r.max; // Vector2i getter (bottom-right)
 
 ## Color32
 
+<Since symbol="Color32" />
+
 32-bit RGBA color (channels 0–255).
 
 ```ts twoslash
@@ -154,6 +162,8 @@ c.isEqual(other); // boolean – all RGBA channels match
 ```
 
 <DemoEmbed demo="032-named-colors" title="BLIT386 named colors demo" />
+
+<PageChangelog page="api/core-types" />
 
 ## See also
 
