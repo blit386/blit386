@@ -5,6 +5,7 @@
  * stay centralized and consistent.
  */
 
+import { SYNTH_WAVEFORMS } from '../assets/synth/SynthParams';
 import { buildPathHint, extractExtension } from './urlHints';
 
 /**
@@ -598,8 +599,8 @@ export function audioClipNotReadyError(): string {
     );
 }
 
-/** Waveform names listed in {@link audioClipSynthInvalidWaveformError}. */
-const SYNTH_WAVEFORM_NAMES = 'sine, square, triangle, sawtooth, noise';
+/** Waveform names listed in {@link audioClipSynthInvalidWaveformError}, derived from {@link SYNTH_WAVEFORMS}. */
+const SYNTH_WAVEFORM_NAMES = SYNTH_WAVEFORMS.join(', ');
 
 /**
  * Returns the error message for a `SynthParams.waveform` that is not a supported waveform name.
@@ -619,6 +620,20 @@ export function audioClipSynthInvalidWaveformError(waveform: string): string {
  */
 export function audioClipSynthNonPositiveDurationError(duration: number): string {
     return `AudioClip.synth() needs duration greater than 0 seconds (got ${duration}). Set duration to a positive number.`;
+}
+
+/**
+ * Returns the error message for a `SynthParams.duration` that exceeds the supported maximum.
+ *
+ * @param duration - Invalid duration value that was supplied, in seconds.
+ * @param maxDuration - Maximum accepted duration, in seconds.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthDurationTooLongError(duration: number, maxDuration: number): string {
+    return (
+        `AudioClip.synth() duration is too long (got ${duration}s). ` +
+        `Use ${maxDuration} seconds or fewer, or split the clip into shorter synthesized pieces.`
+    );
 }
 
 /**

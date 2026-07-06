@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SynthParams } from './SynthParams';
+import { MAX_SYNTH_DURATION_SECONDS } from './SynthParams';
 import { validateSynthParams } from './synthValidation';
 
 /**
@@ -53,6 +54,18 @@ describe('validateSynthParams', () => {
 
     it('should throw for a negative duration', () => {
         expect(() => validateSynthParams(buildParams({ duration: -1 }), 48000)).toThrow(/duration/);
+    });
+
+    it('should not throw for a duration exactly at the maximum', () => {
+        const params = buildParams({ duration: MAX_SYNTH_DURATION_SECONDS });
+
+        expect(() => validateSynthParams(params, 48000)).not.toThrow();
+    });
+
+    it('should throw for a duration exceeding the maximum', () => {
+        const params = buildParams({ duration: MAX_SYNTH_DURATION_SECONDS + 1 });
+
+        expect(() => validateSynthParams(params, 48000)).toThrow(/duration/);
     });
 
     it('should throw for a zero sample rate', () => {

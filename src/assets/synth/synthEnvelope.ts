@@ -88,8 +88,12 @@ export function envelopeValueAt(t: number, duration: number, envelope: ResolvedE
         return 0;
     }
 
+    // Ramp across whatever span is actually available before `duration` (`release` itself when
+    // `release <= duration`, but only `duration` when a longer release got clamped to
+    // `releaseStart = 0`) - otherwise the ramp would still be mid-fade at the last sample.
+    const releaseSpan = duration - releaseStart;
     const startGain = attackDecayGain(releaseStart, envelope);
-    const releaseT = Math.min((t - releaseStart) / release, 1);
+    const releaseT = releaseSpan > 0 ? Math.min((t - releaseStart) / releaseSpan, 1) : 1;
 
     return startGain * (1 - releaseT);
 }

@@ -3,6 +3,7 @@
  */
 
 import {
+    audioClipSynthDurationTooLongError,
     audioClipSynthInvalidWaveformError,
     audioClipSynthNonNegativeFieldError,
     audioClipSynthNonPositiveDurationError,
@@ -13,9 +14,10 @@ import {
     audioClipSynthUnitRangeFieldError,
 } from '../../utils/errorMessages';
 import type { SynthEnvelope, SynthParams, SynthVibrato } from './SynthParams';
+import { MAX_SYNTH_DURATION_SECONDS, SYNTH_WAVEFORMS } from './SynthParams';
 
 /** Waveform names accepted by {@link SynthParams.waveform}. */
-const VALID_WAVEFORMS = new Set<string>(['sine', 'square', 'triangle', 'sawtooth', 'noise']);
+const VALID_WAVEFORMS = new Set<string>(SYNTH_WAVEFORMS);
 
 /**
  * Validates `params` and the target `sampleRate` before {@link renderSynthSamples} runs.
@@ -31,6 +33,10 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
 
     if (!(params.duration > 0)) {
         throw new Error(audioClipSynthNonPositiveDurationError(params.duration));
+    }
+
+    if (params.duration > MAX_SYNTH_DURATION_SECONDS) {
+        throw new Error(audioClipSynthDurationTooLongError(params.duration, MAX_SYNTH_DURATION_SECONDS));
     }
 
     if (!(sampleRate > 0)) {

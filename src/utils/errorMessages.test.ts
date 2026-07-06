@@ -15,6 +15,7 @@ import {
     audioClipHttpError,
     audioClipNetworkError,
     audioClipNotReadyError,
+    audioClipSynthDurationTooLongError,
     audioClipSynthInvalidWaveformError,
     audioClipSynthNonNegativeFieldError,
     audioClipSynthNonPositiveDurationError,
@@ -430,6 +431,23 @@ describe('audio clip error message helpers', () => {
 
         it('mentions duration', () => {
             expect(audioClipSynthNonPositiveDurationError(0)).toContain('duration');
+        });
+    });
+
+    describe('audioClipSynthDurationTooLongError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthDurationTooLongError(120, 60).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid duration and the maximum', () => {
+            const message = audioClipSynthDurationTooLongError(120, 60);
+
+            expect(message).toContain('120');
+            expect(message).toContain('60');
+        });
+
+        it('mentions duration', () => {
+            expect(audioClipSynthDurationTooLongError(120, 60)).toContain('duration');
         });
     });
 

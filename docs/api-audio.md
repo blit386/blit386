@@ -172,7 +172,7 @@ const laser = await AudioClip.synth({
 <TypeTable type={{
     waveform: { type: "'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise'", description: 'Oscillator waveform shape.' },
     frequency: { type: 'number', description: 'Base carrier frequency in Hz at the start of the clip.' },
-    duration: { type: 'number', description: 'Total clip duration in seconds. Must be greater than 0.' },
+    duration: { type: 'number', description: 'Total clip duration in seconds. Must be greater than 0 and no more than 60.' },
     volume: { type: 'number', default: '1', description: 'Overall output amplitude in [0, 1]; final output is always clamped.' },
     envelope: { type: 'SynthEnvelope', description: 'Attack/decay/sustain/release envelope.' },
     pitchSweep: { type: 'SynthPitchSweep', description: 'Linear pitch sweep from frequency to a target frequency.' },
@@ -231,8 +231,11 @@ import { AudioClip, BT } from 'blit386';
 // Same character every time - useful for a UI sound that should stay consistent.
 const menuBlip = await AudioClip.synth(BT.synthPreset.blip());
 
-// A different seed per pickup keeps repeated collects from sounding robotic.
-const coin = await AudioClip.synth(BT.synthPreset.pickup(Date.now()));
+// A different seed per pickup keeps repeated collects from sounding robotic, while staying
+// reproducible - a wall-clock seed like Date.now() would defeat that, since it can never be
+// replayed the same way twice.
+let pickupCount = 0;
+const coin = await AudioClip.synth(BT.synthPreset.pickup(pickupCount++));
 
 BT.soundPlay(menuBlip);
 BT.soundPlay(coin, { volume: 0.8 });

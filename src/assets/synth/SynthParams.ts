@@ -6,8 +6,16 @@
  * synth presets as data (level files, preset libraries) rather than code.
  */
 
-/** Oscillator waveform shapes accepted by {@link SynthParams.waveform}. */
-export type SynthWaveform = 'noise' | 'sawtooth' | 'sine' | 'square' | 'triangle';
+/**
+ * Oscillator waveform shapes accepted by {@link SynthParams.waveform} - the single source of
+ * truth {@link SynthWaveform} is derived from, and that validation/error-message code reuses
+ * (see `synthValidation.ts` and `errorMessages.ts`) so the accepted set can never drift out of
+ * sync between the type, the validator, and the error text.
+ */
+export const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'] as const;
+
+/** Oscillator waveform shape; one of {@link SYNTH_WAVEFORMS}. */
+export type SynthWaveform = (typeof SYNTH_WAVEFORMS)[number];
 
 /**
  * Attack/decay/sustain/release envelope descriptor; see {@link SynthParams.envelope}.
@@ -76,7 +84,7 @@ export interface SynthParams {
     /** Base carrier frequency in Hz at the start of the clip (before any pitch sweep or vibrato). */
     frequency: number;
 
-    /** Total clip duration in seconds. Must be greater than 0. */
+    /** Total clip duration in seconds. Must be greater than 0 and no more than {@link MAX_SYNTH_DURATION_SECONDS}. */
     duration: number;
 
     /**
@@ -138,3 +146,11 @@ export const DEFAULT_NOISE_MIX = 0;
 
 /** Default {@link SynthParams.dutyCycle} applied when omitted. */
 export const DEFAULT_DUTY_CYCLE = 0.5;
+
+/**
+ * Maximum accepted {@link SynthParams.duration}, in seconds. Rendering is synchronous CPU work
+ * with no chunking, so an unbounded duration could block the caller for an unreasonable amount
+ * of time; this cap is generous for sound effects and short stingers while keeping a single
+ * `AudioClip.synth()` call bounded.
+ */
+export const MAX_SYNTH_DURATION_SECONDS = 60;

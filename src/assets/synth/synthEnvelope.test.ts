@@ -84,6 +84,15 @@ describe('envelopeValueAt', () => {
         expect(envelopeValueAt(0, duration, noAttack)).toBe(1);
     });
 
+    it('should reach exactly 0 at t=duration even when release alone is longer than duration', () => {
+        // release (2s) is longer than duration (1s) and the clip has no attack/decay, so
+        // releaseStart clamps to 0 and startGain is the (non-zero) sustain level - the release
+        // ramp must still finish exactly at duration rather than only covering `release` seconds.
+        const longRelease = { attack: 0, decay: 0, sustain: 0.8, release: 2 };
+
+        expect(envelopeValueAt(duration, duration, longRelease)).toBe(0);
+    });
+
     it('should release correctly from mid-attack/decay when duration is shorter than attack+decay+release', () => {
         // A very short percussive hit: attack+decay+release all compressed by a short duration.
         const shortEnvelope = { attack: 0.5, decay: 0.5, sustain: 0.5, release: 0.5 };
