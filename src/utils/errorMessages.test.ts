@@ -15,6 +15,15 @@ import {
     audioClipHttpError,
     audioClipNetworkError,
     audioClipNotReadyError,
+    audioClipSynthDurationTooLongError,
+    audioClipSynthInvalidWaveformError,
+    audioClipSynthNonNegativeFieldError,
+    audioClipSynthNonPositiveDurationError,
+    audioClipSynthNonPositiveFrequencyError,
+    audioClipSynthNonPositiveSampleRateError,
+    audioClipSynthPitchSweepFrequencyError,
+    audioClipSynthSustainRangeError,
+    audioClipSynthUnitRangeFieldError,
     btfontEmbeddedTextureFormatError,
     btfontEmbeddedTextureTooLargeError,
     btfontGlyphCountTooLargeError,
@@ -388,6 +397,151 @@ describe('audio clip error message helpers', () => {
 
         it('is consistent across calls', () => {
             expect(audioClipNotReadyError()).toBe(audioClipNotReadyError());
+        });
+    });
+
+    describe('audioClipSynthInvalidWaveformError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthInvalidWaveformError('wobble').length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid waveform value', () => {
+            expect(audioClipSynthInvalidWaveformError('wobble')).toContain('wobble');
+        });
+
+        it('mentions the supported waveform names', () => {
+            const message = audioClipSynthInvalidWaveformError('wobble');
+
+            expect(message).toContain('sine');
+            expect(message).toContain('square');
+            expect(message).toContain('triangle');
+            expect(message).toContain('sawtooth');
+            expect(message).toContain('noise');
+        });
+    });
+
+    describe('audioClipSynthNonPositiveDurationError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthNonPositiveDurationError(0).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid duration value', () => {
+            expect(audioClipSynthNonPositiveDurationError(-1)).toContain('-1');
+        });
+
+        it('mentions duration', () => {
+            expect(audioClipSynthNonPositiveDurationError(0)).toContain('duration');
+        });
+    });
+
+    describe('audioClipSynthDurationTooLongError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthDurationTooLongError(120, 60).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid duration and the maximum', () => {
+            const message = audioClipSynthDurationTooLongError(120, 60);
+
+            expect(message).toContain('120');
+            expect(message).toContain('60');
+        });
+
+        it('mentions duration', () => {
+            expect(audioClipSynthDurationTooLongError(120, 60)).toContain('duration');
+        });
+    });
+
+    describe('audioClipSynthNonPositiveSampleRateError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthNonPositiveSampleRateError(0).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid sample rate value', () => {
+            expect(audioClipSynthNonPositiveSampleRateError(-48000)).toContain('-48000');
+        });
+
+        it('mentions sample rate', () => {
+            expect(audioClipSynthNonPositiveSampleRateError(0)).toContain('sample rate');
+        });
+    });
+
+    describe('audioClipSynthNonPositiveFrequencyError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthNonPositiveFrequencyError(0).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid frequency value', () => {
+            expect(audioClipSynthNonPositiveFrequencyError(-440)).toContain('-440');
+        });
+
+        it('mentions frequency', () => {
+            expect(audioClipSynthNonPositiveFrequencyError(0)).toContain('frequency');
+        });
+    });
+
+    describe('audioClipSynthNonNegativeFieldError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthNonNegativeFieldError('envelope.attack', -1).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the field name and invalid value', () => {
+            const message = audioClipSynthNonNegativeFieldError('envelope.attack', -1);
+
+            expect(message).toContain('envelope.attack');
+            expect(message).toContain('-1');
+        });
+
+        it('produces different messages for different fields', () => {
+            expect(audioClipSynthNonNegativeFieldError('vibrato.rate', -1)).not.toBe(
+                audioClipSynthNonNegativeFieldError('vibrato.depth', -1),
+            );
+        });
+    });
+
+    describe('audioClipSynthSustainRangeError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthSustainRangeError(1.5).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid sustain value', () => {
+            expect(audioClipSynthSustainRangeError(1.5)).toContain('1.5');
+        });
+
+        it('mentions sustain', () => {
+            expect(audioClipSynthSustainRangeError(1.5)).toContain('sustain');
+        });
+    });
+
+    describe('audioClipSynthUnitRangeFieldError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthUnitRangeFieldError('noiseMix', 2).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the field name and invalid value', () => {
+            const message = audioClipSynthUnitRangeFieldError('dutyCycle', -0.5);
+
+            expect(message).toContain('dutyCycle');
+            expect(message).toContain('-0.5');
+        });
+
+        it('produces different messages for different fields', () => {
+            expect(audioClipSynthUnitRangeFieldError('noiseMix', 2)).not.toBe(
+                audioClipSynthUnitRangeFieldError('dutyCycle', 2),
+            );
+        });
+    });
+
+    describe('audioClipSynthPitchSweepFrequencyError', () => {
+        it('returns a non-empty string', () => {
+            expect(audioClipSynthPitchSweepFrequencyError(0).length).toBeGreaterThan(0);
+        });
+
+        it('mentions the invalid target frequency value', () => {
+            expect(audioClipSynthPitchSweepFrequencyError(-100)).toContain('-100');
+        });
+
+        it('mentions pitch sweep', () => {
+            expect(audioClipSynthPitchSweepFrequencyError(0)).toContain('pitch sweep');
         });
     });
 });

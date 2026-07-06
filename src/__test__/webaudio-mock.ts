@@ -42,11 +42,17 @@ export interface MockGainNode extends MockAudioNode {
 
 /** Recorded `AudioContext` state: created gain nodes plus resume/close call counts. */
 export interface MockAudioContext {
+    /** Sample rate in Hz reported by this mock context. */
+    readonly sampleRate: number;
+
     /** Gain nodes created via `createGain()`, in call order. */
     readonly createGainCalls: readonly GainNode[];
 
     /** Buffer source nodes created via `createBufferSource()`, in call order. */
     readonly createBufferSourceCalls: readonly AudioBufferSourceNode[];
+
+    /** Arguments recorded from every `createBuffer()` call, in call order. */
+    readonly createBufferCalls: ReadonlyArray<{ numberOfChannels: number; length: number; sampleRate: number }>;
 
     /** Stereo panner nodes created via `createStereoPanner()`, in call order. */
     readonly createStereoPannerCalls: readonly StereoPannerNode[];
@@ -218,20 +224,45 @@ export function createMockStereoPannerNode(): StereoPannerNode {
 }
 
 /**
- * Creates a fake `AudioBuffer`-shaped object for {@link createMockAudioContext}'s
- * default `decodeAudioData` resolution.
+ * Creates a fake `AudioBuffer`-shaped object backed by real per-channel `Float32Array` storage,
+ * used both for {@link createMockAudioContext}'s default `decodeAudioData` resolution and its
+ * `createBuffer()` implementation.
  *
- * @returns Stub `AudioBuffer`, cast from a plain tracking object.
+ * @param numberOfChannels - Channel count. Defaults to `1`.
+ * @param length - Per-channel sample count. Defaults to `0`.
+ * @param sampleRate - Sample rate in Hz. Defaults to {@link MOCK_SAMPLE_RATE}.
+ * @returns Stub `AudioBuffer`, cast from a plain tracking object with live channel data.
  */
-export function createMockAudioBuffer(): AudioBuffer {
+export function createMockAudioBuffer(
+    numberOfChannels: number = 1,
+    length: number = 0,
+    sampleRate: number = MOCK_SAMPLE_RATE,
+): AudioBuffer {
+    const channels: Float32Array[] = Array.from({ length: numberOfChannels }, () => new Float32Array(length));
+
     return {
-        sampleRate: MOCK_SAMPLE_RATE,
-        length: 0,
-        duration: 0,
-        numberOfChannels: 1,
-        getChannelData: () => new Float32Array(0),
-        copyFromChannel: () => {},
-        copyToChannel: () => {},
+        sampleRate,
+        length,
+        duration: length / sampleRate,
+        numberOfChannels,
+        // eslint-disable-next-line security/detect-object-injection -- channel index is bounded by numberOfChannels
+        getChannelData: (channel: number) => channels[channel] ?? new Float32Array(0),
+        copyFromChannel: (destination: Float32Array, channelNumber: number, bufferOffset = 0) => {
+            // eslint-disable-next-line security/detect-object-injection -- channel index is bounded by numberOfChannels
+            const source = channels[channelNumber];
+
+            if (source) {
+                destination.set(source.subarray(bufferOffset, bufferOffset + destination.length));
+            }
+        },
+        copyToChannel: (source: Float32Array, channelNumber: number, bufferOffset = 0) => {
+            // eslint-disable-next-line security/detect-object-injection -- channel index is bounded by numberOfChannels
+            const target = channels[channelNumber];
+
+            if (target) {
+                target.set(source, bufferOffset);
+            }
+        },
     } as unknown as AudioBuffer;
 }
 
@@ -247,6 +278,7 @@ export function createMockAudioContext(): AudioContext {
     const createGainCalls: GainNode[] = [];
     const createBufferSourceCalls: AudioBufferSourceNode[] = [];
     const createStereoPannerCalls: StereoPannerNode[] = [];
+    const createBufferCalls: Array<{ numberOfChannels: number; length: number; sampleRate: number }> = [];
     const destination = {} as unknown as AudioNode;
     const decodeAudioDataCalls: ArrayBuffer[] = [];
     let resumeCallCount = 0;
@@ -260,6 +292,7 @@ export function createMockAudioContext(): AudioContext {
         createGainCalls,
         createBufferSourceCalls,
         createStereoPannerCalls,
+        createBufferCalls,
         decodeAudioDataCalls,
         decodeAudioDataImpl: (_audioData: ArrayBuffer) => Promise.resolve(createMockAudioBuffer()),
         get resumeCallCount() {
@@ -288,6 +321,11 @@ export function createMockAudioContext(): AudioContext {
             createStereoPannerCalls.push(node);
 
             return node;
+        },
+        createBuffer: (numberOfChannels: number, length: number, sampleRate: number) => {
+            createBufferCalls.push({ numberOfChannels, length, sampleRate });
+
+            return createMockAudioBuffer(numberOfChannels, length, sampleRate);
         },
         resume: () => {
             resumeCallCount += 1;

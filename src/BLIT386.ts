@@ -18,6 +18,14 @@ import { BitmapFont } from './assets/BitmapFont';
 import { Palette } from './assets/Palette';
 import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
 import { SpriteSheet } from './assets/SpriteSheet';
+import type {
+    SynthEnvelope,
+    SynthParams,
+    SynthPitchSweep,
+    SynthVibrato,
+    SynthWaveform,
+} from './assets/synth/SynthParams';
+import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
 import type { SoundParamSetOptions, SoundPlayOptions, SoundRef, SoundStopOptions } from './audio/VoicePool';
 import { BTAPI } from './core/BTAPI';
 import {
@@ -704,6 +712,22 @@ export const BT = {
     soundPanGet: (ref: SoundRef): number => {
         return BTAPI.instance.soundPanGet(ref);
     },
+
+    /**
+     * Pre-configured `SynthParams` presets for common sound effects ("jump", "pickup",
+     * "explosion", "laser", "hit", "blip").
+     *
+     * Each function returns a fresh {@link SynthParams} object; pass it to
+     * {@link AudioClip.synth} to render a clip, then play the result via {@link BT.soundPlay}.
+     * An optional `seed` argument applies small, bounded, deterministic jitter to a few
+     * hand-picked fields per preset, so repeated plays vary without losing reproducibility -
+     * the same seed always renders the exact same variant.
+     *
+     * @example
+     * const jumpClip = await AudioClip.synth(BT.synthPreset.jump());
+     * BT.soundPlay(jumpClip);
+     */
+    synthPreset: { jump, pickup, explosion, laser, hit, blip },
 
     /**
      * Creates a standalone palette instance.
@@ -1791,6 +1815,11 @@ export type {
     SoundPlayOptions,
     SoundRef,
     SoundStopOptions,
+    SynthEnvelope,
+    SynthParams,
+    SynthPitchSweep,
+    SynthVibrato,
+    SynthWaveform,
     TextSize,
 };
 export type { IndexedSpriteLoadResult };

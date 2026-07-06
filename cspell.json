@@ -6,6 +6,7 @@
   "words": [
     "ABGR",
     "ABXY",
+    "ADSR",
     "antialiasing",
     "astimezone",
     "backend",
@@ -89,6 +90,7 @@
     "texels",
     "texelSize",
     "timestep",
+    "trippable",
     "Uints",
     "unflushed",
     "unmodulated",

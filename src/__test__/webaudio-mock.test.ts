@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    createMockAudioBuffer,
     createMockAudioBufferSourceNode,
     createMockAudioContext,
     createMockStereoPannerNode,
@@ -85,6 +86,49 @@ describe('createMockAudioContext', () => {
         const context = createMockAudioContext();
 
         expect(context.currentTime).toBe(0);
+    });
+
+    it('creates a buffer via createBuffer with the requested shape and tracks the call', () => {
+        const context = createMockAudioContext();
+
+        const buffer = context.createBuffer(1, 100, 8000);
+
+        const mockContext = context as unknown as MockAudioContext;
+
+        expect(buffer.numberOfChannels).toBe(1);
+        expect(buffer.length).toBe(100);
+        expect(buffer.sampleRate).toBe(8000);
+        expect(mockContext.createBufferCalls).toEqual([{ numberOfChannels: 1, length: 100, sampleRate: 8000 }]);
+    });
+});
+
+describe('createMockAudioBuffer', () => {
+    it('defaults to a single silent zero-length channel', () => {
+        const buffer = createMockAudioBuffer();
+
+        expect(buffer.numberOfChannels).toBe(1);
+        expect(buffer.length).toBe(0);
+        expect(buffer.duration).toBe(0);
+        expect(buffer.getChannelData(0)).toEqual(new Float32Array(0));
+    });
+
+    it('allocates independent per-channel storage for the requested shape', () => {
+        const buffer = createMockAudioBuffer(2, 4, 8000);
+
+        expect(buffer.numberOfChannels).toBe(2);
+        expect(buffer.length).toBe(4);
+        expect(buffer.sampleRate).toBe(8000);
+        expect(buffer.duration).toBeCloseTo(4 / 8000, 10);
+        expect(buffer.getChannelData(0)).toEqual(new Float32Array(4));
+        expect(buffer.getChannelData(1)).toEqual(new Float32Array(4));
+    });
+
+    it('reflects copyToChannel writes back through getChannelData', () => {
+        const buffer = createMockAudioBuffer(1, 4);
+
+        buffer.copyToChannel(new Float32Array([0.1, 0.2, 0.3, 0.4]), 0);
+
+        expect(buffer.getChannelData(0)).toEqual(new Float32Array([0.1, 0.2, 0.3, 0.4]));
     });
 });
 

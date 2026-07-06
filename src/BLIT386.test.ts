@@ -11,6 +11,7 @@
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import type { AudioClip } from './assets/AudioClip';
+import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
 import type { BitmapFont, HardwareSettings } from './BLIT386';
 import { BT, Palette, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
@@ -461,6 +462,33 @@ describe('BT.soundPanSet / BT.soundPanGet', () => {
 
         expect(BT.soundPanGet(ref)).toBe(-0.5);
         expect(spy).toHaveBeenCalledWith(ref);
+    });
+});
+
+describe('BT.synthPreset', () => {
+    it('exposes exactly the preset sound library factories', () => {
+        expect(Object.keys(BT.synthPreset).sort()).toEqual(
+            ['blip', 'explosion', 'hit', 'jump', 'laser', 'pickup'].sort(),
+        );
+    });
+
+    it('delegates each preset to the same factory used by src/assets/synth/synthPresets.ts', () => {
+        expect(BT.synthPreset.jump).toBe(jump);
+        expect(BT.synthPreset.pickup).toBe(pickup);
+        expect(BT.synthPreset.explosion).toBe(explosion);
+        expect(BT.synthPreset.laser).toBe(laser);
+        expect(BT.synthPreset.hit).toBe(hit);
+        expect(BT.synthPreset.blip).toBe(blip);
+    });
+
+    it('every preset returns a SynthParams object usable by AudioClip.synth', () => {
+        for (const factory of Object.values(BT.synthPreset)) {
+            const params = factory();
+
+            expect(params.waveform).toBeDefined();
+            expect(params.frequency).toBeGreaterThan(0);
+            expect(params.duration).toBeGreaterThan(0);
+        }
     });
 });
 

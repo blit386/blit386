@@ -29,6 +29,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMockAudioContext, type MockAudioContext } from '../__test__/webaudio-mock';
 import { setAudioClipUnloadHandler, setAudioDecodeContext } from '../audio/audioDecodeContext';
 import { AudioClip, type AudioClipProgress } from './AudioClip';
+import type { SynthParams } from './synth/SynthParams';
 
 /**
  * Builds a mocked `fetch` response for the download pipeline.
@@ -408,6 +409,79 @@ describe('AudioClip', () => {
 
             expect(handler).toHaveBeenCalledOnce();
             expect(handler).toHaveBeenCalledWith(releasedBuffer);
+        });
+    });
+
+    describe('synth', () => {
+        /**
+         * Builds a valid baseline `SynthParams`, overridden per test.
+         *
+         * @param overrides - Fields to override on top of the baseline.
+         * @returns A valid `SynthParams` value merged with `overrides`.
+         */
+        function buildSynthParams(overrides: Partial<SynthParams> = {}): SynthParams {
+            return {
+                waveform: 'sine',
+                frequency: 440,
+                duration: 0.25,
+                seed: 1,
+                ...overrides,
+            };
+        }
+
+        it('should resolve an AudioClip whose buffer matches the requested duration and context sample rate', async () => {
+            const clip = await AudioClip.synth(buildSynthParams({ duration: 0.5 }));
+
+            expect(clip.sampleRate).toBe(mockContext.sampleRate);
+            expect(clip.duration).toBeCloseTo(0.5, 5);
+            expect(clip.buffer?.length).toBe(Math.round(0.5 * mockContext.sampleRate));
+        });
+
+        it('should reject when no decode context is registered', async () => {
+            setAudioDecodeContext(null);
+
+            await expect(AudioClip.synth(buildSynthParams())).rejects.toThrow(/isn't ready/);
+        });
+
+        it('should reject with a validation error for invalid params', async () => {
+            await expect(AudioClip.synth(buildSynthParams({ duration: 0 }))).rejects.toThrow(/duration/);
+        });
+
+        it('should not populate the URL-keyed resolved cache', async () => {
+            const clip = await AudioClip.synth(buildSynthParams());
+
+            expect(AudioClip.isLoaded(clip.url)).toBe(false);
+            expect(AudioClip.getClip(clip.url)).toBeNull();
+        });
+
+        it('should not dedupe repeated calls - each call renders a distinct buffer', async () => {
+            const params = buildSynthParams();
+
+            const first = await AudioClip.synth(params);
+            const second = await AudioClip.synth(params);
+
+            expect(first).not.toBe(second);
+            expect(first.buffer).not.toBe(second.buffer);
+        });
+
+        it('should render identical sample data for identical params (deterministic)', async () => {
+            const params = buildSynthParams({ waveform: 'noise', seed: 7 });
+
+            const first = await AudioClip.synth(params);
+            const second = await AudioClip.synth(params);
+
+            expect(Array.from(first.buffer?.getChannelData(0) ?? [])).toEqual(
+                Array.from(second.buffer?.getChannelData(0) ?? []),
+            );
+        });
+
+        it('should still no-op safely on unload()', async () => {
+            const clip = await AudioClip.synth(buildSynthParams());
+
+            expect(() => {
+                clip.unload();
+            }).not.toThrow();
+            expect(clip.buffer).toBeNull();
         });
     });
 });
