@@ -597,3 +597,103 @@ export function audioClipNotReadyError(): string {
         'before loading an AudioClip'
     );
 }
+
+/** Waveform names listed in {@link audioClipSynthInvalidWaveformError}. */
+const SYNTH_WAVEFORM_NAMES = 'sine, square, triangle, sawtooth, noise';
+
+/**
+ * Returns the error message for a `SynthParams.waveform` that is not a supported waveform name.
+ *
+ * @param waveform - Invalid waveform value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthInvalidWaveformError(waveform: string): string {
+    return `AudioClip.synth() got an unsupported waveform '${waveform}'. Use one of: ${SYNTH_WAVEFORM_NAMES}`;
+}
+
+/**
+ * Returns the error message for a `SynthParams.duration` that is not a positive number.
+ *
+ * @param duration - Invalid duration value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthNonPositiveDurationError(duration: number): string {
+    return `AudioClip.synth() needs duration greater than 0 seconds (got ${duration}). Set duration to a positive number.`;
+}
+
+/**
+ * Returns the error message for a target sample rate that is not a positive number.
+ *
+ * Surfaces only if the registered decode context reports an invalid sample rate - this should
+ * never happen with a real `AudioContext`, but is validated the same way any other boundary
+ * value is.
+ *
+ * @param sampleRate - Invalid sample rate value that was read from the decode context.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthNonPositiveSampleRateError(sampleRate: number): string {
+    return (
+        `AudioClip.synth() needs a positive sample rate (got ${sampleRate}). ` +
+        'Make sure the engine has finished starting before calling AudioClip.synth().'
+    );
+}
+
+/**
+ * Returns the error message for a `SynthParams.frequency` that is not a positive number.
+ *
+ * @param frequency - Invalid frequency value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthNonPositiveFrequencyError(frequency: number): string {
+    return `AudioClip.synth() needs frequency greater than 0 Hz (got ${frequency}). Set frequency to a positive number.`;
+}
+
+/**
+ * Returns the error message for a `SynthParams` numeric field that must be 0 or greater.
+ *
+ * Shared by envelope timings (`envelope.attack`, `envelope.decay`, `envelope.release`) and
+ * vibrato parameters (`vibrato.rate`, `vibrato.depth`).
+ *
+ * @param field - Dotted field path that failed validation (for example `'envelope.attack'`).
+ * @param value - Invalid negative value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthNonNegativeFieldError(field: string, value: number): string {
+    return `AudioClip.synth() needs ${field} to be 0 or greater (got ${value}). Use a non-negative number.`;
+}
+
+/**
+ * Returns the error message for a `SynthEnvelope.sustain` outside the [0, 1] range.
+ *
+ * @param sustain - Invalid sustain value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthSustainRangeError(sustain: number): string {
+    return `AudioClip.synth() needs envelope.sustain between 0 and 1 (got ${sustain}). Use a value in that range.`;
+}
+
+/**
+ * Returns the error message for a `SynthParams` numeric field that must fall within [0, 1].
+ *
+ * Shared by `noiseMix` and `dutyCycle`.
+ *
+ * @param field - Field name that failed validation (for example `'noiseMix'`).
+ * @param value - Invalid value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthUnitRangeFieldError(field: string, value: number): string {
+    return `AudioClip.synth() needs ${field} between 0 and 1 (got ${value}). Use a value in that range.`;
+}
+
+/**
+ * Returns the error message for a `SynthPitchSweep.toFrequency` that is not a positive number.
+ *
+ * @param toFrequency - Invalid target frequency value that was supplied.
+ * @returns User-facing error string.
+ */
+export function audioClipSynthPitchSweepFrequencyError(toFrequency: number): string {
+    return (
+        `AudioClip.synth() needs pitch sweep toFrequency greater than 0 Hz (got ${toFrequency}). ` +
+        'Set pitchSweep.toFrequency to a positive number.'
+    );
+}

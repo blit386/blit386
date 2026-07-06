@@ -147,6 +147,75 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
 - Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below. Music playback (a separate,
   loopable player distinct from the SFX voice pool) is not implemented yet.
 
+## Synthesis
+
+`AudioClip.synth` renders a clip procedurally from a `SynthParams` descriptor - no source file, no network request, and
+no `OfflineAudioContext`. Rendering runs entirely on the CPU and is deterministic: identical params (including `seed`)
+always produce identical sample data, so a `SynthParams` object can be stored and replayed as a preset.
+
+```ts twoslash
+import { AudioClip } from 'blit386';
+
+const laser = await AudioClip.synth({
+  waveform: 'sawtooth',
+  frequency: 880,
+  duration: 0.3,
+  pitchSweep: { toFrequency: 110 },
+  seed: 1,
+});
+```
+
+`SynthParams` fields:
+
+<TypeTable type={{
+    waveform: { type: "'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise'", description: 'Oscillator waveform shape.' },
+    frequency: { type: 'number', description: 'Base carrier frequency in Hz at the start of the clip.' },
+    duration: { type: 'number', description: 'Total clip duration in seconds. Must be greater than 0.' },
+    volume: { type: 'number', default: '1', description: 'Overall output amplitude in [0, 1]; final output is always clamped.' },
+    envelope: { type: 'SynthEnvelope', description: 'Attack/decay/sustain/release envelope.' },
+    pitchSweep: { type: 'SynthPitchSweep', description: 'Linear pitch sweep from frequency to a target frequency.' },
+    vibrato: { type: 'SynthVibrato', description: 'Sine-wave vibrato applied on top of frequency.' },
+    noiseMix: { type: 'number', default: '0', description: 'Fraction of white noise mixed into the oscillator, in [0, 1]. Ignored when waveform is noise.' },
+    dutyCycle: { type: 'number', default: '0.5', description: 'Fraction of each cycle spent high, in [0, 1]. Only affects square.' },
+    seed: { type: 'number', description: 'Seed for the deterministic PRNG driving noise generation.' },
+  }} />
+
+`SynthEnvelope` fields (all optional, times in seconds):
+
+<TypeTable type={{
+    attack: { type: 'number', default: '0.01', description: 'Time to ramp from silence to full amplitude.' },
+    decay: { type: 'number', default: '0.1', description: 'Time to fall from full amplitude to sustain.' },
+    sustain: { type: 'number', default: '0.7', description: 'Gain level in [0, 1] held between decay and release.' },
+    release: { type: 'number', default: '0.1', description: 'Time to fall from sustain to silence, anchored to the end of the clip.' },
+  }} />
+
+The release phase always finishes exactly at `duration`, even on a very short clip where the attack, decay, and release
+phases overlap - a percussive hit is never cut off mid-fade.
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+// A short, noisy explosion: mostly noise, with a touch of low square tone, quick attack and decay.
+const explosion = await AudioClip.synth({
+  waveform: 'square',
+  frequency: 90,
+  duration: 0.4,
+  noiseMix: 0.8,
+  envelope: { attack: 0, decay: 0.05, sustain: 0.3, release: 0.3 },
+  seed: 42,
+});
+
+BT.soundPlay(explosion, { volume: 0.7 });
+```
+
+<Callout title="Not cached, not deduplicated">
+
+Unlike `AudioClip.load()`, `AudioClip.synth()` never populates the URL-keyed resolved cache and never deduplicates
+concurrent calls - every call renders a fresh, independent `AudioBuffer`, even for byte-identical `params`. `unload()`
+still works the same way (releases the buffer, stops any voice playing it), it just has no cache entry to clear.
+
+</Callout>
+
 ## Playback (SFX)
 
 `BT.soundPlay` plays a loaded `AudioClip` through a fixed-size pool of SFX voices. Each call returns an opaque

@@ -18,6 +18,13 @@ import { BitmapFont } from './assets/BitmapFont';
 import { Palette } from './assets/Palette';
 import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
 import { SpriteSheet } from './assets/SpriteSheet';
+import type {
+    SynthEnvelope,
+    SynthParams,
+    SynthPitchSweep,
+    SynthVibrato,
+    SynthWaveform,
+} from './assets/synth/SynthParams';
 import type { SoundParamSetOptions, SoundPlayOptions, SoundRef, SoundStopOptions } from './audio/VoicePool';
 import { BTAPI } from './core/BTAPI';
 import {
@@ -1791,6 +1798,11 @@ export type {
     SoundPlayOptions,
     SoundRef,
     SoundStopOptions,
+    SynthEnvelope,
+    SynthParams,
+    SynthPitchSweep,
+    SynthVibrato,
+    SynthWaveform,
     TextSize,
 };
 export type { IndexedSpriteLoadResult };

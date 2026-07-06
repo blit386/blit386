@@ -11,9 +11,11 @@
  * - falling back through an ordered list of candidate URLs so a caller can
  *   offer alternate containers/codecs for browsers that cannot decode the
  *   first choice
+ * - synthesizing a clip procedurally via {@link AudioClip.synth}, entirely on the CPU with no
+ *   source file, no `OfflineAudioContext`, and no URL cache entry
  *
  * Playback (voices, buses) is added in a later phase; this class only covers
- * loading, caching, and releasing decoded buffers.
+ * loading, caching, releasing, and synthesizing decoded buffers.
  */
 
 import { getAudioDecodeContext, notifyAudioClipUnload } from '../audio/audioDecodeContext';
@@ -23,6 +25,9 @@ import {
     audioClipNetworkError,
     audioClipNotReadyError,
 } from '../utils/errorMessages';
+import type { SynthParams } from './synth/SynthParams';
+import { renderSynthSamples } from './synth/synthRender';
+import { validateSynthParams } from './synth/synthValidation';
 
 /** Phase reported by {@link AudioClipProgressCallback} during a load. */
 export type AudioClipLoadPhase = 'download' | 'decoding';
@@ -68,8 +73,8 @@ const inFlightLoads = new Map<string, Promise<AudioClip>>();
 /**
  * Decoded audio asset with its winning source URL and buffer-derived metadata.
  *
- * Construct instances with {@link AudioClip.load} or {@link AudioClip.loadAll};
- * there is no public constructor.
+ * Construct instances with {@link AudioClip.load}, {@link AudioClip.loadAll}, or
+ * {@link AudioClip.synth}; there is no public constructor.
  */
 export class AudioClip {
     /** Source URL this clip was decoded from - the winning entry when loaded from a fallback list. */
@@ -142,6 +147,40 @@ export class AudioClip {
      */
     static async loadAll(urls: Array<string | string[]>, options?: AudioClipLoadOptions): Promise<AudioClip[]> {
         return Promise.all(urls.map((url) => AudioClip.load(url, options)));
+    }
+
+    /**
+     * Synthesizes a clip from deterministic procedural parameters - no source file, no
+     * `OfflineAudioContext`, and no audio graph involved.
+     *
+     * Rendering happens entirely on the CPU via the pure {@link renderSynthSamples} function
+     * against an `AudioBuffer` allocated from the registered decode context. The returned clip
+     * flows through the same {@link buffer} getter and playback path as a loaded clip, but uses
+     * a synthetic, non-cached identifier (`synth:<waveform>`) - it is never added to the
+     * URL-keyed resolved cache and never deduplicated, so identical `params` still render a
+     * fresh, independent `AudioBuffer` on every call. See {@link SynthParams} for the full
+     * parameter set.
+     *
+     * @param params - Deterministic synthesis parameters.
+     * @returns A new clip wrapping the synthesized buffer.
+     * @throws Error if `params` fails validation, or the engine has not registered a decode
+     *   context yet (see {@link audioClipNotReadyError}).
+     */
+    static async synth(params: SynthParams): Promise<AudioClip> {
+        const decodeContext = getAudioDecodeContext();
+
+        if (decodeContext === null) {
+            throw new Error(audioClipNotReadyError());
+        }
+
+        validateSynthParams(params, decodeContext.sampleRate);
+
+        const sampleCount = Math.round(params.duration * decodeContext.sampleRate);
+        const buffer = decodeContext.createBuffer(1, sampleCount, decodeContext.sampleRate);
+
+        buffer.copyToChannel(renderSynthSamples(params, decodeContext.sampleRate), 0);
+
+        return new AudioClip(`synth:${params.waveform}`, buffer);
     }
 
     /**
