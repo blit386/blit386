@@ -23,6 +23,7 @@ export default [
             '**/coverage/**',
             '**/dist/**',
             '**/node_modules/**',
+            'scripts/__fixtures__/**',
             '.pnpm-store/**',
             '**/.pnpm-store/**',
             'vite.config.ts.timestamp-*',
