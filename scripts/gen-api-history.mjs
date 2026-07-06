@@ -850,7 +850,10 @@ function pickaxeSearchText(record) {
     }
 
     if (ts.isClassDeclaration(record.node)) {
-        return `export class ${record.name}`;
+        const modifiers = ts.canHaveModifiers(record.node) ? (ts.getModifiers(record.node) ?? []) : [];
+        const isAbstract = modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.AbstractKeyword);
+
+        return isAbstract ? `export abstract class ${record.name}` : `export class ${record.name}`;
     }
 
     if (ts.isInterfaceDeclaration(record.node)) {
