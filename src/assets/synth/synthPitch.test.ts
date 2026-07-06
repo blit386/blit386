@@ -12,12 +12,12 @@ describe('sweepFrequencyAt', () => {
         expect(sweepFrequencyAt(0.5, 1, 440, undefined)).toBe(440);
     });
 
-    it('should return the base frequency at t=0', () => {
-        expect(sweepFrequencyAt(0, 1, 440, { toFrequency: 880 })).toBeCloseTo(440, 5);
+    it('should be exactly the base frequency at t=0 (boundary)', () => {
+        expect(sweepFrequencyAt(0, 1, 440, { toFrequency: 880 })).toBe(440);
     });
 
-    it('should return the target frequency at t=duration', () => {
-        expect(sweepFrequencyAt(1, 1, 440, { toFrequency: 880 })).toBeCloseTo(880, 5);
+    it('should be exactly the target frequency at t=duration (boundary)', () => {
+        expect(sweepFrequencyAt(1, 1, 440, { toFrequency: 880 })).toBe(880);
     });
 
     it('should interpolate linearly at the midpoint', () => {
@@ -38,12 +38,12 @@ describe('vibratoOffsetAt', () => {
         expect(vibratoOffsetAt(0.5, undefined)).toBe(0);
     });
 
-    it('should return 0 at t=0 regardless of depth', () => {
-        expect(vibratoOffsetAt(0, { rate: 5, depth: 10 })).toBeCloseTo(0, 5);
+    it('should be exactly 0 at t=0 regardless of depth (boundary)', () => {
+        expect(vibratoOffsetAt(0, { rate: 5, depth: 10 })).toBe(0);
     });
 
-    it('should return 0 when depth is 0', () => {
-        expect(vibratoOffsetAt(0.25, { rate: 5, depth: 0 })).toBeCloseTo(0, 5);
+    it('should be exactly 0 when depth is 0 (boundary)', () => {
+        expect(vibratoOffsetAt(0.25, { rate: 5, depth: 0 })).toBe(0);
     });
 
     it('should reach the positive peak a quarter cycle in', () => {
@@ -57,8 +57,8 @@ describe('vibratoOffsetAt', () => {
 });
 
 describe('instantaneousFrequencyAt', () => {
-    it('should return the base frequency with no sweep or vibrato', () => {
-        expect(instantaneousFrequencyAt(0.5, 1, 440, undefined, undefined)).toBeCloseTo(440, 5);
+    it('should be exactly the base frequency with no sweep or vibrato (boundary)', () => {
+        expect(instantaneousFrequencyAt(0.5, 1, 440, undefined, undefined)).toBe(440);
     });
 
     it('should combine sweep and vibrato', () => {

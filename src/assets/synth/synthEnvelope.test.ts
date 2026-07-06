@@ -40,28 +40,36 @@ describe('envelopeValueAt', () => {
     const envelope = { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.3 };
     const duration = 1;
 
+    it('should be exactly 0 at the start of the attack phase (boundary)', () => {
+        expect(envelopeValueAt(0, duration, envelope)).toBe(0);
+    });
+
+    it('should be exactly 1 at the end of the attack phase (boundary)', () => {
+        expect(envelopeValueAt(0.1, duration, envelope)).toBe(1);
+    });
+
     it('should ramp from 0 to 1 across the attack phase', () => {
-        expect(envelopeValueAt(0, duration, envelope)).toBeCloseTo(0, 5);
         expect(envelopeValueAt(0.05, duration, envelope)).toBeCloseTo(0.5, 5);
-        expect(envelopeValueAt(0.1, duration, envelope)).toBeCloseTo(1, 5);
     });
 
     it('should fall from 1 to sustain across the decay phase', () => {
-        expect(envelopeValueAt(0.1, duration, envelope)).toBeCloseTo(1, 5);
         expect(envelopeValueAt(0.2, duration, envelope)).toBeCloseTo(0.75, 5);
         expect(envelopeValueAt(0.3, duration, envelope)).toBeCloseTo(0.5, 5);
     });
 
-    it('should hold at sustain until the release phase begins', () => {
-        expect(envelopeValueAt(0.5, duration, envelope)).toBeCloseTo(0.5, 5);
-        expect(envelopeValueAt(0.69, duration, envelope)).toBeCloseTo(0.5, 5);
+    it('should hold at exactly sustain across the sustain plateau (boundary)', () => {
+        expect(envelopeValueAt(0.5, duration, envelope)).toBe(envelope.sustain);
+        expect(envelopeValueAt(0.69, duration, envelope)).toBe(envelope.sustain);
     });
 
-    it('should fall from sustain to 0 across the release phase, ending exactly at duration', () => {
+    it('should fall from sustain to 0 across the release phase', () => {
         // releaseStart = duration - release = 0.7
         expect(envelopeValueAt(0.7, duration, envelope)).toBeCloseTo(0.5, 5);
         expect(envelopeValueAt(0.85, duration, envelope)).toBeCloseTo(0.25, 5);
-        expect(envelopeValueAt(1, duration, envelope)).toBeCloseTo(0, 5);
+    });
+
+    it('should be exactly 0 at the end of the release phase (boundary, ends exactly at duration)', () => {
+        expect(envelopeValueAt(1, duration, envelope)).toBe(0);
     });
 
     it('should return 0 immediately when release is 0 and duration is reached', () => {
@@ -70,10 +78,10 @@ describe('envelopeValueAt', () => {
         expect(envelopeValueAt(1, duration, noRelease)).toBe(0);
     });
 
-    it('should return 1 immediately at t=0 when attack is 0', () => {
+    it('should return exactly 1 immediately at t=0 when attack is 0 (boundary)', () => {
         const noAttack = { attack: 0, decay: 0.1, sustain: 0.5, release: 0.1 };
 
-        expect(envelopeValueAt(0, duration, noAttack)).toBeCloseTo(1, 5);
+        expect(envelopeValueAt(0, duration, noAttack)).toBe(1);
     });
 
     it('should release correctly from mid-attack/decay when duration is shorter than attack+decay+release', () => {
@@ -82,9 +90,9 @@ describe('envelopeValueAt', () => {
         const shortDuration = 0.2;
 
         // releaseStart = max(0.2 - 0.5, 0) = 0, so the entire clip is release, starting from
-        // whatever gain the attack phase had reached at t=0 (which is 0).
-        expect(envelopeValueAt(0, shortDuration, shortEnvelope)).toBeCloseTo(0, 5);
-        expect(envelopeValueAt(shortDuration, shortDuration, shortEnvelope)).toBeCloseTo(0, 5);
+        // whatever gain the attack phase had reached at t=0 (which is 0) - exact, both endpoints.
+        expect(envelopeValueAt(0, shortDuration, shortEnvelope)).toBe(0);
+        expect(envelopeValueAt(shortDuration, shortDuration, shortEnvelope)).toBe(0);
     });
 
     it('should never return a negative gain', () => {
