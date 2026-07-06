@@ -9,7 +9,7 @@ explaining how everything works.
 Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
 scaffolder (`npm create blit386@latest my-game`).
 
-There are 36 demo modules today (35 numbered demos plus `00a-barebones`). Each one lives in a single file under `src/`
+There are 37 demo modules today (36 numbered demos plus `00a-barebones`). Each one lives in a single file under `src/`
 (for example `src/001-basics.js`). During development, Vite serves the matching page at `/demos/001-basics.html` (no
 HTML file is committed; the build wires a shared layout to each script).
 
@@ -119,6 +119,10 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 - [036-audio-basics](https://demos.blit386.dev/036-audio-basics) – Loading clips with `AudioClip.load()`, playing SFX on
   a key press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt
+- [041-synth-toy](https://demos.blit386.dev/041-synth-toy) – Procedural chip-tune SFX built entirely with
+  `AudioClip.synth()`: six keyboard-triggered presets (jump/pickup/explosion/laser/hit/blip) via `BT.synthPreset`, plus
+  a randomize key that rolls a fresh `SynthParams` object to show off waveform, envelope, pitch-sweep, and noise-mix
+  variation
 
 ## Browser and Renderer
 
