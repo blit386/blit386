@@ -1,0 +1,17 @@
+@reference '../app.css';
+
+.badge {
+    @apply inline-flex items-center rounded-lg px-1.5 py-0.5 text-xs font-medium whitespace-nowrap;
+}
+
+.stable {
+    @apply bg-fd-primary text-fd-primary-foreground;
+}
+
+.unreleased {
+    @apply bg-fd-muted text-fd-muted-foreground;
+}
+
+.deprecated {
+    @apply bg-fd-card text-fd-card-foreground;
+}

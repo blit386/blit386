@@ -24,6 +24,9 @@ import { CommunityConnect } from './src/components/community-connect';
 import { DemoEmbed } from './src/components/demo-embed';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
+import { ApiAvailability } from './src/components/api-availability';
+import { PageChangelog } from './src/components/page-changelog';
+import { Since } from './src/components/since-badge';
 import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
@@ -348,6 +351,9 @@ export default defineConfig({
                     DemoEmbed,
                     DemoShowcase,
                     HomeHero,
+                    ApiAvailability,
+                    PageChangelog,
+                    Since,
                 };
             },
         }),
