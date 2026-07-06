@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { ReactNode } from 'react';
+import type { Page, PageData } from 'fumadocs-core/source';
 import { defineConfig } from 'fumapress';
+import type { ConfigContext } from 'fumapress';
 import { fumadocsMdx } from 'fumapress/adapters/mdx';
 import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
 import { linkValidationPlugin } from 'fumapress/plugins/link-validation';
@@ -10,6 +13,7 @@ import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
 import { createDocsLayoutPage } from 'fumapress/layouts/docs';
+import { EditOnGitHub } from 'fumadocs-ui/layouts/docs/page';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
@@ -66,9 +70,59 @@ const rootLayout = createRootLayout({
     },
 });
 
-const docsPageLayout = createDocsLayoutPage({
-    render() {
+/**
+ * Page-data shape carried by the `docs` collection's schema `.extend()` in `source.config.ts`:
+ * `lastModified` and `editUrl` are injected into every synced page's frontmatter by
+ * `scripts/sync-docs-from-engine.mjs`. `createDocsLayoutPage` is generic over `ConfigContext`
+ * but defaults to a bare `PageData`, so this narrows `page.data` for the `render()` callback
+ * below without threading the full multi-source (`docs` + `blog`) content type through it.
+ */
+interface DocsPageData extends PageData {
+    lastModified?: Date;
+    editUrl?: string;
+}
+
+interface DocsLayoutContext extends ConfigContext {
+    page: Page<string | undefined, DocsPageData>;
+}
+
+const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
+    /**
+     * Renders the doc body ourselves (instead of leaving it to the default `render-body`
+     * fallback) so an "Edit on GitHub" link can be appended after it.
+     *
+     * `getGitHubFileUrl` (the framework's built-in edit-link resolver) is intentionally not
+     * used: it needs `siteConfig.git`, which is unset here, and even if set it would compute a
+     * URL into this repo's generated MDX rather than the true source in the sibling `blit386`
+     * engine repo. `editUrl` is injected into each page's frontmatter by `sync-docs-from-engine.mjs`
+     * instead (see `CLAUDE.md`, Documentation mirror), so it is read directly from `page.data`.
+     */
+    async render(page) {
+        let body: ReactNode;
+
+        for (const adapter of this.adapters) {
+            const rendered = await adapter['core:render-body']?.call(this, page);
+
+            if (rendered !== undefined) {
+                body = rendered;
+                break;
+            }
+        }
+
+        if (body === undefined) {
+            throw new Error('[press.config] docsPageLayout: no adapter could render this page body');
+        }
+
+        const editUrl = page.data.editUrl;
+
         return {
+            // The framework's own `getLastModifiedDate()` resolves this via each adapter's
+            // `core:get-modified-date` hook, but for `async: true` doc collections (this site's
+            // `docs` source) that hook awaits `page.data.load()` - which resolves the compiled
+            // body/toc, not the frontmatter - so `lastModified` is never found there. Frontmatter
+            // fields (including `lastModified`) are already flattened onto `page.data` directly,
+            // so it is read from there instead of relying on the built-in resolution.
+            lastModified: page.data.lastModified,
             layoutProps: {
                 nav: { title: <SidebarLogo /> },
                 sidebar: {
@@ -76,6 +130,12 @@ const docsPageLayout = createDocsLayoutPage({
                     footer: <SidebarSocials />,
                 },
             },
+            body: (
+                <>
+                    {body}
+                    {editUrl && <EditOnGitHub href={editUrl} />}
+                </>
+            ),
         };
     },
 });
