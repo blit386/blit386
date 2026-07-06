@@ -1265,6 +1265,10 @@
     }
   },
   "pages": {
-    "api/core-types": ["Color32", "Rect2i", "Vector2i"]
+    "api/core-types": [
+      "Color32",
+      "Rect2i",
+      "Vector2i"
+    ]
   }
 }
