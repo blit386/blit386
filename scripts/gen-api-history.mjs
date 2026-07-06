@@ -666,16 +666,50 @@ export function findJsDocCommentRange(sourceText, node) {
 }
 
 /**
+ * Expands a single-line `/** description *\/` comment into the codebase's standard multi-line
+ * JSDoc block (opening `/**` alone, one ` * <description>` line, closing ` *\/`), so the shared
+ * tag-insertion logic in {@link insertSinceTag} can treat it exactly like any other JSDoc block.
+ * Preserves the description text verbatim (trimmed) and leaves a comment with no description
+ * (e.g. `/**\/`) as just the opening/closing pair.
+ *
+ * @param {string} commentText - Full single-line `/** ... *\/` comment text (no `\n`).
+ * @param {string} baseIndent - Whitespace preceding the comment's `/**` on its source line; the
+ *   expanded continuation lines indent one space further, matching this codebase's convention
+ *   (e.g. `    /**` pairs with `     * ...` and `     *\/`).
+ * @returns {string[]} The comment re-expressed as multi-line lines (not yet joined).
+ */
+function expandSingleLineComment(commentText, baseIndent) {
+    const description = commentText.slice(3, -2).trim();
+    const continuationIndent = `${baseIndent} `;
+    const lines = ['/**'];
+
+    if (description.length > 0) {
+        lines.push(`${continuationIndent}* ${description}`);
+    }
+
+    lines.push(`${continuationIndent}*/`);
+
+    return lines;
+}
+
+/**
  * Inserts an `@since <version>` line into a JSDoc comment's text, immediately before its first
  * existing tag line (or before the closing `*\/` when the block has no tags yet), matching the
- * surrounding indentation.
+ * surrounding indentation. A single-line `/** description *\/` comment (the style used throughout
+ * the `BT` namespace object literal) is first expanded to a proper multi-line block via
+ * {@link expandSingleLineComment} - single-line JSDoc has nowhere valid to hold a second line, so
+ * inserting a tag into it unexpanded would leave the tag as bare text outside any comment.
  *
  * @param {string} commentText - Full `/** ... *\/` comment text.
  * @param {string} version - Version to insert.
+ * @param {{ baseIndent?: string }} [options] - `baseIndent`: whitespace preceding the comment's
+ *   `/**` on its source line, used only when expanding a single-line comment. Defaults to `''`.
  * @returns {string} Updated comment text.
  */
-export function insertSinceTag(commentText, version) {
-    const lines = commentText.split('\n');
+export function insertSinceTag(commentText, version, options = {}) {
+    const initialLines = commentText.split('\n');
+    const lines =
+        initialLines.length === 1 ? expandSingleLineComment(commentText, options.baseIndent ?? '') : initialLines;
     const firstTagIndex = lines.findIndex((line) => /^\s*\*\s*@/u.test(line));
     // eslint-disable-next-line security/detect-object-injection -- firstTagIndex is a bounded findIndex result
     const referenceLine = firstTagIndex === -1 ? (lines.at(-1) ?? '') : lines[firstTagIndex];
@@ -725,9 +759,12 @@ export function applySinceCodemod(sourceText, node, version, options = {}) {
         throw new Error('Cannot backfill @since: declaration has no JSDoc comment block.');
     }
 
+    const lineStart = sourceText.lastIndexOf('\n', range.pos - 1) + 1;
+    const baseIndent = sourceText.slice(lineStart, range.pos);
+
     let commentText = sourceText.slice(range.pos, range.end);
 
-    commentText = insertSinceTag(commentText, version);
+    commentText = insertSinceTag(commentText, version, { baseIndent });
 
     if (options.upgradeDeprecated) {
         commentText = upgradeDeprecatedTag(commentText, version);

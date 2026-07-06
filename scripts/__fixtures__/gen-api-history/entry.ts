@@ -32,4 +32,7 @@ export const FixtureBT = {
      * @returns The amount, unchanged.
      */
     add: (amount: number): number => amount,
+
+    /** Fixture single-line JSDoc member, no version tag yet - matches the real `BT` namespace style. */
+    flag: 1,
 };

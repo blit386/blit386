@@ -3,7 +3,10 @@ import { dirname, join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
+
 import {
+    applySinceCodemod,
     buildApiHistoryJson,
     buildPagesMap,
     buildVersionsMap,
@@ -13,6 +16,7 @@ import {
     createProgramFromFiles,
     deriveStatus,
     enumerateSymbols,
+    extractTags,
     findIntroducingVersion,
     findJsDocCommentRange,
     insertSinceTag,
@@ -33,6 +37,29 @@ function loadFixtureSymbols() {
     const program = createProgramFromFiles([ENTRY_FILE]);
 
     return enumerateSymbols(program, ENTRY_FILE, { namespaceExportName: 'FixtureBT' });
+}
+
+/** Recursively finds a property assignment named `name` anywhere in `sourceFile` (test helper). */
+function findPropertyAssignment(sourceFile, name) {
+    let found;
+
+    const visit = (node) => {
+        if (found) {
+            return;
+        }
+
+        if (ts.isPropertyAssignment(node) && node.name.getText(sourceFile) === name) {
+            found = node;
+
+            return;
+        }
+
+        ts.forEachChild(node, visit);
+    };
+
+    ts.forEachChild(sourceFile, visit);
+
+    return found;
 }
 
 describe('commentToText', () => {
@@ -334,6 +361,67 @@ describe('JSDoc backfill codemod', () => {
 
         assert.ok(range);
         assert.equal(sourceText.slice(range.pos, range.pos + 3), '/**');
+    });
+
+    it('insertSinceTag expands a single-line comment into a multi-line block, preserving the description', () => {
+        const comment = '/** Horizontal flip flag for sprite rendering. */';
+
+        const updated = insertSinceTag(comment, '1.2.0', { baseIndent: '    ' });
+
+        assert.equal(
+            updated,
+            ['/**', '     * Horizontal flip flag for sprite rendering.', '     * @since 1.2.0', '     */'].join('\n'),
+        );
+    });
+
+    it('insertSinceTag expands a single-line comment with no baseIndent (top-level declaration)', () => {
+        const comment = '/** A top-level single-line description. */';
+
+        const updated = insertSinceTag(comment, '2.0.0');
+
+        assert.equal(updated, ['/**', ' * A top-level single-line description.', ' * @since 2.0.0', ' */'].join('\n'));
+    });
+
+    it('applySinceCodemod expands a real single-line-JSDoc namespace member into valid multi-line JSDoc', async () => {
+        const { readFileSync } = await import('node:fs');
+        const program = createProgramFromFiles([ENTRY_FILE]);
+        const records = collectSymbolRecords(program, ENTRY_FILE, { namespaceExportName: 'FixtureBT' });
+        const flagRecord = records.find((record) => record.name === 'FixtureBT.flag');
+
+        assert.ok(flagRecord);
+
+        const sourceText = readFileSync(flagRecord.sourceFile.fileName, 'utf8');
+        const range = findJsDocCommentRange(sourceText, flagRecord.node);
+
+        assert.ok(range);
+        assert.equal(sourceText.slice(range.pos, range.end).includes('\n'), false, 'fixture comment is single-line');
+
+        const updatedSource = applySinceCodemod(sourceText, flagRecord.node, '1.2.0');
+
+        // The inserted tag must land inside a real multi-line JSDoc block, never as bare text
+        // outside any comment (the exact regression this fix addresses).
+        assert.match(
+            updatedSource,
+            /\/\*\*\n\s+\* Fixture single-line JSDoc member, no version tag yet - matches the real `BT` namespace style\.\n\s+\* @since 1\.2\.0\n\s+\*\/\n\s+flag: 1,/u,
+        );
+
+        // Re-parsing the updated text (in memory - never touching the fixture file on disk) must
+        // still find a well-formed `flag` property with the newly inserted @since, and no parse
+        // errors, proving the codemod output is valid, re-consumable TypeScript/JSDoc.
+        const reparsedSourceFile = ts.createSourceFile(
+            flagRecord.sourceFile.fileName,
+            updatedSource,
+            ts.ScriptTarget.ES2022,
+            true,
+        );
+        const flagNode = findPropertyAssignment(reparsedSourceFile, 'flag');
+
+        assert.ok(flagNode, 'expected to find the re-parsed `flag` property assignment');
+        assert.deepEqual(extractTags(flagNode), {
+            since: '1.2.0',
+            changes: [],
+            deprecated: null,
+        });
     });
 });
 
