@@ -12,14 +12,24 @@ locked/unlocked gesture state, and the web platform constraints that shape it.
 
 ```text
 src/audio/
-  AudioManager.ts   # Web Audio context, bus graph, unlock state machine, mute/volume
+  AudioManager.ts        # Web Audio context, bus graph, unlock state machine, mute/volume, SFX playback
+  audioDecodeContext.ts  # Decode-context registry AudioClip reads from to decode
+  VoicePool.ts           # Fixed-size SFX voice pool: allocation/stealing, generational refs, per-voice fades
+src/assets/
+  AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists
 ```
 
 `AudioManager` is owned by the internal `BTAPI` singleton (created and torn down alongside pointer, keyboard, and
-gamepad input) and is never exposed to demo code directly - only through the `BT.audio*` methods and the
-`BT.isAudioUnlocked` getter documented in [API: Audio](/docs/api/audio).
+gamepad input) and is never exposed to demo code directly - only through the `BT.audio*`/`BT.sound*` methods and the
+`BT.isAudioUnlocked` getter documented in [API: Audio](/docs/api/audio). On `attach()`, `AudioManager` registers its Web
+Audio context in `audioDecodeContext.ts`, a small bridge that `AudioClip` reads from to decode audio data without
+needing a direct reference to `AudioManager` itself.
 
-Tests mock the Web Audio API with `src/__test__/webaudio-mock.ts`, since neither Node.js nor happy-dom implement it.
+`AudioClip` (see [Loading](/docs/api/audio#loading)) lives alongside the other asset loaders in `src/assets/` and uses that
+bridge to decode fetched audio bytes into a reusable `AudioBuffer`.
+
+Tests mock the Web Audio API with `src/__test__/webaudio-mock.ts` (including a configurable `decodeAudioData` for
+`AudioClip` tests), since neither Node.js nor happy-dom implement it.
 
 ## Locked vs. unlocked
 
@@ -54,6 +64,31 @@ class Demo implements IBTDemo {
 }
 ```
 
+## Preloading audio clips
+
+`AudioClip.load()` downloads and decodes audio even while the context is locked (suspended, pre-gesture) - decoding only
+needs a registered context, not an unlocked one. That makes a title screen or a loading state a good place to preload
+every clip a level needs, so they're ready the instant the player's first gesture unlocks audio.
+
+```ts twoslash
+import { AudioClip, type IBTDemo } from 'blit386';
+
+class Demo implements IBTDemo {
+  async init() {
+    // Decodes now, even before the player's first gesture unlocks the context.
+    await AudioClip.loadAll(['audio/theme.mp3', ['audio/hit.ogg', 'audio/hit.mp3']]);
+
+    return true;
+  }
+
+  update() {}
+  render() {}
+}
+```
+
+Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode in
+every browser - see [Audio formats](/docs/api/browser-support#audio-formats) for the current per-browser matrix.
+
 ## Web audio constraints
 
 Every major browser enforces an autoplay policy: an `AudioContext` starts `'suspended'` and stays that way until a user
@@ -65,13 +100,107 @@ start audio unlocked, and none is planned.
 - The gesture requirement is independent of the render backend. Unlocking audio has nothing to do with
   `BT.activeBackend` or the WebGPU/Canvas 2D fallback described in [Browser Support](/docs/api/browser-support) - a demo
   can be fully unlocked on the software renderer, or fully locked on WebGPU.
-- Actual sound triggering (loading and playing SFX/music clips) is not implemented yet. This phase covers the bus graph,
-  volume, mute, and unlock tracking that a future playback API will build on.
+- Loading and decoding clips is implemented via `AudioClip` (see [Loading](/docs/api/audio#loading)) and works regardless
+  of lock state. `BT.soundPlay` (see [Playback (SFX)](/docs/api/audio#playback-sfx)) behaves differently from a pre-unlock
+  bus call: `playSound()` drops the request entirely before unlock (no voice allocated, no throw, counted as a dropped
+  SFX request), where `AudioManager.volumeSet()` (`BT.audioVolumeSet`) still updates the engine's internal bus state and
+  applies once the context resumes - it is only inaudible while locked, not dropped.
+
+## Playing SFX
+
+`BT.soundPlay` routes every SFX voice through the `'sfx'` bus (see [Subsystem layout](#subsystem-layout) above), so
+`BT.audioVolumeSet('sfx', ...)` and `BT.audioMuteSet('sfx', ...)` affect every currently-playing sound at once, on top
+of each sound's own per-voice volume from `BT.soundVolumeSet`.
+
+The pool itself (`src/audio/VoicePool.ts`) is a fixed-size array sized by `HardwareSettings.audioVoices` - it never
+grows at runtime. Each `BT.soundPlay` call either claims a free slot or steals the lowest-priority active voice at or
+below the incoming priority; see [Playback (SFX)](/docs/api/audio#playback-sfx) for the exact policy and a worked example.
+This cap exists because each slot is a real `AudioBufferSourceNode -> GainNode -> StereoPannerNode` chain - letting the
+pool grow unbounded would let a busy scene (an explosion with dozens of debris impacts, for example) spend unbounded CPU
+on nodes the player can't meaningfully hear over each other anyway.
+
+A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
+play instead:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const footstep = await AudioClip.load('audio/footstep.mp3');
+
+function playFootstep() {
+  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+
+  BT.soundPlay(footstep, { pitch, volume: 0.6 });
+}
+```
+
+## Design a sound
+
+Beyond loading audio files, `AudioClip.synth` generates a clip entirely on the CPU from a `SynthParams` descriptor - no
+source file, no network fetch, and no `OfflineAudioContext`. Rendering is deterministic and synchronous: the same params
+(including `seed`) always produce the same samples, so a `SynthParams` value behaves like ordinary game data rather than
+a recorded asset. See [Synth](/docs/api/audio#synth) for the full field reference.
+
+Start by hand-tuning a few fields and listening to the result:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const zap = await AudioClip.synth({
+  waveform: 'sawtooth',
+  frequency: 1200,
+  duration: 0.18,
+  pitchSweep: { toFrequency: 200 },
+  envelope: { attack: 0, decay: 0.02, sustain: 0.6, release: 0.1 },
+  seed: 1,
+});
+
+BT.soundPlay(zap);
+```
+
+`BT.synthPreset` bundles ready-made starting points for common effects (`jump`, `pickup`, `explosion`, `laser`, `hit`,
+`blip`) - see [Presets](/docs/api/audio#presets) for the full list. Passing a different `seed` to a preset applies small,
+bounded jitter to a couple of its fields, so a repeated sound (footsteps, hits, pickups) doesn't sound identical every
+time, while staying reproducible for any given seed:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+// A distinct footstep every step, but the same sequence of seeds always sounds the same.
+async function playFootstep(stepIndex: number) {
+  const step = await AudioClip.synth(BT.synthPreset.hit(stepIndex));
+
+  BT.soundPlay(step, { volume: 0.5 });
+}
+```
+
+Because `SynthParams` is plain data (numbers, strings, and nested objects - no functions or class instances), a tuned
+sound can be stored, checked into a level file, or embedded in a save alongside the rest of your game's JSON, then
+handed to `AudioClip.synth` whenever it's needed:
+
+```ts twoslash
+import { AudioClip, type SynthParams } from 'blit386';
+
+const explosionPreset: SynthParams = {
+  waveform: 'sawtooth',
+  frequency: 90,
+  duration: 0.6,
+  noiseMix: 0.85,
+  envelope: { attack: 0, decay: 0.1, sustain: 0.3, release: 0.4 },
+  seed: 7,
+};
+
+// Round-trips losslessly through JSON, so it can live in a level file or save data.
+const serialized = JSON.stringify(explosionPreset);
+const restored = JSON.parse(serialized) as SynthParams;
+
+const explosion = await AudioClip.synth(restored);
+```
 
 ## See also
 
 <Cards>
-  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, and the unlock getter.</Card>
+  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, the unlock getter, and the synth engine.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Pointer, keyboard, and gamepad input that can trigger unlock.</Card>
 </Cards>

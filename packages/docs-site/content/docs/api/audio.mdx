@@ -77,10 +77,230 @@ if (!BT.isAudioUnlocked) {
 See [Web audio constraints](/docs/guides/audio#web-audio-constraints) for what happens to volume/mute calls made before the
 gesture, and why no configure flag can skip this requirement.
 
+## Loading
+
+`AudioClip` decodes an audio file into a reusable `AudioBuffer`, exposing the winning source URL, duration, and sample
+rate. Loading and decoding work even while the audio context is locked (suspended, pre-gesture) - only real-time
+playback needs an unlocked context. See [Preloading audio clips](/docs/guides/audio#preloading-audio-clips).
+
+```ts twoslash
+import { AudioClip } from 'blit386';
+
+// Load a single clip (cached by its resolved URL)
+const theme = await AudioClip.load('audio/theme.mp3');
+
+// Fallback list: tries each URL in order, resolving with the first that decodes
+const hit = await AudioClip.load(['audio/hit.ogg', 'audio/hit.mp3']);
+
+// Load multiple clips in parallel - each entry is a single URL or a fallback list
+const clips = await AudioClip.loadAll(['audio/theme.mp3', ['audio/hit.ogg', 'audio/hit.mp3']]);
+
+// Check cache before loading
+if (AudioClip.isLoaded('audio/theme.mp3')) {
+  // already cached
+}
+```
+
+Pass `onProgress` to report phased load progress:
+
+```ts twoslash
+await AudioClip.load('audio/theme.mp3', {
+  onProgress: (progress) => {
+    console.log(progress.phase, progress.ratio);
+  },
+});
+```
+
+<TypeTable type={{
+    phase: { type: "'download' | 'decoding'", description: 'Which stage of the load this snapshot reports.' },
+    ratio: { type: 'number | null', description: 'Fraction complete in [0, 1]. null when Content-Length is unknown, or during the single, atomic decode step.' },
+  }} />
+
+Release a clip's decoded buffer with `unload()` once you no longer need it:
+
+```ts twoslash
+theme.unload(); // releases the decoded buffer; safe to call more than once
+```
+
+- `AudioClip.load()` and `loadAll()` throw a beginner-friendly error covering network/CORS failures, HTTP status errors,
+  unsupported container/codec decode failures, and loading before the engine has started.
+- Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode
+  in every browser - see [Audio formats](/docs/api/browser-support#audio-formats).
+- Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below. Music playback (a separate,
+  loopable player distinct from the SFX voice pool) is not implemented yet.
+
+## Synth
+
+`AudioClip.synth` renders a clip procedurally from a `SynthParams` descriptor - no source file, no network request, and
+no `OfflineAudioContext`. Rendering runs entirely on the CPU and is deterministic: identical params (including `seed`)
+always produce identical sample data, so a `SynthParams` object can be stored and replayed as a preset. Unlike
+[Loading](#loading), there is nothing to fetch or decode from the network - a synthesized clip is ready the instant
+`synth()` resolves, even before `BT.isAudioUnlocked` is `true` (see [Unlock state](#unlock-state) above).
+
+```ts twoslash
+import { AudioClip } from 'blit386';
+
+const laser = await AudioClip.synth({
+  waveform: 'sawtooth',
+  frequency: 880,
+  duration: 0.3,
+  pitchSweep: { toFrequency: 110 },
+  seed: 1,
+});
+```
+
+`SynthParams` fields:
+
+<TypeTable type={{
+    waveform: { type: "'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise'", description: 'Oscillator waveform shape.' },
+    frequency: { type: 'number', description: 'Base carrier frequency in Hz at the start of the clip.' },
+    duration: { type: 'number', description: 'Total clip duration in seconds. Must be greater than 0 and no more than 60.' },
+    volume: { type: 'number', default: '1', description: 'Overall output amplitude in [0, 1]; final output is always clamped.' },
+    envelope: { type: 'SynthEnvelope', description: 'Attack/decay/sustain/release envelope.' },
+    pitchSweep: { type: 'SynthPitchSweep', description: 'Linear pitch sweep from frequency to a target frequency.' },
+    vibrato: { type: 'SynthVibrato', description: 'Sine-wave vibrato applied on top of frequency.' },
+    noiseMix: { type: 'number', default: '0', description: 'Fraction of white noise mixed into the oscillator, in [0, 1]. Ignored when waveform is noise.' },
+    dutyCycle: { type: 'number', default: '0.5', description: 'Fraction of each cycle spent high, in [0, 1]. Only affects square.' },
+    seed: { type: 'number', description: 'Seed for the deterministic PRNG driving noise generation.' },
+  }} />
+
+`SynthEnvelope` fields (all optional, times in seconds):
+
+<TypeTable type={{
+    attack: { type: 'number', default: '0.01', description: 'Time to ramp from silence to full amplitude.' },
+    decay: { type: 'number', default: '0.1', description: 'Time to fall from full amplitude to sustain.' },
+    sustain: { type: 'number', default: '0.7', description: 'Gain level in [0, 1] held between decay and release.' },
+    release: { type: 'number', default: '0.1', description: 'Time to fall from sustain to silence, anchored to the end of the clip.' },
+  }} />
+
+The release phase always finishes exactly at `duration`, even on a very short clip where the attack, decay, and release
+phases overlap - a percussive hit is never cut off mid-fade.
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+// A short, noisy boom: mostly noise, with a touch of low square tone, quick attack and decay.
+const boom = await AudioClip.synth({
+  waveform: 'square',
+  frequency: 90,
+  duration: 0.4,
+  noiseMix: 0.8,
+  envelope: { attack: 0, decay: 0.05, sustain: 0.3, release: 0.3 },
+  seed: 42,
+});
+
+BT.soundPlay(boom, { volume: 0.7 });
+```
+
+<Callout title="Not cached, not deduplicated">
+
+Unlike `AudioClip.load()`, `AudioClip.synth()` never populates the URL-keyed resolved cache and never deduplicates
+concurrent calls - every call renders a fresh, independent `AudioBuffer`, even for byte-identical `params`. `unload()`
+still works the same way (releases the buffer, stops any voice playing it), it just has no cache entry to clear.
+
+</Callout>
+
+### Presets
+
+`BT.synthPreset` bundles six ready-made `SynthParams` factories for common sound effects: `jump`, `pickup`, `explosion`,
+`laser`, `hit`, `blip`. Each takes an optional `seed` and applies small, bounded, deterministic jitter to a couple of
+hand-picked fields (frequency, duration, or noise mix) - the same seed always renders the exact same variant, so a
+preset stays reproducible even though it varies from call to call.
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+// Same character every time - useful for a UI sound that should stay consistent.
+const menuBlip = await AudioClip.synth(BT.synthPreset.blip());
+
+// A different seed per pickup keeps repeated collects from sounding robotic, while staying
+// reproducible - a wall-clock seed like Date.now() would defeat that, since it can never be
+// replayed the same way twice.
+let pickupCount = 0;
+const coin = await AudioClip.synth(BT.synthPreset.pickup(pickupCount++));
+
+BT.soundPlay(menuBlip);
+BT.soundPlay(coin, { volume: 0.8 });
+```
+
+Omitting `seed` (or passing `0`) always renders the same baseline variant - useful when you want a preset's default
+character rather than per-play variation. See [Playback (SFX)](#playback-sfx) below for playing the resulting clip
+through the SFX voice pool, and [Design a sound](/docs/guides/audio#design-a-sound) in the Audio Guide for a walkthrough of
+tuning `SynthParams` by hand and storing presets as data.
+
+## Playback (SFX)
+
+`BT.soundPlay` plays a loaded `AudioClip` through a fixed-size pool of SFX voices. Each call returns an opaque
+`SoundRef` handle - pass it to `BT.soundStop` and the per-sound volume, pitch, and pan controls.
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const hit = await AudioClip.load('audio/hit.mp3');
+
+const ref = BT.soundPlay(hit, { volume: 0.8 });
+
+BT.isSoundPlaying(ref); // true
+
+BT.soundStop(ref, { fadeOutMs: 200 }); // fades out over 200 ms
+```
+
+`options` fields:
+
+<TypeTable type={{
+    loop: { type: 'boolean', default: 'false', description: 'Whether the clip loops.' },
+    volume: { type: 'number', default: '1', description: 'Initial gain in [0, 1] (unclamped).' },
+    pitch: { type: 'number', default: '1', description: 'Initial playback rate.' },
+    pan: { type: 'number', default: '0', description: 'Initial stereo pan in [-1, 1] (unclamped).' },
+    priority: { type: 'number', default: '0', description: 'Allocation priority; higher survives voice stealing longer.' },
+    fadeInMs: { type: 'number', description: 'Linear fade-in duration in milliseconds, from silence to volume.' },
+    atTime: { type: 'number', description: 'Audio-clock start time. Defaults to "now".' },
+  }} />
+
+<Callout title="Voice cap and stealing">
+
+`HardwareSettings.audioVoices` (default `16`) sizes a fixed pool of voices - it never grows. When every voice is in use,
+a new `BT.soundPlay` call steals the lowest-priority active voice at or below the incoming priority (ties broken by
+whichever voice started first). If every active voice outranks the incoming priority, the new sound is dropped silently:
+no throw, and the returned `SoundRef` is inert (`BT.isSoundPlaying` reports `false` for it immediately).
+
+</Callout>
+
+A common pattern - vary pitch slightly per play so a repeated sound (footsteps, hits) doesn't sound robotic:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const footstep = await AudioClip.load('audio/footstep.mp3');
+
+function playFootstep() {
+  const pitch = 0.9 + Math.random() * 0.2; // 0.9-1.1x
+
+  BT.soundPlay(footstep, { pitch, volume: 0.6 });
+}
+```
+
+Per-sound controls, all silent no-ops on a stale or invalid `SoundRef` (already stopped, stolen, or completed - never
+throws):
+
+```ts twoslash
+BT.soundVolumeSet(ref, 0.5, { fadeMs: 100 });
+BT.soundVolumeGet(ref); // 0.5
+
+BT.soundPitchSet(ref, 1.2);
+BT.soundPitchGet(ref); // 1.2
+
+BT.soundPanSet(ref, -0.3);
+BT.soundPanGet(ref); // -0.3
+```
+
+`BT.soundPlay` also returns an inert `SoundRef` (no throw) when `clip` hasn't finished loading yet, or was already
+released with `clip.unload()`.
+
 ## Hardware settings
 
-`audioVoices` (default `16`, reserved for an upcoming SFX voice-limiting pass; not yet enforced) is documented in
-[Hardware settings](/docs/api/core#hardware-settings).
+`audioVoices` (default `16`) caps the number of simultaneous SFX voices - see [Playback (SFX)](#playback-sfx) for the
+allocation and stealing policy. Documented in [Hardware settings](/docs/api/core#hardware-settings).
 
 ## See also
 
