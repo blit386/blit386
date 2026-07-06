@@ -9,7 +9,7 @@ explaining how everything works.
 Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
 scaffolder (`npm create blit386@latest my-game`).
 
-There are 35 demo modules today (34 numbered demos plus `00a-barebones`). Each one lives in a single file under `src/`
+There are 36 demo modules today (35 numbered demos plus `00a-barebones`). Each one lives in a single file under `src/`
 (for example `src/001-basics.js`). During development, Vite serves the matching page at `/demos/001-basics.html` (no
 HTML file is committed; the build wires a shared layout to each script).
 
@@ -114,6 +114,11 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
   scanlines, mask, bloom, glitch state machine) built from individual decomposed effects
 - [024-crt-toggle](https://demos.blit386.dev/024-crt-toggle) – Toggle the entire `BT.preset.crtPipBoy()` CRT stack on
   and off at runtime – auto-switches between clean and CRT output every two seconds
+
+### Audio
+
+- [036-audio-basics](https://demos.blit386.dev/036-audio-basics) – Loading clips with `AudioClip.load()`, playing SFX on
+  a key press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt
 
 ## Browser and Renderer
 
