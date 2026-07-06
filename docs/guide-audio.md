@@ -106,9 +106,10 @@ start audio unlocked, and none is planned.
   `BT.activeBackend` or the WebGPU/Canvas 2D fallback described in [Browser Support](api-browser-support.md) - a demo
   can be fully unlocked on the software renderer, or fully locked on WebGPU.
 - Loading and decoding clips is implemented via `AudioClip` (see [Loading](api-audio.md#loading)) and works regardless
-  of lock state. `BT.soundPlay` (see [Playback (SFX)](api-audio.md#playback-sfx)) is gated on the same unlock gesture as
-  bus volume/mute: a call made before unlock is dropped silently (no throw), exactly like a pre-unlock
-  `BT.audioVolumeSet`.
+  of lock state. `BT.soundPlay` (see [Playback (SFX)](api-audio.md#playback-sfx)) behaves differently from a pre-unlock
+  bus call: `playSound()` drops the request entirely before unlock (no voice allocated, no throw, counted as a dropped
+  SFX request), where `AudioManager.volumeSet()` (`BT.audioVolumeSet`) still updates the engine's internal bus state and
+  applies once the context resumes - it is only inaudible while locked, not dropped.
 
 ## Playing SFX
 

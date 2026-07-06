@@ -54,6 +54,13 @@ const getLiveContext = (installed: ReturnType<typeof installMockAudioContext>): 
     return context;
 };
 
+/**
+ * Returns the most recently created gain node - the current voice's gain. Bus gains
+ * (main/music/sfx) are all created once during `attach()`, before any voice plays, so the last
+ * entry is always the voice gain regardless of how many bus gains exist.
+ */
+const getVoiceGain = (context: MockAudioContext): GainNode | undefined => context.createGainCalls.at(-1);
+
 describe('VoicePool', () => {
     let canvas: HTMLCanvasElement;
     let audio: AudioManager;
@@ -130,7 +137,7 @@ describe('VoicePool', () => {
 
             const context = getMockContext(installed);
             const source = context.createBufferSourceCalls[0];
-            const gain = context.createGainCalls[3]; // 0-2 are main/music/sfx from buildBusGraph
+            const gain = getVoiceGain(context);
             const panner = context.createStereoPannerCalls[0];
 
             expect((source as unknown as { connectCalls: unknown[] }).connectCalls).toEqual([gain]);
@@ -150,7 +157,7 @@ describe('VoicePool', () => {
 
             const context = getMockContext(installed);
             const source = context.createBufferSourceCalls[0];
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
             const panner = context.createStereoPannerCalls[0];
 
             expect(gain?.gain.value).toBe(0.5);
@@ -168,7 +175,7 @@ describe('VoicePool', () => {
             pool.play(createMockAudioBuffer());
 
             const context = getMockContext(installed);
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
             const source = context.createBufferSourceCalls[0];
             const panner = context.createStereoPannerCalls[0];
 
@@ -220,7 +227,7 @@ describe('VoicePool', () => {
             pool.play(createMockAudioBuffer(), { volume: 0.8, fadeInMs: 200 });
 
             const context = getMockContext(installed);
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
 
             expect(
                 (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number }> })
@@ -240,7 +247,7 @@ describe('VoicePool', () => {
 
             pool.play(createMockAudioBuffer(), { volume: 0.8, fadeInMs: 200 });
 
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
 
             expect(
                 (
@@ -384,7 +391,7 @@ describe('VoicePool', () => {
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             const context = getMockContext(installed);
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
             const source = context.createBufferSourceCalls[0];
 
             pool.stop(ref, 500);
@@ -405,7 +412,7 @@ describe('VoicePool', () => {
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             const context = getMockContext(installed);
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
             const source = context.createBufferSourceCalls[0];
 
             setMockCurrentTime(getLiveContext(installed), 20);
@@ -503,7 +510,7 @@ describe('VoicePool', () => {
             pool.volumeSet(ref, 0.2, 100);
 
             const context = getMockContext(installed);
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
 
             expect(
                 (gain?.gain as unknown as { linearRampToValueAtTimeCalls: unknown[] }).linearRampToValueAtTimeCalls,
@@ -519,7 +526,7 @@ describe('VoicePool', () => {
             const ref = pool.play(createMockAudioBuffer(), { volume: 1 });
 
             const context = getMockContext(installed);
-            const gain = context.createGainCalls[3];
+            const gain = getVoiceGain(context);
 
             setMockCurrentTime(getLiveContext(installed), 5);
 

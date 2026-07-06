@@ -30,6 +30,10 @@ export function applyAudioParamRamp(
     easing: EasingFunction,
 ): void {
     if (fadeMs === undefined || fadeMs <= 0) {
+        // Cancel any pending ramp first - setting `.value` directly does not cancel scheduled
+        // automation events, so a fade started earlier could otherwise keep running and override
+        // this "immediate" value once its scheduled end time arrives.
+        param.cancelScheduledValues(currentTime);
         param.value = targetValue;
 
         return;

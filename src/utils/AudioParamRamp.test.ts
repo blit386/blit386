@@ -20,6 +20,19 @@ describe('applyAudioParamRamp', () => {
         expect(param.value).toBe(0.5);
     });
 
+    it('cancels a pending ramp before setting the value immediately, so it cannot override the new value later', () => {
+        const param = createMockAudioParam(1) as unknown as MockAudioParam;
+
+        // Schedule a ramp toward 0.9 ending at t=1.
+        applyAudioParamRamp(param as unknown as AudioParam, 0, 0.9, 1000, 'linear');
+
+        // Immediately override with 0.5 at t=0.3, before the ramp above would have finished.
+        applyAudioParamRamp(param as unknown as AudioParam, 0.3, 0.5, undefined, 'linear');
+
+        expect(param.cancelScheduledValuesCalls).toEqual([0, 0.3]);
+        expect(param.value).toBe(0.5);
+    });
+
     it('schedules a linear ramp anchored to currentTime', () => {
         const param = createMockAudioParam(1) as unknown as MockAudioParam;
 

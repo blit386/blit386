@@ -464,6 +464,7 @@ describe('AudioManager', () => {
             audio.attach(canvas);
             expect(() => audio.playSound(createMockAudioBuffer())).not.toThrow();
             expect(ref).not.toEqual(INVALID_SOUND_REF);
+            expect(audio.isSoundPlaying(ref)).toBe(false);
         });
     });
 });

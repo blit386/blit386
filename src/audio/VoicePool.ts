@@ -12,11 +12,17 @@
  */
 
 import { BTAPI } from '../core/BTAPI';
+import { defaultConfig } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { AudioManager } from './AudioManager';
 
-/** Fallback voice count used when `HardwareSettings.audioVoices` is unavailable. Mirrors `defaultConfig()`. */
-const DEFAULT_VOICE_COUNT = 16;
+/**
+ * Fallback voice count used when `HardwareSettings.audioVoices` is unavailable. Sourced from
+ * `defaultConfig()` so this can never drift from the engine-wide default; the `?? 16` only
+ * satisfies `audioVoices`' optional type and is unreachable in practice, since `defaultConfig()`
+ * always sets it.
+ */
+const DEFAULT_VOICE_COUNT = defaultConfig().audioVoices ?? 16;
 
 /** Default per-voice gain applied when {@link VoicePlayOptions.volume} is omitted. */
 export const DEFAULT_VOLUME = 1;
