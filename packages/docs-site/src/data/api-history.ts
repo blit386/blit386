@@ -8,7 +8,7 @@ export interface SymbolHistory {
     kind: string;
     since: string;
     changes: { version: string; note: string }[];
-    deprecated: string | null;
+    deprecated: { version: string | null; date: string | null; note: string } | null;
     status: SymbolStatus;
 }
 

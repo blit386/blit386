@@ -41,8 +41,13 @@ function collectEvents(page: string): ChangeEvent[] {
             }
         }
 
-        if (entry.deprecated) {
-            events.push({ version: entry.deprecated, category: 'Deprecated', symbol: name, note: '' });
+        if (entry.deprecated?.version) {
+            events.push({
+                version: entry.deprecated.version,
+                category: 'Deprecated',
+                symbol: name,
+                note: entry.deprecated.note,
+            });
         }
     }
 

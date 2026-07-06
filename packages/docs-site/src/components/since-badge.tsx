@@ -23,7 +23,9 @@ export function Since({ symbol }: SinceProps) {
     }
 
     if (entry.status === 'deprecated') {
-        return <span className={`not-prose ${styles.badge} ${styles.deprecated}`}>Deprecated {entry.since}</span>;
+        const deprecatedVersion = entry.deprecated?.version ?? entry.since;
+
+        return <span className={`not-prose ${styles.badge} ${styles.deprecated}`}>Deprecated {deprecatedVersion}</span>;
     }
 
     return <span className={`not-prose ${styles.badge} ${styles.stable}`}>Since {entry.since}</span>;
