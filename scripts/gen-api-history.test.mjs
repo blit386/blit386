@@ -428,7 +428,7 @@ describe('JSDoc backfill codemod', () => {
 describe('findIntroducingVersion (git pickaxe, mocked execFile)', () => {
     it('strips a TAG~N describe suffix down to the bare tag', () => {
         const execFile = (_git, args) => {
-            if (args[1] === '-S') {
+            if (args.includes('-S')) {
                 return 'abc123\n';
             }
             return '1.2.0~3\n';
@@ -438,7 +438,7 @@ describe('findIntroducingVersion (git pickaxe, mocked execFile)', () => {
     });
 
     it('strips a TAG^0 describe suffix (exact tag commit) down to the bare tag', () => {
-        const execFile = (_git, args) => (args[1] === '-S' ? 'abc123\n' : '1.2.0^0\n');
+        const execFile = (_git, args) => (args.includes('-S') ? 'abc123\n' : '1.2.0^0\n');
 
         assert.equal(findIntroducingVersion('export class Widget', 'src/Widget.ts', { execFile }), '1.2.0');
     });
@@ -451,13 +451,123 @@ describe('findIntroducingVersion (git pickaxe, mocked execFile)', () => {
 
     it('returns null when git describe fails (e.g. commit not reachable from any tag)', () => {
         const execFile = (_git, args) => {
-            if (args[1] === '-S') {
+            if (args.includes('-S')) {
                 return 'abc123\n';
             }
             throw new Error('fatal: no tag exactly matches');
         };
 
         assert.equal(findIntroducingVersion('export class Widget', 'src/Widget.ts', { execFile }), null);
+    });
+
+    it('passes --follow to git log -S so pickaxe search survives file renames', () => {
+        const logArgs = [];
+        const execFile = (_git, args) => {
+            if (args[0] === 'log') {
+                logArgs.push(...args);
+
+                return 'abc123\n';
+            }
+
+            return '1.2.0^0\n';
+        };
+
+        findIntroducingVersion('export class Widget', 'src/Widget.ts', { execFile });
+
+        assert.ok(logArgs.includes('--follow'), 'expected git log invocation to include --follow');
+        assert.ok(logArgs.includes('-S'), 'expected git log invocation to still include -S');
+    });
+});
+
+describe('findIntroducingVersion (git pickaxe, real repo fixture with a rename)', () => {
+    /**
+     * Builds a throwaway git repo with a symbol declared before a file rename, then renamed and
+     * edited afterward, mirroring the real regression: `src/BlitTech.ts` renamed to
+     * `src/BLIT386.ts` shortly before a release tag, which made every symbol declared in that file
+     * falsely resolve to the post-rename release when `git log` ran without `--follow`. A mocked
+     * `execFile` cannot prove this - it only proves the codemod builds the argv it is told to
+     * build. Only a real git repo proves the `--follow` flag itself changes pickaxe results.
+     *
+     * @returns {{ dir: string, oldSha: string, renameSha: string }} Fixture repo directory and the
+     *   genesis commit / rename commit SHAs.
+     */
+    async function buildRenameFixtureRepo() {
+        const { execFileSync } = await import('node:child_process');
+        const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
+        const { tmpdir } = await import('node:os');
+        const dir = mkdtempSync(join(tmpdir(), 'gen-api-history-rename-'));
+        const env = {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'Test',
+            GIT_AUTHOR_EMAIL: 'test@example.com',
+            GIT_COMMITTER_NAME: 'Test',
+            GIT_COMMITTER_EMAIL: 'test@example.com',
+        };
+        // -c commit.gpgsign=false / tag.gpgsign=false override the caller's global git config for
+        // this throwaway, git-config-isolated fixture repo only - a machine with commit signing
+        // enabled globally would otherwise fail these commits without a configured signing key.
+        const run = (args) =>
+            execFileSync('git', ['-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args], {
+                cwd: dir,
+                encoding: 'utf8',
+                env,
+            });
+
+        run(['init', '--initial-branch=main']);
+        writeFileSync(join(dir, 'OldName.ts'), 'export const FLAG: number = 1;\n');
+        run(['add', 'OldName.ts']);
+        run(['commit', '-m', 'genesis: add FLAG in OldName.ts']);
+        const oldSha = run(['log', '-1', '--format=%H']).trim();
+
+        run(['mv', 'OldName.ts', 'NewName.ts']);
+        run(['commit', '-m', 'rename: OldName.ts -> NewName.ts']);
+        const renameSha = run(['log', '-1', '--format=%H']).trim();
+
+        run(['tag', '-a', '1.0.0', '-m', '1.0.0', oldSha]);
+        run(['tag', '-a', '2.0.0', '-m', '2.0.0', renameSha]);
+
+        return { dir, oldSha, renameSha, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+    }
+
+    it('resolves a symbol declared before a rename to the pre-rename tag, not the rename tag', async () => {
+        const { execFileSync } = await import('node:child_process');
+        const fixture = await buildRenameFixtureRepo();
+
+        try {
+            const version = findIntroducingVersion('FLAG: number = 1', 'NewName.ts', {
+                cwd: fixture.dir,
+                execFile: execFileSync,
+            });
+
+            assert.equal(version, '1.0.0', 'expected --follow to find the pre-rename genesis tag, not 2.0.0');
+        } finally {
+            fixture.cleanup();
+        }
+    });
+
+    it('regresses to the wrong post-rename tag when --follow is omitted (proves the bug this test guards against)', async () => {
+        const { execFileSync } = await import('node:child_process');
+        const fixture = await buildRenameFixtureRepo();
+
+        try {
+            // Deliberately mimics the pre-fix argv (no --follow) to prove the old behavior really
+            // was broken, and that the fix in findIntroducingVersion is what closes the gap.
+            const execFileWithoutFollow = (_git, args, options) =>
+                execFileSync(
+                    'git',
+                    args.filter((arg) => arg !== '--follow'),
+                    options,
+                );
+
+            const version = findIntroducingVersion('FLAG: number = 1', 'NewName.ts', {
+                cwd: fixture.dir,
+                execFile: execFileWithoutFollow,
+            });
+
+            assert.equal(version, '2.0.0', 'without --follow, git log cannot see past the rename');
+        } finally {
+            fixture.cleanup();
+        }
     });
 });
 

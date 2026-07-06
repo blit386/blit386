@@ -802,7 +802,12 @@ export function findIntroducingVersion(declarationText, filePath, runOptions = {
     let sha;
 
     try {
-        const log = execFile('git', ['log', '-S', declarationText, '--format=%H', '--', filePath], {
+        // `--follow` is required so the pickaxe search survives file renames (e.g.
+        // `src/BlitTech.ts` -> `src/BLIT386.ts`, or the overlay subsystem's move from
+        // `src/render/stats-overlay/` to `src/overlay/`). Without it, `git log -- <path>` only sees
+        // history since the path last took its current name, so every symbol declared before a
+        // rename falsely resolves to whichever release followed the rename.
+        const log = execFile('git', ['log', '--follow', '-S', declarationText, '--format=%H', '--', filePath], {
             cwd,
             encoding: 'utf8',
         });
