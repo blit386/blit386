@@ -147,11 +147,13 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
 - Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below. Music playback (a separate,
   loopable player distinct from the SFX voice pool) is not implemented yet.
 
-## Synthesis
+## Synth
 
 `AudioClip.synth` renders a clip procedurally from a `SynthParams` descriptor - no source file, no network request, and
 no `OfflineAudioContext`. Rendering runs entirely on the CPU and is deterministic: identical params (including `seed`)
-always produce identical sample data, so a `SynthParams` object can be stored and replayed as a preset.
+always produce identical sample data, so a `SynthParams` object can be stored and replayed as a preset. Unlike
+[Loading](#loading), there is nothing to fetch or decode from the network - a synthesized clip is ready the instant
+`synth()` resolves, even before `BT.isAudioUnlocked` is `true` (see [Unlock state](#unlock-state) above).
 
 ```ts twoslash
 import { AudioClip } from 'blit386';
@@ -195,8 +197,8 @@ phases overlap - a percussive hit is never cut off mid-fade.
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
 
-// A short, noisy explosion: mostly noise, with a touch of low square tone, quick attack and decay.
-const explosion = await AudioClip.synth({
+// A short, noisy boom: mostly noise, with a touch of low square tone, quick attack and decay.
+const boom = await AudioClip.synth({
   waveform: 'square',
   frequency: 90,
   duration: 0.4,
@@ -205,7 +207,7 @@ const explosion = await AudioClip.synth({
   seed: 42,
 });
 
-BT.soundPlay(explosion, { volume: 0.7 });
+BT.soundPlay(boom, { volume: 0.7 });
 ```
 
 <Callout title="Not cached, not deduplicated">
@@ -215,6 +217,31 @@ concurrent calls - every call renders a fresh, independent `AudioBuffer`, even f
 still works the same way (releases the buffer, stops any voice playing it), it just has no cache entry to clear.
 
 </Callout>
+
+### Presets
+
+`BT.synthPreset` bundles six ready-made `SynthParams` factories for common sound effects: `jump`, `pickup`, `explosion`,
+`laser`, `hit`, `blip`. Each takes an optional `seed` and applies small, bounded, deterministic jitter to a couple of
+hand-picked fields (frequency, duration, or noise mix) - the same seed always renders the exact same variant, so a
+preset stays reproducible even though it varies from call to call.
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+// Same character every time - useful for a UI sound that should stay consistent.
+const menuBlip = await AudioClip.synth(BT.synthPreset.blip());
+
+// A different seed per pickup keeps repeated collects from sounding robotic.
+const coin = await AudioClip.synth(BT.synthPreset.pickup(Date.now()));
+
+BT.soundPlay(menuBlip);
+BT.soundPlay(coin, { volume: 0.8 });
+```
+
+Omitting `seed` (or passing `0`) always renders the same baseline variant - useful when you want a preset's default
+character rather than per-play variation. See [Playback (SFX)](#playback-sfx) below for playing the resulting clip
+through the SFX voice pool, and [Design a sound](guide-audio.md#design-a-sound) in the Audio Guide for a walkthrough of
+tuning `SynthParams` by hand and storing presets as data.
 
 ## Playback (SFX)
 

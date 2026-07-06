@@ -139,10 +139,73 @@ function playFootstep() {
 }
 ```
 
+## Design a sound
+
+Beyond loading audio files, `AudioClip.synth` generates a clip entirely on the CPU from a `SynthParams` descriptor - no
+source file, no network fetch, and no `OfflineAudioContext`. Rendering is deterministic and synchronous: the same params
+(including `seed`) always produce the same samples, so a `SynthParams` value behaves like ordinary game data rather than
+a recorded asset. See [Synth](api-audio.md#synth) for the full field reference.
+
+Start by hand-tuning a few fields and listening to the result:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const zap = await AudioClip.synth({
+  waveform: 'sawtooth',
+  frequency: 1200,
+  duration: 0.18,
+  pitchSweep: { toFrequency: 200 },
+  envelope: { attack: 0, decay: 0.02, sustain: 0.6, release: 0.1 },
+  seed: 1,
+});
+
+BT.soundPlay(zap);
+```
+
+`BT.synthPreset` bundles ready-made starting points for common effects (`jump`, `pickup`, `explosion`, `laser`, `hit`,
+`blip`) - see [Presets](api-audio.md#presets) for the full list. Passing a different `seed` to a preset applies small,
+bounded jitter to a couple of its fields, so a repeated sound (footsteps, hits, pickups) doesn't sound identical every
+time, while staying reproducible for any given seed:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+// A distinct footstep every step, but the same sequence of seeds always sounds the same.
+async function playFootstep(stepIndex: number) {
+  const step = await AudioClip.synth(BT.synthPreset.hit(stepIndex));
+
+  BT.soundPlay(step, { volume: 0.5 });
+}
+```
+
+Because `SynthParams` is plain data (numbers, strings, and nested objects - no functions or class instances), a tuned
+sound can be stored, checked into a level file, or embedded in a save alongside the rest of your game's JSON, then
+handed to `AudioClip.synth` whenever it's needed:
+
+```ts twoslash
+import { AudioClip, type SynthParams } from 'blit386';
+
+const explosionPreset: SynthParams = {
+  waveform: 'sawtooth',
+  frequency: 90,
+  duration: 0.6,
+  noiseMix: 0.85,
+  envelope: { attack: 0, decay: 0.1, sustain: 0.3, release: 0.4 },
+  seed: 7,
+};
+
+// Round-trips losslessly through JSON, so it can live in a level file or save data.
+const serialized = JSON.stringify(explosionPreset);
+const restored = JSON.parse(serialized) as SynthParams;
+
+const explosion = await AudioClip.synth(restored);
+```
+
 ## See also
 
 <Cards>
-  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, and the unlock getter.</Card>
+  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, the unlock getter, and the synth engine.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Pointer, keyboard, and gamepad input that can trigger unlock.</Card>
 </Cards>
