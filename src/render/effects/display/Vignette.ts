@@ -7,6 +7,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  *
  * Display-tier: applies to the whole simulated screen, not the underlying
  * pixel art.
+ *
+ * @since 1.0.3
  */
 export class Vignette extends FullscreenEffect {
     public readonly tier = 'display' as const;

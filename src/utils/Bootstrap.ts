@@ -14,6 +14,8 @@ import { CANVAS_NOT_FOUND_MESSAGE, INIT_FAILED_MESSAGE } from './errorMessages';
 
 /**
  * Options for the bootstrap function.
+ *
+ * @since 0.2.0
  */
 export interface BootstrapOptions {
     /**
@@ -208,6 +210,7 @@ async function initDemo(
  * This function provides a streamlined way to start a demo with sensible defaults
  * while allowing customization through options.
  *
+ * @since 0.2.0
  * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options - Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.

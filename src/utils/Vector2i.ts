@@ -4,6 +4,8 @@
  * Used for points, sizes, directions, and camera offsets throughout the engine.
  * The API includes both allocation-free `*To()` / `*InPlace()` variants and
  * convenience methods that return new vectors.
+ *
+ * @since 0.1.0
  */
 export class Vector2i {
     /** The cached singleton for zero vector. */

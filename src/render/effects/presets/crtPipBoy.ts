@@ -19,6 +19,7 @@ import type { Effect } from '../Effect';
  *
  * The returned effects can be added in order to the engine's display chain.
  *
+ * @since 1.0.3
  * @returns Array of pre-configured display-tier effects.
  *
  * @example

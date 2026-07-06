@@ -13,6 +13,7 @@ import type { Effect } from '../Effect';
  * caveat about re-quantization. Same effect stack as `amber()`,
  * tuned slightly toward a cooler / more flickery aesthetic.
  *
+ * @since 1.0.3
  * @returns Array of pre-configured display-tier effects.
  */
 export function green(): Effect[] {

@@ -7,6 +7,8 @@ import { FullscreenPixelEffect } from '../FullscreenPixelEffect';
  * palette indices move whole-texel (no RGB resampling).
  *
  * Pixel-tier: runs on the logical `r8uint` framebuffer (palette indices).
+ *
+ * @since 1.0.3
  */
 export class PixelGlitch extends FullscreenPixelEffect {
     /**

@@ -14,7 +14,11 @@
  */
 export const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'] as const;
 
-/** Oscillator waveform shape; one of {@link SYNTH_WAVEFORMS}. */
+/**
+ * Oscillator waveform shape; one of {@link SYNTH_WAVEFORMS}.
+ *
+ * @since 1.3.0
+ */
 export type SynthWaveform = (typeof SYNTH_WAVEFORMS)[number];
 
 /**
@@ -23,6 +27,8 @@ export type SynthWaveform = (typeof SYNTH_WAVEFORMS)[number];
  * The release phase is always anchored to the end of the clip, so a note is fully released
  * by its last sample regardless of how `attack`/`decay`/`release` compare to the clip's total
  * `duration`.
+ *
+ * @since 1.3.0
  */
 export interface SynthEnvelope {
     /**
@@ -50,13 +56,21 @@ export interface SynthEnvelope {
     release?: number;
 }
 
-/** Linear pitch sweep descriptor; see {@link SynthParams.pitchSweep}. */
+/**
+ * Linear pitch sweep descriptor; see {@link SynthParams.pitchSweep}.
+ *
+ * @since 1.3.0
+ */
 export interface SynthPitchSweep {
     /** Frequency in Hz the carrier linearly reaches by the end of the clip. */
     toFrequency: number;
 }
 
-/** Sine-wave vibrato (periodic pitch wobble) descriptor; see {@link SynthParams.vibrato}. */
+/**
+ * Sine-wave vibrato (periodic pitch wobble) descriptor; see {@link SynthParams.vibrato}.
+ *
+ * @since 1.3.0
+ */
 export interface SynthVibrato {
     /**
      * Vibrato rate in Hz (oscillations per second).
@@ -76,6 +90,8 @@ export interface SynthVibrato {
  *
  * Fully JSON round-trippable: no functions, class instances, or `undefined`-only fields, so a
  * `SynthParams` value can be serialized as a preset and restored later byte-for-byte.
+ *
+ * @since 1.3.0
  */
 export interface SynthParams {
     /** Oscillator waveform shape. */

@@ -15,6 +15,8 @@ export type OutputUpscaleFilter = 'nearest' | 'linear';
  * - `'software'` - Canvas 2D software fallback. Supports draw primitives,
  *   sprites, palette, and camera. Fullscreen shader effects are not available
  *   and will throw when added.
+ *
+ * @since 1.0.3
  */
 export type Backend = 'webgpu' | 'software';
 
@@ -23,12 +25,16 @@ export type Backend = 'webgpu' | 'software';
  * {@link BT.audioVolumeGet}, {@link BT.audioMuteSet}, and {@link BT.isAudioMuted}.
  *
  * `'sfx'` and `'music'` feed into `'main'`, which feeds the audio destination.
+ *
+ * @since 1.3.0
  */
 export type AudioBus = 'main' | 'music' | 'sfx';
 
 /**
  * Engine-facing hardware configuration returned by `configure()` when a demo
  * implements that optional hook, or by {@link defaultConfig} otherwise.
+ *
+ * @since 0.1.0
  */
 export interface HardwareSettings {
     /**
@@ -265,6 +271,8 @@ export interface HardwareSettings {
 
 /**
  * Palette indices for overlay bar fills and system-font text.
+ *
+ * @since 1.1.0
  */
 export interface OverlayStyle {
     /** Palette index for bar backgrounds (top, bottom, and custom rows unless overridden). */
@@ -283,6 +291,8 @@ export interface OverlayStyle {
 
 /**
  * Palette indices for the timing chart band.
+ *
+ * @since 1.1.0
  */
 export interface OverlayTimingChartStyle {
     /** Update bar color; defaults to {@link OverlayStyle.barPaletteIndex} or overlay bar index. */
@@ -317,6 +327,8 @@ export interface OverlayTimingChartStyle {
  * {@link HardwareSettings.isOverlayPaletteEnabled} is `true`, or the hint bar alone) with 1 px gaps.
  * Reuse the same array instance from {@link IBTDemo.overlayRows} when possible to avoid
  * per-frame allocations.
+ *
+ * @since 1.1.0
  */
 export interface OverlayRow {
     /** Left-aligned text (for example `Position: 120, 80`). */
@@ -347,6 +359,8 @@ export interface OverlayRow {
  * 3. update() - Fixed timestep via accumulator (may run 0..N times per frame)
  * 4. render() - Called once per requestAnimationFrame (browser refresh rate)
  * 5. (engine) overlay - When {@link HardwareSettings.isOverlayEnabled} is true, drawn after `render()` on top
+ *
+ * @since 0.1.0
  */
 export interface IBTDemo {
     /**
@@ -431,6 +445,7 @@ export interface IBTDemo {
  * `640x480` canvas output (2x nearest upscale), `60` FPS fixed updates, and the engine
  * overlay enabled.
  *
+ * @since 1.0.3
  * @returns Default HardwareSettings configuration.
  */
 export function defaultConfig(): HardwareSettings {
@@ -913,6 +928,7 @@ function mergeExplicitDisplayProfile(
  * omitted optionals such as `drawingBufferSize` remain unset so the drawing buffer
  * can match logical resolution. `isOverlayEnabled` defaults to `true` when omitted.
  *
+ * @since 1.0.5
  * @param partial - Optional partial settings from `configure()`.
  * @returns Resolved hardware settings for initialization.
  */

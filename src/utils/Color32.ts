@@ -19,7 +19,11 @@ for (let i = 0; i < 256; i++) {
     HEX_TABLE[i] = i.toString(16).padStart(2, '0');
 }
 
-/** Mutable 32-bit RGBA color value with 8-bit channels. */
+/**
+ * Mutable 32-bit RGBA color value with 8-bit channels.
+ *
+ * @since 0.1.0
+ */
 export class Color32 {
     /** The cached singleton for white color. */
     private static readonly _white: Color32 = Object.freeze(Color32.fromRGBAUnchecked(255, 255, 255, 255));

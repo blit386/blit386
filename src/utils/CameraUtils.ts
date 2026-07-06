@@ -7,6 +7,7 @@ import { Vector2i } from './Vector2i';
  * The result is clamped to `[0, max(world - view)]` per axis. When the
  * world is smaller than the viewport on an axis, that axis clamps to `0`.
  *
+ * @since 1.0.3
  * @param camera - Desired camera origin in world coordinates.
  * @param worldSize - Full world size in pixels.
  * @param viewSize - Viewport size in pixels.

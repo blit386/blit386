@@ -7,6 +7,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * stripe a soft top/bottom edge.
  *
  * Display-tier. Demo drives {@link time} (typically `BT.ticks / BT.targetFPS`).
+ *
+ * @since 1.0.3
  */
 export class RollLine extends FullscreenEffect {
     public readonly tier = 'display' as const;

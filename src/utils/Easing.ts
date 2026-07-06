@@ -5,12 +5,17 @@
  * Used by palette fade effects to control interpolation curves.
  */
 
-/** Supported easing function identifiers. */
+/**
+ * Supported easing function identifiers.
+ *
+ * @since 1.0.3
+ */
 export type EasingFunction = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
 /**
  * Applies an easing curve to a normalized time value.
  *
+ * @since 1.0.3
  * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
  * @param easing - Easing curve to apply.
  * @returns Eased value. Guaranteed to return 0 for `t = 0` and 1 for `t = 1`.

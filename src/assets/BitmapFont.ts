@@ -85,6 +85,8 @@ interface FileData {
 
 /**
  * Measured text dimensions in pixels.
+ *
+ * @since 0.1.0
  */
 export interface TextSize {
     /** Width of the text in pixels. */
@@ -143,6 +145,8 @@ function populateAsciiGlyph(asciiGlyphs: (Glyph | null)[], char: string, glyph: 
  * - exposing glyph lookup by character or character code
  * - measuring string widths with a small reusable cache
  * - providing the underlying {@link SpriteSheet} used for rendering glyph quads
+ *
+ * @since 0.1.0
  */
 export class BitmapFont {
     /** Font display name. */

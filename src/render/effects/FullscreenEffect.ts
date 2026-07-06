@@ -28,6 +28,8 @@ export type EffectSamplerFilter = 'nearest' | 'linear';
  * - {@link fragmentShader} - WGSL fragment shader source.
  * - {@link writeUniforms} - populates `uniformData` from public params.
  * - Optionally {@link samplerFilter} (defaults to `'linear'`).
+ *
+ * @since 1.0.3
  */
 export abstract class FullscreenEffect implements Effect {
     /** Tier this effect belongs to (`'pixel'` or `'display'`). */

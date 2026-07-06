@@ -7,6 +7,8 @@ import { Vector2i } from './Vector2i';
  * zero-allocation geometry helpers. Both convenience getters and allocation-free
  * `*To()` helpers are provided so callers can choose between readability and
  * hot-path efficiency.
+ *
+ * @since 0.1.0
  */
 export class Rect2i {
     /** The cached singleton for zero rectangle. */

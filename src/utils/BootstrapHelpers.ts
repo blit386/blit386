@@ -47,6 +47,7 @@ function appendTextWithLineBreaks(element: HTMLElement, text: string): void {
  * SECURITY: This function renders content safely using createTextNode to prevent XSS attacks.
  * All text (including code) is treated as plain text, not interpreted as markup.
  *
+ * @since 1.0.3
  * @param title - Error heading text displayed prominently.
  * @param content - Error message content (string or object with optional code formatting).
  * @param containerID - ID of the container element. Default: 'canvas-container'
@@ -134,6 +135,7 @@ export function displayError(title: string, content: ErrorContent, containerID: 
  * Retrieves a canvas element from the DOM by ID.
  * Validates that the element exists and is a canvas element.
  *
+ * @since 1.0.3
  * @param canvasID - ID of the canvas element. Default: 'blit386-canvas'
  * @returns The canvas element if found and valid, null otherwise.
  *

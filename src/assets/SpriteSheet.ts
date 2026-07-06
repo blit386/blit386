@@ -200,6 +200,8 @@ function markUniqueIndicesInBounds(
 
 /**
  * Result object returned by {@link SpriteSheet.loadIndexed}.
+ *
+ * @since 1.0.3
  */
 export type IndexedSpriteLoadResult = {
     /** Loaded and indexized sprite sheet. */
@@ -224,6 +226,8 @@ export type IndexedSpriteLoadResult = {
  * data. The GPU texture becomes an `r8uint` format uploaded via `writeTexture`.
  * The original RGBA bytes are retained so `reindexize()` can re-convert without
  * reloading the image.
+ *
+ * @since 0.1.0
  */
 export class SpriteSheet {
     /** Sprite sheet dimensions in pixels. */
