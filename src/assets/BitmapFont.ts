@@ -173,9 +173,6 @@ export class BitmapFont {
     /** Cache for text measurement results to avoid repeated calculations. */
     private measureCache: Map<string, number> = new Map();
 
-    /** Reusable result object for measureTextSize to avoid allocations. */
-    private readonly textSizeResult: TextSize = { width: 0, height: 0 };
-
     /**
      * Creates a BitmapFont instance.
      * Use {@link BitmapFont.load} or {@link BitmapFont.createFromGlyphs} to construct instances.
@@ -757,21 +754,26 @@ export class BitmapFont {
     /**
      * Measures the pixel size of a single-line text string.
      *
-     * Returns a reusable internal object to avoid allocations. Copy the values
-     * before calling `measureTextSize()` again if you need to retain them.
+     * Allocates and returns a new `{ width, height }` object on every call, so
+     * results from separate calls never alias each other. For hot loops where
+     * per-call allocation matters, use `measureTextSizeInto()` instead.
      *
      * @param text - String to measure.
-     * @returns Reused width/height pair for the measured text.
+     * @returns A new width/height pair for the measured text.
      */
     measureTextSize(text: string): TextSize {
-        this.textSizeResult.width = this.measureText(text);
-        this.textSizeResult.height = this.lineHeight;
-
-        return this.textSizeResult;
+        return {
+            width: this.measureText(text),
+            height: this.lineHeight,
+        };
     }
 
     /**
      * Measures the pixel size of a single-line text string into a caller-owned object.
+     *
+     * Zero-allocation variant of `measureTextSize()` for hot loops or other
+     * performance-sensitive call sites: writes into `result` instead of
+     * allocating a new object.
      *
      * @param text - String to measure.
      * @param result - Object that receives the measured width and height.

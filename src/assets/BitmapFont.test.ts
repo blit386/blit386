@@ -597,15 +597,20 @@ describe('BitmapFont', () => {
             expect(width).toBe(24);
         });
 
-        it('should return a reusable object from measureTextSize', () => {
+        it('should return a new object from measureTextSize on each call', () => {
             const size1 = font.measureTextSize('A');
             const size2 = font.measureTextSize('AB');
 
-            // Same reference (reused object)
-            expect(size1).toBe(size2);
+            // Different references -- no aliasing.
+            expect(size1).not.toBe(size2);
 
-            // But values reflect the latest measurement
+            // size1 keeps its own values even after size2 is computed.
+            expect(size1.width).toBe(9);
+            expect(size1.height).toBe(14);
+
+            // size2 reflects its own text, independently.
             expect(size2.width).toBe(17);
+            expect(size2.height).toBe(14);
         });
     });
 
