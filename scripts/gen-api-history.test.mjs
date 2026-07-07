@@ -425,6 +425,87 @@ describe('JSDoc backfill codemod', () => {
     });
 });
 
+describe('extractTags (@changed parsing)', () => {
+    /** Parses `source` in memory and returns its lone top-level function declaration. */
+    function parseFunctionFixture(source) {
+        const sourceFile = ts.createSourceFile('malformed-changed-fixture.ts', source, ts.ScriptTarget.ES2022, true);
+        let found;
+
+        ts.forEachChild(sourceFile, (node) => {
+            if (ts.isFunctionDeclaration(node)) {
+                found = node;
+            }
+        });
+
+        return found;
+    }
+
+    it('parses a well-formed @changed tag into version and note', () => {
+        const node = parseFunctionFixture(`
+/**
+ * @changed 1.2.0 Added the paletteOffset parameter.
+ */
+export function widget() {}
+`);
+
+        assert.deepEqual(extractTags(node).changes, [{ version: '1.2.0', note: 'Added the paletteOffset parameter.' }]);
+    });
+
+    it('warns and drops a @changed tag with no note instead of silently discarding it', () => {
+        const node = parseFunctionFixture(`
+/**
+ * @changed 1.2.0
+ */
+export function widget() {}
+`);
+
+        const warnings = [];
+        const originalWarn = console.warn;
+
+        console.warn = (...args) => warnings.push(args.join(' '));
+
+        let tags;
+
+        try {
+            tags = extractTags(node);
+        } finally {
+            console.warn = originalWarn;
+        }
+
+        assert.deepEqual(tags.changes, [], 'a malformed @changed tag must not be recorded as a change');
+        assert.equal(warnings.length, 1);
+        assert.match(warnings[0], /malformed @changed tag/u);
+        assert.match(warnings[0], /malformed-changed-fixture\.ts:\d+/u);
+        assert.match(warnings[0], /"1\.2\.0"/u);
+    });
+
+    it('warns and drops an empty @changed tag', () => {
+        const node = parseFunctionFixture(`
+/**
+ * @changed
+ */
+export function widget() {}
+`);
+
+        const warnings = [];
+        const originalWarn = console.warn;
+
+        console.warn = (...args) => warnings.push(args.join(' '));
+
+        let tags;
+
+        try {
+            tags = extractTags(node);
+        } finally {
+            console.warn = originalWarn;
+        }
+
+        assert.deepEqual(tags.changes, []);
+        assert.equal(warnings.length, 1);
+        assert.match(warnings[0], /malformed @changed tag/u);
+    });
+});
+
 describe('findIntroducingVersion (git pickaxe, mocked execFile)', () => {
     it('strips a TAG~N describe suffix down to the bare tag', () => {
         const execFile = (_git, args) => {

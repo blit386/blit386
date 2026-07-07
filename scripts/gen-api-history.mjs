@@ -136,6 +136,25 @@ export function parseDeprecatedTag(text) {
 }
 
 /**
+ * Warns (to stderr) about an `@changed` tag whose text doesn't match `<version> <note>` - a
+ * missing version token, or a version with no note - so a malformed tag is visibly dropped
+ * during manifest generation rather than silently discarded, matching how `--since-check`
+ * surfaces missing `@since` tags instead of guessing at them.
+ *
+ * @param {ts.Node} declaration - Declaration the malformed tag was found on.
+ * @param {string} text - Raw `@changed` comment text that failed to parse.
+ */
+function warnMalformedChangedTag(declaration, text) {
+    const sourceFile = declaration.getSourceFile();
+    const { line } = sourceFile.getLineAndCharacterOfPosition(declaration.getStart());
+
+    console.warn(
+        `[gen-api-history] malformed @changed tag at ${relativeToRoot(sourceFile.fileName)}:${line + 1} - ` +
+            `expected "<version> <note>", got: ${JSON.stringify(text)}`,
+    );
+}
+
+/**
  * Reads `@since` / `@changed` / `@deprecated` off a declaration node via the compiler API.
  *
  * @param {ts.Node} declaration - Declaration node to inspect.
@@ -161,6 +180,8 @@ export function extractTags(declaration) {
 
             if (match) {
                 changes.push({ version: match[1], note: match[2].trim() });
+            } else {
+                warnMalformedChangedTag(declaration, text);
             }
         } else if (tagName === 'deprecated') {
             deprecated = parseDeprecatedTag(text);
