@@ -1,16 +1,17 @@
 /**
  * Internal audio subsystem: Web Audio context, bus graph, browser autoplay-unlock
- * state machine, SFX voice pool, and pre-unlock SFX/music drop counters.
+ * state machine, SFX voice pool, music player, and pre-unlock SFX/music drop counters.
  *
- * Owned by {@link BTAPI} (not itself a singleton) and never exposed to demo code.
- * Music playback is added in a later phase; this class manages the audio graph, bus
- * volume/mute, unlock tracking, and SFX voice playback via {@link playSound}.
+ * Owned by {@link BTAPI} (not itself a singleton) and never exposed to demo code. This class
+ * manages the audio graph, bus volume/mute, unlock tracking, SFX voice playback via
+ * {@link playSound}, and music playback via {@link musicPlay}.
  */
 
 import type { AudioBus } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
 import { setAudioClipUnloadHandler, setAudioDecodeContext } from './audioDecodeContext';
+import { MusicPlayer, type MusicPlayOptions } from './MusicPlayer';
 import {
     DEFAULT_PAN,
     DEFAULT_PITCH,
@@ -40,8 +41,8 @@ type PerBus<T> = Record<AudioBus, T>;
  * Construct, then call {@link attach} with the rendering canvas. Call {@link detach}
  * to remove listeners and close the audio context (engine restarts, tests).
  *
- * Music playback is added in a later phase; this class exposes bus volume, mute,
- * unlock-state accessors, and SFX voice playback via {@link playSound}.
+ * Exposes bus volume, mute, and unlock-state accessors, SFX voice playback via
+ * {@link playSound}, and music playback via {@link musicPlay}.
  */
 export class AudioManager {
     /** Live Web Audio context, or `null` before {@link attach} / after {@link detach}. */
@@ -52,6 +53,9 @@ export class AudioManager {
 
     /** SFX voice pool, or `null` before {@link attach} / after {@link detach}. */
     private voicePool: VoicePool | null = null;
+
+    /** Music player, or `null` before {@link attach} / after {@link detach}. */
+    private musicPlayer: MusicPlayer | null = null;
 
     /** Canvas passed to {@link attach}; the unlock gesture listener target. */
     private target: HTMLCanvasElement | null = null;
@@ -76,6 +80,9 @@ export class AudioManager {
 
     /** Whether a music play request arrived while locked, remembered for later resumption. */
     private isMusicRequestRemembered = false;
+
+    /** Buffer and options from the latest {@link musicPlay} call made while locked; overwritten by a newer pending call, consumed by {@link resumeAndUnlock}. */
+    private pendingMusicRequest: { buffer: AudioBuffer; options: MusicPlayOptions | undefined } | null = null;
 
     /** Bound `pointerdown` unlock gesture handler; removed by reference in {@link removeUnlockListeners}. */
     private readonly onPointerDown: (event: Event) => void;
@@ -119,9 +126,12 @@ export class AudioManager {
     public attach(target: HTMLCanvasElement): void {
         this.detach();
 
+        let busNodes: PerBus<GainNode>;
+
         try {
             this.context = new AudioContext();
-            this.buildBusGraph(this.context);
+            busNodes = this.buildBusGraph(this.context);
+            this.busNodes = busNodes;
         } catch (error) {
             console.error('[BT] Failed to create the audio context', error);
 
@@ -135,6 +145,8 @@ export class AudioManager {
 
         this.voicePool = new VoicePool(this);
         setAudioClipUnloadHandler((buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer));
+
+        this.musicPlayer = new MusicPlayer(this.context, busNodes.music);
 
         this.target = target;
 
@@ -156,6 +168,9 @@ export class AudioManager {
         this.voicePool = null;
         setAudioClipUnloadHandler(() => {});
 
+        this.musicPlayer?.stop();
+        this.musicPlayer = null;
+
         if (this.context !== null) {
             this.context.close().catch(() => {
                 // Context may already be closed; close() rejects rather than throwing synchronously.
@@ -174,6 +189,7 @@ export class AudioManager {
         this.mutedGainSnapshot = {};
         this.sfxDroppedCount = 0;
         this.isMusicRequestRemembered = false;
+        this.pendingMusicRequest = null;
     }
 
     /**
@@ -318,9 +334,10 @@ export class AudioManager {
 
     /**
      * Remembers that a music play request arrived while the audio context was
-     * locked, so future playback can resume it once unlocked.
+     * locked, so {@link resumeAndUnlock} can resume it once unlocked.
      *
-     * Called by future music playback methods; only the flag is implemented here.
+     * Called by {@link musicPlay}; carries no payload itself - see {@link pendingMusicRequest}
+     * for the actual buffer and options.
      */
     public rememberMusicRequest(): void {
         this.isMusicRequestRemembered = true;
@@ -338,8 +355,7 @@ export class AudioManager {
     /**
      * Clears the remembered pre-unlock music request.
      *
-     * Called by future music playback methods once the remembered request has
-     * been handled.
+     * Called by {@link resumeAndUnlock} once the remembered request has been started.
      */
     public clearRememberedMusicRequest(): void {
         this.isMusicRequestRemembered = false;
@@ -454,12 +470,72 @@ export class AudioManager {
     }
 
     /**
+     * Plays `buffer` through the music player, crossfading out whatever is currently playing.
+     *
+     * While the context is locked (pre-unlock), the request is not dropped like {@link playSound}
+     * - it is stored as the pending music request and remembered via {@link rememberMusicRequest},
+     * so {@link resumeAndUnlock} can start it the moment the context unlocks. A newer call while
+     * still locked overwrites the previously stored request; only the latest survives to unlock.
+     *
+     * @param buffer - Decoded audio buffer to play.
+     * @param options - Playback options; see {@link MusicPlayOptions}.
+     */
+    public musicPlay(buffer: AudioBuffer, options?: MusicPlayOptions): void {
+        if (!this.unlocked) {
+            this.pendingMusicRequest = { buffer, options };
+            this.rememberMusicRequest();
+
+            return;
+        }
+
+        this.musicPlayer?.play(buffer, options);
+    }
+
+    /**
+     * Stops the music player, optionally fading out first.
+     *
+     * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
+     */
+    public musicStop(fadeMs?: number): void {
+        this.musicPlayer?.stop(fadeMs);
+    }
+
+    /**
+     * Sets the music player's volume, optionally fading to it.
+     *
+     * @param value - Target gain.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public musicVolumeSet(value: number, fadeMs?: number): void {
+        this.musicPlayer?.volumeSet(value, fadeMs);
+    }
+
+    /**
+     * Gets the music player's current target volume.
+     *
+     * @returns Current target gain, or {@link DEFAULT_VOLUME} before {@link attach}.
+     */
+    public musicVolumeGet(): number {
+        return this.musicPlayer?.volumeGet() ?? DEFAULT_VOLUME;
+    }
+
+    /**
+     * Reports whether music is currently playing.
+     *
+     * @returns `true` when the music player has a live current track.
+     */
+    public isMusicPlaying(): boolean {
+        return this.musicPlayer?.isPlaying() ?? false;
+    }
+
+    /**
      * Creates the `sfx` / `music` / `main` gain nodes and wires `sfx` and
      * `music` into `main`, which connects to `destination`.
      *
      * @param context - Audio context to build the graph on.
+     * @returns The newly created bus gain nodes.
      */
-    private buildBusGraph(context: AudioContext): void {
+    private buildBusGraph(context: AudioContext): PerBus<GainNode> {
         const main = context.createGain();
         const music = context.createGain();
         const sfx = context.createGain();
@@ -468,7 +544,7 @@ export class AudioManager {
         sfx.connect(main);
         main.connect(context.destination);
 
-        this.busNodes = { main, music, sfx };
+        return { main, music, sfx };
     }
 
     /**
@@ -494,6 +570,10 @@ export class AudioManager {
      * Awaits `context.resume()` and flips {@link unlocked} on success. Always
      * clears {@link isUnlocking} so a failed attempt can retry on the next gesture.
      *
+     * On success, starts any music request remembered from before unlock (see
+     * {@link musicPlay}) and clears it via {@link clearRememberedMusicRequest} so it never
+     * replays on a later unlock attempt.
+     *
      * @param context - Audio context to resume.
      */
     private async resumeAndUnlock(context: AudioContext): Promise<void> {
@@ -502,6 +582,14 @@ export class AudioManager {
 
             this.unlocked = true;
             this.removeUnlockListeners();
+
+            if (this.hasRememberedMusicRequest() && this.pendingMusicRequest !== null) {
+                const { buffer, options } = this.pendingMusicRequest;
+
+                this.musicPlayer?.play(buffer, options);
+                this.clearRememberedMusicRequest();
+                this.pendingMusicRequest = null;
+            }
         } catch (error) {
             console.error('[BT] Failed to resume the audio context', error);
         } finally {

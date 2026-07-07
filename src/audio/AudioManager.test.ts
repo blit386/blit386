@@ -467,4 +467,141 @@ describe('AudioManager', () => {
             expect(audio.isSoundPlaying(ref)).toBe(false);
         });
     });
+
+    describe('music playback', () => {
+        it('drops nothing but remembers the request when locked: musicPlay before unlock', () => {
+            audio.attach(canvas);
+
+            audio.musicPlay(createMockAudioBuffer());
+
+            expect(audio.isMusicPlaying()).toBe(false);
+            expect(audio.hasRememberedMusicRequest()).toBe(true);
+        });
+
+        it('only the latest pending request survives multiple musicPlay calls while locked', async () => {
+            audio.attach(canvas);
+
+            audio.musicPlay(createMockAudioBuffer());
+            audio.musicPlay(createMockAudioBuffer());
+
+            const context = getMockContext();
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                1,
+            );
+        });
+
+        it('starts playback immediately once unlocked', async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            audio.musicPlay(createMockAudioBuffer());
+
+            expect(audio.isMusicPlaying()).toBe(true);
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+        });
+
+        it('starts the remembered request and clears it once the context unlocks', async () => {
+            audio.attach(canvas);
+
+            audio.musicPlay(createMockAudioBuffer(), { volume: 0.5 });
+
+            expect(audio.isMusicPlaying()).toBe(false);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            expect(audio.isMusicPlaying()).toBe(true);
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+        });
+
+        it('does not replay a stale remembered request on a later unlock attempt', async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const context = getMockContext();
+
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                0,
+            );
+        });
+
+        describe('controls once unlocked', () => {
+            beforeEach(async () => {
+                audio.attach(canvas);
+
+                canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+                await vi.waitFor(() => {
+                    expect(audio.isUnlocked()).toBe(true);
+                });
+            });
+
+            it('musicStop stops playback', () => {
+                audio.musicPlay(createMockAudioBuffer());
+
+                audio.musicStop();
+
+                expect(audio.isMusicPlaying()).toBe(false);
+            });
+
+            it('musicStop accepts an optional fadeMs without throwing', () => {
+                audio.musicPlay(createMockAudioBuffer());
+
+                expect(() => audio.musicStop(500)).not.toThrow();
+            });
+
+            it('musicVolumeSet and musicVolumeGet round-trip', () => {
+                audio.musicPlay(createMockAudioBuffer());
+
+                audio.musicVolumeSet(0.4);
+
+                expect(audio.musicVolumeGet()).toBe(0.4);
+            });
+        });
+
+        it('every accessor reports inert defaults on a manager that was never attached', () => {
+            const detachedAudio = new AudioManager();
+
+            expect(detachedAudio.isMusicPlaying()).toBe(false);
+            expect(detachedAudio.musicVolumeGet()).toBe(1);
+            expect(() => detachedAudio.musicPlay(createMockAudioBuffer())).not.toThrow();
+            expect(() => detachedAudio.musicStop()).not.toThrow();
+            expect(() => detachedAudio.musicVolumeSet(0.5)).not.toThrow();
+        });
+
+        it('detach stops music playback', async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            audio.musicPlay(createMockAudioBuffer());
+            audio.detach();
+
+            expect(audio.isMusicPlaying()).toBe(false);
+        });
+    });
 });
