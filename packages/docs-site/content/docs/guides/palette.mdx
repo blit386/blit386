@@ -3,6 +3,8 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Palette"
 description: "The palette-first rendering workflow: setup, slot offsets, and palette effects."
+lastModified: "2026-07-07T17:38:09+02:00"
+editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-palette.md"
 ---
 
 BLIT386 is palette-first: every visible pixel stores a palette slot index, and final RGB color comes from the active
@@ -13,6 +15,8 @@ This guide covers the end-to-end workflow: setup, indexed sprites, palette offse
 
 For terminology (slot vs. `paletteIndex` vs. `paletteOffset`) and when to call `BT.paletteSet()` vs. mutating
 `BT.palette`, see [Palette addressing](/docs/api/palette#palette-addressing) in the API palette reference.
+
+<ApiAvailability page="guides/palette" />
 
 <Steps>
 
@@ -213,6 +217,8 @@ For benchmark workflow and CI thresholds, see [Performance Testing](/docs/perfor
 </Step>
 
 </Steps>
+
+<PageChangelog page="guides/palette" />
 
 ## See also
 

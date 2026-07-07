@@ -1,0 +1,26 @@
+@reference '../app.css';
+
+.badge {
+    @apply inline-flex items-center px-2 pt-0.5 pb-0.75 mb-1 mr-1 border;
+    @apply whitespace-nowrap uppercase font-departure antialiased text-[11px] leading-5;
+
+    & code {
+        @apply opacity-100 normal-case pr-1;
+    }
+}
+
+.stable {
+    @apply border-fd-primary text-fd-primary;
+}
+
+.unreleased {
+    @apply bg-fd-muted text-fd-muted-foreground;
+}
+
+.deprecated {
+    @apply bg-fd-card text-fd-card-foreground;
+}
+
+.symbol {
+    @apply font-mono opacity-80;
+}

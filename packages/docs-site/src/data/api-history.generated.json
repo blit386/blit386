@@ -1,0 +1,1454 @@
+{
+  "packageVersion": "1.2.1",
+  "unreleasedVersion": "1.3.0",
+  "versions": {
+    "0.1.0": "2025-12-13T11:02:41+01:00",
+    "0.2.0": "2025-12-22T16:19:15+01:00",
+    "1.0.3": "2026-05-16T12:44:19+02:00",
+    "1.0.4": "2026-05-17T14:02:47+02:00",
+    "1.0.5": "2026-05-21T15:03:37+02:00",
+    "1.1.0": "2026-05-30T16:05:31+02:00",
+    "1.1.1": "2026-06-07T14:08:44+02:00",
+    "1.2.1": "2026-06-20T21:07:22+02:00",
+    "1.3.0": null
+  },
+  "symbols": {
+    "AssetLoader": {
+      "kind": "class",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "AudioBus": {
+      "kind": "type",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "AudioClip": {
+      "kind": "class",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.AXIS_LEFT_X": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.AXIS_LEFT_Y": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.AXIS_RIGHT_X": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.AXIS_RIGHT_Y": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.AXIS_TRIGGER_L": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.AXIS_TRIGGER_R": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_A": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_ABXY": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_B": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_DOWN": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_L": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_LEFT": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_POINTER_A": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_POINTER_ANY": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_POINTER_B": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_POINTER_C": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_POINTER_D": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_R": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_RIGHT": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_SELECT": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_SHOULDER": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_START": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_UP": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_X": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.BTN_Y": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.DEFAULT_KEYBOARD_PLAYER1": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.DEFAULT_KEYBOARD_PLAYER2": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.FLIP_H": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.FLIP_V": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.PLAYER_FOUR": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.PLAYER_ONE": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.PLAYER_THREE": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.PLAYER_TWO": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.ROT_180_CW": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.ROT_270_CW": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.ROT_90_CW": {
+      "kind": "const",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.activeBackend": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.assignTag": {
+      "kind": "method",
+      "since": "1.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.audioMuteSet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.audioVolumeGet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.audioVolumeSet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.buttonDown": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": {
+        "version": "0.1.0",
+        "date": "2026-05-31",
+        "note": "Use {@link isDown} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.buttonPressed": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": {
+        "version": "0.1.0",
+        "date": "2026-05-31",
+        "note": "Use {@link isPressed} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.buttonReleased": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": {
+        "version": "0.1.0",
+        "date": "2026-05-31",
+        "note": "Use {@link isReleased} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.camera": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.cameraClamp": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.cameraReset": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.cameraSet": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.captureFrame": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.clear": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.clearRect": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.deltaSeconds": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.displaySize": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.downloadFrame": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.drawLine": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.drawPixel": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.drawRect": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.drawRectFill": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.drawSprite": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.drawingBufferSize": {
+      "kind": "getter",
+      "since": "1.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.effectAdd": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.effectClear": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.effectRemove": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.gamepadConnected": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": {
+        "version": "1.0.3",
+        "date": "2026-05-31",
+        "note": "Use {@link isGamepadConnected} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.gamepadCount": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.getAxis": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.hideCursor": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.init": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.inputMap": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.inputMapReset": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.inputString": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isAudioMuted": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.isAudioUnlocked": {
+      "kind": "getter",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.isDown": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isGamepadConnected": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isKeyDown": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isKeyPressed": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isKeyReleased": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isPointerActive": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isPressed": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isReleased": {
+      "kind": "method",
+      "since": "1.1.1",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.isSoundPlaying": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.keyDown": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": {
+        "version": "0.1.0",
+        "date": "2026-05-31",
+        "note": "Use {@link isKeyDown} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.keyPressed": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": {
+        "version": "0.1.0",
+        "date": "2026-05-31",
+        "note": "Use {@link isKeyPressed} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.keyReleased": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": {
+        "version": "0.1.0",
+        "date": "2026-05-31",
+        "note": "Use {@link isKeyReleased} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.outputSize": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.palette": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteClearEffects": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteCreate": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteCycle": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteFade": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteFadeRange": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteFlash": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteSet": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.paletteSwap": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.pointerDelta": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.pointerPos": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.pointerPosValid": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": {
+        "version": "1.0.3",
+        "date": "2026-05-31",
+        "note": "Use {@link isPointerActive} instead."
+      },
+      "status": "deprecated"
+    },
+    "BT.pointerScrollDelta": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.preset": {
+      "kind": "const",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.printFont": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.requestedBackend": {
+      "kind": "getter",
+      "since": "1.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.showCursor": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.soundPanGet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.soundPanSet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.soundPitchGet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.soundPitchSet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.soundPlay": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.soundStop": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.soundVolumeGet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.soundVolumeSet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.spritesRefresh": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.synthPreset": {
+      "kind": "const",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.systemPrint": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.systemPrintMeasure": {
+      "kind": "method",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.targetFPS": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.ticks": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.ticksReset": {
+      "kind": "method",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BT.timeSeconds": {
+      "kind": "getter",
+      "since": "1.0.4",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Backend": {
+      "kind": "type",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BarrelDistortion": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BitmapFont": {
+      "kind": "class",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Bloom": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "BootstrapOptions": {
+      "kind": "interface",
+      "since": "0.2.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "ChromaticAberration": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Color32": {
+      "kind": "class",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "EasingFunction": {
+      "kind": "type",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Effect": {
+      "kind": "interface",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "EffectTier": {
+      "kind": "type",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Flicker": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "FullscreenEffect": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "FullscreenPixelEffect": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "HardwareSettings": {
+      "kind": "interface",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "IBTDemo": {
+      "kind": "interface",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "IndexedSpriteLoadResult": {
+      "kind": "type",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Interference": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Noise": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "OverlayRow": {
+      "kind": "interface",
+      "since": "1.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "OverlayStyle": {
+      "kind": "interface",
+      "since": "1.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "OverlayTimingChartStyle": {
+      "kind": "interface",
+      "since": "1.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Palette": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "PixelGlitch": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "PixelMosaic": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "RGBMask": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Rect2i": {
+      "kind": "class",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "RollLine": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Scanlines": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "SoundParamSetOptions": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SoundPlayOptions": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SoundRef": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SoundStopOptions": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SpriteSheet": {
+      "kind": "class",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "SynthEnvelope": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SynthParams": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SynthPitchSweep": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SynthVibrato": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "SynthWaveform": {
+      "kind": "type",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "TextSize": {
+      "kind": "interface",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Timer": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Vector2i": {
+      "kind": "class",
+      "since": "0.1.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "Vignette": {
+      "kind": "class",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "amber": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "applyEasing": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "bootstrap": {
+      "kind": "function",
+      "since": "0.2.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "clampCameraToWorld": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "crtPipBoy": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "defaultConfig": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "displayError": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "getCanvas": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "green": {
+      "kind": "function",
+      "since": "1.0.3",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "mergeHardwareSettings": {
+      "kind": "function",
+      "since": "1.0.5",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    }
+  },
+  "pages": {
+    "api/assets": [
+      "AssetLoader",
+      "BitmapFont",
+      "IndexedSpriteLoadResult",
+      "SpriteSheet"
+    ],
+    "api/audio": [
+      "AudioBus",
+      "AudioClip",
+      "BT.audioMuteSet",
+      "BT.audioVolumeGet",
+      "BT.audioVolumeSet",
+      "BT.isAudioMuted",
+      "BT.isAudioUnlocked",
+      "BT.isSoundPlaying",
+      "BT.soundPanGet",
+      "BT.soundPanSet",
+      "BT.soundPitchGet",
+      "BT.soundPitchSet",
+      "BT.soundPlay",
+      "BT.soundStop",
+      "BT.soundVolumeGet",
+      "BT.soundVolumeSet",
+      "BT.synthPreset",
+      "SoundPlayOptions",
+      "SoundRef",
+      "SynthEnvelope",
+      "SynthParams"
+    ],
+    "api/camera": [
+      "BT.camera",
+      "BT.cameraClamp",
+      "BT.cameraReset",
+      "BT.cameraSet",
+      "clampCameraToWorld"
+    ],
+    "api/core-types": [
+      "Color32",
+      "Rect2i",
+      "Vector2i"
+    ],
+    "api/core": [
+      "BT.activeBackend",
+      "BT.displaySize",
+      "BT.drawingBufferSize",
+      "BT.init",
+      "BT.outputSize",
+      "BT.requestedBackend",
+      "BT.targetFPS",
+      "BootstrapOptions",
+      "HardwareSettings",
+      "bootstrap",
+      "defaultConfig",
+      "displayError",
+      "getCanvas",
+      "mergeHardwareSettings"
+    ],
+    "api/easing": [
+      "EasingFunction",
+      "applyEasing"
+    ],
+    "api/game-loop": [
+      "BT.assignTag",
+      "BT.deltaSeconds",
+      "BT.ticks",
+      "BT.ticksReset",
+      "BT.timeSeconds",
+      "Timer"
+    ],
+    "api/overlay": [
+      "OverlayRow",
+      "OverlayStyle",
+      "OverlayTimingChartStyle"
+    ],
+    "api/palette": [
+      "BT.palette",
+      "BT.paletteClearEffects",
+      "BT.paletteCreate",
+      "BT.paletteCycle",
+      "BT.paletteFade",
+      "BT.paletteFadeRange",
+      "BT.paletteFlash",
+      "BT.paletteSet",
+      "BT.paletteSwap",
+      "Palette"
+    ],
+    "api/rendering": [
+      "BT.FLIP_H",
+      "BT.FLIP_V",
+      "BT.ROT_180_CW",
+      "BT.ROT_270_CW",
+      "BT.ROT_90_CW",
+      "BT.captureFrame",
+      "BT.clear",
+      "BT.clearRect",
+      "BT.downloadFrame",
+      "BT.drawLine",
+      "BT.drawPixel",
+      "BT.drawRect",
+      "BT.drawRectFill",
+      "BT.drawSprite",
+      "BT.effectAdd",
+      "BT.effectClear",
+      "BT.effectRemove",
+      "BT.preset",
+      "BT.printFont",
+      "BT.spritesRefresh",
+      "BT.systemPrint",
+      "BT.systemPrintMeasure",
+      "amber",
+      "crtPipBoy",
+      "green"
+    ],
+    "guides/bitmap-fonts": [
+      "TextSize"
+    ],
+    "guides/input": [
+      "BT.AXIS_LEFT_X",
+      "BT.AXIS_LEFT_Y",
+      "BT.AXIS_RIGHT_X",
+      "BT.AXIS_RIGHT_Y",
+      "BT.AXIS_TRIGGER_L",
+      "BT.AXIS_TRIGGER_R",
+      "BT.BTN_A",
+      "BT.BTN_ABXY",
+      "BT.BTN_B",
+      "BT.BTN_DOWN",
+      "BT.BTN_L",
+      "BT.BTN_LEFT",
+      "BT.BTN_POINTER_A",
+      "BT.BTN_POINTER_ANY",
+      "BT.BTN_POINTER_B",
+      "BT.BTN_POINTER_C",
+      "BT.BTN_POINTER_D",
+      "BT.BTN_R",
+      "BT.BTN_RIGHT",
+      "BT.BTN_SELECT",
+      "BT.BTN_SHOULDER",
+      "BT.BTN_START",
+      "BT.BTN_UP",
+      "BT.BTN_X",
+      "BT.BTN_Y",
+      "BT.DEFAULT_KEYBOARD_PLAYER1",
+      "BT.DEFAULT_KEYBOARD_PLAYER2",
+      "BT.PLAYER_FOUR",
+      "BT.PLAYER_ONE",
+      "BT.PLAYER_THREE",
+      "BT.PLAYER_TWO",
+      "BT.gamepadCount",
+      "BT.getAxis",
+      "BT.hideCursor",
+      "BT.inputMap",
+      "BT.inputMapReset",
+      "BT.inputString",
+      "BT.isDown",
+      "BT.isGamepadConnected",
+      "BT.isKeyDown",
+      "BT.isKeyPressed",
+      "BT.isKeyReleased",
+      "BT.isPointerActive",
+      "BT.isPressed",
+      "BT.isReleased",
+      "BT.pointerDelta",
+      "BT.pointerPos",
+      "BT.pointerScrollDelta",
+      "BT.showCursor"
+    ],
+    "guides/post-process-effects": [
+      "BarrelDistortion",
+      "Bloom",
+      "ChromaticAberration",
+      "Effect",
+      "EffectTier",
+      "Flicker",
+      "FullscreenEffect",
+      "FullscreenPixelEffect",
+      "Interference",
+      "Noise",
+      "PixelGlitch",
+      "PixelMosaic",
+      "RGBMask",
+      "RollLine",
+      "Scanlines",
+      "Vignette"
+    ]
+  }
+}

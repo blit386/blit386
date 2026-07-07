@@ -65,6 +65,9 @@ ai-rules/
 *.log
 pnpm-debug.log*
 
+# Superpowers skill scratch (task briefs, review diffs, progress ledger)
+.superpowers/
+
 # Cache
 .cache/
 .knip-output.json

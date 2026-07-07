@@ -1,5 +1,8 @@
-import { describe, test } from 'node:test';
+import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,6 +21,9 @@ const {
     stripSiteBanner,
     isToolingDirective,
     summarizeComment,
+    getLastModified,
+    editUrlFor,
+    renderPage,
 } = await import('../sync-docs-from-engine.mjs');
 
 // Injected site-paths map for rewriteTarget tests; matches what the fixture produces.
@@ -264,5 +270,94 @@ describe('summarizeComment', () => {
     test('does not truncate exactly-120-char collapsed strings', () => {
         const exact = 'a'.repeat(120);
         assert.equal(summarizeComment(exact), exact);
+    });
+});
+
+describe('editUrlFor', () => {
+    test('builds a GitHub blob URL under docs/ for the given source', () => {
+        assert.equal(editUrlFor('api/core.md'), 'https://github.com/blit386/blit386/blob/main/docs/api/core.md');
+    });
+});
+
+describe('getLastModified', () => {
+    // Real git integration test: init a throwaway repo with one commit (at a fixed
+    // author date) under docs/, matching the "docs/<src>" pathspec getLastModified
+    // queries, then confirm it reads that date back via `git log`. This exercises
+    // the actual command (not a mock) while staying fully deterministic and
+    // independent of the real sibling engine repo, which is not checked out when
+    // this suite runs in CI.
+    const repoRoot = mkdtempSync(join(tmpdir(), 'sync-docs-git-'));
+    const fixedDate = '2026-01-15T10:30:00+01:00';
+
+    mkdirSync(join(repoRoot, 'docs'), { recursive: true });
+    execFileSync('git', ['init', '--quiet'], { cwd: repoRoot });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: repoRoot });
+    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: repoRoot });
+    writeFileSync(join(repoRoot, 'docs', 'placeholder.md'), '# Placeholder\n');
+    execFileSync('git', ['add', '-A'], { cwd: repoRoot });
+    execFileSync('git', ['commit', '--quiet', '-m', 'initial commit'], {
+        cwd: repoRoot,
+        env: { ...process.env, GIT_AUTHOR_DATE: fixedDate, GIT_COMMITTER_DATE: fixedDate },
+    });
+
+    test('reads the last commit date for a tracked doc path', () => {
+        const result = getLastModified('placeholder.md', repoRoot);
+        assert.equal(result, fixedDate);
+    });
+
+    test('returns undefined when the path has no history in the repo', () => {
+        const result = getLastModified('does-not-exist.md', repoRoot);
+        assert.equal(result, undefined);
+    });
+
+    test('returns undefined when the target is not a git repository', () => {
+        const nonRepoDir = mkdtempSync(join(tmpdir(), 'sync-docs-non-git-'));
+
+        try {
+            const result = getLastModified('anything.md', nonRepoDir);
+            assert.equal(result, undefined);
+        } finally {
+            rmSync(nonRepoDir, { recursive: true, force: true });
+        }
+    });
+
+    after(() => {
+        rmSync(repoRoot, { recursive: true, force: true });
+    });
+});
+
+describe('renderPage frontmatter (lastModified, editUrl)', () => {
+    const FIXTURE_PAGE = { src: 'api/with-components.md', description: 'Version-history components demo.' };
+
+    test('always includes editUrl pointing at the engine GitHub blob', () => {
+        const { contents } = renderPage(FIXTURE_PAGE);
+        assert.match(
+            contents,
+            /editUrl: "https:\/\/github\.com\/blit386\/blit386\/blob\/main\/docs\/api\/with-components\.md"/u,
+        );
+    });
+
+    test('includes lastModified with the injected date when available', () => {
+        const { contents } = renderPage(FIXTURE_PAGE, { lastModifiedFor: () => '2026-02-01T00:00:00Z' });
+        assert.match(contents, /lastModified: "2026-02-01T00:00:00Z"/u);
+    });
+
+    test('omits lastModified entirely when the lookup returns undefined (e.g. no git history)', () => {
+        const { contents } = renderPage(FIXTURE_PAGE, { lastModifiedFor: () => undefined });
+        assert.ok(!contents.includes('lastModified:'));
+    });
+
+    test('omits lastModified by default against the non-git fixture directory', () => {
+        // FIXTURE_DIR (scripts/__fixtures__/sync-docs) is not a git repo, so the real
+        // (non-injected) getLastModified must fail closed rather than throw.
+        const { contents } = renderPage(FIXTURE_PAGE);
+        assert.ok(!contents.includes('lastModified:'));
+    });
+
+    test('Since, ApiAvailability, and PageChangelog tags survive verbatim in the generated MDX', () => {
+        const { contents } = renderPage(FIXTURE_PAGE);
+        assert.ok(contents.includes('<Since symbol="Vector2i" />'));
+        assert.ok(contents.includes('<ApiAvailability page="api/core-types" />'));
+        assert.ok(contents.includes('<PageChangelog page="api/core-types" />'));
     });
 });

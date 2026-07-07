@@ -3,10 +3,14 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "Audio bus volume, mute, and the browser autoplay-unlock state."
+lastModified: "2026-07-07T09:20:36+02:00"
+editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-audio.md"
 ---
 
 Bus volume, mute, and the browser autoplay-unlock state. For the higher-level subsystem walkthrough (bus graph layout,
 locked vs. unlocked, and web autoplay constraints), see the [Audio Guide](/docs/guides/audio).
+
+<ApiAvailability page="api/audio" />
 
 The audio graph has three buses: `'sfx'` and `'music'` feed into `'main'`, which feeds the browser's audio destination.
 All three are independently controllable.
@@ -18,11 +22,16 @@ music  ─┼─► main ─► destination
 
 `AudioBus` is the type of a bus name:
 
+<Since symbol="AudioBus" />
+
 ```ts twoslash
 declare const bus: AudioBus; // 'main' | 'music' | 'sfx'
 ```
 
 ## Volume
+
+<Since symbol="BT.audioVolumeSet" />
+<Since symbol="BT.audioVolumeGet" />
 
 `BT.audioVolumeSet` sets a bus's volume, optionally fading to it. `BT.audioVolumeGet` reads it back.
 
@@ -46,6 +55,9 @@ With no `fadeMs`, the bus gain changes immediately. With `fadeMs`, `'linear'` ea
 
 ## Mute
 
+<Since symbol="BT.audioMuteSet" />
+<Since symbol="BT.isAudioMuted" />
+
 `BT.audioMuteSet` mutes or unmutes a bus without touching its configured volume. `BT.isAudioMuted` reports the current
 mute state.
 
@@ -64,6 +76,8 @@ configured, not `0`.
 
 ## Unlock state
 
+<Since symbol="BT.isAudioUnlocked" />
+
 Browsers block audio playback until a user gesture. `BT.isAudioUnlocked` is `false` until the first `pointerdown`,
 `keydown`, or `touchstart` on the canvas successfully resumes the audio context, and stays `true` for the rest of the
 session.
@@ -78,6 +92,8 @@ See [Web audio constraints](/docs/guides/audio#web-audio-constraints) for what h
 gesture, and why no configure flag can skip this requirement.
 
 ## Loading
+
+<Since symbol="AudioClip" />
 
 `AudioClip` decodes an audio file into a reusable `AudioBuffer`, exposing the winning source URL, duration, and sample
 rate. Loading and decoding work even while the audio context is locked (suspended, pre-gesture) - only real-time
@@ -131,6 +147,8 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
 
 ## Synth
 
+<Since symbol="SynthParams" />
+
 `AudioClip.synth` renders a clip procedurally from a `SynthParams` descriptor - no source file, no network request, and
 no `OfflineAudioContext`. Rendering runs entirely on the CPU and is deterministic: identical params (including `seed`)
 always produce identical sample data, so a `SynthParams` object can be stored and replayed as a preset. Unlike
@@ -163,6 +181,8 @@ const laser = await AudioClip.synth({
     dutyCycle: { type: 'number', default: '0.5', description: 'Fraction of each cycle spent high, in [0, 1]. Only affects square.' },
     seed: { type: 'number', description: 'Seed for the deterministic PRNG driving noise generation.' },
   }} />
+
+<Since symbol="SynthEnvelope" />
 
 `SynthEnvelope` fields (all optional, times in seconds):
 
@@ -202,6 +222,8 @@ still works the same way (releases the buffer, stops any voice playing it), it j
 
 ### Presets
 
+<Since symbol="BT.synthPreset" />
+
 `BT.synthPreset` bundles six ready-made `SynthParams` factories for common sound effects: `jump`, `pickup`, `explosion`,
 `laser`, `hit`, `blip`. Each takes an optional `seed` and applies small, bounded, deterministic jitter to a couple of
 hand-picked fields (frequency, duration, or noise mix) - the same seed always renders the exact same variant, so a
@@ -230,6 +252,11 @@ tuning `SynthParams` by hand and storing presets as data.
 
 ## Playback (SFX)
 
+<Since symbol="BT.soundPlay" />
+<Since symbol="SoundRef" />
+<Since symbol="BT.soundStop" />
+<Since symbol="BT.isSoundPlaying" />
+
 `BT.soundPlay` plays a loaded `AudioClip` through a fixed-size pool of SFX voices. Each call returns an opaque
 `SoundRef` handle - pass it to `BT.soundStop` and the per-sound volume, pitch, and pan controls.
 
@@ -244,6 +271,8 @@ BT.isSoundPlaying(ref); // true
 
 BT.soundStop(ref, { fadeOutMs: 200 }); // fades out over 200 ms
 ```
+
+<Since symbol="SoundPlayOptions" />
 
 `options` fields:
 
@@ -280,6 +309,13 @@ function playFootstep() {
 }
 ```
 
+<Since symbol="BT.soundVolumeSet" />
+<Since symbol="BT.soundVolumeGet" />
+<Since symbol="BT.soundPitchSet" />
+<Since symbol="BT.soundPitchGet" />
+<Since symbol="BT.soundPanSet" />
+<Since symbol="BT.soundPanGet" />
+
 Per-sound controls, all silent no-ops on a stale or invalid `SoundRef` (already stopped, stolen, or completed - never
 throws):
 
@@ -301,6 +337,8 @@ released with `clip.unload()`.
 
 `audioVoices` (default `16`) caps the number of simultaneous SFX voices - see [Playback (SFX)](#playback-sfx) for the
 allocation and stealing policy. Documented in [Hardware settings](/docs/api/core#hardware-settings).
+
+<PageChangelog page="api/audio" />
 
 ## See also
 

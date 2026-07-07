@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { ReactNode } from 'react';
+import type { Page, PageData } from 'fumadocs-core/source';
 import { defineConfig } from 'fumapress';
+import type { ConfigContext } from 'fumapress';
 import { fumadocsMdx } from 'fumapress/adapters/mdx';
 import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
 import { linkValidationPlugin } from 'fumapress/plugins/link-validation';
@@ -10,6 +13,7 @@ import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
 import { createDocsLayoutPage } from 'fumapress/layouts/docs';
+import { EditOnGitHub } from 'fumadocs-ui/layouts/docs/page';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
@@ -24,6 +28,9 @@ import { CommunityConnect } from './src/components/community-connect';
 import { DemoEmbed } from './src/components/demo-embed';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { HomeHero } from './src/components/home-hero';
+import { ApiAvailability } from './src/components/api-availability';
+import { PageChangelog } from './src/components/page-changelog';
+import { Since } from './src/components/since-badge';
 import { SITE_NAME } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
@@ -63,8 +70,103 @@ const rootLayout = createRootLayout({
     },
 });
 
-const docsPageLayout = createDocsLayoutPage({
-    render() {
+/**
+ * Page-data shape carried by the `docs` collection's schema `.extend()` in `source.config.ts`:
+ * `lastModified` and `editUrl` are injected into every synced page's frontmatter by
+ * `scripts/sync-docs-from-engine.mjs`. `createDocsLayoutPage` is generic over `ConfigContext`
+ * but defaults to a bare `PageData`, so this narrows `page.data` for the `render()` callback
+ * below without threading the full multi-source (`docs` + `blog`) content type through it.
+ */
+interface DocsPageData extends PageData {
+    /**
+     * Declared `z.coerce.date()` in the schema, so this is `Date | undefined` per the
+     * generated `Page` type - but `async: true` collections expose `page.data` from the raw
+     * frontmatter object without running that coercion, so the ACTUAL runtime value is the ISO
+     * string from the MDX frontmatter (confirmed by logging it during a real build), never a
+     * `Date` instance. This field's static type does not match its runtime value; read it via
+     * `rawLastModified(page)` below rather than trusting `page.data.lastModified` directly.
+     */
+    lastModified?: Date;
+    editUrl?: string;
+}
+
+/**
+ * Reads `page.data.lastModified` as the string it actually is at runtime (see the field's
+ * doc comment on `DocsPageData` for why its declared `Date` type is not trustworthy), coercing
+ * defensively in case a future fix makes the declared type accurate.
+ */
+const rawLastModified = (page: { data: DocsPageData }): Date | undefined => {
+    const value = page.data.lastModified as unknown as Date | string | undefined;
+
+    if (value === undefined) {
+        return undefined;
+    }
+
+    return value instanceof Date ? value : new Date(value);
+};
+
+interface DocsLayoutContext extends ConfigContext {
+    page: Page<string | undefined, DocsPageData>;
+}
+
+const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
+    /**
+     * Renders the doc body ourselves (instead of leaving it to the default `render-body`
+     * fallback) so an "Edit on GitHub" link can be appended after it.
+     *
+     * `getGitHubFileUrl` (the framework's built-in edit-link resolver) is intentionally not
+     * used: it needs `siteConfig.git`, which is unset here, and even if set it would compute a
+     * URL into this repo's generated MDX rather than the true source in the sibling `blit386`
+     * engine repo. `editUrl` is injected into each page's frontmatter by `sync-docs-from-engine.mjs`
+     * instead (see `CLAUDE.md`, Documentation mirror), so it is read directly from `page.data`.
+     */
+    async render(page) {
+        let body: ReactNode;
+
+        for (const adapter of this.adapters) {
+            const rendered = await adapter['core:render-body']?.call(this, page);
+
+            if (rendered !== undefined) {
+                body = rendered;
+                break;
+            }
+        }
+
+        if (body === undefined) {
+            throw new Error('[press.config] docsPageLayout: no adapter could render this page body');
+        }
+
+        const editUrl = page.data.editUrl;
+
+        // Deliberately NOT returning `lastModified` here to feed the framework's own
+        // `<PageLastUpdate>` (rendered automatically by `createDocsLayoutPage` whenever
+        // `result.lastModified` is truthy): that component keeps the date in client state
+        // (`useState` + `useEffect`) and calls `value.toLocaleDateString()` on it directly with
+        // no coercion, unconditionally assuming a real `Date` instance. `page.data.lastModified`
+        // is declared `z.coerce.date()` in the schema, but `async: true` collections expose
+        // `page.data` from the raw frontmatter object without running that coercion - confirmed
+        // by logging the value during a real build: it is the ISO string from the MDX
+        // frontmatter (e.g. `"2026-07-06T19:37:01.000Z"`), never a `Date`. Calling
+        // `.toLocaleDateString()` on that string throws (a string has no such method) - this
+        // crashed client-side hydration with `TypeError: e.toLocaleDateString is not a function`
+        // before this fix. Coerce explicitly with `new Date(...)` and render the formatted
+        // result as plain server-rendered text below, bypassing the built-in component (and the
+        // client/serialization boundary) entirely.
+        const lastModified = rawLastModified(page);
+        // `timeZone: 'UTC'` keeps the formatted date reproducible across build machines - this
+        // is a static build, so the date is baked in once at build time, not reformatted
+        // per-viewer; without it, a commit within ~12h of UTC midnight could render as a
+        // different calendar day depending on which timezone the build happened to run in.
+        const formattedLastModified =
+            lastModified && !Number.isNaN(lastModified.getTime())
+                ? lastModified.toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      timeZone: 'UTC',
+                  })
+                : undefined;
+
         return {
             layoutProps: {
                 nav: { title: <SidebarLogo /> },
@@ -73,6 +175,15 @@ const docsPageLayout = createDocsLayoutPage({
                     footer: <SidebarSocials />,
                 },
             },
+            body: (
+                <>
+                    {body}
+                    {editUrl && <EditOnGitHub href={editUrl} />}
+                    {formattedLastModified && (
+                        <p className="text-sm text-fd-muted-foreground">Last updated on {formattedLastModified}</p>
+                    )}
+                </>
+            ),
         };
     },
 });
@@ -348,6 +459,9 @@ export default defineConfig({
                     DemoEmbed,
                     DemoShowcase,
                     HomeHero,
+                    ApiAvailability,
+                    PageChangelog,
+                    Since,
                 };
             },
         }),

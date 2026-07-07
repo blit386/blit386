@@ -23,15 +23,19 @@
  * engine repo); locally it defaults to the sibling workspace path
  * `../blit386/docs`.
  */
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ENGINE_DOCS = resolve(ROOT, process.env.ENGINE_DOCS_DIR ?? '../blit386/docs');
+const ENGINE_REPO_ROOT = resolve(ENGINE_DOCS, '..');
 const CONTENT_DOCS = join(ROOT, 'content', 'docs');
 const GITHUB_BASE = 'https://github.com/blit386/blit386';
 const SITEMAP_FILE = join(ENGINE_DOCS, '_sitemap.json');
+const API_HISTORY_SRC = join(ENGINE_DOCS, '_api-history.json');
+const API_HISTORY_DEST = join(ROOT, 'src', 'data', 'api-history.generated.json');
 
 /**
  * Load and validate the sitemap manifest from the engine repo. Presence in
@@ -416,8 +420,35 @@ const stripTwoslashCutPreambles = (markdown) => {
     return result.join('\n');
 };
 
-/** Build the MDX file contents for one page, plus any HTML comments stripped from it. */
-const renderPage = ({ src, description }) => {
+/**
+ * Look up the last commit date (ISO 8601, author date) that touched a source doc in
+ * the engine repo. Returns `undefined` when git is unavailable, the repo has no
+ * history for the path (e.g. a shallow clone), or the call otherwise fails, so a CI
+ * environment without full git history still produces a valid page: the field is
+ * omitted rather than written as an empty or error value.
+ */
+const getLastModified = (src, engineRepoRoot = ENGINE_REPO_ROOT) => {
+    try {
+        const output = execFileSync('git', ['-C', engineRepoRoot, 'log', '-1', '--format=%aI', '--', `docs/${src}`], {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore'],
+        }).trim();
+
+        return output === '' ? undefined : output;
+    } catch {
+        return undefined;
+    }
+};
+
+/** Build the engine repo's GitHub blob URL for a source doc, for the page's "edit" link. */
+const editUrlFor = (src) => `${GITHUB_BASE}/blob/main/docs/${src}`;
+
+/**
+ * Build the MDX file contents for one page, plus any HTML comments stripped from it.
+ * `lastModifiedFor` defaults to the real git-backed `getLastModified` and is injectable
+ * so tests can assert on frontmatter shape without depending on git or a real repo.
+ */
+const renderPage = ({ src, description }, { lastModifiedFor = getLastModified } = {}) => {
     const sourcePath = join(ENGINE_DOCS, src);
     const raw = readFileSync(sourcePath, 'utf8');
     const { title, body } = extractTitleAndBody(raw, src);
@@ -428,7 +459,14 @@ const renderPage = ({ src, description }) => {
         `# Generated from blit386/docs/${src} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',
     ].join('\n');
-    const frontmatter = `---\n${banner}\ntitle: ${JSON.stringify(title)}\ndescription: ${JSON.stringify(description)}\n---`;
+    const lastModified = lastModifiedFor(src);
+    const frontmatterFields = [
+        `title: ${JSON.stringify(title)}`,
+        `description: ${JSON.stringify(description)}`,
+        ...(lastModified === undefined ? [] : [`lastModified: ${JSON.stringify(lastModified)}`]),
+        `editUrl: ${JSON.stringify(editUrlFor(src))}`,
+    ];
+    const frontmatter = `---\n${banner}\n${frontmatterFields.join('\n')}\n---`;
 
     return { contents: `${frontmatter}\n\n${rewritten.trimEnd()}\n`, comments };
 };
@@ -507,6 +545,18 @@ const main = () => {
         rmSync(join(CONTENT_DOCS, section), { recursive: true, force: true });
     }
 
+    // Mirror the engine's JSDoc-driven API version history alongside the docs it
+    // annotates. `src/data/api-history.ts` (a typed loader) reads this file at
+    // build time; it is a generated artifact like the MDX pages above. A missing
+    // source (e.g. an engine checkout that predates the extractor) skips this
+    // step rather than aborting the whole docs sync.
+    try {
+        writeFileSync(API_HISTORY_DEST, readFileSync(API_HISTORY_SRC, 'utf8'));
+        written.push(API_HISTORY_DEST);
+    } catch {
+        console.warn(`warning: ${relative(ROOT, API_HISTORY_SRC)} not found; skipping API history mirror.`);
+    }
+
     for (const [section, entries] of sections) {
         const sectionDir = join(CONTENT_DOCS, section);
         mkdirSync(sectionDir, { recursive: true });
@@ -548,6 +598,9 @@ export {
     stripTwoslashCutPreambles,
     isToolingDirective,
     summarizeComment,
+    getLastModified,
+    editUrlFor,
+    renderPage,
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

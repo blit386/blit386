@@ -2,6 +2,7 @@
   "title": "Reference",
   "pages": [
     "deprecations",
+    "changelog",
     "testing",
     "authors"
   ]

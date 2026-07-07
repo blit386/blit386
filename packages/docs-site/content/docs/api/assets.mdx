@@ -3,9 +3,13 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Assets"
 description: "Sprite sheets, bitmap fonts, and asset loading."
+lastModified: "2026-07-07T09:02:06+02:00"
+editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-assets.md"
 ---
 
 Looking for audio assets? `AudioClip` loading is documented separately in [API: Audio](/docs/api/audio#loading).
+
+<ApiAvailability page="api/assets" />
 
 ## Asset size limits
 
@@ -38,6 +42,8 @@ clipping.
 
 ## Loading assets
 
+<Since symbol="AssetLoader" />
+
 `AssetLoader` caches images by URL so repeated loads share the same `HTMLImageElement`. Oversized images are rejected as
 soon as the browser reports decoded dimensions.
 
@@ -57,6 +63,9 @@ if (AssetLoader.isLoaded('sprites.png')) {
 ```
 
 ## Sprite setup – preferred path
+
+<Since symbol="SpriteSheet" />
+<Since symbol="IndexedSpriteLoadResult" />
 
 Use `SpriteSheet.loadIndexed()` for all standard sprite setup. It combines color registration, image loading, and
 palette indexization in one call.
@@ -158,6 +167,8 @@ BT.drawSprite(sheet, srcRect, pos, 16); // render in "blue team" color range
 
 ## Bitmap fonts
 
+<Since symbol="BitmapFont" />
+
 Load `.btfont` files for proportional, palette-indexed bitmap fonts. After loading, register colors in the palette and
 indexize the font's internal sprite sheet before drawing (same pattern as manual sprite setup).
 
@@ -195,6 +206,8 @@ BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
 - The engine draws its own overlay (present FPS, target FPS, draw calls, frame/update()/render() timings, backend,
   resolution, demo title) after each `render()` when `isOverlayEnabled` is true; see [Overlay Guide](/docs/guides/overlay).
 - For styled variable-width text, use a bitmap font instead.
+
+<PageChangelog page="api/assets" />
 
 ## See also
 
