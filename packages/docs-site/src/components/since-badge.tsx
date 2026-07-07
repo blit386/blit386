@@ -21,7 +21,7 @@ export function Since({ symbol }: SinceProps) {
     if (entry.status === 'unreleased') {
         return (
             <span className={`not-prose ${styles.badge} ${styles.unreleased}`} title={symbol}>
-                Unreleased
+                <code className={styles.symbol}>{symbol}</code> Unreleased
             </span>
         );
     }
@@ -31,14 +31,14 @@ export function Since({ symbol }: SinceProps) {
 
         return (
             <span className={`not-prose ${styles.badge} ${styles.deprecated}`} title={symbol}>
-                Deprecated {deprecatedVersion}
+                <code className={styles.symbol}>{symbol}</code> Deprecated {deprecatedVersion}
             </span>
         );
     }
 
     return (
         <span className={`not-prose ${styles.badge} ${styles.stable}`} title={symbol}>
-            Since {entry.since}
+            <code className={styles.symbol}>{symbol}</code> Since {entry.since}
         </span>
     );
 }

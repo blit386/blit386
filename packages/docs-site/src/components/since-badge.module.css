@@ -15,3 +15,7 @@
 .deprecated {
     @apply bg-fd-card text-fd-card-foreground;
 }
+
+.symbol {
+    @apply font-mono opacity-80;
+}
