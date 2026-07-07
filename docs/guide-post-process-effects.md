@@ -27,6 +27,8 @@ your own, the bundled presets, and the upstream attribution.
 For how logical, drawing buffer, CSS cap, and effect tier map to `HardwareSettings` and `BT` getters, see
 [Resolution model](api-core.md#resolution-model) in the core API docs.
 
+<ApiAvailability page="guides/post-process-effects" />
+
 ## Quick start
 
 ```ts twoslash
@@ -117,6 +119,9 @@ Removes every effect in both tiers and destroys all offscreen GPU resources. Thr
 
 ### `Effect` interface
 
+<Since symbol="Effect" />
+<Since symbol="EffectTier" />
+
 ```ts twoslash
 import type { Effect, EffectTier, Vector2i } from 'blit386';
 
@@ -175,6 +180,8 @@ If the demo does not implement `configure()`, or returns a partial object withou
 
 ### `PixelGlitch` – chunky band shift
 
+<Since symbol="PixelGlitch" />
+
 Per-row horizontal glitch: every Nth row of source palette indices gets a random horizontal shift in index space
 (integer texel steps), so output stays on valid palette slots without RGB remapping.
 
@@ -185,6 +192,8 @@ Per-row horizontal glitch: every Nth row of source palette indices gets a random
   }} />
 
 ### `PixelMosaic` – block down-quantize
+
+<Since symbol="PixelMosaic" />
 
 Replaces each `blockSize x blockSize` group of source pixels with a single sample. Useful for transitions, dream
 sequences, and "low-res mode" effects.
@@ -197,6 +206,8 @@ sequences, and "low-res mode" effects.
 
 ### `BarrelDistortion` – pincushion curve
 
+<Since symbol="BarrelDistortion" />
+
 `warp(uv) = uv + delta * d2 * curvature`. Operates at output resolution so the curve has enough pixels to express
 smoothly – no stepping artifacts on diagonals.
 
@@ -205,6 +216,8 @@ smoothly – no stepping artifacts on diagonals.
   }} />
 
 ### `Scanlines` – bright/dark horizontal bands
+
+<Since symbol="Scanlines" />
 
 Gaussian-weighted scanline pattern matched to source pixel rows.
 
@@ -216,6 +229,8 @@ Gaussian-weighted scanline pattern matched to source pixel rows.
 
 ### `RGBMask` – CRT shadow mask
 
+<Since symbol="RGBMask" />
+
 R/G/B vertical-stripe pattern with darkened cell borders, simulating an aperture-grille CRT.
 
 <TypeTable type={{
@@ -226,6 +241,8 @@ R/G/B vertical-stripe pattern with darkened cell borders, simulating an aperture
 
 ### `Vignette` – edge darkening
 
+<Since symbol="Vignette" />
+
 Smooth radial fade. `pow(edge.x * edge.y, amount)`.
 
 <TypeTable type={{
@@ -233,6 +250,8 @@ Smooth radial fade. `pow(edge.x * edge.y, amount)`.
   }} />
 
 ### `ChromaticAberration` – RGB channel offset
+
+<Since symbol="ChromaticAberration" />
 
 Red samples left of the fragment, blue samples right. Cheap CRT optics produce a tiny version of this naturally.
 
@@ -242,6 +261,8 @@ Red samples left of the fragment, blue samples right. Cheap CRT optics produce a
 
 ### `Flicker` – brightness multiplier
 
+<Since symbol="Flicker" />
+
 The simplest CRT animation knob. `color *= amount`. Demo drives it per-frame.
 
 <TypeTable type={{
@@ -249,6 +270,8 @@ The simplest CRT animation knob. `color *= amount`. Demo drives it per-frame.
   }} />
 
 ### `RollLine` – scrolling interference band
+
+<Since symbol="RollLine" />
 
 A horizontal bright stripe slowly scrolls down the screen.
 
@@ -260,6 +283,8 @@ A horizontal bright stripe slowly scrolls down the screen.
 
 ### `Interference` – per-row analog jitter
 
+<Since symbol="Interference" />
+
 Each row gets a random horizontal offset reseeded each frame.
 
 <TypeTable type={{
@@ -269,6 +294,8 @@ Each row gets a random horizontal offset reseeded each frame.
 
 ### `Noise` – additive pseudo-random noise
 
+<Since symbol="Noise" />
+
 Per-pixel film grain. Reseeds each frame from `time`.
 
 <TypeTable type={{
@@ -277,6 +304,8 @@ Per-pixel film grain. Reseeds each frame from `time`.
   }} />
 
 ### `Bloom` – soft phosphor glow
+
+<Since symbol="Bloom" />
 
 Single-pass 5×5 box blur (25 taps) mixed with the original color.
 
@@ -323,6 +352,8 @@ not yet implemented.
 <Tabs items={['Display tier (FullscreenEffect)', 'Pixel tier (FullscreenPixelEffect)']}>
 
 <Tab value="Display tier (FullscreenEffect)">
+
+<Since symbol="FullscreenEffect" />
 
 Extend `FullscreenEffect` when sampling RGBA at output resolution. Subclasses provide one WGSL fragment shader (`src` +
 `sampler`), declare `tier = 'display'`, set `uniformBytes`, and implement `writeUniforms`.
@@ -373,6 +404,8 @@ Notes
 </Tab>
 
 <Tab value="Pixel tier (FullscreenPixelEffect)">
+
+<Since symbol="FullscreenPixelEffect" />
 
 Extend `FullscreenPixelEffect` for logical `r8uint` chains. Provide both `fragmentShaderUint` (sample `texture_2d<u32>`
 at `@group(0) @binding(1)`, output `vec4<u32>`) and `fragmentShaderRgba` (only used if a float pixel format is ever
@@ -446,6 +479,8 @@ PR to add a verifiable author / URL / license header.
 </Accordion>
 
 </Accordions>
+
+<PageChangelog page="guides/post-process-effects" />
 
 ## See also
 

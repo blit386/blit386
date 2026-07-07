@@ -1377,6 +1377,24 @@
       "amber",
       "crtPipBoy",
       "green"
+    ],
+    "guides/post-process-effects": [
+      "BarrelDistortion",
+      "Bloom",
+      "ChromaticAberration",
+      "Effect",
+      "EffectTier",
+      "Flicker",
+      "FullscreenEffect",
+      "FullscreenPixelEffect",
+      "Interference",
+      "Noise",
+      "PixelGlitch",
+      "PixelMosaic",
+      "RGBMask",
+      "RollLine",
+      "Scanlines",
+      "Vignette"
     ]
   }
 }
