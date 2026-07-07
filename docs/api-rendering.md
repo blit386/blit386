@@ -18,7 +18,16 @@ All draw calls require a palette to be active (`BT.paletteSet(palette)` before t
 Palette addressing: primitives and `BT.systemPrint` use an absolute `paletteIndex`. Sprites and `BT.printFont` use an
 optional `paletteOffset` added to stored texel indices. See [Palette addressing](api-palette.md#palette-addressing).
 
+<ApiAvailability page="api/rendering" />
+
 ## Primitives
+
+<Since symbol="BT.clear" />
+<Since symbol="BT.clearRect" />
+<Since symbol="BT.drawPixel" />
+<Since symbol="BT.drawLine" />
+<Since symbol="BT.drawRect" />
+<Since symbol="BT.drawRectFill" />
 
 ```ts twoslash
 import { BT, Rect2i, Vector2i } from 'blit386';
@@ -54,6 +63,8 @@ Two more primitive-drawing demos: pixel art from number grids, and animated math
 ## Sprites
 
 ### Drawing
+
+<Since symbol="BT.drawSprite" />
 
 ```ts twoslash
 import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
@@ -105,6 +116,12 @@ Draws are auto-batched by texture. Group draws from the same sheet to minimize G
 
 ### Sprite transform constants
 
+<Since symbol="BT.FLIP_H" />
+<Since symbol="BT.FLIP_V" />
+<Since symbol="BT.ROT_90_CW" />
+<Since symbol="BT.ROT_180_CW" />
+<Since symbol="BT.ROT_270_CW" />
+
 The following flags are defined for future use. They are not yet accepted by `BT.drawSprite()`:
 
 ```ts twoslash
@@ -118,6 +135,8 @@ BT.ROT_270_CW; // rotate 270° clockwise
 ```
 
 ### Refreshing after a palette-layout swap
+
+<Since symbol="BT.spritesRefresh" />
 
 ```ts twoslash
 import { BT, Palette } from 'blit386';
@@ -140,6 +159,9 @@ RGBA values are gone.
 
 ### System font
 
+<Since symbol="BT.systemPrint" />
+<Since symbol="BT.systemPrintMeasure" />
+
 Built-in 6×14 monospace font covering printable ASCII (characters 32–126).
 
 ```ts twoslash
@@ -155,6 +177,8 @@ BT.systemPrintMeasure(text); // → Vector2i (pixel width × height)
 <DemoEmbed demo="004-fonts" title="BLIT386 fonts demo" />
 
 ### Bitmap fonts
+
+<Since symbol="BT.printFont" />
 
 Variable-width fonts from `.btfont` files. The font's sprite sheet must be indexized before use.
 
@@ -191,6 +215,14 @@ Post-process is unsupported by the Canvas 2D software backend – calling `effec
 error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
 
 </Callout>
+
+<Since symbol="BT.effectAdd" />
+<Since symbol="BT.effectRemove" />
+<Since symbol="BT.effectClear" />
+<Since symbol="BT.preset" />
+<Since symbol="crtPipBoy" />
+<Since symbol="amber" />
+<Since symbol="green" />
 
 ```ts twoslash
 import { BT, BarrelDistortion, Scanlines, Bloom, PixelGlitch, type Effect } from 'blit386';
@@ -233,6 +265,9 @@ See [Post-Process Effects Guide](guide-post-process-effects.md) for parameter re
 
 ## Frame capture
 
+<Since symbol="BT.captureFrame" />
+<Since symbol="BT.downloadFrame" />
+
 Capture the current rendered frame as a PNG.
 
 ```ts twoslash
@@ -255,6 +290,8 @@ await BT.downloadFrame('screenshot-001.png'); // custom filename
 `'blit386'`. Demos should use `BT.captureFrame()` and `BT.downloadFrame()` only.
 
 </Callout>
+
+<PageChangelog page="api/rendering" />
 
 ## See also
 

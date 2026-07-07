@@ -12,6 +12,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * The math comes from Timothy Lottes's public-domain `crt-lottes.glsl`:
  * `warp(uv) = uv + delta * d2 * curvature` where `delta = uv - 0.5` and
  * `d2 = dot(delta, delta)`.
+ *
+ * @since 1.0.3
  */
 export class BarrelDistortion extends FullscreenEffect {
     public readonly tier = 'display' as const;

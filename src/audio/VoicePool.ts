@@ -45,6 +45,8 @@ const DEFAULT_LOOP = false;
  * `generation` increments every time the referenced slot is recycled (natural completion,
  * explicit {@link VoicePool.stop}, or being stolen by a later `play()`), so a ref captured
  * before a recycle silently fails every {@link VoicePool} accessor's generation check.
+ *
+ * @since 1.3.0
  */
 export interface SoundRef {
     /** Index into the pool's fixed slot array. */
@@ -88,17 +90,27 @@ export interface VoicePlayOptions {
  * down to {@link AudioManager.playSound} and {@link VoicePool.play}. Declared as an `extends` of
  * `VoicePlayOptions` (rather than redeclaring the same fields) so a future field added to either
  * type cannot silently drift out of sync with the other.
+ *
+ * @since 1.3.0
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- intentional no-op extends keeps SoundPlayOptions in lockstep with VoicePlayOptions
 export interface SoundPlayOptions extends VoicePlayOptions {}
 
-/** Options accepted by {@link BT.soundStop}. */
+/**
+ * Options accepted by {@link BT.soundStop}.
+ *
+ * @since 1.3.0
+ */
 export interface SoundStopOptions {
     /** Optional linear fade-out duration in milliseconds before the voice actually stops. */
     fadeOutMs?: number;
 }
 
-/** Options accepted by {@link BT.soundVolumeSet}, {@link BT.soundPitchSet}, and {@link BT.soundPanSet}. */
+/**
+ * Options accepted by {@link BT.soundVolumeSet}, {@link BT.soundPitchSet}, and {@link BT.soundPanSet}.
+ *
+ * @since 1.3.0
+ */
 export interface SoundParamSetOptions {
     /** Fade duration in milliseconds. Omit for an immediate change. */
     fadeMs?: number;

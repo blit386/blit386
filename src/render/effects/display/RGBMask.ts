@@ -10,6 +10,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * the {@link size} parameter.
  *
  * Math is a direct WGSL port of the libretro `crt-lottes.glsl` mask code.
+ *
+ * @since 1.0.3
  */
 export class RGBMask extends FullscreenEffect {
     public readonly tier = 'display' as const;

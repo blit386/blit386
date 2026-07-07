@@ -14,6 +14,7 @@ import type { Effect } from '../Effect';
  * For now this preset gives you the *feel* (CRT curvature + scanlines +
  * vignette + warm-tinted bloom) without the actual amber re-quantization.
  *
+ * @since 1.0.3
  * @returns Array of pre-configured display-tier effects.
  */
 export function amber(): Effect[] {

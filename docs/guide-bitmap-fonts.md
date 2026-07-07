@@ -13,6 +13,8 @@
 BLIT386 ships with a built-in system font and supports custom `.btfont` bitmap fonts with variable-width glyphs,
 per-character offsets, Unicode characters, and either embedded or external textures.
 
+<ApiAvailability page="guides/bitmap-fonts" />
+
 ## Built-in system font
 
 The engine includes a 6×14 monospace bitmap font covering printable ASCII (characters 32–126). It requires no file
@@ -315,6 +317,8 @@ Point it at the PNG filename, or embed it as base64.
 
 ### BitmapFont
 
+<Since symbol="TextSize" />
+
 ```ts twoslash
 import { type Rect2i, type TextSize, type SpriteSheet } from 'blit386';
 interface Glyph {
@@ -440,6 +444,8 @@ for (let i = 0; i < text.length; i++) {
 </Accordion>
 
 </Accordions>
+
+<PageChangelog page="guides/bitmap-fonts" />
 
 ## See also
 

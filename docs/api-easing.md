@@ -12,6 +12,11 @@
 
 Palette fade effects accept an `EasingFunction`. Use `applyEasing` to evaluate named curves:
 
+<ApiAvailability page="api/easing" />
+
+<Since symbol="EasingFunction" />
+<Since symbol="applyEasing" />
+
 ```ts twoslash
 import { applyEasing } from 'blit386';
 
@@ -19,6 +24,8 @@ const t = applyEasing('ease-in-out', 0.5); // 0..1 progress → eased value
 ```
 
 <DemoEmbed demo="020-palette-fade" title="BLIT386 palette fade and flash demo" />
+
+<PageChangelog page="api/easing" />
 
 ## See also
 

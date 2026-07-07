@@ -17,6 +17,8 @@ title. Demos should not duplicate this text.
 Configure-time flags, style objects, and worked examples live in [API: Overlay](api-overlay.md). This guide maps the
 internal subsystem and common integration patterns.
 
+<ApiAvailability page="guides/overlay" />
+
 ## Subsystem layout
 
 ```text
@@ -106,6 +108,8 @@ BT.systemPrint(new Vector2i(8, 8), palette.getNamed('hud_label'), 'Custom row');
 - `Present: N FPS` = measured browser refresh cadence while the overlay body is visible – not the same as target FPS.
 
 Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot GPU or draw-call bottlenecks.
+
+<PageChangelog page="guides/overlay" />
 
 ## See also
 

@@ -6,6 +6,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * {@link time} so the noise pattern animates.
  *
  * Display-tier.
+ *
+ * @since 1.0.3
  */
 export class Noise extends FullscreenEffect {
     public readonly tier = 'display' as const;

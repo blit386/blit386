@@ -10,6 +10,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * the {@link Noise} effect.
  *
  * Display-tier.
+ *
+ * @since 1.0.3
  */
 export class Flicker extends FullscreenEffect {
     public readonly tier = 'display' as const;

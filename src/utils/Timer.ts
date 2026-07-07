@@ -9,6 +9,8 @@ import { BTAPI } from '../core/BTAPI';
  *
  * Tracks a "last fired" tick and reports when a configured interval has elapsed.
  * Useful for periodic events such as particle spawning, score ticks, or palette swaps.
+ *
+ * @since 1.0.3
  */
 export class Timer {
     /** Interval size in ticks. */

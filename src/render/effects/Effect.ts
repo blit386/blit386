@@ -14,6 +14,8 @@ import type { Vector2i } from '../../utils/Vector2i';
  *   vignette, chromatic aberration, monochrome amber/green, bloom, etc. The
  *   higher resolution lets curved sampling (barrel) express smoothly without
  *   floor-quantizing onto the logical pixel grid.
+ *
+ * @since 1.0.3
  */
 export type EffectTier = 'pixel' | 'display';
 
@@ -33,6 +35,8 @@ export type EffectTier = 'pixel' | 'display';
  *
  * Implementations must reuse uniform buffers and avoid per-frame allocations on
  * the hot path.
+ *
+ * @since 1.0.3
  */
 export interface Effect {
     /**

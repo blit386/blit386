@@ -9,6 +9,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * scanlines to read as alternating bright/dark bands. At logical 320x240 the
  * Gaussian weight quantizes to one of two values per source row and you lose
  * the smooth fade.
+ *
+ * @since 1.0.3
  */
 export class Scanlines extends FullscreenEffect {
     public readonly tier = 'display' as const;

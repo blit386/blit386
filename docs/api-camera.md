@@ -12,6 +12,13 @@
 
 The camera applies a global pixel offset to all subsequent draw calls. Integer only – pass `Vector2i`, never floats.
 
+<ApiAvailability page="api/camera" />
+
+<Since symbol="BT.cameraSet" />
+<Since symbol="BT.camera" />
+<Since symbol="BT.cameraReset" />
+<Since symbol="BT.cameraClamp" />
+
 ```ts twoslash
 import { BT, Vector2i } from 'blit386';
 declare const scrollX: number;
@@ -32,6 +39,8 @@ const clamped2 = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
 
 Standalone helper (same math as `BT.cameraClamp`):
 
+<Since symbol="clampCameraToWorld" />
+
 ```ts twoslash
 import { clampCameraToWorld, Vector2i } from 'blit386';
 declare const desired: Vector2i;
@@ -48,6 +57,8 @@ Two more camera-driven demos: parallax scrolling and a scrolling tile grid.
 <DemoEmbed demo="011-starfield" title="BLIT386 starfield parallax demo" />
 
 <DemoEmbed demo="012-tilemap" title="BLIT386 tilemap demo" />
+
+<PageChangelog page="api/camera" />
 
 ## See also
 

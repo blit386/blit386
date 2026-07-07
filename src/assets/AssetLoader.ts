@@ -171,6 +171,8 @@ function startLoading(url: string): Promise<HTMLImageElement> {
  * - caches successfully resolved `HTMLImageElement` instances by URL
  * - deduplicates concurrent requests for the same URL
  * - exposes cache inspection and reset helpers for engine code and tests
+ *
+ * @since 0.1.0
  */
 export class AssetLoader {
     /**

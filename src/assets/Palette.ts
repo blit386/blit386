@@ -143,6 +143,8 @@ function createPreset(hexColors: readonly string[], size: number): Palette {
  *   e.g. `setNamed('player', 3)`. They carry no runtime cost when unused.
  * - **Mutable by design:** palette-effect features modify entries in place.
  *   Use `clone()` when a snapshot is needed before modification.
+ *
+ * @since 1.0.3
  */
 export class Palette {
     /** Number of usable palette entries. */

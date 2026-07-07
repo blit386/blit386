@@ -75,6 +75,8 @@ const inFlightLoads = new Map<string, Promise<AudioClip>>();
  *
  * Construct instances with {@link AudioClip.load}, {@link AudioClip.loadAll}, or
  * {@link AudioClip.synth}; there is no public constructor.
+ *
+ * @since 1.3.0
  */
 export class AudioClip {
     /** Source URL this clip was decoded from - the winning entry when loaded from a fallback list. */

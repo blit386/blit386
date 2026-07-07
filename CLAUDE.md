@@ -22,6 +22,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Question                                                          | Where to look                                                                                                                                                                                                                                           |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | What does `BT.X` do (getter vs method)?                           | `src/BLIT386.ts` JSDoc, `docs/api-core.md`, BT API: getters vs methods below                                                                                                                                                                            |
+| How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md` (@since/@changed/@deprecated tagging, `<Since>`/`<ApiAvailability>`/`<PageChangelog>` doc components, review checklist)                                                                                    |
 | How does a subsystem work internally?                             | The relevant `src/core/` or `src/render/` file                                                                                                                                                                                                          |
 | What does a demo implement?                                       | `src/core/IBTDemo.ts` (interface + HardwareSettings)                                                                                                                                                                                                    |
 | How does palette usage tracking work for the overlay grid?        | `src/core/RenderPaletteUsage.ts`, `src/overlay/palette/PaletteView.ts`                                                                                                                                                                                  |
@@ -514,7 +515,7 @@ pnpm run typecheck          # TypeScript type checking
 pnpm run spellcheck         # cspell check
 pnpm run knip               # Find unused exports/deps
 pnpm run docs:links         # Check Markdown links (all repo-root *.md / *.mdx)
-pnpm run preflight          # All checks (format + lint + typecheck + spellcheck + knip + docs:links + sync:doc-banners:check + test:unit + test:declarations)
+pnpm run preflight          # All checks (format + lint + typecheck + spellcheck + knip + docs:links + sync:doc-banners:check + api:since:check + api:history:check + test:unit + test:declarations)
 ```
 
 RTK: Shell commands are rewritten via `rtk hook cursor` (Cursor) / `rtk hook claude` (Claude Code). Use `pnpm run …` for

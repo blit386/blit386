@@ -8,6 +8,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * Display-tier: spreads color along the lens axis. At logical resolution the
  * single-pixel offset is too coarse and reads as a glitch instead of a soft
  * fringe.
+ *
+ * @since 1.0.3
  */
 export class ChromaticAberration extends FullscreenEffect {
     public readonly tier = 'display' as const;

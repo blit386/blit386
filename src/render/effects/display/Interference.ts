@@ -10,6 +10,8 @@ import { FullscreenEffect } from '../FullscreenEffect';
  *
  * Display-tier. Drives jitter from {@link time}; demos typically pass
  * `BT.ticks / BT.targetFPS`.
+ *
+ * @since 1.0.3
  */
 export class Interference extends FullscreenEffect {
     public readonly tier = 'display' as const;

@@ -7,6 +7,8 @@ import { FullscreenPixelEffect } from '../FullscreenPixelEffect';
  * producing chunky pixelation without RGB averaging drift.
  *
  * Pixel-tier: runs on the logical `r8uint` framebuffer (palette indices).
+ *
+ * @since 1.0.3
  */
 export class PixelMosaic extends FullscreenPixelEffect {
     /**

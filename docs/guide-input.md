@@ -17,6 +17,8 @@ buttons), gamepad (up to four players via `navigator.getGamepads()`), and text a
 All pointer coordinates are returned in logical display space (the `displaySize` from `configure()` or
 `defaultConfig()`), independent of the canvas's CSS or backing-buffer size.
 
+<ApiAvailability page="guides/input" />
+
 ## Pointer slot model
 
 The engine tracks up to four simultaneous pointers:
@@ -46,6 +48,10 @@ The engine tracks four pointer slots (indices `0`–`3`). Overflow contacts beyo
 
 ## Position and delta
 
+<Since symbol="BT.pointerPos" />
+<Since symbol="BT.pointerDelta" />
+<Since symbol="BT.isPointerActive" />
+
 ```ts twoslash
 import { BT } from 'blit386';
 // ---cut---
@@ -74,6 +80,10 @@ if (BT.isPointerActive(1)) {
 
 ## Buttons
 
+<Since symbol="BT.isDown" />
+<Since symbol="BT.isPressed" />
+<Since symbol="BT.isReleased" />
+
 Use `BT.isDown()`, `BT.isPressed()`, and `BT.isReleased()` with the `BTN_POINTER_*` constants. The second parameter is
 the pointer slot (defaults to `0`):
 
@@ -98,6 +108,12 @@ BT.isDown(BT.BTN_POINTER_A | BT.BTN_POINTER_B); // left or right mouse button he
 ```
 
 ### Mouse button mapping
+
+<Since symbol="BT.BTN_POINTER_A" />
+<Since symbol="BT.BTN_POINTER_B" />
+<Since symbol="BT.BTN_POINTER_C" />
+<Since symbol="BT.BTN_POINTER_D" />
+<Since symbol="BT.BTN_POINTER_ANY" />
 
 The mapping follows the [RetroBlit](https://www.badcastle.com/retroblit.html) canonical order, not the DOM
 `PointerEvent.button` index:
@@ -127,6 +143,10 @@ example `canvas.tabIndex = 0` and `canvas.focus()`). The library follows `Keyboa
 not `event.key` layout text.
 
 ### Raw key queries
+
+<Since symbol="BT.isKeyDown" />
+<Since symbol="BT.isKeyPressed" />
+<Since symbol="BT.isKeyReleased" />
 
 Use these for direct key checks:
 
@@ -162,6 +182,23 @@ under rapid input – the tick already consumed and cleared the edge before rend
 
 ### Face buttons (`BTN_UP` through `BTN_SELECT`)
 
+<Since symbol="BT.BTN_UP" />
+<Since symbol="BT.BTN_DOWN" />
+<Since symbol="BT.BTN_LEFT" />
+<Since symbol="BT.BTN_RIGHT" />
+<Since symbol="BT.BTN_A" />
+<Since symbol="BT.BTN_B" />
+<Since symbol="BT.BTN_X" />
+<Since symbol="BT.BTN_Y" />
+<Since symbol="BT.BTN_L" />
+<Since symbol="BT.BTN_R" />
+<Since symbol="BT.BTN_START" />
+<Since symbol="BT.BTN_SELECT" />
+<Since symbol="BT.BTN_ABXY" />
+<Since symbol="BT.BTN_SHOULDER" />
+<Since symbol="BT.DEFAULT_KEYBOARD_PLAYER1" />
+<Since symbol="BT.DEFAULT_KEYBOARD_PLAYER2" />
+
 Face button constants are bit flags. You can pass a single button or a combined mask; matching uses ANY semantics:
 `BT.isDown(BT.BTN_A | BT.BTN_B)` is true when either A or B is down.
 
@@ -196,6 +233,9 @@ Built-in defaults are exposed as read-only tables (same values the engine starts
 
 ### Remapping (`BT.inputMap` / `BT.inputMapReset`)
 
+<Since symbol="BT.inputMap" />
+<Since symbol="BT.inputMapReset" />
+
 Override bindings at runtime. The first argument is the zero-based player index (`0` or `1` only; other values are
 ignored). The second is the face button constant. Remaining arguments are `KeyboardEvent.code` strings.
 
@@ -221,6 +261,20 @@ BT.inputMap(0, BT.BTN_X); // player 0 X has no keyboard keys until remapped
 <DemoEmbed demo="030-input-map-remapping" title="BLIT386 input map remapping demo" />
 
 ### Gamepad API
+
+<Since symbol="BT.isGamepadConnected" />
+<Since symbol="BT.gamepadCount" />
+<Since symbol="BT.getAxis" />
+<Since symbol="BT.AXIS_LEFT_X" />
+<Since symbol="BT.AXIS_LEFT_Y" />
+<Since symbol="BT.AXIS_RIGHT_X" />
+<Since symbol="BT.AXIS_RIGHT_Y" />
+<Since symbol="BT.AXIS_TRIGGER_L" />
+<Since symbol="BT.AXIS_TRIGGER_R" />
+<Since symbol="BT.PLAYER_ONE" />
+<Since symbol="BT.PLAYER_TWO" />
+<Since symbol="BT.PLAYER_THREE" />
+<Since symbol="BT.PLAYER_FOUR" />
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -259,11 +313,15 @@ value today.
 
 ### Text input buffer
 
+<Since symbol="BT.inputString" />
+
 `BT.inputString` returns characters accumulated from filtered `beforeinput` (and Tab / Escape where needed). The buffer
 clears at the end of each fixed update step (read it during `update()`). See public JSDoc on `BT.inputString` for
 details.
 
 ## Scroll delta
+
+<Since symbol="BT.pointerScrollDelta" />
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -284,6 +342,9 @@ to pixels. It resets to zero each frame. The engine also calls `preventDefault()
 scroll while the canvas has focus.
 
 ## Cursor control
+
+<Since symbol="BT.hideCursor" />
+<Since symbol="BT.showCursor" />
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -357,6 +418,8 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 </Accordion>
 
 </Accordions>
+
+<PageChangelog page="guides/input" />
 
 ## See also
 

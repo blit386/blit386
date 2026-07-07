@@ -19,6 +19,8 @@ This guide covers the end-to-end workflow: setup, indexed sprites, palette offse
 For terminology (slot vs. `paletteIndex` vs. `paletteOffset`) and when to call `BT.paletteSet()` vs. mutating
 `BT.palette`, see [Palette addressing](api-palette.md#palette-addressing) in the API palette reference.
 
+<ApiAvailability page="guides/palette" />
+
 <Steps>
 
 <Step>
@@ -243,6 +245,8 @@ For benchmark workflow and CI thresholds, see [Performance Testing](performance-
 </Step>
 
 </Steps>
+
+<PageChangelog page="guides/palette" />
 
 ## See also
 

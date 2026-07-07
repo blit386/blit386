@@ -23,6 +23,7 @@ export default [
             '**/coverage/**',
             '**/dist/**',
             '**/node_modules/**',
+            'scripts/__fixtures__/**',
             '.pnpm-store/**',
             '**/.pnpm-store/**',
             'vite.config.ts.timestamp-*',
@@ -132,7 +133,7 @@ export default [
             // JSDoc rules
             'jsdoc/check-alignment': 'warn',
             'jsdoc/check-param-names': 'warn',
-            'jsdoc/check-tag-names': 'warn',
+            'jsdoc/check-tag-names': ['warn', { definedTags: ['changed'] }],
             'jsdoc/require-jsdoc': [
                 'warn',
                 {
@@ -194,7 +195,7 @@ export default [
             // JSDoc rules (relaxed for JS config files)
             'jsdoc/check-alignment': 'warn',
             'jsdoc/check-param-names': 'warn',
-            'jsdoc/check-tag-names': 'warn',
+            'jsdoc/check-tag-names': ['warn', { definedTags: ['changed'] }],
 
             // Code quality rules
             complexity: ['warn', { max: 15 }],

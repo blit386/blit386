@@ -24,7 +24,12 @@ state), and [Browser Support](api-browser-support.md).
   API for hand-wired or existing projects.
 </Callout>
 
+<ApiAvailability page="api/core" />
+
 ## Bootstrap
+
+<Since symbol="bootstrap" />
+<Since symbol="BootstrapOptions" />
 
 The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
 (WebGPU or software fallback), and error display automatically.
@@ -59,6 +64,9 @@ bootstrap(MyDemo, {
 
 Manual utilities (for custom initialization flows):
 
+<Since symbol="getCanvas" />
+<Since symbol="displayError" />
+
 ```ts twoslash
 import { displayError, getCanvas } from 'blit386';
 
@@ -70,6 +78,8 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
   scaling). Custom hosts can reuse the same helper when not using `bootstrap()`.
 
 ## Initialization
+
+<Since symbol="BT.init" />
 
 <DemoEmbed demo="001-basics" title="BLIT386 basics demo" />
 
@@ -91,6 +101,10 @@ BT.activeBackend; // 'webgpu' | 'software' | null – backend that actually star
 - When not using `bootstrap()`, set `canvas.tabIndex = 0` and call `canvas.focus()` so keyboard events reach the canvas.
 
 ### Resolution model
+
+<Since symbol="BT.displaySize" />
+<Since symbol="BT.drawingBufferSize" />
+<Since symbol="BT.outputSize" />
 
 BLIT386 tracks several related pixel dimensions. Public configure/getter names (`displaySize`, `drawingBufferSize`,
 `maxCanvasSize`) map to the layers below; display-tier is a separate post-process term.
@@ -134,6 +148,8 @@ See [Post-Process Effects](guide-post-process-effects.md) for tier routing and p
 </Callout>
 
 ### Hardware settings
+
+<Since symbol="HardwareSettings" />
 
 Resolved after `configure()`; the hook may return a partial object.
 
@@ -181,6 +197,8 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
 
 ### Getters vs. configuration fields
 
+<Since symbol="BT.targetFPS" />
+
 | Kind    | `BT` getter                                       | `HardwareSettings` field |
 | ------- | ------------------------------------------------- | ------------------------ |
 | Mirror  | `displaySize`, `drawingBufferSize`, `targetFPS`   | same names               |
@@ -193,6 +211,9 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
   the session afterward. See [API: Audio](api-audio.md#unlock-state).
 
 ### Requested vs. active backend
+
+<Since symbol="BT.requestedBackend" />
+<Since symbol="BT.activeBackend" />
 
 Two getters disambiguate what you asked for from what is running:
 
@@ -251,6 +272,9 @@ function configure(): Partial<HardwareSettings> {
 
 ## Default configuration
 
+<Since symbol="defaultConfig" />
+<Since symbol="mergeHardwareSettings" />
+
 Import `defaultConfig` and `mergeHardwareSettings` when building custom configure flows outside `bootstrap()`:
 
 ```ts twoslash
@@ -265,6 +289,8 @@ enabled, WebGPU backend, `16` SFX voices, and other defaults documented in the t
 ## Putting it together
 
 <DemoEmbed demo="014-game-scene" title="BLIT386 game scene capstone demo" />
+
+<PageChangelog page="api/core" />
 
 ## See also
 
