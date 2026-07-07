@@ -1,11 +1,16 @@
 @reference '../app.css';
 
 .badge {
-    @apply inline-flex items-center rounded-lg px-1.5 py-0.5 text-xs font-medium whitespace-nowrap;
+    @apply inline-flex items-center px-2 pt-0.5 pb-0.75 mb-1 mr-1 border;
+    @apply whitespace-nowrap uppercase font-departure antialiased text-[11px] leading-5;
+
+    & code {
+        @apply opacity-100 normal-case pr-1;
+    }
 }
 
 .stable {
-    @apply bg-fd-primary text-fd-primary-foreground;
+    @apply border-fd-primary text-fd-primary;
 }
 
 .unreleased {

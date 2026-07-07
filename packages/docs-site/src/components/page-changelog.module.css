@@ -1,7 +1,7 @@
 @reference '../app.css';
 
 .changelog {
-    @apply flex flex-col gap-6;
+    @apply flex flex-col gap-6 mt-4;
 }
 
 .version {
@@ -25,11 +25,12 @@
 }
 
 .category {
-    @apply inline-flex items-center rounded-lg px-1.5 py-0.5 text-xs font-medium whitespace-nowrap;
+    @apply inline-flex items-center px-1.5 py-0.5 border;
+    @apply whitespace-nowrap uppercase font-departure antialiased text-[11px] leading-5;
 }
 
 .added {
-    @apply bg-fd-primary text-fd-primary-foreground;
+    @apply border-fd-primary text-fd-primary;
 }
 
 .changed {
