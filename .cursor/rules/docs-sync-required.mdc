@@ -17,6 +17,15 @@ alwaysApply: false
 
 - Documentation is part of the implementation, not a follow-up task.
 - When public API changes, update relevant `docs/api-*.md` and related examples in the same change.
+- When you add a public export, a new `BT` member, or a `HardwareSettings`/config type, change an existing public
+  symbol's signature or behavior, or deprecate a public symbol, follow `docs/documentation-and-versioning-guide.md`: add
+  `@since <version>` / `@changed <version> <note>` / `@deprecated Deprecated since <version> (<date>). ...` JSDoc tags
+  at the symbol's original declaration (not the re-export line), then run `pnpm run api:history` to regenerate
+  `docs/_api-history.json` (never hand-edit it – commit the regenerated file). Add or update the `<Since symbol="...">`,
+  `<ApiAvailability page="...">`, and `<PageChangelog page="...">` MDX components on the symbol's one documentation home
+  (the page with real explanatory prose – see the guide's Step 3 for how to pick it when more than one page mentions the
+  symbol). `pnpm run preflight` already runs `api:since:check` and `api:history:check`, so a missing or malformed tag
+  fails preflight before docs work even starts.
 - When runtime behavior changes, update affected guides under `docs/` (including `docs/guide-overlay.md` for overlay
   subsystem changes).
 - When you add, remove, or rename a `docs/*.md` page that should appear on the public site (blit386.dev), update
