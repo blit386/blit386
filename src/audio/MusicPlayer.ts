@@ -10,6 +10,7 @@
 
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
+import { musicLoopRangeError } from '../utils/errorMessages';
 
 /** Default gain applied to an incoming track when {@link MusicPlayOptions.volume} is omitted. */
 const DEFAULT_VOLUME = 1;
@@ -32,7 +33,11 @@ const DEFAULT_LOOP = true;
 /** Default easing curve applied to a fade-in/fade-out ramp when omitted. */
 const DEFAULT_EASING: EasingFunction = 'linear';
 
-/** Options accepted by {@link MusicPlayer.play}. */
+/**
+ * Options accepted by {@link MusicPlayer.play}, {@link BTAPI.musicPlay}, and {@link BT.musicPlay}.
+ *
+ * @since 1.3.0
+ */
 export interface MusicPlayOptions {
     /** Target gain for the incoming track in `[0, 1]` (unclamped). Defaults to `1`. */
     volume?: number;
@@ -385,6 +390,10 @@ function applyLoopOptions(source: AudioBufferSourceNode, options: MusicPlayOptio
  * playback state changes, so an invalid call to {@link MusicPlayer.play} never leaves the
  * player mid-mutated.
  *
+ * This is the one deliberate throw in the music playback path - clearly-invalid programmer
+ * input, the same way {@link AudioClip.synth} and {@link VoicePool} validate their own
+ * boundary values.
+ *
  * @param options - Playback options; see {@link MusicPlayOptions}.
  * @param duration - Duration in seconds of the buffer about to be played.
  * @throws Error if only one of `loopStart`/`loopEnd` is given, or the pair does not satisfy
@@ -397,16 +406,11 @@ function validateLoopRegion(options: MusicPlayOptions, duration: number): void {
         return;
     }
 
-    if (loopStart === undefined || loopEnd === undefined) {
-        throw new Error(
-            `MusicPlayer.play(): loopStart and loopEnd must be provided together (got loopStart=${loopStart}, loopEnd=${loopEnd})`,
-        );
-    }
-
-    if (!(loopStart >= 0 && loopStart < loopEnd && loopEnd <= duration)) {
-        throw new Error(
-            `MusicPlayer.play(): invalid loop region [${loopStart}, ${loopEnd}] for a ${duration}s buffer - ` +
-                'loopStart must be >= 0 and < loopEnd, and loopEnd must be <= the buffer duration',
-        );
+    if (
+        loopStart === undefined ||
+        loopEnd === undefined ||
+        !(loopStart >= 0 && loopStart < loopEnd && loopEnd <= duration)
+    ) {
+        throw new Error(musicLoopRangeError(loopStart, loopEnd, duration));
     }
 }

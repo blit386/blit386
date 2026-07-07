@@ -465,6 +465,77 @@ describe('BT.soundPanSet / BT.soundPanGet', () => {
     });
 });
 
+describe('BT.musicPlay', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.musicPlay', () => {
+        const clip = {} as unknown as AudioClip;
+        const spy = vi.spyOn(BTAPI.instance, 'musicPlay').mockReturnValue(undefined);
+
+        BT.musicPlay(clip, { volume: 0.5, fadeMs: 400 });
+
+        expect(spy).toHaveBeenCalledWith(clip, { volume: 0.5, fadeMs: 400 });
+    });
+});
+
+describe('BT.musicStop', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.musicStop, unpacking fadeMs', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'musicStop').mockReturnValue(undefined);
+
+        BT.musicStop({ fadeMs: 500 });
+
+        expect(spy).toHaveBeenCalledWith(500);
+    });
+
+    it('passes undefined fadeMs when options are omitted', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'musicStop').mockReturnValue(undefined);
+
+        BT.musicStop();
+
+        expect(spy).toHaveBeenCalledWith(undefined);
+    });
+});
+
+describe('BT.isMusicPlaying', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.isMusicPlaying', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'isMusicPlaying').mockReturnValue(true);
+
+        expect(BT.isMusicPlaying).toBe(true);
+        expect(spy).toHaveBeenCalledWith();
+    });
+});
+
+describe('BT.musicVolumeSet / BT.musicVolumeGet', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('musicVolumeSet delegates to BTAPI.instance.musicVolumeSet, unpacking fadeMs', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'musicVolumeSet').mockReturnValue(undefined);
+
+        BT.musicVolumeSet(0.5, { fadeMs: 100 });
+
+        expect(spy).toHaveBeenCalledWith(0.5, 100);
+    });
+
+    it('musicVolumeGet delegates to BTAPI.instance.musicVolumeGet', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'musicVolumeGet').mockReturnValue(0.5);
+
+        expect(BT.musicVolumeGet()).toBe(0.5);
+        expect(spy).toHaveBeenCalledWith();
+    });
+});
+
 describe('BT.synthPreset', () => {
     it('exposes exactly the preset sound library factories', () => {
         expect(Object.keys(BT.synthPreset).sort()).toEqual(

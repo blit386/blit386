@@ -158,8 +158,8 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
   unsupported container/codec decode failures, and loading before the engine has started.
 - Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode
   in every browser - see [Audio formats](api-browser-support.md#audio-formats).
-- Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below. Music playback (a separate,
-  loopable player distinct from the SFX voice pool) is not implemented yet.
+- Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below; as looping, crossfading music
+  in [Playback (Music)](#playback-music).
 
 ## Synth
 
@@ -353,6 +353,110 @@ BT.soundPanGet(ref); // -0.3
 
 `BT.soundPlay` also returns an inert `SoundRef` (no throw) when `clip` hasn't finished loading yet, or was already
 released with `clip.unload()`.
+
+## Playback (Music)
+
+<Since symbol="BT.musicPlay" />
+<Since symbol="BT.musicStop" />
+<Since symbol="BT.isMusicPlaying" />
+
+`BT.musicPlay` plays a loaded `AudioClip` through a single looping music player, distinct from the SFX voice pool -
+there is no `SoundRef` to manage, and calling it again crossfades from whatever is currently playing into the new track
+rather than layering the two.
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const theme = await AudioClip.load('audio/theme.mp3');
+
+BT.musicPlay(theme, { volume: 0.8 });
+
+BT.isMusicPlaying; // true
+
+BT.musicStop({ fadeMs: 500 }); // fades out over 500 ms
+```
+
+<Since symbol="MusicPlayOptions" />
+
+`options` fields:
+
+<TypeTable type={{
+    volume: { type: 'number', default: '1', description: 'Target gain for the incoming track in [0, 1] (unclamped).' },
+    fadeMs: { type: 'number', default: '0', description: 'Crossfade duration in milliseconds, applied to both the outgoing fade-out and the incoming fade-in. 0 switches immediately.' },
+    overlap: { type: 'number', default: '1', description: 'Crossfade timing offset in [-1, 1]. See Crossfading below.' },
+    easeIn: { type: 'EasingFunction', default: "'linear'", description: "Easing curve for the incoming track's fade-in." },
+    easeOut: { type: 'EasingFunction', default: "'linear'", description: "Easing curve for the outgoing track's fade-out." },
+    loop: { type: 'boolean', default: 'true', description: 'Whether the whole track loops. Ignored when loopStart/loopEnd are given.' },
+    loopStart: { type: 'number', description: 'Loop region start in seconds. Requires loopEnd.' },
+    loopEnd: { type: 'number', description: 'Loop region end in seconds. Requires loopStart.' },
+  }} />
+
+### Crossfading
+
+`fadeMs` sets how long each side of a crossfade takes; `overlap` sets how the two sides line up in time:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const calm = await AudioClip.load('audio/calm.mp3');
+const battle = await AudioClip.load('audio/battle.mp3');
+
+BT.musicPlay(calm);
+
+// Later, when the fight starts:
+BT.musicPlay(battle, { fadeMs: 800, overlap: 1 }); // calm fades out while battle fades in, at the same time
+BT.musicPlay(battle, { fadeMs: 800, overlap: 0 }); // battle starts fading in exactly as calm finishes fading out
+BT.musicPlay(battle, { fadeMs: 800, overlap: -1 }); // an 800 ms silence gap between the two
+```
+
+Calling `BT.musicPlay` again before a crossfade finishes immediately cuts the track that was already fading out - only
+one crossfade is ever in flight, so rapid calls (menu navigation, quick scene changes) never pile up.
+
+### Loop points
+
+Loop the whole track (the default), a one-shot, or a specific region such as a bridge that repeats while an intro plays
+only once:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const theme = await AudioClip.load('audio/theme.mp3');
+
+BT.musicPlay(theme); // loops the whole track (default)
+BT.musicPlay(theme, { loop: false }); // plays once and stops
+BT.musicPlay(theme, { loopStart: 8, loopEnd: 32 }); // an 8s intro, then loops the 8-32s region forever
+```
+
+`loopStart` and `loopEnd` must be given together, with `0 <= loopStart < loopEnd <= duration` - `BT.musicPlay` throws a
+beginner-friendly error otherwise, since a mismatched pair is always a programmer mistake rather than something that can
+happen from normal play.
+
+<Since symbol="BT.musicVolumeSet" />
+<Since symbol="BT.musicVolumeGet" />
+
+`BT.musicVolumeSet` sets the current track's gain, optionally fading to it; `BT.musicVolumeGet` reads back the last
+requested target (not a mid-fade instantaneous value):
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const theme = await AudioClip.load('audio/theme.mp3');
+BT.musicPlay(theme);
+// ---cut---
+BT.musicVolumeSet(0.4, { fadeMs: 300 });
+BT.musicVolumeGet(); // 0.4
+```
+
+<Callout title="Remembered while locked, not dropped">
+
+Unlike `BT.soundPlay`, a `BT.musicPlay` call made before `BT.isAudioUnlocked` is `true` is not dropped - the engine
+remembers the most recent pending request and starts it automatically the instant the context unlocks. Calling
+`BT.musicPlay` again while still locked replaces the remembered request; only the latest survives to unlock.
+
+</Callout>
+
+`BT.musicPlay` silently does nothing (no throw) when `clip` hasn't finished loading yet, or was already released with
+`clip.unload()` - the same as `BT.soundPlay`.
 
 ## Hardware settings
 
