@@ -15,6 +15,8 @@ automatically; it also runs on browsers that do not expose WebGPU globals at all
 Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
 init).
 
+<ApiAvailability page="api/browser-support" />
+
 | Browser     | Version        | Status                                                           |
 | ----------- | -------------- | ---------------------------------------------------------------- |
 | Chrome/Edge | 113+           | Enabled by default                                               |
@@ -49,6 +51,8 @@ periodically. This is why `AudioClip.load()` accepts an ordered fallback list (f
 `['theme.ogg', 'theme.mp3']`) - the engine tries each candidate in order until one decodes.
 
 </Callout>
+
+<PageChangelog page="api/browser-support" />
 
 ## See also
 

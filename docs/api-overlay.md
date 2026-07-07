@@ -32,6 +32,8 @@ back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choo
 
 </Callout>
 
+<ApiAvailability page="api/overlay" />
+
 ## Anatomy
 
 The overlay body stacks, top to bottom: title and backend rows, an optional timing chart, the frame-metrics rows, any
@@ -137,6 +139,8 @@ custom rows, and the bottom band (palette grid plus hint bar).
 
 ### Custom rows (optional)
 
+<Since symbol="OverlayRow" />
+
 - Extra bars from `overlayRows()` stacked above the bottom band, `1px` filled gaps apart, each with left text and
   optional right text (same `13px` bar style as the built-in rows)
 - Demos may implement optional `overlayRows()` on `IBTDemo`.
@@ -176,6 +180,8 @@ On WebGPU, the engine draws the HUD after your `render()` call, composited above
 batches (not exposed on `BT`).
 
 ## Overlay colors
+
+<Since symbol="OverlayStyle" />
 
 Colors follow one path: use `overlayStyle` when set, otherwise the defaults `1` (bar and gap) and `2` (text).
 
@@ -256,6 +262,8 @@ function configure(): Partial<HardwareSettings> {
 }
 ```
 
+<Since symbol="OverlayTimingChartStyle" />
+
 ```ts twoslash
 import { type HardwareSettings, Vector2i } from 'blit386';
 // ---cut---
@@ -283,6 +291,8 @@ function configure(): Partial<HardwareSettings> {
   };
 }
 ```
+
+<PageChangelog page="api/overlay" />
 
 ## See also
 

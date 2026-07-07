@@ -1293,6 +1293,10 @@
       "getCanvas",
       "mergeHardwareSettings"
     ],
+    "api/easing": [
+      "EasingFunction",
+      "applyEasing"
+    ],
     "api/game-loop": [
       "BT.assignTag",
       "BT.deltaSeconds",
@@ -1300,6 +1304,11 @@
       "BT.ticksReset",
       "BT.timeSeconds",
       "Timer"
+    ],
+    "api/overlay": [
+      "OverlayRow",
+      "OverlayStyle",
+      "OverlayTimingChartStyle"
     ]
   }
 }
