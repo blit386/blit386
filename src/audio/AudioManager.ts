@@ -571,29 +571,51 @@ export class AudioManager {
      * clears {@link isUnlocking} so a failed attempt can retry on the next gesture.
      *
      * On success, starts any music request remembered from before unlock (see
-     * {@link musicPlay}) and clears it via {@link clearRememberedMusicRequest} so it never
-     * replays on a later unlock attempt.
+     * {@link musicPlay}) via {@link startRememberedMusicRequest}.
      *
      * @param context - Audio context to resume.
      */
     private async resumeAndUnlock(context: AudioContext): Promise<void> {
         try {
             await context.resume();
-
-            this.unlocked = true;
-            this.removeUnlockListeners();
-
-            if (this.hasRememberedMusicRequest() && this.pendingMusicRequest !== null) {
-                const { buffer, options } = this.pendingMusicRequest;
-
-                this.musicPlayer?.play(buffer, options);
-                this.clearRememberedMusicRequest();
-                this.pendingMusicRequest = null;
-            }
         } catch (error) {
             console.error('[BT] Failed to resume the audio context', error);
+
+            return;
         } finally {
             this.isUnlocking = false;
+        }
+
+        this.unlocked = true;
+        this.removeUnlockListeners();
+        this.startRememberedMusicRequest();
+    }
+
+    /**
+     * Starts the music request remembered from before unlock (see {@link musicPlay}), if any.
+     *
+     * Clears {@link isMusicRequestRemembered} and {@link pendingMusicRequest} before calling
+     * {@link MusicPlayer.play} (rather than after), so a `play()` failure - for example invalid
+     * `loopStart`/`loopEnd` - can never leave a stale request dangling forever. `unlock()` never
+     * calls {@link resumeAndUnlock} again once {@link unlocked} is `true`, so a request left
+     * uncleared here would never get another chance to be replayed or discarded. A `play()`
+     * failure is logged separately from a `context.resume()` failure so the two are never
+     * conflated.
+     */
+    private startRememberedMusicRequest(): void {
+        if (!this.hasRememberedMusicRequest() || this.pendingMusicRequest === null) {
+            return;
+        }
+
+        const { buffer, options } = this.pendingMusicRequest;
+
+        this.clearRememberedMusicRequest();
+        this.pendingMusicRequest = null;
+
+        try {
+            this.musicPlayer?.play(buffer, options);
+        } catch (error) {
+            console.error('[BT] Failed to start the remembered music request', error);
         }
     }
 

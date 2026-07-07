@@ -262,6 +262,27 @@ describe('MusicPlayer', () => {
 
             expect(asMockSource(source).startCalls).toEqual([{ when: 5 }]);
         });
+
+        it('ignores overlap on the very first play() - there is no outgoing voice to offset from', () => {
+            const { player, context } = createPlayer();
+
+            setMockCurrentTime(context, 5);
+
+            // overlap: -1 would normally push fadeInStart two full fadeMs later, but with no
+            // current voice playing there is nothing to crossfade against, so the very first
+            // track must still start immediately at now.
+            player.play(createMockAudioBuffer(), { fadeMs: 500, overlap: -1 });
+
+            const context2 = context as unknown as {
+                createGainCalls: GainNode[];
+                createBufferSourceCalls: AudioBufferSourceNode[];
+            };
+            const source = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+            const gain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
+
+            expect(asMockSource(source).startCalls).toEqual([{ when: 5 }]);
+            expect(gain.gain.setValueAtTimeCalls).toEqual([{ value: 0, startTime: 5 }]);
+        });
     });
 
     describe('crossfade timing on replace', () => {
@@ -580,6 +601,35 @@ describe('MusicPlayer', () => {
             // play() call; stop() force-releases it immediately on top of that, so the source
             // sees both calls (a real AudioBufferSourceNode lets the later stop() win).
             expect(asMockSource(fadingPrevious).stopCalls).toEqual([1, 0]);
+        });
+
+        it('a repeated stop() call immediately silences the voice still fading from the first stop() call', () => {
+            const { player, context } = createPlayer();
+
+            player.play(createMockAudioBuffer());
+
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const source = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+
+            player.stop(1000); // scheduled fade-out and stop, not yet complete
+            player.stop(); // must find and immediately force-stop the still-fading voice
+
+            expect(asMockSource(source).stopCalls).toEqual([1, 0]);
+        });
+
+        it('play() right after stop() force-stops the voice still fading from stop()', () => {
+            const { player, context } = createPlayer();
+
+            player.play(createMockAudioBuffer());
+
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const stoppedSource = context2.createBufferSourceCalls.at(0) as AudioBufferSourceNode;
+
+            player.stop(1000); // scheduled fade-out and stop, not yet complete
+            player.play(createMockAudioBuffer()); // must immediately silence the still-fading voice, not leave it orphaned
+
+            expect(asMockSource(stoppedSource).stopCalls).toEqual([1, 0]);
+            expect(player.isPlaying()).toBe(true);
         });
 
         it('is a no-op when nothing is playing', () => {

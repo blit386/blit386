@@ -90,12 +90,6 @@ interface Voice {
  * the crossfade model.
  */
 export class MusicPlayer {
-    /** Live audio context; scheduling is always anchored to its `currentTime`. */
-    private readonly context: AudioContext;
-
-    /** Injected `music` bus gain node every voice's gain connects to. */
-    private readonly musicBus: GainNode;
-
     /** Most recently started voice, or `null` when nothing is playing. */
     private current: Voice | null = null;
 
@@ -111,10 +105,12 @@ export class MusicPlayer {
      * @param context - Live audio context to schedule against.
      * @param musicBus - `music` bus gain node every voice connects to.
      */
-    constructor(context: AudioContext, musicBus: GainNode) {
-        this.context = context;
-        this.musicBus = musicBus;
-    }
+    constructor(
+        /** Live audio context to schedule against. */
+        private readonly context: AudioContext,
+        /** `music` bus gain node every voice connects to. */
+        private readonly musicBus: GainNode,
+    ) {}
 
     /**
      * Starts `buffer` as the new current track, crossfading out any track already playing.
@@ -141,7 +137,11 @@ export class MusicPlayer {
         const now = this.context.currentTime;
         const fadeSeconds = Math.max(0, options.fadeMs ?? DEFAULT_FADE_MS) / 1000;
         const overlap = clampOverlap(options.overlap ?? DEFAULT_OVERLAP);
-        const fadeInStart = now + fadeSeconds * (1 - overlap);
+
+        // overlap only describes the offset between an outgoing and incoming fade - with no
+        // current voice to crossfade against, there is nothing to offset from, so the new track
+        // always starts at now regardless of overlap.
+        const fadeInStart = this.current !== null ? now + fadeSeconds * (1 - overlap) : now;
 
         if (this.previous !== null) {
             this.forceStopVoice(this.previous);
@@ -169,10 +169,12 @@ export class MusicPlayer {
      * Stops playback, optionally fading out first.
      *
      * Immediately stops and releases any voice still crossfading out from a prior {@link play}
-     * call, and schedules the current voice's fade-out and stop the same way {@link play} does
-     * for a replaced track. Both {@link current} and {@link previous} are cleared synchronously,
-     * so {@link isPlaying} reports `false` right away even while the fade-out is still audible.
-     * No-op when nothing is playing.
+     * call, then demotes the current voice to "previous" and schedules its fade-out and stop the
+     * same way {@link play} does for a replaced track - it stays tracked (not discarded) until
+     * the fade actually completes, so a subsequent {@link play} or {@link stop} call can still
+     * find and immediately silence it instead of leaving it to fade out on its own unmanaged.
+     * {@link current} is cleared synchronously, so {@link isPlaying} reports `false` right away
+     * even while the fade-out is still audible. No-op when nothing is playing.
      *
      * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
      */
@@ -186,8 +188,9 @@ export class MusicPlayer {
         }
 
         if (this.current !== null) {
-            this.scheduleFadeOutAndStop(this.current, now, fadeSeconds, DEFAULT_EASING);
+            this.previous = this.current;
             this.current = null;
+            this.scheduleFadeOutAndStop(this.previous, now, fadeSeconds, DEFAULT_EASING);
         }
     }
 
