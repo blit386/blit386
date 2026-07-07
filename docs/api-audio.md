@@ -458,6 +458,9 @@ remembers the most recent pending request and starts it automatically the instan
 `BT.musicPlay` silently does nothing (no throw) when `clip` hasn't finished loading yet, or was already released with
 `clip.unload()` - the same as `BT.soundPlay`.
 
+See [Playing music](guide-audio.md#playing-music) in the Audio Guide for a state-based music switching pattern and an
+intro-then-loop recipe.
+
 ## Hardware settings
 
 `audioVoices` (default `16`) caps the number of simultaneous SFX voices - see [Playback (SFX)](#playback-sfx) for the

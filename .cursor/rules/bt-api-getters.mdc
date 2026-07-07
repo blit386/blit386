@@ -16,8 +16,9 @@ Zero-argument **read-only** values on `BT`:
 - **Configure-time (backend):** `requestedBackend` mirrors resolved `HardwareSettings.backend` (includes
   `?backend=software`); **`null` before `BT.init()`**
 - **Loop:** `deltaSeconds`, `timeSeconds`, `ticks`
-- **Runtime:** `activeBackend`, `camera`, `palette`, `isAudioUnlocked` — `activeBackend` is **`null` before init or on
-  failure**; `isAudioUnlocked` is `false` until the first user gesture resumes the audio context
+- **Runtime:** `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying` — `activeBackend` is **`null`
+  before init or on failure**; `isAudioUnlocked` is `false` until the first user gesture resumes the audio context;
+  `isMusicPlaying` is `true` while the music player has a live current track
 - **Per-frame input:** `pointerScrollDelta`, `inputString`, `gamepadCount`
 
 Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
@@ -35,7 +36,8 @@ Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use prope
 - **Audio:** `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`,
   `isAudioMuted(bus)`, `soundPlay(clip, options?)`, `soundStop(ref, options?)`, `isSoundPlaying(ref)`,
   `soundVolumeSet(ref, value, options?)`, `soundVolumeGet(ref)`, `soundPitchSet(ref, value, options?)`,
-  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`
+  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`, `musicPlay(clip, options?)`,
+  `musicStop(options?)`, `musicVolumeSet(value, options?)`, `musicVolumeGet()`
 - **Drawing / clearing:** `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
   `systemPrint`, `printFont` (4th arg is optional **`paletteOffset`**, not `Color32`)
 - Any **parameter**: `pointerPos(0)`, `isDown(BT.BTN_A)`, `cameraClamp(...)`
