@@ -547,9 +547,15 @@ const main = () => {
 
     // Mirror the engine's JSDoc-driven API version history alongside the docs it
     // annotates. `src/data/api-history.ts` (a typed loader) reads this file at
-    // build time; it is a generated artifact like the MDX pages above.
-    writeFileSync(API_HISTORY_DEST, readFileSync(API_HISTORY_SRC, 'utf8'));
-    written.push(API_HISTORY_DEST);
+    // build time; it is a generated artifact like the MDX pages above. A missing
+    // source (e.g. an engine checkout that predates the extractor) skips this
+    // step rather than aborting the whole docs sync.
+    try {
+        writeFileSync(API_HISTORY_DEST, readFileSync(API_HISTORY_SRC, 'utf8'));
+        written.push(API_HISTORY_DEST);
+    } catch {
+        console.warn(`warning: ${relative(ROOT, API_HISTORY_SRC)} not found; skipping API history mirror.`);
+    }
 
     for (const [section, entries] of sections) {
         const sectionDir = join(CONTENT_DOCS, section);
