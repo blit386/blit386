@@ -78,9 +78,32 @@ const rootLayout = createRootLayout({
  * below without threading the full multi-source (`docs` + `blog`) content type through it.
  */
 interface DocsPageData extends PageData {
+    /**
+     * Declared `z.coerce.date()` in the schema, so this is `Date | undefined` per the
+     * generated `Page` type - but `async: true` collections expose `page.data` from the raw
+     * frontmatter object without running that coercion, so the ACTUAL runtime value is the ISO
+     * string from the MDX frontmatter (confirmed by logging it during a real build), never a
+     * `Date` instance. This field's static type does not match its runtime value; read it via
+     * `rawLastModified(page)` below rather than trusting `page.data.lastModified` directly.
+     */
     lastModified?: Date;
     editUrl?: string;
 }
+
+/**
+ * Reads `page.data.lastModified` as the string it actually is at runtime (see the field's
+ * doc comment on `DocsPageData` for why its declared `Date` type is not trustworthy), coercing
+ * defensively in case a future fix makes the declared type accurate.
+ */
+const rawLastModified = (page: { data: DocsPageData }): Date | undefined => {
+    const value = page.data.lastModified as unknown as Date | string | undefined;
+
+    if (value === undefined) {
+        return undefined;
+    }
+
+    return value instanceof Date ? value : new Date(value);
+};
 
 interface DocsLayoutContext extends ConfigContext {
     page: Page<string | undefined, DocsPageData>;
@@ -115,14 +138,27 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
 
         const editUrl = page.data.editUrl;
 
+        // Deliberately NOT returning `lastModified` here to feed the framework's own
+        // `<PageLastUpdate>` (rendered automatically by `createDocsLayoutPage` whenever
+        // `result.lastModified` is truthy): that component keeps the date in client state
+        // (`useState` + `useEffect`) and calls `value.toLocaleDateString()` on it directly with
+        // no coercion, unconditionally assuming a real `Date` instance. `page.data.lastModified`
+        // is declared `z.coerce.date()` in the schema, but `async: true` collections expose
+        // `page.data` from the raw frontmatter object without running that coercion - confirmed
+        // by logging the value during a real build: it is the ISO string from the MDX
+        // frontmatter (e.g. `"2026-07-06T19:37:01.000Z"`), never a `Date`. Calling
+        // `.toLocaleDateString()` on that string throws (a string has no such method) - this
+        // crashed client-side hydration with `TypeError: e.toLocaleDateString is not a function`
+        // before this fix. Coerce explicitly with `new Date(...)` and render the formatted
+        // result as plain server-rendered text below, bypassing the built-in component (and the
+        // client/serialization boundary) entirely.
+        const lastModified = rawLastModified(page);
+        const formattedLastModified =
+            lastModified && !Number.isNaN(lastModified.getTime())
+                ? lastModified.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                : undefined;
+
         return {
-            // The framework's own `getLastModifiedDate()` resolves this via each adapter's
-            // `core:get-modified-date` hook, but for `async: true` doc collections (this site's
-            // `docs` source) that hook awaits `page.data.load()` - which resolves the compiled
-            // body/toc, not the frontmatter - so `lastModified` is never found there. Frontmatter
-            // fields (including `lastModified`) are already flattened onto `page.data` directly,
-            // so it is read from there instead of relying on the built-in resolution.
-            lastModified: page.data.lastModified,
             layoutProps: {
                 nav: { title: <SidebarLogo /> },
                 sidebar: {
@@ -134,6 +170,9 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
                 <>
                     {body}
                     {editUrl && <EditOnGitHub href={editUrl} />}
+                    {formattedLastModified && (
+                        <p className="text-sm text-fd-muted-foreground">Last updated on {formattedLastModified}</p>
+                    )}
                 </>
             ),
         };
