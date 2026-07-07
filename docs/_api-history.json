@@ -1309,6 +1309,33 @@
       "OverlayRow",
       "OverlayStyle",
       "OverlayTimingChartStyle"
+    ],
+    "api/rendering": [
+      "BT.FLIP_H",
+      "BT.FLIP_V",
+      "BT.ROT_180_CW",
+      "BT.ROT_270_CW",
+      "BT.ROT_90_CW",
+      "BT.captureFrame",
+      "BT.clear",
+      "BT.clearRect",
+      "BT.downloadFrame",
+      "BT.drawLine",
+      "BT.drawPixel",
+      "BT.drawRect",
+      "BT.drawRectFill",
+      "BT.drawSprite",
+      "BT.effectAdd",
+      "BT.effectClear",
+      "BT.effectRemove",
+      "BT.preset",
+      "BT.printFont",
+      "BT.spritesRefresh",
+      "BT.systemPrint",
+      "BT.systemPrintMeasure",
+      "amber",
+      "crtPipBoy",
+      "green"
     ]
   }
 }
