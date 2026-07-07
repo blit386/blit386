@@ -67,34 +67,36 @@ exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 
 ## Documentation index
 
-| Guide                                                         | What it covers                                         |
-| ------------------------------------------------------------- | ------------------------------------------------------ |
-| [API: Core](api-core.md)                                      | bootstrap, init, default configuration                 |
-| [API: Game Loop](api-game-loop.md)                            | tick timing, present FPS, Timer                        |
-| [API: Camera](api-camera.md)                                  | global pixel offset, world-clamp helpers               |
-| [API: Core Types](api-core-types.md)                          | Vector2i, Rect2i, Color32                              |
-| [API: Easing](api-easing.md)                                  | named easing curves for palette fades                  |
-| [Overlay Guide](guide-overlay.md)                             | engine HUD subsystem, toggle, custom rows, layout      |
-| [API: Rendering](api-rendering.md)                            | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](api-palette.md)                                | palette setup, presets, effects, serialization         |
-| [Palette Guide](guide-palette.md)                             | palette-first workflow, offsets, effects, performance  |
-| [Palette Presets](guide-palette-presets.md)                   | built-in preset reference and exact color data         |
-| [API: Assets](api-assets.md)                                  | sprite sheets, bitmap fonts, asset loading             |
-| [API: Browser Support](api-browser-support.md)                | WebGPU support matrix, automatic fallback              |
-| [Input Guide](guide-input.md)                                 | pointer, keyboard, gamepad                             |
-| [Post-Process Effects](guide-post-process-effects.md)         | effect chain, built-in effects, custom effects         |
-| [Bitmap Fonts](guide-bitmap-fonts.md)                         | .btfont format, BMFont conversion                      |
-| [Deprecation Timeline](reference-deprecations.md)             | dated compatibility aliases and cleanup checklist      |
-| [Testing](reference-testing.md)                               | test tiers, WebGPU mocks, visual regression            |
-| [Performance Testing](performance-testing.md)                 | CPU benchmarks, CI regression checks                   |
-| [Performance Best Practices](performance-best-practices.md)   | optimization guidelines                                |
-| [Software Fallback Smoke Matrix](performance-smoke-matrix.md) | manual software renderer verification matrix           |
-| [Developer Experience](developer-experience-guide.md)         | contributing workflow, IDE setup                       |
-| [Security runbook](security/security-runbook.md)              | MCP preflight, fallbacks, governance, security runs    |
-| [Dependency policy](security/dependency-policy.md)            | CI audit gate, severity threshold, refresh cadence     |
-| [Audit exceptions](security/audit-exceptions.md)              | Temporary GHSA acceptance playbook                     |
-| [Tooling](tooling.md)                                         | TypeScript pin, declaration checks, CI enforcement     |
-| [Voice Guide](voice.md)                                       | error messages and user-facing string style            |
+| Guide                                                                     | What it covers                                         |
+| ------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [API: Core](api-core.md)                                                  | bootstrap, init, default configuration                 |
+| [API: Game Loop](api-game-loop.md)                                        | tick timing, present FPS, Timer                        |
+| [API: Camera](api-camera.md)                                              | global pixel offset, world-clamp helpers               |
+| [API: Core Types](api-core-types.md)                                      | Vector2i, Rect2i, Color32                              |
+| [API: Easing](api-easing.md)                                              | named easing curves for palette fades                  |
+| [Overlay Guide](guide-overlay.md)                                         | engine HUD subsystem, toggle, custom rows, layout      |
+| [API: Rendering](api-rendering.md)                                        | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](api-palette.md)                                            | palette setup, presets, effects, serialization         |
+| [Palette Guide](guide-palette.md)                                         | palette-first workflow, offsets, effects, performance  |
+| [Palette Presets](guide-palette-presets.md)                               | built-in preset reference and exact color data         |
+| [API: Assets](api-assets.md)                                              | sprite sheets, bitmap fonts, asset loading             |
+| [API: Browser Support](api-browser-support.md)                            | WebGPU support matrix, automatic fallback              |
+| [Input Guide](guide-input.md)                                             | pointer, keyboard, gamepad                             |
+| [Post-Process Effects](guide-post-process-effects.md)                     | effect chain, built-in effects, custom effects         |
+| [Bitmap Fonts](guide-bitmap-fonts.md)                                     | .btfont format, BMFont conversion                      |
+| [Deprecation Timeline](reference-deprecations.md)                         | dated compatibility aliases and cleanup checklist      |
+| [Changelog](changelog.md)                                                 | release history in Keep a Changelog style              |
+| [Testing](reference-testing.md)                                           | test tiers, WebGPU mocks, visual regression            |
+| [Performance Testing](performance-testing.md)                             | CPU benchmarks, CI regression checks                   |
+| [Performance Best Practices](performance-best-practices.md)               | optimization guidelines                                |
+| [Software Fallback Smoke Matrix](performance-smoke-matrix.md)             | manual software renderer verification matrix           |
+| [Developer Experience](developer-experience-guide.md)                     | contributing workflow, IDE setup                       |
+| [Documentation and API Versioning](documentation-and-versioning-guide.md) | @since/@changed tagging, doc component workflow        |
+| [Security runbook](security/security-runbook.md)                          | MCP preflight, fallbacks, governance, security runs    |
+| [Dependency policy](security/dependency-policy.md)                        | CI audit gate, severity threshold, refresh cadence     |
+| [Audit exceptions](security/audit-exceptions.md)                          | Temporary GHSA acceptance playbook                     |
+| [Tooling](tooling.md)                                                     | TypeScript pin, declaration checks, CI enforcement     |
+| [Voice Guide](voice.md)                                                   | error messages and user-facing string style            |
 
 ---
 
