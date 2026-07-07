@@ -15,6 +15,8 @@ Exact built-in color data for `Palette` preset factories and `palette.applyHUD()
 All preset hex values are lowercase `RRGGBB` (no `#`), matching `src/assets/palettes/presetData.ts` and
 `src/assets/palettes/hudData.ts`.
 
+<ApiAvailability page="guides/palette-presets" />
+
 <!-- cspell:disable -->
 
 <Callout type="warn" title="Slot mapping (important)">
@@ -240,6 +242,8 @@ slots keep their constructor default (black).
   { hex: '6496c8', name: 'hud_code' },
 ];
 ```
+
+<PageChangelog page="guides/palette-presets" />
 
 ## See also
 

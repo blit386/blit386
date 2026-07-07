@@ -13,6 +13,8 @@
 Bus volume, mute, and worked examples live in [API: Audio](api-audio.md). This guide maps the internal subsystem, the
 locked/unlocked gesture state, and the web platform constraints that shape it.
 
+<ApiAvailability page="guides/audio" />
+
 ## Subsystem layout
 
 ```text
@@ -201,6 +203,8 @@ const restored = JSON.parse(serialized) as SynthParams;
 
 const explosion = await AudioClip.synth(restored);
 ```
+
+<PageChangelog page="guides/audio" />
 
 ## See also
 
