@@ -153,9 +153,18 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
         // result as plain server-rendered text below, bypassing the built-in component (and the
         // client/serialization boundary) entirely.
         const lastModified = rawLastModified(page);
+        // `timeZone: 'UTC'` keeps the formatted date reproducible across build machines - this
+        // is a static build, so the date is baked in once at build time, not reformatted
+        // per-viewer; without it, a commit within ~12h of UTC midnight could render as a
+        // different calendar day depending on which timezone the build happened to run in.
         const formattedLastModified =
             lastModified && !Number.isNaN(lastModified.getTime())
-                ? lastModified.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                ? lastModified.toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      timeZone: 'UTC',
+                  })
                 : undefined;
 
         return {
