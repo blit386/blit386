@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout."
-lastModified: "2026-07-02T18:37:16+02:00"
+lastModified: "2026-07-07T17:38:09+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-overlay.md"
 ---
 
@@ -13,6 +13,8 @@ title. Demos should not duplicate this text.
 
 Configure-time flags, style objects, and worked examples live in [API: Overlay](/docs/api/overlay). This guide maps the
 internal subsystem and common integration patterns.
+
+<ApiAvailability page="guides/overlay" />
 
 ## Subsystem layout
 
@@ -101,6 +103,8 @@ BT.systemPrint(new Vector2i(8, 8), palette.getNamed('hud_label'), 'Custom row');
 - `Present: N FPS` = measured browser refresh cadence while the overlay body is visible – not the same as target FPS.
 
 Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot GPU or draw-call bottlenecks.
+
+<PageChangelog page="guides/overlay" />
 
 ## See also
 

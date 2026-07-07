@@ -3,11 +3,13 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Game Loop"
 description: "Fixed-timestep simulation timing, tick counters, and the Timer helper."
-lastModified: "2026-07-02T18:37:16+02:00"
+lastModified: "2026-07-07T08:17:09+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-game-loop.md"
 ---
 
 Fixed-timestep simulation timing, tick counters, and the `Timer` helper.
+
+<ApiAvailability page="api/game-loop" />
 
 BLIT386 runs two independent cadences:
 
@@ -27,9 +29,17 @@ BT.ticksReset(); // reset tick counter to 0
 BT.assignTag('Round start'); // timing chart event tag at current tick (requires isOverlayTimingChartEnabled)
 ```
 
+<Since symbol="BT.deltaSeconds" />
+<Since symbol="BT.timeSeconds" />
+<Since symbol="BT.ticks" />
+<Since symbol="BT.ticksReset" />
+<Since symbol="BT.assignTag" />
+
 <DemoEmbed demo="009-animation" title="BLIT386 animation and timing demo" />
 
 ## Timer
+
+<Since symbol="Timer" />
 
 `Timer` counts fixed update ticks, not render frames. Intervals are in ticks; convert to seconds with
 `intervalTicks / BT.targetFPS`. Use it in `update()` for periodic events: particle spawns, score ticks, palette swaps.
@@ -51,6 +61,8 @@ spawn.intervalTicks; // readonly interval size
 
 `Timer.fireIfElapsed()` advances the internal baseline on each true return. Pass `BT.ticks` explicitly only when you
 need a specific snapshot; the default is the engine tick counter.
+
+<PageChangelog page="api/game-loop" />
 
 ## See also
 

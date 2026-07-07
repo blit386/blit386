@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "Engine overlay HUD configure flags, style objects, and worked examples."
-lastModified: "2026-07-02T16:21:59+02:00"
+lastModified: "2026-07-07T08:33:01+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-overlay.md"
 ---
 
@@ -28,6 +28,8 @@ Upgrading demos now starts with the overlay body hidden. Teaching demos that rel
 back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choose otherwise.
 
 </Callout>
+
+<ApiAvailability page="api/overlay" />
 
 ## Anatomy
 
@@ -134,6 +136,8 @@ custom rows, and the bottom band (palette grid plus hint bar).
 
 ### Custom rows (optional)
 
+<Since symbol="OverlayRow" />
+
 - Extra bars from `overlayRows()` stacked above the bottom band, `1px` filled gaps apart, each with left text and
   optional right text (same `13px` bar style as the built-in rows)
 - Demos may implement optional `overlayRows()` on `IBTDemo`.
@@ -171,6 +175,8 @@ On WebGPU, the engine draws the HUD after your `render()` call, composited above
 batches (not exposed on `BT`).
 
 ## Overlay colors
+
+<Since symbol="OverlayStyle" />
 
 Colors follow one path: use `overlayStyle` when set, otherwise the defaults `1` (bar and gap) and `2` (text).
 
@@ -249,6 +255,8 @@ function configure(): Partial<HardwareSettings> {
 }
 ```
 
+<Since symbol="OverlayTimingChartStyle" />
+
 ```ts twoslash
 // Overlay on with palette grid and timing chart.
 function configure(): Partial<HardwareSettings> {
@@ -274,6 +282,8 @@ function configure(): Partial<HardwareSettings> {
   };
 }
 ```
+
+<PageChangelog page="api/overlay" />
 
 ## See also
 

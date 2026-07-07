@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Browser Support"
 description: "WebGPU support matrix, automatic software fallback, and build toolchain."
-lastModified: "2026-07-05T16:53:56+02:00"
+lastModified: "2026-07-07T08:33:01+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-browser-support.md"
 ---
 
@@ -11,6 +11,8 @@ The WebGPU renderer is the default. When WebGPU is unavailable the engine falls 
 automatically; it also runs on browsers that do not expose WebGPU globals at all (for example Firefox on Linux without
 Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
 init).
+
+<ApiAvailability page="api/browser-support" />
 
 | Browser     | Version        | Status                                                           |
 | ----------- | -------------- | ---------------------------------------------------------------- |
@@ -46,6 +48,8 @@ periodically. This is why `AudioClip.load()` accepts an ordered fallback list (f
 `['theme.ogg', 'theme.mp3']`) - the engine tries each candidate in order until one decodes.
 
 </Callout>
+
+<PageChangelog page="api/browser-support" />
 
 ## See also
 

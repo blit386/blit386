@@ -3,12 +3,14 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Bitmap Fonts"
 description: "The system font and custom .btfont bitmap fonts: format, loading, and BMFont conversion."
-lastModified: "2026-07-02T18:37:16+02:00"
+lastModified: "2026-07-07T17:38:09+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-bitmap-fonts.md"
 ---
 
 BLIT386 ships with a built-in system font and supports custom `.btfont` bitmap fonts with variable-width glyphs,
 per-character offsets, Unicode characters, and either embedded or external textures.
+
+<ApiAvailability page="guides/bitmap-fonts" />
 
 ## Built-in system font
 
@@ -310,6 +312,8 @@ Point it at the PNG filename, or embed it as base64.
 
 ### BitmapFont
 
+<Since symbol="TextSize" />
+
 ```ts twoslash
 declare class BitmapFont {
   static load(url: string): Promise<BitmapFont>;
@@ -411,6 +415,8 @@ for (let i = 0; i < text.length; i++) {
 </Accordion>
 
 </Accordions>
+
+<PageChangelog page="guides/bitmap-fonts" />
 
 ## See also
 

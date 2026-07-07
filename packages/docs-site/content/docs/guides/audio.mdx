@@ -3,12 +3,14 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
-lastModified: "2026-07-06T08:03:09+02:00"
+lastModified: "2026-07-07T17:38:09+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-audio.md"
 ---
 
 Bus volume, mute, and worked examples live in [API: Audio](/docs/api/audio). This guide maps the internal subsystem, the
 locked/unlocked gesture state, and the web platform constraints that shape it.
+
+<ApiAvailability page="guides/audio" />
 
 ## Subsystem layout
 
@@ -198,6 +200,8 @@ const restored = JSON.parse(serialized) as SynthParams;
 
 const explosion = await AudioClip.synth(restored);
 ```
+
+<PageChangelog page="guides/audio" />
 
 ## See also
 

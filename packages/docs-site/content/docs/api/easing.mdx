@@ -3,11 +3,16 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Easing"
 description: "Named easing curves for palette fade effects via applyEasing."
-lastModified: "2026-07-02T18:37:16+02:00"
+lastModified: "2026-07-07T08:33:01+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-easing.md"
 ---
 
 Palette fade effects accept an `EasingFunction`. Use `applyEasing` to evaluate named curves:
+
+<ApiAvailability page="api/easing" />
+
+<Since symbol="EasingFunction" />
+<Since symbol="applyEasing" />
 
 ```ts twoslash
 import { applyEasing } from 'blit386';
@@ -16,6 +21,8 @@ const t = applyEasing('ease-in-out', 0.5); // 0..1 progress → eased value
 ```
 
 <DemoEmbed demo="020-palette-fade" title="BLIT386 palette fade and flash demo" />
+
+<PageChangelog page="api/easing" />
 
 ## See also
 
