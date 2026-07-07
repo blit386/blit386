@@ -15,6 +15,8 @@ Palette setup, built-in presets, HUD preset, serialization, and palette effects.
 The palette is the single color authority for all rendering. Index `0` is always transparent and is never drawn. Set an
 active palette with `BT.paletteSet()` before any draw calls. Valid sizes: `2, 4, 16, 32, 64, 128, 256`.
 
+<ApiAvailability page="api/palette" />
+
 ## Palette addressing
 
 A palette is a fixed-size table of color slots (positions `0` through `size - 1`). Docs and APIs use three related
@@ -75,6 +77,11 @@ after a layout swap when colors moved to different slot numbers (then also call 
 [Palette Guide](guide-palette.md) section 6.
 
 ## Palette setup
+
+<Since symbol="Palette" />
+<Since symbol="BT.paletteCreate" />
+<Since symbol="BT.paletteSet" />
+<Since symbol="BT.palette" />
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';
@@ -186,6 +193,13 @@ const slot = palette.findColor(color); // → index, or -1 if not found
 
 ## Palette effects
 
+<Since symbol="BT.paletteCycle" />
+<Since symbol="BT.paletteFade" />
+<Since symbol="BT.paletteFadeRange" />
+<Since symbol="BT.paletteFlash" />
+<Since symbol="BT.paletteSwap" />
+<Since symbol="BT.paletteClearEffects" />
+
 Animated effects run automatically each frame in the engine's end-of-frame pass (after `demo.render()`, before the GPU
 upload). Multiple effects can run simultaneously on different palette ranges and will not conflict. The public
 `Palette.isDirty` getter reflects whether slots changed since the last GPU upload – effects set this flag; no polling
@@ -251,6 +265,8 @@ Effects that auto-remove (fade, flash) clean up when their duration elapses. `pa
 `paletteClearEffects()` is called.
 
 </Callout>
+
+<PageChangelog page="api/palette" />
 
 ## See also
 

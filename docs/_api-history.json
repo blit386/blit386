@@ -1265,6 +1265,12 @@
     }
   },
   "pages": {
+    "api/assets": [
+      "AssetLoader",
+      "BitmapFont",
+      "IndexedSpriteLoadResult",
+      "SpriteSheet"
+    ],
     "api/camera": [
       "BT.camera",
       "BT.cameraClamp",
@@ -1309,6 +1315,18 @@
       "OverlayRow",
       "OverlayStyle",
       "OverlayTimingChartStyle"
+    ],
+    "api/palette": [
+      "BT.palette",
+      "BT.paletteClearEffects",
+      "BT.paletteCreate",
+      "BT.paletteCycle",
+      "BT.paletteFade",
+      "BT.paletteFadeRange",
+      "BT.paletteFlash",
+      "BT.paletteSet",
+      "BT.paletteSwap",
+      "Palette"
     ],
     "api/rendering": [
       "BT.FLIP_H",
