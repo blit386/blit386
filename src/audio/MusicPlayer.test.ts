@@ -206,6 +206,25 @@ describe('MusicPlayer', () => {
 
             expect(context2.createBufferSourceCalls).toHaveLength(0);
         });
+
+        it('leaves an already-playing track untouched when a later play() call fails loop validation', () => {
+            const { player, context } = createPlayer();
+            const invalidBuffer = createMockAudioBuffer(1, 10, 10);
+
+            player.play(createMockAudioBuffer());
+
+            expect(() => player.play(invalidBuffer, { loopStart: 5, loopEnd: 1 })).toThrow();
+
+            // Validation runs before any promotion/teardown, so the already-playing track from
+            // the first play() call is still the current voice - never demoted to previous, never
+            // stopped.
+            expect(player.isPlaying()).toBe(true);
+
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+
+            expect(context2.createBufferSourceCalls).toHaveLength(1);
+            expect(asMockSource(context2.createBufferSourceCalls[0] as AudioBufferSourceNode).stopCalls).toEqual([]);
+        });
     });
 
     describe('play - fade-in', () => {
@@ -265,17 +284,32 @@ describe('MusicPlayer', () => {
             expect(asMockSource(firstSource).stopCalls).toEqual([10.4]);
         });
 
-        it('overlap 1 starts the fade-in at the same time as the fade-out (simultaneous)', () => {
+        it('overlap 1 fades both voices simultaneously - gain ramps and source timings all anchor to now', () => {
             const { player, context } = createPlayer();
 
             setMockCurrentTime(context, 10);
             player.play(createMockAudioBuffer(), { fadeMs: 0 });
 
+            const context2 = context as unknown as {
+                createGainCalls: GainNode[];
+                createBufferSourceCalls: AudioBufferSourceNode[];
+            };
+            const firstGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
+            const firstSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+
             player.play(createMockAudioBuffer(), { fadeMs: 400, overlap: 1 });
 
-            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const secondGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
             const secondSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
 
+            // Outgoing voice fades to silence starting at now (10), ending at now + fadeMs (10.4).
+            expect(firstGain.gain.setValueAtTimeCalls).toEqual([{ value: 1, startTime: 10 }]);
+            expect(firstGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 0, endTime: 10.4 }]);
+            expect(asMockSource(firstSource).stopCalls).toEqual([10.4]);
+
+            // Incoming voice fades in over the exact same window since overlap 1 is simultaneous.
+            expect(secondGain.gain.setValueAtTimeCalls).toEqual([{ value: 0, startTime: 10 }]);
+            expect(secondGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 1, endTime: 10.4 }]);
             expect(asMockSource(secondSource).startCalls).toEqual([{ when: 10 }]);
         });
 
@@ -285,11 +319,25 @@ describe('MusicPlayer', () => {
             setMockCurrentTime(context, 10);
             player.play(createMockAudioBuffer(), { fadeMs: 0 });
 
+            const context2 = context as unknown as {
+                createGainCalls: GainNode[];
+                createBufferSourceCalls: AudioBufferSourceNode[];
+            };
+            const firstGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
+            const firstSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+
             player.play(createMockAudioBuffer(), { fadeMs: 400, overlap: 0 });
 
-            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const secondGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
             const secondSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
 
+            expect(firstGain.gain.setValueAtTimeCalls).toEqual([{ value: 1, startTime: 10 }]);
+            expect(firstGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 0, endTime: 10.4 }]);
+            expect(asMockSource(firstSource).stopCalls).toEqual([10.4]);
+
+            // Incoming voice starts fading in exactly when the outgoing voice finishes (10.4).
+            expect(secondGain.gain.setValueAtTimeCalls).toEqual([{ value: 0, startTime: 10.4 }]);
+            expect(secondGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 1, endTime: 10.8 }]);
             expect(asMockSource(secondSource).startCalls).toEqual([{ when: 10.4 }]);
         });
 
@@ -299,11 +347,27 @@ describe('MusicPlayer', () => {
             setMockCurrentTime(context, 10);
             player.play(createMockAudioBuffer(), { fadeMs: 0 });
 
+            const context2 = context as unknown as {
+                createGainCalls: GainNode[];
+                createBufferSourceCalls: AudioBufferSourceNode[];
+            };
+            const firstGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
+            const firstSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+
             player.play(createMockAudioBuffer(), { fadeMs: 400, overlap: -1 });
 
-            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const secondGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
             const secondSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
 
+            expect(firstGain.gain.setValueAtTimeCalls).toEqual([{ value: 1, startTime: 10 }]);
+            expect(firstGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 0, endTime: 10.4 }]);
+            expect(asMockSource(firstSource).stopCalls).toEqual([10.4]);
+
+            // Incoming voice waits a full extra fadeMs (400ms) of silence after the fade-out ends.
+            expect(secondGain.gain.setValueAtTimeCalls).toEqual([{ value: 0, startTime: 10.8 }]);
+            expect(secondGain.gain.linearRampToValueAtTimeCalls).toHaveLength(1);
+            expect(secondGain.gain.linearRampToValueAtTimeCalls[0]?.value).toBe(1);
+            expect(secondGain.gain.linearRampToValueAtTimeCalls[0]?.endTime).toBeCloseTo(11.2, 10);
             expect(asMockSource(secondSource).startCalls).toEqual([{ when: 10.8 }]);
         });
 
@@ -313,11 +377,25 @@ describe('MusicPlayer', () => {
             setMockCurrentTime(context, 0);
             player.play(createMockAudioBuffer(), { fadeMs: 0 });
 
+            const context2 = context as unknown as {
+                createGainCalls: GainNode[];
+                createBufferSourceCalls: AudioBufferSourceNode[];
+            };
+            const firstGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
+            const firstSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+
             player.play(createMockAudioBuffer(), { fadeMs: 1000, overlap: 0.5 });
 
-            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const secondGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
             const secondSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
 
+            // fadeSeconds*(1 - overlap) = 1 * 0.5 = 0.5s offset, halfway between simultaneous and sequential.
+            expect(firstGain.gain.setValueAtTimeCalls).toEqual([{ value: 1, startTime: 0 }]);
+            expect(firstGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 0, endTime: 1 }]);
+            expect(asMockSource(firstSource).stopCalls).toEqual([1]);
+
+            expect(secondGain.gain.setValueAtTimeCalls).toEqual([{ value: 0, startTime: 0.5 }]);
+            expect(secondGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 1, endTime: 1.5 }]);
             expect(asMockSource(secondSource).startCalls).toEqual([{ when: 0.5 }]);
         });
 
@@ -401,6 +479,33 @@ describe('MusicPlayer', () => {
 
             expect(context2.createBufferSourceCalls).toHaveLength(3);
             expect(player.isPlaying()).toBe(true);
+        });
+
+        it('driving the force-stopped voice to completion via onended leaves the current voice untouched', () => {
+            const { player, context } = createPlayer();
+
+            player.play(createMockAudioBuffer(), { fadeMs: 0 });
+
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const firstSource = context2.createBufferSourceCalls.at(0) as AudioBufferSourceNode;
+
+            player.play(createMockAudioBuffer(), { fadeMs: 1000 }); // first -> previous, mid-fade
+            player.play(createMockAudioBuffer(), { fadeMs: 0 }); // force-stops firstSource (stale previous)
+
+            const thirdSource = context2.createBufferSourceCalls.at(2) as AudioBufferSourceNode;
+
+            // The browser eventually fires onended for the force-stopped source; the generation
+            // guard (object identity here) must recognize it no longer belongs to any tracked
+            // voice and no-op instead of clearing the live current voice.
+            (asMockSource(firstSource).onended as () => void)();
+
+            expect(player.isPlaying()).toBe(true);
+
+            // The still-live current voice (from the third play() call) is unaffected and can
+            // still be driven to its own natural completion afterward.
+            (asMockSource(thirdSource).onended as () => void)();
+
+            expect(player.isPlaying()).toBe(false);
         });
     });
 
@@ -522,9 +627,10 @@ describe('MusicPlayer', () => {
             expect(gain.gain.value).toBe(0.25);
         });
 
-        it('volumeSet ramps the current voice gain over fadeMs', () => {
+        it('volumeSet ramps the current voice gain over fadeMs, anchored to the current audio-clock time', () => {
             const { player, context } = createPlayer();
 
+            setMockCurrentTime(context, 4);
             player.play(createMockAudioBuffer());
 
             const context2 = context as unknown as { createGainCalls: GainNode[] };
@@ -532,7 +638,8 @@ describe('MusicPlayer', () => {
 
             player.volumeSet(0.2, 100);
 
-            expect(gain.gain.linearRampToValueAtTimeCalls).toHaveLength(1);
+            expect(gain.gain.setValueAtTimeCalls).toEqual([{ value: 1, startTime: 4 }]);
+            expect(gain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 0.2, endTime: 4.1 }]);
         });
 
         it('volumeSet before any play() does not throw and still updates volumeGet', () => {

@@ -476,6 +476,14 @@ describe('AudioManager', () => {
 
             expect(audio.isMusicPlaying()).toBe(false);
             expect(audio.hasRememberedMusicRequest()).toBe(true);
+
+            // No voice was actually started - the request is only remembered, never dropped
+            // silently like a pre-unlock playSound() call, but also not started early.
+            const context = getMockContext();
+
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                0,
+            );
         });
 
         it('only the latest pending request survives multiple musicPlay calls while locked', async () => {
@@ -485,6 +493,12 @@ describe('AudioManager', () => {
             audio.musicPlay(createMockAudioBuffer());
 
             const context = getMockContext();
+
+            // Still locked - neither call started a voice yet, only the second overwrote the
+            // first as the remembered pending request.
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                0,
+            );
 
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
@@ -519,6 +533,8 @@ describe('AudioManager', () => {
 
             expect(audio.isMusicPlaying()).toBe(false);
 
+            const context = getMockContext();
+
             canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
             await vi.waitFor(() => {
@@ -527,6 +543,17 @@ describe('AudioManager', () => {
 
             expect(audio.isMusicPlaying()).toBe(true);
             expect(audio.hasRememberedMusicRequest()).toBe(false);
+
+            // The remembered request actually started a live voice, not just flipped the flag.
+            const sources = (context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] })
+                .createBufferSourceCalls;
+
+            expect(sources).toHaveLength(1);
+            expect((sources[0] as unknown as { startCalls: unknown[] }).startCalls).toHaveLength(1);
+
+            // The stored {buffer, options} payload is cleared alongside the boolean flag, so a
+            // later unlock attempt (see the test below) can never find a stale request to replay.
+            expect((audio as unknown as { pendingMusicRequest: unknown }).pendingMusicRequest).toBeNull();
         });
 
         it('does not replay a stale remembered request on a later unlock attempt', async () => {
