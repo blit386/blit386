@@ -223,4 +223,20 @@ describe('initWebGPU', () => {
         expect(canvas.width).toBe(640);
         expect(canvas.height).toBe(480);
     });
+
+    it('should configure the canvas context with COPY_SRC usage so captureFrame can read back the swap-chain texture', async () => {
+        installMockNavigatorGPU();
+
+        const configure = vi.fn();
+        const gpuContext = { ...createMockGPUCanvasContext(), configure };
+        const canvas = createMockCanvas(gpuContext);
+
+        await initWebGPU(canvas, displaySize);
+
+        expect(configure).toHaveBeenCalledWith(
+            expect.objectContaining({
+                usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+            }),
+        );
+    });
 });
