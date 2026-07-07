@@ -82,6 +82,9 @@ pnpm-debug.log*
 tmp/
 temp/
 
+# Superpowers skill scratch (task briefs, review diffs, progress ledger)
+.superpowers/
+
 # Local security run reports (MCP preflight / governance)
 security-reports/
 
