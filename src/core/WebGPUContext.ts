@@ -133,6 +133,13 @@ export async function initWebGPU(
         device,
         format: canvasFormat,
         alphaMode: 'premultiplied',
+
+        // COPY_SRC is required alongside the default RENDER_ATTACHMENT so FrameCapture can
+        // copy the swap-chain texture straight to a staging buffer (see WebGPURenderer.submitFrame).
+        // Without it, copyTextureToBuffer on the current texture is a WebGPU validation error;
+        // implementations that drop the invalid copy leave the staging buffer zero-filled,
+        // which BT.captureFrame/downloadFrame then encodes as a fully transparent PNG.
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
     });
 
     console.log('[BT] WebGPU initialized successfully');
