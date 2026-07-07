@@ -467,4 +467,216 @@ describe('AudioManager', () => {
             expect(audio.isSoundPlaying(ref)).toBe(false);
         });
     });
+
+    describe('music playback', () => {
+        it('drops nothing but remembers the request when locked: musicPlay before unlock', () => {
+            audio.attach(canvas);
+
+            audio.musicPlay(createMockAudioBuffer());
+
+            expect(audio.isMusicPlaying()).toBe(false);
+            expect(audio.hasRememberedMusicRequest()).toBe(true);
+
+            // No voice was actually started - the request is only remembered, never dropped
+            // silently like a pre-unlock playSound() call, but also not started early.
+            const context = getMockContext();
+
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                0,
+            );
+        });
+
+        it('only the latest pending request survives multiple musicPlay calls while locked', async () => {
+            audio.attach(canvas);
+
+            const firstBuffer = createMockAudioBuffer();
+            const secondBuffer = createMockAudioBuffer();
+
+            audio.musicPlay(firstBuffer);
+            audio.musicPlay(secondBuffer);
+
+            const context = getMockContext();
+
+            // Still locked - neither call started a voice yet, only the second overwrote the
+            // first as the remembered pending request.
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                0,
+            );
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const sources = (context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] })
+                .createBufferSourceCalls;
+
+            // Exactly one voice started, and it must be the second (latest) request's buffer -
+            // proving "latest wins" concretely instead of only inferring it from a call count.
+            expect(sources).toHaveLength(1);
+            expect(sources[0]?.buffer).toBe(secondBuffer);
+            expect(sources[0]?.buffer).not.toBe(firstBuffer);
+        });
+
+        it('starts playback immediately once unlocked', async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            audio.musicPlay(createMockAudioBuffer());
+
+            expect(audio.isMusicPlaying()).toBe(true);
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+        });
+
+        it('starts the remembered request and clears it once the context unlocks', async () => {
+            audio.attach(canvas);
+
+            audio.musicPlay(createMockAudioBuffer(), { volume: 0.5 });
+
+            expect(audio.isMusicPlaying()).toBe(false);
+
+            const context = getMockContext();
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            expect(audio.isMusicPlaying()).toBe(true);
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+
+            // The remembered request actually started a live voice, not just flipped the flag.
+            const sources = (context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] })
+                .createBufferSourceCalls;
+
+            expect(sources).toHaveLength(1);
+            expect((sources[0] as unknown as { startCalls: unknown[] }).startCalls).toHaveLength(1);
+
+            // The stored {buffer, options} payload is cleared alongside the boolean flag, so a
+            // later unlock attempt (see the test below) can never find a stale request to replay.
+            expect((audio as unknown as { pendingMusicRequest: unknown }).pendingMusicRequest).toBeNull();
+        });
+
+        it('clears the remembered request and logs distinctly even if starting it throws', async () => {
+            audio.attach(canvas);
+
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            // Invalid loopStart/loopEnd pair - MusicPlayer.play() validates and throws
+            // synchronously, which must not be mistaken for a context.resume() failure.
+            audio.musicPlay(createMockAudioBuffer(), { loopStart: 5, loopEnd: 1 });
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            expect(audio.hasRememberedMusicRequest()).toBe(false);
+            expect((audio as unknown as { pendingMusicRequest: unknown }).pendingMusicRequest).toBeNull();
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                '[BT] Failed to start the remembered music request',
+                expect.any(Error),
+            );
+            expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+                '[BT] Failed to resume the audio context',
+                expect.anything(),
+            );
+
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('does not replay a stale remembered request on a later unlock attempt', async () => {
+            audio.attach(canvas);
+
+            // Queue a request while locked, then unlock - this replays it exactly once.
+            audio.musicPlay(createMockAudioBuffer());
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const context = getMockContext();
+
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                1,
+            );
+
+            // A later gesture must not find a stale remembered request to replay - the source
+            // count stays at 1, not 2.
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            expect((context as unknown as { createBufferSourceCalls: unknown[] }).createBufferSourceCalls).toHaveLength(
+                1,
+            );
+        });
+
+        describe('controls once unlocked', () => {
+            beforeEach(async () => {
+                audio.attach(canvas);
+
+                canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+                await vi.waitFor(() => {
+                    expect(audio.isUnlocked()).toBe(true);
+                });
+            });
+
+            it('musicStop stops playback', () => {
+                audio.musicPlay(createMockAudioBuffer());
+
+                audio.musicStop();
+
+                expect(audio.isMusicPlaying()).toBe(false);
+            });
+
+            it('musicStop accepts an optional fadeMs without throwing', () => {
+                audio.musicPlay(createMockAudioBuffer());
+
+                expect(() => audio.musicStop(500)).not.toThrow();
+            });
+
+            it('musicVolumeSet and musicVolumeGet round-trip', () => {
+                audio.musicPlay(createMockAudioBuffer());
+
+                audio.musicVolumeSet(0.4);
+
+                expect(audio.musicVolumeGet()).toBe(0.4);
+            });
+        });
+
+        it('every accessor reports inert defaults on a manager that was never attached', () => {
+            const detachedAudio = new AudioManager();
+
+            expect(detachedAudio.isMusicPlaying()).toBe(false);
+            expect(detachedAudio.musicVolumeGet()).toBe(1);
+            expect(() => detachedAudio.musicPlay(createMockAudioBuffer())).not.toThrow();
+            expect(() => detachedAudio.musicStop()).not.toThrow();
+            expect(() => detachedAudio.musicVolumeSet(0.5)).not.toThrow();
+        });
+
+        it('detach stops music playback', async () => {
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            audio.musicPlay(createMockAudioBuffer());
+            audio.detach();
+
+            expect(audio.isMusicPlaying()).toBe(false);
+        });
+    });
 });

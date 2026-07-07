@@ -712,3 +712,28 @@ export function audioClipSynthPitchSweepFrequencyError(toFrequency: number): str
         'Set pitchSweep.toFrequency to a positive number.'
     );
 }
+
+/**
+ * Returns the error message for an invalid `loopStart`/`loopEnd` pair passed to
+ * `BT.musicPlay`.
+ *
+ * Covers both failure shapes: only one of the pair given, or a pair that fails
+ * `0 <= loopStart < loopEnd <= duration`. `loopStart`/`loopEnd` are `undefined` when missing
+ * entirely, so the message still shows the caller exactly what was supplied.
+ *
+ * @param loopStart - Supplied loop region start in seconds, or `undefined` if omitted.
+ * @param loopEnd - Supplied loop region end in seconds, or `undefined` if omitted.
+ * @param duration - Duration in seconds of the buffer being played.
+ * @returns User-facing error string.
+ */
+export function musicLoopRangeError(
+    loopStart: number | undefined,
+    loopEnd: number | undefined,
+    duration: number,
+): string {
+    return (
+        `BT.musicPlay() got an invalid loop region (loopStart=${loopStart}, loopEnd=${loopEnd}) for a ${duration}s track. ` +
+        'Provide both loopStart and loopEnd together, with 0 <= loopStart < loopEnd <= the track duration, ' +
+        'or omit both and use loop instead'
+    );
+}

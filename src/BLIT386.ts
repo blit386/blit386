@@ -26,6 +26,7 @@ import type {
     SynthWaveform,
 } from './assets/synth/SynthParams';
 import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
+import type { MusicPlayOptions } from './audio/MusicPlayer';
 import type { SoundParamSetOptions, SoundPlayOptions, SoundRef, SoundStopOptions } from './audio/VoicePool';
 import { BTAPI } from './core/BTAPI';
 import {
@@ -870,6 +871,67 @@ export const BT = {
      */
     soundPanGet: (ref: SoundRef): number => {
         return BTAPI.instance.soundPanGet(ref);
+    },
+
+    /**
+     * Plays a loaded audio clip through the music player, crossfading out whatever is currently
+     * playing.
+     *
+     * Silently does nothing when the clip hasn't finished loading yet (or was already unloaded
+     * with `clip.unload()`), or before the engine has initialized. While the audio context is
+     * still locked (before the first unlock gesture), the request is remembered instead of
+     * dropped - it starts automatically the instant the context unlocks, unlike {@link BT.soundPlay}.
+     *
+     * @since 1.3.0
+     * @param clip - Loaded audio clip to play.
+     * @param options - Crossfade, volume, and loop options; see {@link MusicPlayOptions}.
+     */
+    musicPlay: (clip: AudioClip, options?: MusicPlayOptions): void => {
+        BTAPI.instance.musicPlay(clip, options);
+    },
+
+    /**
+     * Stops the music player, optionally fading out first.
+     *
+     * @since 1.3.0
+     * @param options - Optional fade behavior.
+     * @param options.fadeMs - Fade-out duration in milliseconds. Omit to stop immediately.
+     */
+    musicStop: (options?: { fadeMs?: number }): void => {
+        BTAPI.instance.musicStop(options?.fadeMs);
+    },
+
+    /**
+     * Whether music is currently playing.
+     *
+     * @since 1.3.0
+     * @returns `true` when the music player has a live current track; `false` when stopped or
+     *   not yet started.
+     */
+    get isMusicPlaying(): boolean {
+        return BTAPI.instance.isMusicPlaying();
+    },
+
+    /**
+     * Sets the music player's volume, optionally fading to it.
+     *
+     * @since 1.3.0
+     * @param value - Target gain.
+     * @param options - Optional fade behavior.
+     * @param options.fadeMs - Fade duration in milliseconds. Omit for an immediate change.
+     */
+    musicVolumeSet: (value: number, options?: { fadeMs?: number }): void => {
+        BTAPI.instance.musicVolumeSet(value, options?.fadeMs);
+    },
+
+    /**
+     * Gets the music player's current target volume.
+     *
+     * @since 1.3.0
+     * @returns Current target gain, or `1` before initialization.
+     */
+    musicVolumeGet: (): number => {
+        return BTAPI.instance.musicVolumeGet();
     },
 
     /**
@@ -2030,6 +2092,7 @@ export type {
     EffectTier,
     HardwareSettings,
     IBTDemo,
+    MusicPlayOptions,
     OverlayRow,
     OverlayStyle,
     OverlayTimingChartStyle,

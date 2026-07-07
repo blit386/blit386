@@ -257,6 +257,107 @@ describe('sound playback passthroughs', () => {
     });
 });
 
+describe('music playback passthroughs', () => {
+    beforeEach(() => {
+        resetSingleton();
+    });
+
+    afterEach(() => {
+        resetSingleton();
+    });
+
+    function setAudio(audio: AudioManager | null): void {
+        // Same test-isolation technique as the "sound playback passthroughs" block above - see
+        // its comment for why this cast is safe here.
+        (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
+    }
+
+    it('musicPlay is a no-op when the audio subsystem is not initialized', () => {
+        const clip = { buffer: createMockAudioBuffer() } as unknown as AudioClip;
+
+        expect(() => BTAPI.instance.musicPlay(clip)).not.toThrow();
+    });
+
+    it('musicPlay is a no-op when the clip buffer is null', () => {
+        const audio = new AudioManager();
+        const spy = vi.spyOn(audio, 'musicPlay').mockReturnValue(undefined);
+
+        setAudio(audio);
+
+        const clip = { buffer: null } as unknown as AudioClip;
+
+        BTAPI.instance.musicPlay(clip);
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('musicPlay delegates to AudioManager.musicPlay with the clip buffer', () => {
+        const audio = new AudioManager();
+        const buffer = createMockAudioBuffer();
+        const spy = vi.spyOn(audio, 'musicPlay').mockReturnValue(undefined);
+
+        setAudio(audio);
+
+        const clip = { buffer } as unknown as AudioClip;
+
+        BTAPI.instance.musicPlay(clip, { volume: 0.5 });
+
+        expect(spy).toHaveBeenCalledWith(buffer, { volume: 0.5 });
+    });
+
+    it('musicStop delegates to AudioManager.musicStop', () => {
+        const audio = new AudioManager();
+        const spy = vi.spyOn(audio, 'musicStop').mockReturnValue(undefined);
+
+        setAudio(audio);
+        BTAPI.instance.musicStop(200);
+
+        expect(spy).toHaveBeenCalledWith(200);
+    });
+
+    it('musicStop is a no-op when the audio subsystem is not initialized', () => {
+        expect(() => BTAPI.instance.musicStop()).not.toThrow();
+    });
+
+    it('isMusicPlaying delegates to AudioManager.isMusicPlaying', () => {
+        const audio = new AudioManager();
+        const spy = vi.spyOn(audio, 'isMusicPlaying').mockReturnValue(true);
+
+        setAudio(audio);
+
+        expect(BTAPI.instance.isMusicPlaying()).toBe(true);
+        expect(spy).toHaveBeenCalledWith();
+    });
+
+    it('isMusicPlaying returns false when the audio subsystem is not initialized', () => {
+        expect(BTAPI.instance.isMusicPlaying()).toBe(false);
+    });
+
+    it('musicVolumeSet delegates to AudioManager.musicVolumeSet', () => {
+        const audio = new AudioManager();
+        const spy = vi.spyOn(audio, 'musicVolumeSet').mockReturnValue(undefined);
+
+        setAudio(audio);
+        BTAPI.instance.musicVolumeSet(0.4, 100);
+
+        expect(spy).toHaveBeenCalledWith(0.4, 100);
+    });
+
+    it('musicVolumeGet delegates to AudioManager.musicVolumeGet', () => {
+        const audio = new AudioManager();
+        const spy = vi.spyOn(audio, 'musicVolumeGet').mockReturnValue(0.75);
+
+        setAudio(audio);
+
+        expect(BTAPI.instance.musicVolumeGet()).toBe(0.75);
+        expect(spy).toHaveBeenCalledWith();
+    });
+
+    it('musicVolumeGet returns 1 when the audio subsystem is not initialized', () => {
+        expect(BTAPI.instance.musicVolumeGet()).toBe(1);
+    });
+});
+
 describe('BTAPI', () => {
     beforeEach(() => {
         resetSingleton();

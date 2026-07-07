@@ -12,6 +12,7 @@ import {
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import { createSystemFont } from '../assets/SystemFont';
 import { AudioManager } from '../audio/AudioManager';
+import type { MusicPlayOptions } from '../audio/MusicPlayer';
 import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef } from '../audio/VoicePool';
 import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
@@ -658,6 +659,62 @@ export class BTAPI {
      */
     public soundPanGet(ref: SoundRef): number {
         return this.audio?.soundPanGet(ref) ?? 0;
+    }
+
+    /**
+     * Plays a loaded audio clip through the music player, crossfading out whatever is currently
+     * playing.
+     *
+     * No-ops when the clip's buffer isn't available (not finished loading yet, or already
+     * unloaded), mirroring {@link soundPlay}, or when the audio subsystem is not initialized.
+     *
+     * @param clip - Loaded audio clip to play.
+     * @param options - Playback options; see {@link MusicPlayOptions}.
+     */
+    public musicPlay(clip: AudioClip, options?: MusicPlayOptions): void {
+        if (clip.buffer === null) {
+            return;
+        }
+
+        this.audio?.musicPlay(clip.buffer, options);
+    }
+
+    /**
+     * Stops the music player, optionally fading out first.
+     *
+     * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
+     */
+    public musicStop(fadeMs?: number): void {
+        this.audio?.musicStop(fadeMs);
+    }
+
+    /**
+     * Reports whether music is currently playing.
+     *
+     * @returns `true` when the music player has a live current track; `false` when stopped, not
+     *   yet started, or when the audio subsystem is not initialized.
+     */
+    public isMusicPlaying(): boolean {
+        return this.audio?.isMusicPlaying() ?? false;
+    }
+
+    /**
+     * Sets the music player's volume, optionally fading to it.
+     *
+     * @param value - Target gain.
+     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     */
+    public musicVolumeSet(value: number, fadeMs?: number): void {
+        this.audio?.musicVolumeSet(value, fadeMs);
+    }
+
+    /**
+     * Gets the music player's current target volume.
+     *
+     * @returns Current target gain, or `1` when the audio subsystem is not initialized.
+     */
+    public musicVolumeGet(): number {
+        return this.audio?.musicVolumeGet() ?? 1;
     }
 
     /**

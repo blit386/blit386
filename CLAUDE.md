@@ -50,6 +50,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How do users start a new project with the engine?                 | `npm create blit386@latest` – the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below                                                                                                                        |
 | How do I load an audio clip?                                      | `src/assets/AudioClip.ts`, `docs/api-audio.md` (Loading section), `docs/guide-audio.md` (Preloading audio clips)                                                                                                                                        |
 | How does the SFX voice pool allocate/steal voices?                | `src/audio/VoicePool.ts`; exposed via `BT.soundPlay` and friends (`docs/api-audio.md`, Playback (SFX) section)                                                                                                                                          |
+| How does music playback crossfade and loop?                       | `src/audio/MusicPlayer.ts`; exposed via `BT.musicPlay` and friends (`docs/api-audio.md`, Playback (Music) section)                                                                                                                                      |
 | How do I synthesize a sound procedurally (no source file)?        | `AudioClip.synth` in `src/assets/AudioClip.ts`; render/validation math in `src/assets/synth/` (`SynthParams.ts`, `synthEnvelope.ts`, `synthPitch.ts`, `synthWaveforms.ts`, `synthRender.ts`, `synthValidation.ts`); `docs/api-audio.md` (Synth section) |
 | Is there a built-in sound preset library (jump, explosion, etc.)? | `src/assets/synth/synthPresets.ts`, exposed publicly as `BT.synthPreset.{jump,pickup,explosion,laser,hit,blip}`; `docs/api-audio.md` (Presets section), `docs/guide-audio.md` (Design a sound)                                                          |
 
@@ -276,9 +277,10 @@ src/
     GamepadInput.ts        # Polling-based gamepad input tracker (4 players, axes, buttons, dead zone)
     defaultKeyboardMap.ts  # Default face-button key tables; clone helpers for BT.inputMapReset
   audio/
-    AudioManager.ts        # Web Audio context, bus graph (sfx/music -> main -> destination), unlock state, mute/volume, SFX playback
+    AudioManager.ts        # Web Audio context, bus graph (sfx/music -> main -> destination), unlock state, mute/volume, SFX + music playback
     audioDecodeContext.ts  # Module-scoped decode-context registry + AudioClip unload seam (wired to VoicePool)
     VoicePool.ts            # Fixed-size SFX voice pool: allocation/stealing, generational SoundRef handles, per-voice fades
+    MusicPlayer.ts          # Crossfading music player: current/previous voice pair, fadeMs/overlap timing, loop points
   utils/
     Bootstrap.ts           # Demo bootstrap utilities
     BootstrapHelpers.ts    # Canvas lookup and error display utilities
@@ -373,7 +375,8 @@ Full table in `docs/api-core.md` and `.claude/rules/bt-api-getters.md`. The cate
   `null` before init).
 - Loop timing: `deltaSeconds`, `timeSeconds`, `ticks`.
 - Runtime state: `activeBackend` (what actually started after fallback; `null` before init or on failure), `camera`,
-  `palette` (live reference), `isAudioUnlocked` (`false` until the first user gesture resumes the audio context).
+  `palette` (live reference), `isAudioUnlocked` (`false` until the first user gesture resumes the audio context),
+  `isMusicPlaying` (`true` while the music player has a live current track).
 - Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount` (read once per frame).
 
 Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBackend === 'software')`.
@@ -389,7 +392,8 @@ Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBac
 - Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`,
   `soundPlay(clip, options?)`, `soundStop(ref, options?)`, `isSoundPlaying(ref)`,
   `soundVolumeSet(ref, value, options?)`, `soundVolumeGet(ref)`, `soundPitchSet(ref, value, options?)`,
-  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`; procedural synthesis via
+  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`, `musicPlay(clip, options?)`,
+  `musicStop(options?)`, `musicVolumeSet(value, options?)`, `musicVolumeGet()`; procedural synthesis via
   `AudioClip.synth(params)` (not a `BT` method); preset namespace `BT.synthPreset` (`jump`, `pickup`, `explosion`,
   `laser`, `hit`, `blip`).
 - Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
