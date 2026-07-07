@@ -4,6 +4,14 @@ Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
 
 - Documentation is part of the implementation, not a follow-up task.
 - Public API changes: update relevant `docs/api-*.md` and related examples.
+- Adding a public export, a new `BT` member, or a `HardwareSettings`/config type; changing an existing public symbol's
+  signature or behavior; or deprecating a public symbol: follow `docs/documentation-and-versioning-guide.md`. Add
+  `@since <version>` / `@changed <version> <note>` / `@deprecated Deprecated since <version> (<date>). ...` JSDoc tags
+  at the symbol's original declaration (not the re-export line), then run `pnpm run api:history` to regenerate
+  `docs/_api-history.json` (never hand-edit it – commit the regenerated file). Add or update the `<Since symbol="...">`,
+  `<ApiAvailability page="...">`, and `<PageChangelog page="...">` MDX components on the symbol's one documentation home
+  (the page with real explanatory prose – see the guide's Step 3 for how to pick it). `pnpm run preflight` already runs
+  `api:since:check` and `api:history:check`, so a missing or malformed tag fails preflight before docs work even starts.
 - Runtime behavior changes: update affected guides under `docs/` (including `docs/guide-overlay.md` for overlay
   changes).
 - Adding/removing/renaming a public `docs/*.md` page (one that should appear on blit386.dev): update
