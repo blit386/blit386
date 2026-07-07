@@ -1265,10 +1265,41 @@
     }
   },
   "pages": {
+    "api/camera": [
+      "BT.camera",
+      "BT.cameraClamp",
+      "BT.cameraReset",
+      "BT.cameraSet",
+      "clampCameraToWorld"
+    ],
     "api/core-types": [
       "Color32",
       "Rect2i",
       "Vector2i"
+    ],
+    "api/core": [
+      "BT.activeBackend",
+      "BT.displaySize",
+      "BT.drawingBufferSize",
+      "BT.init",
+      "BT.outputSize",
+      "BT.requestedBackend",
+      "BT.targetFPS",
+      "BootstrapOptions",
+      "HardwareSettings",
+      "bootstrap",
+      "defaultConfig",
+      "displayError",
+      "getCanvas",
+      "mergeHardwareSettings"
+    ],
+    "api/game-loop": [
+      "BT.assignTag",
+      "BT.deltaSeconds",
+      "BT.ticks",
+      "BT.ticksReset",
+      "BT.timeSeconds",
+      "Timer"
     ]
   }
 }
