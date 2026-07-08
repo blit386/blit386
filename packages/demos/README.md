@@ -85,7 +85,7 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 - [013-image-output](https://demos.blit386.dev/013-image-output) – Frame capture and PNG export
 - [014-game-scene](https://demos.blit386.dev/014-game-scene) – Capstone: tilemap ground, patterns, sprites, camera,
-  animation, and frame capture in one scene
+  animation, frame capture, and looping background music with a real intro/loop point in one scene
 
 ### Input
 

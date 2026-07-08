@@ -25,6 +25,8 @@
 //   - Moving rock hero = sprites (008) and timing (009).
 //   - Sparkles near the rock = small fading squares, like the particles in animation (009).
 //   - Day and night = palette-based ambient lighting (010); the world dims at night.
+//   - Background music with a real intro-then-loop point (037), plus a chime on every
+//     day/night phase change and a blip on a successful PNG capture.
 //   - Score, rock position, and day phase = engine overlay rows (004 + built-in FPS bar).
 //   - Press Space to save a PNG snapshot (013). On-screen legend explains the mix.
 //
@@ -45,7 +47,7 @@
 //
 // Think of it as updating the paint cans before the painter starts working.
 
-import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
+import { applyEasing, AudioClip, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -93,6 +95,11 @@ const DAY_NIGHT_CYCLE_TICKS = 1200;
 
 // Camera smooth factor: each tick we step 14% closer to the target.
 const CAMERA_LERP = 0.14;
+
+// These two numbers come straight out of public/audio/music-intro-loop.loop.json, generated
+// by scripts/generate-audio-loops.mjs (see 037-Music for the same track used in isolation).
+const MUSIC_LOOP_START_SECONDS = 1.5;
+const MUSIC_LOOP_END_SECONDS = 7.9;
 
 // Parallax: clouds move at 22% of the real camera speed (parallax illusion).
 const SKY_PARALLAX = 0.22;
@@ -160,6 +167,18 @@ class Demo {
     // Sprite sheet for the rock hero, loaded from /sprites/test.png.
     /** @type {SpriteSheet | null} */
     heroSheet = null;
+
+    /** @type {AudioClip | null} Looping background music with a distinct intro section. */
+    musicClip = null;
+
+    /** @type {AudioClip | null} Short chime played on every day/night phase change. */
+    dayPhaseChimeClip = null;
+
+    /** @type {AudioClip | null} Confirmation blip played after a successful PNG capture. */
+    captureBlipClip = null;
+
+    /** @type {string | null} Day phase label as of the previous tick, used to detect changes. */
+    lastDayPhaseLabel = null;
 
     // The full source rectangle for the hero sprite.
     /** @type {Rect2i | null} */
@@ -348,6 +367,30 @@ class Demo {
         this.cameraPos.y = 0;
         this.clampCamera();
 
+        // Background music: a real intro-then-loop track, the same one 037-Music
+        // demonstrates in isolation. BT.musicPlay() called before the page is unlocked is
+        // "remembered" and starts for real the instant the player clicks or presses a key.
+        this.musicClip = await AudioClip.load('/audio/music-intro-loop.wav');
+        BT.musicPlay(this.musicClip, {
+            loop: true,
+            loopStart: MUSIC_LOOP_START_SECONDS,
+            loopEnd: MUSIC_LOOP_END_SECONDS,
+        });
+
+        // A soft rising chime for day/night transitions, and BT.synthPreset.blip() (the
+        // same UI blip 041-Synth Toy uses) for a successful capture.
+        this.dayPhaseChimeClip = await AudioClip.synth({
+            waveform: 'sine',
+            frequency: 660,
+            duration: 0.6,
+            volume: 0.5,
+            envelope: { attack: 0.02, decay: 0.15, sustain: 0.3, release: 0.4 },
+            seed: 1,
+        });
+        this.captureBlipClip = await AudioClip.synth(BT.synthPreset.blip());
+
+        this.lastDayPhaseLabel = this.getDayPhaseLabel();
+
         console.log('[GameSceneDemo] Ready.');
         return true;
     }
@@ -359,6 +402,8 @@ class Demo {
     update() {
         const tick = BT.ticks;
 
+        this.updateDayPhaseSound(tick);
+
         // Demo 013: one PNG per Space press (edge via BT.isKeyPressed).
         if (BT.isKeyPressed('Space') && !this.capturing) {
             this.capturing = true;
@@ -367,6 +412,7 @@ class Demo {
                     this.lastCaptureMessage = 'Saved: blit386-scene.png';
                     this.messageTimer = 180;
                     this.capturing = false;
+                    BT.soundPlay(this.captureBlipClip);
                     return null;
                 })
                 .catch((err) => {
@@ -406,6 +452,24 @@ class Demo {
         this.overlayRowData[2].leftText = this.getDayPhaseLabel();
 
         return this.overlayRowData;
+    }
+
+    /**
+     * Plays a short chime the instant the day/night phase label changes (Day -> Toward dusk
+     * -> Night -> Toward dawn -> Day...). Comparing this tick's label against last tick's
+     * label is the same "edge detection" idea 028-Keyboard Input uses for key presses - we
+     * only care about the moment something changes, not every tick it stays the same.
+     *
+     * @param {number} tick - Current engine tick (BT.ticks).
+     */
+    updateDayPhaseSound(tick) {
+        const currentPhase = this.getDayPhaseLabel(tick);
+
+        if (this.lastDayPhaseLabel !== null && currentPhase !== this.lastDayPhaseLabel) {
+            BT.soundPlay(this.dayPhaseChimeClip);
+        }
+
+        this.lastDayPhaseLabel = currentPhase;
     }
 
     /**
