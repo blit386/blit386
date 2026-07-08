@@ -26,11 +26,11 @@
  * This page loads sound the same "click or press a key first" way 036-audio-basics does -
  * browsers refuse to make any sound until you interact with the page at least once.
  *
- * The engine's built-in overlay can also show live audio meters: little bars that move
+ * The engine's built-in overlay also shows live audio meters: little bars that move
  * up and down with how loud each audio bus (main, music, sfx) is right now, plus a
  * count of how many sounds are playing at once. This demo turns that feature on with
- * `isOverlayAudioMetersEnabled: true` in configure() - open the overlay (see below) and
- * watch the meters jump every time a preset or a randomized sound plays.
+ * `isOverlayAudioMetersEnabled: true` in configure() - watch the meters jump every time a
+ * preset or a randomized sound plays.
  *
  * Try this:
  * - Click anywhere, or press any key, to unlock sound - watch the message at the top change
@@ -41,8 +41,6 @@
  *   frequency, duration, noise mix, and pitch sweep target that were rolled.
  * - Press R again and again - notice how differently the exact same few lines of "roll a
  *   random number" code can make the engine sound each time.
- * - Press the backquote key (`) or click the small icon in the bottom-left corner to open
- *   the engine overlay, then play a few sounds and watch the audio meters move.
  */
 
 import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
@@ -87,7 +85,7 @@ const PRESET_DEFINITIONS = [
 // for every row below plus a couple of pixels of breathing room above the bottom border - the
 // last row's text is one full font-cell (14px) tall, so the panel has to extend well past
 // where that row starts, not just past where it starts drawing.
-const PANEL_Y = 108;
+const PANEL_Y = 94;
 const PANEL_W = 148;
 const PANEL_H = 124;
 const PANEL_LEFT_X = 8;
@@ -228,6 +226,12 @@ class Demo {
             // readout to the overlay. Off by default, since measuring audio levels costs a
             // little extra CPU work the engine skips unless a demo asks for it.
             isOverlayAudioMetersEnabled: true,
+
+            isOverlayVisibleAtStart: true,
+
+            overlayStyle: {
+                gapPaletteIndex: C_DIM,
+            },
         };
     }
 
@@ -256,6 +260,7 @@ class Demo {
         this.palette.set(C_METER_FILL, new Color32(120, 190, 255));
 
         BT.paletteSet(this.palette);
+
         return true;
     }
 
@@ -340,12 +345,13 @@ class Demo {
      * to a plain reminder of the controls.
      */
     renderUnlockPrompt() {
-        if (!BT.isAudioUnlocked) {
-            BT.systemPrint(new Vector2i(8, 8), C_ACCENT, 'Click or press a key to enable sound');
-            return;
-        }
+        const pos = new Vector2i(8, 62);
 
-        BT.systemPrint(new Vector2i(8, 8), C_DIM, 'Press J/P/E/L/H/B for presets, R to randomize');
+        if (BT.isAudioUnlocked) {
+            BT.systemPrint(pos, C_DIM, 'Press J/P/E/L/H/B for presets, R to randomize');
+        } else {
+            BT.systemPrint(pos, C_ACCENT, 'Click or press a key to enable sound');
+        }
     }
 
     /**
