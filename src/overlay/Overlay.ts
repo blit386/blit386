@@ -9,6 +9,7 @@ import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import type {
     Backend,
+    OverlayAudioMeterStyle,
     OverlayRow,
     OverlayStyle,
     OverlayTimingChartDiagnosticsMode,
@@ -18,7 +19,7 @@ import type { KeyboardInput } from '../input/KeyboardInput';
 import type { PointerInput } from '../input/PointerInput';
 import { AudioMeter } from './audio-meter/AudioMeter';
 import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
-import type { AudioMeterDrawStyle, AudioMeterStyle } from './audio-meter/style';
+import type { AudioMeterDrawStyle } from './audio-meter/style';
 import { resolveAudioMeterStyle } from './audio-meter/style';
 import { OverlayBars } from './bars/Bars';
 import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from './constants';
@@ -186,7 +187,7 @@ export class Overlay {
         isOverlayToggleHintVisible = true,
         isOverlayToggleEnabled = true,
         isOverlayAudioMetersEnabled = false,
-        audioMeterStyle?: AudioMeterStyle,
+        audioMeterStyle?: OverlayAudioMeterStyle,
         audioMeterHeight?: number,
     ) {
         this.#layout = layout;

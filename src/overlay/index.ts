@@ -3,7 +3,7 @@
  */
 
 export { AudioMeter } from './audio-meter/AudioMeter';
-export type { AudioMeterDrawStyle, AudioMeterStyle } from './audio-meter/style';
+export type { AudioMeterDrawStyle } from './audio-meter/style';
 export { computeAudioMeterBarHeight, resolveAudioMeterStyle } from './audio-meter/style';
 export type { OverlayBarStyle } from './bars/Bars';
 export { OverlayBars } from './bars/Bars';

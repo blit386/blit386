@@ -1,24 +1,6 @@
-import type { OverlayStyle } from '../../core/IBTDemo';
+import type { OverlayAudioMeterStyle, OverlayStyle } from '../../core/IBTDemo';
 import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from '../constants';
 import { AUDIO_METER_DEFAULT_CLIP_IDX, AUDIO_METER_DEFAULT_WARNING_IDX } from './constants';
-
-/** Optional palette index overrides for the audio meter band. */
-export interface AudioMeterStyle {
-    /** Bus level bar color; defaults to {@link OverlayStyle.textPaletteIndex} or overlay text index. */
-    levelBarPaletteIndex?: number;
-
-    /**
-     * Bar track (empty background) color. Defaults to {@link OverlayStyle.gapPaletteIndex} or
-     * {@link OverlayStyle.barPaletteIndex} when omitted.
-     */
-    trackPaletteIndex?: number;
-
-    /** Warning tint when a bus level crosses {@link AUDIO_METER_WARNING_THRESHOLD}. */
-    warningPaletteIndex?: number;
-
-    /** Clip tint when a bus level crosses {@link AUDIO_METER_CLIP_THRESHOLD}. */
-    clipPaletteIndex?: number;
-}
 
 /** Resolved palette indices used when drawing the overlay audio meter band. */
 export interface AudioMeterDrawStyle {
@@ -50,7 +32,7 @@ const pickOverlayBarTextGap = (
  */
 export function resolveAudioMeterStyle(
     overlayStyle: OverlayStyle | undefined,
-    meterStyle: AudioMeterStyle | undefined,
+    meterStyle: OverlayAudioMeterStyle | undefined,
 ): AudioMeterDrawStyle {
     const { textIndex, gapIndex } = pickOverlayBarTextGap(overlayStyle);
 

@@ -182,6 +182,9 @@ Resolved after `configure()`; the hook may return a partial object.
 | `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                                   |
 | `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted)     |
 | `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                           |
+| `isOverlayAudioMetersEnabled`            | `boolean`                      | `false`     | Per-bus level bars and voices/steal/drop text readout band                                             |
+| `overlayAudioMeterHeight`                | `number`                       | `13`        | Audio meter band height in pixels when audio meters are enabled                                        |
+| `overlayAudioMeterStyle`                 | `OverlayAudioMeterStyle`       | _unset_     | Optional audio meter palette indices (defaults to overlay text/gap)                                    |
 
 - `displaySize`, `drawingBufferSize`, and `maxCanvasSize` must be positive whole-number pixel dimensions.
 - Each size is capped at `8192×8192` per axis and `16,777,216` total pixels (`4096×4096`).

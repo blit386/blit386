@@ -267,6 +267,33 @@ export interface HardwareSettings {
      * @deprecated Deprecated since 2026-05-31. Use {@link isOverlayRendererDiagnosticsBarEnabled} instead.
      */
     overlayRendererDiagnosticsBar?: boolean;
+
+    /**
+     * When `true`, the engine draws a per-bus level meter band (main/music/sfx bars plus a
+     * voices used/total, steal, and drop text readout) in the overlay. Defaults to `false` in
+     * {@link defaultConfig}. Enabling this also lazily creates the `AnalyserNode`s backing the
+     * bus level readings ({@link AudioManager.enableBusMetering}) - no metering cost is paid
+     * unless this flag is `true`.
+     *
+     * @since 1.3.0
+     */
+    isOverlayAudioMetersEnabled?: boolean;
+
+    /**
+     * Height in pixels of the audio meter band when {@link isOverlayAudioMetersEnabled} is `true`.
+     * Defaults to 13 pixels when omitted.
+     *
+     * @since 1.3.0
+     */
+    overlayAudioMeterHeight?: number;
+
+    /**
+     * Optional palette indices for the audio meter band. Level bar and track colors default to
+     * {@link OverlayStyle} text/gap indices; warning/clip slots control semantic level tints.
+     *
+     * @since 1.3.0
+     */
+    overlayAudioMeterStyle?: OverlayAudioMeterStyle;
 }
 
 /**
@@ -318,6 +345,28 @@ export interface OverlayTimingChartStyle {
 
     /** Overflow marker tint for {@link HardwareSettings.overlayTimingChartDiagnostics} minimal/rich modes. Defaults to {@link warningPaletteIndex}. */
     overflowPaletteIndex?: number;
+}
+
+/**
+ * Palette indices for the audio meter band.
+ *
+ * @since 1.3.0
+ */
+export interface OverlayAudioMeterStyle {
+    /** Bus level bar color; defaults to {@link OverlayStyle.textPaletteIndex} or overlay text index. */
+    levelBarPaletteIndex?: number;
+
+    /**
+     * Bar track (empty background) color. Defaults to {@link OverlayStyle.gapPaletteIndex} or
+     * {@link OverlayStyle.barPaletteIndex} when omitted.
+     */
+    trackPaletteIndex?: number;
+
+    /** Warning tint when a bus level crosses the warning threshold. */
+    warningPaletteIndex?: number;
+
+    /** Clip tint when a bus level crosses the clip threshold. */
+    clipPaletteIndex?: number;
 }
 
 /**
@@ -463,6 +512,7 @@ export function defaultConfig(): HardwareSettings {
         isOverlayToggleEnabled: true,
         isOverlayPaletteEnabled: false,
         isOverlayTimingChartEnabled: false,
+        isOverlayAudioMetersEnabled: false,
     };
 }
 
@@ -577,6 +627,8 @@ function pickDefinedOverlaySettings(picked: Partial<HardwareSettings>, partial: 
     pickIfDefinedPartial(picked, partial, 'overlayTimingChartHeight');
     pickIfDefinedPartial(picked, partial, 'overlayTimingChartDiagnostics');
     pickIfDefinedPartial(picked, partial, 'isOverlayRendererDiagnosticsBarEnabled');
+    pickIfDefinedPartial(picked, partial, 'isOverlayAudioMetersEnabled');
+    pickIfDefinedPartial(picked, partial, 'overlayAudioMeterHeight');
 
     if (partial.overlayStyle !== undefined) {
         picked.overlayStyle = { ...partial.overlayStyle };
@@ -584,6 +636,10 @@ function pickDefinedOverlaySettings(picked: Partial<HardwareSettings>, partial: 
 
     if (partial.overlayTimingChartStyle !== undefined) {
         picked.overlayTimingChartStyle = { ...partial.overlayTimingChartStyle };
+    }
+
+    if (partial.overlayAudioMeterStyle !== undefined) {
+        picked.overlayAudioMeterStyle = { ...partial.overlayAudioMeterStyle };
     }
 }
 
@@ -809,6 +865,39 @@ function assignFullDefaultMergeScalars(
     assignIfDefined(optionals, 'overlayTimingChartDiagnostics', picked.overlayTimingChartDiagnostics);
 
     assignIfDefined(optionals, 'isOverlayRendererDiagnosticsBarEnabled', picked.isOverlayRendererDiagnosticsBarEnabled);
+
+    assignFullDefaultMergeAudioMeterScalars(optionals, picked, defaults);
+}
+
+/**
+ * Merged optional audio meter fields for the full-default configure path.
+ *
+ * @param optionals - Partial settings object being built.
+ * @param picked - Defined fields from `configure()`.
+ * @param defaults - Baseline hardware settings.
+ */
+function assignFullDefaultMergeAudioMeterScalars(
+    optionals: Partial<HardwareSettings>,
+    picked: Partial<HardwareSettings>,
+    defaults: HardwareSettings,
+): void {
+    assignIfDefined(
+        optionals,
+        'isOverlayAudioMetersEnabled',
+        picked.isOverlayAudioMetersEnabled ?? defaults.isOverlayAudioMetersEnabled,
+    );
+
+    assignIfDefined(
+        optionals,
+        'overlayAudioMeterHeight',
+        picked.overlayAudioMeterHeight ?? defaults.overlayAudioMeterHeight,
+    );
+
+    assignIfDefined(
+        optionals,
+        'overlayAudioMeterStyle',
+        shallowCloneOptional(picked.overlayAudioMeterStyle ?? defaults.overlayAudioMeterStyle),
+    );
 }
 
 /**
@@ -863,6 +952,9 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'overlayTimingChartStyle', shallowCloneOptional(picked.overlayTimingChartStyle));
     assignIfDefined(optionals, 'overlayTimingChartDiagnostics', picked.overlayTimingChartDiagnostics);
     assignIfDefined(optionals, 'isOverlayRendererDiagnosticsBarEnabled', picked.isOverlayRendererDiagnosticsBarEnabled);
+    assignIfDefined(optionals, 'isOverlayAudioMetersEnabled', picked.isOverlayAudioMetersEnabled);
+    assignIfDefined(optionals, 'overlayAudioMeterHeight', picked.overlayAudioMeterHeight);
+    assignIfDefined(optionals, 'overlayAudioMeterStyle', shallowCloneOptional(picked.overlayAudioMeterStyle));
     return optionals;
 }
 

@@ -5,11 +5,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { Palette } from '../assets/Palette';
+import type { OverlayAudioMeterStyle } from '../core/IBTDemo';
 import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { AUDIO_METER_BAR_WIDTH_PX } from './audio-meter/constants';
-import type { AudioMeterStyle } from './audio-meter/style';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_ROW_GAP_PX } from './layout/constants';
 import { createOverlayLayout, overlayRightAlignedTextX } from './layout/layoutHelpers';
 import { hintBarY, paletteBandY } from './layout/layoutPlan';
@@ -51,7 +51,7 @@ interface OverlayTestOptions {
     isOverlayToggleEnabled?: boolean;
     backend?: 'webgpu' | 'software';
     isOverlayAudioMetersEnabled?: boolean;
-    audioMeterStyle?: AudioMeterStyle;
+    audioMeterStyle?: OverlayAudioMeterStyle;
     audioMeterHeight?: number;
 }
 

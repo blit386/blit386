@@ -100,6 +100,12 @@ describe('defaultConfig', () => {
         expect(settings.isOverlayTimingChartEnabled).toBe(false);
     });
 
+    it('should disable overlay audio meters by default', () => {
+        const settings = defaultConfig();
+
+        expect(settings.isOverlayAudioMetersEnabled).toBe(false);
+    });
+
     it('should return a fresh object on each call', () => {
         const a = defaultConfig();
         const b = defaultConfig();
@@ -257,6 +263,51 @@ describe('mergeHardwareSettings', () => {
         });
 
         expect(needsOverlayRendererDiagnostics(settings)).toBe(true);
+    });
+
+    it('merges isOverlayAudioMetersEnabled flags and style from configure()', () => {
+        const settings = mergeHardwareSettings({
+            isOverlayAudioMetersEnabled: true,
+            overlayAudioMeterHeight: 20,
+            overlayAudioMeterStyle: {
+                levelBarPaletteIndex: 20,
+                trackPaletteIndex: 21,
+                warningPaletteIndex: 22,
+                clipPaletteIndex: 23,
+            },
+        });
+
+        expect(settings.isOverlayAudioMetersEnabled).toBe(true);
+        expect(settings.overlayAudioMeterHeight).toBe(20);
+        expect(settings.overlayAudioMeterStyle?.levelBarPaletteIndex).toBe(20);
+        expect(settings.overlayAudioMeterStyle?.trackPaletteIndex).toBe(21);
+        expect(settings.overlayAudioMeterStyle?.warningPaletteIndex).toBe(22);
+        expect(settings.overlayAudioMeterStyle?.clipPaletteIndex).toBe(23);
+    });
+
+    it('keeps isOverlayAudioMetersEnabled unset when omitted, defaulting via defaultConfig', () => {
+        const settings = mergeHardwareSettings({ targetFPS: 30 });
+
+        expect(settings.isOverlayAudioMetersEnabled).toBe(false);
+    });
+
+    it('applies audio meter fields alongside an explicit displaySize', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+            isOverlayAudioMetersEnabled: true,
+            overlayAudioMeterHeight: 18,
+        });
+
+        expect(settings.isOverlayAudioMetersEnabled).toBe(true);
+        expect(settings.overlayAudioMeterHeight).toBe(18);
+    });
+
+    it('keeps overlayAudioMeterHeight unset when displaySize is provided without an explicit height', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+        });
+
+        expect(settings.overlayAudioMeterHeight).toBeUndefined();
     });
 
     it('surfaces null displaySize via dimension validation instead of returning null', () => {
