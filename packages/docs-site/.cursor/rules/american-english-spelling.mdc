@@ -1,0 +1,19 @@
+---
+description: Hand-authored content and source use American English spelling; spec-mandated third-party names are exempt
+alwaysApply: true
+---
+
+# American English spelling
+
+Hand-authored content (`content/**` outside the generated `content/docs/**` mirror) and this repo's own TypeScript
+source use American English, never British spellings: `color`, `optimization`, `canceled`, `centered`.
+
+Exempt: literal third-party or spec-mandated names correctly spelled with a British `s`/`c` in their own spec (for
+example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those.
+
+Generated pages under `content/docs/**` are mirrored from `blit386/docs/` (see Documentation mirror / Fumapress Content
+rules). If one contains a British spelling, fix the canonical source in the engine repo and re-run `pnpm run sync:docs`
+– never hand-edit the mirror directly.
+
+Full policy: `CLAUDE.md` (Content Conventions), blit386
+[CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) (American English spelling).
