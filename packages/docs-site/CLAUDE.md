@@ -60,6 +60,13 @@ Custom Waku pages: optional `src/pages/**/*.{ts,tsx}` (not used in scaffold).
   hand-edit a generated page. Hand-authored content (the landing page, `content/docs/index.mdx` hub, and the root
   `content/docs/meta.json`) lives outside the generator's output.
 - No emoji in content, code, commits, or UI strings
+- American English spelling in hand-authored content and source (`color`, `optimization`, `canceled`, `centered`, never
+  the British equivalents). Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or
+  `c` in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. Generated pages
+  under `content/docs/` inherit this from the canonical source in `blit386/docs/` (see blit386
+  [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md), American English spelling) – fix the upstream
+  source and re-run `pnpm run sync:docs`, never the mirror directly. Cursor:
+  `.cursor/rules/american-english-spelling.mdc` (always applied in this repo).
 
 ## Documentation mirror
 

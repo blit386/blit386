@@ -93,7 +93,7 @@ function countMatches(haystack: string, needle: string): number {
     return count;
 }
 
-// Build a short excerpt centred on the earliest matched term so results show
+// Build a short excerpt centered on the earliest matched term so results show
 // where the query was found rather than just the start of the page.
 function buildExcerpt(text: string, terms: readonly string[]): string {
     const trimmed = text.trim();
