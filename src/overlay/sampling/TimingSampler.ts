@@ -71,42 +71,6 @@ export class TimingSampler {
     }
 
     /**
-     * Most recent primitive pipeline overflow events for the frame.
-     *
-     * @returns Primitive overflow count.
-     */
-    get primitiveOverflowCount(): number {
-        return this.#primitiveOverflowCount;
-    }
-
-    /**
-     * Most recent sprite pipeline overflow events for the frame.
-     *
-     * @returns Sprite overflow count.
-     */
-    get spriteOverflowCount(): number {
-        return this.#spriteOverflowCount;
-    }
-
-    /**
-     * Most recent primitive vertices batched for GPU submission.
-     *
-     * @returns Primitive submitted vertex count.
-     */
-    get primitiveSubmittedVertices(): number {
-        return this.#primitiveSubmittedVertices;
-    }
-
-    /**
-     * Most recent sprite vertices batched for GPU submission.
-     *
-     * @returns Sprite submitted vertex count.
-     */
-    get spriteSubmittedVertices(): number {
-        return this.#spriteSubmittedVertices;
-    }
-
-    /**
      * Ingests one frame-timing snapshot.
      *
      * @param sample - Current-frame timing values from BTAPI.
@@ -142,8 +106,8 @@ export class TimingSampler {
      */
     formatRendererDiagnosticsLabel(): string {
         return (
-            `Prim ${this.#primitiveSubmittedVertices}v ov: ${this.#primitiveOverflowCount} | ` +
-            `Spr ${this.#spriteSubmittedVertices}v ov: ${this.#spriteOverflowCount}`
+            `Prim ${this.#primitiveSubmittedVertices}v ov ${this.#primitiveOverflowCount}|` +
+            `Spr ${this.#spriteSubmittedVertices}v ov ${this.#spriteOverflowCount}`
         );
     }
 }

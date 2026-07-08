@@ -200,7 +200,7 @@ export class Overlay {
         this.#idxBg = indices.bg;
         this.#idxText = indices.text;
         this.#idxGap = indices.gap;
-        this.#topRightLabel = `${activeBackend} | ${layout.displayWidth}x${layout.displayHeight}`;
+        this.#topRightLabel = `${activeBackend}|${layout.displayWidth}x${layout.displayHeight}`;
         this.#timingChartStyle = resolveTimingChartStyle(style, timingChartStyle);
         this.#timingChartHeight = timingChartHeight ?? DEFAULT_TIMING_CHART_HEIGHT;
         this.#timingChart = createTimingChart(layout, isOverlayTimingChartEnabled, targetFps, timingChartDiagnostics);
@@ -414,6 +414,7 @@ export class Overlay {
     #createLayoutConfig(customRowCount: number, palette: Palette | null | undefined): OverlayLayoutConfig {
         const isOverlayPaletteEnabled = this.#paletteView.isEnabled;
         const colorCount = palette?.size ?? 256;
+
         const paletteGrid = isOverlayPaletteEnabled
             ? computeGrid(
                   this.#layout.displayWidth,
@@ -454,6 +455,7 @@ export class Overlay {
         palette: Palette | null | undefined,
     ): { layoutConfig: OverlayLayoutConfig; plan: OverlayLayoutPlan } {
         const layoutConfig = this.#createLayoutConfig(customRowCount, palette);
+
         const plan = buildOverlayLayoutPlan(
             layoutConfig,
             this.#layoutScratch,
@@ -524,11 +526,11 @@ export class Overlay {
         if (isBodyVisible) {
             const updateStepSuffix = this.#timing.updateSteps > 1 ? `x${this.#timing.updateSteps}` : '';
 
-            topMetricsLabel = `Present: ${this.#fps.measuredFps} FPS | Target: ${this.#targetFps} FPS | Draw Calls: ${this.#timing.drawCalls}`;
+            topMetricsLabel = `Present ${this.#fps.measuredFps} FPS|Target ${this.#targetFps} FPS|Draw Calls ${this.#timing.drawCalls}`;
 
             topTimingLabel =
-                `Frame: ${this.#timing.frameMs.toFixed(1)}ms | update(): ${this.#timing.updateMs.toFixed(1)}ms${updateStepSuffix} | ` +
-                `render(): ${this.#timing.renderMs.toFixed(1)}ms`;
+                `Frame ${this.#timing.frameMs.toFixed(1)}ms|update() ${this.#timing.updateMs.toFixed(1)}ms${updateStepSuffix}|` +
+                `render() ${this.#timing.renderMs.toFixed(1)}ms`;
 
             if (this.#isOverlayRendererDiagnosticsBarEnabled) {
                 rendererDiagnosticsLabel = this.#timing.formatRendererDiagnosticsLabel();
@@ -589,6 +591,7 @@ export class Overlay {
                 font,
                 plan,
                 this.#barStyle,
+                this.#idxGap,
                 this.#topLeftLabel,
                 this.#topRightLabel,
                 topMetricsLabel,

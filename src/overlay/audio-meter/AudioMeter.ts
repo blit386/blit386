@@ -6,6 +6,7 @@ import type { BitmapFont } from '../../assets/BitmapFont';
 import type { AudioBus } from '../../core/IBTDemo';
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
+import { drawOverlayLabelWithDividers } from '../labels';
 import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_TOP_TEXT_Y } from '../layout/constants';
 import { overlayBitmapTextPaletteOffset } from '../layout/layoutHelpers';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';
@@ -32,9 +33,6 @@ const ZERO_LEVELS: Readonly<Record<AudioBus, number>> = { main: 0, music: 0, sfx
 export class AudioMeter {
     /** Feature flag from the constructor; when false, {@link sample} and {@link draw} are no-ops. */
     readonly #isEnabled: boolean;
-
-    /** Reused track fill rect, overwritten in place per bus per {@link draw} call. */
-    readonly #trackScratch = new Rect2i(0, 0, 1, 1);
 
     /** Reused bottom-anchored level fill rect, overwritten in place per bus per {@link draw} call. */
     readonly #fillScratch = new Rect2i(0, 0, 1, 1);
@@ -136,9 +134,6 @@ export class AudioMeter {
 
             const x = busBarX(rect, busIndex);
 
-            this.#trackScratch.set(x, rect.y, AUDIO_METER_BAR_WIDTH_PX, rect.height);
-            target.drawBarFill(this.#trackScratch, style.trackIndex);
-
             // eslint-disable-next-line security/detect-object-injection -- bus is keyof AudioBus union, not arbitrary input
             const level = this.#levels[bus];
             const fillHeight = computeAudioMeterBarHeight(level, rect.height, AUDIO_METER_FULL_SCALE);
@@ -157,6 +152,9 @@ export class AudioMeter {
     /**
      * Draws the voices used/total, steal, and drop text readout to the right of the bus bars.
      *
+     * The `|` separators between the readout segments render as 1 px full-band-height
+     * dividers in the gap palette index, matching the other engine-composed labels.
+     *
      * @param target - Overlay draw target.
      * @param rect - Screen-space meter band.
      * @param style - Resolved meter palette indices.
@@ -169,9 +167,17 @@ export class AudioMeter {
         this.#textPos.y = rect.y + OVERLAY_TOP_TEXT_Y;
 
         const drops = this.#voiceDropCount + this.#preUnlockDropCount;
-        const text = `${this.#activeVoices}/${this.#totalVoices} voices | steal ${this.#voiceStealCount} | drop ${drops}`;
+        const text = `${this.#activeVoices}/${this.#totalVoices} voices|steal ${this.#voiceStealCount}|drop ${drops}`;
 
-        target.drawLabel(font, this.#textPos, text, overlayBitmapTextPaletteOffset(style.textIndex));
+        drawOverlayLabelWithDividers(
+            target,
+            font,
+            this.#textPos,
+            text,
+            rect,
+            overlayBitmapTextPaletteOffset(style.textIndex),
+            style.gapIndex,
+        );
     }
 
     /**

@@ -16,6 +16,7 @@ const defaultStyle = {
     levelBarIndex: 8,
     trackIndex: 6,
     textIndex: 9,
+    gapIndex: 12,
     warningIndex: 3,
     clipIndex: 4,
 };
@@ -88,7 +89,11 @@ describe('AudioMeter', () => {
         meter.sample(snapshot());
         meter.draw(renderer, meterRect, defaultStyle, mockFont);
 
-        const trackRects = getRectFillCalls(renderer).filter((rect) => rect.height === meterRect.height);
+        // Readout dividers are also full band height; bus tracks are the bar-width fills.
+        const trackRects = getRectFillCalls(renderer).filter(
+            (rect) => rect.height === meterRect.height && rect.width === AUDIO_METER_BAR_WIDTH_PX,
+        );
+
         const xs = trackRects.map((rect) => rect.x).sort((a, b) => a - b);
 
         expect(xs).toEqual([
@@ -180,13 +185,33 @@ describe('AudioMeter', () => {
                 preUnlockDropCount: 2,
             }),
         );
+
         meter.draw(renderer, meterRect, defaultStyle, mockFont);
 
         const textCalls = getBitmapTextCalls(renderer);
 
-        expect(textCalls).toHaveLength(1);
-        expect(textCalls[0]?.text).toContain('5/16');
-        expect(textCalls[0]?.text).toContain('3');
-        expect(textCalls[0]?.text).toContain('drop');
+        expect(textCalls.map((call) => call.text)).toEqual(['5/16 voices', 'steal 3', 'drop 3']);
+    });
+
+    it('draws the readout separators as full-band-height dividers in the gap index', () => {
+        const meter = new AudioMeter(true);
+        const renderer = createMockRenderer();
+
+        meter.sample(snapshot({ activeVoices: 5, totalVoices: 16, voiceStealCount: 3 }));
+        meter.draw(renderer, meterRect, defaultStyle, mockFont);
+
+        const dividerIndices = renderer.drawBarFill.mock.calls
+            .map((call, callIndex) => (call[1] === defaultStyle.gapIndex ? callIndex : -1))
+            .filter((callIndex) => callIndex !== -1);
+
+        expect(dividerIndices).toHaveLength(2);
+
+        for (const callIndex of dividerIndices) {
+            expect(renderer.drawBarFill.rectSnapshots.at(callIndex)).toMatchObject({
+                y: meterRect.y,
+                width: 1,
+                height: meterRect.height,
+            });
+        }
     });
 });

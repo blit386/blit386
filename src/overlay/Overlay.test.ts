@@ -10,8 +10,13 @@ import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { AUDIO_METER_BAR_WIDTH_PX } from './audio-meter/constants';
+import { OVERLAY_DIVIDER_GAP_PX, SYSTEM_CHAR_ADVANCE } from './constants';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_ROW_GAP_PX } from './layout/constants';
-import { createOverlayLayout, overlayRightAlignedTextX } from './layout/layoutHelpers';
+import {
+    createOverlayLayout,
+    overlayRightAlignedDividerLabelX,
+    overlayRightAlignedTextX,
+} from './layout/layoutHelpers';
 import { hintBarY, paletteBandY } from './layout/layoutPlan';
 import { Overlay } from './Overlay';
 import { hintIconPos } from './OverlayToggleIcon';
@@ -32,10 +37,12 @@ const PALETTE_GRID_OFF = false;
 
 interface OverlayTestOptions {
     style?: { barPaletteIndex?: number; textPaletteIndex?: number; gapPaletteIndex?: number };
+
     isOverlayPaletteEnabled?: boolean;
     paletteColumns?: number;
     paletteRowsVisible?: number;
     isOverlayTimingChartEnabled?: boolean;
+
     overlayTimingChartStyle?: {
         updateBarPaletteIndex?: number;
         renderBarPaletteIndex?: number;
@@ -43,6 +50,7 @@ interface OverlayTestOptions {
         errorPaletteIndex?: number;
         tagPaletteIndex?: number;
     };
+
     overlayTimingChartHeight?: number;
     overlayTimingChartDiagnostics?: false | 'minimal' | 'rich';
     isOverlayRendererDiagnosticsBarEnabled?: boolean;
@@ -105,6 +113,7 @@ describe('Overlay', () => {
 
     it('isTrackingPaletteUsage follows palette grid opt-in and visibility toggle', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Test Demo', {
             isOverlayPaletteEnabled: true,
             isOverlayVisibleAtStart: true,
@@ -125,10 +134,12 @@ describe('Overlay', () => {
 
     it('swatch press in the toggle corner does not toggle overlay body', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Test Demo', {
             isOverlayPaletteEnabled: true,
             isOverlayVisibleAtStart: true,
         });
+
         const grid = computeGrid(320);
         const paletteBandTop = paletteBandY(240, grid.totalHeight);
         const paletteBand = new Rect2i(0, paletteBandTop, 320, grid.totalHeight);
@@ -151,16 +162,19 @@ describe('Overlay', () => {
 
     it('scrollbar track press blocks toggle but swatch press still copies first', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Test Demo', {
             isOverlayPaletteEnabled: true,
             isOverlayVisibleAtStart: true,
             paletteRowsVisible: 3,
         });
+
         const grid = computeGrid(320, undefined, 256, undefined, undefined, 3);
         const paletteBandTop = paletteBandY(240, grid.totalHeight);
         const paletteBand = new Rect2i(0, paletteBandTop, 320, grid.totalHeight);
         const track = new Rect2i();
         const thumb = new Rect2i();
+
         writeScrollbarRects(track, thumb, paletteBand, grid, 0, 4);
 
         overlay.handleFrameInput(
@@ -215,38 +229,58 @@ describe('Overlay', () => {
         overlay.updateAndRender(renderer, mockFont, null, null, 0);
 
         const calls = getBitmapTextCalls(renderer);
-        const topRightLabel = 'webgpu | 320x240';
-        const topRightX = overlayRightAlignedTextX(topRightLabel, 320);
 
-        expect(calls).toHaveLength(4);
+        // Segmented engine labels: each '|' marker becomes its own drawLabel segment.
+        const topRightX = overlayRightAlignedDividerLabelX('webgpu|320x240', 320);
+        const metricsY = OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX + OVERLAY_TOP_TEXT_Y;
+        const timingY = (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX) * 2 + OVERLAY_TOP_TEXT_Y;
+
+        expect(calls).toHaveLength(9);
+
         expect(calls[0]).toEqual({
             pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, OVERLAY_TOP_TEXT_Y),
             text: topLeftLabel,
             paletteOffset: 1,
         });
+
         expect(calls[1]).toEqual({
             pos: new Vector2i(topRightX, OVERLAY_TOP_TEXT_Y),
-            text: topRightLabel,
+            text: 'webgpu',
             paletteOffset: 1,
         });
-        expect(calls[2]).toMatchObject({
-            pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX + OVERLAY_TOP_TEXT_Y),
-            text: expect.stringMatching(/^Present: \d+ FPS \| Target: 60 FPS \| Draw Calls: \d+$/),
+
+        expect(calls[2]).toEqual({
+            pos: new Vector2i(topRightX + 6 * SYSTEM_CHAR_ADVANCE + 2 * OVERLAY_DIVIDER_GAP_PX, OVERLAY_TOP_TEXT_Y),
+            text: '320x240',
             paletteOffset: 1,
         });
+
         expect(calls[3]).toMatchObject({
-            pos: new Vector2i(
-                OVERLAY_EDGE_MARGIN_PX,
-                (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX) * 2 + OVERLAY_TOP_TEXT_Y,
-            ),
-            text: expect.any(String),
+            pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, metricsY),
+            text: expect.stringMatching(/^Present \d+ FPS$/),
             paletteOffset: 1,
         });
-        expect(calls[3]?.text).toContain('Frame: ');
-        expect(calls[3]?.text).toContain(' | update(): ');
-        expect(calls[3]?.text).toContain(' | render(): ');
+
+        expect(calls[4]).toMatchObject({ pos: expect.objectContaining({ y: metricsY }), text: 'Target 60 FPS' });
+        expect(calls[5]?.text).toMatch(/^Draw Calls \d+$/);
+        expect(calls[5]?.pos.y).toBe(metricsY);
+
+        expect(calls[6]).toMatchObject({
+            pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, timingY),
+            text: expect.stringMatching(/^Frame \d+\.\dms$/),
+            paletteOffset: 1,
+        });
+
+        expect(calls[7]?.text).toMatch(/^update\(\) \d+\.\dms$/);
+        expect(calls[8]?.text).toMatch(/^render\(\) \d+\.\dms$/);
         expect(renderer.drawBarFillOnTop).toHaveBeenCalled();
-        expect(renderer.drawBarFillOnTop.rectSnapshots[0]).toMatchObject({ x: 3, y: 230, width: 11, height: 1 });
+
+        expect(renderer.drawBarFillOnTop.rectSnapshots[0]).toMatchObject({
+            x: OVERLAY_EDGE_MARGIN_PX,
+            y: 230,
+            width: 11,
+            height: 1,
+        });
     });
 
     it('uses activeBackend for the top-right label', () => {
@@ -256,8 +290,56 @@ describe('Overlay', () => {
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0);
 
-        const topRightCall = getBitmapTextCalls(renderer)[1];
-        expect(topRightCall?.text).toBe('software | 320x240');
+        const calls = getBitmapTextCalls(renderer);
+
+        expect(calls[1]?.text).toBe('software');
+        expect(calls[2]?.text).toBe('320x240');
+    });
+
+    it('draws in-row label separators as 1 px full-row-height dividers in the gap index', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+
+        const overlay = createOverlay(layout, 'Demo', {
+            style: { gapPaletteIndex: 7 },
+            isOverlayVisibleAtStart: true,
+        });
+
+        const renderer = createMockRenderer();
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0);
+
+        // Row gaps share palette 7 but span the full display width; dividers are the width-1 fills.
+        const dividers = renderer.drawBarFill.mock.calls
+            .map((call, callIndex) => ({
+                paletteIndex: call[1] as number,
+                rect: renderer.drawBarFill.rectSnapshots.at(callIndex) as Rect2i,
+            }))
+            .filter((fill) => fill.paletteIndex === 7 && fill.rect.width === 1);
+
+        // 1 pipe in the top-right label, 2 in the metrics row, 2 in the timing row.
+        expect(dividers).toHaveLength(5);
+
+        const topRightDivider = dividers[0]?.rect;
+        expect(topRightDivider).toMatchObject({
+            x:
+                overlayRightAlignedDividerLabelX('webgpu|320x240', 320) +
+                6 * SYSTEM_CHAR_ADVANCE +
+                OVERLAY_DIVIDER_GAP_PX -
+                1,
+            y: 0,
+            width: 1,
+            height: OVERLAY_BAR_HEIGHT,
+        });
+
+        const metricsRowY = OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX;
+        const timingRowY = (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX) * 2;
+
+        expect(dividers.filter((fill) => fill.rect.y === metricsRowY)).toHaveLength(2);
+        expect(dividers.filter((fill) => fill.rect.y === timingRowY)).toHaveLength(2);
+
+        for (const divider of dividers) {
+            expect(divider.rect.height).toBe(OVERLAY_BAR_HEIGHT);
+        }
     });
 
     it('uses provided frame timings and shows update-step suffix when multiple updates ran', () => {
@@ -278,11 +360,12 @@ describe('Overlay', () => {
             spriteSubmittedVertices: 0,
         });
 
-        const calls = getBitmapTextCalls(renderer);
-        expect(calls[2]?.text).toContain('Draw Calls: 42');
-        expect(calls[3]?.text).toContain('Frame: 8.3ms');
-        expect(calls[3]?.text).toContain('update(): 1.5msx3');
-        expect(calls[3]?.text).toContain('render(): 3.8ms');
+        const texts = getBitmapTextCalls(renderer).map((call) => call.text);
+
+        expect(texts).toContain('Draw Calls 42');
+        expect(texts).toContain('Frame 8.3ms');
+        expect(texts).toContain('update() 1.5msx3');
+        expect(texts).toContain('render() 3.8ms');
     });
 
     it('skips draw calls when body is hidden and the toggle hint is disabled', () => {
@@ -369,6 +452,7 @@ describe('Overlay', () => {
             expect.objectContaining({ y: 13, height: OVERLAY_ROW_GAP_PX }),
             12,
         );
+
         expect(renderer.drawBarFill).toHaveBeenCalledWith(
             expect.objectContaining({ y: 41, height: OVERLAY_ROW_GAP_PX }),
             12,
@@ -377,10 +461,12 @@ describe('Overlay', () => {
 
     it('falls back gap fills to bar palette index when gapPaletteIndex is omitted', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             style: { barPaletteIndex: 8, textPaletteIndex: 9 },
             isOverlayVisibleAtStart: true,
         });
+
         const renderer = createMockRenderer();
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0);
@@ -393,11 +479,14 @@ describe('Overlay', () => {
 
     it('uses overlayStyle palette indices when provided', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             style: { barPaletteIndex: 8, textPaletteIndex: 9 },
             isOverlayVisibleAtStart: true,
         });
+
         const renderer = createMockRenderer();
+
         overlay.updateAndRender(renderer, mockFont, null, null, 0);
 
         expect(renderer.drawBarFill).toHaveBeenCalledWith(expect.anything(), 8);
@@ -409,10 +498,12 @@ describe('Overlay', () => {
 
     it('draws custom rows with per-row palette indices', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             style: { barPaletteIndex: 2, textPaletteIndex: 3 },
             isOverlayVisibleAtStart: true,
         });
+
         const renderer = createMockRenderer();
         const customRows = [{ leftText: 'Left', barPaletteIndex: 5, textPaletteIndex: 6 }];
 
@@ -431,7 +522,7 @@ describe('Overlay', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
         const renderer = createMockRenderer();
-        const customRows = [{ leftText: 'Position: 10, 20' }, { leftText: 'Bounces: 3', rightText: 'ok' }];
+        const customRows = [{ leftText: 'Position (10, 20)' }, { leftText: 'Bounces 3', rightText: 'ok' }];
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, () => customRows);
 
@@ -439,7 +530,8 @@ describe('Overlay', () => {
         const row0BarY = customRowBarY(240, 0);
         const row1BarY = customRowBarY(240, 1);
 
-        expect(fills).toHaveLength(12);
+        // 12 band/gap fills plus 5 in-row separator dividers from the top labels.
+        expect(fills).toHaveLength(17);
         expect(fills[3]).toMatchObject({ y: row0BarY, width: 320, height: OVERLAY_BAR_HEIGHT });
         expect(fills[4]).toMatchObject({ y: row1BarY, width: 320, height: OVERLAY_BAR_HEIGHT });
         expect(fills[11]).toMatchObject({ y: hintBarY(240), width: 320, height: OVERLAY_BAR_HEIGHT });
@@ -448,17 +540,21 @@ describe('Overlay', () => {
         const calls = getBitmapTextCalls(renderer);
         const rightX = overlayRightAlignedTextX('ok', 320);
 
-        expect(calls).toHaveLength(7);
+        // 3 custom row labels plus 9 segmented top-label draws.
+        expect(calls).toHaveLength(12);
+
         expect(calls[0]).toEqual({
             pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, row0BarY + OVERLAY_TOP_TEXT_Y),
-            text: 'Position: 10, 20',
+            text: 'Position (10, 20)',
             paletteOffset: 1,
         });
+
         expect(calls[1]).toEqual({
             pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, row1BarY + OVERLAY_TOP_TEXT_Y),
-            text: 'Bounces: 3',
+            text: 'Bounces 3',
             paletteOffset: 1,
         });
+
         expect(calls[2]).toEqual({
             pos: new Vector2i(rightX, row1BarY + OVERLAY_TOP_TEXT_Y),
             text: 'ok',
@@ -473,8 +569,11 @@ describe('Overlay', () => {
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, () => []);
 
-        expect(getRectFillCalls(renderer)).toHaveLength(8);
-        expect(getBitmapTextCalls(renderer)).toHaveLength(4);
+        // 8 band/gap fills plus 5 in-row separator dividers from the top labels.
+        expect(getRectFillCalls(renderer)).toHaveLength(13);
+
+        // Top labels split into segments: title, backend + resolution, 3 metrics, 3 timing.
+        expect(getBitmapTextCalls(renderer)).toHaveLength(9);
     });
 
     it('does not invoke getCustomRows while the overlay is hidden', () => {
@@ -499,6 +598,7 @@ describe('Overlay', () => {
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, undefined, palette, usedMask);
 
         const fills = getRectFillCalls(renderer);
+
         const paletteBandFill = fills.find(
             (rect) =>
                 rect.y === paletteBandY(240, grid.totalHeight) &&
@@ -507,9 +607,11 @@ describe('Overlay', () => {
         );
 
         expect(paletteBandFill).toBeDefined();
+
         expect(
             fills.some((rect) => rect.y === hintBarY(240) && rect.height === OVERLAY_BAR_HEIGHT && rect.width === 320),
         ).toBe(true);
+
         expect(renderer.drawBarFill.mock.calls.length).toBeGreaterThan(4);
     });
 
@@ -522,10 +624,16 @@ describe('Overlay', () => {
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, undefined, palette);
 
         const fills = getRectFillCalls(renderer);
+
         expect(fills.some((rect) => rect.y === hintBarY(240) && rect.height === OVERLAY_BAR_HEIGHT)).toBe(true);
+
+        // Width-1 top-label separator dividers are bar-height; palette swatch fills are not.
         const swatchCalls = renderer.drawBarFill.mock.calls.filter(
-            (call) => (call[0] as { width: number }).width === 1,
+            (call) =>
+                (call[0] as { width: number }).width === 1 &&
+                (call[0] as { height: number }).height !== OVERLAY_BAR_HEIGHT,
         );
+
         expect(swatchCalls).toHaveLength(0);
     });
 
@@ -561,7 +669,8 @@ describe('Overlay', () => {
 
         writeSwatchTopLeft(swatch, hoveredIndex, paletteBand, grid);
 
-        const customRows = [{ leftText: 'Bounces: 11' }, { leftText: 'Position: (43, 166)' }];
+        const customRows = [{ leftText: 'Bounces: 11' }, { leftText: 'Position (43, 166)' }];
+
         const pointer = {
             isActive: () => true,
             getPos: () => new Vector2i(swatch.x + 1, swatch.y + 1),
@@ -580,10 +689,11 @@ describe('Overlay', () => {
         );
 
         const calls = getBitmapTextCalls(renderer);
-        const positionLabelIndex = renderer.drawLabel.mock.calls.findIndex((call) => call[2] === 'Position: (43, 166)');
+        const positionLabelIndex = renderer.drawLabel.mock.calls.findIndex((call) => call[2] === 'Position (43, 166)');
 
-        expect(calls.some((call) => call.text === 'Position: (43, 166)')).toBe(true);
+        expect(calls.some((call) => call.text === 'Position (43, 166)')).toBe(true);
         expect(positionLabelIndex).toBeGreaterThanOrEqual(0);
+
         const labelDrawOrder = renderer.drawLabel.mock.invocationCallOrder.at(positionLabelIndex);
         const tooltipLabelDrawOrder = renderer.drawLabelOnTop.mock.invocationCallOrder.at(0);
         const lastBarFillOrder = renderer.drawBarFill.mock.invocationCallOrder.at(-1);
@@ -600,25 +710,30 @@ describe('Overlay', () => {
 
         expect(labelDrawOrder).toBeLessThan(tooltipLabelDrawOrder);
         expect(lastBarFillOrder).toBeLessThan(firstBarFillOnTopOrder);
+
         expect(renderer.drawLabelOnTop).toHaveBeenCalledWith(
             mockFont,
             expect.any(Vector2i),
             String(hoveredIndex),
             expect.any(Number),
         );
+
         expect(renderer.drawBarFillOnTop).toHaveBeenCalled();
     });
 
     it('forwards timing chart tags to drawLabelOnTop with event palette offset', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: { tagPaletteIndex: 7 },
             isOverlayVisibleAtStart: true,
         });
+
         const renderer = createMockRenderer();
 
         overlay.assignTag('Spawn', 42);
+
         overlay.updateAndRender(renderer, mockFont, null, null, 42, undefined, {
             frameMs: 1,
             updateMs: 1,
@@ -640,6 +755,7 @@ describe('Overlay', () => {
 
     it('draws timing chart dots when isOverlayTimingChartEnabled is enabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             style: { barPaletteIndex: 8, textPaletteIndex: 9 },
             isOverlayTimingChartEnabled: true,
@@ -647,6 +763,7 @@ describe('Overlay', () => {
             overlayTimingChartHeight: 36,
             isOverlayVisibleAtStart: true,
         });
+
         const renderer = createMockRenderer();
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
@@ -673,6 +790,7 @@ describe('Overlay', () => {
 
     it('tints timing chart dots with warning palette when frame exceeds soft budget', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
@@ -683,6 +801,7 @@ describe('Overlay', () => {
             },
             isOverlayVisibleAtStart: true,
         });
+
         const renderer = createMockRenderer();
 
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
@@ -701,6 +820,7 @@ describe('Overlay', () => {
         const dotCalls = renderer.drawBarFill.mock.calls.filter(
             (call) => (call[0] as { width: number }).width === 1 && (call[0] as { height: number }).height === 1,
         );
+
         const paletteIndices = dotCalls.map((call) => call[1] as number);
 
         expect(paletteIndices.length).toBeGreaterThan(0);
@@ -709,15 +829,18 @@ describe('Overlay', () => {
 
     it('does not draw overlay while hidden but keeps timing chart samples for re-show', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: { updateBarPaletteIndex: 10, renderBarPaletteIndex: 11 },
             isOverlayVisibleAtStart: true,
             isOverlayToggleHintVisible: false,
         });
+
         const renderer = createMockRenderer();
 
         overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 1);
+
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 8,
             updateMs: 12,
@@ -734,6 +857,7 @@ describe('Overlay', () => {
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
 
         overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 2);
+
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 8,
             updateMs: 12,
@@ -773,15 +897,18 @@ describe('Overlay', () => {
 
     it('records drop severity in chart history while body is hidden', () => {
         const layout = createOverlayLayout(320, 240, 14);
+
         const overlay = createOverlay(layout, 'Demo', {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: { warningPaletteIndex: 3, errorPaletteIndex: 4 },
             isOverlayVisibleAtStart: true,
             isOverlayToggleHintVisible: false,
         });
+
         const renderer = createMockRenderer();
 
         overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 1);
+
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 0,
             updateMs: 0,
@@ -798,6 +925,7 @@ describe('Overlay', () => {
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
 
         overlay.handleToggle(null, { isKeyPressed: (key: string) => key === 'Backquote' } as never, 2);
+
         overlay.updateAndRender(renderer, mockFont, null, null, 0, undefined, {
             frameMs: 0,
             updateMs: 0,
@@ -884,10 +1012,12 @@ describe('Overlay', () => {
 
         it('draws audio meter track and level bars when isOverlayAudioMetersEnabled is enabled', () => {
             const layout = createOverlayLayout(320, 240, 14);
+
             const overlay = createOverlay(layout, 'Demo', {
                 isOverlayAudioMetersEnabled: true,
                 isOverlayVisibleAtStart: true,
             });
+
             const renderer = createMockRenderer();
 
             overlay.updateAndRender(
@@ -913,10 +1043,12 @@ describe('Overlay', () => {
 
         it('draws the voices/steal/drop text readout when enabled', () => {
             const layout = createOverlayLayout(320, 240, 14);
+
             const overlay = createOverlay(layout, 'Demo', {
                 isOverlayAudioMetersEnabled: true,
                 isOverlayVisibleAtStart: true,
             });
+
             const renderer = createMockRenderer();
 
             overlay.updateAndRender(
@@ -939,11 +1071,13 @@ describe('Overlay', () => {
 
         it('honors audio meter palette overrides', () => {
             const layout = createOverlayLayout(320, 240, 14);
+
             const overlay = createOverlay(layout, 'Demo', {
                 isOverlayAudioMetersEnabled: true,
                 isOverlayVisibleAtStart: true,
                 audioMeterStyle: { trackPaletteIndex: 30, levelBarPaletteIndex: 31 },
             });
+
             const renderer = createMockRenderer();
 
             overlay.updateAndRender(
@@ -969,11 +1103,13 @@ describe('Overlay', () => {
 
         it('does not draw audio meter content when no audio snapshot is supplied', () => {
             const layout = createOverlayLayout(320, 240, 14);
+
             const overlay = createOverlay(layout, 'Demo', {
                 isOverlayAudioMetersEnabled: true,
                 isOverlayVisibleAtStart: true,
                 audioMeterHeight: 13,
             });
+
             const renderer = createMockRenderer();
 
             overlay.updateAndRender(renderer, mockFont, null, null, 0);
