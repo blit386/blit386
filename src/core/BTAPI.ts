@@ -17,7 +17,7 @@ import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef } from '../audi
 import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { PointerInput } from '../input/PointerInput';
-import type { OverlayDrawTarget } from '../overlay';
+import type { OverlayAudioSnapshot, OverlayDrawTarget } from '../overlay';
 import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
@@ -47,6 +47,9 @@ import {
 } from './IBTDemo';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { initWebGPU } from './WebGPUContext';
+
+/** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
+type Writable<T> = { -readonly [K in keyof T]: T[K] };
 
 /**
  * Central runtime facade for BLIT386 engine services.
@@ -158,6 +161,16 @@ export class BTAPI {
         spriteSubmittedVertices: 0,
     };
 
+    /** Reused audio snapshot passed into the overlay each frame; populated by {@link captureAudioDiagnostics}. */
+    private readonly audioSnapshot: Writable<OverlayAudioSnapshot> = {
+        levels: { main: 0, music: 0, sfx: 0 },
+        activeVoices: 0,
+        totalVoices: 0,
+        voiceStealCount: 0,
+        voiceDropCount: 0,
+        preUnlockDropCount: 0,
+    };
+
     /** Pending renderer diagnostics captured after overlay draws; copied into {@link overlayTiming} at frame end. */
     private readonly pendingRendererDiagnostics: {
         primitiveOverflowCount: number;
@@ -173,6 +186,12 @@ export class BTAPI {
 
     /** When true, {@link captureRendererDiagnostics} reads renderer pipeline counters each frame. */
     private isCollectRendererDiagnosticsEnabled = false;
+
+    /**
+     * When true, {@link attachAudioSubsystem} enables bus metering and
+     * {@link captureAudioDiagnostics} reads audio bus/voice counters each frame.
+     */
+    private isCollectAudioMetersEnabled = false;
 
     /** Pointer / mouse / touch input subsystem. Created during {@link init}. */
     private pointer: PointerInput | null = null;
@@ -271,6 +290,9 @@ export class BTAPI {
 
         const updateInterval = 1000 / hwSettings.targetFPS;
 
+        this.isCollectAudioMetersEnabled =
+            hwSettings.isOverlayEnabled !== false && hwSettings.isOverlayAudioMetersEnabled === true;
+
         console.log('[BT] Hardware settings:', {
             displaySize: `${hwSettings.displaySize.x}x${hwSettings.displaySize.y}`,
             targetFPS: hwSettings.targetFPS,
@@ -316,6 +338,13 @@ export class BTAPI {
         this.overlayTiming.primitiveSubmittedVertices = 0;
         this.overlayTiming.spriteSubmittedVertices = 0;
         this.resetPendingRendererDiagnostics();
+
+        this.audioSnapshot.levels = { main: 0, music: 0, sfx: 0 };
+        this.audioSnapshot.activeVoices = 0;
+        this.audioSnapshot.totalVoices = 0;
+        this.audioSnapshot.voiceStealCount = 0;
+        this.audioSnapshot.voiceDropCount = 0;
+        this.audioSnapshot.preUnlockDropCount = 0;
 
         this.loop = new GameLoop(
             updateInterval,
@@ -372,10 +401,12 @@ export class BTAPI {
                             this.overlayTiming,
                             this.palette,
                             this.framePaletteUsageMask,
+                            this.audioSnapshot,
                         );
                     }
 
                     this.captureRendererDiagnostics();
+                    this.captureAudioDiagnostics();
 
                     this.renderer.endFrame();
                 }
@@ -1299,6 +1330,9 @@ export class BTAPI {
             hw.isOverlayVisibleAtStart === true,
             hw.isOverlayToggleHintVisible !== false,
             hw.isOverlayToggleEnabled !== false,
+            hw.isOverlayAudioMetersEnabled === true,
+            hw.overlayAudioMeterStyle,
+            hw.overlayAudioMeterHeight,
         );
     }
 
@@ -1344,6 +1378,10 @@ export class BTAPI {
         this.audio?.detach();
         this.audio = new AudioManager();
         this.audio.attach(canvas);
+
+        if (this.isCollectAudioMetersEnabled) {
+            this.audio.enableBusMetering();
+        }
     }
 
     /**
@@ -1589,6 +1627,24 @@ export class BTAPI {
         this.pendingRendererDiagnostics.spriteOverflowCount = diagnostics.spriteOverflowCount;
         this.pendingRendererDiagnostics.primitiveSubmittedVertices = diagnostics.primitiveSubmittedVertices;
         this.pendingRendererDiagnostics.spriteSubmittedVertices = diagnostics.spriteSubmittedVertices;
+    }
+
+    /**
+     * Reads audio bus levels and voice counters when overlay audio metering is enabled.
+     *
+     * Must run after demo and overlay draws, mirroring {@link captureRendererDiagnostics}.
+     */
+    private captureAudioDiagnostics(): void {
+        if (!this.isCollectAudioMetersEnabled || !this.audio) {
+            return;
+        }
+
+        this.audioSnapshot.levels = this.audio.getBusLevels();
+        this.audioSnapshot.activeVoices = this.audio.getActiveVoiceCount();
+        this.audioSnapshot.totalVoices = this.audio.getVoiceCount();
+        this.audioSnapshot.voiceStealCount = this.audio.getVoiceStealCount();
+        this.audioSnapshot.voiceDropCount = this.audio.getVoiceDropCount();
+        this.audioSnapshot.preUnlockDropCount = this.audio.getDroppedSfxCount();
     }
 
     /**

@@ -309,6 +309,9 @@ a new `BT.soundPlay` call steals the lowest-priority active voice at or below th
 whichever voice started first). If every active voice outranks the incoming priority, the new sound is dropped silently:
 no throw, and the returned `SoundRef` is inert (`BT.isSoundPlaying` reports `false` for it immediately).
 
+Set `isOverlayAudioMetersEnabled: true` to see active/total voices, steal count, and drop count live in the overlay
+instead of reasoning about the pool from code - see [Audio meters](api-overlay.md#audio-meters-optional).
+
 </Callout>
 
 A common pattern - vary pitch slightly per play so a repeated sound (footsteps, hits) doesn't sound robotic:
@@ -474,5 +477,6 @@ allocation and stealing policy. Documented in [Hardware settings](api-core.md#ha
   <Card title="Audio Guide" href="/docs/guides/audio">Subsystem layout, locked vs. unlocked, web audio constraints.</Card>
   <Card title="API: Easing" href="/docs/api/easing">Named easing curves used by fadeMs.</Card>
   <Card title="API: Core" href="/docs/api/core">Hardware settings, including audioVoices.</Card>
+  <Card title="API: Overlay" href="/docs/api/overlay#audio-meters-optional">Live bus level bars and voices/steal/drop readout.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
 </Cards>

@@ -1,3 +1,5 @@
+import type { AudioBus } from '../core/IBTDemo';
+
 /**
  * Per-frame WebGPU pipeline diagnostic counters for overlay timing/chart internals.
  *
@@ -59,6 +61,31 @@ export interface OverlayTimingSnapshot {
 
     /** {@link OverlayRendererDiagnostics.spriteSubmittedVertices} for this frame. */
     readonly spriteSubmittedVertices: number;
+}
+
+/**
+ * Per-frame audio snapshot fed into {@link Overlay.updateAndRender}.
+ *
+ * Populated from {@link AudioManager.getBusLevels} and the {@link VoicePool} counters.
+ */
+export interface OverlayAudioSnapshot {
+    /** Normalized per-bus level (0..1), keyed the same way as the bus graph (`main`, `music`, `sfx`). */
+    readonly levels: Readonly<Record<AudioBus, number>>;
+
+    /** Number of currently active SFX voices. */
+    readonly activeVoices: number;
+
+    /** Fixed total number of SFX voice slots. */
+    readonly totalVoices: number;
+
+    /** Count of `playSound()` calls that stole an active voice slot. */
+    readonly voiceStealCount: number;
+
+    /** Count of `playSound()` calls dropped because no voice slot was free or stealable. */
+    readonly voiceDropCount: number;
+
+    /** Count of SFX play requests dropped before the audio context unlocked. */
+    readonly preUnlockDropCount: number;
 }
 
 /** Computed palette swatch grid dimensions for the palette band. */

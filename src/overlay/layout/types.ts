@@ -37,6 +37,12 @@ export interface OverlayLayoutConfig {
     /** Mirrors {@link HardwareSettings.isOverlayRendererDiagnosticsBarEnabled}. */
     readonly isOverlayRendererDiagnosticsBarEnabled: boolean;
 
+    /** When true, reserves the audio meter band at the tail of the top overlay cluster. */
+    readonly isOverlayAudioMetersEnabled: boolean;
+
+    /** Audio meter band height in pixels when {@link isOverlayAudioMetersEnabled} is true. */
+    readonly audioMeterHeight: number;
+
     /** Mirrors {@link HardwareSettings.isOverlayPaletteEnabled}. */
     readonly isOverlayPaletteEnabled: boolean;
 
@@ -55,6 +61,8 @@ export interface OverlayLayoutPlan {
 
     readonly rendererDiagnosticsBar: Rect2i;
 
+    readonly audioMeterBar: Rect2i;
+
     readonly paletteBand: Rect2i;
 
     /** Bottom hint bar (13 px); always at the display bottom edge. */
@@ -71,6 +79,8 @@ export interface OverlayLayoutPlan {
     readonly topTimingPos: Vector2i;
 
     readonly rendererDiagnosticsPos: Vector2i;
+
+    readonly audioMeterTextPos: Vector2i;
 
     readonly customBars: readonly Rect2i[];
 

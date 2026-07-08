@@ -16,11 +16,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     createMockAudioBuffer,
     installMockAudioContext,
+    type MockAnalyserNode,
     type MockAudioContext,
     type MockAudioParam,
     type MockGainNode,
     uninstallMockAudioContext,
 } from '../__test__/webaudio-mock';
+import { BTAPI } from '../core/BTAPI';
+import type { HardwareSettings } from '../core/IBTDemo';
 import { AudioManager } from './AudioManager';
 import { INVALID_SOUND_REF } from './VoicePool';
 
@@ -283,6 +286,172 @@ describe('AudioManager', () => {
         });
     });
 
+    describe('bus metering', () => {
+        it('creates no analyzers until enableBusMetering is called', () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+
+            expect(context.createAnalyserCalls).toHaveLength(0);
+        });
+
+        it('enableBusMetering creates one analyzer per bus on first call', () => {
+            audio.attach(canvas);
+
+            audio.enableBusMetering();
+
+            const context = getMockContext();
+
+            expect(context.createAnalyserCalls).toHaveLength(3);
+        });
+
+        it('a second enableBusMetering call does not create more analyzers', () => {
+            audio.attach(canvas);
+
+            audio.enableBusMetering();
+            audio.enableBusMetering();
+
+            const context = getMockContext();
+
+            expect(context.createAnalyserCalls).toHaveLength(3);
+        });
+
+        it('connects each bus gain node to its analyzer without altering existing routing', () => {
+            audio.attach(canvas);
+
+            const context = getMockContext();
+            const main = nthGainNode(context.createGainCalls, 0);
+            const music = nthGainNode(context.createGainCalls, 1);
+            const sfx = nthGainNode(context.createGainCalls, 2);
+
+            audio.enableBusMetering();
+
+            const [mainAnalyzer, musicAnalyzer, sfxAnalyzer] = context.createAnalyserCalls;
+
+            expect(main.connectCalls).toContain(context.destination);
+            expect(music.connectCalls).toContain(main);
+            expect(sfx.connectCalls).toContain(main);
+
+            expect(main.connectCalls).toContain(mainAnalyzer);
+            expect(music.connectCalls).toContain(musicAnalyzer);
+            expect(sfx.connectCalls).toContain(sfxAnalyzer);
+        });
+
+        it('is a no-op before attach', () => {
+            expect(() => audio.enableBusMetering()).not.toThrow();
+        });
+
+        it('tears down the bus-to-analyzer taps on detach and rebuilds fresh analyzers on re-attach', () => {
+            audio.attach(canvas);
+            audio.enableBusMetering();
+
+            const firstContext = getMockContext();
+            const firstAnalyzers = firstContext.createAnalyserCalls;
+            const firstMain = nthGainNode(firstContext.createGainCalls, 0);
+            const firstMusic = nthGainNode(firstContext.createGainCalls, 1);
+            const firstSfx = nthGainNode(firstContext.createGainCalls, 2);
+            const disconnectSpies = [
+                vi.spyOn(firstMain as unknown as GainNode, 'disconnect'),
+                vi.spyOn(firstMusic as unknown as GainNode, 'disconnect'),
+                vi.spyOn(firstSfx as unknown as GainNode, 'disconnect'),
+            ];
+
+            audio.detach();
+
+            for (const spy of disconnectSpies) {
+                expect(spy).toHaveBeenCalledTimes(1);
+            }
+
+            expect(disconnectSpies[0]).toHaveBeenCalledWith(firstAnalyzers[0]);
+            expect(disconnectSpies[1]).toHaveBeenCalledWith(firstAnalyzers[1]);
+            expect(disconnectSpies[2]).toHaveBeenCalledWith(firstAnalyzers[2]);
+
+            audio.attach(canvas);
+            audio.enableBusMetering();
+
+            const secondContext = getMockContext();
+
+            expect(secondContext.createAnalyserCalls).toHaveLength(3);
+            expect(secondContext.createAnalyserCalls[0]).not.toBe(firstAnalyzers[0]);
+        });
+
+        it('getBusLevels returns zeros before enableBusMetering was ever called', () => {
+            audio.attach(canvas);
+
+            expect(audio.getBusLevels()).toEqual({ main: 0, music: 0, sfx: 0 });
+        });
+
+        it('getBusLevels returns zeros before attach', () => {
+            expect(audio.getBusLevels()).toEqual({ main: 0, music: 0, sfx: 0 });
+        });
+
+        it('getBusLevels returns zeros when metering is enabled but the context is not unlocked', () => {
+            audio.attach(canvas);
+            audio.enableBusMetering();
+
+            expect(audio.isUnlocked()).toBe(false);
+            expect(audio.getBusLevels()).toEqual({ main: 0, music: 0, sfx: 0 });
+        });
+
+        it('computes a normalized RMS level per bus from analyzer time-domain data once unlocked', async () => {
+            audio.attach(canvas);
+            audio.enableBusMetering();
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const context = getMockContext();
+            const [mainAnalyzer, musicAnalyzer, sfxAnalyzer] = context.createAnalyserCalls as unknown as [
+                MockAnalyserNode,
+                MockAnalyserNode,
+                MockAnalyserNode,
+            ];
+
+            mainAnalyzer.mockTimeDomainData = new Float32Array(mainAnalyzer.fftSize).fill(1);
+            musicAnalyzer.mockTimeDomainData = new Float32Array(musicAnalyzer.fftSize).fill(0);
+            sfxAnalyzer.mockTimeDomainData = new Float32Array(sfxAnalyzer.fftSize).fill(0.5);
+
+            const levels = audio.getBusLevels();
+
+            expect(levels.main).toBeCloseTo(1, 5);
+            expect(levels.music).toBeCloseTo(0, 5);
+            expect(levels.sfx).toBeCloseTo(0.5, 5);
+        });
+
+        it('reuses the same scratch buffer across getBusLevels calls instead of reallocating', async () => {
+            audio.attach(canvas);
+            audio.enableBusMetering();
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            const context = getMockContext();
+            const mainAnalyzer = context.createAnalyserCalls[0];
+
+            if (mainAnalyzer === undefined) {
+                throw new Error('expected a live main analyzer; call audio.enableBusMetering() first');
+            }
+
+            const getFloatTimeDomainDataSpy = vi.spyOn(mainAnalyzer, 'getFloatTimeDomainData');
+
+            audio.getBusLevels();
+            audio.getBusLevels();
+
+            expect(getFloatTimeDomainDataSpy).toHaveBeenCalledTimes(2);
+
+            const firstBuffer = getFloatTimeDomainDataSpy.mock.calls[0]?.[0];
+            const secondBuffer = getFloatTimeDomainDataSpy.mock.calls[1]?.[0];
+
+            expect(firstBuffer).toBe(secondBuffer);
+        });
+    });
+
     describe('unlock state machine', () => {
         it('starts locked', () => {
             audio.attach(canvas);
@@ -440,6 +609,89 @@ describe('AudioManager', () => {
             expect(detachedAudio.soundPanGet(INVALID_SOUND_REF)).toBe(0);
             expect(() => detachedAudio.soundStop(INVALID_SOUND_REF)).not.toThrow();
             expect(() => detachedAudio.soundVolumeSet(INVALID_SOUND_REF, 0.5)).not.toThrow();
+        });
+    });
+
+    describe('voice pool accessors', () => {
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('every accessor reports zero on a manager that was never attached', () => {
+            const detachedAudio = new AudioManager();
+
+            expect(detachedAudio.getVoiceCount()).toBe(0);
+            expect(detachedAudio.getActiveVoiceCount()).toBe(0);
+            expect(detachedAudio.getVoiceStealCount()).toBe(0);
+            expect(detachedAudio.getVoiceDropCount()).toBe(0);
+        });
+
+        it('getVoiceCount returns the configured slot count after attach', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 3,
+            } as HardwareSettings);
+
+            audio.attach(canvas);
+
+            expect(audio.getVoiceCount()).toBe(3);
+        });
+
+        it('getActiveVoiceCount reflects live voices once unlocked', async () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 3,
+            } as HardwareSettings);
+
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            audio.playSound(createMockAudioBuffer());
+            audio.playSound(createMockAudioBuffer());
+
+            expect(audio.getActiveVoiceCount()).toBe(2);
+        });
+
+        it('getVoiceStealCount reflects pool steals once the pool is full', async () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            audio.playSound(createMockAudioBuffer(), { priority: 5 });
+            audio.playSound(createMockAudioBuffer(), { priority: 5 });
+
+            expect(audio.getVoiceStealCount()).toBe(1);
+        });
+
+        it('getVoiceDropCount reflects pool-exhaustion drops, distinct from pre-unlock drops', async () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 1,
+            } as HardwareSettings);
+
+            audio.attach(canvas);
+
+            canvas.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
+            await vi.waitFor(() => {
+                expect(audio.isUnlocked()).toBe(true);
+            });
+
+            audio.playSound(createMockAudioBuffer(), { priority: 5 });
+            audio.playSound(createMockAudioBuffer(), { priority: 1 });
+
+            expect(audio.getVoiceDropCount()).toBe(1);
+            expect(audio.getDroppedSfxCount()).toBe(0);
         });
     });
 

@@ -395,6 +395,24 @@ export class VoicePool {
     }
 
     /**
+     * Returns the number of currently active (live-voice) slots.
+     *
+     * @returns Active voice count, in `[0, getVoiceCount()]`.
+     */
+    public getActiveVoiceCount(): number {
+        return this.slots.filter((slot) => slot.isActive).length;
+    }
+
+    /**
+     * Returns the fixed total number of voice slots in the pool.
+     *
+     * @returns Total slot count, sized at construction from `HardwareSettings.audioVoices`.
+     */
+    public getVoiceCount(): number {
+        return this.slots.length;
+    }
+
+    /**
      * Picks a slot for a new voice: the first free slot, or the best steal candidate.
      *
      * @param priority - Allocation priority of the incoming voice.

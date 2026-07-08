@@ -51,6 +51,12 @@ export class AudioManager {
     /** Gain nodes for the bus graph, or `null` before {@link attach} / after {@link detach}. */
     private busNodes: PerBus<GainNode> | null = null;
 
+    /** Per-bus metering analyzers, or `null` before {@link enableBusMetering} / after {@link detach}. */
+    private analyzerNodes: PerBus<AnalyserNode> | null = null;
+
+    /** Reusable per-bus sample scratch buffers for {@link getBusLevels}, sized to each analyzer's `fftSize`. */
+    private analyzerBuffers: PerBus<Float32Array<ArrayBuffer>> | null = null;
+
     /** SFX voice pool, or `null` before {@link attach} / after {@link detach}. */
     private voicePool: VoicePool | null = null;
 
@@ -170,6 +176,15 @@ export class AudioManager {
 
         this.musicPlayer?.stop();
         this.musicPlayer = null;
+
+        if (this.analyzerNodes !== null && this.busNodes !== null) {
+            this.busNodes.main.disconnect(this.analyzerNodes.main);
+            this.busNodes.music.disconnect(this.analyzerNodes.music);
+            this.busNodes.sfx.disconnect(this.analyzerNodes.sfx);
+        }
+
+        this.analyzerNodes = null;
+        this.analyzerBuffers = null;
 
         if (this.context !== null) {
             this.context.close().catch(() => {
@@ -529,6 +544,94 @@ export class AudioManager {
     }
 
     /**
+     * Returns the number of `playSound()` calls that stole an active voice slot.
+     *
+     * @returns Steal count, or `0` before {@link attach}.
+     */
+    public getVoiceStealCount(): number {
+        return this.voicePool?.getStealCount() ?? 0;
+    }
+
+    /**
+     * Returns the number of `playSound()` calls dropped because no voice slot was free or
+     * stealable. Distinct from {@link getDroppedSfxCount}, which counts requests dropped before
+     * unlock.
+     *
+     * @returns Drop count, or `0` before {@link attach}.
+     */
+    public getVoiceDropCount(): number {
+        return this.voicePool?.getDropCount() ?? 0;
+    }
+
+    /**
+     * Returns the number of currently active SFX voices.
+     *
+     * @returns Active voice count, or `0` before {@link attach}.
+     */
+    public getActiveVoiceCount(): number {
+        return this.voicePool?.getActiveVoiceCount() ?? 0;
+    }
+
+    /**
+     * Returns the fixed total number of SFX voice slots.
+     *
+     * @returns Total slot count, or `0` before {@link attach}.
+     */
+    public getVoiceCount(): number {
+        return this.voicePool?.getVoiceCount() ?? 0;
+    }
+
+    /**
+     * Lazily creates one `AnalyserNode` per bus and connects each bus gain node to its analyser,
+     * in parallel with the bus's existing routing (analyzers never replace or reroute existing
+     * connections). A no-op on every call after the first, and before {@link attach} / after a
+     * failed `attach()` (no live bus graph).
+     */
+    public enableBusMetering(): void {
+        if (this.analyzerNodes !== null || this.context === null || this.busNodes === null) {
+            return;
+        }
+
+        const context = this.context;
+        const busNodes = this.busNodes;
+        const analyzerNodes: PerBus<AnalyserNode> = {
+            main: context.createAnalyser(),
+            music: context.createAnalyser(),
+            sfx: context.createAnalyser(),
+        };
+
+        busNodes.main.connect(analyzerNodes.main);
+        busNodes.music.connect(analyzerNodes.music);
+        busNodes.sfx.connect(analyzerNodes.sfx);
+
+        this.analyzerNodes = analyzerNodes;
+        this.analyzerBuffers = {
+            main: new Float32Array(analyzerNodes.main.fftSize),
+            music: new Float32Array(analyzerNodes.music.fftSize),
+            sfx: new Float32Array(analyzerNodes.sfx.fftSize),
+        };
+    }
+
+    /**
+     * Returns a normalized per-bus level snapshot (RMS of the current time-domain samples, in
+     * `[0, 1]`).
+     *
+     * @returns Per-bus level snapshot, or all zeros when {@link enableBusMetering} was never
+     *   called or the audio context is not yet unlocked.
+     */
+    public getBusLevels(): PerBus<number> {
+        if (this.analyzerNodes === null || this.analyzerBuffers === null || !this.unlocked) {
+            return { main: 0, music: 0, sfx: 0 };
+        }
+
+        return {
+            main: computeBusLevel(this.analyzerNodes.main, this.analyzerBuffers.main),
+            music: computeBusLevel(this.analyzerNodes.music, this.analyzerBuffers.music),
+            sfx: computeBusLevel(this.analyzerNodes.sfx, this.analyzerBuffers.sfx),
+        };
+    }
+
+    /**
      * Creates the `sfx` / `music` / `main` gain nodes and wires `sfx` and
      * `music` into `main`, which connects to `destination`.
      *
@@ -642,4 +745,23 @@ export class AudioManager {
  */
 function clampVolume(volume: number): number {
     return Math.min(MAX_BUS_VOLUME, Math.max(MIN_BUS_VOLUME, volume));
+}
+
+/**
+ * Computes a normalized RMS level from `analyzer`'s current time-domain samples.
+ *
+ * @param analyzer - Bus analyzer to sample.
+ * @param samples - Reusable scratch buffer sized to `analyzer.fftSize`; overwritten in place.
+ * @returns RMS level in `[0, 1]` for a full-scale signal.
+ */
+function computeBusLevel(analyzer: AnalyserNode, samples: Float32Array<ArrayBuffer>): number {
+    analyzer.getFloatTimeDomainData(samples);
+
+    let sumOfSquares = 0;
+
+    for (const sample of samples) {
+        sumOfSquares += sample * sample;
+    }
+
+    return Math.sqrt(sumOfSquares / samples.length);
 }

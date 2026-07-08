@@ -131,6 +131,11 @@ This cap exists because each slot is a real `AudioBufferSourceNode -> GainNode -
 pool grow unbounded would let a busy scene (an explosion with dozens of debris impacts, for example) spend unbounded CPU
 on nodes the player can't meaningfully hear over each other anyway.
 
+To see the pool cap and stealing policy in action instead of reasoning about it in the abstract, enable
+`isOverlayAudioMetersEnabled: true` - the overlay's audio meter band shows live `main`/`music`/`sfx` bus levels plus a
+voices used/total, steal, and drop readout. See [Audio meters](api-overlay.md#audio-meters-optional) in the Overlay API
+reference.
+
 A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
 play instead:
 
@@ -273,6 +278,7 @@ const explosion = await AudioClip.synth(restored);
 
 <Cards>
   <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, unlock, SFX and music playback, and the synth engine.</Card>
+  <Card title="API: Overlay" href="/docs/api/overlay#audio-meters-optional">Live bus level bars and voices/steal/drop readout.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Pointer, keyboard, and gamepad input that can trigger unlock.</Card>
 </Cards>

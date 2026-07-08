@@ -1067,6 +1067,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "OverlayAudioMeterStyle": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "OverlayRow": {
       "kind": "interface",
       "since": "1.1.0",
@@ -1383,6 +1390,7 @@
       "Timer"
     ],
     "api/overlay": [
+      "OverlayAudioMeterStyle",
       "OverlayRow",
       "OverlayStyle",
       "OverlayTimingChartStyle"

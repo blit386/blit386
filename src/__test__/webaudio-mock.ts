@@ -10,6 +10,12 @@ const MOCK_SAMPLE_RATE = 48000;
 /** Default gain value for a freshly created mock `AudioParam`, matching the real `GainNode` default. */
 const DEFAULT_GAIN_VALUE = 1;
 
+/** Default FFT window size for a freshly created mock `AnalyserNode`, matching the real `AnalyserNode` default. */
+const DEFAULT_FFT_SIZE = 2048;
+
+/** Default smoothing constant for a freshly created mock `AnalyserNode`, matching the real `AnalyserNode` default. */
+const DEFAULT_SMOOTHING_TIME_CONSTANT = 0.8;
+
 /** Recorded `AudioParam` scheduling calls, readable via a cast back from the returned `AudioParam`. */
 export interface MockAudioParam {
     /** Current (immediately applied) parameter value. */
@@ -40,6 +46,18 @@ export interface MockGainNode extends MockAudioNode {
     readonly gain: MockAudioParam;
 }
 
+/** Recorded `AnalyserNode` state: connect tracking plus settable analysis parameters and injectable sample data. */
+export interface MockAnalyserNode extends MockAudioNode {
+    /** FFT window size; settable per test. */
+    fftSize: number;
+
+    /** Analyzer smoothing constant; settable per test. */
+    smoothingTimeConstant: number;
+
+    /** Time-domain samples returned by `getFloatTimeDomainData`; settable per test. */
+    mockTimeDomainData: Float32Array;
+}
+
 /** Recorded `AudioContext` state: created gain nodes plus resume/close call counts. */
 export interface MockAudioContext {
     /** Sample rate in Hz reported by this mock context. */
@@ -56,6 +74,9 @@ export interface MockAudioContext {
 
     /** Stereo panner nodes created via `createStereoPanner()`, in call order. */
     readonly createStereoPannerCalls: readonly StereoPannerNode[];
+
+    /** Analyzer nodes created via `createAnalyser()`, in call order. */
+    readonly createAnalyserCalls: readonly AnalyserNode[];
 
     /** Destination node passed to `main.connect(...)` in a well-wired bus graph. */
     readonly destination: AudioNode;
@@ -224,6 +245,40 @@ export function createMockStereoPannerNode(): StereoPannerNode {
 }
 
 /**
+ * Creates a mock `AnalyserNode`: a `connect`-tracking node with settable `fftSize` /
+ * `smoothingTimeConstant`, and a `getFloatTimeDomainData` that copies from an injectable
+ * `mockTimeDomainData` array (zero-filled by default).
+ *
+ * @returns Mock `AnalyserNode` stub, cast from a plain tracking object.
+ */
+export function createMockAnalyserNode(): AnalyserNode {
+    const connectCalls: unknown[] = [];
+
+    const node = {
+        fftSize: DEFAULT_FFT_SIZE,
+        smoothingTimeConstant: DEFAULT_SMOOTHING_TIME_CONSTANT,
+        mockTimeDomainData: new Float32Array(DEFAULT_FFT_SIZE),
+        connectCalls,
+        connect: (destination: unknown) => {
+            connectCalls.push(destination);
+
+            return destination;
+        },
+        disconnect: () => {},
+        getFloatTimeDomainData: (array: Float32Array) => {
+            const source = node.mockTimeDomainData;
+
+            for (let i = 0; i < array.length; i++) {
+                // eslint-disable-next-line security/detect-object-injection -- i is a bounded loop index, not user input
+                array[i] = source[i] ?? 0;
+            }
+        },
+    };
+
+    return node as unknown as AnalyserNode;
+}
+
+/**
  * Creates a fake `AudioBuffer`-shaped object backed by real per-channel `Float32Array` storage,
  * used both for {@link createMockAudioContext}'s default `decodeAudioData` resolution and its
  * `createBuffer()` implementation.
@@ -278,6 +333,7 @@ export function createMockAudioContext(): AudioContext {
     const createGainCalls: GainNode[] = [];
     const createBufferSourceCalls: AudioBufferSourceNode[] = [];
     const createStereoPannerCalls: StereoPannerNode[] = [];
+    const createAnalyserCalls: AnalyserNode[] = [];
     const createBufferCalls: Array<{ numberOfChannels: number; length: number; sampleRate: number }> = [];
     const destination = {} as unknown as AudioNode;
     const decodeAudioDataCalls: ArrayBuffer[] = [];
@@ -292,6 +348,7 @@ export function createMockAudioContext(): AudioContext {
         createGainCalls,
         createBufferSourceCalls,
         createStereoPannerCalls,
+        createAnalyserCalls,
         createBufferCalls,
         decodeAudioDataCalls,
         decodeAudioDataImpl: (_audioData: ArrayBuffer) => Promise.resolve(createMockAudioBuffer()),
@@ -319,6 +376,13 @@ export function createMockAudioContext(): AudioContext {
             const node = createMockStereoPannerNode();
 
             createStereoPannerCalls.push(node);
+
+            return node;
+        },
+        createAnalyser: () => {
+            const node = createMockAnalyserNode();
+
+            createAnalyserCalls.push(node);
 
             return node;
         },
