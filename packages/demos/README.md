@@ -94,7 +94,8 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 - [026-pointer-paint](https://demos.blit386.dev/026-pointer-paint) – Multi-touch finger painting using all four pointer
   slots (mouse + up to three touches), with edge-triggered clear / brush-cycle on right and middle click
 - [027-pointer-drag-flick](https://demos.blit386.dev/027-pointer-drag-flick) – Drag-and-flick physics: grab one of three
-  bouncing balls, release with `pointerDelta` as launch velocity. Multi-touch grabs one ball per finger.
+  bouncing balls, release with `pointerDelta` as launch velocity. Multi-touch grabs one ball per finger. Throws and wall
+  bounces play synthesized whoosh/thud sound effects.
 - [028-keyboard-input](https://demos.blit386.dev/028-keyboard-input) – Keyboard face buttons for two players
   (`BT.BTN_UP` … `BT.BTN_SELECT`), raw `BT.isKeyDown` / `BT.isKeyPressed` (optional tick repeat) / `BT.isKeyReleased`,
   and typed text via `BT.inputString`

@@ -29,6 +29,10 @@
  *     edge to capture the user's release-time hand velocity.
  *   - BT.pointerDelta actively driving simulation, not just shown as text.
  *
+ * Two custom sounds, both built with AudioClip.synth() (the technique 041-Synth Toy
+ * explores in depth): a whoosh on every throw, whose pitch and volume scale with how hard
+ * you flicked, and a thud every time a ball hits a wall or the floor hard enough to notice.
+ *
  * Coordinate convention: balls store position with sub-pixel precision
  * (floats) so physics integrates smoothly, but every render call rounds to
  * integer display coordinates so pixels stay crisp.
@@ -36,7 +40,7 @@
 
 // @pageTitle BLIT386 Demo 027 - Pointer Drag Flick
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -81,6 +85,31 @@ const THROW_SCALE = 1.4;
 // flick so balls don't escape the box in a single tick.
 const MAX_THROW_SPEED = 16;
 
+// Throw whoosh: pitch and volume scale between these min/max values based on how fast the
+// ball was thrown, so a gentle nudge sounds different from a hard flick.
+const WHOOSH_PITCH_MIN = 0.85;
+const WHOOSH_PITCH_MAX = 1.6;
+const WHOOSH_VOLUME_MIN = 0.35;
+const WHOOSH_VOLUME_MAX = 1.0;
+
+// Wall/floor thud: bounces gentler than this speed are skipped entirely, so a ball settling
+// to rest does not spam quiet thuds. THUD_VOLUME_MAX_SPEED is the impact speed at or above
+// which the thud plays at full volume.
+const THUD_MIN_SPEED = 0.5;
+const THUD_VOLUME_MAX_SPEED = 10;
+
+/**
+ * Keeps a number from going below `min` or above `max`.
+ *
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
 /**
  * Drag-and-flick physics demo.
  *
@@ -95,6 +124,12 @@ const MAX_THROW_SPEED = 16;
 class Demo {
     /** @type {Palette | null} */
     palette = null;
+
+    /** @type {AudioClip | null} Whoosh sound played when a ball is thrown. */
+    whooshClip = null;
+
+    /** @type {AudioClip | null} Thud sound played when a ball bounces off a wall or floor. */
+    thudClip = null;
 
     /**
      * Active balls. Created in init().
@@ -132,6 +167,24 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
+        this.whooshClip = await AudioClip.synth({
+            waveform: 'sine',
+            frequency: 600,
+            duration: 0.35,
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.2, release: 0.2 },
+            pitchSweep: { toFrequency: 150 },
+            noiseMix: 0.15,
+            seed: 2,
+        });
+
+        this.thudClip = await AudioClip.synth({
+            waveform: 'sine',
+            frequency: 90,
+            duration: 0.12,
+            envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.05 },
+            seed: 3,
+        });
+
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_BG, new Color32(18, 22, 32));
@@ -280,11 +333,28 @@ class Demo {
                 vy *= k;
             }
 
+            this.playWhoosh(speed);
+
             ball.vx = vx;
             ball.vy = vy;
             ball.grabbedBy = -1;
             return;
         }
+    }
+
+    /**
+     * Plays the flick whoosh, using throw speed to control pitch (faster flick = higher,
+     * more urgent pitch) and volume (faster flick = louder). BT.soundPlay's `pitch` option
+     * is a playback-rate multiplier, the same trick 036-Audio Basics uses for its blip sound.
+     *
+     * @param {number} speed - Pre-clamp launch speed in px/tick, from Math.hypot(vx, vy).
+     */
+    playWhoosh(speed) {
+        const speedFraction = clamp(speed / MAX_THROW_SPEED, 0, 1);
+        const pitch = WHOOSH_PITCH_MIN + speedFraction * (WHOOSH_PITCH_MAX - WHOOSH_PITCH_MIN);
+        const volume = WHOOSH_VOLUME_MIN + speedFraction * (WHOOSH_VOLUME_MAX - WHOOSH_VOLUME_MIN);
+
+        BT.soundPlay(this.whooshClip, { pitch, volume });
     }
 
     /**
@@ -327,17 +397,21 @@ class Demo {
         // Bounce off walls. The HUD strip at the top acts as the ceiling.
         if (ball.x - BALL_RADIUS < 0) {
             ball.x = BALL_RADIUS;
+            this.playThud(Math.abs(ball.vx));
             ball.vx = -ball.vx * WALL_DAMPING;
         } else if (ball.x + BALL_RADIUS > DISPLAY_W) {
             ball.x = DISPLAY_W - BALL_RADIUS;
+            this.playThud(Math.abs(ball.vx));
             ball.vx = -ball.vx * WALL_DAMPING;
         }
 
         if (ball.y - BALL_RADIUS < HUD_HEIGHT) {
             ball.y = HUD_HEIGHT + BALL_RADIUS;
+            this.playThud(Math.abs(ball.vy));
             ball.vy = -ball.vy * WALL_DAMPING;
         } else if (ball.y + BALL_RADIUS > DISPLAY_H) {
             ball.y = DISPLAY_H - BALL_RADIUS;
+            this.playThud(Math.abs(ball.vy));
             ball.vy = -ball.vy * WALL_DAMPING;
 
             // Touching the floor: scrub a little horizontal speed so balls
@@ -353,6 +427,21 @@ class Demo {
         if (Math.abs(ball.vy) < MIN_SPEED) {
             ball.vy = 0;
         }
+    }
+
+    /**
+     * Plays the wall/floor bounce thud, skipping bounces too gentle to notice and scaling
+     * volume with impact speed.
+     *
+     * @param {number} impactSpeed - Absolute velocity component (px/tick) at the moment of impact.
+     */
+    playThud(impactSpeed) {
+        if (impactSpeed < THUD_MIN_SPEED) {
+            return;
+        }
+
+        const volume = clamp(impactSpeed / THUD_VOLUME_MAX_SPEED, 0.2, 1);
+        BT.soundPlay(this.thudClip, { volume });
     }
 
     /**
