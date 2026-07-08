@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout."
-lastModified: "2026-07-07T17:38:09+02:00"
+lastModified: "2026-07-08T09:50:52+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-overlay.md"
 ---
 
@@ -77,9 +77,11 @@ Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-ro
 | Palette grid        | `isOverlayPaletteEnabled`                | Live swatch grid; wheel scroll when rows exceed visible cap               |
 | GPU diagnostics row | `isOverlayRendererDiagnosticsBarEnabled` | Text row below frame metrics                                              |
 | Chart GPU markers   | `overlayTimingChartDiagnostics`          | `'minimal'` (default when chart on), `'rich'`, or `false`                 |
+| Audio meters        | `isOverlayAudioMetersEnabled`            | Per-bus (main/music/sfx) level bars plus a voices/steal/drop text readout |
 
-Reserve vertical space in demo layouts: ~42 px top, ~14 px per custom row, timing chart height (default 22 px), palette
-grid height when enabled, and ~13 px footer hint bar. See [API: Overlay](/docs/api/overlay) for layout formulas.
+Reserve vertical space in demo layouts: ~42 px top, ~14 px per custom row, timing chart height (default 22 px), audio
+meter band height plus a 1 px gap when enabled (14 px default), palette grid height when enabled, and ~13 px footer hint
+bar. See [API: Overlay](/docs/api/overlay) for layout formulas.
 
 ## Colors and HUD palette slots
 

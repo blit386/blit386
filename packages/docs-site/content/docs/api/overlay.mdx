@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "Engine overlay HUD configure flags, style objects, and worked examples."
-lastModified: "2026-07-07T08:33:01+02:00"
+lastModified: "2026-07-08T08:37:59+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-overlay.md"
 ---
 
@@ -106,6 +106,25 @@ custom rows, and the bottom band (palette grid plus hint bar).
   enabled.
 - Overflow counts apply on WebGPU; the software backend reports `ov: 0` with GPU-equivalent vertex totals for primitive
   and sprite work.
+
+### Audio meters (optional)
+
+<Since symbol="OverlayAudioMeterStyle" />
+
+- When `isOverlayAudioMetersEnabled: true`, a band below the renderer diagnostics row (or the frame timing row when
+  diagnostics are disabled) shows three fixed-width bus level bars (`main`, `music`, `sfx`) plus an
+  `N/M voices | steal X | drop Y` text readout.
+- Band height defaults to `13px`; override with `overlayAudioMeterHeight`.
+- Enabling this flag also lazily creates the `AnalyserNode`s backing the bus level readings; no metering cost is paid
+  while the flag is `false`.
+- Each bar tracks its bus level (`0`-`1`, from `AudioManager.getBusLevels()`) as a bottom-anchored fill; a track rect
+  always draws so a quiet bus still shows as an outline.
+- Fill color defaults to `overlayStyle.textPaletteIndex`; track color defaults to `overlayStyle.gapPaletteIndex` (then
+  `barPaletteIndex`); override with `overlayAudioMeterStyle`.
+- A bar switches to the warning tint at `70%` of full scale and the clip tint at `95%`; defaults `3` and `4`, override
+  with `overlayAudioMeterStyle.warningPaletteIndex` / `clipPaletteIndex`.
+- `drop` sums pool-exhaustion drops (no free or stealable voice slot) and pre-unlock drops (SFX requested before the
+  audio context unlocked).
 
 ### Top row 2 (left)
 
@@ -218,6 +237,7 @@ Demos should not duplicate engine overlay text; the overlay provides it. Leave r
 - Top of screen: about `43px` clear (three built-in text rows + filled gaps + separator below the top cluster).
   - Add `overlayTimingChartHeight` (or `22px`) when `isOverlayTimingChartEnabled: true`.
   - Add `14px` when `isOverlayRendererDiagnosticsBarEnabled: true`.
+  - Add `overlayAudioMeterHeight + 1px` (or `14px`) when `isOverlayAudioMetersEnabled: true`.
 - Bottom of screen: about `14px` clear by default (`1px` separator + `13px` hint bar).
 - With the palette grid (`isOverlayPaletteEnabled: true`): add the grid height, its `1px` filled row gap, and the `13px`
   hint bar – for example about `83px` on the default `320×240` layout with a 256-slot palette (32 columns × 8 rows of
@@ -269,6 +289,8 @@ function configure(): Partial<HardwareSettings> {
     overlayTimingChartHeight: 32, // optional; default 22
     overlayTimingChartDiagnostics: 'rich', // optional; default 'minimal' when chart enabled
     isOverlayRendererDiagnosticsBarEnabled: true, // optional; default false
+    isOverlayAudioMetersEnabled: true, // optional; default false
+    overlayAudioMeterHeight: 13, // optional; default 13
     overlayStyle: { barPaletteIndex: 2, textPaletteIndex: 3, gapPaletteIndex: 2 },
     overlayTimingChartStyle: {
       updateBarPaletteIndex: 2, // defaults to barPaletteIndex when omitted
@@ -278,6 +300,12 @@ function configure(): Partial<HardwareSettings> {
       errorPaletteIndex: 4, // hard over-budget / 2+ drops; default 4
       tagPaletteIndex: 5, // tag and tick text; default 5
       overflowPaletteIndex: 3, // overflow baseline marker; defaults to warningPaletteIndex
+    },
+    overlayAudioMeterStyle: {
+      levelBarPaletteIndex: 3, // defaults to textPaletteIndex when omitted
+      trackPaletteIndex: 2, // defaults to gapPaletteIndex when omitted
+      warningPaletteIndex: 3, // bus level >= 70% of full scale; default 3
+      clipPaletteIndex: 4, // bus level >= 95% of full scale; default 4
     },
   };
 }

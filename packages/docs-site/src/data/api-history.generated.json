@@ -596,6 +596,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.isMusicPlaying": {
+      "kind": "getter",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.isPointerActive": {
       "kind": "method",
       "since": "1.1.1",
@@ -656,6 +663,34 @@
         "note": "Use {@link isKeyReleased} instead."
       },
       "status": "deprecated"
+    },
+    "BT.musicPlay": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.musicStop": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.musicVolumeGet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.musicVolumeSet": {
+      "kind": "method",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "BT.outputSize": {
       "kind": "getter",
@@ -1018,12 +1053,26 @@
       "deprecated": null,
       "status": "stable"
     },
+    "MusicPlayOptions": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "Noise": {
       "kind": "class",
       "since": "1.0.3",
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "OverlayAudioMeterStyle": {
+      "kind": "interface",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "OverlayRow": {
       "kind": "interface",
@@ -1279,7 +1328,12 @@
       "BT.audioVolumeSet",
       "BT.isAudioMuted",
       "BT.isAudioUnlocked",
+      "BT.isMusicPlaying",
       "BT.isSoundPlaying",
+      "BT.musicPlay",
+      "BT.musicStop",
+      "BT.musicVolumeGet",
+      "BT.musicVolumeSet",
       "BT.soundPanGet",
       "BT.soundPanSet",
       "BT.soundPitchGet",
@@ -1289,6 +1343,7 @@
       "BT.soundVolumeGet",
       "BT.soundVolumeSet",
       "BT.synthPreset",
+      "MusicPlayOptions",
       "SoundPlayOptions",
       "SoundRef",
       "SynthEnvelope",
@@ -1335,6 +1390,7 @@
       "Timer"
     ],
     "api/overlay": [
+      "OverlayAudioMeterStyle",
       "OverlayRow",
       "OverlayStyle",
       "OverlayTimingChartStyle"
