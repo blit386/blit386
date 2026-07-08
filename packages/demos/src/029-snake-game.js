@@ -288,11 +288,23 @@ class Demo {
         // Rendering them once here means eating and dying play back with zero delay later.
         this.eatClip = await AudioClip.synth(BT.synthPreset.pickup());
         this.gameOverClip = await AudioClip.synth(BT.synthPreset.explosion());
-        this.musicClip = await AudioClip.load('/audio/music-upbeat.wav');
 
-        // BT.musicPlay() called before the page is unlocked is "remembered" and starts for
-        // real the instant the player clicks or presses a key.
-        BT.musicPlay(this.musicClip, { loop: true });
+        // The background music file is loaded separately from the sound effects above, and
+        // wrapped in its own try/catch. Unlike the effects (built on the spot by the synth
+        // engine, so they cannot fail), this loads an actual audio file over the network -
+        // if it is missing or the browser cannot decode it, we do not want that one file to
+        // stop the whole game from starting. Catching the error here means Snake stays fully
+        // playable with sound effects but no music, instead of getting stuck on a blank
+        // screen.
+        try {
+            this.musicClip = await AudioClip.load('/audio/music-upbeat.wav');
+
+            // BT.musicPlay() called before the page is unlocked is "remembered" and starts
+            // for real the instant the player clicks or presses a key.
+            BT.musicPlay(this.musicClip, { loop: true });
+        } catch (error) {
+            console.warn('Snake Game: failed to load background music, continuing without it.', error);
+        }
 
         this.palette = BT.paletteCreate(256);
 
