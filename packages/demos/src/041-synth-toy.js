@@ -26,6 +26,12 @@
  * This page loads sound the same "click or press a key first" way 036-audio-basics does -
  * browsers refuse to make any sound until you interact with the page at least once.
  *
+ * The engine's built-in overlay also shows live audio meters: little bars that move
+ * up and down with how loud each audio bus (main, music, sfx) is right now, plus a
+ * count of how many sounds are playing at once. This demo turns that feature on with
+ * `isOverlayAudioMetersEnabled: true` in configure() - watch the meters jump every time a
+ * preset or a randomized sound plays.
+ *
  * Try this:
  * - Click anywhere, or press any key, to unlock sound - watch the message at the top change
  *   once you do.
@@ -42,6 +48,7 @@ import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SynthParams} SynthParams */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
 // Palette indices. Slot 0 stays transparent.
 const C_WHITE = 1;
@@ -78,11 +85,14 @@ const PRESET_DEFINITIONS = [
 // for every row below plus a couple of pixels of breathing room above the bottom border - the
 // last row's text is one full font-cell (14px) tall, so the panel has to extend well past
 // where that row starts, not just past where it starts drawing.
-const PANEL_Y = 108;
+const PANEL_Y = 94;
 const PANEL_W = 148;
 const PANEL_H = 124;
 const PANEL_LEFT_X = 8;
 const PANEL_RIGHT_X = 164;
+
+// Position of the one-line unlock/controls reminder that sits above both panels.
+const UNLOCK_PROMPT_Y = 62;
 
 // Row spacing inside the preset panel: the first row starts this many pixels below the
 // panel's top edge, and each following row sits one step further down.
@@ -209,6 +219,34 @@ class Demo {
     lastRandomParams = null;
 
     /**
+     * Turns on the engine's built-in audio meters in the overlay.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
+    configure() {
+        return {
+            // Adds live bar-graph meters (main/music/sfx bus levels) plus a voice-count
+            // readout to the overlay. Off by default, since measuring audio levels costs a
+            // little extra CPU work the engine skips unless a demo asks for it.
+            isOverlayAudioMetersEnabled: true,
+
+            // Shows the overlay body (title, FPS, backend, and the audio meters above) right
+            // from the first frame instead of waiting for a Backquote press or a click in the
+            // toggle-hint corner. This demo is all about sound, so the meters should be
+            // visible immediately.
+            isOverlayVisibleAtStart: true,
+
+            // gapPaletteIndex fills both the thin seams between overlay rows and the empty
+            // (unfilled) track behind each audio meter bar, so it must match the screen
+            // background - slot {@link C_BG} - or those seams and meter tracks would show up
+            // as a mismatched color instead of blending in. Filled in init() below.
+            overlayStyle: {
+                gapPaletteIndex: C_BG,
+            },
+        };
+    }
+
+    /**
      * Renders every preset's SynthParams recipe into a ready-to-play clip, so pressing a
      * preset key later has zero delay, and sets up the palette.
      *
@@ -233,6 +271,7 @@ class Demo {
         this.palette.set(C_METER_FILL, new Color32(120, 190, 255));
 
         BT.paletteSet(this.palette);
+
         return true;
     }
 
@@ -317,12 +356,13 @@ class Demo {
      * to a plain reminder of the controls.
      */
     renderUnlockPrompt() {
-        if (!BT.isAudioUnlocked) {
-            BT.systemPrint(new Vector2i(8, 8), C_ACCENT, 'Click or press a key to enable sound');
-            return;
-        }
+        const pos = new Vector2i(PANEL_LEFT_X, UNLOCK_PROMPT_Y);
 
-        BT.systemPrint(new Vector2i(8, 8), C_DIM, 'Press J/P/E/L/H/B for presets, R to randomize');
+        if (BT.isAudioUnlocked) {
+            BT.systemPrint(pos, C_DIM, 'Press J/P/E/L/H/B for presets, R to randomize');
+        } else {
+            BT.systemPrint(pos, C_ACCENT, 'Click or press a key to enable sound');
+        }
     }
 
     /**

@@ -20,6 +20,7 @@ dist/
 # Git
 .git/
 .remember/
+.superpowers/
 
 # Generated/minified files
 **/*.min.css

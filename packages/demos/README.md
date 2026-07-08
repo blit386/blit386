@@ -9,7 +9,7 @@ explaining how everything works.
 Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
 scaffolder (`npm create blit386@latest my-game`).
 
-There are 37 demo modules today (36 numbered demos plus `00a-barebones`). Each one lives in a single file under `src/`
+There are 39 demo modules today (38 numbered demos plus `00a-barebones`). Each one lives in a single file under `src/`
 (for example `src/001-basics.js`). During development, Vite serves the matching page at `/demos/001-basics.html` (no
 HTML file is committed; the build wires a shared layout to each script).
 
@@ -85,7 +85,7 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 
 - [013-image-output](https://demos.blit386.dev/013-image-output) – Frame capture and PNG export
 - [014-game-scene](https://demos.blit386.dev/014-game-scene) – Capstone: tilemap ground, patterns, sprites, camera,
-  animation, and frame capture in one scene
+  animation, frame capture, and looping background music with a real intro/loop point in one scene
 
 ### Input
 
@@ -94,14 +94,15 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 - [026-pointer-paint](https://demos.blit386.dev/026-pointer-paint) – Multi-touch finger painting using all four pointer
   slots (mouse + up to three touches), with edge-triggered clear / brush-cycle on right and middle click
 - [027-pointer-drag-flick](https://demos.blit386.dev/027-pointer-drag-flick) – Drag-and-flick physics: grab one of three
-  bouncing balls, release with `pointerDelta` as launch velocity. Multi-touch grabs one ball per finger.
+  bouncing balls, release with `pointerDelta` as launch velocity. Multi-touch grabs one ball per finger. Throws and wall
+  bounces play synthesized whoosh/thud sound effects.
 - [028-keyboard-input](https://demos.blit386.dev/028-keyboard-input) – Keyboard face buttons for two players
   (`BT.BTN_UP` … `BT.BTN_SELECT`), raw `BT.isKeyDown` / `BT.isKeyPressed` (optional tick repeat) / `BT.isKeyReleased`,
   and typed text via `BT.inputString`
 - [035-keyboard-diagnostic](https://demos.blit386.dev/035-keyboard-diagnostic) – Full on-screen keyboard layout with
   press / hold / release color feedback; use to verify fast taps on high-refresh displays
-- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard steering, and
-  PipBoy-style CRT post-processing
+- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard steering,
+  PipBoy-style CRT post-processing, synth SFX on eat/game-over, and a looping background music track
 - [030-input-map-remapping](https://demos.blit386.dev/030-input-map-remapping) – Runtime face-button remapping with
   `BT.inputMap` / `BT.inputMapReset` (defaults, custom OR keys, clearing a binding); complements demo 028
 - [031-gamepad-input](https://demos.blit386.dev/031-gamepad-input) – Tiny hover-pod playground showing gamepad connect
@@ -118,11 +119,18 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 ### Audio
 
 - [036-audio-basics](https://demos.blit386.dev/036-audio-basics) – Loading clips with `AudioClip.load()`, playing SFX on
-  a key press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt
+  a key press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt;
+  `isOverlayAudioMetersEnabled` shows live bus-level meters and a voice-count readout in the overlay
 - [041-synth-toy](https://demos.blit386.dev/041-synth-toy) – Procedural chip-tune SFX built entirely with
   `AudioClip.synth()`: six keyboard-triggered presets (jump/pickup/explosion/laser/hit/blip) via `BT.synthPreset`, plus
   a randomize key that rolls a fresh `SynthParams` object to show off waveform, envelope, pitch-sweep, and noise-mix
-  variation
+  variation; also opts into the overlay's live audio meters via `isOverlayAudioMetersEnabled`
+- [037-music](https://demos.blit386.dev/037-music) – Crossfading between two looping tracks with two different
+  `BT.musicPlay()` fade profiles, plus a third track demonstrating a seamless `loopStart`/`loopEnd` region after a
+  one-time intro
+- [038-audio-buses](https://demos.blit386.dev/038-audio-buses) – Mixer bus control: draggable `main`/`music`/`sfx`
+  volume sliders, per-bus mute toggles that preserve the stored volume, and an alert button that ducks the music bus
+  with `BT.audioVolumeSet()`
 
 ## Browser and Renderer
 
