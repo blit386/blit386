@@ -1065,7 +1065,7 @@ export class BTAPI {
     /**
      * Starts rotating a range of palette entries at a constant speed.
      *
-     * Classic water/fire/plasma animation. Runs indefinitely until cancelled
+     * Classic water/fire/plasma animation. Runs indefinitely until canceled
      * via {@link paletteClearEffects}.
      *
      * @param start - First palette index in the cycling range (inclusive).
@@ -1162,7 +1162,7 @@ export class BTAPI {
     /**
      * Cancels all running palette effects immediately.
      *
-     * The palette stays at whatever state it was in when cancelled.
+     * The palette stays at whatever state it was in when canceled.
      */
     public paletteClearEffects(): void {
         this.paletteEffects.clear();

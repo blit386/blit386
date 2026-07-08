@@ -1017,7 +1017,7 @@ export const BT = {
      * Starts rotating a range of palette entries at a constant speed.
      *
      * Classic water/fire/plasma animation technique. Runs indefinitely until
-     * cancelled via {@link BT.paletteClearEffects}. Uses a fractional accumulator
+     * canceled via {@link BT.paletteClearEffects}. Uses a fractional accumulator
      * for sub-frame precision.
      *
      * @since 1.0.3
@@ -1104,7 +1104,7 @@ export const BT = {
     /**
      * Cancels all running palette effects immediately.
      *
-     * The palette stays at whatever state it was in when cancelled.
+     * The palette stays at whatever state it was in when canceled.
      *
      * @since 1.0.3
      */

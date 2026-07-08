@@ -125,7 +125,7 @@ export class PaletteEffectManager {
 /**
  * Rotates a range of palette entries at a constant speed.
  *
- * Classic water/fire/plasma animation. Runs indefinitely until cancelled
+ * Classic water/fire/plasma animation. Runs indefinitely until canceled
  * via {@link PaletteEffectManager.clear}.
  *
  * Uses a fractional accumulator for sub-frame precision and a pre-allocated

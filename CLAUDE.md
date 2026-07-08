@@ -182,6 +182,8 @@ Prose rules:
   subsection needs a parent `##`; give orphaned ones a heading.
 - Credit external inspirations with a link and the author's name (for example RetroBlit at
   `https://www.badcastle.com/retroblit.html` by Martin Cietwierkowski, `@daafu`).
+- American English spelling – see American English spelling under Code Style; the same convention applies to doc prose,
+  not just JSDoc.
 
 Filenames mirror the sitemap section: a doc whose `path` is `api/<topic>` is `api-<topic>.md`; `guides/<topic>` is
 `guide-<topic>.md`; `performance/<topic>` is `performance-<topic>.md`; `reference/<topic>` is `reference-<topic>.md`.
@@ -467,6 +469,16 @@ or drive breaking changes through consumers for naming-only cleanup.
 - JSDoc required for public APIs
 - When implementing changes, always update JSDoc and inline comments alongside the code. Never leave stale comments that
   describe old behavior.
+
+### American English spelling
+
+Prose, JSDoc, and our own identifiers use American English (`color`, `optimization`, `canceled`, and American-style
+verbs), never the British equivalents. Exempt: literal third-party or spec-mandated names that are correctly spelled
+with a British `s` or `c` in their own spec – for example Web Audio's `AnalyserNode`/`createAnalyser`, or this repo's
+own `gray`/`grey` named-color alias in `Color32.ts`, which mirrors the CSS Color Module's own dual spelling. Do not
+"fix" those.
+
+Cursor: `.cursor/rules/american-english-spelling.mdc` (always applied in this repo).
 
 ## TypeScript file structure
 
