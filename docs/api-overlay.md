@@ -110,7 +110,7 @@ custom rows, and the bottom band (palette grid plus hint bar).
 - Overflow counts apply on WebGPU; the software backend reports `ov: 0` with GPU-equivalent vertex totals for primitive
   and sprite work.
 
-### Audio meter (optional)
+### Audio meters (optional)
 
 <Since symbol="OverlayAudioMeterStyle" />
 
