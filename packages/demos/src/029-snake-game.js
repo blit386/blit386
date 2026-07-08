@@ -19,11 +19,16 @@
  * WebGPU path: PixelGlitch on the logical index buffer, then palette resolve + upscale,
  * then display-tier barrel distortion, chromatic aberration, interference, rolling scan
  * line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
+ *
+ * Eating food and dying both play a synthesized sound effect (built with AudioClip.synth(),
+ * the same technique 041-Synth Toy explores in depth), and an upbeat music loop plays in the
+ * background the whole time.
  */
 
 // @pageTitle BLIT386 Demo 029 - Snake Game
 
 import {
+    AudioClip,
     BarrelDistortion,
     Bloom,
     bootstrap,
@@ -155,6 +160,15 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    /** @type {AudioClip | null} Sound played when the snake eats food. */
+    eatClip = null;
+
+    /** @type {AudioClip | null} Sound played when the snake dies. */
+    gameOverClip = null;
+
+    /** @type {AudioClip | null} Looping background music. */
+    musicClip = null;
+
     /** @type {{ x: number; y: number }[]} Head first, tail last (grid coords). */
     snake = [];
 
@@ -269,6 +283,16 @@ class Demo {
     async init() {
         // Start from default keyboard maps so this demo stays independent from remapping demos.
         BT.inputMapReset();
+
+        // BT.synthPreset bundles ready-tuned sound recipes (041-Synth Toy explores all six).
+        // Rendering them once here means eating and dying play back with zero delay later.
+        this.eatClip = await AudioClip.synth(BT.synthPreset.pickup());
+        this.gameOverClip = await AudioClip.synth(BT.synthPreset.explosion());
+        this.musicClip = await AudioClip.load('/audio/music-upbeat.wav');
+
+        // BT.musicPlay() called before the page is unlocked is "remembered" and starts for
+        // real the instant the player clicks or presses a key.
+        BT.musicPlay(this.musicClip, { loop: true });
 
         this.palette = BT.paletteCreate(256);
 
@@ -639,6 +663,7 @@ class Demo {
         this.snake.unshift({ x: nx, y: ny });
 
         if (eating) {
+            BT.soundPlay(this.eatClip);
             this.placeFood();
         } else {
             this.snake.pop();
@@ -651,6 +676,7 @@ class Demo {
     endGame() {
         this.gameOver = true;
         this.deathTick = BT.ticks;
+        BT.soundPlay(this.gameOverClip);
         BT.assignTag('Game over');
     }
 }

@@ -100,8 +100,8 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
   and typed text via `BT.inputString`
 - [035-keyboard-diagnostic](https://demos.blit386.dev/035-keyboard-diagnostic) – Full on-screen keyboard layout with
   press / hold / release color feedback; use to verify fast taps on high-refresh displays
-- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard steering, and
-  PipBoy-style CRT post-processing
+- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard steering,
+  PipBoy-style CRT post-processing, synth SFX on eat/game-over, and a looping background music track
 - [030-input-map-remapping](https://demos.blit386.dev/030-input-map-remapping) – Runtime face-button remapping with
   `BT.inputMap` / `BT.inputMapReset` (defaults, custom OR keys, clearing a binding); complements demo 028
 - [031-gamepad-input](https://demos.blit386.dev/031-gamepad-input) – Tiny hover-pod playground showing gamepad connect
