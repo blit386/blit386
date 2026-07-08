@@ -1,3 +1,5 @@
+// @pageTitle BLIT386 Demo 037 - Music Playback
+
 /**
  * Music Demo - crossfading between two tracks and playing one with a seamless loop point.
  *
@@ -26,8 +28,6 @@
  * Click or press a key to unlock sound first (see 036-Audio Basics for why browsers require
  * that first click).
  */
-
-// @pageTitle BLIT386 Demo 037 - Music Playback
 
 import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
@@ -193,36 +193,6 @@ class Demo {
     }
 
     /**
-     * Starts the given track with its matching crossfade profile, unless it is already
-     * playing (pressing the same button twice does nothing new).
-     *
-     * @param {string} trackId - 'A', 'B', or 'loop'.
-     */
-    playTrack(trackId) {
-        if (trackId === this.activeTrackId) {
-            return;
-        }
-
-        if (trackId === 'A') {
-            BT.musicPlay(this.calmClip, { volume: 1, loop: true, ...PROFILE_TO_A });
-            this.activeProfileLabel = 'fade out, gap, fade in (800ms, no overlap)';
-        } else if (trackId === 'B') {
-            BT.musicPlay(this.upbeatClip, { volume: 1, loop: true, ...PROFILE_TO_B });
-            this.activeProfileLabel = 'fade out and fade in together (1200ms, full overlap)';
-        } else {
-            BT.musicPlay(this.introLoopClip, {
-                volume: 1,
-                loopStart: INTRO_LOOP_START_SECONDS,
-                loopEnd: INTRO_LOOP_END_SECONDS,
-                ...PROFILE_TO_LOOP,
-            });
-            this.activeProfileLabel = 'quick overlapping fade (600ms)';
-        }
-
-        this.activeTrackId = trackId;
-    }
-
-    /**
      * Clears the screen and draws the HUD, buttons, and status text.
      */
     render() {
@@ -280,6 +250,36 @@ class Demo {
                 `Loop region: ${INTRO_LOOP_START_SECONDS}s - ${INTRO_LOOP_END_SECONDS}s (intro plays once)`,
             );
         }
+    }
+
+    /**
+     * Starts the given track with its matching crossfade profile, unless it is already
+     * playing (pressing the same button twice does nothing new).
+     *
+     * @param {string} trackId - 'A', 'B', or 'loop'.
+     */
+    playTrack(trackId) {
+        if (trackId === this.activeTrackId) {
+            return;
+        }
+
+        if (trackId === 'A') {
+            BT.musicPlay(this.calmClip, { volume: 1, loop: true, ...PROFILE_TO_A });
+            this.activeProfileLabel = 'fade out, gap, fade in (800ms, no overlap)';
+        } else if (trackId === 'B') {
+            BT.musicPlay(this.upbeatClip, { volume: 1, loop: true, ...PROFILE_TO_B });
+            this.activeProfileLabel = 'fade out and fade in together (1200ms, full overlap)';
+        } else {
+            BT.musicPlay(this.introLoopClip, {
+                volume: 1,
+                loopStart: INTRO_LOOP_START_SECONDS,
+                loopEnd: INTRO_LOOP_END_SECONDS,
+                ...PROFILE_TO_LOOP,
+            });
+            this.activeProfileLabel = 'quick overlapping fade (600ms)';
+        }
+
+        this.activeTrackId = trackId;
     }
 }
 

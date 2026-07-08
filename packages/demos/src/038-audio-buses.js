@@ -206,74 +206,6 @@ class Demo {
     }
 
     /**
-     * While the pointer is held down over a bar, sets that bus's volume to match the
-     * pointer's horizontal position inside the bar (0 at the left edge, 1 at the right).
-     */
-    updateVolumeDrag() {
-        if (!BT.isPointerActive(0) || !BT.isDown(BT.BTN_POINTER_A, 0)) {
-            return;
-        }
-
-        const pos = BT.pointerPos(0);
-
-        for (const row of BUS_ROWS) {
-            if (!row.barRect.isContaining(pos)) {
-                continue;
-            }
-
-            const fraction = clamp((pos.x - row.barRect.x) / row.barRect.width, 0, 1);
-            BT.audioVolumeSet(row.bus, fraction, { fadeMs: 0 });
-        }
-    }
-
-    /**
-     * Toggles a bus's mute state when its button is clicked or its shortcut key is pressed.
-     */
-    updateMuteToggles() {
-        const pointerPressed = BT.isPressed(BT.BTN_POINTER_A, 0);
-        const pointerPos = BT.isPointerActive(0) ? BT.pointerPos(0) : null;
-
-        for (const row of BUS_ROWS) {
-            const clicked = pointerPressed && pointerPos !== null && row.muteRect.isContaining(pointerPos);
-            const keyPressed = BT.isKeyPressed(row.muteKeyCode);
-
-            if (clicked || keyPressed) {
-                BT.audioMuteSet(row.bus, !BT.isAudioMuted(row.bus));
-            }
-        }
-    }
-
-    /**
-     * Plays the alert sound and ducks the music bus when the Alert button is clicked or
-     * Space is pressed.
-     */
-    updateAlertButton() {
-        // Ignore presses while a duck is already in progress. Without this guard, a rapid
-        // re-press would capture the already-ducked volume as the new restore target, so each
-        // re-press would multiply the eventual "restored" volume by DUCK_VOLUME_FACTOR again.
-        if (this.isDucking) {
-            return;
-        }
-
-        const pointerPressed = BT.isPressed(BT.BTN_POINTER_A, 0);
-        const pointerPos = BT.isPointerActive(0) ? BT.pointerPos(0) : null;
-        const clicked = pointerPressed && pointerPos !== null && ALERT_BUTTON_RECT.isContaining(pointerPos);
-        const keyPressed = BT.isKeyPressed('Space');
-
-        if (!clicked && !keyPressed) {
-            return;
-        }
-
-        this.preDuckMusicVolume = BT.audioVolumeGet('music');
-        BT.audioVolumeSet('music', this.preDuckMusicVolume * DUCK_VOLUME_FACTOR, { fadeMs: DUCK_FADE_MS });
-        BT.soundPlay(this.alertClip);
-
-        this.isDucking = true;
-        this.duckHoldTicksLeft = DUCK_HOLD_TICKS;
-        this.alertFlashTicks = FLASH_TICKS;
-    }
-
-    /**
      * Clears the screen and draws the HUD, the three bus rows, and the alert button.
      */
     render() {
@@ -355,6 +287,74 @@ class Demo {
         }
 
         return { text: 'Music at full volume.', color: C_DIM };
+    }
+
+    /**
+     * While the pointer is held down over a bar, sets that bus's volume to match the
+     * pointer's horizontal position inside the bar (0 at the left edge, 1 at the right).
+     */
+    updateVolumeDrag() {
+        if (!BT.isPointerActive(0) || !BT.isDown(BT.BTN_POINTER_A, 0)) {
+            return;
+        }
+
+        const pos = BT.pointerPos(0);
+
+        for (const row of BUS_ROWS) {
+            if (!row.barRect.isContaining(pos)) {
+                continue;
+            }
+
+            const fraction = clamp((pos.x - row.barRect.x) / row.barRect.width, 0, 1);
+            BT.audioVolumeSet(row.bus, fraction, { fadeMs: 0 });
+        }
+    }
+
+    /**
+     * Toggles a bus's mute state when its button is clicked or its shortcut key is pressed.
+     */
+    updateMuteToggles() {
+        const pointerPressed = BT.isPressed(BT.BTN_POINTER_A, 0);
+        const pointerPos = BT.isPointerActive(0) ? BT.pointerPos(0) : null;
+
+        for (const row of BUS_ROWS) {
+            const clicked = pointerPressed && pointerPos !== null && row.muteRect.isContaining(pointerPos);
+            const keyPressed = BT.isKeyPressed(row.muteKeyCode);
+
+            if (clicked || keyPressed) {
+                BT.audioMuteSet(row.bus, !BT.isAudioMuted(row.bus));
+            }
+        }
+    }
+
+    /**
+     * Plays the alert sound and ducks the music bus when the Alert button is clicked or
+     * Space is pressed.
+     */
+    updateAlertButton() {
+        // Ignore presses while a duck is already in progress. Without this guard, a rapid
+        // re-press would capture the already-ducked volume as the new restore target, so each
+        // re-press would multiply the eventual "restored" volume by DUCK_VOLUME_FACTOR again.
+        if (this.isDucking) {
+            return;
+        }
+
+        const pointerPressed = BT.isPressed(BT.BTN_POINTER_A, 0);
+        const pointerPos = BT.isPointerActive(0) ? BT.pointerPos(0) : null;
+        const clicked = pointerPressed && pointerPos !== null && ALERT_BUTTON_RECT.isContaining(pointerPos);
+        const keyPressed = BT.isKeyPressed('Space');
+
+        if (!clicked && !keyPressed) {
+            return;
+        }
+
+        this.preDuckMusicVolume = BT.audioVolumeGet('music');
+        BT.audioVolumeSet('music', this.preDuckMusicVolume * DUCK_VOLUME_FACTOR, { fadeMs: DUCK_FADE_MS });
+        BT.soundPlay(this.alertClip);
+
+        this.isDucking = true;
+        this.duckHoldTicksLeft = DUCK_HOLD_TICKS;
+        this.alertFlashTicks = FLASH_TICKS;
     }
 }
 

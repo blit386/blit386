@@ -91,6 +91,9 @@ const PANEL_H = 124;
 const PANEL_LEFT_X = 8;
 const PANEL_RIGHT_X = 164;
 
+// Position of the one-line unlock/controls reminder that sits above both panels.
+const UNLOCK_PROMPT_Y = 62;
+
 // Row spacing inside the preset panel: the first row starts this many pixels below the
 // panel's top edge, and each following row sits one step further down.
 const PRESET_ROW_START_Y = 20;
@@ -227,10 +230,18 @@ class Demo {
             // little extra CPU work the engine skips unless a demo asks for it.
             isOverlayAudioMetersEnabled: true,
 
+            // Shows the overlay body (title, FPS, backend, and the audio meters above) right
+            // from the first frame instead of waiting for a Backquote press or a click in the
+            // toggle-hint corner. This demo is all about sound, so the meters should be
+            // visible immediately.
             isOverlayVisibleAtStart: true,
 
+            // gapPaletteIndex fills both the thin seams between overlay rows and the empty
+            // (unfilled) track behind each audio meter bar, so it must match the screen
+            // background - slot {@link C_BG} - or those seams and meter tracks would show up
+            // as a mismatched color instead of blending in. Filled in init() below.
             overlayStyle: {
-                gapPaletteIndex: C_DIM,
+                gapPaletteIndex: C_BG,
             },
         };
     }
@@ -345,7 +356,7 @@ class Demo {
      * to a plain reminder of the controls.
      */
     renderUnlockPrompt() {
-        const pos = new Vector2i(8, 62);
+        const pos = new Vector2i(PANEL_LEFT_X, UNLOCK_PROMPT_Y);
 
         if (BT.isAudioUnlocked) {
             BT.systemPrint(pos, C_DIM, 'Press J/P/E/L/H/B for presets, R to randomize');
