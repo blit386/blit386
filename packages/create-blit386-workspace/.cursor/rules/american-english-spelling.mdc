@@ -1,0 +1,17 @@
+---
+description:
+  This repo's source, docs, and scaffolder/kit prose use American English spelling; spec-mandated third-party names are
+  exempt
+alwaysApply: true
+---
+
+# American English spelling
+
+This repo's own source, docs, and scaffolder/kit prose use American English, never the British equivalents: `color`,
+`optimization`, `canceled`.
+
+Exempt: literal third-party or spec-mandated names correctly spelled with a British `s`/`c` in their own spec (for
+example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those.
+
+Full policy: `CLAUDE.md` (Critical rules), blit386 [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md)
+(American English spelling).
