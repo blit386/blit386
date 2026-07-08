@@ -122,7 +122,7 @@ class Demo {
     }
 
     /**
-     * Allocate palette colours once at startup.
+     * Allocate palette colors once at startup.
      *
      * @returns {Promise<boolean>}
      */

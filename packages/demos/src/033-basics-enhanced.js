@@ -20,7 +20,7 @@
  *      https://vancura.dev/articles/blit386-crt-toggle
  *
  *   2. Display tier - runs AFTER the palette is resolved and the image is upscaled to
- *      the canvas. Effects here work in full-colour RGB and can blur, warp, tint, and
+ *      the canvas. Effects here work in full-color RGB and can blur, warp, tint, and
  *      bloom the final image. The other ten effects in this demo live here.
  *
  * Why ten separate display-tier effects instead of one ready-made preset (like

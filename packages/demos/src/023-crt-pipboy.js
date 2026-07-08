@@ -626,7 +626,7 @@ class Demo {
             }
 
             const visible = fullLine.slice(0, charsToShow);
-            // Pick the colour: lines that finished get the brighter green; lines mid-typing
+            // Pick the color: lines that finished get the brighter green; lines mid-typing
             // stay dim until they complete. Subtle but adds life.
             const slot = charsToShow >= fullLine.length ? C_GREEN : C_GREEN_DIM;
             this.print(new Vector2i(TEXT_LEFT, y), visible, slot);

@@ -73,7 +73,7 @@ const DRAG_FACTOR = 0.9965 ** (85 / 60);
 
 // How fast newly spawned particles shoot outward from their spark, in world units per tick.
 // Combined with the spark's own velocity (added at spawn), this gives each particle
-// a unique direction so they fan out rather than all travelling the same way.
+// a unique direction so they fan out rather than all traveling the same way.
 const STREAM_SPEED = 15;
 
 // How far from the exact spark position a new particle may appear, in world units.
