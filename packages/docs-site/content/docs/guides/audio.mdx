@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
-lastModified: "2026-07-07T17:38:09+02:00"
+lastModified: "2026-07-08T08:37:59+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-audio.md"
 ---
 
@@ -16,18 +16,19 @@ locked/unlocked gesture state, and the web platform constraints that shape it.
 
 ```text
 src/audio/
-  AudioManager.ts        # Web Audio context, bus graph, unlock state machine, mute/volume, SFX playback
+  AudioManager.ts        # Web Audio context, bus graph, unlock state machine, mute/volume, SFX + music playback
   audioDecodeContext.ts  # Decode-context registry AudioClip reads from to decode
   VoicePool.ts           # Fixed-size SFX voice pool: allocation/stealing, generational refs, per-voice fades
+  MusicPlayer.ts          # Crossfading music player: current/previous voice pair, fadeMs/overlap timing, loop points
 src/assets/
   AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists
 ```
 
 `AudioManager` is owned by the internal `BTAPI` singleton (created and torn down alongside pointer, keyboard, and
-gamepad input) and is never exposed to demo code directly - only through the `BT.audio*`/`BT.sound*` methods and the
-`BT.isAudioUnlocked` getter documented in [API: Audio](/docs/api/audio). On `attach()`, `AudioManager` registers its Web
-Audio context in `audioDecodeContext.ts`, a small bridge that `AudioClip` reads from to decode audio data without
-needing a direct reference to `AudioManager` itself.
+gamepad input) and is never exposed to demo code directly - only through the `BT.audio*`/`BT.sound*`/`BT.music*` methods
+and the `BT.isAudioUnlocked`/`BT.isMusicPlaying` getters documented in [API: Audio](/docs/api/audio). On `attach()`,
+`AudioManager` registers its Web Audio context in `audioDecodeContext.ts`, a small bridge that `AudioClip` reads from to
+decode audio data without needing a direct reference to `AudioManager` itself.
 
 `AudioClip` (see [Loading](/docs/api/audio#loading)) lives alongside the other asset loaders in `src/assets/` and uses that
 bridge to decode fetched audio bytes into a reusable `AudioBuffer`.
@@ -109,6 +110,10 @@ start audio unlocked, and none is planned.
   bus call: `playSound()` drops the request entirely before unlock (no voice allocated, no throw, counted as a dropped
   SFX request), where `AudioManager.volumeSet()` (`BT.audioVolumeSet`) still updates the engine's internal bus state and
   applies once the context resumes - it is only inaudible while locked, not dropped.
+- `BT.musicPlay` (see [Playback (Music)](/docs/api/audio#playback-music)) sits between those two behaviors: a pre-unlock
+  call isn't dropped like `BT.soundPlay`, but it isn't merely inaudible-and-applied like a bus call either - it is
+  remembered and starts automatically the instant the context unlocks. Calling `BT.musicPlay` again while still locked
+  replaces the remembered request, so only the last call before unlock actually plays.
 
 ## Playing SFX
 
@@ -122,6 +127,11 @@ below the incoming priority; see [Playback (SFX)](/docs/api/audio#playback-sfx) 
 This cap exists because each slot is a real `AudioBufferSourceNode -> GainNode -> StereoPannerNode` chain - letting the
 pool grow unbounded would let a busy scene (an explosion with dozens of debris impacts, for example) spend unbounded CPU
 on nodes the player can't meaningfully hear over each other anyway.
+
+To see the pool cap and stealing policy in action instead of reasoning about it in the abstract, enable
+`isOverlayAudioMetersEnabled: true` - the overlay's audio meter band shows live `main`/`music`/`sfx` bus levels plus a
+voices used/total, steal, and drop readout. See [Audio meters](/docs/api/overlay#audio-meters-optional) in the Overlay API
+reference.
 
 A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
 play instead:
@@ -137,6 +147,64 @@ function playFootstep() {
   BT.soundPlay(footstep, { pitch, volume: 0.6 });
 }
 ```
+
+## Playing music
+
+`BT.musicPlay` (see [Playback (Music)](/docs/api/audio#playback-music)) drives a single looping music player through the
+`'music'` bus - there is no per-track handle to manage like `SoundRef`, and a second call crossfades from whatever is
+currently playing into the new track instead of layering the two. Two patterns cover most games: switching tracks by
+game state, and looping a region after a one-shot intro.
+
+### Switching music by game state
+
+The common shape: preload every track a scene needs, then call `BT.musicPlay` from wherever your game logic already
+transitions state, guarding against re-triggering the crossfade while a state is merely held:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+type GameState = 'menu' | 'exploring' | 'combat';
+
+const tracks = {
+  menu: await AudioClip.load('audio/menu.mp3'),
+  exploring: await AudioClip.load('audio/exploring.mp3'),
+  combat: await AudioClip.load('audio/combat.mp3'),
+};
+
+let currentState: GameState = 'menu';
+
+function setGameState(next: GameState) {
+  if (next === currentState) {
+    return; // holding a state shouldn't retrigger the crossfade every frame
+  }
+
+  currentState = next;
+
+  BT.musicPlay(tracks[next], { fadeMs: 1000 }); // simultaneous crossfade (default overlap)
+}
+```
+
+Reach for `overlap: 0` instead of the default simultaneous crossfade when the outgoing track should finish cleanly
+before the new one starts (a menu jingle that shouldn't blend into gameplay music), or `overlap: -1` for a deliberate
+beat of silence between tracks (a boss intro sting) - see [Crossfading](/docs/api/audio#crossfading) for the exact timing
+math.
+
+### Intro then loop
+
+A theme with a distinct opening flourish sounds wrong repeating on every loop. `loopStart`/`loopEnd` let the intro play
+once while only a later region repeats:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const theme = await AudioClip.load('audio/theme.mp3');
+
+// The first 8 seconds play once, then the engine loops the 8-32s region forever.
+BT.musicPlay(theme, { loopStart: 8, loopEnd: 32 });
+```
+
+`loopStart` and `loopEnd` must be given together and satisfy `0 <= loopStart < loopEnd <= duration` - see
+[Loop points](/docs/api/audio#loop-points) for the exact validation rule and its error.
 
 ## Design a sound
 
@@ -206,7 +274,8 @@ const explosion = await AudioClip.synth(restored);
 ## See also
 
 <Cards>
-  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, the unlock getter, and the synth engine.</Card>
+  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, unlock, SFX and music playback, and the synth engine.</Card>
+  <Card title="API: Overlay" href="/docs/api/overlay#audio-meters-optional">Live bus level bars and voices/steal/drop readout.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Pointer, keyboard, and gamepad input that can trigger unlock.</Card>
 </Cards>
