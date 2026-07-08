@@ -78,6 +78,10 @@ generate-to-memory copies in `packages/kit/src/adapters.ts`.
 5. Use `BT` namespace in generated game code – never `BTAPI`
 6. Named exports only in library TypeScript; no default exports
 7. Documentation is part of every feature – update this file when workflow or architecture changes
+8. American English spelling – `color`, `optimization`, `canceled`, never the British equivalents. Exempt: literal
+   third-party or spec-mandated names correctly spelled with a British `s`/`c` in their own spec (for example Web
+   Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. See `.claude/rules/american-english-spelling.md` /
+   `.cursor/rules/american-english-spelling.mdc`.
 
 ## Git
 
