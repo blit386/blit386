@@ -26,6 +26,12 @@
  * This page loads sound the same "click or press a key first" way 036-audio-basics does -
  * browsers refuse to make any sound until you interact with the page at least once.
  *
+ * The engine's built-in overlay can also show live audio meters: little bars that move
+ * up and down with how loud each audio bus (main, music, sfx) is right now, plus a
+ * count of how many sounds are playing at once. This demo turns that feature on with
+ * `isOverlayAudioMetersEnabled: true` in configure() - open the overlay (see below) and
+ * watch the meters jump every time a preset or a randomized sound plays.
+ *
  * Try this:
  * - Click anywhere, or press any key, to unlock sound - watch the message at the top change
  *   once you do.
@@ -35,6 +41,8 @@
  *   frequency, duration, noise mix, and pitch sweep target that were rolled.
  * - Press R again and again - notice how differently the exact same few lines of "roll a
  *   random number" code can make the engine sound each time.
+ * - Press the backquote key (`) or click the small icon in the bottom-left corner to open
+ *   the engine overlay, then play a few sounds and watch the audio meters move.
  */
 
 import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
@@ -42,6 +50,7 @@ import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SynthParams} SynthParams */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
 // Palette indices. Slot 0 stays transparent.
 const C_WHITE = 1;
@@ -207,6 +216,20 @@ class Demo {
 
     /** @type {SynthParams | null} The most recently rolled random recipe, or null before the first roll. */
     lastRandomParams = null;
+
+    /**
+     * Turns on the engine's built-in audio meters in the overlay.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
+    configure() {
+        return {
+            // Adds live bar-graph meters (main/music/sfx bus levels) plus a voice-count
+            // readout to the overlay. Off by default, since measuring audio levels costs a
+            // little extra CPU work the engine skips unless a demo asks for it.
+            isOverlayAudioMetersEnabled: true,
+        };
+    }
 
     /**
      * Renders every preset's SynthParams recipe into a ready-to-play clip, so pressing a

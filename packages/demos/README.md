@@ -118,11 +118,12 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
 ### Audio
 
 - [036-audio-basics](https://demos.blit386.dev/036-audio-basics) – Loading clips with `AudioClip.load()`, playing SFX on
-  a key press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt
+  a key press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt;
+  `isOverlayAudioMetersEnabled` shows live bus-level meters and a voice-count readout in the overlay
 - [041-synth-toy](https://demos.blit386.dev/041-synth-toy) – Procedural chip-tune SFX built entirely with
   `AudioClip.synth()`: six keyboard-triggered presets (jump/pickup/explosion/laser/hit/blip) via `BT.synthPreset`, plus
   a randomize key that rolls a fresh `SynthParams` object to show off waveform, envelope, pitch-sweep, and noise-mix
-  variation
+  variation; also opts into the overlay's live audio meters via `isOverlayAudioMetersEnabled`
 
 ## Browser and Renderer
 

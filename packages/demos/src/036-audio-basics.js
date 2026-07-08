@@ -21,6 +21,12 @@
  * - pan: which speaker the sound favors, from -1 (only the left speaker) through 0
  *   (centered) to +1 (only the right speaker).
  *
+ * The engine's built-in overlay can also show live audio meters: little bars that move
+ * up and down with how loud each audio bus (main, music, sfx) is right now, plus a
+ * count of how many sounds are playing at once. This demo turns that feature on with
+ * `isOverlayAudioMetersEnabled: true` in configure() - open the overlay (see below) and
+ * watch the meters jump every time a blip or pop plays.
+ *
  * Try this:
  * - Click anywhere, or press any key, to unlock sound - watch the message at the top
  *   change once you do.
@@ -28,12 +34,15 @@
  * - Click near the top of the screen for a loud "pop," or near the bottom for a quiet
  *   one. Click near the left or right edge to hear it pan toward that speaker
  *   (headphones or stereo speakers make this easiest to hear).
+ * - Press the backquote key (`) or click the small icon in the bottom-left corner to
+ *   open the engine overlay, then play a few sounds and watch the audio meters move.
  */
 
 import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
 // Palette indices. Slot 0 stays transparent.
 const C_WHITE = 1;
@@ -123,6 +132,20 @@ class Demo {
 
     /** @type {number | null} Pan used for the most recent pop sound. */
     lastClickPan = null;
+
+    /**
+     * Turns on the engine's built-in audio meters in the overlay.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
+    configure() {
+        return {
+            // Adds live bar-graph meters (main/music/sfx bus levels) plus a voice-count
+            // readout to the overlay. Off by default, since measuring audio levels costs a
+            // little extra CPU work the engine skips unless a demo asks for it.
+            isOverlayAudioMetersEnabled: true,
+        };
+    }
 
     /**
      * Loads the two sound clips and sets up the palette.
