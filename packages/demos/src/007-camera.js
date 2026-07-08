@@ -260,7 +260,7 @@ class Demo {
             // Each building gets its own palette slot starting at C_BUILDING_BASE (20).
             const colorIndex = C_BUILDING_BASE + i;
 
-            // Give each building a slightly different blue-grey tint by randomizing R, G, B.
+            // Give each building a slightly different blue-gray tint by randomizing R, G, B.
             // Math.random() gives a number from 0 up to 1; multiplying stretches that range.
             // Math.floor() rounds down to a whole number.
             const r = 100 + Math.floor(Math.random() * 100);

@@ -19,6 +19,7 @@ Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine 
 - Integer coordinates – all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
 - Plain JavaScript – demos use ES2022 JS for simplicity (no TypeScript)
 - Beginner-friendly comments – see Documentation Style section below
+- American English spelling – see Documentation Style below
 
 ## Project Structure
 
@@ -161,6 +162,12 @@ and why, not just restate it.
 - Use short sentences. Avoid jargon unless you explain it immediately after.
 - Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
   https://demos.blit386.dev/001-basics"
+- American English spelling – `color`, `center`, `canceled`, `traveling`, `gray`, never `colour`, `centre`, `cancelled`,
+  `travelling`, `grey`. Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or `c`
+  in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`, should this repo ever reference them) – do
+  not "fix" those. See blit386 [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) (American English
+  spelling) for the full policy this repo follows. Cursor: `.cursor/rules/american-english-spelling.mdc` (always applied
+  in this repo).
 
 ### Example (do this)
 

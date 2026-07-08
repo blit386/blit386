@@ -59,7 +59,7 @@ const C_PANEL_BORDER = 5; // HUD strip border
 const C_BALL_OUTLINE = 6; // outline drawn around any grabbed ball
 const C_BALL_HIGHLIGHT = 7; // tint for the ball under the mouse cursor when no slot is grabbing it
 
-// Three balls, each its own colour so it's easy to track which is which.
+// Three balls, each its own color so it's easy to track which is which.
 const BALL_COLORS = [10, 11, 12];
 
 // Physics parameters, all expressed in "display pixels per fixed update tick"
@@ -205,7 +205,7 @@ class Demo {
     }
 
     /**
-     * Attempts to grab a ball whose centre is under this slot's pointer.
+     * Attempts to grab a ball whose center is under this slot's pointer.
      * Skips if no live pointer, or pointer is inside the HUD strip, or if
      * this slot is already holding a ball.
      */
@@ -289,7 +289,7 @@ class Demo {
 
     /**
      * Snaps a held ball to its owning pointer's position. If the pointer
-     * went invalid mid-grab (pointer left the canvas, touch cancelled) we
+     * went invalid mid-grab (pointer left the canvas, touch canceled) we
      * release the ball gently with zero velocity.
      */
     updateHeldBall(ball) {

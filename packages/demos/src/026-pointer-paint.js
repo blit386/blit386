@@ -7,7 +7,7 @@
  * Live version: https://demos.blit386.dev/026-pointer-paint
  *
  * This demo shows how all four pointer slots work side by side. Each slot
- * paints in its own colour:
+ * paints in its own color:
  *   slot 0 = mouse        (white)
  *   slot 1 = first touch  (red)
  *   slot 2 = second touch (green)
@@ -29,7 +29,7 @@
  *
  * The painting happens on an offscreen palette layer (a 2D array of palette
  * indices) so brush strokes persist across frames even though render() clears
- * to a background colour first.
+ * to a background color first.
  */
 
 // @pageTitle BLIT386 Demo 026 - Pointer Paint
@@ -46,12 +46,12 @@ const DISPLAY_H = 240;
 
 // Palette slots. Index 0 is always transparent.
 const C_BG = 1; // dark background revealed by the clear button
-const C_TEXT = 2; // overlay text colour
+const C_TEXT = 2; // overlay text color
 const C_DIM = 3; // dim hint text
 const C_PANEL = 4; // overlay panel background
 const C_PANEL_BORDER = 5; // overlay panel border
 
-// One paint colour per pointer slot. The slot index is the same as the array
+// One paint color per pointer slot. The slot index is the same as the array
 // index here so renderStrokes() can write SLOT_PAINT[slot] directly.
 const SLOT_PAINT = [
     10, // slot 0 (mouse)
@@ -80,7 +80,7 @@ class Demo {
     palette = null;
 
     // Painting layer: one palette index per display pixel. 0 means "blank"
-    // (the background colour shows through). Length = DISPLAY_W * DISPLAY_H.
+    // (the background color shows through). Length = DISPLAY_W * DISPLAY_H.
     /** @type {Uint8Array | null} */
     layer = null;
 
@@ -137,8 +137,8 @@ class Demo {
         this.palette.set(C_PANEL, new Color32(40, 50, 70));
         this.palette.set(C_PANEL_BORDER, new Color32(110, 120, 140));
 
-        // One paint colour per slot. Slot 0 (mouse) gets a soft white; the
-        // three touch slots get bold primary colours so multiple fingers are
+        // One paint color per slot. Slot 0 (mouse) gets a soft white; the
+        // three touch slots get bold primary colors so multiple fingers are
         // easy to tell apart.
         this.palette.set(SLOT_PAINT[0], new Color32(240, 240, 240));
         this.palette.set(SLOT_PAINT[1], new Color32(255, 100, 100));
@@ -152,7 +152,7 @@ class Demo {
         BT.hideCursor();
 
         // Allocate the paint layer. `fill(0)` makes every pixel start blank
-        // (transparent) so the background colour shows through.
+        // (transparent) so the background color shows through.
         this.layer = new Uint8Array(DISPLAY_W * DISPLAY_H);
         return true;
     }
@@ -217,13 +217,13 @@ class Demo {
 
     /**
      * Stamps the current brush along the line segment from (x0,y0) to (x1,y1),
-     * writing palette index `colour` into the paint layer at every covered
+     * writing palette index `color` into the paint layer at every covered
      * pixel.
      *
      * Uses a simple step-by-distance walker (good enough for small distances).
      * For each step, paint a filled disc whose radius is the current brush.
      */
-    stamp(x0, y0, x1, y1, colour) {
+    stamp(x0, y0, x1, y1, color) {
         const dx = x1 - x0;
         const dy = y1 - y0;
         const distance = Math.max(1, Math.ceil(Math.hypot(dx, dy)));
@@ -232,18 +232,18 @@ class Demo {
             const t = i / distance;
             const x = Math.round(x0 + dx * t);
             const y = Math.round(y0 + dy * t);
-            this.stampAt(x, y, colour);
+            this.stampAt(x, y, color);
         }
     }
 
     /**
-     * Paints a filled disc of the current brush radius centred on (cx, cy).
+     * Paints a filled disc of the current brush radius centered on (cx, cy).
      */
-    stampAt(cx, cy, colour) {
+    stampAt(cx, cy, color) {
         const radius = BRUSH_SIZES[this.brushIndex];
 
         if (radius === 0) {
-            this.setPixel(cx, cy, colour);
+            this.setPixel(cx, cy, color);
             return;
         }
 
@@ -251,7 +251,7 @@ class Demo {
         for (let dy = -radius; dy <= radius; dy++) {
             for (let dx = -radius; dx <= radius; dx++) {
                 if (dx * dx + dy * dy <= r2) {
-                    this.setPixel(cx + dx, cy + dy, colour);
+                    this.setPixel(cx + dx, cy + dy, color);
                 }
             }
         }
@@ -260,16 +260,16 @@ class Demo {
     /**
      * Writes a palette index into layer, ignoring out-of-bounds writes.
      */
-    setPixel(x, y, colour) {
+    setPixel(x, y, color) {
         if (x < 0 || x >= DISPLAY_W || y < 0 || y >= DISPLAY_H) {
             return;
         }
-        this.layer[y * DISPLAY_W + x] = colour;
+        this.layer[y * DISPLAY_W + x] = color;
     }
 
     /**
      * Copies the persistent paint layer onto the screen. Pixels with palette
-     * index 0 are skipped so the background colour shows through.
+     * index 0 are skipped so the background color shows through.
      */
     renderLayer() {
         for (let y = 0; y < DISPLAY_H; y++) {
@@ -294,11 +294,11 @@ class Demo {
             }
 
             const pos = BT.pointerPos(slot);
-            const colour = SLOT_PAINT[slot];
+            const color = SLOT_PAINT[slot];
 
             // Crosshair that doesn't depend on a circle primitive.
-            BT.drawLine(new Vector2i(pos.x - 5, pos.y), new Vector2i(pos.x + 5, pos.y), colour);
-            BT.drawLine(new Vector2i(pos.x, pos.y - 5), new Vector2i(pos.x, pos.y + 5), colour);
+            BT.drawLine(new Vector2i(pos.x - 5, pos.y), new Vector2i(pos.x + 5, pos.y), color);
+            BT.drawLine(new Vector2i(pos.x, pos.y - 5), new Vector2i(pos.x, pos.y + 5), color);
         }
     }
 

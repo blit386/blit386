@@ -112,7 +112,7 @@ class Demo {
         // visible while the pointer is over the canvas.
         BT.hideCursor();
 
-        // Prefill the trail with the centre point so the very first frame has
+        // Prefill the trail with the center point so the very first frame has
         // something to draw without a special-case "no history yet" path.
         for (let i = 0; i < TRAIL_LENGTH; i++) {
             this.trail.push([Math.floor(screen.x / 2), Math.floor(screen.y / 2)]);
@@ -174,7 +174,7 @@ class Demo {
         const valid = BT.isPointerActive(0);
         const scroll = BT.pointerScrollDelta;
 
-        // Background panel so text is readable over any colour.
+        // Background panel so text is readable over any color.
         BT.drawRectFill(new Rect2i(8, 40, 140, 64), C_PANEL);
         BT.drawRect(new Rect2i(8, 40, 140, 64), C_PANEL_BORDER);
 
@@ -201,7 +201,7 @@ class Demo {
      * A box lights up while its button is down and dims when released.
      */
     renderButtonIndicators() {
-        // Each entry: [label, palette colour when held, BT.BTN_POINTER_* code].
+        // Each entry: [label, palette color when held, BT.BTN_POINTER_* code].
         const buttons = [
             ['A (left)', C_RED, BT.BTN_POINTER_A],
             ['B (right)', C_GREEN, BT.BTN_POINTER_B],
@@ -242,7 +242,7 @@ class Demo {
         BT.drawRectFill(new Rect2i(trackX, trackY, trackW, trackH), C_PANEL);
         BT.drawRect(new Rect2i(trackX, trackY, trackW, trackH), C_PANEL_BORDER);
 
-        // Centre the handle around scrollBarY so it can reach top and bottom.
+        // Center the handle around scrollBarY so it can reach top and bottom.
         const handleY = Math.max(0, Math.min(trackH - handleH, Math.floor(this.scrollBarY) - handleH / 2));
         BT.drawRectFill(new Rect2i(trackX + 2, handleY, trackW - 4, handleH), C_AMBER);
 
@@ -277,10 +277,10 @@ class Demo {
             BT.drawLine(new Vector2i(pos.x - size, pos.y), new Vector2i(pos.x + size, pos.y), C_WHITE);
             // Vertical arm.
             BT.drawLine(new Vector2i(pos.x, pos.y - size), new Vector2i(pos.x, pos.y + size), C_WHITE);
-            // Centre dot.
+            // Center dot.
             BT.drawPixel(pos, C_WHITE);
         } else {
-            // Show a hint in the centre of the screen instead.
+            // Show a hint in the center of the screen instead.
             const center = BT.displaySize;
             BT.systemPrint(
                 new Vector2i(Math.floor(center.x / 2) - 60, Math.floor(center.y / 2) - 7),
