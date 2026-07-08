@@ -15,15 +15,13 @@ import {
     AUDIO_METER_BAR_GAP_PX,
     AUDIO_METER_BAR_WIDTH_PX,
     AUDIO_METER_BUS_COUNT,
+    AUDIO_METER_BUSES,
     AUDIO_METER_CLIP_THRESHOLD,
     AUDIO_METER_FULL_SCALE,
     AUDIO_METER_TEXT_GAP_PX,
     AUDIO_METER_WARNING_THRESHOLD,
 } from './constants';
 import { type AudioMeterDrawStyle, computeAudioMeterBarHeight } from './style';
-
-/** Fixed bus draw order (main, music, sfx), mirroring the bus graph's `PerBus` key order. */
-const AUDIO_METER_BUSES: readonly AudioBus[] = ['main', 'music', 'sfx'];
 
 /** Levels used before the first {@link AudioMeter.sample} call. */
 const ZERO_LEVELS: Readonly<Record<AudioBus, number>> = { main: 0, music: 0, sfx: 0 };
@@ -32,25 +30,35 @@ const ZERO_LEVELS: Readonly<Record<AudioBus, number>> = { main: 0, music: 0, sfx
  * Per-bus level bars and voice/steal/drop text readout for the overlay audio meter band.
  */
 export class AudioMeter {
+    /** Feature flag from the constructor; when false, {@link sample} and {@link draw} are no-ops. */
     readonly #isEnabled: boolean;
 
-    #levels: Readonly<Record<AudioBus, number>> = ZERO_LEVELS;
-
-    #activeVoices = 0;
-
-    #totalVoices = 0;
-
-    #voiceStealCount = 0;
-
-    #voiceDropCount = 0;
-
-    #preUnlockDropCount = 0;
-
+    /** Reused track fill rect, overwritten in place per bus per {@link draw} call. */
     readonly #trackScratch = new Rect2i(0, 0, 1, 1);
 
+    /** Reused bottom-anchored level fill rect, overwritten in place per bus per {@link draw} call. */
     readonly #fillScratch = new Rect2i(0, 0, 1, 1);
 
+    /** Reused text draw position, overwritten in place per {@link draw} call. */
     readonly #textPos = new Vector2i(0, 0);
+
+    /** Last-sampled per-bus levels; {@link ZERO_LEVELS} until the first {@link sample} call. */
+    #levels: Readonly<Record<AudioBus, number>> = ZERO_LEVELS;
+
+    /** Last-sampled active SFX voice count. */
+    #activeVoices = 0;
+
+    /** Last-sampled total SFX voice slot count. */
+    #totalVoices = 0;
+
+    /** Last-sampled voice-pool steal count. */
+    #voiceStealCount = 0;
+
+    /** Last-sampled voice-pool drop count. */
+    #voiceDropCount = 0;
+
+    /** Last-sampled pre-unlock SFX drop count. */
+    #preUnlockDropCount = 0;
 
     /**
      * Creates an audio meter with the given feature flag.

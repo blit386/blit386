@@ -83,8 +83,8 @@ Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-ro
 | Audio meters        | `isOverlayAudioMetersEnabled`            | Per-bus (main/music/sfx) level bars plus a voices/steal/drop text readout |
 
 Reserve vertical space in demo layouts: ~42 px top, ~14 px per custom row, timing chart height (default 22 px), audio
-meter band height when enabled (default 13 px), palette grid height when enabled, and ~13 px footer hint bar. See
-[API: Overlay](api-overlay.md) for layout formulas.
+meter band height plus a 1 px gap when enabled (14 px default), palette grid height when enabled, and ~13 px footer hint
+bar. See [API: Overlay](api-overlay.md) for layout formulas.
 
 ## Colors and HUD palette slots
 

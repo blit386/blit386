@@ -17,7 +17,7 @@ import { INVALID_SOUND_REF, type SoundPlayOptions, type SoundRef } from '../audi
 import { GamepadInput } from '../input/GamepadInput';
 import { KeyboardInput } from '../input/KeyboardInput';
 import { PointerInput } from '../input/PointerInput';
-import type { OverlayDrawTarget } from '../overlay';
+import type { OverlayAudioSnapshot, OverlayDrawTarget } from '../overlay';
 import { createOverlayLayout, Overlay, OVERLAY_TOGGLE_KEY_CODE, resolveOverlayTopLeftLabel } from '../overlay';
 import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
@@ -47,6 +47,9 @@ import {
 } from './IBTDemo';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { initWebGPU } from './WebGPUContext';
+
+/** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
+type Writable<T> = { -readonly [K in keyof T]: T[K] };
 
 /**
  * Central runtime facade for BLIT386 engine services.
@@ -159,14 +162,7 @@ export class BTAPI {
     };
 
     /** Reused audio snapshot passed into the overlay each frame; populated by {@link captureAudioDiagnostics}. */
-    private readonly audioSnapshot: {
-        levels: { main: number; music: number; sfx: number };
-        activeVoices: number;
-        totalVoices: number;
-        voiceStealCount: number;
-        voiceDropCount: number;
-        preUnlockDropCount: number;
-    } = {
+    private readonly audioSnapshot: Writable<OverlayAudioSnapshot> = {
         levels: { main: 0, music: 0, sfx: 0 },
         activeVoices: 0,
         totalVoices: 0,

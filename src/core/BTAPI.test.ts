@@ -34,7 +34,7 @@ import { INVALID_SOUND_REF } from '../audio/VoicePool';
 import { BT } from '../BLIT386';
 import type { OverlayDrawTarget } from '../overlay';
 import { DEFAULT_IDX_TEXT, Overlay, paletteBandY } from '../overlay';
-import { AUDIO_METER_BAR_WIDTH_PX } from '../overlay/audio-meter/constants';
+import { AUDIO_METER_BAR_GAP_PX, AUDIO_METER_BAR_WIDTH_PX } from '../overlay/audio-meter/constants';
 import { OVERLAY_EDGE_MARGIN_PX } from '../overlay/layout/constants';
 import {
     computeGrid,
@@ -1819,6 +1819,26 @@ describe('BTAPI', () => {
             return barFills;
         }
 
+        /**
+         * The three bus bar left-edge X positions {@link AudioMeter} draws at, computed the same
+         * way as `busBarX()` in `src/overlay/audio-meter/AudioMeter.ts` (band left edge at `x: 0`).
+         */
+        const expectedAudioMeterBarXs = [0, 1, 2].map(
+            (busIndex) => OVERLAY_EDGE_MARGIN_PX + busIndex * (AUDIO_METER_BAR_WIDTH_PX + AUDIO_METER_BAR_GAP_PX),
+        );
+
+        /**
+         * Matches a bar fill against the audio meter's known bar geometry (width and left-edge X),
+         * not width alone - width-only matching risks false positives from unrelated same-width bars.
+         *
+         * @param fill - Collected bar fill from {@link drainAndCollectBarFills}.
+         * @param fill.rect - Filled rectangle in display coordinates.
+         * @returns `true` when the fill's rect matches one of the three bus bar positions.
+         */
+        function isAudioMeterBar(fill: { rect: Rect2i }): boolean {
+            return fill.rect.width === AUDIO_METER_BAR_WIDTH_PX && expectedAudioMeterBarXs.includes(fill.rect.x);
+        }
+
         it('draws audio meter bars when isOverlayAudioMetersEnabled and the overlay body are enabled', async () => {
             const demo: IBTDemo = {
                 configure: () => ({
@@ -1833,9 +1853,9 @@ describe('BTAPI', () => {
             };
 
             const barFills = await drainAndCollectBarFills(demo);
-            const meterBars = barFills.filter((fill) => fill.rect.width === AUDIO_METER_BAR_WIDTH_PX);
+            const meterBarXs = new Set(barFills.filter(isAudioMeterBar).map((fill) => fill.rect.x));
 
-            expect(meterBars.length).toBeGreaterThan(0);
+            expect([...meterBarXs].sort((a, b) => a - b)).toEqual(expectedAudioMeterBarXs);
         });
 
         it('does not draw audio meter bars when isOverlayAudioMetersEnabled is disabled', async () => {
@@ -1851,7 +1871,7 @@ describe('BTAPI', () => {
             };
 
             const barFills = await drainAndCollectBarFills(demo);
-            const meterBars = barFills.filter((fill) => fill.rect.width === AUDIO_METER_BAR_WIDTH_PX);
+            const meterBars = barFills.filter(isAudioMeterBar);
 
             expect(meterBars.length).toBe(0);
         });

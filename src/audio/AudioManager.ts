@@ -54,6 +54,9 @@ export class AudioManager {
     /** Per-bus metering analyzers, or `null` before {@link enableBusMetering} / after {@link detach}. */
     private analyzerNodes: PerBus<AnalyserNode> | null = null;
 
+    /** Reusable per-bus sample scratch buffers for {@link getBusLevels}, sized to each analyzer's `fftSize`. */
+    private analyzerBuffers: PerBus<Float32Array<ArrayBuffer>> | null = null;
+
     /** SFX voice pool, or `null` before {@link attach} / after {@link detach}. */
     private voicePool: VoicePool | null = null;
 
@@ -174,10 +177,14 @@ export class AudioManager {
         this.musicPlayer?.stop();
         this.musicPlayer = null;
 
-        this.analyzerNodes?.main.disconnect();
-        this.analyzerNodes?.music.disconnect();
-        this.analyzerNodes?.sfx.disconnect();
+        if (this.analyzerNodes !== null && this.busNodes !== null) {
+            this.busNodes.main.disconnect(this.analyzerNodes.main);
+            this.busNodes.music.disconnect(this.analyzerNodes.music);
+            this.busNodes.sfx.disconnect(this.analyzerNodes.sfx);
+        }
+
         this.analyzerNodes = null;
+        this.analyzerBuffers = null;
 
         if (this.context !== null) {
             this.context.close().catch(() => {
@@ -598,6 +605,11 @@ export class AudioManager {
         busNodes.sfx.connect(analyzerNodes.sfx);
 
         this.analyzerNodes = analyzerNodes;
+        this.analyzerBuffers = {
+            main: new Float32Array(analyzerNodes.main.fftSize),
+            music: new Float32Array(analyzerNodes.music.fftSize),
+            sfx: new Float32Array(analyzerNodes.sfx.fftSize),
+        };
     }
 
     /**
@@ -608,14 +620,14 @@ export class AudioManager {
      *   called or the audio context is not yet unlocked.
      */
     public getBusLevels(): PerBus<number> {
-        if (this.analyzerNodes === null || !this.unlocked) {
+        if (this.analyzerNodes === null || this.analyzerBuffers === null || !this.unlocked) {
             return { main: 0, music: 0, sfx: 0 };
         }
 
         return {
-            main: computeBusLevel(this.analyzerNodes.main),
-            music: computeBusLevel(this.analyzerNodes.music),
-            sfx: computeBusLevel(this.analyzerNodes.sfx),
+            main: computeBusLevel(this.analyzerNodes.main, this.analyzerBuffers.main),
+            music: computeBusLevel(this.analyzerNodes.music, this.analyzerBuffers.music),
+            sfx: computeBusLevel(this.analyzerNodes.sfx, this.analyzerBuffers.sfx),
         };
     }
 
@@ -739,11 +751,10 @@ function clampVolume(volume: number): number {
  * Computes a normalized RMS level from `analyzer`'s current time-domain samples.
  *
  * @param analyzer - Bus analyzer to sample.
+ * @param samples - Reusable scratch buffer sized to `analyzer.fftSize`; overwritten in place.
  * @returns RMS level in `[0, 1]` for a full-scale signal.
  */
-function computeBusLevel(analyzer: AnalyserNode): number {
-    const samples = new Float32Array(analyzer.fftSize);
-
+function computeBusLevel(analyzer: AnalyserNode, samples: Float32Array<ArrayBuffer>): number {
     analyzer.getFloatTimeDomainData(samples);
 
     let sumOfSquares = 0;

@@ -1,3 +1,5 @@
+import type { AudioBus } from '../../core/IBTDemo';
+
 /** Default audio meter band height in pixels (single-row height, matches {@link OVERLAY_BAR_HEIGHT}). */
 export const DEFAULT_AUDIO_METER_HEIGHT = 13;
 
@@ -16,8 +18,11 @@ export const AUDIO_METER_DEFAULT_WARNING_IDX = 3;
 /** Default clip palette index for audio meter semantic overlays. */
 export const AUDIO_METER_DEFAULT_CLIP_IDX = 4;
 
-/** Number of fixed bus bars drawn side by side (main, music, sfx). */
-export const AUDIO_METER_BUS_COUNT = 3;
+/** Fixed bus draw order (main, music, sfx), mirroring the bus graph's `PerBus` key order. */
+export const AUDIO_METER_BUSES: readonly AudioBus[] = ['main', 'music', 'sfx'];
+
+/** Number of fixed bus bars drawn side by side; derived from {@link AUDIO_METER_BUSES} so the two can't drift. */
+export const AUDIO_METER_BUS_COUNT = AUDIO_METER_BUSES.length;
 
 /** Width in pixels of one bus level bar. */
 export const AUDIO_METER_BAR_WIDTH_PX = 4;
