@@ -248,6 +248,13 @@ class Demo {
      * Space is pressed.
      */
     updateAlertButton() {
+        // Ignore presses while a duck is already in progress. Without this guard, a rapid
+        // re-press would capture the already-ducked volume as the new restore target, so each
+        // re-press would multiply the eventual "restored" volume by DUCK_VOLUME_FACTOR again.
+        if (this.isDucking) {
+            return;
+        }
+
         const pointerPressed = BT.isPressed(BT.BTN_POINTER_A, 0);
         const pointerPos = BT.isPointerActive(0) ? BT.pointerPos(0) : null;
         const clicked = pointerPressed && pointerPos !== null && ALERT_BUTTON_RECT.isContaining(pointerPos);
