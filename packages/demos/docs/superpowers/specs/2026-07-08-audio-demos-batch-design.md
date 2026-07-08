@@ -1,6 +1,7 @@
 # Audio demos batch - design
 
-Date: 2026-07-08 Status: Approved (pending spec self-review)
+- Date: 2026-07-08
+- Status: Approved (pending spec self-review)
 
 ## Context
 
