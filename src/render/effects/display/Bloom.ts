@@ -15,7 +15,7 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * warm phosphor glow of an old monitor instead.
  *
  * The implementation matches the original PipBoy bloom shader. A future
- * optimisation would be a two-pass separable Gaussian (5 + 5 = 10 taps); add
+ * optimization would be a two-pass separable Gaussian (5 + 5 = 10 taps); add
  * it once a GPU perf test demands it.
  *
  * @since 1.0.3

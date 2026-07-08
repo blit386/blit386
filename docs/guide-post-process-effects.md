@@ -314,7 +314,7 @@ Single-pass 5×5 box blur (25 taps) mixed with the original color.
     glow: { type: 'number', default: '0.18', description: 'Mix factor between original sample and blurred neighbors' },
   }} />
 
-A future optimisation would be a two-pass separable Gaussian (5+5 = 10 taps); we will revisit when GPU perf tests demand
+A future optimization would be a two-pass separable Gaussian (5+5 = 10 taps); we will revisit when GPU perf tests demand
 it.
 
 ## Presets

@@ -1,0 +1,32 @@
+---
+description:
+  Prose, JSDoc, and our own identifiers use American English spelling; spec-mandated third-party names are exempt
+alwaysApply: true
+---
+
+# American English spelling
+
+## Rule
+
+Prose, JSDoc, and our own identifiers use American English, never British spellings:
+
+| American (use this)                                                                                                                                                                                                       | Never the British equivalent |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `color`                                                                                                                                                                                                                   | ✓                            |
+| `optimization`, `optimize`                                                                                                                                                                                                | ✓                            |
+| `canceled`, `canceling`                                                                                                                                                                                                   | ✓                            |
+| `center`, `centered`                                                                                                                                                                                                      | ✓                            |
+| `behavior`                                                                                                                                                                                                                | ✓                            |
+| `traveling`                                                                                                                                                                                                               | ✓                            |
+| `normalize`, `initialize`, `serialize`, `recognize`, `organize`, `customize`, `analyze`, `finalize`, `minimize`, `maximize`, `prioritize`, `categorize`, `synchronize`, `standardize`, `specialize`, `utilize`, `realize` | ✓                            |
+
+## Exemptions – do not "fix" these
+
+Literal third-party or spec-mandated identifiers that are correctly spelled with a British `s` or `c` in their own spec
+must be left exactly as the spec defines them:
+
+- Web Audio API: `AnalyserNode`, `createAnalyser()`
+- This repo's own `gray`/`grey` named-color alias in `src/utils/Color32.ts` (`alias('grey', 'gray')`), which
+  deliberately mirrors the CSS Color Module's own dual spelling (`gray`/`grey`, `darkgray`/`darkgrey`, ...)
+
+Full policy: `CLAUDE.md` (American English spelling, Documentation authoring style).
