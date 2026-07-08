@@ -122,6 +122,56 @@ describe('VoicePool', () => {
             expect(pool.getDropCount()).toBe(0);
             expect(pool.getStealCount()).toBe(0);
         });
+
+        it('getVoiceCount returns the fixed total slot count', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            expect(pool.getVoiceCount()).toBe(4);
+        });
+
+        it('getActiveVoiceCount starts at zero on a fresh pool', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            expect(pool.getActiveVoiceCount()).toBe(0);
+        });
+
+        it('getActiveVoiceCount reflects live voices and decreases after stop', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 4,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+            const first = pool.play(createMockAudioBuffer());
+            pool.play(createMockAudioBuffer());
+
+            expect(pool.getActiveVoiceCount()).toBe(2);
+
+            pool.stop(first);
+
+            expect(pool.getActiveVoiceCount()).toBe(1);
+        });
+
+        it('getActiveVoiceCount never exceeds getVoiceCount when the pool is full', () => {
+            vi.spyOn(BTAPI.instance, 'getHardwareSettings').mockReturnValue({
+                audioVoices: 2,
+            } as HardwareSettings);
+
+            const pool = new VoicePool(audio);
+
+            pool.play(createMockAudioBuffer());
+            pool.play(createMockAudioBuffer());
+            pool.play(createMockAudioBuffer());
+
+            expect(pool.getActiveVoiceCount()).toBe(pool.getVoiceCount());
+        });
     });
 
     describe('play', () => {
