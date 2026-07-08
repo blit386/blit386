@@ -2,6 +2,9 @@
  * Overlay subsystem public exports for BTAPI and unit tests.
  */
 
+export { AudioMeter } from './audio-meter/AudioMeter';
+export type { AudioMeterDrawStyle, AudioMeterStyle } from './audio-meter/style';
+export { computeAudioMeterBarHeight, resolveAudioMeterStyle } from './audio-meter/style';
 export type { OverlayBarStyle } from './bars/Bars';
 export { OverlayBars } from './bars/Bars';
 export { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT, SYSTEM_CHAR_ADVANCE } from './constants';
@@ -55,4 +58,9 @@ export {
     writeTimingChartGridMarkers,
 } from './timing-chart/style';
 export { TimingChart } from './timing-chart/TimingChart';
-export type { OverlayRendererDiagnostics, OverlayTimingSnapshot, PaletteGridLayout } from './types';
+export type {
+    OverlayAudioSnapshot,
+    OverlayRendererDiagnostics,
+    OverlayTimingSnapshot,
+    PaletteGridLayout,
+} from './types';

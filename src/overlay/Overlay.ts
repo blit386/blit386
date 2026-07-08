@@ -16,6 +16,10 @@ import type {
 } from '../core/IBTDemo';
 import type { KeyboardInput } from '../input/KeyboardInput';
 import type { PointerInput } from '../input/PointerInput';
+import { AudioMeter } from './audio-meter/AudioMeter';
+import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
+import type { AudioMeterDrawStyle, AudioMeterStyle } from './audio-meter/style';
+import { resolveAudioMeterStyle } from './audio-meter/style';
 import { OverlayBars } from './bars/Bars';
 import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from './constants';
 import { OVERLAY_TOGGLE_KEY_CODE } from './input/constants';
@@ -32,7 +36,7 @@ import { DEFAULT_TIMING_CHART_HEIGHT } from './timing-chart/constants';
 import type { TimingChartDrawStyle } from './timing-chart/style';
 import { resolveTimingChartStyle } from './timing-chart/style';
 import { TimingChart } from './timing-chart/TimingChart';
-import type { OverlayTimingSnapshot } from './types';
+import type { OverlayAudioSnapshot, OverlayTimingSnapshot } from './types';
 
 /** Empty usage mask for overlay draws when palette tracking is inactive. */
 const EMPTY_PALETTE_USAGE_MASK = new Uint8Array(0);
@@ -75,6 +79,16 @@ function createTimingChart(
 }
 
 /**
+ * Creates an audio meter instance with the given feature flag.
+ *
+ * @param isEnabled - Whether the audio meter band is active.
+ * @returns Configured {@link AudioMeter} for the overlay.
+ */
+function createAudioMeter(isEnabled: boolean): AudioMeter {
+    return new AudioMeter(isEnabled);
+}
+
+/**
  * Screen-space overlay HUD rendered after demo content each frame.
  *
  * Internal to the engine; demos do not instantiate this class. Use
@@ -106,6 +120,12 @@ export class Overlay {
     readonly #isOverlayRendererDiagnosticsBarEnabled: boolean;
 
     readonly #timingChartStyle: TimingChartDrawStyle;
+
+    readonly #audioMeter: AudioMeter;
+
+    readonly #audioMeterHeight: number;
+
+    readonly #audioMeterStyle: AudioMeterDrawStyle;
 
     readonly #paletteView: PaletteView;
 
@@ -144,6 +164,9 @@ export class Overlay {
      * @param isOverlayVisibleAtStart - Initial overlay body visibility (default false).
      * @param isOverlayToggleHintVisible - Draw toggle hint while body hidden (default true).
      * @param isOverlayToggleEnabled - Enable Backquote and corner toggle input (default true).
+     * @param isOverlayAudioMetersEnabled - When true, draws the per-bus level and voice/steal/drop band.
+     * @param audioMeterStyle - Optional audio meter palette overrides.
+     * @param audioMeterHeight - Audio meter band height in pixels (default 13).
      */
     constructor(
         layout: OverlayLayout,
@@ -162,6 +185,9 @@ export class Overlay {
         isOverlayVisibleAtStart = false,
         isOverlayToggleHintVisible = true,
         isOverlayToggleEnabled = true,
+        isOverlayAudioMetersEnabled = false,
+        audioMeterStyle?: AudioMeterStyle,
+        audioMeterHeight?: number,
     ) {
         this.#layout = layout;
         this.#topLeftLabel = topLeftLabel;
@@ -178,6 +204,9 @@ export class Overlay {
         this.#timingChartHeight = timingChartHeight ?? DEFAULT_TIMING_CHART_HEIGHT;
         this.#timingChart = createTimingChart(layout, isOverlayTimingChartEnabled, targetFps, timingChartDiagnostics);
         this.#isOverlayRendererDiagnosticsBarEnabled = isOverlayRendererDiagnosticsBarEnabled;
+        this.#audioMeterStyle = resolveAudioMeterStyle(style, audioMeterStyle);
+        this.#audioMeterHeight = audioMeterHeight ?? DEFAULT_AUDIO_METER_HEIGHT;
+        this.#audioMeter = createAudioMeter(isOverlayAudioMetersEnabled);
         this.#paletteView = new PaletteView(isOverlayPaletteEnabled);
         this.#paletteInteraction = new PaletteInteraction(targetFps);
         this.#paletteColumns = paletteColumns;
@@ -300,6 +329,7 @@ export class Overlay {
      * @param timing - Optional timing snapshot from the previous rendered frame.
      * @param palette - Active demo palette for optional palette grid.
      * @param usedPaletteMask - Per-frame palette usage mask populated during demo render.
+     * @param audioSnapshot - Optional audio snapshot (bus levels and voice counters) from the previous rendered frame.
      */
     updateAndRender(
         renderer: OverlayRenderer,
@@ -311,9 +341,11 @@ export class Overlay {
         timing?: OverlayTimingSnapshot,
         palette?: Palette | null,
         usedPaletteMask: Uint8Array = EMPTY_PALETTE_USAGE_MASK,
+        audioSnapshot?: OverlayAudioSnapshot,
     ): void {
         // Chart history keeps advancing while hidden so re-show reflects demo-only timing.
         this.#sampleTiming(timing);
+        this.#sampleAudio(audioSnapshot);
 
         const isBodyVisible = this.#toggle.isBodyVisible;
 
@@ -359,6 +391,19 @@ export class Overlay {
     }
 
     /**
+     * Records an audio sample when a snapshot is provided.
+     *
+     * @param audioSnapshot - Optional audio snapshot from the previous rendered frame.
+     */
+    #sampleAudio(audioSnapshot?: OverlayAudioSnapshot): void {
+        if (!audioSnapshot) {
+            return;
+        }
+
+        this.#audioMeter.sample(audioSnapshot);
+    }
+
+    /**
      * Builds per-frame layout config including optional palette grid dimensions.
      *
      * @param customRowCount - Demo custom row count for this frame.
@@ -390,6 +435,8 @@ export class Overlay {
             isOverlayTimingChartEnabled: this.#timingChart.isEnabled,
             timingChartHeight: this.#timingChartHeight,
             isOverlayRendererDiagnosticsBarEnabled: this.#isOverlayRendererDiagnosticsBarEnabled,
+            isOverlayAudioMetersEnabled: this.#audioMeter.isEnabled,
+            audioMeterHeight: this.#audioMeterHeight,
             ...(paletteGrid === undefined ? {} : { paletteGrid }),
         };
     }
@@ -488,6 +535,7 @@ export class Overlay {
 
             this.#bars.drawTopBars(renderer, plan, this.#idxBg);
             this.#timingChart.draw(renderer, plan.timingChart, this.#timingChartStyle, font, currentTick);
+            this.#audioMeter.draw(renderer, plan.audioMeterBar, this.#audioMeterStyle, font);
 
             if (customRows !== undefined && customRows.length > 0) {
                 this.#bars.drawCustomRowFills(renderer, plan, customRows, this.#barStyle);

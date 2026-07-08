@@ -90,6 +90,112 @@ describe('buildOverlayLayoutPlan', () => {
         expect(plan.topClusterSeparator.y).toBe(plan.rendererDiagnosticsBar.y + OVERLAY_BAR_HEIGHT);
     });
 
+    it('reserves zero height for the audio meter band by default', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const scratch = createOverlayLayoutPlanScratch();
+        const config = createDefaultLayoutConfig(320, 240, 14, 0);
+
+        const plan = buildOverlayLayoutPlan(config, scratch, 'webgpu | 320x240', layout.toggleRect);
+
+        expect(plan.audioMeterBar.height).toBe(0);
+        expect(plan.topClusterSeparator.y).toBe(plan.timingTextBar.y + OVERLAY_BAR_HEIGHT);
+    });
+
+    it('inserts audio meter band after timing text when enabled and diagnostics disabled', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const scratch = createOverlayLayoutPlanScratch();
+        const config = {
+            ...createDefaultLayoutConfig(320, 240, 14, 0),
+            isOverlayAudioMetersEnabled: true,
+            audioMeterHeight: 13,
+        };
+
+        const plan = buildOverlayLayoutPlan(config, scratch, 'webgpu | 320x240', layout.toggleRect);
+
+        expect(plan.audioMeterBar).toMatchObject({
+            x: 0,
+            y: plan.timingTextBar.y + OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX,
+            width: 320,
+            height: 13,
+        });
+        expect(plan.audioMeterTextPos.y).toBe(plan.audioMeterBar.y);
+        expect(plan.topClusterSeparator.y).toBe(plan.audioMeterBar.y + plan.audioMeterBar.height);
+    });
+
+    it('inserts audio meter band after renderer diagnostics when both are enabled', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const scratch = createOverlayLayoutPlanScratch();
+        const config = {
+            ...createDefaultLayoutConfig(320, 240, 14, 0),
+            isOverlayRendererDiagnosticsBarEnabled: true,
+            isOverlayAudioMetersEnabled: true,
+            audioMeterHeight: 13,
+        };
+
+        const plan = buildOverlayLayoutPlan(config, scratch, 'webgpu | 320x240', layout.toggleRect);
+
+        expect(plan.audioMeterBar).toMatchObject({
+            x: 0,
+            y: plan.rendererDiagnosticsBar.y + OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX,
+            width: 320,
+            height: 13,
+        });
+        expect(plan.topClusterSeparator.y).toBe(plan.audioMeterBar.y + plan.audioMeterBar.height);
+    });
+
+    it('falls back to the default audio meter height when zero', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const scratch = createOverlayLayoutPlanScratch();
+        const config = {
+            ...createDefaultLayoutConfig(320, 240, 14, 0),
+            isOverlayAudioMetersEnabled: true,
+            audioMeterHeight: 0,
+        };
+
+        const plan = buildOverlayLayoutPlan(config, scratch, 'webgpu | 320x240', layout.toggleRect);
+
+        expect(plan.audioMeterBar.height).toBe(13);
+    });
+
+    it('adds row gaps around the audio meter band when enabled', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const scratch = createOverlayLayoutPlanScratch();
+        const withoutMeter = buildOverlayLayoutPlan(
+            createDefaultLayoutConfig(320, 240, 14, 0),
+            scratch,
+            'webgpu | 320x240',
+            layout.toggleRect,
+        );
+
+        expect(withoutMeter.rowGapRects).toHaveLength(2);
+
+        const scratchWithMeter = createOverlayLayoutPlanScratch();
+        const withMeter = buildOverlayLayoutPlan(
+            { ...createDefaultLayoutConfig(320, 240, 14, 0), isOverlayAudioMetersEnabled: true, audioMeterHeight: 13 },
+            scratchWithMeter,
+            'webgpu | 320x240',
+            layout.toggleRect,
+        );
+
+        expect(withMeter.rowGapRects).toHaveLength(4);
+        expect(withMeter.rowGapRects.some((rect) => rect.y === withMeter.audioMeterBar.y - OVERLAY_ROW_GAP_PX)).toBe(
+            true,
+        );
+        expect(
+            withMeter.rowGapRects.some((rect) => rect.y === withMeter.audioMeterBar.y + withMeter.audioMeterBar.height),
+        ).toBe(true);
+    });
+
+    it('does not add extra row gaps when both diagnostics and meter are disabled', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const scratch = createOverlayLayoutPlanScratch();
+        const config = createDefaultLayoutConfig(320, 240, 14, 0);
+
+        const plan = buildOverlayLayoutPlan(config, scratch, 'webgpu | 320x240', layout.toggleRect);
+
+        expect(plan.rowGapRects).toHaveLength(2);
+    });
+
     it('uses variable bottom height when palette grid is enabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();

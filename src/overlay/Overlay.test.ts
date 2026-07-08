@@ -8,6 +8,8 @@ import { Palette } from '../assets/Palette';
 import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
+import { AUDIO_METER_BAR_WIDTH_PX } from './audio-meter/constants';
+import type { AudioMeterStyle } from './audio-meter/style';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_ROW_GAP_PX } from './layout/constants';
 import { createOverlayLayout, overlayRightAlignedTextX } from './layout/layoutHelpers';
 import { hintBarY, paletteBandY } from './layout/layoutPlan';
@@ -23,6 +25,7 @@ import {
     OVERLAY_EDGE_MARGIN_PX,
     OVERLAY_TOP_TEXT_Y,
 } from './testFixtures';
+import type { OverlayAudioSnapshot } from './types';
 
 /** Default overlay tests use the 13 px hint bar (palette grid opt-in off). */
 const PALETTE_GRID_OFF = false;
@@ -47,6 +50,9 @@ interface OverlayTestOptions {
     isOverlayToggleHintVisible?: boolean;
     isOverlayToggleEnabled?: boolean;
     backend?: 'webgpu' | 'software';
+    isOverlayAudioMetersEnabled?: boolean;
+    audioMeterStyle?: AudioMeterStyle;
+    audioMeterHeight?: number;
 }
 
 /** Builds a {@link Overlay} with explicit visibility defaults for tests. */
@@ -72,6 +78,9 @@ function createOverlay(
         options.isOverlayVisibleAtStart ?? false,
         options.isOverlayToggleHintVisible ?? true,
         options.isOverlayToggleEnabled ?? true,
+        options.isOverlayAudioMetersEnabled ?? false,
+        options.audioMeterStyle,
+        options.audioMeterHeight,
     );
 }
 
@@ -833,5 +842,148 @@ describe('Overlay', () => {
 
         expect(renderer.resetCamera).toHaveBeenCalledOnce();
         expect(renderer.setCameraOffset).toHaveBeenCalledWith(saved);
+    });
+
+    describe('audio meter', () => {
+        function audioSnapshot(overrides: Partial<OverlayAudioSnapshot> = {}): OverlayAudioSnapshot {
+            return {
+                levels: { main: 0, music: 0, sfx: 0 },
+                activeVoices: 0,
+                totalVoices: 16,
+                voiceStealCount: 0,
+                voiceDropCount: 0,
+                preUnlockDropCount: 0,
+                ...overrides,
+            };
+        }
+
+        it('does not draw audio meter bars when isOverlayAudioMetersEnabled is disabled', () => {
+            const layout = createOverlayLayout(320, 240, 14);
+            const overlay = createOverlay(layout, 'Demo', { isOverlayVisibleAtStart: true });
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                0,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                audioSnapshot({ levels: { main: 1, music: 1, sfx: 1 } }),
+            );
+
+            const barWidthBars = renderer.drawBarFill.mock.calls.filter(
+                (call) => (call[0] as Rect2i).width === AUDIO_METER_BAR_WIDTH_PX,
+            );
+
+            expect(barWidthBars).toHaveLength(0);
+        });
+
+        it('draws audio meter track and level bars when isOverlayAudioMetersEnabled is enabled', () => {
+            const layout = createOverlayLayout(320, 240, 14);
+            const overlay = createOverlay(layout, 'Demo', {
+                isOverlayAudioMetersEnabled: true,
+                isOverlayVisibleAtStart: true,
+            });
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                0,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                audioSnapshot({ levels: { main: 0.5, music: 0, sfx: 0 } }),
+            );
+
+            const barWidthBars = renderer.drawBarFill.mock.calls.filter(
+                (call) => (call[0] as Rect2i).width === AUDIO_METER_BAR_WIDTH_PX,
+            );
+
+            // 3 tracks (always drawn) + 1 fill (only main is non-zero)
+            expect(barWidthBars).toHaveLength(4);
+        });
+
+        it('draws the voices/steal/drop text readout when enabled', () => {
+            const layout = createOverlayLayout(320, 240, 14);
+            const overlay = createOverlay(layout, 'Demo', {
+                isOverlayAudioMetersEnabled: true,
+                isOverlayVisibleAtStart: true,
+            });
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                0,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                audioSnapshot({ activeVoices: 7, totalVoices: 16, voiceStealCount: 2, voiceDropCount: 1 }),
+            );
+
+            const textCalls = getBitmapTextCalls(renderer);
+
+            expect(textCalls.some((call) => call.text.includes('7/16'))).toBe(true);
+        });
+
+        it('honors audio meter palette overrides', () => {
+            const layout = createOverlayLayout(320, 240, 14);
+            const overlay = createOverlay(layout, 'Demo', {
+                isOverlayAudioMetersEnabled: true,
+                isOverlayVisibleAtStart: true,
+                audioMeterStyle: { trackPaletteIndex: 30, levelBarPaletteIndex: 31 },
+            });
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(
+                renderer,
+                mockFont,
+                null,
+                null,
+                0,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                audioSnapshot({ levels: { main: 0.3, music: 0, sfx: 0 } }),
+            );
+
+            const paletteIndices = renderer.drawBarFill.mock.calls
+                .filter((call) => (call[0] as Rect2i).width === AUDIO_METER_BAR_WIDTH_PX)
+                .map((call) => call[1] as number);
+
+            expect(paletteIndices).toContain(30);
+            expect(paletteIndices).toContain(31);
+        });
+
+        it('does not draw audio meter content when no audio snapshot is supplied', () => {
+            const layout = createOverlayLayout(320, 240, 14);
+            const overlay = createOverlay(layout, 'Demo', {
+                isOverlayAudioMetersEnabled: true,
+                isOverlayVisibleAtStart: true,
+                audioMeterHeight: 13,
+            });
+            const renderer = createMockRenderer();
+
+            overlay.updateAndRender(renderer, mockFont, null, null, 0);
+
+            const barWidthBars = renderer.drawBarFill.mock.calls.filter(
+                (call) => (call[0] as Rect2i).width === AUDIO_METER_BAR_WIDTH_PX,
+            );
+
+            // Tracks still draw (3, one per bus) since the band reserves space; no level fills without a sample.
+            expect(barWidthBars).toHaveLength(3);
+        });
     });
 });

@@ -77,7 +77,7 @@ export class OverlayBars {
     }
 
     /**
-     * Draws title, timing chart, metrics, and timing text bar fills.
+     * Draws title, timing chart, metrics, timing text, renderer diagnostics, and audio meter bar fills.
      *
      * @param target - Overlay draw target.
      * @param plan - Computed layout plan.
@@ -95,6 +95,10 @@ export class OverlayBars {
 
         if (plan.rendererDiagnosticsBar.height > 0) {
             target.drawBarFill(plan.rendererDiagnosticsBar, barIndex);
+        }
+
+        if (plan.audioMeterBar.height > 0) {
+            target.drawBarFill(plan.audioMeterBar, barIndex);
         }
     }
 

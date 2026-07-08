@@ -8,6 +8,7 @@
 
 import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
+import { DEFAULT_AUDIO_METER_HEIGHT } from '../audio-meter/constants';
 import { DEFAULT_TIMING_CHART_HEIGHT } from '../timing-chart/constants';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from './constants';
 import { overlayRightAlignedTextX } from './layoutHelpers';
@@ -20,6 +21,7 @@ export interface OverlayLayoutPlanScratch {
     metricsBar: Rect2i;
     timingTextBar: Rect2i;
     rendererDiagnosticsBar: Rect2i;
+    audioMeterBar: Rect2i;
     customBars: Rect2i[];
     paletteBand: Rect2i;
     hintBar: Rect2i;
@@ -29,6 +31,7 @@ export interface OverlayLayoutPlanScratch {
     topMetricsPos: Vector2i;
     topTimingPos: Vector2i;
     rendererDiagnosticsPos: Vector2i;
+    audioMeterTextPos: Vector2i;
     rowGapRects: Rect2i[];
     topClusterSeparator: Rect2i;
     bottomClusterSeparator: Rect2i;
@@ -46,6 +49,7 @@ export function createOverlayLayoutPlanScratch(): OverlayLayoutPlanScratch {
         metricsBar: new Rect2i(0, 0, 0, OVERLAY_BAR_HEIGHT),
         timingTextBar: new Rect2i(0, 0, 0, OVERLAY_BAR_HEIGHT),
         rendererDiagnosticsBar: new Rect2i(0, 0, 0, 0),
+        audioMeterBar: new Rect2i(0, 0, 0, 0),
         customBars: [],
         paletteBand: new Rect2i(0, 0, 0, 0),
         hintBar: new Rect2i(0, 0, 0, OVERLAY_BAR_HEIGHT),
@@ -55,6 +59,7 @@ export function createOverlayLayoutPlanScratch(): OverlayLayoutPlanScratch {
         topMetricsPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         topTimingPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         rendererDiagnosticsPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
+        audioMeterTextPos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, 0),
         rowGapRects: [],
         topClusterSeparator: new Rect2i(0, 0, 0, OVERLAY_ROW_GAP_PX),
         bottomClusterSeparator: new Rect2i(0, 0, 0, OVERLAY_ROW_GAP_PX),
@@ -214,9 +219,23 @@ function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLay
 
     gapIndex = writeRowGapBelow(scratch, scratch.metricsBar, displayWidth, gapIndex);
 
+    let lastTopClusterBar = scratch.timingTextBar;
+    let hasOptionalTailBand = false;
+
     if (scratch.rendererDiagnosticsBar.height > 0) {
-        gapIndex = writeRowGapBelow(scratch, scratch.timingTextBar, displayWidth, gapIndex);
-        gapIndex = writeRowGapBelow(scratch, scratch.rendererDiagnosticsBar, displayWidth, gapIndex);
+        gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
+        lastTopClusterBar = scratch.rendererDiagnosticsBar;
+        hasOptionalTailBand = true;
+    }
+
+    if (scratch.audioMeterBar.height > 0) {
+        gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
+        lastTopClusterBar = scratch.audioMeterBar;
+        hasOptionalTailBand = true;
+    }
+
+    if (hasOptionalTailBand) {
+        gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
     }
 
     /* eslint-disable security/detect-object-injection -- rowIndex bounded by customRowCount */
@@ -235,11 +254,8 @@ function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLay
 
     scratch.rowGapRects.length = gapIndex;
 
-    const topClusterAnchorBar =
-        scratch.rendererDiagnosticsBar.height > 0 ? scratch.rendererDiagnosticsBar : scratch.timingTextBar;
-
     scratch.topClusterSeparator.x = 0;
-    scratch.topClusterSeparator.y = topClusterAnchorBar.y + topClusterAnchorBar.height;
+    scratch.topClusterSeparator.y = lastTopClusterBar.y + lastTopClusterBar.height;
     scratch.topClusterSeparator.width = displayWidth;
     scratch.topClusterSeparator.height = OVERLAY_ROW_GAP_PX;
 
@@ -350,6 +366,29 @@ export function buildOverlayLayoutPlan(
         scratch.rendererDiagnosticsPos.y = y + OVERLAY_TOP_TEXT_Y;
     }
 
+    const preAudioMeterBottom = config.isOverlayRendererDiagnosticsBarEnabled
+        ? scratch.rendererDiagnosticsBar.y + scratch.rendererDiagnosticsBar.height
+        : scratch.timingTextBar.y + scratch.timingTextBar.height;
+
+    if (config.isOverlayAudioMetersEnabled) {
+        const meterHeight = config.audioMeterHeight > 0 ? config.audioMeterHeight : DEFAULT_AUDIO_METER_HEIGHT;
+        const meterY = preAudioMeterBottom + OVERLAY_ROW_GAP_PX;
+
+        scratch.audioMeterBar.x = 0;
+        scratch.audioMeterBar.y = meterY;
+        scratch.audioMeterBar.width = displayWidth;
+        scratch.audioMeterBar.height = meterHeight;
+        scratch.audioMeterTextPos.x = OVERLAY_EDGE_MARGIN_PX;
+        scratch.audioMeterTextPos.y = meterY + OVERLAY_TOP_TEXT_Y;
+    } else {
+        scratch.audioMeterBar.x = 0;
+        scratch.audioMeterBar.y = preAudioMeterBottom;
+        scratch.audioMeterBar.width = displayWidth;
+        scratch.audioMeterBar.height = 0;
+        scratch.audioMeterTextPos.x = OVERLAY_EDGE_MARGIN_PX;
+        scratch.audioMeterTextPos.y = preAudioMeterBottom + OVERLAY_TOP_TEXT_Y;
+    }
+
     scratch.toggleRect.x = toggleRect.x;
     scratch.toggleRect.y = toggleRect.y;
     scratch.toggleRect.width = toggleRect.width;
@@ -395,6 +434,8 @@ export function createDefaultLayoutConfig(
         isOverlayTimingChartEnabled: false,
         timingChartHeight: DEFAULT_TIMING_CHART_HEIGHT,
         isOverlayRendererDiagnosticsBarEnabled: false,
+        isOverlayAudioMetersEnabled: false,
+        audioMeterHeight: DEFAULT_AUDIO_METER_HEIGHT,
         isOverlayPaletteEnabled: false,
     };
 }
