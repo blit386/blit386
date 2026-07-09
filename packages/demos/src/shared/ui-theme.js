@@ -45,6 +45,15 @@ const THEME_COLORS = [
 // Resolved palette indices, filled in by applyTheme(). Widgets read `T.text`, `T.panel`,
 // and so on instead of raw numbers. `ready` lets the kit give a helpful error when a demo
 // forgets to call applyTheme() before drawing UI.
+//
+// `T` is a single module-level object, not per-palette state: calling applyTheme() again
+// (a second demo instance, a test harness, hot-reload) overwrites it in place for whatever
+// is currently reading it. That is safe today because ui-core.js and ui-dpad.js assume the
+// same "one demo runs at a time" model this whole kit is built on (see ui.js) - there is
+// exactly one UiContext and it always draws with the most recently applied theme. It would
+// stop being safe the moment two palettes/themes need to be live at once (multiple demos in
+// one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
+// patch here.
 const T = {
     bg: 0,
     shadow: 0,

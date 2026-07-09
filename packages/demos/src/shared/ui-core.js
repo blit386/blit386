@@ -126,6 +126,16 @@ class UiContext {
      */
     hitRects = new Map();
 
+    /**
+     * Widget ids flushed so far during the frame currently being declared. Compared against
+     * `hitRects` at the next frame's first begin() so widgets that stopped being declared
+     * (conditional UI) get their stale rectangle removed instead of leaving a dead zone that
+     * `isInsideAnyWidget()` keeps reporting as occupied forever.
+     *
+     * @type {Set<string>}
+     */
+    frameHitIds = new Set();
+
     // The two scratch objects reused for every BT draw call at flush time. The engine
     // copies their numbers into its vertex buffers synchronously, so mutating and reusing
     // one instance across many calls is safe.
@@ -350,6 +360,13 @@ class UiContext {
             throw new Error('ui.begin: the previous group is still open. Did you forget ui.end()?');
         }
 
+        // The first begin() since the last tick() starts a new frame's worth of widget
+        // declarations. Prune now, using the ids the previous frame flushed, so a widget
+        // that stopped being declared drops out of hitRects instead of leaving a dead zone.
+        if (!this.renderedSinceTick) {
+            this.pruneHitRects();
+        }
+
         this.refreshPointerSnapshot();
 
         this.renderedSinceTick = true;
@@ -494,7 +511,8 @@ class UiContext {
             }
         }
 
-        // Store this frame's absolute widget rectangles for next frame's interaction.
+        // Store this frame's absolute widget rectangles for next frame's interaction, and
+        // remember the id so a future prune knows this widget is still alive.
         for (let i = 0; i < this.pendingHitCount; i++) {
             const pending = this.pendingHits[i];
             let rec = this.hitRects.get(pending.id);
@@ -508,7 +526,25 @@ class UiContext {
             rec.y = originY + pending.y;
             rec.w = pending.w;
             rec.h = pending.h;
+
+            this.frameHitIds.add(pending.id);
         }
+    }
+
+    /**
+     * Drops any cached hit rectangle whose id was not flushed during the frame that just
+     * finished (see the call site in begin()). Widgets that disappeared - a panel that
+     * closed, a conditional row that stopped rendering - stop blocking taps and swipes at
+     * their old location instead of leaving a permanent dead zone.
+     */
+    pruneHitRects() {
+        for (const id of this.hitRects.keys()) {
+            if (!this.frameHitIds.has(id)) {
+                this.hitRects.delete(id);
+            }
+        }
+
+        this.frameHitIds.clear();
     }
 
     /**

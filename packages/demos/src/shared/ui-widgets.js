@@ -256,13 +256,14 @@ function slider(ctx, text, value, opts = {}) {
     // frame's new value instead of lagging one frame behind the finger.
     const dragX = ctx.resolveDrag(id);
     const rec = ctx.hitRects.get(id);
+    const range = max - min;
     let nextValue = clamp(value, min, max);
 
-    if (dragX !== null && rec) {
+    if (dragX !== null && rec && range !== 0) {
         // Where is the pointer along the bar, from 0 (left edge) to 1 (right edge)?
         const fraction = clamp((dragX - rec.x) / rec.w, 0, 1);
 
-        nextValue = min + fraction * (max - min);
+        nextValue = min + fraction * range;
     }
 
     const valueText = nextValue.toFixed(2);
@@ -273,9 +274,11 @@ function slider(ctx, text, value, opts = {}) {
     ctx.addCommand(CMD_TEXT, ctx.pad, labelY + 1, 0, 0, T.dim, text);
     ctx.addCommand(CMD_TEXT, ctx.pad + barW - valueText.length * FONT_W, labelY + 1, 0, 0, T.text, valueText);
 
-    // Bar row: an outline that fills up left-to-right in proportion to the value.
+    // Bar row: an outline that fills up left-to-right in proportion to the value. An equal
+    // min/max (a zero-width range) has no meaningful fraction - draw the bar empty rather
+    // than dividing by zero into NaN.
     const barY = ctx.addRow(barW, SLIDER_BAR_H + 4);
-    const fillW = Math.round(barW * ((nextValue - min) / (max - min)));
+    const fillW = range === 0 ? 0 : Math.round(barW * ((nextValue - min) / range));
 
     if (fillW > 0) {
         ctx.addCommand(CMD_RECT_FILL, ctx.pad, barY, fillW, SLIDER_BAR_H, dragX === null ? T.info : T.accent);
