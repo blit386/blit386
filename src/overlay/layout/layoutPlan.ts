@@ -222,20 +222,14 @@ function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLay
     let lastTopClusterBar = scratch.timingTextBar;
     let hasOptionalTailBand = false;
 
-    if (scratch.rendererDiagnosticsBar.height > 0) {
-        gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
+    for (const optionalTailBar of [scratch.rendererDiagnosticsBar, scratch.audioMeterBar]) {
+        if (optionalTailBar.height > 0) {
+            gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
 
-        lastTopClusterBar = scratch.rendererDiagnosticsBar;
+            lastTopClusterBar = optionalTailBar;
 
-        hasOptionalTailBand = true;
-    }
-
-    if (scratch.audioMeterBar.height > 0) {
-        gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
-
-        lastTopClusterBar = scratch.audioMeterBar;
-
-        hasOptionalTailBand = true;
+            hasOptionalTailBand = true;
+        }
     }
 
     if (hasOptionalTailBand) {

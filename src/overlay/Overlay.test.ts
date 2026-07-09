@@ -628,10 +628,8 @@ describe('Overlay', () => {
         expect(fills.some((rect) => rect.y === hintBarY(240) && rect.height === OVERLAY_BAR_HEIGHT)).toBe(true);
 
         // Width-1 top-label separator dividers are bar-height; palette swatch fills are not.
-        const swatchCalls = renderer.drawBarFill.mock.calls.filter(
-            (call) =>
-                (call[0] as { width: number }).width === 1 &&
-                (call[0] as { height: number }).height !== OVERLAY_BAR_HEIGHT,
+        const swatchCalls = renderer.drawBarFill.rectSnapshots.filter(
+            (rect) => rect.width === 1 && rect.height !== OVERLAY_BAR_HEIGHT,
         );
 
         expect(swatchCalls).toHaveLength(0);

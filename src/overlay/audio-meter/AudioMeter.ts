@@ -116,8 +116,8 @@ export class AudioMeter {
     }
 
     /**
-     * Draws one track (full band height) and, when the bus level is non-zero, one
-     * bottom-anchored fill rect per bus.
+     * Draws one bottom-anchored fill rect per bus, sized to its current level, skipping
+     * buses whose level is zero.
      *
      * @param target - Overlay draw target.
      * @param rect - Screen-space meter band.

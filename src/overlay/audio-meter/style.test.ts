@@ -48,6 +48,7 @@ describe('resolveAudioMeterStyle', () => {
 
         expect(resolved.levelBarIndex).toBe(20);
         expect(resolved.trackIndex).toBe(21);
+        expect(resolved.gapIndex).toBe(12);
         expect(resolved.warningIndex).toBe(22);
         expect(resolved.clipIndex).toBe(23);
     });
