@@ -11,7 +11,7 @@ import { Vector2i } from '../../utils/Vector2i';
 import { DEFAULT_AUDIO_METER_HEIGHT } from '../audio-meter/constants';
 import { DEFAULT_TIMING_CHART_HEIGHT } from '../timing-chart/constants';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from './constants';
-import { overlayRightAlignedTextX } from './layoutHelpers';
+import { overlayRightAlignedDividerLabelX } from './layoutHelpers';
 import type { OverlayLayoutConfig, OverlayLayoutPlan } from './types';
 
 /** Mutable scratch object reused by {@link buildOverlayLayoutPlan}. */
@@ -222,16 +222,14 @@ function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLay
     let lastTopClusterBar = scratch.timingTextBar;
     let hasOptionalTailBand = false;
 
-    if (scratch.rendererDiagnosticsBar.height > 0) {
-        gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
-        lastTopClusterBar = scratch.rendererDiagnosticsBar;
-        hasOptionalTailBand = true;
-    }
+    for (const optionalTailBar of [scratch.rendererDiagnosticsBar, scratch.audioMeterBar]) {
+        if (optionalTailBar.height > 0) {
+            gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
 
-    if (scratch.audioMeterBar.height > 0) {
-        gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
-        lastTopClusterBar = scratch.audioMeterBar;
-        hasOptionalTailBand = true;
+            lastTopClusterBar = optionalTailBar;
+
+            hasOptionalTailBand = true;
+        }
     }
 
     if (hasOptionalTailBand) {
@@ -320,6 +318,7 @@ export function buildOverlayLayoutPlan(
     scratch.titleBar.y = y;
     scratch.titleBar.width = displayWidth;
     scratch.titleBar.height = OVERLAY_BAR_HEIGHT;
+
     y += OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX;
 
     if (config.isOverlayTimingChartEnabled) {
@@ -329,6 +328,7 @@ export function buildOverlayLayoutPlan(
         scratch.timingChart.y = y;
         scratch.timingChart.width = displayWidth;
         scratch.timingChart.height = chartHeight;
+
         y += chartHeight + OVERLAY_ROW_GAP_PX;
     } else {
         scratch.timingChart.x = 0;
@@ -341,6 +341,7 @@ export function buildOverlayLayoutPlan(
     scratch.metricsBar.y = y;
     scratch.metricsBar.width = displayWidth;
     scratch.metricsBar.height = OVERLAY_BAR_HEIGHT;
+
     y += OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX;
 
     scratch.timingTextBar.x = 0;
@@ -397,7 +398,7 @@ export function buildOverlayLayoutPlan(
     scratch.topLeftPos.x = OVERLAY_EDGE_MARGIN_PX;
     scratch.topLeftPos.y = OVERLAY_TOP_TEXT_Y;
 
-    scratch.topRightPos.x = overlayRightAlignedTextX(topRightLabel, displayWidth);
+    scratch.topRightPos.x = overlayRightAlignedDividerLabelX(topRightLabel, displayWidth);
     scratch.topRightPos.y = OVERLAY_TOP_TEXT_Y;
 
     scratch.topMetricsPos.x = OVERLAY_EDGE_MARGIN_PX;

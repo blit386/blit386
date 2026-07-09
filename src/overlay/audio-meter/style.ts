@@ -7,6 +7,7 @@ export interface AudioMeterDrawStyle {
     readonly levelBarIndex: number;
     readonly trackIndex: number;
     readonly textIndex: number;
+    readonly gapIndex: number;
     readonly warningIndex: number;
     readonly clipIndex: number;
 }
@@ -40,6 +41,7 @@ export function resolveAudioMeterStyle(
         levelBarIndex: pickPaletteIndex(meterStyle?.levelBarPaletteIndex, textIndex),
         trackIndex: pickPaletteIndex(meterStyle?.trackPaletteIndex, gapIndex),
         textIndex,
+        gapIndex,
         warningIndex: pickPaletteIndex(meterStyle?.warningPaletteIndex, AUDIO_METER_DEFAULT_WARNING_IDX),
         clipIndex: pickPaletteIndex(meterStyle?.clipPaletteIndex, AUDIO_METER_DEFAULT_CLIP_IDX),
     };

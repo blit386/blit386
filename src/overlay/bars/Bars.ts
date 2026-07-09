@@ -1,8 +1,8 @@
 import type { BitmapFont } from '../../assets/BitmapFont';
 import type { OverlayRow } from '../../core/IBTDemo';
-import { Rect2i } from '../../utils/Rect2i';
 import { Vector2i } from '../../utils/Vector2i';
-import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from '../layout/constants';
+import { drawOverlayLabelWithDividers } from '../labels';
+import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_TOP_TEXT_Y } from '../layout/constants';
 import { overlayBitmapTextPaletteOffset, overlayRightAlignedTextX } from '../layout/layoutHelpers';
 import type { OverlayLayoutPlan } from '../layout/types';
 import type { OverlayDrawTarget } from '../OverlayDrawTarget';
@@ -21,8 +21,6 @@ export class OverlayBars {
 
     readonly #customRightPos: Vector2i[] = [];
 
-    readonly #hintSeparatorRect = new Rect2i(0, 0, 0, OVERLAY_ROW_GAP_PX);
-
     /**
      * Draws 1 px row gaps between stacked overlay bands.
      *
@@ -34,21 +32,6 @@ export class OverlayBars {
         for (const gapRect of plan.rowGapRects) {
             target.drawBarFill(gapRect, gapIndex);
         }
-    }
-
-    /**
-     * Draws the 1 px separator immediately above the bottom hint bar.
-     *
-     * @param target - Overlay draw target.
-     * @param hintBar - Bottom hint bar rect.
-     * @param gapIndex - Palette index for separator fill.
-     */
-    drawHintClusterSeparator(target: OverlayDrawTarget, hintBar: Rect2i, gapIndex: number): void {
-        this.#hintSeparatorRect.x = 0;
-        this.#hintSeparatorRect.y = hintBar.y - OVERLAY_ROW_GAP_PX;
-        this.#hintSeparatorRect.width = hintBar.width;
-        this.#hintSeparatorRect.height = OVERLAY_ROW_GAP_PX;
-        target.drawBarFill(this.#hintSeparatorRect, gapIndex);
     }
 
     /**
@@ -129,10 +112,15 @@ export class OverlayBars {
     /**
      * Draws built-in top overlay text labels (excluding the footer hint).
      *
+     * Engine-composed labels render their `|` separators as 1 px full-row-height
+     * dividers in the gap palette index; the demo title is user content and keeps
+     * literal pipes.
+     *
      * @param target - Overlay draw target.
      * @param font - System bitmap font.
      * @param plan - Computed layout plan.
      * @param style - Default overlay palette indices.
+     * @param gapIndex - Palette index for in-row separator dividers (same as row gaps).
      * @param topLeftLabel - Demo title (left).
      * @param topRightLabel - Backend and resolution (right).
      * @param topMetricsLabel - Present FPS / target / draw calls line.
@@ -144,6 +132,7 @@ export class OverlayBars {
         font: BitmapFont,
         plan: OverlayLayoutPlan,
         style: OverlayBarStyle,
+        gapIndex: number,
         topLeftLabel: string,
         topRightLabel: string,
         topMetricsLabel: string,
@@ -153,12 +142,47 @@ export class OverlayBars {
         const textPaletteOffset = overlayBitmapTextPaletteOffset(style.textIndex);
 
         target.drawLabel(font, plan.topLeftPos, topLeftLabel, textPaletteOffset);
-        target.drawLabel(font, plan.topRightPos, topRightLabel, textPaletteOffset);
-        target.drawLabel(font, plan.topMetricsPos, topMetricsLabel, textPaletteOffset);
-        target.drawLabel(font, plan.topTimingPos, topTimingLabel, textPaletteOffset);
+
+        drawOverlayLabelWithDividers(
+            target,
+            font,
+            plan.topRightPos,
+            topRightLabel,
+            plan.titleBar,
+            textPaletteOffset,
+            gapIndex,
+        );
+
+        drawOverlayLabelWithDividers(
+            target,
+            font,
+            plan.topMetricsPos,
+            topMetricsLabel,
+            plan.metricsBar,
+            textPaletteOffset,
+            gapIndex,
+        );
+
+        drawOverlayLabelWithDividers(
+            target,
+            font,
+            plan.topTimingPos,
+            topTimingLabel,
+            plan.timingTextBar,
+            textPaletteOffset,
+            gapIndex,
+        );
 
         if (rendererDiagnosticsLabel.length > 0 && plan.rendererDiagnosticsBar.height > 0) {
-            target.drawLabel(font, plan.rendererDiagnosticsPos, rendererDiagnosticsLabel, textPaletteOffset);
+            drawOverlayLabelWithDividers(
+                target,
+                font,
+                plan.rendererDiagnosticsPos,
+                rendererDiagnosticsLabel,
+                plan.rendererDiagnosticsBar,
+                textPaletteOffset,
+                gapIndex,
+            );
         }
     }
 
@@ -217,6 +241,7 @@ export class OverlayBars {
         }
 
         this.#ensureCustomRowPool(rowCount);
+
         const displayWidth = plan.titleBar.width;
 
         /* eslint-disable security/detect-object-injection -- rowIndex bounded by rows.length */
@@ -243,6 +268,7 @@ export class OverlayBars {
             if (rightText !== undefined && rightText.length > 0) {
                 rightPos.y = barY + OVERLAY_TOP_TEXT_Y;
                 rightPos.x = overlayRightAlignedTextX(rightText, displayWidth);
+
                 target.drawLabel(font, rightPos, rightText, textPaletteOffset);
             }
         }

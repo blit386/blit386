@@ -39,6 +39,12 @@ back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choo
 The overlay body stacks, top to bottom: title and backend rows, an optional timing chart, the frame-metrics rows, any
 custom rows, and the bottom band (palette grid plus hint bar).
 
+The `|` separators shown in the engine row formats below (backend/resolution, frame metrics, timing, renderer
+diagnostics, and the audio meter readout) do not render as text glyphs: each one draws as a `1px` full-row-height
+vertical divider filled with `overlayStyle.gapPaletteIndex` – the same color as the row gaps between bands – with `7px`
+of space between the line and the text on each side. Overlay text and chrome keep the same `7px` inset from the left and
+right screen edges. Custom rows are user content, so a `|` in their text stays a literal glyph.
+
 ### Top row 1 (left)
 
 - Short demo title derived from `document.title` (registry pages titled `BLIT386 Demo NNN – Topic` show as
@@ -206,7 +212,9 @@ Colors follow one path: use `overlayStyle` when set, otherwise the defaults `1` 
 
 - Globally in `configure()`: `overlayStyle: { barPaletteIndex, textPaletteIndex, gapPaletteIndex }`.
 - Per custom row on `OverlayRow`: `barPaletteIndex`, `textPaletteIndex`.
-- `gapPaletteIndex` fills inter-band row gaps and cluster separators; when omitted it matches `barPaletteIndex`.
+- `gapPaletteIndex` fills inter-band row gaps, cluster separators, and the `1px` vertical dividers between segments of
+  the engine-composed rows (backend/resolution, frame metrics, timing, renderer diagnostics, and the audio meter
+  readout); when omitted it matches `barPaletteIndex`.
 
 ## Present FPS vs. target FPS
 

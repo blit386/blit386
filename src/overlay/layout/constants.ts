@@ -1,8 +1,8 @@
 /** Height of each overlay bar strip in pixels. */
 export const OVERLAY_BAR_HEIGHT = 13;
 
-/** Horizontal inset from screen edges for overlay text. */
-export const OVERLAY_EDGE_MARGIN_PX = 3;
+/** Horizontal inset from screen edges for overlay text and chrome. */
+export const OVERLAY_EDGE_MARGIN_PX = 7;
 
 /** Vertical offset for top-row text inside the top bar. */
 export const OVERLAY_TOP_TEXT_Y = 0;

@@ -2,6 +2,7 @@ import { Rect2i } from '../../utils/Rect2i';
 import type { Vector2i } from '../../utils/Vector2i';
 import { SYSTEM_CHAR_ADVANCE } from '../constants';
 import { OVERLAY_TOGGLE_CORNER_SIZE } from '../input/constants';
+import { overlayDividerLabelWidth } from '../labels';
 import { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from './constants';
 import type { OverlayLayout } from './types';
 
@@ -50,6 +51,23 @@ export function isPointerInOverlayToggleCorner(pos: Vector2i, toggleRect: Rect2i
  */
 export function overlayRightAlignedTextX(text: string, displayWidth: number): number {
     const width = text.length * SYSTEM_CHAR_ADVANCE;
+
+    return Math.max(OVERLAY_EDGE_MARGIN_PX, displayWidth - width - OVERLAY_EDGE_MARGIN_PX + 1);
+}
+
+/**
+ * X position for a right-aligned engine-composed label whose `|` markers render as
+ * dividers via {@link drawOverlayLabelWithDividers}.
+ *
+ * Same flush-right convention as {@link overlayRightAlignedTextX}, but measured with
+ * {@link overlayDividerLabelWidth} so the divider spacing is accounted for.
+ *
+ * @param text - Engine-composed label with `|` separator markers.
+ * @param displayWidth - Logical display width in pixels.
+ * @returns Left edge X for {@link drawOverlayLabelWithDividers} (never less than the margin).
+ */
+export function overlayRightAlignedDividerLabelX(text: string, displayWidth: number): number {
+    const width = overlayDividerLabelWidth(text);
 
     return Math.max(OVERLAY_EDGE_MARGIN_PX, displayWidth - width - OVERLAY_EDGE_MARGIN_PX + 1);
 }

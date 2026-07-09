@@ -28,6 +28,7 @@ describe('overlayRightAlignedTextX', () => {
     it('places text flush right with edge margin (+1 px inset)', () => {
         const label = 'webgpu | 320x240';
         const width = label.length * SYSTEM_CHAR_ADVANCE;
+
         expect(overlayRightAlignedTextX(label, 320)).toBe(320 - width - OVERLAY_EDGE_MARGIN_PX + 1);
     });
 

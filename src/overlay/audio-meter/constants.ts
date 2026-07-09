@@ -25,10 +25,10 @@ export const AUDIO_METER_BUSES: readonly AudioBus[] = ['main', 'music', 'sfx'];
 export const AUDIO_METER_BUS_COUNT = AUDIO_METER_BUSES.length;
 
 /** Width in pixels of one bus level bar. */
-export const AUDIO_METER_BAR_WIDTH_PX = 4;
+export const AUDIO_METER_BAR_WIDTH_PX = 3;
 
 /** Horizontal gap in pixels between bus level bars. */
 export const AUDIO_METER_BAR_GAP_PX = 1;
 
 /** Horizontal gap in pixels between the bus bar block and the voice/steal/drop text readout. */
-export const AUDIO_METER_TEXT_GAP_PX = 4;
+export const AUDIO_METER_TEXT_GAP_PX = 7;

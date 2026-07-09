@@ -30,6 +30,7 @@ describe('buildOverlayLayoutPlan', () => {
         expect(plan.rowGapRects[0]).toMatchObject({ y: 13, width: 320, height: OVERLAY_ROW_GAP_PX });
         expect(plan.rowGapRects[1]).toMatchObject({ y: 27, width: 320, height: OVERLAY_ROW_GAP_PX });
         expect(plan.topClusterSeparator).toMatchObject({ y: 41, width: 320, height: OVERLAY_ROW_GAP_PX });
+
         expect(plan.bottomClusterSeparator).toMatchObject({
             y: hintBarY(240) - OVERLAY_ROW_GAP_PX,
             width: 320,
@@ -59,6 +60,7 @@ describe('buildOverlayLayoutPlan', () => {
     it('inserts timing chart band when enabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
+
         const config = {
             ...createDefaultLayoutConfig(320, 240, 14, 0),
             isOverlayTimingChartEnabled: true,
@@ -74,6 +76,7 @@ describe('buildOverlayLayoutPlan', () => {
     it('inserts renderer diagnostics bar below timing text when enabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
+
         const config = {
             ...createDefaultLayoutConfig(320, 240, 14, 0),
             isOverlayRendererDiagnosticsBarEnabled: true,
@@ -87,6 +90,7 @@ describe('buildOverlayLayoutPlan', () => {
             width: 320,
             height: OVERLAY_BAR_HEIGHT,
         });
+
         expect(plan.topClusterSeparator.y).toBe(plan.rendererDiagnosticsBar.y + OVERLAY_BAR_HEIGHT);
     });
 
@@ -104,6 +108,7 @@ describe('buildOverlayLayoutPlan', () => {
     it('inserts audio meter band after timing text when enabled and diagnostics disabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
+
         const config = {
             ...createDefaultLayoutConfig(320, 240, 14, 0),
             isOverlayAudioMetersEnabled: true,
@@ -118,6 +123,7 @@ describe('buildOverlayLayoutPlan', () => {
             width: 320,
             height: 13,
         });
+
         expect(plan.audioMeterTextPos.y).toBe(plan.audioMeterBar.y);
         expect(plan.topClusterSeparator.y).toBe(plan.audioMeterBar.y + plan.audioMeterBar.height);
     });
@@ -125,6 +131,7 @@ describe('buildOverlayLayoutPlan', () => {
     it('inserts audio meter band after renderer diagnostics when both are enabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
+
         const config = {
             ...createDefaultLayoutConfig(320, 240, 14, 0),
             isOverlayRendererDiagnosticsBarEnabled: true,
@@ -140,12 +147,14 @@ describe('buildOverlayLayoutPlan', () => {
             width: 320,
             height: 13,
         });
+
         expect(plan.topClusterSeparator.y).toBe(plan.audioMeterBar.y + plan.audioMeterBar.height);
     });
 
     it('falls back to the default audio meter height when zero', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
+
         const config = {
             ...createDefaultLayoutConfig(320, 240, 14, 0),
             isOverlayAudioMetersEnabled: true,
@@ -160,6 +169,7 @@ describe('buildOverlayLayoutPlan', () => {
     it('adds row gaps around the audio meter band when enabled', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
+
         const withoutMeter = buildOverlayLayoutPlan(
             createDefaultLayoutConfig(320, 240, 14, 0),
             scratch,
@@ -170,6 +180,7 @@ describe('buildOverlayLayoutPlan', () => {
         expect(withoutMeter.rowGapRects).toHaveLength(2);
 
         const scratchWithMeter = createOverlayLayoutPlanScratch();
+
         const withMeter = buildOverlayLayoutPlan(
             { ...createDefaultLayoutConfig(320, 240, 14, 0), isOverlayAudioMetersEnabled: true, audioMeterHeight: 13 },
             scratchWithMeter,
@@ -178,9 +189,11 @@ describe('buildOverlayLayoutPlan', () => {
         );
 
         expect(withMeter.rowGapRects).toHaveLength(4);
+
         expect(withMeter.rowGapRects.some((rect) => rect.y === withMeter.audioMeterBar.y - OVERLAY_ROW_GAP_PX)).toBe(
             true,
         );
+
         expect(
             withMeter.rowGapRects.some((rect) => rect.y === withMeter.audioMeterBar.y + withMeter.audioMeterBar.height),
         ).toBe(true);
@@ -200,6 +213,7 @@ describe('buildOverlayLayoutPlan', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
         const paletteGrid = computeGrid(320, 4, 256, 1);
+
         const config = {
             ...createDefaultLayoutConfig(320, 240, 14, 0),
             isOverlayPaletteEnabled: true,
@@ -213,6 +227,7 @@ describe('buildOverlayLayoutPlan', () => {
             height: paletteGrid.totalHeight,
             width: 320,
         });
+
         expect(plan.hintBar).toMatchObject({
             y: hintBarY(240),
             height: OVERLAY_BAR_HEIGHT,
@@ -224,6 +239,7 @@ describe('buildOverlayLayoutPlan', () => {
         const layout = createOverlayLayout(320, 240, 14);
         const scratch = createOverlayLayoutPlanScratch();
         const paletteGrid = computeGrid(320, 4, 256, 1);
+
         const config = {
             ...createDefaultLayoutConfig(320, 240, 14, 1),
             isOverlayPaletteEnabled: true,
@@ -243,11 +259,13 @@ describe('buildOverlayLayoutPlan', () => {
         const paletteGrid = computeGrid(320, 4, 256, 1);
         const cappedGrid = computeGrid(320, 4, 256, 1, undefined, 3);
         const hintOnlyConfig = createDefaultLayoutConfig(320, 240, 14, 0);
+
         const paletteConfig = {
             ...hintOnlyConfig,
             isOverlayPaletteEnabled: true,
             paletteGrid,
         };
+
         const cappedPaletteConfig = {
             ...hintOnlyConfig,
             isOverlayPaletteEnabled: true,
@@ -255,12 +273,15 @@ describe('buildOverlayLayoutPlan', () => {
         };
 
         expect(resolveOverlayFooterHeight(hintOnlyConfig)).toBe(OVERLAY_BAR_HEIGHT);
+
         expect(resolveOverlayFooterHeight(paletteConfig)).toBe(
             paletteGrid.totalHeight + OVERLAY_ROW_GAP_PX + OVERLAY_BAR_HEIGHT,
         );
+
         expect(resolveOverlayFooterHeight(cappedPaletteConfig)).toBe(
             cappedGrid.totalHeight + OVERLAY_ROW_GAP_PX + OVERLAY_BAR_HEIGHT,
         );
+
         expect(cappedGrid.totalHeight).toBeLessThan(paletteGrid.totalHeight);
     });
 });

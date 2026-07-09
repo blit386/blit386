@@ -48,6 +48,7 @@ describe('resolveAudioMeterStyle', () => {
 
         expect(resolved.levelBarIndex).toBe(20);
         expect(resolved.trackIndex).toBe(21);
+        expect(resolved.gapIndex).toBe(12);
         expect(resolved.warningIndex).toBe(22);
         expect(resolved.clipIndex).toBe(23);
     });
@@ -56,12 +57,14 @@ describe('resolveAudioMeterStyle', () => {
         const resolved = resolveAudioMeterStyle({ barPaletteIndex: 1, textPaletteIndex: 2, gapPaletteIndex: 7 }, {});
 
         expect(resolved.trackIndex).toBe(7);
+        expect(resolved.gapIndex).toBe(7);
     });
 
     it('falls back track to bar index when gap palette is omitted', () => {
         const resolved = resolveAudioMeterStyle({ barPaletteIndex: 9, textPaletteIndex: 2 }, undefined);
 
         expect(resolved.trackIndex).toBe(9);
+        expect(resolved.gapIndex).toBe(9);
     });
 
     it('resolves defaults when overlay style is entirely omitted', () => {
@@ -70,5 +73,6 @@ describe('resolveAudioMeterStyle', () => {
         expect(resolved.levelBarIndex).toBe(2);
         expect(resolved.trackIndex).toBe(1);
         expect(resolved.textIndex).toBe(2);
+        expect(resolved.gapIndex).toBe(1);
     });
 });

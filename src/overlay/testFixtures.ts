@@ -19,31 +19,60 @@ export type BitmapTextCall = {
 };
 
 /**
+ * Creates a `vi.fn` mock paired with an array of derived snapshots, one per call.
+ *
+ * Draw helpers reuse scratch `Rect2i`/`Vector2i` instances, so recording the raw call
+ * arguments would capture their final mutated state instead of the value at call time.
+ *
+ * @param snapshot - Derives a defensive-copy snapshot from a call's arguments.
+ * @returns The mock function and the array its snapshots are pushed onto, in call order.
+ */
+function createSnapshotMock<TArgs extends unknown[], TSnapshot>(
+    snapshot: (...args: TArgs) => TSnapshot,
+): { mock: ReturnType<typeof vi.fn>; snapshots: TSnapshot[] } {
+    const snapshots: TSnapshot[] = [];
+    const mock = vi.fn((...args: TArgs) => {
+        snapshots.push(snapshot(...args));
+    });
+
+    return { mock, snapshots };
+}
+
+/**
  * Minimal renderer stub for {@link Overlay.updateAndRender}.
  *
  * @returns Renderer with spied camera, bar fills, and bitmap text draws.
  */
 export function createMockRenderer(): OverlayRenderer & {
     drawBitmapText: ReturnType<typeof vi.fn>;
-    drawLabel: ReturnType<typeof vi.fn>;
-    drawLabelOnTop: ReturnType<typeof vi.fn>;
+    drawLabel: ReturnType<typeof vi.fn> & { posSnapshots: Vector2i[] };
+    drawLabelOnTop: ReturnType<typeof vi.fn> & { posSnapshots: Vector2i[] };
     drawPixel: ReturnType<typeof vi.fn>;
     drawRectFill: ReturnType<typeof vi.fn>;
     drawBarFill: ReturnType<typeof vi.fn> & { rectSnapshots: Rect2i[] };
     drawBarFillOnTop: ReturnType<typeof vi.fn> & { rectSnapshots: Rect2i[] };
 } {
-    const barFillSnapshots: Rect2i[] = [];
-    const barFillOnTopSnapshots: Rect2i[] = [];
-    const drawBarFill = vi.fn((rect: Rect2i) => {
-        barFillSnapshots.push(new Rect2i(rect.x, rect.y, rect.width, rect.height));
-    }) as ReturnType<typeof vi.fn> & { rectSnapshots: Rect2i[] };
-    drawBarFill.rectSnapshots = barFillSnapshots;
-    const drawBarFillOnTop = vi.fn((rect: Rect2i) => {
-        barFillOnTopSnapshots.push(new Rect2i(rect.x, rect.y, rect.width, rect.height));
-    }) as ReturnType<typeof vi.fn> & { rectSnapshots: Rect2i[] };
-    drawBarFillOnTop.rectSnapshots = barFillOnTopSnapshots;
-    const drawLabel = vi.fn();
-    const drawLabelOnTop = vi.fn();
+    const barFillMock = createSnapshotMock((rect: Rect2i) => new Rect2i(rect.x, rect.y, rect.width, rect.height));
+    const drawBarFill = barFillMock.mock as ReturnType<typeof vi.fn> & { rectSnapshots: Rect2i[] };
+
+    drawBarFill.rectSnapshots = barFillMock.snapshots;
+
+    const barFillOnTopMock = createSnapshotMock((rect: Rect2i) => new Rect2i(rect.x, rect.y, rect.width, rect.height));
+    const drawBarFillOnTop = barFillOnTopMock.mock as ReturnType<typeof vi.fn> & { rectSnapshots: Rect2i[] };
+
+    drawBarFillOnTop.rectSnapshots = barFillOnTopMock.snapshots;
+
+    // Positions are snapshotted because draw helpers reuse scratch Vector2i instances.
+    const labelMock = createSnapshotMock((_font: unknown, pos: Vector2i) => new Vector2i(pos.x, pos.y));
+    const drawLabel = labelMock.mock as ReturnType<typeof vi.fn> & { posSnapshots: Vector2i[] };
+
+    drawLabel.posSnapshots = labelMock.snapshots;
+
+    const labelOnTopMock = createSnapshotMock((_font: unknown, pos: Vector2i) => new Vector2i(pos.x, pos.y));
+    const drawLabelOnTop = labelOnTopMock.mock as ReturnType<typeof vi.fn> & { posSnapshots: Vector2i[] };
+
+    drawLabelOnTop.posSnapshots = labelOnTopMock.snapshots;
+
     const drawPixel = vi.fn();
     const drawRect = vi.fn();
 
@@ -69,8 +98,8 @@ export function createMockRenderer(): OverlayRenderer & {
  * @returns Parsed draw calls in invocation order.
  */
 export function getBitmapTextCalls(renderer: ReturnType<typeof createMockRenderer>): BitmapTextCall[] {
-    return renderer.drawLabel.mock.calls.map((call) => ({
-        pos: call[1] as Vector2i,
+    return renderer.drawLabel.mock.calls.map((call, callIndex) => ({
+        pos: renderer.drawLabel.posSnapshots.at(callIndex) as Vector2i,
         text: call[2] as string,
         paletteOffset: (call[3] as number | undefined) ?? 0,
     }));
@@ -83,8 +112,8 @@ export function getBitmapTextCalls(renderer: ReturnType<typeof createMockRendere
  * @returns Parsed draw calls in invocation order.
  */
 export function getLabelOnTopCalls(renderer: ReturnType<typeof createMockRenderer>): BitmapTextCall[] {
-    return renderer.drawLabelOnTop.mock.calls.map((call) => ({
-        pos: call[1] as Vector2i,
+    return renderer.drawLabelOnTop.mock.calls.map((call, callIndex) => ({
+        pos: renderer.drawLabelOnTop.posSnapshots.at(callIndex) as Vector2i,
         text: call[2] as string,
         paletteOffset: (call[3] as number | undefined) ?? 0,
     }));

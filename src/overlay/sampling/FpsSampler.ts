@@ -36,10 +36,12 @@ export class FpsSampler {
         if (this.#lastSampleMs === null) {
             this.#lastSampleMs = now;
             this.#smoothedFps = this.#targetFps;
+
             return;
         }
 
         const deltaSeconds = (now - this.#lastSampleMs) / MS_PER_SECOND;
+
         this.#lastSampleMs = now;
 
         if (deltaSeconds <= 0) {
@@ -51,6 +53,7 @@ export class FpsSampler {
         }
 
         const instantFps = 1 / deltaSeconds;
+
         this.#smoothedFps += (instantFps - this.#smoothedFps) * FPS_SMOOTHING;
     }
 }
