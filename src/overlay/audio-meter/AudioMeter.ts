@@ -34,6 +34,9 @@ export class AudioMeter {
     /** Feature flag from the constructor; when false, {@link sample} and {@link draw} are no-ops. */
     readonly #isEnabled: boolean;
 
+    /** Reused track fill rect, overwritten in place per bus per {@link draw} call. */
+    readonly #trackScratch = new Rect2i(0, 0, 1, 1);
+
     /** Reused bottom-anchored level fill rect, overwritten in place per bus per {@link draw} call. */
     readonly #fillScratch = new Rect2i(0, 0, 1, 1);
 
@@ -116,8 +119,8 @@ export class AudioMeter {
     }
 
     /**
-     * Draws one bottom-anchored fill rect per bus, sized to its current level, skipping
-     * buses whose level is zero.
+     * Draws one track (full band height) and, when the bus level is non-zero, one
+     * bottom-anchored fill rect per bus.
      *
      * @param target - Overlay draw target.
      * @param rect - Screen-space meter band.
@@ -133,6 +136,9 @@ export class AudioMeter {
             }
 
             const x = busBarX(rect, busIndex);
+
+            this.#trackScratch.set(x, rect.y, AUDIO_METER_BAR_WIDTH_PX, rect.height);
+            target.drawBarFill(this.#trackScratch, style.trackIndex);
 
             // eslint-disable-next-line security/detect-object-injection -- bus is keyof AudioBus union, not arbitrary input
             const level = this.#levels[bus];
