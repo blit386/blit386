@@ -161,7 +161,7 @@ and why, not just restate it.
 - Never assume the reader knows what a function does just from its name.
 - Use short sentences. Avoid jargon unless you explain it immediately after.
 - Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
-  https://demos.blit386.dev/001-basics"
+  <https://demos.blit386.dev/001-basics>"
 - American English spelling – `color`, `center`, `canceled`, `traveling`, `gray`, never `colour`, `centre`, `cancelled`,
   `travelling`, `grey`. Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or `c`
   in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`, should this repo ever reference them) – do
@@ -293,6 +293,49 @@ CRT and post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` f
 `src/shared/post-process-backend.js`. After `init()`, call `this.effectsAvailable = isAvailable()` (checks
 `BT.activeBackend === 'webgpu'`, not `BT.requestedBackend`) before `BT.effectAdd(...)`. When effects are skipped, show
 `SOFTWARE_FALLBACK_NOTE` on the overlay or in demo HUD text.
+
+### Shared UI kit (src/shared/ui.js)
+
+All demo UI (panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch D-pad, swipes, and
+tap zones) comes from the shared immediate-mode kit. NEVER hand-roll panels, buttons, or HUD text colors in a demo -
+import the kit:
+
+```js
+import { applyTheme, ui } from './shared/ui.js';
+
+// init(): install the 12 shared UI colors (slots 240-251 by default; returns the slot map).
+this.theme = applyTheme(this.palette); // before BT.paletteSet(); pass a startSlot if 240-251 collides
+
+// update(): first line, whenever the demo uses { key } bindings, gestures, or the D-pad.
+ui.tick();
+
+// render(): declare UI each frame; widgets answer clicks/taps/keys immediately.
+ui.begin('bottomLeft'); // or topLeft/topRight/bottomRight/topBar; opts: { x, y, width, margin, pad, kvCols }
+ui.panel('Title'); // optional bg+border+amber title; first call after begin()
+if (ui.button('Play (Space)', { key: 'Space' })) {
+  this.play();
+}
+this.loop = ui.checkbox('Loop', this.loop);
+volume = ui.slider('Vol', volume);
+ui.kv('State', label);
+ui.pip('A held', isHeld); // read-only indicator
+ui.meter('Level', fraction);
+ui.label('hint', { color: 'dim' }); // roles: text/dim/header/accent/warm/info
+ui.end();
+
+ui.dpadWidget(); // self-contained touch D-pad (outside begin/end); shows after first touch
+```
+
+Update-side queries: `ui.dpad.isDown/isPressed(dir)`, `ui.swipe()`, `ui.tapIn(rect)`, `ui.hasTouch()`,
+`ui.overWidget(x, y)` (skip raw-pointer painting/dragging under UI). Widget identity is the label; pass `{ id }` for
+duplicate labels. Keyboard `{ key }` bindings are edge-safe via `ui.tick()` - never read `BT.isKeyPressed` in
+`render()`. Pointer APIs stay safe in `render()`. The kit allocates nothing per frame (pooled draw commands, cached
+one-frame-old hit rects), so calling it from `render()` at 60 FPS is fine. `configure()` runs before `init()`, so
+overlay styles that need theme colors use literal slot numbers (240 + offset) with a comment, or dedicated scene slots.
+
+Every demo must be usable on touch: actions triggered by keys get a `ui.button` with a `{ key }` binding, directional
+game input gets `ui.dpadWidget()` + `ui.swipe()`, and hardware-showcase demos (028, 031, 035) show a warm "needs a
+keyboard/gamepad" label when `ui.hasTouch()` is true.
 
 The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
 The overlay body starts hidden; a bitmap toggle hint sits in the bottom-left corner by default. Toggle the body with
