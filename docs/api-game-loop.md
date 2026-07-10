@@ -61,6 +61,15 @@ to about `30 Hz`, unrelated to script performance or display refresh rate. See
 [Safari render throttling](api-browser-support.md#safari-render-throttling-macos-low-power-mode) in Browser Support for
 the WebKit reference and why other engines are unaffected.
 
+## Render frames with zero update() steps
+
+The opposite direction happens too: on a high refresh-rate display (120 Hz or higher) with `targetFPS: 60`,
+`requestAnimationFrame` calls `render()` more often than the accumulator drains a full `updateInterval` chunk, so a
+sizeable fraction of render frames have zero preceding `update()` calls that frame. This is normal, not a dropped frame
+– `BT.ticks` and any state written during the last `update()` (including the camera offset from `BT.cameraSet()`, see
+[API: Camera](api-camera.md#camera-persists-across-zero-update-frames)) still reflect the last completed tick, so
+`render()` draws the same game state twice in a row rather than resetting to defaults.
+
 ## Timer
 
 <Since symbol="Timer" />
