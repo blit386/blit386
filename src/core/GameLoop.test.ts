@@ -68,10 +68,116 @@ describe('GameLoop', () => {
     });
 
     describe('getRenderAlpha', () => {
+        type PrivateLoop = {
+            tick: (currentTime: number) => void;
+            isRunning: boolean;
+            lastUpdateTime: number;
+            accumulator: number;
+        };
+
+        beforeEach(() => {
+            vi.stubGlobal('requestAnimationFrame', vi.fn());
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
         it('should return 0 initially', () => {
             const loop = new GameLoop(16.67, vi.fn(), vi.fn());
 
             expect(loop.getRenderAlpha()).toBe(0);
+        });
+
+        it('should set renderAlpha to the leftover accumulator fraction after fixed updates', () => {
+            const loop = new GameLoop(10, vi.fn(), vi.fn());
+            const p = loop as unknown as PrivateLoop;
+
+            p.isRunning = true;
+            p.lastUpdateTime = 0;
+            p.tick(25); // 25ms at 10ms interval = 2 steps, 5ms leftover
+
+            expect(loop.getRenderAlpha()).toBeCloseTo(0.5);
+        });
+
+        it('should be 0 immediately after a frame whose deltaTime consumes the accumulator exactly', () => {
+            const loop = new GameLoop(10, vi.fn(), vi.fn());
+            const p = loop as unknown as PrivateLoop;
+
+            p.isRunning = true;
+            p.lastUpdateTime = 0;
+            p.tick(20); // 20ms at 10ms interval = 2 whole steps, 0ms remainder
+
+            expect(loop.getRenderAlpha()).toBe(0);
+        });
+
+        it('should approach but never reach 1 as deltaTime approaches a full updateInterval without crossing it', () => {
+            const loop = new GameLoop(100, vi.fn(), vi.fn());
+            const p = loop as unknown as PrivateLoop;
+
+            p.isRunning = true;
+            p.lastUpdateTime = 0;
+            // 97.9ms at a 100ms interval: 0 steps, 97.9ms leftover. Kept more
+            // than SNAP_EPSILON_MS (2ms) away from the 100ms boundary so the
+            // rAF-jitter snap correction does not round this up to a full step.
+            p.tick(97.9);
+
+            const alpha = loop.getRenderAlpha();
+
+            expect(alpha).toBeCloseTo(0.979);
+            expect(alpha).toBeLessThan(1);
+        });
+
+        it('should stay within [0, 1) across consecutive frames, including a multi-step catch-up frame', () => {
+            const onUpdate = vi.fn();
+            const loop = new GameLoop(10, onUpdate, vi.fn());
+            const p = loop as unknown as PrivateLoop;
+
+            p.isRunning = true;
+            p.lastUpdateTime = 0;
+
+            p.tick(7); // 7ms delta: 0 steps, 7ms leftover -> alpha 0.7
+
+            expect(loop.getRenderAlpha()).toBeGreaterThanOrEqual(0);
+            expect(loop.getRenderAlpha()).toBeLessThan(1);
+
+            p.tick(32); // 25ms delta on top of the 7ms leftover: 3 steps (catch-up), 2ms leftover -> alpha 0.2
+
+            expect(onUpdate).toHaveBeenCalledTimes(3);
+            expect(loop.getRenderAlpha()).toBeGreaterThanOrEqual(0);
+            expect(loop.getRenderAlpha()).toBeLessThan(1);
+
+            p.tick(47); // 15ms delta on top of the 2ms leftover: 1 step, 7ms leftover -> alpha 0.7
+
+            expect(onUpdate).toHaveBeenCalledTimes(4);
+            expect(loop.getRenderAlpha()).toBeGreaterThanOrEqual(0);
+            expect(loop.getRenderAlpha()).toBeLessThan(1);
+        });
+
+        it('should keep renderAlpha within [0, 1) even at the max-steps clamp boundary', () => {
+            const loop = new GameLoop(10, vi.fn(), vi.fn());
+            const p = loop as unknown as PrivateLoop;
+
+            p.isRunning = true;
+            p.lastUpdateTime = 0;
+            p.tick(10000); // huge pause - MAX_STEPS clamp leaves 0 leftover
+
+            const alpha = loop.getRenderAlpha();
+
+            expect(alpha).toBeGreaterThanOrEqual(0);
+            expect(alpha).toBeLessThan(1);
+        });
+
+        it('should not produce a non-finite renderAlpha when updateInterval is corrupted to 0', () => {
+            const loop = new GameLoop(10, vi.fn(), vi.fn());
+            const p = loop as unknown as PrivateLoop & { updateInterval: number };
+
+            p.updateInterval = 0;
+            p.isRunning = true;
+            p.lastUpdateTime = 0;
+            p.tick(25);
+
+            expect(Number.isFinite(loop.getRenderAlpha())).toBe(true);
         });
     });
 
@@ -231,54 +337,6 @@ describe('GameLoop', () => {
             p.tick(10);
 
             expect(requestAnimationFrame).toHaveBeenCalled();
-        });
-
-        it('should set renderAlpha to the leftover accumulator fraction after fixed updates', () => {
-            const loop = new GameLoop(10, vi.fn(), vi.fn());
-            const p = loop as unknown as PrivateLoop;
-
-            p.isRunning = true;
-            p.lastUpdateTime = 0;
-            p.tick(25); // 25ms at 10ms interval = 2 steps, 5ms leftover
-
-            expect(loop.getRenderAlpha()).toBeCloseTo(0.5);
-        });
-
-        it('should set renderAlpha to 0 when the delta is an exact multiple of updateInterval', () => {
-            const loop = new GameLoop(10, vi.fn(), vi.fn());
-            const p = loop as unknown as PrivateLoop;
-
-            p.isRunning = true;
-            p.lastUpdateTime = 0;
-            p.tick(20); // 20ms at 10ms interval = 2 steps, 0ms leftover
-
-            expect(loop.getRenderAlpha()).toBe(0);
-        });
-
-        it('should keep renderAlpha within [0, 1) even at the max-steps clamp boundary', () => {
-            const loop = new GameLoop(10, vi.fn(), vi.fn());
-            const p = loop as unknown as PrivateLoop;
-
-            p.isRunning = true;
-            p.lastUpdateTime = 0;
-            p.tick(10000); // huge pause - MAX_STEPS clamp leaves 0 leftover
-
-            const alpha = loop.getRenderAlpha();
-
-            expect(alpha).toBeGreaterThanOrEqual(0);
-            expect(alpha).toBeLessThan(1);
-        });
-
-        it('should not produce a non-finite renderAlpha when updateInterval is corrupted to 0', () => {
-            const loop = new GameLoop(10, vi.fn(), vi.fn());
-            const p = loop as unknown as PrivateLoop & { updateInterval: number };
-
-            p.updateInterval = 0;
-            p.isRunning = true;
-            p.lastUpdateTime = 0;
-            p.tick(25);
-
-            expect(Number.isFinite(loop.getRenderAlpha())).toBe(true);
         });
     });
 
