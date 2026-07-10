@@ -37,6 +37,15 @@ const clamped = BT.cameraClamp(desired, worldSize);
 const clamped2 = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
 ```
 
+## Camera persists across zero-update frames
+
+`BT.cameraSet()`'s offset persists across render frames automatically, including frames where `update()` does not run –
+common on high refresh-rate displays where `render()` outpaces the fixed update rate (see
+[Render frames with zero update() steps](api-game-loop.md#render-frames-with-zero-update-steps) in API: Game Loop). Call
+`cameraSet()` once per `update()` tick and `cameraReset()` at the end of `render()` to switch to screen space for UI
+overlays, as the demos below do; the engine re-applies the last offset before the next render pass begins, so the reset
+never leaks into the following frame's world draw.
+
 Standalone helper (same math as `BT.cameraClamp`):
 
 <Since symbol="clampCameraToWorld" />

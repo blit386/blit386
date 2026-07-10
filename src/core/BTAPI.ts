@@ -96,6 +96,19 @@ export class BTAPI {
     private activeBackend: Backend | null = null;
 
     /**
+     * World camera offset last applied via {@link setCameraOffset}, persisted across frames.
+     *
+     * Re-applied at the start of every render pass, before the demo's `render()` runs (see
+     * the `onRender` callback built in {@link init}). Without this, a render frame with zero
+     * fixed-update steps (common once the render rate approaches or exceeds the fixed update
+     * rate, for example at 120 Hz) would draw the world with whatever the *previous* frame's
+     * `render()` left the live offset at after its own {@link resetCamera} call for
+     * screen-space UI - which is always `(0, 0)` - producing a visible snap-to-origin flash
+     * instead of holding the last correct scroll position.
+     */
+    private lastCameraOffset: Vector2i = Vector2i.zero();
+
+    /**
      * Engine overlay; non-null when {@link HardwareSettings.isOverlayEnabled}
      * is not `false`. Layout is fixed at init; drawn after demo `render()` each frame.
      */
@@ -327,6 +340,7 @@ export class BTAPI {
         this.pendingUpdateMs = 0;
         this.pendingUpdateSteps = 0;
         this.pendingDrawCalls = 0;
+        this.lastCameraOffset = Vector2i.zero();
         this.overlayTiming.frameMs = 0;
         this.overlayTiming.updateMs = 0;
         this.overlayTiming.renderMs = 0;
@@ -375,6 +389,10 @@ export class BTAPI {
                     this.beginRenderFrame();
 
                     this.renderer.beginFrame();
+
+                    // Re-prime the world camera before the demo draws, in case this render
+                    // frame has zero fixed-update steps (see lastCameraOffset doc comment).
+                    this.renderer.setCameraOffset(this.lastCameraOffset);
 
                     const renderStartMs = performance.now();
 
@@ -1074,6 +1092,7 @@ export class BTAPI {
      * @param offset - Camera position offset in pixels.
      */
     public setCameraOffset(offset: Vector2i): void {
+        this.lastCameraOffset = offset.clone();
         this.renderer?.setCameraOffset(offset);
     }
 
