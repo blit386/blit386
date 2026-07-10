@@ -142,6 +142,10 @@ right screen edges. Custom rows are user content, so a `|` in their text stays a
 ### Top row 3 (left)
 
 - `Frame: Xms | update(): Yms | render(): Zms` (shows `xN` on `update()` when multiple fixed updates ran this frame)
+- `N` is the number of fixed `update()` steps the accumulator drained for that render frame – normally `1`; higher when
+  `render()` falls behind `targetFPS` (a throttled background tab, a slow device, or a power-saving cap on
+  `requestAnimationFrame`). Game logic stays time-correct either way; see
+  [Multiple update() steps per render frame](api-game-loop.md#multiple-update-steps-per-render-frame) in Game Loop.
 
 ### Bottom band
 

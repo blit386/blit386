@@ -42,6 +42,40 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 
 <DemoEmbed demo="009-animation" title="BLIT386 animation and timing demo" />
 
+## Multiple update() steps per render frame
+
+The fixed step runs through an accumulator: each render frame adds the elapsed wall-clock time to a running total, then
+drains as many `updateInterval`-sized (`1000 / targetFPS`) chunks as fit. Before draining, the accumulator is clamped to
+`8 × updateInterval` (`MAX_STEPS`), so at most 8 `update()` calls run per frame – a guard against a spiral-of-death
+catch-up burst after a long pause (a backgrounded tab, a breakpoint, a slow asset load). When that cap is hit, only the
+executed steps are subtracted from the accumulator and the excess wall-clock time is discarded: `BT.ticks` still
+advances once per executed `update()`, but a long pause skips the missed simulation time rather than fully catching up
+on it. When render and update cadences are close – a `60 Hz` display with `targetFPS: 60` – the accumulator typically
+drains exactly one chunk per render frame, so `update()` and `render()` alternate 1:1; when `render()` runs faster than
+`targetFPS`, some frames drain zero chunks (see
+[Render frames with zero update() steps](#render-frames-with-zero-update-steps) below).
+
+When `render()` falls behind `targetFPS` – a throttled background tab, a slow device, or a browser power-saving cap on
+`requestAnimationFrame` – the accumulator has more than one `updateInterval` worth of time to drain before the next
+render, so multiple `update()` calls run in a row ahead of that single `render()` call. Game logic still advances at the
+correct rate (`BT.ticks` still increments once per fixed step, `BT.deltaSeconds` is unchanged); only the render cadence
+drops. The engine overlay's frame-metrics row surfaces this as an `xN` suffix on `update()` – see
+[Top row 3 (left)](api-overlay.md#top-row-3-left) in the Overlay API docs.
+
+A concrete real-world trigger: macOS Low Power Mode makes Safari/WebKit halve its `requestAnimationFrame` dispatch rate
+to about `30 Hz`, unrelated to script performance or display refresh rate. See
+[Safari render throttling](api-browser-support.md#safari-render-throttling-macos-low-power-mode) in Browser Support for
+the WebKit reference and why other engines are unaffected.
+
+## Render frames with zero update() steps
+
+The opposite direction happens too: on a high refresh-rate display (120 Hz or higher) with `targetFPS: 60`,
+`requestAnimationFrame` calls `render()` more often than the accumulator drains a full `updateInterval` chunk, so a
+sizeable fraction of render frames have zero preceding `update()` calls that frame. This is normal, not a dropped frame
+– `BT.ticks` and any state written during the last `update()` (including the camera offset from `BT.cameraSet()`, see
+[API: Camera](api-camera.md#camera-persists-across-zero-update-frames)) still reflect the last completed tick, so
+`render()` draws the same game state twice in a row rather than resetting to defaults.
+
 ## Timer
 
 <Since symbol="Timer" />
@@ -78,4 +112,5 @@ need a specific snapshot; the default is the engine tick counter.
   <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
   <Card title="API: Overlay" href="/docs/api/overlay">Present FPS, timing chart, event tags.</Card>
   <Card title="API: Camera" href="/docs/api/camera">Global pixel offset for draw calls.</Card>
+  <Card title="Browser Support" href="/docs/api/browser-support">Safari's Low Power Mode requestAnimationFrame throttling.</Card>
 </Cards>
