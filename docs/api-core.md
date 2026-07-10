@@ -13,9 +13,9 @@
 Bootstrap, initialization, and default configuration.
 
 The rest of the core API surface lives in dedicated pages: [Overlay](api-overlay.md) (HUD configure flags and style),
-[Game Loop](api-game-loop.md) (tick timing and `Timer`), [Camera](api-camera.md), [Easing](api-easing.md),
-[Core Types](api-core-types.md) (`Vector2i`, `Rect2i`, `Color32`), [Audio](api-audio.md) (bus volume, mute, unlock
-state), and [Browser Support](api-browser-support.md).
+[Game Loop](api-game-loop.md) (tick timing, `Timer`, and the `BT.renderAlpha` render-interpolation factor),
+[Camera](api-camera.md), [Easing](api-easing.md), [Core Types](api-core-types.md) (`Vector2i`, `Rect2i`, `Color32`),
+[Audio](api-audio.md) (bus volume, mute, unlock state), and [Browser Support](api-browser-support.md).
 
 <Callout title="Starting a new project?">
   The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm, pnpm, yarn, or bun).

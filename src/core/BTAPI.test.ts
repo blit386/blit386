@@ -427,6 +427,10 @@ describe('BTAPI', () => {
             expect(() => BTAPI.instance.resetTicks()).not.toThrow();
         });
 
+        it('getRenderAlpha should return 0 before init', () => {
+            expect(BTAPI.instance.getRenderAlpha()).toBe(0);
+        });
+
         it('getDevice should return null before init', () => {
             expect(BTAPI.instance.getDevice()).toBeNull();
         });

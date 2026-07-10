@@ -19,10 +19,13 @@ BLIT386 runs two independent cadences:
 | Concept         | Where                                                      | Meaning                                                        |
 | --------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
 | Simulation rate | `targetFPS`, `BT.targetFPS`, `BT.deltaSeconds`, `BT.ticks` | Fixed `update()` step; game logic and `Timer` use ticks        |
-| Render rate     | Overlay `Present: N FPS`                                   | Measured `requestAnimationFrame` cadence; `render()` runs here |
+| Render rate     | Overlay `Present: N FPS`, `BT.renderAlpha`                 | Measured `requestAnimationFrame` cadence; `render()` runs here |
 
 `render()` may run more or fewer times per second than `update()` (for example 120 Hz display with `targetFPS: 60`). Use
-tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks.
+tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks. Because the two
+cadences drift apart, `BT.renderAlpha` gives `render()` a normalized `[0, 1)` interpolation factor toward the next fixed
+step, for smoothing motion across that mismatch (see
+[Interpolating render state with renderAlpha](#interpolating-render-state-with-renderalpha) below).
 
 ```ts twoslash
 import { BT } from 'blit386';
@@ -30,6 +33,7 @@ import { BT } from 'blit386';
 BT.deltaSeconds; // seconds per fixed tick (1 / BT.targetFPS)
 BT.timeSeconds; // elapsed seconds since init (ticks × deltaSeconds)
 BT.ticks; // current tick counter (increments each update)
+BT.renderAlpha; // fractional progress [0, 1) toward the next update, for interpolation
 BT.ticksReset(); // reset tick counter to 0
 BT.assignTag('Round start'); // timing chart event tag at current tick (requires isOverlayTimingChartEnabled)
 ```
@@ -37,6 +41,7 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 <Since symbol="BT.deltaSeconds" />
 <Since symbol="BT.timeSeconds" />
 <Since symbol="BT.ticks" />
+<Since symbol="BT.renderAlpha" />
 <Since symbol="BT.ticksReset" />
 <Since symbol="BT.assignTag" />
 
@@ -76,6 +81,30 @@ sizeable fraction of render frames have zero preceding `update()` calls that fra
 [API: Camera](api-camera.md#camera-persists-across-zero-update-frames)) still reflect the last completed tick, so
 `render()` draws the same game state twice in a row rather than resetting to defaults.
 
+## Interpolating render state with renderAlpha
+
+`render()` frequently runs at a different cadence than `update()` (see the two sections above), so game state read
+during `render()` can be up to one fixed step stale. The accumulator introduced above always holds less than one
+`updateInterval` of leftover time once its whole-step chunks are removed for the frame - that remainder is exactly what
+the whole-step loop couldn't consume. Dividing that leftover by `updateInterval` gives, from first principles, how far
+the simulation has already progressed toward its next step - a fraction in `[0, 1)`. `BT.renderAlpha` exposes that
+fraction: `0` means a fixed update just completed, values approaching `1` mean the next update is imminent.
+
+```ts twoslash
+import { BT, Vector2i } from 'blit386';
+const previousPos = new Vector2i(0, 0);
+const currentPos = new Vector2i(0, 0);
+// ---cut---
+const alpha = BT.renderAlpha;
+const drawX = previousPos.x + (currentPos.x - previousPos.x) * alpha;
+const drawY = previousPos.y + (currentPos.y - previousPos.y) * alpha;
+```
+
+Interpolating between the previous and current tick's positions smooths motion on displays whose refresh rate does not
+line up cleanly with `targetFPS`, without changing simulation timing. `BT.renderAlpha` only reflects the most recently
+completed render frame's accumulator state; read it from `render()`, not `update()`. For the full worked pattern,
+including a zero-allocation version and `Vector2i.lerp`, see [Guide: Game Loop](guide-game-loop.md).
+
 ## Timer
 
 <Since symbol="Timer" />
@@ -113,4 +142,5 @@ need a specific snapshot; the default is the engine tick counter.
   <Card title="API: Overlay" href="/docs/api/overlay">Present FPS, timing chart, event tags.</Card>
   <Card title="API: Camera" href="/docs/api/camera">Global pixel offset for draw calls.</Card>
   <Card title="Browser Support" href="/docs/api/browser-support">Safari's Low Power Mode requestAnimationFrame throttling.</Card>
+  <Card title="Guide: Game Loop" href="/docs/guides/game-loop">Smoothing motion between update() steps with renderAlpha.</Card>
 </Cards>

@@ -22,6 +22,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Question                                                          | Where to look                                                                                                                                                                                                                                                       |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | What does `BT.X` do (getter vs method)?                           | `src/BLIT386.ts` JSDoc, `docs/api-core.md`, BT API: getters vs methods below                                                                                                                                                                                        |
+| How do I smooth motion between fixed `update()` steps?            | `BT.renderAlpha` (`src/core/GameLoop.ts`, `docs/api-game-loop.md`); worked pattern with `Vector2i.lerp` in `docs/guide-game-loop.md`                                                                                                                                |
 | How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md` (@since/@changed/@deprecated tagging, `<Since>`/`<ApiAvailability>`/`<PageChangelog>` doc components, review checklist)                                                                                                |
 | How does a subsystem work internally?                             | The relevant `src/core/` or `src/render/` file                                                                                                                                                                                                                      |
 | What does a demo implement?                                       | `src/core/IBTDemo.ts` (interface + HardwareSettings)                                                                                                                                                                                                                |
@@ -377,7 +378,7 @@ Full table in `docs/api-core.md` and `.claude/rules/bt-api-getters.md`. The cate
 - Derived: `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field; clone per read).
 - Configure-time (backend): `requestedBackend` (resolved `HardwareSettings.backend` after merge and `?backend=software`;
   `null` before init).
-- Loop timing: `deltaSeconds`, `timeSeconds`, `ticks`.
+- Loop timing: `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`.
 - Runtime state: `activeBackend` (what actually started after fallback; `null` before init or on failure), `camera`,
   `palette` (live reference), `isAudioUnlocked` (`false` until the first user gesture resumes the audio context),
   `isMusicPlaying` (`true` while the music player has a live current track).

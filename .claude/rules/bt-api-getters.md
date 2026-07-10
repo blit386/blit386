@@ -15,7 +15,7 @@ Quick rules when changing `src/BLIT386.ts` or demos:
 | Configure-time (mirror `HardwareSettings` names) | `displaySize`, `drawingBufferSize`, `targetFPS`                                                                |
 | Derived                                          | `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field)                                 |
 | Configure-time (backend)                         | `requestedBackend` (mirrors `HardwareSettings.backend`; `null` before init)                                    |
-| Loop timing                                      | `deltaSeconds`, `timeSeconds`, `ticks`                                                                         |
+| Loop timing                                      | `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`                                                          |
 | Runtime state                                    | `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying` (`activeBackend` `null` before init) |
 | Per-frame input                                  | `pointerScrollDelta`, `inputString`, `gamepadCount`                                                            |
 
