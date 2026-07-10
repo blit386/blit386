@@ -75,6 +75,24 @@ export class GameLoop {
     private static readonly BASELINE_WINDOW = 60;
 
     /**
+     * Tolerance, in milliseconds, for snapping a rAF delta onto the nearest exact
+     * multiple of {@link updateInterval} before it is added to the accumulator.
+     *
+     * Browsers coarsen `performance.now()` resolution (commonly to ~1 ms, as a
+     * Spectre-era timing-attack mitigation), so a display genuinely refreshing at the
+     * target rate on average still reports deltas like 16 and 17 ms rather than a
+     * clean 16.667 ms. Left uncorrected, that rounding noise walks the accumulator's
+     * phase back and forth across a step boundary, producing a deterministic
+     * "extra step, then a stalled frame" beat (for example 2, 0, 1, 2, 0, 1, ...)
+     * instead of a steady one-step-per-frame cadence - visible as camera/scroll
+     * jitter even though the true average frame rate matches the target exactly.
+     * 2 ms comfortably covers that rounding noise while staying far below
+     * {@link DROP_THRESHOLD_MULTIPLIER}'s much larger gap, so a genuine dropped frame
+     * is never masked.
+     */
+    private static readonly SNAP_EPSILON_MS = 2;
+
+    /**
      * Minimum samples required before the baseline is trusted enough to drive
      * detection. Avoids false positives during page-load warm-up where a few
      * rAF callbacks may fire with unusual cadence.
@@ -204,7 +222,7 @@ export class GameLoop {
 
         this.detectFrameDrop(deltaTime);
 
-        this.accumulator += deltaTime;
+        this.accumulator += this.snapDeltaTime(deltaTime);
 
         const maxAccumulator = this.updateInterval * GameLoop.MAX_STEPS;
 
@@ -225,6 +243,19 @@ export class GameLoop {
         this.onRender();
 
         requestAnimationFrame((t) => this.tick(t));
+    }
+
+    /**
+     * Corrects rAF timer coarsening by snapping a delta that already lands close to an
+     * exact multiple of {@link updateInterval} onto that multiple.
+     *
+     * @param deltaTime - Raw milliseconds between the current and previous rAF callback.
+     * @returns `deltaTime`, or the nearest update-interval multiple when within {@link SNAP_EPSILON_MS} of it.
+     */
+    private snapDeltaTime(deltaTime: number): number {
+        const nearestMultiple = Math.round(deltaTime / this.updateInterval) * this.updateInterval;
+
+        return Math.abs(deltaTime - nearestMultiple) <= GameLoop.SNAP_EPSILON_MS ? nearestMultiple : deltaTime;
     }
 
     /**
