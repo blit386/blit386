@@ -68,6 +68,11 @@
       "description": "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
     },
     {
+      "src": "guide-game-loop.md",
+      "path": "guides/game-loop",
+      "description": "Smoothing motion between fixed update() steps using BT.renderAlpha and Vector2i.lerp."
+    },
+    {
       "src": "guide-palette.md",
       "path": "guides/palette",
       "description": "The palette-first rendering workflow: setup, slot offsets, and palette effects."
