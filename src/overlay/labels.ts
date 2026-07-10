@@ -24,6 +24,24 @@ const dividerScratch = new Rect2i(0, 0, 1, 0);
 const segmentScratch = new Vector2i(0, 0);
 
 /**
+ * Left-pads an already-formatted numeric segment with spaces to a fixed column width.
+ *
+ * Engine-composed rows join several of these segments with `|` dividers positioned by
+ * cumulative character count (see {@link drawOverlayLabelWithDividers}). Without a fixed width,
+ * a value's digit count changing from one frame to the next (for example `8.3` becoming `16.7`,
+ * or an update-step suffix like `x3` appearing and disappearing) shifts every later segment on
+ * the row. Padding every such field to the same width up front keeps divider and segment
+ * positions stable regardless of the underlying value.
+ *
+ * @param text - Already-formatted field text, e.g. `'8.3'`, `'60'`, or `'x3'` (may be empty).
+ * @param width - Fixed column width in characters.
+ * @returns `text` padded with leading spaces to at least `width` characters.
+ */
+export function padOverlayField(text: string, width: number): string {
+    return text.padStart(width, ' ');
+}
+
+/**
  * Turns the browser page title into a short top-left overlay label.
  *
  * @param pageTitle - Browser document title when available.

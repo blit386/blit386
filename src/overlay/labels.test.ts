@@ -3,8 +3,29 @@ import { describe, expect, it } from 'vitest';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { OVERLAY_DIVIDER_GAP_PX, SYSTEM_CHAR_ADVANCE } from './constants';
-import { drawOverlayLabelWithDividers, overlayDividerLabelWidth, resolveOverlayTopLeftLabel } from './labels';
+import {
+    drawOverlayLabelWithDividers,
+    overlayDividerLabelWidth,
+    padOverlayField,
+    resolveOverlayTopLeftLabel,
+} from './labels';
 import { createMockRenderer, getBitmapTextCalls, mockFont } from './testFixtures';
+
+describe('padOverlayField', () => {
+    it('left-pads shorter text with spaces to reach the fixed width', () => {
+        expect(padOverlayField('8.3', 4)).toBe(' 8.3');
+        expect(padOverlayField('60', 3)).toBe(' 60');
+    });
+
+    it('reserves the fixed width even for an empty field', () => {
+        expect(padOverlayField('', 2)).toBe('  ');
+    });
+
+    it('leaves text unchanged once it already meets or exceeds the fixed width', () => {
+        expect(padOverlayField('123.4', 4)).toBe('123.4');
+        expect(padOverlayField('x3', 2)).toBe('x3');
+    });
+});
 
 describe('resolveOverlayTopLeftLabel', () => {
     it('formats registry-style page titles without a BLIT386 prefix', () => {

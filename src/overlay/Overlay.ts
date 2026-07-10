@@ -22,9 +22,16 @@ import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
 import type { AudioMeterDrawStyle } from './audio-meter/style';
 import { resolveAudioMeterStyle } from './audio-meter/style';
 import { OverlayBars } from './bars/Bars';
-import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from './constants';
+import {
+    DEFAULT_IDX_BG,
+    DEFAULT_IDX_TEXT,
+    OVERLAY_FPS_FIELD_WIDTH,
+    OVERLAY_MS_FIELD_WIDTH,
+    OVERLAY_UPDATE_STEPS_FIELD_WIDTH,
+} from './constants';
 import { OVERLAY_TOGGLE_KEY_CODE } from './input/constants';
 import { Toggle } from './input/Toggle';
+import { padOverlayField } from './labels';
 import { buildOverlayLayoutPlan, createDefaultLayoutConfig, createOverlayLayoutPlanScratch } from './layout/layoutPlan';
 import type { OverlayLayout, OverlayLayoutConfig, OverlayLayoutPlan } from './layout/types';
 import type { OverlayRenderer } from './OverlayDrawTarget';
@@ -87,6 +94,16 @@ function createTimingChart(
  */
 function createAudioMeter(isEnabled: boolean): AudioMeter {
     return new AudioMeter(isEnabled);
+}
+
+/**
+ * Formats a millisecond timing value to one decimal place, padded to the fixed overlay field width.
+ *
+ * @param valueMs - Timing value in milliseconds.
+ * @returns Padded `X.X` text for the `Frame`/`update()`/`render()` metrics row.
+ */
+function formatOverlayMsField(valueMs: number): string {
+    return padOverlayField(valueMs.toFixed(1), OVERLAY_MS_FIELD_WIDTH);
 }
 
 /**
@@ -524,13 +541,18 @@ export class Overlay {
         const paletteGrid = layoutConfig.paletteGrid ?? DEFAULT_PALETTE_GRID;
 
         if (isBodyVisible) {
-            const updateStepSuffix = this.#timing.updateSteps > 1 ? `x${this.#timing.updateSteps}` : '';
+            const presentFps = padOverlayField(String(this.#fps.measuredFps), OVERLAY_FPS_FIELD_WIDTH);
+            const frameMs = formatOverlayMsField(this.#timing.frameMs);
+            const updateMs = formatOverlayMsField(this.#timing.updateMs);
+            const renderMs = formatOverlayMsField(this.#timing.renderMs);
+            const updateStepSuffix = padOverlayField(
+                this.#timing.updateSteps > 1 ? `x${this.#timing.updateSteps}` : '',
+                OVERLAY_UPDATE_STEPS_FIELD_WIDTH,
+            );
 
-            topMetricsLabel = `Present ${this.#fps.measuredFps} FPS|Target ${this.#targetFps} FPS|Draw Calls ${this.#timing.drawCalls}`;
+            topMetricsLabel = `Present ${presentFps} FPS|Target ${this.#targetFps} FPS|Draw Calls ${this.#timing.drawCalls}`;
 
-            topTimingLabel =
-                `Frame ${this.#timing.frameMs.toFixed(1)}ms|update() ${this.#timing.updateMs.toFixed(1)}ms${updateStepSuffix}|` +
-                `render() ${this.#timing.renderMs.toFixed(1)}ms`;
+            topTimingLabel = `Frame ${frameMs}ms|update() ${updateMs}ms${updateStepSuffix}|` + `render() ${renderMs}ms`;
 
             if (this.#isOverlayRendererDiagnosticsBarEnabled) {
                 rendererDiagnosticsLabel = this.#timing.formatRendererDiagnosticsLabel();
