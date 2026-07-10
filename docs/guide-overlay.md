@@ -114,6 +114,14 @@ BT.systemPrint(new Vector2i(8, 8), palette.getNamed('hud_label'), 'Custom row');
 
 Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot GPU or draw-call bottlenecks.
 
+## Stable column widths
+
+The present-FPS, timing (`Frame`/`update()`/`render()`), and GPU diagnostics rows pad their numeric fields to a fixed
+character width before drawing. Without this, a value's digit count changing between frames (for example `8.3` becoming
+`16.7`, or the `update()` step suffix like `x3` appearing only when the fixed-update loop runs a catch-up burst) would
+shift every later segment on that row, since segments are drawn left to right based on the previous segment's rendered
+width. Padding keeps the `|` dividers and the segments after them in place regardless of how the values change.
+
 <PageChangelog page="guides/overlay" />
 
 ## See also

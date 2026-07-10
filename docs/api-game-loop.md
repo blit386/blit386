@@ -42,6 +42,25 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 
 <DemoEmbed demo="009-animation" title="BLIT386 animation and timing demo" />
 
+## Multiple update() steps per render frame
+
+The fixed step runs through an accumulator: each render frame adds the elapsed wall-clock time to a running total, then
+drains as many `updateInterval`-sized (`1000 / targetFPS`) chunks as fit, capped at 8 steps per frame to avoid a
+spiral-of-death catch-up burst after a long pause (a backgrounded tab, a breakpoint, a slow asset load). Ordinarily that
+accumulator drains exactly one chunk per render frame, so `update()` and `render()` alternate 1:1.
+
+When `render()` falls behind `targetFPS` – a throttled background tab, a slow device, or a browser power-saving cap on
+`requestAnimationFrame` – the accumulator has more than one `updateInterval` worth of time to drain before the next
+render, so multiple `update()` calls run in a row ahead of that single `render()` call. Game logic still advances at the
+correct rate (`BT.ticks` still increments once per fixed step, `BT.deltaSeconds` is unchanged); only the render cadence
+drops. The engine overlay's frame-metrics row surfaces this as an `xN` suffix on `update()` – see
+[Top row 3 (left)](api-overlay.md#top-row-3-left) in the Overlay API docs.
+
+A concrete real-world trigger: macOS Low Power Mode makes Safari/WebKit halve its `requestAnimationFrame` dispatch rate
+to about `30 Hz`, unrelated to script performance or display refresh rate. See
+[Safari render throttling](api-browser-support.md#safari-render-throttling-macos-low-power-mode) in Browser Support for
+the WebKit reference and why other engines are unaffected.
+
 ## Timer
 
 <Since symbol="Timer" />
@@ -78,4 +97,5 @@ need a specific snapshot; the default is the engine tick counter.
   <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
   <Card title="API: Overlay" href="/docs/api/overlay">Present FPS, timing chart, event tags.</Card>
   <Card title="API: Camera" href="/docs/api/camera">Global pixel offset for draw calls.</Card>
+  <Card title="Browser Support" href="/docs/api/browser-support">Safari's Low Power Mode requestAnimationFrame throttling.</Card>
 </Cards>

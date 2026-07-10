@@ -52,6 +52,22 @@ periodically. This is why `AudioClip.load()` accepts an ordered fallback list (f
 
 </Callout>
 
+## Safari render throttling (macOS Low Power Mode)
+
+macOS Low Power Mode makes Safari/WebKit halve its `requestAnimationFrame` dispatch rate to about `30 Hz`, even on a
+`120 Hz` display and even when the page's JavaScript is nowhere near the frame budget. This is a documented WebKit
+power-saving policy – see [WebKit bug 168837](https://bugs.webkit.org/show_bug.cgi?id=168837), "Throttle
+requestAnimationFrame to 30fps in low power mode" – not a web standard, and a page cannot opt out of it. Chromium
+(Chrome/Edge) and Gecko (Firefox) do not tie their `requestAnimationFrame` cadence to the OS power state this way; both
+keep dispatching at the display's native rate regardless of Low Power Mode.
+
+BLIT386's `render()` runs on `requestAnimationFrame`, so this halves the render rate while `update()` keeps advancing at
+`targetFPS` through the fixed-timestep accumulator – see
+[Multiple update() steps per render frame](api-game-loop.md#multiple-update-steps-per-render-frame). Game logic stays
+correct; only the visible frame rate drops, and the overlay's frame-metrics row shows the resulting `x2` (or higher)
+suffix on `update()`. Turning off Low Power Mode restores a clean `60 fps` ceiling on WebKit (capped by its own "prefer
+page rendering updates near 60 fps" policy, not the display's full refresh rate).
+
 <PageChangelog page="api/browser-support" />
 
 ## See also
@@ -61,4 +77,5 @@ periodically. This is why `AudioClip.load()` accepts an ordered fallback list (f
   <Card title="API: Audio" href="/docs/api/audio">Autoplay-unlock gesture requirement, independent of backend.</Card>
   <Card title="Loading Audio Clips" href="/docs/api/audio#loading">AudioClip.load(), fallback lists, and progress reporting.</Card>
   <Card title="Software Fallback Smoke Matrix" href="/docs/performance/smoke-matrix">Manual Canvas 2D fallback checklist.</Card>
+  <Card title="Game Loop" href="/docs/api/game-loop">Fixed-timestep accumulator and the update() xN overlay suffix.</Card>
 </Cards>
