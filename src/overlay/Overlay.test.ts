@@ -257,7 +257,8 @@ describe('Overlay', () => {
 
         expect(calls[3]).toMatchObject({
             pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, metricsY),
-            text: expect.stringMatching(/^Present\s+\d+ FPS$/),
+            // Present FPS pads to OVERLAY_FPS_FIELD_WIDTH (3): "60" -> " 60", plus the literal template space.
+            text: expect.stringMatching(/^Present {2}\d+ FPS$/),
             paletteOffset: 1,
         });
 
@@ -267,12 +268,14 @@ describe('Overlay', () => {
 
         expect(calls[6]).toMatchObject({
             pos: new Vector2i(OVERLAY_EDGE_MARGIN_PX, timingY),
-            text: expect.stringMatching(/^Frame\s+\d+\.\dms$/),
+            // Frame ms pads to OVERLAY_MS_FIELD_WIDTH (4): "0.0" -> " 0.0", plus the literal template space.
+            text: expect.stringMatching(/^Frame {2}\d+\.\dms$/),
             paletteOffset: 1,
         });
 
-        expect(calls[7]?.text).toMatch(/^update\(\)\s+\d+\.\dms\s*$/);
-        expect(calls[8]?.text).toMatch(/^render\(\)\s+\d+\.\dms$/);
+        // update() ms has the same 2-space lead-in, plus a 2-space trailing gap reserved for the absent xN suffix.
+        expect(calls[7]?.text).toMatch(/^update\(\) {2}\d+\.\dms {2}$/);
+        expect(calls[8]?.text).toMatch(/^render\(\) {2}\d+\.\dms$/);
         expect(renderer.drawBarFillOnTop).toHaveBeenCalled();
 
         expect(renderer.drawBarFillOnTop.rectSnapshots[0]).toMatchObject({
