@@ -92,8 +92,8 @@ fraction: `0` means a fixed update just completed, values approaching `1` mean t
 
 ```ts twoslash
 import { BT, Vector2i } from 'blit386';
-declare const previousPos: Vector2i;
-declare const currentPos: Vector2i;
+const previousPos = new Vector2i(0, 0);
+const currentPos = new Vector2i(0, 0);
 // ---cut---
 const alpha = BT.renderAlpha;
 const drawX = previousPos.x + (currentPos.x - previousPos.x) * alpha;
