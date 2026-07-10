@@ -105,6 +105,9 @@ export class GameLoop {
     /** Current tick count (increments once per fixed update call). */
     private ticks: number = 0;
 
+    /** Fractional progress `[0, 1)` between the last completed fixed update and the next. */
+    private renderAlpha: number = 0;
+
     /** Timestamp of the last frame, in milliseconds. */
     private lastUpdateTime: number = 0;
 
@@ -205,6 +208,16 @@ export class GameLoop {
     }
 
     /**
+     * Gets the fractional progress between the last completed fixed update and the next.
+     *
+     * @returns Interpolation alpha in `[0, 1)`, computed from the leftover accumulator after
+     *   the most recent frame's fixed-update steps.
+     */
+    public getRenderAlpha(): number {
+        return this.renderAlpha;
+    }
+
+    /**
      * Processes one animation frame.
      *
      * Advances the accumulator, runs zero or more fixed updates, renders once,
@@ -239,6 +252,11 @@ export class GameLoop {
         }
 
         this.accumulator -= steps * this.updateInterval;
+
+        this.renderAlpha =
+            Number.isFinite(this.updateInterval) && this.updateInterval > 0
+                ? Math.min(Math.max(this.accumulator / this.updateInterval, 0), 1 - Number.EPSILON)
+                : 0;
 
         this.onRender();
 

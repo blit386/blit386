@@ -808,6 +808,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.renderAlpha": {
+      "kind": "getter",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.requestedBackend": {
       "kind": "getter",
       "since": "1.1.0",
@@ -1384,6 +1391,7 @@
     "api/game-loop": [
       "BT.assignTag",
       "BT.deltaSeconds",
+      "BT.renderAlpha",
       "BT.ticks",
       "BT.ticksReset",
       "BT.timeSeconds",

@@ -497,6 +497,15 @@ export class BTAPI {
     }
 
     /**
+     * Gets the fractional progress between the last completed fixed update and the next.
+     *
+     * @returns Interpolation alpha in `[0, 1)`; `0` before initialization.
+     */
+    public getRenderAlpha(): number {
+        return this.loop?.getRenderAlpha() ?? 0;
+    }
+
+    /**
      * Assigns an event tag on the stats overlay timing chart.
      *
      * No-op when the overlay or timing chart is disabled.

@@ -327,6 +327,18 @@ describe('BT.ticksReset', () => {
     });
 });
 
+describe('BT.renderAlpha', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.getRenderAlpha', () => {
+        vi.spyOn(BTAPI.instance, 'getRenderAlpha').mockReturnValue(0.42);
+
+        expect(BT.renderAlpha).toBe(0.42);
+    });
+});
+
 describe('BT.assignTag', () => {
     beforeEach(() => {
         vi.restoreAllMocks();

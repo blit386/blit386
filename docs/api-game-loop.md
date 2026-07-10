@@ -19,7 +19,7 @@ BLIT386 runs two independent cadences:
 | Concept         | Where                                                      | Meaning                                                        |
 | --------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
 | Simulation rate | `targetFPS`, `BT.targetFPS`, `BT.deltaSeconds`, `BT.ticks` | Fixed `update()` step; game logic and `Timer` use ticks        |
-| Render rate     | Overlay `Present: N FPS`                                   | Measured `requestAnimationFrame` cadence; `render()` runs here |
+| Render rate     | Overlay `Present: N FPS`, `BT.renderAlpha`                 | Measured `requestAnimationFrame` cadence; `render()` runs here |
 
 `render()` may run more or fewer times per second than `update()` (for example 120 Hz display with `targetFPS: 60`). Use
 tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks.
@@ -31,6 +31,7 @@ BT.deltaSeconds; // seconds per fixed tick (1 / BT.targetFPS)
 BT.timeSeconds; // elapsed seconds since init (ticks × deltaSeconds)
 BT.ticks; // current tick counter (increments each update)
 BT.ticksReset(); // reset tick counter to 0
+BT.renderAlpha; // fractional progress [0, 1) toward the next update, for interpolation
 BT.assignTag('Round start'); // timing chart event tag at current tick (requires isOverlayTimingChartEnabled)
 ```
 
@@ -38,6 +39,7 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 <Since symbol="BT.timeSeconds" />
 <Since symbol="BT.ticks" />
 <Since symbol="BT.ticksReset" />
+<Since symbol="BT.renderAlpha" />
 <Since symbol="BT.assignTag" />
 
 <DemoEmbed demo="009-animation" title="BLIT386 animation and timing demo" />
@@ -75,6 +77,27 @@ sizeable fraction of render frames have zero preceding `update()` calls that fra
 – `BT.ticks` and any state written during the last `update()` (including the camera offset from `BT.cameraSet()`, see
 [API: Camera](api-camera.md#camera-persists-across-zero-update-frames)) still reflect the last completed tick, so
 `render()` draws the same game state twice in a row rather than resetting to defaults.
+
+## Interpolating render state with renderAlpha
+
+`render()` frequently runs at a different cadence than `update()` (see the two sections above), so game state read
+during `render()` can be up to one fixed step stale. `BT.renderAlpha` exposes how far the accumulator has progressed
+toward the next `update()` call, as a fraction in `[0, 1)`: `0` means a fixed update just completed, values approaching
+`1` mean the next update is imminent.
+
+```ts twoslash
+import { BT, Vector2i } from 'blit386';
+declare const previousPos: Vector2i;
+declare const currentPos: Vector2i;
+// ---cut---
+const alpha = BT.renderAlpha;
+const drawX = previousPos.x + (currentPos.x - previousPos.x) * alpha;
+const drawY = previousPos.y + (currentPos.y - previousPos.y) * alpha;
+```
+
+Interpolating between the previous and current tick's positions smooths motion on displays whose refresh rate does not
+line up cleanly with `targetFPS`, without changing simulation timing. `BT.renderAlpha` only reflects the most recently
+completed render frame's accumulator state; read it from `render()`, not `update()`.
 
 ## Timer
 

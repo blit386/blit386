@@ -662,6 +662,18 @@ export const BT = {
     },
 
     /**
+     * Fractional progress between the last completed fixed update and the next.
+     *
+     * Intended for interpolating render state between fixed-update steps.
+     *
+     * @since 1.3.0
+     * @returns Interpolation alpha in `[0, 1)`.
+     */
+    get renderAlpha(): number {
+        return BTAPI.instance.getRenderAlpha();
+    },
+
+    /**
      * Places a labeled marker on the overlay timing chart at the current tick.
      *
      * Requires `isOverlayTimingChartEnabled: true` in `configure()`. Tags scroll with the chart
