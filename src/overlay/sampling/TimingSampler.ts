@@ -1,3 +1,5 @@
+import { OVERLAY_DIAGNOSTICS_OVERFLOW_FIELD_WIDTH, OVERLAY_DIAGNOSTICS_VERTEX_FIELD_WIDTH } from '../constants';
+import { padOverlayField } from '../labels';
 import type { OverlayTimingSnapshot } from '../types';
 import { FPS_SMOOTHING } from './constants';
 
@@ -105,9 +107,23 @@ export class TimingSampler {
      * @returns Single-line GPU batch summary for the diagnostics bar.
      */
     formatRendererDiagnosticsLabel(): string {
-        return (
-            `Prim ${this.#primitiveSubmittedVertices}v ov ${this.#primitiveOverflowCount}|` +
-            `Spr ${this.#spriteSubmittedVertices}v ov ${this.#spriteOverflowCount}`
-        );
+        const primStats = this.#formatBatchStats(this.#primitiveSubmittedVertices, this.#primitiveOverflowCount);
+        const sprStats = this.#formatBatchStats(this.#spriteSubmittedVertices, this.#spriteOverflowCount);
+
+        return `Prim ${primStats}|Spr ${sprStats}`;
+    }
+
+    /**
+     * Pads one pipeline's vertex and overflow counts to their fixed field widths.
+     *
+     * @param vertices - Submitted vertex count for the pipeline.
+     * @param overflow - Overflow (dropped-batch) count for the pipeline.
+     * @returns Formatted `Xv ov Y` segment with fixed-width padded fields.
+     */
+    #formatBatchStats(vertices: number, overflow: number): string {
+        const paddedVertices = padOverlayField(String(vertices), OVERLAY_DIAGNOSTICS_VERTEX_FIELD_WIDTH);
+        const paddedOverflow = padOverlayField(String(overflow), OVERLAY_DIAGNOSTICS_OVERFLOW_FIELD_WIDTH);
+
+        return `${paddedVertices}v ov ${paddedOverflow}`;
     }
 }
