@@ -45,9 +45,15 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 ## Multiple update() steps per render frame
 
 The fixed step runs through an accumulator: each render frame adds the elapsed wall-clock time to a running total, then
-drains as many `updateInterval`-sized (`1000 / targetFPS`) chunks as fit, capped at 8 steps per frame to avoid a
-spiral-of-death catch-up burst after a long pause (a backgrounded tab, a breakpoint, a slow asset load). Ordinarily that
-accumulator drains exactly one chunk per render frame, so `update()` and `render()` alternate 1:1.
+drains as many `updateInterval`-sized (`1000 / targetFPS`) chunks as fit. Before draining, the accumulator is clamped to
+`8 × updateInterval` (`MAX_STEPS`), so at most 8 `update()` calls run per frame – a guard against a spiral-of-death
+catch-up burst after a long pause (a backgrounded tab, a breakpoint, a slow asset load). When that cap is hit, only the
+executed steps are subtracted from the accumulator and the excess wall-clock time is discarded: `BT.ticks` still
+advances once per executed `update()`, but a long pause skips the missed simulation time rather than fully catching up
+on it. When render and update cadences are close – a `60 Hz` display with `targetFPS: 60` – the accumulator typically
+drains exactly one chunk per render frame, so `update()` and `render()` alternate 1:1; when `render()` runs faster than
+`targetFPS`, some frames drain zero chunks (see
+[Render frames with zero update() steps](#render-frames-with-zero-update-steps) below).
 
 When `render()` falls behind `targetFPS` – a throttled background tab, a slow device, or a browser power-saving cap on
 `requestAnimationFrame` – the accumulator has more than one `updateInterval` worth of time to drain before the next

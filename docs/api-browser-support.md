@@ -55,11 +55,13 @@ periodically. This is why `AudioClip.load()` accepts an ordered fallback list (f
 ## Safari render throttling (macOS Low Power Mode)
 
 macOS Low Power Mode makes Safari/WebKit halve its `requestAnimationFrame` dispatch rate to about `30 Hz`, even on a
-`120 Hz` display and even when the page's JavaScript is nowhere near the frame budget. This is a documented WebKit
-power-saving policy – see [WebKit bug 168837](https://bugs.webkit.org/show_bug.cgi?id=168837), "Throttle
-requestAnimationFrame to 30fps in low power mode" – not a web standard, and a page cannot opt out of it. Chromium
-(Chrome/Edge) and Gecko (Firefox) do not tie their `requestAnimationFrame` cadence to the OS power state this way; both
-keep dispatching at the display's native rate regardless of Low Power Mode.
+`120 Hz` display and even when the page's JavaScript is nowhere near the frame budget. WebKit first shipped this
+throttle for iOS – see [WebKit bug 168837](https://bugs.webkit.org/show_bug.cgi?id=168837), "[iOS] Throttle
+requestAnimationFrame to 30fps in low power mode" – and the same WebKit power-saving policy applies on macOS once Apple
+added Low Power Mode there in macOS `12` (2021), where it is reproducible on Apple silicon laptops. It is not a web
+standard, and a page cannot opt out of it. Chromium (Chrome/Edge) and Gecko (Firefox) do not tie their
+`requestAnimationFrame` cadence to the OS power state this way; both keep dispatching at the display's native rate
+regardless of Low Power Mode.
 
 BLIT386's `render()` runs on `requestAnimationFrame`, so this halves the render rate while `update()` keeps advancing at
 `targetFPS` through the fixed-timestep accumulator – see
