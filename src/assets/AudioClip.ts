@@ -14,7 +14,8 @@
  * - synthesizing a clip procedurally via {@link AudioClip.synth}, entirely on the CPU with no
  *   source file, no `OfflineAudioContext`, and no URL cache entry
  *
- * Playback (voices, buses) is added in a later phase; this class only covers
+ * Playback (voices, buses) lives in the audio subsystem (`VoicePool` / `MusicPlayer` /
+ * `AudioManager`, reached through `BT.soundPlay` / `BT.musicPlay`); this class only covers
  * loading, caching, releasing, and synthesizing decoded buffers.
  */
 

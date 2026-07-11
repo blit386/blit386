@@ -153,10 +153,12 @@ bootstrap(Game);
 - Recolor without redrawing: Palette offsets turn one sprite sheet into team colors, day and night, or power-up states –
   no duplicate textures.
 - CRT when you want it: A two-tier post-process chain with bundled CRT presets for that curved-glass glow.
-- Everything a tiny engine needs: Pointer, keyboard, and gamepad input, a fixed-timestep loop, bitmap fonts, a camera,
-  and one-call PNG frame capture.
-- Audio buses that behave: A three-bus mixer (sfx, music, main) with volume, mute, and fades – tracking the browser's
-  autoplay-gesture unlock honestly instead of pretending it doesn't exist.
+- Everything a tiny engine needs: Pointer, keyboard, and gamepad input, a fixed-timestep loop with render-time
+  interpolation for smooth motion between ticks, bitmap fonts, a camera, and one-call PNG frame capture.
+- Sound that plays, not just routes: Fire off sound effects and crossfading music through a three-bus mixer (sfx, music,
+  main) with volume, mute, and fades, synthesize blips and booms from scratch or reach for a built-in preset, and read
+  live levels off the overlay's audio meters – all while tracking the browser's autoplay-gesture unlock honestly instead
+  of pretending it doesn't exist.
 
 ## Get started
 
@@ -211,8 +213,10 @@ important pages:
 | [API: Rendering](docs/api-rendering.md)                    | primitives, sprites, text, post-process, frame capture |
 | [API: Palette](docs/api-palette.md)                        | palette setup, presets, effects, serialization         |
 | [API: Assets](docs/api-assets.md)                          | sprite sheets, bitmap fonts, asset loading             |
+| [API: Audio](docs/api-audio.md)                            | buses, sound effects, music, procedural synthesis      |
 | [Input Guide](docs/guide-input.md)                         | pointer, keyboard, gamepad                             |
 | [Palette Guide](docs/guide-palette.md)                     | the palette-first workflow, offsets, and effects       |
+| [Audio Guide](docs/guide-audio.md)                         | loading, playing, and designing sound                  |
 | [Post-Process Effects](docs/guide-post-process-effects.md) | the effect chain, built-in effects, CRT presets        |
 
 The full index – overlay HUD, palette presets, bitmap fonts, performance, testing, security – lives in [`docs/`](docs/).

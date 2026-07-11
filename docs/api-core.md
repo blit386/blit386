@@ -159,32 +159,32 @@ Resolved after `configure()`; the hook may return a partial object.
 - Include `displaySize` when you want a custom logical size; optional fields you omit then stay unset (for example no
   `drawingBufferSize` means a 1:1 drawing buffer).
 
-| Field                                    | Type                           | Default     | Description                                                                                            |
-| ---------------------------------------- | ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------ |
-| `displaySize`                            | `Vector2i`                     | `320×240`   | Logical render resolution                                                                              |
-| `drawingBufferSize`                      | `Vector2i`                     | `640×480`   | Drawing buffer size; enables display-tier effects when set                                             |
-| `maxCanvasSize`                          | `Vector2i`                     | `960×720`   | CSS cap – maximum on-screen canvas size                                                                |
-| `targetFPS`                              | `number`                       | `60`        | Fixed `update()` rate (simulation ticks per second)                                                    |
-| `backend`                                | `'webgpu' \| 'software'`       | `'webgpu'`  | Force rendering backend                                                                                |
-| `audioVoices`                            | `number`                       | `16`        | Max simultaneous SFX voices, `1`-`64` (reserved for an upcoming voice-limiting pass; not yet enforced) |
-| `outputUpscaleFilter`                    | `'nearest' \| 'linear'`        | `'nearest'` | Upscale filter                                                                                         |
-| `isDetectingDroppedFrames`               | `boolean`                      | `false`     | Log a console warning on missed vsync                                                                  |
-| `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                               |
-| `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                         |
-| `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                     |
-| `isOverlayToggleEnabled`                 | `boolean`                      | `true`      | Enable Backquote and bottom-left corner toggle input                                                   |
-| `isOverlayPaletteEnabled`                | `boolean`                      | `false`     | Live palette swatch grid in the overlay bottom band (opt-in)                                           |
-| `overlayPaletteColumns`                  | `number`                       | _unset_     | Max palette swatches per grid row (default: widest fit)                                                |
-| `overlayPaletteRowsVisible`              | `number`                       | _unset_     | Max visible palette grid rows (default: all rows; band height capped)                                  |
-| `overlayStyle`                           | `OverlayStyle`                 | _unset_     | Optional bar/text/gap palette indices for overlay                                                      |
-| `isOverlayTimingChartEnabled`            | `boolean`                      | `false`     | Scrolling update/render timing chart between title and metrics rows                                    |
-| `overlayTimingChartHeight`               | `number`                       | `22`        | Timing chart band height in pixels when the chart is enabled                                           |
-| `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                                   |
-| `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted)     |
-| `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                           |
-| `isOverlayAudioMetersEnabled`            | `boolean`                      | `false`     | Per-bus level bars and voices/steal/drop text readout band                                             |
-| `overlayAudioMeterHeight`                | `number`                       | `13`        | Audio meter band height in pixels when audio meters are enabled                                        |
-| `overlayAudioMeterStyle`                 | `OverlayAudioMeterStyle`       | _unset_     | Optional audio meter palette indices (defaults to overlay text/gap)                                    |
+| Field                                    | Type                           | Default     | Description                                                                                              |
+| ---------------------------------------- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `displaySize`                            | `Vector2i`                     | `320×240`   | Logical render resolution                                                                                |
+| `drawingBufferSize`                      | `Vector2i`                     | `640×480`   | Drawing buffer size; enables display-tier effects when set                                               |
+| `maxCanvasSize`                          | `Vector2i`                     | `960×720`   | CSS cap – maximum on-screen canvas size                                                                  |
+| `targetFPS`                              | `number`                       | `60`        | Fixed `update()` rate (simulation ticks per second)                                                      |
+| `backend`                                | `'webgpu' \| 'software'`       | `'webgpu'`  | Force rendering backend                                                                                  |
+| `audioVoices`                            | `number`                       | `16`        | Max simultaneous SFX voices, `1`-`64`; sizes the fixed SFX voice pool (voices are stolen when exhausted) |
+| `outputUpscaleFilter`                    | `'nearest' \| 'linear'`        | `'nearest'` | Upscale filter                                                                                           |
+| `isDetectingDroppedFrames`               | `boolean`                      | `false`     | Log a console warning on missed vsync                                                                    |
+| `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                                 |
+| `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                           |
+| `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                       |
+| `isOverlayToggleEnabled`                 | `boolean`                      | `true`      | Enable Backquote and bottom-left corner toggle input                                                     |
+| `isOverlayPaletteEnabled`                | `boolean`                      | `false`     | Live palette swatch grid in the overlay bottom band (opt-in)                                             |
+| `overlayPaletteColumns`                  | `number`                       | _unset_     | Max palette swatches per grid row (default: widest fit)                                                  |
+| `overlayPaletteRowsVisible`              | `number`                       | _unset_     | Max visible palette grid rows (default: all rows; band height capped)                                    |
+| `overlayStyle`                           | `OverlayStyle`                 | _unset_     | Optional bar/text/gap palette indices for overlay                                                        |
+| `isOverlayTimingChartEnabled`            | `boolean`                      | `false`     | Scrolling update/render timing chart between title and metrics rows                                      |
+| `overlayTimingChartHeight`               | `number`                       | `22`        | Timing chart band height in pixels when the chart is enabled                                             |
+| `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                                     |
+| `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted)       |
+| `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                             |
+| `isOverlayAudioMetersEnabled`            | `boolean`                      | `false`     | Per-bus level bars and voices/steal/drop text readout band                                               |
+| `overlayAudioMeterHeight`                | `number`                       | `13`        | Audio meter band height in pixels when audio meters are enabled                                          |
+| `overlayAudioMeterStyle`                 | `OverlayAudioMeterStyle`       | _unset_     | Optional audio meter palette indices (defaults to overlay text/gap)                                      |
 
 - `displaySize`, `drawingBufferSize`, and `maxCanvasSize` must be positive whole-number pixel dimensions.
 - Each size is capped at `8192×8192` per axis and `16,777,216` total pixels (`4096×4096`).

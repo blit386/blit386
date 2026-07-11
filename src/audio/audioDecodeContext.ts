@@ -1,6 +1,6 @@
 /**
- * Module-scoped audio decode/unload seam that `AudioClip` will depend on in a
- * later phase.
+ * Module-scoped audio decode/unload seam that `AudioClip` depends on for decoding
+ * synthesized buffers and for unload notification.
  *
  * Follows the module-level state style used in `AssetLoader.ts`: plain
  * module-scoped variables rather than a class, since there is exactly one

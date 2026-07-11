@@ -142,8 +142,8 @@ One to three sentences capturing the theme of this release: what was the main fo
 upgrading should know first. Be specific. Name actual things: "`BT` namespace", "btfont validation", "WebGPU adapter
 limits". No marketing fluff. No passive voice.
 
-Before writing the lead paragraph, invoke the `vancura-dinner-style` skill on a draft of the paragraph to refine the
-prose voice. Apply its output as the final lead.
+After drafting the lead paragraph, tighten it: lead with the release's single most important change, cut every hedge and
+adverb that does not carry information, and read it aloud once to catch passive voice.
 
 #### Per-group sections
 

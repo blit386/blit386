@@ -212,6 +212,23 @@ const laser = await AudioClip.synth({
 The release phase always finishes exactly at `duration`, even on a very short clip where the attack, decay, and release
 phases overlap - a percussive hit is never cut off mid-fade.
 
+<Since symbol="SynthPitchSweep" />
+
+`SynthPitchSweep` fields:
+
+<TypeTable type={{
+    toFrequency: { type: 'number', description: 'Frequency in Hz the carrier linearly reaches by the end of the clip. Required, and must be greater than 0.' },
+  }} />
+
+<Since symbol="SynthVibrato" />
+
+`SynthVibrato` fields (both optional):
+
+<TypeTable type={{
+    rate: { type: 'number', default: '5', description: 'Vibrato rate in Hz (oscillations per second). Must not be negative.' },
+    depth: { type: 'number', default: '0', description: 'Peak frequency deviation in Hz above and below the carrier. Defaults to 0, so vibrato is silent until you set a depth. Must not be negative.' },
+  }} />
+
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
 

@@ -1,6 +1,7 @@
 /**
  * Internal audio subsystem: Web Audio context, bus graph, browser autoplay-unlock
- * state machine, SFX voice pool, music player, and pre-unlock SFX/music drop counters.
+ * state machine, SFX voice pool, music player, a pre-unlock SFX drop counter, and a single
+ * remembered pre-unlock music request.
  *
  * Owned by {@link BTAPI} (not itself a singleton) and never exposed to demo code. This class
  * manages the audio graph, bus volume/mute, unlock tracking, SFX voice playback via
@@ -36,7 +37,8 @@ type PerBus<T> = Record<AudioBus, T>;
 
 /**
  * Owns the Web Audio context, the bus graph (`sfx` / `music` -> `main` -> `destination`),
- * the autoplay-unlock state machine, and pre-unlock SFX/music request counters.
+ * the autoplay-unlock state machine, a pre-unlock SFX drop counter, and a single remembered
+ * pre-unlock music request.
  *
  * Construct, then call {@link attach} with the rendering canvas. Call {@link detach}
  * to remove listeners and close the audio context (engine restarts, tests).
@@ -332,7 +334,8 @@ export class AudioManager {
     /**
      * Records an SFX play request dropped while the audio context was locked.
      *
-     * Called by future SFX playback methods; only the counter is implemented here.
+     * Called by {@link playSound} when it drops a play request because the audio context is
+     * still locked (pre-unlock).
      */
     public noteDroppedSfx(): void {
         this.sfxDroppedCount += 1;
@@ -384,8 +387,8 @@ export class AudioManager {
      * (pre-unlock), so the pool's slots are never spent on sound that would be inaudible anyway.
      *
      * {@link getDroppedSfxCount} only counts these pre-unlock drops; pool-exhaustion drops (no
-     * free or stealable slot) are tracked separately by the pool's own `getDropCount()`, which is
-     * internal-only and not yet exposed through `AudioManager`.
+     * free or stealable slot) are tracked separately by the pool's own `getDropCount()`, surfaced
+     * through {@link getVoiceDropCount}.
      *
      * @param buffer - Decoded audio buffer to play.
      * @param options - Playback options; see {@link VoicePlayOptions}.

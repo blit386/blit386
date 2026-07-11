@@ -56,9 +56,13 @@ subsystem entirely (for example release builds or full-screen custom HUD demos).
 Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it once per frame after `render()` when the
 overlay body is visible. Return a reused array of row objects when possible – avoid allocating new strings every frame.
 
-```javascript
+```ts twoslash
+import { type IBTDemo } from 'blit386';
+// ---cut---
+/** @implements {IBTDemo} */
 class Demo {
-  #overlayRows = [{ leftText: 'Score: 0' }];
+  readonly #overlayRows = [{ leftText: 'Score: 0' }];
+  score = 0;
 
   overlayRows() {
     this.#overlayRows[0].leftText = `Score: ${this.score}`;

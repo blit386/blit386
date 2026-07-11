@@ -79,7 +79,10 @@ export interface VoicePlayOptions {
     /** Optional linear fade-in duration in milliseconds, from silence to `volume`. */
     fadeInMs?: number;
 
-    /** Audio-clock start time (`AudioContext.currentTime`-relative). Defaults to "now". */
+    /**
+     * Absolute audio-clock start time, in the same timebase as `AudioContext.currentTime` (passed
+     * straight to `source.start`). Defaults to "now" (`AudioContext.currentTime`).
+     */
     atTime?: number;
 }
 
