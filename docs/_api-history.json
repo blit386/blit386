@@ -1354,7 +1354,9 @@
       "SoundPlayOptions",
       "SoundRef",
       "SynthEnvelope",
-      "SynthParams"
+      "SynthParams",
+      "SynthPitchSweep",
+      "SynthVibrato"
     ],
     "api/camera": [
       "BT.camera",

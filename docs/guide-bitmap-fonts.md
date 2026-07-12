@@ -295,11 +295,6 @@ Point it at the PNG filename, or embed it as base64.
 - Adobe AIR application.
 - Can create bitmap fonts from existing images.
 
-#### Custom Font Editor (coming soon)
-
-- BLIT386 will include its own font editor.
-- Native `.btfont` export with embedded textures.
-
 ### Tips for creating fonts
 
 1. Use power-of-two texture sizes (256×128, 512×256, etc.) for best GPU compatibility.

@@ -133,6 +133,8 @@ export interface HardwareSettings {
     /**
      * Maximum number of simultaneous audio voices (concurrently playing sounds). Defaults to
      * `16` in {@link defaultConfig}. Valid range is `1`-`64`.
+     *
+     * @since 1.3.0
      */
     audioVoices?: number;
 

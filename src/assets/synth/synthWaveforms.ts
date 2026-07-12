@@ -13,6 +13,8 @@ import type { SynthWaveform } from './SynthParams';
  * @param phase - Phase in [0, 1), already wrapped by the caller.
  * @param dutyCycle - Fraction of the cycle spent high. Only affects `'square'`.
  * @returns Sample in [-1, 1].
+ * @throws If `waveform` is not one of the supported tonal shapes (defensive guard; `'noise'`
+ *   and unknown values must never reach this function).
  */
 export function oscillatorSample(waveform: Exclude<SynthWaveform, 'noise'>, phase: number, dutyCycle: number): number {
     switch (waveform) {
