@@ -2,6 +2,7 @@
   "title": "Guides",
   "pages": [
     "input",
+    "game-loop",
     "palette",
     "palette-presets",
     "overlay",

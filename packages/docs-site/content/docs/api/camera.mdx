@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Camera"
 description: "The camera's global pixel offset and world-clamp helpers."
-lastModified: "2026-07-07T08:17:09+02:00"
+lastModified: "2026-07-10T16:19:01+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-camera.md"
 ---
 
@@ -27,6 +27,15 @@ const clamped = BT.cameraClamp(desired, worldSize);
 // Optional third argument overrides the viewport size (default: BT.displaySize):
 const clamped2 = BT.cameraClamp(desired, worldSize, new Vector2i(160, 120));
 ```
+
+## Camera persists across zero-update frames
+
+`BT.cameraSet()`'s offset persists across render frames automatically, including frames where `update()` does not run –
+common on high refresh-rate displays where `render()` outpaces the fixed update rate (see
+[Render frames with zero update() steps](/docs/api/game-loop#render-frames-with-zero-update-steps) in API: Game Loop). Call
+`cameraSet()` once per `update()` tick and `cameraReset()` at the end of `render()` to switch to screen space for UI
+overlays, as the demos below do; the engine re-applies the last offset before the next render pass begins, so the reset
+never leaks into the following frame's world draw.
 
 Standalone helper (same math as `BT.cameraClamp`):
 

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-07-07T18:00:20+02:00"
+lastModified: "2026-07-13T17:14:43+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -15,6 +15,50 @@ This page is editorial – release highlights and migration notes, not an exhaus
 (exactly when a given class, method, or getter shipped) see the availability table and changelog on each `api/*` and
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
+
+## 1.3.0 - 2026-07-13
+
+The audio release: the engine gains a full sound subsystem, from bus mixing to procedural synthesis, plus render-time
+interpolation for smoother motion between fixed update steps.
+
+### Added
+
+- Audio subsystem with a three-bus mixer (`sfx` and `music` feed `main`, which feeds the destination), per-bus volume,
+  mute, and fades, and honest browser autoplay-gesture unlock tracking: `BT.audioVolumeSet` / `BT.audioVolumeGet`,
+  `BT.audioMuteSet` / `BT.isAudioMuted`, and the `BT.isAudioUnlocked` getter.
+- `AudioClip` asset: streamed `fetch` and decode with byte-accurate progress, resolved-URL caching with
+  concurrent-request deduplication, and ordered fallback URL lists for browsers that cannot decode the first choice.
+- Sound-effect playback through a fixed-size voice pool with priority-based voice stealing: `BT.soundPlay`,
+  `BT.soundStop`, `BT.isSoundPlaying`, per-voice `BT.soundVolumeSet` / `BT.soundPitchSet` / `BT.soundPanSet` (plus
+  getters), and generational `SoundRef` handles. `HardwareSettings.audioVoices` (default `16`, range `1`-`64`) sizes the
+  pool.
+- Deterministic procedural synthesis via `AudioClip.synth(params)` - waveforms, an ADSR envelope, a linear pitch sweep,
+  vibrato, and noise mixing, rendered on the CPU with no source file - plus a preset library `BT.synthPreset` (`jump`,
+  `pickup`, `explosion`, `laser`, `hit`, `blip`).
+- Crossfading music playback with configurable fade, overlap, and loop points: `BT.musicPlay`, `BT.musicStop`,
+  `BT.musicVolumeSet` / `BT.musicVolumeGet`, and the `BT.isMusicPlaying` getter.
+- Overlay audio meters: a per-bus level band with a voices used/total, steal, and drop readout, gated by
+  `HardwareSettings.isOverlayAudioMetersEnabled` with lazy opt-in metering - no metering cost is paid unless the flag is
+  set.
+- `BT.renderAlpha` getter: the fractional interpolation factor in `[0, 1)` between fixed `update()` steps, for smoothing
+  render state on high-refresh displays. See the new game-loop smoothing guide.
+
+### Changed
+
+- Overlay engine-label separators now render as gap-colored dividers, and numeric overlay fields are padded to a fixed
+  width so the dividers no longer drift frame to frame.
+- Published documentation moved to a site-first workflow (blit386.dev): Fumadocs components, Twoslash-checked code
+  blocks, self-maintaining per-page version badges, and a generated per-symbol API history.
+
+### Fixed
+
+- The camera offset now persists across render frames that run zero `update()` steps, so scrolling no longer snaps back
+  on high-refresh displays.
+- WebGPU frame capture requests `COPY_SRC` canvas usage, fixing `BT.captureFrame()` / `BT.downloadFrame()` on backends
+  that require it.
+- `BT.systemPrintMeasure()` returns a fresh size object on every call instead of mutating a shared instance.
+- The engine overlay's toggle key press is now sampled during the fixed-update tick instead of the render phase, fixing
+  intermittently dropped toggle presses under rapid input on high-refresh displays.
 
 ## 1.2.1 - 2026-06-20
 

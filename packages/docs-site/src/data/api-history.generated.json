@@ -1,6 +1,6 @@
 {
-  "packageVersion": "1.2.1",
-  "unreleasedVersion": "1.3.0",
+  "packageVersion": "1.3.0",
+  "unreleasedVersion": "1.3.1",
   "versions": {
     "0.1.0": "2025-12-13T11:02:41+01:00",
     "0.2.0": "2025-12-22T16:19:15+01:00",
@@ -9,8 +9,8 @@
     "1.0.5": "2026-05-21T15:03:37+02:00",
     "1.1.0": "2026-05-30T16:05:31+02:00",
     "1.1.1": "2026-06-07T14:08:44+02:00",
-    "1.2.1": "2026-06-20T21:07:22+02:00",
-    "1.3.0": null
+    "1.3.0": null,
+    "1.3.1": null
   },
   "symbols": {
     "AssetLoader": {
@@ -25,14 +25,14 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "AudioClip": {
       "kind": "class",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.AXIS_LEFT_X": {
       "kind": "const",
@@ -305,21 +305,21 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.audioVolumeGet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.audioVolumeSet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.buttonDown": {
       "kind": "method",
@@ -552,14 +552,14 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.isAudioUnlocked": {
       "kind": "getter",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.isDown": {
       "kind": "method",
@@ -601,7 +601,7 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.isPointerActive": {
       "kind": "method",
@@ -629,7 +629,7 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.keyDown": {
       "kind": "method",
@@ -669,28 +669,28 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.musicStop": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.musicVolumeGet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.musicVolumeSet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.outputSize": {
       "kind": "getter",
@@ -808,6 +808,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.renderAlpha": {
+      "kind": "getter",
+      "since": "1.3.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
     "BT.requestedBackend": {
       "kind": "getter",
       "since": "1.1.0",
@@ -827,56 +834,56 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.soundPanSet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.soundPitchGet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.soundPitchSet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.soundPlay": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.soundStop": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.soundVolumeGet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.soundVolumeSet": {
       "kind": "method",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.spritesRefresh": {
       "kind": "method",
@@ -890,7 +897,7 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "BT.systemPrint": {
       "kind": "method",
@@ -1058,7 +1065,7 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "Noise": {
       "kind": "class",
@@ -1072,7 +1079,7 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "OverlayRow": {
       "kind": "interface",
@@ -1149,28 +1156,28 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SoundPlayOptions": {
       "kind": "interface",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SoundRef": {
       "kind": "interface",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SoundStopOptions": {
       "kind": "interface",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SpriteSheet": {
       "kind": "class",
@@ -1184,35 +1191,35 @@
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SynthParams": {
       "kind": "interface",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SynthPitchSweep": {
       "kind": "interface",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SynthVibrato": {
       "kind": "interface",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "SynthWaveform": {
       "kind": "type",
       "since": "1.3.0",
       "changes": [],
       "deprecated": null,
-      "status": "unreleased"
+      "status": "stable"
     },
     "TextSize": {
       "kind": "interface",
@@ -1347,7 +1354,9 @@
       "SoundPlayOptions",
       "SoundRef",
       "SynthEnvelope",
-      "SynthParams"
+      "SynthParams",
+      "SynthPitchSweep",
+      "SynthVibrato"
     ],
     "api/camera": [
       "BT.camera",
@@ -1384,6 +1393,7 @@
     "api/game-loop": [
       "BT.assignTag",
       "BT.deltaSeconds",
+      "BT.renderAlpha",
       "BT.ticks",
       "BT.ticksReset",
       "BT.timeSeconds",

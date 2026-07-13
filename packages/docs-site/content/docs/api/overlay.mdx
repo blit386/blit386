@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "Engine overlay HUD configure flags, style objects, and worked examples."
-lastModified: "2026-07-08T08:37:59+02:00"
+lastModified: "2026-07-10T16:14:15+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-overlay.md"
 ---
 
@@ -35,6 +35,12 @@ back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choo
 
 The overlay body stacks, top to bottom: title and backend rows, an optional timing chart, the frame-metrics rows, any
 custom rows, and the bottom band (palette grid plus hint bar).
+
+The `|` separators shown in the engine row formats below (backend/resolution, frame metrics, timing, renderer
+diagnostics, and the audio meter readout) do not render as text glyphs: each one draws as a `1px` full-row-height
+vertical divider filled with `overlayStyle.gapPaletteIndex` – the same color as the row gaps between bands – with `7px`
+of space between the line and the text on each side. Overlay text and chrome keep the same `7px` inset from the left and
+right screen edges. Custom rows are user content, so a `|` in their text stays a literal glyph.
 
 ### Top row 1 (left)
 
@@ -133,6 +139,10 @@ custom rows, and the bottom band (palette grid plus hint bar).
 ### Top row 3 (left)
 
 - `Frame: Xms | update(): Yms | render(): Zms` (shows `xN` on `update()` when multiple fixed updates ran this frame)
+- `N` is the number of fixed `update()` steps the accumulator drained for that render frame – normally `1`; higher when
+  `render()` falls behind `targetFPS` (a throttled background tab, a slow device, or a power-saving cap on
+  `requestAnimationFrame`). Game logic stays time-correct either way; see
+  [Multiple update() steps per render frame](/docs/api/game-loop#multiple-update-steps-per-render-frame) in Game Loop.
 
 ### Bottom band
 
@@ -201,7 +211,9 @@ Colors follow one path: use `overlayStyle` when set, otherwise the defaults `1` 
 
 - Globally in `configure()`: `overlayStyle: { barPaletteIndex, textPaletteIndex, gapPaletteIndex }`.
 - Per custom row on `OverlayRow`: `barPaletteIndex`, `textPaletteIndex`.
-- `gapPaletteIndex` fills inter-band row gaps and cluster separators; when omitted it matches `barPaletteIndex`.
+- `gapPaletteIndex` fills inter-band row gaps, cluster separators, and the `1px` vertical dividers between segments of
+  the engine-composed rows (backend/resolution, frame metrics, timing, renderer diagnostics, and the audio meter
+  readout); when omitted it matches `barPaletteIndex`.
 
 ## Present FPS vs. target FPS
 

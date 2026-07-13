@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout."
-lastModified: "2026-07-08T09:50:52+02:00"
+lastModified: "2026-07-11T10:57:07Z"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-overlay.md"
 ---
 
@@ -53,9 +53,11 @@ subsystem entirely (for example release builds or full-screen custom HUD demos).
 Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it once per frame after `render()` when the
 overlay body is visible. Return a reused array of row objects when possible – avoid allocating new strings every frame.
 
-```javascript
+```ts twoslash
+/** @implements {IBTDemo} */
 class Demo {
-  #overlayRows = [{ leftText: 'Score: 0' }];
+  readonly #overlayRows = [{ leftText: 'Score: 0' }];
+  score = 0;
 
   overlayRows() {
     this.#overlayRows[0].leftText = `Score: ${this.score}`;
@@ -85,9 +87,12 @@ bar. See [API: Overlay](/docs/api/overlay) for layout formulas.
 
 ## Colors and HUD palette slots
 
-Overlay chrome uses palette indices from `overlayStyle` (defaults: bar/gap 1, text 2). For demos that draw their own HUD
-text with `BT.systemPrint`, call `palette.applyHUD(startSlot?)` once at init to fill the six common UI slots (white,
-background, label, header, dim, FPS) and register `hud_*` name aliases. See
+Overlay chrome uses palette indices from `overlayStyle` (defaults: bar/gap 1, text 2). The gap index also fills the
+`1px` vertical dividers separating segments within the engine rows (metrics, timing, diagnostics, and the audio meter
+readout), so those separators match the row gaps between bands; each divider keeps `7px` of space to the text on both
+sides, matching the `7px` text inset from the screen edges. For demos that draw their own HUD text with
+`BT.systemPrint`, call `palette.applyHUD(startSlot?)` once at init to fill the six common UI slots (white, background,
+label, header, dim, FPS) and register `hud_*` name aliases. See
 [API: Palette – applyHUD](/docs/api/palette#built-in-presets) and
 [Palette Presets – HUD](/docs/guides/palette-presets#hud-preset).
 
@@ -105,6 +110,14 @@ BT.systemPrint(new Vector2i(8, 8), palette.getNamed('hud_label'), 'Custom row');
 - `Present: N FPS` = measured browser refresh cadence while the overlay body is visible – not the same as target FPS.
 
 Use `BT.deltaSeconds` / `BT.ticks` for gameplay timing; use present FPS to spot GPU or draw-call bottlenecks.
+
+## Stable column widths
+
+The present-FPS, timing (`Frame`/`update()`/`render()`), and GPU diagnostics rows pad their numeric fields to a fixed
+character width before drawing. Without this, a value's digit count changing between frames (for example `8.3` becoming
+`16.7`, or the `update()` step suffix like `x3` appearing only when the fixed-update loop runs a catch-up burst) would
+shift every later segment on that row, since segments are drawn left to right based on the previous segment's rendered
+width. Padding keeps the `|` dividers and the segments after them in place regardless of how the values change.
 
 <PageChangelog page="guides/overlay" />
 
