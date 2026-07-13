@@ -25,9 +25,40 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
     you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
   - `blit help` – list the commands.
 - `content/` – everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
-  project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (add a sprite, play
-  a sound, animate the palette, and more), the agent `hooks/` plus `hooks.manifest.json`, and `agents.config.json`,
-  which declares what each assistant's adapter emits.
+  project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), the
+  agent `hooks/` plus `hooks.manifest.json`, and `agents.config.json`, which declares what each assistant's adapter
+  emits.
+
+## The game-author skills
+
+Every scaffolded game gets these. Your AI assistant loads one on its own when the task calls for it – you do not have to
+name them. In Claude Code they live in `.claude/skills/`; in Cursor they are slash commands in `.cursor/commands/`, so
+there you can also invoke one by name (`/add-sprite`).
+
+| Skill                 | What it is for                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `structure-a-game`    | The shape of a game: `configure`, `init`, `update`, `render` – and what the engine does not do for you |
+| `run`                 | Start the dev server and see the game                                                                  |
+| `fix`                 | The game crashes, shows a black screen, or behaves oddly                                               |
+| `draw-shapes`         | Rectangles, lines, pixels, and clearing the screen                                                     |
+| `add-sprite`          | Load a PNG sprite sheet and draw it, whole or frame by frame                                           |
+| `add-text`            | Scores, labels, and titles with the built-in or a bitmap font                                          |
+| `use-palette`         | Set up colors as numbered palette slots                                                                |
+| `animate-the-palette` | Cycle, fade, flash, and swap colors for motion and mood                                                |
+| `move-and-time`       | The frame clock, timers, cooldowns, and easing                                                         |
+| `smooth-the-motion`   | Make movement look smooth instead of stepped, with `BT.renderAlpha`                                    |
+| `scroll-with-camera`  | Scroll a world bigger than the screen, clamped to its bounds                                           |
+| `read-keyboard`       | Keys, face buttons, typed text, and remapping                                                          |
+| `read-pointer`        | Mouse, touch, and pen, up to four at once                                                              |
+| `read-gamepad`        | Controllers: buttons, sticks, and triggers                                                             |
+| `play-a-sound`        | Sound effects, music, volume, and why a game starts silent                                             |
+| `design-a-sound`      | Build a custom sound from scratch when the presets are not right                                       |
+| `add-crt-effect`      | Fullscreen post-process effects: CRT, scanlines, bloom, glitch (WebGPU only)                           |
+| `show-debug-overlay`  | FPS, timings, your own values, and the palette grid                                                    |
+| `keep-it-fast`        | The game stutters, drops frames, or sprites start vanishing                                            |
+| `save-a-screenshot`   | Capture the frame as a PNG                                                                             |
+| `share-the-game`      | Build it and put it online for other people to play                                                    |
+| `migrate`             | Update the game's code after a BLIT386 upgrade renamed something                                       |
 
 ## Usage
 
