@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
-lastModified: "2026-07-08T08:37:59+02:00"
+lastModified: "2026-07-13T18:09:45+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-audio.md"
 ---
 
@@ -148,6 +148,8 @@ function playFootstep() {
 }
 ```
 
+<DemoEmbed demo="036-audio-basics" title="BLIT386 audio basics demo" />
+
 ## Playing music
 
 `BT.musicPlay` (see [Playback (Music)](/docs/api/audio#playback-music)) drives a single looping music player through the
@@ -205,6 +207,8 @@ BT.musicPlay(theme, { loopStart: 8, loopEnd: 32 });
 
 `loopStart` and `loopEnd` must be given together and satisfy `0 <= loopStart < loopEnd <= duration` - see
 [Loop points](/docs/api/audio#loop-points) for the exact validation rule and its error.
+
+<DemoEmbed demo="037-music" title="BLIT386 music playback demo" />
 
 ## Design a sound
 
@@ -268,6 +272,8 @@ const restored = JSON.parse(serialized) as SynthParams;
 
 const explosion = await AudioClip.synth(restored);
 ```
+
+<DemoEmbed demo="041-synth-toy" title="BLIT386 synth toy demo" />
 
 <PageChangelog page="guides/audio" />
 
