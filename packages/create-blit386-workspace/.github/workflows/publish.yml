@@ -3,7 +3,9 @@ name: Publish
 on:
   push:
     tags:
-      - 'v*'
+      # Release tags in this repo carry NO `v` prefix (0.1.0, 1.0.0, 1.1.0, 1.2.0), so a `v*`
+      # filter would never fire. Keep this in step with the tags CREATE_BLIT386_DESIGN.md cuts.
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   publish:
@@ -35,12 +37,13 @@ jobs:
 
       - name: Verify package versions match tag
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          # Tags have no `v` prefix, so the tag name IS the version.
+          TAG_VERSION="${GITHUB_REF_NAME}"
           KIT_VERSION=$(node -p "require('./packages/kit/package.json').version")
           CBT_VERSION=$(node -p "require('./packages/create-blit386/package.json').version")
 
           if [ "$KIT_VERSION" != "$TAG_VERSION" ] || [ "$CBT_VERSION" != "$TAG_VERSION" ]; then
-            echo "Tag v${TAG_VERSION} does not match package.json versions."
+            echo "Tag ${TAG_VERSION} does not match package.json versions."
             echo "  @blit386/kit: ${KIT_VERSION}"
             echo "  create-blit386: ${CBT_VERSION}"
             exit 1
