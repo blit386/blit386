@@ -115,6 +115,26 @@ render() {
 That single line turns "my game is broken, there is no sound" into "the game is waiting for me". A title screen the
 player has to dismiss with a key or a click is the usual answer, and it fixes the problem for the rest of the session.
 
+## Making your own sound from scratch
+
+The six presets are shortcuts. Underneath, each one is just a description of a sound, and you can write your own
+description instead and hand it to the same `AudioClip.synth()`:
+
+```js
+this.zap = await AudioClip.synth({
+  waveform: 'square', // the character: sine, square, triangle, sawtooth, or noise
+  frequency: 440, // how high, in hertz
+  duration: 0.2, // how long, in seconds
+  seed: 1, // any number; the same seed always makes the same sound
+});
+```
+
+Those four are required. The optional ones are the interesting ones: `envelope` shapes the sound over time (how fast it
+fades in, how fast it dies away), `pitchSweep` slides the pitch while it plays (sliding up reads as a jump, sliding down
+reads as falling), `noiseMix` stirs in hiss for grit, and `dutyCycle` thins out a square wave into that nasal NES buzz.
+
+Build sounds in `init()`, never in `update()` – synthesizing takes real work and will hitch the frame mid-game.
+
 ## Notes
 
 - Sound works on both renderers – WebGPU and the plain Canvas 2D fallback. Unlike CRT and post-process effects, it never
