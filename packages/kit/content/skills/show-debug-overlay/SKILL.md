@@ -23,6 +23,8 @@ configure() {
         isOverlayVisibleAtStart: true, // show the body on frame 1 (default: hidden until toggled)
         isOverlayPaletteEnabled: true, // live palette swatch grid
         isOverlayTimingChartEnabled: true, // scrolling update/render timing chart
+        isOverlayAudioMetersEnabled: true, // volume meters for the sound buses
+        isOverlayRendererDiagnosticsBarEnabled: true, // extra renderer details bar
     };
 }
 ```
@@ -57,7 +59,9 @@ update() {
 ## Key calls
 
 - Configure flags (all `is*`): `isOverlayEnabled`, `isOverlayVisibleAtStart`, `isOverlayToggleHintVisible`,
-  `isOverlayToggleEnabled`, `isOverlayPaletteEnabled`, `isOverlayTimingChartEnabled`.
+  `isOverlayToggleEnabled`, `isOverlayPaletteEnabled`, `isOverlayTimingChartEnabled`, `isOverlayAudioMetersEnabled`
+  (live volume meters for the sound buses), `isOverlayRendererDiagnosticsBarEnabled` (an extra bar with renderer
+  details).
 - `overlayRows()` – optional method on your game class returning `{ leftText, rightText? }[]`.
 - `BT.assignTag(label?)` (method) – drop a labeled marker (needs the timing chart enabled).
 
