@@ -135,6 +135,8 @@ right screen edges. Custom rows are user content, so a `|` in their text stays a
 - `drop` sums pool-exhaustion drops (no free or stealable voice slot) and pre-unlock drops (SFX requested before the
   audio context unlocked).
 
+<DemoEmbed demo="038-audio-buses" title="BLIT386 audio buses demo" />
+
 ### Top row 2 (left)
 
 - `Present: N FPS | Target: T FPS | Draw Calls: C`
