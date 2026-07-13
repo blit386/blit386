@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "Engine overlay HUD configure flags, style objects, and worked examples."
-lastModified: "2026-07-10T16:14:15+02:00"
+lastModified: "2026-07-13T18:09:45+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-overlay.md"
 ---
 
@@ -131,6 +131,8 @@ right screen edges. Custom rows are user content, so a `|` in their text stays a
   with `overlayAudioMeterStyle.warningPaletteIndex` / `clipPaletteIndex`.
 - `drop` sums pool-exhaustion drops (no free or stealable voice slot) and pre-unlock drops (SFX requested before the
   audio context unlocked).
+
+<DemoEmbed demo="038-audio-buses" title="BLIT386 audio buses demo" />
 
 ### Top row 2 (left)
 
