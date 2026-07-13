@@ -19,7 +19,7 @@ This page is editorial – release highlights and migration notes, not an exhaus
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## 1.3.0 - Unreleased
+## 1.3.0 - 2026-07-13
 
 The audio release: the engine gains a full sound subsystem, from bus mixing to procedural synthesis, plus render-time
 interpolation for smoother motion between fixed update steps.
@@ -60,6 +60,8 @@ interpolation for smoother motion between fixed update steps.
 - WebGPU frame capture requests `COPY_SRC` canvas usage, fixing `BT.captureFrame()` / `BT.downloadFrame()` on backends
   that require it.
 - `BT.systemPrintMeasure()` returns a fresh size object on every call instead of mutating a shared instance.
+- The engine overlay's toggle key press is now sampled during the fixed-update tick instead of the render phase, fixing
+  intermittently dropped toggle presses under rapid input on high-refresh displays.
 
 ## 1.2.1 - 2026-06-20
 
