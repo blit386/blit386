@@ -2,5 +2,5 @@
   "title": "Blog",
   "defaultOpen": true,
   "pagesIndex": "[Blog](/blog)",
-  "pages": ["hello-world"]
+  "pages": ["audio-release-1-3-0", "hello-world"]
 }
