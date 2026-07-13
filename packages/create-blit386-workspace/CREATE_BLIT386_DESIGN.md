@@ -85,9 +85,10 @@ anything genuinely private out of it.
 > (Catcher sounds, kit docs, generated-config mentions, version bumps). Curiously, the engine-side tracking issue it was
 > blocked on, blit386/blit386#191, is still open even though `1.3.0` shipped – worth a glance before relying on it, but
 > the published package itself does have the audio API (confirmed by version, not by re-reading engine source here).
-> Next actions: commit the staged kit changes, bump `BLIT386_RANGE` / `engineRange` from `^1.2.0` to `^1.3.0`, then
-> publish the kit first and the scaffolder second per section 11 – the release-order rule below has now been satisfied
-> by the engine publish, so nothing is blocking the kit release except doing it.
+> Next actions: commit the staged kit changes, then publish the kit first and the scaffolder second per section 11 – the
+> release-order rule below has now been satisfied by the engine publish, so nothing is blocking the kit release except
+> doing it. No version-pin bump is needed: `BLIT386_RANGE` / `engineRange` stay `^1.2.0` (see the "why this is safe"
+> paragraph below – the existing caret range already admits `1.3.0`).
 
 The kit now documents the engine's audio subsystem – `content/docs/audio.md`, the `play-a-sound` skill, the audio rows
 in `content/AGENTS.md` and `content/rules/blit-api-names.md`, and the audio overlay flags in `show-debug-overlay`. All
@@ -664,14 +665,15 @@ Separate product (later): Ambilab (ambilab.games) hosted editor + game hosting; 
 
 ## 11. Publishing to npm (procedure + status)
 
-Status (verified 2026-06-14 against the npm registry): `@blit386/kit@1.1.0` and `create-blit386@1.1.0` are published and
-live (`dist-tags.latest = 1.1.0` on both). Prior releases: `0.1.0` / `0.1.1`, then `1.0.0` (2026-06-14), then `1.1.0`
-(2026-06-14; migrate codemods + game-author skills). Git tag `1.1.0` (no `v` prefix) on merged commit `a9e77fd`; release
-notes live in the GitHub Release at <https://github.com/blit386/create-blit386/releases/tag/1.1.0> (there is no
-`RELEASE.md` in this repo – earlier references to one were wrong). Tags carry no `v` prefix, and
-`.github/workflows/publish.yml` triggers on that shape (`[0-9]+.[0-9]+.[0-9]+`); a `v*` trigger would never fire. Next
-publish: bump both packages, preflight, kit first, scaffolder second (see `PUBLISHING.md`) – and mind the audio
-release-order constraint in section 0.
+Status (verified 2026-07-13 against the npm registry): `@blit386/kit@1.2.0` and `create-blit386@1.2.0` are published and
+live (`dist-tags.latest = 1.2.0` on both). Prior releases: `0.1.0` / `0.1.1`, then `1.0.0` (2026-06-14), then `1.1.0`
+(2026-06-14; migrate codemods + game-author skills), then `1.2.0` (2026-06-19; `create-blit-tech`/`@blit-tech/kit`
+rename to `create-blit386`/`@blit386/kit`). Git tag `1.2.0` (no `v` prefix) on merged commit `ec563aa`; release notes
+live in the GitHub Release at <https://github.com/blit386/create-blit386/releases/tag/1.2.0> (there is no `RELEASE.md`
+in this repo – earlier references to one were wrong). Tags carry no `v` prefix, and `.github/workflows/publish.yml`
+triggers on that shape (`[0-9]+.[0-9]+.[0-9]+`); a `v*` trigger would never fire. Next publish: bump both packages,
+preflight, kit first, scaffolder second (see `PUBLISHING.md`) – and mind the audio release-order constraint in
+section 0.
 
 Procedure (repeat for each release; bump versions first – a version, once published, is permanent):
 

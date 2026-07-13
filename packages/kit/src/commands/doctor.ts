@@ -68,7 +68,7 @@ export function runDoctor(): void {
                     `Your local guides were written for an older BLIT386 (${engineRange}), but ${version} is installed.`,
                 ),
             );
-            out(ui.info('Update /kit to get guides that match your engine: run `npx blit upgrade`.'));
+            out(ui.info('Update @blit386/kit, then run `npx blit agents sync` to refresh your local guides.'));
         } else {
             out('');
             out(ui.warn(`This kit needs blit386 ${engineRange}, but ${version} is installed.`));
