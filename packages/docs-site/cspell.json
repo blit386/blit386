@@ -4,6 +4,7 @@
   "allowCompoundWords": true,
   "useGitignore": true,
   "words": [
+    "ADSR",
     "BLIT386",
     "biomejs",
     "btfont",
@@ -14,6 +15,7 @@
     "fumapress",
     "flexsearch",
     "Knip",
+    "lerp",
     "LLMs",
     "MCP",
     "MDX",
