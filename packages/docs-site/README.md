@@ -79,4 +79,4 @@ is added. Expanding coverage means adding an entry to that manifest (in the engi
 
 ## Agent policy
 
-See [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md) for contributor and agent conventions.
+See [`CLAUDE.md`](CLAUDE.md) and [`AGENTS.md`](AGENTS.md) for project and agent conventions.

@@ -55,7 +55,6 @@ jobs:
           if [ $FAILED -eq 1 ]; then
             echo ""
             echo "All commits must be signed off. Use: git commit -s -m \"message\""
-            echo "See CONTRIBUTING.md for details."
             exit 1
           fi
 
@@ -107,7 +106,6 @@ jobs:
           if [ $FAILED -eq 1 ]; then
             echo ""
             echo "All commits must be signed off. Use: git commit -s -m \"message\""
-            echo "See CONTRIBUTING.md for details."
             exit 1
           fi
 
