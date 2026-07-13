@@ -1,7 +1,7 @@
 # AGENTS.md – working on a BLIT386 game
 
 <!-- blit-kit:managed:start -->
-<!-- Everything between the managed markers is owned by /kit and will be rewritten by a future
+<!-- Everything between the managed markers is owned by @blit386/kit and will be rewritten by a future
      `npx blit agents sync`. Put your own notes in the "Your notes" section below the end marker. -->
 
 This file is the home base for anyone (a person or an AI assistant) working on this game. It is short on purpose: it
@@ -46,18 +46,22 @@ bootstrap(Game);
   beginner bug.
 - No fullscreen post-process effects in a starter. Effects like CRT need WebGPU and do not run on the Canvas 2D
   fallback. Keep starters working everywhere.
+- Sound waits for the player. Browsers refuse to play audio until someone clicks, taps, or presses a key, so a game is
+  silent until then – that is the web's rule, not a bug. `BT.musicPlay` is remembered and starts on the first
+  interaction; `BT.soundPlay` before it is dropped. See `docs/audio.md`.
 - No emoji anywhere in code, comments, or text.
 
 ## When you need detail, open the right doc
 
-| You want to...                                   | Read                            |
-| ------------------------------------------------ | ------------------------------- |
-| Install Node, run the game, edit your first line | `docs/getting-started.md`       |
-| Understand init/update/render and timing         | `docs/basics.md`                |
-| Clear the screen, draw rectangles, lines, text   | `docs/drawing.md`               |
-| Read the keyboard, mouse, or a gamepad           | `docs/input.md`                 |
-| Make and use colors (palette, slots)             | `docs/palette.md`               |
-| Fix a blank screen, an error, a broken change    | `docs/when-something-breaks.md` |
+| You want to...                                     | Read                            |
+| -------------------------------------------------- | ------------------------------- |
+| Install Node, run the game, edit your first line   | `docs/getting-started.md`       |
+| Understand init/update/render and timing           | `docs/basics.md`                |
+| Clear the screen, draw rectangles, lines, text     | `docs/drawing.md`               |
+| Read the keyboard, mouse, or a gamepad             | `docs/input.md`                 |
+| Make and use colors (palette, slots)               | `docs/palette.md`               |
+| Play sound effects and music, or fix a silent game | `docs/audio.md`                 |
+| Fix a blank screen, an error, a broken change      | `docs/when-something-breaks.md` |
 
 The full engine reference lives at https://github.com/blit386/blit386 – only go there if these local docs do not answer
 the question.
@@ -72,14 +76,15 @@ From the project folder:
 - `npx blit upgrade` – update BLIT386 to the latest version (and offer to fix any renamed API names for you).
 - `npx blit migrate` – update old BLIT386 names in your game to the current ones. Add `--write` to apply the changes.
 
-The `blit` helper is installed inside the project (it ships with `/kit`), so it is not on the system PATH. Always invoke
-it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works inside package scripts.
+The `blit` helper is installed inside the project (it ships with `@blit386/kit`), so it is not on the system PATH.
+Always invoke it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works inside package scripts.
 
 ## Good habits
 
 - Change one small thing, then look at the browser. Fast loops beat big rewrites.
 - Keep `update()` cheap: it runs 60 times a second. Avoid creating lots of new objects every frame in hot paths.
-- The starter game (`src/game.js`) is yours to change. Read its comments first; they explain every line.
+- The starter game (`src/game.js`, or `src/game.ts` in a TypeScript project) is yours to change. Read its comments
+  first; they explain every line.
 
 ## Working with an AI assistant
 

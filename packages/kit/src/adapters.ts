@@ -173,7 +173,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
 
     const claudeMd = [
         MANAGED_START,
-        '<!-- This block is managed by /kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
+        '<!-- This block is managed by @blit386/kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
         '',
         managedBody,
         commandsBlock,

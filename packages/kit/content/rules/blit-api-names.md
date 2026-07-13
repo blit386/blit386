@@ -20,8 +20,12 @@ BT.drawRectFill(rect, COLOR); // correct
 
 These are read-only values; access them as properties, not function calls.
 
-`BT.displaySize`, `BT.ticks`, `BT.deltaSeconds`, `BT.timeSeconds`, `BT.targetFPS`, `BT.activeBackend`, `BT.camera`,
-`BT.palette`
+- Screen: `BT.displaySize`, `BT.drawingBufferSize`, `BT.outputSize`
+- Timing: `BT.ticks`, `BT.deltaSeconds`, `BT.timeSeconds`, `BT.targetFPS`, `BT.renderAlpha`
+- Backend: `BT.activeBackend`, `BT.requestedBackend`
+- Audio: `BT.isAudioUnlocked`, `BT.isMusicPlaying`
+- Input: `BT.inputString`, `BT.pointerScrollDelta`, `BT.gamepadCount`
+- Scene: `BT.camera`, `BT.palette` (throws if no palette has been set yet)
 
 ```js
 const w = BT.displaySize.x; // correct

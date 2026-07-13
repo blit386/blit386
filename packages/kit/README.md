@@ -23,8 +23,11 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   - `blit agents add <claude|cursor>` – set up the files for one AI assistant in a game that did not pick it at the
     start. It writes the new files and records them so `blit agents sync` keeps them fresh. It never overwrites a file
     you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
-- `content/` – the canonical `AGENTS.md` and `docs/` that scaffolded projects ship, so a person or an AI assistant can
-  learn the engine from inside the project.
+  - `blit help` – list the commands.
+- `content/` – everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
+  project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (add a sprite, play
+  a sound, animate the palette, and more), the agent `hooks/` plus `hooks.manifest.json`, and `agents.config.json`,
+  which declares what each assistant's adapter emits.
 
 ## Usage
 
@@ -38,6 +41,7 @@ npx blit migrate
 npx blit migrate --write
 npx blit agents sync
 npx blit agents add cursor
+npx blit help
 ```
 
 ## Requirements
