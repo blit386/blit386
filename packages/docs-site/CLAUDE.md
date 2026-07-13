@@ -166,8 +166,10 @@ this script – owns which docs publish, their URL, sidebar order, and subtitle;
   `/docs/...` href values.
 - Adding a page: add an entry to `pages` in `blit386/docs/_sitemap.json` (the array order is the sidebar order; add the
   section to `sections` if it is new), then run `pnpm run sync:docs`. No change to this repo's script is needed.
-  Contributor-only pages (developer experience, voice, tooling, `security/*`) are intentionally not mirrored – just
-  leave them out of the manifest and they stay link-only on GitHub.
+  Contributor-only pages (`developer-experience-guide.md`, `documentation-and-versioning-guide.md`, `tooling.md`,
+  `voice.md`, `security/security-runbook.md`, `security/dependency-policy.md`, `security/audit-exceptions.md`, and the
+  docs `README.md`) are intentionally not mirrored – just leave them out of the manifest and they stay link-only on
+  GitHub.
 
 ## Critical Rules
 

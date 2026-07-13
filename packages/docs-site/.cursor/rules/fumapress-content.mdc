@@ -14,8 +14,9 @@ alwaysApply: false
 - The engine repo's `blit386/docs/_sitemap.json` manifest decides which docs publish, and their URL, sidebar order, and
   subtitle. Add, remove, or reorder a page there, then run `pnpm run sync:docs`.
 - Link API reference to site paths (`/docs/api/...`, `/docs/guides/...`) – the mirror is complete, so it cannot drift.
-  Only engine docs omitted from the manifest (developer experience guide, documentation and versioning guide, tooling,
-  voice, security) stay link-only on GitHub.
+  Only engine docs omitted from the manifest (`developer-experience-guide.md`, `documentation-and-versioning-guide.md`,
+  `tooling.md`, `voice.md`, `security/security-runbook.md`, `security/dependency-policy.md`,
+  `security/audit-exceptions.md`, and the docs `README.md`) stay link-only on GitHub.
 - Hand-authored and editable: `content/index.mdx`, `content/showcase.mdx`, `content/community.mdx`,
   `content/mcp-server.mdx`, `content/meta.json`, `content/blog/**`, and under `content/docs/`: `index.mdx`,
   `getting-started.mdx`, `faq.mdx`, `meta.json`.
