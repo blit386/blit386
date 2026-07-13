@@ -23,15 +23,21 @@ It works with npm, pnpm, yarn, or bun – the scaffolder quietly uses whichever 
 
 ## What you get
 
-The wizard asks two quick questions (language, and whether you want an AI assistant set up), then writes:
+The wizard asks three quick questions – language (JavaScript or TypeScript), whether you want an AI assistant set up,
+and whether to add a GitHub Actions CI workflow – plus the folder name, if you did not pass one on the command line.
+Then it writes:
 
 - A Catcher starter game – a tiny, complete, heavily commented game you can read top to bottom.
 - A Vite project that builds and runs with one command.
 - JavaScript by default, or TypeScript if you ask for it (`--ts`).
 - Local docs and an `AGENTS.md`, so your editor's AI actually knows how the engine works.
-- The `blit` CLI: `blit run`, `blit doctor`, `blit upgrade`, and `blit agents` for keeping assistant files current.
+- The `blit` CLI: `blit run`, `blit doctor`, `blit upgrade`, `blit migrate`, and `blit agents` for keeping assistant
+  files current.
 - Optional Claude or Cursor config, generated from the kit's canonical content – pick one in the wizard, or add it later
-  with `npx blit agents add`.
+  with `npx blit agents add`. Claude gets `CLAUDE.md`, `.claude/rules/`, and a `.claude/skills/<name>/SKILL.md` for each
+  game-author skill (add a sprite, play a sound, animate the palette, ...); Cursor gets `.cursor/rules/*.mdc`, the same
+  skills as `.cursor/commands/*.md`, plus `.cursor/hooks.json` and `.cursor/hooks/`.
+- Optional GitHub Actions CI (build + format check), if you say yes in the wizard.
 
 ## Never used Node.js before?
 
@@ -60,8 +66,9 @@ A pnpm monorepo with two published packages:
 
 - `create-blit386` (`packages/create-blit386`) – the `npm create blit386` scaffolder: the wizard and the project
   templates.
-- `@blit386/kit` (`packages/kit`) – the canonical AI docs (`AGENTS.md` + local `docs/`) and the project-local `blit` CLI
-  (`run`, `doctor`, `upgrade`, `agents sync`, `agents add`).
+- `@blit386/kit` (`packages/kit`) – the canonical kit content in `content/` (`AGENTS.md`, the local `docs/`, the API
+  rules, the game-author skills, the agent hooks, and `agents.config.json`) and the project-local `blit` CLI (`run`,
+  `doctor`, `upgrade`, `migrate`, `agents sync`, `agents add`, `help`).
 
 ### Working on it
 
@@ -69,19 +76,30 @@ A pnpm monorepo with two published packages:
 pnpm install
 pnpm run build        # build both packages with tsup
 pnpm run typecheck    # tsc --noEmit per package
-pnpm run test         # scaffolder smoke test (needs a build first)
+pnpm run test         # pnpm -r test: three node:test suites, 37 cases (scaffolder, env, codemod)
 pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + build + test
 ```
 
+The scaffolder suites read from `dist/`, so build before running them on their own (the kit's suite rebuilds itself via
+a `pretest` script; `pnpm run preflight` builds first anyway).
+
 CI runs the same checks on every push and pull request to `main`. Publishing to npm is a deliberate, manual step (it is
 not automated here). The full roadmap lives in [`CREATE_BLIT386_DESIGN.md`](CREATE_BLIT386_DESIGN.md).
+
+### Contributing
+
+Pull requests are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first; everyone taking part is held to the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+Every commit must carry a Developer Certificate of Origin sign-off – commit with `git commit -s` and a `Signed-off-by:`
+trailer is added for you. A CI check enforces it, so an unsigned commit blocks the pull request.
 
 ## Related
 
 - Docs: [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site.
 - Engine: [blit386](https://github.com/blit386/blit386) – the palette-first WebGPU retro engine these games run on
   ([npm](https://www.npmjs.com/package/blit386), [docs](https://blit386.dev)).
-- Demos: [demos.blit386.dev](https://demos.blit386.dev) – 34 small, commented examples.
+- Demos: [demos.blit386.dev](https://demos.blit386.dev) – 39 small, commented examples.
 
 ## Community
 
