@@ -46,8 +46,9 @@
 > subsystem. This opens the release-order gate in section 0 – the kit's audio content (`content/docs/audio.md`,
 > `content/skills/play-a-sound/`, plus audio rows added to `content/AGENTS.md`, `blit-api-names.md`, and
 > `show-debug-overlay`) can now be published. It is not published yet: `@blit386/kit` and `create-blit386` remain at
-> `1.2.0` on npm, and the audio changes are still uncommitted in the working tree. Tracked by
-> [#50](https://github.com/blit386/create-blit386/issues/50) (open). See section 0 for the full status and next steps.
+> `1.2.0` on npm, and the audio changes are sitting in open PR #56 (`chore/kit-update`), not yet merged to `main`.
+> Tracked by [#50](https://github.com/blit386/create-blit386/issues/50) (open). See section 0 for the full status and
+> next steps.
 >
 > Dogfood finding (Round 15, still holds): the kit IR is game-author altitude; the `blit386` / `blit386-demos` repos are
 > the kit's upstream maintainers, not consumer games – regenerating their `.cursor/`/`.claude/` from the current IR
@@ -76,19 +77,19 @@ anything genuinely private out of it.
 
 > Status (verified 2026-07-13 against the npm registry): the gate below is now OPEN – `npm view blit386 dist-tags`
 > returns `{ latest: '1.3.0' }`, so the engine's audio subsystem is live on npm. `@blit386/kit` and `create-blit386` are
-> still published at `1.2.0` (unchanged) and the audio content is still sitting locally: `content/docs/audio.md` and
-> `content/skills/play-a-sound/` are untracked, plus in-progress edits to `content/AGENTS.md`,
+> still published at `1.2.0` (unchanged) and the audio content lives in open PR #56 (`chore/kit-update`): it adds
+> `content/docs/audio.md` and `content/skills/play-a-sound/`, plus edits to `content/AGENTS.md`,
 > `content/rules/blit-api-names.md`, `content/skills/show-debug-overlay/SKILL.md`,
 > `content/skills/share-the-game/SKILL.md`, `content/skills/structure-a-game/SKILL.md`,
-> `content/docs/getting-started.md`, and `content/docs/when-something-breaks.md` – none of it committed yet. Tracked by
-> [#50](https://github.com/blit386/create-blit386/issues/50) (open), which lists the four remaining checklist items
-> (Catcher sounds, kit docs, generated-config mentions, version bumps). Curiously, the engine-side tracking issue it was
-> blocked on, blit386/blit386#191, is still open even though `1.3.0` shipped – worth a glance before relying on it, but
-> the published package itself does have the audio API (confirmed by version, not by re-reading engine source here).
-> Next actions: commit the staged kit changes, then publish the kit first and the scaffolder second per section 11 – the
-> release-order rule below has now been satisfied by the engine publish, so nothing is blocking the kit release except
-> doing it. No version-pin bump is needed: `BLIT386_RANGE` / `engineRange` stay `^1.2.0` (see the "why this is safe"
-> paragraph below – the existing caret range already admits `1.3.0`).
+> `content/docs/getting-started.md`, and `content/docs/when-something-breaks.md` – committed on that branch, but not yet
+> merged to `main`. Tracked by [#50](https://github.com/blit386/create-blit386/issues/50) (open), which lists the four
+> remaining checklist items (Catcher sounds, kit docs, generated-config mentions, version bumps). Curiously, the
+> engine-side tracking issue it was blocked on, blit386/blit386#191, is still open even though `1.3.0` shipped – worth a
+> glance before relying on it, but the published package itself does have the audio API (confirmed by version, not by
+> re-reading engine source here). Next actions: merge PR #56, then publish the kit first and the scaffolder second per
+> section 11 – the release-order rule below has now been satisfied by the engine publish, so nothing is blocking the kit
+> release except doing it. No version-pin bump is needed: `BLIT386_RANGE` / `engineRange` stay `^1.2.0` (see the "why
+> this is safe" paragraph below – the existing caret range already admits `1.3.0`).
 
 The kit now documents the engine's audio subsystem – `content/docs/audio.md`, the `play-a-sound` skill, the audio rows
 in `content/AGENTS.md` and `content/rules/blit-api-names.md`, and the audio overlay flags in `show-debug-overlay`. All
@@ -700,15 +701,18 @@ before scaffolder; with 2FA publish one package at a time (each needs a fresh OT
   (`content/docs/audio.md`, `content/skills/play-a-sound/`, and edits to `content/AGENTS.md`,
   `content/rules/blit-api-names.md`, `content/skills/show-debug-overlay/SKILL.md`,
   `content/skills/share-the-game/SKILL.md`, `content/skills/structure-a-game/SKILL.md`,
-  `content/docs/getting-started.md`, `content/docs/when-something-breaks.md`) sits uncommitted in the working tree –
-  none of it is on `main` yet. (3) Tracking issue [#50](https://github.com/blit386/create-blit386/issues/50) is open
-  with its four checklist items unchecked. (4) Phase 3 items #26 (generate `deprecations.md` from migration data) and
-  #27 (auto-stamp `engineRange` + drift CI) remain open, as does all of Phase 4 (#23–25, #28–33 – StackBlitz, iPad,
-  Windows, and the Zed/Gemini CLI/Windsurf adapters). (5) Also open and untracked in this doc before now: #37
-  (non-interactive scaffolding support). Updated section 0's status line and the top status header to record this;
-  otherwise this doc was already current with the working tree's uncommitted audio-doc and `/kit` → `@blit386/kit`
-  naming fixes from a prior session. Next actions for whoever picks this up: commit the staged kit/audio changes, bump
-  `BLIT386_RANGE` and `engineRange` to `^1.3.0`, and publish the kit before the scaffolder (section 11).
+  `content/docs/getting-started.md`, `content/docs/when-something-breaks.md`) is committed on the open, unmerged
+  `chore/kit-update` branch (PR #56) – none of it is on `main` yet. (3) Tracking issue
+  [#50](https://github.com/blit386/create-blit386/issues/50) is open with its four checklist items unchecked. (4) Phase
+  3 items #26 (generate `deprecations.md` from migration data) and #27 (auto-stamp `engineRange` + drift CI) remain
+  open, as does all of Phase 4 (#23–25, #28–33 – StackBlitz, iPad, Windows, and the Zed/Gemini CLI/Windsurf adapters).
+  (5) #37 (non-interactive scaffolding support) is already implemented and tested in code – the `isInteractive` TTY
+  check plus `--yes`/`--ts`/`--no-install`/`--no-git` flags in `src/index.ts`, covered by the "scaffolds without --yes
+  when no interactive terminal is attached" test in `scaffold.test.mjs` – the GitHub issue just hasn't been closed yet.
+  Updated section 0's status line and the top status header to record this; otherwise this doc was already current with
+  the `/kit` → `@blit386/kit` naming fixes from a prior session. Next actions for whoever picks this up: merge PR #56,
+  then publish the kit before the scaffolder (section 11); no version-pin bump needed – `BLIT386_RANGE` / `engineRange`
+  stay `^1.2.0` (the existing caret range already admits `1.3.0`).
 - 2026-06-07: Created. Round 1 decisions D1-D4 locked. Findings F1-F4 recorded. Architecture drafted. Open questions
   Q-NAME, Q-GAME, Q-KIT, Q-MVP, Q-REPO queued.
 - 2026-06-07: Round 2. Decisions D5 (Catcher), D6 (kit as own package), D7 (thinnest MVP on adapter pipeline). Finding
