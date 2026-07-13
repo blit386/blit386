@@ -1,16 +1,6 @@
 ---
 description: Require docs and README updates when content or site behavior changes
-globs:
-  {
-    content/**,
-    src/**,
-    press.config.tsx,
-    source.config.ts,
-    README.md,
-    CLAUDE.md,
-    .claude/skills/**/SKILL.md,
-    .cursor/rules/*.mdc,
-  }
+globs: content/**,src/**,press.config.tsx,source.config.ts,README.md,CLAUDE.md,.claude/rules/**,.claude/skills/**/SKILL.md,.cursor/rules/*.mdc
 alwaysApply: false
 ---
 
@@ -26,6 +16,9 @@ alwaysApply: false
   manifest, not in this repo's script; add, remove, or reorder a published page by editing that manifest, then run
   `pnpm run sync:docs`. Pages omitted from the manifest stay link-only on GitHub. See `CLAUDE.md` (Documentation
   mirror).
+- `src/data/api-history.generated.json` is also generated (copied from `blit386/docs/_api-history.json` by the same
+  script). Never hand-edit it; it backs the `Since`, `ApiAvailability`, and `PageChangelog` components.
+- Rules are mirrored: `.claude/rules/*.md` and `.cursor/rules/*.mdc` are twins. Change one, change the other.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and affected
   `.cursor/rules/*.mdc`.
 - If no docs update is needed, state why explicitly in the final response.
