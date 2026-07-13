@@ -151,6 +151,10 @@ export function collectDocs(root: string): GeneratedFile[] {
  *   - `CLAUDE.md`                      (shared file with a managed region)
  *   - `.claude/rules/{name}.md`        (kit-owned; frontmatter stripped)
  *   - `.claude/skills/{name}/SKILL.md` (kit-owned)
+ *
+ * @param root - The kit root directory.
+ * @param vars - Template variables used when rendering generated content.
+ * @returns The generated Claude Code files and their contents.
  */
 export function generateClaudeAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
     const contentRoot = join(root, 'content');
