@@ -38,4 +38,4 @@ Sign-off with `-s` adds a `Signed-off-by:` line to the commit message. CI verifi
 | Package          | Path                      | Purpose                                     |
 | ---------------- | ------------------------- | ------------------------------------------- |
 | `create-blit386` | `packages/create-blit386` | npm `create-*` CLI and templates            |
-| `/kit`           | `packages/kit`            | Canonical `AGENTS.md`, docs, and `blit` CLI |
+| `@blit386/kit`   | `packages/kit`            | Canonical `AGENTS.md`, docs, and `blit` CLI |
