@@ -151,6 +151,8 @@ function playFootstep() {
 }
 ```
 
+<DemoEmbed demo="036-audio-basics" title="BLIT386 audio basics demo" />
+
 ## Playing music
 
 `BT.musicPlay` (see [Playback (Music)](api-audio.md#playback-music)) drives a single looping music player through the
@@ -208,6 +210,8 @@ BT.musicPlay(theme, { loopStart: 8, loopEnd: 32 });
 
 `loopStart` and `loopEnd` must be given together and satisfy `0 <= loopStart < loopEnd <= duration` - see
 [Loop points](api-audio.md#loop-points) for the exact validation rule and its error.
+
+<DemoEmbed demo="037-music" title="BLIT386 music playback demo" />
 
 ## Design a sound
 
@@ -271,6 +275,8 @@ const restored = JSON.parse(serialized) as SynthParams;
 
 const explosion = await AudioClip.synth(restored);
 ```
+
+<DemoEmbed demo="041-synth-toy" title="BLIT386 synth toy demo" />
 
 <PageChangelog page="guides/audio" />
 

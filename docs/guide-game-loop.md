@@ -57,6 +57,8 @@ smooths motion that covers more than a pixel or two per tick - it doesn't add su
 renderer. For a sprite moving `2` px/tick at `targetFPS: 60` on a `144` Hz display, it turns a visible 1-then-2-then-0
 px stutter into a steadier progression across render frames.
 
+<DemoEmbed demo="001-basics" title="BLIT386 basics demo" />
+
 ## Zero-allocation version
 
 `update()`/`render()` run every frame, so the allocating version above (`clone()`, `add()`, `Vector2i.lerp()`) is fine
