@@ -28,9 +28,10 @@ top-level `tests/` directory – each package owns its own `test/` folder.
 
 - Node.js >= 22.18.0
 - pnpm
-- A build for the scaffolder suite – it shells out to `packages/kit/dist/cli.js` and asserts it exists. The kit package
-  rebuilds itself through a `pretest` script; the scaffolder package does not, so run `pnpm run build` first if `dist/`
-  is missing or stale.
+- A build for the scaffolder suite – it shells out to two built artifacts and asserts both exist:
+  `packages/create-blit386/dist/index.js` (the scaffold CLI itself) and `packages/kit/dist/cli.js` (used for the
+  `agents sync` / `migrate` checks). The kit package rebuilds itself through a `pretest` script; the scaffolder package
+  does not, so run `pnpm run build` first if either `dist/` is missing or stale.
 
 ## Steps
 
