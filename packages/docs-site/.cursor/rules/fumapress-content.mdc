@@ -7,9 +7,17 @@ alwaysApply: false
 # Fumapress Content
 
 - Every doc page needs frontmatter with at least `title`; add `description` for SEO and OG images.
-- Folder URLs: `content/guide/index.mdx` maps to `/guide`.
 - Optional sidebar: `meta.json` or `meta.yaml` per folder (`title`, `pages`, `root`, `icon`, …).
-- Link to [blit386 engine docs on GitHub](https://github.com/blit386/blit386/tree/main/docs) for API reference;
-  summarize here, do not copy full API tables.
+- Public engine docs under `content/docs/{api,guides,performance,reference}/` are GENERATED from `blit386/docs/` by
+  `scripts/sync-docs-from-engine.mjs` (`pnpm run sync:docs`) – never hand-edit them, nor their section `meta.json`, nor
+  `src/data/api-history.generated.json`. Edit the engine source, then re-sync.
+- The engine repo's `blit386/docs/_sitemap.json` manifest decides which docs publish, and their URL, sidebar order, and
+  subtitle. Add, remove, or reorder a page there, then run `pnpm run sync:docs`.
+- Link API reference to site paths (`/docs/api/...`, `/docs/guides/...`) – the mirror is complete, so it cannot drift.
+  Only engine docs omitted from the manifest (developer experience guide, documentation and versioning guide, tooling,
+  voice, security) stay link-only on GitHub.
+- Hand-authored and editable: `content/index.mdx`, `content/showcase.mdx`, `content/community.mdx`,
+  `content/mcp-server.mdx`, `content/meta.json`, `content/blog/**`, and under `content/docs/`: `index.mdx`,
+  `getting-started.mdx`, `faq.mdx`, `meta.json`.
 - No emoji in content or UI strings.
 - After editing links, run `pnpm run docs:links`.
