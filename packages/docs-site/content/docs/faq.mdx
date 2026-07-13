@@ -1,6 +1,6 @@
 ---
 title: FAQ
-description: Common questions about BLIT386 — WebGPU availability, software fallback, and setup.
+description: Common questions about BLIT386 – WebGPU availability, software fallback, audio, and setup.
 ---
 
 Answers to the questions that come up most often. For live discussion, see the [Community](/community) page.
@@ -9,11 +9,11 @@ Answers to the questions that come up most often. For live discussion, see the [
 
 ### Which browsers support WebGPU?
 
-Chrome and Edge 113 or later have WebGPU enabled by default on desktop. Firefox added default support starting with
-version 141 on Windows, 145 or later on macOS, and Nightly on Linux and Android. Safari 26 and later have it on by
-default; Safari 18-25 can enable it via Feature Flags.
+Recent Chrome, Edge, Firefox, and Safari releases ship WebGPU; older versions either gate it behind a flag or lack it
+entirely, in which case the engine falls back to the Canvas 2D software renderer.
 
-See [Browser Support](/docs/api/browser-support) for the current compatibility matrix.
+The exact per-browser matrix is maintained with the engine and published at
+[Browser Support](/docs/api/browser-support) - that page is the single source of truth, so it is not duplicated here.
 
 ### What happens in a browser where WebGPU is not available?
 
@@ -67,7 +67,7 @@ npm create blit386@latest my-game
 This generates a ready-to-run Vite project with the engine, a starter game, and the `blit` project CLI. See
 [Getting Started](/docs/getting-started) for the full walkthrough.
 
-**The demo page is blank and there is no error in the console. What should I check?**
+### The demo page is blank and there is no error in the console. What should I check?
 
 - Verify that `bootstrap()` is called and that the canvas element ID matches `BootstrapOptions.canvasID` (default:
   `blit386-canvas`).
@@ -77,9 +77,34 @@ This generates a ready-to-run Vite project with the engine, a starter game, and 
 
 ### I am getting a TypeScript error about unknown properties on `HardwareSettings`. What is happening?
 
-Some configuration fields were renamed in 1.2.0 to follow the boolean-naming convention. The old names are available as
-compatibility aliases until the next major release. See the [Deprecation Timeline](/docs/reference/deprecations) for the
-full mapping.
+Some configuration fields were renamed in 1.1.1 to follow the `is*`/`has*` boolean-naming convention (1.2.0 was a
+different change: the npm package rename from `blit-tech` to `blit386`). The old names are available as compatibility
+aliases until the next major release. See the [Deprecation Timeline](/docs/reference/deprecations) for the full mapping
+and the [Changelog](/docs/reference/changelog) for the release history.
+
+## Audio
+
+### Why is there no sound?
+
+Browsers refuse to start audio until the user interacts with the page, so BLIT386 starts in a locked state. On
+`BT.init()` the engine installs one-shot `pointerdown`, `keydown`, and `touchstart` listeners on the canvas; the first
+gesture unlocks the audio context for the rest of the session and `BT.isAudioUnlocked` flips to `true`.
+
+The two playback paths behave differently while still locked:
+
+- `BT.soundPlay()` is dropped - it returns an inert `SoundRef` and no voice is allocated.
+- `BT.musicPlay()` is remembered and starts automatically the moment the context unlocks.
+
+Loading is unaffected: `AudioClip.load()` and `AudioClip.synth()` both work while locked, because decoding does not need
+an unlocked context. If a game must make noise immediately, either wait for `BT.isAudioUnlocked`, or prompt for a click
+or key press first. See the [Audio Guide](/docs/guides/audio).
+
+### Does audio work in the software renderer?
+
+Yes. Audio is Web Audio only and never touches the GPU, so it behaves identically on the WebGPU and Canvas 2D backends.
+Post-process effects remain the only WebGPU-only feature.
+
+## Reporting
 
 ### Where do I report bugs or ask questions?
 
@@ -94,6 +119,7 @@ system, and a minimal reproduction.
   <Card title="Browser Support" href="/docs/api/browser-support">WebGPU compatibility matrix and build toolchain.</Card>
   <Card title="API: Core" href="/docs/api/core">Bootstrap options, backend selection, and BT namespace.</Card>
   <Card title="API: Rendering" href="/docs/api/rendering">Post-process effects and software renderer limits.</Card>
+  <Card title="Audio Guide" href="/docs/guides/audio">Bus layout, the unlock rule, and web audio constraints.</Card>
   <Card title="Software Fallback Smoke Matrix" href="/docs/performance/smoke-matrix">Manual Canvas 2D fallback checklist.</Card>
   <Card title="Community" href="/community">Ask questions and report bugs.</Card>
 </Cards>

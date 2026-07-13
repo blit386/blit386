@@ -2,5 +2,5 @@
   "title": "Blog",
   "defaultOpen": true,
   "pagesIndex": "[Blog](/blog)",
-  "pages": ["hello-world", "demo-loop"]
+  "pages": ["hello-world"]
 }

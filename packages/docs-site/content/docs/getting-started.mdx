@@ -38,23 +38,44 @@ Then implement a demo and start it with `bootstrap()`, which handles DOM ready, 
 with an automatic Canvas 2D fallback), and error display:
 
 ```ts twoslash
-import { bootstrap, BT, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, type IBTDemo, Rect2i, Vector2i } from 'blit386';
 
-class MyGame {
-  init() {
-    BT.paletteCreate();
+class Game implements IBTDemo {
+  private x = 140;
+  private speed = 1;
+
+  async init(): Promise<boolean> {
+    // Create a palette, fill the slots, then install it. Slot 0 is transparent.
+    const palette = BT.paletteCreate(16);
+
+    palette.set(1, new Color32(32, 0, 128));
+    palette.set(2, new Color32(255, 220, 90));
+
+    BT.paletteSet(palette);
+
+    return true;
   }
 
-  update() {}
+  update(): void {
+    this.x += this.speed;
 
-  render() {
-    BT.clear(0);
-    BT.drawRectFill(new Vector2i(10, 10), new Vector2i(40, 24), 1);
+    if (this.x < 0 || this.x > 280) {
+      this.speed = -this.speed;
+    }
+  }
+
+  render(): void {
+    BT.clear(1);
+    BT.drawRectFill(new Rect2i(this.x, 100, 40, 40), 2);
+    BT.systemPrint(new Vector2i(108, 160), 2, 'HELLO BLIT386');
   }
 }
 
-bootstrap(MyGame);
+void bootstrap(Game);
 ```
+
+`BT.paletteCreate()` returns a palette; it does not install one. Call `BT.paletteSet()` with the result before the first
+draw call, and return `true` from `init()` so the engine knows startup succeeded.
 
 `bootstrap()` defaults to a canvas with id `blit386-canvas` inside a `canvas-container` element. See
 [API: Core](/docs/api/core) for `BootstrapOptions`, the resolution model, the game loop, and the full configure surface.
@@ -63,12 +84,14 @@ bootstrap(MyGame);
 
 - [API: Core](/docs/api/core) - bootstrap, the game loop, camera, `Timer`, and core types.
 - [API: Rendering](/docs/api/rendering) - primitives, sprites, text, post-process, and frame capture.
+- [API: Audio](/docs/api/audio) - bus volume and mute, sound and music playback, the procedural synth.
 - [Palette Guide](/docs/guides/palette) - the palette-first workflow.
 - [Input Guide](/docs/guides/input) - pointer, keyboard, and gamepad.
+- [Audio Guide](/docs/guides/audio) - the bus layout and the browser user-gesture unlock rule.
 - [Interactive demos](https://demos.blit386.dev) - runnable examples for every subsystem.
 
 ## Requirements
 
 - Node.js >= 22.18.0 and an ESM bundler (Vite, webpack, esbuild, or similar).
 - A browser with WebGPU for the default backend; the engine falls back to a Canvas 2D software renderer otherwise. See
-  [API: Core](/docs/api/core#browser-support) for the support matrix.
+  [Browser Support](/docs/api/browser-support) for the support matrix.

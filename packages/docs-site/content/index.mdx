@@ -30,12 +30,17 @@ software renderer.
     A built-in debug HUD displays frame timing, palette state, and the active renderer backend at a keypress.
   </Card>
 
-  <Card title="Palette effects" href="/docs/guides/post-process-effects">
+  <Card title="Palette effects" href="/docs/guides/palette">
     Cycle, fade, flash, and swap palette entries at runtime for classic retro visual effects.
   </Card>
 
   <Card title="Input: pointer, keyboard & gamepad" href="/docs/guides/input">
     Unified input layer covering mouse, touch, pen, keyboard, and gamepad across all modern browsers.
+  </Card>
+
+  <Card title="Audio: buses, clips & synth" href="/docs/guides/audio">
+    A full audio subsystem: a three-bus mixer, `AudioClip` loading and playback, and a procedural synth for
+    zero-asset sound effects.
   </Card>
 </Cards>
 
@@ -55,23 +60,30 @@ npm install blit386
 ```
 
 ```ts twoslash
-import { bootstrap, BT, Rect2i } from 'blit386';
+import { bootstrap, BT, Color32, type IBTDemo, Rect2i } from 'blit386';
 
-class MyGame {
-  async init() {
-    BT.paletteCreate();
+class MyGame implements IBTDemo {
+  async init(): Promise<boolean> {
+    // paletteCreate() returns a palette; paletteSet() installs it.
+    const palette = BT.paletteCreate(16);
+
+    palette.set(1, new Color32(32, 0, 128));
+    palette.set(2, new Color32(255, 220, 90));
+
+    BT.paletteSet(palette);
+
     return true;
   }
 
-  update() {}
+  update(): void {}
 
-  render() {
-    BT.clear(0);
-    BT.drawRectFill(new Rect2i(10, 10, 40, 24), 1);
+  render(): void {
+    BT.clear(1);
+    BT.drawRectFill(new Rect2i(10, 10, 40, 24), 2);
   }
 }
 
-bootstrap(MyGame);
+void bootstrap(MyGame);
 ```
 
 <DemoShowcase />

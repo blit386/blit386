@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Game Loop"
 description: "Fixed-timestep simulation timing, tick counters, and the Timer helper."
-lastModified: "2026-07-07T08:17:09+02:00"
+lastModified: "2026-07-10T20:25:17+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-game-loop.md"
 ---
 
@@ -16,15 +16,19 @@ BLIT386 runs two independent cadences:
 | Concept         | Where                                                      | Meaning                                                        |
 | --------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
 | Simulation rate | `targetFPS`, `BT.targetFPS`, `BT.deltaSeconds`, `BT.ticks` | Fixed `update()` step; game logic and `Timer` use ticks        |
-| Render rate     | Overlay `Present: N FPS`                                   | Measured `requestAnimationFrame` cadence; `render()` runs here |
+| Render rate     | Overlay `Present: N FPS`, `BT.renderAlpha`                 | Measured `requestAnimationFrame` cadence; `render()` runs here |
 
 `render()` may run more or fewer times per second than `update()` (for example 120 Hz display with `targetFPS: 60`). Use
-tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks.
+tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks. Because the two
+cadences drift apart, `BT.renderAlpha` gives `render()` a normalized `[0, 1)` interpolation factor toward the next fixed
+step, for smoothing motion across that mismatch (see
+[Interpolating render state with renderAlpha](#interpolating-render-state-with-renderalpha) below).
 
 ```ts twoslash
 BT.deltaSeconds; // seconds per fixed tick (1 / BT.targetFPS)
 BT.timeSeconds; // elapsed seconds since init (ticks × deltaSeconds)
 BT.ticks; // current tick counter (increments each update)
+BT.renderAlpha; // fractional progress [0, 1) toward the next update, for interpolation
 BT.ticksReset(); // reset tick counter to 0
 BT.assignTag('Round start'); // timing chart event tag at current tick (requires isOverlayTimingChartEnabled)
 ```
@@ -32,10 +36,65 @@ BT.assignTag('Round start'); // timing chart event tag at current tick (requires
 <Since symbol="BT.deltaSeconds" />
 <Since symbol="BT.timeSeconds" />
 <Since symbol="BT.ticks" />
+<Since symbol="BT.renderAlpha" />
 <Since symbol="BT.ticksReset" />
 <Since symbol="BT.assignTag" />
 
 <DemoEmbed demo="009-animation" title="BLIT386 animation and timing demo" />
+
+## Multiple update() steps per render frame
+
+The fixed step runs through an accumulator: each render frame adds the elapsed wall-clock time to a running total, then
+drains as many `updateInterval`-sized (`1000 / targetFPS`) chunks as fit. Before draining, the accumulator is clamped to
+`8 × updateInterval` (`MAX_STEPS`), so at most 8 `update()` calls run per frame – a guard against a spiral-of-death
+catch-up burst after a long pause (a backgrounded tab, a breakpoint, a slow asset load). When that cap is hit, only the
+executed steps are subtracted from the accumulator and the excess wall-clock time is discarded: `BT.ticks` still
+advances once per executed `update()`, but a long pause skips the missed simulation time rather than fully catching up
+on it. When render and update cadences are close – a `60 Hz` display with `targetFPS: 60` – the accumulator typically
+drains exactly one chunk per render frame, so `update()` and `render()` alternate 1:1; when `render()` runs faster than
+`targetFPS`, some frames drain zero chunks (see
+[Render frames with zero update() steps](#render-frames-with-zero-update-steps) below).
+
+When `render()` falls behind `targetFPS` – a throttled background tab, a slow device, or a browser power-saving cap on
+`requestAnimationFrame` – the accumulator has more than one `updateInterval` worth of time to drain before the next
+render, so multiple `update()` calls run in a row ahead of that single `render()` call. Game logic still advances at the
+correct rate (`BT.ticks` still increments once per fixed step, `BT.deltaSeconds` is unchanged); only the render cadence
+drops. The engine overlay's frame-metrics row surfaces this as an `xN` suffix on `update()` – see
+[Top row 3 (left)](/docs/api/overlay#top-row-3-left) in the Overlay API docs.
+
+A concrete real-world trigger: macOS Low Power Mode makes Safari/WebKit halve its `requestAnimationFrame` dispatch rate
+to about `30 Hz`, unrelated to script performance or display refresh rate. See
+[Safari render throttling](/docs/api/browser-support#safari-render-throttling-macos-low-power-mode) in Browser Support for
+the WebKit reference and why other engines are unaffected.
+
+## Render frames with zero update() steps
+
+The opposite direction happens too: on a high refresh-rate display (120 Hz or higher) with `targetFPS: 60`,
+`requestAnimationFrame` calls `render()` more often than the accumulator drains a full `updateInterval` chunk, so a
+sizeable fraction of render frames have zero preceding `update()` calls that frame. This is normal, not a dropped frame
+– `BT.ticks` and any state written during the last `update()` (including the camera offset from `BT.cameraSet()`, see
+[API: Camera](/docs/api/camera#camera-persists-across-zero-update-frames)) still reflect the last completed tick, so
+`render()` draws the same game state twice in a row rather than resetting to defaults.
+
+## Interpolating render state with renderAlpha
+
+`render()` frequently runs at a different cadence than `update()` (see the two sections above), so game state read
+during `render()` can be up to one fixed step stale. The accumulator introduced above always holds less than one
+`updateInterval` of leftover time once its whole-step chunks are removed for the frame - that remainder is exactly what
+the whole-step loop couldn't consume. Dividing that leftover by `updateInterval` gives, from first principles, how far
+the simulation has already progressed toward its next step - a fraction in `[0, 1)`. `BT.renderAlpha` exposes that
+fraction: `0` means a fixed update just completed, values approaching `1` mean the next update is imminent.
+
+```ts twoslash
+const alpha = BT.renderAlpha;
+const drawX = previousPos.x + (currentPos.x - previousPos.x) * alpha;
+const drawY = previousPos.y + (currentPos.y - previousPos.y) * alpha;
+```
+
+Interpolating between the previous and current tick's positions smooths motion on displays whose refresh rate does not
+line up cleanly with `targetFPS`, without changing simulation timing. `BT.renderAlpha` only reflects the most recently
+completed render frame's accumulator state; read it from `render()`, not `update()`. For the full worked pattern,
+including a zero-allocation version and `Vector2i.lerp`, see [Guide: Game Loop](/docs/guides/game-loop).
 
 ## Timer
 
@@ -70,4 +129,6 @@ need a specific snapshot; the default is the engine tick counter.
   <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
   <Card title="API: Overlay" href="/docs/api/overlay">Present FPS, timing chart, event tags.</Card>
   <Card title="API: Camera" href="/docs/api/camera">Global pixel offset for draw calls.</Card>
+  <Card title="Browser Support" href="/docs/api/browser-support">Safari's Low Power Mode requestAnimationFrame throttling.</Card>
+  <Card title="Guide: Game Loop" href="/docs/guides/game-loop">Smoothing motion between update() steps with renderAlpha.</Card>
 </Cards>
