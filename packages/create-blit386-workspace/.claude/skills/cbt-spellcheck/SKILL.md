@@ -19,8 +19,8 @@ Run the project-wide spellcheck, then fix all reported errors.
 
 1. Run spellcheck
 
-   Execute `pnpm run spellcheck` to check `packages/*/src//*.ts`, kit `content//*.md`, `README.md`, and `CLAUDE.md`.
-   Capture the full error output.
+   Execute `pnpm run spellcheck`. It runs cspell over `packages/*/src/**/*.ts`, `packages/kit/content/**/*.md`,
+   `README.md`, and `CLAUDE.md`. Capture the full error output.
 
 2. Analyze each error
 

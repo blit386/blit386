@@ -1,14 +1,22 @@
 ---
 name: cbt-test
 description:
-  Run the scaffold smoke test and explain what automated testing exists here. Use when the user wants to run tests or
-  verify the scaffolder still produces a working project.
+  Run the automated test suites and explain what testing exists here. Use when the user wants to run tests or verify the
+  scaffolder, the kit CLI, or the codemod engine still work.
 ---
 
 # Tests
 
-This repo has one automated test: a scaffold smoke test that verifies `npm create blit386` output builds and runs. There
-is no Vitest suite, Playwright suite, or `tests/` directory.
+This repo has three `node --test` suites, 37 cases in total. There is no Vitest suite, no Playwright suite, and no
+top-level `tests/` directory – each package owns its own `test/` folder.
+
+| Suite                                            | Cases | Covers                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/create-blit386/test/scaffold.test.mjs` | 20    | The scaffold path end to end (JS and TS), the non-TTY `--yes` fallback, optional CI and agent files, the `.blit/` ownership manifest, `blit agents sync` (drift, full sync, `--force`, note and merge preservation), `blit agents add` (including collision safety), and `blit migrate` preview + `--write` |
+| `packages/create-blit386/test/env.test.mjs`      | 4     | `meetsNodeFloor`: the Node version floor guard, including pre-release and custom-floor strings                                                                                                                                                                                                              |
+| `packages/kit/test/codemod.test.mjs`             | 13    | The migration registry and the anchored codemod engine behind `blit migrate`: auto-applied renames vs. names reported for review, receiver anchoring, idempotence, and registry field completeness                                                                                                          |
+
+`pnpm run test` at the root is `pnpm -r test`, which runs all three.
 
 ## Usage
 
@@ -20,32 +28,31 @@ is no Vitest suite, Playwright suite, or `tests/` directory.
 
 - Node.js >= 22.18.0
 - pnpm
-- A successful build (`pnpm run build`) – the smoke test imports from `dist/`
+- A build for the scaffolder suite – it shells out to `packages/kit/dist/cli.js` and asserts it exists. The kit package
+  rebuilds itself through a `pretest` script; the scaffolder package does not, so run `pnpm run build` first if `dist/`
+  is missing or stale.
 
 ## Steps
 
-1. Build both packages
+1. Build if needed
 
-   Execute `pnpm run build` if `dist/` is missing or stale.
+   Execute `pnpm run build` when `dist/` is missing or stale.
 
-2. Run the smoke test
+2. Run the suites
 
-   Execute `pnpm run test` from the repository root.
+   Execute `pnpm run test` from the repository root. To run one package: `pnpm --filter @blit386/kit test` or
+   `pnpm --filter create-blit386 test`.
 
 3. Report results
-   - If the test passes: confirm the scaffolder and kit CLI still produce a working project
-   - If it fails: report the failure output and whether the break is in scaffold logic, templates, or kit content
+   - If they pass: confirm the scaffolder, the kit CLI, and the codemod engine still behave.
+   - If one fails: report the failing case and whether the break is in scaffold logic, templates, kit content, the
+     adapters, or the migration registry.
 
-## What the smoke test covers
+## What the suites do not cover
 
-- Wizard/scaffold path writes expected files
-- Generated project resolves `blit386` and `@blit386/kit`
-- The Catcher starter game builds under Vite
-
-## What it does not cover
-
-- Visual regression of generated games
-- Every wizard option combination (CI opt-in, Cursor/Claude adapters)
-- npm publish or registry propagation
+- Visual regression of generated games – nothing renders a canvas.
+- A real `npm install` or Vite build inside a generated project.
+- npm publish or registry propagation.
+- Some `agents sync` cases are skipped when git is unavailable (they need a three-way merge).
 
 For full quality gates before commit, use `/cbt-preflight` instead.
