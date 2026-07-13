@@ -7,9 +7,11 @@ Scaffold a new [BLIT386](https://www.npmjs.com/package/blit386) game in seconds.
 ```bash
 npm create blit386@latest my-game
 cd my-game
-npm install
 npm run dev
 ```
+
+The scaffolder installs the dependencies for you, so there is no `npm install` step. (If you passed `--no-install`, run
+your install command first.)
 
 Works with npm, pnpm, yarn, or bun – the scaffolder uses whichever you ran it with.
 
@@ -20,8 +22,9 @@ Works with npm, pnpm, yarn, or bun – the scaffolder uses whichever you ran it 
 - A ready-to-run Vite setup: `index.html`, `src/game.js` (or `src/game.ts`), and a dev server.
 - Local guides (`docs/`) and an `AGENTS.md` so you – or an AI assistant – can learn the engine without leaving the
   project.
-- The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`, `npx blit agents sync`), provided by
-  [`@blit386/kit`](https://www.npmjs.com/package/@blit386/kit). It is a project-local bin, so invoke it through `npx`.
+- The `blit` helper CLI (`npx blit run`, `npx blit doctor`, `npx blit upgrade`, `npx blit migrate`,
+  `npx blit agents sync`), provided by [`@blit386/kit`](https://www.npmjs.com/package/@blit386/kit). It is a
+  project-local bin, so invoke it through `npx`.
 
 If you pick an AI assistant in the wizard, the scaffolder also generates its config (Claude: `CLAUDE.md` + `.claude/`;
 Cursor: `.cursor/`) from the kit's canonical content, and `npx blit agents sync` keeps it current. Did not pick one at
@@ -30,11 +33,15 @@ the start? Run `npx blit agents add claude` or `npx blit agents add cursor` late
 ## Options
 
 ```bash
-npm create blit386@latest my-game -- --yes         # skip the prompts (JavaScript, no AI files)
+npm create blit386@latest my-game -- --yes         # skip the prompts (JavaScript, no AI files, no CI)
 npm create blit386@latest my-game -- --ts          # use the TypeScript starter instead of JavaScript
 npm create blit386@latest my-game -- --no-install  # do not install dependencies
 npm create blit386@latest my-game -- --no-git      # do not initialize a git repository
 ```
+
+Without an interactive terminal – an AI assistant or a CI job running the command – there is nobody to answer the
+prompts, so the scaffolder behaves as if you passed `--yes` and says so once. `--ts` still applies. Pass `--yes`
+yourself to silence the notice.
 
 ## Requirements
 

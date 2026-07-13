@@ -52,7 +52,11 @@ export function pmHints(name: PackageManager): PmHints {
                 runBuildCmd: 'pnpm run build',
                 runFormatCmd: 'pnpm run format',
                 runLintCmd: 'pnpm run lint',
-                installArgs: ['install'],
+                // --ignore-workspace: the scaffold target may sit under an ancestor directory that has its own
+                // pnpm-workspace.yaml (e.g. a monorepo of unrelated projects). Without this flag pnpm silently
+                // installs for that ancestor workspace instead of the new project, leaving it without a
+                // node_modules or lockfile while still reporting a successful exit code.
+                installArgs: ['install', '--ignore-workspace'],
             };
         case 'yarn':
             return {
