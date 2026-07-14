@@ -121,11 +121,12 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 
 Generated games receive `AGENTS.md`, seven beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
 `drawing`, `input`, `palette`, `audio`, `when-something-breaks`), and the game-author skills in
-`packages/kit/content/skills/` (emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`). They are
-not copies of blit386's full `docs/` tree – they teach the starter game and point to GitHub for deep API reference.
+`packages/kit/content/skills/` (emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`; the skills
+table in `packages/kit/README.md` lists them). They are not copies of blit386's full `docs/` tree – they teach the
+starter game and point to GitHub for deep API reference.
 
 The whole of `packages/kit/content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/` (2
-files), `skills/` (19), `hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are
+files), `skills/` (22), `hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are
 discovered by directory scan in `scaffold.ts` / `adapters.ts` – adding a skill folder is enough, nothing registers it by
 name.
 
