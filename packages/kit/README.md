@@ -54,7 +54,7 @@ there you can also invoke one by name (`/add-sprite`).
 | `play-a-sound`        | Sound effects, music, volume, and why a game starts silent                                             |
 | `design-a-sound`      | Build a custom sound from scratch when the presets are not right                                       |
 | `add-crt-effect`      | Fullscreen post-process effects: CRT, scanlines, bloom, glitch (WebGPU only)                           |
-| `show-debug-overlay`  | FPS, timings, your own values, and the palette grid                                                    |
+| `show-debug-overlay`  | FPS, timings, your own values, the palette grid, audio volume meters, and renderer diagnostics         |
 | `keep-it-fast`        | The game stutters, drops frames, or sprites start vanishing                                            |
 | `save-a-screenshot`   | Capture the frame as a PNG                                                                             |
 | `share-the-game`      | Build it and put it online for other people to play                                                    |

@@ -60,6 +60,7 @@ The options you can pass to `BT.soundPlay(clip, options)`:
 - `pitch` – 1 is normal, 2 is twice as high, 0.5 is an octave down.
 - `pan` – where it sits between your ears: -1 left, 0 middle, 1 right.
 - `fadeInMs` – slide the volume up over this many milliseconds instead of starting abruptly.
+- `priority` – a hint for which sound to drop first when too many are playing at once.
 
 ## Music
 
@@ -131,7 +132,8 @@ this.zap = await AudioClip.synth({
 
 Those four are required. The optional ones are the interesting ones: `envelope` shapes the sound over time (how fast it
 fades in, how fast it dies away), `pitchSweep` slides the pitch while it plays (sliding up reads as a jump, sliding down
-reads as falling), `noiseMix` stirs in hiss for grit, and `dutyCycle` thins out a square wave into that nasal NES buzz.
+reads as falling), `vibrato` adds a wobble to the pitch, `noiseMix` stirs in hiss for grit, `dutyCycle` thins out a
+square wave into that nasal NES buzz, and `volume` (0 to 1, default 1) sets the clip's own level.
 
 Build sounds in `init()`, never in `update()` – synthesizing takes real work and will hitch the frame mid-game.
 
