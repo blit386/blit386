@@ -624,11 +624,13 @@ Phase 3 – "Stays fresh":
 - [x] More game-author skills. Round 23 shipped 14 capability skills in `content/skills/` (`structure-a-game`,
       `draw-shapes`, `add-sprite`, `add-text`, `use-palette`, `animate-the-palette`, `move-and-time`,
       `scroll-with-camera`, `read-keyboard`, `read-pointer`, `read-gamepad`, `add-crt-effect`, `save-a-screenshot`,
-      `show-debug-overlay`). With `run`, `fix`, `migrate`, `share-the-game`, and `play-a-sound`, that is 19 today,
-      covering the full renderer / input / palette / timing / audio / post-process surface. `share-the-game` IS the
-      publish skill and it shipped: it teaches `build` + `preview` + upload `dist/` to a static host, which needs no
+      `show-debug-overlay`), later joined by `play-a-sound` and `share-the-game`, and by `smooth-the-motion`,
+      `design-a-sound`, and `keep-it-fast` in Round 24. With `run`, `fix`, and `migrate`, that is 22 skill directories
+      today, covering the full renderer / input / palette / timing / audio / post-process surface. `share-the-game` IS
+      the publish skill and it shipped: it teaches `build` + `preview` + upload `dist/` to a static host, which needs no
       deploy config in the scaffold. Still no `add-enemy`/physics skill – the engine has no game systems, and inventing
-      one in a skill would be a lie.
+      one in a skill would be a lie. The current list is the directory itself, mirrored for humans in
+      `packages/kit/README.md` – do not re-enumerate it here.
 
 Phase 4 – "Reach":
 
@@ -958,3 +960,20 @@ before scaffolder; with 2FA publish one package at a time (each needs a fresh OT
   `main` next session). (4) Merges: the write path + fixes + docs sweep are on `main` (PR #15, then PR #16 for docs;
   `main` HEAD `b7435fa`). (5) Release deferred: reverted the uncommitted `1.0.0` bump back to `0.1.0`/`0.1.1`; no tag
   cut. The owner is adding a couple more features before `1.0.0`. Nothing about the release is committed or tagged.
+- 2026-07-13: Round 24. Three engine-surface skills added to `content/skills/`, closing gaps opened by the 1.3.0 engine
+  release rather than by a new product decision. (1) `smooth-the-motion` – `BT.renderAlpha` appeared exactly once in the
+  entire kit (a bare name in a getter list in `rules/blit-api-names.md`) and was explained nowhere, so no scaffolded
+  game interpolated and all three `_3RD_` games judder against the fixed tick on a high-refresh display; the skill
+  teaches the snapshot-before-move + `Vector2i.lerp` recipe, and `docs/basics.md` gains the matching section. (2)
+  `design-a-sound` – `play-a-sound` stopped at the six `BT.synthPreset` factories, leaving the whole `SynthParams` knob
+  surface undocumented; `_3RD_/killer-math` hand-rolled a raw Web Audio `beep()` rather than finding
+  `BT.synthPreset.blip()`, which is a discoverability failure the kit caused. (3) `keep-it-fast` – the kit had no
+  performance guidance at all; notably, blowing the per-frame budget (about 8,300 sprites, and separately about 8,300
+  shapes, everything being drawn as quads) _silently drops_ the extra draws with only a console warning, which reads to
+  a beginner as "sprites randomly vanish." Also fixed `add-crt-effect` to warn against gating on `BT.requestedBackend`,
+  which stays `'webgpu'` after a software fallback and so passes on exactly the machines the guard exists to protect.
+  The renderer-only boundary from Round 23 was reaffirmed, not relaxed: collision, game states, juice, and save/load
+  were considered and deliberately left out, since the engine has no game systems to document. Hygiene: `cbt-kit-audit`
+  hardcoded a 12-skill list that had already gone stale (missing four skills and `audio.md`), so its doc and skill steps
+  now glob the directories instead of naming files; `packages/kit/README.md` gains the first human-facing table of the
+  shipped skills, and `cbt-kit-audit` is responsible for keeping it complete.

@@ -27,20 +27,29 @@ so they drift silently when the engine changes. This skill walks the staleness c
 
 2. Audit the kit docs
 
-   For each file in `packages/kit/content/docs/`, check every code example and API mention against the current engine:
-   - `getting-started.md` – install/run flow, `npx blit run` / `doctor`
-   - `basics.md` – `configure()`, loop timing getters (`BT.deltaSeconds`, `BT.ticks`), `bootstrap()` shape
-   - `drawing.md` – `BT.clear`, primitives, `systemPrint` / text APIs
-   - `input.md` – `BT.isDown` / edges, keyboard, pointer, gamepad, button constants
-   - `palette.md` – `paletteCreate`, slots, `Color32`
-   - `when-something-breaks.md` – common errors, `await`, palette slot 0, `doctor`
+   List the docs first – a list written down here is exactly how this audit goes stale, and it did: it still named six
+   docs long after `audio.md` shipped.
+
+   ```bash
+   ls packages/kit/content/docs/
+   ```
+
+   Check every code example and API mention in each one against the current engine. For what each doc leans on, use the
+   "Kit file / Review when" table in `CLAUDE.md` – that table is maintained, so read it rather than copying it here.
 
 3. Audit the shipped skills
 
-   The skills in `packages/kit/content/skills/` demonstrate engine APIs the same way the docs do. Check each one whose
-   topic touches the changed surface (for example `use-palette`, `animate-the-palette`, `read-gamepad`, `read-keyboard`,
-   `read-pointer`, `add-crt-effect`, `add-sprite`, `add-text`, `draw-shapes`, `move-and-time`, `scroll-with-camera`,
-   `show-debug-overlay`). Confirm method-vs-getter usage, `BT` names, and constants match the engine.
+   Same rule: enumerate them, do not trust a list.
+
+   ```bash
+   ls -d packages/kit/content/skills/*/
+   ```
+
+   The skills demonstrate engine APIs the same way the docs do. Check each one whose topic touches the changed surface,
+   confirming method-vs-getter usage, `BT` names, and constants against the engine.
+
+   While you are here, confirm every skill directory appears in the skills table in `packages/kit/README.md` – that is
+   the only human-facing list of what ships, and it has no automated guard.
 
 4. Check the version pin
 
