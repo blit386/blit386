@@ -126,9 +126,9 @@ table in `packages/kit/README.md` lists them). They are not copies of blit386's 
 starter game and point to GitHub for deep API reference.
 
 The whole of `packages/kit/content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/` (2
-files), `skills/` (22), `hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are
-discovered by directory scan in `scaffold.ts` / `adapters.ts` – adding a skill folder is enough, nothing registers it by
-name.
+files), `skills/` (22 directories – 19 game-author capability skills plus the `run`, `fix`, and `migrate` workflow
+skills), `hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are discovered by
+directory scan in `scaffold.ts` / `adapters.ts` – adding a skill folder is enough, nothing registers it by name.
 
 Kit content must be self-contained. Skills and docs may reference only `blit386` (the engine) and other local kit files
 (`docs/*.md`, `AGENTS.md`). Do not reference the `blit386-demos` repo (demo slugs like `029-snake-game`, or demo URLs) –
