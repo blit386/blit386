@@ -13,7 +13,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const MLC_BIN = require.resolve('markdown-link-check/markdown-link-check');
 const CONFIG = join(ROOT, '.github/markdown-link-check.json');
-const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', 'coverage', 'tmp', 'templates']);
+const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', 'coverage', 'tmp', 'templates', '.remember']);
 
 /** @param {string} dir @param {string[]} files */
 function walkMarkdownFiles(dir, files) {
