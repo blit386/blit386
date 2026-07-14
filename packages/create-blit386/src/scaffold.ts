@@ -5,7 +5,7 @@
  *   - ../templates/base  (language-agnostic: index.html, vite config, README, .editorconfig, biome.json)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
  *   - ../templates/optional/* (wizard opt-in: CI, Cursor rules, Claude guide)
- *   - /kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
+ *   - @blit386/kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
  *
  * After emitting all files, scaffold writes `.blit/manifest.json` (the ownership manifest) and
  * `.blit/base/` (pristine copies of kit-owned and shared files) so future `blit agents sync` runs
@@ -333,7 +333,7 @@ function generateClaudeAdapter(
 
     const claudeMd = [
         '<!-- blit-kit:managed:start -->',
-        '<!-- This block is managed by /kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
+        '<!-- This block is managed by @blit386/kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
         '',
         managedBody,
         commandsBlock,
