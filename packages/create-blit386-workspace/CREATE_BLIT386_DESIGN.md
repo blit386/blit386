@@ -88,8 +88,10 @@ anything genuinely private out of it.
 > glance before relying on it, but the published package itself does have the audio API (confirmed by version, not by
 > re-reading engine source here). Next actions: merge PR #56, then publish the kit first and the scaffolder second per
 > section 11 – the release-order rule below has now been satisfied by the engine publish, so nothing is blocking the kit
-> release except doing it. No version-pin bump is needed: `BLIT386_RANGE` / `engineRange` stay `^1.2.0` (see the "why
-> this is safe" paragraph below – the existing caret range already admits `1.3.0`).
+> release except doing it. Correction (2026-07-14): the "no version-pin bump needed" call originally made here was wrong
+> for `engineRange` – see the "why this is safe" paragraph below, now corrected. `blit386.engineRange` in
+> `packages/kit/package.json` is bumped to `^1.3.0` for the `1.2.1` release; `BLIT386_RANGE` in `scaffold.ts` is bumped
+> to match.
 
 The kit now documents the engine's audio subsystem – `content/docs/audio.md`, the `play-a-sound` skill, the audio rows
 in `content/AGENTS.md` and `content/rules/blit-api-names.md`, and the audio overlay flags in `show-debug-overlay`. All
@@ -102,10 +104,26 @@ The rule:
 > Do NOT publish `@blit386/kit` with the audio content until `blit386@1.3.0` is live on npm. Publish the engine first,
 > then the kit.
 
-Why this is safe once the order is respected: scaffolds pin `BLIT386_RANGE = ^1.2.0` and the kit declares
-`blit386.engineRange: ^1.2.0`. A caret range over `1.2.0` already admits `1.3.0`, so the moment the engine publishes, a
-fresh `npm create blit386` resolves to it and every audio example in the kit becomes true. There is no version-pin
-change to make, and making one would be a mistake.
+Correction (2026-07-14): the paragraph below originally argued no version-pin change was needed. That conflated two
+different mechanisms and was wrong for one of them.
+
+`BLIT386_RANGE` (in `scaffold.ts`) is written into a freshly scaffolded game's `package.json` as its `blit386`
+dependency range. Leaving it at `^1.2.0` really would have been harmless: `npm install` always resolves to the latest
+version satisfying the range, so a fresh scaffold gets `1.3.0` regardless of whether the pin reads `^1.2.0` or `^1.3.0`.
+
+`engineRange` (in `packages/kit/package.json`) is a different mechanism entirely – it does not describe what a fresh
+install resolves to. `blit doctor` reads it via `kitEngineRange()` (`packages/kit/src/env.ts`) and compares it against
+an **already-installed** `blit386` via `satisfiesCaretRange()`, which only checks "same major, and installed >= floor"
+(`packages/kit/src/commands/doctor.ts`, the D14 compatibility check). Leaving `engineRange` at `^1.2.0` while the kit's
+own content documents 1.3.0-only API means an existing project that syncs in the new audio docs (`npx blit agents sync`
+/ `blit upgrade`) but still has `blit386@1.2.0` installed gets told "blit386 1.2.0 is compatible with this kit (^1.2.0)"
+– a false green light, while `docs/audio.md` describes `BT.soundPlay`, which does not exist on their installed engine.
+That is the exact "docs lied to me" failure D14 exists to catch; the stale `engineRange` just made D14 blind to this
+particular drift. Bumping `engineRange` to `^1.3.0` puts that same user in the correct "needs update" branch of
+`blit doctor` instead.
+
+Conclusion: `BLIT386_RANGE` and `engineRange` are bumped to `^1.3.0` together for the `1.2.1` release – required for
+`engineRange` (the D14 compatibility check needs it), harmless-but-consistent for `BLIT386_RANGE`.
 
 If the kit shipped first, a kid would follow `docs/audio.md`, call `BT.soundPlay`, and get "not a function" – the exact
 "the docs lied to me" failure this repo exists to prevent. The audio doc and skill each carry a line telling the reader
@@ -696,6 +714,14 @@ before scaffolder; with 2FA publish one package at a time (each needs a fresh OT
 
 ## Changelog
 
+- 2026-07-14: Correction to the 2026-07-13 entry below and to section 0. That entry's "no version-pin bump needed –
+  `BLIT386_RANGE` / `engineRange` stay `^1.2.0`" call was wrong for `engineRange`: it conflated the scaffold-pin
+  mechanism (`BLIT386_RANGE`, harmless to leave since `npm install` always resolves to the latest satisfying version)
+  with the kit's own `blit386.engineRange` field, which `blit doctor`'s D14 compatibility check
+  (`packages/kit/src/commands/doctor.ts`, `env.ts`) compares against an already-installed engine. Leaving it at `^1.2.0`
+  meant `blit doctor` would report a false "compatible" for a project on `blit386@1.2.0` after syncing in the new
+  1.3.0-only audio docs. Fixed for the `1.2.1` release: `packages/kit/package.json`'s `blit386.engineRange` and
+  `scaffold.ts`'s `BLIT386_RANGE` both bumped to `^1.3.0`. See the corrected "why this is safe" paragraph in section 0.
 - 2026-07-13: Status audit (no code changes). Verified current state against npm and GitHub rather than trusting the doc
   at face value. Findings: (1) `blit386@1.3.0` (the audio-bearing release) is live on npm as `latest` – confirmed via
   `npm view blit386 dist-tags`. This satisfies the section 0 release-order gate for the first time. (2) `@blit386/kit`
