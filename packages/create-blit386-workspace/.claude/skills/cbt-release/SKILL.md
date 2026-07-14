@@ -23,9 +23,12 @@ is stale.
 ## Golden rules (never skip)
 
 1. **Engine first.** If this release's kit content documents a new engine API (for example audio –
-   `content/docs/audio.md`, the `play-a-sound` / `design-a-sound` skills), that `blit386` version must already be on npm
-   (`npm view blit386 version`) before the kit ships it. Publishing kit docs/skills ahead of the engine sends a
-   twelve-year-old's AI assistant instructions for an API that does not exist yet.
+   `content/docs/audio.md`, the `play-a-sound` / `design-a-sound` skills), find the exact engine version that content
+   requires (check its own version callouts, e.g. `audio.md`'s "Sound arrived in blit386 1.3.0" – don't assume
+   `BLIT386_RANGE` / `blit386.engineRange` are current, they may still lag behind and are only bumped in step 2 below),
+   then confirm via `npm view blit386 version` that the published version already satisfies it. Publishing kit
+   docs/skills ahead of the engine sends a twelve-year-old's AI assistant instructions for an API that does not exist
+   yet.
 2. Always `pnpm publish`, never `npm publish` – only pnpm rewrites `workspace:*` to a real version. (CI already does
    this correctly; this matters most for the manual fallback.)
 3. Publish `@blit386/kit` before `create-blit386` – the scaffolder depends on the kit.
@@ -105,11 +108,15 @@ npx blit doctor
 ## Fallback: publishing by hand
 
 Use only when CI cannot do it (workflow broken, npm token expired, an emergency re-publish). Same rules apply – engine
-first, kit first, `pnpm publish` always, versions permanent.
+first, kit first, `pnpm publish` always, versions permanent. `main` is still protected: the version bump still needs a
+PR merged to `main` before you tag, exactly as in the normal path's step 3 – this fallback only skips the CI publish
+job, not branch protection. Tagging a commit that is not on `main` is an explicit emergency exception and needs the
+user's sign-off, called out as such when you report back.
 
 ```bash
 pnpm run preflight
-# commit, push (pnpm publish refuses a dirty tree; --no-git-checks only with explicit user sign-off)
+# commit, push a branch, open a PR, merge to main (pnpm publish refuses a dirty tree; --no-git-checks only with
+# explicit user sign-off)
 
 pnpm --filter @blit386/kit publish --dry-run
 pnpm --filter @blit386/kit publish            # add --otp=123456 if 2FA is on
@@ -119,8 +126,9 @@ pnpm --filter create-blit386 publish --dry-run
 pnpm --filter create-blit386 publish          # --otp=... if 2FA
 ```
 
-Then verify the registry and smoke test exactly as in steps 6–7 above, and still push the version tag afterwards so the
-repo history records the release (the workflow will find both versions already on npm and skip).
+Then verify the registry and smoke test exactly as in steps 6–7 above, and still push the version tag against the merged
+`main` commit afterwards so the repo history records the release (the workflow will find both versions already on npm
+and skip).
 
 ## Troubleshooting
 
