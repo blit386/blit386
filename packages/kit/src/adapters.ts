@@ -151,6 +151,10 @@ export function collectDocs(root: string): GeneratedFile[] {
  *   - `CLAUDE.md`                      (shared file with a managed region)
  *   - `.claude/rules/{name}.md`        (kit-owned; frontmatter stripped)
  *   - `.claude/skills/{name}/SKILL.md` (kit-owned)
+ *
+ * @param root - The kit root directory.
+ * @param vars - Template variables used when rendering generated content.
+ * @returns The generated Claude Code files and their contents.
  */
 export function generateClaudeAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
     const contentRoot = join(root, 'content');
@@ -173,7 +177,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
 
     const claudeMd = [
         MANAGED_START,
-        '<!-- This block is managed by /kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
+        '<!-- This block is managed by @blit386/kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
         '',
         managedBody,
         commandsBlock,

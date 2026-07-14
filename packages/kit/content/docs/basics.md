@@ -53,6 +53,33 @@ The engine gives you a few read-only values (they are properties, so no parenthe
 - `BT.deltaSeconds` – how much time one step represents, in seconds. Use it for smooth motion if you prefer
   speed-per-second over speed-per-step.
 
+## Drawing between two steps
+
+`update()` runs at a fixed speed (60 times a second), but the screen often draws faster than that – 120 or 144 times a
+second on a modern monitor. That means some drawn frames land _in between_ two thinking steps.
+
+`BT.renderAlpha` tells you where you landed: `0` is "exactly on the previous step", `1` is "exactly on the current
+step", `0.5` is "halfway between them". If you ignore it and just draw the current position, motion looks slightly
+stepped. If you use it, motion looks smooth.
+
+To use it, remember where a thing was before you move it:
+
+```js
+import { BT, Rect2i, Vector2i } from 'blit386';
+
+update() {
+    this.prevPos = this.pos.clone(); // remember, BEFORE moving
+    this.pos = this.pos.add(this.vel);
+}
+
+render() {
+    const drawPos = Vector2i.lerp(this.prevPos, this.pos, BT.renderAlpha);
+    BT.drawRectFill(new Rect2i(drawPos.x, drawPos.y, 8, 8), 2);
+}
+```
+
+Do this for things that move. Do not do it for the HUD or the score – those should sit still.
+
 ## init returns a promise
 
 `init()` is `async`, which means it can wait for things to load. Anything that loads (a font, a sprite sheet) gives back

@@ -43,10 +43,12 @@ async init() {
 }
 ```
 
-Turn it off again:
+Turn it off again (guard the same way – `this.crt` is never set on the software fallback):
 
 ```js
-for (const fx of this.crt) BT.effectRemove(fx);
+if (this.crt) {
+  for (const fx of this.crt) BT.effectRemove(fx);
+}
 // or remove everything at once:
 BT.effectClear();
 ```
@@ -71,6 +73,9 @@ BT.effectAdd(lines);
 
 - Always gate effects behind `BT.activeBackend === 'webgpu'` so the game still runs on the software fallback. Keep
   starter games effect-free.
+- Gate on `BT.activeBackend`, **never** on `BT.requestedBackend`. `requestedBackend` is the backend you asked for, and
+  it still says `'webgpu'` even after the engine has quietly fallen back to Canvas 2D – so a guard built on it passes on
+  exactly the machines it was meant to protect, and `BT.effectAdd` throws there.
 - Some effects animate from a `time` field – set `fx.time = BT.timeSeconds` each frame.
 - Hold onto effect instances and reuse them; rebuilding every toggle re-allocates GPU pipelines.
 - Full effect reference lives in the engine repo (linked from `AGENTS.md`); the local docs do not cover every effect.

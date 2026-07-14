@@ -1,20 +1,20 @@
 ---
 name: structure-a-game
 description:
-  Show the shape of a BLIT386 game (configure, init, update, render) and set the expectation that the engine renders and
-  reads input while you write physics, collision, enemies, scenes, and sound yourself. Use when starting a new game or
-  when the user asks how to add a player, collision, or enemies and might expect built-in systems.
+  Show the shape of a BLIT386 game (configure, init, update, render) and set the expectation that the engine draws,
+  reads input, and plays sound while you write physics, collision, enemies, and scenes yourself. Use when starting a new
+  game or when the user asks how to add a player, collision, or enemies and might expect built-in systems.
 ---
 
 # Structure a game
 
-BLIT386 draws pixels and reads input. It does NOT include physics, collision, enemies, scenes, or sound – you write that
-game logic yourself. This skill shows the shape to put it in.
+BLIT386 draws pixels, reads input, and plays sound. It does NOT include physics, collision, enemies, or a scene system –
+you write that game logic yourself. This skill shows the shape to put it in.
 
 ## When to use
 
 Use when starting a new game, or when the user asks "how do I add a player / collision / enemies" and might expect
-built-in systems. Set the expectation early: the engine renders and reads input; you build the rest.
+built-in systems. Set the expectation early: the engine draws, reads input, and plays sound; you build the game logic.
 
 ## The shape of a game
 
@@ -51,10 +51,17 @@ if (this.player.isIntersecting(this.coin)) {
 }
 ```
 
+## The engine does provide these
+
+- Drawing: shapes, sprites, text, and the palette.
+- Input: keyboard, pointer, and gamepad.
+- Sound: a bus mixer, loadable clips, looping music, and a synth that builds retro sounds from nothing (see the
+  play-a-sound skill).
+
 ## Notes
 
 - `update()` decides; `render()` draws. Keep them apart (see `docs/basics.md`).
 - The engine runs on WebGPU and falls back to plain Canvas 2D, so a game always renders. Only fullscreen post-process
-  effects need WebGPU (see the add-crt-effect skill).
+  effects need WebGPU (see the add-crt-effect skill); sound works on both.
 
 See `docs/basics.md`.

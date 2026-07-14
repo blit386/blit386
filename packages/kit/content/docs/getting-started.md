@@ -42,8 +42,8 @@ folder, not on your whole computer.
 
 ## 5. Change something
 
-Open `src/game.js`. Find a number or a color and change it. Save the file. The browser updates by itself. That is the
-whole loop: change a little, look, repeat.
+Open `src/game.js` (or `src/game.ts` if you chose TypeScript). Find a number or a color and change it. Save the file.
+The browser updates by itself. That is the whole loop: change a little, look, repeat.
 
 ## If something seems wrong
 

@@ -43,5 +43,8 @@ address you can share.
 - The game runs on WebGPU where it is available and falls back to plain Canvas 2D everywhere else, so friends can play
   in any modern browser with nothing extra installed. (Only fullscreen CRT or post-process effects need WebGPU – see the
   add-crt-effect skill.)
+- Has sound? Expect the shared game to be silent until the player clicks, taps, or presses a key. Browsers refuse to
+  make noise on a page nobody has touched yet, so this is not a broken upload. Give the game a "press a key to start"
+  screen and the sound arrives with the first keypress. See the play-a-sound skill.
 - Made a change you want to share? Run `{{pmRunBuild}}` again and re-upload `dist/`. The build does not update itself.
 - Do not hand-edit files inside `dist/` – they are generated from your `src/` code. Change the source, then rebuild.

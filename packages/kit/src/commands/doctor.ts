@@ -14,6 +14,9 @@ import {
 import { NO_GIT_NAG, ui } from '../messages';
 import { checkSyncDrift } from './agents';
 
+/**
+ * Runs a BLIT386 environment and project checkup, reporting configuration issues and compatibility warnings to standard output.
+ */
 export function runDoctor(): void {
     const out = (line: string): void => {
         process.stdout.write(`${line}\n`);

@@ -15,7 +15,7 @@ Your game leaves clues in two places. Check both before anything else.
    Chrome.) Red lines are errors. The first red line is usually the real problem; the rest are often side effects of it.
 
 An error message looks scary, but it always answers two questions: what went wrong and where. Look for your file name
-(like `game.js`) and a line number. That is the spot to inspect.
+(like `game.js`, or `game.ts` in a TypeScript project) and a line number. That is the spot to inspect.
 
 ## The screen is blank or black
 
@@ -49,6 +49,21 @@ If tapping a key or button sometimes does nothing, especially when you tap fast,
 always finishes before `render()` runs each frame, and one-frame events like `BT.isKeyPressed`, `BT.isKeyReleased`,
 `BT.inputString`, `BT.isPressed`, and `BT.isReleased` already reset by the time `render()` sees them. Read them in
 `update()`, and save what happened (in a variable on `this`) if `render()` needs to know about it later. See `input.md`.
+
+## The game is completely silent
+
+Almost always, this is the browser and not your code. A web page is not allowed to make noise until the person has
+clicked, tapped, or pressed a key on it – otherwise every site you opened would start shouting. Check in this order:
+
+1. Have you touched the page yet? Click the game once, or press a key, and try the sound again. If it works now, nothing
+   is broken. Give the game a "press a key to start" screen and the problem disappears for good. `BT.isAudioUnlocked`
+   tells you whether the player has interacted yet.
+2. Did you forget `await`? `AudioClip.load(...)` and `AudioClip.synth(...)` both load things, so both need `await`.
+   Without it you are holding a promise, not a sound, and nothing plays.
+3. Is the volume down? Check `BT.audioVolumeGet('main')` and `BT.audioVolumeGet('sfx')`, and that nothing is muted.
+
+Music behaves a bit differently on purpose: `BT.musicPlay()` called too early is remembered and starts by itself on the
+first click or keypress, while `BT.soundPlay()` called too early is thrown away. More in `audio.md`.
 
 ## A big red overlay covers the page
 
@@ -105,6 +120,6 @@ what to do in plain language.
 - Make the problem smaller. Undo until the game works again, then redo your change in tiny steps, checking the browser
   after each one. The step where it breaks is the answer.
 - Read the matching guide. Drawing problems: `drawing.md`. Input problems: `input.md`. Color problems: `palette.md`.
-  Game loop confusion: `basics.md`.
+  Sound problems: `audio.md`. Game loop confusion: `basics.md`.
 - Ask for help with the error text. Whether you ask a person or an AI assistant, copy the exact error message from the
   console or terminal – it contains the clues they need.
