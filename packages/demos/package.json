@@ -57,7 +57,10 @@
   "packageManager": "pnpm@10.26.2",
   "pnpm": {
     "overrides": {
-      "yaml@>=2.0.0 <2.8.3": "^2.8.3"
+      "yaml@>=2.0.0 <2.8.3": "^2.8.3",
+      "undici@>=7.0.0 <7.28.0": "^7.28.0",
+      "js-yaml@>=4.0.0 <4.2.0": "^4.2.0",
+      "shell-quote@<1.8.4": "^1.8.4"
     }
   },
   "dependencies": {
@@ -70,7 +73,7 @@
     "@eslint/js": "^10.0.1",
     "concurrently": "^9.1.0",
     "cspell": "^10.0.0",
-    "esbuild": "^0.27.7",
+    "esbuild": "^0.28.1",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^62.9.0",
@@ -84,7 +87,7 @@
     "lint-staged": "^16.4.0",
     "markdown-link-check": "^3.14.2",
     "prettier": "^3.7.4",
-    "vite": "^8.0.13",
+    "vite": "^8.1.4",
     "vite-plugin-static-copy": "^4.1.0"
   }
 }
