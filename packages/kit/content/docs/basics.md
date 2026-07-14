@@ -65,6 +65,8 @@ stepped. If you use it, motion looks smooth.
 To use it, remember where a thing was before you move it:
 
 ```js
+import { BT, Rect2i, Vector2i } from 'blit386';
+
 update() {
     this.prevPos = this.pos.clone(); // remember, BEFORE moving
     this.pos = this.pos.add(this.vel);

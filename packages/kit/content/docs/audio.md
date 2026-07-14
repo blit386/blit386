@@ -141,7 +141,7 @@ Build sounds in `init()`, never in `update()` – synthesizing takes real work a
 
 - Sound works on both renderers – WebGPU and the plain Canvas 2D fallback. Unlike CRT and post-process effects, it never
   touches the graphics card, so every player hears it.
-- Sound arrived in BLIT386 1.3.0. If `BT.soundPlay` is not a function, you have an older engine – run
+- Sound arrived in blit386 1.3.0. If `BT.soundPlay` is not a function, you have an older engine – run
   `npx blit upgrade`.
 
 Next: `docs/input.md` for the button presses that trigger your sounds, `docs/when-something-breaks.md` when things go

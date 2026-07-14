@@ -43,10 +43,12 @@ async init() {
 }
 ```
 
-Turn it off again:
+Turn it off again (guard the same way – `this.crt` is never set on the software fallback):
 
 ```js
-for (const fx of this.crt) BT.effectRemove(fx);
+if (this.crt) {
+  for (const fx of this.crt) BT.effectRemove(fx);
+}
 // or remove everything at once:
 BT.effectClear();
 ```
