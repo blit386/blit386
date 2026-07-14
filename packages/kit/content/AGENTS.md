@@ -1,7 +1,7 @@
 # AGENTS.md – working on a BLIT386 game
 
 <!-- blit-kit:managed:start -->
-<!-- Everything between the managed markers is owned by /kit and will be rewritten by a future
+<!-- Everything between the managed markers is owned by @blit386/kit and will be rewritten by a future
      `npx blit agents sync`. Put your own notes in the "Your notes" section below the end marker. -->
 
 This file is the home base for anyone (a person or an AI assistant) working on this game. It is short on purpose: it
