@@ -4,10 +4,13 @@ Monorepo for the BLIT386 game scaffolder and project kit.
 
 ## Packages
 
-| Package                   | npm name         | Purpose                                               |
-| ------------------------- | ---------------- | ----------------------------------------------------- |
-| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` CLI and templates         |
-| `packages/kit`            | `@blit386/kit`   | Canonical `AGENTS.md`, local docs, and the `blit` CLI |
+| Package                   | npm name         | Purpose                                           |
+| ------------------------- | ---------------- | ------------------------------------------------- |
+| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` CLI and templates     |
+| `packages/kit`            | `@blit386/kit`   | Canonical kit content (the IR) and the `blit` CLI |
+
+The `blit` CLI (a project-local bin inside every generated game): `blit run`, `blit doctor`, `blit upgrade`,
+`blit migrate`, `blit agents sync` / `blit agents add`, `blit help`.
 
 ## Tech stack
 
@@ -32,7 +35,7 @@ pnpm run format:check   # Verify formatting
 pnpm run spellcheck     # cspell
 pnpm run knip           # Dead code / unused exports
 pnpm run docs:links     # Markdown link checker
-pnpm run test           # Scaffold smoke test (requires build first)
+pnpm run test           # All node:test suites (pnpm -r test; scaffolder suites need a build first)
 pnpm run preflight      # All quality checks before commit
 pnpm run security:audit # Dependency audit (moderate+)
 ```
@@ -47,8 +50,15 @@ Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shel
 3. Templates from `packages/create-blit386/templates/` (`base/` + the chosen language layer) are rendered with
    `{{placeholders}}`.
 4. If an AI assistant was chosen, its config is generated from the kit IR (`generateClaudeAdapter` /
-   `generateCursorAdapter` in `src/scaffold.ts`): `CLAUDE.md` + `.claude/`, or `.cursor/`.
-5. Kit content (`AGENTS.md` + `docs/`) is copied from `/kit/content/`.
+   `generateCursorAdapter` in `src/scaffold.ts`), rendering `{{placeholders}}` as it goes. Claude gets `CLAUDE.md` +
+   `.claude/rules/` (from `content/rules/`) + `.claude/skills/<name>/SKILL.md` (from `content/skills/`). Cursor gets
+   `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same skills, frontmatter stripped), `.cursor/hooks.json`
+   (built from `content/hooks.manifest.json`), and `.cursor/hooks/shell-safety.sh` (from `content/hooks/`). Which files
+   each adapter emits is declared in `content/agents.config.json`.
+5. Kit content (`AGENTS.md` + `docs/`) is copied verbatim from `@blit386/kit`'s `content/`. `AGENTS.md` and `docs/` are
+   copied byte-for-byte (`copyFileSync` / `cpSync`), so `{{placeholder}}` tokens are NOT substituted in them – only
+   rules and skills pass through `render()`. Prose in `AGENTS.md` / `docs/` must therefore spell out both language cases
+   ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
 6. `scaffold()` writes the ownership manifest `.blit/manifest.json` (path / class / kit version / sha256, plus the
    scaffold-time template `vars`) and pristine `.blit/base/` copies, so `blit agents sync` can update kit files later
    without clobbering user edits.
@@ -58,12 +68,16 @@ Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shel
 
 ```text
 packages/create-blit386/templates/
-  base/           # index.html, vite.config.js, README, .editorconfig, biome.json ({{entryFile}}/{{gameFile}} placeholders)
+  base/           # index.html, vite.config.js, README, editorconfig, biome.json.tmpl, gitignore,
+                  #   public/.gitkeep ({{entryFile}}/{{gameFile}} placeholders)
   js/             # package.json.tmpl, jsconfig.json, src/game.js
   ts/             # package.json.tmpl, tsconfig.json, src/game.ts (same Catcher game, typed)
   optional/
     ci/           # GitHub Actions workflow (wizard opt-in)
 ```
+
+`gitignore` and `editorconfig` are renamed to `.gitignore` / `.editorconfig` on copy (`mapOutputName`); `.tmpl` is
+stripped.
 
 The Claude and Cursor configs are no longer static templates: they are generated at scaffold time from the kit IR
 (`packages/kit/content/`) by the adapters in `src/scaffold.ts`. `blit agents sync` regenerates the same output via the
@@ -99,35 +113,50 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 - `cbt-review` – review changes against project rules
 - `cbt-pr` – create a pull request with checks
 - `cbt-spellcheck` – fix cspell errors and extend the dictionary
-- `cbt-test` – run the scaffold smoke test
+- `cbt-test` – run the node:test suites (scaffolder, env, codemod)
 - `cbt-release` – npm publish procedure (`../PUBLISHING.md` in the local workspace layout)
 - `cbt-kit-audit` – re-audit shipped kit docs and skills against the current engine API (see Kit content vs engine docs)
 
 ## Kit content vs engine docs
 
-Generated games receive `AGENTS.md`, six beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
-`drawing`, `input`, `palette`, `when-something-breaks`), and the game-author skills in `packages/kit/content/skills/`
-(emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`). They are not copies of blit386's full
-`docs/` tree – they teach the starter game and point to GitHub for deep API reference.
+Generated games receive `AGENTS.md`, seven beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
+`drawing`, `input`, `palette`, `audio`, `when-something-breaks`), and the game-author skills in
+`packages/kit/content/skills/` (emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`). They are
+not copies of blit386's full `docs/` tree – they teach the starter game and point to GitHub for deep API reference.
+
+The whole of `packages/kit/content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/` (2
+files), `skills/` (19), `hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are
+discovered by directory scan in `scaffold.ts` / `adapters.ts` – adding a skill folder is enough, nothing registers it by
+name.
 
 Kit content must be self-contained. Skills and docs may reference only `blit386` (the engine) and other local kit files
-(`docs/*.md`, `AGENTS.md`). Do not reference the `blit386-demos` repo (demo slugs like `029-snake-game` or
-`blit386-demos.vancura.dev` URLs) – that repo may be archived in favor of kit-based demos, and shipped content must not
-break with it.
+(`docs/*.md`, `AGENTS.md`). Do not reference the `blit386-demos` repo (demo slugs like `029-snake-game`, or demo URLs) –
+that repo may be archived in favor of kit-based demos, and shipped content must not break with it. (The demos live at
+`demos.blit386.dev`; the old `blit386-demos.vancura.dev` host is dead.)
+
+Engine API surface the kit teaches: drawing (primitives, sprites, text), palette (+ effects), input (keyboard, pointer,
+gamepad), timing, audio (bus mixer, `AudioClip`, procedural synth – engine 1.3.0), the debug overlay, screenshots, and
+WebGPU-only post-process effects. The engine has no physics, collision, entity, or scene system: say so, and do not
+invent one.
 
 When blit386 public API or naming changes in the sibling repo, audit these kit files for stale examples:
 
-| Kit file                                | Review when                                        |
-| --------------------------------------- | -------------------------------------------------- |
-| `content/docs/getting-started.md`       | Install/run flow, `npx blit run` / `doctor`        |
-| `content/docs/basics.md`                | `configure()`, loop timing getters, bootstrap flow |
-| `content/docs/drawing.md`               | `BT.clear`, primitives, text APIs                  |
-| `content/docs/input.md`                 | `BT.isDown`, edges, keyboard, pointer, gamepad     |
-| `content/docs/palette.md`               | `paletteCreate`, slots, `Color32`                  |
-| `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, `doctor`   |
-| `content/AGENTS.md`                     | Overall game shape, hard rules, doc routing        |
-| `content/rules/blit-api-names.md`       | Configure `is*` flags, input hold/edge naming      |
-| `content/rules/blit-integer-coords.md`  | Integer-coordinate rule (`Vector2i` / `Rect2i`)    |
+| Kit file                                | Review when                                                          |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| `content/docs/getting-started.md`       | Install/run flow, `npx blit run` / `doctor`                          |
+| `content/docs/basics.md`                | `configure()`, loop timing getters, bootstrap flow                   |
+| `content/docs/drawing.md`               | `BT.clear`, primitives, text APIs                                    |
+| `content/docs/input.md`                 | `BT.isDown`, edges, keyboard, pointer, gamepad                       |
+| `content/docs/palette.md`               | `paletteCreate`, slots, `Color32`                                    |
+| `content/docs/audio.md`                 | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                |
+| `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, `doctor`       |
+| `content/AGENTS.md`                     | Overall game shape, hard rules, doc routing                          |
+| `content/rules/blit-api-names.md`       | `BT` getter list, configure `is*` flags, input hold/edge naming      |
+| `content/rules/blit-integer-coords.md`  | Integer-coordinate rule (`Vector2i` / `Rect2i`)                      |
+| `content/skills/*/SKILL.md`             | 19 game-author skills; each demonstrates a slice of the `BT` surface |
+| `content/hooks/shell-safety.sh`         | Shell commands the hook blocks in a generated game                   |
+| `content/hooks.manifest.json`           | Canonical hook intent; the Cursor `hooks.json` is generated from it  |
+| `content/agents.config.json`            | Which files each adapter (claude / cursor) emits                     |
 
 Also check `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine
 version.

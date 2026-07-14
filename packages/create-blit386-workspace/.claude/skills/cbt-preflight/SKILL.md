@@ -32,7 +32,7 @@ Run comprehensive quality checks before committing or pushing code.
    - `knip` – Find unused exports and dependencies
    - `docs:links` – Verify Markdown links
    - `build` – Build both packages
-   - `test` – Scaffold smoke test
+   - `test` – `pnpm -r test`: three `node --test` suites, 37 cases (scaffolder, env, codemod)
 
 2. Report results
    - If all checks pass: Confirm code is ready for commit
