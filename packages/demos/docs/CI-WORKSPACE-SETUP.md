@@ -118,9 +118,10 @@ This script uses `concurrently` to watch both projects:
 1. No npm publish required – Dependencies are linked via pnpm workspace protocol
 2. Identical to local – CI uses the exact same workspace structure as development
 3. Fast builds – pnpm workspace linking is instantaneous
-4. Always current – Demos build against the library's freshly built `dist/`, so an engine API change breaks CI here
-   immediately instead of at the next npm release (the demos are plain JavaScript with a `jsconfig.json`, so this is a
-   runtime and bundling guarantee, not a type-checking one)
+4. Always current (build/bundling) – CI builds the demos against the library's freshly built `dist/`, so import and
+   bundling incompatibilities with a changed engine API fail here immediately instead of at the next npm release. That
+   is a build and bundling guarantee only: the demos are plain JavaScript with a `jsconfig.json` (no type-checking
+   gate), and runtime behavior still needs a local run (`pnpm run dev` / `pnpm run preview`) or separate runtime tests
 5. Hot reload – Local dev:watch script provides excellent DX
 
 ## Future Option: Switch Demos to npm Dependency
@@ -147,11 +148,11 @@ Third-party actions in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 40-character commit SHA, with a trailing `# vN` comment naming the release tag the SHA was resolved from. Mutable `@vN`
 references are not used.
 
-| Path    | Who refreshes pins                                                                             |
-| ------- | ---------------------------------------------------------------------------------------------- |
-| Routine | [Renovate](../renovate.json) `github-actions` manager – grouped PRs, 3-day `minimumReleaseAge` |
-| Manual  | Resolve the tag to a commit on the action repository                                           |
-|         | (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), replace the SHA, update the `# vN` comment |
+| Path    | Who refreshes pins                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------ |
+| Routine | [Renovate](../renovate.json) `github-actions` manager – patch updates only, grouped, 3-day release age |
+| Manual  | Resolve the tag to a commit on the action repository                                                   |
+|         | (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), replace the SHA, update the `# vN` comment         |
 
 After changing pins, confirm CI still passes (workspace setup, quality checks, artifact upload/download, Cloudflare
 deploy).
@@ -160,10 +161,10 @@ deploy).
 
 [`renovate.json`](../renovate.json) runs weekly (before 6am Monday, Europe/Prague) with `chore(deps):` commits:
 
-- Patch updates for all packages: automerged after a 3-day `minimumReleaseAge`
-- Minor and major updates: manual review (majors also get a `major-update` label)
-- GitHub Actions: grouped into one PR and automerged after the same 3-day wait – note this rule applies to every update
-  type for actions, not only patches, because it does not set `matchUpdateTypes`
+- Patch updates for all packages (including GitHub Actions): automerged after a 3-day `minimumReleaseAge`
+- Minor and major updates (including GitHub Actions): manual review (majors also get a `major-update` label)
+- GitHub Actions patches only: grouped into one PR and automerged after the same 3-day wait
+  (`matchUpdateTypes: ["patch"]`); action minor/major updates stay ungrouped and need review like other packages
 - Lock file maintenance: monthly; `pnpm` itself is pinned rather than ranged
 - Vulnerability alerts are enabled and labeled `security`
 

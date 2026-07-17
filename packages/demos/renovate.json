@@ -45,8 +45,9 @@
       "labels": ["dependencies", "major-update"]
     },
     {
-      "description": "GitHub Actions",
+      "description": "GitHub Actions patches - group and automerge",
       "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch"],
       "groupName": "github actions",
       "automerge": true,
       "automergeType": "pr",

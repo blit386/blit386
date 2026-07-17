@@ -464,7 +464,8 @@ Follow Conventional Commits: `<type>(<scope>): <description>`
 Types (commitlint-enforced): `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`,
 `revert`
 
-DCO sign-off is required: always `git commit -s`.
+DCO sign-off is recommended: prefer `git commit -s` so commits carry a `Signed-off-by` trailer. This repo's history
+follows that convention, but the commit hook only runs commitlint (conventional commits) and there is no DCO CI check.
 
 Scopes are optional (not commitlint-enforced). Prefer ones already in history: `demos`, `ui`, `assets`, `docs`,
 `skills`, `deps`.
@@ -476,6 +477,7 @@ AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
 Managed by Husky (auto-installed via `prepare` script).
 
 - Pre-commit (lint-staged): auto-formats and lints staged files
+- Commit-msg: commitlint (conventional commit type/subject rules)
 - Pre-push: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, build)
 
 ## Deployment
@@ -489,15 +491,15 @@ Demos deploy to Cloudflare Pages via GitHub Actions on push to main. The product
 Skills live in `.claude/skills/` (Zed/Cursor also see them via `.agents/skills/*` symlinks – edit the `.claude` copy
 once). Available:
 
-| Skill                                 | Purpose                                               |
-| ------------------------------------- | ----------------------------------------------------- |
-| `demos-preflight`                     | Run format, lint, spellcheck, knip, docs:links, build |
-| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify)   |
-| `demos-review` / `demos-deep-review`  | Diff review vs project rules; deep pre-push review    |
-| `demos-pr`                            | Preflight, conventional commit with DCO, open a PR    |
-| `demos-new`                           | Scaffold the next `NNN-topic.js` demo                 |
-| `demos-spellcheck`                    | Fix cspell errors and extend `cspell.json`            |
-| `demos-test`                          | Explain that this repo has no automated tests         |
-| `demos-security-run`                  | MCP security preflight + audit fallbacks              |
+| Skill                                 | Purpose                                                     |
+| ------------------------------------- | ----------------------------------------------------------- |
+| `demos-preflight`                     | Run format, lint, spellcheck, knip, docs:links, build       |
+| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify)         |
+| `demos-review` / `demos-deep-review`  | Diff review vs project rules; deep pre-push review          |
+| `demos-pr`                            | Preflight, conventional commit (DCO recommended), open a PR |
+| `demos-new`                           | Scaffold the next `NNN-topic.js` demo                       |
+| `demos-spellcheck`                    | Fix cspell errors and extend `cspell.json`                  |
+| `demos-test`                          | Explain that this repo has no automated tests               |
+| `demos-security-run`                  | MCP security preflight + audit fallbacks                    |
 
 `.agents/skills/*` are symlinks to `.claude/skills/*`. Do not treat them as two copies to patch.

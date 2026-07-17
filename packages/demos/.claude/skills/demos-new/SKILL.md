@@ -50,7 +50,7 @@ touch. Start from this shape:
 // Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics)
 // Live version: https://demos.blit386.dev/NNN-topic
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { bootstrap, BT } from 'blit386';
 
 import { applyTheme, ui } from './shared/ui.js';
 
@@ -83,7 +83,7 @@ class Demo {
     ui.tick();
 
     // Read input and change state here (logic only).
-    // Directional input: ui.dpad.isDown('left'), ui.dpad.isPressed('up'), ui.swipe().
+    // Directional input (when needed): ui.dpad.isDown('left'), ui.dpad.isPressed('up'), ui.swipe().
   }
 
   render() {
@@ -102,9 +102,10 @@ class Demo {
     ui.kv('Ticks', BT.ticks);
     ui.end();
 
-    // Self-contained touch D-pad (outside begin/end) - add it whenever the demo has
-    // directional input. It appears after the first touch contact.
-    ui.dpadWidget();
+    // Optional – only when this demo's input model includes directional controls
+    // (movement, aim, menu navigation). Keep the call outside begin/end so the
+    // touch D-pad sits as its own overlay; it appears after the first touch contact.
+    // ui.dpadWidget();
   }
 
   reset() {
