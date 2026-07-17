@@ -41,15 +41,18 @@ The description after `/demos-pr` becomes the commit subject.
 - Stage relevant files with `git add`
 - Generate conventional commit message:
   - Format: `<type>(<scope>): <description>`
-  - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
-  - Scopes:
-    - `examples` – demo JS source (`src/NNN-name.js`)
-    - `plugin` – virtual-demos plugin and demo-registry (`plugins/`)
-    - `assets` – static assets in `public/` (sprites, fonts, Cloudflare headers/redirects)
-    - `ci` – GitHub Actions and CI config
-    - `docs` – documentation
-    - `config` – tooling config (Vite, Biome, ESLint, etc.)
-    - `deps` – dependency updates
+  - Types (enforced by `commitlint.config.js`): `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`,
+    `ci`, `chore`, `revert`. Subject lowercase, no trailing period, header at most 100 characters
+  - Scopes are optional and not enforced by commitlint. Use the ones this repo's history already uses:
+    - `demos` – demo JS source (`src/NNN-name.js`), by far the most common scope
+    - `ui` – the shared UI kit (`src/shared/ui*.js`)
+    - `assets` – static assets in `public/` (sprites, fonts, audio, Cloudflare headers/redirects)
+    - `docs` – documentation (`README.md`, `docs/`, `CLAUDE.md`)
+    - `skills` – Claude/Cursor skills and rules (`.claude/`, `.cursor/`)
+    - `deps` – dependency updates (Renovate uses this)
+  - Only introduce a new scope when none of the above fits, and keep it a single lowercase word
+- Prefer DCO sign-off with `git commit -s` (recommended; this repo's history uses it, but hooks/CI do not enforce
+  `Signed-off-by`)
 - Include trailer: `Co-Authored-By: Claude <noreply@anthropic.com>`
 
 5. Push and create PR

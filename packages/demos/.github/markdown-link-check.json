@@ -43,9 +43,6 @@
       "pattern": "^https?://www\\.npmjs\\.com/package/[^\\s]+$"
     },
     {
-      "pattern": "^https?://www\\.contributor-covenant\\.org(/|$)"
-    },
-    {
       "pattern": "^https?://www\\.conventionalcommits\\.org(/|$)"
     },
     {

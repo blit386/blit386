@@ -20,14 +20,16 @@ can track the local sibling repo during development. That means you still need b
 ## Browser and Renderer
 
 The engine prefers WebGPU and falls back to a Canvas 2D software renderer when WebGPU is missing or fails to start
-(optional `?backend=software` on a demo URL). A dismissible on-canvas banner indicates software mode.
+(optional `?backend=software` on a demo URL). There is no on-canvas banner for this. The engine logs
+`[BT] WebGPU unavailable, falling back to software renderer` to the browser console, and the engine overlay shows the
+active backend in its status row (for example `software|320x240`). Demo code can read the same value at runtime with
+`BT.activeBackend`.
 
 WebGPU is required for post-process / fullscreen effect demos (CRT stacks, two-tier chains). In software mode those
 demos still boot and run their core scene without the CRT stack; an on-screen note explains the limitation. Most other
-demos run fully in software mode for core 2D.
+demos run fully in software mode for core 2D, including all audio.
 
-WebGPU is supported in current versions of Chrome/Edge, recent Firefox and Safari as listed in the
-[BLIT386 README](https://github.com/blit386/blit386/blob/main/README.md#prerequisites) and the demos
+WebGPU is supported in current versions of Chrome/Edge, recent Firefox and Safari as listed in the demos
 [README](../README.md#browser-and-renderer).
 
 ## One-Time Setup
@@ -69,18 +71,22 @@ pnpm install
 After setup, your directory should look like this:
 
 ```text
-blit386-workspace/          # Your workspace root
+blit386-workspace/            # Your workspace root
 ├── pnpm-workspace.yaml       # Links the two packages
 ├── package.json              # Optional (see below)
 ├── node_modules/             # Shared dependencies
-├── blit386/                # The library
+├── blit386/                  # The library
 │   ├── src/
 │   ├── dist/                 # Built output
 │   └── package.json
-└── blit386-demos/          # The demos
+└── blit386-demos/            # The demos
     ├── src/                  # One JS file per demo (single source of truth)
+    │   └── shared/           # Shared UI kit (panels, buttons, touch D-pad) + helpers
+    ├── public/               # Static assets: sprites/, fonts/, audio/, _headers, _redirects
     ├── _partials/            # Shared HTML template
     ├── plugins/              # virtual-demos Vite plugin
+    ├── scripts/              # Repo scripts (Markdown link check, audio loop generator)
+    ├── docs/                 # This guide, CI setup, security headers
     └── package.json
 ```
 
@@ -173,13 +179,19 @@ cd ../blit386-demos
 pnpm run dev
 ```
 
-## Alternative: Use BLIT386 from npm
+## Alternative: Start your own game with the scaffolder
 
-If you only want to build your own standalone app with the published package (instead of working on this demos repo),
-you can install BLIT386 directly from npm:
+The setup above is only needed to hack on this demos repo against the local engine source. If you just want to build
+your own game with the published engine, use the [create-blit386](https://github.com/blit386/create-blit386) scaffolder
+instead – it writes a ready-to-run project (starter game, Vite config, `index.html`, docs, and an optional AI-assistant
+config) that already depends on `blit386` from npm:
 
 ```bash
-pnpm create vite my-demo --template vanilla-ts
-cd my-demo
-pnpm add blit386
+npm create blit386@latest my-game
+cd my-game
+pnpm install
+pnpm run dev
 ```
+
+The generated project also ships the `blit` CLI (`blit run`, `blit doctor`, `blit upgrade`, `blit agents`). You do not
+need a pnpm workspace or a local engine checkout for this path.
