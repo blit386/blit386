@@ -29,7 +29,7 @@ blit386-demos/
     001-basics.js
     002-primitives.js
     ...                        # numbered demos under src/*.js (plugin discovers all)
-    shared/                    # Shared UI kit + cross-demo helpers (38 of 39 demos import it)
+    shared/                    # Shared UI kit + cross-demo helpers (38 of 39 demos import it; 018-flurry is the exception)
       ui.js                    # The one entry point demos import: applyTheme() + the ui object
       ui-core.js               # Immediate-mode context: anchors, layout, pooled draws, hit testing
       ui-widgets.js            # panel, label, kv, checkbox, pip, button, slider, meter, separator, spacer
@@ -53,7 +53,7 @@ blit386-demos/
   scripts/                     # Repo maintenance scripts (run via package scripts)
     check-markdown-links.mjs   # pnpm run docs:links – walks every .md/.mdx in the repo
     generate-audio-loops.mjs   # pnpm run generate:audio-loops – writes the *.loop.json loop points
-  docs/                        # Project documentation
+  docs/                        # CI-WORKSPACE-SETUP, EXTERNAL-DEVELOPER-SETUP, SECURITY-HEADERS
 ```
 
 The `/demos/NNN-name.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
@@ -376,8 +376,9 @@ CRT and post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` f
 ### Shared UI kit (src/shared/ui.js)
 
 All demo UI (panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch D-pad, swipes, and
-tap zones) comes from the shared immediate-mode kit. NEVER hand-roll panels, buttons, or HUD text colors in a demo -
-import the kit:
+tap zones) comes from the shared immediate-mode kit. NEVER hand-roll panels, buttons, or HUD text colors in a demo –
+import the kit. The one intentional exception is `018-flurry` (immersive screensaver with no demo HUD; engine overlay
+only):
 
 ```js
 import { applyTheme, ui } from './shared/ui.js';
@@ -433,18 +434,19 @@ enabled in `configure()`.
 
 ## File Organization
 
-Standard section order:
+Standard section order (matches `.cursor/rules/file-structure.mdc`):
 
-1. Imports
-2. Configuration
-3. Type Definitions
-4. Module State
-5. Helper Functions
-6. Main Logic
-7. Exports
+1. Header comment (`// Demo NNN – …`, prerequisites, hosted links; optional `// @pageTitle`)
+2. Imports
+3. Type definitions (`@typedef` JSDoc)
+4. Configuration constants
+5. Module state
+6. Helper functions
+7. Main logic (`Demo` class)
+8. Exports / bootstrap – `bootstrap(Demo);` last
 
 Demo class member order: instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
-methods. Keep `bootstrap(Demo);` as the last statement in the file.
+methods.
 
 Never use `// #region` / `// #endregion` – region markers are banned everywhere. See `.cursor/rules/file-structure.mdc`.
 
@@ -459,7 +461,13 @@ Enforced by Biome (JS/JSON/CSS) and Prettier (Markdown/YAML):
 
 Follow Conventional Commits: `<type>(<scope>): <description>`
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+Types (commitlint-enforced): `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`,
+`revert`
+
+DCO sign-off is required: always `git commit -s`.
+
+Scopes are optional (not commitlint-enforced). Prefer ones already in history: `demos`, `ui`, `assets`, `docs`,
+`skills`, `deps`.
 
 AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
 
@@ -475,3 +483,21 @@ Managed by Husky (auto-installed via `prepare` script).
 Demos deploy to Cloudflare Pages via GitHub Actions on push to main. The production build copies each virtual demo to
 `dist/<slug>.html` at the site root (see `flattenDemosPlugin` in `vite.config.js`). Public URLs are listed in
 `README.md` (the hosted site uses short paths such as `/001-basics`; local dev still uses `/demos/<slug>.html`).
+
+## Agent skills
+
+Skills live in `.claude/skills/` (Zed/Cursor also see them via `.agents/skills/*` symlinks – edit the `.claude` copy
+once). Available:
+
+| Skill                                 | Purpose                                               |
+| ------------------------------------- | ----------------------------------------------------- |
+| `demos-preflight`                     | Run format, lint, spellcheck, knip, docs:links, build |
+| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify)   |
+| `demos-review` / `demos-deep-review`  | Diff review vs project rules; deep pre-push review    |
+| `demos-pr`                            | Preflight, conventional commit with DCO, open a PR    |
+| `demos-new`                           | Scaffold the next `NNN-topic.js` demo                 |
+| `demos-spellcheck`                    | Fix cspell errors and extend `cspell.json`            |
+| `demos-test`                          | Explain that this repo has no automated tests         |
+| `demos-security-run`                  | MCP security preflight + audit fallbacks              |
+
+`.agents/skills/*` are symlinks to `.claude/skills/*`. Do not treat them as two copies to patch.

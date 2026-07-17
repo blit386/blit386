@@ -34,8 +34,9 @@ title.
 ### 2. Create src/NNN-topic.js
 
 File name is `src/NNN-topic.js` with the kebab-cased topic (e.g. `src/042-sprite-trails.js`). Every demo (except
-`00a-barebones`) uses the shared UI kit for its on-screen panels and touch controls – `CLAUDE.md` forbids hand-rolling
-panels, buttons, or HUD text colors, and requires the demo to be usable on touch. Start from this shape:
+`018-flurry`, the immersive screensaver with no demo HUD) uses the shared UI kit for its on-screen panels and touch
+controls – `CLAUDE.md` forbids hand-rolling panels, buttons, or HUD text colors, and requires the demo to be usable on
+touch. Start from this shape:
 
 ```js
 // @pageTitle BLIT386 Demo NNN – Title Cased Topic
@@ -156,8 +157,9 @@ by `src/00a-barebones.js`; see `CLAUDE.md` (Documentation Style) for the full ru
 
 - Plain JavaScript only (ES2022, no TypeScript).
 - Next free three-digit prefix above the highest in use; retired (`021`) and skipped (`039`, `040`) numbers stay unused;
-  `00a-barebones` is the only exception.
-- Use the shared UI kit – never hand-roll panels, buttons, or HUD text colors.
+  `00a-barebones` is the only non-numeric slug (do not create more `00a-*` files).
+- Use the shared UI kit – never hand-roll panels, buttons, or HUD text colors (`018-flurry` is the only intentional
+  exception: no demo HUD).
 - Every demo must be usable on touch: key-triggered actions also get a `ui.button` with a `{ key }` binding, and
   directional input also gets `ui.dpadWidget()` / `ui.swipe()`.
 - Beginner-friendly comments are required; relaxed linting does not relax the comment rule.

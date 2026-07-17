@@ -41,7 +41,8 @@ Review current changes against project rules and quality standards.
   sufficient. Math functions, loop structures, and engine API calls must be explained in plain language.
 - Shared UI kit: on-screen UI comes from `src/shared/ui.js` (`applyTheme()` in `init()` before `BT.paletteSet()`,
   `ui.tick()` as the first line of `update()`, `ui.begin()` / widgets / `ui.end()` in `render()`). Never hand-rolled
-  panels, buttons, or HUD text colors
+  panels, buttons, or HUD text colors (`018-flurry` is the only intentional exception: immersive screensaver, no demo
+  HUD)
 - Touch usability: every key-triggered action also has a `ui.button` with a `{ key }` binding, directional input also
   has `ui.dpadWidget()` and/or `ui.swipe()`, and hardware-showcase demos (028, 031, 035) show a warm "needs a
   keyboard/gamepad" label when `ui.hasTouch()` is true

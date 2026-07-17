@@ -29,7 +29,7 @@ Run comprehensive quality checks before committing or pushing code.
   - `lint` – Check for lint errors (ESLint)
   - `spellcheck` – Check spelling in code and docs
   - `knip` – Find unused exports and dependencies
-  - `docs:links` – Verify Markdown links (README, docs/, skills)
+  - `docs:links` – Verify Markdown links (every `.md` / `.mdx` in the repo, including `README.md`, `docs/`, `.claude/`)
   - `build` – Confirm the production build succeeds (CI and Cloudflare Pages depend on this)
 
 2. Report results

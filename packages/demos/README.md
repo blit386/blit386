@@ -145,7 +145,7 @@ next free number after the highest one in use – never a retired or skipped one
 
 All on-screen demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
 D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 38 of the 39 demos
-(`00a-barebones` is deliberately the exception, since it shows the engine with nothing else layered on top):
+(`018-flurry` is the deliberate exception: an immersive screensaver with no demo HUD, only the engine overlay):
 
 | File                      | What it provides                                                                    |
 | ------------------------- | ----------------------------------------------------------------------------------- |

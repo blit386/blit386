@@ -51,6 +51,7 @@ The description after `/demos-pr` becomes the commit subject.
     - `skills` – Claude/Cursor skills and rules (`.claude/`, `.cursor/`)
     - `deps` – dependency updates (Renovate uses this)
   - Only introduce a new scope when none of the above fits, and keep it a single lowercase word
+- Create the commit with DCO sign-off: `git commit -s` (required; every commit in this repo's history uses it)
 - Include trailer: `Co-Authored-By: Claude <noreply@anthropic.com>`
 
 5. Push and create PR

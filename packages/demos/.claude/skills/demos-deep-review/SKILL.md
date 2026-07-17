@@ -28,8 +28,7 @@ pushing significant changes or creating pull requests.
 
 2. Run preflight checks
 
-- Execute `pnpm run preflight` (format, lint, spellcheck, knip, docs:links)
-- Execute `pnpm run build` to confirm the production build succeeds
+- Execute `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, build – build is already included)
 - If any check fails, report issues and stop
 - All automated checks must pass before AI review
 
