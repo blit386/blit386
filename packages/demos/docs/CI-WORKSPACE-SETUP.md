@@ -78,12 +78,17 @@ The composite action performs these steps internally:
 
 ## CI Job Flow
 
-The single CI workflow (`.github/workflows/ci.yml`) uses this pattern across its jobs:
+The single CI workflow (`.github/workflows/ci.yml`) has three jobs:
 
-- quality-checks – Code quality (format, lint, spellcheck, knip)
-- build – Build demos and upload artifacts
+- quality-checks – format check, lint, spellcheck, knip, and the Markdown link check (`pnpm run docs:links`), all as
+  parallel steps in this one job. It runs on pull requests as well as on pushes to `main`, and it needs the workspace
+  like every other step (the checks run from inside `blit386-demos/` with its dependencies installed). The link check
+  walks every `.md` / `.mdx` file in the repo, not just `README.md`
+- build – Build demos and upload artifacts (depends on `quality-checks`)
 - deploy – Deploy to Cloudflare Pages (main branch only; depends on `build`)
-- docs-links – Markdown link check on `README.md` (no workspace needed; runs only on main push after deploy)
+
+CodeQL and Dependabot also run on this repo, but through GitHub's default setup – there is no workflow YAML for them in
+`.github/workflows/`.
 
 ## Local Development
 
@@ -113,7 +118,9 @@ This script uses `concurrently` to watch both projects:
 1. No npm publish required – Dependencies are linked via pnpm workspace protocol
 2. Identical to local – CI uses the exact same workspace structure as development
 3. Fast builds – pnpm workspace linking is instantaneous
-4. Type safety – TypeScript resolves imports correctly in both environments
+4. Always current – Demos build against the library's freshly built `dist/`, so an engine API change breaks CI here
+   immediately instead of at the next npm release (the demos are plain JavaScript with a `jsconfig.json`, so this is a
+   runtime and bundling guarantee, not a type-checking one)
 5. Hot reload – Local dev:watch script provides excellent DX
 
 ## Future Option: Switch Demos to npm Dependency
@@ -132,6 +139,33 @@ If this demos repo ever switches from `workspace:*` to an npm semver dependency:
 
 2. Simplify CI workflow (no need to clone both repos)
 3. Keep local workspace linking as an optional development setup if desired
+
+## GitHub Actions pinning
+
+Third-party actions in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) and
+[`.github/actions/workspace-setup/action.yml`](../.github/actions/workspace-setup/action.yml) are pinned to a
+40-character commit SHA, with a trailing `# vN` comment naming the release tag the SHA was resolved from. Mutable `@vN`
+references are not used.
+
+| Path    | Who refreshes pins                                                                             |
+| ------- | ---------------------------------------------------------------------------------------------- |
+| Routine | [Renovate](../renovate.json) `github-actions` manager – grouped PRs, 3-day `minimumReleaseAge` |
+| Manual  | Resolve the tag to a commit on the action repository                                           |
+|         | (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), replace the SHA, update the `# vN` comment |
+
+After changing pins, confirm CI still passes (workspace setup, quality checks, artifact upload/download, Cloudflare
+deploy).
+
+### Renovate policy
+
+[`renovate.json`](../renovate.json) runs weekly (before 6am Monday, Europe/Prague) with `chore(deps):` commits:
+
+- Patch updates for all packages: automerged after a 3-day `minimumReleaseAge`
+- Minor and major updates: manual review (majors also get a `major-update` label)
+- GitHub Actions: grouped into one PR and automerged after the same 3-day wait – note this rule applies to every update
+  type for actions, not only patches, because it does not set `matchUpdateTypes`
+- Lock file maintenance: monthly; `pnpm` itself is pinned rather than ranged
+- Vulnerability alerts are enabled and labeled `security`
 
 ## Troubleshooting
 
