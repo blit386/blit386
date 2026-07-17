@@ -9,9 +9,11 @@ explaining how everything works.
 Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
 scaffolder (`npm create blit386@latest my-game`).
 
-There are 39 demo modules today (38 numbered demos plus `00a-barebones`). Each one lives in a single file under `src/`
-(for example `src/001-basics.js`). During development, Vite serves the matching page at `/demos/001-basics.html` (no
-HTML file is committed; the build wires a shared layout to each script).
+There are 39 demo modules today (38 numbered demos plus `00a-barebones`), covering drawing, palettes, post-process CRT
+effects, input (pointer, keyboard, gamepad), and audio. Each demo lives in a single file under `src/` (for example
+`src/001-basics.js`) and imports the shared UI kit in `src/shared/` for its on-screen panels and touch controls. During
+development, Vite serves the matching page at `/demos/001-basics.html` (no HTML file is committed; the build wires a
+shared layout to each script).
 
 Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/). Live URLs use a flat path per slug,
 for example `https://demos.blit386.dev/001-basics`.
@@ -33,15 +35,22 @@ the overlay subsystem entirely.
 
 ## Demos
 
-Below, each title links to the deployed page. Slug `021-error-preview` was retired; numbering resumes at `022`.
+Below, each title links to the deployed page.
+
+Numbering has two gaps. Slug `021-error-preview` was retired and its number stays unused; numbering resumes at `022`.
+Numbers `039` and `040` were never used at all, so the list jumps straight from `038` to `041`. A new demo takes the
+next free number after the highest one in use – never a retired or skipped one.
 
 ### Drawing Basics
 
 - [001-basics](https://demos.blit386.dev/001-basics) – Engine basics, lifecycle, bouncing sprite, canvas text
 - [033-basics-enhanced](https://demos.blit386.dev/033-basics-enhanced) – Enhanced version of the basics demo with
   optional visual effects
-- [034-logo-lowres](https://demos.blit386.dev/034-logo-lowres) – Logo sprite centered on a 160x120 screen, upscaled 4x
-  with nearest-neighbor filtering for a chunky retro look
+- [034-logo-lowres](https://demos.blit386.dev/034-logo-lowres) – Logo sprite centered on a tiny 80x60 screen, upscaled
+  3x to 240x180 with nearest-neighbor filtering, then wrapped in the Tesla Orava black-and-white CRT stack (scanlines,
+  scrolling roll line, flicker, RGB mask, vignette, bloom, and random analog-TV fault bursts) with a shared UI-kit
+  status chip naming the current fault. The one demo that turns the engine overlay off entirely
+  (`isOverlayEnabled: false`)
 - [002-primitives](https://demos.blit386.dev/002-primitives) – All primitive drawing: pixels, lines, rectangles
 - [003-colors](https://demos.blit386.dev/003-colors) – Color32 deep dive: named, HSL, alpha, lerp
 - [032-named-colors](https://demos.blit386.dev/032-named-colors) – Color32 named registry APIs: resolve, register,
@@ -132,13 +141,35 @@ Below, each title links to the deployed page. Slug `021-error-preview` was retir
   volume sliders, per-bus mute toggles that preserve the stored volume, and an alert button that ducks the music bus
   with `BT.audioVolumeSet()`
 
+## Shared UI kit
+
+All on-screen demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
+D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 38 of the 39 demos
+(`00a-barebones` is deliberately the exception, since it shows the engine with nothing else layered on top):
+
+| File                      | What it provides                                                                    |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| `ui.js`                   | The single entry point demos import: `applyTheme()` and the `ui` object             |
+| `ui-core.js`              | Immediate-mode context: layout anchors, pooled draw commands, hit testing           |
+| `ui-widgets.js`           | Panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters          |
+| `ui-theme.js`             | `applyTheme(palette)` – installs the 12 shared UI colors (slots 240–251 by default) |
+| `ui-dpad.js`              | The virtual touch D-pad (`ui.dpadWidget()`, `ui.dpad.isDown` / `ui.dpad.isPressed`) |
+| `ui-gestures.js`          | Swipe recognition (`ui.swipe()`) and invisible tap zones (`ui.tapIn()`)             |
+| `post-process-backend.js` | `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` for effect demos that need WebGPU      |
+
+The kit is immediate mode: a demo declares its widgets every frame inside `render()`, and each widget answers a click, a
+tap, or its bound key on the spot. Because every action is reachable by tap as well as by key, the demos are usable on a
+phone without a keyboard.
+
 ## Browser and Renderer
 
 BLIT386 uses two backends (WebGPU and Canvas 2D software). The default path is WebGPU (indexed framebuffer, full
 post-process chain, CRT presets, and related demos). If WebGPU is unavailable or fails to initialize, the engine
-automatically switches to a Canvas 2D software renderer; a small dismissible SOFTWARE RENDERER banner appears on the
-canvas. You can also force software mode with the `?backend=software` query on a demo URL, or with
-`HardwareSettings.backend: 'software'` in a demo’s `configure()`.
+automatically switches to a Canvas 2D software renderer. There is no on-canvas banner for this: the engine logs
+`[BT] WebGPU unavailable, falling back to software renderer` to the browser console, and the engine overlay reports the
+active backend in its status row (for example `software|320x240`). Demo code can query the same value at runtime with
+`BT.activeBackend` (`'webgpu'` or `'software'`). You can force software mode with the `?backend=software` query on a
+demo URL, or with `HardwareSettings.backend: 'software'` in a demo's `configure()`.
 
 Most demos run in software mode for core drawing (sprites, primitives, palette, input). Post-process and fullscreen
 effect stacks (for example the CRT demos) need WebGPU; effect-heavy demos skip those stacks in software mode and show an
@@ -180,8 +211,9 @@ pnpm install
 pnpm run dev
 ```
 
-This opens the demo index at `http://localhost:5173/demos/` and each page at `http://localhost:5173/demos/<slug>.html`
-(for example `http://localhost:5173/demos/001-basics.html`). For the public build, open the flat URLs on
+The dev server opens `http://localhost:5173/demos/001-basics.html` in your browser (configured by `server.open` in
+`vite.config.js`). Every demo is served at `http://localhost:5173/demos/<slug>.html`, and the index listing all of them
+is at `http://localhost:5173/demos/`. For the public build, open the flat URLs on
 [demos.blit386.dev](https://demos.blit386.dev/).
 
 ## Community
