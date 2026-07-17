@@ -18,7 +18,7 @@ Run project-wide spellcheck, then fix all reported errors.
 ## Steps
 
 1. Run spellcheck
-   - Execute `pnpm run spellcheck` to check all `*.{js,md,mdx,mdc}` files
+   - Execute `pnpm run spellcheck` to check `src/**/*.{js,md,mdx,mdc}`, `docs/**/*.{md,mdx,mdc}`, and `README.md`
    - Capture the full error output
 
 2. Analyze each error For every word flagged by cspell, determine if it is:
@@ -50,5 +50,8 @@ Run project-wide spellcheck, then fix all reported errors.
 
 ## Notes
 
-- Files checked: `*.{js,md,mdx,mdc}`
+- Files checked by the script: `src/**/*.{js,md,mdx,mdc}`, `docs/**/*.{md,mdx,mdc}`, and `README.md`. Files outside
+  those paths (`CLAUDE.md`, `.claude/**`, `.cursor/**`, `plugins/**`, config files) are not covered by
+  `pnpm run spellcheck` – lint-staged spellchecks them when they are staged for a commit. To check one of them by hand,
+  run `pnpm exec cspell <path>`.
 - Compound words are allowed (`allowCompoundWords: true`)

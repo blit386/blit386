@@ -29,41 +29,62 @@ blit386-demos/
     001-basics.js
     002-primitives.js
     ...                        # numbered demos under src/*.js (plugin discovers all)
-    shared/                    # Cross-demo helpers (post-process backend checks)
-      post-process-backend.js
+    shared/                    # Shared UI kit + cross-demo helpers (38 of 39 demos import it)
+      ui.js                    # The one entry point demos import: applyTheme() + the ui object
+      ui-core.js               # Immediate-mode context: anchors, layout, pooled draws, hit testing
+      ui-widgets.js            # panel, label, kv, checkbox, pip, button, slider, meter, separator, spacer
+      ui-theme.js              # applyTheme(palette) – installs the 12 shared UI colors (slots 240-251)
+      ui-dpad.js               # Virtual touch D-pad (ui.dpadWidget, ui.dpad.isDown / isPressed)
+      ui-gestures.js           # Swipe recognition (ui.swipe) and tap zones (ui.tapIn)
+      post-process-backend.js  # isAvailable() + SOFTWARE_FALLBACK_NOTE (WebGPU-only effect demos)
   public/                      # Static assets copied to dist/ verbatim
-    fonts/                     # Bitmap fonts (.btfont + .png)
+    fonts/                     # Bitmap fonts (.btfont + .png) and DepartureMono/ (otf/woff/woff2 + LICENSE,
+                               #   the web font used by the demo navigation banner)
     sprites/                   # Sprite sheets used by demos
+    audio/                     # blip.wav, pop.wav, music-calm.wav, music-upbeat.wav,
+                               #   music-intro-loop.wav + music-intro-loop.loop.json (loop points)
     _headers                   # Cloudflare Pages headers
     _redirects                 # Cloudflare Pages redirects
-  _partials/                   # Shared HTML template (plain HTML with {{title}} and {{scriptFile}} placeholders)
-    layout.html
+  _partials/                   # Shared HTML template (plain HTML with {{title}}, {{scriptFile}},
+    layout.html                #   and {{demoList}} placeholders)
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
     virtual-demos.js
     demo-registry.js
+  scripts/                     # Repo maintenance scripts (run via package scripts)
+    check-markdown-links.mjs   # pnpm run docs:links – walks every .md/.mdx in the repo
+    generate-audio-loops.mjs   # pnpm run generate:audio-loops – writes the *.loop.json loop points
   docs/                        # Project documentation
 ```
 
 The `/demos/NNN-name.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
 disk.
 
+Numbering has two gaps: `021` is retired (it was `021-error-preview`), and `039` / `040` were never used. New demos take
+the next free number after the highest one in use – never a retired or skipped one.
+
 ## Development Commands
 
 ```bash
-pnpm run dev              # Start dev server (http://localhost:5173/demos/)
-pnpm run dev:watch        # Dev server + watch BLIT386 library for changes
-pnpm run build            # Build for production (output: dist/)
-pnpm run preview          # Preview production build
-pnpm run lint             # Lint (ESLint)
-pnpm run lint:fix         # Auto-fix lint issues
-pnpm run format           # Format (Biome + Prettier)
-pnpm run format:check     # Check formatting
-pnpm run spellcheck       # Check spelling
-pnpm run knip             # Find unused exports
-pnpm run docs:links       # Check Markdown links (README, docs/, skills)
-pnpm run preflight        # ALL quality checks before committing
-pnpm run clean            # Clean build artifacts
-pnpm run security:audit   # Run security audit on dependencies
+pnpm run dev                    # Start dev server (opens /demos/001-basics.html; index at /demos/)
+pnpm run dev:watch              # Dev server + watch BLIT386 library for changes
+pnpm run build                  # Build for production (output: dist/)
+pnpm run preview                # Preview production build
+pnpm run lint                   # Lint (ESLint)
+pnpm run lint:fix               # Auto-fix lint issues
+pnpm run format                 # Format (Biome + Prettier)
+pnpm run format:check           # Check formatting
+pnpm run format:biome           # Format JS/JSON/CSS only (Biome)
+pnpm run format:prettier        # Format Markdown/YAML only (Prettier)
+pnpm run spellcheck             # Check spelling (src/**, docs/**, README.md)
+pnpm run knip                   # Find unused exports
+pnpm run knip:fix               # Auto-remove what knip flags (review the diff)
+pnpm run docs:links             # Check Markdown links (every .md/.mdx in the repo)
+pnpm run generate:audio-loops   # Regenerate public/audio/*.loop.json loop points
+pnpm run preflight              # ALL quality checks before committing
+pnpm run clean                  # Clean build artifacts
+pnpm run security:audit         # Run security audit on dependencies
+pnpm run security:audit:fix     # Apply the audit's suggested fixes
+pnpm run security:mcp-preflight # MCP security preflight (script lives in the blit386 repo)
 ```
 
 RTK: Use `pnpm run …` for scripts. Cursor `.cursor/hooks.json` runs `rtk hook cursor` on Shell; Claude Code uses
@@ -130,10 +151,10 @@ Demos use kebab-case slugs: `NNN-topic` with three digits, e.g. `023-particles`.
 The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` for this pattern. Adding a demo is a
 single step:
 
-1. Create `src/NNN-your-topic.js` (or `00a-…`) with the next free number. Retired numbers stay unused (e.g. `021`). The
-   page title defaults to `BLIT386 Demo NNN – Your Topic` (topic title-cased from the slug). To override, add a
-   `// @pageTitle Custom Title` comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or
-   `src/024-crt-toggle.js` for examples).
+1. Create `src/NNN-your-topic.js` (or `00a-…`) with the next free number. Retired and skipped numbers stay unused (`021`
+   retired; `039` and `040` never used), so pick the next number above the highest one in use. The page title defaults
+   to `BLIT386 Demo NNN – Your Topic` (topic title-cased from the slug). To override, add a `// @pageTitle Custom Title`
+   comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or `src/024-crt-toggle.js` for examples).
 
 No `vite.config.js` edit. No context file to update. No HTML file to create.
 
@@ -240,6 +261,64 @@ Read keyboard edges (`BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, an
 tick, which always runs before that frame's `render()` – reading them from `render()` intermittently drops presses under
 rapid input (the tick already consumed and cleared the edge before render saw it). `BT.isKeyDown` / `BT.isDown` (held
 state, not edges) have no such restriction and are safe from either lifecycle method.
+
+### Audio API
+
+Audio works on both backends (WebGPU and Canvas 2D software) – it is Web Audio only and never touches the GPU.
+Post-process effects remain the only WebGPU-only feature.
+
+```js
+import { AudioClip, BT } from 'blit386';
+
+// init(): load or synthesize clips. Both work before audio is unlocked – decoding needs no unlocked context.
+const blip = await AudioClip.load('/audio/blip.wav'); // pass an array for an ordered fallback list
+const [pop, music] = await AudioClip.loadAll(['/audio/pop.wav', '/audio/music-calm.wav']);
+const jump = await AudioClip.synth(BT.synthPreset.jump()); // synth() is never cached
+
+// One-shot sound effects. soundPlay() returns a SoundRef handle.
+const ref = BT.soundPlay(blip, { volume: 0.8, pitch: 1.2, pan: -0.3, loop: false, priority: 0, fadeInMs: 0 });
+BT.isSoundPlaying(ref); // still audible?
+BT.soundStop(ref, { fadeOutMs: 120 });
+BT.soundVolumeSet(ref, 0.5, { fadeMs: 100 }); // also soundPitchSet / soundPanSet (+ matching *Get)
+
+// Music: one track at a time, crossfaded by the engine.
+BT.musicPlay(music, { fadeMs: 800, loop: true, loopStart: 2.5, loopEnd: 30.0, overlap: 1 });
+BT.isMusicPlaying;
+BT.musicVolumeSet(0.6, { fadeMs: 400 });
+BT.musicStop({ fadeMs: 600 });
+
+// Buses: 'main' | 'music' | 'sfx' (sfx and music feed main; main feeds the speakers).
+BT.audioVolumeSet('music', 0.25, { fadeMs: 300, easing: 'ease-out' }); // duck the music bus
+BT.audioVolumeGet('sfx');
+BT.audioMuteSet('sfx', true); // mute preserves the stored volume
+BT.isAudioMuted('sfx');
+```
+
+`BT.synthPreset` has exactly six keys: `jump`, `pickup`, `explosion`, `laser`, `hit`, `blip`. Each is
+`(seed?) => SynthParams` – a plain, JSON-round-trippable recipe object (`waveform`, `frequency`, `duration`, `seed`,
+plus optional `volume`, `envelope`, `pitchSweep`, `vibrato`, `noiseMix`, `dutyCycle`). Waveforms: `sine`, `square`,
+`triangle`, `sawtooth`, `noise`. There is no `BT.audioUnlock()` and no `BT.soundLoad()`.
+
+The user-gesture unlock rule (get this right in every audio demo): browsers refuse to play any sound until the user
+interacts with the page. `BT.init()` installs one-shot `pointerdown` / `keydown` / `touchstart` listeners on the canvas;
+the first gesture unlocks the audio context for the session and `BT.isAudioUnlocked` flips to `true`. The asymmetry that
+matters:
+
+- `BT.soundPlay()` before unlock is dropped – it returns an inert `SoundRef` and no voice is allocated.
+- `BT.musicPlay()` before unlock is remembered and starts automatically the instant the context unlocks.
+- `AudioClip.load()` / `AudioClip.synth()` work fine while still locked.
+
+So every audio demo shows a "click or press a key to enable sound" prompt gated on `BT.isAudioUnlocked`, and never
+assumes an SFX triggered on the first frame was heard.
+
+Audio settings in `configure()`: `audioVoices` (default `16`, range 1–64 – sizes the SFX voice pool) and
+`isOverlayAudioMetersEnabled` (default `false` – adds live per-bus level meters and a voice-count readout to the
+overlay; metering costs nothing while it is off). Style them with `overlayAudioMeterHeight` (default `13` px) and
+`overlayAudioMeterStyle`.
+
+Audio demos: `036-audio-basics` (loading and playing SFX), `037-music` (crossfades and loop points), `038-audio-buses`
+(mixer buses, mute, ducking), `041-synth-toy` (`AudioClip.synth()` and `BT.synthPreset`). Demos `014`, `027`, and `029`
+use audio as part of a larger scene.
 
 Configure example (overlay flags use grammatical `is*`):
 
