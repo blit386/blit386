@@ -1,9 +1,9 @@
 # Security headers (Cloudflare Pages)
 
 Deployed demos are static assets on [demos.blit386.dev](https://demos.blit386.dev/): HTML, JS, sprite PNGs, `.btfont`
-bitmap fonts, the Departure Mono web font (used by the navigation banner), Pragmata Pro for the demo source panel
-(served from [fonts.vancura.dev](https://fonts.vancura.dev/)), and `.wav` audio clips. HTTP response headers are defined
-in [`public/_headers`](../public/_headers) and copied into `dist/` at build time.
+bitmap fonts, the Departure Mono web font (used by the navigation banner), Pragmata Pro for the demo source panel, and
+`.wav` audio clips. HTTP response headers are defined in [`public/_headers`](../public/_headers) and copied into `dist/`
+at build time.
 
 ## Baseline
 
