@@ -94,6 +94,12 @@ describe('defaultConfig', () => {
         expect(settings.isOverlayToggleEnabled).toBe(true);
     });
 
+    it('should hide overlay toggle hit debug outline by default', () => {
+        const settings = defaultConfig();
+
+        expect(settings.isOverlayToggleHitDebugVisible).toBe(false);
+    });
+
     it('should disable overlay timing chart by default', () => {
         const settings = defaultConfig();
 
@@ -263,6 +269,21 @@ describe('mergeHardwareSettings', () => {
         });
 
         expect(needsOverlayRendererDiagnostics(settings)).toBe(true);
+    });
+
+    it('merges isOverlayToggleHitDebugVisible from configure()', () => {
+        const settings = mergeHardwareSettings({ isOverlayToggleHitDebugVisible: true });
+
+        expect(settings.isOverlayToggleHitDebugVisible).toBe(true);
+    });
+
+    it('applies isOverlayToggleHitDebugVisible alongside an explicit displaySize', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+            isOverlayToggleHitDebugVisible: true,
+        });
+
+        expect(settings.isOverlayToggleHitDebugVisible).toBe(true);
     });
 
     it('merges isOverlayAudioMetersEnabled flags and style from configure()', () => {

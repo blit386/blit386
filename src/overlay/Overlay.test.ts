@@ -57,6 +57,7 @@ interface OverlayTestOptions {
     isOverlayVisibleAtStart?: boolean;
     isOverlayToggleHintVisible?: boolean;
     isOverlayToggleEnabled?: boolean;
+    isOverlayToggleHitDebugVisible?: boolean;
     backend?: 'webgpu' | 'software';
     isOverlayAudioMetersEnabled?: boolean;
     audioMeterStyle?: OverlayAudioMeterStyle;
@@ -86,6 +87,7 @@ function createOverlay(
         options.isOverlayVisibleAtStart ?? false,
         options.isOverlayToggleHintVisible ?? true,
         options.isOverlayToggleEnabled ?? true,
+        options.isOverlayToggleHitDebugVisible ?? false,
         options.isOverlayAudioMetersEnabled ?? false,
         options.audioMeterStyle,
         options.audioMeterHeight,
@@ -381,6 +383,29 @@ describe('Overlay', () => {
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
         expect(renderer.drawLabel).not.toHaveBeenCalled();
         expect(renderer.drawBarFillOnTop).not.toHaveBeenCalled();
+    });
+
+    it('draws the toggle hit debug outline when enabled even if the hint is hidden', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', {
+            isOverlayToggleHintVisible: false,
+            isOverlayToggleHitDebugVisible: true,
+        });
+        const renderer = createMockRenderer();
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0);
+
+        expect(renderer.drawBarFill).not.toHaveBeenCalled();
+        expect(renderer.drawLabel).not.toHaveBeenCalled();
+        expect(renderer.drawBarFillOnTop.rectSnapshots).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ x: 0, y: 192, width: 48, height: 1 }),
+                expect.objectContaining({ x: 0, y: 239, width: 48, height: 1 }),
+                expect.objectContaining({ x: 0, y: 193, width: 1, height: 46 }),
+                expect.objectContaining({ x: 47, y: 193, width: 1, height: 46 }),
+            ]),
+        );
+        expect(renderer.drawBarFillOnTop).toHaveBeenCalledTimes(4);
     });
 
     it('draws hint-only path while body is hidden and toggle hint is visible', () => {

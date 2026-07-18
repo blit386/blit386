@@ -49,7 +49,8 @@ Toggle the body at runtime:
 - Primary pointer press in the bottom-left 48×48 px corner
 
 Set `isOverlayVisibleAtStart: true` to show the body on the first frame. Set `isOverlayEnabled: false` to disable the
-subsystem entirely (for example release builds or full-screen custom HUD demos).
+subsystem entirely (for example release builds or full-screen custom HUD demos). Set
+`isOverlayToggleHitDebugVisible: true` to outline the 48×48 toggle hit region while you tune it.
 
 ## Custom rows
 
