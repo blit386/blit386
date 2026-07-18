@@ -425,13 +425,7 @@ export class Overlay {
         }
 
         for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
-            if (!pointer.isActive(slot)) {
-                continue;
-            }
-
-            const pos = pointer.getPos(slot);
-
-            if (paletteBand.isContainingXY(pos.x, pos.y)) {
+            if (pointer.isSlotInRect(slot, paletteBand)) {
                 return true;
             }
         }

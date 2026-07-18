@@ -1414,7 +1414,7 @@ export const BT = {
      * scrolls normally.
      *
      * @since 1.0.4
-     * @changed 1.3.1 Requires `HardwareSettings.isCapturingPointerScroll` (or overlay palette-band force) before wheel events accumulate; default no longer steals page scroll.
+     * @changed 1.3.1 Requires `HardwareSettings.isCapturingPointerScroll` (or overlay force); opt-in now, not default.
      * @returns Vertical scroll delta in pixels for the current frame, or `0` when not initialized.
      */
     get pointerScrollDelta(): number {

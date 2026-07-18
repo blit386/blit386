@@ -15,6 +15,7 @@
  * the rendering API where everything works in display coordinates.
  */
 
+import type { Rect2i } from '../utils/Rect2i';
 import type { Vector2i } from '../utils/Vector2i';
 import { Vector2i as Vector2iImpl } from '../utils/Vector2i';
 
@@ -324,6 +325,20 @@ export class PointerInput {
      */
     public isActive(slot: number): boolean {
         return this.getSlotOrNull(slot)?.isActive ?? false;
+    }
+
+    /**
+     * Reports whether the pointer in slot `slot` is positioned inside `rect`, without
+     * allocating a `Vector2i` (unlike `getPos(slot)` followed by a containment check).
+     *
+     * @param slot - Pointer slot index.
+     * @param rect - Rectangle to test against, in display coordinates.
+     * @returns `true` when the slot is active and its position is inside `rect`.
+     */
+    public isSlotInRect(slot: number, rect: Rect2i): boolean {
+        const s = this.getSlotOrNull(slot);
+
+        return s?.isActive === true && rect.isContainingXY(s.pos.x, s.pos.y);
     }
 
     /**
