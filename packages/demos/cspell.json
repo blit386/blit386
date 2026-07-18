@@ -54,7 +54,9 @@
     "Vitest",
     "vroll",
     "WebGPU",
-    "Zhang"
+    "Zhang",
+    "sfmono",
+    "shiki"
   ],
   "flagWords": ["cant", "dont", "hte", "teh", "wont"],
   "ignorePaths": [
