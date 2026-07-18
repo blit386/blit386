@@ -19,9 +19,9 @@ describe('createOverlayLayout', () => {
         expect(layout.displayHeight).toBe(240);
         expect(layout.topTextY).toBe(OVERLAY_TOP_TEXT_Y);
         expect(layout.toggleRect.x).toBe(0);
-        expect(layout.toggleRect.y).toBe(240 - 13);
-        expect(layout.toggleRect.width).toBe(17);
-        expect(layout.toggleRect.height).toBe(13);
+        expect(layout.toggleRect.y).toBe(240 - OVERLAY_TOGGLE_CORNER_HEIGHT);
+        expect(layout.toggleRect.width).toBe(OVERLAY_TOGGLE_CORNER_WIDTH);
+        expect(layout.toggleRect.height).toBe(OVERLAY_TOGGLE_CORNER_HEIGHT);
     });
 
     it('excludes the exact right and bottom edges of the toggle rect', () => {

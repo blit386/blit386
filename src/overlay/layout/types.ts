@@ -16,7 +16,7 @@ export interface OverlayLayout {
     /** Y baseline for top-bar text. */
     readonly topTextY: number;
 
-    /** Bottom-left 17x13 px region that toggles overlay body visibility on primary press. */
+    /** Bottom-left 17×13 px region that toggles overlay body visibility on primary press. */
     readonly toggleRect: Rect2i;
 }
 
