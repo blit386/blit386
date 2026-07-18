@@ -12,17 +12,16 @@ h1 {
 ul {
     list-style: none;
     padding: 0;
-}
 
-li {
-    padding: 0.25rem 0;
+    & li {
+        padding: 0.25rem 0;
+    }
 }
 
 a {
     color: #0366d6;
     text-decoration: none;
 
-    /* Nested via postcss-nesting – emitted as a:hover in the bundle. */
     &:hover {
         text-decoration: underline;
     }
