@@ -15,7 +15,7 @@
       "**/*.json",
       "**/*.jsonc",
       "**/*.css",
-      "!public/css/twoslash-rich.css"
+      "!styles/twoslash-rich.css"
     ]
   },
   "formatter": {

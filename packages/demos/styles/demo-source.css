@@ -1,0 +1,144 @@
+/**
+ * Demo source panel: dual-theme Shiki tokens, Pragmata mono, Twoslash hover
+ * tweaks. Pair with styles/twoslash-rich.css (vendored from @shikijs/twoslash).
+ */
+
+@font-face {
+    font-family: 'essential_pragmatapro';
+    src: url('https://fonts.vancura.dev/PragmataPro-R.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+#demo-source {
+    --font-mono:
+        'essential_pragmatapro', ui-monospace, sfmono-regular, menlo, monaco, consolas, monospace;
+    --twoslash-popup-bg: black;
+    --twoslash-popup-color: #e6edf3;
+    --twoslash-border-color: #ddd;
+    --twoslash-docs-color: #8b949e;
+    --twoslash-code-font: var(--font-mono);
+    --twoslash-docs-font: system-ui, sans-serif;
+
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 23px 0 0;
+
+    & .demo-source-code {
+        background: #000;
+        overflow: hidden;
+        padding-bottom: 500px;
+    }
+
+    & .shiki {
+        margin: 0;
+        padding: 0 16px;
+        font-family: var(--font-mono);
+        font-size: 15px;
+        line-height: 1.65;
+        tab-size: 4;
+        background-color: #000;
+
+        /*
+         * Shiki emits a plain <pre>, which defaults to white-space: pre (no
+         * wrap). On narrow layouts long comment lines then run off the edge
+         * with no scrollbar to reveal the rest (.demo-source-code and body
+         * both clip overflow-x). pre-wrap keeps indentation but lets lines
+         * break instead of getting cut off.
+         */
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+
+        @media (max-width: 959px) {
+            font-size: 13px;
+        }
+    }
+
+    & .shiki code {
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+    }
+
+    /*
+     * Prefer dark tokens on the black panel; keep token span backgrounds clear.
+     * Do not target .twoslash-popup-container / .twoslash-hover – those are also
+     * spans inside .shiki and must keep their own background.
+     */
+    & .shiki,
+    & .shiki span {
+        color: var(--shiki-dark, inherit);
+    }
+
+    & .shiki .line > span:not(.twoslash-hover) {
+        background-color: transparent;
+    }
+
+    /* Popover polish – closer to blit386.dev's fd-twoslash-popover spacing */
+    & .shiki .twoslash-popup-container {
+        top: 100%;
+
+        /* Clear the hovered token; default translateY(1.1em) sits on the callsite */
+        transform: translateY(6px);
+
+        /*
+         * Absolute inside the hovered token span: width:auto shrink-to-fits that
+         * narrow containing block (too skinny). Fixed width makes short hovers
+         * (e.g. "color: string") absurdly wide. Use max-content + a rem/vw cap.
+         */
+        width: max-content;
+        max-width: min(28rem, calc(100vw - 2rem));
+        min-width: 0;
+        padding: 0;
+        border-radius: 0;
+        background-color: black;
+
+        /*
+         * .shiki now wraps too (pre-wrap), but popup text should never break
+         * mid-line like code does – force normal flow so long type signatures
+         * wrap at word boundaries and stay inside the popover box.
+         */
+        white-space: normal;
+        overflow-x: hidden;
+        overflow-wrap: anywhere;
+    }
+
+    & .shiki .twoslash-popup-arrow {
+        background-color: black;
+    }
+
+    & .twoslash .twoslash-popup-code,
+    & .twoslash .twoslash-popup-docs,
+    & .twoslash .twoslash-popup-docs-tags,
+    & .twoslash .twoslash-popup-error {
+        /* Outrank vendored .twoslash .twoslash-popup-* padding */
+        padding: 10px 12px;
+
+        /* Flex item default min-width:auto grows past the box; allow shrink */
+        min-width: 0;
+    }
+
+    /*
+     * Hover signatures are flat <span>s inside code.twoslash-popup-code (no .line /
+     * .shiki wrapper). Force wrap so they cannot spill past the popover border.
+     */
+    & .twoslash-popup-code,
+    & .twoslash-popup-code * {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    & .twoslash-popup-code .shiki,
+    & .twoslash-popup-code .shiki span {
+        background-color: transparent;
+    }
+
+    & .twoslash-popup-docs,
+    & .twoslash-popup-docs-tags {
+        margin-top: 0;
+        border-top: none;
+    }
+}

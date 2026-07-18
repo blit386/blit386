@@ -191,9 +191,15 @@ export function virtualDemos() {
                 }
 
                 if (url === '/demos/' || url === '/demos') {
-                    const html = renderIndexPage(registry);
-                    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                    res.end(html);
+                    try {
+                        // Same Vite HTML/CSS pipeline as demo pages (PostCSS, hashed assets).
+                        let html = renderIndexPage(registry);
+                        html = await server.transformIndexHtml('/demos/', html);
+                        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                        res.end(html);
+                    } catch (error) {
+                        next(error);
+                    }
                     return;
                 }
 
@@ -241,14 +247,7 @@ function renderIndexPage(registry) {
     <head>
         <meta charset="UTF-8" />
         <title>BLIT386 Demos</title>
-        <style>
-            body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
-            h1 { margin-bottom: 0.5rem; }
-            ul { list-style: none; padding: 0; }
-            li { padding: 0.25rem 0; }
-            a { color: #0366d6; text-decoration: none; }
-            a:hover { text-decoration: underline; }
-        </style>
+        <link rel="stylesheet" href="../styles/demos-index.css" />
     </head>
     <body>
         <h1>BLIT386 Demos</h1>

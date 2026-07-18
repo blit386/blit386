@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/**/*.js", "plugins/*.js"],
+  "entry": ["src/**/*.js", "plugins/*.js", "postcss.config.js"],
   "project": ["src/**/*.js", "plugins/*.js"],
   "ignore": [],
   "ignoreExportsUsedInFile": true,
