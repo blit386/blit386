@@ -399,10 +399,10 @@ describe('Overlay', () => {
         expect(renderer.drawLabel).not.toHaveBeenCalled();
         expect(renderer.drawBarFillOnTop.rectSnapshots).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ x: 0, y: 192, width: 48, height: 1 }),
-                expect.objectContaining({ x: 0, y: 239, width: 48, height: 1 }),
-                expect.objectContaining({ x: 0, y: 193, width: 1, height: 46 }),
-                expect.objectContaining({ x: 47, y: 193, width: 1, height: 46 }),
+                expect.objectContaining({ x: 0, y: 227, width: 17, height: 1 }),
+                expect.objectContaining({ x: 0, y: 239, width: 17, height: 1 }),
+                expect.objectContaining({ x: 0, y: 228, width: 1, height: 11 }),
+                expect.objectContaining({ x: 16, y: 228, width: 1, height: 11 }),
             ]),
         );
         expect(renderer.drawBarFillOnTop).toHaveBeenCalledTimes(4);

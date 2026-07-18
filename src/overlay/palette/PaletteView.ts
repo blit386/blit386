@@ -481,7 +481,7 @@ function drawSwatchGrid(
         const x = swatchScratch.x;
         const y = swatchScratch.y;
 
-        // Reserve only the toggle hint icon band; do not clip against the 48x48 toggle hit rect
+        // Reserve only the toggle hint icon band; do not clip against the 17x13 toggle hit rect
         // (it overlaps many grid rows and would truncate every row below it).
         if (doesSwatchIntersectExclusion(x, y, swatchSize, hintExclusion)) {
             continue;

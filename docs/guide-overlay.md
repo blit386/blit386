@@ -46,11 +46,11 @@ visible and `isOverlayPaletteEnabled` is true).
 Toggle the body at runtime:
 
 - Backquote (`~`) when `isOverlayToggleEnabled` is true
-- Primary pointer press in the bottom-left 48×48 px corner
+- Primary pointer press in the bottom-left 17×13 px corner
 
 Set `isOverlayVisibleAtStart: true` to show the body on the first frame. Set `isOverlayEnabled: false` to disable the
 subsystem entirely (for example release builds or full-screen custom HUD demos). Set
-`isOverlayToggleHitDebugVisible: true` to outline the 48×48 toggle hit region while you tune it.
+`isOverlayToggleHitDebugVisible: true` to outline the 17×13 toggle hit region while you tune it.
 
 ## Custom rows
 

@@ -36,6 +36,7 @@ export type AudioBus = 'main' | 'music' | 'sfx';
  *
  * @since 0.1.0
  * @changed 1.3.1 Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}.
+ * @changed 1.3.1 Shrink bottom-left overlay toggle hit region from 48x48 to 17x13.
  */
 export interface HardwareSettings {
     /**
@@ -144,7 +145,7 @@ export interface HardwareSettings {
      * each demo `render()` call (FPS, target rate, resolution, backend, demo title).
      * The overlay body starts hidden unless {@link isOverlayVisibleAtStart} is
      * `true`. Users can show or hide the body with Backquote or a primary press in
-     * the bottom-left 48x48 px corner when {@link isOverlayToggleEnabled} is
+     * the bottom-left 17x13 px corner when {@link isOverlayToggleEnabled} is
      * `true`. Set to `false` to disable the overlay subsystem and all toggle input
      * (for release builds that must not expose debug HUD).
      */
@@ -193,7 +194,7 @@ export interface HardwareSettings {
 
     /**
      * When `true`, the engine draws a 1 px outline of the bottom-left overlay toggle hit
-     * region (`48×48` logical pixels). Defaults to `false` in {@link defaultConfig}; set to
+     * region (`17×13` logical pixels). Defaults to `false` in {@link defaultConfig}; set to
      * `true` while tuning the hit zone. The outline uses the overlay text palette index and
      * draws whether the overlay body is shown or hidden.
      *

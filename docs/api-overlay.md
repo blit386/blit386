@@ -200,7 +200,7 @@ class Demo {
 
 ## Toggling visibility
 
-Toggle the overlay body at runtime with backquote/tilde (`~`) or a primary pointer press in the bottom-left `48×48px`
+Toggle the overlay body at runtime with backquote/tilde (`~`) or a primary pointer press in the bottom-left `17×13px`
 corner, as long as `isOverlayToggleEnabled` is `true` (default). These flags shape that behavior:
 
 - `isOverlayToggleHintVisible: false` – hide the hint icon while the body stays hidden.

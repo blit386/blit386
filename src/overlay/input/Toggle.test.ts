@@ -7,7 +7,7 @@ describe('Toggle.handleInput', () => {
     it('toggles from a precomputed toggle-press edge', () => {
         const toggle = new Toggle(false, true);
 
-        toggle.handleInput(null, true, new Rect2i(0, 0, 48, 48), false);
+        toggle.handleInput(null, true, new Rect2i(0, 0, 17, 13), false);
 
         expect(toggle.isBodyVisible).toBe(true);
     });
@@ -19,7 +19,7 @@ describe('Toggle.handleInput', () => {
             getPos: () => ({ x: 8, y: 8 }),
         };
 
-        toggle.handleInput(pointer as never, false, new Rect2i(0, 0, 48, 48), true);
+        toggle.handleInput(pointer as never, false, new Rect2i(0, 0, 17, 13), true);
 
         expect(toggle.isBodyVisible).toBe(false);
     });
@@ -33,7 +33,7 @@ describe('Toggle.handleToggle (deprecated)', () => {
                 key === 'Backquote' && tick === 5,
         };
 
-        toggle.handleToggle(null, keyboard as never, 5, new Rect2i(0, 0, 48, 48), false);
+        toggle.handleToggle(null, keyboard as never, 5, new Rect2i(0, 0, 17, 13), false);
 
         expect(toggle.isBodyVisible).toBe(true);
     });
