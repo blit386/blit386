@@ -130,9 +130,9 @@ html[data-embed='true'] {
     padding: 8px 12px;
     overflow: hidden;
     background: oklch(97% 0 0);
-    color: oklch(20.5% 0 0);
+    color: #2d2e31;
     font-family: 'DepartureMono', monospace;
-    font-size: 22px;
+    font-size: 11px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
@@ -160,6 +160,48 @@ html[data-embed='true'] {
         display: none;
     }
 
+    & .demo-banner-nav {
+        grid-column: 2;
+        justify-self: center;
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 2px;
+    }
+
+    & button {
+        background: #2d2e31;
+        color: white;
+        border: none;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 11px;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    & button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        background: transparent;
+        color: #2d2e31;
+    }
+
+    & select {
+        background: transparent;
+        color: inherit;
+        border: 2px solid currentColor;
+        border-radius: 0;
+        padding: 6px 10px;
+        font: inherit;
+        width: 30vw;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
     /* After the default logo display rules so dark mode can override them. */
     @media (prefers-color-scheme: dark) {
         background: #222;
@@ -172,44 +214,14 @@ html[data-embed='true'] {
         & .demo-banner-logo-dark {
             display: block;
         }
-    }
 
-    & .demo-banner-nav {
-        grid-column: 2;
-        justify-self: center;
-        display: flex;
-        align-items: center;
-        min-width: 0;
-    }
+        & button {
+            background: oklch(97% 0 0);
+            color: black;
+        }
 
-    & button {
-        background: transparent;
-        color: inherit;
-        border: none;
-        width: 37px;
-        height: 37px;
-        cursor: pointer;
-        font: inherit;
-        font-size: 22px;
-        line-height: 1;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-
-    & button:disabled {
-        opacity: 0.35;
-        cursor: not-allowed;
-    }
-
-    & select {
-        background: transparent;
-        color: inherit;
-        border: 2px solid currentColor;
-        border-radius: 0;
-        padding: 1px 10px 2px;
-        font: inherit;
-        max-width: 50vw;
-        -webkit-user-select: none;
-        user-select: none;
+        & button:disabled {
+            color: oklch(97% 0 0);
+        }
     }
 }
