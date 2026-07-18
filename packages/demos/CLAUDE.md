@@ -38,6 +38,7 @@ blit386-demos/
       ui-gestures.js           # Swipe recognition (ui.swipe) and tap zones (ui.tapIn)
       post-process-backend.js  # isAvailable() + SOFTWARE_FALLBACK_NOTE (WebGPU-only effect demos)
   public/                      # Static assets copied to dist/ verbatim
+    css/                       # Demo source panel styles (demo-source.css + vendored twoslash-rich.css)
     fonts/                     # Bitmap fonts (.btfont + .png) and DepartureMono/ (otf/woff/woff2 + LICENSE,
                                #   the web font used by the demo navigation banner)
     sprites/                   # Sprite sheets used by demos
@@ -46,9 +47,10 @@ blit386-demos/
     _headers                   # Cloudflare Pages headers
     _redirects                 # Cloudflare Pages redirects
   _partials/                   # Shared HTML template (plain HTML with {{title}}, {{scriptFile}},
-    layout.html                #   and {{demoList}} placeholders)
+    layout.html                #   {{slug}}, {{demoList}}, and {{sourceHtml}} placeholders)
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
-    virtual-demos.js
+    virtual-demos.js           # Virtual HTML pages + injects Twoslash-highlighted source
+    highlight-demo-source.js   # Shiki + @shikijs/twoslash highlighter (mtime cache)
     demo-registry.js
   scripts/                     # Repo maintenance scripts (run via package scripts)
     check-markdown-links.mjs   # pnpm run docs:links – walks every .md/.mdx in the repo
@@ -57,7 +59,9 @@ blit386-demos/
 ```
 
 The `/demos/NNN-name.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
-disk.
+disk. Each demo page top-aligns the canvas (40px pad), then shows a Shiki + Twoslash highlighted copy of that demo's
+`src/<slug>.js` below it (Pragmata Pro, github-light / github-dark, CSS type-hover popovers). `?embed` hides the source
+panel and restores a centered full-viewport canvas for docs iframes.
 
 Numbering has two gaps: `021` is retired (it was `021-error-preview`), and `039` / `040` were never used. New demos take
 the next free number after the highest one in use – never a retired or skipped one.

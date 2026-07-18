@@ -18,6 +18,13 @@
         :root {
             --color-accent: #5da0f2;
             --banner-height: 80px;
+            --canvas-top-pad: 23px;
+
+            /*
+             * Viewport height available for the canvas: below the banner and the
+             * top pad, so the first screen still fits the demo without scrolling.
+             */
+            --canvas-view-h: calc(100dvh - var(--banner-height) - var(--canvas-top-pad));
         }
 
         *,
@@ -29,19 +36,40 @@
         html,
         body {
             margin: 0;
-            height: 100%;
-            overflow: hidden;
+            min-height: 100%;
+            overflow-x: hidden;
         }
 
         body {
             background: black;
         }
 
-        #canvas-container {
-            width: 100dvw;
-            height: calc(100dvh - var(--banner-height));
-            display: flex;
+        /*
+         * Embed mode (iframe on blit386.dev): lock to the viewport and hide the
+         * source panel so the embed stays a pure canvas view.
+         */
+        html[data-embed='true'],
+        html[data-embed='true'] body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        html[data-embed='true'] #demo-source {
+            display: none;
+        }
+
+        html[data-embed='true'] #canvas-container {
+            --canvas-view-h: calc(100dvh - var(--banner-height));
+            height: var(--canvas-view-h);
+            padding-top: 0;
             align-items: center;
+        }
+
+        #canvas-container {
+            width: 100%;
+            padding-top: var(--canvas-top-pad);
+            display: flex;
+            align-items: flex-start;
             justify-content: center;
         }
 
@@ -53,19 +81,20 @@
             max-height: var(--canvas-max-h, 720px);
 
             /*
-             * Largest size that fits the viewport (minus the banner) and demo max cap while keeping aspect ratio.
+             * Largest size that fits the first viewport (minus banner + top pad)
+             * and the demo max cap while keeping aspect ratio.
              * --canvas-aspect-w/h: aspect (from drawingBufferSize or displaySize).
              * --canvas-max-w/h: max on-screen size (from configure() maxCanvasSize).
              */
             width: min(
                 100dvw,
-                calc((100dvh - var(--banner-height)) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
+                calc(var(--canvas-view-h) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
                 var(--canvas-max-w, 960px),
                 calc(var(--canvas-max-h, 720px) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480))
             );
 
             height: min(
-                calc(100dvh - var(--banner-height)),
+                var(--canvas-view-h),
                 calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
                 var(--canvas-max-h, 720px),
                 calc(var(--canvas-max-w, 960px) * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640))
@@ -173,6 +202,9 @@
             max-width: 50vw;
         }
     </style>
+
+    <link rel="stylesheet" href="/css/twoslash-rich.css"/>
+    <link rel="stylesheet" href="/css/demo-source.css"/>
 </head>
 
 <body data-slug="{{slug}}">
@@ -195,12 +227,19 @@
         /**
          * Reserve (or collapse) the vertical space the banner occupies. Runs before
          * #canvas-container is parsed, so the canvas sizing calc() chain in <style> picks
-         * up the correct value on first layout.
+         * up the correct value on first layout. Also stamps data-embed so CSS can hide
+         * the source panel and restore a centered full-viewport canvas.
          * @param {boolean} embedded
          * @returns {void}
          */
         function setBannerHeight(embedded) {
             document.documentElement.style.setProperty('--banner-height', embedded ? '0px' : '80px');
+
+            if (embedded) {
+                document.documentElement.setAttribute('data-embed', 'true');
+            } else {
+                document.documentElement.removeAttribute('data-embed');
+            }
         }
 
         /**
@@ -406,6 +445,12 @@
 <div id="canvas-container">
     <canvas id="blit386-canvas"></canvas>
 </div>
+
+<section id="demo-source" aria-label="Demo source">
+    <div class="demo-source-code">
+        {{sourceHtml}}
+    </div>
+</section>
 
 <script async src="https://plausible.io/js/pa-Jy-1Ffqwh5Zpp2YOMEBr5.js"></script>
 <script>

@@ -13,7 +13,8 @@ There are 39 demo modules today (38 numbered demos plus `00a-barebones`), coveri
 effects, input (pointer, keyboard, gamepad), and audio. Each demo lives in a single file under `src/` (for example
 `src/001-basics.js`) and imports the shared UI kit in `src/shared/` for its on-screen panels and touch controls. During
 development, Vite serves the matching page at `/demos/001-basics.html` (no HTML file is committed; the build wires a
-shared layout to each script).
+shared layout to each script). Below the canvas, each page shows that demo's JavaScript source with syntax highlighting
+and Twoslash type-hover popovers. The entire source panel is hidden when the page is loaded with `?embed`.
 
 Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/). Live URLs use a flat path per slug,
 for example `https://demos.blit386.dev/001-basics`.

@@ -7,7 +7,16 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**/*.ts", "**/*.js", "**/*.mjs", "**/*.cjs", "**/*.json", "**/*.jsonc", "**/*.css"]
+    "includes": [
+      "**/*.ts",
+      "**/*.js",
+      "**/*.mjs",
+      "**/*.cjs",
+      "**/*.json",
+      "**/*.jsonc",
+      "**/*.css",
+      "!public/css/twoslash-rich.css"
+    ]
   },
   "formatter": {
     "enabled": true,
