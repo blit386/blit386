@@ -1,8 +1,9 @@
 # Security headers (Cloudflare Pages)
 
 Deployed demos are static assets on [demos.blit386.dev](https://demos.blit386.dev/): HTML, JS, sprite PNGs, `.btfont`
-bitmap fonts, the Departure Mono web font (used by the navigation banner), and `.wav` audio clips. HTTP response headers
-are defined in [`public/_headers`](../public/_headers) and copied into `dist/` at build time.
+bitmap fonts, the Departure Mono web font (used by the navigation banner), Pragmata Pro for the demo source panel
+(served from [fonts.vancura.dev](https://fonts.vancura.dev/)), and `.wav` audio clips. HTTP response headers are defined
+in [`public/_headers`](../public/_headers) and copied into `dist/` at build time.
 
 ## Baseline
 
@@ -23,7 +24,7 @@ are defined in [`public/_headers`](../public/_headers) and copied into `dist/` a
 | `script-src`                | `'self' 'unsafe-inline' https://plausible.io`                  | Vite emits same-origin ES module bundles; `'unsafe-inline'` covers the Plausible init snippet and the demo-navigation banner's inline script, both in [`_partials/layout.html`](../_partials/layout.html).  |
 | `style-src`                 | `'self' 'unsafe-inline'`                                       | Required: shared [`_partials/layout.html`](../_partials/layout.html) uses an inline `<style>` block.                                                                                                        |
 | `img-src`                   | `'self' data: blob:`                                           | Sprites/fonts from same origin; `blob:` for frame capture / download ([013-image-output](../src/013-image-output.js)).                                                                                      |
-| `font-src`                  | `'self'`                                                       | Bitmap fonts and the Departure Mono web font under `/fonts/`.                                                                                                                                               |
+| `font-src`                  | `'self' https://fonts.vancura.dev`                             | Same-origin bitmap fonts and Departure Mono under `/fonts/`; Pragmata Pro for the source panel is loaded from `fonts.vancura.dev` (see [`public/css/demo-source.css`](../public/css/demo-source.css)).      |
 | `connect-src`               | `'self' https://plausible.io`                                  | `fetch` for PNG, `.btfont`, and `.wav` audio assets (the engine decodes audio through Web Audio, so audio loads are governed here, not by `media-src`); WebGPU init stays same-origin; Plausible analytics. |
 | `media-src`                 | `'none'`                                                       | Correct today, but read the note below before adding audio or video markup.                                                                                                                                 |
 | `worker-src`                | `'self' blob:`                                                 | Reserved for worker/blob patterns used by capture and asset helpers.                                                                                                                                        |
@@ -87,7 +88,8 @@ curl -sI 'https://demos.blit386.dev/001-basics' | rg -i '^(content-security-poli
 
 Smoke-test in a browser:
 
-1. [001-basics](https://demos.blit386.dev/001-basics) – WebGPU + sprite load.
+1. [001-basics](https://demos.blit386.dev/001-basics) – WebGPU + sprite load; source panel uses Pragmata Pro from
+   `fonts.vancura.dev` (no CSP `font-src` violation in the console).
 2. [013-image-output](https://demos.blit386.dev/013-image-output) – Space triggers PNG download (`blob:`).
 3. [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) – WebGPU post-process chain.
 4. Embed check – demo iframe on [vancura.dev](https://vancura.dev) articles still loads (`frame-ancestors`).
