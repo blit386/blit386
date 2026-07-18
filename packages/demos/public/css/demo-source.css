@@ -29,14 +29,14 @@
 }
 
 #demo-source .demo-source-code {
-    overflow-x: auto;
     background: #000;
+    overflow: hidden;
+    padding-bottom: 500px;
 }
 
 #demo-source .shiki {
     margin: 0;
     padding: 0 16px;
-    overflow-x: auto;
     font-family: var(--font-mono);
     font-size: 15px;
     line-height: 1.65;
