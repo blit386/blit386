@@ -17,6 +17,7 @@ import type {
 } from '../core/IBTDemo';
 import type { KeyboardInput } from '../input/KeyboardInput';
 import type { PointerInput } from '../input/PointerInput';
+import { Rect2i } from '../utils/Rect2i';
 import { AudioMeter } from './audio-meter/AudioMeter';
 import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
 import type { AudioMeterDrawStyle } from './audio-meter/style';
@@ -34,7 +35,7 @@ import { Toggle } from './input/Toggle';
 import { padOverlayField } from './labels';
 import { buildOverlayLayoutPlan, createDefaultLayoutConfig, createOverlayLayoutPlanScratch } from './layout/layoutPlan';
 import type { OverlayLayout, OverlayLayoutConfig, OverlayLayoutPlan } from './layout/types';
-import type { OverlayRenderer } from './OverlayDrawTarget';
+import type { OverlayDrawTarget, OverlayRenderer } from './OverlayDrawTarget';
 import { toggleIcon } from './OverlayToggleIcon';
 import { PaletteInteraction } from './palette/PaletteInteraction';
 import { computeGrid, DEFAULT_PALETTE_GRID, PaletteView } from './palette/PaletteView';
@@ -129,6 +130,11 @@ export class Overlay {
 
     readonly #isToggleHintVisible: boolean;
 
+    readonly #isToggleHitDebugVisible: boolean;
+
+    /** Scratch edge rect for the toggle hit-zone debug outline (one overlay draw at a time). */
+    readonly #toggleHitDebugEdge = new Rect2i();
+
     readonly #bars: OverlayBars = new OverlayBars();
 
     readonly #timingChart: TimingChart;
@@ -182,6 +188,7 @@ export class Overlay {
      * @param isOverlayVisibleAtStart - Initial overlay body visibility (default false).
      * @param isOverlayToggleHintVisible - Draw toggle hint while body hidden (default true).
      * @param isOverlayToggleEnabled - Enable Backquote and corner toggle input (default true).
+     * @param isOverlayToggleHitDebugVisible - Draw a 1 px outline of the toggle hit region (default false).
      * @param isOverlayAudioMetersEnabled - When true, draws the per-bus level and voice/steal/drop band.
      * @param audioMeterStyle - Optional audio meter palette overrides.
      * @param audioMeterHeight - Audio meter band height in pixels (default 13).
@@ -203,6 +210,7 @@ export class Overlay {
         isOverlayVisibleAtStart = false,
         isOverlayToggleHintVisible = true,
         isOverlayToggleEnabled = true,
+        isOverlayToggleHitDebugVisible = false,
         isOverlayAudioMetersEnabled = false,
         audioMeterStyle?: OverlayAudioMeterStyle,
         audioMeterHeight?: number,
@@ -231,6 +239,7 @@ export class Overlay {
         this.#paletteRowsVisible = paletteRowsVisible;
         this.#toggle = new Toggle(isOverlayVisibleAtStart, isOverlayToggleEnabled);
         this.#isToggleHintVisible = isOverlayToggleHintVisible;
+        this.#isToggleHitDebugVisible = isOverlayToggleHitDebugVisible;
     }
 
     /**
@@ -367,7 +376,7 @@ export class Overlay {
 
         const isBodyVisible = this.#toggle.isBodyVisible;
 
-        if (!isBodyVisible && !this.#isToggleHintVisible) {
+        if (!isBodyVisible && !this.#isToggleHintVisible && !this.#isToggleHitDebugVisible) {
             return;
         }
 
@@ -622,7 +631,7 @@ export class Overlay {
             );
         }
 
-        toggleIcon(renderer, plan.hintBar.y, this.#idxText, isBodyVisible);
+        this.#drawToggleAffordance(renderer, plan, isBodyVisible);
 
         if (isBodyVisible) {
             this.#paletteInteraction.drawTooltipChrome(
@@ -644,6 +653,46 @@ export class Overlay {
                 this.#layout.displayHeight,
                 this.#idxText,
             );
+        }
+    }
+
+    /**
+     * Draws the toggle hint icon and the optional hit-zone debug outline.
+     *
+     * @param renderer - Active renderer.
+     * @param plan - Computed layout plan for this frame.
+     * @param isBodyVisible - Whether the overlay body is visible this frame.
+     */
+    #drawToggleAffordance(renderer: OverlayRenderer, plan: OverlayLayoutPlan, isBodyVisible: boolean): void {
+        if (isBodyVisible || this.#isToggleHintVisible) {
+            toggleIcon(renderer, plan.hintBar.y, this.#idxText, isBodyVisible);
+        }
+
+        if (this.#isToggleHitDebugVisible) {
+            this.#drawToggleHitDebug(renderer);
+        }
+    }
+
+    /**
+     * Draws a 1 px outline of the bottom-left toggle hit region for hit-zone tuning.
+     *
+     * @param target - Overlay draw target.
+     */
+    #drawToggleHitDebug(target: OverlayDrawTarget): void {
+        const rect = this.#layout.toggleRect;
+        const edge = this.#toggleHitDebugEdge;
+        const x0 = rect.x;
+        const y0 = rect.y;
+        const x1 = rect.x + rect.width - 1;
+        const y1 = rect.y + rect.height - 1;
+        const color = this.#idxText;
+
+        target.drawBarFillOnTop(edge.set(x0, y0, x1 - x0 + 1, 1), color);
+        target.drawBarFillOnTop(edge.set(x0, y1, x1 - x0 + 1, 1), color);
+
+        if (y1 - y0 > 1) {
+            target.drawBarFillOnTop(edge.set(x0, y0 + 1, 1, y1 - y0 - 1), color);
+            target.drawBarFillOnTop(edge.set(x1, y0 + 1, 1, y1 - y0 - 1), color);
         }
     }
 }

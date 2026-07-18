@@ -1358,6 +1358,7 @@ export class BTAPI {
             hw.isOverlayVisibleAtStart === true,
             hw.isOverlayToggleHintVisible !== false,
             hw.isOverlayToggleEnabled !== false,
+            hw.isOverlayToggleHitDebugVisible === true,
             hw.isOverlayAudioMetersEnabled === true,
             hw.overlayAudioMeterStyle,
             hw.overlayAudioMeterHeight,

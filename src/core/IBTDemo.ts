@@ -35,6 +35,8 @@ export type AudioBus = 'main' | 'music' | 'sfx';
  * implements that optional hook, or by {@link defaultConfig} otherwise.
  *
  * @since 0.1.0
+ * @changed 1.3.1 Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}.
+ * @changed 1.3.1 Shrink bottom-left overlay toggle hit region from 48x48 to 17x13.
  */
 export interface HardwareSettings {
     /**
@@ -143,7 +145,7 @@ export interface HardwareSettings {
      * each demo `render()` call (FPS, target rate, resolution, backend, demo title).
      * The overlay body starts hidden unless {@link isOverlayVisibleAtStart} is
      * `true`. Users can show or hide the body with Backquote or a primary press in
-     * the bottom-left 48x48 px corner when {@link isOverlayToggleEnabled} is
+     * the bottom-left 17x13 px corner when {@link isOverlayToggleEnabled} is
      * `true`. Set to `false` to disable the overlay subsystem and all toggle input
      * (for release builds that must not expose debug HUD).
      */
@@ -189,6 +191,16 @@ export interface HardwareSettings {
      * @deprecated Deprecated since 2026-05-31. Use {@link isOverlayToggleEnabled} instead.
      */
     overlayToggleEnabled?: boolean;
+
+    /**
+     * When `true`, the engine draws a 1 px outline of the bottom-left overlay toggle hit
+     * region (`17x13` logical pixels). Defaults to `false` in {@link defaultConfig}; set to
+     * `true` while tuning the hit zone. The outline uses the overlay text palette index and
+     * draws whether the overlay body is shown or hidden.
+     *
+     * @since 1.3.1
+     */
+    isOverlayToggleHitDebugVisible?: boolean;
 
     /**
      * When `true`, the engine draws a live palette swatch grid in the overlay
@@ -512,6 +524,7 @@ export function defaultConfig(): HardwareSettings {
         isOverlayVisibleAtStart: false,
         isOverlayToggleHintVisible: true,
         isOverlayToggleEnabled: true,
+        isOverlayToggleHitDebugVisible: false,
         isOverlayPaletteEnabled: false,
         isOverlayTimingChartEnabled: false,
         isOverlayAudioMetersEnabled: false,
@@ -622,6 +635,7 @@ function pickDefinedOverlaySettings(picked: Partial<HardwareSettings>, partial: 
     pickIfDefinedPartial(picked, partial, 'isOverlayVisibleAtStart');
     pickIfDefinedPartial(picked, partial, 'isOverlayToggleHintVisible');
     pickIfDefinedPartial(picked, partial, 'isOverlayToggleEnabled');
+    pickIfDefinedPartial(picked, partial, 'isOverlayToggleHitDebugVisible');
     pickIfDefinedPartial(picked, partial, 'isOverlayPaletteEnabled');
     pickIfDefinedPartial(picked, partial, 'overlayPaletteColumns');
     pickIfDefinedPartial(picked, partial, 'overlayPaletteRowsVisible');
@@ -838,6 +852,12 @@ function assignFullDefaultMergeScalars(
 
     assignIfDefined(
         optionals,
+        'isOverlayToggleHitDebugVisible',
+        picked.isOverlayToggleHitDebugVisible ?? defaults.isOverlayToggleHitDebugVisible,
+    );
+
+    assignIfDefined(
+        optionals,
         'isOverlayPaletteEnabled',
         picked.isOverlayPaletteEnabled ?? defaults.isOverlayPaletteEnabled,
     );
@@ -954,6 +974,7 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'overlayTimingChartStyle', shallowCloneOptional(picked.overlayTimingChartStyle));
     assignIfDefined(optionals, 'overlayTimingChartDiagnostics', picked.overlayTimingChartDiagnostics);
     assignIfDefined(optionals, 'isOverlayRendererDiagnosticsBarEnabled', picked.isOverlayRendererDiagnosticsBarEnabled);
+    assignIfDefined(optionals, 'isOverlayToggleHitDebugVisible', picked.isOverlayToggleHitDebugVisible);
     assignIfDefined(optionals, 'isOverlayAudioMetersEnabled', picked.isOverlayAudioMetersEnabled);
     assignIfDefined(optionals, 'overlayAudioMeterHeight', picked.overlayAudioMeterHeight);
     assignIfDefined(optionals, 'overlayAudioMeterStyle', shallowCloneOptional(picked.overlayAudioMeterStyle));

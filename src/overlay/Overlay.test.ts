@@ -57,6 +57,7 @@ interface OverlayTestOptions {
     isOverlayVisibleAtStart?: boolean;
     isOverlayToggleHintVisible?: boolean;
     isOverlayToggleEnabled?: boolean;
+    isOverlayToggleHitDebugVisible?: boolean;
     backend?: 'webgpu' | 'software';
     isOverlayAudioMetersEnabled?: boolean;
     audioMeterStyle?: OverlayAudioMeterStyle;
@@ -86,6 +87,7 @@ function createOverlay(
         options.isOverlayVisibleAtStart ?? false,
         options.isOverlayToggleHintVisible ?? true,
         options.isOverlayToggleEnabled ?? true,
+        options.isOverlayToggleHitDebugVisible ?? false,
         options.isOverlayAudioMetersEnabled ?? false,
         options.audioMeterStyle,
         options.audioMeterHeight,
@@ -234,6 +236,7 @@ describe('Overlay', () => {
         const topRightX = overlayRightAlignedDividerLabelX('webgpu|320x240', 320);
         const metricsY = OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX + OVERLAY_TOP_TEXT_Y;
         const timingY = (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX) * 2 + OVERLAY_TOP_TEXT_Y;
+        const iconPos = hintIconPos(hintBarY(240));
 
         expect(calls).toHaveLength(9);
 
@@ -279,7 +282,7 @@ describe('Overlay', () => {
         expect(renderer.drawBarFillOnTop).toHaveBeenCalled();
 
         expect(renderer.drawBarFillOnTop.rectSnapshots[0]).toMatchObject({
-            x: OVERLAY_EDGE_MARGIN_PX,
+            x: iconPos.x,
             y: 230,
             width: 11,
             height: 1,
@@ -381,6 +384,29 @@ describe('Overlay', () => {
         expect(renderer.drawBarFill).not.toHaveBeenCalled();
         expect(renderer.drawLabel).not.toHaveBeenCalled();
         expect(renderer.drawBarFillOnTop).not.toHaveBeenCalled();
+    });
+
+    it('draws the toggle hit debug outline when enabled even if the hint is hidden', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+        const overlay = createOverlay(layout, 'Demo', {
+            isOverlayToggleHintVisible: false,
+            isOverlayToggleHitDebugVisible: true,
+        });
+        const renderer = createMockRenderer();
+
+        overlay.updateAndRender(renderer, mockFont, null, null, 0);
+
+        expect(renderer.drawBarFill).not.toHaveBeenCalled();
+        expect(renderer.drawLabel).not.toHaveBeenCalled();
+        expect(renderer.drawBarFillOnTop.rectSnapshots).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ x: 0, y: 227, width: 17, height: 1 }),
+                expect.objectContaining({ x: 0, y: 239, width: 17, height: 1 }),
+                expect.objectContaining({ x: 0, y: 228, width: 1, height: 11 }),
+                expect.objectContaining({ x: 16, y: 228, width: 1, height: 11 }),
+            ]),
+        );
+        expect(renderer.drawBarFillOnTop).toHaveBeenCalledTimes(4);
     });
 
     it('draws hint-only path while body is hidden and toggle hint is visible', () => {

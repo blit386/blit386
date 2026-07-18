@@ -200,11 +200,13 @@ class Demo {
 
 ## Toggling visibility
 
-Toggle the overlay body at runtime with backquote/tilde (`~`) or a primary pointer press in the bottom-left `48×48px`
-corner, as long as `isOverlayToggleEnabled` is `true` (default). Three flags shape that behavior:
+Toggle the overlay body at runtime with backquote/tilde (`~`) or a primary pointer press in the bottom-left `17×13px`
+corner, as long as `isOverlayToggleEnabled` is `true` (default). These flags shape that behavior:
 
 - `isOverlayToggleHintVisible: false` – hide the hint icon while the body stays hidden.
 - `isOverlayToggleEnabled: false` – lock body visibility at `isOverlayVisibleAtStart` (no key or corner input).
+- `isOverlayToggleHitDebugVisible: true` – draw a 1 px outline of the bottom-left toggle hit region (opt-in; useful when
+  tuning the corner size).
 - `isOverlayEnabled: false` – disable the overlay subsystem and all toggle input entirely (for example release builds).
 
 On WebGPU, the engine draws the HUD after your `render()` call, composited above demo sprites via internal overlay draw

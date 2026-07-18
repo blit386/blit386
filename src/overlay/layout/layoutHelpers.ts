@@ -1,9 +1,15 @@
 import { Rect2i } from '../../utils/Rect2i';
 import type { Vector2i } from '../../utils/Vector2i';
 import { SYSTEM_CHAR_ADVANCE } from '../constants';
-import { OVERLAY_TOGGLE_CORNER_SIZE } from '../input/constants';
+import { OVERLAY_TOGGLE_CORNER_HEIGHT, OVERLAY_TOGGLE_CORNER_WIDTH } from '../input/constants';
 import { overlayDividerLabelWidth } from '../labels';
-import { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX, OVERLAY_ROW_GAP_PX, OVERLAY_TOP_TEXT_Y } from './constants';
+import {
+    OVERLAY_BAR_HEIGHT,
+    OVERLAY_EDGE_MARGIN_PX,
+    OVERLAY_ROW_GAP_PX,
+    OVERLAY_TOGGLE_HINT_ICON_NUDGE_X_PX,
+    OVERLAY_TOP_TEXT_Y,
+} from './constants';
 import type { OverlayLayout } from './types';
 
 /**
@@ -17,9 +23,9 @@ import type { OverlayLayout } from './types';
 export function createOverlayLayout(displayWidth: number, displayHeight: number, lineHeight: number): OverlayLayout {
     const toggleRect = new Rect2i(
         0,
-        displayHeight - OVERLAY_TOGGLE_CORNER_SIZE,
-        OVERLAY_TOGGLE_CORNER_SIZE,
-        OVERLAY_TOGGLE_CORNER_SIZE,
+        displayHeight - OVERLAY_TOGGLE_CORNER_HEIGHT,
+        OVERLAY_TOGGLE_CORNER_WIDTH,
+        OVERLAY_TOGGLE_CORNER_HEIGHT,
     );
 
     return {
@@ -75,12 +81,12 @@ export function overlayRightAlignedDividerLabelX(text: string, displayWidth: num
 /**
  * X position for the bottom-left toggle hint icon.
  *
- * Aligns with the bottom-left toggle hit region ({@link OVERLAY_TOGGLE_CORNER_SIZE}).
+ * Starts at {@link OVERLAY_EDGE_MARGIN_PX}, then applies {@link OVERLAY_TOGGLE_HINT_ICON_NUDGE_X_PX}.
  *
  * @returns Left edge X for the inline toggle icon.
  */
 export function overlayToggleHintIconX(): number {
-    return OVERLAY_EDGE_MARGIN_PX;
+    return OVERLAY_EDGE_MARGIN_PX + OVERLAY_TOGGLE_HINT_ICON_NUDGE_X_PX;
 }
 
 /**

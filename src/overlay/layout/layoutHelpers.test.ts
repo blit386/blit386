@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { Vector2i } from '../../utils/Vector2i';
 import { SYSTEM_CHAR_ADVANCE } from '../constants';
-import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_TOP_TEXT_Y } from './constants';
+import { OVERLAY_TOGGLE_CORNER_HEIGHT, OVERLAY_TOGGLE_CORNER_WIDTH } from '../input/constants';
+import { OVERLAY_EDGE_MARGIN_PX, OVERLAY_TOGGLE_HINT_ICON_NUDGE_X_PX, OVERLAY_TOP_TEXT_Y } from './constants';
 import {
     createOverlayLayout,
     isPointerInOverlayToggleCorner,
@@ -18,9 +19,17 @@ describe('createOverlayLayout', () => {
         expect(layout.displayHeight).toBe(240);
         expect(layout.topTextY).toBe(OVERLAY_TOP_TEXT_Y);
         expect(layout.toggleRect.x).toBe(0);
-        expect(layout.toggleRect.y).toBe(240 - 48);
-        expect(layout.toggleRect.width).toBe(48);
-        expect(layout.toggleRect.height).toBe(48);
+        expect(layout.toggleRect.y).toBe(240 - OVERLAY_TOGGLE_CORNER_HEIGHT);
+        expect(layout.toggleRect.width).toBe(OVERLAY_TOGGLE_CORNER_WIDTH);
+        expect(layout.toggleRect.height).toBe(OVERLAY_TOGGLE_CORNER_HEIGHT);
+    });
+
+    it('excludes the exact right and bottom edges of the toggle rect', () => {
+        const layout = createOverlayLayout(320, 240, 14);
+
+        expect(layout.toggleRect.isContaining(new Vector2i(16, 238))).toBe(true);
+        expect(layout.toggleRect.isContaining(new Vector2i(17, 238))).toBe(false);
+        expect(layout.toggleRect.isContaining(new Vector2i(16, 240))).toBe(false);
     });
 });
 
@@ -38,23 +47,27 @@ describe('overlayRightAlignedTextX', () => {
 });
 
 describe('overlayToggleHintIconX', () => {
-    it('anchors the toggle hint at the left edge margin', () => {
-        expect(overlayToggleHintIconX()).toBe(OVERLAY_EDGE_MARGIN_PX);
+    it('anchors the toggle hint at the left edge margin plus the icon nudge', () => {
+        expect(overlayToggleHintIconX()).toBe(OVERLAY_EDGE_MARGIN_PX + OVERLAY_TOGGLE_HINT_ICON_NUDGE_X_PX);
     });
 });
 
 describe('isPointerInOverlayToggleCorner', () => {
-    it('returns true inside the bottom-left 48x48 region', () => {
+    it('returns true inside the bottom-left toggle region', () => {
         const layout = createOverlayLayout(320, 240, 14);
+        const top = 240 - OVERLAY_TOGGLE_CORNER_HEIGHT;
 
-        expect(isPointerInOverlayToggleCorner(new Vector2i(20, 220), layout.toggleRect)).toBe(true);
-        expect(isPointerInOverlayToggleCorner(new Vector2i(0, 192), layout.toggleRect)).toBe(true);
+        expect(isPointerInOverlayToggleCorner(new Vector2i(12, top + 6), layout.toggleRect)).toBe(true);
+        expect(isPointerInOverlayToggleCorner(new Vector2i(0, top), layout.toggleRect)).toBe(true);
     });
 
     it('returns false outside the toggle region', () => {
         const layout = createOverlayLayout(320, 240, 14);
+        const top = 240 - OVERLAY_TOGGLE_CORNER_HEIGHT;
 
         expect(isPointerInOverlayToggleCorner(new Vector2i(300, 220), layout.toggleRect)).toBe(false);
-        expect(isPointerInOverlayToggleCorner(new Vector2i(48, 191), layout.toggleRect)).toBe(false);
+        expect(
+            isPointerInOverlayToggleCorner(new Vector2i(OVERLAY_TOGGLE_CORNER_WIDTH, top - 1), layout.toggleRect),
+        ).toBe(false);
     });
 });

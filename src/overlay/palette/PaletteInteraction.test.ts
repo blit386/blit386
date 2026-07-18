@@ -148,7 +148,7 @@ describe('hitTestSwatch', () => {
         ).toBe(index);
     });
 
-    it('still hits swatches inside the bottom-left toggle corner overlap', () => {
+    it('hits the bottom-left palette swatch, which no longer overlaps the shrunk toggle rect', () => {
         const index = grid.cols * (grid.rows - 1);
         const swatch = new Rect2i();
 
@@ -157,7 +157,9 @@ describe('hitTestSwatch', () => {
         expect(
             hitTestSwatch(swatch.x + 1, swatch.y + 1, paletteBand, grid, 256, hintExclusion, layout.displayWidth),
         ).toBe(index);
-        expect(layout.toggleRect.isContaining(new Vector2i(swatch.x + 1, swatch.y + 1))).toBe(true);
+        // The 17x13 toggle rect matches the hint bar footprint exactly, so the row gap above it
+        // keeps the palette grid clear; this used to overlap when the corner was 48x48.
+        expect(layout.toggleRect.isContaining(new Vector2i(swatch.x + 1, swatch.y + 1))).toBe(false);
     });
 });
 

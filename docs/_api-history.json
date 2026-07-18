@@ -1035,7 +1035,16 @@
     "HardwareSettings": {
       "kind": "interface",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.3.1",
+          "note": "Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}."
+        },
+        {
+          "version": "1.3.1",
+          "note": "Shrink bottom-left overlay toggle hit region from 48x48 to 17x13."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },

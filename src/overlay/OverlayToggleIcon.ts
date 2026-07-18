@@ -4,7 +4,8 @@
 
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
-import { OVERLAY_BAR_HEIGHT, OVERLAY_EDGE_MARGIN_PX } from './layout/constants';
+import { OVERLAY_BAR_HEIGHT } from './layout/constants';
+import { overlayToggleHintIconX } from './layout/layoutHelpers';
 import type { OverlayDrawTarget } from './OverlayDrawTarget';
 import { ICON_HEIGHT, ICON_MASK, ICON_WIDTH } from './toggleIconData';
 
@@ -42,7 +43,7 @@ export function overlayToggleHintIconY(hintBarTopY: number): number {
  * @returns Icon anchor in display pixels.
  */
 export function hintIconPos(hintBarTopY: number): Vector2i {
-    return new Vector2i(OVERLAY_EDGE_MARGIN_PX, hintIconY(hintBarTopY));
+    return new Vector2i(overlayToggleHintIconX(), hintIconY(hintBarTopY));
 }
 
 /**
@@ -63,7 +64,7 @@ export function overlayToggleHintIconPos(hintBarTopY: number): Vector2i {
  * @returns Icon bounding rect in display pixels.
  */
 export function hintIconExclusionRect(hintBarTopY: number): Rect2i {
-    return new Rect2i(OVERLAY_EDGE_MARGIN_PX, hintIconY(hintBarTopY), ICON_WIDTH, ICON_HEIGHT);
+    return new Rect2i(overlayToggleHintIconX(), hintIconY(hintBarTopY), ICON_WIDTH, ICON_HEIGHT);
 }
 
 /**
@@ -150,6 +151,6 @@ export function drawOverlayToggleIcon(
  * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
  */
 function writeHintIconOrigin(target: Vector2i, hintBarTopY: number): void {
-    target.x = OVERLAY_EDGE_MARGIN_PX;
+    target.x = overlayToggleHintIconX();
     target.y = hintIconY(hintBarTopY);
 }
