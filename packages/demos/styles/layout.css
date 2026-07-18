@@ -1,0 +1,208 @@
+@font-face {
+    font-family: 'DepartureMono';
+    src: url('/fonts/DepartureMono/DepartureMono-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --color-accent: #5da0f2;
+    --banner-height: 80px;
+    --canvas-top-pad: 23px;
+
+    /*
+     * Viewport height available for the canvas: below the banner and the
+     * top pad, so the first screen still fits the demo without scrolling.
+     */
+    --canvas-view-h: calc(100dvh - var(--banner-height) - var(--canvas-top-pad));
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+::selection {
+    background: var(--color-accent);
+    color: black;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    background: black;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#demo-source .shiki {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/*
+ * Embed mode (iframe on blit386.dev): lock to the viewport and hide the
+ * source panel so the embed stays a pure canvas view.
+ */
+html[data-embed='true'],
+html[data-embed='true'] body {
+    height: 100%;
+    overflow: hidden;
+}
+
+html[data-embed='true'] #demo-source {
+    display: none;
+}
+
+html[data-embed='true'] #canvas-container {
+    --canvas-view-h: calc(100dvh - var(--banner-height));
+    height: var(--canvas-view-h);
+    padding-top: 0;
+    align-items: center;
+}
+
+#canvas-container {
+    width: 100%;
+    padding-top: var(--canvas-top-pad);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+#canvas-container canvas {
+    display: block;
+    image-rendering: pixelated;
+    outline: none;
+    max-width: var(--canvas-max-w, 960px);
+    max-height: var(--canvas-max-h, 720px);
+
+    /*
+     * Largest size that fits the first viewport (minus banner + top pad)
+     * and the demo max cap while keeping aspect ratio.
+     * --canvas-aspect-w/h: aspect (from drawingBufferSize or displaySize).
+     * --canvas-max-w/h: max on-screen size (from configure() maxCanvasSize).
+     */
+    width: min(
+        100dvw,
+        calc(var(--canvas-view-h) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
+        var(--canvas-max-w, 960px),
+        calc(var(--canvas-max-h, 720px) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480))
+    );
+
+    height: min(
+        var(--canvas-view-h),
+        calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
+        var(--canvas-max-h, 720px),
+        calc(var(--canvas-max-w, 960px) * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640))
+    );
+}
+
+@supports (image-rendering: crisp-edges) {
+    #canvas-container canvas {
+        image-rendering: crisp-edges;
+    }
+}
+
+#demo-banner {
+    height: var(--banner-height);
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 8px 12px;
+    overflow: hidden;
+    background: oklch(97% 0 0);
+    color: oklch(20.5% 0 0);
+    font-family: 'DepartureMono', monospace;
+    font-size: 22px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+    #demo-banner {
+        background: #222;
+        color: oklch(97% 0 0);
+    }
+}
+
+#demo-banner:empty {
+    padding: 0;
+}
+
+#demo-banner .demo-banner-logo {
+    grid-column: 1;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+}
+
+#demo-banner .demo-banner-logo-light,
+#demo-banner .demo-banner-logo-dark {
+    image-rendering: pixelated;
+}
+
+#demo-banner .demo-banner-logo-light {
+    display: block;
+}
+
+#demo-banner .demo-banner-logo-dark {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    #demo-banner .demo-banner-logo-light {
+        display: none;
+    }
+
+    #demo-banner .demo-banner-logo-dark {
+        display: block;
+    }
+}
+
+#demo-banner .demo-banner-nav {
+    grid-column: 2;
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+#demo-banner button {
+    background: transparent;
+    color: inherit;
+    border: none;
+    width: 37px;
+    height: 37px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 22px;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#demo-banner button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+#demo-banner select {
+    background: transparent;
+    color: inherit;
+    border: 2px solid currentColor;
+    border-radius: 0;
+    padding: 1px 10px 2px;
+    font: inherit;
+    max-width: 50vw;
+    -webkit-user-select: none;
+    user-select: none;
+}

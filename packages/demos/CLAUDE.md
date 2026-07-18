@@ -38,7 +38,6 @@ blit386-demos/
       ui-gestures.js           # Swipe recognition (ui.swipe) and tap zones (ui.tapIn)
       post-process-backend.js  # isAvailable() + SOFTWARE_FALLBACK_NOTE (WebGPU-only effect demos)
   public/                      # Static assets copied to dist/ verbatim
-    css/                       # Demo source panel styles (demo-source.css + vendored twoslash-rich.css)
     fonts/                     # Bitmap fonts (.btfont + .png) and DepartureMono/ (otf/woff/woff2 + LICENSE,
                                #   the web font used by the demo navigation banner)
     sprites/                   # Sprite sheets used by demos
@@ -46,6 +45,11 @@ blit386-demos/
                                #   music-intro-loop.wav + music-intro-loop.loop.json (loop points)
     _headers                   # Cloudflare Pages headers
     _redirects                 # Cloudflare Pages redirects
+  styles/                      # Demo chrome CSS (Vite + PostCSS: nesting, Autoprefixer)
+    layout.css                 # Banner, canvas sizing, embed mode (from layout.html)
+    demo-source.css            # Source panel / Shiki / Twoslash hover polish
+    twoslash-rich.css          # Vendored from @shikijs/twoslash (Biome-ignored)
+    demos-index.css            # Dev-only /demos/ index page
   _partials/                   # Shared HTML template (plain HTML with {{title}}, {{scriptFile}},
     layout.html                #   {{slug}}, {{demoList}}, and {{sourceHtml}} placeholders)
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
