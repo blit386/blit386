@@ -194,7 +194,7 @@ export interface HardwareSettings {
 
     /**
      * When `true`, the engine draws a 1 px outline of the bottom-left overlay toggle hit
-     * region (`17×13` logical pixels). Defaults to `false` in {@link defaultConfig}; set to
+     * region (`17x13` logical pixels). Defaults to `false` in {@link defaultConfig}; set to
      * `true` while tuning the hit zone. The outline uses the overlay text palette index and
      * draws whether the overlay body is shown or hidden.
      *

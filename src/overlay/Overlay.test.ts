@@ -236,6 +236,7 @@ describe('Overlay', () => {
         const topRightX = overlayRightAlignedDividerLabelX('webgpu|320x240', 320);
         const metricsY = OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX + OVERLAY_TOP_TEXT_Y;
         const timingY = (OVERLAY_BAR_HEIGHT + OVERLAY_ROW_GAP_PX) * 2 + OVERLAY_TOP_TEXT_Y;
+        const iconPos = hintIconPos(hintBarY(240));
 
         expect(calls).toHaveLength(9);
 
@@ -281,7 +282,7 @@ describe('Overlay', () => {
         expect(renderer.drawBarFillOnTop).toHaveBeenCalled();
 
         expect(renderer.drawBarFillOnTop.rectSnapshots[0]).toMatchObject({
-            x: OVERLAY_EDGE_MARGIN_PX,
+            x: iconPos.x,
             y: 230,
             width: 11,
             height: 1,
