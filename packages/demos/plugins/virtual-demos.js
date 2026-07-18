@@ -2,13 +2,15 @@ import { readFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 
 import { buildRegistry } from './demo-registry.js';
+import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
 /**
  * Vite plugin that serves/generates demo HTML pages virtually from src/NNN-*.js files.
  * No per-demo HTML file is needed on disk; the template lives in _partials/layout.html
- * and is rendered via simple string substitution.
+ * and is rendered via simple string substitution. Each page embeds a Shiki + Twoslash
+ * highlighted copy of that demo's source below the canvas.
  * @returns {import('vite').Plugin}
  */
 export function virtualDemos() {
@@ -64,20 +66,24 @@ export function virtualDemos() {
     }
 
     /**
-     * Render a demo entry's HTML page from the shared layout template.
+     * Render a demo entry's HTML page from the shared layout template, including a
+     * Twoslash-highlighted copy of the demo source.
      * @param {object} entry - Registry entry (see buildRegistry's return type).
-     * @returns {string}
+     * @returns {Promise<string>}
      */
-    function renderHtml(entry) {
+    async function renderHtml(entry) {
         const demoListJson = JSON.stringify(
             registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel })),
         ).replaceAll('<', '\\u003c');
+
+        const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
 
         return layoutTemplate
             .replaceAll('{{title}}', escapeHtml(entry.title))
             .replaceAll('{{scriptFile}}', entry.scriptFile)
             .replaceAll('{{slug}}', entry.slug)
-            .replace('{{demoList}}', () => demoListJson);
+            .replace('{{demoList}}', () => demoListJson)
+            .replace('{{sourceHtml}}', () => sourceHtml);
     }
 
     return {
@@ -126,7 +132,7 @@ export function virtualDemos() {
             return null;
         },
 
-        load(id) {
+        async load(id) {
             const entry = findEntryByAbsPath(id);
 
             if (!entry) {
@@ -139,24 +145,28 @@ export function virtualDemos() {
         configureServer(server) {
             server.watcher.add(join(partialsDir, '*.html'));
             server.watcher.add(join(srcDir, '*.js'));
+            server.watcher.add(join(srcDir, 'shared', '*.js'));
 
             server.watcher.on('change', (changedPath) => {
                 if (changedPath.startsWith(partialsDir)) {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
                 } else if (changedPath.startsWith(srcDir)) {
+                    clearHighlightCache();
                     reload();
                     server.ws.send({ type: 'full-reload' });
                 }
             });
             server.watcher.on('add', (addedPath) => {
                 if (addedPath.startsWith(srcDir)) {
+                    clearHighlightCache();
                     reload();
                     server.ws.send({ type: 'full-reload' });
                 }
             });
             server.watcher.on('unlink', (removedPath) => {
                 if (removedPath.startsWith(srcDir)) {
+                    clearHighlightCache();
                     reload();
                     server.ws.send({ type: 'full-reload' });
                 }
@@ -200,7 +210,7 @@ export function virtualDemos() {
                 }
 
                 try {
-                    let html = renderHtml(entry);
+                    let html = await renderHtml(entry);
                     html = await server.transformIndexHtml(url, html);
                     res.setHeader('Content-Type', 'text/html; charset=utf-8');
                     res.end(html);
