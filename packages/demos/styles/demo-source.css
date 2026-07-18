@@ -42,6 +42,16 @@
         tab-size: 4;
         background-color: #000;
 
+        /*
+         * Shiki emits a plain <pre>, which defaults to white-space: pre (no
+         * wrap). On narrow layouts long comment lines then run off the edge
+         * with no scrollbar to reveal the rest (.demo-source-code and body
+         * both clip overflow-x). pre-wrap keeps indentation but lets lines
+         * break instead of getting cut off.
+         */
+        white-space: pre-wrap;
+        overflow-wrap: break-word;
+
         @media (max-width: 959px) {
             font-size: 13px;
         }
@@ -87,8 +97,9 @@
         background-color: black;
 
         /*
-         * Popovers are nested inside pre.shiki, which inherits white-space: pre and
-         * prevents wrapping. Reset here so long type signatures stay in the box.
+         * .shiki now wraps too (pre-wrap), but popup text should never break
+         * mid-line like code does – force normal flow so long type signatures
+         * wrap at word boundaries and stay inside the popover box.
          */
         white-space: normal;
         overflow-x: hidden;
