@@ -33,6 +33,11 @@
             box-sizing: border-box;
         }
 
+        ::selection {
+            background: var(--color-accent);
+            color: black;
+        }
+
         html,
         body {
             margin: 0;
@@ -42,6 +47,13 @@
 
         body {
             background: black;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        #demo-source .shiki {
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         /*
@@ -200,6 +212,8 @@
             padding: 1px 10px 2px;
             font: inherit;
             max-width: 50vw;
+            -webkit-user-select: none;
+            user-select: none;
         }
     </style>
 
