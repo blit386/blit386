@@ -154,6 +154,8 @@ describe('Overlay', () => {
             {
                 isButtonPressed: () => true,
                 getPos: () => new Vector2i(swatch.x + 1, swatch.y + 1),
+                isActive: () => true,
+                setIsScrollCaptureForced: vi.fn(),
             } as never,
             false,
             1,
@@ -187,6 +189,7 @@ describe('Overlay', () => {
                 getPos: () => new Vector2i(track.x + 1, track.y + 1),
                 getScrollDelta: () => 0,
                 consumeScrollDelta: vi.fn(),
+                setIsScrollCaptureForced: vi.fn(),
             } as never,
             false,
             1,

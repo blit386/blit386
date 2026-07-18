@@ -706,6 +706,7 @@ describe('PointerInput', () => {
         });
 
         it('zeroes scrollDelta on endFrame', () => {
+            input.setIsCapturingScroll(true);
             canvas.dispatchEvent(
                 new WheelEvent('wheel', { deltaY: 100, deltaMode: 0, bubbles: true, cancelable: true }),
             );
@@ -1023,6 +1024,33 @@ describe('PointerInput', () => {
     });
 
     describe('wheel handling', () => {
+        beforeEach(() => {
+            input.setIsCapturingScroll(true);
+        });
+
+        it('ignores wheel events when capture is off', () => {
+            input.setIsCapturingScroll(false);
+            const wheelEvent = new WheelEvent('wheel', { deltaY: 5, deltaMode: 0, bubbles: true, cancelable: true });
+            const preventDefault = vi.spyOn(wheelEvent, 'preventDefault');
+
+            canvas.dispatchEvent(wheelEvent);
+
+            expect(preventDefault).not.toHaveBeenCalled();
+            expect(input.getScrollDelta()).toBe(0);
+        });
+
+        it('captures wheel when scroll capture is forced without configure opt-in', () => {
+            input.setIsCapturingScroll(false);
+            input.setIsScrollCaptureForced(true);
+            const wheelEvent = new WheelEvent('wheel', { deltaY: 5, deltaMode: 0, bubbles: true, cancelable: true });
+            const preventDefault = vi.spyOn(wheelEvent, 'preventDefault');
+
+            canvas.dispatchEvent(wheelEvent);
+
+            expect(preventDefault).toHaveBeenCalled();
+            expect(input.getScrollDelta()).toBe(5);
+        });
+
         it('uses raw deltaY for deltaMode 0 (PIXEL)', () => {
             canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 5, deltaMode: 0, bubbles: true, cancelable: true }));
 

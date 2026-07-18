@@ -1380,6 +1380,7 @@ export class BTAPI {
         this.pointer?.detach();
         this.pointer = new PointerInput();
         this.pointer.attach(canvas, hw.displaySize);
+        this.pointer.setIsCapturingScroll(hw.isCapturingPointerScroll === true);
 
         this.keyboard?.detach();
         this.keyboard = new KeyboardInput();

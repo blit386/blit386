@@ -120,6 +120,18 @@ export class PointerInput {
     /** Captured `canvas.style.cursor` value, restored by {@link detach}. */
     private originalCursor: string | null = null;
 
+    /**
+     * When true, wheel events call `preventDefault` and accumulate into
+     * {@link getScrollDelta}. Set from `HardwareSettings.isCapturingPointerScroll`.
+     */
+    private isCapturingScroll = false;
+
+    /**
+     * When true, forces the same capture behavior as {@link isCapturingScroll}.
+     * Used by the overlay palette band so wheel scroll works without a demo opt-in.
+     */
+    private isScrollCaptureForced = false;
+
     private readonly onMove: (event: PointerEvent) => void;
     private readonly onDown: (event: PointerEvent) => void;
     private readonly onUp: (event: PointerEvent) => void;
@@ -149,9 +161,9 @@ export class PointerInput {
     /**
      * Attaches DOM listeners to the canvas and stores the logical display size.
      *
-     * Installs three page-interaction guards on the canvas:
-     * - `wheel.preventDefault()` (with `{ passive: false }`) so the browser
-     *   doesn't scroll the page when the user spins the wheel over the game
+     * Installs page-interaction guards on the canvas:
+     * - `wheel` with `{ passive: false }` so `preventDefault` can run when scroll
+     *   capture is active ({@link setIsCapturingScroll} or {@link setIsScrollCaptureForced})
      * - `canvas.style.touchAction = 'none'` so iOS Safari doesn't intercept
      *   touches for pinch-zoom or double-tap-zoom
      * - `contextmenu.preventDefault()` so right-click feeds `BTN_B`
@@ -221,6 +233,8 @@ export class PointerInput {
         this.displaySize = null;
         this.originalTouchAction = null;
         this.originalCursor = null;
+        this.isCapturingScroll = false;
+        this.isScrollCaptureForced = false;
 
         this.idToSlot.clear();
         this.scrollDeltaY = 0;
@@ -334,6 +348,32 @@ export class PointerInput {
      */
     public consumeScrollDelta(): void {
         this.scrollDeltaY = 0;
+    }
+
+    /**
+     * Enables or disables configure-time wheel capture on the canvas.
+     *
+     * When enabled, wheel events call `preventDefault` and accumulate into
+     * {@link getScrollDelta}. When disabled (the default), the host page can
+     * scroll while the pointer is over the canvas unless
+     * {@link setIsScrollCaptureForced} is active.
+     *
+     * @param enabled - Whether the demo opted into pointer scroll capture.
+     */
+    public setIsCapturingScroll(enabled: boolean): void {
+        this.isCapturingScroll = enabled;
+    }
+
+    /**
+     * Forces wheel capture for the current hover state (overlay palette band).
+     *
+     * Independent of {@link setIsCapturingScroll}. Cleared when the pointer
+     * leaves the palette band or the overlay body is hidden.
+     *
+     * @param forced - Whether overlay scroll capture is active this frame.
+     */
+    public setIsScrollCaptureForced(forced: boolean): void {
+        this.isScrollCaptureForced = forced;
     }
 
     /**
@@ -636,14 +676,22 @@ export class PointerInput {
     }
 
     /**
-     * Routes a `wheel` event: normalizes `deltaY` to pixels (line and page
-     * delta modes are converted) and accumulates into `scrollDeltaY` for
-     * the current frame. Calls `preventDefault` so the page does not scroll
-     * while the user is interacting with the canvas.
+     * Routes a `wheel` event: when scroll capture is active, normalizes `deltaY`
+     * to pixels (line and page delta modes are converted), accumulates into
+     * `scrollDeltaY` for the current frame, and calls `preventDefault` so the
+     * page does not scroll. When capture is inactive, leaves the event alone
+     * so the host page can scroll.
+     *
+     * Capture is active when {@link setIsCapturingScroll} or
+     * {@link setIsScrollCaptureForced} is enabled.
      *
      * @param event - DOM wheel event from the canvas.
      */
     private handleWheel(event: WheelEvent): void {
+        if (!this.isCapturingScroll && !this.isScrollCaptureForced) {
+            return;
+        }
+
         event.preventDefault();
 
         let pixels = event.deltaY;

@@ -16,7 +16,7 @@ import type {
     OverlayTimingChartStyle,
 } from '../core/IBTDemo';
 import type { KeyboardInput } from '../input/KeyboardInput';
-import type { PointerInput } from '../input/PointerInput';
+import { POINTER_SLOT_COUNT, type PointerInput } from '../input/PointerInput';
 import { Rect2i } from '../utils/Rect2i';
 import { AudioMeter } from './audio-meter/AudioMeter';
 import { DEFAULT_AUDIO_METER_HEIGHT } from './audio-meter/constants';
@@ -297,6 +297,7 @@ export class Overlay {
         palette?: Palette | null,
     ): void {
         let isPointerPressConsumed = false;
+        let isScrollCaptureForced = false;
 
         if (this.#paletteView.isEnabled && this.#toggle.isBodyVisible) {
             const customRows = getCustomRows?.();
@@ -306,6 +307,8 @@ export class Overlay {
 
             if (grid !== undefined && plan.paletteBand.height > 0) {
                 this.#paletteInteraction.syncScrollBounds(grid);
+
+                isScrollCaptureForced = this.#isPointerOverPaletteBand(pointer, plan.paletteBand);
 
                 isPointerPressConsumed = this.#paletteInteraction.handlePress(
                     pointer,
@@ -322,6 +325,8 @@ export class Overlay {
                     isPointerPressConsumed;
             }
         }
+
+        pointer?.setIsScrollCaptureForced(isScrollCaptureForced);
 
         this.#toggle.handleInput(pointer, isTogglePressed, this.#layout.toggleRect, isPointerPressConsumed);
     }
@@ -401,6 +406,37 @@ export class Overlay {
                 currentTick,
             );
         });
+    }
+
+    /**
+     * Reports whether any active pointer is inside the palette scroll band.
+     *
+     * Used to force wheel capture so the host page does not scroll while the
+     * user wheels over the palette grid, even when the demo did not opt into
+     * `HardwareSettings.isCapturingPointerScroll`.
+     *
+     * @param pointer - Pointer subsystem, or `null` when unavailable.
+     * @param paletteBand - Palette band rect from the layout plan.
+     * @returns `true` when an active pointer is inside the band.
+     */
+    #isPointerOverPaletteBand(pointer: PointerInput | null, paletteBand: Rect2i): boolean {
+        if (!pointer || paletteBand.height <= 0) {
+            return false;
+        }
+
+        for (let slot = 0; slot < POINTER_SLOT_COUNT; slot++) {
+            if (!pointer.isActive(slot)) {
+                continue;
+            }
+
+            const pos = pointer.getPos(slot);
+
+            if (paletteBand.isContainingXY(pos.x, pos.y)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
