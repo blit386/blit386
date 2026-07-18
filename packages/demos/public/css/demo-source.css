@@ -13,7 +13,7 @@
 
 #demo-source {
     --font-mono:
-        'essential_pragmatapro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        'essential_pragmatapro', ui-monospace, sfmono-regular, menlo, monaco, consolas, monospace;
     --twoslash-popup-bg: black;
     --twoslash-popup-color: #e6edf3;
     --twoslash-border-color: #ddd;
@@ -94,7 +94,6 @@
     white-space: normal;
     overflow-x: hidden;
     overflow-wrap: anywhere;
-    word-break: break-word;
 }
 
 #demo-source .shiki .twoslash-popup-arrow {
@@ -120,7 +119,6 @@
 #demo-source .twoslash-popup-code * {
     white-space: normal;
     overflow-wrap: anywhere;
-    word-break: break-word;
 }
 
 #demo-source .twoslash-popup-docs,
