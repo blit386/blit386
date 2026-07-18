@@ -19,6 +19,15 @@ This page is editorial – release highlights and migration notes, not an exhaus
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.3.1 - Unreleased
+
+### Changed
+
+- Pointer wheel capture is opt-in via `HardwareSettings.isCapturingPointerScroll` (default `false`). Canvas wheel events
+  no longer call `preventDefault()` by default, so host pages can scroll while the pointer is over the canvas. Demos
+  that map `BT.pointerScrollDelta` must set the flag. The overlay palette grid still forces capture while the pointer is
+  over its band.
+
 ## 1.3.0 - 2026-07-13
 
 The audio release: the engine gains a full sound subsystem, from bus mixing to procedural synthesis, plus render-time

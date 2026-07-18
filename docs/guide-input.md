@@ -338,8 +338,24 @@ if (scroll < 0) {
 ```
 
 The value aggregates all `WheelEvent.deltaY` values received since the last frame, normalizing line and page delta modes
-to pixels. It resets to zero each frame. The engine also calls `preventDefault()` on wheel events so the page does not
-scroll while the canvas has focus.
+to pixels. It resets to zero each frame.
+
+Wheel capture is opt-in. Set `isCapturingPointerScroll: true` in `configure()` so the engine calls `preventDefault()` on
+canvas `wheel` events and fills `BT.pointerScrollDelta`. When the flag is omitted (the default), the host page scrolls
+normally while the pointer is over the canvas and `BT.pointerScrollDelta` stays `0`.
+
+The overlay palette grid still captures wheel while the pointer is over its band, even without the configure flag, so
+scrolling palette rows does not move the page.
+
+```ts twoslash
+import { type HardwareSettings } from 'blit386';
+
+function configure(): Partial<HardwareSettings> {
+  return {
+    isCapturingPointerScroll: true,
+  };
+}
+```
 
 ## Cursor control
 
@@ -378,9 +394,11 @@ Pointer transitions:
 
 ## Page-interaction guards
 
-`attach()` installs three guards on the canvas to prevent browser defaults from interfering:
+`attach()` installs guards on the canvas to prevent browser defaults from interfering:
 
-- `wheel` with `{ passive: false }` and `preventDefault()` – prevents page scroll on wheel events.
+- `wheel` with `{ passive: false }` – when `isCapturingPointerScroll` is `true` (or the overlay forces capture over the
+  palette band), `preventDefault()` stops page scroll and the delta feeds `BT.pointerScrollDelta`. When capture is off,
+  the page scrolls normally.
 - `canvas.style.touchAction = 'none'` – prevents iOS Safari pinch-zoom and double-tap-zoom.
 - `contextmenu` with `preventDefault()` – prevents the OS context menu on right-click so `BTN_POINTER_B` works.
 

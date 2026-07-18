@@ -37,6 +37,7 @@ export type AudioBus = 'main' | 'music' | 'sfx';
  * @since 0.1.0
  * @changed 1.3.1 Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}.
  * @changed 1.3.1 Shrink bottom-left overlay toggle hit region from 48x48 to 17x13.
+ * @changed 1.3.1 Added {@link HardwareSettings.isCapturingPointerScroll}.
  */
 export interface HardwareSettings {
     /**
@@ -122,6 +123,19 @@ export interface HardwareSettings {
      * @deprecated Deprecated since 2026-05-31. Use {@link isDetectingDroppedFrames} instead.
      */
     detectDroppedFrames?: boolean;
+
+    /**
+     * When `true`, the engine calls `preventDefault()` on canvas `wheel` events and
+     * accumulates vertical delta into {@link BT.pointerScrollDelta}. Defaults to `false`
+     * in {@link defaultConfig} so the host page can scroll while the pointer is over the
+     * canvas. Opt in when the demo or game maps the mouse wheel.
+     *
+     * The overlay palette grid still captures wheel while the pointer is over its band,
+     * even when this flag is `false`.
+     *
+     * @since 1.3.1
+     */
+    isCapturingPointerScroll?: boolean;
 
     /**
      * Rendering backend to use. Defaults to `'webgpu'`.
@@ -520,6 +534,7 @@ export function defaultConfig(): HardwareSettings {
         outputUpscaleFilter: 'nearest',
         backend: 'webgpu',
         audioVoices: 16,
+        isCapturingPointerScroll: false,
         isOverlayEnabled: true,
         isOverlayVisibleAtStart: false,
         isOverlayToggleHintVisible: true,
@@ -686,6 +701,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'targetFPS');
     pickIfDefinedPartial(picked, partial, 'outputUpscaleFilter');
     pickIfDefinedPartial(picked, partial, 'isDetectingDroppedFrames');
+    pickIfDefinedPartial(picked, partial, 'isCapturingPointerScroll');
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
     pickDefinedOverlaySettings(picked, partial);
@@ -827,6 +843,11 @@ function assignFullDefaultMergeScalars(
         'isDetectingDroppedFrames',
         picked.isDetectingDroppedFrames ?? defaults.isDetectingDroppedFrames,
     );
+    assignIfDefined(
+        optionals,
+        'isCapturingPointerScroll',
+        picked.isCapturingPointerScroll ?? defaults.isCapturingPointerScroll,
+    );
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
 
@@ -965,6 +986,7 @@ function buildExplicitDisplayOptionals(
     );
     assignIfDefined(optionals, 'outputUpscaleFilter', picked.outputUpscaleFilter);
     assignIfDefined(optionals, 'isDetectingDroppedFrames', picked.isDetectingDroppedFrames);
+    assignIfDefined(optionals, 'isCapturingPointerScroll', picked.isCapturingPointerScroll);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
     assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);

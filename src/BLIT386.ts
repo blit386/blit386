@@ -1409,8 +1409,12 @@ export const BT = {
      *
      * Aggregates `WheelEvent.deltaY` across all wheel events received since
      * the last frame, normalizing line and page delta modes to pixels.
+     * Requires {@link HardwareSettings.isCapturingPointerScroll} (or overlay
+     * palette-band force capture); otherwise this stays `0` and the host page
+     * scrolls normally.
      *
      * @since 1.0.4
+     * @changed 1.3.1 Requires `HardwareSettings.isCapturingPointerScroll` (or overlay force); opt-in now, not default.
      * @returns Vertical scroll delta in pixels for the current frame, or `0` when not initialized.
      */
     get pointerScrollDelta(): number {

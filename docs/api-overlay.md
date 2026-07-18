@@ -158,7 +158,8 @@ right screen edges. Custom rows are user content, so a `|` in their text stays a
 - When `overlayPaletteRowsVisible` is set, only that many rows are shown in a scrollable viewport with a right-side
   scrollbar thumb (proportional to visible vs. total rows, minimum `4px`, inset `1px` from the band top, right, and
   bottom); wheel input over the palette band scrolls rows and does not reach `BT.pointerScrollDelta` outside that
-  region.
+  region. The engine forces wheel capture while the pointer is over that band even when `isCapturingPointerScroll` is
+  `false`, so the host page does not scroll under the palette.
 - The timing chart and palette grid bands use the same `overlayStyle.barPaletteIndex` fill as the other overlay rows
   (bars draw first; chart dots and swatches render on top).
 - `1px` row gaps between stacked overlay bands and cluster separators (below the top metrics cluster and above the
@@ -280,7 +281,8 @@ bottomReserve = paletteGridHeight + 1 + 13
 - Default swatch size is `7px` with `1px` gaps and `3px` padding above and below the grid.
 - When `overlayPaletteRowsVisible` is unset, `visibleRows` equals `rows` (the full palette).
 - Wheel scrolling applies only while the pointer is over the palette footer band (grid or scrollbar); demos reading
-  `BT.pointerScrollDelta` elsewhere are unaffected.
+  `BT.pointerScrollDelta` elsewhere are unaffected. Palette-band hover forces wheel capture without requiring
+  `isCapturingPointerScroll`.
 - Set `isOverlayPaletteEnabled: true` to enable the grid, or `isOverlayEnabled: false` for full-screen layouts (for
   example terminal-style demos).
 - Implementation lives in `src/overlay/palette/PaletteView.ts` (`computeGrid`, `pickGridColumnCount`,
