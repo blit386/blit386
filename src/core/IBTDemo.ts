@@ -38,6 +38,7 @@ export type AudioBus = 'main' | 'music' | 'sfx';
  * @changed 1.3.1 Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}.
  * @changed 1.3.1 Shrink bottom-left overlay toggle hit region from 48x48 to 17x13.
  * @changed 1.3.1 Added {@link HardwareSettings.isCapturingPointerScroll}.
+ * @changed 1.3.1 Added {@link HardwareSettings.isCapturingKeyboardScroll}.
  * @changed 1.3.1 Added {@link HardwareSettings.isWakeLockEnabled}.
  */
 export interface HardwareSettings {
@@ -137,6 +138,17 @@ export interface HardwareSettings {
      * @since 1.3.1
      */
     isCapturingPointerScroll?: boolean;
+
+    /**
+     * When `true`, the engine calls `preventDefault()` on canvas `keydown` for keys that
+     * scroll the host page by default (arrow keys, Space, PageUp/PageDown, Home, End).
+     * Defaults to `false` in {@link defaultConfig} so those keys still scroll the page
+     * while the canvas is focused. Opt in when the demo or game maps those keys for
+     * gameplay.
+     *
+     * @since 1.3.1
+     */
+    isCapturingKeyboardScroll?: boolean;
 
     /**
      * When `true`, the engine requests a screen wake lock after a successful `init()`
@@ -547,6 +559,7 @@ export function defaultConfig(): HardwareSettings {
         backend: 'webgpu',
         audioVoices: 16,
         isCapturingPointerScroll: false,
+        isCapturingKeyboardScroll: false,
         isWakeLockEnabled: false,
         isOverlayEnabled: true,
         isOverlayVisibleAtStart: false,
@@ -715,6 +728,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'outputUpscaleFilter');
     pickIfDefinedPartial(picked, partial, 'isDetectingDroppedFrames');
     pickIfDefinedPartial(picked, partial, 'isCapturingPointerScroll');
+    pickIfDefinedPartial(picked, partial, 'isCapturingKeyboardScroll');
     pickIfDefinedPartial(picked, partial, 'isWakeLockEnabled');
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
@@ -863,6 +877,11 @@ function assignFullDefaultMergeScalars(
         'isCapturingPointerScroll',
         picked.isCapturingPointerScroll ?? defaults.isCapturingPointerScroll,
     );
+    assignIfDefined(
+        optionals,
+        'isCapturingKeyboardScroll',
+        picked.isCapturingKeyboardScroll ?? defaults.isCapturingKeyboardScroll,
+    );
     assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled ?? defaults.isWakeLockEnabled);
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
@@ -1003,6 +1022,7 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'outputUpscaleFilter', picked.outputUpscaleFilter);
     assignIfDefined(optionals, 'isDetectingDroppedFrames', picked.isDetectingDroppedFrames);
     assignIfDefined(optionals, 'isCapturingPointerScroll', picked.isCapturingPointerScroll);
+    assignIfDefined(optionals, 'isCapturingKeyboardScroll', picked.isCapturingKeyboardScroll);
     assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));

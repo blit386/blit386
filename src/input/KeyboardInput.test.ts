@@ -4,7 +4,7 @@
  * Unit tests for {@link KeyboardInput}.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DEFAULT_KEYBOARD_PLAYER1 } from './defaultKeyboardMap';
 import { KeyboardInput } from './KeyboardInput';
@@ -424,5 +424,82 @@ describe('KeyboardInput', () => {
         expect(kb.isButtonDown(codes)).toBe(true);
 
         kb.detach();
+    });
+
+    describe('keyboard scroll capture', () => {
+        it('does not call preventDefault when capture is off', () => {
+            const canvas = createCanvas();
+            const kb = new KeyboardInput();
+
+            kb.attach(canvas, { getTicks: () => tick });
+
+            const arrowEvent = new KeyboardEvent('keydown', {
+                code: 'ArrowDown',
+                bubbles: true,
+                cancelable: true,
+            });
+            const spaceEvent = new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true });
+            const preventArrow = vi.spyOn(arrowEvent, 'preventDefault');
+            const preventSpace = vi.spyOn(spaceEvent, 'preventDefault');
+
+            canvas.dispatchEvent(arrowEvent);
+            canvas.dispatchEvent(spaceEvent);
+
+            expect(preventArrow).not.toHaveBeenCalled();
+            expect(preventSpace).not.toHaveBeenCalled();
+
+            kb.detach();
+        });
+
+        it('calls preventDefault for scroll keys when capture is on', () => {
+            const canvas = createCanvas();
+            const kb = new KeyboardInput();
+
+            kb.attach(canvas, { getTicks: () => tick });
+            kb.setIsCapturingScroll(true);
+
+            const arrowEvent = new KeyboardEvent('keydown', {
+                code: 'ArrowDown',
+                bubbles: true,
+                cancelable: true,
+            });
+            const spaceEvent = new KeyboardEvent('keydown', { code: 'Space', bubbles: true, cancelable: true });
+            const keyWEvent = new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true, cancelable: true });
+            const preventArrow = vi.spyOn(arrowEvent, 'preventDefault');
+            const preventSpace = vi.spyOn(spaceEvent, 'preventDefault');
+            const preventKeyW = vi.spyOn(keyWEvent, 'preventDefault');
+
+            canvas.dispatchEvent(arrowEvent);
+            canvas.dispatchEvent(spaceEvent);
+            canvas.dispatchEvent(keyWEvent);
+
+            expect(preventArrow).toHaveBeenCalled();
+            expect(preventSpace).toHaveBeenCalled();
+            expect(preventKeyW).not.toHaveBeenCalled();
+
+            kb.detach();
+        });
+
+        it('calls preventDefault on key-repeat keydowns while held', () => {
+            const canvas = createCanvas();
+            const kb = new KeyboardInput();
+
+            kb.attach(canvas, { getTicks: () => tick });
+            kb.setIsCapturingScroll(true);
+
+            const first = new KeyboardEvent('keydown', { code: 'ArrowDown', bubbles: true, cancelable: true });
+            const repeat = new KeyboardEvent('keydown', { code: 'ArrowDown', bubbles: true, cancelable: true });
+            const preventFirst = vi.spyOn(first, 'preventDefault');
+            const preventRepeat = vi.spyOn(repeat, 'preventDefault');
+
+            canvas.dispatchEvent(first);
+            canvas.dispatchEvent(repeat);
+
+            expect(preventFirst).toHaveBeenCalled();
+            expect(preventRepeat).toHaveBeenCalled();
+            expect(kb.isKeyDown('ArrowDown')).toBe(true);
+
+            kb.detach();
+        });
     });
 });

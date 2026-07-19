@@ -1404,6 +1404,7 @@ export class BTAPI {
         this.keyboard.attach(canvas, {
             getTicks: () => this.loop?.getTicks() ?? 0,
         });
+        this.keyboard.setIsCapturingScroll(hw.isCapturingKeyboardScroll === true);
 
         this.gamepad?.detach();
         this.gamepad = new GamepadInput();

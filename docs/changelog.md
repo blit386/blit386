@@ -23,6 +23,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
+- Opt-in keyboard scroll capture via `HardwareSettings.isCapturingKeyboardScroll` (default `false`). When enabled,
+  canvas `keydown` for arrow keys, Space, PageUp/PageDown, Home, and End calls `preventDefault()` so games can map those
+  keys without scrolling the host page.
 - Opt-in screen wake lock via `HardwareSettings.isWakeLockEnabled` (default `false`). When enabled, the engine requests
   a screen wake lock after a successful `init()` to prevent mobile browsers from dimming or locking the screen during
   active gameplay, and re-acquires it automatically once the page returns to the foreground. Silently no-ops on browsers
