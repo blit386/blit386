@@ -287,9 +287,9 @@ added a table row; the pointer/keyboard scroll-capture PRs shipped the same rele
 
 ```bash
 git checkout main && git pull
-pnpm run release          # = pnpm run build && pnpm publish
 git tag X.Y.Z              # no "v" prefix, e.g. 1.3.2 not v1.3.2
 git push origin X.Y.Z
+pnpm run release          # = pnpm run build && pnpm publish
 gh release create X.Y.Z --title "Release X.Y.Z" --notes-file RELEASE.md
 ```
 
