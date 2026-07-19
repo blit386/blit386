@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "Engine overlay HUD configure flags, style objects, and worked examples."
-lastModified: "2026-07-13T18:09:45+02:00"
+lastModified: "2026-07-18T10:39:40+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-overlay.md"
 ---
 
@@ -155,7 +155,8 @@ right screen edges. Custom rows are user content, so a `|` in their text stays a
 - When `overlayPaletteRowsVisible` is set, only that many rows are shown in a scrollable viewport with a right-side
   scrollbar thumb (proportional to visible vs. total rows, minimum `4px`, inset `1px` from the band top, right, and
   bottom); wheel input over the palette band scrolls rows and does not reach `BT.pointerScrollDelta` outside that
-  region.
+  region. The engine forces wheel capture while the pointer is over that band even when `isCapturingPointerScroll` is
+  `false`, so the host page does not scroll under the palette.
 - The timing chart and palette grid bands use the same `overlayStyle.barPaletteIndex` fill as the other overlay rows
   (bars draw first; chart dots and swatches render on top).
 - `1px` row gaps between stacked overlay bands and cluster separators (below the top metrics cluster and above the
@@ -195,11 +196,13 @@ class Demo {
 
 ## Toggling visibility
 
-Toggle the overlay body at runtime with backquote/tilde (`~`) or a primary pointer press in the bottom-left `48×48px`
-corner, as long as `isOverlayToggleEnabled` is `true` (default). Three flags shape that behavior:
+Toggle the overlay body at runtime with backquote/tilde (`~`) or a primary pointer press in the bottom-left `17×13px`
+corner, as long as `isOverlayToggleEnabled` is `true` (default). These flags shape that behavior:
 
 - `isOverlayToggleHintVisible: false` – hide the hint icon while the body stays hidden.
 - `isOverlayToggleEnabled: false` – lock body visibility at `isOverlayVisibleAtStart` (no key or corner input).
+- `isOverlayToggleHitDebugVisible: true` – draw a 1 px outline of the bottom-left toggle hit region (opt-in; useful when
+  tuning the corner size).
 - `isOverlayEnabled: false` – disable the overlay subsystem and all toggle input entirely (for example release builds).
 
 On WebGPU, the engine draws the HUD after your `render()` call, composited above demo sprites via internal overlay draw
@@ -273,7 +276,8 @@ bottomReserve = paletteGridHeight + 1 + 13
 - Default swatch size is `7px` with `1px` gaps and `3px` padding above and below the grid.
 - When `overlayPaletteRowsVisible` is unset, `visibleRows` equals `rows` (the full palette).
 - Wheel scrolling applies only while the pointer is over the palette footer band (grid or scrollbar); demos reading
-  `BT.pointerScrollDelta` elsewhere are unaffected.
+  `BT.pointerScrollDelta` elsewhere are unaffected. Palette-band hover forces wheel capture without requiring
+  `isCapturingPointerScroll`.
 - Set `isOverlayPaletteEnabled: true` to enable the grid, or `isOverlayEnabled: false` for full-screen layouts (for
   example terminal-style demos).
 - Implementation lives in `src/overlay/palette/PaletteView.ts` (`computeGrid`, `pickGridColumnCount`,

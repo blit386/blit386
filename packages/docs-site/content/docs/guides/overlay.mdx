@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Overlay"
 description: "The engine overlay HUD: metrics, timing chart, palette grid, toggle, and layout."
-lastModified: "2026-07-11T10:57:07Z"
+lastModified: "2026-07-18T10:39:40+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-overlay.md"
 ---
 
@@ -43,10 +43,11 @@ visible and `isOverlayPaletteEnabled` is true).
 Toggle the body at runtime:
 
 - Backquote (`~`) when `isOverlayToggleEnabled` is true
-- Primary pointer press in the bottom-left 48×48 px corner
+- Primary pointer press in the bottom-left 17×13 px corner
 
 Set `isOverlayVisibleAtStart: true` to show the body on the first frame. Set `isOverlayEnabled: false` to disable the
-subsystem entirely (for example release builds or full-screen custom HUD demos).
+subsystem entirely (for example release builds or full-screen custom HUD demos). Set
+`isOverlayToggleHitDebugVisible: true` to outline the 17×13 toggle hit region while you tune it.
 
 ## Custom rows
 
@@ -73,13 +74,13 @@ Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-ro
 
 ## Optional bands
 
-| Feature             | Configure flag                           | Notes                                                                     |
-| ------------------- | ---------------------------------------- | ------------------------------------------------------------------------- |
-| Timing chart        | `isOverlayTimingChartEnabled`            | Scrolling dots for update/render ms; `BT.assignTag('label')` marks events |
-| Palette grid        | `isOverlayPaletteEnabled`                | Live swatch grid; wheel scroll when rows exceed visible cap               |
-| GPU diagnostics row | `isOverlayRendererDiagnosticsBarEnabled` | Text row below frame metrics                                              |
-| Chart GPU markers   | `overlayTimingChartDiagnostics`          | `'minimal'` (default when chart on), `'rich'`, or `false`                 |
-| Audio meters        | `isOverlayAudioMetersEnabled`            | Per-bus (main/music/sfx) level bars plus a voices/steal/drop text readout |
+| Feature             | Configure flag                           | Notes                                                                                      |
+| ------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Timing chart        | `isOverlayTimingChartEnabled`            | Scrolling dots for update/render ms; `BT.assignTag('label')` marks events                  |
+| Palette grid        | `isOverlayPaletteEnabled`                | Live swatch grid; wheel scroll when rows exceed visible cap (forces capture over the band) |
+| GPU diagnostics row | `isOverlayRendererDiagnosticsBarEnabled` | Text row below frame metrics                                                               |
+| Chart GPU markers   | `overlayTimingChartDiagnostics`          | `'minimal'` (default when chart on), `'rich'`, or `false`                                  |
+| Audio meters        | `isOverlayAudioMetersEnabled`            | Per-bus (main/music/sfx) level bars plus a voices/steal/drop text readout                  |
 
 Reserve vertical space in demo layouts: ~42 px top, ~14 px per custom row, timing chart height (default 22 px), audio
 meter band height plus a 1 px gap when enabled (14 px default), palette grid height when enabled, and ~13 px footer hint

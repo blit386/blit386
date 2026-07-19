@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-07-13T17:14:43+02:00"
+lastModified: "2026-07-19T15:33:20+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -15,6 +15,33 @@ This page is editorial – release highlights and migration notes, not an exhaus
 (exactly when a given class, method, or getter shipped) see the availability table and changelog on each `api/*` and
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
+
+## 1.3.1 - 2026-07-19
+
+### Added
+
+- Opt-in keyboard scroll capture via `HardwareSettings.isCapturingKeyboardScroll` (default `false`). When enabled,
+  canvas `keydown` for arrow keys, Space, PageUp/PageDown, Home, and End calls `preventDefault()` so games can map those
+  keys without scrolling the host page.
+- Opt-in screen wake lock via `HardwareSettings.isWakeLockEnabled` (default `false`). When enabled, the engine requests
+  a screen wake lock after a successful `init()` to prevent mobile browsers from dimming or locking the screen during
+  active gameplay, and re-acquires it automatically once the page returns to the foreground. Silently no-ops on browsers
+  without the Wake Lock API.
+- Screen orientation detection and optional lock: `BT.screenOrientation` reads the current `screen.orientation.type` (or
+  `null` when unavailable); optional `IBTDemo.onOrientationChange(type)` fires on rotate;
+  `HardwareSettings.preferredOrientation` (`'landscape' | 'portrait' | 'any'`, default `'any'`) attempts
+  `screen.orientation.lock()` after init. Lock failures are silent no-ops (for example on iOS Safari).
+- `HardwareSettings.isOverlayToggleHitDebugVisible` (default `false`) draws a 1 pixel outline of the overlay's
+  bottom-left `17×13` toggle hit region, for tuning the hit zone.
+
+### Changed
+
+- Pointer wheel capture is opt-in via `HardwareSettings.isCapturingPointerScroll` (default `false`). Canvas wheel events
+  no longer call `preventDefault()` by default, so host pages can scroll while the pointer is over the canvas. Demos
+  that map `BT.pointerScrollDelta` must set the flag. The overlay palette grid still forces capture while the pointer is
+  over its band.
+- The overlay's bottom-left toggle hit region shrinks from `48×48` to `17×13` pixels, matching the visible toggle icon
+  more closely.
 
 ## 1.3.0 - 2026-07-13
 
