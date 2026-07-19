@@ -45,6 +45,7 @@ import {
     needsOverlayRendererDiagnostics,
     resolveOverlayTimingChartDiagnostics,
 } from './IBTDemo';
+import { Orientation } from './Orientation';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { WakeLock } from './WakeLock';
 import { initWebGPU } from './WebGPUContext';
@@ -223,6 +224,9 @@ export class BTAPI {
      *  {@link HardwareSettings.isWakeLockEnabled} is true. */
     private wakeLock: WakeLock | null = null;
 
+    /** Screen orientation detection / lock subsystem. Created and attached during {@link init}. */
+    private orientation: Orientation | null = null;
+
     // TODO: Additional subsystems for future implementation:
     // AssetManager
 
@@ -284,6 +288,8 @@ export class BTAPI {
      * - run the demo's async `init()`
      * - start the fixed-timestep game loop
      * - request a screen wake lock when {@link HardwareSettings.isWakeLockEnabled} is true
+     * - attach screen orientation detection (and optional lock via
+     *   {@link HardwareSettings.preferredOrientation})
      *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
@@ -475,17 +481,23 @@ export class BTAPI {
             this.wakeLock.attach();
         }
 
+        this.orientation?.detach();
+        this.orientation = new Orientation();
+        this.orientation.attach(hwSettings.preferredOrientation ?? 'any', demo.onOrientationChange?.bind(demo) ?? null);
+
         console.log('[BT] Initialization complete');
 
         return true;
     }
 
     /**
-     * Stops the active game loop and detaches input, audio, and wake lock subsystems.
+     * Stops the active game loop and detaches input, audio, wake lock, and orientation
+     * subsystems.
      *
-     * Pointer, keyboard, gamepad, audio, and wake lock subsystems are detached so
-     * listeners, polling state, the audio context, and the held wake lock sentinel do
-     * not leak across engine restarts (relevant in tests where the same DOM persists).
+     * Pointer, keyboard, gamepad, audio, wake lock, and orientation subsystems are
+     * detached so listeners, polling state, the audio context, the held wake lock
+     * sentinel, and the orientation change listener do not leak across engine restarts
+     * (relevant in tests where the same DOM persists).
      */
     public stop(): void {
         this.loop?.stop();
@@ -493,6 +505,9 @@ export class BTAPI {
 
         this.wakeLock?.detach();
         this.wakeLock = null;
+
+        this.orientation?.detach();
+        this.orientation = null;
     }
 
     /**
@@ -825,6 +840,19 @@ export class BTAPI {
      */
     public getActiveBackend(): Backend | null {
         return this.activeBackend;
+    }
+
+    /**
+     * Returns the current `screen.orientation.type` string when available.
+     *
+     * Does not require a successful init - reads the platform API directly.
+     * Examples: `'landscape-primary'`, `'portrait-secondary'`.
+     *
+     * @returns Orientation type string, or `null` when the Screen Orientation API
+     *   is unavailable.
+     */
+    public getScreenOrientation(): string | null {
+        return Orientation.type;
     }
 
     /**

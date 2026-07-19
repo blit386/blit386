@@ -1512,6 +1512,117 @@ describe('BTAPI', () => {
         });
     });
 
+    describe('screen orientation', () => {
+        type FakeOrientation = {
+            type: string;
+            lock: ReturnType<typeof vi.fn>;
+            unlock: ReturnType<typeof vi.fn>;
+            addEventListener: ReturnType<typeof vi.fn>;
+            removeEventListener: ReturnType<typeof vi.fn>;
+            dispatchEvent: (event: Event) => boolean;
+        };
+
+        let mockOrientation: FakeOrientation | null = null;
+
+        afterEach(() => {
+            mockOrientation = null;
+            Reflect.deleteProperty(globalThis, 'screen');
+        });
+
+        function installMockOrientation(type = 'landscape-primary'): FakeOrientation {
+            const target = new EventTarget();
+
+            mockOrientation = {
+                type,
+                lock: vi.fn(async () => undefined),
+                unlock: vi.fn(),
+                addEventListener: vi.fn((event: string, listener: EventListener) => {
+                    target.addEventListener(event, listener);
+                }),
+                removeEventListener: vi.fn((event: string, listener: EventListener) => {
+                    target.removeEventListener(event, listener);
+                }),
+                dispatchEvent: (event: Event) => target.dispatchEvent(event),
+            };
+
+            Object.defineProperty(globalThis, 'screen', {
+                configurable: true,
+                value: { orientation: mockOrientation },
+            });
+
+            return mockOrientation;
+        }
+
+        function makeOrientationDemo(
+            preferredOrientation: 'landscape' | 'portrait' | 'any',
+            onOrientationChange?: (type: string) => void,
+        ): IBTDemo {
+            const demo: IBTDemo = {
+                ...makeMockDemo(),
+                configure: vi.fn().mockReturnValue({
+                    displaySize: new Vector2i(320, 240),
+                    drawingBufferSize: new Vector2i(640, 480),
+                    targetFPS: 60,
+                    preferredOrientation,
+                }),
+            };
+
+            if (onOrientationChange !== undefined) {
+                demo.onOrientationChange = onOrientationChange;
+            }
+
+            return demo;
+        }
+
+        it('exposes the current screen orientation via getScreenOrientation', () => {
+            installMockOrientation('portrait-secondary');
+
+            expect(BTAPI.instance.getScreenOrientation()).toBe('portrait-secondary');
+            expect(BT.screenOrientation).toBe('portrait-secondary');
+        });
+
+        it('requests an orientation lock on successful init when preferredOrientation is set', async () => {
+            const mock = installMockOrientation();
+
+            await BTAPI.instance.init(makeOrientationDemo('landscape'), makeMockCanvas());
+
+            await vi.waitFor(() => {
+                expect(mock.lock).toHaveBeenCalledWith('landscape');
+            });
+        });
+
+        it('does not lock when preferredOrientation is any', async () => {
+            const mock = installMockOrientation();
+
+            await BTAPI.instance.init(makeOrientationDemo('any'), makeMockCanvas());
+
+            expect(mock.lock).not.toHaveBeenCalled();
+        });
+
+        it('forwards orientation change events to demo.onOrientationChange', async () => {
+            const mock = installMockOrientation('landscape-primary');
+            const onOrientationChange = vi.fn();
+
+            await BTAPI.instance.init(makeOrientationDemo('any', onOrientationChange), makeMockCanvas());
+
+            mock.type = 'portrait-primary';
+            mock.dispatchEvent(new Event('change'));
+
+            expect(onOrientationChange).toHaveBeenCalledWith('portrait-primary');
+        });
+
+        it('removes the orientation listener on stop', async () => {
+            const mock = installMockOrientation();
+
+            await BTAPI.instance.init(makeOrientationDemo('landscape'), makeMockCanvas());
+
+            BTAPI.instance.stop();
+
+            expect(mock.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+            expect(mock.unlock).toHaveBeenCalled();
+        });
+    });
+
     describe('assignTag', () => {
         it('forwards tags to Overlay when the timing chart is enabled', async () => {
             const assignSpy = vi.spyOn(Overlay.prototype, 'assignTag');

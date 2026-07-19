@@ -118,6 +118,12 @@ describe('defaultConfig', () => {
         expect(settings.isWakeLockEnabled).toBe(false);
     });
 
+    it('should prefer any orientation by default', () => {
+        const settings = defaultConfig();
+
+        expect(settings.preferredOrientation).toBe('any');
+    });
+
     it('should return a fresh object on each call', () => {
         const a = defaultConfig();
         const b = defaultConfig();
@@ -206,6 +212,30 @@ describe('mergeHardwareSettings', () => {
         });
 
         expect(settings.isWakeLockEnabled).toBe(true);
+    });
+
+    it('merges preferredOrientation-only partials with full defaults', () => {
+        const settings = mergeHardwareSettings({ preferredOrientation: 'landscape' });
+
+        expect(settings.preferredOrientation).toBe('landscape');
+        expect(settings.targetFPS).toBe(60);
+    });
+
+    it('keeps preferredOrientation unset when displaySize is provided without an explicit value', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+        });
+
+        expect(settings.preferredOrientation).toBeUndefined();
+    });
+
+    it('applies an explicit preferredOrientation alongside displaySize', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+            preferredOrientation: 'portrait',
+        });
+
+        expect(settings.preferredOrientation).toBe('portrait');
     });
 
     it('applies only provided fields when displaySize is set', () => {

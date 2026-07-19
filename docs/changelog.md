@@ -30,6 +30,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   a screen wake lock after a successful `init()` to prevent mobile browsers from dimming or locking the screen during
   active gameplay, and re-acquires it automatically once the page returns to the foreground. Silently no-ops on browsers
   without the Wake Lock API.
+- Screen orientation detection and optional lock: `BT.screenOrientation` reads the current `screen.orientation.type` (or
+  `null` when unavailable); optional `IBTDemo.onOrientationChange(type)` fires on rotate;
+  `HardwareSettings.preferredOrientation` (`'landscape' | 'portrait' | 'any'`, default `'any'`) attempts
+  `screen.orientation.lock()` after init. Lock failures are silent console warnings (for example on iOS Safari).
 
 ### Changed
 

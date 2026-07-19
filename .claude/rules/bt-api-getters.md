@@ -10,14 +10,14 @@ Quick rules when changing `src/BLIT386.ts` or demos:
 
 ## Getter lists
 
-| Category                                         | Members                                                                                                        |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Configure-time (mirror `HardwareSettings` names) | `displaySize`, `drawingBufferSize`, `targetFPS`                                                                |
-| Derived                                          | `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field)                                 |
-| Configure-time (backend)                         | `requestedBackend` (mirrors `HardwareSettings.backend`; `null` before init)                                    |
-| Loop timing                                      | `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`                                                          |
-| Runtime state                                    | `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying` (`activeBackend` `null` before init) |
-| Per-frame input                                  | `pointerScrollDelta`, `inputString`, `gamepadCount`                                                            |
+| Category                                         | Members                                                                                                                                                                      |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Configure-time (mirror `HardwareSettings` names) | `displaySize`, `drawingBufferSize`, `targetFPS`                                                                                                                              |
+| Derived                                          | `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field)                                                                                               |
+| Configure-time (backend)                         | `requestedBackend` (mirrors `HardwareSettings.backend`; `null` before init)                                                                                                  |
+| Loop timing                                      | `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`                                                                                                                        |
+| Runtime state                                    | `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation` (`activeBackend` / `screenOrientation` `null` before init / when unavailable) |
+| Per-frame input                                  | `pointerScrollDelta`, `inputString`, `gamepadCount`                                                                                                                          |
 
 `Vector2i` getters return a clone per read. `activeBackend` is what actually started after fallback, not
 `configure().backend`. `palette` is a live reference – mutating slots affects rendering on the next frame.

@@ -31,6 +31,17 @@ export type Backend = 'webgpu' | 'software';
 export type AudioBus = 'main' | 'music' | 'sfx';
 
 /**
+ * Preferred display orientation for {@link HardwareSettings.preferredOrientation}.
+ *
+ * - `'landscape'` / `'portrait'` - after init, attempt `screen.orientation.lock()`
+ *   with that target (silent no-op when unsupported or rejected).
+ * - `'any'` - no lock attempt (default).
+ *
+ * @since 1.3.1
+ */
+export type PreferredOrientation = 'landscape' | 'portrait' | 'any';
+
+/**
  * Engine-facing hardware configuration returned by `configure()` when a demo
  * implements that optional hook, or by {@link defaultConfig} otherwise.
  *
@@ -40,6 +51,7 @@ export type AudioBus = 'main' | 'music' | 'sfx';
  * @changed 1.3.1 Added {@link HardwareSettings.isCapturingPointerScroll}.
  * @changed 1.3.1 Added {@link HardwareSettings.isCapturingKeyboardScroll}.
  * @changed 1.3.1 Added {@link HardwareSettings.isWakeLockEnabled}.
+ * @changed 1.3.1 Added {@link HardwareSettings.preferredOrientation}.
  */
 export interface HardwareSettings {
     /**
@@ -160,6 +172,18 @@ export interface HardwareSettings {
      * @since 1.3.1
      */
     isWakeLockEnabled?: boolean;
+
+    /**
+     * Preferred screen orientation. When `'landscape'` or `'portrait'`, the engine
+     * attempts `screen.orientation.lock()` after a successful `init()`. Silently
+     * no-ops on browsers that do not support locking (for example iOS Safari) or when
+     * the platform rejects the request. Defaults to `'any'` in {@link defaultConfig}
+     * (no lock attempt). Detection via {@link BT.screenOrientation} and
+     * {@link IBTDemo.onOrientationChange} works regardless of this setting.
+     *
+     * @since 1.3.1
+     */
+    preferredOrientation?: PreferredOrientation;
 
     /**
      * Rendering backend to use. Defaults to `'webgpu'`.
@@ -462,6 +486,7 @@ export interface OverlayRow {
  * 5. (engine) overlay - When {@link HardwareSettings.isOverlayEnabled} is true, drawn after `render()` on top
  *
  * @since 0.1.0
+ * @changed 1.3.1 Added optional {@link IBTDemo.onOrientationChange} hook.
  */
 export interface IBTDemo {
     /**
@@ -537,6 +562,20 @@ export interface IBTDemo {
      * @returns Read-only list of overlay rows, or `undefined` for none.
      */
     overlayRows?(): readonly OverlayRow[] | undefined;
+
+    /**
+     * Optional hook called when `screen.orientation` reports a type change.
+     *
+     * The engine installs a listener after a successful `init()` and removes it on
+     * `stop()`. Use this to show a "please rotate" prompt or adapt layout; the
+     * engine does not draw that UI itself. Read the current value any time via
+     * {@link BT.screenOrientation}.
+     *
+     * @since 1.3.1
+     * @param type - Current `screen.orientation.type` (for example
+     *   `'landscape-primary'` or `'portrait-secondary'`).
+     */
+    onOrientationChange?(type: string): void;
 }
 
 /**
@@ -561,6 +600,7 @@ export function defaultConfig(): HardwareSettings {
         isCapturingPointerScroll: false,
         isCapturingKeyboardScroll: false,
         isWakeLockEnabled: false,
+        preferredOrientation: 'any',
         isOverlayEnabled: true,
         isOverlayVisibleAtStart: false,
         isOverlayToggleHintVisible: true,
@@ -730,6 +770,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'isCapturingPointerScroll');
     pickIfDefinedPartial(picked, partial, 'isCapturingKeyboardScroll');
     pickIfDefinedPartial(picked, partial, 'isWakeLockEnabled');
+    pickIfDefinedPartial(picked, partial, 'preferredOrientation');
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
     pickDefinedOverlaySettings(picked, partial);
@@ -883,6 +924,7 @@ function assignFullDefaultMergeScalars(
         picked.isCapturingKeyboardScroll ?? defaults.isCapturingKeyboardScroll,
     );
     assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled ?? defaults.isWakeLockEnabled);
+    assignIfDefined(optionals, 'preferredOrientation', picked.preferredOrientation ?? defaults.preferredOrientation);
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
 
@@ -1024,6 +1066,7 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'isCapturingPointerScroll', picked.isCapturingPointerScroll);
     assignIfDefined(optionals, 'isCapturingKeyboardScroll', picked.isCapturingKeyboardScroll);
     assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled);
+    assignIfDefined(optionals, 'preferredOrientation', picked.preferredOrientation);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
     assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);

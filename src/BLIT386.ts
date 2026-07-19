@@ -40,6 +40,7 @@ import {
     type OverlayRow,
     type OverlayStyle,
     type OverlayTimingChartStyle,
+    type PreferredOrientation,
 } from './core/IBTDemo';
 import {
     createDefaultKeyboardRuntimeMaps,
@@ -708,6 +709,24 @@ export const BT = {
      */
     get activeBackend(): Backend | null {
         return BTAPI.instance.getActiveBackend();
+    },
+
+    /**
+     * Current screen orientation type from the Screen Orientation API.
+     *
+     * Examples: `'landscape-primary'`, `'portrait-secondary'`. Returns `null` when
+     * `screen.orientation` is unavailable. Pair with
+     * {@link HardwareSettings.preferredOrientation} to request a lock after init, and
+     * with {@link IBTDemo.onOrientationChange} to react when the user rotates the device.
+     *
+     * Named `screenOrientation` (not `orientation`) to leave room for a future
+     * device-orientation (alpha/beta/gamma) getter.
+     *
+     * @since 1.3.1
+     * @returns Orientation type string, or `null` when the API is unavailable.
+     */
+    get screenOrientation(): string | null {
+        return BTAPI.instance.getScreenOrientation();
     },
 
     /**
@@ -2114,6 +2133,7 @@ export type {
     OverlayRow,
     OverlayStyle,
     OverlayTimingChartStyle,
+    PreferredOrientation,
     SoundParamSetOptions,
     SoundPlayOptions,
     SoundRef,

@@ -74,6 +74,27 @@ it never fails `init()` and there is no fallback behavior to configure.
 
 </Callout>
 
+## Screen orientation
+
+Read the current orientation with `BT.screenOrientation` (a `screen.orientation.type` string, or `null` when the API is
+unavailable). After `init()`, the engine listens for orientation changes and calls optional
+`IBTDemo.onOrientationChange(type)`. Set `HardwareSettings.preferredOrientation` to `'landscape'` or `'portrait'` to
+attempt `screen.orientation.lock()` after init; the default `'any'` skips the lock. See
+[Screen orientation](api-core.md#screen-orientation) for the API surface and a usage example.
+
+| Capability                         | Chrome/Edge | Safari   | Firefox | Notes                                        |
+| ---------------------------------- | ----------- | -------- | ------- | -------------------------------------------- |
+| Detection (`type` + `change`)      | Yes         | Yes      | Yes     | All modern browsers                          |
+| Lock (`screen.orientation.lock()`) | Android Yes | No (iOS) | Limited | Desktop often requires fullscreen or similar |
+
+<Callout title="Silent no-op fallback">
+
+Lock support is uneven - Chrome on Android and Samsung Internet typically allow it; iOS Safari does not. When locking is
+unsupported or rejected, the engine logs a console warning and continues. Detection and `onOrientationChange` still work
+wherever `screen.orientation` exists.
+
+</Callout>
+
 ## Safari render throttling (macOS Low Power Mode)
 
 macOS Low Power Mode makes Safari/WebKit halve its `requestAnimationFrame` dispatch rate to about `30 Hz`, even on a
