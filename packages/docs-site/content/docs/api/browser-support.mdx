@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Browser Support"
 description: "WebGPU support matrix, automatic software fallback, and build toolchain."
-lastModified: "2026-07-10T16:41:03+02:00"
+lastModified: "2026-07-19T15:33:20+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-browser-support.md"
 ---
 
@@ -46,6 +46,49 @@ codec support follows the browser, not BLIT386.
 Codec support shifts with browser updates. Treat this matrix as a snapshot and re-check the vendor release notes
 periodically. This is why `AudioClip.load()` accepts an ordered fallback list (for example
 `['theme.ogg', 'theme.mp3']`) - the engine tries each candidate in order until one decodes.
+
+</Callout>
+
+## Screen wake lock
+
+Set `HardwareSettings.isWakeLockEnabled: true` in `configure()` to keep the screen from dimming or locking during active
+gameplay via the [Screen Wake Lock API](https://developer.mozilla.org/docs/Web/API/Screen_Wake_Lock_API). The engine
+acquires the lock after a successful `init()` and re-acquires it automatically once the page returns to the foreground -
+the platform releases the lock on its own while the page is hidden.
+
+| Browser         | Minimum version | Support |
+| --------------- | --------------- | ------- |
+| Chrome/Edge     | 84+             | Yes     |
+| Safari          | 16.4+           | Yes     |
+| Firefox         | 126+            | Yes     |
+| Android WebView | -               | Yes     |
+
+<Callout title="Silent no-op fallback">
+
+Coverage is broad enough to treat this as a standard feature. On a browser without the Wake Lock API, or when the
+platform denies the request (for example a low-battery OS override), the engine logs a console warning and continues -
+it never fails `init()` and there is no fallback behavior to configure.
+
+</Callout>
+
+## Screen orientation
+
+Read the current orientation with `BT.screenOrientation` (a `screen.orientation.type` string, or `null` when the API is
+unavailable). After `init()`, the engine listens for orientation changes and calls optional
+`IBTDemo.onOrientationChange(type)`. Set `HardwareSettings.preferredOrientation` to `'landscape'` or `'portrait'` to
+attempt `screen.orientation.lock()` after init; the default `'any'` skips the lock. See
+[Screen orientation](/docs/api/core#screen-orientation) for the API surface and a usage example.
+
+| Capability                         | Chrome/Edge | Safari   | Firefox | Notes                                        |
+| ---------------------------------- | ----------- | -------- | ------- | -------------------------------------------- |
+| Detection (`type` + `change`)      | Yes         | Yes      | Yes     | All modern browsers                          |
+| Lock (`screen.orientation.lock()`) | Android Yes | No (iOS) | Limited | Desktop often requires fullscreen or similar |
+
+<Callout title="Silent no-op fallback">
+
+Lock support is uneven - Chrome on Android and Samsung Internet typically allow it; iOS Safari does not. When locking is
+unsupported or rejected, the engine continues without unlocking or failing `init()`. Detection and `onOrientationChange`
+still work wherever `screen.orientation` exists.
 
 </Callout>
 
