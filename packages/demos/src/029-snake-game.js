@@ -101,9 +101,13 @@ const MOVE_INTERVAL_STEP = 1;
 // Background-loop playback rate (Web Audio pitch). 1.0 is the file's natural tempo;
 // higher values play faster and higher, like speeding up a cassette.
 // MUSIC_PITCH_AT_START is the rate on a fresh round; each food multiplies that rate by
-// MUSIC_PITCH_SCALE_PER_GROWTH (for example 0.6, then 0.6 * 1.05, then 0.6 * 1.05^2, ...).
+// MUSIC_PITCH_SCALE_PER_GROWTH (for example 0.57, then 0.57 * 1.03, then 0.57 * 1.03^2, ...).
 const MUSIC_PITCH_AT_START = 0.57;
 const MUSIC_PITCH_SCALE_PER_GROWTH = 1.03;
+
+// How many growths it takes for moveInterval to reach MOVE_INTERVAL_MIN. Music pitch uses
+// the same ceiling so the loop stops speeding up once the snake is already at top speed.
+const MUSIC_PITCH_GROWTH_CAP = (MOVE_INTERVAL_START - MOVE_INTERVAL_MIN) / MOVE_INTERVAL_STEP;
 
 // High enough that short eat / death blips never steal the looping music voice from the
 // SFX pool (BT.soundPlay uses priority stealing when every voice is busy).
@@ -185,8 +189,8 @@ class Demo {
     moveInterval = MOVE_INTERVAL_START;
 
     /**
-     * How many food dots the snake has eaten this round. Drives music pitch:
-     * start rate times MUSIC_PITCH_SCALE_PER_GROWTH raised to this count.
+     * How many food dots the snake has eaten this round. Music pitch uses this count
+     * capped at MUSIC_PITCH_GROWTH_CAP so tempo plateaus with move speed.
      */
     growthCount = 0;
 
@@ -682,13 +686,17 @@ class Demo {
      * Playback rate for the background loop from the starting pitch and how many times
      * the snake has grown this round. One food is start * scale, two foods is
      * start * scale * scale, and so on; zero growths leaves the rate at the start pitch.
+     * Growth above MUSIC_PITCH_GROWTH_CAP no longer raises the rate (matches top speed).
      *
      * @returns {number} Playback rate to pass to BT.soundPlay / BT.soundPitchSet.
      */
     currentMusicPitch() {
         // The ** operator is "to the power of": a ** b means a multiplied by itself b times.
         // growthCount 0 gives 1, so the rate stays at MUSIC_PITCH_AT_START on a fresh round.
-        return MUSIC_PITCH_AT_START * MUSIC_PITCH_SCALE_PER_GROWTH ** this.growthCount;
+        // Cap at MUSIC_PITCH_GROWTH_CAP so pitch plateaus with moveInterval at top speed.
+        const growthForPitch = Math.min(this.growthCount, MUSIC_PITCH_GROWTH_CAP);
+
+        return MUSIC_PITCH_AT_START * MUSIC_PITCH_SCALE_PER_GROWTH ** growthForPitch;
     }
 
     /**
@@ -831,7 +839,8 @@ class Demo {
             // value, which is how we stop the interval from dropping into the negatives.
             this.moveInterval = Math.max(MOVE_INTERVAL_MIN, this.moveInterval - MOVE_INTERVAL_STEP);
 
-            // One more segment - multiply the music tempo by MUSIC_PITCH_SCALE_PER_GROWTH.
+            // Keep counting every food for length / UI; currentMusicPitch() caps the exponent
+            // at MUSIC_PITCH_GROWTH_CAP so tempo stops climbing once speed has already maxed out.
             this.growthCount += 1;
             this.syncMusicTempo();
 
