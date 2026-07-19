@@ -12,8 +12,9 @@
  * Move with WASD or the arrow keys (both are mapped to player 0 face buttons). On a phone
  * or tablet, steer with the on-screen D-pad in the bottom-right corner (it appears at the
  * first touch) or simply swipe anywhere in the direction you want to go - both come from
- * the shared UI kit in src/shared/ui.js. Each food dot grows the snake. Hitting the
- * boundary wall or your own body ends the run; the game restarts after two seconds.
+ * the shared UI kit in src/shared/ui.js. Each food dot grows the snake and makes it
+ * one step faster. Hitting the boundary wall or your own body ends the run; the game
+ * restarts after two seconds.
  * Gameplay uses rectangles; a short systemPrint note appears in software mode.
  *
  * Post-processing matches demo 023 when WebGPU is active. In software fallback mode the
@@ -24,8 +25,8 @@
  * line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
  *
  * Eating food and dying both play a synthesized sound effect (built with AudioClip.synth(),
- * the same technique 041-Synth Toy explores in depth), and an upbeat music loop plays in the
- * background the whole time.
+ * the same technique 041-Synth Toy explores in depth). An upbeat music loop plays in the
+ * background; each food multiplies its playback rate so the beat climbs with snake length.
  */
 
 import {
@@ -90,8 +91,26 @@ const INNER_H = DISPLAY_H - 2 * WALL;
 const CELLS_X = INNER_W / CELL;
 const CELLS_Y = INNER_H / CELL;
 
-// Fixed ticks between snake steps (lower = faster snake).
-const MOVE_INTERVAL = 10;
+// Ticks between snake steps (lower = faster). A new round starts slow, then each food
+// shortens the wait by MOVE_INTERVAL_STEP until MOVE_INTERVAL_MIN. At 60 FPS, 20 ticks
+// is three steps per second; 4 ticks is fifteen steps per second.
+const MOVE_INTERVAL_START = 20;
+const MOVE_INTERVAL_MIN = 4;
+const MOVE_INTERVAL_STEP = 1;
+
+// Background-loop playback rate (Web Audio pitch). 1.0 is the file's natural tempo;
+// higher values play faster and higher, like speeding up a cassette.
+// MUSIC_PITCH_AT_START is the rate on a fresh round; each food multiplies that rate by
+// MUSIC_PITCH_SCALE_PER_GROWTH (for example 0.6, then 0.6 * 1.05, then 0.6 * 1.05^2, ...).
+const MUSIC_PITCH_AT_START = 0.57;
+const MUSIC_PITCH_SCALE_PER_GROWTH = 1.03;
+
+// High enough that short eat / death blips never steal the looping music voice from the
+// SFX pool (BT.soundPlay uses priority stealing when every voice is busy).
+const MUSIC_VOICE_PRIORITY = 100;
+
+// Soft glide when the loop speeds up or slows down after a food eat or a new round.
+const MUSIC_PITCH_FADE_MS = 120;
 
 // Two seconds at 60 ticks per second before a new round starts.
 const RESTART_DELAY_TICKS = 120;
@@ -131,6 +150,15 @@ class Demo {
     /** @type {AudioClip | null} Looping background music. */
     musicClip = null;
 
+    /**
+     * Live handle for the looping music voice, or null before unlock / if music failed to
+     * load. We use BT.soundPlay (not BT.musicPlay) so we can change pitch each time the
+     * snake speeds up - the music player has volume and crossfade controls, but no pitch.
+     *
+     * @type {import('blit386').SoundRef | null}
+     */
+    musicRef = null;
+
     /** @type {{ x: number; y: number }[]} Head first, tail last (grid coords). */
     snake = [];
 
@@ -149,6 +177,18 @@ class Demo {
 
     /** Counts ticks until the next snake step while the game is running. */
     moveCooldown = 0;
+
+    /**
+     * Current ticks between steps. Starts at MOVE_INTERVAL_START each round and drops
+     * toward MOVE_INTERVAL_MIN every time the snake eats food.
+     */
+    moveInterval = MOVE_INTERVAL_START;
+
+    /**
+     * How many food dots the snake has eaten this round. Drives music pitch:
+     * start rate times MUSIC_PITCH_SCALE_PER_GROWTH raised to this count.
+     */
+    growthCount = 0;
 
     /** When true, the snake does not move until restart. */
     gameOver = false;
@@ -218,6 +258,16 @@ class Demo {
             outputUpscaleFilter: 'nearest',
             targetFPS: TARGET_FPS,
 
+            // Phones and tablets dim, then lock, the screen after 30-60 seconds without a touch -
+            // annoying mid-game when you are only pressing arrow keys or swiping every few seconds.
+            // This asks the browser to keep the screen on while you are playing. Browsers that do
+            // not support the request just ignore it, so this is safe everywhere.
+            isWakeLockEnabled: true,
+
+            // Arrow keys (and Space) normally scroll the page. This demo maps those keys to move
+            // the snake, so opt in so the browser does not scroll the demo page while you play.
+            isCapturingKeyboardScroll: true,
+
             // Hide the small "~" toggle hint in the bottom-left corner so the game
             // board stays clean. Players who want the stats overlay can still press
             // the Backquote key (`) to show it and press ` again to hide it - hiding
@@ -270,12 +320,13 @@ class Demo {
         // stop the whole game from starting. Catching the error here means Snake stays fully
         // playable with sound effects but no music, instead of getting stuck on a blank
         // screen.
+        //
+        // We only load here - we do not call BT.soundPlay yet. Browsers keep audio locked
+        // until the first click or key press, and unlike BT.musicPlay (which remembers a
+        // request while locked), BT.soundPlay would be dropped. update() starts the loop
+        // the moment BT.isAudioUnlocked flips true.
         try {
             this.musicClip = await AudioClip.load('/audio/music-upbeat.wav');
-
-            // BT.musicPlay() called before the page is unlocked is "remembered" and starts
-            // for real the instant the player clicks or presses a key.
-            BT.musicPlay(this.musicClip, { loop: true });
         } catch (error) {
             console.warn('Snake Game: failed to load background music, continuing without it.', error);
         }
@@ -317,6 +368,9 @@ class Demo {
         // and watches for swipe gestures. Always the first line of update().
         ui.tick();
 
+        // Start (or restart) the tempo-linked music loop once audio is unlocked.
+        this.ensureBackgroundMusic();
+
         // Did a swipe finish on this tick? ui.swipe() answers with a direction name
         // ('up', 'down', 'left', 'right') or null. We read it once and hand it to the
         // steering code below, next to the keyboard and D-pad checks.
@@ -339,7 +393,8 @@ class Demo {
             return;
         }
 
-        this.moveCooldown = MOVE_INTERVAL;
+        // Use the live interval so food-driven speed-ups take effect on the next step.
+        this.moveCooldown = this.moveInterval;
 
         if (!(this.pendingDx === -this.dx && this.pendingDy === -this.dy)) {
             this.dx = this.pendingDx;
@@ -371,12 +426,13 @@ class Demo {
         }
 
         // Browsers keep all sound muted until the player clicks or presses a key. This
-        // shared row shows the standard warm "enable sound" hint only while audio is still
-        // locked, then disappears on its own the moment a first move unlocks it - which is
-        // also the same gesture that starts the snake moving, so the hint is usually only
-        // visible for a single frame.
+        // shared row shows a warm "enable sound" hint only while audio is still locked,
+        // then disappears on its own the moment a first move unlocks it - which is also
+        // the same gesture that starts the snake moving, so the hint is usually only
+        // visible for a single frame. The default sentence is too long for this 160-wide
+        // playfield, so we pass a short override.
         ui.begin('topLeft', { margin: 3 });
-        ui.audioUnlockHint();
+        ui.audioUnlockHint({ text: 'Click for sound' });
         ui.end();
 
         // The touch D-pad, drawn over the playfield in the bottom-right corner. It stays
@@ -623,12 +679,74 @@ class Demo {
     }
 
     /**
-     * Places a short snake in the middle and spawns the first food dot.
+     * Playback rate for the background loop from the starting pitch and how many times
+     * the snake has grown this round. One food is start * scale, two foods is
+     * start * scale * scale, and so on; zero growths leaves the rate at the start pitch.
+     *
+     * @returns {number} Playback rate to pass to BT.soundPlay / BT.soundPitchSet.
+     */
+    currentMusicPitch() {
+        // The ** operator is "to the power of": a ** b means a multiplied by itself b times.
+        // growthCount 0 gives 1, so the rate stays at MUSIC_PITCH_AT_START on a fresh round.
+        return MUSIC_PITCH_AT_START * MUSIC_PITCH_SCALE_PER_GROWTH ** this.growthCount;
+    }
+
+    /**
+     * Starts the looping music voice once audio is unlocked, or restarts it if the voice
+     * was somehow lost. Safe to call every tick - it no-ops while already playing.
+     *
+     * Why BT.soundPlay instead of BT.musicPlay: only the SFX path exposes pitch (playback
+     * rate), which is how we keep the beat tied to snake growth. The tradeoff is that
+     * soundPlay is dropped before unlock, so we wait for BT.isAudioUnlocked here.
+     */
+    ensureBackgroundMusic() {
+        if (this.musicClip === null || !BT.isAudioUnlocked) {
+            return;
+        }
+
+        // Already have a live looping voice - nothing to do.
+        if (this.musicRef !== null && BT.isSoundPlaying(this.musicRef)) {
+            return;
+        }
+
+        // Start (or restart) at the pitch for the current growth count.
+        this.musicRef = BT.soundPlay(this.musicClip, {
+            loop: true,
+            volume: 0.65,
+            pitch: this.currentMusicPitch(),
+            priority: MUSIC_VOICE_PRIORITY,
+        });
+    }
+
+    /**
+     * Glides the live music loop to the playback rate for the current growth count.
+     * No-op before the loop has started (still locked, or music failed to load).
+     */
+    syncMusicTempo() {
+        if (this.musicRef === null || !BT.isSoundPlaying(this.musicRef)) {
+            return;
+        }
+
+        BT.soundPitchSet(this.musicRef, this.currentMusicPitch(), {
+            fadeMs: MUSIC_PITCH_FADE_MS,
+        });
+    }
+
+    /**
+     * Places a short snake in the middle, resets speed to the slow start, and spawns
+     * the first food dot.
      */
     startRound() {
         this.gameOver = false;
         this.deathTick = null;
-        this.moveCooldown = MOVE_INTERVAL;
+
+        // Every new round begins at the slow pace; eating food will speed things up again.
+        this.moveInterval = MOVE_INTERVAL_START;
+        this.moveCooldown = this.moveInterval;
+
+        // Zero foods eaten - music returns to MUSIC_PITCH_AT_START for the new round.
+        this.growthCount = 0;
+        this.syncMusicTempo();
 
         const midX = Math.floor(CELLS_X / 2);
         const midY = Math.floor(CELLS_Y / 2);
@@ -707,6 +825,16 @@ class Demo {
 
         if (eating) {
             BT.soundPlay(this.eatClip);
+
+            // Shorter wait between steps = faster snake. Clamp so it never goes below
+            // MOVE_INTERVAL_MIN; Math.max picks the larger of the floor and the stepped-down
+            // value, which is how we stop the interval from dropping into the negatives.
+            this.moveInterval = Math.max(MOVE_INTERVAL_MIN, this.moveInterval - MOVE_INTERVAL_STEP);
+
+            // One more segment - multiply the music tempo by MUSIC_PITCH_SCALE_PER_GROWTH.
+            this.growthCount += 1;
+            this.syncMusicTempo();
+
             this.placeFood();
         } else {
             this.snake.pop();
