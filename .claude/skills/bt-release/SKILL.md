@@ -1,8 +1,9 @@
 ---
 name: bt-release
 description:
-  'Prepare a semver release: gather PR history since the last tag, write a polished RELEASE.md. Does NOT change any
-  files except RELEASE.md.'
+  'Prepare a semver release: gather PR history since the last tag, write a polished RELEASE.md. Also the reference for
+  the rest of the release lifecycle (version bump, changelog, docs coverage, downstream repos, npm publish, API-history
+  regeneration) – walk through it when asked to do more than just RELEASE.md.'
 ---
 
 # Release
@@ -10,8 +11,11 @@ description:
 Generate a polished `RELEASE.md` for pasting into GitHub Releases. Reads every PR merged since the last tag from GitHub,
 groups changes semantically, and writes clear human-readable release notes.
 
-Does not modify `package.json`, `src/core/BTAPI.ts`, or any other source file. Does not create branches, commits, or
-tags. All of that stays with the user.
+The RELEASE.md generation itself (steps 1-9 below) does not modify `package.json`, `src/core/BTAPI.ts`, or any other
+source file, and does not create branches, commits, or tags. When the user asks for more than RELEASE.md – "do the whole
+release", "bump the version", "mark the changelog released", "remind me of the npm workflow" – see
+[After RELEASE.md: the rest of the release](#after-releasemd-the-rest-of-the-release) below; that part does touch other
+files, but only when asked.
 
 ## Usage
 
@@ -130,7 +134,11 @@ any group with zero PRs):
 | Documentation  | `docs(*)`                                                                    |
 | Examples       | `feat(examples)`, `fix(examples)`                                            |
 
-If a PR does not match any group, add it to a final Other section.
+This table is not exhaustive – `blit386/CLAUDE.md`'s "Git scopes" list is longer (`audio`, `overlay`, `input`, `camera`,
+`assets`, `release`, `visual`, …). When a PR's scope isn't in the table above, give it its own topic-matched heading
+("Audio", "Overlay", "Input") instead of forcing it into a generic bucket – this is what both the real 1.3.0 GitHub
+release and the 1.3.1 `RELEASE.md` actually did (`## Audio`, `## Overlay`, `## Input` headings that aren't in this
+table). Reserve a final `## Other` section only for PRs with no clear topic at all.
 
 ### 8. Write the RELEASE.md narrative
 
@@ -226,3 +234,91 @@ After writing RELEASE.md, report:
 - "Last tag: LAST_TAG – New version: NEW_VERSION"
 - "Review, edit as needed, then delete RELEASE.md after you paste it into GitHub Releases."
 - "To bump the version in `package.json` and `src/core/BTAPI.ts`, do that manually or I can do it if you ask."
+
+## After RELEASE.md: the rest of the release
+
+`/bt-release` only writes `RELEASE.md`. Everything below is manual-on-request, not automatic – walk through it in this
+order when the user asks for more, since later steps depend on earlier ones (the API-history step in particular is
+order-sensitive and silently produces wrong data if done too early).
+
+### 10. Bump the version
+
+Two places, kept in lockstep:
+
+- `package.json` -> `"version"`
+- `src/core/BTAPI.ts` -> `VERSION_MAJOR` / `VERSION_MINOR` / `VERSION_PATCH`
+
+### 11. Mark the changelog as released
+
+`docs/changelog.md` usually already has a `## X.Y.Z - Unreleased` section – features add their own entries as they
+merge. Change the heading to `## X.Y.Z - <today's date>`.
+
+Do not assume that section is complete just because it exists. A PR can ship a fully `@since`-tagged feature with
+correct API docs and still skip the editorial changelog entry – this happened in 1.3.1: the overlay toggle hit-region PR
+(#366) was correctly documented in `docs/api-core.md`, `docs/api-overlay.md`, and `docs/guide-overlay.md`, but never
+touched `docs/changelog.md`. Cross-check every `{ version: NEW_VERSION, note }` entry in `docs/_api-history.json`'s
+`symbols[*].changes` arrays against the changelog section – anything present there but missing from the changelog is a
+gap to add.
+
+### 12. Verify docs coverage
+
+For each new/changed public symbol in this release, grep across `docs/*.md` (api-core.md, the relevant guide-*.md,
+api-browser-support.md, …) to confirm it's actually documented, not just `@since`-tagged. Also check `CLAUDE.md`'s
+"Where to Find Information" table: a release that adds a new subsystem or notable API surface usually needs a row there.
+Compare sibling PRs in the same release – if one PR added a table row for its feature and another PR shipping a
+similarly-sized feature didn't, that's a real gap, not a style choice. (1.3.1: the wake-lock and orientation PRs each
+added a table row; the pointer/keyboard scroll-capture PRs shipped the same release and didn't.)
+
+### 13. Check downstream repos
+
+- `../create-blit386`: grep `packages/kit/content/{docs,rules,skills}/` for anything describing the changed API. A
+  default-value flip is the dangerous case – it can make existing skill/doc prose actively wrong, not just stale, and
+  won't show up as a missing mention. (1.3.1: `isCapturingPointerScroll` flipped from always-on to opt-in default;
+  `read-pointer/SKILL.md` needed both a new opt-in snippet AND a fix to code that assumed the old default.) Run
+  `pnpm run preflight` there afterward.
+- `../blit386-dev-fumapress`: if `docs/` changed, the mirror is stale. `pnpm run sync:docs` there reads the local
+  sibling `../blit386/docs` path directly off disk – it does not need those changes pushed to GitHub first. Follow with
+  `pnpm run sync:docs:check` and `pnpm run build` to confirm the site still compiles (a Twoslash code block that doesn't
+  compile standalone fails the build, not just the check).
+
+### 14. Land it, tag it, publish it
+
+`main` is protected – branch, PR, squash-merge, then from the merged commit:
+
+```bash
+git checkout main && git pull
+git tag X.Y.Z              # no "v" prefix, e.g. 1.3.2 not v1.3.2
+git push origin X.Y.Z
+pnpm run release          # = pnpm run build && pnpm publish
+gh release create X.Y.Z --title "Release X.Y.Z" --notes-file RELEASE.md
+```
+
+Verify with `npm view blit386 version`. Full checklist (2FA/OTP, verify/smoke-test steps, troubleshooting): see
+`docs/developer-experience-guide.md` ("Before releases").
+
+### 15. Regenerate `docs/_api-history.json` – only after the tag exists
+
+The step most likely to get skipped or done in the wrong order. Do these four in sequence, after the tag from step 14
+exists:
+
+1. In `scripts/gen-api-history.mjs`, bump `UNRELEASED_VERSION` from the version just tagged to the next one (e.g.
+   `1.3.1` -> `1.3.2`).
+2. Run `pnpm run api:history`.
+3. Verify: `pnpm run api:history:check`, `pnpm run api:since:check`, `pnpm run test:api-history`.
+4. `main` is protected – branch, PR, squash-merge (mirrors PR #364 for 1.3.0, merged the day after that tag). Make sure
+   the regenerated `docs/_api-history.json` is part of that PR.
+
+Both possible mistakes here produce a subtly wrong `docs/_api-history.json` and neither fails loudly, so get the order
+right rather than debugging it after the fact:
+
+- Regenerating before the tag exists, with `UNRELEASED_VERSION` still equal to the version already bumped into
+  `package.json`: `packageVersion` in the output flips to that version (a lie – it isn't published yet) while every
+  symbol from this release correctly stays `"unreleased"` with a `null` date. `api:history:check` also starts failing at
+  this point, purely because `package.json` no longer matches the committed manifest – that failure is expected and
+  resolves itself once this section's steps are followed, it does not mean something else broke.
+- Bumping `UNRELEASED_VERSION` before the tag exists: `packageVersion` and the version being bumped away from are now
+  equal, so the generator's "future and untagged -> unreleased" rule never fires (the comparison is `0`, not `> 0`).
+  Every symbol from this release flips straight to `"stable"` with a `null` date, claiming it shipped when it hasn't.
+
+Both were reproduced and reverted (`git diff` then `git restore --staged --worktree -- docs/_api-history.json`) while
+diagnosing this during 1.3.1 release prep, before landing on the order above.
