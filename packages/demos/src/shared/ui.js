@@ -38,7 +38,20 @@ import { UiContext } from './ui-core.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from './ui-dpad.js';
 import { stepGestures, swipeResult, tapIn } from './ui-gestures.js';
 import { applyTheme } from './ui-theme.js';
-import { button, checkbox, kv, label, meter, panel, pip, separator, slider, spacer } from './ui-widgets.js';
+import {
+    audioUnlockHint,
+    button,
+    caption,
+    checkbox,
+    kv,
+    label,
+    meter,
+    panel,
+    pip,
+    separator,
+    slider,
+    spacer,
+} from './ui-widgets.js';
 
 // The one shared context. Demos run one at a time, so a single instance serves them all.
 const ctx = new UiContext();
@@ -87,6 +100,28 @@ const ui = {
      */
     label(text, opts) {
         label(ctx, text, opts);
+    },
+
+    /**
+     * A single line of floating text pinned at an exact screen position - the shared
+     * section caption the drawing demos print next to their artwork. Self-contained:
+     * call it on its own, outside ui.begin()/ui.end().
+     *
+     * @param {number} x - Left edge in display pixels.
+     * @param {number} y - Top edge in display pixels.
+     * @param {string} text
+     * @param {{ color?: string }} [opts] - Role; defaults to 'header' (series amber).
+     */
+    caption(x, y, text, opts) {
+        caption(ctx, x, y, text, opts);
+    },
+
+    /**
+     * The standard "click or press a key to enable sound" row for audio demos.
+     * Draws only while audio is still locked; call it inside a group each frame.
+     */
+    audioUnlockHint() {
+        audioUnlockHint(ctx);
     },
 
     /**

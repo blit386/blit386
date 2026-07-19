@@ -435,7 +435,7 @@ class UiContext {
      *
      * @param {import('blit386').Vector2i} display - The logical display size.
      * @param {number} groupW - The group's final width.
-     * @returns {number|null}
+     * @returns {number}
      */
     resolveOriginX(display, groupW) {
         if (this.groupOptX !== null) {
@@ -458,7 +458,7 @@ class UiContext {
      *
      * @param {import('blit386').Vector2i} display - The logical display size.
      * @param {number} groupH - The group's final height.
-     * @returns {number|null}
+     * @returns {number}
      */
     resolveOriginY(display, groupH) {
         if (this.groupOptY !== null) {
