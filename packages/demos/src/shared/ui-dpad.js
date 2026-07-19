@@ -11,7 +11,7 @@
  *
  * By default ('show: auto') the D-pad stays invisible until the session sees its first
  * touch contact, so mouse-and-keyboard visitors never know it exists. It sits in the
- * bottom-right corner - the bottom-LEFT 48x48 corner belongs to the engine overlay's
+ * bottom-right corner - the bottom-LEFT 17x13 corner belongs to the engine overlay's
  * toggle, and most thumbs rest on the right half of a phone anyway.
  */
 
