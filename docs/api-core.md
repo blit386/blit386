@@ -95,6 +95,7 @@ BT.outputSize; // Vector2i – effective drawing-buffer size (clone per read)
 BT.targetFPS; // number – fixed update() rate (simulation), not measured present FPS
 BT.requestedBackend; // 'webgpu' | 'software' | null – resolved request (see below)
 BT.activeBackend; // 'webgpu' | 'software' | null – backend that actually started
+BT.screenOrientation; // 'landscape-primary' | … | null – Screen Orientation API type
 ```
 
 - `BT.init()` selects WebGPU or falls back to the Canvas 2D software renderer automatically.
@@ -172,6 +173,7 @@ Resolved after `configure()`; the hook may return a partial object.
 | `isCapturingPointerScroll`               | `boolean`                      | `false`     | Opt into canvas wheel `preventDefault` and `BT.pointerScrollDelta` (page scrolls over the canvas when off)                                                           |
 | `isCapturingKeyboardScroll`              | `boolean`                      | `false`     | Opt into canvas `keydown` `preventDefault` for arrow keys, Space, PageUp/PageDown, Home, and End (page scrolls when off)                                             |
 | `isWakeLockEnabled`                      | `boolean`                      | `false`     | Request a screen wake lock after init to prevent mobile screen dimming/locking during gameplay (silent no-op if unsupported)                                         |
+| `preferredOrientation`                   | `PreferredOrientation`         | `'any'`     | Attempt `screen.orientation.lock()` after init (`'landscape'` / `'portrait'`); `'any'` skips the lock (silent no-op if unsupported)                                  |
 | `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                                                                                             |
 | `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                                                                                       |
 | `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                                                                                   |
@@ -216,6 +218,45 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
   See [Resolution model](#resolution-model) for drawing-buffer vocabulary.
 - `isAudioUnlocked` is runtime state too: `false` until a user gesture resumes the audio context, `true` for the rest of
   the session afterward. See [API: Audio](api-audio.md#unlock-state).
+- `screenOrientation` is runtime state from the Screen Orientation API (`null` when unavailable). See
+  [Screen orientation](api-browser-support.md#screen-orientation).
+
+### Screen orientation
+
+<Since symbol="BT.screenOrientation" />
+<Since symbol="PreferredOrientation" />
+
+`BT.screenOrientation` reads the current `screen.orientation.type` string (for example `'landscape-primary'` or
+`'portrait-secondary'`), or `null` when the API is missing. After a successful `init()`, the engine also:
+
+- Listens for orientation `change` and calls optional `IBTDemo.onOrientationChange(type)` when the demo implements it.
+- Attempts `screen.orientation.lock()` when `HardwareSettings.preferredOrientation` is `'landscape'` or `'portrait'`
+  (default `'any'` skips the lock). Lock failures are silent no-ops and never fail `init()`.
+
+Showing a "please rotate your device" prompt is a demo concern - the engine only supplies the getter, the change hook,
+and the optional lock. Browser support details live in [Screen orientation](api-browser-support.md#screen-orientation).
+
+```ts twoslash
+import { BT, type HardwareSettings, type IBTDemo } from 'blit386';
+
+class Demo implements IBTDemo {
+  configure(): Partial<HardwareSettings> {
+    return { preferredOrientation: 'landscape' };
+  }
+
+  onOrientationChange(type: string): void {
+    console.log('orientation:', type, BT.screenOrientation);
+  }
+
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+
+  render(): void {}
+}
+```
 
 ### Requested vs. active backend
 

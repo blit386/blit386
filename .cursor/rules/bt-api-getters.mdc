@@ -16,9 +16,10 @@ Zero-argument **read-only** values on `BT`:
 - **Configure-time (backend):** `requestedBackend` mirrors resolved `HardwareSettings.backend` (includes
   `?backend=software`); **`null` before `BT.init()`**
 - **Loop:** `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`
-- **Runtime:** `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying` — `activeBackend` is **`null`
-  before init or on failure**; `isAudioUnlocked` is `false` until the first user gesture resumes the audio context;
-  `isMusicPlaying` is `true` while the music player has a live current track
+- **Runtime:** `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation` —
+  `activeBackend` is **`null` before init or on failure**; `isAudioUnlocked` is `false` until the first user gesture
+  resumes the audio context; `isMusicPlaying` is `true` while the music player has a live current track;
+  `screenOrientation` is the current `screen.orientation.type` string, or **`null`** when the API is unavailable
 - **Per-frame input:** `pointerScrollDelta`, `inputString`, `gamepadCount`
 
 Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
