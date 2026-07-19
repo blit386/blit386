@@ -1616,10 +1616,25 @@ describe('BTAPI', () => {
 
             await BTAPI.instance.init(makeOrientationDemo('landscape'), makeMockCanvas());
 
+            await vi.waitFor(() => {
+                expect(mock.lock).toHaveBeenCalledWith('landscape');
+            });
+
             BTAPI.instance.stop();
 
             expect(mock.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
             expect(mock.unlock).toHaveBeenCalled();
+        });
+
+        it('does not unlock on stop when preferredOrientation is any', async () => {
+            const mock = installMockOrientation();
+
+            await BTAPI.instance.init(makeOrientationDemo('any'), makeMockCanvas());
+
+            BTAPI.instance.stop();
+
+            expect(mock.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+            expect(mock.unlock).not.toHaveBeenCalled();
         });
     });
 

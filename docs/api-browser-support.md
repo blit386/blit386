@@ -90,8 +90,8 @@ attempt `screen.orientation.lock()` after init; the default `'any'` skips the lo
 <Callout title="Silent no-op fallback">
 
 Lock support is uneven - Chrome on Android and Samsung Internet typically allow it; iOS Safari does not. When locking is
-unsupported or rejected, the engine logs a console warning and continues. Detection and `onOrientationChange` still work
-wherever `screen.orientation` exists.
+unsupported or rejected, the engine continues without unlocking or failing `init()`. Detection and `onOrientationChange`
+still work wherever `screen.orientation` exists.
 
 </Callout>
 

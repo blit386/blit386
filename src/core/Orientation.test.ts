@@ -100,7 +100,7 @@ describe('Orientation', () => {
         expect(() => orientation.attach('landscape', null)).not.toThrow();
     });
 
-    it('logs a warning and does not throw when lock rejects', async () => {
+    it('does not throw or warn when lock rejects', async () => {
         const mock = installMockOrientation();
         mock.lock.mockRejectedValue(new Error('denied'));
 
@@ -110,8 +110,14 @@ describe('Orientation', () => {
         expect(() => orientation.attach('portrait', null)).not.toThrow();
 
         await vi.waitFor(() => {
-            expect(warnSpy).toHaveBeenCalledWith('[BT] Failed to lock screen orientation:', expect.any(Error));
+            expect(mock.lock).toHaveBeenCalledWith('portrait');
         });
+
+        expect(warnSpy).not.toHaveBeenCalled();
+
+        orientation.detach();
+
+        expect(mock.unlock).not.toHaveBeenCalled();
     });
 
     it('invokes the change handler with the current type', () => {
@@ -127,15 +133,59 @@ describe('Orientation', () => {
         expect(onChange).toHaveBeenCalledWith('portrait-primary');
     });
 
-    it('removes the listener and unlocks on detach', () => {
+    it('removes the listener and unlocks on detach only after a successful lock', async () => {
         const mock = installMockOrientation();
         const orientation = new Orientation();
 
         orientation.attach('landscape', null);
+
+        await vi.waitFor(() => {
+            expect(mock.lock).toHaveBeenCalled();
+        });
+
         orientation.detach();
 
         expect(mock.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
         expect(mock.unlock).toHaveBeenCalled();
+    });
+
+    it('does not unlock on detach when preferredOrientation is any', () => {
+        const mock = installMockOrientation();
+        const orientation = new Orientation();
+
+        orientation.attach('any', null);
+        orientation.detach();
+
+        expect(mock.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+        expect(mock.unlock).not.toHaveBeenCalled();
+    });
+
+    it('unlocks immediately when a lock resolves after detach', async () => {
+        let resolveLock: (() => void) | undefined;
+        const mock = installMockOrientation();
+        mock.lock.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveLock = resolve;
+                }),
+        );
+
+        const orientation = new Orientation();
+        orientation.attach('landscape', null);
+
+        await vi.waitFor(() => {
+            expect(mock.lock).toHaveBeenCalled();
+        });
+
+        orientation.detach();
+
+        expect(mock.unlock).not.toHaveBeenCalled();
+
+        resolveLock?.();
+
+        await vi.waitFor(() => {
+            expect(mock.unlock).toHaveBeenCalledTimes(1);
+        });
     });
 
     it('does not invoke the change handler after detach', () => {

@@ -33,7 +33,7 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - Screen orientation detection and optional lock: `BT.screenOrientation` reads the current `screen.orientation.type` (or
   `null` when unavailable); optional `IBTDemo.onOrientationChange(type)` fires on rotate;
   `HardwareSettings.preferredOrientation` (`'landscape' | 'portrait' | 'any'`, default `'any'`) attempts
-  `screen.orientation.lock()` after init. Lock failures are silent console warnings (for example on iOS Safari).
+  `screen.orientation.lock()` after init. Lock failures are silent no-ops (for example on iOS Safari).
 
 ### Changed
 

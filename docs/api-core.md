@@ -231,7 +231,7 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
 
 - Listens for orientation `change` and calls optional `IBTDemo.onOrientationChange(type)` when the demo implements it.
 - Attempts `screen.orientation.lock()` when `HardwareSettings.preferredOrientation` is `'landscape'` or `'portrait'`
-  (default `'any'` skips the lock). Lock failures are silent console warnings and never fail `init()`.
+  (default `'any'` skips the lock). Lock failures are silent no-ops and never fail `init()`.
 
 Showing a "please rotate your device" prompt is a demo concern - the engine only supplies the getter, the change hook,
 and the optional lock. Browser support details live in [Screen orientation](api-browser-support.md#screen-orientation).

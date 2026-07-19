@@ -19,7 +19,7 @@ type LockableOrientation = ScreenOrientation & {
  * Watches `screen.orientation` for `change` events and optionally requests
  * `screen.orientation.lock()` after {@link attach}. Silently no-ops on browsers
  * that do not expose the Screen Orientation API, and treats a rejected lock
- * (for example iOS Safari) as a console warning rather than a failed init.
+ * (for example iOS Safari) as a silent no-op rather than a failed init.
  *
  * Named `Orientation` rather than `ScreenOrientation` to avoid colliding with
  * the DOM `ScreenOrientation` interface/constructor.
@@ -27,6 +27,13 @@ type LockableOrientation = ScreenOrientation & {
 export class Orientation {
     /** True between {@link attach} and {@link detach}. */
     private attached = false;
+
+    /**
+     * True while this instance successfully holds an orientation lock it requested.
+     * Guards {@link detach} so we never call `unlock()` for `'any'`, unsupported
+     * lock APIs, failed requests, or a host page lock we did not acquire.
+     */
+    private held = false;
 
     /** Demo callback for orientation changes, or null when the demo omitted the hook. */
     private onChange: ChangeHandler | null = null;
@@ -94,7 +101,7 @@ export class Orientation {
      * Installs the orientation `change` listener and optionally requests a lock.
      *
      * No-ops when the Screen Orientation API is unavailable. The lock request is
-     * fire-and-forget - a rejection logs a warning but never throws, so callers
+     * fire-and-forget - a rejection is swallowed and never throws, so callers
      * never need to await or catch this.
      *
      * @param preferred - Preferred lock target; `'any'` skips the lock attempt.
@@ -107,6 +114,7 @@ export class Orientation {
 
         this.onChange = onChange;
         this.attached = true;
+        this.held = false;
 
         globalThis.screen.orientation.addEventListener('change', this.handleChange);
 
@@ -116,7 +124,7 @@ export class Orientation {
     }
 
     /**
-     * Removes the `change` listener and unlocks the orientation when possible.
+     * Removes the `change` listener and unlocks only when this instance holds a lock.
      *
      * Safe to call repeatedly or when {@link attach} was never called (for example
      * because the browser does not support the Screen Orientation API).
@@ -126,6 +134,8 @@ export class Orientation {
         this.onChange = null;
 
         if (!Orientation.isSupported()) {
+            this.held = false;
+
             return;
         }
 
@@ -133,17 +143,24 @@ export class Orientation {
 
         orientation.removeEventListener('change', this.handleChange);
 
-        try {
-            orientation.unlock();
-        } catch {
-            // Not locked, or unlock unsupported; nothing to do.
+        if (this.held) {
+            this.held = false;
+
+            try {
+                orientation.unlock();
+            } catch {
+                // Already unlocked or unlock unsupported; nothing to do.
+            }
         }
     }
 
     /**
-     * Requests an orientation lock. Logs a warning and never throws on failure.
+     * Requests an orientation lock. Never throws on failure.
      *
      * No-ops when `lock` is missing from the platform object (for example iOS Safari).
+     * If {@link detach} runs before this request resolves, the newly-acquired lock is
+     * released immediately instead of being recorded as held, so a host page lock is
+     * not cleared later by mistake.
      *
      * @param preferred - `'landscape'` or `'portrait'` lock target.
      */
@@ -157,8 +174,20 @@ export class Orientation {
 
         try {
             await lock.call(orientation, preferred);
-        } catch (error) {
-            console.warn('[BT] Failed to lock screen orientation:', error);
+
+            if (!this.attached) {
+                try {
+                    orientation.unlock();
+                } catch {
+                    // Already unlocked or unlock unsupported; nothing to do.
+                }
+
+                return;
+            }
+
+            this.held = true;
+        } catch {
+            // Lock rejected or unsupported for this orientation; leave held false.
         }
     }
 }
