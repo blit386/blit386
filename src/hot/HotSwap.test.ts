@@ -147,6 +147,24 @@ describe('hasHardReloadDiff', () => {
         const changed = { ...base, [field]: CHANGED_VALUES[field] };
         expect(hasHardReloadDiff(base, changed)).toBe(true);
     });
+
+    // These five fields are deliberately excluded from the hard-reload comparison (per the
+    // originating issue's own field list): they are applied live by their own subsystems
+    // (PointerInput, KeyboardInput, WakeLock, Orientation) rather than requiring a fresh
+    // init(), so changing any of them must never force a Tier 3 hard reload.
+    const EXCLUDED_CHANGED_VALUES: Record<string, unknown> = {
+        isCapturingPointerScroll: true,
+        isCapturingKeyboardScroll: true,
+        isWakeLockEnabled: true,
+        preferredOrientation: 'landscape',
+        isDetectingDroppedFrames: true,
+    };
+
+    it.each(Object.keys(EXCLUDED_CHANGED_VALUES))('is false when excluded field %s changes', (field) => {
+        // eslint-disable-next-line security/detect-object-injection -- field iterates EXCLUDED_CHANGED_VALUES' own keys, not external input
+        const changed = { ...base, [field]: EXCLUDED_CHANGED_VALUES[field] };
+        expect(hasHardReloadDiff(base, changed)).toBe(false);
+    });
 });
 
 describe('hotSwapDemo', () => {
