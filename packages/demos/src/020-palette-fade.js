@@ -1,5 +1,3 @@
-// @pageTitle BLIT386 Demo 020 - Palette Fade
-//
 // Demo 020 - Palette Fade & Flash: smooth color transitions and flash effects.
 //
 // Demo 020 in the BLIT386 series (written for readers about 12 years old).
@@ -43,6 +41,12 @@
 //   sky, trees, and ground change color because the engine updated the palette, not
 //   because render() passes new Color32 values to draw calls.
 //
+// The phase caption panel is drawn with the shared UI kit (src/shared/ui.js). Its theme
+// colors live in slots 240..251 - and because BT.paletteFade() blends EVERY slot toward
+// the target palette, init() writes the same theme colors into the day and night target
+// palettes too. That makes the UI slots "fade" from a color to the identical color, so
+// the panel stays readable while the whole scene transitions around it.
+//
 // WHAT YOU WILL SEE:
 //   A pixel-art landscape (sky, ground, trees, sun) that loops through:
 //   1. Day (bright)   - hold 3 seconds
@@ -52,9 +56,12 @@
 //   5. Night hold     - 2 seconds
 //   6. Fade to day    - 2 seconds, ease-out (dawn)
 //   Repeat forever.
-//   Current phase label (Day, Night, Dawn, etc.) = engine overlay row above the FPS bar.
+//   The current phase (Day, Night, Dawn, etc.) shows in a UI kit panel in the top-left
+//   corner, and also as an engine overlay row above the FPS bar.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -70,7 +77,6 @@ const PHASE_NIGHT_HOLD_2 = 120; // 2 seconds
 const PHASE_FADE_TO_DAY = 120; // 2 seconds
 
 // Slot 0: always transparent.
-const C_BG = 2; // Not used for scene, but available.
 const C_LABEL = 3;
 const C_DIM = 4;
 const C_OVERLAY_BAR = 6; // Overlay row background (same in day and night palettes)
@@ -97,7 +103,6 @@ const C_MOUNTAIN_LIGHT = 23;
  * @param {Palette} p - Palette to fill.
  */
 function fillDay(p) {
-    p.set(C_BG, new Color32(10, 12, 20));
     p.set(C_LABEL, new Color32(255, 210, 80));
     p.set(C_DIM, new Color32(120, 130, 160));
     p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
@@ -124,7 +129,6 @@ function fillDay(p) {
  * @param {Palette} p - Palette to fill.
  */
 function fillNight(p) {
-    p.set(C_BG, new Color32(5, 5, 15));
     p.set(C_LABEL, new Color32(180, 160, 100));
     p.set(C_DIM, new Color32(80, 80, 110));
     p.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200));
@@ -159,6 +163,10 @@ class Demo {
     day = null;
     /** @type {Palette | null} */
     night = null;
+
+    // Palette slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // theme.text, theme.header, ... are palette indices ready for BT draw calls.
+    theme = null;
 
     // Which phase of the day/night cycle we are in.
     phase = 'day';
@@ -213,6 +221,20 @@ class Demo {
         // Start with the day palette.
         this.palette = BT.paletteCreate(256);
         fillDay(this.palette);
+
+        // Install the shared UI kit colors (slots 240..251) into ALL THREE palettes.
+        // This matters because BT.paletteFade() blends every slot toward the target
+        // palette - if the day and night targets left those slots at their default
+        // black, the first fade would fade the UI colors away for good. Writing the
+        // identical theme colors into the targets turns the UI slots into fixed
+        // points: they "fade" from a color to the very same color, so nothing moves.
+        // (BT.paletteFlash() still whites them out for 200 ms, but it snapshots and
+        // restores every slot afterwards, so the flash heals itself - just like it
+        // always did for the scene colors.)
+        applyTheme(this.day);
+        applyTheme(this.night);
+        this.theme = applyTheme(this.palette);
+
         BT.paletteSet(this.palette);
 
         console.log('[PaletteFadeDemo] Initialized');
@@ -232,17 +254,6 @@ class Demo {
 
         // Check if the current phase has expired and advance to the next one.
         this.advancePhaseIfExpired(elapsed, tick);
-    }
-
-    /**
-     * Current fade/flash phase for the engine overlay (Day, Night, Dawn, etc.).
-     *
-     * @returns {readonly { leftText: string }[]}
-     */
-    overlayRows() {
-        this.overlayRowData[0].leftText = this.getPhaseLabel();
-
-        return this.overlayRowData;
     }
 
     /**
@@ -304,6 +315,25 @@ class Demo {
         BT.clear(C_SKY);
 
         this.renderScene();
+
+        // A small UI kit panel names the current phase, so viewers can follow the
+        // cycle without opening the engine overlay. Its colors come from the theme
+        // slots, which the fade leaves alone (see init()).
+        ui.begin('topLeft');
+        ui.panel('Palette Fade & Flash');
+        ui.label(this.getPhaseLabel());
+        ui.end();
+    }
+
+    /**
+     * Current fade/flash phase for the engine overlay (Day, Night, Dawn, etc.).
+     *
+     * @returns {readonly { leftText: string }[]}
+     */
+    overlayRows() {
+        this.overlayRowData[0].leftText = this.getPhaseLabel();
+
+        return this.overlayRowData;
     }
 
     /**

@@ -18,7 +18,11 @@
  * brush size between three preset thicknesses.
  *
  * Touch: each finger paints automatically while in contact. Up to three touches
- * are tracked at once; a fourth simultaneous touch is dropped silently.
+ * are tracked at once; a fourth simultaneous touch is dropped silently. Because
+ * touch devices have no right or middle button, the shared UI kit
+ * (src/shared/ui.js) draws a small panel with a Clear button and a Brush button
+ * that do exactly the same thing as the mouse shortcuts - so the whole demo
+ * works with fingers alone.
  *
  * What this demonstrates:
  *   - BT.isPressed() for one-shot mouse actions (clear canvas, cycle brush size)
@@ -26,15 +30,16 @@
  *   - BT.isPointerActive(slot) / BT.pointerPos(slot) for per-slot touch painting
  *   - lastPosX / lastPosY per-slot stamping: draws from the previous frame's
  *     position to the current one so fast strokes look continuous instead of dotted
+ *   - ui.overWidget() to keep brush strokes from landing underneath the UI panel
  *
  * The painting happens on an offscreen palette layer (a 2D array of palette
  * indices) so brush strokes persist across frames even though render() clears
  * to a background color first.
  */
 
-// @pageTitle BLIT386 Demo 026 - Pointer Paint
+import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -44,15 +49,10 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
 
-// Palette slots. Index 0 is always transparent.
-const C_BG = 1; // dark background revealed by the clear button
-const C_TEXT = 2; // overlay text color
-const C_DIM = 3; // dim hint text
-const C_PANEL = 4; // overlay panel background
-const C_PANEL_BORDER = 5; // overlay panel border
-
 // One paint color per pointer slot. The slot index is the same as the array
-// index here so renderStrokes() can write SLOT_PAINT[slot] directly.
+// index here so update() can write SLOT_PAINT[slot] directly. These are scene
+// colors (the artwork itself); the UI panel colors come from the shared theme,
+// which lives far away in slots 240-251.
 const SLOT_PAINT = [
     10, // slot 0 (mouse)
     11, // slot 1 (first touch)
@@ -60,9 +60,16 @@ const SLOT_PAINT = [
     13, // slot 3 (third touch)
 ];
 
-// Brush sizes the middle mouse button cycles through. Values are radii in
-// pixels; a radius of 0 paints a single pixel.
+// Friendly names for the panel rows: which slot is which input device.
+const SLOT_LABELS = ['Mouse', 'Touch 1', 'Touch 2', 'Touch 3'];
+
+// Brush sizes that middle-click (or the Brush button) cycles through. Values
+// are radii in pixels; a radius of 0 paints a single pixel.
 const BRUSH_SIZES = [0, 2, 4];
+
+// Human-readable names for the same brushes, shown on the Brush button and in
+// the panel's Brush row. Same order as BRUSH_SIZES.
+const BRUSH_NAMES = ['Thin', 'Medium', 'Thick'];
 
 /**
  * Multi-touch / mouse paint demo.
@@ -79,12 +86,16 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Palette slot map for the shared UI theme, filled in by applyTheme() in
+    // init(). Gives us named slots like this.theme.bg for our own drawing.
+    theme = null;
+
     // Painting layer: one palette index per display pixel. 0 means "blank"
     // (the background color shows through). Length = DISPLAY_W * DISPLAY_H.
     /** @type {Uint8Array | null} */
     layer = null;
 
-    // Index into BRUSH_SIZES; cycled by middle-click on the mouse.
+    // Index into BRUSH_SIZES; cycled by middle-click or the Brush button.
     brushIndex = 1;
 
     // Last known position per slot, recorded the frame the pointer became
@@ -108,34 +119,39 @@ class Demo {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
             isOverlayRendererDiagnosticsBarEnabled: true,
+            // The engine overlay bars reuse the shared UI theme colors so
+            // everything on screen matches. applyTheme() puts the panel color
+            // in slot 242 and the text color in slot 244 (its default start
+            // slot is 240 - see init() below); configure() runs before init(),
+            // so the numbers are written out here.
             overlayStyle: {
-                barPaletteIndex: C_PANEL,
-                textPaletteIndex: C_TEXT,
-                gapPaletteIndex: C_PANEL,
+                barPaletteIndex: 242,
+                textPaletteIndex: 244,
+                gapPaletteIndex: 242,
             },
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: SLOT_PAINT[0],
                 renderBarPaletteIndex: SLOT_PAINT[1],
                 warningPaletteIndex: SLOT_PAINT[2],
                 errorPaletteIndex: SLOT_PAINT[3],
-                tagPaletteIndex: C_TEXT,
+                tagPaletteIndex: 244,
             },
         };
     }
 
     /**
-     * Sets up the palette and allocates the offscreen paint layer.
+     * Sets up the palette (shared UI theme + scene paint colors) and allocates
+     * the offscreen paint layer.
      *
      * @returns {Promise<boolean>}
      */
     async init() {
         this.palette = BT.paletteCreate(256);
 
-        this.palette.set(C_BG, new Color32(20, 25, 35));
-        this.palette.set(C_TEXT, new Color32(255, 255, 255));
-        this.palette.set(C_DIM, new Color32(160, 170, 190));
-        this.palette.set(C_PANEL, new Color32(40, 50, 70));
-        this.palette.set(C_PANEL_BORDER, new Color32(110, 120, 140));
+        // Install the shared UI colors (slots 240-251) that the kit's panel,
+        // pips, and buttons draw with. Must happen before BT.paletteSet() so
+        // the colors actually reach the GPU.
+        this.theme = applyTheme(this.palette);
 
         // One paint color per slot. Slot 0 (mouse) gets a soft white; the
         // three touch slots get bold primary colors so multiple fingers are
@@ -161,14 +177,21 @@ class Demo {
      * Per-tick: read input from each slot and write strokes into layer.
      */
     update() {
-        // Mouse-only controls: B clears the canvas, C cycles the brush size.
+        // Let the UI kit do its per-tick housekeeping (touch tracking) before
+        // we read any input ourselves. Always the first line of update().
+        ui.tick();
+
+        // Mouse shortcuts: right-click (button B) clears the canvas and
+        // middle-click (button C) cycles the brush size. The Clear and Brush
+        // buttons in the kit panel (see renderPanel()) call the exact same
+        // helper methods, so mouse and touch users get identical features.
         // We use isPressed (edge) so a single click triggers exactly once.
         if (BT.isPressed(BT.BTN_POINTER_B, 0)) {
-            this.layer.fill(0);
+            this.clearCanvas();
         }
 
         if (BT.isPressed(BT.BTN_POINTER_C, 0)) {
-            this.brushIndex = (this.brushIndex + 1) % BRUSH_SIZES.length;
+            this.cycleBrush();
         }
 
         // Walk the four slots. Slot 0 paints while BTN_POINTER_A is held;
@@ -181,38 +204,71 @@ class Demo {
             // a contact is enough.
             const wantPaint = slot === 0 ? BT.isDown(BT.BTN_POINTER_A, 0) && valid : valid;
 
-            if (wantPaint) {
-                const pos = BT.pointerPos(slot);
+            if (!wantPaint) {
+                this.painting[slot] = false;
+                continue;
+            }
 
-                if (!this.painting[slot]) {
-                    // Just started painting - seed last position so the first
-                    // stamp doesn't draw a line all the way from (0, 0).
-                    this.lastPosX[slot] = pos.x;
-                    this.lastPosY[slot] = pos.y;
-                    this.painting[slot] = true;
-                }
+            const pos = BT.pointerPos(slot);
 
-                // Stamp from previous position to current one. This is what
-                // makes fast strokes look continuous instead of dotted.
-                this.stamp(this.lastPosX[slot], this.lastPosY[slot], pos.x, pos.y, SLOT_PAINT[slot]);
+            // Never paint underneath the UI. Without this check, tapping the
+            // Clear button would also drop a dot of paint under the button,
+            // because a tap is a pointer contact like any other. Marking the
+            // slot as "not painting" also re-seeds the stroke start when the
+            // pointer leaves the widget again, so no straight line gets drawn
+            // through the area the panel covers.
+            if (ui.overWidget(pos.x, pos.y)) {
+                this.painting[slot] = false;
+                continue;
+            }
 
+            if (!this.painting[slot]) {
+                // Just started painting - seed last position so the first
+                // stamp doesn't draw a line all the way from (0, 0).
                 this.lastPosX[slot] = pos.x;
                 this.lastPosY[slot] = pos.y;
-            } else {
-                this.painting[slot] = false;
+                this.painting[slot] = true;
             }
+
+            // Stamp from previous position to current one. This is what
+            // makes fast strokes look continuous instead of dotted.
+            this.stamp(this.lastPosX[slot], this.lastPosY[slot], pos.x, pos.y, SLOT_PAINT[slot]);
+
+            this.lastPosX[slot] = pos.x;
+            this.lastPosY[slot] = pos.y;
         }
     }
 
     /**
-     * Per-frame render: paint layer first, then live overlays (cursors and HUD).
+     * Per-frame render: paint layer first, then live overlays (cursors and the
+     * kit control panel).
      */
     render() {
-        BT.clear(C_BG);
+        // Clear to the shared theme's background color so the canvas matches
+        // the UI panel and the engine overlay.
+        BT.clear(this.theme.bg);
 
         this.renderLayer();
         this.renderCursors();
-        this.renderHUD();
+        this.renderPanel();
+    }
+
+    /**
+     * Wipes every painted pixel back to blank. Shared by right-click and the
+     * Clear button so both inputs behave identically.
+     */
+    clearCanvas() {
+        this.layer.fill(0);
+    }
+
+    /**
+     * Steps to the next brush size. Shared by middle-click and the Brush
+     * button so both inputs behave identically.
+     */
+    cycleBrush() {
+        // The % (remainder) operator wraps the index around: after the last
+        // brush it lands back on 0, like a clock rolling over from 12 to 1.
+        this.brushIndex = (this.brushIndex + 1) % BRUSH_SIZES.length;
     }
 
     /**
@@ -303,31 +359,42 @@ class Demo {
     }
 
     /**
-     * Heads-up display: title plus per-slot status panel and brush hint.
+     * The kit control panel: per-slot activity pips, the current brush, and
+     * two touch-friendly buttons. Anchored bottom-right so it stays clear of
+     * the engine overlay's toggle corner (the bottom-left 17x13 pixels are
+     * reserved for that).
      */
-    renderHUD() {
-        // Bottom status panel.
-        const panelY = DISPLAY_H - 36;
-        BT.drawRectFill(new Rect2i(0, panelY, DISPLAY_W, 36), C_PANEL);
-        BT.drawRect(new Rect2i(0, panelY, DISPLAY_W, 36), C_PANEL_BORDER);
+    renderPanel() {
+        ui.begin('bottomRight');
+        ui.panel('Paint');
 
-        // Per-slot active indicators across the bottom row.
+        // One pip per pointer slot: lit while that mouse / finger is active.
+        // This is the same per-slot status the old hand-drawn panel showed.
         for (let slot = 0; slot < 4; slot++) {
-            const x = 4 + slot * 78;
-            const valid = BT.isPointerActive(slot);
-            const label = ['Mouse', 'Touch 1', 'Touch 2', 'Touch 3'][slot];
-
-            BT.drawRectFill(new Rect2i(x, panelY + 4, 8, 8), valid ? SLOT_PAINT[slot] : C_PANEL_BORDER);
-            BT.systemPrint(new Vector2i(x + 12, panelY + 4), valid ? C_TEXT : C_DIM, label);
+            ui.pip(SLOT_LABELS[slot], BT.isPointerActive(slot));
         }
 
-        // Brush size + clear hint.
-        const radius = BRUSH_SIZES[this.brushIndex];
-        BT.systemPrint(
-            new Vector2i(4, panelY + 18),
-            C_DIM,
-            `brush r=${radius} (middle-click to cycle)  |  right-click to clear`,
-        );
+        ui.separator();
+
+        // Which brush is selected right now, as a readable name.
+        const name = BRUSH_NAMES[this.brushIndex];
+        ui.kv('Brush', name);
+
+        // The Brush button cycles the size - the touch equivalent of the
+        // middle-click shortcut in update(). Its label changes with the brush,
+        // and the kit normally recognizes a widget by its label, so we give it
+        // a stable id to keep it the "same" button across frames.
+        if (ui.button(`Brush: ${name}`, { id: 'brush' })) {
+            this.cycleBrush();
+        }
+
+        // The Clear button wipes the canvas - the touch equivalent of the
+        // right-click shortcut in update(). Both paths call clearCanvas().
+        if (ui.button('Clear')) {
+            this.clearCanvas();
+        }
+
+        ui.end();
     }
 }
 

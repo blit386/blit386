@@ -28,7 +28,8 @@
 //   - Background music with a real intro-then-loop point (037), plus a chime on every
 //     day/night phase change and a blip on a successful PNG capture.
 //   - Score, rock position, and day phase = engine overlay rows (004 + built-in FPS bar).
-//   - Press Space to save a PNG snapshot (013). On-screen legend explains the mix.
+//   - A legend panel built with the shared UI kit (src/shared/ui.js) explains the mix and
+//     holds a Save PNG button (013): click it, tap it on a touchscreen, or press Space.
 //
 // HOW THE DAY/NIGHT PALETTE WORKS:
 //
@@ -48,6 +49,8 @@
 // Think of it as updating the paint cans before the painter starts working.
 
 import { applyEasing, AudioClip, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -73,10 +76,6 @@ const TILE_DIRT_ID = 2;
 
 // Checker squares inside buildings (006-Patterns idea: repeating blocks, no images).
 const BUILDING_PATTERN_CELL = 4;
-
-// Rock sprite size in world pixels.
-const HERO_W = 16; // Adjusted to a reasonable display size; actual sprite may differ.
-const HERO_H = 16;
 
 // How fast the rock moves along X each update tick.
 const HERO_SPEED = 1;
@@ -110,10 +109,10 @@ const SKY_BANDS = 20;
 // Maximum live particles at once.
 const MAX_PARTICLES = 20;
 
-// Static UI slots (never change after init).
-const C_WHITE = 1; // Font base color.
+// Static scene slots (never change after init).
+// UI text and panel colors now come from the shared UI kit theme (slots 240 and up); the
+// slots below belong to the scene itself.
 const C_BLACK = 2; // Black for BT.clear.
-const C_HUD_BAR = 3; // (0,0,0,150) semi-transparent HUD overlay.
 
 // Dynamic world slots (updated every tick in update()).
 // Sky bands: 10..10+SKY_BANDS-1 (20 slots).
@@ -133,18 +132,13 @@ const C_CLOUD = 40;
 const C_HUD_TITLE = 41;
 const C_HUD_SCORE = 42;
 const C_HUD_POS = 43;
-const C_HUD_FPS = 44;
+const C_HUD_PHASE = 44; // Colors the day-phase overlay row (Day / Night / ...).
 
 // Hero shadow: 45.
 const C_HERO_SHADOW = 45;
 
-// Overlay bar fill (text slots reuse C_HUD_SCORE / C_HUD_POS / C_HUD_FPS below).
+// Overlay bar fill (text slots reuse C_HUD_SCORE / C_HUD_POS / C_HUD_PHASE below).
 const C_OVERLAY_BAR = 46;
-
-// In-canvas legend (screen space, drawn after cameraReset).
-const C_LEGEND = 47;
-const C_LEGEND_DIM = 48;
-const C_CAPTURE_MSG = 49;
 
 // Particle slots: 50..69 (MAX_PARTICLES=20).
 const PARTICLE_SLOT_START = 50;
@@ -184,14 +178,31 @@ class Demo {
     /** @type {Rect2i | null} */
     heroSprite = null;
 
+    // Hero sprite size in world pixels, read from the loaded sheet in init()
+    // (test.png is 44x44). Deriving it from the real image - instead of guessing a
+    // number here - keeps movement bounds, camera centering, and particle spawns
+    // matching what is actually drawn on screen.
+    /** @type {Vector2i} */
+    heroSize = new Vector2i(0, 0);
+
     // How many unique colors the sprite has (N).
     spriteColorCount = 0;
 
     // Original Color32 objects for the sprite's colors (for ambient multiplication).
     spriteBaseColors = [];
 
-    // Rock position in world pixels.
-    heroPos = new Vector2i(120, GROUND_Y - HERO_H);
+    // Rock position in world pixels. The Y here is a placeholder: init() sets the
+    // real Y once the sprite has loaded and its true height is known, so the rock
+    // stands exactly on the ground line.
+    heroPos = new Vector2i(120, 0);
+
+    // Rock position at the START of the most recent update() tick, before this tick's
+    // walk step moved it. render() blends between heroPrevPos and heroPos using
+    // BT.renderAlpha so the rock glides smoothly between physics ticks instead of
+    // jumping - see "Interpolating render state with renderAlpha" in the engine's
+    // docs/api-game-loop.md. init() snaps this to match heroPos so the very first
+    // frame does not blend in from a stale position.
+    heroPrevPos = new Vector2i(120, 0);
 
     // +1 = moving right, -1 = moving left.
     heroFacing = 1;
@@ -202,6 +213,16 @@ class Demo {
 
     // Camera top-left in world coordinates.
     cameraPos = new Vector2i(0, 0);
+
+    // Camera position at the START of the most recent update() tick, before this tick's
+    // follow-lerp moved it. render() blends between this and cameraPos using
+    // BT.renderAlpha for the same reason as heroPrevPos above.
+    cameraPrevPos = new Vector2i(0, 0);
+
+    // Reused every render() call for the render-time (interpolated) camera and hero
+    // positions, so we do not allocate new Vector2i instances every frame.
+    cameraRenderPos = new Vector2i(0, 0);
+    heroRenderPos = new Vector2i(0, 0);
 
     // Float version for smooth lerp without pixel jitter.
     cameraXFloat = 0;
@@ -226,7 +247,8 @@ class Demo {
     // Tile IDs for one sidewalk row (012): each entry is TILE_GRASS_ID or TILE_DIRT_ID.
     groundTileIds = [];
 
-    // PNG capture state (013): Space triggers BT.downloadFrame once per press.
+    // PNG capture state (013): the legend's Save button (click, tap, or Space)
+    // triggers BT.downloadFrame once per press.
     capturing = false;
     lastCaptureMessage = '';
     messageTimer = 0;
@@ -255,17 +277,17 @@ class Demo {
 
     // Reused every frame for overlay rows (score, rock position, day phase).
     overlayRowData = [
-        { leftText: 'Score: 0', textPaletteIndex: C_HUD_SCORE },
-        { leftText: 'Rock: (0,0)', textPaletteIndex: C_HUD_POS },
-        { leftText: 'Dawn/Day', textPaletteIndex: C_HUD_FPS },
+        { leftText: 'Score 0', textPaletteIndex: C_HUD_SCORE },
+        { leftText: 'Rock (0, 0)', textPaletteIndex: C_HUD_POS },
+        { leftText: 'Dawn/Day', textPaletteIndex: C_HUD_PHASE },
     ];
 
     /**
      * Palette slots for the engine overlay bars (FPS strip uses the engine defaults).
      *
      * The live palette grid at the bottom shows which slots this frame's draw calls
-     * use (helpful for day/night tinting and sprite palette blocks). Sixteen swatches
-     * per row, two visible rows; scroll to browse the full 256-slot palette.
+     * use (helpful for day/night tinting and sprite palette blocks). Thirty-two swatches
+     * per row, three visible rows; scroll to browse the full 256-slot palette.
      *
      * @returns {Partial<HardwareSettings>}
      */
@@ -292,7 +314,7 @@ class Demo {
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_HUD_POS,
                 renderBarPaletteIndex: C_HUD_SCORE,
-                warningPaletteIndex: C_HUD_FPS,
+                warningPaletteIndex: C_HUD_PHASE,
                 errorPaletteIndex: C_HUD_TITLE,
                 tagPaletteIndex: C_HUD_POS,
             },
@@ -308,18 +330,15 @@ class Demo {
         console.log('[GameSceneDemo] Initializing...');
 
         // Create palette and set static slots
-        // applyHUD(1) fills six standard HUD slots. Slot 1 (white) matches directly.
-        // Slots 2 and 3 are overridden: this demo uses pure black (not a dark-purple
-        // background) and a semi-transparent black overlay for the HUD bar.
+        // The shared UI kit needs its twelve theme colors in the palette before any widget
+        // draws. applyTheme() writes them into high slots (240 and up), far above this
+        // demo's scene slots (which top out around slot 110 at the sprite ambient block).
+        // This demo never needs the returned slot map, so the call is side effect only.
         this.palette = BT.paletteCreate(256);
-        this.palette.applyHUD(1);
+        applyTheme(this.palette);
 
         this.palette.set(C_BLACK, new Color32(0, 0, 0));
-        this.palette.set(C_HUD_BAR, new Color32(0, 0, 0, 150));
         this.palette.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 180)); // overlay row backgrounds
-        this.palette.set(C_LEGEND, new Color32(255, 230, 180));
-        this.palette.set(C_LEGEND_DIM, new Color32(180, 200, 220));
-        this.palette.set(C_CAPTURE_MSG, new Color32(120, 220, 160));
 
         // Pre-fill particle slots as transparent.
         for (let i = 0; i < MAX_PARTICLES; i++) {
@@ -348,25 +367,50 @@ class Demo {
         }
 
         // Load hero sprite
-        try {
-            const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
-                sort: 'none',
-            });
-            this.heroSheet = indexed.sheet;
-            this.heroSprite = this.heroSheet.fullRect();
-            BT.paletteSet(this.palette);
-            console.log(`[GameSceneDemo] Loaded sprite: ${this.heroSprite.width}x${this.heroSprite.height}px`);
-        } catch (error) {
-            console.error('[GameSceneDemo] Failed to load sprite:', error);
-            return false;
-        }
+        const indexed = await SpriteSheet.loadIndexed('/sprites/test.png', this.palette, SPRITE_BASE, {
+            sort: 'none',
+        });
+        this.heroSheet = indexed.sheet;
+        this.heroSprite = this.heroSheet.fullRect();
+        BT.paletteSet(this.palette);
+        console.log(`[GameSceneDemo] Loaded sprite: ${this.heroSprite.width}x${this.heroSprite.height}px`);
+
+        // Read the hero's real size from the loaded sheet (44x44 for test.png), the
+        // same way demos 033 and 034 do. Every bit of math below - movement bounds,
+        // camera centering, particle spawns - uses this size, so the logic always
+        // matches the picture on screen.
+        this.heroSize.set(this.heroSheet.size.x, this.heroSheet.size.y);
+
+        // Stand the rock on the ground line: the sprite's top-left Y is the ground
+        // minus the sprite's height, so its bottom edge touches GROUND_Y exactly.
+        this.heroPos.y = GROUND_Y - this.heroSize.y;
+
+        // Snap heroPrevPos to match so the very first render does not blend in from
+        // the placeholder position the class fields started with.
+        this.heroPrevPos.set(this.heroPos.x, this.heroPos.y);
 
         // Place camera on the hero to start.
-        this.cameraXFloat = this.heroPos.x - DISPLAY_W / 2 + HERO_W / 2;
+        this.cameraXFloat = this.heroPos.x - DISPLAY_W / 2 + this.heroSize.x / 2;
         this.cameraPos.x = Math.floor(this.cameraXFloat);
         this.cameraPos.y = 0;
         this.clampCamera();
 
+        // Snap cameraPrevPos to match the starting camera position so the very first
+        // render does not blend in from (0, 0).
+        this.cameraPrevPos.set(this.cameraPos.x, this.cameraPos.y);
+
+        // Load and start all sound: music, the day/night chime, and the capture blip.
+        await this.initAudio();
+
+        console.log('[GameSceneDemo] Ready.');
+        return true;
+    }
+
+    /**
+     * Loads the music track, synthesizes the two sound effects, and starts the music.
+     * Called once from init(); split out so the audio setup reads as one clear step.
+     */
+    async initAudio() {
         // Background music: a real intro-then-loop track, the same one 037-Music
         // demonstrates in isolation. BT.musicPlay() called before the page is unlocked is
         // "remembered" and starts for real the instant the player clicks or presses a key.
@@ -389,10 +433,9 @@ class Demo {
         });
         this.captureBlipClip = await AudioClip.synth(BT.synthPreset.blip());
 
+        // Remember the starting day phase so updateDayPhaseSound() only chimes when
+        // the phase actually changes, not on the very first tick.
         this.lastDayPhaseLabel = this.getDayPhaseLabel();
-
-        console.log('[GameSceneDemo] Ready.');
-        return true;
     }
 
     /**
@@ -400,29 +443,16 @@ class Demo {
      * then recalculates all ambient-lit palette colors.
      */
     update() {
+        // Let the shared UI kit latch keyboard shortcuts and touch contacts for this tick.
+        // This must run before anything else so the Save button's Space binding works.
+        ui.tick();
+
         const tick = BT.ticks;
 
         this.updateDayPhaseSound(tick);
 
-        // Demo 013: one PNG per Space press (edge via BT.isKeyPressed).
-        if (BT.isKeyPressed('Space') && !this.capturing) {
-            this.capturing = true;
-            BT.downloadFrame('blit386-scene.png')
-                .then(() => {
-                    this.lastCaptureMessage = 'Saved: blit386-scene.png';
-                    this.messageTimer = 180;
-                    this.capturing = false;
-                    BT.soundPlay(this.captureBlipClip);
-                    return null;
-                })
-                .catch((err) => {
-                    this.lastCaptureMessage = `Error: ${err.message}`;
-                    this.messageTimer = 180;
-                    this.capturing = false;
-                    console.error('[GameSceneDemo] Capture failed:', err);
-                });
-        }
-
+        // The PNG capture itself now starts from the kit's Save button in renderLegend().
+        // Here we only count down the "Saved: ..." message so it disappears after a while.
         if (this.messageTimer > 0) {
             this.messageTimer--;
         }
@@ -438,20 +468,6 @@ class Demo {
         // Recalculate all ambient-lit palette colors.
         // This is the core of the day/night system.
         this.updateWorldPalette();
-    }
-
-    /**
-     * Score, rock position, and day/night phase for the engine overlay.
-     * Text colors are updated each tick in updateWorldPalette() so they dim at night.
-     *
-     * @returns {readonly { leftText: string, rightText?: string }[]}
-     */
-    overlayRows() {
-        this.overlayRowData[0].leftText = `Score: ${this.score}`;
-        this.overlayRowData[1].leftText = `Rock: (${this.heroPos.x},${this.heroPos.y})`;
-        this.overlayRowData[2].leftText = this.getDayPhaseLabel();
-
-        return this.overlayRowData;
     }
 
     /**
@@ -479,16 +495,21 @@ class Demo {
     render() {
         BT.clear(C_BLACK);
 
-        if (!this.heroSheet) {
-            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
-            return;
-        }
+        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha - a fraction from 0
+        // (a tick just finished) to just under 1 (the next tick is about to happen) -
+        // so the camera's on-screen position matches this exact render moment instead
+        // of only its last-tick position. Both the sky parallax below and the full
+        // camera offset use this same smoothed value, so the layers never drift apart.
+        this.cameraRenderPos.set(
+            Math.floor(this.cameraPrevPos.x + (this.cameraPos.x - this.cameraPrevPos.x) * BT.renderAlpha),
+            Math.floor(this.cameraPrevPos.y + (this.cameraPos.y - this.cameraPrevPos.y) * BT.renderAlpha),
+        );
 
         // Layer 1: sky and clouds with parallax.
         this.renderSkyLayer();
 
         // Layer 2: world with full camera offset.
-        BT.cameraSet(this.cameraPos);
+        BT.cameraSet(this.cameraRenderPos);
         this.renderGroundAndBuildings();
         this.renderParticles();
         this.renderHero();
@@ -498,6 +519,20 @@ class Demo {
         this.renderLegend();
 
         // Score, rock position, and day phase are drawn in overlayRows() above the FPS bar.
+    }
+
+    /**
+     * Score, rock position, and day/night phase for the engine overlay.
+     * Text colors are updated each tick in updateWorldPalette() so they dim at night.
+     *
+     * @returns {readonly { leftText: string, rightText?: string }[]}
+     */
+    overlayRows() {
+        this.overlayRowData[0].leftText = `Score ${this.score}`;
+        this.overlayRowData[1].leftText = `Rock (${this.heroPos.x}, ${this.heroPos.y})`;
+        this.overlayRowData[2].leftText = this.getDayPhaseLabel();
+
+        return this.overlayRowData;
     }
 
     /**
@@ -620,13 +655,12 @@ class Demo {
         // Clouds
         this.palette.set(C_CLOUD, this.cloudBaseColor.multiply(ambient));
 
-        // HUD text (subtle night tint on screen text)
+        // Engine overlay text (subtle night tint on the score / position / phase rows).
+        // The kit legend panel keeps its fixed theme colors and does not dim at night.
         this.palette.set(C_HUD_TITLE, this.hudTitleBase.multiply(ambient));
         this.palette.set(C_HUD_SCORE, this.hudScoreBase.multiply(ambient));
         this.palette.set(C_HUD_POS, this.hudPosBase.multiply(ambient));
-        this.palette.set(C_HUD_FPS, this.hudFpsBase.multiply(ambient));
-        this.palette.set(C_LEGEND, this.hudTitleBase.multiply(ambient));
-        this.palette.set(C_LEGEND_DIM, this.hudPosBase.multiply(ambient));
+        this.palette.set(C_HUD_PHASE, this.hudFpsBase.multiply(ambient));
 
         // Hero shadow
         const shadowAlpha = Math.floor(60 + (ambient.r / 255) * 60); // Softer at night.
@@ -646,7 +680,9 @@ class Demo {
      */
     renderSkyLayer() {
         // Fake camera X is only a fraction of the real one: clouds drift slower than ground.
-        const paraX = Math.floor(this.cameraPos.x * SKY_PARALLAX);
+        // Uses the same render-time (interpolated) camera position as the ground layer
+        // below, so the two never drift apart from each other frame to frame.
+        const paraX = Math.floor(this.cameraRenderPos.x * SKY_PARALLAX);
         BT.cameraSet(new Vector2i(paraX, 0));
 
         // Each band is GROUND_Y/SKY_BANDS pixels tall.
@@ -735,14 +771,18 @@ class Demo {
      * Moves the rock left/right automatically, bouncing off world edges.
      */
     updateHeroMovement() {
+        // Remember where the rock was before this tick moves it, so render() can
+        // draw a smooth in-between position instead of a pop.
+        this.heroPrevPos.set(this.heroPos.x, this.heroPos.y);
+
         let nextX = this.heroPos.x + HERO_SPEED * this.heroFacing;
         const margin = 2;
 
         if (nextX <= margin) {
             nextX = margin;
             this.heroFacing = 1;
-        } else if (nextX + HERO_W >= WORLD_W - margin) {
-            nextX = WORLD_W - HERO_W - margin;
+        } else if (nextX + this.heroSize.x >= WORLD_W - margin) {
+            nextX = WORLD_W - this.heroSize.x - margin;
             this.heroFacing = -1;
         }
 
@@ -773,17 +813,25 @@ class Demo {
             return;
         }
 
+        // Blend heroPrevPos toward heroPos by BT.renderAlpha so the rock's drawn
+        // position matches this exact render moment instead of only its last-tick
+        // position (same idea as the camera blend in render() above).
+        this.heroRenderPos.set(
+            Math.round(this.heroPrevPos.x + (this.heroPos.x - this.heroPrevPos.x) * BT.renderAlpha),
+            Math.round(this.heroPrevPos.y + (this.heroPos.y - this.heroPrevPos.y) * BT.renderAlpha),
+        );
+
         // Tiny vertical bob based on walkStep (steps 0,2 are up; 1,3 are at rest).
         const bob = this.walkStep % 2 === 0 ? -1 : 0;
 
-        this.tempVec.set(this.heroPos.x, this.heroPos.y + bob);
+        this.tempVec.set(this.heroRenderPos.x, this.heroRenderPos.y + bob);
 
         // The ambient offset shifts all pixel indices into the pre-lit block.
         BT.drawSprite(this.heroSheet, this.heroSprite, this.tempVec, this.spriteColorCount);
 
         // Shadow underfoot.
-        const shadowY = this.heroPos.y + this.heroSprite.height - 2;
-        this.tempRect.set(this.heroPos.x + 2, shadowY, this.heroSprite.width - 4, 3);
+        const shadowY = this.heroRenderPos.y + this.heroSprite.height - 2;
+        this.tempRect.set(this.heroRenderPos.x + 2, shadowY, this.heroSprite.width - 4, 3);
         BT.drawRectFill(this.tempRect, C_HERO_SHADOW);
     }
 
@@ -791,7 +839,10 @@ class Demo {
      * Smoothly follows the hero, then clamps so the view never leaves the world.
      */
     updateCameraFollow() {
-        const targetCamX = this.heroPos.x - DISPLAY_W / 2 + HERO_W / 2;
+        // Remember where the camera was before this tick's follow-lerp moves it.
+        this.cameraPrevPos.set(this.cameraPos.x, this.cameraPos.y);
+
+        const targetCamX = this.heroPos.x - DISPLAY_W / 2 + this.heroSize.x / 2;
         this.cameraXFloat += (targetCamX - this.cameraXFloat) * CAMERA_LERP;
         this.cameraPos.x = Math.floor(this.cameraXFloat);
         this.clampCamera();
@@ -833,7 +884,13 @@ class Demo {
                 const oy = Math.floor(Math.random() * 16) - 12;
 
                 this.particles.push({
-                    pos: new Vector2i(this.heroPos.x + HERO_W / 2 + ox, this.heroPos.y + HERO_H / 2 + oy),
+                    // Spawn each sparkle near the center of the rock (half its real
+                    // width and height in from the top-left corner), plus the random
+                    // offset picked above.
+                    pos: new Vector2i(
+                        this.heroPos.x + this.heroSize.x / 2 + ox,
+                        this.heroPos.y + this.heroSize.y / 2 + oy,
+                    ),
                     spawnTick: tick,
                     paletteSlot: slot,
                 });
@@ -885,28 +942,63 @@ class Demo {
     }
 
     /**
-     * Short legend for first-time viewers (screen space, top-left).
+     * Short legend for first-time viewers (screen space, top-left), built with the shared
+     * UI kit. The Save button also listens for the Space key, so keyboard, mouse, and
+     * touch all trigger the same PNG capture (Demo 013).
      */
     renderLegend() {
-        this.tempRect.set(4, 4, 312, 84);
-        BT.drawRectFill(this.tempRect, C_HUD_BAR);
+        // Anchor the group to the top-left corner; the kit sizes the panel to fit its rows.
+        ui.begin('topLeft');
 
-        this.tempVec.set(10, 18);
-        BT.systemPrint(this.tempVec, C_LEGEND, 'Capstone: scroll, tiles, sprite, day/night');
+        // panel() gives the group a background, border, and an amber title line.
+        ui.panel('Capstone: scroll, tiles, sprite, day/night');
 
-        this.tempVec.set(10, 32);
-        BT.systemPrint(this.tempVec, C_LEGEND_DIM, 'Tiles + checker = demos 012 + 006');
+        // A dim (secondary) line pointing back at the demos these visuals come from.
+        ui.label('Tiles + checker = demos 012 + 006', { color: 'dim' });
 
-        this.tempVec.set(10, 46);
-        BT.systemPrint(this.tempVec, C_LEGEND_DIM, 'Space = save PNG (demo 013)');
-
-        if (this.capturing) {
-            this.tempVec.set(10, 72);
-            BT.systemPrint(this.tempVec, C_CAPTURE_MSG, 'Capturing...');
-        } else if (this.messageTimer > 0) {
-            this.tempVec.set(10, 72);
-            BT.systemPrint(this.tempVec, C_CAPTURE_MSG, this.lastCaptureMessage);
+        // The Save button returns true only on the frame it is clicked, tapped, or its
+        // bound key (Space) is pressed. The `capturing` flag stops a second capture from
+        // starting while the browser is still writing the first PNG.
+        if (ui.button('Save PNG (Space)', { key: 'Space' }) && !this.capturing) {
+            this.startCapture();
         }
+
+        // Progress / result line for the capture, in the kit's green accent color.
+        if (this.capturing) {
+            ui.label('Capturing...', { color: 'accent' });
+        } else if (this.messageTimer > 0) {
+            ui.label(this.lastCaptureMessage, { color: 'accent' });
+        }
+
+        // Browsers keep all sound muted until the player clicks or presses a key.
+        // This kit row shows the standard warm "enable sound" hint only while the
+        // audio is still locked, then disappears on its own.
+        ui.audioUnlockHint();
+
+        ui.end();
+    }
+
+    /**
+     * Starts one PNG download (Demo 013). BT.downloadFrame() is asynchronous - it hands
+     * the browser a file and resolves later - so we flip `capturing` on now and set the
+     * result message (shown for ~3 seconds via messageTimer) when the promise settles.
+     */
+    startCapture() {
+        this.capturing = true;
+        BT.downloadFrame('blit386-scene.png')
+            .then(() => {
+                this.lastCaptureMessage = 'Saved: blit386-scene.png';
+                this.messageTimer = 180;
+                this.capturing = false;
+                BT.soundPlay(this.captureBlipClip);
+                return null;
+            })
+            .catch((err) => {
+                this.lastCaptureMessage = `Error: ${err.message}`;
+                this.messageTimer = 180;
+                this.capturing = false;
+                console.error('[GameSceneDemo] Capture failed:', err);
+            });
     }
 
     /**

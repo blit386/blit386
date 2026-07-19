@@ -5,11 +5,12 @@
 // (https://demos.blit386.dev/002-primitives), and color in Demo 003-Colors
 // (https://demos.blit386.dev/003-colors).
 //
-// We also use the palette system introduced in Demo 015-Palette-Presets
-// (https://demos.blit386.dev/015-palette-presets) and demonstrated
-// further in Demo 016-Palette-Animation (https://demos.blit386.dev/016-palette-animation).
+// We also use the palette system introduced in Demo 003-Colors
+// (https://demos.blit386.dev/003-colors). You will see much more of
+// palettes later, in demo 015 and beyond.
 //
-// Live walkthrough: https://vancura.dev/articles/blit386-patterns
+// Live version: https://demos.blit386.dev/006-patterns
+// Walkthrough article: https://vancura.dev/articles/blit386-patterns
 //
 // All six patterns here are drawn using just pixels, lines, and rectangles
 // no images needed. Each pattern is based on simple math (angles, waves, circles)
@@ -33,8 +34,14 @@
 // once during setup. Other colors animate (spiral, Lissajous, tunnel) - those
 // are recalculated every tick in update() and stored back in the palette.
 // The render() function only ever uses color numbers (indices), never Color32 objects.
+//
+// The six pattern captions ("Spiral", "Radial", ...) are drawn with ui.caption() from the
+// shared UI kit (src/shared/ui.js), in the same amber header color every other demo in the
+// series uses. The patterns themselves are the lesson and are still drawn by hand below.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -46,9 +53,9 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // We give each color a readable name so the code is easier to follow.
 
 // Static colors (set once in init, never change).
-const C_WHITE = 1; // Pure white - title text and font base color.
+const C_WHITE = 1; // Pure white - overlay bar style color (see configure()).
 const C_BG = 2; // Very dark blue-black background.
-const C_LABEL = 3; // Dim white - section labels ("Spiral", "Wave", etc.).
+const C_TAG = 3; // Dim white - only feeds the overlay timing-chart tag color (see configure()).
 const C_WAVE_1 = 5; // Blue - primary sine wave.
 const C_WAVE_2 = 6; // Orange - secondary cosine wave.
 const C_WAVE_3 = 7; // Green - interference (both waves combined).
@@ -97,6 +104,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Where the shared UI theme colors landed in the palette, filled by applyTheme() in
+    // init(). The UI kit draws the six pattern captions with these slots.
+    theme = null;
+
     // These Vector2i and Rect2i objects are created once and reused every frame.
     // Creating new objects inside a loop every frame can slow things down because
     // the browser has to clean up old objects. Reusing them avoids that.
@@ -115,9 +126,9 @@ class Demo {
         return {
             isOverlayPaletteEnabled: true,
             overlayStyle: {
-                barPaletteIndex: 1,
-                textPaletteIndex: 2,
-                gapPaletteIndex: 2,
+                barPaletteIndex: C_WHITE,
+                textPaletteIndex: C_BG,
+                gapPaletteIndex: C_BG,
             },
             isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
@@ -127,7 +138,7 @@ class Demo {
                 renderBarPaletteIndex: C_WAVE_1,
                 warningPaletteIndex: C_WAVE_2,
                 errorPaletteIndex: C_WAVE_2,
-                tagPaletteIndex: C_LABEL,
+                tagPaletteIndex: C_TAG,
             },
         };
     }
@@ -153,7 +164,7 @@ class Demo {
         // Basic UI colors.
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // White for title text.
         this.palette.set(C_BG, new Color32(15, 15, 25)); // Very dark blue-black background.
-        this.palette.set(C_LABEL, new Color32(200, 200, 200)); // Dim white for pattern labels.
+        this.palette.set(C_TAG, new Color32(200, 200, 200)); // Dim white for the timing-chart tag.
 
         // Wave pattern: three fixed colors.
         this.palette.set(C_WAVE_1, new Color32(100, 200, 255)); // Blue wave.
@@ -178,11 +189,16 @@ class Demo {
         // Spiral, Lissajous, and tunnel slots are left empty here.
         // They will be filled in by update() before the first frame renders.
 
+        // Install the shared UI theme the kit draws the pattern captions with.
+        // It writes 12 colors into slots 240-251, above every range this demo touches
+        // (the highest animated range is the tunnel at 192-211), so the per-tick palette
+        // animation never collides with the UI colors. Must run before BT.paletteSet().
+        this.theme = applyTheme(this.palette);
+
         // Step 3: Activate the palette
         // This tells the engine "use this palette for all drawing from now on".
         BT.paletteSet(this.palette);
 
-        console.log('[PatternsDemo] Initialized');
         return true;
     }
 
@@ -257,13 +273,15 @@ class Demo {
         this.drawTunnel(new Vector2i(200, 130));
 
         // Label each grid cell so viewers know which pattern they are looking at.
-        // systemPrint draws left-aligned text; we nudge x so short names sit under each center.
-        BT.systemPrint(new Vector2i(22, 92), C_LABEL, 'Spiral');
-        BT.systemPrint(new Vector2i(100, 92), C_LABEL, 'Radial');
-        BT.systemPrint(new Vector2i(184, 92), C_LABEL, 'Wave');
-        BT.systemPrint(new Vector2i(16, 172), C_LABEL, 'Circle');
-        BT.systemPrint(new Vector2i(88, 172), C_LABEL, 'Lissajous');
-        BT.systemPrint(new Vector2i(178, 172), C_LABEL, 'Tunnel');
+        // ui.caption() is the shared UI kit's pinned one-line caption - the same widget
+        // every demo in the series uses, so all captions look identical everywhere.
+        // Text draws left-aligned, so we nudge x until short names sit under each center.
+        ui.caption(22, 92, 'Spiral');
+        ui.caption(100, 92, 'Radial');
+        ui.caption(184, 92, 'Wave');
+        ui.caption(16, 172, 'Circle');
+        ui.caption(88, 172, 'Lissajous');
+        ui.caption(178, 172, 'Tunnel');
     }
 
     /**

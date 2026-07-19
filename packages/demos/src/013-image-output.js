@@ -1,12 +1,17 @@
 // Demo 013 - Image Output: demonstrates BT.downloadFrame().
 //
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
-// it as a PNG image file to your computer. Press Space to download the current frame.
+// it as a PNG image file to your computer. Click or tap the "Save PNG" button from the
+// shared UI kit (or press Space) to download the current frame - so the demo works on
+// touch screens too. Note: the kit panel is drawn on screen, so it appears in the
+// saved PNG as well. That is fine for this demo - see the comment in render().
 //
 // Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics).
 // Live article: https://vancura.dev/articles/blit386-image-output
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -16,12 +21,10 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // Every color used for drawing is stored in a numbered "palette" slot.
 // Think of each slot like a labeled paint jar on an artist's shelf.
 // Index 0 is always transparent (invisible). Our custom colors start at 1.
-const C_WHITE = 1; // White: grid dots, border, crosshairs, and most text
+// These are the SCENE colors - the test pattern itself. All the UI text and the
+// Save button draw with the shared UI theme instead (installed by applyTheme() in init()).
+const C_WHITE = 1; // White: grid dots, border, and crosshairs
 const C_BG = 2; // Very dark blue-gray: the background color
-const C_YELLOW = 3; // Yellow: the "Press SPACE" instruction line
-const C_CYAN = 4; // Cyan (bright blue-green): the "Capturing..." status message
-const C_GREEN = 5; // Green: the success message after a file saves
-const C_GRAY = 6; // Medium gray: the frame counter at the bottom
 
 // Dynamic slots: these six colors change every frame to create the animated rainbow stripes.
 // We pre-allocate (reserve) index slots 10 through 15, one for each horizontal stripe.
@@ -32,7 +35,8 @@ const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 
 /**
  * Image output demo.
- * Draws a colorful test pattern and saves the next frame to PNG when Space is pressed.
+ * Draws a colorful test pattern and saves the frame to PNG when the kit's
+ * "Save PNG" button is clicked, tapped, or triggered with the Space key.
  *
  * @implements {IBTDemo}
  */
@@ -42,15 +46,19 @@ class Demo {
     palette = null;
 
     // tick counts how many update steps have run since the demo started (goes up by 1 each update).
-    // We use it to animate the gradient stripes and to show a frame number in the corner.
+    // We use it to animate the gradient stripes and to show a frame number in the panel.
     tick = 0;
 
     // capturing is true while we are waiting for BT.downloadFrame() to finish saving the file.
-    // We use it so you cannot press Space twice at once and to show "Capturing..." on screen.
+    // We use it so you cannot trigger two saves at once and to show "Capturing..." on screen.
     capturing = false;
 
     // lastCaptureMessage holds the text we show after a save succeeds or fails (for example the file name or an error).
     lastCaptureMessage = '';
+
+    // lastCaptureColor remembers which UI color role to draw that message with:
+    // 'accent' (green) for a successful save, 'warm' (orange) for an error.
+    lastCaptureColor = 'accent';
 
     // messageTimer counts down how many more frames to show lastCaptureMessage before hiding it.
     // 180 frames is 3 seconds at 60 FPS, then the message disappears.
@@ -65,17 +73,21 @@ class Demo {
         return {
             // The engine usually draws a small "~" hint in the bottom-left corner to
             // tell people they can press the Backquote key (`) to open the stats
-            // overlay. This demo's whole point is saving a clean picture with
+            // overlay. This demo's whole point is saving a picture with
             // BT.downloadFrame(), and the overlay is drawn on top of everything, so
             // that hint would end up baked into the saved PNG. We hide the hint to keep
-            // captures tidy. The overlay still works on demand: press ` to show it and
-            // ` again to hide it before you capture.
+            // captures tidy. (The kit's Save panel DOES appear in the capture - a
+            // deliberate trade-off so touch users can save at all; see render().)
+            // The overlay still works on demand: press ` to show it and ` again to
+            // hide it before you capture. The bottom-left 17x13 corner also stays
+            // tappable to toggle it, which is why our UI panel sits in the top-right.
             isOverlayToggleHintVisible: false,
         };
     }
 
     /**
-     * Sets up the color palette. Space-to-save is handled in update() via BT.isKeyPressed.
+     * Sets up the color palette and installs the shared UI theme colors.
+     * The Save button itself is declared every frame in render().
      *
      * @returns {Promise<boolean>} Resolves to `true` when the demo is ready to run.
      */
@@ -84,13 +96,9 @@ class Demo {
         // Create a palette with room for 256 colors. 256 is a classic retro amount.
         this.palette = BT.paletteCreate(256);
 
-        // Store the static colors we always need.
+        // Store the static scene colors we always need.
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(20, 20, 30)); // very dark blue-gray background
-        this.palette.set(C_YELLOW, Color32.yellow); // yellow for the instruction text
-        this.palette.set(C_CYAN, Color32.cyan); // cyan for the "Capturing..." message
-        this.palette.set(C_GREEN, Color32.green); // green for the "Saved" success message
-        this.palette.set(C_GRAY, new Color32(128, 128, 128)); // medium gray for the frame counter
 
         // Pre-fill the six animated stripe slots with a starting color (dark gray).
         // They will be updated properly in update() on the very first tick.
@@ -99,6 +107,13 @@ class Demo {
             this.palette.set(C_STRIPE_0 + i, new Color32(40, 40, 40));
         }
 
+        // Step 2: install the shared UI theme. applyTheme() writes the twelve UI kit
+        // colors into high palette slots (240-251 by default), far above our scene
+        // slots 1-15. Every kit widget (the panel, button, labels) draws with these
+        // colors automatically - this demo never needs the slot numbers itself, so
+        // we call applyTheme() only for that side effect and ignore its return value.
+        applyTheme(this.palette);
+
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
 
@@ -106,38 +121,18 @@ class Demo {
     }
 
     /**
-     * Advances the demo clock, expires transient UI messages, and updates
+     * Advances the demo clock, expires transient status messages, and updates
      * the animated stripe colors in the palette.
      * Runs at a fixed rate (60 times per second).
      */
     update() {
-        // Bump the frame counter so animations and the on-screen "Frame: N" label keep changing.
+        // Let the UI kit do its per-tick housekeeping first: it latches keyboard
+        // shortcuts (like the Save button's Space binding) and tracks touch contacts.
+        // This must be the first line of update() so nothing misses a key press.
+        ui.tick();
+
+        // Bump the frame counter so animations and the on-screen "FRAME" row keep changing.
         this.tick++;
-
-        // Space bar: save the current frame as a PNG (same idea as Demo 013 in the series).
-        // BT.isKeyPressed('Space') is true only on the frame the key goes down (edge),
-        // so holding Space does not spam downloads.
-        if (BT.isKeyPressed('Space') && !this.capturing) {
-            this.capturing = true;
-
-            // BT.downloadFrame() reads the canvas and asks the browser to save a file.
-            // Most browsers open a "Save as" dialog or drop the file straight into your
-            // Downloads folder (depends on your browser settings). The demo cannot pick
-            // the folder for you - that is normal browser security.
-            BT.downloadFrame('blit386-capture.png')
-                .then(() => {
-                    this.lastCaptureMessage = 'Saved: blit386-capture.png';
-                    this.messageTimer = 180; // 3 seconds at 60 FPS
-                    this.capturing = false;
-                    return null;
-                })
-                .catch((err) => {
-                    this.lastCaptureMessage = `Error: ${err.message}`;
-                    this.messageTimer = 180;
-                    this.capturing = false;
-                    console.error('[Demo] Capture failed:', err);
-                });
-        }
 
         // If we are showing a success or error message, count down until it should disappear.
         if (this.messageTimer > 0) {
@@ -174,8 +169,8 @@ class Demo {
     }
 
     /**
-     * Renders the animated gradient test pattern and capture status overlay.
-     * Runs once per screen refresh.
+     * Renders the animated gradient test pattern and the UI kit panel with the
+     * Save button and capture status. Runs once per screen refresh.
      */
     render() {
         // Ask the engine how wide and tall our virtual screen is in pixels.
@@ -216,18 +211,70 @@ class Demo {
         // Vertical line through the center (20 pixels up and down from center).
         BT.drawLine(new Vector2i(cx, cy - 20), new Vector2i(cx, cy + 20), C_WHITE);
 
-        // Title and instructions in the top-left. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 26), C_YELLOW, 'Press SPACE to download PNG');
+        // UI kit panel in the top-right corner. We put it there (not bottom-left)
+        // because the engine keeps the bottom-left 17x13 corner tappable for toggling
+        // the stats overlay, and we do not want the two to fight over taps.
+        // Note: this panel is drawn onto the frame, so it WILL be part of the saved
+        // PNG. That is acceptable here - it even doubles as a caption telling you
+        // which demo produced the screenshot.
+        ui.begin('topRight');
+        ui.panel('Image Output');
 
-        // Show either a busy message, a result message, or nothing in the third text line.
-        if (this.capturing) {
-            BT.systemPrint(new Vector2i(10, 42), C_CYAN, 'Capturing...');
-        } else if (this.messageTimer > 0) {
-            BT.systemPrint(new Vector2i(10, 42), C_GREEN, this.lastCaptureMessage);
+        // The Save button. ui.button() returns true only on the single frame it was
+        // clicked, tapped, or its bound key (Space) was pressed - so holding Space
+        // does not spam downloads. We also ignore it while a save is already running.
+        if (ui.button('Save PNG (Space)', { key: 'Space' }) && !this.capturing) {
+            this.saveFrame();
         }
 
-        // Frame counter near the bottom so you can tell consecutive screenshots apart.
-        BT.systemPrint(new Vector2i(10, screen.y - 20), C_GRAY, `Frame: ${this.tick}`);
+        // One status row below the button. We always draw a row (even when idle) so
+        // the panel does not jump in size when a message appears or disappears.
+        if (this.capturing) {
+            // A save is in flight - the browser is busy reading the canvas.
+            ui.label('Capturing...', { color: 'info' });
+        } else if (this.messageTimer > 0) {
+            // A save just finished - show the result in green (success) or orange (error).
+            ui.label(this.lastCaptureMessage, { color: this.lastCaptureColor });
+        } else {
+            // Nothing happening - a quiet hint in dim gray.
+            ui.label('Saves the current frame', { color: 'dim' });
+        }
+
+        // Frame counter so you can tell consecutive screenshots apart.
+        ui.kv('FRAME', this.tick);
+        ui.end();
+    }
+
+    /**
+     * Starts an asynchronous PNG download of the current frame and remembers
+     * the outcome so render() can show a status message for a few seconds.
+     */
+    saveFrame() {
+        // Mark the save as "in flight" so the button ignores further presses
+        // and render() shows the "Capturing..." status row.
+        this.capturing = true;
+
+        // BT.downloadFrame() reads the canvas and asks the browser to save a file.
+        // Most browsers open a "Save as" dialog or drop the file straight into your
+        // Downloads folder (depends on your browser settings). The demo cannot pick
+        // the folder for you - that is normal browser security.
+        BT.downloadFrame('blit386-capture.png')
+            .then(() => {
+                // Success: remember a friendly message and show it in green.
+                this.lastCaptureMessage = 'Saved: blit386-capture.png';
+                this.lastCaptureColor = 'accent';
+                this.messageTimer = 180; // 3 seconds at 60 FPS
+                this.capturing = false;
+                return null;
+            })
+            .catch((err) => {
+                // Failure: show the error in orange and log details for developers.
+                this.lastCaptureMessage = `Error: ${err.message}`;
+                this.lastCaptureColor = 'warm';
+                this.messageTimer = 180;
+                this.capturing = false;
+                console.error('[Demo] Capture failed:', err);
+            });
     }
 }
 

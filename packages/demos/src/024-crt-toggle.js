@@ -13,7 +13,8 @@
 //
 // WHAT YOU WILL SEE
 // A colorful, simple scene - bouncing squares and a few horizontal bars. Every two seconds
-// the CRT preset flips on and off automatically. Status text lives in the overlay. While it is on
+// the CRT preset flips on and off automatically. Status text sits in a small panel drawn
+// with the shared UI kit. While it is on
 // you see scanlines, the RGB shadow mask, smooth barrel curvature, and a soft phosphor
 // glow; while it is off the pixels are exactly what the engine drew (no post-processing).
 // The bouncing keeps going either way, so you can compare the two looks side by side.
@@ -35,12 +36,13 @@
 //
 // HOW THE TOGGLE WORKS
 // We measure time in ticks (60 per second). Every TOGGLE_PERIOD_TICKS the demo flips a
-// boolean and either adds or removes the entire preset stack. The overlay shows
+// boolean and either adds or removes the entire preset stack. A small kit panel shows
 // "CRT: ON" or "CRT: OFF" so you always know which side you are looking at.
 //
 // SOFTWARE FALLBACK
 // In software renderer mode, post-process effects are unavailable. The bouncing
-// squares and color bars still animate; CRT toggle is disabled and a note explains why.
+// squares and color bars still animate; CRT toggle is disabled and the status panel
+// explains why.
 //
 // Why auto-toggle instead of a button? This page focuses on the effect API, not controls.
 // Auto-toggling keeps the ON/OFF comparison hands-free. Pointer and keyboard input are
@@ -49,6 +51,7 @@
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 // Internal pixel resolution.
 const DISPLAY_W = 320;
@@ -123,12 +126,6 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
  * @implements {IBTDemo}
  */
 class Demo {
-    // Reused every frame for the overlay (CRT status + hint).
-    overlayRowData = [
-        { leftText: 'CRT: OFF', textPaletteIndex: C_LABEL },
-        { leftText: 'Auto-toggles every 2s', textPaletteIndex: C_LABEL },
-    ];
-
     /**
      * Same 320x240 logical / 1280x960 output setup as demo 023 for display-tier CRT presets.
      *
@@ -176,9 +173,11 @@ class Demo {
      */
     async init() {
         // Step 1: build the palette
-        // A small, colorful palette. Bright primaries make the CRT effect visually
-        // obvious - soft pastels would look the same with or without.
-        const palette = BT.paletteCreate(16);
+        // A small, colorful set of scene colors in the low slots. Bright primaries make
+        // the CRT effect visually obvious - soft pastels would look the same with or
+        // without. The palette is 256 entries long so the shared UI theme can live in
+        // the high slots (240-251), far away from the scene colors.
+        const palette = BT.paletteCreate(256);
         palette.set(C_BG, new Color32(20, 30, 50, 255));
         palette.set(C_LABEL, Color32.white);
         palette.set(C_RED, Color32.red);
@@ -188,6 +187,10 @@ class Demo {
         palette.set(C_CYAN, Color32.cyan);
         palette.set(C_MAGENTA, Color32.magenta);
         palette.set(C_OVERLAY_BAR, new Color32(10, 15, 25, 220));
+
+        // Install the shared UI kit colors into slots 240-251. The kit draws the small
+        // CRT status panel; the animated scene keeps its own bright primaries above.
+        applyTheme(palette);
         BT.paletteSet(palette);
 
         this.effectsAvailable = isAvailable();
@@ -226,8 +229,16 @@ class Demo {
         // instances - the engine convention for all pixel-level coordinates.
         this.squares = [];
         for (let i = 0; i < SQUARE_COUNT; i++) {
+            const startPos = new Vector2i(20 + i * 50, 150 + (i % 2) * 30);
+
             this.squares.push({
-                pos: new Vector2i(20 + i * 50, 150 + (i % 2) * 30),
+                pos: startPos,
+                // prevPos remembers where the square was at the START of the most recent
+                // update() tick. render() blends between prevPos and pos using
+                // BT.renderAlpha so each square glides smoothly between physics ticks
+                // instead of jumping - see "Interpolating render state with renderAlpha"
+                // in the engine's docs/api-game-loop.md.
+                prevPos: startPos,
                 vel: new Vector2i(SQUARE_SPEEDS[i].x, SQUARE_SPEEDS[i].y),
                 color: SQUARE_COLORS[i % SQUARE_COLORS.length],
             });
@@ -275,6 +286,10 @@ class Demo {
         // Vector2i is immutable, so we assign new instances rather than mutating components.
         // Reassigning sq.pos and sq.vel is allowed for per-frame demo state (see CLAUDE.md).
         for (const sq of this.squares) {
+            // Snapshot "where was this square a moment ago" BEFORE moving it, so
+            // render() can draw a smooth in-between position instead of a pop.
+            sq.prevPos = sq.pos;
+
             sq.pos = new Vector2i(sq.pos.x + sq.vel.x, sq.pos.y + sq.vel.y);
 
             // Bounce against the left/right walls. We compare against [0, DISPLAY_W - SQUARE_SIZE]
@@ -293,18 +308,6 @@ class Demo {
         }
     }
 
-    /**
-     * CRT on/off status and backend hint for the engine overlay.
-     *
-     * @returns {readonly { leftText: string }[]}
-     */
-    overlayRows() {
-        this.overlayRowData[0].leftText = this.effectsAvailable ? (this.enabled ? 'CRT: ON' : 'CRT: OFF') : 'CRT: N/A';
-        this.overlayRowData[1].leftText = this.effectsAvailable ? 'Auto-toggles every 2s' : SOFTWARE_FALLBACK_NOTE;
-
-        return this.overlayRowData;
-    }
-
     render() {
         BT.clear(C_BG);
 
@@ -315,16 +318,32 @@ class Demo {
             BT.drawRectFill(new Rect2i(20, y, DISPLAY_W - 40, BAR_HEIGHT), BAR_COLORS[i]);
         }
 
-        // Draw the bouncing squares on top of the bars.
+        // Draw the bouncing squares on top of the bars. Vector2i.lerp() blends prevPos
+        // toward pos by BT.renderAlpha, so a square's drawn position matches this exact
+        // render moment instead of only its last-tick position - smoother motion when
+        // render() runs at a different rate than update() (see docs/api-game-loop.md
+        // in the engine repo for the full explanation).
         for (const sq of this.squares) {
-            BT.drawRectFill(new Rect2i(sq.pos.x, sq.pos.y, SQUARE_SIZE, SQUARE_SIZE), sq.color);
+            const drawPos = Vector2i.lerp(sq.prevPos, sq.pos, BT.renderAlpha);
+            BT.drawRectFill(new Rect2i(drawPos.x, drawPos.y, SQUARE_SIZE, SQUARE_SIZE), sq.color);
         }
 
-        // CRT status and hints are drawn in overlayRows() above the FPS bar.
-
-        if (!this.effectsAvailable) {
-            BT.systemPrint(new Vector2i(8, DISPLAY_H - 28), C_LABEL, SOFTWARE_FALLBACK_NOTE);
+        // Status readout: a small panel from the shared UI kit, drawn last so it sits on
+        // top of the moving squares. Like everything the demo draws, it lives on the
+        // logical buffer, so the CRT effects warp and glow the panel too - a nice way to
+        // read the toggle even when you cannot see the scanlines up close.
+        ui.begin('topLeft');
+        ui.panel();
+        if (this.effectsAvailable) {
+            // 'accent' (phosphor green) while the stack is live, 'dim' gray while it rests.
+            ui.label(this.enabled ? 'CRT: ON' : 'CRT: OFF', { color: this.enabled ? 'accent' : 'dim' });
+            ui.label('Auto-toggles every 2s', { color: 'dim' });
+        } else {
+            // Software renderer: no post-processing at all, so explain the reduced mode.
+            ui.label('CRT: N/A', { color: 'dim' });
+            ui.label(SOFTWARE_FALLBACK_NOTE, { color: 'warm' });
         }
+        ui.end();
     }
 }
 

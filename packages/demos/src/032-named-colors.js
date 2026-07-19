@@ -16,31 +16,40 @@
  * - The "definition" is a Color32 value (r, g, b, a).
  * - resolveNamedColor(name) asks the dictionary: "Do you know this word?"
  *
+ * The title strip, captions, and tips panel draw with the shared demo UI kit
+ * (src/shared/ui.js), so this demo's chrome matches every other demo. The color
+ * swatches themselves stay hand-drawn - their palette slots ARE the lesson.
+ *
  * Live version: https://demos.blit386.dev/032-named-colors
  */
 
-// @pageTitle BLIT386 Demo 032 - Named Colors
-//
-
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+// The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
+// palette (slots 240-251, far above this demo's slots 1-9), and ui.* draws the title
+// strip, the caption text, and the Tips panel.
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// Palette indices for panels, swatches, and status text. Slot 0 stays transparent.
-const C_BG = 1; // Screen background.
-const C_TEXT = 2; // Labels, tips, and panel headings.
-const C_PANEL = 3; // Filled background behind swatch rows and tips box.
-const C_PANEL_BORDER = 4; // Outlines around panels and each swatch.
+// Palette indices for this demo's own colors. Slot 0 stays transparent.
+// Panels, captions, and status text draw with the shared UI theme instead (installed by
+// applyTheme() in init()), so only two kinds of slots live down here: the overlay timing
+// chart's bar colors, and the lesson's swatch slots.
+//
+// The chart slots exist because configure() runs BEFORE init() installs the theme, so the
+// chart style cannot point at theme slots - init() copies the matching theme colors here.
+const C_CHART_UPDATE = 1; // Timing chart: update() bar (matches the theme's blue-gray border).
+const C_CHART_RENDER = 2; // Timing chart: render() bar (matches the theme's off-white text).
+const C_CHART_TAG = 3; // Timing chart: milestone tag labels (matches the theme's green accent).
 const C_TOMATO = 5; // Swatch slot for built-in name "tomato".
 const C_CORNFLOWER = 6; // Swatch slot for built-in name "cornflowerblue".
 const C_CUSTOM_DYNAMIC = 7; // Swatch slot for animated custom name "demo-dynamic".
 const C_OPTIONAL = 8; // Swatch slot for toggled custom name "demo-optional".
 const C_OPTIONAL_FALLBACK = 9; // Gray shown when demo-optional is unregistered.
-const C_OK = 10; // Green status when demo-optional is registered.
-const C_WARN = 11; // Amber status when demo-optional is missing.
 
 const CUSTOM_DYNAMIC_NAME = 'demo-dynamic';
 const CUSTOM_OPTIONAL_NAME = 'demo-optional';
@@ -56,50 +65,14 @@ const SWATCH_H = 26;
 class Demo {
     /** @type {Palette | null} */
     palette = null;
+
+    // theme holds the palette slot numbers of the shared UI kit colors, filled in by
+    // applyTheme() in init(). We use them for the background, the swatch panel frame,
+    // and the swatch outlines and labels.
+    theme = null;
+
     optionalRegistered = true;
     elapsed = 0;
-
-    /**
-     * Resolve a named color and fall back if the name is missing.
-     *
-     * @param {string} name
-     * @param {Color32} fallback
-     * @returns {Color32}
-     */
-    resolveOr(name, fallback) {
-        const resolved = Color32.resolveNamedColor(name);
-        if (resolved === undefined) {
-            return fallback;
-        }
-        return resolved;
-    }
-
-    /**
-     * If a custom name exists, remove it first so init() can register cleanly.
-     *
-     * This makes hot-reload safer during development.
-     *
-     * @param {string} name
-     */
-    removeIfExists(name) {
-        if (Color32.resolveNamedColor(name) !== undefined) {
-            Color32.unregisterColor(name);
-        }
-    }
-
-    /**
-     * Draw one labeled color swatch.
-     *
-     * @param {number} x
-     * @param {number} y
-     * @param {number} colorIndex
-     * @param {string} label
-     */
-    drawSwatch(x, y, colorIndex, label) {
-        BT.drawRectFill(new Rect2i(x, y, SWATCH_W, SWATCH_H), colorIndex);
-        BT.drawRect(new Rect2i(x, y, SWATCH_W, SWATCH_H), C_PANEL_BORDER);
-        BT.systemPrint(new Vector2i(x, y + SWATCH_H + 2), C_TEXT, label);
-    }
 
     /**
      * Opt in to the overlay timing chart with palette-matched bar colors.
@@ -110,9 +83,9 @@ class Demo {
         return {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_PANEL_BORDER,
-                renderBarPaletteIndex: C_TEXT,
-                tagPaletteIndex: C_OK,
+                updateBarPaletteIndex: C_CHART_UPDATE,
+                renderBarPaletteIndex: C_CHART_RENDER,
+                tagPaletteIndex: C_CHART_TAG,
             },
         };
     }
@@ -125,14 +98,20 @@ class Demo {
     async init() {
         this.palette = BT.paletteCreate(256);
 
-        // UI colors for panels and text.
-        this.palette.set(C_BG, new Color32(14, 18, 28));
-        this.palette.set(C_TEXT, new Color32(232, 236, 245));
-        this.palette.set(C_PANEL, new Color32(26, 33, 49));
-        this.palette.set(C_PANEL_BORDER, new Color32(79, 93, 121));
+        // Overlay timing chart colors. These copy the shared theme's hex values into the
+        // low slots that configure() pointed the chart style at (see the note on the
+        // C_CHART_* constants above for why the chart cannot use theme slots directly).
+        this.palette.set(C_CHART_UPDATE, Color32.fromHex('#5a6480')); // theme border blue-gray
+        this.palette.set(C_CHART_RENDER, Color32.fromHex('#e6ecf5')); // theme text off-white
+        this.palette.set(C_CHART_TAG, Color32.fromHex('#7dffa5')); // theme accent green
+
+        // Fallback gray for the moments when demo-optional is unregistered.
         this.palette.set(C_OPTIONAL_FALLBACK, new Color32(80, 80, 80));
-        this.palette.set(C_OK, new Color32(120, 235, 165));
-        this.palette.set(C_WARN, new Color32(255, 193, 122));
+
+        // Install the shared UI kit colors. They land in palette slots 240-251, far above
+        // the swatch slots this demo animates (5-9), so the two can never collide. The
+        // returned map remembers which slot each UI color went to (theme.bg, theme.text, ...).
+        this.theme = applyTheme(this.palette);
 
         // Remove old custom names before registering fresh ones.
         // Hot reload can leave names in memory from a previous run; unregister first
@@ -198,15 +177,26 @@ class Demo {
 
     /**
      * Draw color swatches and live registry status.
+     *
+     * The chrome (title strip, captions, Tips panel) draws with the shared UI kit;
+     * the swatch panel and swatches stay hand-drawn because their palette slots
+     * are what this demo teaches.
      */
     render() {
-        BT.clear(C_BG);
+        // Fill the screen with the shared UI theme's deep navy background.
+        BT.clear(this.theme.bg);
 
-        BT.systemPrint(new Vector2i(8, 20), C_TEXT, 'Built-in lookups + custom register/update/unregister');
+        // Full-width title strip across the top of the screen, drawn by the shared UI kit.
+        // 'topBar' is the classic 22-pixel strip; panel() gives it a background and title.
+        ui.begin('topBar');
+        ui.panel('Built-in lookups + register / update / unregister');
+        ui.end();
 
-        // Upper panel: background for the four color swatches.
-        BT.drawRectFill(new Rect2i(6, 32, 308, 126), C_PANEL);
-        BT.drawRect(new Rect2i(6, 32, 308, 126), C_PANEL_BORDER);
+        // Upper panel: hand-drawn background for the four color swatches. Kit panels size
+        // themselves around kit rows only, so a frame around hand-drawn artwork keeps using
+        // BT.drawRectFill / BT.drawRect - but with the shared theme's panel colors.
+        BT.drawRectFill(new Rect2i(6, 32, 308, 126), this.theme.panel);
+        BT.drawRect(new Rect2i(6, 32, 308, 126), this.theme.border);
 
         // Four labeled swatches in one row (tomato, cornflower, animated custom, optional custom).
         this.drawSwatch(16, 44, C_TOMATO, 'tomato');
@@ -214,21 +204,76 @@ class Demo {
         this.drawSwatch(176, 44, C_CUSTOM_DYNAMIC, 'dynamic');
         this.drawSwatch(256, 44, C_OPTIONAL, 'optional');
 
-        BT.systemPrint(new Vector2i(16, 104), C_TEXT, "Custom dynamic name: 'demo-dynamic'");
-        BT.systemPrint(new Vector2i(16, 116), C_TEXT, "Custom optional name: 'demo-optional'");
+        // Captions under the swatches: a borderless kit group pinned inside the panel.
+        // Passing x and y pins the group's top-left corner; pad: 0 removes the group's
+        // inner padding so the first row starts exactly at (16, 100).
+        ui.begin('topLeft', { x: 16, y: 100, pad: 0 });
+        ui.label("Custom dynamic name: 'demo-dynamic'");
+        ui.label("Custom optional name: 'demo-optional'");
 
-        const optionalStateText = this.optionalRegistered
-            ? 'demo-optional is registered (Color32.registerColor)'
-            : 'demo-optional is missing (Color32.unregisterColor)';
-        BT.systemPrint(new Vector2i(16, 132), this.optionalRegistered ? C_OK : C_WARN, optionalStateText);
+        // The status line flips between the theme's green 'accent' and orange 'warm' roles,
+        // so you can watch Color32.registerColor / Color32.unregisterColor take effect
+        // every 3 seconds (update() drives the toggle).
+        if (this.optionalRegistered) {
+            ui.label('demo-optional is registered (registerColor)', { color: 'accent' });
+        } else {
+            ui.label('demo-optional is missing (unregisterColor)', { color: 'warm' });
+        }
+        ui.end();
 
-        // Lower panel: API tips (names are normalized; register/update/unregister rules).
-        BT.drawRectFill(new Rect2i(6, 168, 308, 66), C_PANEL);
-        BT.drawRect(new Rect2i(6, 168, 308, 66), C_PANEL_BORDER);
-        BT.systemPrint(new Vector2i(14, 178), C_TEXT, 'Tips:');
-        BT.systemPrint(new Vector2i(14, 190), C_TEXT, '- Names are trim + lowercase normalized.');
-        BT.systemPrint(new Vector2i(14, 202), C_TEXT, '- registerColor throws if the name already exists.');
-        BT.systemPrint(new Vector2i(14, 214), C_TEXT, '- updateColor and unregisterColor throw if missing.');
+        // Lower panel: API tips as a kit panel anchored to the bottom-left corner.
+        // The kit sizes the panel to its widest row and keeps a small screen margin.
+        ui.begin('bottomLeft');
+        ui.panel('Tips');
+        ui.label('Names are trim + lowercase normalized.', { color: 'dim' });
+        ui.label('registerColor throws if the name exists.', { color: 'dim' });
+        ui.label('updateColor / unregisterColor throw if missing.', { color: 'dim' });
+        ui.end();
+    }
+
+    /**
+     * Resolve a named color and fall back if the name is missing.
+     *
+     * @param {string} name
+     * @param {Color32} fallback
+     * @returns {Color32}
+     */
+    resolveOr(name, fallback) {
+        const resolved = Color32.resolveNamedColor(name);
+        if (resolved === undefined) {
+            return fallback;
+        }
+        return resolved;
+    }
+
+    /**
+     * If a custom name exists, remove it first so init() can register cleanly.
+     *
+     * This makes hot-reload safer during development.
+     *
+     * @param {string} name
+     */
+    removeIfExists(name) {
+        if (Color32.resolveNamedColor(name) !== undefined) {
+            Color32.unregisterColor(name);
+        }
+    }
+
+    /**
+     * Draw one labeled color swatch.
+     *
+     * @param {number} x
+     * @param {number} y
+     * @param {number} colorIndex
+     * @param {string} label
+     */
+    drawSwatch(x, y, colorIndex, label) {
+        // Fill the swatch with the palette slot we are demonstrating - the lesson itself.
+        BT.drawRectFill(new Rect2i(x, y, SWATCH_W, SWATCH_H), colorIndex);
+
+        // The outline and the label are chrome, so they use the shared UI theme colors.
+        BT.drawRect(new Rect2i(x, y, SWATCH_W, SWATCH_H), this.theme.border);
+        BT.systemPrint(new Vector2i(x, y + SWATCH_H + 2), this.theme.text, label);
     }
 }
 

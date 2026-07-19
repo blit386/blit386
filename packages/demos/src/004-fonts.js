@@ -14,13 +14,17 @@
  *   - Rainbow text: one systemPrint call per character with its own palette slot
  *   - Pulsing text: animating alpha in update() on a single palette slot
  *
+ * The title strip and the small pointer to Demo 022 are chrome drawn by the shared UI kit
+ * (src/shared/ui.js). The showcase lines themselves stay hand-rolled on purpose - drawing
+ * text with BT.systemPrint() is the whole lesson of this demo.
+ *
  * For custom bitmap fonts loaded from disk, variable glyph widths, and BT.printFont(),
  * see Demo 022 - Bitmap Font: https://demos.blit386.dev/022-bitmap-font
  */
 
-// @pageTitle BLIT386 Demo 004 - Fonts
-
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -29,7 +33,7 @@ import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
-const C_WHITE = 1; // Pure white: title and special characters
+const C_WHITE = 1; // Pure white: the overlay bar style color (see configure())
 const C_BG = 2; // Dark blue-navy: fills the screen each frame
 const C_RED_TEXT = 3; // Soft red: "Red Text" sample line
 const C_GREEN_TEXT = 4; // Soft green: "Green Text" sample line
@@ -65,6 +69,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Where the shared UI theme colors landed in the palette, filled by applyTheme() in
+    // init(). The UI kit draws the title strip and captions with these slots.
+    theme = null;
+
     // animTime is a timer that counts up in seconds.
     // We use it to control the speed of color animations.
     animTime = 0;
@@ -82,9 +90,9 @@ class Demo {
             overlayPaletteRowsVisible: 2,
 
             overlayStyle: {
-                barPaletteIndex: 1,
-                textPaletteIndex: 2,
-                gapPaletteIndex: 2,
+                barPaletteIndex: C_WHITE,
+                textPaletteIndex: C_BG,
+                gapPaletteIndex: C_BG,
             },
         };
     }
@@ -120,6 +128,12 @@ class Demo {
         }
         // Pre-fill pulse slot.
         this.palette.set(C_PULSE, new Color32(100, 100, 255));
+
+        // Install the shared UI theme the kit's title strip and caption draw with.
+        // It writes 12 colors into slots 240-251, far above everything this demo uses
+        // (static colors in 1-7, animated rainbow and pulse in 20-38), so the palette
+        // animation never collides with the UI colors. Must happen before BT.paletteSet().
+        this.theme = applyTheme(this.palette);
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
@@ -165,14 +179,28 @@ class Demo {
         // Fill the screen with the dark blue-navy background.
         BT.clear(C_BG);
 
-        // Start drawing from near the top of the screen.
-        let y = 24;
+        // Title strip across the top, drawn by the shared UI kit. begin('topBar') opens a
+        // full-width 22-pixel band, panel() fills it and prints the amber title, and end()
+        // closes the group. This is chrome only - the lesson lives in the lines below.
+        ui.begin('topBar');
+        ui.panel('Fonts - BT.systemPrint() showcase');
+        ui.end();
+
+        // Start drawing below the 22-pixel title strip.
+        let y = 32;
 
         // Draw each section in order, updating y as we go so nothing overlaps.
         y = this.renderColoredText(y);
         y = this.renderRainbowText(y);
         y = this.renderPulsingText(y);
         this.renderSpecialCharacters(y);
+
+        // A small dim caption in the bottom-left corner pointing to the next font lesson.
+        // No ui.panel() call inside the group means it is just floating text - no box.
+        ui.begin('bottomLeft');
+        ui.label('To see how to load bitmap fonts from disk,', { color: 'dim' });
+        ui.label('go to demo 022', { color: 'dim' });
+        ui.end();
     }
 
     /**
@@ -202,7 +230,7 @@ class Demo {
 
         BT.systemPrint(new Vector2i(10, currentY), C_YELLOW_TEXT, 'Yellow Text');
 
-        // Extra gap after this block (a bit more than one line height).
+        // Move down one line height after the last word, just like the rows above.
         currentY += lineAdvance;
 
         return currentY;

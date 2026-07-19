@@ -15,6 +15,9 @@
 //   2. Palette offsets - shifting every pixel index to a different color block.
 //   3. Opacity pulsing - rewriting palette alpha slots in update().
 //
+// Captions and the code panel are drawn with the shared UI kit (src/shared/ui.js), which
+// installs its own twelve UI colors high in the palette (slots 240-251) via applyTheme().
+//
 // In a real project you would load PNGs from disk instead:
 //   await SpriteSheet.load('/sprites/hero.png')
 //   await SpriteSheet.loadIndexed('/sprites/hero.png', palette, startSlot)
@@ -31,10 +34,13 @@
 // to use palette[15..19] - a completely different color theme!
 // This is how retro games did "team colors" and environmental lighting.
 //
-// We learned about palette setup in Demo 015-Palette-Presets:
+// Demo 015 explores the palette system in depth:
 // https://demos.blit386.dev/015-palette-presets
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+
+import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -43,8 +49,9 @@ import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 /** @typedef {import('blit386').Rect2i} Rect2i */
 
-// Where in the palette the sprite's original colors start.
-// Everything before this (index 1..9) is used for UI colors.
+// Where in the palette the sprite's original colors start. The sprite uses two colors
+// (fill + stroke), and the recolored theme blocks below stack up to about slot 19, so
+// everything above that stays free for the shared UI theme (slots 240-251).
 const COLOR_BASE = 10;
 
 // Each shape cell in the programmatic sheet is 20x20 pixels.
@@ -52,34 +59,20 @@ const SHAPE_CELL = 20;
 const SHAPE_COLS = 3;
 const SHAPE_ROWS = 2;
 
-// UI color slot indices written by palette.applyHUD() in init().
-const C_WHITE = 1;
-const C_BG = 2;
-const C_LABEL = 3;
-const C_CODE = 6;
+// One name per shape cell, in the same order drawShapeInCell() paints them.
+// This single list drives both the sheet builder (how many cells to draw) and the
+// captions under each shape in render(). The captions sit 50 pixels apart, so the
+// longer names are shortened ('Tri', 'Gem') to keep each label inside its column.
+const SHAPE_NAMES = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
 
-/**
- * Turns an offscreen canvas into a loaded HTMLImageElement.
- * The browser needs an Image object before SpriteSheet can upload it to the GPU.
- *
- * @param {OffscreenCanvas} canvas
- * @returns {Promise<HTMLImageElement>}
- */
-async function canvasToImage(canvas) {
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const url = URL.createObjectURL(blob);
-
-    try {
-        return await new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = url;
-        });
-    } finally {
-        URL.revokeObjectURL(url);
-    }
-}
+// Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
+// colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
+// the overlay styles below cannot read this.theme yet - these constants spell out where
+// each theme color will land once init() runs.
+const UI_BG = 240; // 'ui_bg' - deep navy screen background
+const UI_TEXT = 244; // 'ui_text' - off-white primary text
+const UI_DIM = 245; // 'ui_text_dim' - secondary gray text
+const UI_INFO = 249; // 'ui_info' - code blue
 
 // The exact two colors drawShapeInCell() paints with (see fill/stroke below).
 // The canvas smooths shape edges automatically (anti-aliasing), which blends these two
@@ -148,48 +141,6 @@ function quantizeCanvasToShapeColors(ctx, w, h) {
     }
 
     ctx.putImageData(imageData, 0, 0);
-}
-
-/**
- * Scans canvas pixels and registers every unique opaque color into the palette.
- * Transparent pixels (alpha 0) are skipped - they map to slot 0 at draw time. Call this only
- * after quantizeCanvasToShapeColors(), so every pixel is already one of the two exact design
- * colors.
- *
- * @param {import('blit386').Palette} palette
- * @param {OffscreenCanvasRenderingContext2D} ctx
- * @param {number} w
- * @param {number} h
- * @param {number} startSlot
- * @returns {Color32[]}
- */
-function registerCanvasColors(palette, ctx, w, h, startSlot) {
-    const data = ctx.getImageData(0, 0, w, h).data;
-    const seen = new Map();
-    const colors = [];
-
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        if (a === 0) {
-            continue;
-        }
-
-        const key = `${r},${g},${b}`;
-
-        if (!seen.has(key)) {
-            const slot = startSlot + colors.length;
-            seen.set(key, slot);
-            const color = new Color32(r, g, b, 255);
-            palette.set(slot, color);
-            colors.push(color);
-        }
-    }
-
-    return colors;
 }
 
 /**
@@ -289,10 +240,10 @@ function buildShapeSheet() {
     // Clear to transparent so unused pixels stay invisible.
     ctx.clearRect(0, 0, sheetW, sheetH);
 
-    const names = ['Square', 'Circle', 'Triangle', 'Star', 'Heart', 'Diamond'];
     const rects = [];
 
-    for (let i = 0; i < names.length; i++) {
+    // One cell per entry in the shared SHAPE_NAMES list (the same list captions use).
+    for (let i = 0; i < SHAPE_NAMES.length; i++) {
         const col = i % SHAPE_COLS;
         const row = Math.floor(i / SHAPE_COLS);
         const cellX = col * SHAPE_CELL;
@@ -320,6 +271,10 @@ class Demo {
     /** @type {SpriteSheet | null} */
     sheet = null;
 
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // theme.bg, theme.text, and friends are palette indices for our own drawing.
+    theme = null;
+
     // One Rect2i per shape cell in the programmatic sheet.
     shapeRects = [];
 
@@ -338,16 +293,16 @@ class Demo {
         return {
             isOverlayTimingChartEnabled: true,
             overlayStyle: {
-                barPaletteIndex: C_BG,
-                textPaletteIndex: C_LABEL,
-                gapPaletteIndex: C_BG,
+                barPaletteIndex: UI_BG,
+                textPaletteIndex: UI_DIM,
+                gapPaletteIndex: UI_BG,
             },
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_LABEL,
-                renderBarPaletteIndex: C_CODE,
-                warningPaletteIndex: C_CODE,
-                errorPaletteIndex: C_WHITE,
-                tagPaletteIndex: C_LABEL,
+                updateBarPaletteIndex: UI_DIM,
+                renderBarPaletteIndex: UI_INFO,
+                warningPaletteIndex: UI_INFO,
+                errorPaletteIndex: UI_TEXT,
+                tagPaletteIndex: UI_DIM,
             },
         };
     }
@@ -361,7 +316,12 @@ class Demo {
         console.log('[SpriteDemo] Initializing...');
 
         this.palette = BT.paletteCreate(256);
-        this.palette.applyHUD(1);
+
+        // Install the shared UI theme: applyTheme() writes the twelve UI kit colors into
+        // high palette slots (240-251), far above this demo's sprite colors (slots 10-19),
+        // and returns a map of friendly names to those slots (this.theme.bg, .text, ...).
+        // Every caption and the code panel below draw with these shared colors.
+        this.theme = applyTheme(this.palette);
 
         try {
             const { canvas, ctx, rects } = buildShapeSheet();
@@ -426,59 +386,66 @@ class Demo {
     }
 
     render() {
-        BT.clear(C_BG);
-
-        if (!this.sheet || this.shapeRects.length === 0) {
-            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
-            return;
-        }
+        // Clear the whole screen with the shared UI theme's background color.
+        BT.clear(this.theme.bg);
 
         // Row 1: six shapes - each draw call uses a different source Rect2i.
         const shapeY = 14;
         const shapeSpacing = 50;
-        const shapeNames = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
 
         for (let i = 0; i < this.shapeRects.length; i++) {
             const destX = 6 + i * shapeSpacing;
             BT.drawSprite(this.sheet, this.shapeRects[i], new Vector2i(destX, shapeY), 0);
-            BT.systemPrint(new Vector2i(destX, shapeY + 22), C_LABEL, shapeNames[i]);
+            ui.caption(destX, shapeY + 22, SHAPE_NAMES[i], { color: 'dim' });
         }
 
-        BT.systemPrint(new Vector2i(6, 58), C_LABEL, 'Source rects - one region per shape');
+        ui.caption(6, 58, 'Source rects - one region per shape', { color: 'dim' });
 
         // Row 2: palette offsets on the star shape (offset shifts every pixel index).
-        const N = this.colorCount;
+        const n = this.colorCount;
         const themeY = 78;
         const themeSpacing = 72;
 
         BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8, themeY), 0);
-        BT.systemPrint(new Vector2i(6, themeY + 22), C_LABEL, 'Original');
+        ui.caption(6, themeY + 22, 'Original', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing, themeY), N);
-        BT.systemPrint(new Vector2i(6 + themeSpacing, themeY + 22), C_LABEL, 'Fire');
+        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing, themeY), n);
+        ui.caption(6 + themeSpacing, themeY + 22, 'Fire', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing * 2, themeY), N * 2);
-        BT.systemPrint(new Vector2i(6 + themeSpacing * 2, themeY + 22), C_LABEL, 'Ice');
+        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing * 2, themeY), n * 2);
+        ui.caption(6 + themeSpacing * 2, themeY + 22, 'Ice', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing * 3, themeY), N * 3);
-        BT.systemPrint(new Vector2i(6 + themeSpacing * 3, themeY + 22), C_LABEL, 'Void');
+        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing * 3, themeY), n * 3);
+        ui.caption(6 + themeSpacing * 3, themeY + 22, 'Void', { color: 'dim' });
 
         // Row 3: opacity pulsing via palette alpha slots rewritten in update().
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8, 148), N * 4);
-        BT.systemPrint(new Vector2i(6, 170), C_LABEL, 'Alpha pulse');
-        BT.systemPrint(new Vector2i(36, 152), C_LABEL, 'Opacity via palette,');
-        BT.systemPrint(new Vector2i(36, 164), C_LABEL, 'not a drawSprite flag.');
+        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8, 148), n * 4);
+        ui.caption(6, 170, 'Alpha pulse', { color: 'dim' });
+
+        // A two-line footnote about the pulsing star. A borderless group anchored to the
+        // bottom-left corner: the kit stacks its labels vertically and places the whole
+        // block just above the bottom screen edge.
+        ui.begin('bottomLeft');
+        ui.label('Opacity via palette,', { color: 'dim' });
+        ui.label('not a drawSprite flag.', { color: 'dim' });
+        ui.end();
 
         this.renderCodeSnippet();
     }
 
+    /**
+     * The "how you would load a real PNG" cheat sheet, as a bordered kit panel anchored
+     * to the bottom-right corner of the screen.
+     */
     renderCodeSnippet() {
-        BT.systemPrint(new Vector2i(170, 188), C_LABEL, 'Production PNG load:');
-        BT.systemPrint(new Vector2i(170, 200), C_CODE, 'const indexed =');
-        BT.systemPrint(new Vector2i(170, 212), C_CODE, '  await SpriteSheet');
-        BT.systemPrint(new Vector2i(170, 224), C_CODE, '  .loadIndexed(');
-        BT.systemPrint(new Vector2i(170, 236), C_CODE, "   '/sprites/test.png',");
-        BT.systemPrint(new Vector2i(170, 248), C_CODE, '   palette, 10);');
+        ui.begin('bottomRight');
+        ui.panel('Production PNG load');
+        ui.label('const indexed =', { color: 'info' });
+        ui.label('  await SpriteSheet', { color: 'info' });
+        ui.label('  .loadIndexed(', { color: 'info' });
+        ui.label("   '/sprites/test.png',", { color: 'info' });
+        ui.label('   palette, 10);', { color: 'info' });
+        ui.end();
     }
 }
 

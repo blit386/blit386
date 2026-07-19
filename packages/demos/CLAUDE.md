@@ -427,7 +427,7 @@ keyboard/gamepad" label when `ui.hasTouch()` is true.
 
 The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
 The overlay body starts hidden; a bitmap toggle hint sits in the bottom-left corner by default. Toggle the body with
-Backquote or a primary press in the bottom-left 48x48 px corner. Use `isOverlayVisibleAtStart: true` to show the body on
+Backquote or a primary press in the bottom-left 17x13 px corner. Use `isOverlayVisibleAtStart: true` to show the body on
 the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still toggles
 with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
 `isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem

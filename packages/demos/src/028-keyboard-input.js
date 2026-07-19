@@ -21,37 +21,34 @@
  *   once per fixed-update tick, and that tick always finishes before render()
  *   runs, so read it in update(), not render(), or you can miss characters.
  *
+ * The panels and readouts are drawn with the shared demo UI kit (src/shared/ui.js),
+ * so this page looks like every other demo in the series. The inputs themselves stay
+ * deliberately keyboard-only - there is no touch stand-in for a physical keyboard,
+ * so on a touch device the page shows a "needs a keyboard" notice instead.
+ *
  * Try this:
  * - Hold W, A, S, D and Space / N on player 1; arrow keys and ; ' on player 2.
  * - Tap the same letter repeatedly and watch the press counter climb (edge-only
  *   BT.isKeyPressed, no repeat rate). Press a different key and the counter resets.
- * - Hold Q to see isKeyDown; tap F and watch the release line.
+ * - Hold Q to see isKeyDown; tap F and watch the release readout.
  * - Type letters into the buffer line at the bottom.
  * - If keys stop responding, click the canvas - focus may have moved to another
  *   part of the page after you tabbed away.
  */
 
-// @pageTitle BLIT386 Demo 028 - Keyboard Input
+import { bootstrap, BT } from 'blit386';
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// Palette indices. Slot 0 stays transparent for indexed draws we do not use here.
-const C_WHITE = 1;
-const C_BG = 2;
-const C_AMBER = 3;
-const C_DIM = 4;
-const C_LIT = 5;
-const C_PANEL = 6;
-const C_PANEL_BORDER = 7;
-const C_ACCENT = 8;
-
-// How many characters we keep in the typed-text demo line (rolling window).
-const TYPED_BUFFER_MAX = 80;
+// How many characters we keep in the typed-text demo line (rolling window). The line
+// lives in a 308-pixel-wide panel and the system font is 6 pixels per character, so
+// 48 characters fill the panel without spilling over its border.
+const TYPED_BUFFER_MAX = 48;
 
 // Keys the press counter listens to (KeyboardEvent.code strings).
 const PRESS_COUNTER_KEYS = [
@@ -63,8 +60,24 @@ const PRESS_COUNTER_KEYS = [
     'ArrowRight',
 ];
 
-// Horizontal spacing for face-button pips so four fit inside each 148px-wide panel.
-const FACE_SLOT_WIDTH = 34;
+// Palette slots of three shared UI theme colors, for the overlay timing chart below.
+// applyTheme() in init() writes the twelve theme colors into slots 240-251 (its default
+// start slot), but configure() runs BEFORE init(), so the chart style cannot read
+// this.theme yet - we spell out where the colors will land: 244 = text, 245 = dim gray,
+// 247 = accent green.
+const THEME_TEXT_SLOT = 244;
+const THEME_DIM_SLOT = 245;
+const THEME_ACCENT_SLOT = 247;
+
+// Fixed vertical layout, in display pixels. The kit normally stacks panels on its own,
+// but this page places several groups side by side, so each one gets a pinned x/y.
+const NOTICE_Y = 24; // The hint / touch-notice line right under the title strip.
+const PANEL_TOP_Y = 42; // Top edge of the face-button panels and the press counter.
+const RAW_PANEL_Y = 134; // Top edge of the raw-key panel (below the press counter).
+const PLAYER0_PANEL_X = 6; // Left edge of the player 0 panel.
+const PLAYER1_PANEL_X = 68; // Left edge of the player 1 panel (next to player 0).
+const READOUT_COLUMN_X = 130; // Left edge of the press-counter / raw-key column.
+const TYPED_PANEL_WIDTH = 308; // The typed-text panel spans almost the full screen.
 
 /**
  * Turns `KeyH` into `H`, `Digit5` into `5`, and leaves other codes readable.
@@ -93,8 +106,20 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // Set when `BT.isKeyReleased('KeyF')` is true this frame (plain English message).
-    lastFReleaseMessage = 'Tap F to see isKeyReleased';
+    // Palette slots of the shared UI theme colors, filled by applyTheme() in init().
+    /** @type {ReturnType<typeof applyTheme> | null} */
+    theme = null;
+
+    /**
+     * Face buttons that have at least one key in each player's default map, built once
+     * in init(). Index 0 is player 0's list, index 1 is player 1's.
+     *
+     * @type {Array<Array<{ label: string, code: number }>>}
+     */
+    faceButtons = [];
+
+    /** @type {number | null} Engine tick when `BT.isKeyReleased('KeyF')` last fired. */
+    lastFReleaseTick = null;
 
     /** @type {string | null} KeyboardEvent.code for the key we are counting presses on. */
     activePressKey = null;
@@ -114,15 +139,15 @@ class Demo {
         return {
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_DIM,
-                renderBarPaletteIndex: C_WHITE,
-                tagPaletteIndex: C_ACCENT,
+                updateBarPaletteIndex: THEME_DIM_SLOT,
+                renderBarPaletteIndex: THEME_TEXT_SLOT,
+                tagPaletteIndex: THEME_ACCENT_SLOT,
             },
         };
     }
 
     /**
-     * Allocate palette colors once at startup.
+     * Install the shared UI theme and build the face-button lists once at startup.
      *
      * @returns {Promise<boolean>}
      */
@@ -134,16 +159,34 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
-        this.palette.set(C_BG, new Color32(18, 22, 38));
-        this.palette.set(C_AMBER, new Color32(255, 200, 120));
-        this.palette.set(C_DIM, new Color32(130, 140, 160));
-        this.palette.set(C_LIT, new Color32(120, 255, 160));
-        this.palette.set(C_PANEL, new Color32(35, 42, 62));
-        this.palette.set(C_PANEL_BORDER, new Color32(90, 98, 120));
-        this.palette.set(C_ACCENT, new Color32(255, 140, 90));
+        // applyTheme() installs the twelve shared UI colors (into high palette slots, far
+        // above where scene art normally lives) and reports their slots, so render() can
+        // clear the screen with the theme's background color. Every panel, pip, and text
+        // row on this page draws with these colors - no hand-picked HUD slots needed.
+        this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
+
+        // The full face-button roster, in the order the panels list them. Each entry pairs
+        // a short on-screen label with the engine's button constant.
+        const allButtons = [
+            { label: 'Up', code: BT.BTN_UP },
+            { label: 'Dn', code: BT.BTN_DOWN },
+            { label: 'Lf', code: BT.BTN_LEFT },
+            { label: 'Rt', code: BT.BTN_RIGHT },
+            { label: 'A', code: BT.BTN_A },
+            { label: 'B', code: BT.BTN_B },
+            { label: 'St', code: BT.BTN_START },
+            { label: 'Sl', code: BT.BTN_SELECT },
+        ];
+
+        // Keep only the buttons that actually have keys in each player's default map
+        // (player 2's Select slot is empty, for example, so its row would never light).
+        // .map() walks the two default maps and .filter() drops the empty slots.
+        this.faceButtons = [BT.DEFAULT_KEYBOARD_PLAYER1, BT.DEFAULT_KEYBOARD_PLAYER2].map((map) =>
+            allButtons.filter((button) => (map[button.code] ?? []).length > 0),
+        );
+
         return true;
     }
 
@@ -151,6 +194,11 @@ class Demo {
      * Read keyboard state after the engine has updated input for this tick.
      */
     update() {
+        // The UI kit's once-per-tick housekeeping. This demo has no kit buttons, but
+        // ui.tick() is also where the kit notices touch contacts - ui.hasTouch() in
+        // render() relies on it to know when to show the "needs a keyboard" notice.
+        ui.tick();
+
         // --- Raw keys (KeyboardEvent.code strings, layout-independent) ---
         //
         // BT.isKeyDown(code)     = true EVERY tick while the key is held (like holding a door shut).
@@ -162,14 +210,14 @@ class Demo {
         // Face buttons (BT.BTN_UP, BT.isDown, …) are separate: they go through the input map.
         // Use raw keys when you need a specific key regardless of player slot or remapping.
 
-        // Release edge for F: fires once when you let go of F.
+        // Release edge for F: fires once when you let go of F. We remember the engine tick
+        // it happened on so the raw-key panel can show it.
         if (BT.isKeyReleased('KeyF')) {
-            const tick = BT.ticks;
-            this.lastFReleaseMessage = `isKeyReleased(KeyF) at tick ${tick}`;
+            this.lastFReleaseTick = BT.ticks;
             BT.assignTag('Key F released');
         }
 
-        // Q held: we only read isKeyDown in render() for a live true/false label (no state here).
+        // Q held: we only read isKeyDown in render() for a live lit/unlit pip (no state here).
 
         // Edge-only press counter: tap the same key to climb; another key resets to 1.
         for (let i = 0; i < PRESS_COUNTER_KEYS.length; i++) {
@@ -204,158 +252,114 @@ class Demo {
     }
 
     /**
-     * Clear the frame and draw every panel.
+     * Clear the frame and declare every kit panel.
      */
     render() {
-        BT.clear(C_BG);
+        // Paint the whole screen with the theme's deep navy background.
+        BT.clear(this.theme.bg);
 
-        BT.systemPrint(new Vector2i(8, 18), C_DIM, 'Codes use KeyboardEvent.code (KeyW, Space, …).');
+        // Full-width title strip across the top, in the classic 22-pixel top-bar style.
+        ui.begin('topBar');
+        ui.panel('Keyboard Input (KeyboardEvent.code)');
+        ui.end();
 
-        this.renderPlayerFacePanel(0, 8, 36);
-        this.renderPlayerFacePanel(1, 168, 36);
+        // One borderless line right under the title. On a touch device it becomes a
+        // warning - this page has no on-screen substitute for a physical keyboard - and
+        // otherwise it lists the default key maps as a quick reference. pad: 0 removes
+        // the group's inner padding so the single line sits snug against its y position.
+        ui.begin('topLeft', { y: NOTICE_Y, pad: 0 });
 
-        this.renderPressCounter(8, 118);
-        this.renderRawKeyPanel(8, 162);
-        this.renderTypedLine(8, 218);
+        if (ui.hasTouch()) {
+            ui.label('This demo needs a keyboard', { color: 'warm' });
+        } else {
+            ui.label('P0: W A S D Space N 5 Esc - P1: arrows ; quote /', { color: 'dim' });
+        }
+
+        ui.end();
+
+        // The two face-button panels sit side by side, like two little gamepads.
+        this.renderFacePanel(0, PLAYER0_PANEL_X);
+        this.renderFacePanel(1, PLAYER1_PANEL_X);
+
+        // The right-hand column: press counter on top, raw-key readouts below.
+        this.renderPressCounter();
+        this.renderRawKeyPanel();
+
+        // The typed-text line hugs the bottom edge of the screen.
+        this.renderTypedLine();
     }
 
     /**
-     * Draws one player's mapped face buttons as a row of lit/dim pips.
+     * One player's mapped face buttons as a panel of lit/unlit pip rows.
      *
      * @param {number} player - 0 or 1 (`BT.isDown` player index).
-     * @param {number} originX - Left edge of the panel in display pixels.
-     * @param {number} originY - Top edge of the panel.
+     * @param {number} x - Left edge of the panel in display pixels.
      */
-    renderPlayerFacePanel(player, originX, originY) {
-        const title = player === 0 ? 'Player 0 (P1 map)' : 'Player 1 (P2 map)';
-        const hints =
-            player === 0
-                ? 'W, A, S, D, Space or B=A, N=B, 5=Start, Esc=Select'
-                : 'Arrows, ; or 1=A, quote or 2=B, Backspace or /=Start';
+    renderFacePanel(player, x) {
+        // Pin the panel to its column; both player panels share the same top edge.
+        ui.begin('topLeft', { x, y: PANEL_TOP_Y });
+        ui.panel(player === 0 ? 'Player 0' : 'Player 1');
 
-        // Which buttons have at least one key in the default map (skip empty slots).
-        /** @type {Array<{label: string, code: number}>} */
-        const buttons =
-            player === 0
-                ? [
-                      { label: 'Up', code: BT.BTN_UP },
-                      { label: 'Dn', code: BT.BTN_DOWN },
-                      { label: 'Lf', code: BT.BTN_LEFT },
-                      { label: 'Rt', code: BT.BTN_RIGHT },
-                      { label: 'A', code: BT.BTN_A },
-                      { label: 'B', code: BT.BTN_B },
-                      { label: 'St', code: BT.BTN_START },
-                      { label: 'Sl', code: BT.BTN_SELECT },
-                  ]
-                : [
-                      { label: 'Up', code: BT.BTN_UP },
-                      { label: 'Dn', code: BT.BTN_DOWN },
-                      { label: 'Lf', code: BT.BTN_LEFT },
-                      { label: 'Rt', code: BT.BTN_RIGHT },
-                      { label: 'A', code: BT.BTN_A },
-                      { label: 'B', code: BT.BTN_B },
-                      { label: 'St', code: BT.BTN_START },
-                  ];
+        const buttons = this.faceButtons[player];
 
-        const map = player === 0 ? BT.DEFAULT_KEYBOARD_PLAYER1 : BT.DEFAULT_KEYBOARD_PLAYER2;
-        const filtered = buttons.filter((b) => (map[b.code] ?? []).length > 0);
+        // One read-only pip per button: filled while the button is held, hollow when it
+        // is up. BT.isDown() reports held state (not a press edge), so reading it here
+        // in render() is safe - only press/release EDGES must stay in update().
+        for (let i = 0; i < buttons.length; i++) {
+            const { label, code } = buttons[i];
 
-        BT.drawRectFill(new Rect2i(originX, originY, 148, 74), C_PANEL);
-        BT.drawRect(new Rect2i(originX, originY, 148, 74), C_PANEL_BORDER);
-
-        BT.systemPrint(new Vector2i(originX + 4, originY + 4), C_AMBER, title);
-        BT.systemPrint(new Vector2i(originX + 4, originY + 16), C_DIM, hints);
-
-        // Two rows of indicators: first half, second half.
-        const mid = Math.ceil(filtered.length / 2);
-        const row1 = filtered.slice(0, mid);
-        const row2 = filtered.slice(mid);
-
-        this.renderFaceButtonRow(row1, player, originX + 4, originY + 30);
-        this.renderFaceButtonRow(row2, player, originX + 4, originY + 52);
-    }
-
-    /**
-     * @param {Array<{label: string, code: number}>} row
-     * @param {number} player
-     * @param {number} x
-     * @param {number} y
-     */
-    renderFaceButtonRow(row, player, x, y) {
-        let cx = x;
-
-        for (let i = 0; i < row.length; i++) {
-            const { label, code } = row[i];
-            const held = BT.isDown(code, player);
-            const pip = new Rect2i(cx, y, 8, 8);
-
-            if (held) {
-                BT.drawRectFill(pip, C_LIT);
-            } else {
-                BT.drawRect(pip, C_PANEL_BORDER);
-            }
-
-            BT.systemPrint(new Vector2i(cx + 12, y - 2), held ? C_LIT : C_DIM, label);
-            cx += FACE_SLOT_WIDTH;
+            ui.pip(label, BT.isDown(code, player));
         }
+
+        ui.end();
     }
 
     /**
-     * Large readout for edge-only press counting on one key at a time.
-     *
-     * @param {number} x
-     * @param {number} y
+     * Readout for edge-only press counting on one key at a time.
      */
-    renderPressCounter(x, y) {
-        BT.drawRectFill(new Rect2i(x, y, 304, 40), C_PANEL);
-        BT.drawRect(new Rect2i(x, y, 304, 40), C_PANEL_BORDER);
+    renderPressCounter() {
+        ui.begin('topLeft', { x: READOUT_COLUMN_X, y: PANEL_TOP_Y });
+        ui.panel('isKeyPressed counter');
 
-        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'BT.isKeyPressed(code) — press count');
+        // Before any counted key is tapped there is nothing to show, so both rows fall
+        // back to placeholder text.
+        const hasKey = this.activePressKey !== null;
 
-        const keyLabel = this.activePressKey === null ? 'none yet' : formatKeyCode(this.activePressKey);
-        const countLabel = this.activePressKey === null ? '—' : String(this.keyPressCount);
-
-        BT.systemPrint(new Vector2i(x + 4, y + 18), C_DIM, 'Key:');
-        BT.systemPrint(new Vector2i(x + 36, y + 18), this.activePressKey === null ? C_DIM : C_WHITE, keyLabel);
-
-        BT.systemPrint(new Vector2i(x + 120, y + 18), C_DIM, 'Count:');
-        BT.systemPrint(new Vector2i(x + 168, y + 18), this.keyPressCount > 0 ? C_ACCENT : C_DIM, countLabel);
-
-        BT.systemPrint(new Vector2i(x + 4, y + 32), C_DIM, 'Tap same key to add 1. Different key resets to 1.');
+        ui.kv('Key', hasKey ? formatKeyCode(this.activePressKey) : 'none yet');
+        ui.kv('Count', hasKey ? this.keyPressCount : '-');
+        ui.label('Same key: +1', { color: 'dim' });
+        ui.label('New key: reset', { color: 'dim' });
+        ui.end();
     }
 
     /**
-     * Small panel for Q down and last F release.
-     *
-     * @param {number} x
-     * @param {number} y
+     * Panel for Q held state and the last F release.
      */
-    renderRawKeyPanel(x, y) {
-        BT.drawRectFill(new Rect2i(x, y, 304, 48), C_PANEL);
-        BT.drawRect(new Rect2i(x, y, 304, 48), C_PANEL_BORDER);
+    renderRawKeyPanel() {
+        ui.begin('topLeft', { x: READOUT_COLUMN_X, y: RAW_PANEL_Y });
+        ui.panel('Raw keys');
 
-        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'Raw keys (separate from face buttons)');
+        // Held state is safe to read in render() (see renderFacePanel above).
+        ui.pip('Q held (isKeyDown)', BT.isKeyDown('KeyQ'));
 
-        const qHeld = BT.isKeyDown('KeyQ');
-        BT.systemPrint(new Vector2i(x + 4, y + 18), C_WHITE, 'BT.isKeyDown(KeyQ) - hold:');
-        BT.systemPrint(new Vector2i(x + 148, y + 18), qHeld ? C_LIT : C_DIM, qHeld ? 'true (held)' : 'false');
-
-        BT.systemPrint(new Vector2i(x + 4, y + 32), C_WHITE, 'BT.isKeyReleased(KeyF) - tap F:');
-        BT.systemPrint(new Vector2i(x + 148, y + 32), C_DIM, this.lastFReleaseMessage);
+        // The release EDGE was caught in update(); here we only display the remembered tick.
+        ui.kv('F rel', this.lastFReleaseTick === null ? 'tap F' : `tick ${this.lastFReleaseTick}`);
+        ui.end();
     }
 
     /**
      * Shows text accumulated from `BT.inputString`.
-     *
-     * @param {number} x
-     * @param {number} y
      */
-    renderTypedLine(x, y) {
-        BT.drawRectFill(new Rect2i(x, y, 304, 22), C_PANEL);
-        BT.drawRect(new Rect2i(x, y, 304, 22), C_PANEL_BORDER);
+    renderTypedLine() {
+        // A fixed width keeps the panel spanning the screen even while the buffer is
+        // short; bottomLeft anchors it just above the bottom edge.
+        ui.begin('bottomLeft', { width: TYPED_PANEL_WIDTH });
+        ui.panel('BT.inputString (typed this session)');
 
-        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'BT.inputString (typed this session)');
-        BT.systemPrint(new Vector2i(x + 4, y + 12), C_WHITE, this.typedBuffer.length > 0 ? this.typedBuffer : '…');
+        const hasText = this.typedBuffer.length > 0;
+
+        ui.label(hasText ? this.typedBuffer : '...', { color: hasText ? 'text' : 'dim' });
+        ui.end();
     }
 }
 

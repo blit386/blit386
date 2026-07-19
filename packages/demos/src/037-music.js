@@ -25,11 +25,18 @@
  *   a chosen point onward - the intro only ever plays once, exactly like the opening jingle
  *   of a real game level that then settles into its main tune.
  *
+ * The title strip, track buttons, and status readout all come from the shared UI kit in
+ * src/shared/ui.js - the same look every demo in this series uses, and it is fully
+ * touch-friendly: tap a button with a finger, click it with a mouse, or press its number
+ * key, and the kit reports all three the same way.
+ *
  * Click or press a key to unlock sound first (see 036-Audio Basics for why browsers require
  * that first click).
  */
 
-import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { AudioClip, bootstrap, BT, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -38,25 +45,6 @@ import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
-
-const HUD_HEIGHT = 22;
-
-// Palette slots. Index 0 is always transparent.
-const C_BG = 1;
-const C_TEXT = 2;
-const C_DIM = 3;
-const C_ACCENT = 4;
-const C_PANEL = 5;
-const C_PANEL_BORDER = 6;
-const C_BUTTON = 7;
-const C_BUTTON_ACTIVE = 8;
-
-// Button layout: three stacked buttons on the left half of the screen.
-const BUTTON_X = 16;
-const BUTTON_W = 220;
-const BUTTON_H = 28;
-const BUTTON_START_Y = 40;
-const BUTTON_GAP = 36;
 
 // These two numbers come straight out of public/audio/music-intro-loop.loop.json, generated
 // by scripts/generate-audio-loops.mjs. They mark where the short intro ends and the
@@ -76,27 +64,13 @@ const PROFILE_TO_B = { fadeMs: 1200, overlap: 1, easeIn: 'ease-in-out', easeOut:
 // Fading into the loop-point track: a plain, fairly quick overlapping crossfade.
 const PROFILE_TO_LOOP = { fadeMs: 600, overlap: 1, easeIn: 'linear', easeOut: 'linear' };
 
-// One entry per button: which track it plays, its label, its keyboard shortcut, and where it
-// is drawn on screen.
-const BUTTONS = [
-    {
-        trackId: 'A',
-        label: 'Track A (calm)',
-        keyCode: 'Digit1',
-        rect: new Rect2i(BUTTON_X, BUTTON_START_Y, BUTTON_W, BUTTON_H),
-    },
-    {
-        trackId: 'B',
-        label: 'Track B (upbeat)',
-        keyCode: 'Digit2',
-        rect: new Rect2i(BUTTON_X, BUTTON_START_Y + BUTTON_GAP, BUTTON_W, BUTTON_H),
-    },
-    {
-        trackId: 'loop',
-        label: 'Loop Demo (intro + loop)',
-        keyCode: 'Digit3',
-        rect: new Rect2i(BUTTON_X, BUTTON_START_Y + BUTTON_GAP * 2, BUTTON_W, BUTTON_H),
-    },
+// One entry per track button: which track it plays, its on-screen name, and the keyboard
+// shortcut the kit binds to the button (`keyCode` is the raw key name, `keyHint` is the
+// friendly character shown in the button label).
+const TRACKS = [
+    { trackId: 'A', label: 'Track A - calm', keyCode: 'Digit1', keyHint: '1' },
+    { trackId: 'B', label: 'Track B - upbeat', keyCode: 'Digit2', keyHint: '2' },
+    { trackId: 'loop', label: 'Loop Demo - intro + loop', keyCode: 'Digit3', keyHint: '3' },
 ];
 
 /**
@@ -107,6 +81,9 @@ const BUTTONS = [
 class Demo {
     /** @type {Palette | null} */
     palette = null;
+
+    /** Palette slots of the shared UI theme colors, filled by applyTheme() in init(). */
+    theme = null;
 
     /** @type {AudioClip | null} */
     calmClip = null;
@@ -124,22 +101,21 @@ class Demo {
     activeProfileLabel = '-';
 
     /**
-     * Turns on the engine's built-in audio meters in the overlay.
+     * Sets the logical display size and turns on the engine's built-in audio meters in
+     * the overlay.
      *
      * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
-            // Adds live bar-graph meters (main/music/sfx bus levels) plus a voice-count
-            // readout to the overlay. Off by default, since measuring audio levels costs a
-            // little extra CPU work the engine skips unless a demo asks for it.
+            // Live per-bus level meters and a voice-count readout in the overlay (off by default).
             isOverlayAudioMetersEnabled: true,
         };
     }
 
     /**
-     * Loads all three music clips, sets up the palette, and starts Track A playing.
+     * Loads all three music clips, sets up the shared UI theme, and starts Track A playing.
      *
      * @returns {Promise<boolean>}
      */
@@ -150,14 +126,10 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
-        this.palette.set(C_BG, new Color32(18, 22, 38));
-        this.palette.set(C_TEXT, new Color32(255, 255, 255));
-        this.palette.set(C_DIM, new Color32(130, 140, 160));
-        this.palette.set(C_ACCENT, new Color32(255, 140, 90));
-        this.palette.set(C_PANEL, new Color32(35, 42, 62));
-        this.palette.set(C_PANEL_BORDER, new Color32(90, 98, 120));
-        this.palette.set(C_BUTTON, new Color32(50, 60, 85));
-        this.palette.set(C_BUTTON_ACTIVE, new Color32(120, 255, 160));
+        // applyTheme() installs the twelve shared UI colors (into high palette slots, far
+        // from any scene colors) and hands back where they landed, so render() can clear
+        // the screen with the theme's background color.
+        this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
 
@@ -171,84 +143,79 @@ class Demo {
     }
 
     /**
-     * Reads button clicks and keyboard shortcuts, and swaps tracks in response.
+     * Once-per-tick housekeeping for the UI kit.
      *
-     * We check for presses here in update(), not in render(). The engine clears "was this
-     * just pressed?" flags once per tick, and that tick always finishes before this frame's
-     * render() runs - checking in render() instead would randomly miss fast taps
-     * (028-keyboard-input explains this in more detail).
+     * ui.tick() is what safely catches the number-key shortcuts bound to the buttons in
+     * render(). Keyboard presses can only be read reliably here in update(), never in
+     * render() - the engine clears "was this just pressed?" flags once per tick, and that
+     * tick always finishes before this frame's render() runs (028-keyboard-input explains
+     * this in more detail). The kit latches the presses now so the buttons can answer
+     * later, during render().
      */
     update() {
-        const pointerDown = BT.isPressed(BT.BTN_POINTER_A, 0);
-        const pointerPos = BT.isPointerActive(0) ? BT.pointerPos(0) : null;
-
-        for (const button of BUTTONS) {
-            const clicked = pointerDown && pointerPos !== null && button.rect.isContaining(pointerPos);
-            const keyPressed = BT.isKeyPressed(button.keyCode);
-
-            if (clicked || keyPressed) {
-                this.playTrack(button.trackId);
-            }
-        }
+        ui.tick();
     }
 
     /**
-     * Clears the screen and draws the HUD, buttons, and status text.
+     * Clears the screen and declares the whole UI: a title strip, one button per track,
+     * and the status readout.
+     *
+     * With the immediate-mode kit there is no separate "handle input" step: ui.button()
+     * returns true on the frame it was clicked, tapped, or its number key was pressed, so
+     * the track switch happens right where the button is declared.
      */
     render() {
-        BT.clear(C_BG);
+        BT.clear(this.theme.bg);
 
-        this.renderHUD();
-        this.renderButtons();
-        this.renderStatus();
-    }
+        // The full-width title strip along the top edge.
+        ui.begin('topBar');
+        ui.panel('Music Playback - Crossfade and Loop Points');
+        ui.end();
 
-    /**
-     * Top status strip with the demo title.
-     */
-    renderHUD() {
-        BT.drawRectFill(new Rect2i(0, 0, DISPLAY_W, HUD_HEIGHT), C_PANEL);
-        BT.drawRect(new Rect2i(0, 0, DISPLAY_W, HUD_HEIGHT), C_PANEL_BORDER);
-        BT.systemPrint(new Vector2i(4, 3), C_TEXT, 'Music Playback - Crossfade and Loop Points');
-    }
+        // The track panel, pinned just below the title strip. Width and height size
+        // themselves to the widest row and the number of rows - no layout math here.
+        ui.begin('topLeft', { y: 30 });
+        ui.panel('Tracks');
 
-    /**
-     * Draws each button, highlighting whichever track is currently active.
-     */
-    renderButtons() {
-        for (const button of BUTTONS) {
-            const active = button.trackId === this.activeTrackId;
-
-            BT.drawRectFill(button.rect, active ? C_BUTTON_ACTIVE : C_BUTTON);
-            BT.drawRect(button.rect, C_PANEL_BORDER);
-            BT.systemPrint(new Vector2i(button.rect.x + 8, button.rect.y + 7), active ? C_BG : C_TEXT, button.label);
+        // One button per track. Each label ends with its keyboard hint, and the kit binds
+        // the matching key so pressing it acts exactly like a click or a tap.
+        for (const track of TRACKS) {
+            if (ui.button(`${track.label} (${track.keyHint})`, { key: track.keyCode })) {
+                this.playTrack(track.trackId);
+            }
         }
+
+        ui.separator();
+        this.renderStatus();
+        ui.end();
     }
 
     /**
-     * Shows the unlock prompt (until sound is unlocked), then the currently playing track,
-     * its crossfade profile, and - only for the loop track - the loop boundaries in seconds.
+     * Status rows inside the track panel: the unlock prompt (until sound is unlocked),
+     * then the currently playing track, its crossfade profile, and - only for the loop
+     * track - the loop boundaries in seconds.
      */
     renderStatus() {
-        const statusY = BUTTON_START_Y + BUTTON_GAP * 2 + BUTTON_H + 16;
+        // The shared "click to enable sound" row - it draws itself only while sound is
+        // still locked, and disappears on its own after the first click or key press.
+        ui.audioUnlockHint();
 
+        // Until sound is unlocked there is nothing worth reporting yet, so the readout
+        // rows below wait for that first click or key press too.
         if (!BT.isAudioUnlocked) {
-            BT.systemPrint(new Vector2i(BUTTON_X, statusY), C_ACCENT, 'Click or press a key to enable sound');
             return;
         }
 
-        const trackNames = { A: 'Track A (calm)', B: 'Track B (upbeat)', loop: 'Loop Demo (intro + loop)' };
-        const nowPlaying = this.activeTrackId === null ? '-' : trackNames[this.activeTrackId];
+        // Look up the friendly name of whichever track is active. Array.find() walks the
+        // list and returns the first entry the test function says yes to (or undefined if
+        // none matches - which here only happens before the first play).
+        const active = TRACKS.find((track) => track.trackId === this.activeTrackId);
 
-        BT.systemPrint(new Vector2i(BUTTON_X, statusY), C_DIM, `Now playing: ${nowPlaying}`);
-        BT.systemPrint(new Vector2i(BUTTON_X, statusY + 14), C_DIM, `Crossfade: ${this.activeProfileLabel}`);
+        ui.kv('Playing', active ? active.label : '-');
+        ui.kv('Fade', this.activeProfileLabel);
 
         if (this.activeTrackId === 'loop') {
-            BT.systemPrint(
-                new Vector2i(BUTTON_X, statusY + 28),
-                C_DIM,
-                `Loop region: ${INTRO_LOOP_START_SECONDS}s - ${INTRO_LOOP_END_SECONDS}s (intro plays once)`,
-            );
+            ui.kv('Loop', `${INTRO_LOOP_START_SECONDS}s - ${INTRO_LOOP_END_SECONDS}s (intro once)`);
         }
     }
 
@@ -265,10 +232,10 @@ class Demo {
 
         if (trackId === 'A') {
             BT.musicPlay(this.calmClip, { volume: 1, loop: true, ...PROFILE_TO_A });
-            this.activeProfileLabel = 'fade out, gap, fade in (800ms, no overlap)';
+            this.activeProfileLabel = 'out, gap, in (800ms)';
         } else if (trackId === 'B') {
             BT.musicPlay(this.upbeatClip, { volume: 1, loop: true, ...PROFILE_TO_B });
-            this.activeProfileLabel = 'fade out and fade in together (1200ms, full overlap)';
+            this.activeProfileLabel = 'out + in together (1200ms)';
         } else {
             BT.musicPlay(this.introLoopClip, {
                 volume: 1,
@@ -276,7 +243,7 @@ class Demo {
                 loopEnd: INTRO_LOOP_END_SECONDS,
                 ...PROFILE_TO_LOOP,
             });
-            this.activeProfileLabel = 'quick overlapping fade (600ms)';
+            this.activeProfileLabel = 'quick overlap (600ms)';
         }
 
         this.activeTrackId = trackId;

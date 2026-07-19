@@ -1,5 +1,3 @@
-// @pageTitle BLIT386 Demo 010 - Sprite Effects
-//
 // Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
 //
 // Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
@@ -37,13 +35,16 @@
 // Post-process needs WebGPU; the software renderer still shows the sprite effects without CRT.
 //
 // We learned about composing effects in 023-PipBoy CRT and 033-Basics Enhanced.
+//
+// Captions, the day/night legend, and the software fallback note are drawn with the shared
+// UI kit (src/shared/ui.js), which installs its twelve UI colors high in the palette
+// (slots 240-251) via applyTheme().
 
 import {
     BarrelDistortion,
     Bloom,
     bootstrap,
     BT,
-    ChromaticAberration,
     Color32,
     Flicker,
     Interference,
@@ -59,6 +60,8 @@ import {
 } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { randFloat, randInt, randPick } from './shared/rand.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -68,7 +71,6 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
 /** @typedef {import('blit386').Rect2i} Rect2i */
 /** @typedef {import('blit386').PixelGlitch} PixelGlitch */
 /** @typedef {import('blit386').BarrelDistortion} BarrelDistortion */
-/** @typedef {import('blit386').ChromaticAberration} ChromaticAberration */
 /** @typedef {import('blit386').Interference} Interference */
 /** @typedef {import('blit386').RollLine} RollLine */
 /** @typedef {import('blit386').Scanlines} Scanlines */
@@ -78,45 +80,41 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
 /** @typedef {import('blit386').Flicker} Flicker */
 /** @typedef {import('blit386').Bloom} Bloom */
 
-// Where sprite colors start in the palette.
-// Must be above the highest UI slot (C_FPS = 11) to avoid overwriting UI colors.
+// Where sprite colors start in the palette. The 13 theme blocks stack upward from here:
+// with the 6-color test sprite the top block ends at slot 89, far below the shared UI
+// theme colors at slots 240-251.
 const COLOR_BASE = 12;
 
-// Placeholder for "how many unique colors in the sprite" - set during init().
-// We use 0 here and update it after extracting colors.
-let N = 0; // Each theme block is N entries wide.
-
-// Static UI color indices.
-const C_WHITE = 1;
-const C_BG = 2; // (25, 25, 35) dark background.
-const C_LABEL = 3; // (200, 200, 200) section labels.
-const C_LABEL_RED = 4; // (255, 100, 100) damage/red label.
-const C_LABEL_BLUE = 5; // (100, 150, 255) blue team label.
-const C_LABEL_GREEN = 6; // (100, 255, 100) green team label.
-const C_LABEL_CYAN = 7; // (150, 200, 255) frozen label.
-const C_LABEL_YELLOW = 8; // (255, 200, 100) day/night label.
-const C_BAR_DARK = 9; // (30, 30, 30) progress bar track.
-const C_BAR_BORDER = 10; // (150, 150, 150) progress bar outline.
-const C_FPS = 11; // (100, 100, 100) dim FPS.
-const C_OVERLAY_BG = 14;
+// Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
+// colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
+// the overlay styles below cannot read this.theme yet - these constants spell out where
+// each theme color will land once init() runs.
+const UI_BG = 240; // 'ui_bg' - deep navy screen background.
+const UI_TEXT = 244; // 'ui_text' - off-white primary text.
+const UI_DIM = 245; // 'ui_text_dim' - secondary gray text.
+const UI_HEADER = 246; // 'ui_header' - warm amber (render bars, chart warnings).
+const UI_ACCENT = 247; // 'ui_accent' - phosphor green (update bars).
+const UI_WARM = 248; // 'ui_accent_warm' - orange (chart error frames).
+const UI_INFO = 249; // 'ui_info' - light blue (chart tags).
 
 // Theme block indices (as palette offsets from COLOR_BASE).
-// Each block contains N entries. Offset = blockIndex * N.
+// Each block contains one entry per unique sprite color - that count lives in
+// this.colorCount, extracted in init(). Offset = blockIndex * colorCount.
 // Blocks 0..7 are static; blocks 8..12 are dynamic (updated in update()).
 //
-// Block 0 (offset 0):         Original stone colors.
-// Block 1 (offset N):         Silhouette - all colors near-black.
-// Block 2 (offset 2*N):       Damage white - all colors bright white.
-// Block 3 (offset 3*N):       Damage red - all colors shifted red.
-// Block 4 (offset 4*N):       Team red.
-// Block 5 (offset 5*N):       Team blue.
-// Block 6 (offset 6*N):       Team green.
-// Block 7 (offset 7*N):       Frozen (cool blue).
-// Block 8 (offset 8*N):       Damage flash (dynamic: toggling white/red).
-// Block 9 (offset 9*N):       Ghost (dynamic: pulsing low alpha).
-// Block 10 (offset 10*N):     Invincibility (dynamic: hue rotation).
-// Block 11 (offset 11*N):     Poison (dynamic: pulsing green brightness).
-// Block 12 (offset 12*N):     Day/night ambient (dynamic: brightness cycle).
+// Block 0 (offset 0):                 Original stone colors.
+// Block 1 (offset colorCount):        Silhouette - all colors near-black.
+// Block 2 (offset 2 * colorCount):    Damage white - all colors bright white.
+// Block 3 (offset 3 * colorCount):    Damage red - all colors shifted red.
+// Block 4 (offset 4 * colorCount):    Team red.
+// Block 5 (offset 5 * colorCount):    Team blue.
+// Block 6 (offset 6 * colorCount):    Team green.
+// Block 7 (offset 7 * colorCount):    Frozen (cool blue).
+// Block 8 (offset 8 * colorCount):    Damage flash (dynamic: toggling white/red).
+// Block 9 (offset 9 * colorCount):    Ghost (dynamic: pulsing low alpha).
+// Block 10 (offset 10 * colorCount):  Invincibility (dynamic: hue rotation).
+// Block 11 (offset 11 * colorCount):  Poison (dynamic: pulsing green brightness).
+// Block 12 (offset 12 * colorCount):  Day/night ambient (dynamic: brightness cycle).
 
 const BLOCK_ORIGINAL = 0;
 const BLOCK_SILHOUETTE = 1;
@@ -163,9 +161,13 @@ const GLITCH_LABELS = {
     vroll: 'V-ROLL',
 };
 
+// The shared fallback note is one long sentence. split('. ') cuts the string at the
+// sentence break, giving us an array of two shorter lines the UI kit can draw one under
+// the other when the software renderer is active (same pattern as demo 033).
+const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
+
 const FLICKER_BASE = 1.0;
 const FLICKER_DIP = 0.78;
-const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.038;
 // Always-on bright band scrolling top to bottom (RollLine).
 const ROLL_BASE = 0.26;
@@ -178,33 +180,6 @@ const BAND_WOBBLE_COOLDOWN_MAX = 280;
 const BAND_WOBBLE_ACTIVE_MIN = 3;
 const BAND_WOBBLE_ACTIVE_MAX = 10;
 const BAND_WOBBLE_INTENSITY = 0.11;
-
-/**
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randInt(min, max) {
-    return min + Math.floor(Math.random() * (max - min));
-}
-
-/**
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randFloat(min, max) {
-    return min + Math.random() * (max - min);
-}
-
-/**
- * @template T
- * @param {readonly T[]} arr
- * @returns {T}
- */
-function randPick(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
 
 /**
  * Spins the CPU until roughly `ms` milliseconds have passed.
@@ -245,8 +220,13 @@ class Demo {
     /** @type {Rect2i | null} */
     charRect = null;
 
-    // How many unique colors the sprite has (N). Computed in init().
+    // How many unique colors the sprite has - every theme block is this many
+    // palette slots wide. Computed in init() after the colors are extracted.
     colorCount = 0;
+
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // theme.bg, theme.panel, and friends are palette indices for our own drawing.
+    theme = null;
 
     // The extracted original Color32 objects (used to build theme blocks).
     baseColors = [];
@@ -261,8 +241,6 @@ class Demo {
     pixelGlitch = null;
     /** @type {BarrelDistortion | null} */
     barrel = null;
-    /** @type {ChromaticAberration | null} */
-    aberration = null;
     /** @type {Interference | null} */
     interference = null;
     /** @type {RollLine | null} */
@@ -282,19 +260,21 @@ class Demo {
 
     effectsAvailable = false;
     glitchCooldown = 0;
-    glitchActive = 0;
+    // How many ticks the current TV fault burst still has to run (0 = no burst active).
+    glitchTicksLeft = 0;
     glitchDuration = 0;
     glitchType = 'none';
     glitchPeak = 0;
 
     bandWobbleCooldown = 0;
-    bandWobbleActive = 0;
+    // How many ticks the current band wobble still has to run (0 = no wobble active).
+    bandWobbleTicksLeft = 0;
     bandWobbleDuration = 0;
     bandWobbleSeed = 0;
 
     overlayRowData = [
-        { leftText: 'Orava CRT: OFF', textPaletteIndex: C_LABEL },
-        { leftText: 'TV fault: NONE', textPaletteIndex: C_LABEL_YELLOW },
+        { leftText: 'Orava CRT OFF', textPaletteIndex: UI_TEXT },
+        { leftText: 'TV fault NONE', textPaletteIndex: UI_HEADER },
     ];
 
     /**
@@ -317,45 +297,35 @@ class Demo {
             overlayTimingChartDiagnostics: 'rich',
             isOverlayRendererDiagnosticsBarEnabled: true,
             overlayStyle: {
-                barPaletteIndex: C_OVERLAY_BG,
-                textPaletteIndex: C_BG,
-                gapPaletteIndex: C_BG,
+                barPaletteIndex: UI_BG,
+                textPaletteIndex: UI_DIM,
+                gapPaletteIndex: UI_BG,
             },
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_LABEL_GREEN,
-                renderBarPaletteIndex: C_LABEL_YELLOW,
-                warningPaletteIndex: C_LABEL_YELLOW,
-                errorPaletteIndex: C_LABEL_RED,
-                tagPaletteIndex: C_LABEL_CYAN,
+                updateBarPaletteIndex: UI_ACCENT,
+                renderBarPaletteIndex: UI_HEADER,
+                warningPaletteIndex: UI_HEADER,
+                errorPaletteIndex: UI_WARM,
+                tagPaletteIndex: UI_INFO,
             },
         };
     }
 
     /**
-     * Sets up the palette with static UI colors, builds all 13 theme blocks,
-     * loads the sprite, and loads the font.
+     * Sets up the palette, builds all 13 theme blocks, and loads the sprite.
      *
      * @returns {Promise<boolean>} Returns true when everything is ready.
      */
     async init() {
         console.log('[SpriteEffectsDemo] Initializing...');
 
-        // Palette: static UI colors
-        // applyHUD(1) fills six standard HUD slots. Slots 1 (white) and 3 (label
-        // gray) match this demo's values exactly. Slot 2 (bg) and slots 4-6 are
-        // overridden below with demo-specific colors; slots 7-11 are new additions.
         this.palette = BT.paletteCreate(256);
-        this.palette.applyHUD(1);
 
-        this.palette.set(C_BG, new Color32(25, 25, 35));
-        this.palette.set(C_LABEL_RED, new Color32(255, 100, 100));
-        this.palette.set(C_LABEL_BLUE, new Color32(100, 150, 255));
-        this.palette.set(C_LABEL_GREEN, new Color32(100, 255, 100));
-        this.palette.set(C_LABEL_CYAN, new Color32(150, 200, 255));
-        this.palette.set(C_LABEL_YELLOW, new Color32(255, 200, 100));
-        this.palette.set(C_BAR_DARK, new Color32(30, 30, 30));
-        this.palette.set(C_BAR_BORDER, new Color32(150, 150, 150));
-        this.palette.set(C_FPS, new Color32(100, 100, 100));
+        // Install the shared UI theme: applyTheme() writes the twelve UI kit colors into
+        // high palette slots (240-251), far above the sprite theme blocks (slots 12-89
+        // with the 6-color test sprite), and returns a map of friendly names to those
+        // slots (this.theme.bg, .panel, ...). All captions and legends draw with these.
+        this.theme = applyTheme(this.palette);
 
         // Extract sprite colors
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,
@@ -366,19 +336,16 @@ class Demo {
         const colorCount = this.baseColors.length;
         this.colorCount = colorCount;
 
-        // Update the module-level N so other helpers can use it without passing it around.
-        N = colorCount;
-
         // Build the 8 static theme blocks
-        // Each block sits at COLOR_BASE + blockIndex * N.
+        // Each block sits at COLOR_BASE + blockIndex * colorCount.
         this.buildStaticThemeBlocks();
 
         // Dynamic blocks (8..12) start as copies of the original.
         // update() will replace them each tick.
         for (let block = BLOCK_DAMAGE_FLASH; block <= BLOCK_DAYNIGHT; block++) {
-            for (let i = 0; i < N; i++) {
+            for (let i = 0; i < colorCount; i++) {
                 const base = this.baseColors[i];
-                this.palette.set(COLOR_BASE + block * N + i, new Color32(base.r, base.g, base.b, base.a));
+                this.palette.set(COLOR_BASE + block * colorCount + i, new Color32(base.r, base.g, base.b, base.a));
             }
         }
 
@@ -400,7 +367,7 @@ class Demo {
 
         if (!this.effectsAvailable) {
             this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-            this.glitchActive = 0;
+            this.glitchTicksLeft = 0;
             this.glitchDuration = 0;
             this.glitchType = 'none';
             this.glitchPeak = 0;
@@ -408,72 +375,17 @@ class Demo {
             return true;
         }
 
-        // Pixel tier: indexed-buffer horizontal band tear (V-hold style).
-        this.pixelGlitch = new PixelGlitch();
-        this.pixelGlitch.bandHeight = 4;
-        this.pixelGlitch.intensity = 0;
-        BT.effectAdd(this.pixelGlitch);
-
-        // Display tier: Tesla Orava B/W tube - curved glass, faint grille, soft halation.
-        this.barrel = new BarrelDistortion();
-        this.barrel.curvature = 0.07;
-
-        this.aberration = new ChromaticAberration();
-        this.aberration.aberration = ABERRATION_BASE;
-
-        this.interference = new Interference();
-        this.interference.amount = INTERFERENCE_BASE;
-
-        this.rollLine = new RollLine();
-        this.rollLine.amount = ROLL_BASE;
-        this.rollLine.speed = ROLL_SPEED;
-
-        this.scanlines = new Scanlines();
-        this.scanlines.amount = 0.42;
-        this.scanlines.strength = -7;
-        this.scanlines.density = DISPLAY_H;
-
-        this.mask = new RGBMask();
-        this.mask.intensity = 0.07;
-        this.mask.size = 5;
-        this.mask.border = 0.45;
-
-        this.vignette = new Vignette();
-        this.vignette.amount = 0.1;
-
-        this.noise = new Noise();
-        this.noise.amount = NOISE_BASE;
-
-        this.flicker = new Flicker();
-        this.flicker.amount = FLICKER_BASE;
-
-        this.bloom = new Bloom();
-        this.bloom.spread = 2.2;
-        this.bloom.glow = 0.09;
-
-        for (const fx of [
-            this.barrel,
-            this.aberration,
-            this.interference,
-            this.rollLine,
-            this.scanlines,
-            this.mask,
-            this.vignette,
-            this.noise,
-            this.flicker,
-            this.bloom,
-        ]) {
-            BT.effectAdd(fx);
-        }
+        // Build the full Orava CRT effect chain (see setupCrtStack() below render()).
+        this.setupCrtStack();
 
         this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-        this.glitchActive = 0;
+        this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
         this.glitchType = 'none';
         this.glitchPeak = 0;
 
         this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
-        this.bandWobbleActive = 0;
+        this.bandWobbleTicksLeft = 0;
         this.bandWobbleDuration = 0;
 
         console.log('[SpriteEffectsDemo] Initialization complete!');
@@ -518,22 +430,115 @@ class Demo {
     }
 
     /**
+     * Runs once per screen refresh to draw all the sprite effect demonstrations.
+     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
+     */
+    render() {
+        // Clear the whole screen with the shared UI theme's background color.
+        BT.clear(this.theme.bg);
+
+        // Extra render() work so the timing chart shows yellow scrolling bars.
+        const chartRenderLoadMs = 1 + (Math.cos(BT.timeSeconds * 2.2) * 0.5 + 0.5) * 6;
+        burnCpuMs(chartRenderLoadMs);
+
+        // Draw both effect rows.
+        this.renderStaticEffects();
+        this.renderDynamicEffects();
+
+        // Day/night cycle at the bottom.
+        this.renderDayNightCycle();
+
+        // Software renderer: warn on-canvas that the Orava CRT look is missing. A small
+        // borderless kit group in the top-left corner; the shared note was split into
+        // two lines up top (FALLBACK_LINES) so it stays short and easy to read.
+        if (!this.effectsAvailable) {
+            ui.begin('topLeft', { margin: 2, pad: 2 });
+            for (const line of FALLBACK_LINES) {
+                ui.label(line, { color: 'warm' });
+            }
+            ui.end();
+        }
+    }
+
+    /**
      * Orava CRT stack and current analog-TV fault (overlay custom rows).
      *
      * @returns {readonly { leftText: string }[]}
      */
     overlayRows() {
         if (this.effectsAvailable) {
-            this.overlayRowData[0].leftText = 'Orava CRT: ON';
+            this.overlayRowData[0].leftText = 'Orava CRT ON';
             const faultLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
-            const faultValue = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
-            this.overlayRowData[1].leftText = `TV fault: ${faultLabel} ${String(faultValue).padStart(2, '0')}%`;
+            const faultValue = this.glitchTicksLeft > 0 ? Math.round(this.glitchPeak * 100) : 0;
+            this.overlayRowData[1].leftText = `TV fault ${faultLabel} ${String(faultValue).padStart(2, '0')}%`;
         } else {
-            this.overlayRowData[0].leftText = 'Orava CRT: OFF';
-            this.overlayRowData[1].leftText = SOFTWARE_FALLBACK_NOTE;
+            // Software renderer: no CRT stack, so the fault machine never fires. The full
+            // explanation lives on the canvas itself (see render()), not in the overlay.
+            this.overlayRowData[0].leftText = 'Orava CRT OFF (software)';
+            this.overlayRowData[1].leftText = 'TV fault NONE';
         }
 
         return this.overlayRowData;
+    }
+
+    /**
+     * Builds the Orava CRT effect chain once in init(): the pixel-tier band tear plus
+     * the display-tier tube look, in back-to-front order.
+     */
+    setupCrtStack() {
+        // Pixel tier: indexed-buffer horizontal band tear (V-hold style).
+        this.pixelGlitch = new PixelGlitch();
+        this.pixelGlitch.bandHeight = 4;
+        this.pixelGlitch.intensity = 0;
+        BT.effectAdd(this.pixelGlitch);
+
+        // Display tier: Tesla Orava B/W tube - curved glass, faint grille, soft halation.
+        this.barrel = new BarrelDistortion();
+        this.barrel.curvature = 0.07;
+
+        this.interference = new Interference();
+        this.interference.amount = INTERFERENCE_BASE;
+
+        this.rollLine = new RollLine();
+        this.rollLine.amount = ROLL_BASE;
+        this.rollLine.speed = ROLL_SPEED;
+
+        this.scanlines = new Scanlines();
+        this.scanlines.amount = 0.42;
+        this.scanlines.strength = -7;
+        this.scanlines.density = DISPLAY_H;
+
+        this.mask = new RGBMask();
+        this.mask.intensity = 0.07;
+        this.mask.size = 5;
+        this.mask.border = 0.45;
+
+        this.vignette = new Vignette();
+        this.vignette.amount = 0.1;
+
+        this.noise = new Noise();
+        this.noise.amount = NOISE_BASE;
+
+        this.flicker = new Flicker();
+        this.flicker.amount = FLICKER_BASE;
+
+        this.bloom = new Bloom();
+        this.bloom.spread = 2.2;
+        this.bloom.glow = 0.09;
+
+        for (const fx of [
+            this.barrel,
+            this.interference,
+            this.rollLine,
+            this.scanlines,
+            this.mask,
+            this.vignette,
+            this.noise,
+            this.flicker,
+            this.bloom,
+        ]) {
+            BT.effectAdd(fx);
+        }
     }
 
     /**
@@ -545,13 +550,13 @@ class Demo {
         this.noise.time = seconds;
         this.interference.time = seconds;
 
-        if (this.glitchActive > 0) {
-            const t = 1 - (this.glitchActive - 1) / this.glitchDuration;
+        if (this.glitchTicksLeft > 0) {
+            const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
             this.applyRestingCrtUniforms();
             this.applyGlitchUniforms(envelope);
-            this.glitchActive--;
-            if (this.glitchActive <= 0) {
+            this.glitchTicksLeft--;
+            if (this.glitchTicksLeft <= 0) {
                 this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
                 this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
@@ -560,13 +565,13 @@ class Demo {
 
         this.applyRestingCrtUniforms();
 
-        if (this.bandWobbleActive > 0) {
-            const t = 1 - (this.bandWobbleActive - 1) / this.bandWobbleDuration;
+        if (this.bandWobbleTicksLeft > 0) {
+            const t = 1 - (this.bandWobbleTicksLeft - 1) / this.bandWobbleDuration;
             const envelope = Math.sin(t * Math.PI);
             this.pixelGlitch.intensity = BAND_WOBBLE_INTENSITY * envelope;
             this.pixelGlitch.seed = this.bandWobbleSeed;
-            this.bandWobbleActive--;
-            if (this.bandWobbleActive <= 0) {
+            this.bandWobbleTicksLeft--;
+            if (this.bandWobbleTicksLeft <= 0) {
                 this.pixelGlitch.intensity = 0;
                 this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
@@ -574,7 +579,7 @@ class Demo {
             this.bandWobbleCooldown--;
             if (this.bandWobbleCooldown <= 0) {
                 this.bandWobbleDuration = randInt(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
-                this.bandWobbleActive = this.bandWobbleDuration;
+                this.bandWobbleTicksLeft = this.bandWobbleDuration;
                 this.bandWobbleSeed = Math.random() * 1000;
             }
         }
@@ -583,7 +588,7 @@ class Demo {
         if (this.glitchCooldown <= 0) {
             this.glitchType = randPick(GLITCH_TYPES);
             this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
-            this.glitchActive = this.glitchDuration;
+            this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
             this.pixelGlitch.seed = Math.random() * 1000;
         }
@@ -592,7 +597,6 @@ class Demo {
     /** Resting Orava CRT look: scrolling roll band plus calm noise/flicker. */
     applyRestingCrtUniforms() {
         this.pixelGlitch.intensity = 0;
-        this.aberration.aberration = ABERRATION_BASE;
         this.noise.amount = NOISE_BASE;
         this.flicker.amount = FLICKER_BASE;
         this.interference.amount = INTERFERENCE_BASE;
@@ -621,37 +625,15 @@ class Demo {
     }
 
     /**
-     * Runs once per screen refresh to draw all the sprite effect demonstrations.
-     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
-     */
-    render() {
-        BT.clear(C_BG);
-
-        if (!this.sheet || !this.charRect) {
-            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
-            return;
-        }
-
-        // Extra render() work so the timing chart shows yellow scrolling bars.
-        const chartRenderLoadMs = 1 + (Math.cos(BT.timeSeconds * 2.2) * 0.5 + 0.5) * 6;
-        burnCpuMs(chartRenderLoadMs);
-
-        // Draw both effect rows.
-        this.renderStaticEffects();
-        this.renderDynamicEffects();
-
-        // Day/night cycle at the bottom.
-        this.renderDayNightCycle();
-    }
-
-    /**
      * Builds the 8 static theme blocks by transforming the base colors.
      * Called once in init() - these never change after setup.
      */
     buildStaticThemeBlocks() {
         // Block 0 (original) is already filled by SpriteSheet.loadColorsIntoPalette above.
+        // n is how many unique colors the sprite has - every block is n slots wide.
+        const n = this.colorCount;
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
 
             // The average brightness of this pixel (0..255 range).
@@ -659,26 +641,26 @@ class Demo {
 
             // Block 1: Silhouette - near-black with slight variation to preserve depth cues.
             this.palette.set(
-                COLOR_BASE + BLOCK_SILHOUETTE * N + i,
+                COLOR_BASE + BLOCK_SILHOUETTE * n + i,
                 new Color32(lum * 0.08, lum * 0.08, lum * 0.1, base.a),
             );
 
             // Block 2: Damage white - everything shifted toward bright white.
             const whitened = Math.floor(128 + lum * 0.5);
             this.palette.set(
-                COLOR_BASE + BLOCK_DAMAGE_WHITE * N + i,
+                COLOR_BASE + BLOCK_DAMAGE_WHITE * n + i,
                 new Color32(whitened, whitened, whitened, base.a),
             );
 
             // Block 3: Damage red - everything shifted toward red.
             this.palette.set(
-                COLOR_BASE + BLOCK_DAMAGE_RED * N + i,
+                COLOR_BASE + BLOCK_DAMAGE_RED * n + i,
                 new Color32(Math.min(255, lum + 80), lum * 0.3, lum * 0.3, base.a),
             );
 
             // Block 4: Team red - multiply base colors with a red tint.
             this.palette.set(
-                COLOR_BASE + BLOCK_TEAM_RED * N + i,
+                COLOR_BASE + BLOCK_TEAM_RED * n + i,
                 new Color32(
                     Math.min(255, Math.floor(base.r * 1.4)),
                     Math.floor(base.g * 0.5),
@@ -689,7 +671,7 @@ class Demo {
 
             // Block 5: Team blue - multiply with a blue tint.
             this.palette.set(
-                COLOR_BASE + BLOCK_TEAM_BLUE * N + i,
+                COLOR_BASE + BLOCK_TEAM_BLUE * n + i,
                 new Color32(
                     Math.floor(base.r * 0.5),
                     Math.floor(base.g * 0.7),
@@ -700,7 +682,7 @@ class Demo {
 
             // Block 6: Team green - multiply with a green tint.
             this.palette.set(
-                COLOR_BASE + BLOCK_TEAM_GREEN * N + i,
+                COLOR_BASE + BLOCK_TEAM_GREEN * n + i,
                 new Color32(
                     Math.floor(base.r * 0.5),
                     Math.min(255, Math.floor(base.g * 1.4)),
@@ -711,7 +693,7 @@ class Demo {
 
             // Block 7: Frozen - push toward cold blue-white.
             this.palette.set(
-                COLOR_BASE + BLOCK_FROZEN * N + i,
+                COLOR_BASE + BLOCK_FROZEN * n + i,
                 new Color32(Math.floor(lum * 0.7 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 80), base.a),
             );
         }
@@ -723,8 +705,9 @@ class Demo {
      */
     updateDamageFlashBlock() {
         const flashAge = BT.ticks - this.damageFlashTick;
+        const n = this.colorCount;
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
             const lum = Math.floor(base.luminance);
 
@@ -746,7 +729,7 @@ class Demo {
                 color = new Color32(base.r, base.g, base.b, base.a);
             }
 
-            this.palette.set(COLOR_BASE + BLOCK_DAMAGE_FLASH * N + i, color);
+            this.palette.set(COLOR_BASE + BLOCK_DAMAGE_FLASH * n + i, color);
         }
     }
 
@@ -758,14 +741,15 @@ class Demo {
         // Math.sin oscillates between -1 and 1; we shift it to 0..1.
         const pulse = Math.sin(this.animTime * 3) * 0.5 + 0.5;
         const alpha = Math.floor(40 + pulse * 140); // 40..180
+        const n = this.colorCount;
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
             const lum = Math.floor(base.luminance);
 
             // Push toward a cool blue-white while reducing alpha.
             this.palette.set(
-                COLOR_BASE + BLOCK_GHOST * N + i,
+                COLOR_BASE + BLOCK_GHOST * n + i,
                 new Color32(Math.floor(lum * 0.8 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 60), alpha),
             );
         }
@@ -777,8 +761,9 @@ class Demo {
      */
     updateInvincibleBlock() {
         const hue = (this.animTime * 200) % 360;
+        const n = this.colorCount;
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
 
             // fromHSL takes hue (0-360), saturation (0-100), lightness (0-100).
@@ -788,7 +773,7 @@ class Demo {
             const rainbow = Color32.fromHSL(hue, 100, lightness);
 
             this.palette.set(
-                COLOR_BASE + BLOCK_INVINCIBLE * N + i,
+                COLOR_BASE + BLOCK_INVINCIBLE * n + i,
                 new Color32(rainbow.r, rainbow.g, rainbow.b, base.a),
             );
         }
@@ -799,11 +784,12 @@ class Demo {
      */
     updatePoisonBlock() {
         const pulse = Math.sin(this.animTime * 5) * 0.2 + 0.8; // 0.6..1.0
+        const n = this.colorCount;
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
             this.palette.set(
-                COLOR_BASE + BLOCK_POISON * N + i,
+                COLOR_BASE + BLOCK_POISON * n + i,
                 new Color32(
                     Math.floor(base.r * 0.5 * pulse),
                     Math.min(255, Math.floor(base.g * 1.4 * pulse)),
@@ -821,13 +807,15 @@ class Demo {
     updateDayNightBlock() {
         const cycle = (BT.ticks % 1200) / 1200; // 0..1
         const brightness = (Math.cos(cycle * Math.PI * 2) + 1) * 0.35 + 0.3; // 0.3..1.0
+        const n = this.colorCount;
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 0; i < n; i++) {
             const base = this.baseColors[i];
-            // Blend from a fixed cool night tint (slight blue) toward the sprite's daylight colors as brightness → 1.
+            // Blend from a fixed cool night tint (slight blue) toward the sprite's daylight
+            // colors as brightness approaches 1.
             // Color32.lerp(a, b, t): t=0 is all `a`, t=1 is all `b`; matches the old per-channel formula.
             const nightTint = new Color32(0, 0, 30, base.a);
-            this.palette.set(COLOR_BASE + BLOCK_DAYNIGHT * N + i, Color32.lerp(nightTint, base, brightness));
+            this.palette.set(COLOR_BASE + BLOCK_DAYNIGHT * n + i, Color32.lerp(nightTint, base, brightness));
         }
     }
 
@@ -836,36 +824,35 @@ class Demo {
      * Normal, Silhouette, Team Red/Blue/Green, Frozen.
      */
     renderStaticEffects() {
-        if (!this.sheet || !this.charRect) {
-            return;
-        }
-
         const row1Y = 30;
         const spacing = 100;
+        const n = this.colorCount;
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row1Y), BLOCK_ORIGINAL * N);
-        BT.systemPrint(new Vector2i(6, row1Y + 36), C_LABEL, 'Normal');
-        BT.systemPrint(new Vector2i(6, row1Y + 48), C_LABEL, 'Default look');
+        // Each cell is the same sprite drawn with a different palette offset, with a
+        // named caption and a one-line "when you would use this" note under it.
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row1Y), BLOCK_ORIGINAL * n);
+        ui.caption(6, row1Y + 36, 'Normal', { color: 'text' });
+        ui.caption(6, row1Y + 48, 'Default look', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * N);
-        BT.systemPrint(new Vector2i(6 + spacing, row1Y + 36), C_LABEL, 'Silhouette');
-        BT.systemPrint(new Vector2i(6 + spacing, row1Y + 48), C_LABEL, 'Stealth / cutscene');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * n);
+        ui.caption(6 + spacing, row1Y + 36, 'Silhouette', { color: 'text' });
+        ui.caption(6 + spacing, row1Y + 48, 'Stealth / cutscene', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * N);
-        BT.systemPrint(new Vector2i(6 + spacing * 2, row1Y + 36), C_LABEL_RED, 'Team Red');
-        BT.systemPrint(new Vector2i(6 + spacing * 2, row1Y + 48), C_LABEL, 'Friendly fire team');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * n);
+        ui.caption(6 + spacing * 2, row1Y + 36, 'Team Red', { color: 'warm' });
+        ui.caption(6 + spacing * 2, row1Y + 48, 'Friendly fire team', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * N);
-        BT.systemPrint(new Vector2i(6 + spacing * 3, row1Y + 36), C_LABEL_BLUE, 'Team Blue');
-        BT.systemPrint(new Vector2i(6 + spacing * 3, row1Y + 48), C_LABEL, 'Enemy squad color');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * n);
+        ui.caption(6 + spacing * 3, row1Y + 36, 'Team Blue', { color: 'info' });
+        ui.caption(6 + spacing * 3, row1Y + 48, 'Enemy squad color', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 4, row1Y), BLOCK_TEAM_GREEN * N);
-        BT.systemPrint(new Vector2i(6 + spacing * 4, row1Y + 36), C_LABEL_GREEN, 'Team Green');
-        BT.systemPrint(new Vector2i(6 + spacing * 4, row1Y + 48), C_LABEL, 'Ally / coop team');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 4, row1Y), BLOCK_TEAM_GREEN * n);
+        ui.caption(6 + spacing * 4, row1Y + 36, 'Team Green', { color: 'accent' });
+        ui.caption(6 + spacing * 4, row1Y + 48, 'Ally / coop team', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 5, row1Y), BLOCK_FROZEN * N);
-        BT.systemPrint(new Vector2i(6 + spacing * 5, row1Y + 36), C_LABEL_CYAN, 'Frozen');
-        BT.systemPrint(new Vector2i(6 + spacing * 5, row1Y + 48), C_LABEL, 'Slow freeze status');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 5, row1Y), BLOCK_FROZEN * n);
+        ui.caption(6 + spacing * 5, row1Y + 36, 'Frozen', { color: 'info' });
+        ui.caption(6 + spacing * 5, row1Y + 48, 'Slow freeze status', { color: 'dim' });
     }
 
     /**
@@ -873,28 +860,25 @@ class Demo {
      * Damage Flash, Ghost, Invincibility, Poison.
      */
     renderDynamicEffects() {
-        if (!this.sheet || !this.charRect) {
-            return;
-        }
-
         const row2Y = 100;
         const spacing = 100;
+        const n = this.colorCount;
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * N);
-        BT.systemPrint(new Vector2i(6, row2Y + 36), C_LABEL_RED, 'Damage');
-        BT.systemPrint(new Vector2i(6, row2Y + 48), C_LABEL, 'Hit flash (white/red)');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * n);
+        ui.caption(6, row2Y + 36, 'Damage', { color: 'warm' });
+        ui.caption(6, row2Y + 48, 'Hit flash (white/red)', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * N);
-        BT.systemPrint(new Vector2i(6 + spacing, row2Y + 36), C_LABEL_CYAN, 'Ghost');
-        BT.systemPrint(new Vector2i(6 + spacing, row2Y + 48), C_LABEL, 'Spirit / low alpha');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * n);
+        ui.caption(6 + spacing, row2Y + 36, 'Ghost', { color: 'info' });
+        ui.caption(6 + spacing, row2Y + 48, 'Spirit / low alpha', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * N);
-        BT.systemPrint(new Vector2i(6 + spacing * 2, row2Y + 36), C_LABEL, 'Invincible');
-        BT.systemPrint(new Vector2i(6 + spacing * 2, row2Y + 48), C_LABEL, 'Power-up star mode');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * n);
+        ui.caption(6 + spacing * 2, row2Y + 36, 'Invincible', { color: 'text' });
+        ui.caption(6 + spacing * 2, row2Y + 48, 'Power-up star mode', { color: 'dim' });
 
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * N);
-        BT.systemPrint(new Vector2i(6 + spacing * 3, row2Y + 36), C_LABEL_GREEN, 'Poisoned');
-        BT.systemPrint(new Vector2i(6 + spacing * 3, row2Y + 48), C_LABEL, 'Poison over time');
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * n);
+        ui.caption(6 + spacing * 3, row2Y + 36, 'Poisoned', { color: 'accent' });
+        ui.caption(6 + spacing * 3, row2Y + 48, 'Poison over time', { color: 'dim' });
     }
 
     /**
@@ -902,39 +886,37 @@ class Demo {
      * A progress bar shows the current phase.
      */
     renderDayNightCycle() {
-        if (!this.sheet || !this.charRect) {
-            return;
-        }
-
         const baseY = 178;
+        const n = this.colorCount;
 
-        BT.systemPrint(new Vector2i(10, baseY), C_LABEL_YELLOW, 'Day/Night Cycle:');
-        BT.systemPrint(new Vector2i(10, baseY + 12), C_LABEL, 'Ambient light palette offset');
+        ui.caption(10, baseY, 'Day/Night Cycle:', { color: 'header' });
+        ui.caption(10, baseY + 12, 'Ambient light palette offset', { color: 'dim' });
 
         // Draw the sprite with the day/night block.
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 28), BLOCK_DAYNIGHT * N);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 28), BLOCK_DAYNIGHT * n);
 
-        // Progress bar showing time of day.
+        // Progress bar showing time of day. The bar stays hand-drawn (a kit meter shows a
+        // 0..1 fill, not a moving marker) but its track and outline use theme colors.
         const barX = 60;
         const barY = baseY + 36;
         const barWidth = 240;
         const barHeight = 10;
 
-        BT.drawRectFill(new Rect2i(barX, barY, barWidth, barHeight), C_BAR_DARK);
+        BT.drawRectFill(new Rect2i(barX, barY, barWidth, barHeight), this.theme.panel);
 
         const cycle = (BT.ticks % 1200) / 1200;
         const indicatorX = barX + Math.floor(barWidth * cycle);
 
         // The indicator rectangle uses the current day/night color (block 12, first color).
-        // We compute the actual index: COLOR_BASE + 12*N + 0 = first slot in the day/night block.
-        BT.drawRectFill(new Rect2i(indicatorX - 2, barY - 2, 4, barHeight + 4), COLOR_BASE + BLOCK_DAYNIGHT * N);
-        BT.drawRect(new Rect2i(barX, barY, barWidth, barHeight), C_BAR_BORDER);
+        // We compute the actual index: COLOR_BASE + 12 * n + 0 = first slot in the day/night block.
+        BT.drawRectFill(new Rect2i(indicatorX - 2, barY - 2, 4, barHeight + 4), COLOR_BASE + BLOCK_DAYNIGHT * n);
+        BT.drawRect(new Rect2i(barX, barY, barWidth, barHeight), this.theme.border);
 
         // Phase labels.
-        BT.systemPrint(new Vector2i(barX, barY + 14), C_LABEL, 'Day');
-        BT.systemPrint(new Vector2i(barX + 60, barY + 14), C_LABEL, 'Sunset');
-        BT.systemPrint(new Vector2i(barX + 120, barY + 14), C_LABEL, 'Night');
-        BT.systemPrint(new Vector2i(barX + 180, barY + 14), C_LABEL, 'Dawn');
+        ui.caption(barX, barY + 14, 'Day', { color: 'dim' });
+        ui.caption(barX + 60, barY + 14, 'Sunset', { color: 'dim' });
+        ui.caption(barX + 120, barY + 14, 'Night', { color: 'dim' });
+        ui.caption(barX + 180, barY + 14, 'Dawn', { color: 'dim' });
     }
 }
 

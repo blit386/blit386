@@ -1,5 +1,3 @@
-// @pageTitle BLIT386 Demo 019 - Palette Cycling
-//
 // Demo 019 - Palette Cycling: classic retro color rotation using BT.paletteCycle().
 //
 // Demo 019 in the BLIT386 series (written for readers about 12 years old).
@@ -40,14 +38,19 @@
 //   appear to flow because the engine shifted slot colors, not because render()
 //   recomputes Color32 values.
 //
+// The band headings are drawn with the shared UI kit (src/shared/ui.js); its theme
+// colors live in high palette slots (240 and up), far away from every cycling range.
+//
 // WHAT YOU WILL SEE (three horizontal bands):
-//   1. Water (bottom) - blue gradient slots cycling forward = flowing water
+//   1. Sky   (top)    - purple-pink slots cycling very slowly = twilight drift
 //   2. Fire  (middle) - orange-yellow slots cycling backward = rising flames
-//   3. Sky   (top)    - purple-pink slots cycling very slowly = twilight drift
+//   3. Water (bottom) - blue gradient slots cycling forward = flowing water
 //
 // Plus a palette swap demonstration every few seconds.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -74,12 +77,16 @@ const SKY_SPEED = 0.5;
 const SWAP_INTERVAL = 180; // ~3 seconds at 60 FPS
 
 // Slot 0: always transparent (reserved by the engine).
-const C_WHITE = 1;
-const C_BG = 2;
-const C_PANEL = 3;
-const C_LABEL = 4;
-const C_DIM = 5;
-const C_FPS = 6;
+
+// Engine overlay style slots. configure() runs BEFORE init() installs the shared UI
+// theme, so the overlay style cannot use theme slots - instead it points at these six
+// low slots, which init() fills by hand with fixed colors.
+const C_OVERLAY_TAG = 1; // Chart milestone tags (white).
+const C_OVERLAY_BAR = 2; // Overlay bar background (very dark navy).
+const C_OVERLAY_RENDER = 3; // Timing chart render bars (dark blue).
+const C_OVERLAY_TEXT = 4; // Overlay text and chart update bars (golden yellow).
+const C_OVERLAY_WARN = 5; // Timing chart warnings (cool gray-blue).
+const C_OVERLAY_ERR = 6; // Timing chart error bars (dark gray-violet).
 
 // Sky gradient: slots 10..19 (10 slots).
 const C_SKY_BASE = 10;
@@ -89,6 +96,27 @@ const C_FIRE_BASE = 30;
 
 // Water gradient: slots 50..57 (8 slots).
 const C_WATER_BASE = 50;
+
+/**
+ * Fills a run of palette slots with a smooth gradient.
+ *
+ * For each slot we compute t = i / (count - 1). Think of t as "how far along the
+ * gradient are we?" - the first slot gets t = 0 (the start), the last slot gets
+ * t = 1 (the end), and the slots between get evenly spaced fractions like 0.25
+ * or 0.5 (exactly halfway). The colorAt callback turns that fraction into the
+ * actual Color32 for the slot, so each gradient only has to describe its own
+ * start and end colors.
+ *
+ * @param {Palette} palette - The palette to write into.
+ * @param {number} baseSlot - The first slot of the gradient run.
+ * @param {number} count - How many slots to fill.
+ * @param {(t: number) => Color32} colorAt - Returns the color for progress t (0..1).
+ */
+function fillGradient(palette, baseSlot, count, colorAt) {
+    for (let i = 0; i < count; i++) {
+        palette.set(baseSlot + i, colorAt(i / (count - 1)));
+    }
+}
 
 /**
  * Demonstrates BT.paletteCycle() for automatic palette rotation, plus
@@ -101,6 +129,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Palette slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // theme.bg, theme.dim, ... are palette indices ready for BT draw calls.
+    theme = null;
+
     // Track the last swap tick so we know when to do the next swap demo.
     lastSwapTick = 0;
 
@@ -110,7 +142,8 @@ class Demo {
     showSwapLabel = false;
 
     /**
-     * Palette cycling runs in the engine each frame; the chart shows update vs render time.
+     * Palette cycling runs in the engine each frame; the chart shows update vs render
+     * time. The overlay style colors come from the dedicated low slots set in init().
      *
      * @returns {Partial<HardwareSettings>}
      */
@@ -118,16 +151,16 @@ class Demo {
         return {
             isOverlayTimingChartEnabled: true,
             overlayStyle: {
-                barPaletteIndex: C_BG,
-                textPaletteIndex: C_LABEL,
-                gapPaletteIndex: C_BG,
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_OVERLAY_TEXT,
+                gapPaletteIndex: C_OVERLAY_BAR,
             },
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_LABEL,
-                renderBarPaletteIndex: C_PANEL,
-                warningPaletteIndex: C_DIM,
-                errorPaletteIndex: C_FPS,
-                tagPaletteIndex: C_WHITE,
+                updateBarPaletteIndex: C_OVERLAY_TEXT,
+                renderBarPaletteIndex: C_OVERLAY_RENDER,
+                warningPaletteIndex: C_OVERLAY_WARN,
+                errorPaletteIndex: C_OVERLAY_ERR,
+                tagPaletteIndex: C_OVERLAY_TAG,
             },
         };
     }
@@ -142,44 +175,47 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
-        // Static UI colors
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
-        this.palette.set(C_BG, new Color32(10, 12, 20));
-        this.palette.set(C_PANEL, new Color32(20, 24, 36));
-        this.palette.set(C_LABEL, new Color32(255, 210, 80));
-        this.palette.set(C_DIM, new Color32(120, 130, 160));
-        this.palette.set(C_FPS, new Color32(70, 70, 90));
+        // Colors for the engine overlay (the stats HUD). These live in low slots so
+        // configure() could reference them before the UI theme existed.
+        this.palette.set(C_OVERLAY_TAG, new Color32(255, 255, 255));
+        this.palette.set(C_OVERLAY_BAR, new Color32(10, 12, 20));
+        this.palette.set(C_OVERLAY_RENDER, new Color32(20, 24, 36));
+        this.palette.set(C_OVERLAY_TEXT, new Color32(255, 210, 80));
+        this.palette.set(C_OVERLAY_WARN, new Color32(120, 130, 160));
+        this.palette.set(C_OVERLAY_ERR, new Color32(70, 70, 90));
 
-        // Sky gradient: purple to pink
-        // Each slot goes from deep purple to soft pink across 10 steps.
-        for (let i = 0; i < SKY_SLOTS; i++) {
-            const t = i / (SKY_SLOTS - 1); // 0..1
-            const r = Math.floor(40 + t * 120); // 40..160
-            const g = Math.floor(20 + t * 40); // 20..60
-            const b = Math.floor(80 + t * 100); // 80..180
+        // The three gradients below all use the same fillGradient() helper (defined
+        // above the class): each one only supplies its own start and end channel values.
 
-            this.palette.set(C_SKY_BASE + i, new Color32(r, g, b));
-        }
+        // Sky gradient: deep purple to soft pink (red 40..160, green 20..60, blue 80..180).
+        fillGradient(
+            this.palette,
+            C_SKY_BASE,
+            SKY_SLOTS,
+            (t) => new Color32(Math.floor(40 + t * 120), Math.floor(20 + t * 40), Math.floor(80 + t * 100)),
+        );
 
-        // Fire gradient: dark red to bright yellow
-        for (let i = 0; i < FIRE_SLOTS; i++) {
-            const t = i / (FIRE_SLOTS - 1);
-            const r = Math.floor(80 + t * 175); // 80..255
-            const g = Math.floor(t * 200); // 0..200
-            const b = Math.floor(t * 40); // 0..40
+        // Fire gradient: dark red to bright yellow (red 80..255, green 0..200, blue 0..40).
+        fillGradient(
+            this.palette,
+            C_FIRE_BASE,
+            FIRE_SLOTS,
+            (t) => new Color32(Math.floor(80 + t * 175), Math.floor(t * 200), Math.floor(t * 40)),
+        );
 
-            this.palette.set(C_FIRE_BASE + i, new Color32(r, g, b));
-        }
+        // Water gradient: dark blue to bright cyan (red 0..60, green 40..200, blue 100..255).
+        fillGradient(
+            this.palette,
+            C_WATER_BASE,
+            WATER_SLOTS,
+            (t) => new Color32(Math.floor(t * 60), Math.floor(40 + t * 160), Math.floor(100 + t * 155)),
+        );
 
-        // Water gradient: dark blue to bright cyan
-        for (let i = 0; i < WATER_SLOTS; i++) {
-            const t = i / (WATER_SLOTS - 1);
-            const r = Math.floor(t * 60); // 0..60
-            const g = Math.floor(40 + t * 160); // 40..200
-            const b = Math.floor(100 + t * 155); // 100..255
-
-            this.palette.set(C_WATER_BASE + i, new Color32(r, g, b));
-        }
+        // Install the shared UI kit colors (panel fills, borders, headings, dim text).
+        // applyTheme() writes 12 colors into slots 240..251 - far above every range the
+        // engine cycles here (sky 10..19, fire 30..35, water 50..57), so the rotation
+        // can never touch the UI theme.
+        this.theme = applyTheme(this.palette);
 
         // Activate palette
         BT.paletteSet(this.palette);
@@ -200,7 +236,9 @@ class Demo {
     update() {
         const tick = BT.ticks;
 
-        // Every SWAP_INTERVAL ticks, swap two random fire slots.
+        // Every SWAP_INTERVAL ticks, swap two fire slots to demonstrate BT.paletteSwap().
+        // The pair is not random - it is computed from the tick counter, so each swap
+        // picks a predictable pair: tick % FIRE_SLOTS and (tick + 3) % FIRE_SLOTS.
         if (tick - this.lastSwapTick >= SWAP_INTERVAL) {
             // Pick two different slots within the fire range.
             this.swappedA = C_FIRE_BASE + (tick % FIRE_SLOTS);
@@ -221,11 +259,11 @@ class Demo {
     }
 
     /**
-     * Draws the three animated bands and UI labels.
+     * Draws the three animated bands and their kit-panel headings.
      * No Color32 objects here - only palette indices.
      */
     render() {
-        BT.clear(C_BG);
+        BT.clear(this.theme.bg);
 
         this.renderSkyPanel();
         this.renderFirePanel();
@@ -237,18 +275,24 @@ class Demo {
      * The slow cycling makes the twilight colors gently shift.
      */
     renderSkyPanel() {
-        const panelY = 18;
+        const bandY = 6;
         const stripeH = 5;
 
-        BT.drawRectFill(new Rect2i(0, panelY, 320, 60), C_PANEL);
-        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Sky (0.5 steps/sec, forward)');
+        // The heading lives in a kit panel pinned to the band position. ui.end() draws
+        // the panel right away, so the stripes drawn after it land ON TOP of the panel
+        // background. ui.spacer() reserves empty rows for that artwork.
+        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.panel('Sky (0.5 steps/sec, forward)');
+        ui.spacer(40);
+        ui.end();
 
         // Draw 10 horizontal stripes, repeated twice for fullness.
         for (let row = 0; row < 2; row++) {
             for (let i = 0; i < SKY_SLOTS; i++) {
-                const y = panelY + 16 + (row * (stripeH * SKY_SLOTS)) / 2 + i * stripeH;
+                const y = bandY + 20 + (row * (stripeH * SKY_SLOTS)) / 2 + i * stripeH;
 
-                if (y + stripeH <= panelY + 60) {
+                // Only draw stripes that fit inside the panel's content area.
+                if (y + stripeH <= bandY + 60) {
                     BT.drawRectFill(new Rect2i(6, y, 308, stripeH), C_SKY_BASE + (i % SKY_SLOTS));
                 }
             }
@@ -260,26 +304,33 @@ class Demo {
      * Negative speed makes the colors cycle backward (rising flame illusion).
      */
     renderFirePanel() {
-        const panelY = 84;
+        const bandY = 76;
         const colW = Math.floor(308 / FIRE_SLOTS);
 
-        BT.drawRectFill(new Rect2i(0, panelY, 320, 60), C_PANEL);
-        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Fire (-6 steps/sec, backward)');
+        // Kit panel with the heading; the spacer reserves room for the fire columns.
+        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.panel('Fire (-6 steps/sec, backward)');
+        ui.spacer(40);
+        ui.end();
 
         // Draw fire columns.
         for (let i = 0; i < FIRE_SLOTS; i++) {
             // Each column is drawn with multiple rows of the same slot to make it taller.
             for (let row = 0; row < 8; row++) {
                 const x = 6 + i * colW;
-                const y = panelY + 16 + row * 5;
+                const y = bandY + 20 + row * 5;
 
                 BT.drawRectFill(new Rect2i(x, y, colW - 1, 5), C_FIRE_BASE + ((i + row) % FIRE_SLOTS));
             }
         }
 
-        // Show swap label if active.
+        // Show swap label if active (printed over the tiles, like a caption).
         if (this.showSwapLabel) {
-            BT.systemPrint(new Vector2i(6, panelY + 48), C_DIM, `Swapped slots ${this.swappedA} <-> ${this.swappedB}`);
+            BT.systemPrint(
+                new Vector2i(6, bandY + 44),
+                this.theme.text,
+                `Swapped slots ${this.swappedA} <-> ${this.swappedB}`,
+            );
         }
     }
 
@@ -288,17 +339,20 @@ class Demo {
      * Forward cycling at 4 steps/sec makes colors flow like water.
      */
     renderWaterPanel() {
-        const panelY = 150;
+        const bandY = 146;
         const colW = Math.floor(308 / WATER_SLOTS);
 
-        BT.drawRectFill(new Rect2i(0, panelY, 320, 70), C_PANEL);
-        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Water (4 steps/sec, forward)');
+        // Kit panel with the heading; the spacer reserves room for the water tiles.
+        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.panel('Water (4 steps/sec, forward)');
+        ui.spacer(54);
+        ui.end();
 
         // Draw water tiles in a grid pattern.
         for (let row = 0; row < 10; row++) {
             for (let col = 0; col < WATER_SLOTS; col++) {
                 const x = 6 + col * colW;
-                const y = panelY + 16 + row * 5;
+                const y = bandY + 20 + row * 5;
 
                 // Offset the slot index by the row to create a diagonal wave pattern.
                 const slot = C_WATER_BASE + ((col + row) % WATER_SLOTS);
@@ -307,8 +361,8 @@ class Demo {
             }
         }
 
-        // Explanatory text.
-        BT.systemPrint(new Vector2i(6, panelY + 56), C_DIM, 'BT.paletteCycle() runs automatically');
+        // Explanatory text (printed over the tiles, like a caption).
+        BT.systemPrint(new Vector2i(6, bandY + 58), this.theme.text, 'BT.paletteCycle() runs automatically');
     }
 }
 

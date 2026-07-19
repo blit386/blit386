@@ -29,11 +29,18 @@
  * This demo shows how to load a font, draw text in different colors,
  * make text that changes color over time (rainbow), text that pulses in opacity (alpha),
  * and how to measure how wide a piece of text will be before drawing it.
+ *
+ * The font-metadata caption in the bottom-right corner is drawn with the shared demo UI kit
+ * (src/shared/ui.js), so it looks the same as the info panels in every other demo. The
+ * showcase lines themselves are hand-drawn on purpose - they ARE the lesson.
  */
 
-// @pageTitle BLIT386 Demo 022 - Bitmap Font
-
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit386';
+
+// The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
+// palette (slots 240-251, far above this demo's slots 1-38), and ui.* draws the small
+// "Font Info" panel in the bottom-right corner of the screen.
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -46,16 +53,15 @@ const RAINBOW_ORIGIN_X = 10;
 
 // Every color used for drawing is stored in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
+// The screen background and the Font Info panel use the shared UI theme instead
+// (installed by applyTheme() in init()), so there are no background slots here.
 const C_WHITE = 1; // Pure white: title, special characters, 'A'/'B' labels
-const C_BG = 2; // Dark blue-navy: fills the screen each frame
 const C_RED_TEXT = 3; // Soft red: "Red Text" sample line
 const C_GREEN_TEXT = 4; // Soft green: "Green Text" sample line
 const C_BLUE_TEXT = 5; // Soft blue: "Blue Text" sample line
 const C_YELLOW_TEXT = 6; // Yellow: "Yellow Text" sample line
-const C_GRAY_TEXT = 7; // Light gray: "Measured Width" and font info text
+const C_GRAY_TEXT = 7; // Light gray: "Measured Width" text
 const C_ORANGE_LINE = 8; // Orange: underline below the measured-width text
-const C_DIM_GRAY = 9; // Dim gray: font metadata line
-const C_DARKER_GRAY = 10; // Darker gray: FPS/tick counter
 
 // We define the rainbow text string before the slot constants so C_PULSE can be derived from it.
 // If you change this string, update() will compute the right number of palette colors automatically.
@@ -91,6 +97,11 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // theme holds the palette slot numbers of the shared UI kit colors, filled in by
+    // applyTheme() in init(). We use theme.bg to clear the screen so this demo's
+    // background matches every other demo in the series.
+    theme = null;
+
     // animTime is a timer that counts up in seconds.
     // We use it to control the speed of color animations.
     animTime = 0;
@@ -120,15 +131,12 @@ class Demo {
 
         // Static colors that never change from frame to frame.
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
-        this.palette.set(C_BG, new Color32(20, 30, 50)); // dark blue-navy background
         this.palette.set(C_RED_TEXT, new Color32(255, 100, 100)); // soft red
         this.palette.set(C_GREEN_TEXT, new Color32(100, 255, 100)); // soft green
         this.palette.set(C_BLUE_TEXT, new Color32(100, 100, 255)); // soft blue
         this.palette.set(C_YELLOW_TEXT, new Color32(255, 255, 100)); // yellow
         this.palette.set(C_GRAY_TEXT, new Color32(200, 200, 200)); // light gray
         this.palette.set(C_ORANGE_LINE, new Color32(255, 200, 100)); // orange for underlines
-        this.palette.set(C_DIM_GRAY, new Color32(150, 150, 150)); // dim gray
-        this.palette.set(C_DARKER_GRAY, new Color32(100, 100, 100)); // darker gray
 
         // Pre-fill dynamic rainbow slots with gray so they're not empty on the first frame.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
@@ -136,6 +144,11 @@ class Demo {
         }
         // Pre-fill pulse slot.
         this.palette.set(C_PULSE, new Color32(100, 100, 255));
+
+        // Install the shared UI kit colors. They land in palette slots 240-251, well above
+        // this demo's highest slot (C_PULSE = 38), so the two can never collide. The
+        // returned map remembers which slot each UI color went to (theme.bg, theme.text, ...).
+        this.theme = applyTheme(this.palette);
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
@@ -192,32 +205,31 @@ class Demo {
 
         // Update the rainbow text character colors
         // We compute hue (color wheel position) for each character based on its x position
-        // and animTime. We need the font loaded to get the correct glyph widths.
+        // and animTime. The font is always loaded here: the demo loop only starts after
+        // init() finished successfully, and init() returns false when the font fails.
         // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
         // https://demos.blit386.dev/003-colors
-        if (this.font) {
-            let charX = RAINBOW_ORIGIN_X; // Starting x position - same as where render() draws the rainbow text.
-            for (let i = 0; i < RAINBOW_TEXT.length; i++) {
-                // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
-                // Using charX (actual x position) matches the visual rhythm of the rainbow.
-                // Adding animTime*100 scrolls the rainbow to the left over time.
-                // The % 360 keeps hue within the 0-359 range so it cycles smoothly around the
-                // color wheel instead of growing unbounded as animTime increases.
-                const hue = (charX * 3 + this.animTime * 100) % 360;
-                this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
+        let charX = RAINBOW_ORIGIN_X; // Starting x position - same as where render() draws the rainbow text.
+        for (let i = 0; i < RAINBOW_TEXT.length; i++) {
+            // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
+            // Using charX (actual x position) matches the visual rhythm of the rainbow.
+            // Adding animTime*100 scrolls the rainbow to the left over time.
+            // The % 360 keeps hue within the 0-359 range so it cycles smoothly around the
+            // color wheel instead of growing unbounded as animTime increases.
+            const hue = (charX * 3 + this.animTime * 100) % 360;
+            this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
 
-                // Advance charX by this character's actual pixel width in the font.
-                // This is specific to BitmapFont - the system font advances a fixed systemCharWidth per character.
-                const glyph = this.font.getGlyph(RAINBOW_TEXT[i]);
-                charX += glyph ? glyph.advance : 7;
-            }
+            // Advance charX by this character's actual pixel width in the font.
+            // This is specific to BitmapFont - the system font advances a fixed systemCharWidth per character.
+            const glyph = this.font.getGlyph(RAINBOW_TEXT[i]);
+            charX += glyph ? glyph.advance : 7;
         }
     }
 
     // Runs once per screen refresh to draw all the text demonstrations on screen.
     render() {
-        // Fill the screen with the dark blue-navy background.
-        BT.clear(C_BG);
+        // Fill the screen with the shared UI theme's deep navy background.
+        BT.clear(this.theme.bg);
 
         // Start drawing from near the top of the screen.
         let y = 10;
@@ -255,11 +267,12 @@ class Demo {
         y = this.renderRainbowText(y, bitmapLineHeight);
         y = this.renderPulsingText(y, bitmapLineHeight);
         y = this.renderSpecialCharacters(y, bitmapLineHeight);
-        y = this.renderTextMeasurement(y, bitmapLineHeight);
+        this.renderTextMeasurement(y, bitmapLineHeight);
 
-        // Draw one line of font metadata (name and glyph count) near the bottom of the demo area.
-        // Measured FPS and the demo title are drawn by the engine overlay.
-        this.renderFontInfo(y);
+        // Draw a small panel of font metadata (name, size, glyph count) in the bottom-right
+        // corner using the shared UI kit. Measured FPS and the demo title are drawn by the
+        // engine overlay.
+        this.renderFontInfo();
     }
 
     // Draws the same four words, each in a different color.
@@ -383,19 +396,26 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    // Draws one line of BitmapFont metadata: the font file name and how many glyphs it contains.
-    // This is demo-specific info that only BitmapFont exposes; the built-in system font has no
-    // name or glyph count you can print this way.
-    // y: the Y position to start drawing at (pixels from the top of the screen).
-    renderFontInfo(y) {
-        // Print the font name and glyph count in dim gray so it reads as secondary info.
-        // C_DIM_GRAY - 1 = 8. That means palette[1 + 8] = palette[9] = C_DIM_GRAY = dim gray.
-        BT.printFont(
-            this.font,
-            new Vector2i(10, y),
-            `Font: ${this.font.name} (${this.font.glyphCount} glyphs)`,
-            C_DIM_GRAY - 1,
-        );
+    // Draws a small panel of BitmapFont metadata: the font's name, point size, and how many
+    // glyphs (letter pictures) it contains. This is demo-specific info that only BitmapFont
+    // exposes; the built-in system font has no name or glyph count you can print this way.
+    // The panel is drawn with the shared UI kit: everything between ui.begin() and ui.end()
+    // stacks into one bordered group that the kit sizes and anchors for us.
+    renderFontInfo() {
+        // Anchor the group to the bottom-right corner of the screen, away from the showcase
+        // text on the left and the engine overlay's toggle hint in the bottom-left corner.
+        ui.begin('bottomRight');
+
+        // Give the group a background, border, and an amber title.
+        ui.panel('Font Info');
+
+        // ui.kv() draws an aligned "KEY: value" row - the key dim, the value bright.
+        ui.kv('FONT', this.font.name);
+        ui.kv('SIZE', `${this.font.size}pt`);
+        ui.kv('GLYPHS', this.font.glyphCount);
+
+        // end() closes the group: the kit measures the rows, places the panel, and draws it.
+        ui.end();
     }
 }
 

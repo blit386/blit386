@@ -11,11 +11,16 @@
  *
  * update() advances animTicks (logical time). render() reads animTicks to spin and slide shapes.
  * FPS and tick stats appear in the engine overlay automatically - this file does not draw them.
+ * The amber section captions are drawn with the shared UI kit (src/shared/ui.js), so they
+ * look the same as the text in every other demo of the series.
  */
 
-// @pageTitle BLIT386 Demo 002 - Primitives
-
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+// The shared demo UI kit: applyTheme() installs the series' standard UI colors into the
+// palette, and ui.caption() prints the section captions with them. We met the kit in the
+// Basics demo: https://demos.blit386.dev/001-basics
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -24,12 +29,13 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // Every color used for drawing is pre-registered in a numbered palette slot.
 // Think of each slot like a labeled jar of paint on an art shelf.
 // Index 0 is always transparent (invisible). Custom colors start at 1.
-const C_WHITE = 1; // Pure white: title text, the spinning line
+// (Slot 3 is intentionally skipped: it used to hold the caption amber, but the
+// captions now come from the shared UI theme in slots 240-251 instead.)
+const C_WHITE = 1; // Pure white: the spinning line and the overlay bar
 const C_BG = 2; // Dark blue-gray: background and the clearRect erase color
-const C_AMBER = 3; // Amber (orange-yellow): section header labels
 const C_RED = 4; // Red: first rectangle in each row
-const C_GREEN_SHAPE = 5; // Green: second rectangle in each row
-const C_BLUE_SHAPE = 6; // Blue: third rectangle in each row
+const C_GREEN = 5; // Green: second rectangle in each row
+const C_BLUE = 6; // Blue: third rectangle in each row
 const C_YELLOW = 7; // Yellow: the pulsing and sliding rectangles
 const C_CYAN = 8; // Cyan (bright blue-green): sine wave graph line
 const C_GRAY_BORDER = 9; // Gray: the graph outline border
@@ -37,10 +43,14 @@ const C_DARK = 10; // Very dark blue: graph background fill
 const C_STEEL = 11; // Steel blue: background squares in the clearRect grid
 
 // Dynamic palette slots for the rainbow pixel animation.
-// Each of the 50 animated pixels needs its own slot so they can all be different colors.
+// Each animated pixel needs its own slot so they can all be different colors.
 // update() will compute and store each pixel's current color in slots 20..69 every tick.
 // render() then simply passes the slot number to BT.drawPixel() - no Color32 needed there!
-const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... pixel 49 = 69
+const C_PIXEL_BASE = 20; // slot for pixel 0 = 20, pixel 1 = 21, ... last pixel = 20 + PIXEL_COUNT - 1
+
+// How many rainbow pixels renderPixel() draws. init(), update(), and renderPixel() all loop
+// over this same count, so it lives in one place instead of three repeated "50"s.
+const PIXEL_COUNT = 50;
 
 /**
  * Demonstrates all primitive drawing operations with animated examples.
@@ -57,6 +67,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // theme remembers which palette slots the shared UI kit colors landed in.
+    // applyTheme() in init() fills it with a map like { bg, text, dim, header, ... }.
+    theme = null;
+
     /**
      * Optional engine settings. We keep the default 320x240 screen and show the
      * palette grid in the overlay with 24 swatches per row and 3 visible rows.
@@ -68,6 +82,7 @@ class Demo {
             isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 24,
             overlayPaletteRowsVisible: 3,
+            isOverlayVisibleAtStart: true,
 
             overlayStyle: {
                 barPaletteIndex: C_WHITE,
@@ -91,21 +106,26 @@ class Demo {
         // Static colors (these never change from frame to frame).
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(40, 50, 80)); // dark blue-gray background
-        this.palette.set(C_AMBER, new Color32(255, 200, 100)); // amber for section headers
         this.palette.set(C_RED, new Color32(255, 100, 100)); // red shapes
-        this.palette.set(C_GREEN_SHAPE, new Color32(100, 255, 100)); // green shapes
-        this.palette.set(C_BLUE_SHAPE, new Color32(100, 100, 255)); // blue shapes
+        this.palette.set(C_GREEN, new Color32(100, 255, 100)); // green shapes
+        this.palette.set(C_BLUE, new Color32(100, 100, 255)); // blue shapes
         this.palette.set(C_YELLOW, new Color32(255, 255, 100)); // yellow pulsing/sliding shapes
         this.palette.set(C_CYAN, new Color32(100, 255, 255)); // cyan sine wave line
         this.palette.set(C_GRAY_BORDER, new Color32(100, 100, 100)); // graph border gray
         this.palette.set(C_DARK, new Color32(10, 15, 25)); // very dark background for graph area
         this.palette.set(C_STEEL, new Color32(100, 150, 200)); // steel blue clearRect grid squares
 
-        // Pre-fill the 50 rainbow pixel slots with a placeholder color so no slot is empty
+        // Pre-fill the rainbow pixel slots with a placeholder color so no slot is empty
         // on the very first frame (before update() has run for the first time).
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < PIXEL_COUNT; i++) {
             this.palette.set(C_PIXEL_BASE + i, new Color32(128, 128, 128)); // start as gray
         }
+
+        // Install the shared UI theme. It writes the series' twelve standard UI colors
+        // into high palette slots (240-251), far away from our scene slots (1-11) and the
+        // animated rainbow slots (20-69). The section captions draw with these colors.
+        // This must happen BEFORE BT.paletteSet() below so the colors are included.
+        this.theme = applyTheme(this.palette);
 
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
@@ -124,14 +144,14 @@ class Demo {
         this.animTicks++;
 
         // Pre-compute the rainbow pixel colors
-        // Each of the 50 animated pixels gets a different hue, and the whole rainbow
+        // Each animated pixel gets a different hue, and the whole rainbow
         // rotates forward by animTicks so it appears to cycle over time.
         // We compute the color here in update() and store it in the palette so that
         // render() can just say "use slot 20", "use slot 21", etc.
         // This keeps ALL color math out of render() - the "palette animation" technique.
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < PIXEL_COUNT; i++) {
             // hue is a position on the color wheel (0 = red, 120 = green, 240 = blue, 360 = back to red).
-            // We spread 50 pixels evenly by multiplying i by 17 (about 1/50 of 360).
+            // We spread the pixels evenly by multiplying i by 17 (about 1/PIXEL_COUNT of 360).
             // Adding animTicks makes the whole rainbow rotate forward each tick.
             // The % 360 keeps the value inside 0-359 (it wraps around like a clock).
             const hue = (i * 17 + this.animTicks) % 360;
@@ -164,19 +184,20 @@ class Demo {
 
     /**
      * Shows how BT.drawPixel() works - it draws a single colored dot.
-     * We draw 50 dots in a pattern, each with a different rainbow color.
+     * We draw a scattered pattern of dots, each with a different rainbow color.
      * The colors shift over time because update() rotates them each tick.
      */
     renderPixel() {
         const anchor = new Vector2i(10, 7);
 
-        // Print the section label in amber (orange-yellow) color.
-        BT.systemPrint(anchor, C_AMBER, 'Pixels');
+        // Print the section caption with ui.caption() from the shared UI kit. Every demo
+        // in the series uses this same widget, so all captions look identical everywhere.
+        ui.caption(anchor.x, anchor.y, 'Pixels');
 
-        // Draw 50 pixels scattered across a small area.
+        // Draw the pixels scattered across a small area.
         // The colors were already computed in update() and stored in palette slots 20..69.
         // Here we just pass the slot index number - no Color32 math needed in render()!
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < PIXEL_COUNT; i++) {
             // Use a formula to spread the pixels out so they don't all overlap.
             // Multiplying by 13 and 7 spreads them without an obvious pattern.
             const x = anchor.x + ((i * 13) % 60);
@@ -195,24 +216,16 @@ class Demo {
     renderLine() {
         const anchor = new Vector2i(10, 75);
 
-        BT.systemPrint(anchor, C_AMBER, 'Lines');
+        ui.caption(anchor.x, anchor.y, 'Lines');
 
         // A horizontal line goes straight left-to-right. Color: red.
         BT.drawLine(new Vector2i(anchor.x, anchor.y + 15), new Vector2i(anchor.x + 60, anchor.y + 15), C_RED);
 
         // A vertical line goes straight up-and-down. Color: green.
-        BT.drawLine(
-            new Vector2i(anchor.x + 10, anchor.y + 20),
-            new Vector2i(anchor.x + 10, anchor.y + 40),
-            C_GREEN_SHAPE,
-        );
+        BT.drawLine(new Vector2i(anchor.x + 10, anchor.y + 20), new Vector2i(anchor.x + 10, anchor.y + 40), C_GREEN);
 
         // A diagonal line goes from top-left to bottom-right. Color: blue.
-        BT.drawLine(
-            new Vector2i(anchor.x + 20, anchor.y + 20),
-            new Vector2i(anchor.x + 50, anchor.y + 40),
-            C_BLUE_SHAPE,
-        );
+        BT.drawLine(new Vector2i(anchor.x + 20, anchor.y + 20), new Vector2i(anchor.x + 50, anchor.y + 40), C_BLUE);
 
         // A spinning line that rotates from the center point.
         // Math.PI * 2 is a full circle in radians. We divide by 180 to convert
@@ -241,12 +254,12 @@ class Demo {
     renderRectOutline() {
         const anchor = new Vector2i(90, 30);
 
-        BT.systemPrint(anchor, C_AMBER, 'Rect Outlines');
+        ui.caption(anchor.x, anchor.y, 'Rect Outlines');
 
         // Three rectangles with different colors. Rect2i takes (x, y, width, height).
         BT.drawRect(new Rect2i(anchor.x, anchor.y + 15, 40, 25), C_RED); // Red outline.
-        BT.drawRect(new Rect2i(anchor.x + 50, anchor.y + 15, 30, 30), C_GREEN_SHAPE); // Green outline.
-        BT.drawRect(new Rect2i(anchor.x + 90, anchor.y + 15, 25, 35), C_BLUE_SHAPE); // Blue outline.
+        BT.drawRect(new Rect2i(anchor.x + 50, anchor.y + 15, 30, 30), C_GREEN); // Green outline.
+        BT.drawRect(new Rect2i(anchor.x + 90, anchor.y + 15, 25, 35), C_BLUE); // Blue outline.
 
         // A yellow rectangle that pulses - it grows and shrinks over time.
         // Math.sin goes smoothly between -1 and +1, so adding 10 to 5*sin gives
@@ -265,12 +278,12 @@ class Demo {
     renderRectFill() {
         const anchor = new Vector2i(90, 90);
 
-        BT.systemPrint(anchor, C_AMBER, 'Rect Fills');
+        ui.caption(anchor.x, anchor.y, 'Rect Fills');
 
         // Three filled rectangles in different colors.
         BT.drawRectFill(new Rect2i(anchor.x, anchor.y + 15, 40, 25), C_RED); // Red fill.
-        BT.drawRectFill(new Rect2i(anchor.x + 50, anchor.y + 15, 30, 30), C_GREEN_SHAPE); // Green fill.
-        BT.drawRectFill(new Rect2i(anchor.x + 90, anchor.y + 15, 25, 35), C_BLUE_SHAPE); // Blue fill.
+        BT.drawRectFill(new Rect2i(anchor.x + 50, anchor.y + 15, 30, 30), C_GREEN); // Green fill.
+        BT.drawRectFill(new Rect2i(anchor.x + 90, anchor.y + 15, 25, 35), C_BLUE); // Blue fill.
 
         // A yellow square that slides back and forth.
         // Math.sin oscillates between -1 and 1. Multiplying by 20 makes it slide
@@ -283,16 +296,14 @@ class Demo {
     /**
      * Shows how BT.clearRect() works - it erases a rectangle back to a specific color.
      * We first draw a grid of blue squares, then erase a moving rectangular chunk.
-     * The erased area reveals the background color underneath.
-     *
-     * IMPORTANT NOTE: clearRect(rect, paletteIndex) takes the RECTANGLE first, then
-     * the color index. The order is different from drawRect(rect, index) - clearRect
-     * is special because it "paints over" the existing content with a solid color.
+     * The erased area reveals the background color underneath. Like drawRect(), it takes
+     * the rectangle first and the color index second - it just "paints over" instead of
+     * drawing an outline or fill.
      */
     renderClearRect() {
         const anchor = new Vector2i(10, 135);
 
-        BT.systemPrint(anchor, C_AMBER, 'Clear Rect');
+        ui.caption(anchor.x, anchor.y, 'Clear Rect');
 
         // Draw a background grid of steel-blue squares.
         // The outer loop goes across (i = 0 to 9), the inner loop goes down (j = 0 to 4).
@@ -309,8 +320,6 @@ class Demo {
 
         // Erase a 40x30 rectangle back to the background color.
         // This makes it look like a window is moving across the grid.
-        // Note: clearRect takes (rectangle, paletteIndex) - rectangle FIRST, then index.
-        // This is different from the old API which put the color first!
         BT.clearRect(new Rect2i(clearX, anchor.y + 25, 40, 30), C_BG);
     }
 
@@ -322,7 +331,7 @@ class Demo {
     renderCombined() {
         const anchor = new Vector2i(130, 165);
 
-        BT.systemPrint(anchor, C_AMBER, 'Combined');
+        ui.caption(anchor.x, anchor.y, 'Combined');
 
         // The graph's position and size on screen (offset from the section anchor).
         const graphX = anchor.x;

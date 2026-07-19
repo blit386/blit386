@@ -29,10 +29,17 @@
 // and write it into that slot with palette.set(). In render(), we just
 // use the particle's slot number - no Color32 objects needed there.
 //
-// We used the same idea in Demo 016-Palette-Animation:
+// Demo 016 explores this palette-animation idea in depth:
 // https://demos.blit386.dev/016-palette-animation
+//
+// The cooldown readout, spawn timer, concept summary, and state badge are drawn with the
+// shared UI kit (src/shared/ui.js), which installs its twelve UI colors high in the
+// palette (slots 240-251) via applyTheme().
 
 import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
+
+import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -62,84 +69,22 @@ const SPRITE_BASE = 20;
 const WALK_FRAME_W = 18;
 const WALK_FRAME_COUNT = 4;
 
-// UI color slots (1..18).
-const C_WHITE = 1;
-const C_BG = 2; // (30, 20, 40) dark purple.
-const C_GROUND = 3; // (40, 60, 40) dark green.
-const C_SHADOW = 4; // (0, 0, 0, 100) semi-transparent shadow.
-const C_STAT_DIM = 6; // (150, 150, 150) gray stat text.
-const C_COOLDOWN_ACTIVE = 7; // (255, 100, 100) red cooldown label.
-const C_COOLDOWN_READY = 8; // (100, 255, 100) green ready label.
-const C_COOLDOWN_BG = 9; // (40, 40, 40) dark bar background.
-const C_COOLDOWN_BAR = 10; // (255, 100, 100) red bar fill.
-const C_COOLDOWN_BORDER = 11; // (150, 150, 150) bar outline.
-const C_SPAWN_TEXT = 12; // (200, 200, 100) yellow spawn text.
-const C_INFO_HEADER = 13; // (255, 200, 100) golden section header.
-const C_INFO_TEXT = 14; // (180, 180, 180) gray info text.
-const C_FPS = 15; // (100, 100, 100) dim FPS text.
-const C_OVERLAY_BAR = 70; // Bar behind overlay custom rows
-const C_OVERLAY_STATE = 71; // Status row text (state left, ticks right)
+// Scene color slots (low palette slots - text and panels use the shared UI theme instead).
+const C_GROUND = 1; // (40, 60, 40) dark green ground strip.
+const C_SHADOW = 2; // (0, 0, 0, 100) semi-transparent shadow under the rock.
+const C_STATE_IDLE = 3; // (150, 150, 150) calm gray - the Idle state color.
+const C_STATE_WALK = 4; // (100, 255, 100) "go" green - the Walking state color.
+const C_STATE_JUMP = 5; // (255, 100, 100) alert red - the Jumping state color.
 
-/**
- * Turns an offscreen canvas into a loaded HTMLImageElement for SpriteSheet.
- *
- * @param {OffscreenCanvas} canvas
- * @returns {Promise<HTMLImageElement>}
- */
-async function canvasToImage(canvas) {
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const url = URL.createObjectURL(blob);
-
-    try {
-        return await new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = url;
-        });
-    } finally {
-        URL.revokeObjectURL(url);
-    }
-}
-
-/**
- * Scans canvas pixels and registers every unique opaque color into the palette.
- *
- * @param {import('blit386').Palette} palette
- * @param {OffscreenCanvasRenderingContext2D} ctx
- * @param {number} w
- * @param {number} h
- * @param {number} startSlot
- * @returns {Color32[]}
- */
-function registerCanvasColors(palette, ctx, w, h, startSlot) {
-    const data = ctx.getImageData(0, 0, w, h).data;
-    const seen = new Map();
-    const colors = [];
-
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        if (a === 0) {
-            continue;
-        }
-
-        const key = `${r},${g},${b}`;
-
-        if (!seen.has(key)) {
-            const slot = startSlot + colors.length;
-            seen.set(key, slot);
-            const color = new Color32(r, g, b, 255);
-            palette.set(slot, color);
-            colors.push(color);
-        }
-    }
-
-    return colors;
-}
+// Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
+// colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
+// the overlay styles below cannot read this.theme yet - these constants spell out where
+// each theme color will land once init() runs.
+const UI_BG = 240; // 'ui_bg' - deep navy screen background.
+const UI_HEADER = 246; // 'ui_header' - warm amber (render bars, chart tags).
+const UI_ACCENT = 247; // 'ui_accent' - phosphor green (update bars).
+const UI_WARM = 248; // 'ui_accent_warm' - orange (chart warning and error frames).
+const UI_INFO = 249; // 'ui_info' - light blue (overlay row text).
 
 /**
  * Draws one character pose into a walk-strip cell.
@@ -220,10 +165,6 @@ class Demo {
     /** @type {SpriteSheet | null} */
     spriteSheet = null;
 
-    // The source rectangle for the rock sprite (set after loading).
-    /** @type {Rect2i | null} */
-    charSprite = null;
-
     // One Rect2i per walk-strip frame (idle + three walk poses).
     walkFrames = [];
 
@@ -261,8 +202,12 @@ class Demo {
     // Starting X position for the walk state.
     walkStartX = 80;
 
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // theme.bg, theme.text, and friends are palette indices for our own drawing.
+    theme = null;
+
     // Reused every frame for the engine overlay status row (state + ticks).
-    overlayRowData = [{ leftText: 'State: Idle', rightText: 'Ticks: 0', textPaletteIndex: C_OVERLAY_STATE }];
+    overlayRowData = [{ leftText: 'State: Idle', rightText: 'Ticks: 0', textPaletteIndex: UI_INFO }];
 
     /**
      * Tells the engine which palette slots to use for overlay bars and timing chart.
@@ -272,23 +217,23 @@ class Demo {
     configure() {
         return {
             overlayStyle: {
-                barPaletteIndex: C_OVERLAY_BAR,
-                textPaletteIndex: C_OVERLAY_STATE,
-                gapPaletteIndex: C_OVERLAY_BAR,
+                barPaletteIndex: UI_BG,
+                textPaletteIndex: UI_INFO,
+                gapPaletteIndex: UI_BG,
             },
             // Show the scrolling timing chart in the overlay so each frame's update/render cost is visible.
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                // C_COOLDOWN_READY: green - used for update() bars, matching the "ready" cooldown color.
-                updateBarPaletteIndex: C_COOLDOWN_READY,
-                // C_SPAWN_TEXT: bright - used for render() bars, matching the sprite spawn text color.
-                renderBarPaletteIndex: C_SPAWN_TEXT,
-                // C_COOLDOWN_ACTIVE: yellow-orange - flags frames that are close to the frame budget.
-                warningPaletteIndex: C_COOLDOWN_ACTIVE,
-                // C_COOLDOWN_BAR: dim red - marks frames that went over budget (error / dropped frame).
-                errorPaletteIndex: C_COOLDOWN_BAR,
-                // C_INFO_HEADER: gold - used for milestone labels such as "Start" or BT.assignTag() calls.
-                tagPaletteIndex: C_INFO_HEADER,
+                // Theme green - used for update() bars, matching the "ready" cooldown color.
+                updateBarPaletteIndex: UI_ACCENT,
+                // Theme amber - used for render() bars.
+                renderBarPaletteIndex: UI_HEADER,
+                // Theme orange - flags frames that are close to the frame budget.
+                warningPaletteIndex: UI_WARM,
+                // Theme orange again - the old palette also shared one red for warning and error.
+                errorPaletteIndex: UI_WARM,
+                // Theme amber - used for milestone labels such as "Start" or BT.assignTag() calls.
+                tagPaletteIndex: UI_HEADER,
             },
         };
     }
@@ -301,29 +246,20 @@ class Demo {
     async init() {
         console.log('[AnimationDemo] Initializing...');
 
-        // Create palette and fill static UI colors
-        // applyHUD(1) writes six standard HUD defaults into slots 1-6.
-        // Slots 1 (white) and 2 (dark bg) come directly from the preset.
-        // Slots 3-6 are overridden below with demo-specific colors.
+        // Create the palette and fill the scene colors (ground, shadow, state indicator).
         this.palette = BT.paletteCreate(256);
-        this.palette.applyHUD(1);
 
         this.palette.set(C_GROUND, new Color32(40, 60, 40));
         this.palette.set(C_SHADOW, new Color32(0, 0, 0, 100));
-        this.palette.set(C_STAT_DIM, new Color32(150, 150, 150));
-        this.palette.set(C_COOLDOWN_ACTIVE, new Color32(255, 100, 100));
-        this.palette.set(C_COOLDOWN_READY, new Color32(100, 255, 100));
-        this.palette.set(C_COOLDOWN_BG, new Color32(40, 40, 40));
-        this.palette.set(C_COOLDOWN_BAR, new Color32(255, 100, 100));
-        this.palette.set(C_COOLDOWN_BORDER, new Color32(150, 150, 150));
-        this.palette.set(C_SPAWN_TEXT, new Color32(200, 200, 100));
-        this.palette.set(C_INFO_HEADER, new Color32(255, 200, 100));
-        this.palette.set(C_INFO_TEXT, new Color32(180, 180, 180));
-        this.palette.set(C_FPS, new Color32(100, 100, 100));
+        this.palette.set(C_STATE_IDLE, new Color32(150, 150, 150));
+        this.palette.set(C_STATE_WALK, new Color32(100, 255, 100));
+        this.palette.set(C_STATE_JUMP, new Color32(255, 100, 100));
 
-        // Overlay (must match configure().overlayStyle and overlayRowData).
-        this.palette.set(C_OVERLAY_BAR, new Color32(20, 15, 30, 220)); // dark bar over the purple background
-        this.palette.set(C_OVERLAY_STATE, new Color32(100, 200, 255)); // matches former C_STATE_TEXT
+        // Install the shared UI theme: applyTheme() writes the twelve UI kit colors into
+        // high palette slots (240-251), far above this demo's sprite colors (slots 20-21)
+        // and particle slots (50-69), and returns a map of friendly names to those slots
+        // (this.theme.bg, .text, ...). All on-screen text and the cooldown meter use them.
+        this.theme = applyTheme(this.palette);
 
         // Particle slots (50..69) start as transparent - update() fills them when particles spawn.
         // We pre-fill with a dim white so nothing shows before the first particle.
@@ -335,7 +271,6 @@ class Demo {
         try {
             const { canvas, ctx, frames } = buildWalkSheet();
             this.walkFrames = frames;
-            this.charSprite = frames[0];
 
             registerCanvasColors(this.palette, ctx, canvas.width, canvas.height, SPRITE_BASE);
 
@@ -406,20 +341,7 @@ class Demo {
         }
 
         // Update rock position in the Walking and Jumping states.
-        this.updateRockPosition(tick);
-    }
-
-    /**
-     * Status row in the engine overlay: animation state (left) and tick count (right).
-     *
-     * @returns {readonly { leftText: string, rightText?: string }[]}
-     */
-    overlayRows() {
-        const row = this.overlayRowData[0];
-        row.leftText = `State: ${this.animState}`;
-        row.rightText = `Ticks: ${BT.ticks}`;
-
-        return this.overlayRowData;
+        this.updateRockPosition();
     }
 
     /**
@@ -427,12 +349,8 @@ class Demo {
      * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
      */
     render() {
-        BT.clear(C_BG);
-
-        if (!this.spriteSheet) {
-            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
-            return;
-        }
+        // Clear the whole screen with the shared UI theme's background color.
+        BT.clear(this.theme.bg);
 
         // Green ground strip the rock stands on.
         BT.drawRectFill(new Rect2i(0, 150, 320, 90), C_GROUND);
@@ -446,8 +364,21 @@ class Demo {
         // Draw any active particles.
         this.renderParticles();
 
-        // Draw the info panel.
+        // Draw the timer readouts and the concept summary (shared UI kit groups).
         this.renderUI();
+    }
+
+    /**
+     * Status row in the engine overlay: animation state (left) and tick count (right).
+     *
+     * @returns {readonly { leftText: string, rightText?: string }[]}
+     */
+    overlayRows() {
+        const row = this.overlayRowData[0];
+        row.leftText = `State: ${this.animState}`;
+        row.rightText = `Ticks: ${BT.ticks}`;
+
+        return this.overlayRowData;
     }
 
     /**
@@ -489,16 +420,16 @@ class Demo {
     /**
      * Moves the rock based on the current state.
      * Walk: slide left/right; Idle/Jump: handled via jump arc in render.
-     *
-     * @param {number} _tick - Current tick count (reserved for future use).
      */
-    updateRockPosition(_tick) {
+    updateRockPosition() {
         if (this.animState === AnimState.Walking) {
             // Move 1 pixel per tick; bounce off screen edges.
             this.charPos.x += this.walkDir;
+
             if (this.charPos.x > 220) {
                 this.walkDir = -1;
             }
+
             if (this.charPos.x < 60) {
                 this.walkDir = 1;
             }
@@ -511,10 +442,6 @@ class Demo {
      * During Jumping, the sprite moves up in an arc while the shadow stays on the ground.
      */
     renderCharacter() {
-        if (!this.spriteSheet || this.walkFrames.length === 0) {
-            return;
-        }
-
         let srcRect = this.walkFrames[0];
 
         if (this.animState === AnimState.Walking) {
@@ -540,23 +467,33 @@ class Demo {
     }
 
     /**
-     * Draws a colored state badge so the Idle / Walking / Jumping cycle is obvious on screen.
+     * Draws the state readout so the Idle / Walking / Jumping cycle is obvious on screen:
+     * a small kit panel in the top-right corner plus a color strip on the ground edge.
      */
     renderStateIndicator() {
-        let badgeColor = C_STAT_DIM;
+        // Pick the scene slot for the strip and the kit text role for the panel label.
+        // Idle is calm gray/dim, Walking is "go" green, Jumping is alert red/orange.
+        let stripColor = C_STATE_IDLE;
+        let stateRole = 'dim';
 
         if (this.animState === AnimState.Walking) {
-            badgeColor = C_COOLDOWN_READY;
+            stripColor = C_STATE_WALK;
+            stateRole = 'accent';
         } else if (this.animState === AnimState.Jumping) {
-            badgeColor = C_COOLDOWN_ACTIVE;
+            stripColor = C_STATE_JUMP;
+            stateRole = 'warm';
         }
 
-        BT.drawRectFill(new Rect2i(218, 6, 96, 18), C_COOLDOWN_BG);
-        BT.drawRect(new Rect2i(218, 6, 96, 18), badgeColor);
-        BT.systemPrint(new Vector2i(224, 9), badgeColor, this.animState);
+        // A small bordered kit panel in the top-right corner names the current state.
+        ui.begin('topRight');
+        ui.panel('State');
+        ui.label(this.animState, { color: stateRole });
+        ui.end();
 
-        BT.drawRectFill(new Rect2i(218, 152, 96, 6), badgeColor);
-        BT.systemPrint(new Vector2i(218, 162), C_INFO_TEXT, 'State machine');
+        // A matching color strip painted right into the scene, on the ground edge, so
+        // you can see the state change even without reading the panel text.
+        BT.drawRectFill(new Rect2i(218, 152, 96, 6), stripColor);
+        ui.caption(218, 161, 'State machine', { color: 'dim' });
     }
 
     /**
@@ -592,63 +529,39 @@ class Demo {
     }
 
     /**
-     * Draws the information panel (cooldown, spawn timer, concept summary).
+     * Draws the timer readouts and the concept summary with the shared UI kit.
      * State and tick count are shown in overlayRows() above the bottom FPS bar.
      */
     renderUI() {
-        // Cooldown bar.
-        this.renderCooldownUI();
-
-        // Particle spawn timer.
-        this.renderSpawnTimerUI();
-
-        // Concept summary.
-        BT.systemPrint(new Vector2i(10, 168), C_INFO_HEADER, 'Tick-based timing:');
-        BT.systemPrint(new Vector2i(10, 182), C_INFO_TEXT, '- Tick-based timing (update rate)');
-        BT.systemPrint(new Vector2i(10, 196), C_INFO_TEXT, '- Cooldown & event scheduling');
-        BT.systemPrint(new Vector2i(10, 210), C_INFO_TEXT, '- State machine transitions');
-    }
-
-    /**
-     * Draws the ability cooldown bar and timer.
-     */
-    renderCooldownUI() {
+        // How much of the cooldown is still left, as a fraction from 0 (ready) to 1 (full).
         const cooldownPercent = Math.max(0, this.abilityCooldownTicks / this.abilityCooldownDuration);
 
-        // Red when counting down, green when ready. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(
-            new Vector2i(10, 28),
-            cooldownPercent > 0 ? C_COOLDOWN_ACTIVE : C_COOLDOWN_READY,
-            `Cooldown: ${Math.ceil(this.abilityCooldownTicks / 60)}s`,
-        );
-
-        // Bar background.
-        const barWidth = 100;
-        const barHeight = 8;
-        const barX = 10;
-        const barY = 45;
-        BT.drawRectFill(new Rect2i(barX, barY, barWidth, barHeight), C_COOLDOWN_BG);
-
-        // Bar fill (scales with remaining fraction).
-        if (cooldownPercent > 0) {
-            const fillWidth = Math.floor(barWidth * cooldownPercent);
-            BT.drawRectFill(new Rect2i(barX, barY, fillWidth, barHeight), C_COOLDOWN_BAR);
-        }
-
-        // Bar border.
-        BT.drawRect(new Rect2i(barX, barY, barWidth, barHeight), C_COOLDOWN_BORDER);
-    }
-
-    /**
-     * Shows the spawn timer countdown and particle count.
-     */
-    renderSpawnTimerUI() {
         // Ask the timer how many ticks are left until the next spawn event.
         const ticksUntilSpawn = this.spawnTimer.remainingTicks(BT.ticks);
 
-        // systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(10, 65), C_SPAWN_TEXT, `Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`);
-        BT.systemPrint(new Vector2i(10, 80), C_STAT_DIM, `Particles: ${this.particles.length}`);
+        // Timer readouts: a borderless kit group pinned near the top-left corner.
+        // { x, y } pin the group's top-left corner; the kit stacks the rows below it.
+        ui.begin('topLeft', { x: 4, y: 22 });
+
+        // Orange while counting down, green once the ability is ready again.
+        // Math.ceil rounds up, so "1s" shows until the very last tick of the cooldown.
+        const cooldownSecs = Math.ceil(this.abilityCooldownTicks / 60);
+        ui.label(`Cooldown: ${cooldownSecs}s`, { color: cooldownPercent > 0 ? 'warm' : 'accent' });
+
+        // A read-only kit meter replaces the old hand-drawn cooldown bar rectangles.
+        ui.meter(null, cooldownPercent, { color: 'warm', width: 100 });
+
+        ui.label(`Next spawn: ${Math.ceil(ticksUntilSpawn / 60)}s`, { color: 'header' });
+        ui.label(`Particles: ${this.particles.length}`, { color: 'dim' });
+        ui.end();
+
+        // Concept summary: another borderless kit group, pinned over the ground strip.
+        ui.begin('topLeft', { x: 4, y: 162 });
+        ui.label('Tick-based timing:', { color: 'header' });
+        ui.label('- Tick-based timing (update rate)', { color: 'dim' });
+        ui.label('- Cooldown & event scheduling', { color: 'dim' });
+        ui.label('- State machine transitions', { color: 'dim' });
+        ui.end();
     }
 }
 

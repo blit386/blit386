@@ -28,7 +28,7 @@ implements `init()`, `update()`, and `render()`.
 
 The engine draws a unified stats overlay on top of each frame (FPS, target FPS, backend, resolution, demo title). The
 overlay body starts hidden; a small bitmap toggle hint sits in the bottom-left corner by default. Press Backquote (`~`)
-or tap the bottom-left 48x48 px corner to show or hide the body. Opt into a body that is visible on the first frame with
+or tap the bottom-left 17x13 px corner to show or hide the body. Opt into a body that is visible on the first frame with
 `isOverlayVisibleAtStart: true`. Immersive demos hide the hint icon with `isOverlayToggleHintVisible: false` (see
 `013-image-output`, `014-game-scene`, `023-crt-pipboy`, and `029-snake-game`); the overlay still toggles with Backquote.
 Set `isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` in `configure()` to disable

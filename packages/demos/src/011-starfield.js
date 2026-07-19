@@ -30,10 +30,15 @@
 // palette once at startup and store the palette slot number on the star.
 // render() just reads that slot number - no Color32 objects needed per frame.
 //
+// The three explainer lines in the corner are drawn with the shared UI kit
+// (src/shared/ui.js), so their colors and spacing match every other demo.
+//
 // The engine splits work the usual way: update() moves things; render() only draws.
 // See the Basics demo for the full story: https://demos.blit386.dev/001-basics
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -58,11 +63,10 @@ const NEAR_STAR_SIZE = 2;
 const SLOT_START = 10;
 
 // Static color slots.
-const C_WHITE = 1; // White - font base color.
 const C_BG = 2; // Deep space background (very dark blue-black).
-const C_TITLE = 3; // Light blue-white: overlay timing chart text and update bars.
-const C_LABEL = 4; // Dim blue-gray for the layer description lines.
-const C_TIP = 5; // Even dimmer: overlay chart tags and tips.
+const C_CHART_TEXT = 3; // Light blue-white: overlay text and timing chart update bars.
+const C_CHART_WARN = 4; // Dim blue-gray: overlay timing chart warning color.
+const C_CHART_TAG = 5; // Even dimmer: overlay timing chart tag labels.
 const C_STREAK = 7; // Cool white for the shooting star streak.
 
 /**
@@ -75,6 +79,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // The kit's label widgets draw with these colors automatically.
+    theme = null;
+
     // Three separate arrays. Each entry is a plain object:
     // { x, y, speed, paletteIndex }
     // paletteIndex is the slot number registered during init().
@@ -84,10 +92,17 @@ class Demo {
 
     // Shooting star: not an array - only one at a time, or none.
     // When active is false, we ignore the numbers until we spawn again.
+    // prevHeadX/prevHeadY remember the head position at the START of the most recent
+    // update() tick, before this tick's movement. render() blends between them and
+    // headX/headY using BT.renderAlpha so the streak glides smoothly between physics
+    // ticks instead of hopping in 14px jumps - see "Interpolating render state with
+    // renderAlpha" in the engine's docs/api-game-loop.md.
     streak = {
         active: false,
         headX: 0,
         headY: 0,
+        prevHeadX: 0,
+        prevHeadY: 0,
     };
 
     // Counts how many update() ticks passed since the last shooting star (for timing).
@@ -106,15 +121,15 @@ class Demo {
             isOverlayTimingChartEnabled: true,
             overlayStyle: {
                 barPaletteIndex: C_BG,
-                textPaletteIndex: C_TITLE,
+                textPaletteIndex: C_CHART_TEXT,
                 gapPaletteIndex: C_BG,
             },
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_TITLE,
+                updateBarPaletteIndex: C_CHART_TEXT,
                 renderBarPaletteIndex: C_STREAK,
-                warningPaletteIndex: C_LABEL,
+                warningPaletteIndex: C_CHART_WARN,
                 errorPaletteIndex: C_STREAK,
-                tagPaletteIndex: C_TIP,
+                tagPaletteIndex: C_CHART_TAG,
             },
         };
     }
@@ -136,11 +151,10 @@ class Demo {
         // Step 1: Create palette and static colors
         this.palette = BT.paletteCreate(256);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
         this.palette.set(C_BG, new Color32(4, 6, 18)); // Deep space: very dark blue-black.
-        this.palette.set(C_TITLE, new Color32(200, 210, 230)); // Overlay chart accent.
-        this.palette.set(C_LABEL, new Color32(140, 150, 170)); // Dim blue-gray labels.
-        this.palette.set(C_TIP, new Color32(110, 120, 140)); // Dimmer overlay tags.
+        this.palette.set(C_CHART_TEXT, new Color32(200, 210, 230)); // Overlay text and chart update bars.
+        this.palette.set(C_CHART_WARN, new Color32(140, 150, 170)); // Dim blue-gray chart warnings.
+        this.palette.set(C_CHART_TAG, new Color32(110, 120, 140)); // Dimmer chart tag labels.
         this.palette.set(C_STREAK, new Color32(230, 240, 255)); // Cool white shooting streak.
 
         // Step 2: Build the three star layers
@@ -178,6 +192,11 @@ class Demo {
             slot++;
         }
 
+        // Install the shared UI kit theme. applyTheme() writes twelve UI colors into
+        // high palette slots (240 and up), far above this demo's scene slots (1..69),
+        // so the star colors and the UI colors never fight over the same slots.
+        this.theme = applyTheme(this.palette);
+
         // Activate the palette
         BT.paletteSet(this.palette);
 
@@ -211,9 +230,10 @@ class Demo {
         BT.clear(C_BG);
 
         // Draw back to front so near stars visually cover far ones, like real depth.
-        this.drawFar();
-        this.drawMedium();
-        this.drawNear();
+        // Far and medium stars are single pixels (size 1); near stars are bigger blocks.
+        this.drawLayer(this.farLayer, 1);
+        this.drawLayer(this.mediumLayer, 1);
+        this.drawLayer(this.nearLayer, NEAR_STAR_SIZE);
         this.drawStreak();
         this.drawLabels();
     }
@@ -230,7 +250,7 @@ class Demo {
      * @param {number} speedMax
      * @param {number} brightMin
      * @param {number} brightMax
-     * @returns {Array<{x: number, y: number, speed: number, brightness: number, paletteIndex: number}>}
+     * @returns {Array<{x: number, y: number, prevX: number, prevY: number, speed: number, brightness: number, paletteIndex: number}>}
      */
     createLayerData(count, speedMin, speedMax, brightMin, brightMax) {
         const layer = [];
@@ -247,7 +267,8 @@ class Demo {
             const brightness = Math.floor(brightMin + Math.random() * (brightMax - brightMin + 1));
 
             // paletteIndex starts at 0; init() will fill it in after palette setup.
-            layer.push({ x, y, speed, brightness, paletteIndex: 0 });
+            // prevX/prevY start equal to x/y - see moveLayer() for how they update.
+            layer.push({ x, y, prevX: x, prevY: y, speed, brightness, paletteIndex: 0 });
         }
 
         return layer;
@@ -263,6 +284,11 @@ class Demo {
         for (let i = 0; i < layer.length; i++) {
             const star = layer[i];
 
+            // Remember where the star was before this tick moves it, so render() can
+            // draw a smooth in-between position instead of a pop.
+            star.prevX = star.x;
+            star.prevY = star.y;
+
             // Left means subtract from x (the origin is at the top-left of the screen).
             star.x -= star.speed;
 
@@ -271,6 +297,12 @@ class Demo {
             if (star.x < -wrapW) {
                 star.x = DISPLAY_W + Math.random() * 40;
                 star.y = Math.random() * DISPLAY_H;
+
+                // Snap prevX/prevY to match the teleported spot too. Without this,
+                // render() would blend from the old off-screen-left position all the
+                // way across to the new one, drawing a streak clear across the sky.
+                star.prevX = star.x;
+                star.prevY = star.y;
             }
         }
     }
@@ -280,6 +312,10 @@ class Demo {
      */
     updateStreak() {
         if (this.streak.active) {
+            // Remember the head's position before this tick moves it.
+            this.streak.prevHeadX = this.streak.headX;
+            this.streak.prevHeadY = this.streak.headY;
+
             // Very fast compared to normal stars - several pixels per tick.
             this.streak.headX -= 14;
 
@@ -314,6 +350,11 @@ class Demo {
         this.streak.headX = DISPLAY_W + 10 + Math.random() * 60;
         // Keep it in the upper half so it reads as "sky" above the labels.
         this.streak.headY = 16 + Math.random() * (DISPLAY_H * 0.45);
+
+        // Snap prevHeadX/prevHeadY to the spawn point too, so the very first render
+        // after spawning does not blend in from wherever the last streak died.
+        this.streak.prevHeadX = this.streak.headX;
+        this.streak.prevHeadY = this.streak.headY;
     }
 
     /**
@@ -325,8 +366,13 @@ class Demo {
             return;
         }
 
-        const hx = Math.floor(this.streak.headX);
-        const hy = Math.floor(this.streak.headY);
+        // Blend the head's previous and current tick position by BT.renderAlpha - a
+        // fraction from 0 (a tick just finished) to just under 1 (the next tick is
+        // about to happen) - so the streak's drawn position matches this exact render
+        // moment instead of only its last-tick position.
+        const alpha = BT.renderAlpha;
+        const hx = Math.floor(this.streak.prevHeadX + (this.streak.headX - this.streak.prevHeadX) * alpha);
+        const hy = Math.floor(this.streak.prevHeadY + (this.streak.headY - this.streak.prevHeadY) * alpha);
 
         // Tail sits to the right and a little up because we move left and down each tick.
         const tailX = hx + 14;
@@ -337,47 +383,45 @@ class Demo {
     }
 
     /**
-     * Farthest layer: one pixel per star (BT.drawPixel), dim gray range.
+     * Draws one layer of stars. All three layers share the same movement math;
+     * only the drawn size differs, so one method handles them all.
      * Each star's paletteIndex was set in init() to point at its unique gray shade.
+     *
+     * @param {Array<{x: number, y: number, prevX: number, prevY: number, paletteIndex: number}>} layer
+     * @param {number} size - Star width and height in pixels: 1 draws a single pixel,
+     *   anything bigger draws a filled square (near stars use NEAR_STAR_SIZE).
      */
-    drawFar() {
-        for (let i = 0; i < this.farLayer.length; i++) {
-            const star = this.farLayer[i];
-            BT.drawPixel(new Vector2i(Math.floor(star.x), Math.floor(star.y)), star.paletteIndex);
+    drawLayer(layer, size) {
+        // Blend each star's previous and current tick position by BT.renderAlpha - a
+        // fraction from 0 (a tick just finished) to just under 1 (the next tick is
+        // about to happen) - so the star's drawn position matches this exact render
+        // moment instead of only its last-tick position.
+        const alpha = BT.renderAlpha;
+
+        for (let i = 0; i < layer.length; i++) {
+            const star = layer[i];
+            const px = Math.floor(star.prevX + (star.x - star.prevX) * alpha);
+            const py = Math.floor(star.prevY + (star.y - star.prevY) * alpha);
+
+            if (size === 1) {
+                BT.drawPixel(new Vector2i(px, py), star.paletteIndex);
+            } else {
+                BT.drawRectFill(new Rect2i(px, py, size, size), star.paletteIndex);
+            }
         }
     }
 
     /**
-     * Middle layer: still single pixels, but brighter.
-     */
-    drawMedium() {
-        for (let i = 0; i < this.mediumLayer.length; i++) {
-            const star = this.mediumLayer[i];
-            BT.drawPixel(new Vector2i(Math.floor(star.x), Math.floor(star.y)), star.paletteIndex);
-        }
-    }
-
-    /**
-     * Closest layer: filled rectangle (NEAR_STAR_SIZE x NEAR_STAR_SIZE) so stars look bigger.
-     */
-    drawNear() {
-        for (let i = 0; i < this.nearLayer.length; i++) {
-            const star = this.nearLayer[i];
-            const px = Math.floor(star.x);
-            const py = Math.floor(star.y);
-
-            BT.drawRectFill(new Rect2i(px, py, NEAR_STAR_SIZE, NEAR_STAR_SIZE), star.paletteIndex);
-        }
-    }
-
-    /**
-     * Explain the three layers using the system font (drawn last so text stays readable).
-     * systemPrint takes (position, paletteIndex, text).
+     * Explain the three layers with the shared UI kit (drawn last so text stays readable).
+     * We skip ui.panel() on purpose: without it the group is just floating text, which
+     * keeps the sky visible behind the caption instead of covering it with a box.
      */
     drawLabels() {
-        BT.systemPrint(new Vector2i(8, 22), C_LABEL, 'FAR: slow, dim, 1 pixel');
-        BT.systemPrint(new Vector2i(8, 38), C_LABEL, 'MED: faster, brighter pixel');
-        BT.systemPrint(new Vector2i(8, 54), C_LABEL, 'NEAR: fastest, bright 2x2 block');
+        ui.begin('topLeft');
+        ui.label('FAR: slow, dim, 1 pixel', { color: 'dim' });
+        ui.label('MED: faster, brighter pixel', { color: 'dim' });
+        ui.label('NEAR: fastest, bright 2x2 block', { color: 'dim' });
+        ui.end();
     }
 }
 

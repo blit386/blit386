@@ -47,17 +47,18 @@
 //
 // HOW THE GLITCH STATE MACHINE WORKS
 // We keep two counters:
-//   - cooldown: ticks remaining until the NEXT glitch starts.
-//   - active:   ticks remaining in the CURRENT glitch (0 means "no glitch right now").
-// Every frame we count one down. When `active` runs out we decrement `cooldown`. When
-// `cooldown` runs out we roll a new glitch (random type, random duration, random strength)
-// and reset `active` to that duration. Each burst type drives different effect uniforms.
+//   - glitchCooldown:  ticks remaining until the NEXT glitch starts.
+//   - glitchTicksLeft: ticks remaining in the CURRENT glitch (0 means "no glitch right now").
+// Every frame we count one down. When `glitchTicksLeft` runs out we decrement `glitchCooldown`.
+// When `glitchCooldown` runs out we roll a new glitch (random type, random duration, random
+// strength) and reset `glitchTicksLeft` to that duration. Each burst type drives different
+// effect uniforms.
 //
 // SOFTWARE FALLBACK
 // If the browser uses the Canvas 2D software renderer (WebGPU missing or
 // ?backend=software), post-process effects are not available. The terminal
 // scene, boot animation, and status block still run; only the CRT stack is skipped.
-// An on-screen note explains the reduced mode.
+// An on-screen note drawn with the shared UI kit explains the reduced mode.
 //
 // HOW THE BITMAP FONT COLORS WORK
 // The font is loaded as a sprite sheet of WHITE glyph pixels. We "indexize" the sheet
@@ -89,6 +90,8 @@ import {
 } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { randFloat, randInt, randPick } from './shared/rand.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 // The internal pixel resolution of the demo. Small numbers keep the pixel art look.
 const DISPLAY_W = 320;
@@ -195,42 +198,6 @@ const NOISE_BASE = 0.025;
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
 /**
- * Returns a random integer in the half-open range [min, max).
- * Used by the glitch state machine to pick a fresh duration / cooldown each burst.
- *
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randInt(min, max) {
-    return min + Math.floor(Math.random() * (max - min));
-}
-
-/**
- * Returns a random float in [min, max).
- * Used to roll the strength of each glitch.
- *
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randFloat(min, max) {
-    return min + Math.random() * (max - min);
-}
-
-/**
- * Returns a random element from `arr`. Used to pick a glitch personality.
- * Strings or numbers, doesn't matter.
- *
- * @template T
- * @param {readonly T[]} arr
- * @returns {T}
- */
-function randPick(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-/**
  * Maps a status-line "color name" (kept as a string in STATUS_LINES so the table
  * is human-readable) to the matching palette slot.
  *
@@ -325,14 +292,20 @@ class Demo {
      */
     async init() {
         // Step 1: build the palette
-        // Six colors. Every effect on screen comes from these.
-        const palette = BT.paletteCreate(16);
+        // Six scene colors, all in the low slots. The palette is 256 entries long so the
+        // shared UI theme can live in the high slots (240-251), far away from the greens.
+        const palette = BT.paletteCreate(256);
         palette.set(C_BG, new Color32(8, 14, 8, 255)); // Almost-black with green tint
         palette.set(C_WHITE, Color32.white); // Slot the font glyph pixels resolve to
         palette.set(C_GREEN_DIM, new Color32(40, 100, 60, 255)); // Faded green
         palette.set(C_GREEN, new Color32(80, 200, 110, 255)); // PipBoy green
         palette.set(C_GREEN_BRIGHT, new Color32(170, 255, 190, 255)); // Hot green highlights
         palette.set(C_AMBER, new Color32(220, 180, 60, 255)); // Vault-Tec amber accent
+
+        // Install the shared UI kit colors into slots 240-251. In this demo the kit only
+        // draws the software-fallback note; the terminal itself stays hand-rolled so the
+        // phosphor-green PipBoy look is untouched.
+        applyTheme(palette);
         BT.paletteSet(palette);
 
         // Step 2: load the bitmap font
@@ -454,7 +427,7 @@ class Demo {
         // See the file header for what each field means. We start in a long cooldown so
         // the first burst doesn't fire on frame 1.
         this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-        this.glitchActive = 0;
+        this.glitchTicksLeft = 0; // ticks remaining in the current burst; 0 means "no glitch right now"
         this.glitchDuration = 0;
         this.glitchType = 'none';
         this.glitchPeak = 0;
@@ -463,14 +436,14 @@ class Demo {
 
     update() {
         if (!this.effectsAvailable) {
-            this._ticksSinceBoot = BT.ticks - this.bootStartTick;
+            this.ticksSinceBoot = BT.ticks - this.bootStartTick;
             return;
         }
 
         // 1. Drive the boot animation timer
-        // We don't draw here - render() reads `this._ticksSinceBoot` and computes how many
+        // We don't draw here - render() reads `this.ticksSinceBoot` and computes how many
         // characters to show. update() just provides time.
-        this._ticksSinceBoot = BT.ticks - this.bootStartTick;
+        this.ticksSinceBoot = BT.ticks - this.bootStartTick;
 
         // 2. Drive the time-based effects every frame
         // RollLine, Noise, and Interference all need a wall-clock seconds value to drive
@@ -482,34 +455,33 @@ class Demo {
         this.interference.time = seconds;
 
         // 3. Drive the glitch state machine
-        if (this.glitchActive > 0) {
-            // We are inside a glitch burst. Build an "envelope": ramps up to glitchPeak,
-            // holds, then ramps down. Sounds fancy - in practice it just makes a sin curve
-            // over the lifetime of the burst (sin from 0 to PI is a nice 0 -> 1 -> 0 hump).
-            const t = 1 - this.glitchActive / this.glitchDuration; // 0 at start, 1 at end
-            const envelope = Math.sin(t * Math.PI); // 0 -> 1 -> 0
+        this.stepGlitchMachine();
+    }
 
-            this.applyGlitchUniforms(envelope);
+    render() {
+        // Fill the background. Even with the CRT effect on top, this becomes the
+        // "phosphor off" color of every empty cell.
+        BT.clear(C_BG);
 
-            this.glitchActive--;
-            // When the burst ends, reset the uniforms so the screen calms down.
-            if (this.glitchActive === 0) {
-                this.resetGlitchUniforms();
-                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // Draw the boot sequence one character at a time, line by line.
+        this.renderBootSequence();
+
+        // Once the boot lines are all visible, draw the status block on the right.
+        if (this.bootFullyDone()) {
+            if (!this.bootTagged) {
+                this.bootTagged = true;
+                BT.assignTag('Boot done');
             }
-        } else {
-            // No active glitch - count down to the next one.
-            this.glitchCooldown--;
-            if (this.glitchCooldown <= 0) {
-                // Roll a new burst. Pick a random type, duration, and peak strength.
-                this.glitchType = randPick(GLITCH_TYPES);
-                BT.assignTag(`Glitch: ${this.glitchType}`);
-                this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
-                this.glitchActive = this.glitchDuration;
-                this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
-                // Reset the seed so the shader uses a new band-noise pattern this burst.
-                this.pixelGlitch.seed = Math.random() * 1000;
-            }
+            this.renderStatusBlock();
+            this.renderBlinkingCursor();
+        }
+
+        // In software mode the CRT stack is skipped - say so with a kit label. Omitting
+        // ui.panel() keeps the group borderless, so it reads as a single caption line.
+        if (!this.effectsAvailable) {
+            ui.begin('bottomLeft');
+            ui.label(SOFTWARE_FALLBACK_NOTE, { color: 'warm' });
+            ui.end();
         }
     }
 
@@ -563,26 +535,41 @@ class Demo {
         this.interference.amount = 0;
     }
 
-    render() {
-        // Fill the background. Even with the CRT effect on top, this becomes the
-        // "phosphor off" color of every empty cell.
-        BT.clear(C_BG);
+    /**
+     * Advances the glitch state machine by one tick. Called from update() once
+     * per frame. Either a burst is currently running (count it down and drive
+     * the effect uniforms), or the screen is calm (count down the cooldown and
+     * roll a fresh burst when it reaches zero).
+     */
+    stepGlitchMachine() {
+        if (this.glitchTicksLeft > 0) {
+            // We are inside a glitch burst. Build an "envelope": ramps up to glitchPeak,
+            // holds, then ramps down. Sounds fancy - in practice it just makes a sin curve
+            // over the lifetime of the burst (sin from 0 to PI is a nice 0 -> 1 -> 0 hump).
+            const t = 1 - this.glitchTicksLeft / this.glitchDuration; // 0 at start, 1 at end
+            const envelope = Math.sin(t * Math.PI); // 0 -> 1 -> 0
 
-        // Draw the boot sequence one character at a time, line by line.
-        this.renderBootSequence();
+            this.applyGlitchUniforms(envelope);
 
-        // Once the boot lines are all visible, draw the status block on the right.
-        if (this.bootFullyDone()) {
-            if (!this._bootTagged) {
-                this._bootTagged = true;
-                BT.assignTag('Boot done');
+            this.glitchTicksLeft--;
+            // When the burst ends, reset the uniforms so the screen calms down.
+            if (this.glitchTicksLeft === 0) {
+                this.resetGlitchUniforms();
+                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
-            this.renderStatusBlock();
-            this.renderBlinkingCursor();
-        }
-
-        if (!this.effectsAvailable) {
-            BT.systemPrint(new Vector2i(TEXT_LEFT, DISPLAY_H - 28), C_GREEN_DIM, SOFTWARE_FALLBACK_NOTE);
+        } else {
+            // No active glitch - count down to the next one.
+            this.glitchCooldown--;
+            if (this.glitchCooldown <= 0) {
+                // Roll a new burst. Pick a random type, duration, and peak strength.
+                this.glitchType = randPick(GLITCH_TYPES);
+                BT.assignTag(`Glitch: ${this.glitchType}`);
+                this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+                this.glitchTicksLeft = this.glitchDuration;
+                this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+                // Reset the seed so the shader uses a new band-noise pattern this burst.
+                this.pixelGlitch.seed = Math.random() * 1000;
+            }
         }
     }
 
@@ -604,7 +591,7 @@ class Demo {
      * passed and use that to slice the strings in place.
      */
     renderBootSequence() {
-        let ticksLeft = this._ticksSinceBoot;
+        let ticksLeft = this.ticksSinceBoot;
 
         for (let i = 0; i < BOOT_LINES.length; i++) {
             const fullLine = BOOT_LINES[i];
@@ -649,7 +636,7 @@ class Demo {
         for (const line of BOOT_LINES) {
             totalTicks += (line.length === 0 ? 0 : line.length * BOOT_TICKS_PER_CHAR) + BOOT_LINE_SPACER_TICKS;
         }
-        return this._ticksSinceBoot >= totalTicks;
+        return this.ticksSinceBoot >= totalTicks;
     }
 
     /**

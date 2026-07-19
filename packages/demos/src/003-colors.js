@@ -1,5 +1,3 @@
-// @pageTitle BLIT386 Demo 003 - Colors
-//
 // Colors Demo - a deep dive into Color32 and palettes in BLIT386.
 //
 // Demo 003 in the BLIT386 demo series, written for young learners (around 12)
@@ -14,7 +12,8 @@
 // We learned about the demo lifecycle, Vector2i, Rect2i, and clearing the screen in the Basics demo:
 // https://demos.blit386.dev/001-basics
 //
-// Live version: https://vancura.dev/articles/blit386-colors
+// Live version: https://demos.blit386.dev/003-colors
+// Walkthrough article: https://vancura.dev/articles/blit386-colors
 //
 // IMPORTANT - palettes and how they changed from older demos:
 //
@@ -28,6 +27,11 @@
 //   inside update() and written back into their reserved palette slots.
 //   render() only ever uses palette index numbers - no Color32 objects there.
 //
+//   The numbered section headers are drawn with the shared UI kit (src/shared/ui.js),
+//   which parks its own twelve colors in high slots 240-251 - far away from every slot
+//   this lesson uses. The swatches and their little labels stay hand-drawn on purpose:
+//   they ARE the lesson.
+//
 // IMPORTANT - update() ticks vs render() frames:
 //   update() runs at a fixed rate (here, 60 times per second when the tab is active).
 //   Each call to update() is one "tick". Our animTime adds 1/60 on every tick, so after
@@ -36,6 +40,11 @@
 //   per second on high-refresh screens, but animTime still only changes inside update().
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+// The shared demo UI kit: applyTheme() installs the series' standard UI colors into the
+// palette, and ui.caption() prints the section headers with them. We met the kit in the
+// Basics demo: https://demos.blit386.dev/001-basics
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -48,7 +57,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // Index 0 is always transparent and reserved - never assign to it.
 
 // Basic colors (set once in init, never change).
-const C_WHITE = 1; // Pure white - font base and section headers.
+const C_WHITE = 1; // Pure white - the WHT swatch and labels on dark swatches.
 const C_BG = 2; // Dark gray-blue background.
 const C_BLACK = 3; // Pure black - labels on light-colored swatches.
 const C_RED = 4; // Color32.red - (255, 0, 0).
@@ -105,6 +114,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // theme remembers which palette slots the shared UI kit colors landed in.
+    // applyTheme() in init() fills it with a map like { bg, text, dim, header, ... }.
+    theme = null;
+
     // The two Color32 objects used to compute the lerp gradient.
     // We store them here so update() can call colorA.lerp(colorB, t) every tick.
     /** @type {Color32 | null} */
@@ -124,9 +137,9 @@ class Demo {
             overlayPaletteRowsVisible: 4,
 
             overlayStyle: {
-                barPaletteIndex: 94,
-                textPaletteIndex: 15,
-                gapPaletteIndex: 3,
+                barPaletteIndex: C_LERP_BASE,
+                textPaletteIndex: C_ALPHA_2,
+                gapPaletteIndex: C_BLACK,
             },
         };
     }
@@ -179,7 +192,14 @@ class Demo {
         // HSL, lerp gradient, and pulse slots are left empty here.
         // update() will fill them before the first frame is drawn.
 
-        // Step 3: Activate the palette
+        // Step 3: Install the shared UI theme
+        // applyTheme() writes the series' twelve standard UI colors into slots 240-251,
+        // safely above every slot this lesson uses (the static colors in 1-19 and the
+        // animated ranges 30-93, 94-125, and 126). The section headers draw with them.
+        // This must happen BEFORE BT.paletteSet() below so the colors are included.
+        this.theme = applyTheme(this.palette);
+
+        // Step 4: Activate the palette
         BT.paletteSet(this.palette);
         return true;
     }
@@ -265,9 +285,9 @@ class Demo {
      * Each block is a filled rectangle; the label sits above it in small text.
      */
     drawNamedColorsSection() {
-        // Section header in white.
-        // BT.systemPrint() arguments: (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(6, 4), C_WHITE, '1 NAMED COLORS (shortcuts)');
+        // Section header, drawn with ui.caption() from the shared UI kit. Every demo in
+        // the series uses this same widget, so all headers look identical everywhere.
+        ui.caption(6, 4, '1 NAMED COLORS (shortcuts)');
 
         const rowY = 20;
         const swatchH = 16;
@@ -311,8 +331,8 @@ class Demo {
      * When two colors overlap with alpha blending, your eye mixes them like colored lights.
      */
     drawRgbMixSection() {
-        // Section header in white.
-        BT.systemPrint(new Vector2i(6, 40), C_WHITE, '2 RGB MIX (overlap, see-through)');
+        // Section header, drawn with the shared UI kit.
+        ui.caption(6, 40, '2 RGB MIX (overlap, see-through)');
 
         // Base y for the three little experiments side by side.
         const y0 = 52;
@@ -343,7 +363,7 @@ class Demo {
      * Hue is an angle 0..360 on a color wheel. 64 slots cover the whole wheel in steps.
      */
     drawHslRainbowSection() {
-        BT.systemPrint(new Vector2i(6, 102), C_WHITE, '3 HSL RAINBOW (fromHSL, scrolling hue)');
+        ui.caption(6, 102, '3 HSL RAINBOW (fromHSL, scrolling hue)');
 
         const stripY = 114;
         const stripH = 8;
@@ -367,7 +387,7 @@ class Demo {
      * need to pass index numbers here.
      */
     drawAlphaSection() {
-        BT.systemPrint(new Vector2i(6, 126), C_WHITE, '4 ALPHA (fourth number = see-through)');
+        ui.caption(6, 126, '4 ALPHA (fourth number = see-through)');
 
         const box = new Rect2i(20, 138, 200, 40);
 
@@ -393,7 +413,7 @@ class Demo {
      * The thin strip below uses one slot that breathes A <-> B with a sine wave.
      */
     drawLerpSection() {
-        BT.systemPrint(new Vector2i(6, 184), C_WHITE, '5 LERP: slide + pulse (see comments)');
+        ui.caption(6, 184, '5 LERP: slide + pulse (see comments)');
 
         const barY = 198;
 

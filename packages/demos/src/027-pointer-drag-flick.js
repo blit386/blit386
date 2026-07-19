@@ -33,14 +33,19 @@
  * explores in depth): a whoosh on every throw, whose pitch and volume scale with how hard
  * you flicked, and a thud every time a ball hits a wall or the floor hard enough to notice.
  *
+ * The HUD (the title strip along the top and the per-slot pointer indicators in the
+ * top-right corner) is drawn with the shared UI kit (src/shared/ui.js), so it uses the
+ * same colors and layout as every other demo. The balls themselves keep their own scene
+ * colors and are grabbed with raw pointer reads - the kit only handles the readouts.
+ *
  * Coordinate convention: balls store position with sub-pixel precision
  * (floats) so physics integrates smoothly, but every render call rounds to
  * integer display coordinates so pixels stay crisp.
  */
 
-// @pageTitle BLIT386 Demo 027 - Pointer Drag Flick
+import { AudioClip, bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -50,21 +55,21 @@ import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 const DISPLAY_W = 320;
 const DISPLAY_H = 240;
 
-// Vertical strip at the top reserved for the title and per-slot indicators.
-// Balls cannot enter it, and grabs are only registered below it.
+// Vertical strip at the top reserved for the shared UI kit's full-width title bar
+// ('topBar' is 22 pixels tall). Balls cannot enter it, and grabs are only registered
+// below it, so the strip acts as the ceiling of the physics box.
 const HUD_HEIGHT = 22;
 
-// Palette slots. Index 0 is always transparent.
-const C_BG = 1; // dark background
-const C_TEXT = 2; // overlay text
-const C_DIM = 3; // dim hint text
-const C_PANEL = 4; // HUD strip background
-const C_PANEL_BORDER = 5; // HUD strip border
-const C_BALL_OUTLINE = 6; // outline drawn around any grabbed ball
-const C_BALL_HIGHLIGHT = 7; // tint for the ball under the mouse cursor when no slot is grabbing it
+// Scene palette slots. Index 0 is always transparent. UI colors (panel, text, borders)
+// are no longer listed here - the shared UI kit installs them into high slots (240+)
+// via applyTheme() in init(), so only the demo's own scene colors remain.
+const C_BALL_OUTLINE = 1; // outline drawn around any grabbed ball
+const C_BALL_HIGHLIGHT = 2; // tint for the ball under the mouse cursor when no slot is grabbing it
+const C_CHART_UPDATE = 3; // dim gray for the overlay timing chart's update bars
+const C_CHART_RENDER = 4; // white for the chart's render bars and milestone tags
 
 // Three balls, each its own color so it's easy to track which is which.
-const BALL_COLORS = [10, 11, 12];
+const BALL_COLORS = [5, 6, 7];
 
 // Physics parameters, all expressed in "display pixels per fixed update tick"
 // since the engine runs `update()` at a fixed rate (here 60 Hz).
@@ -125,6 +130,14 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    /**
+     * Palette slot map returned by applyTheme() - where the shared UI colors landed.
+     * Used for BT.clear(this.theme.bg) and the crosshair cursor color.
+     *
+     * @type {ReturnType<typeof applyTheme> | null}
+     */
+    theme = null;
+
     /** @type {AudioClip | null} Whoosh sound played when a ball is thrown. */
     whooshClip = null;
 
@@ -134,7 +147,13 @@ class Demo {
     /**
      * Active balls. Created in init().
      *
-     * @type {Array<{x: number, y: number, vx: number, vy: number, color: number, grabbedBy: number}>}
+     * prevX/prevY remember where each ball was at the START of the most recent
+     * update() tick, before physics moved it. render() blends between prevX/prevY
+     * and x/y using BT.renderAlpha so the ball glides smoothly across render
+     * frames instead of only moving once per physics tick - see "Interpolating
+     * render state with renderAlpha" in the engine's docs/api-game-loop.md.
+     *
+     * @type {Array<{x: number, y: number, prevX: number, prevY: number, vx: number, vy: number, color: number, grabbedBy: number}>}
      */
     balls = [];
 
@@ -150,13 +169,15 @@ class Demo {
             // Set the logical display size (how many pixels the demo draws at).
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             // Show the scrolling timing chart in the overlay so each frame's cost is visible.
+            // configure() runs before init(), so the shared theme slots do not exist yet -
+            // the chart uses two dedicated scene slots filled in init() instead.
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                // C_DIM makes update bars subtle so render bars stand out by contrast.
-                updateBarPaletteIndex: C_DIM,
-                // C_TEXT gives render bars and milestone labels high contrast against the dark background.
-                renderBarPaletteIndex: C_TEXT,
-                tagPaletteIndex: C_TEXT,
+                // Dim gray makes update bars subtle so render bars stand out by contrast.
+                updateBarPaletteIndex: C_CHART_UPDATE,
+                // White gives render bars and milestone labels high contrast against the dark background.
+                renderBarPaletteIndex: C_CHART_RENDER,
+                tagPaletteIndex: C_CHART_RENDER,
             },
         };
     }
@@ -187,17 +208,21 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
-        this.palette.set(C_BG, new Color32(18, 22, 32));
-        this.palette.set(C_TEXT, new Color32(255, 255, 255));
-        this.palette.set(C_DIM, new Color32(150, 160, 180));
-        this.palette.set(C_PANEL, new Color32(40, 50, 70));
-        this.palette.set(C_PANEL_BORDER, new Color32(100, 110, 130));
+        // Scene colors: the ball rings, the timing chart bars, and the balls themselves.
         this.palette.set(C_BALL_OUTLINE, new Color32(255, 255, 255));
         this.palette.set(C_BALL_HIGHLIGHT, new Color32(255, 220, 120));
+        this.palette.set(C_CHART_UPDATE, new Color32(150, 160, 180));
+        this.palette.set(C_CHART_RENDER, new Color32(255, 255, 255));
 
         this.palette.set(BALL_COLORS[0], new Color32(255, 100, 110));
         this.palette.set(BALL_COLORS[1], new Color32(120, 220, 130));
         this.palette.set(BALL_COLORS[2], new Color32(120, 170, 255));
+
+        // Install the shared UI theme (panel, text, border colors and so on) into high
+        // palette slots (240 and up), far away from the scene colors above. The returned
+        // map tells us which slot each theme color landed in, so the demo can reuse them
+        // (for example this.theme.bg as the screen clear color).
+        this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
 
@@ -208,9 +233,9 @@ class Demo {
         // Stagger the balls horizontally and give each a small initial velocity
         // so the simulation looks alive on first frame.
         this.balls = [
-            { x: 80, y: 60, vx: 1.2, vy: 0, color: BALL_COLORS[0], grabbedBy: -1 },
-            { x: 160, y: 50, vx: -0.6, vy: 0.4, color: BALL_COLORS[1], grabbedBy: -1 },
-            { x: 240, y: 70, vx: 0.8, vy: -0.2, color: BALL_COLORS[2], grabbedBy: -1 },
+            { x: 80, y: 60, prevX: 80, prevY: 60, vx: 1.2, vy: 0, color: BALL_COLORS[0], grabbedBy: -1 },
+            { x: 160, y: 50, prevX: 160, prevY: 50, vx: -0.6, vy: 0.4, color: BALL_COLORS[1], grabbedBy: -1 },
+            { x: 240, y: 70, prevX: 240, prevY: 70, vx: 0.8, vy: -0.2, color: BALL_COLORS[2], grabbedBy: -1 },
         ];
         return true;
     }
@@ -238,6 +263,11 @@ class Demo {
         // Move every ball: held ones follow their pointer, free ones obey
         // gravity / drag / wall bounce.
         for (const ball of this.balls) {
+            // Snapshot "where was this ball a moment ago" BEFORE moving it, so
+            // render() can draw a smooth in-between position instead of a pop.
+            ball.prevX = ball.x;
+            ball.prevY = ball.y;
+
             if (ball.grabbedBy >= 0) {
                 this.updateHeldBall(ball);
             } else {
@@ -250,7 +280,8 @@ class Demo {
      * Per-frame render: clear, draw HUD, draw balls, draw cursor markers.
      */
     render() {
-        BT.clear(C_BG);
+        // Clear the whole screen with the shared theme's background color.
+        BT.clear(this.theme.bg);
 
         this.renderHUD();
         this.renderBalls();
@@ -445,31 +476,39 @@ class Demo {
     }
 
     /**
-     * Top status strip with the title and per-slot indicators.
+     * The HUD, built from shared UI kit groups: the full-width title strip at the top
+     * (it doubles as the ceiling of the physics box - see HUD_HEIGHT), plus a compact
+     * corner panel with one pip per pointer slot. A pip lights up while that slot
+     * (M = mouse, T1-T3 = touch fingers) is grabbing a ball.
      */
     renderHUD() {
-        BT.drawRectFill(new Rect2i(0, 0, DISPLAY_W, HUD_HEIGHT), C_PANEL);
-        BT.drawRect(new Rect2i(0, 0, DISPLAY_W, HUD_HEIGHT), C_PANEL_BORDER);
-        BT.systemPrint(new Vector2i(4, 3), C_TEXT, 'Drag a ball, release to flick.');
+        // The classic full-width 22 px title strip along the top edge.
+        ui.begin('topBar');
+        ui.panel('Drag a ball, release to flick');
 
-        // Per-slot indicator: a tiny circle in the top-right that lights up
-        // while that slot is grabbing a ball.
+        // Browsers refuse to play any sound until the page is clicked or a key
+        // is pressed. This shared row shows the standard warm "enable sound"
+        // prompt and disappears on its own the moment audio unlocks - which
+        // here happens on the very first grab.
+        ui.audioUnlockHint();
+
+        ui.end();
+
+        // Per-slot grab indicators, tucked into the top-right corner just below the
+        // strip. Balls may fly behind this panel - that is fine, it is a readout, not
+        // a wall. ui.pip() draws a small square that fills in while its state is true.
         const labels = ['M', 'T1', 'T2', 'T3'];
 
+        ui.begin('topRight', { y: HUD_HEIGHT + 6 });
+        ui.panel('Grabs');
+
         for (let slot = 0; slot < 4; slot++) {
+            // .some() asks: is there at least one ball whose grabbedBy equals this slot?
             const grabbing = this.balls.some((b) => b.grabbedBy === slot);
-            const x = DISPLAY_W - 64 + slot * 16;
-            const y = 12;
-
-            const indicator = new Rect2i(x - 3, y - 3, 7, 7);
-            if (grabbing) {
-                BT.drawRectFill(indicator, C_BALL_OUTLINE);
-            } else {
-                BT.drawRect(indicator, C_PANEL_BORDER);
-            }
-
-            BT.systemPrint(new Vector2i(x - 4, y + 5), grabbing ? C_TEXT : C_DIM, labels[slot]);
+            ui.pip(labels[slot], grabbing);
         }
+
+        ui.end();
     }
 
     /**
@@ -497,15 +536,27 @@ class Demo {
 
         for (let i = 0; i < this.balls.length; i++) {
             const ball = this.balls[i];
-            this.drawDisc(Math.round(ball.x), Math.round(ball.y), BALL_RADIUS, ball.color);
+
+            // BT.renderAlpha is a fraction from 0 (a physics tick just finished) to just
+            // under 1 (the next tick is about to happen). Blending prevX/prevY toward
+            // x/y by that fraction gives us the ball's position AT THIS EXACT RENDER
+            // MOMENT, not just its position as of the last physics tick. Picture a movie:
+            // physics ticks are the individual film frames, and render() is the projector
+            // running faster than the film advances - renderAlpha tells the projector how
+            // far to "tween" between the current frame and the next one so playback looks
+            // smooth instead of jerky.
+            const drawX = Math.round(ball.prevX + (ball.x - ball.prevX) * BT.renderAlpha);
+            const drawY = Math.round(ball.prevY + (ball.y - ball.prevY) * BT.renderAlpha);
+
+            this.drawDisc(drawX, drawY, BALL_RADIUS, ball.color);
 
             if (ball.grabbedBy !== -1) {
                 // Outline grabbed balls so you can tell which slot owns each.
-                this.drawCircle(Math.round(ball.x), Math.round(ball.y), BALL_RADIUS + 1, C_BALL_OUTLINE);
+                this.drawCircle(drawX, drawY, BALL_RADIUS + 1, C_BALL_OUTLINE);
             } else if (i === hoverIndex) {
                 // Hover highlight: a thin amber ring on the topmost free ball
                 // under the mouse cursor.
-                this.drawCircle(Math.round(ball.x), Math.round(ball.y), BALL_RADIUS + 1, C_BALL_HIGHLIGHT);
+                this.drawCircle(drawX, drawY, BALL_RADIUS + 1, C_BALL_HIGHLIGHT);
             }
         }
     }
@@ -521,8 +572,8 @@ class Demo {
             }
 
             const pos = BT.pointerPos(slot);
-            BT.drawLine(new Vector2i(pos.x - 4, pos.y), new Vector2i(pos.x + 4, pos.y), C_TEXT);
-            BT.drawLine(new Vector2i(pos.x, pos.y - 4), new Vector2i(pos.x, pos.y + 4), C_TEXT);
+            BT.drawLine(new Vector2i(pos.x - 4, pos.y), new Vector2i(pos.x + 4, pos.y), this.theme.text);
+            BT.drawLine(new Vector2i(pos.x, pos.y - 4), new Vector2i(pos.x, pos.y + 4), this.theme.text);
         }
     }
 
