@@ -40,6 +40,15 @@ function installMockOrientation(type = 'landscape-primary'): FakeOrientation {
     return orientation;
 }
 
+/** Drain queued microtasks and one macrotask so delayed lock continuations settle. */
+async function flushAsyncWork(): Promise<void> {
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+    });
+}
+
 describe('Orientation', () => {
     afterEach(() => {
         Reflect.deleteProperty(globalThis, 'screen');
@@ -251,11 +260,12 @@ describe('Orientation', () => {
         resolveFirstLock?.();
 
         // Stale first lock must not unlock the second attach's held lock.
-        await Promise.resolve();
+        await flushAsyncWork();
         expect(mock.unlock).not.toHaveBeenCalled();
 
         orientation.detach();
 
+        await flushAsyncWork();
         expect(mock.unlock).toHaveBeenCalledTimes(1);
     });
 
