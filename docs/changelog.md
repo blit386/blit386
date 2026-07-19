@@ -21,6 +21,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ## 1.3.1 - Unreleased
 
+### Added
+
+- Opt-in screen wake lock via `HardwareSettings.isWakeLockEnabled` (default `false`). When enabled, the engine requests
+  a screen wake lock after a successful `init()` to prevent mobile browsers from dimming or locking the screen during
+  active gameplay, and re-acquires it automatically once the page returns to the foreground. Silently no-ops on browsers
+  without the Wake Lock API.
+
 ### Changed
 
 - Pointer wheel capture is opt-in via `HardwareSettings.isCapturingPointerScroll` (default `false`). Canvas wheel events

@@ -55,6 +55,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How does the audio meter work?                                    | `src/overlay/audio-meter/` (AudioMeter, style, constants); lazy metering via `AudioManager.enableBusMetering()`/`getBusLevels()`; wired through `HardwareSettings.isOverlayAudioMetersEnabled` in `src/core/BTAPI.ts`; `docs/api-overlay.md` (Audio meters section) |
 | How do I synthesize a sound procedurally (no source file)?        | `AudioClip.synth` in `src/assets/AudioClip.ts`; render/validation math in `src/assets/synth/` (`SynthParams.ts`, `synthEnvelope.ts`, `synthPitch.ts`, `synthWaveforms.ts`, `synthRender.ts`, `synthValidation.ts`); `docs/api-audio.md` (Synth section)             |
 | Is there a built-in sound preset library (jump, explosion, etc.)? | `src/assets/synth/synthPresets.ts`, exposed publicly as `BT.synthPreset.{jump,pickup,explosion,laser,hit,blip}`; `docs/api-audio.md` (Presets section), `docs/guide-audio.md` (Design a sound)                                                                      |
+| How does the screen wake lock work?                               | `src/core/WakeLock.ts`; `HardwareSettings.isWakeLockEnabled` in `src/core/IBTDemo.ts`; `docs/api-core.md` (Hardware settings table), `docs/api-browser-support.md` (Screen wake lock section)                                                                       |
 
 ## Onboarding and the scaffolder
 
@@ -231,6 +232,7 @@ src/
     GameLoop.ts            # Fixed-timestep game loop
     WebGPUContext.ts       # WebGPU adapter/device/context setup
     RenderPaletteUsage.ts  # Per-frame palette index usage mask for overlay grid
+    WakeLock.ts             # Screen Wake Lock subsystem: acquire/release/re-acquire on visibilitychange (HardwareSettings.isWakeLockEnabled)
   overlay/
     Overlay.ts             # Orchestrator: sample, toggle, layout plan, delegate draws
     OverlayDrawTarget.ts   # Internal draw port (drawBarFill / drawLabel); not on IRenderer or BT
