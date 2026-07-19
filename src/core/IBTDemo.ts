@@ -610,7 +610,8 @@ export interface IBTDemo {
      * this hook is only ever called during local development.
      *
      * @since 1.4.0
-     * @param context - Which tier ran, the new generation number, and (for `'reinit'`) a field snapshot of the previous instance.
+     * @param context - Which tier ran, the new generation number, and (for
+     *   `'reinit'`) a field snapshot of the previous instance.
      */
     onHotReload?(context: HotReloadContext): void;
 }
