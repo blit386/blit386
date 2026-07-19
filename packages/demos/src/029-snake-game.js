@@ -9,8 +9,8 @@
  *
  * Live version: https://demos.blit386.dev/029-snake-game
  *
- * Move with player 1 face buttons (W, A, S, D): Up, Down, Left, Right. On a phone or
- * tablet, steer with the on-screen D-pad in the bottom-right corner (it appears at the
+ * Move with WASD or the arrow keys (both are mapped to player 0 face buttons). On a phone
+ * or tablet, steer with the on-screen D-pad in the bottom-right corner (it appears at the
  * first touch) or simply swipe anywhere in the direction you want to go - both come from
  * the shared UI kit in src/shared/ui.js. Each food dot grows the snake. Hitting the
  * boundary wall or your own body ends the run; the game restarts after two seconds.
@@ -53,7 +53,6 @@ import { randFloat, randInt, randIntInclusive, randPick } from './shared/rand.js
 import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
-
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
@@ -249,6 +248,15 @@ class Demo {
     async init() {
         // Start from default keyboard maps so this demo stays independent from remapping demos.
         BT.inputMapReset();
+
+        // Engine defaults put WASD on player 0 and arrows on player 1. This is a single-player
+        // game, so fold both layouts into player 0: either set of keys steers the same snake.
+        // BT.inputMap replaces the whole key list for that button; listing both codes means
+        // either key counts (logical OR), the same pattern demo 030 shows with Q|E for LEFT.
+        BT.inputMap(0, BT.BTN_UP, 'KeyW', 'ArrowUp');
+        BT.inputMap(0, BT.BTN_DOWN, 'KeyS', 'ArrowDown');
+        BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft');
+        BT.inputMap(0, BT.BTN_RIGHT, 'KeyD', 'ArrowRight');
 
         // BT.synthPreset bundles ready-tuned sound recipes (041-Synth Toy explores all six).
         // Rendering them once here means eating and dying play back with zero delay later.
@@ -467,7 +475,7 @@ class Demo {
 
     /**
      * Reads all three steering inputs and updates pending direction (no instant reverse):
-     * player 1 face buttons (keyboard/gamepad), the on-screen touch D-pad, and swipes.
+     * player 0 face buttons (WASD, arrows, or gamepad), the on-screen touch D-pad, and swipes.
      *
      * We use BT.isPressed (edge: up -> down this tick), not BT.isDown (held every tick),
      * and the D-pad's matching ui.dpad.isPressed. That way one tap per direction per move

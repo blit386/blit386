@@ -56,7 +56,8 @@
     "WebGPU",
     "Zhang",
     "sfmono",
-    "shiki"
+    "shiki",
+    "WASD"
   ],
   "flagWords": ["cant", "dont", "hte", "teh", "wont"],
   "ignorePaths": [
