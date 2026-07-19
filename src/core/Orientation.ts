@@ -35,6 +35,13 @@ export class Orientation {
      */
     private held = false;
 
+    /**
+     * Monotonic attach/detach generation. Each {@link attach} / {@link detach}
+     * bumps it so an in-flight {@link lock} can tell whether it still belongs to
+     * the current attachment (avoids a detach→reattach race claiming `held`).
+     */
+    private generation = 0;
+
     /** Demo callback for orientation changes, or null when the demo omitted the hook. */
     private onChange: ChangeHandler | null = null;
 
@@ -98,6 +105,19 @@ export class Orientation {
     }
 
     /**
+     * Calls `orientation.unlock()` and ignores failures.
+     *
+     * @param orientation - Platform orientation object to unlock.
+     */
+    private static unlockQuietly(orientation: ScreenOrientation): void {
+        try {
+            orientation.unlock();
+        } catch {
+            // Already unlocked or unlock unsupported; nothing to do.
+        }
+    }
+
+    /**
      * Installs the orientation `change` listener and optionally requests a lock.
      *
      * No-ops when the Screen Orientation API is unavailable. The lock request is
@@ -112,6 +132,9 @@ export class Orientation {
             return;
         }
 
+        this.generation += 1;
+        const generation = this.generation;
+
         this.onChange = onChange;
         this.attached = true;
         this.held = false;
@@ -119,7 +142,7 @@ export class Orientation {
         globalThis.screen.orientation.addEventListener('change', this.handleChange);
 
         if (preferred !== 'any') {
-            void this.lock(preferred);
+            void this.lock(preferred, generation);
         }
     }
 
@@ -130,6 +153,7 @@ export class Orientation {
      * because the browser does not support the Screen Orientation API).
      */
     public detach(): void {
+        this.generation += 1;
         this.attached = false;
         this.onChange = null;
 
@@ -145,12 +169,7 @@ export class Orientation {
 
         if (this.held) {
             this.held = false;
-
-            try {
-                orientation.unlock();
-            } catch {
-                // Already unlocked or unlock unsupported; nothing to do.
-            }
+            Orientation.unlockQuietly(orientation);
         }
     }
 
@@ -158,13 +177,14 @@ export class Orientation {
      * Requests an orientation lock. Never throws on failure.
      *
      * No-ops when `lock` is missing from the platform object (for example iOS Safari).
-     * If {@link detach} runs before this request resolves, the newly-acquired lock is
-     * released immediately instead of being recorded as held, so a host page lock is
-     * not cleared later by mistake.
+     * Captures the {@link attach} generation so a lock that resolves after
+     * detach→reattach is treated as stale: released when nothing newer holds a
+     * lock, and never recorded as {@link held} for the new attachment.
      *
      * @param preferred - `'landscape'` or `'portrait'` lock target.
+     * @param generation - Attach generation captured when this request started.
      */
-    private async lock(preferred: Exclude<PreferredOrientation, 'any'>): Promise<void> {
+    private async lock(preferred: Exclude<PreferredOrientation, 'any'>, generation: number): Promise<void> {
         const orientation = globalThis.screen.orientation as LockableOrientation;
         const lock = orientation.lock;
 
@@ -175,11 +195,12 @@ export class Orientation {
         try {
             await lock.call(orientation, preferred);
 
-            if (!this.attached) {
-                try {
-                    orientation.unlock();
-                } catch {
-                    // Already unlocked or unlock unsupported; nothing to do.
+            if (generation !== this.generation || !this.attached) {
+                // Stale relative to the current attach/detach cycle. Unlock only when
+                // a newer attach has not already recorded a held lock - unlocking
+                // while held would release that newer lock (unlock is process-wide).
+                if (!this.held) {
+                    Orientation.unlockQuietly(orientation);
                 }
 
                 return;

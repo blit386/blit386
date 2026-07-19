@@ -188,6 +188,77 @@ describe('Orientation', () => {
         });
     });
 
+    it('releases a stale lock after detach then reattach instead of claiming held', async () => {
+        let resolveFirstLock: (() => void) | undefined;
+        const mock = installMockOrientation();
+        mock.lock.mockImplementationOnce(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveFirstLock = resolve;
+                }),
+        );
+        mock.lock.mockImplementationOnce(async () => undefined);
+
+        const orientation = new Orientation();
+        orientation.attach('landscape', null);
+
+        await vi.waitFor(() => {
+            expect(mock.lock).toHaveBeenCalledTimes(1);
+        });
+
+        orientation.detach();
+        orientation.attach('any', null);
+
+        resolveFirstLock?.();
+
+        await vi.waitFor(() => {
+            expect(mock.unlock).toHaveBeenCalledTimes(1);
+        });
+
+        // Reattach used 'any', so detach must not unlock a lock we never held for it.
+        orientation.detach();
+
+        expect(mock.unlock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not unlock a newer held lock when a stale request resolves', async () => {
+        let resolveFirstLock: (() => void) | undefined;
+        const mock = installMockOrientation();
+        mock.lock.mockImplementationOnce(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveFirstLock = resolve;
+                }),
+        );
+        mock.lock.mockImplementationOnce(async () => undefined);
+
+        const orientation = new Orientation();
+        orientation.attach('landscape', null);
+
+        await vi.waitFor(() => {
+            expect(mock.lock).toHaveBeenCalledTimes(1);
+        });
+
+        orientation.detach();
+        orientation.attach('portrait', null);
+
+        await vi.waitFor(() => {
+            expect(mock.lock).toHaveBeenCalledTimes(2);
+        });
+
+        expect(mock.unlock).not.toHaveBeenCalled();
+
+        resolveFirstLock?.();
+
+        // Stale first lock must not unlock the second attach's held lock.
+        await Promise.resolve();
+        expect(mock.unlock).not.toHaveBeenCalled();
+
+        orientation.detach();
+
+        expect(mock.unlock).toHaveBeenCalledTimes(1);
+    });
+
     it('does not invoke the change handler after detach', () => {
         const mock = installMockOrientation();
         const onChange = vi.fn();
