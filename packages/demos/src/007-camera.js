@@ -23,8 +23,12 @@
 // more of the world.
 //
 // It also shows a mini-map in the corner that shows where in the world we currently are.
+// The title panel in the top-left corner is drawn with the shared UI kit (src/shared/ui.js),
+// so it looks the same as the info panels in every other demo.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -34,7 +38,8 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // Every color in this demo is pre-registered in a numbered palette slot.
 // Index 0 is always transparent. Custom colors start at 1.
 // We separate static colors (fixed forever) from building colors (20 random ones).
-const C_WHITE = 1; // White: font base, mini-map border, world border outline text
+// UI chrome (the title panel and the mini-map frame) uses the shared UI kit theme
+// instead, which applyTheme() installs into high palette slots (240 and up).
 const C_SKY = 2; // Sky blue: screen background
 const C_GRID = 3; // Medium green: grid lines on the ground
 const C_WORLD_BORDER = 4; // Red: rectangle around the entire world boundary
@@ -45,14 +50,10 @@ const C_BUILDING_OUTLINE = 8; // Very dark gray: building border
 const C_WINDOW = 9; // Pale yellow (semi-transparent): building windows
 const C_PLAYER = 10; // Salmon red: player square fill
 const C_PLAYER_OUTLINE = 11; // Darker red: player square border
-const C_HUD_BG = 12; // Black (semi-transparent): HUD bar behind text
-const C_TEXT_DIMMER = 14; // Dimmer white: "auto-scrolling" label on the top HUD bar
-const C_MINIMAP_BG = 15; // Black (semi-transparent): mini-map background panel
 const C_BUILDING_DOT = 16; // Blue-gray: building dot on the mini-map
 const C_VIEWPORT = 17; // Yellow: viewport rectangle on the mini-map
-const C_FPS = 18; // Gray: FPS counter text
 const C_OVERLAY_BAR = 40; // Semi-transparent bar behind overlay custom rows
-const C_OVERLAY_GREEN = 41; // Bright text for camera position in the overlay
+const C_OVERLAY_TEXT = 41; // Light gray text for camera position in the overlay
 const C_OVERLAY_AMBER = 42; // Amber accent for world size in the overlay
 
 // Each of the 20 buildings gets its own randomly chosen color stored at index 20..39.
@@ -75,6 +76,17 @@ class Demo {
     // (0,0) means the top-left corner of the world is visible.
     cameraPos = new Vector2i(0, 0);
 
+    // Where the camera was at the START of the most recent update() tick, before this
+    // tick's sine/cosine math moved it. render() blends between cameraPrevPos and
+    // cameraPos using BT.renderAlpha so the camera pans smoothly between physics ticks
+    // instead of jumping - see "Interpolating render state with renderAlpha" in the
+    // engine's docs/api-game-loop.md.
+    cameraPrevPos = new Vector2i(0, 0);
+
+    // Reused every render() call for the render-time (interpolated) camera position,
+    // so we do not allocate a new Vector2i every frame.
+    cameraRenderPos = new Vector2i(0, 0);
+
     // A stationary red square we call the "player" - it stays in place
     // while the camera moves around it.
     playerPos = new Vector2i(400, 300);
@@ -89,12 +101,16 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // It tells us which palette slots hold the kit's panel, border, and text colors.
+    theme = null;
+
     // Reused every frame for the engine overlay (camera position + world size).
     // We keep one array and update the text strings in place so we do not
     // allocate new objects on every screen refresh.
     overlayRowData = [
-        { leftText: 'Camera: (0, 0)', textPaletteIndex: C_OVERLAY_GREEN },
-        { leftText: 'World: 800x600', textPaletteIndex: C_OVERLAY_AMBER },
+        { leftText: 'Camera (0, 0)', textPaletteIndex: C_OVERLAY_TEXT },
+        { leftText: 'World 800x600', textPaletteIndex: C_OVERLAY_AMBER },
     ];
 
     // These objects are reused every frame instead of creating new ones in the draw loop.
@@ -120,16 +136,16 @@ class Demo {
             overlayPaletteRowsVisible: 2,
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
-                textPaletteIndex: C_OVERLAY_GREEN,
+                textPaletteIndex: C_OVERLAY_TEXT,
                 gapPaletteIndex: C_OVERLAY_BAR,
             },
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_OVERLAY_GREEN,
+                updateBarPaletteIndex: C_OVERLAY_TEXT,
                 renderBarPaletteIndex: C_OVERLAY_AMBER,
                 warningPaletteIndex: C_OVERLAY_AMBER,
                 errorPaletteIndex: C_OVERLAY_AMBER,
-                tagPaletteIndex: C_OVERLAY_GREEN,
+                tagPaletteIndex: C_OVERLAY_TEXT,
             },
         };
     }
@@ -148,7 +164,6 @@ class Demo {
         this.palette = BT.paletteCreate(256);
 
         // Static colors - these are the same every time the demo runs.
-        this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_SKY, new Color32(135, 206, 235)); // sky blue background
         this.palette.set(C_GRID, new Color32(100, 180, 100)); // medium green for the ground grid
         this.palette.set(C_WORLD_BORDER, new Color32(255, 0, 0)); // red world boundary rectangle
@@ -159,17 +174,18 @@ class Demo {
         this.palette.set(C_WINDOW, new Color32(255, 255, 200, 200)); // pale yellow semi-transparent window
         this.palette.set(C_PLAYER, new Color32(255, 100, 100)); // salmon red player fill
         this.palette.set(C_PLAYER_OUTLINE, new Color32(200, 50, 50)); // darker red player outline
-        this.palette.set(C_HUD_BG, new Color32(0, 0, 0, 180)); // semi-transparent black HUD bar
-        this.palette.set(C_TEXT_DIMMER, new Color32(180, 180, 180)); // dim label on the top HUD bar
-        this.palette.set(C_MINIMAP_BG, new Color32(0, 0, 0, 200)); // dark mini-map panel
         this.palette.set(C_BUILDING_DOT, new Color32(150, 150, 200)); // blue-gray dots on mini-map
         this.palette.set(C_VIEWPORT, new Color32(255, 255, 0)); // yellow viewport box on mini-map
-        this.palette.set(C_FPS, new Color32(150, 150, 150)); // gray FPS counter
 
         // Overlay colors (must match configure().overlayStyle and overlayRowData).
         this.palette.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200)); // dark bar behind custom overlay rows
-        this.palette.set(C_OVERLAY_GREEN, new Color32(200, 200, 200)); // camera position line
+        this.palette.set(C_OVERLAY_TEXT, new Color32(200, 200, 200)); // camera position line
         this.palette.set(C_OVERLAY_AMBER, new Color32(220, 180, 60)); // world size line
+
+        // Install the shared UI kit theme. applyTheme() writes twelve UI colors into
+        // high palette slots (240 and up), far above this demo's scene slots (1..42),
+        // and returns a map of slot numbers we can draw with (panel, border, text...).
+        this.theme = applyTheme(this.palette);
 
         // Tell the engine "use this palette from now on."
         BT.paletteSet(this.palette);
@@ -188,6 +204,10 @@ class Demo {
      * In a real game you would move the camera based on player input instead.
      */
     update() {
+        // Remember where the camera was before this tick's math moves it, so render()
+        // has an "old" and "new" position to blend between.
+        this.cameraPrevPos.set(this.cameraPos.x, this.cameraPos.y);
+
         // t increases slowly each tick, driving the sinusoidal movement.
         // Multiplying ticks by 0.02 makes the movement nice and slow.
         const t = BT.ticks * 0.02;
@@ -203,9 +223,42 @@ class Demo {
         // the screen to show empty space past the world's right boundary.
         this.cameraPos = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize);
 
-        // Tell the engine to offset all world-space drawing by the camera position.
-        // After this call, drawing at (0,0) will draw at the camera's top-left corner.
-        BT.cameraSet(this.cameraPos);
+        // BT.cameraSet() now happens in render(), using a position blended between
+        // cameraPrevPos and cameraPos - see renderWorld() below.
+    }
+
+    /**
+     * Runs once per screen refresh to draw the world and the UI overlay.
+     *
+     * Important: anything drawn BEFORE BT.cameraReset() is offset by the camera.
+     * Anything drawn AFTER BT.cameraReset() is drawn in screen coordinates (no offset).
+     */
+    render() {
+        // Clear the screen to sky blue.
+        BT.clear(C_SKY);
+
+        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha - a fraction from 0
+        // (a tick just finished) to just under 1 (the next tick is about to happen) -
+        // so the camera's on-screen position matches this exact render moment instead
+        // of only its last-tick position. Set it here, right before any world drawing,
+        // so every draw call this frame uses the same smoothed offset.
+        this.cameraRenderPos.set(
+            Math.floor(this.cameraPrevPos.x + (this.cameraPos.x - this.cameraPrevPos.x) * BT.renderAlpha),
+            Math.floor(this.cameraPrevPos.y + (this.cameraPos.y - this.cameraPrevPos.y) * BT.renderAlpha),
+        );
+        BT.cameraSet(this.cameraRenderPos);
+
+        // Draw all the world content (trees, buildings, player).
+        // These are offset by the camera, so they appear to scroll.
+        this.renderWorld();
+
+        // Reset the camera so the UI (text, mini-map) stays fixed on screen.
+        // Without this, the UI would scroll away when the camera moves.
+        BT.cameraReset();
+
+        // Draw the UI overlay (title, camera position, mini-map).
+        // These are drawn in screen coordinates, so they never move.
+        this.renderUI();
     }
 
     /**
@@ -221,33 +274,10 @@ class Demo {
     overlayRows() {
         // Use this.cameraPos, not BT.camera: the engine calls this hook after render(),
         // and we call BT.cameraReset() at the end of render() so screen UI stays fixed.
-        this.overlayRowData[0].leftText = `Camera: (${this.cameraPos.x}, ${this.cameraPos.y})`;
-        this.overlayRowData[1].leftText = `World: ${this.worldWidth}x${this.worldHeight}`;
+        this.overlayRowData[0].leftText = `Camera (${this.cameraPos.x}, ${this.cameraPos.y})`;
+        this.overlayRowData[1].leftText = `World ${this.worldWidth}x${this.worldHeight}`;
 
         return this.overlayRowData;
-    }
-
-    /**
-     * Runs once per screen refresh to draw the world and the UI overlay.
-     *
-     * Important: anything drawn BEFORE BT.cameraReset() is offset by the camera.
-     * Anything drawn AFTER BT.cameraReset() is drawn in screen coordinates (no offset).
-     */
-    render() {
-        // Clear the screen to sky blue.
-        BT.clear(C_SKY);
-
-        // Draw all the world content (trees, buildings, player).
-        // These are offset by the camera, so they appear to scroll.
-        this.renderWorld();
-
-        // Reset the camera so the UI (text, mini-map) stays fixed on screen.
-        // Without this, the UI would scroll away when the camera moves.
-        BT.cameraReset();
-
-        // Draw the UI overlay (title, camera position, mini-map).
-        // These are drawn in screen coordinates, so they never move.
-        this.renderUI();
     }
 
     /**
@@ -412,14 +442,20 @@ class Demo {
      * Everything here is in screen coordinates (not offset by the camera).
      */
     renderUI() {
-        // Draw a semi-transparent black bar across the top for the title area.
-        // BT.displaySize.x is the logical screen width (320 by default) - never hardcode it.
-        this.tempRect.set(0, 0, BT.displaySize.x, 40);
-        BT.drawRectFill(this.tempRect, C_HUD_BG);
+        // The title panel is built with the shared UI kit. Every widget declared
+        // between ui.begin() and ui.end() stacks into one anchored group; the kit
+        // measures the rows, draws the panel background, and places it for us.
+        // The kit draws in whatever camera space is active, so this must run AFTER
+        // BT.cameraReset() - otherwise the panel would scroll away with the world.
+        ui.begin('topLeft');
+        ui.panel('Camera Demo');
+        ui.label('Auto-scrolling camera', { color: 'dim' });
 
-        // Title and subtitle sit in screen space (camera was reset before renderUI()).
-        BT.systemPrint(new Vector2i(8, 6), C_WHITE, 'Camera Demo');
-        BT.systemPrint(new Vector2i(8, 22), C_TEXT_DIMMER, 'Auto-scrolling camera');
+        // KEY: value rows showing where the camera is looking right now and how big
+        // the world is, so you can watch the numbers change as the view drifts around.
+        ui.kv('CAMERA', `${this.cameraPos.x}, ${this.cameraPos.y}`);
+        ui.kv('WORLD', `${this.worldWidth}x${this.worldHeight}`);
+        ui.end();
 
         // Draw the mini-map in the bottom-right corner.
         this.renderMiniMap();
@@ -437,12 +473,12 @@ class Demo {
         const mapW = 90;
         const mapH = 70;
 
-        // Dark semi-transparent background for the mini-map.
+        // Background and border for the mini-map frame. The kit has no mini-map
+        // widget, so we draw this panel by hand - but we borrow the shared theme's
+        // panel and border slots so it matches the kit's look exactly.
         this.tempRect.set(mapX, mapY, mapW, mapH);
-        BT.drawRectFill(this.tempRect, C_MINIMAP_BG);
-
-        // White border around the mini-map.
-        BT.drawRect(this.tempRect, C_WHITE);
+        BT.drawRectFill(this.tempRect, this.theme.panel);
+        BT.drawRect(this.tempRect, this.theme.border);
 
         // Draw a dot for each building, scaled down to fit the mini-map.
         // We divide by worldWidth/Height to get a 0.0-1.0 fraction, then multiply

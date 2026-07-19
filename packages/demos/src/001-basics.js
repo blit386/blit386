@@ -38,8 +38,6 @@
  * Live version: https://demos.blit386.dev/001-basics
  */
 
-// @pageTitle BLIT386 Demo 001 - Basics
-
 /**
  * "import" loads tools from the BLIT386 engine library.
  * Think of it like opening a toolbox before you start building.
@@ -55,6 +53,21 @@ import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
 // so they all look the same. applyTheme() installs the kit's colors into our palette, and
 // ui.* draws things like the hint label you see in the top-left corner.
 import { applyTheme, ui } from './shared/ui.js';
+
+/**
+ * These @typedef lines tell code editors what types we mean when we write
+ * Palette, SpriteSheet, and so on. They do not change how the demo runs.
+ * IBTDemo is the contract that says a demo needs init, update, and render.
+ * configure() and overlayRows() are optional extras (this demo uses both).
+ * If you skip configure(), the engine uses defaults: 320x240 logical pixels,
+ * 640x480 canvas, 60 updates per second.
+ */
+/** @typedef {import('blit386').IBTDemo} IBTDemo */
+
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
+/** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
+/** @typedef {import('blit386').Rect2i} Rect2i */
 
 // BLIT386 uses a "palette" - a numbered list of colors you choose BEFORE drawing.
 // Think of it like an artist picking paint colors and laying them on a palette tray
@@ -77,21 +90,6 @@ const SPRITE_BASE = 10;
 // Path to the sprite image. The "public" folder contents are served at the
 // site root, so /sprites/logo-1.png maps to public/sprites/logo-1.png on disk.
 const SPRITE_URL = '/sprites/logo-1.png';
-
-/**
- * These @typedef lines tell code editors what types we mean when we write
- * Palette, SpriteSheet, and so on. They do not change how the demo runs.
- * IBTDemo is the contract that says a demo needs init, update, and render.
- * configure() and overlayRows() are optional extras (this demo uses both).
- * If you skip configure(), the engine uses defaults: 320x240 logical pixels,
- * 640x480 canvas, 60 updates per second.
- */
-/** @typedef {import('blit386').IBTDemo} IBTDemo */
-
-/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
-/** @typedef {import('blit386').Palette} Palette */
-/** @typedef {import('blit386').SpriteSheet} SpriteSheet */
-/** @typedef {import('blit386').Rect2i} Rect2i */
 
 /**
  * Bouncing-sprite demo - a friendly first BLIT386 demo.
@@ -145,9 +143,11 @@ class Demo {
     // "prevPos" remembers where the sprite was at the START of the most recent
     // update() tick, before that tick moved it. render() uses this together with
     // BT.renderAlpha to draw the sprite smoothly between ticks - see the big comment
-    // above render() below for the full explanation. It starts as a copy of pos;
-    // init() updates it again once the real starting position is known.
-    prevPos = new Vector2i(160, 120);
+    // above render() below for the full explanation. It starts equal to pos (both
+    // point at the same placeholder above) so the very first render() has nothing
+    // to blend between; init() updates both again once the real starting position
+    // is known.
+    prevPos = this.pos;
 
     // "size" is how big the sprite is: we start with 16x16 as a guess.
     // We update this from the loaded image in init() so the bounce
@@ -391,24 +391,6 @@ class Demo {
     }
 
     /**
-     * Optional hook: feeds extra text rows into the engine overlay (not the game canvas).
-     *
-     * The overlay is the HUD the engine draws after render(): FPS, demo title, timing chart,
-     * palette grid, and these custom rows. Toggle it with the ~ key (Backquote on the
-     * keyboard) or by clicking/tapping the symbol in the bottom-left corner.
-     * Each row here is plain text plus a palette index for its color.
-     * We reuse overlayRowData every frame and only rewrite the strings - no new arrays.
-     *
-     * @returns {readonly { leftText: string, textPaletteIndex: number }[]}
-     */
-    overlayRows() {
-        this.overlayRowData[0].leftText = `Position (${this.pos.x}, ${this.pos.y})`;
-        this.overlayRowData[1].leftText = `Bounces ${this.bounces}`;
-
-        return this.overlayRowData;
-    }
-
-    /**
      * Called once per screen refresh to draw everything.
      *
      * render() runs AFTER update(). By the time render() is called, all
@@ -479,6 +461,24 @@ class Demo {
         // Live stats (position, bounce count) come from overlayRows() in the engine HUD.
         // The overlay also shows FPS, backend, and this demo's page title - we do not
         // duplicate those strings here.
+    }
+
+    /**
+     * Optional hook: feeds extra text rows into the engine overlay (not the game canvas).
+     *
+     * The overlay is the HUD the engine draws after render(): FPS, demo title, timing chart,
+     * palette grid, and these custom rows. Toggle it with the ~ key (Backquote on the
+     * keyboard) or by clicking/tapping the symbol in the bottom-left corner.
+     * Each row here is plain text plus a palette index for its color.
+     * We reuse overlayRowData every frame and only rewrite the strings - no new arrays.
+     *
+     * @returns {readonly { leftText: string, textPaletteIndex: number }[]}
+     */
+    overlayRows() {
+        this.overlayRowData[0].leftText = `Position (${this.pos.x}, ${this.pos.y})`;
+        this.overlayRowData[1].leftText = `Bounces ${this.bounces}`;
+
+        return this.overlayRowData;
     }
 }
 

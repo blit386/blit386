@@ -32,11 +32,14 @@ blit386-demos/
     shared/                    # Shared UI kit + cross-demo helpers (38 of 39 demos import it; 018-flurry is the exception)
       ui.js                    # The one entry point demos import: applyTheme() + the ui object
       ui-core.js               # Immediate-mode context: anchors, layout, pooled draws, hit testing
-      ui-widgets.js            # panel, label, kv, checkbox, pip, button, slider, meter, separator, spacer
+      ui-widgets.js            # panel, label, caption, kv, checkbox, pip, button, slider, meter,
+                               #   separator, spacer, audioUnlockHint
       ui-theme.js              # applyTheme(palette) – installs the 12 shared UI colors (slots 240-251)
       ui-dpad.js               # Virtual touch D-pad (ui.dpadWidget, ui.dpad.isDown / isPressed)
       ui-gestures.js           # Swipe recognition (ui.swipe) and tap zones (ui.tapIn)
       post-process-backend.js  # isAvailable() + SOFTWARE_FALLBACK_NOTE (WebGPU-only effect demos)
+      rand.js                  # randInt, randIntInclusive, randFloat, randPick (shared random helpers)
+      canvas-sprites.js        # canvasToImage() + registerCanvasColors() for canvas-built sprite sheets
   public/                      # Static assets copied to dist/ verbatim
     fonts/                     # Bitmap fonts (.btfont + .png) and DepartureMono/ (otf/woff/woff2 + LICENSE,
                                #   the web font used by the demo navigation banner)
@@ -409,8 +412,10 @@ ui.kv('State', label);
 ui.pip('A held', isHeld); // read-only indicator
 ui.meter('Level', fraction);
 ui.label('hint', { color: 'dim' }); // roles: text/dim/header/accent/warm/info
+ui.audioUnlockHint(); // audio demos: standard "enable sound" row, auto-hides once unlocked
 ui.end();
 
+ui.caption(x, y, 'Pixels'); // pinned one-line caption (default amber); no begin()/end() needed
 ui.dpadWidget(); // self-contained touch D-pad (outside begin/end); shows after first touch
 ```
 
@@ -427,7 +432,7 @@ keyboard/gamepad" label when `ui.hasTouch()` is true.
 
 The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
 The overlay body starts hidden; a bitmap toggle hint sits in the bottom-left corner by default. Toggle the body with
-Backquote or a primary press in the bottom-left 48x48 px corner. Use `isOverlayVisibleAtStart: true` to show the body on
+Backquote or a primary press in the bottom-left 17x13 px corner. Use `isOverlayVisibleAtStart: true` to show the body on
 the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still toggles
 with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
 `isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem

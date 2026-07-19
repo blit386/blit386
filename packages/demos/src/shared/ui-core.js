@@ -38,7 +38,7 @@ const FONT_W = 6;
 
 // Standard row height: one font cell plus two pixels of breathing room. Buttons are a
 // little taller so they read as pressable and give fingers a bigger target.
-const ROW_H = 16;
+const ROW_H = 10;
 const BUTTON_H = 18;
 
 // Default inner padding between a panel's border and its content, and default margin
@@ -418,7 +418,7 @@ class UiContext {
         if (this.isTopBar) {
             bottomPad = this.cursorY > 22 ? 4 : 0;
         } else if (this.hasPanel) {
-            bottomPad = 4;
+            bottomPad = 12;
         }
 
         const groupH = this.cursorY + bottomPad;
@@ -435,7 +435,7 @@ class UiContext {
      *
      * @param {import('blit386').Vector2i} display - The logical display size.
      * @param {number} groupW - The group's final width.
-     * @returns {number|null}
+     * @returns {number}
      */
     resolveOriginX(display, groupW) {
         if (this.groupOptX !== null) {
@@ -458,7 +458,7 @@ class UiContext {
      *
      * @param {import('blit386').Vector2i} display - The logical display size.
      * @param {number} groupH - The group's final height.
-     * @returns {number|null}
+     * @returns {number}
      */
     resolveOriginY(display, groupH) {
         if (this.groupOptY !== null) {

@@ -1,5 +1,3 @@
-// @pageTitle BLIT386 Demo 017 - Palette Swap
-//
 // Demo 017 - Palette Swap: change the active palette at runtime to switch color themes.
 //
 // Demo 017 in the BLIT386 series (written for readers about 12 years old).
@@ -41,11 +39,17 @@
 // We demonstrate it as a call with no visual side-effect and explain when it matters.
 //
 // WHAT YOU WILL SEE:
-//   Left column: four theme buttons showing each theme's color set.
+//   Left column: a legend of the four themes, each with its own color swatch.
 //   Center: one large sprite that changes theme every 2 seconds.
 //   Right: code snippet showing how to build and swap palettes.
+//
+// All captions and the code column are drawn with the shared UI kit (src/shared/ui.js).
+// Because this demo swaps the WHOLE palette every 2 seconds, every theme palette must
+// carry the same UI kit colors in the same slots - see buildTheme() for the details.
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -59,20 +63,23 @@ const SWAP_PERIOD_TICKS = 120;
 // Where in the palette the sprite's base colors begin.
 const COLOR_BASE = 10;
 
-// Static representative swatches for each theme (one color each, for the theme buttons).
-// These stay the same across ALL theme palettes so the buttons look stable.
+// Static representative swatches for each theme (one color each, for the theme legend).
+// These stay the same across ALL theme palettes so the legend looks stable.
 const SWATCH_STONE = 30;
 const SWATCH_FIRE = 31;
 const SWATCH_ICE = 32;
 const SWATCH_VOID = 33;
 
-// UI color slots (same in every theme palette).
-const C_WHITE = 1;
-const C_BG = 2;
-const C_LABEL = 3;
-const C_HEADER = 4;
-const C_CODE = 5;
-const C_DIM = 6;
+// Engine overlay color slots (same in every theme palette).
+// The overlay style is declared in configure(), which runs BEFORE init(), so it
+// needs fixed slot NUMBERS known ahead of time. buildTheme() writes the same
+// colors into these slots in all four palettes so the overlay never shifts color
+// when the theme swaps.
+const C_OVERLAY_BAR = 40; // Dark navy bar behind overlay text rows.
+const C_OVERLAY_GOLD = 41; // Golden overlay text and update-timing bars.
+const C_OVERLAY_BLUE = 42; // Blue-gray render-timing bars and chart tags.
+const C_OVERLAY_DIM = 43; // Dim purple-gray chart warnings.
+const C_OVERLAY_GRAY = 44; // Light gray chart error bars.
 
 /**
  * Demonstrates palette swap: building multiple palettes and switching between them
@@ -108,6 +115,11 @@ class Demo {
     // Fires every 120 ticks (2 seconds) to switch to the next theme.
     swapTimer = new Timer(SWAP_PERIOD_TICKS);
 
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // Maps friendly names (bg, text, dim, header, accent, info, ...) to slot numbers.
+    /** @type {ReturnType<typeof applyTheme> | null} */
+    theme = null;
+
     /**
      * Timing chart helps compare CPU cost while palettes swap on a timer.
      *
@@ -117,16 +129,16 @@ class Demo {
         return {
             isOverlayTimingChartEnabled: true,
             overlayStyle: {
-                barPaletteIndex: C_BG,
-                textPaletteIndex: C_HEADER,
-                gapPaletteIndex: C_BG,
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_OVERLAY_GOLD,
+                gapPaletteIndex: C_OVERLAY_BAR,
             },
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: C_HEADER,
-                renderBarPaletteIndex: C_CODE,
-                warningPaletteIndex: C_DIM,
-                errorPaletteIndex: C_LABEL,
-                tagPaletteIndex: C_CODE,
+                updateBarPaletteIndex: C_OVERLAY_GOLD,
+                renderBarPaletteIndex: C_OVERLAY_BLUE,
+                warningPaletteIndex: C_OVERLAY_DIM,
+                errorPaletteIndex: C_OVERLAY_GRAY,
+                tagPaletteIndex: C_OVERLAY_BLUE,
             },
         };
     }
@@ -160,6 +172,9 @@ class Demo {
         console.log(`[PaletteSwapDemo] Found ${this.colorCount} unique sprite colors`);
 
         // Steps 2 & 3: Build all four theme palettes
+        // buildTheme() also installs the shared UI kit colors (slots 240-251) into
+        // EVERY palette and stores the returned slot map in this.theme, so the kit
+        // keeps its colors no matter which theme palette is active.
         this.themes = [
             this.buildTheme('stone'), // Original rock colors.
             this.buildTheme('fire'), // Warm reds and oranges.
@@ -222,54 +237,59 @@ class Demo {
     }
 
     /**
-     * Draws the theme buttons, cycling sprite, and code panel.
+     * Draws the theme legend, cycling sprite, and code column.
      * NO Color32 objects appear in draw calls - only palette indices and offsets.
      */
     render() {
-        // Clear to the background color (slot 2 = dark bg, same in all theme palettes).
-        BT.clear(C_BG);
-
-        if (!this.sheet || !this.charSprite) {
-            BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'Loading...');
-            return;
-        }
+        // Clear to the shared UI theme background (same slot in all theme palettes).
+        BT.clear(this.theme.bg);
 
         // Draw the three main sections.
-        this.renderThemeButtons();
+        this.renderThemeLegend();
         this.renderCyclingSprite();
         this.renderCodePanel();
     }
 
     /**
-     * Draws four labeled theme buttons on the left side of the screen.
-     * Each button shows a color swatch (from a stable static slot) and the theme name.
+     * Draws the four-entry theme legend on the left side of the screen.
+     * Each entry shows a color swatch (from a stable static slot) and the theme name.
      * A highlight box shows which theme is currently active.
+     *
+     * The swatch squares use this demo's own scene slots (30..33), which the UI kit
+     * cannot draw, so the legend rows stay hand-rolled - but their text and outline
+     * use the shared theme slots so the colors match the rest of the UI.
      */
-    renderThemeButtons() {
+    renderThemeLegend() {
         const startY = 20;
-        const btnH = 20;
-        const btnW = 70;
+        const entryH = 20;
+        const entryW = 70;
         const gap = 4;
 
         for (let i = 0; i < this.themes.length; i++) {
-            const btnY = startY + i * (btnH + gap);
+            const entryY = startY + i * (entryH + gap);
 
-            // Highlight box around the active theme.
+            // Highlight box around the active theme, in the kit's "active" green accent.
             if (i === this.currentTheme) {
-                BT.drawRect(new Rect2i(4, btnY - 1, btnW, btnH + 2), C_LABEL);
+                BT.drawRect(new Rect2i(4, entryY - 1, entryW, entryH + 2), this.theme.accent);
             }
 
             // Color swatch dot: a small filled square using the representative swatch slot.
             // These slots (30..33) are the SAME in every theme palette, so the dots never change.
-            BT.drawRectFill(new Rect2i(8, btnY + 4, 12, 12), SWATCH_STONE + i);
+            BT.drawRectFill(new Rect2i(8, entryY + 4, 12, 12), SWATCH_STONE + i);
 
             // Theme name. systemPrint takes (position, paletteIndex, text).
-            BT.systemPrint(new Vector2i(24, btnY + 4), C_LABEL, this.themeNames[i]);
+            // The active theme's name is bright; the other names are dimmed.
+            const nameSlot = i === this.currentTheme ? this.theme.text : this.theme.dim;
+            BT.systemPrint(new Vector2i(24, entryY + 4), nameSlot, this.themeNames[i]);
         }
 
-        // Section heading below the buttons.
-        BT.systemPrint(new Vector2i(6, 120), C_LABEL, 'Themes:');
-        BT.systemPrint(new Vector2i(6, 132), C_DIM, '2 s each');
+        // Section caption below the legend, drawn as a borderless kit group.
+        // Passing x and y to ui.begin() pins the group's top-left corner exactly
+        // there, so the caption sits right under the last legend entry.
+        ui.begin('topLeft', { x: 0, y: 113 });
+        ui.label('Themes:', { color: 'header' });
+        ui.label('2 s each', { color: 'dim' });
+        ui.end();
     }
 
     /**
@@ -278,10 +298,6 @@ class Demo {
      * which contains the current theme's colors in whichever palette is active.
      */
     renderCyclingSprite() {
-        if (!this.sheet || !this.charSprite) {
-            return;
-        }
-
         const spriteX = 90;
         const spriteY = 30;
 
@@ -289,55 +305,63 @@ class Demo {
         // Offset 0 means: draw using palette slots starting at the sprite's base index.
         BT.drawSprite(this.sheet, this.charSprite, new Vector2i(spriteX, spriteY), 0);
 
-        // Label below the sprite. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(
-            new Vector2i(spriteX, spriteY + this.charSprite.height + 8),
-            C_HEADER,
-            `Theme: ${this.themeNames[this.currentTheme]}`,
-        );
+        // Captions below the sprite, drawn as a borderless kit group pinned right
+        // under the artwork. The group's inner padding (6 px) shifts its text right
+        // and down a little, so the pin point compensates by starting 6 px to the
+        // left of the sprite and just 1 px below it.
+        ui.begin('topLeft', { x: spriteX - 6, y: spriteY + this.charSprite.height + 1 });
 
-        // Explain offset 0.
-        BT.systemPrint(new Vector2i(spriteX, spriteY + this.charSprite.height + 20), C_CODE, 'drawSprite offset = 0');
-        BT.systemPrint(
-            new Vector2i(spriteX, spriteY + this.charSprite.height + 32),
-            C_CODE,
-            `slots ${COLOR_BASE}..${COLOR_BASE + this.colorCount - 1}`,
-        );
+        // Which theme the sprite is currently drawn with.
+        ui.label(`Theme: ${this.themeNames[this.currentTheme]}`, { color: 'header' });
+
+        // Explain the draw call: BT.drawSprite() above passes palette offset 0, so
+        // the sprite reads its colors straight from slots COLOR_BASE and up.
+        ui.label('offset = 0', { color: 'info' });
+        ui.label(`slots ${COLOR_BASE}..${COLOR_BASE + this.colorCount - 1}`, { color: 'info' });
+
+        ui.end();
     }
 
     /**
-     * Draws a code snippet on the right side showing how palette swap works.
+     * Draws a code snippet column on the right side showing how palette swap works.
+     * A borderless kit group (no ui.panel call) keeps the original loose-text look:
+     * dim lines are code comments, blue "info" lines are the code itself.
      */
     renderCodePanel() {
-        const x = 200;
-        const startY = 20;
+        ui.begin('topRight');
 
-        BT.systemPrint(new Vector2i(x, startY), C_LABEL, 'How it works:');
-        BT.systemPrint(new Vector2i(x, startY + 14), C_CODE, '// Build palettes');
-        BT.systemPrint(new Vector2i(x, startY + 26), C_CODE, 'stone = clone()');
-        BT.systemPrint(new Vector2i(x, startY + 38), C_CODE, 'fire = clone()');
-        BT.systemPrint(new Vector2i(x, startY + 50), C_CODE, 'fire.set(10, red)');
+        ui.label('How it works:', { color: 'header' });
+        ui.label('// Build palettes', { color: 'dim' });
+        ui.label('stone = clone()', { color: 'info' });
+        ui.label('fire = clone()', { color: 'info' });
+        ui.label('fire.set(10, red)', { color: 'info' });
+        ui.spacer();
 
-        BT.systemPrint(new Vector2i(x, startY + 70), C_LABEL, '// Swap theme');
-        BT.systemPrint(new Vector2i(x, startY + 82), C_CODE, 'BT.paletteSet(');
-        BT.systemPrint(new Vector2i(x, startY + 94), C_CODE, '  firePalette)');
+        ui.label('// Swap theme', { color: 'dim' });
+        ui.label('BT.paletteSet(', { color: 'info' });
+        ui.label('  firePalette)', { color: 'info' });
+        ui.spacer();
 
-        BT.systemPrint(new Vector2i(x, startY + 114), C_LABEL, '// Sync sprites');
-        BT.systemPrint(new Vector2i(x, startY + 126), C_CODE, '// (when layout');
-        BT.systemPrint(new Vector2i(x, startY + 138), C_CODE, '// changes)');
-        BT.systemPrint(new Vector2i(x, startY + 150), C_CODE, 'BT.spritesRefresh()');
+        // spritesRefresh() only matters when the new palette moves colors to
+        // DIFFERENT slot numbers - see the header comment at the top of this file.
+        ui.label('// Sync sprites', { color: 'dim' });
+        ui.label('BT.spritesRefresh()', { color: 'info' });
+        ui.spacer();
 
-        BT.systemPrint(new Vector2i(x, startY + 170), C_LABEL, '// Snapshot:');
-        BT.systemPrint(new Vector2i(x, startY + 182), C_CODE, 'copy = pal.clone()');
+        ui.label('// Snapshot:', { color: 'dim' });
+        ui.label('copy = pal.clone()', { color: 'info' });
+
+        ui.end();
     }
 
     /**
      * Builds a complete Palette for the given theme name.
      *
      * Every palette has the SAME slot layout:
-     *   Slots 1..9:    UI colors (white, background, labels - identical in all palettes).
-     *   Slots 10..N:   Sprite colors for this theme (different RGBA per theme).
-     *   Slots 30..33:  Representative swatch color per theme (identical in all palettes).
+     *   Slots 10..N:    Sprite colors for this theme (different RGBA per theme).
+     *   Slots 30..33:   Representative swatch color per theme (identical in all palettes).
+     *   Slots 40..44:   Engine overlay colors (identical in all palettes).
+     *   Slots 240..251: Shared UI kit theme colors (identical in all palettes).
      *
      * Because the sprite slot NUMBERS (10..N) are the same in every palette,
      * the sprite sheet does not need re-indexization when we swap themes.
@@ -350,57 +374,70 @@ class Demo {
     buildTheme(themeName) {
         const palette = BT.paletteCreate(256);
 
-        // Static UI colors (same in every palette)
-        // applyHUD(1) fills the six standard HUD slots. Slot 1 (white) is used
-        // directly. Slots 2-6 are overridden with this demo's values, which use
-        // a dark navy instead of the preset's dark purple, and slightly different
-        // shades for labels, header, code, and FPS dim text.
-        palette.applyHUD(1);
-        palette.set(C_BG, new Color32(16, 18, 28)); // Dark navy background.
-        palette.set(C_LABEL, new Color32(180, 180, 180)); // Gray labels.
-        palette.set(C_HEADER, new Color32(255, 210, 80)); // Golden header.
-        palette.set(C_CODE, new Color32(100, 155, 210)); // Blue-gray code.
-        palette.set(C_DIM, new Color32(80, 80, 100)); // Dim FPS text.
+        // Shared UI kit colors (same in every palette)
+        // applyTheme() writes the twelve kit colors into high slots (240-251), far
+        // above this demo's scene slots, and returns a map of slot numbers.
+        // CRITICAL for this demo: BT.paletteSet() replaces the ENTIRE palette, so
+        // if only one theme palette carried the UI colors, all the text and panels
+        // would turn black after the first swap. Installing the same colors at the
+        // same slots in all four palettes keeps the UI rock-steady across swaps.
+        this.theme = applyTheme(palette);
+
+        // Engine overlay colors (same in every palette)
+        // These must match the slot numbers used in configure().overlayStyle above.
+        palette.set(C_OVERLAY_BAR, new Color32(16, 18, 28)); // Dark navy bar background.
+        palette.set(C_OVERLAY_GOLD, new Color32(255, 210, 80)); // Golden overlay text.
+        palette.set(C_OVERLAY_BLUE, new Color32(100, 155, 210)); // Blue-gray chart bars.
+        palette.set(C_OVERLAY_DIM, new Color32(80, 80, 100)); // Dim chart warnings.
+        palette.set(C_OVERLAY_GRAY, new Color32(180, 180, 180)); // Gray chart error bars.
 
         // Sprite colors for this theme
         // We take the original stone RGBA values from baseColors and apply a tint.
-        // The tint depends on the theme name.
+        // tintColor() below picks the right recipe for the theme name.
         for (let i = 0; i < this.baseColors.length; i++) {
-            const base = this.baseColors[i];
-            let tinted;
-
-            if (themeName === 'stone') {
-                // Original colors - no tint.
-                tinted = base;
-            } else if (themeName === 'fire') {
-                // Warm: boost red, reduce blue.
-                tinted = new Color32(Math.min(255, base.r + 70), Math.max(0, base.g - 20), Math.max(0, base.b - 90));
-            } else if (themeName === 'ice') {
-                // Cool: boost blue, reduce red.
-                tinted = new Color32(Math.max(0, base.r - 70), Math.min(255, base.g + 20), Math.min(255, base.b + 90));
-            } else {
-                // void: desaturate and shift toward green.
-                const luma = Math.floor(base.luminance);
-                tinted = new Color32(
-                    Math.floor(luma * 0.4),
-                    Math.min(255, Math.floor(luma * 0.8 + 20)),
-                    Math.floor(luma * 0.4),
-                );
-            }
-
             // Register the tinted color at the SAME slot number regardless of theme.
-            palette.set(COLOR_BASE + i, tinted);
+            palette.set(COLOR_BASE + i, this.tintColor(this.baseColors[i], themeName));
         }
 
         // Representative swatch colors (same in every palette)
-        // These are used for the theme buttons on the left side.
-        // They do NOT change with the theme so the buttons always show all four options.
+        // These are used for the theme legend on the left side.
+        // They do NOT change with the theme so the legend always shows all four options.
         palette.set(SWATCH_STONE, new Color32(130, 120, 110)); // Warm gray for stone.
         palette.set(SWATCH_FIRE, new Color32(220, 80, 20)); // Orange-red for fire.
         palette.set(SWATCH_ICE, new Color32(80, 160, 220)); // Sky blue for ice.
         palette.set(SWATCH_VOID, new Color32(40, 90, 50)); // Dim green for void.
 
         return palette;
+    }
+
+    /**
+     * Applies one theme's tint to a single base color.
+     * A "tint" is a simple recipe: nudge the red, green, and blue channels up or
+     * down, clamped to the valid 0..255 range so the math never overflows.
+     *
+     * @param {Color32} base - The original stone color from the sprite.
+     * @param {'stone'|'fire'|'ice'|'void'} themeName - Which tint recipe to apply.
+     * @returns {Color32} The tinted color for this theme.
+     */
+    tintColor(base, themeName) {
+        if (themeName === 'stone') {
+            // Original colors - no tint.
+            return base;
+        }
+
+        if (themeName === 'fire') {
+            // Warm: boost red, reduce blue.
+            return new Color32(Math.min(255, base.r + 70), Math.max(0, base.g - 20), Math.max(0, base.b - 90));
+        }
+
+        if (themeName === 'ice') {
+            // Cool: boost blue, reduce red.
+            return new Color32(Math.max(0, base.r - 70), Math.min(255, base.g + 20), Math.min(255, base.b + 90));
+        }
+
+        // void: desaturate and shift toward green.
+        const luma = Math.floor(base.luminance);
+        return new Color32(Math.floor(luma * 0.4), Math.min(255, Math.floor(luma * 0.8 + 20)), Math.floor(luma * 0.4));
     }
 }
 

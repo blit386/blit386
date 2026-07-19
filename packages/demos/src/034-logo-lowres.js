@@ -5,22 +5,26 @@
 // Written for readers about 12 years old.
 //
 // What you will see:
-//   - The logo sprite from Demo 001-Basics centered on a tiny 160x120 pixel canvas.
-//     That is a quarter of the usual 320x240 - close to old Game Boy territory.
-//   - The engine upscales that 160x120 picture 4x to 640x480 using nearest-neighbor
-//     filtering, so each logical pixel becomes a big hard-edged 4x4 block.
+//   - The logo sprite from Demo 001-Basics centered on a tiny 80x60 pixel canvas.
+//     That is one quarter of the usual 320x240 in each direction - even smaller
+//     than an old Game Boy screen (160x144).
+//   - The engine upscales that 80x60 picture 3x to 240x180 using nearest-neighbor
+//     filtering, so each logical pixel becomes a big hard-edged 3x3 block.
 //   - On top of that upscaled image the engine runs the Tesla Orava B/W CRT stack:
 //     scanlines, a bright scrolling roll band (RollLine),
 //     light noise, brightness waver (Flicker), soft RGB halation (RGBMask), a gentle
 //     vignette, soft bloom, and occasional analog-TV fault bursts (horizontal hold,
 //     snow, dimming, ghosting, vertical roll).
+//   - A tiny status chip in the bottom-left corner, drawn with the shared UI kit
+//     (src/shared/ui.js), names the TV fault that is firing right now. It is part
+//     of the picture, so the CRT effects wash over it too.
 //   - Post-process needs WebGPU. The software renderer shows the logo without CRT.
 //
 // Why upscale first and then add CRT?
-//   The engine renders the 160x120 palette-indexed picture into a 640x480 RGBA buffer
+//   The engine renders the 80x60 palette-indexed picture into a 240x180 RGBA buffer
 //   (the drawingBufferSize step). The CRT effects run AFTER that, on the RGBA buffer,
-//   so they see 640x480 pixels and can paint convincing curved-tube scanlines across
-//   the whole frame - even though the game itself only used 160x120 logical pixels.
+//   so they see 240x180 pixels and can paint convincing curved-tube scanlines across
+//   the whole frame - even though the game itself only used 80x60 logical pixels.
 //
 // Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
 //                010-Sprite Effects (https://demos.blit386.dev/010-sprite-effects).
@@ -45,7 +49,9 @@ import {
     Vignette,
 } from 'blit386';
 
-import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable } from './shared/post-process-backend.js';
+import { randFloat, randInt, randPick } from './shared/rand.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -66,12 +72,12 @@ import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backe
 // --- Screen dimensions ---
 
 // The logical drawing area where BT.draw* calls happen.
-// 160x120 is our tiny retro resolution - close to Game Boy (160x144).
+// 80x60 is our tiny retro resolution - even smaller than a Game Boy screen (160x144).
 const DISPLAY_W = 80;
 const DISPLAY_H = 60;
 
-// The final output size. The engine stretches the 160x120 picture up to 640x480
-// (exactly 4x) before the CRT effects run. Each logical pixel becomes a 4x4 block.
+// The intermediate buffer size. The engine stretches the 80x60 picture up to 240x180
+// (exactly 3x) before the CRT effects run. Each logical pixel becomes a 3x3 block.
 const OUTPUT_W = 240;
 const OUTPUT_H = 180;
 
@@ -79,8 +85,8 @@ const OUTPUT_H = 180;
 
 // Index 0 is always transparent. Our own colors start at index 1.
 // Think of these numbers as labels on paint jars laid out before painting.
-const C_BG = 1; // Dark background color.
-const C_LABEL = 2; // Text color for the overlay HUD rows.
+// The shared UI kit adds its own 12 colors at slots 240-251 in init().
+const C_BG = 1; // Light gray background color.
 const SPRITE_BASE = 3; // First palette slot reserved for the logo's own colors.
 
 // --- Sprite sources ---
@@ -89,12 +95,13 @@ const SPRITE_URL = '/sprites/logo-1.png';
 // --- Orava CRT constants ---
 // These numbers control the base look of the old B/W CRT effect.
 
-// A bright band scrolls top-to-bottom on a real CRT (caused by the tube's electron beam).
-// ROLL_BASE is how bright the band appears; ROLL_SPEED is how fast it moves.
 const FLICKER_BASE = 1.0; // Normal brightness (1.0 = full, lower = dimmer).
 const FLICKER_DIP = 0.78; // How dark the screen gets during a "dim" TV fault.
 const ABERRATION_BASE = 0; // No chromatic offset when the set is working correctly.
 const NOISE_BASE = 0.038; // Slight film-grain noise: always present on a real CRT.
+
+// A bright band scrolls top-to-bottom on a real CRT (caused by the tube's electron beam).
+// ROLL_BASE is how bright the band appears; ROLL_SPEED is how fast it moves.
 const ROLL_BASE = 0.26; // Brightness of the scrolling highlight band.
 const ROLL_SPEED = 0.92; // Scroll speed of the band (higher = faster).
 const INTERFERENCE_BASE = 0; // No ghost image when the set is tuned correctly.
@@ -113,7 +120,7 @@ const GLITCH_INTENSITY_MAX = 0.95; // Strongest fault (almost unwatchable).
 // (Chromatic aberration is omitted because a B/W set has no color to split.)
 const GLITCH_TYPES = ['hshift', 'noise', 'flicker', 'interference', 'vroll'];
 
-// Human-readable names shown in the overlay HUD.
+// Human-readable names shown in the on-screen status chip.
 const GLITCH_LABELS = {
     none: 'NONE',
     hshift: 'H-HOLD',
@@ -132,46 +139,8 @@ const BAND_WOBBLE_ACTIVE_MIN = 3; // Wobble lasts at least 3 ticks (~0.05 s).
 const BAND_WOBBLE_ACTIVE_MAX = 10; // Wobble lasts up to 10 ticks (~0.17 s).
 const BAND_WOBBLE_INTENSITY = 0.11; // Peak strength - much milder than a full TV fault.
 
-// --- Helper functions ---
-
 /**
- * Returns a random whole number between min (inclusive) and max (exclusive).
- * Used throughout the TV-fault timing system so faults do not feel mechanical.
- *
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randInt(min, max) {
-    return min + Math.floor(Math.random() * (max - min));
-}
-
-/**
- * Returns a random decimal number between min and max.
- * Used to pick the intensity of each TV fault (how bad the signal is).
- *
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randFloat(min, max) {
-    return min + Math.random() * (max - min);
-}
-
-/**
- * Picks one element at random from an array.
- * Used to choose which kind of TV fault fires next.
- *
- * @template T
- * @param {readonly T[]} arr
- * @returns {T}
- */
-function randPick(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-/**
- * The BLIT386 logo centered on a 160x120 pixel canvas, upscaled 4x,
+ * The BLIT386 logo centered on an 80x60 pixel canvas, upscaled 3x,
  * and wrapped in the Tesla Orava B/W CRT post-process stack.
  *
  * @implements {IBTDemo}
@@ -231,13 +200,13 @@ class Demo {
 
     // --- TV fault state machine ---
     // glitchCooldown counts down ticks until the next fault fires.
-    // glitchActive counts down ticks while a fault is running.
+    // glitchTicksLeft counts down ticks while a fault is running.
     // glitchDuration remembers how long the current fault was supposed to last
     //   (used to compute a smooth 0..1 envelope so faults ease in and out).
     // glitchType is a string like 'hshift' saying which fault is active.
     // glitchPeak is how strong this particular fault burst is (0..1).
     glitchCooldown = 0;
-    glitchActive = 0;
+    glitchTicksLeft = 0;
     glitchDuration = 0;
     glitchType = 'none';
     glitchPeak = 0;
@@ -248,33 +217,26 @@ class Demo {
     bandWobbleDuration = 0;
     bandWobbleSeed = 0;
 
-    // Two text rows shown in the engine overlay HUD (toggle with Backquote / bottom-left corner).
-    // We reuse the same array every frame and only update the strings inside it,
-    // so we are not creating new objects on every screen refresh.
-    overlayRowData = [
-        { leftText: 'Orava CRT: OFF', textPaletteIndex: C_LABEL },
-        { leftText: 'TV fault: NONE', textPaletteIndex: C_LABEL },
-    ];
-
     /**
-     * Called once at startup. Sets the screen resolution, upscale size, and
-     * nearest-neighbor filter, then enables the overlay timing chart.
+     * Called once at startup. Sets the tiny screen resolution, the 3x upscale
+     * buffer, and the nearest-neighbor filter, and turns the engine overlay off.
      *
      * @returns {Partial<HardwareSettings>}
      */
     configure() {
         return {
-            // Tiny 160x120 logical canvas.
+            // Tiny 80x60 logical canvas.
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
 
-            // 4x upscale to 640x480. CRT effects run on this larger buffer.
+            // 3x upscale to 240x180. CRT effects run on this larger buffer.
             drawingBufferSize: new Vector2i(OUTPUT_W, OUTPUT_H),
 
             // Keep each logical pixel as a crisp hard-edged square.
             // The CRT effects layer on top and add the soft, curved-glass look.
             outputUpscaleFilter: 'nearest',
 
-            // Overlay disabled so nothing draws over the CRT image.
+            // Engine overlay disabled so its HUD never covers the CRT image.
+            // The small kit status chip drawn in render() takes over its job.
             isOverlayEnabled: false,
         };
     }
@@ -295,7 +257,6 @@ class Demo {
 
         // Color32(Red, Green, Blue) - each value is 0 (none) to 255 (maximum).
         this.palette.set(C_BG, new Color32(160, 160, 160)); // Light gray background.
-        this.palette.set(C_LABEL, new Color32(160, 200, 160)); // Soft green for overlay text.
 
         // Read every unique color in the logo PNG and store them starting at SPRITE_BASE.
         // The engine must know these colors before it can draw palette-indexed sprites.
@@ -307,17 +268,25 @@ class Demo {
         this.spriteSheet = indexed.sheet;
         this.spriteRect = indexed.srcRect;
 
+        // Install the shared UI kit colors for the status chip drawn in render().
+        // The scene only uses slot 1 (background) and slots 3-5 (the logo's three
+        // colors loaded above), so the kit's default range 240-251 - way up at the
+        // top of the palette - is provably free.
+        applyTheme(this.palette);
+
         // Activate our palette. Every draw call from here on uses these colors.
         BT.paletteSet(this.palette);
 
         // --- Center the sprite ---
-        // BT.displaySize is the logical 160x120 canvas.
+        // BT.displaySize is the logical 80x60 canvas.
         // Subtracting half the sprite size from half the screen size gives the top-left
         // corner position that puts the sprite's CENTER at the screen's CENTER.
         const screen = BT.displaySize;
-        const sw = this.spriteSheet.size.x;
-        const sh = this.spriteSheet.size.y;
-        this.pos = new Vector2i(Math.floor(screen.x / 2 - sw / 2), Math.floor(screen.y / 2 - sh / 2));
+
+        this.pos = new Vector2i(
+            Math.floor(screen.x / 2 - this.spriteSheet.size.x / 2),
+            Math.floor(screen.y / 2 - this.spriteSheet.size.y / 2),
+        );
 
         // --- Post-process effects (WebGPU only) ---
         // isAvailable() checks BT.activeBackend === 'webgpu'. If the browser falls back
@@ -325,10 +294,7 @@ class Demo {
         this.effectsAvailable = isAvailable();
 
         if (!this.effectsAvailable) {
-            // Schedule the first fault anyway so the state machine is ready if
-            // effects become available (they never will in software mode, but this
-            // keeps the code path clean and avoids null checks later).
-            this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+            // Software renderer: update() never runs the CRT state machine, so there is nothing to schedule.
             return true;
         }
 
@@ -337,11 +303,11 @@ class Demo {
         // palette-index rows - each shifted row is then resolved to a different RGBA color.
         // intensity = 0 means no shift right now; it spikes up during H-HOLD faults.
         this.pixelGlitch = new PixelGlitch();
-        this.pixelGlitch.bandHeight = 2; // Two logical-pixel-tall bands (our screen is only 120 px tall).
+        this.pixelGlitch.bandHeight = 2; // Two logical-pixel-tall bands (our screen is only 60 px tall).
         this.pixelGlitch.intensity = 0;
         BT.effectAdd(this.pixelGlitch);
 
-        // Display-tier: the effects below run on the full 640x480 RGBA buffer after upscaling.
+        // Display-tier: the effects below run on the full 240x180 RGBA buffer after upscaling.
 
         // Chromatic aberration splits red and blue channels slightly at bright edges.
         // On a B/W CRT this is very faint; we only raise it during fault bursts.
@@ -361,12 +327,12 @@ class Demo {
         this.rollLine.speed = ROLL_SPEED;
 
         // Scanlines darken alternate rows to recreate the gaps between phosphor lines.
-        // density = DISPLAY_H aligns one scanline pair per logical pixel row (every 4 output pixels).
+        // density = DISPLAY_H aligns one scanline pair per logical pixel row (every 3 output pixels).
         // strength = negative values darken; -40 is a strong darkening (built-in CRT presets use -7 to -8).
         this.scanlines = new Scanlines();
         this.scanlines.amount = 0.05;
         this.scanlines.strength = -40;
-        this.scanlines.density = 60;
+        this.scanlines.density = DISPLAY_H;
 
         // RGBMask adds a subpixel pattern across the whole output image.
         //
@@ -375,9 +341,10 @@ class Demo {
         //   size = 3 → each subpixel is exactly 1 output pixel wide: R | G | B | R | G | B …
         //   That is the same layout as a real LCD or OLED display (RGB stripe).
         //
-        //   The stripes do not align to the 4-output-pixel logical pixel boundaries
-        //   (because 3 does not divide 4 evenly), but that is also true on a real
-        //   screen: the physical subpixel grid is independent of the game's pixel grid.
+        //   With our 3x upscale each logical pixel is 3 output pixels wide, so one
+        //   full R-G-B cycle happens to line up exactly with one logical pixel here.
+        //   On a real screen the physical subpixel grid is independent of the game's
+        //   pixel grid, but the stripe look is the same either way.
         //
         //   border = 0 disables the cell-edge darkening AND the vertical stagger that
         //   was causing each logical pixel to look like a 2×2 block of subpixels.
@@ -440,30 +407,9 @@ class Demo {
     }
 
     /**
-     * Feeds two custom rows into the engine overlay HUD.
-     * Shows whether the CRT stack is active and which TV fault is currently firing.
-     *
-     * @returns {readonly { leftText: string }[]}
-     */
-    overlayRows() {
-        if (this.effectsAvailable) {
-            this.overlayRowData[0].leftText = 'Orava CRT: ON';
-
-            // Look up the friendly name for the current fault type, then show its strength.
-            const faultLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
-            const faultStrength = this.glitchActive > 0 ? Math.round(this.glitchPeak * 100) : 0;
-            this.overlayRowData[1].leftText = `TV fault: ${faultLabel} ${String(faultStrength).padStart(2, '0')}%`;
-        } else {
-            this.overlayRowData[0].leftText = 'Orava CRT: OFF';
-            this.overlayRowData[1].leftText = SOFTWARE_FALLBACK_NOTE;
-        }
-
-        return this.overlayRowData;
-    }
-
-    /**
      * Called once per screen refresh. The logo does not move so this is simple:
-     * clear the screen, then draw the sprite at its fixed center position.
+     * clear the screen, draw the sprite at its fixed center position, then draw
+     * the little status chip with the shared UI kit.
      */
     render() {
         // Erase the previous frame so nothing trails or ghosts.
@@ -474,6 +420,36 @@ class Demo {
         if (this.spriteSheet && this.spriteRect) {
             BT.drawSprite(this.spriteSheet, this.spriteRect, this.pos, 0);
         }
+
+        // --- Status chip (shared UI kit) ---
+        // The engine overlay is disabled in configure(), so this tiny one-row panel
+        // is the only readout: it says whether the Orava CRT stack is running and
+        // which TV fault is firing right now. Because it is drawn onto the 80x60
+        // picture BEFORE the post-process step, the CRT effects wash over it too.
+        // The screen is tiny, so margin, padding, and the words stay very small.
+        ui.begin('bottomLeft', { margin: 2, pad: 2 });
+
+        // panel() with no title gives the chip a dark background and border, so the
+        // text stays readable on top of the light gray backdrop.
+        ui.panel();
+
+        if (!this.effectsAvailable) {
+            // Software renderer: no post-process. The usual shared fallback note is
+            // far too long for an 80-pixel-wide screen, so we show a short version.
+            ui.label('CRT OFF', { color: 'warm' });
+            ui.label('No WebGPU', { color: 'dim' });
+        } else if (this.glitchTicksLeft > 0) {
+            // A fault burst is running: show its friendly name and how strong this
+            // particular burst is, like "H-HOLD 82%". Math.round() turns the 0..1
+            // strength into the nearest whole percentage.
+            const pct = Math.round(this.glitchPeak * 100);
+            ui.label(`${GLITCH_LABELS[this.glitchType]} ${pct}%`, { color: 'warm' });
+        } else {
+            // Calm between faults: just confirm the CRT stack is on.
+            ui.label('CRT ON', { color: 'dim' });
+        }
+
+        ui.end();
     }
 
     /**
@@ -493,19 +469,19 @@ class Demo {
         this.interference.time = seconds;
 
         // --- TV fault burst ---
-        if (this.glitchActive > 0) {
+        if (this.glitchTicksLeft > 0) {
             // We are inside a fault burst. Compute a smooth envelope (0..1..0) so
             // the fault eases in and out rather than snapping on and off instantly.
             // t = 0 at the start of the burst, t = 1 at the end.
-            const t = 1 - (this.glitchActive - 1) / this.glitchDuration;
+            const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI); // Sine gives a bell-curve shape: 0 at edges, 1 at peak.
 
             this.applyRestingCrtUniforms();
             this.applyGlitchUniforms(envelope);
 
-            this.glitchActive--;
+            this.glitchTicksLeft--;
 
-            if (this.glitchActive <= 0) {
+            if (this.glitchTicksLeft <= 0) {
                 // Burst finished - schedule the next cooldown and reset band-wobble too.
                 this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
                 this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
@@ -549,7 +525,7 @@ class Demo {
             // Time for a fault! Pick a random type and intensity.
             this.glitchType = randPick(GLITCH_TYPES);
             this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
-            this.glitchActive = this.glitchDuration;
+            this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
             this.pixelGlitch.seed = Math.random() * 1000;
         }

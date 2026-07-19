@@ -9,9 +9,12 @@
  *
  * Live version: https://demos.blit386.dev/029-snake-game
  *
- * Move with player 1 face buttons (W, A, S, D): Up, Down, Left, Right. Each food dot grows
- * the snake. Hitting the boundary wall or your own body ends the run; the game restarts after
- * two seconds. Gameplay uses rectangles; a short systemPrint note appears in software mode.
+ * Move with player 1 face buttons (W, A, S, D): Up, Down, Left, Right. On a phone or
+ * tablet, steer with the on-screen D-pad in the bottom-right corner (it appears at the
+ * first touch) or simply swipe anywhere in the direction you want to go - both come from
+ * the shared UI kit in src/shared/ui.js. Each food dot grows the snake. Hitting the
+ * boundary wall or your own body ends the run; the game restarts after two seconds.
+ * Gameplay uses rectangles; a short systemPrint note appears in software mode.
  *
  * Post-processing matches demo 023 when WebGPU is active. In software fallback mode the
  * snake game still runs; CRT effects are skipped and a short note is shown on canvas.
@@ -24,8 +27,6 @@
  * the same technique 041-Synth Toy explores in depth), and an upbeat music loop plays in the
  * background the whole time.
  */
-
-// @pageTitle BLIT386 Demo 029 - Snake Game
 
 import {
     AudioClip,
@@ -48,6 +49,8 @@ import {
 } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { randFloat, randInt, randIntInclusive, randPick } from './shared/rand.js';
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -112,46 +115,6 @@ const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
 /**
- * Random integer from min through max inclusive.
- *
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randomInt(min, max) {
-    return min + Math.floor(Math.random() * (max - min + 1));
-}
-
-/**
- * Random integer in [min, max) - used by glitch cooldown rolls (demo 023 style).
- *
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randIntHalfOpen(min, max) {
-    return min + Math.floor(Math.random() * (max - min));
-}
-
-/**
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
-function randFloat(min, max) {
-    return min + Math.random() * (max - min);
-}
-
-/**
- * @template T
- * @param {readonly T[]} arr
- * @returns {T}
- */
-function randPick(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-/**
  * Minimal snake with PipBoy CRT post-processing from demo 023.
  *
  * @implements {IBTDemo}
@@ -191,11 +154,13 @@ class Demo {
     /** When true, the snake does not move until restart. */
     gameOver = false;
 
-    /** Tick index when the snake died (`BT.ticks`); null while playing. */
-    /** @type {number | null} */
+    /** @type {number | null} Tick index when the snake died (`BT.ticks`); null while playing. */
     deathTick = null;
 
-    // CRT effects (initialized in init())
+    /** True when the WebGPU backend is active, so the CRT effect chain can run (set in init()). */
+    effectsAvailable = false;
+
+    // CRT effects (initialized in setupCrtEffects(), called from init())
     /** @type {PixelGlitch} */
     pixelGlitch;
 
@@ -231,7 +196,8 @@ class Demo {
 
     glitchCooldown = 0;
 
-    glitchActive = 0;
+    /** How many ticks remain in the current glitch burst; 0 means no glitch is running. */
+    glitchTicksLeft = 0;
 
     glitchDuration = 0;
 
@@ -315,15 +281,108 @@ class Demo {
         this.palette.set(C_FOOTER_DIM, new Color32(120, 130, 150));
         this.palette.set(C_FOOTER_WHITE, new Color32(220, 230, 240));
 
+        // The shared UI kit draws the touch D-pad, and it needs its theme colors in the
+        // palette. applyTheme() writes them into high slots (240 and up), far away from the
+        // six scene colors above, so the game's look does not change at all.
+        applyTheme(this.palette);
+
         BT.paletteSet(this.palette);
 
+        // CRT post-processing needs WebGPU. In software fallback mode we skip the whole
+        // effect chain - the snake game itself still runs fine without it.
         this.effectsAvailable = isAvailable();
 
-        if (!this.effectsAvailable) {
-            this.startRound();
-            return true;
+        if (this.effectsAvailable) {
+            this.setupCrtEffects();
         }
 
+        this.startRound();
+
+        return true;
+    }
+
+    /**
+     * Drive CRT animation and glitch machine every tick; run snake logic when alive.
+     */
+    update() {
+        // The UI kit's once-per-tick housekeeping: it tracks touch contacts for the D-pad
+        // and watches for swipe gestures. Always the first line of update().
+        ui.tick();
+
+        // Did a swipe finish on this tick? ui.swipe() answers with a direction name
+        // ('up', 'down', 'left', 'right') or null. We read it once and hand it to the
+        // steering code below, next to the keyboard and D-pad checks.
+        const swipe = ui.swipe();
+
+        if (this.effectsAvailable) {
+            this.tickCrtClock();
+            this.tickGlitchMachine();
+        }
+
+        if (this.tickRestartAfterDeath()) {
+            return;
+        }
+
+        this.pollDirectionInput(swipe);
+
+        this.moveCooldown -= 1;
+
+        if (this.moveCooldown > 0) {
+            return;
+        }
+
+        this.moveCooldown = MOVE_INTERVAL;
+
+        if (!(this.pendingDx === -this.dx && this.pendingDy === -this.dy)) {
+            this.dx = this.pendingDx;
+            this.dy = this.pendingDy;
+        }
+
+        this.step();
+    }
+
+    /**
+     * Clear to background, draw walls, food, snake segments.
+     */
+    render() {
+        BT.clear(C_BG);
+
+        this.renderWalls();
+
+        if (this.food.x >= 0 && this.food.y >= 0) {
+            BT.drawRectFill(this.gridRect(this.food.x, this.food.y), C_FOOD);
+        }
+
+        for (let i = 0; i < this.snake.length; i++) {
+            const seg = this.snake[i];
+            BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
+        }
+
+        if (!this.effectsAvailable) {
+            BT.systemPrint(new Vector2i(INNER_X0, DISPLAY_H - 16), C_FOOTER_DIM, SOFTWARE_FALLBACK_NOTE);
+        }
+
+        // Browsers keep all sound muted until the player clicks or presses a key. This
+        // shared row shows the standard warm "enable sound" hint only while audio is still
+        // locked, then disappears on its own the moment a first move unlocks it - which is
+        // also the same gesture that starts the snake moving, so the hint is usually only
+        // visible for a single frame.
+        ui.begin('topLeft', { margin: 3 });
+        ui.audioUnlockHint();
+        ui.end();
+
+        // The touch D-pad, drawn over the playfield in the bottom-right corner. It stays
+        // invisible until the first touch contact, so mouse-and-keyboard players never see
+        // it. This playfield is only 160x120 logical pixels, so the keys are scaled down
+        // from the kit's phone-sized default.
+        ui.dpadWidget({ size: 22, gap: 3, margin: 4 });
+    }
+
+    /**
+     * Builds the WebGPU CRT effect chain (same stack and tuning as demo 023) and seeds
+     * the glitch state machine. Called from init() only when WebGPU is active.
+     */
+    setupCrtEffects() {
         // Pixel-tier glitch (same role as demo 023).
         this.pixelGlitch = new PixelGlitch();
         this.pixelGlitch.bandHeight = 6;
@@ -381,46 +440,11 @@ class Demo {
             BT.effectAdd(fx);
         }
 
-        this.glitchCooldown = randIntHalfOpen(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-        this.glitchActive = 0;
+        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
         this.glitchType = 'none';
         this.glitchPeak = 0;
-
-        this.startRound();
-
-        return true;
-    }
-
-    /**
-     * Drive CRT animation and glitch machine every tick; run snake logic when alive.
-     */
-    update() {
-        if (this.effectsAvailable) {
-            this.tickCrtClock();
-            this.tickGlitchMachine();
-        }
-
-        if (this.tickRestartAfterDeath()) {
-            return;
-        }
-
-        this.pollDirectionInput();
-
-        this.moveCooldown -= 1;
-
-        if (this.moveCooldown > 0) {
-            return;
-        }
-
-        this.moveCooldown = MOVE_INTERVAL;
-
-        if (!(this.pendingDx === -this.dx && this.pendingDy === -this.dy)) {
-            this.dx = this.pendingDx;
-            this.dy = this.pendingDy;
-        }
-
-        this.step();
     }
 
     /**
@@ -442,37 +466,54 @@ class Demo {
     }
 
     /**
-     * Reads player 1 face buttons and updates pending direction (no instant reverse).
+     * Reads all three steering inputs and updates pending direction (no instant reverse):
+     * player 1 face buttons (keyboard/gamepad), the on-screen touch D-pad, and swipes.
      *
-     * We use BT.isPressed (edge: up -> down this tick), not BT.isDown (held every tick).
-     * That way one tap per direction per move interval feels like a classic D-pad.
-     * The `this.dy !== 1` checks block a 180-degree turn: you cannot go straight back
-     * into your body on the next step.
+     * We use BT.isPressed (edge: up -> down this tick), not BT.isDown (held every tick),
+     * and the D-pad's matching ui.dpad.isPressed. That way one tap per direction per move
+     * interval feels like a classic D-pad. The `this.dy !== 1` checks block a 180-degree
+     * turn: you cannot go straight back into your body on the next step.
+     *
+     * @param {'up' | 'down' | 'left' | 'right' | null} swipe - The swipe finished this
+     *   tick, if any (from ui.swipe() in update()).
      */
-    pollDirectionInput() {
+    pollDirectionInput(swipe) {
         // Up: only if we are not currently moving down (would reverse into the tail).
-        if (BT.isPressed(BT.BTN_UP, 0) && this.dy !== 1) {
+        if (this.isSteerPressed(BT.BTN_UP, 'up', swipe) && this.dy !== 1) {
             this.pendingDx = 0;
             this.pendingDy = -1;
         }
 
         // Down: only if we are not currently moving up.
-        if (BT.isPressed(BT.BTN_DOWN, 0) && this.dy !== -1) {
+        if (this.isSteerPressed(BT.BTN_DOWN, 'down', swipe) && this.dy !== -1) {
             this.pendingDx = 0;
             this.pendingDy = 1;
         }
 
         // Left: only if we are not currently moving right.
-        if (BT.isPressed(BT.BTN_LEFT, 0) && this.dx !== 1) {
+        if (this.isSteerPressed(BT.BTN_LEFT, 'left', swipe) && this.dx !== 1) {
             this.pendingDx = -1;
             this.pendingDy = 0;
         }
 
         // Right: only if we are not currently moving left.
-        if (BT.isPressed(BT.BTN_RIGHT, 0) && this.dx !== -1) {
+        if (this.isSteerPressed(BT.BTN_RIGHT, 'right', swipe) && this.dx !== -1) {
             this.pendingDx = 1;
             this.pendingDy = 0;
         }
+    }
+
+    /**
+     * Combines the three ways to steer in one direction: the engine face button (keyboard
+     * or gamepad), the on-screen touch D-pad key, and a swipe that way.
+     *
+     * @param {number} button - The engine face button mask (BT.BTN_UP and friends).
+     * @param {'up' | 'down' | 'left' | 'right'} dir - The D-pad/swipe direction name.
+     * @param {'up' | 'down' | 'left' | 'right' | null} swipe - The swipe finished this tick.
+     * @returns {boolean} True when any of the three pressed that direction this tick.
+     */
+    isSteerPressed(button, dir, swipe) {
+        return BT.isPressed(button, 0) || ui.dpad.isPressed(dir) || swipe === dir;
     }
 
     /**
@@ -490,17 +531,20 @@ class Demo {
      * Same state machine as demo 023: cooldown, burst envelope, random glitch type.
      */
     tickGlitchMachine() {
-        if (this.glitchActive > 0) {
-            const t = 1 - this.glitchActive / this.glitchDuration;
+        // A burst is running while there are ticks left on its countdown.
+        if (this.glitchTicksLeft > 0) {
+            const t = 1 - this.glitchTicksLeft / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
 
             this.applyGlitchUniforms(envelope);
 
-            this.glitchActive--;
+            this.glitchTicksLeft--;
 
-            if (this.glitchActive === 0) {
+            // Countdown just hit zero: the burst is over, so calm the effects down
+            // and roll a fresh cooldown until the next burst.
+            if (this.glitchTicksLeft === 0) {
                 this.resetGlitchUniforms();
-                this.glitchCooldown = randIntHalfOpen(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
 
             return;
@@ -510,8 +554,8 @@ class Demo {
 
         if (this.glitchCooldown <= 0) {
             this.glitchType = randPick(GLITCH_TYPES);
-            this.glitchDuration = randIntHalfOpen(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
-            this.glitchActive = this.glitchDuration;
+            this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+            this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
             this.pixelGlitch.seed = Math.random() * 1000;
         }
@@ -544,28 +588,6 @@ class Demo {
         this.noise.amount = NOISE_BASE;
         this.flicker.amount = FLICKER_BASE;
         this.interference.amount = 0;
-    }
-
-    /**
-     * Clear to background, draw walls, food, snake segments.
-     */
-    render() {
-        BT.clear(C_BG);
-
-        this.renderWalls();
-
-        if (this.food.x >= 0 && this.food.y >= 0) {
-            BT.drawRectFill(this.gridRect(this.food.x, this.food.y), C_FOOD);
-        }
-
-        for (let i = 0; i < this.snake.length; i++) {
-            const seg = this.snake[i];
-            BT.drawRectFill(this.gridRect(seg.x, seg.y), C_SNAKE);
-        }
-
-        if (!this.effectsAvailable) {
-            BT.systemPrint(new Vector2i(INNER_X0, DISPLAY_H - 16), C_FOOTER_DIM, SOFTWARE_FALLBACK_NOTE);
-        }
     }
 
     /**
@@ -630,8 +652,8 @@ class Demo {
         }
 
         for (let attempt = 0; attempt < 4000; attempt++) {
-            const x = randomInt(0, CELLS_X - 1);
-            const y = randomInt(0, CELLS_Y - 1);
+            const x = randIntInclusive(0, CELLS_X - 1);
+            const y = randIntInclusive(0, CELLS_Y - 1);
             const key = `${x},${y}`;
 
             if (!occupied.has(key)) {
@@ -641,6 +663,7 @@ class Demo {
             }
         }
 
+        // Board full - no free cell found; (-1, -1) is a sentinel that render() sees and skips drawing the food dot.
         this.food = { x: -1, y: -1 };
     }
 

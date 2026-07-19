@@ -1,5 +1,3 @@
-// @pageTitle BLIT386 Demo 016 - Palette Animation
-//
 // Demo 016 - Palette Animation: change palette entries every tick for instant visual effects.
 //
 // Demo 016 in the BLIT386 series (written for readers about 12 years old).
@@ -31,6 +29,10 @@
 //   render() writes palette indices (numbers) - never Color32 objects.
 //   update() computes new Color32 values and stores them in palette slots.
 //
+// The section headings and panels are drawn with the shared UI kit (src/shared/ui.js);
+// its theme colors live in high palette slots (240 and up), far away from every slot
+// this demo animates.
+//
 // WHAT YOU WILL SEE (four panels):
 //   1. Scrolling gradient bar  - 32 color slots hold a rainbow; the base hue rotates.
 //   2. Fire column             - colors stack up from black to red to yellow to white.
@@ -38,6 +40,8 @@
 //   4. Cycling water strip     - three blue-green slots ripple in sequence.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -49,8 +53,9 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // More slots = smoother rainbow; fewer slots = more "chunky".
 const GRAD_SLOTS = 32;
 
-// Width of each gradient swatch rectangle in pixels.
-const GRAD_SWATCH_W = Math.floor(320 / GRAD_SLOTS); // ~10 px each
+// Width of each gradient swatch rectangle in pixels. The swatches sit inside a UI kit
+// panel, so they share the panel's 308-pixel content width (320 minus the borders).
+const GRAD_SWATCH_W = Math.floor(308 / GRAD_SLOTS); // ~9 px each
 
 // Fire column
 // How many color slots make up the fire gradient.
@@ -80,13 +85,19 @@ const HEALTH_MAX = 100;
 const HEALTH_DRAIN_TICKS = 360; // ~6 seconds to drain completely.
 
 // Palette slot constants - we group our palette like compartments in a paint box.
-// Each section owns a range of slots that it fills in update() every tick.
+// Each animated section owns a range of slots that it fills in update() every tick.
+// The shared UI kit adds its own 12 theme colors in slots 240..251 (see init()),
+// safely above everything listed here.
 
 // Slot 0:   always transparent - reserved by the engine.
-const C_BG = 2; // Screen background.
-const C_PANEL = 3; // Panel background (slightly lighter than screen).
-const C_LABEL = 4; // Section heading text.
-const C_DIM = 5; // Dimmer subtitle / tip text.
+
+// Engine overlay style slots. configure() runs BEFORE init() installs the shared UI
+// theme, so the overlay style cannot use theme slots - instead it points at these four
+// low slots, which init() fills by hand with fixed colors.
+const C_OVERLAY_BAR = 2; // Overlay bar background (very dark navy).
+const C_OVERLAY_ERR = 3; // Timing chart error bars (dark blue).
+const C_OVERLAY_TEXT = 4; // Overlay text and chart update bars (golden yellow).
+const C_OVERLAY_DIM = 5; // Chart render/warning bars (cool gray-blue).
 
 // Gradient section: 32 slots, one per swatch column.
 // We update all 32 every tick to scroll the hue.
@@ -114,6 +125,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Palette slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // theme.bg, theme.border, theme.header, ... are palette indices ready for BT calls.
+    theme = null;
+
     // Counts up by 1/60 every frame (in seconds).
     // Used to drive continuous animation in update().
     animTime = 0;
@@ -128,8 +143,8 @@ class Demo {
     waterTick = 0;
 
     /**
-     * Wider canvas, overlay palette grid (64 columns), and timing chart colors
-     * tied to the four animated panel slot ranges.
+     * Wider canvas, overlay palette grid (64 columns), and overlay style colors from
+     * the dedicated low slots (plus the animated health slot as a playful gap color).
      *
      * @returns {Partial<HardwareSettings>}
      */
@@ -140,24 +155,26 @@ class Demo {
             isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 64,
             overlayStyle: {
-                barPaletteIndex: 2,
-                textPaletteIndex: 4,
-                gapPaletteIndex: 80,
+                barPaletteIndex: C_OVERLAY_BAR,
+                textPaletteIndex: C_OVERLAY_TEXT,
+                // The gap reuses the animated health slot, so it flashes with the demo.
+                gapPaletteIndex: C_HEALTH_BAR,
             },
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: 4,
-                renderBarPaletteIndex: 5,
-                warningPaletteIndex: 5,
-                errorPaletteIndex: 3,
-                tagPaletteIndex: C_LABEL,
+                updateBarPaletteIndex: C_OVERLAY_TEXT,
+                renderBarPaletteIndex: C_OVERLAY_DIM,
+                warningPaletteIndex: C_OVERLAY_DIM,
+                errorPaletteIndex: C_OVERLAY_ERR,
+                tagPaletteIndex: C_OVERLAY_TEXT,
             },
         };
     }
 
     /**
-     * Builds the palette with static UI slots and zeroed dynamic slots, then
-     * primes one update() so every animated slot has real colors before render().
+     * Builds the palette with overlay slots, zeroed dynamic slots, and the shared UI
+     * theme, then primes one update() so every animated slot has real colors before
+     * the first render().
      *
      * @returns {Promise<boolean>}
      */
@@ -166,16 +183,17 @@ class Demo {
 
         // Build the main palette
         // Think of this like setting up your paint box before you start painting.
-        // Static entries (labels, background) go in now and never change.
+        // Static entries (overlay colors, UI theme) go in now and never change.
         // Dynamic entries (gradient, fire, health, water) start as black and get
         // overwritten in update() every tick.
         this.palette = BT.paletteCreate(256);
 
-        // Static UI colors.
-        this.palette.set(C_BG, new Color32(10, 12, 20)); // Very dark navy background.
-        this.palette.set(C_PANEL, new Color32(20, 24, 36)); // Slightly lighter for panel backgrounds.
-        this.palette.set(C_LABEL, new Color32(255, 210, 80)); // Golden yellow for section headings.
-        this.palette.set(C_DIM, new Color32(120, 130, 160)); // Cool gray-blue for subtitles.
+        // Colors for the engine overlay (the stats HUD). These match the shared UI
+        // theme's look but live in low slots so configure() could reference them.
+        this.palette.set(C_OVERLAY_BAR, new Color32(10, 12, 20)); // Very dark navy.
+        this.palette.set(C_OVERLAY_ERR, new Color32(20, 24, 36)); // Dark blue.
+        this.palette.set(C_OVERLAY_TEXT, new Color32(255, 210, 80)); // Golden yellow.
+        this.palette.set(C_OVERLAY_DIM, new Color32(120, 130, 160)); // Cool gray-blue.
 
         // Initialize all dynamic slots to black (invisible for now).
         // They will be filled with real colors on the very first update() call.
@@ -191,13 +209,21 @@ class Demo {
             this.palette.set(C_WATER_BASE + i, new Color32(0, 80, 160));
         }
 
+        // Install the shared UI kit colors (panel fills, borders, headings, dim text).
+        // applyTheme() writes 12 colors into slots 240..251 - far above every range this
+        // demo animates (gradient 10..41, fire 50..69, health 80, water 90..92), so the
+        // palette animation can never overwrite the UI theme. The returned map remembers
+        // where each color landed (this.theme.bg, this.theme.header, ...).
+        this.theme = applyTheme(this.palette);
+
         // Activate palette
         // Tell the engine to use our palette from this point forward.
         BT.paletteSet(this.palette);
 
         // Run one update cycle so all dynamic slots have real colors before the first render.
-        // Pass false so animTime is not incremented during this priming call.
-        this.update(false);
+        // update() takes no arguments - this priming call still advances animTime by one tick,
+        // same as every regular call from the engine's game loop.
+        this.update();
 
         console.log('[PaletteAnimationDemo] Initialized');
         return true;
@@ -207,12 +233,9 @@ class Demo {
      * Called 60 times per second. Computes new Color32 values for every dynamic slot.
      * render() will never see Color32 - it only reads slot indices we set here.
      */
-    update(advanceTime = true) {
+    update() {
         // Advance the clock. animTime grows by 1/60 each frame.
-        // Skipped when advanceTime is false (used during init() priming call).
-        if (advanceTime) {
-            this.animTime += BT.deltaSeconds;
-        }
+        this.animTime += BT.deltaSeconds;
 
         // Advance health drain.
         // We simulate a health bar that empties over HEALTH_DRAIN_TICKS ticks,
@@ -243,8 +266,8 @@ class Demo {
      * Draws all four panels. Only palette indices appear here - no Color32 objects.
      */
     render() {
-        // Clear the screen with the dark background.
-        BT.clear(C_BG);
+        // Clear the screen with the UI theme's dark background.
+        BT.clear(this.theme.bg);
 
         // Draw each of the four panels.
         this.renderGradientPanel();
@@ -292,30 +315,37 @@ class Demo {
             // Apply flicker to t, clamped between 0 and 1.
             const ft = Math.min(1, Math.max(0, t + flicker));
 
-            // Map ft (0..1) to a fire color.
-            // We blend through a four-color gradient:
-            //   0.0 = black        (cold, no flame)
-            //   0.3 = dark red     (embers just starting)
-            //   0.6 = bright orange (active flame)
-            //   1.0 = pale yellow  (hottest, near the tip)
-            let color;
-
-            if (ft < 0.3) {
-                // Black to dark red.
-                const s = ft / 0.3; // Rescales 0..0.3 to 0..1.
-                color = new Color32(Math.floor(s * 160), 0, 0);
-            } else if (ft < 0.6) {
-                // Dark red to bright orange.
-                const s = (ft - 0.3) / 0.3;
-                color = new Color32(160 + Math.floor(s * 95), Math.floor(s * 100), 0);
-            } else {
-                // Orange to pale yellow-white.
-                const s = (ft - 0.6) / 0.4;
-                color = new Color32(255, 100 + Math.floor(s * 155), Math.floor(s * 120));
-            }
-
-            this.palette.set(C_FIRE_BASE + i, color);
+            this.palette.set(C_FIRE_BASE + i, this.fireColor(ft));
         }
+    }
+
+    /**
+     * Maps one band position ft (0..1) to a fire color.
+     * We blend through a four-color gradient:
+     *   0.0 = black        (cold, no flame)
+     *   0.3 = dark red     (embers just starting)
+     *   0.6 = bright orange (active flame)
+     *   1.0 = pale yellow  (hottest, near the tip)
+     *
+     * @param {number} ft - Position along the flame, 0 at the bottom, 1 at the top.
+     * @returns {Color32} The blended color for that position.
+     */
+    fireColor(ft) {
+        if (ft < 0.3) {
+            // Black to dark red.
+            const s = ft / 0.3; // Rescales 0..0.3 to 0..1.
+            return new Color32(Math.floor(s * 160), 0, 0);
+        }
+
+        if (ft < 0.6) {
+            // Dark red to bright orange.
+            const s = (ft - 0.3) / 0.3;
+            return new Color32(160 + Math.floor(s * 95), Math.floor(s * 100), 0);
+        }
+
+        // Orange to pale yellow-white.
+        const s = (ft - 0.6) / 0.4;
+        return new Color32(255, 100 + Math.floor(s * 155), Math.floor(s * 120));
     }
 
     /**
@@ -355,7 +385,7 @@ class Demo {
             // phase distance: how far is slot i from the current bright spot?
             const dist = (i - this.waterPhase + WATER_SLOTS) % WATER_SLOTS;
 
-            // dist == 0 → brightest, dist == 1 → medium, dist == 2 → darkest
+            // dist == 0 -> brightest, dist == 1 -> medium, dist == 2 -> darkest
             let color;
 
             if (dist === 0) {
@@ -375,24 +405,28 @@ class Demo {
 
     /**
      * Panel 1: Scrolling gradient bar.
-     * 32 thin rectangles in a row; each uses a different palette slot.
-     * Because update() rotates the hues in those slots, the bar appears to scroll.
+     * A UI kit panel holds the heading; 32 thin rectangles sit inside it, each using a
+     * different palette slot. Because update() rotates the hues in those slots, the bar
+     * appears to scroll.
      */
     renderGradientPanel() {
-        const panelY = 18;
+        const bandY = 6;
 
-        // Panel background.
-        BT.drawRectFill(new Rect2i(0, panelY, 320, 46), C_PANEL);
+        // The heading and subtitle live in a kit panel pinned to the band position.
+        // ui.end() draws the panel right away, so the swatches drawn after it land ON TOP
+        // of the panel background. ui.spacer() reserves empty rows for that artwork.
+        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.panel('Scrolling Gradient');
+        ui.label('Hues rotate in update() each tick', { color: 'dim' });
+        ui.spacer(18);
+        ui.end();
 
-        // Section heading. systemPrint takes (position, paletteIndex, text).
-        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Scrolling Gradient');
-        BT.systemPrint(new Vector2i(6, panelY + 14), C_DIM, 'Hues rotate in update() each tick');
-
-        // Draw one rectangle per gradient slot, side by side across the full screen width.
+        // Draw one rectangle per gradient slot, side by side inside the panel.
         for (let i = 0; i < GRAD_SLOTS; i++) {
-            // Each swatch is GRAD_SWATCH_W pixels wide and 14 pixels tall.
-            const x = i * GRAD_SWATCH_W;
-            BT.drawRectFill(new Rect2i(x, panelY + 28, GRAD_SWATCH_W, 14), C_GRAD_BASE + i);
+            // Each swatch is GRAD_SWATCH_W pixels wide and 14 pixels tall, starting
+            // 6 pixels in so the strip clears the panel border.
+            const x = 6 + i * GRAD_SWATCH_W;
+            BT.drawRectFill(new Rect2i(x, bandY + 38, GRAD_SWATCH_W, 14), C_GRAD_BASE + i);
         }
     }
 
@@ -401,31 +435,35 @@ class Demo {
      * FIRE_SLOTS horizontal bands stacked vertically; the colors change in update() to flicker.
      */
     renderFirePanel() {
-        const panelY = 70;
+        const bandY = 70;
 
-        // Panel background.
-        BT.drawRectFill(new Rect2i(0, panelY, 320, 70), C_PANEL);
-
-        // Section heading.
-        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Fire Column');
-        BT.systemPrint(new Vector2i(6, panelY + 14), C_DIM, 'Color stack shifts upward in update()');
+        // Kit panel with the heading; the spacer reserves room for the 80-pixel column.
+        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.panel('Fire Column');
+        ui.label('Color stack shifts upward in update()', { color: 'dim' });
+        ui.spacer(86);
+        ui.end();
 
         // Fire bands, from bottom (slot 0 = darkest) to top (slot FIRE_SLOTS-1 = brightest).
         // We draw them from bottom up so slot 0 is at the base of the column.
         const colX = 6;
-        const colBottom = panelY + 66;
+        const colBottom = bandY + 118;
 
         for (let i = 0; i < FIRE_SLOTS; i++) {
-            // i=0 → bottom of column, i=FIRE_SLOTS-1 → top.
+            // i=0 -> bottom of column, i=FIRE_SLOTS-1 -> top.
             // Each band is FIRE_BAND_H pixels tall.
             const y = colBottom - (i + 1) * FIRE_BAND_H;
             BT.drawRectFill(new Rect2i(colX, y, FIRE_COL_W, FIRE_BAND_H), C_FIRE_BASE + i);
         }
 
-        // Explanatory note beside the column.
-        BT.systemPrint(new Vector2i(colX + FIRE_COL_W + 6, panelY + 28), C_DIM, 'slot 0 = black');
-        BT.systemPrint(new Vector2i(colX + FIRE_COL_W + 6, panelY + 40), C_DIM, '...  = red');
-        BT.systemPrint(new Vector2i(colX + FIRE_COL_W + 6, panelY + 52), C_DIM, 'slot 19 = white');
+        // Explanatory notes beside the column, lined up with the parts they describe:
+        // the brightest band is at the top of the column, the darkest at the bottom.
+        // "Band" here means the position in the fire stack (0..19), not the palette
+        // slot number - the actual slots are C_FIRE_BASE + band, i.e. 50..69.
+        const noteX = colX + FIRE_COL_W + 6;
+        BT.systemPrint(new Vector2i(noteX, bandY + 44), this.theme.dim, 'band 19 = white');
+        BT.systemPrint(new Vector2i(noteX, bandY + 74), this.theme.dim, '...     = red');
+        BT.systemPrint(new Vector2i(noteX, bandY + 104), this.theme.dim, 'band 0  = black');
     }
 
     /**
@@ -433,35 +471,34 @@ class Demo {
      * One palette slot toggles between red and white when health is critically low.
      */
     renderHealthPanel() {
-        const panelY = 146;
+        const bandY = 202;
 
-        // Panel background.
-        BT.drawRectFill(new Rect2i(0, panelY, 320, 44), C_PANEL);
+        // Kit panel: heading, a spacer for the bar artwork, then the live status line.
+        // The status text turns warm orange when health is critical, dim gray otherwise.
+        const isCritical = this.health <= HEALTH_LOW;
 
-        // Section heading.
-        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Flashing Health Bar');
+        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.panel('Flashing Health Bar');
+        ui.spacer(18);
+        ui.label(isCritical ? 'CRITICAL! slot 80 flashes red/white' : 'Healthy: slot 80 = steady red', {
+            color: isCritical ? 'warm' : 'dim',
+        });
+        ui.end();
 
         // Compute the width of the filled portion from the current health value.
         // health / HEALTH_MAX is a fraction from 0 to 1; multiply by max bar width (200 px).
         const barMaxW = 200;
         const barW = Math.max(1, Math.floor((this.health / HEALTH_MAX) * barMaxW));
 
-        // Background trough (dark, always full width).
-        BT.drawRectFill(new Rect2i(6, panelY + 14, barMaxW, 12), C_BG);
-        BT.drawRect(new Rect2i(6, panelY + 14, barMaxW, 12), C_DIM);
+        // Background trough (dark, always full width) with a theme-colored outline.
+        BT.drawRectFill(new Rect2i(6, bandY + 22, barMaxW, 12), this.theme.bg);
+        BT.drawRect(new Rect2i(6, bandY + 22, barMaxW, 12), this.theme.border);
 
         // Filled bar - uses C_HEALTH_BAR, which flashes in update() when health is low.
-        BT.drawRectFill(new Rect2i(6, panelY + 14, barW, 12), C_HEALTH_BAR);
+        BT.drawRectFill(new Rect2i(6, bandY + 22, barW, 12), C_HEALTH_BAR);
 
-        // Health value as text.
-        BT.systemPrint(new Vector2i(212, panelY + 14), C_LABEL, `HP: ${this.health}`);
-
-        // Tip: flashes when low.
-        if (this.health <= HEALTH_LOW) {
-            BT.systemPrint(new Vector2i(6, panelY + 30), C_DIM, 'CRITICAL! slot 80 flashes red/white');
-        } else {
-            BT.systemPrint(new Vector2i(6, panelY + 30), C_DIM, 'Healthy: slot 80 = steady red');
-        }
+        // Health value as text, in the theme's amber heading color.
+        BT.systemPrint(new Vector2i(212, bandY + 21), this.theme.header, `HP: ${this.health}`);
     }
 
     /**
@@ -470,14 +507,14 @@ class Demo {
      * The brightness cycles across them to look like a ripple.
      */
     renderWaterPanel() {
-        const panelY = 196;
+        const bandY = 266;
 
-        // Panel background.
-        BT.drawRectFill(new Rect2i(0, panelY, 320, 44), C_PANEL);
-
-        // Section heading.
-        BT.systemPrint(new Vector2i(6, panelY + 2), C_LABEL, 'Cycling Water Strip');
-        BT.systemPrint(new Vector2i(6, panelY + 14), C_DIM, '3 slots ripple in sequence');
+        // Kit panel with the heading; the spacer reserves room for the tile strip.
+        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.panel('Cycling Water Strip');
+        ui.label('3 slots (90..92) ripple in sequence', { color: 'dim' });
+        ui.spacer(18);
+        ui.end();
 
         // Draw 15 water tiles (5 repetitions of the 3-slot cycle) to make a wide strip.
         const tileW = 18;
@@ -487,11 +524,8 @@ class Demo {
         for (let i = 0; i < totalTiles; i++) {
             // Map tile index to one of the 3 water slots using remainder (%).
             const slot = C_WATER_BASE + (i % WATER_SLOTS);
-            BT.drawRectFill(new Rect2i(6 + i * tileW, panelY + 26, tileW - 1, tileH), slot);
+            BT.drawRectFill(new Rect2i(6 + i * tileW, bandY + 38, tileW - 1, tileH), slot);
         }
-
-        // Label to the right.
-        BT.systemPrint(new Vector2i(6 + totalTiles * tileW + 4, panelY + 28), C_DIM, 'slots 90..92');
     }
 }
 

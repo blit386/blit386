@@ -11,6 +11,8 @@
  * one shared UiContext and exposes them as ui.panel(), ui.button(), and so on.
  */
 
+import { BT } from 'blit386';
+
 import { BUTTON_H, CMD_RECT_FILL, CMD_RECT_STROKE, CMD_TEXT, FONT_W, FULL_WIDTH, ROW_H } from './ui-core.js';
 import { T } from './ui-theme.js';
 
@@ -80,16 +82,16 @@ function panel(ctx, title) {
     ctx.hasPanel = true;
 
     if (title) {
-        // The classic title inset used across the demo series: 4 pixels from the top-left
-        // corner (3 for the slightly tighter full-width top bar).
-        const titleY = ctx.isTopBar ? 3 : 4;
+        // The title inset used across the demo series: 6 pixels in from the left,
+        // 3 pixels down from the top of the panel.
+        const titleY = 3;
 
-        ctx.addCommand(CMD_TEXT, 4, titleY, 0, 0, T.header, title);
+        ctx.addCommand(CMD_TEXT, 6, titleY, 0, 0, T.header, title);
 
         // The title contributes to auto width (4 px inset on both sides), and the first
         // content row starts below it.
         ctx.maxGroupW = Math.max(ctx.maxGroupW, title.length * FONT_W + 8);
-        ctx.cursorY = ctx.isTopBar ? 22 : 20;
+        ctx.cursorY = 18;
     }
 }
 
@@ -106,6 +108,31 @@ function label(ctx, text, opts = {}) {
 
     // +1 vertically centers the 14-pixel font inside the 16-pixel row.
     ctx.addCommand(CMD_TEXT, ctx.pad, rowY + 1, 0, 0, roleSlot(opts.color), text);
+}
+
+/**
+ * A single line of floating text pinned at an exact screen position - the shared
+ * "section caption" the drawing demos print next to their artwork. Unlike label(),
+ * which stacks rows inside the current begin()/end() group, caption() opens and
+ * closes its own tiny one-row group, so demos call it on its own:
+ *
+ *     ui.caption(24, 40, 'Pixels');
+ *
+ * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {number} x - Left edge of the caption in display pixels.
+ * @param {number} y - Top edge of the caption in display pixels.
+ * @param {string} text - The caption text.
+ * @param {{ color?: string }} [opts] - color picks a role; captions default to
+ *   'header' (the amber title color shared by the whole demo series).
+ */
+function caption(ctx, x, y, text, opts = {}) {
+    // Passing x and y pins the group to an exact spot next to the artwork (instead
+    // of snapping it to a screen corner), and pad: 0 removes the group's built-in
+    // inner padding so the text lands right at the requested position. With no
+    // panel() call the group has no box around it - just floating text.
+    ctx.begin('topLeft', { x, y, pad: 0 });
+    label(ctx, text, { color: opts.color ?? 'header' });
+    ctx.end();
 }
 
 /**
@@ -150,22 +177,33 @@ function checkbox(ctx, text, value, opts = {}) {
     const res = ctx.resolveInteraction(id);
     const keyFired = ctx.consumeKey(opts.key);
 
-    // The pip: filled with the accent color when on, hollow otherwise; always outlined.
-    if (value) {
-        ctx.addCommand(CMD_RECT_FILL, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.accent);
-    }
-
-    ctx.addCommand(CMD_RECT_STROKE, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.border);
-
     // On or hovered rows brighten so the row reads as live.
-    const textColor = value || res.hover ? T.text : T.dim;
-
-    ctx.addCommand(CMD_TEXT, ctx.pad + PIP_LABEL_OFFSET, rowY + 1, 0, 0, textColor, text);
+    drawPipRow(ctx, rowY, value, text, value || res.hover ? T.text : T.dim);
 
     // The full row is the touch target, not just the little pip.
     ctx.addHit(id, ctx.pad, rowY, contentW, ROW_H);
 
     return res.activated || keyFired ? !value : value;
+}
+
+/**
+ * Queues the shared pip-row drawing used by both checkbox() and pip(): a small
+ * square (filled with the accent color when on, hollow otherwise, always
+ * outlined) followed by its label.
+ *
+ * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {number} rowY - The row's top edge, from ctx.addRow().
+ * @param {boolean} on - Whether the pip is lit (filled).
+ * @param {string} text - The label next to the pip.
+ * @param {number} textColor - Palette slot for the label text.
+ */
+function drawPipRow(ctx, rowY, on, text, textColor) {
+    if (on) {
+        ctx.addCommand(CMD_RECT_FILL, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.accent);
+    }
+
+    ctx.addCommand(CMD_RECT_STROKE, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.border);
+    ctx.addCommand(CMD_TEXT, ctx.pad + PIP_LABEL_OFFSET, rowY + 1, 0, 0, textColor, text);
 }
 
 /**
@@ -181,13 +219,8 @@ function pip(ctx, text, on) {
     const contentW = PIP_LABEL_OFFSET + text.length * FONT_W;
     const rowY = ctx.addRow(contentW, ROW_H);
 
-    // Lit pips fill with the accent color; unlit ones stay hollow. Always outlined.
-    if (on) {
-        ctx.addCommand(CMD_RECT_FILL, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.accent);
-    }
-
-    ctx.addCommand(CMD_RECT_STROKE, ctx.pad, rowY + 3, PIP_SIZE, PIP_SIZE, T.border);
-    ctx.addCommand(CMD_TEXT, ctx.pad + PIP_LABEL_OFFSET, rowY + 1, 0, 0, on ? T.text : T.dim, text);
+    // Lit pips brighten their label; unlit ones stay dim.
+    drawPipRow(ctx, rowY, on, text, on ? T.text : T.dim);
 }
 
 /**
@@ -321,6 +354,24 @@ function meter(ctx, text, fraction, opts = {}) {
 }
 
 /**
+ * The standard "enable sound" prompt every audio demo shows, kept in one place so
+ * the wording and color can never drift between demos. Browsers refuse to play any
+ * sound until the user interacts with the page, so this row reminds the user to
+ * click or press a key. It draws only while audio is still locked - once
+ * BT.isAudioUnlocked flips true, the row disappears on its own. Call it inside a
+ * ui.begin()/ui.end() group like any other row.
+ *
+ * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ */
+function audioUnlockHint(ctx) {
+    if (BT.isAudioUnlocked) {
+        return;
+    }
+
+    label(ctx, 'Click or press a key to enable sound', { color: 'warm' });
+}
+
+/**
  * A thin horizontal rule across the group, for separating sections inside one panel.
  *
  * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
@@ -347,4 +398,4 @@ function spacer(ctx, px = 6) {
     ctx.cursorY += px;
 }
 
-export { button, checkbox, kv, label, meter, panel, pip, separator, slider, spacer };
+export { audioUnlockHint, button, caption, checkbox, kv, label, meter, panel, pip, separator, slider, spacer };

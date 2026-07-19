@@ -20,9 +20,13 @@
 // whole map. A mini-map in the corner shows the full world and the yellow box is the
 // part you are looking at right now. Pond water on the main map shimmers (animated
 // palette slot C_WATER); the mini-map uses a separate still blue (C_MINIMAP_WATER)
-// so the overview stays calm and easy to read.
+// so the overview stays calm and easy to read. The caption panel in the top-left
+// corner is drawn with the shared UI kit (src/shared/ui.js), so it matches the
+// panels in every other demo.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -52,10 +56,11 @@ const WORLD_HEIGHT_PX = MAP_HEIGHT_TILES * TILE_SIZE;
 // Each color in this demo has a reserved palette slot (a number from 1 upward).
 // Index 0 is always transparent. Giving each slot a name makes the drawing code
 // easier to read - "draw in C_GRASS" is clearer than "draw in index 5."
-const C_WHITE = 1; // Pure white: font base color, mini-map border
+// The caption panel and the mini-map frame use the shared UI kit theme instead,
+// which applyTheme() installs into high palette slots (240 and up).
 const C_SKY = 2; // Soft sky blue: fills the screen background
-const C_HUD_BAR = 3; // Semi-transparent black: the dark bar behind the HUD text
-const C_TEXT_DIM = 4; // Dimmed white: subtitle and secondary text
+const C_HUD_BAR = 3; // Semi-transparent black: the engine overlay bar color
+const C_TEXT_DIM = 4; // Dimmed white: the engine overlay text color
 const C_GRASS = 5; // Green: grass tiles
 const C_DIRT = 6; // Brown: dirt tiles
 const C_STONE = 7; // Gray: stone/rock tiles
@@ -63,10 +68,9 @@ const C_TREE_TOP = 8; // Dark green: tree canopy tiles
 // C_MINIMAP_WATER is a calm, fixed blue for the corner mini-map only. The main view
 // uses C_WATER, which update() animates every tick so the pond shimmers on screen.
 const C_MINIMAP_WATER = 9; // Static blue: water on the mini-map (never animated)
-const C_MINIMAP_BG = 10; // Very dark semi-transparent: mini-map background panel
-const C_MINIMAP_BORDER = 11; // Near-white: mini-map panel border
+const C_CHART_WARNING = 11; // Near-white: overlay timing chart warning color
 const C_VIEWPORT = 12; // Yellow: rectangle showing the camera view on the mini-map
-const C_FPS = 13; // Dim gray: the FPS counter text color
+const C_CHART_TAG = 13; // Dim gray: overlay timing chart tag labels
 const C_WATER = 14; // DYNAMIC: the animated water tile color, updated every tick in update()
 
 /**
@@ -84,17 +88,31 @@ class Demo {
     // top-left of the screen. When this moves right, the world seems to slide left.
     cameraPos = new Vector2i(0, 0);
 
+    // Where the camera was at the START of the most recent update() tick, before this
+    // tick's sine math moved it. render() blends between cameraPrevPos and cameraPos
+    // using BT.renderAlpha so the camera pans smoothly between physics ticks instead
+    // of jumping - see "Interpolating render state with renderAlpha" in the engine's
+    // docs/api-game-loop.md.
+    cameraPrevPos = new Vector2i(0, 0);
+
+    // Reused every render() call for the render-time (interpolated) camera position,
+    // so we do not allocate a new Vector2i every frame. Both the actual camera offset
+    // and the visible-tile culling window use this same value, so they never disagree
+    // about which pixel row/column the camera is looking at.
+    cameraRenderPos = new Vector2i(0, 0);
+
     // palette holds all the colors this demo uses. We fill it in init()
     // so the engine knows every color before drawing begins.
     /** @type {Palette | null} */
     palette = null;
 
+    // Slot map for the shared UI kit theme, filled in init() by applyTheme().
+    // It tells us which palette slots hold the kit's panel, border, and text colors.
+    theme = null;
+
     // One rectangle object we rewrite each time we draw a tile. Reusing it avoids
     // making a new Rect2i for every single tile, which would stress the garbage collector.
     tileRect = new Rect2i(0, 0, TILE_SIZE, TILE_SIZE);
-
-    // Scratch vectors for text positions and similar.
-    tempVec = new Vector2i(0, 0);
 
     /**
      * @returns {Partial<HardwareSettings>}
@@ -112,9 +130,9 @@ class Demo {
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_VIEWPORT,
                 renderBarPaletteIndex: C_GRASS,
-                warningPaletteIndex: C_MINIMAP_BORDER,
+                warningPaletteIndex: C_CHART_WARNING,
                 errorPaletteIndex: C_STONE,
-                tagPaletteIndex: C_FPS,
+                tagPaletteIndex: C_CHART_TAG,
             },
         };
     }
@@ -133,23 +151,26 @@ class Demo {
         this.palette = BT.paletteCreate(256);
 
         // Static (fixed) colors: these never change from frame to frame.
-        this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_SKY, new Color32(135, 206, 250)); // soft sky blue
         this.palette.set(C_HUD_BAR, new Color32(0, 0, 0, 185)); // black with some transparency (alpha 185)
-        this.palette.set(C_TEXT_DIM, new Color32(200, 200, 200)); // dimmed white for labels
+        this.palette.set(C_TEXT_DIM, new Color32(200, 200, 200)); // dimmed white for the engine overlay
         this.palette.set(C_GRASS, new Color32(50, 160, 60)); // medium green grass
         this.palette.set(C_DIRT, new Color32(130, 90, 55)); // earthy brown dirt
         this.palette.set(C_STONE, new Color32(120, 120, 130)); // cool gray stone
         this.palette.set(C_TREE_TOP, new Color32(15, 90, 30)); // very dark green canopy
         this.palette.set(C_MINIMAP_WATER, new Color32(30, 110, 200)); // solid blue for mini-map water
-        this.palette.set(C_MINIMAP_BG, new Color32(0, 0, 0, 210)); // very dark panel behind mini-map
-        this.palette.set(C_MINIMAP_BORDER, new Color32(240, 240, 240)); // near-white border
+        this.palette.set(C_CHART_WARNING, new Color32(240, 240, 240)); // near-white chart warnings
         this.palette.set(C_VIEWPORT, new Color32(255, 230, 60)); // yellow camera-viewport box
-        this.palette.set(C_FPS, new Color32(160, 160, 160)); // medium gray FPS counter
+        this.palette.set(C_CHART_TAG, new Color32(160, 160, 160)); // medium gray chart tag labels
 
         // Dynamic color: the animated water tile. We give it a starting value here so
         // there is no empty slot on the very first frame before update() runs.
         this.palette.set(C_WATER, new Color32(30, 110, 210)); // initial water blue (updated each tick)
+
+        // Install the shared UI kit theme. applyTheme() writes twelve UI colors into
+        // high palette slots (240 and up), far above this demo's scene slots (1..14),
+        // and returns a map of slot numbers we can draw with (panel, border, text...).
+        this.theme = applyTheme(this.palette);
 
         // Tell the engine to use this palette for all drawing from now on.
         BT.paletteSet(this.palette);
@@ -166,6 +187,10 @@ class Demo {
      * animated water color in the palette so render() can use C_WATER as a plain index.
      */
     update() {
+        // Remember where the camera was before this tick's math moves it, so render()
+        // has an "old" and "new" position to blend between.
+        this.cameraPrevPos.set(this.cameraPos.x, this.cameraPos.y);
+
         // BT.ticks counts how many fixed updates have happened since the demo started.
         // Multiplying by a small number makes the wave change slowly over time.
         const t = BT.ticks * 0.028;
@@ -187,9 +212,8 @@ class Demo {
         // Clamp keeps the camera inside the world so you never see empty void past the edge.
         this.cameraPos = BT.cameraClamp(this.cameraPos, new Vector2i(WORLD_WIDTH_PX, WORLD_HEIGHT_PX), viewSize);
 
-        // From this point until BT.cameraReset(), all drawing uses world coordinates
-        // shifted by this offset - like sliding a picture under a fixed window.
-        BT.cameraSet(this.cameraPos);
+        // BT.cameraSet() now happens in render(), using a position blended between
+        // cameraPrevPos and cameraPos - see render() below.
 
         // Update the animated water color in the palette
         // Instead of computing a new Color32 inside render() every frame, we compute it
@@ -209,6 +233,17 @@ class Demo {
         // Soft sky blue behind everything. Tiles with ID 0 (sky) are not drawn, so this
         // color shows through in "empty" cells.
         BT.clear(C_SKY);
+
+        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha - a fraction from 0
+        // (a tick just finished) to just under 1 (the next tick is about to happen) -
+        // so the camera's on-screen position matches this exact render moment instead
+        // of only its last-tick position. Both the camera offset and the visible-tile
+        // culling window below use this same smoothed value.
+        this.cameraRenderPos.set(
+            Math.floor(this.cameraPrevPos.x + (this.cameraPos.x - this.cameraPrevPos.x) * BT.renderAlpha),
+            Math.floor(this.cameraPrevPos.y + (this.cameraPos.y - this.cameraPrevPos.y) * BT.renderAlpha),
+        );
+        BT.cameraSet(this.cameraRenderPos);
 
         // Draw the chunk of the world that might be visible right now.
         this.renderVisibleTiles();
@@ -314,9 +349,11 @@ class Demo {
         const viewW = BT.displaySize.x;
         const viewH = BT.displaySize.y;
 
-        // Camera position is the world pixel at the top-left of the view.
-        const camX = this.cameraPos.x;
-        const camY = this.cameraPos.y;
+        // Camera position is the world pixel at the top-left of the view. Use the same
+        // render-time (interpolated) position render() just set with BT.cameraSet(),
+        // so the culling window always agrees with what actually got drawn.
+        const camX = this.cameraRenderPos.x;
+        const camY = this.cameraRenderPos.y;
 
         // Convert pixel edges to tile indices. Math.floor for the left/top tile,
         // Math.ceil for the pixel just past the right/bottom edge so we include partial tiles.
@@ -366,13 +403,16 @@ class Demo {
      * Draws labels and the mini-map after the camera is reset so they stay on the screen.
      */
     renderHud() {
-        // Semi-transparent bar at the top so white text stays readable on any tile.
-        this.tileRect.set(0, 0, 320, 38);
-        BT.drawRectFill(this.tileRect, C_HUD_BAR);
-
-        // systemPrint takes (position, paletteIndex, text).
-        this.tempVec.set(8, 22);
-        BT.systemPrint(this.tempVec, C_TEXT_DIM, '30x20 tiles, 16px each, camera scrolls');
+        // The caption panel is built with the shared UI kit. Widgets declared between
+        // ui.begin() and ui.end() stack into one anchored group; the kit measures the
+        // rows, draws the panel background, and places the group for us.
+        // The kit draws in whatever camera space is active, so this must run AFTER
+        // BT.cameraReset() - otherwise the panel would scroll away with the world.
+        ui.begin('topLeft');
+        ui.panel('Tilemap');
+        ui.label('30x20 tiles, 16px each', { color: 'dim' });
+        ui.label('Camera scrolls automatically', { color: 'dim' });
+        ui.end();
 
         // Mini-map sits in the bottom-right, like a treasure map corner-fold.
         this.renderMiniMap();
@@ -389,10 +429,12 @@ class Demo {
         const mapPixelW = MAP_WIDTH_TILES * scale;
         const mapPixelH = MAP_HEIGHT_TILES * scale;
 
-        // Backing panel.
+        // Backing panel. The kit has no mini-map widget, so we draw this frame by
+        // hand - but we borrow the shared theme's panel and border slots so it
+        // matches the kit's look exactly.
         this.tileRect.set(mapX - 2, mapY - 2, mapPixelW + 4, mapPixelH + 4);
-        BT.drawRectFill(this.tileRect, C_MINIMAP_BG);
-        BT.drawRect(this.tileRect, C_MINIMAP_BORDER);
+        BT.drawRectFill(this.tileRect, this.theme.panel);
+        BT.drawRect(this.tileRect, this.theme.border);
 
         // Walk every tile in the entire world (the map is small, so this is cheap).
         for (let row = 0; row < MAP_HEIGHT_TILES; row++) {
@@ -424,7 +466,9 @@ class Demo {
         }
 
         // Viewport indicator: where is the 320x240 window inside the 480x320 world?
-        const cam = BT.camera;
+        // Use this.cameraPos, not BT.camera: render() already called BT.cameraReset(),
+        // which zeroes BT.camera - our own field still remembers the real position.
+        const cam = this.cameraPos;
         const disp = BT.displaySize;
         const vx = mapX + Math.floor((cam.x / WORLD_WIDTH_PX) * mapPixelW);
         const vy = mapY + Math.floor((cam.y / WORLD_HEIGHT_PX) * mapPixelH);

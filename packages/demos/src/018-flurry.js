@@ -1,5 +1,3 @@
-// @pageTitle BLIT386 Demo 018 - Flurry
-//
 // Demo 018 - Flurry: a retro screensaver built on particle physics and palette animation.
 //
 // Ported from the classic macOS Flurry screensaver by Calum Robinson (2002).
@@ -180,6 +178,33 @@ const SPARK_TABLE = [
 ];
 
 /**
+ * Converts one axis of a world position into a screen pixel coordinate.
+ *
+ * Two steps happen here:
+ *   1. Blend: prev + (cur - prev) * alpha slides the position from where it was at
+ *      the start of the last physics tick (prev) toward where it is now (cur), by
+ *      the fraction alpha (BT.renderAlpha, 0 = tick just finished, almost 1 = next
+ *      tick about to happen). This gives the true position at this exact render
+ *      moment, so motion looks smooth between ticks instead of jumping.
+ *   2. Scale and shift: dividing by FIELD_RANGE gives a fraction from -1 to +1,
+ *      multiplying by halfExtent stretches that to screen pixels, and adding
+ *      halfExtent shifts the result so world (0, 0) lands at the screen center.
+ *      Math.floor() then snaps to a whole pixel (you cannot draw half a pixel).
+ *
+ * Call it once with HALF_W for the x axis and once with HALF_H for the y axis.
+ *
+ * @param {number} prev - World coordinate at the start of the last tick.
+ * @param {number} cur - World coordinate now, after the last tick.
+ * @param {number} alpha - BT.renderAlpha blend fraction (0..1).
+ * @param {number} halfExtent - HALF_W for x, HALF_H for y.
+ * @returns {number} Whole-pixel screen coordinate.
+ */
+function worldToScreen(prev, cur, alpha, halfExtent) {
+    const world = prev + (cur - prev) * alpha;
+    return Math.floor((world / FIELD_RANGE) * halfExtent + halfExtent);
+}
+
+/**
  * Retro port of the classic macOS Flurry screensaver.
  * Twelve spark attractors trace Lissajous orbit paths; PARTICLE_COUNT particles spiral
  * around them via inverse-square gravity. Palette animation cycles a full rainbow every 15 seconds.
@@ -205,6 +230,11 @@ class Demo {
     // Array of SPARK_COUNT spark objects (the invisible gravity-well attractors).
     // Created in initSparks(). Each spark has:
     //   x, y        - current world position
+    //   prevX, prevY  - world position as of the START of the most recent update() tick,
+    //     before this tick's orbit math moved it. render() blends between prevX/prevY and
+    //     x/y using BT.renderAlpha so sparks glide smoothly between physics ticks instead
+    //     of jumping - see "Interpolating render state with renderAlpha" in the engine's
+    //     docs/api-game-loop.md.
     //   vx, vy      - instantaneous velocity (used as a hint when spawning particles)
     //   freqX, freqY  - oscillation frequencies for the Lissajous orbit
     //   phaseX, phaseY - starting angles on the orbit path
@@ -214,6 +244,8 @@ class Demo {
     // Array of PARTICLE_COUNT particle objects. Created in initParticles(), reused forever.
     // Dead particles are respawned rather than deleted. Each particle has:
     //   x, y        - current world position
+    //   prevX, prevY  - world position as of the START of the most recent update() tick
+    //     (see the sparks comment above for why render() needs this)
     //   vx, vy      - current velocity
     //   age         - how old the particle is (0.0 = newborn, 1.0 = about to die)
     //   ageRate     - how fast it ages each tick (varies slightly per particle)
@@ -363,6 +395,8 @@ class Demo {
             this.sparks.push({
                 x: 0, // Current world x position (set by updateSparks).
                 y: 0, // Current world y position.
+                prevX: 0, // World x position at the start of the last tick (for render interpolation).
+                prevY: 0, // World y position at the start of the last tick.
                 vx: 0, // Instantaneous velocity on x (used for spawn direction hint).
                 vy: 0, // Instantaneous velocity on y.
                 freqX, // How fast the spark oscillates horizontally.
@@ -375,6 +409,15 @@ class Demo {
 
         // Run one updateSparks() so all sparks have correct positions before particles spawn.
         this.updateSparks();
+
+        // The first updateSparks() call above moved every spark away from its placeholder
+        // (0, 0), which would otherwise look like every spark render-interpolating in from
+        // the world's center on the very first frame. Snap prevX/prevY to match so the
+        // first render draws sparks in the right place with no bogus streak.
+        for (let i = 0; i < SPARK_COUNT; i++) {
+            this.sparks[i].prevX = this.sparks[i].x;
+            this.sparks[i].prevY = this.sparks[i].y;
+        }
     }
 
     /**
@@ -389,7 +432,18 @@ class Demo {
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             // Pre-create each particle with dummy values. spawnParticle() will overwrite them.
             // We push the object first so it exists in the array before spawnParticle() runs.
-            this.particles.push({ x: 0, y: 0, vx: 0, vy: 0, age: 0, ageRate: 0.002, hueIndex: 0, alive: false });
+            this.particles.push({
+                x: 0,
+                y: 0,
+                prevX: 0,
+                prevY: 0,
+                vx: 0,
+                vy: 0,
+                age: 0,
+                ageRate: 0.002,
+                hueIndex: 0,
+                alive: false,
+            });
 
             // Set real position, velocity, hue, and age rate using the full spawn logic.
             this.spawnParticle(this.particles[i]);
@@ -478,6 +532,12 @@ class Demo {
         }
 
         // Move the particle
+        // Remember where the particle started this tick before moving it, so render()
+        // can blend smoothly between "was here" and "is here" (see the prevX/prevY
+        // comment on the particles field above).
+        p.prevX = p.x;
+        p.prevY = p.y;
+
         // Velocity (units/tick) added to position gives the new position.
         p.x += p.vx;
         p.y += p.vy;
@@ -511,6 +571,13 @@ class Demo {
         // multiplying by SPAWN_SCATTER * 2 gives -SPAWN_SCATTER to +SPAWN_SCATTER.
         p.x = spark.x + (Math.random() - 0.5) * SPAWN_SCATTER * 2;
         p.y = spark.y + (Math.random() - 0.5) * SPAWN_SCATTER * 2;
+
+        // Snap prevX/prevY to the same spot as the new x/y. Without this, render()
+        // would blend from wherever this particle died (maybe clear across the
+        // screen) to its brand-new spawn point, drawing a streak that was never
+        // really there.
+        p.prevX = p.x;
+        p.prevY = p.y;
 
         // Give the particle a random initial velocity in a random direction.
         // Math.PI is the number pi (~3.14159). Multiplying by 2 gives the full circle in radians.
@@ -554,6 +621,11 @@ class Demo {
     updateSparks() {
         for (let i = 0; i < SPARK_COUNT; i++) {
             const spark = this.sparks[i];
+
+            // Remember this tick's starting position before the orbit math below moves
+            // the spark, so render() has an "old" and "new" position to blend between.
+            spark.prevX = spark.x;
+            spark.prevY = spark.y;
 
             // Lissajous orbit: x follows a sine wave, y follows a cosine wave.
             // Slightly different frequencies (freqX vs freqY) mean the path slowly
@@ -635,6 +707,12 @@ class Demo {
      * Pass 2 - young particles (tier 0, 1, 2): drawn as 2×2 filled rectangles.
      */
     renderParticles() {
+        // How far we are, right now, between the last completed physics tick and the
+        // next one. Every particle blends its prevX/prevY toward its x/y by this same
+        // fraction, giving each one a true render-time position instead of only its
+        // last-tick position (same idea as renderSparks() above).
+        const alpha = BT.renderAlpha;
+
         // Pass 1: old, dim particles as single 1×1 pixels
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             const p = this.particles[i];
@@ -658,11 +736,10 @@ class Demo {
                 continue;
             }
 
-            // Convert world coordinates to screen pixel coordinates.
-            // See the HALF_W / HALF_H comment in the Configuration section for the formula.
-            // Math.floor() snaps to the nearest whole pixel (you cannot draw half a pixel).
-            const sx = Math.floor((p.x / FIELD_RANGE) * HALF_W + HALF_W);
-            const sy = Math.floor((p.y / FIELD_RANGE) * HALF_H + HALF_H);
+            // Convert the particle's blended world position to screen pixels
+            // (worldToScreen() above explains the blend and the conversion formula).
+            const sx = worldToScreen(p.prevX, p.x, alpha, HALF_W);
+            const sy = worldToScreen(p.prevY, p.y, alpha, HALF_H);
 
             // Skip any particle whose screen position is outside the visible area.
             // Drawing outside the canvas boundaries would cause an engine error.
@@ -698,8 +775,9 @@ class Demo {
                 continue;
             }
 
-            const sx = Math.floor((p.x / FIELD_RANGE) * HALF_W + HALF_W);
-            const sy = Math.floor((p.y / FIELD_RANGE) * HALF_H + HALF_H);
+            // Same world-to-screen conversion as pass 1 (see worldToScreen() above).
+            const sx = worldToScreen(p.prevX, p.x, alpha, HALF_W);
+            const sy = worldToScreen(p.prevY, p.y, alpha, HALF_H);
 
             // A 2×2 rect occupies pixels at (sx, sy), (sx+1, sy), (sx, sy+1), (sx+1, sy+1).
             // We therefore need both sx and sx+1 to be inside the screen, so sx <= DISPLAY_W-2.
@@ -728,12 +806,19 @@ class Demo {
      * are built without any actual blending or transparency.
      */
     renderSparks() {
+        // How far we are, right now, between the last completed physics tick and the
+        // next one (0 = just completed, just under 1 = next tick about to happen).
+        // Blending prevX/prevY toward x/y by this fraction gives each spark's true
+        // position at this render moment instead of only its last-tick position.
+        const alpha = BT.renderAlpha;
+
         for (let i = 0; i < SPARK_COUNT; i++) {
             const spark = this.sparks[i];
 
-            // Convert the spark's world position to screen pixel coordinates.
-            const sx = Math.floor((spark.x / FIELD_RANGE) * HALF_W + HALF_W);
-            const sy = Math.floor((spark.y / FIELD_RANGE) * HALF_H + HALF_H);
+            // Convert the spark's blended world position to screen pixel coordinates
+            // (worldToScreen() above explains the blend and the conversion formula).
+            const sx = worldToScreen(spark.prevX, spark.x, alpha, HALF_W);
+            const sy = worldToScreen(spark.prevY, spark.y, alpha, HALF_H);
 
             // The outermost layer is a 5×5 rect extending 2 pixels in each direction.
             // We therefore need sx >= 2 (so sx-2 >= 0) and sx <= DISPLAY_W-3 (so sx+2 <= DISPLAY_W-1).

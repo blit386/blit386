@@ -15,8 +15,14 @@
 //   - How grid row/column indices turn into x/y positions on the screen
 //   - Why we sometimes draw many BT.drawPixel calls in a small block to make one "big" chunky pixel
 //   - A pattern drawn only with loops and math (no picture array), with colors that move over time
+//
+// The section captions above each artwork are drawn with ui.caption() from the shared UI kit
+// (src/shared/ui.js), in the same amber header color every other demo in the series uses.
+// The artwork itself is the lesson and is still drawn pixel by pixel below.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -27,7 +33,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // Index 0 is always transparent. Custom colors start at 1.
 const C_WHITE = 1; // Pure white: font base color
 const C_BG = 2; // Deep gray-blue: fills the screen background
-const C_LABEL = 3; // Pale blue-white: section headings
+const C_TAG = 3; // Pale blue-white: only colors the overlay bar and timing-chart marks (see configure())
 
 // Heart sprite colors (used by HEART_PALETTE_MAP below).
 const C_HEART_OUTLINE = 5; // Dark red: the heart's outline pixels
@@ -89,6 +95,8 @@ const TREE_PALETTE_MAP = [null, C_TREE_DARK, C_TREE_LIGHT, C_TRUNK];
 /**
  * Looks up the palette index for a paint code.
  * The grid only uses small integers we authored, not user input.
+ * This is the one place that validates grid codes: 0 (empty) and anything
+ * outside the map both come back as null, so callers only need one check.
  *
  * @param {(number | null)[]} paletteMap - Array of palette indices (null = transparent).
  * @param {number} code - The paint code from the grid.
@@ -115,6 +123,10 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Where the shared UI theme colors landed in the palette, filled by applyTheme() in
+    // init(). The UI kit draws the section captions with these slots.
+    theme = null;
+
     /**
      * Optional engine settings. We keep the default 320x240 screen and ask for 16
      * palette swatches per row so the overlay grid lines up with the 8-cell-wide heart art
@@ -130,19 +142,19 @@ class Demo {
             overlayTimingChartHeight: 64,
 
             overlayStyle: {
-                barPaletteIndex: 3,
-                textPaletteIndex: 2,
-                gapPaletteIndex: 2,
+                barPaletteIndex: C_TAG,
+                textPaletteIndex: C_BG,
+                gapPaletteIndex: C_BG,
             },
 
             isOverlayTimingChartEnabled: true,
 
             overlayTimingChartStyle: {
-                updateBarPaletteIndex: 2,
-                renderBarPaletteIndex: 3,
-                warningPaletteIndex: 3,
-                errorPaletteIndex: 4,
-                tagPaletteIndex: 2,
+                updateBarPaletteIndex: C_BG,
+                renderBarPaletteIndex: C_TAG,
+                warningPaletteIndex: C_TAG,
+                errorPaletteIndex: 4, // Slot 4 has no named constant - this demo leaves it unassigned.
+                tagPaletteIndex: C_BG,
             },
         };
     }
@@ -156,14 +168,15 @@ class Demo {
         // Set up the color palette
         // Think of this as laying out paint on an artist's palette tray before starting a painting.
         // Every color we might use gets a number. We set them all up before drawing begins.
-        // Sixteen slots are enough for this demo (we only use indices 1 through 11).
+        // Thirty-two slots: the artwork only uses indices 1 through 11, and the shared UI
+        // theme takes 12 more (slots 20-31, installed below), so 32 fits everything.
         // configure() sets overlayPaletteColumns: 16 so the overlay swatch grid matches the
         // 8-column-wide heart grid (two art cells per overlay column).
-        this.palette = BT.paletteCreate(16);
+        this.palette = BT.paletteCreate(32);
 
         this.palette.set(C_WHITE, new Color32(255, 255, 255)); // pure white
         this.palette.set(C_BG, new Color32(28, 32, 48)); // deep gray-blue background
-        this.palette.set(C_LABEL, new Color32(200, 210, 230)); // pale blue-white section labels
+        this.palette.set(C_TAG, new Color32(200, 210, 230)); // pale blue-white overlay bar / chart accent
 
         // Heart sprite colors.
         this.palette.set(C_HEART_OUTLINE, new Color32(110, 10, 30)); // dark red outline
@@ -179,8 +192,13 @@ class Demo {
         this.palette.set(C_CHECKER_A, new Color32(255, 0, 0)); // start as red
         this.palette.set(C_CHECKER_B, new Color32(0, 0, 255)); // start as blue
 
-        // Overlay colors (must match configure().overlayStyle above).
-        // Bar fill uses slot 7 (C_TREE_DARK); text uses C_LABEL. Both are set above.
+        // The overlay styles in configure() reuse C_TAG and C_BG, both set above.
+
+        // Install the shared UI theme the kit draws the section captions with.
+        // It writes 12 colors starting at the slot we pass - slots 20..31 here, which
+        // stay clear of the artwork colors (1-11) and fill the top of our 32-slot
+        // palette exactly. Must happen before BT.paletteSet() below.
+        this.theme = applyTheme(this.palette, 20);
 
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
@@ -250,12 +268,9 @@ class Demo {
                 // Read the paint code for this cell, like looking up a coordinate on graph paper.
                 const code = rowCodes[col];
 
-                // Zero means "no ink here" - skip so the background stays visible.
-                if (code === 0) {
-                    continue;
-                }
-
-                // paletteMap[code] gives us the palette index for this paint code (bounds-checked helper).
+                // Ask the helper which palette index this code means. It answers null for
+                // code 0 ("no ink here") and for any code outside the map, so this single
+                // check is all the guarding we need - skip and the background stays visible.
                 const paletteIndex = indexFromPaletteMap(paletteMap, code);
                 if (paletteIndex === null) {
                     continue;
@@ -280,7 +295,9 @@ class Demo {
      * Labels and draws the 8x8 heart on the left.
      */
     renderHeartSection() {
-        BT.systemPrint(new Vector2i(10, 28), C_LABEL, 'Heart 8x8 (number grid)');
+        // Print the section caption with ui.caption() from the shared UI kit - the same
+        // widget every demo in the series uses, so all captions look identical everywhere.
+        ui.caption(10, 28, 'Heart 8x8 (number grid)');
 
         // scale = 4 makes the 8-cell-wide picture use 32 virtual pixels of width.
         const scale = 4;
@@ -294,7 +311,7 @@ class Demo {
      * Labels and draws the 12x16 tree on the right.
      */
     renderTreeSection() {
-        BT.systemPrint(new Vector2i(168, 28), C_LABEL, 'Tree 12x16 (number grid)');
+        ui.caption(168, 28, 'Tree 12x16 (number grid)');
 
         // Slightly smaller scale so the taller tree still fits comfortably.
         const scale = 3;
@@ -309,7 +326,7 @@ class Demo {
      * Colors slide around based on animTime (updated in update()) so you can see the clock moving.
      */
     renderCheckerPatternSection() {
-        BT.systemPrint(new Vector2i(10, 100), C_LABEL, 'Checkerboard (loops + math, no grid array)');
+        ui.caption(10, 100, 'Checkerboard (loops + math, no grid array)');
 
         // How many squares along each side.
         const cells = 8;

@@ -4,17 +4,22 @@
  * Demo 035 in the BLIT386 demo series.
  * Prerequisites: 028-Keyboard-Input (https://demos.blit386.dev/028-keyboard-input)
  *
- * Port of a standalone blit-tech keyboard test: every key is drawn on screen and
+ * Port of a standalone blit386 keyboard test: every key is drawn on screen and
  * lights up green while held, yellow on `BT.isKeyPressed` (edge), red on
  * `BT.isKeyReleased`. Use this page to verify that fast repeated taps are not
  * dropped on high-refresh displays (120 Hz monitor with `targetFPS: 60`).
  *
+ * The title strip and the status readouts (last event, tick, press/release
+ * counts) come from the shared UI kit; the keyboard drawing itself stays
+ * hand-rolled. On touch devices the kit shows a warm notice that this demo
+ * needs a physical keyboard.
+ *
  * Live version: https://demos.blit386.dev/035-keyboard-diagnostic
  */
 
-// @pageTitle BLIT386 Demo 035 - Keyboard Diagnostic
-
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -32,15 +37,35 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
  * @property {number} releaseTimer Frames left to show the release flash.
  */
 
-const C_BG = 1; // Screen background color.
-const C_PANEL = 2; // Resting key-cap color (not held, pressed, or released).
-const C_BORDER = 3; // Outline color for keys and panels.
-const C_WHITE = 4; // Bright text, also used for the "released" key label.
-const C_AMBER = 5; // Last-action status line color.
-const C_DIM = 6; // Resting key label color.
-const C_LIT_HELD = 7; // Key-cap color while BT.isKeyDown is true (green).
-const C_LIT_PRESS = 8; // Key-cap color during the press flash (yellow).
-const C_LIT_RELEASE = 9; // Key-cap color during the release flash (red).
+/**
+ * One key inside a row descriptor. Most keys are standard-sized and sit one key width
+ * plus one KEY_GAP apart, so each entry only spells out its quirks (a wider cap, an extra gap, a jump
+ * to a fixed column) and everything else falls back to the standard measurements.
+ *
+ * @typedef {Object} KeyRowEntry
+ * @property {string} code KeyboardEvent.code string.
+ * @property {string} label Short label drawn on the key cap.
+ * @property {number} [w] Width in pixels, when the cap is wider or narrower than standard.
+ * @property {number} [gapBefore] Extra empty pixels before this key (for cluster gaps).
+ * @property {number} [x] Absolute left edge, when the key jumps to a fixed column.
+ */
+
+/**
+ * One horizontal row of the on-screen keyboard picture.
+ *
+ * @typedef {Object} KeyRow
+ * @property {number} startX Left edge of the first key in the row, in display pixels.
+ * @property {number} y Top edge of every key in the row, in display pixels.
+ * @property {KeyRowEntry[]} keys The keys, left to right.
+ */
+
+// Scene palette slots for the three key-cap flash states. These stay demo-owned
+// (not shared UI theme colors) because the legend and the key caps must show the
+// exact same green / yellow / red the diagnostic is about. Everything else (panel
+// fills, borders, text) now comes from the shared UI theme installed in init().
+const C_LIT_HELD = 1; // Key-cap color while BT.isKeyDown is true (green).
+const C_LIT_PRESS = 2; // Key-cap color during the press flash (yellow).
+const C_LIT_RELEASE = 3; // Key-cap color during the release flash (red).
 
 /** How many fixed ticks a press or release flash stays visible. */
 const FLASH_TICKS = 12;
@@ -48,7 +73,141 @@ const FLASH_TICKS = 12;
 const KEY_WIDTH = 18; // Width of a standard 1u key cap, in pixels.
 const KEY_HEIGHT = 18; // Height of a standard key cap, in pixels.
 const KEY_GAP = 2; // Empty space between adjacent key caps, in pixels.
-const KEY_PITCH = KEY_WIDTH + KEY_GAP; // Center-to-center spacing for a row of standard keys.
+
+/**
+ * The whole keyboard picture as data: six rows of key descriptors, top to bottom.
+ * addKeyRow() walks each row like laying tiles on a shelf - it keeps a running x
+ * position, places a key, then moves right by the key's width plus KEY_GAP. A key
+ * only needs extra fields when it breaks the pattern: `w` for wide caps (Backspace,
+ * Enter, Space), `gapBefore` for the small gaps between F-key clusters, and `x`
+ * when a key jumps to a fixed column (the arrow cluster on the right).
+ *
+ * @type {KeyRow[]}
+ */
+const KEYBOARD_ROWS = [
+    // Function row: Esc is a little wider, and the twelve F-keys sit in three
+    // clusters of four with a 6-pixel breather between clusters (F4|F5 and F8|F9).
+    {
+        startX: 10,
+        y: 50,
+        keys: [
+            { code: 'Escape', label: 'Esc', w: 22 },
+            { code: 'F1', label: 'F1', gapBefore: 4 },
+            { code: 'F2', label: 'F2' },
+            { code: 'F3', label: 'F3' },
+            { code: 'F4', label: 'F4' },
+            { code: 'F5', label: 'F5', gapBefore: 6 },
+            { code: 'F6', label: 'F6' },
+            { code: 'F7', label: 'F7' },
+            { code: 'F8', label: 'F8' },
+            { code: 'F9', label: 'F9', gapBefore: 6 },
+            { code: 'F10', label: 'F10' },
+            { code: 'F11', label: 'F11' },
+            { code: 'F12', label: 'F12' },
+        ],
+    },
+    // Number row: thirteen standard keys, then a wide Backspace at the end.
+    {
+        startX: 10,
+        y: 72,
+        keys: [
+            { code: 'Backquote', label: '`' },
+            { code: 'Digit1', label: '1' },
+            { code: 'Digit2', label: '2' },
+            { code: 'Digit3', label: '3' },
+            { code: 'Digit4', label: '4' },
+            { code: 'Digit5', label: '5' },
+            { code: 'Digit6', label: '6' },
+            { code: 'Digit7', label: '7' },
+            { code: 'Digit8', label: '8' },
+            { code: 'Digit9', label: '9' },
+            { code: 'Digit0', label: '0' },
+            { code: 'Minus', label: '-' },
+            { code: 'Equal', label: '=' },
+            { code: 'Backspace', label: 'Back', w: 38 },
+        ],
+    },
+    // QWERTY row: a wider Tab first, then standard keys, with a wider backslash cap.
+    {
+        startX: 10,
+        y: 92,
+        keys: [
+            { code: 'Tab', label: 'Tab', w: 27 },
+            { code: 'KeyQ', label: 'Q' },
+            { code: 'KeyW', label: 'W' },
+            { code: 'KeyE', label: 'E' },
+            { code: 'KeyR', label: 'R' },
+            { code: 'KeyT', label: 'T' },
+            { code: 'KeyY', label: 'Y' },
+            { code: 'KeyU', label: 'U' },
+            { code: 'KeyI', label: 'I' },
+            { code: 'KeyO', label: 'O' },
+            { code: 'KeyP', label: 'P' },
+            { code: 'BracketLeft', label: '[' },
+            { code: 'BracketRight', label: ']' },
+            { code: 'Backslash', label: '\\', w: 29 },
+        ],
+    },
+    // Home row: a wide Caps Lock, standard letter keys, and a wide Enter at the end.
+    {
+        startX: 10,
+        y: 112,
+        keys: [
+            { code: 'CapsLock', label: 'Caps', w: 32 },
+            { code: 'KeyA', label: 'A' },
+            { code: 'KeyS', label: 'S' },
+            { code: 'KeyD', label: 'D' },
+            { code: 'KeyF', label: 'F' },
+            { code: 'KeyG', label: 'G' },
+            { code: 'KeyH', label: 'H' },
+            { code: 'KeyJ', label: 'J' },
+            { code: 'KeyK', label: 'K' },
+            { code: 'KeyL', label: 'L' },
+            { code: 'Semicolon', label: ';' },
+            { code: 'Quote', label: "'" },
+            { code: 'Enter', label: 'Enter', w: 44 },
+        ],
+    },
+    // Bottom letter row: wide left Shift, standard keys, a narrow right Shift, and
+    // the up arrow pinned to its own column on the right edge.
+    {
+        startX: 10,
+        y: 132,
+        keys: [
+            { code: 'ShiftLeft', label: 'Shift', w: 42 },
+            { code: 'KeyZ', label: 'Z' },
+            { code: 'KeyX', label: 'X' },
+            { code: 'KeyC', label: 'C' },
+            { code: 'KeyV', label: 'V' },
+            { code: 'KeyB', label: 'B' },
+            { code: 'KeyN', label: 'N' },
+            { code: 'KeyM', label: 'M' },
+            { code: 'Comma', label: ',' },
+            { code: 'Period', label: '.' },
+            { code: 'Slash', label: '/' },
+            { code: 'ShiftRight', label: 'Shift', w: 14 },
+            { code: 'ArrowUp', label: '^', x: 268 },
+        ],
+    },
+    // Modifier row: every cap has its own width, and the left/down/right arrows jump
+    // to a fixed column so they line up under the up arrow above.
+    {
+        startX: 10,
+        y: 152,
+        keys: [
+            { code: 'ControlLeft', label: 'Ctrl', w: 24 },
+            { code: 'MetaLeft', label: 'Win', w: 18 },
+            { code: 'AltLeft', label: 'Alt', w: 18 },
+            { code: 'Space', label: 'Space', w: 96 },
+            { code: 'AltRight', label: 'Alt', w: 18 },
+            { code: 'MetaRight', label: 'Win', w: 18 },
+            { code: 'ControlRight', label: 'Ctrl', w: 24 },
+            { code: 'ArrowLeft', label: '<', x: 248 },
+            { code: 'ArrowDown', label: 'v' },
+            { code: 'ArrowRight', label: '>' },
+        ],
+    },
+];
 
 /**
  * Full keyboard layout diagnostic for edge-trigger testing.
@@ -59,10 +218,24 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
+    // Palette slots of the shared UI theme colors, filled by applyTheme() in init().
+    /** @type {ReturnType<typeof applyTheme> | null} */
+    theme = null;
+
     /** @type {KeyDef[]} */
     keys = [];
 
-    lastActionMessage = 'Press any key to test...';
+    /** Human-readable description of the most recent key edge, shown in the status panel. */
+    lastEvent = 'press any key';
+
+    /** Engine tick of the most recent key edge, or null before the first one. */
+    lastTick = null;
+
+    /** How many press edges we have seen in total. Fast-tap test: this must match releases. */
+    pressCount = 0;
+
+    /** How many release edges we have seen in total. */
+    releaseCount = 0;
 
     /**
      * @returns {Partial<HardwareSettings>}
@@ -82,15 +255,17 @@ class Demo {
      */
     async init() {
         this.palette = BT.paletteCreate(256);
-        this.palette.set(C_BG, new Color32(10, 12, 18, 255));
-        this.palette.set(C_PANEL, new Color32(24, 28, 38, 255));
-        this.palette.set(C_BORDER, new Color32(60, 68, 88, 255));
-        this.palette.set(C_WHITE, new Color32(230, 235, 245, 255));
-        this.palette.set(C_AMBER, new Color32(245, 180, 80, 255));
-        this.palette.set(C_DIM, new Color32(110, 120, 140, 255));
+
+        // The three flash colors live in low scene slots; the legend and the key
+        // caps both draw with them so the colors always match.
         this.palette.set(C_LIT_HELD, new Color32(75, 210, 120, 255));
         this.palette.set(C_LIT_PRESS, new Color32(255, 230, 80, 255));
         this.palette.set(C_LIT_RELEASE, new Color32(240, 80, 80, 255));
+
+        // applyTheme() installs the twelve shared UI colors (background, panel,
+        // border, text, ...) high in the palette and reports their slots, so the
+        // key caps and the kit widgets all draw from one consistent theme.
+        this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
         this.initKeyboardLayout();
@@ -98,6 +273,10 @@ class Demo {
     }
 
     update() {
+        // Let the UI kit track touch contacts first - ui.hasTouch() in render()
+        // relies on this housekeeping running every update tick.
+        ui.tick();
+
         for (let i = 0; i < this.keys.length; i++) {
             const key = this.keys[i];
 
@@ -107,13 +286,17 @@ class Demo {
             if (BT.isKeyPressed(key.code)) {
                 key.pressTimer = FLASH_TICKS;
                 key.releaseTimer = 0;
-                this.lastActionMessage = `[PRESSED] code: "${key.code}" at tick ${BT.ticks}`;
+                this.lastEvent = `PRESSED ${key.code}`;
+                this.lastTick = BT.ticks;
+                this.pressCount += 1;
             }
 
             if (BT.isKeyReleased(key.code)) {
                 key.releaseTimer = FLASH_TICKS;
                 key.pressTimer = 0;
-                this.lastActionMessage = `[RELEASED] code: "${key.code}" at tick ${BT.ticks}`;
+                this.lastEvent = `RELEASED ${key.code}`;
+                this.lastTick = BT.ticks;
+                this.releaseCount += 1;
             }
 
             if (key.pressTimer > 0) {
@@ -127,22 +310,47 @@ class Demo {
     }
 
     render() {
-        BT.clear(C_BG);
+        BT.clear(this.theme.bg);
 
-        BT.systemPrint(new Vector2i(10, 10), C_WHITE, 'BLIT386 KEYBOARD DIAGNOSTIC');
-        BT.systemPrint(new Vector2i(10, 20), C_DIM, 'Tap fast on 120 Hz — yellow flash must not skip');
-
-        BT.systemPrint(new Vector2i(10, 185), C_LIT_HELD, 'HELD (Green)');
-        BT.systemPrint(new Vector2i(110, 185), C_LIT_PRESS, 'TRANS_PRESS (Yellow)');
-        BT.systemPrint(new Vector2i(230, 185), C_LIT_RELEASE, 'TRANS_RELEASE (Red)');
-
-        BT.drawRectFill(new Rect2i(10, 205, 300, 20), C_PANEL);
-        BT.drawRect(new Rect2i(10, 205, 300, 20), C_BORDER);
-        BT.systemPrint(new Vector2i(16, 211), C_AMBER, this.lastActionMessage);
-
+        // Draw every key cap first, so the kit panels below layer on top of nothing.
         for (let i = 0; i < this.keys.length; i++) {
             this.renderKey(this.keys[i]);
         }
+
+        // The color legend stays hand-drawn: each word is printed in the actual
+        // scene flash color it describes, which the kit's fixed theme roles cannot do.
+        BT.systemPrint(new Vector2i(10, 173), C_LIT_HELD, 'HELD (green)');
+        BT.systemPrint(new Vector2i(104, 173), C_LIT_PRESS, 'PRESS (yellow)');
+        BT.systemPrint(new Vector2i(210, 173), C_LIT_RELEASE, 'RELEASE (red)');
+
+        // Full-width title strip. The second row is contextual: touch devices get a
+        // warning that the demo is pointless without a keyboard, everyone else gets
+        // the fast-tap testing hint.
+        ui.begin('topBar');
+        ui.panel('BLIT386 Keyboard Diagnostic');
+
+        if (ui.hasTouch()) {
+            ui.label('This demo needs a keyboard', { color: 'warm' });
+        } else {
+            ui.label('Tap fast on 120 Hz - yellow flash must not skip', { color: 'dim' });
+        }
+
+        ui.end();
+
+        // Status readout: which edge fired last, and on which engine tick.
+        ui.begin('bottomLeft');
+        ui.panel();
+        ui.kv('Last', this.lastEvent);
+        ui.kv('Tick', this.lastTick === null ? '-' : this.lastTick);
+        ui.end();
+
+        // Edge counters: after a burst of fast taps both numbers must match - a
+        // mismatch means an edge was dropped somewhere.
+        ui.begin('bottomRight');
+        ui.panel();
+        ui.kv('Presses', this.pressCount);
+        ui.kv('Releases', this.releaseCount);
+        ui.end();
     }
 
     /**
@@ -153,23 +361,25 @@ class Demo {
         const isPressed = key.pressTimer > 0;
         const isReleased = key.releaseTimer > 0;
 
-        let color = C_PANEL;
-        let textColor = C_DIM;
+        // Resting keys use the shared theme's panel / dim-text colors; lit keys
+        // switch to the scene flash colors with a contrasting label.
+        let color = this.theme.panel;
+        let textColor = this.theme.dim;
 
         if (isDown) {
             color = C_LIT_HELD;
-            textColor = C_BG;
+            textColor = this.theme.bg;
         } else if (isPressed) {
             color = C_LIT_PRESS;
-            textColor = C_BG;
+            textColor = this.theme.bg;
         } else if (isReleased) {
             color = C_LIT_RELEASE;
-            textColor = C_WHITE;
+            textColor = this.theme.text;
         }
 
         const rect = new Rect2i(key.x, key.y, key.w, key.h);
         BT.drawRectFill(rect, color);
-        BT.drawRect(rect, C_BORDER);
+        BT.drawRect(rect, this.theme.border);
 
         const labelSize = BT.systemPrintMeasure(key.label);
         const lx = key.x + Math.floor((key.w - labelSize.x) / 2);
@@ -192,125 +402,46 @@ class Demo {
         this.keys.push({ code, label, x, y, w, h, pressTimer: 0, releaseTimer: 0 });
     }
 
+    /**
+     * Lays out one row of key caps from its descriptor, left to right.
+     *
+     * The running x position starts at the row's startX. For each key we first honor
+     * its quirks - jump to an absolute column (`x`) or skip a few extra pixels
+     * (`gapBefore`) - then place the cap and step right by its width plus the
+     * standard KEY_GAP, ready for the next key.
+     *
+     * @param {KeyRow} row One entry of KEYBOARD_ROWS.
+     */
+    addKeyRow(row) {
+        let x = row.startX;
+
+        for (const key of row.keys) {
+            // A fixed column wins over the flowing position (used by the arrow cluster).
+            if (typeof key.x === 'number') {
+                x = key.x;
+            }
+
+            // Extra breathing room before this key, like the gap between F-key clusters.
+            // The ?? operator means "use the left value unless it is missing, then 0".
+            x += key.gapBefore ?? 0;
+
+            // Wide and narrow caps say so; everyone else gets the standard width.
+            const w = key.w ?? KEY_WIDTH;
+
+            this.addKey(key.code, key.label, x, row.y, w, KEY_HEIGHT);
+
+            // Step past this cap and the standard gap so the next key lands beside it.
+            x += w + KEY_GAP;
+        }
+    }
+
     /** Builds the on-screen key cap list (positions only; state lives on each KeyDef). */
     initKeyboardLayout() {
-        this.addKey('Escape', 'Esc', 10, 50, 22, KEY_HEIGHT);
-
-        const fKeys = ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'];
-
-        for (let i = 0; i < fKeys.length; i++) {
-            let offset = 0;
-
-            if (i >= 4) {
-                offset += 6;
-            }
-
-            if (i >= 8) {
-                offset += 6;
-            }
-
-            this.addKey(fKeys[i], fKeys[i], 38 + i * KEY_PITCH + offset, 50, KEY_WIDTH, KEY_HEIGHT);
+        // The layout itself lives in KEYBOARD_ROWS near the top of the file; here we
+        // just walk the six rows and let addKeyRow() place every cap.
+        for (const row of KEYBOARD_ROWS) {
+            this.addKeyRow(row);
         }
-
-        const numberRow = [
-            { code: 'Backquote', label: '`' },
-            { code: 'Digit1', label: '1' },
-            { code: 'Digit2', label: '2' },
-            { code: 'Digit3', label: '3' },
-            { code: 'Digit4', label: '4' },
-            { code: 'Digit5', label: '5' },
-            { code: 'Digit6', label: '6' },
-            { code: 'Digit7', label: '7' },
-            { code: 'Digit8', label: '8' },
-            { code: 'Digit9', label: '9' },
-            { code: 'Digit0', label: '0' },
-            { code: 'Minus', label: '-' },
-            { code: 'Equal', label: '=' },
-        ];
-
-        for (let i = 0; i < numberRow.length; i++) {
-            this.addKey(numberRow[i].code, numberRow[i].label, 10 + i * KEY_PITCH, 72, KEY_WIDTH, KEY_HEIGHT);
-        }
-
-        this.addKey('Backspace', 'Back', 10 + numberRow.length * KEY_PITCH, 72, 38, KEY_HEIGHT);
-
-        const qwerty = [
-            { code: 'KeyQ', label: 'Q' },
-            { code: 'KeyW', label: 'W' },
-            { code: 'KeyE', label: 'E' },
-            { code: 'KeyR', label: 'R' },
-            { code: 'KeyT', label: 'T' },
-            { code: 'KeyY', label: 'Y' },
-            { code: 'KeyU', label: 'U' },
-            { code: 'KeyI', label: 'I' },
-            { code: 'KeyO', label: 'O' },
-            { code: 'KeyP', label: 'P' },
-            { code: 'BracketLeft', label: '[' },
-            { code: 'BracketRight', label: ']' },
-            { code: 'Backslash', label: '\\' },
-        ];
-
-        this.addKey('Tab', 'Tab', 10, 92, 27, KEY_HEIGHT);
-
-        for (let i = 0; i < qwerty.length; i++) {
-            const w = qwerty[i].code === 'Backslash' ? 29 : KEY_WIDTH;
-            this.addKey(qwerty[i].code, qwerty[i].label, 39 + i * KEY_PITCH, 92, w, KEY_HEIGHT);
-        }
-
-        const asdf = [
-            { code: 'KeyA', label: 'A' },
-            { code: 'KeyS', label: 'S' },
-            { code: 'KeyD', label: 'D' },
-            { code: 'KeyF', label: 'F' },
-            { code: 'KeyG', label: 'G' },
-            { code: 'KeyH', label: 'H' },
-            { code: 'KeyJ', label: 'J' },
-            { code: 'KeyK', label: 'K' },
-            { code: 'KeyL', label: 'L' },
-            { code: 'Semicolon', label: ';' },
-            { code: 'Quote', label: "'" },
-        ];
-
-        this.addKey('CapsLock', 'Caps', 10, 112, 32, KEY_HEIGHT);
-
-        for (let i = 0; i < asdf.length; i++) {
-            this.addKey(asdf[i].code, asdf[i].label, 44 + i * KEY_PITCH, 112, KEY_WIDTH, KEY_HEIGHT);
-        }
-
-        this.addKey('Enter', 'Enter', 44 + asdf.length * KEY_PITCH, 112, 44, KEY_HEIGHT);
-
-        const bottomRowKeys = [
-            { code: 'KeyZ', label: 'Z' },
-            { code: 'KeyX', label: 'X' },
-            { code: 'KeyC', label: 'C' },
-            { code: 'KeyV', label: 'V' },
-            { code: 'KeyB', label: 'B' },
-            { code: 'KeyN', label: 'N' },
-            { code: 'KeyM', label: 'M' },
-            { code: 'Comma', label: ',' },
-            { code: 'Period', label: '.' },
-            { code: 'Slash', label: '/' },
-        ];
-
-        this.addKey('ShiftLeft', 'Shift', 10, 132, 42, KEY_HEIGHT);
-
-        for (let i = 0; i < bottomRowKeys.length; i++) {
-            this.addKey(bottomRowKeys[i].code, bottomRowKeys[i].label, 54 + i * KEY_PITCH, 132, KEY_WIDTH, KEY_HEIGHT);
-        }
-
-        this.addKey('ShiftRight', 'Shift', 54 + bottomRowKeys.length * KEY_PITCH, 132, 14, KEY_HEIGHT);
-        this.addKey('ArrowUp', '^', 268, 132, KEY_WIDTH, KEY_HEIGHT);
-
-        this.addKey('ControlLeft', 'Ctrl', 10, 152, 24, KEY_HEIGHT);
-        this.addKey('MetaLeft', 'Win', 36, 152, 18, KEY_HEIGHT);
-        this.addKey('AltLeft', 'Alt', 56, 152, 18, KEY_HEIGHT);
-        this.addKey('Space', 'Space', 76, 152, 96, KEY_HEIGHT);
-        this.addKey('AltRight', 'Alt', 174, 152, 18, KEY_HEIGHT);
-        this.addKey('MetaRight', 'Win', 194, 152, 18, KEY_HEIGHT);
-        this.addKey('ControlRight', 'Ctrl', 214, 152, 24, KEY_HEIGHT);
-        this.addKey('ArrowLeft', '<', 248, 152, KEY_WIDTH, KEY_HEIGHT);
-        this.addKey('ArrowDown', 'v', 268, 152, KEY_WIDTH, KEY_HEIGHT);
-        this.addKey('ArrowRight', '>', 288, 152, KEY_WIDTH, KEY_HEIGHT);
     }
 }
 

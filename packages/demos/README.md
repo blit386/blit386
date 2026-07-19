@@ -28,7 +28,7 @@ implements `init()`, `update()`, and `render()`.
 
 The engine draws a unified stats overlay on top of each frame (FPS, target FPS, backend, resolution, demo title). The
 overlay body starts hidden; a small bitmap toggle hint sits in the bottom-left corner by default. Press Backquote (`~`)
-or tap the bottom-left 48x48 px corner to show or hide the body. Opt into a body that is visible on the first frame with
+or tap the bottom-left 17x13 px corner to show or hide the body. Opt into a body that is visible on the first frame with
 `isOverlayVisibleAtStart: true`. Immersive demos hide the hint icon with `isOverlayToggleHintVisible: false` (see
 `013-image-output`, `014-game-scene`, `023-crt-pipboy`, and `029-snake-game`); the overlay still toggles with Backquote.
 Set `isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` in `configure()` to disable
@@ -111,8 +111,8 @@ next free number after the highest one in use – never a retired or skipped one
   and typed text via `BT.inputString`
 - [035-keyboard-diagnostic](https://demos.blit386.dev/035-keyboard-diagnostic) – Full on-screen keyboard layout with
   press / hold / release color feedback; use to verify fast taps on high-refresh displays
-- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard steering,
-  PipBoy-style CRT post-processing, synth SFX on eat/game-over, and a looping background music track
+- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard, D-pad, and swipe
+  steering, PipBoy-style CRT post-processing, synth SFX on eat/game-over, and a looping background music track
 - [030-input-map-remapping](https://demos.blit386.dev/030-input-map-remapping) – Runtime face-button remapping with
   `BT.inputMap` / `BT.inputMapReset` (defaults, custom OR keys, clearing a binding); complements demo 028
 - [031-gamepad-input](https://demos.blit386.dev/031-gamepad-input) – Tiny hover-pod playground showing gamepad connect

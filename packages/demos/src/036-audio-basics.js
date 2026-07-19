@@ -21,6 +21,9 @@
  * - pan: which speaker the sound favors, from -1 (only the left speaker) through 0
  *   (centered) to +1 (only the right speaker).
  *
+ * The panels and buttons come from the shared UI kit in src/shared/ui.js, so each pitch
+ * preset works three ways: click its button, tap it on a phone, or press its number key.
+ *
  * The engine's built-in overlay can also show live audio meters: little bars that move
  * up and down with how loud each audio bus (main, music, sfx) is right now, plus a
  * count of how many sounds are playing at once. This demo turns that feature on with
@@ -30,7 +33,8 @@
  * Try this:
  * - Click anywhere, or press any key, to unlock sound - watch the message at the top
  *   change once you do.
- * - Press 1, 2, or 3 to play a short "blip" at a low, normal, or high pitch.
+ * - Press 1, 2, or 3 (or tap the matching button) to play a short "blip" at a low,
+ *   normal, or high pitch.
  * - Click near the top of the screen for a loud "pop," or near the bottom for a quiet
  *   one. Click near the left or right edge to hear it pan toward that speaker
  *   (headphones or stereo speakers make this easiest to hear).
@@ -38,35 +42,31 @@
  *   open the engine overlay, then play a few sounds and watch the audio meters move.
  */
 
-import { AudioClip, bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { AudioClip, bootstrap, BT, Rect2i } from 'blit386';
+
+import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
+/** @typedef {import('blit386').Vector2i} Vector2i */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
-// Palette indices. Slot 0 stays transparent.
-const C_WHITE = 1;
-const C_BG = 2;
-const C_AMBER = 3;
-const C_DIM = 4;
-const C_LIT = 5;
-const C_PANEL = 6;
-const C_PANEL_BORDER = 7;
-const C_ACCENT = 8;
-const C_METER_FILL = 9;
-
-// How many fixed ticks a key or click flash stays lit before fading back to normal.
+// How many fixed ticks a click flash stays lit before fading back to normal.
 // The engine runs 60 ticks per second by default, so 12 ticks is about 200ms.
 const FLASH_TICKS = 12;
 
-// The three number keys, and the pitch each one plays the blip sound at.
+// The three pitch-preset buttons, and the pitch each one plays the blip sound at.
 // 1.0 is the sound's natural pitch; smaller numbers sound lower and slower,
-// bigger numbers sound higher and faster.
+// bigger numbers sound higher and faster. `label` is the button text (which doubles as
+// the keyboard hint), and `code` is the bound key.
 const KEY_PITCH_PRESETS = [
-    { code: 'Digit1', label: '1', pitch: 0.75 },
-    { code: 'Digit2', label: '2', pitch: 1.0 },
-    { code: 'Digit3', label: '3', pitch: 1.5 },
+    { code: 'Digit1', label: '1 - Low (0.75x)', pitch: 0.75 },
+    { code: 'Digit2', label: '2 - Normal (1.00x)', pitch: 1.0 },
+    { code: 'Digit3', label: '3 - High (1.50x)', pitch: 1.5 },
 ];
+
+// All pitch buttons share one width so the left panel reads as a tidy keypad.
+const PITCH_BUTTON_W = 120;
 
 // A click near the top of the screen plays at POINTER_VOLUME_MAX; a click near the
 // bottom plays at POINTER_VOLUME_MIN. Everything in between fades smoothly.
@@ -78,15 +78,9 @@ const POINTER_VOLUME_MIN = 0.2;
 const POINTER_PAN_MIN = -1;
 const POINTER_PAN_MAX = 1;
 
-// Layout for the two side-by-side info panels near the bottom of the screen.
-const PANEL_Y = 150;
-const PANEL_W = 148;
-const PANEL_H = 82;
-const PANEL_LEFT_X = 8;
-const PANEL_RIGHT_X = 168;
-
-// Radius of the little square ring drawn where you last clicked, in pixels.
-const CLICK_MARKER_RADIUS = 6;
+// Half the width of the little square ring drawn where you last clicked, in pixels.
+// The marker is drawn by stepping this far out from the click point on every side.
+const CLICK_MARKER_HALF_SIZE = 6;
 
 /**
  * Keeps a number from going below `min` or above `max`.
@@ -109,19 +103,19 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    /** @type {AudioClip | null} Short blip sound played by the number keys. */
+    /** Palette slots of the shared UI theme colors, filled by applyTheme() in init(). */
+    theme = null;
+
+    /** @type {AudioClip | null} Short blip sound played by the pitch buttons. */
     blipClip = null;
 
     /** @type {AudioClip | null} Short pop sound played by clicking. */
     popClip = null;
 
-    // One flash-countdown per key preset, so each key's indicator lights up on its own.
-    keyFlashTimers = [0, 0, 0];
-
     /** @type {number | null} Pitch of the most recently played blip, or null before the first press. */
     lastKeyPitch = null;
 
-    // Flash countdown for the click marker and the pointer info panel.
+    // Flash countdown for the click marker and the pointer panel's volume meter.
     pointerFlashTimer = 0;
 
     /** @type {Vector2i | null} Where the pointer was the last time it was clicked. */
@@ -140,9 +134,7 @@ class Demo {
      */
     configure() {
         return {
-            // Adds live bar-graph meters (main/music/sfx bus levels) plus a voice-count
-            // readout to the overlay. Off by default, since measuring audio levels costs a
-            // little extra CPU work the engine skips unless a demo asks for it.
+            // Live per-bus level meters and a voice-count readout in the overlay (explained in the header above).
             isOverlayAudioMetersEnabled: true,
         };
     }
@@ -161,104 +153,79 @@ class Demo {
 
         this.palette = BT.paletteCreate(256);
 
-        this.palette.set(C_WHITE, new Color32(255, 255, 255));
-        this.palette.set(C_BG, new Color32(18, 22, 38));
-        this.palette.set(C_AMBER, new Color32(255, 200, 120));
-        this.palette.set(C_DIM, new Color32(130, 140, 160));
-        this.palette.set(C_LIT, new Color32(120, 255, 160));
-        this.palette.set(C_PANEL, new Color32(35, 42, 62));
-        this.palette.set(C_PANEL_BORDER, new Color32(90, 98, 120));
-        this.palette.set(C_ACCENT, new Color32(255, 140, 90));
-        this.palette.set(C_METER_FILL, new Color32(120, 190, 255));
+        // applyTheme() installs the twelve shared UI colors (panels, text, buttons, ...)
+        // and reports their slots, so render() can clear the screen with the theme's
+        // background color and draw the click marker with the theme's accent green.
+        this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
         return true;
     }
 
     /**
-     * Reads keyboard and pointer input for this tick and plays sounds in response.
+     * Runs the UI kit's once-per-tick housekeeping, then reads pointer clicks.
      *
-     * We check for key presses and clicks here in update(), not in render(). The engine
-     * clears "was this just pressed?" flags once per tick, and that tick always finishes
-     * before this frame's render() runs - checking in render() instead would randomly
-     * miss fast taps (028-keyboard-input explains this in more detail).
+     * The pitch keys (1/2/3) are bound to the buttons declared in render() via their
+     * { key } option. ui.tick() is where the kit safely catches those presses - keyboard
+     * "was it just pressed?" flags can only be read reliably here in update(), never in
+     * render() (028-keyboard-input explains why in detail).
      */
     update() {
-        // Each number key plays the blip sound at its own pitch.
-        for (let i = 0; i < KEY_PITCH_PRESETS.length; i++) {
-            const preset = KEY_PITCH_PRESETS[i];
-
-            if (!BT.isKeyPressed(preset.code)) {
-                continue;
-            }
-
-            BT.soundPlay(this.blipClip, { pitch: preset.pitch });
-            this.keyFlashTimers[i] = FLASH_TICKS;
-            this.lastKeyPitch = preset.pitch;
-        }
-
-        // Count every active flash timer down toward zero, one tick at a time.
-        for (let i = 0; i < this.keyFlashTimers.length; i++) {
-            if (this.keyFlashTimers[i] > 0) {
-                this.keyFlashTimers[i] -= 1;
-            }
-        }
+        ui.tick();
 
         // BT.BTN_POINTER_A is the primary click (left mouse button, or a touchscreen
         // tap). BT.isPressed fires only once, on the frame the click happens - the same
         // way 025-pointer-basics and 026-pointer-paint read their clicks.
         if (BT.isPressed(BT.BTN_POINTER_A, 0)) {
             const pos = BT.pointerPos(0);
-            const screen = BT.displaySize;
 
-            // Turn the click's vertical position into a volume: 0 at the very top of the
-            // screen, 1 at the very bottom.
-            const verticalFraction = clamp(pos.y / screen.y, 0, 1);
-            // Loud at the top, quiet at the bottom, so we count down from the maximum.
-            const volume = POINTER_VOLUME_MAX - verticalFraction * (POINTER_VOLUME_MAX - POINTER_VOLUME_MIN);
-
-            // Turn the click's horizontal position into a pan: 0 at the left edge of the
-            // screen, 1 at the right edge, then stretched out to the -1..+1 range BT.soundPlay
-            // expects.
-            const horizontalFraction = clamp(pos.x / screen.x, 0, 1);
-            const pan = POINTER_PAN_MIN + horizontalFraction * (POINTER_PAN_MAX - POINTER_PAN_MIN);
-
-            BT.soundPlay(this.popClip, { volume, pan });
-
-            this.lastClickPos = pos;
-            this.lastClickVolume = volume;
-            this.lastClickPan = pan;
-            this.pointerFlashTimer = FLASH_TICKS;
+            // Skip clicks that land on a UI kit widget - tapping a pitch button should
+            // only play its blip, not also fire a pop underneath the button.
+            if (!ui.overWidget(pos.x, pos.y)) {
+                this.playPopAt(pos);
+            }
         }
 
+        // Count the click flash down toward zero, one tick at a time.
         if (this.pointerFlashTimer > 0) {
             this.pointerFlashTimer -= 1;
         }
     }
 
     /**
-     * Clears the screen and draws the unlock message, click marker, and info panels.
+     * Clears the screen and declares the whole UI: the unlock/status message, the click
+     * marker, and the two info panels along the bottom edge.
      */
     render() {
-        BT.clear(C_BG);
+        BT.clear(this.theme.bg);
 
-        this.renderUnlockPrompt();
+        // The click marker is scene drawing, not a widget - draw it first so the panels
+        // always sit on top of it.
         this.renderClickMarker();
-        this.renderKeyboardPanel(PANEL_LEFT_X, PANEL_Y);
-        this.renderPointerPanel(PANEL_RIGHT_X, PANEL_Y);
+
+        this.renderStatusLine();
+        this.renderKeyboardPanel();
+        this.renderPointerPanel();
     }
 
     /**
-     * Shows the "please click or press a key" message until audio is unlocked, then
-     * switches to a plain reminder of the controls.
+     * The status line in the top-left corner: the shared unlock reminder until audio is
+     * unlocked, then a plain reminder of the controls. A borderless group - just one
+     * line of text, no panel around it.
      */
-    renderUnlockPrompt() {
-        if (!BT.isAudioUnlocked) {
-            BT.systemPrint(new Vector2i(8, 8), C_ACCENT, 'Click or press a key to enable sound');
-            return;
+    renderStatusLine() {
+        ui.begin('topLeft');
+
+        // The shared "click to enable sound" row - it draws itself only while sound is
+        // still locked, and disappears on its own after the first click or key press.
+        ui.audioUnlockHint();
+
+        // Once sound works, swap in a short reminder of what to try instead.
+        if (BT.isAudioUnlocked) {
+            ui.label('Tap a button for a blip. Click anywhere for a pop.', { color: 'dim' });
         }
 
-        BT.systemPrint(new Vector2i(8, 8), C_DIM, 'Press 1, 2, 3 for a blip. Click anywhere for a pop.');
+        ui.end();
     }
 
     /**
@@ -270,95 +237,91 @@ class Demo {
         }
 
         const marker = new Rect2i(
-            this.lastClickPos.x - CLICK_MARKER_RADIUS,
-            this.lastClickPos.y - CLICK_MARKER_RADIUS,
-            CLICK_MARKER_RADIUS * 2,
-            CLICK_MARKER_RADIUS * 2,
+            this.lastClickPos.x - CLICK_MARKER_HALF_SIZE,
+            this.lastClickPos.y - CLICK_MARKER_HALF_SIZE,
+            CLICK_MARKER_HALF_SIZE * 2,
+            CLICK_MARKER_HALF_SIZE * 2,
         );
 
-        BT.drawRect(marker, C_LIT);
+        BT.drawRect(marker, this.theme.accent);
     }
 
     /**
-     * Left-hand panel: the three pitch-preset keys and the pitch last played.
-     *
-     * @param {number} x - Left edge of the panel in display pixels.
-     * @param {number} y - Top edge of the panel.
+     * Left-hand panel: one button per pitch preset, plus the pitch last played. Each
+     * button fires on click, tap, or its number key - ui.button() treats all three the
+     * same, which is what makes this demo playable on a touchscreen.
      */
-    renderKeyboardPanel(x, y) {
-        BT.drawRectFill(new Rect2i(x, y, PANEL_W, PANEL_H), C_PANEL);
-        BT.drawRect(new Rect2i(x, y, PANEL_W, PANEL_H), C_PANEL_BORDER);
+    renderKeyboardPanel() {
+        ui.begin('bottomLeft');
+        ui.panel('Keyboard SFX (pitch)');
 
-        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'Keyboard SFX (pitch)');
-
-        for (let i = 0; i < KEY_PITCH_PRESETS.length; i++) {
-            const preset = KEY_PITCH_PRESETS[i];
-            const rowY = y + 20 + i * 14;
-            const flashing = this.keyFlashTimers[i] > 0;
-            const pip = new Rect2i(x + 6, rowY, 8, 8);
-
-            if (flashing) {
-                BT.drawRectFill(pip, C_LIT);
-            } else {
-                BT.drawRect(pip, C_PANEL_BORDER);
+        for (const preset of KEY_PITCH_PRESETS) {
+            if (ui.button(preset.label, { key: preset.code, width: PITCH_BUTTON_W })) {
+                // Play the blip at this preset's speed and remember it for the row below.
+                BT.soundPlay(this.blipClip, { pitch: preset.pitch });
+                this.lastKeyPitch = preset.pitch;
             }
-
-            const rowColor = flashing ? C_LIT : C_DIM;
-            BT.systemPrint(new Vector2i(x + 20, rowY - 1), rowColor, `Key ${preset.label}`);
-            BT.systemPrint(new Vector2i(x + 90, rowY - 1), rowColor, `${preset.pitch.toFixed(2)}x`);
         }
 
-        const lastPitchLabel = this.lastKeyPitch === null ? '—' : `${this.lastKeyPitch.toFixed(2)}x`;
-        BT.systemPrint(new Vector2i(x + 6, y + 66), C_DIM, 'Last pitch:');
-        BT.systemPrint(new Vector2i(x + 70, y + 66), this.lastKeyPitch === null ? C_DIM : C_WHITE, lastPitchLabel);
+        const lastPitchLabel = this.lastKeyPitch === null ? '-' : `${this.lastKeyPitch.toFixed(2)}x`;
+
+        ui.kv('Last pitch', lastPitchLabel);
+        ui.end();
     }
 
     /**
-     * Right-hand panel: a volume bar and a pan meter for the most recent click.
-     *
-     * @param {number} x - Left edge of the panel in display pixels.
-     * @param {number} y - Top edge of the panel.
+     * Right-hand panel: the volume and pan of the most recent click. The volume gets a
+     * meter bar that fills left-to-right (and flashes green right after a click); the
+     * pan is a plain number row, since -1 means left, 0 center, and +1 right.
      */
-    renderPointerPanel(x, y) {
-        BT.drawRectFill(new Rect2i(x, y, PANEL_W, PANEL_H), C_PANEL);
-        BT.drawRect(new Rect2i(x, y, PANEL_W, PANEL_H), C_PANEL_BORDER);
-
-        BT.systemPrint(new Vector2i(x + 4, y + 4), C_AMBER, 'Pointer SFX (volume/pan)');
-
-        const flashing = this.pointerFlashTimer > 0;
+    renderPointerPanel() {
         const hasClicked = this.lastClickVolume !== null && this.lastClickPan !== null;
-        const meterColor = flashing ? C_LIT : C_METER_FILL;
+        const flashing = this.pointerFlashTimer > 0;
 
-        // Volume bar: an empty outline that fills up left-to-right with the last volume.
-        const volumeLabel = hasClicked ? this.lastClickVolume.toFixed(2) : '—';
-        BT.systemPrint(new Vector2i(x + 6, y + 18), C_DIM, `Volume: ${volumeLabel}`);
+        ui.begin('bottomRight');
+        ui.panel('Pointer SFX (volume/pan)');
 
-        const barX = x + 6;
-        const barY = y + 30;
-        const barW = 120;
-        BT.drawRect(new Rect2i(barX, barY, barW, 8), C_PANEL_BORDER);
+        // Two short reminders of how a click's position maps to sound.
+        ui.label('Top = loud, bottom = quiet', { color: 'dim' });
+        ui.label('Left/right edge = pan', { color: 'dim' });
+        ui.spacer(4);
 
-        if (hasClicked) {
-            const fillW = Math.round(barW * this.lastClickVolume);
-            BT.drawRectFill(new Rect2i(barX, barY, fillW, 8), meterColor);
-        }
+        // Volume row plus a read-only bar showing the same value ('-' before any click).
+        ui.kv('Volume', hasClicked ? this.lastClickVolume.toFixed(2) : '-');
+        ui.meter(null, hasClicked ? this.lastClickVolume : 0, { color: flashing ? 'accent' : 'info' });
 
-        // Pan meter: a track with a small marker sliding from L (left) to R (right).
-        const panLabel = hasClicked ? this.lastClickPan.toFixed(2) : '—';
-        BT.systemPrint(new Vector2i(x + 6, y + 44), C_DIM, `Pan: ${panLabel}`);
+        // Pan as a signed number: -1.00 is fully left, 0.00 centered, +1.00 fully right.
+        ui.kv('Pan', hasClicked ? this.lastClickPan.toFixed(2) : '-');
+        ui.end();
+    }
 
-        const trackX = x + 6;
-        const trackY = y + 56;
-        const trackW = 120;
-        BT.drawRect(new Rect2i(trackX, trackY, trackW, 6), C_PANEL_BORDER);
-        BT.systemPrint(new Vector2i(trackX, trackY + 8), C_DIM, 'L');
-        BT.systemPrint(new Vector2i(trackX + trackW - 6, trackY + 8), C_DIM, 'R');
+    /**
+     * Plays the pop sound with a volume and pan taken from where the click landed, and
+     * remembers everything the pointer panel and click marker show.
+     *
+     * @param {Vector2i} pos - Where the click landed, in display pixels.
+     */
+    playPopAt(pos) {
+        const screen = BT.displaySize;
 
-        if (hasClicked) {
-            const panFraction = (this.lastClickPan - POINTER_PAN_MIN) / (POINTER_PAN_MAX - POINTER_PAN_MIN);
-            const markerX = trackX + Math.round(panFraction * (trackW - 4));
-            BT.drawRectFill(new Rect2i(markerX, trackY, 4, 6), meterColor);
-        }
+        // Turn the click's vertical position into a volume: 0 at the very top of the
+        // screen, 1 at the very bottom.
+        const verticalFraction = clamp(pos.y / screen.y, 0, 1);
+        // Loud at the top, quiet at the bottom, so we count down from the maximum.
+        const volume = POINTER_VOLUME_MAX - verticalFraction * (POINTER_VOLUME_MAX - POINTER_VOLUME_MIN);
+
+        // Turn the click's horizontal position into a pan: 0 at the left edge of the
+        // screen, 1 at the right edge, then stretched out to the -1..+1 range BT.soundPlay
+        // expects.
+        const horizontalFraction = clamp(pos.x / screen.x, 0, 1);
+        const pan = POINTER_PAN_MIN + horizontalFraction * (POINTER_PAN_MAX - POINTER_PAN_MIN);
+
+        BT.soundPlay(this.popClip, { volume, pan });
+
+        this.lastClickPos = pos;
+        this.lastClickVolume = volume;
+        this.lastClickPan = pan;
+        this.pointerFlashTimer = FLASH_TICKS;
     }
 }
 
