@@ -21,6 +21,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ## 1.3.1 - Unreleased
 
+### Added
+
+- Opt-in keyboard scroll capture via `HardwareSettings.isCapturingKeyboardScroll` (default `false`). When enabled,
+  canvas `keydown` for arrow keys, Space, PageUp/PageDown, Home, and End calls `preventDefault()` so games can map those
+  keys without scrolling the host page.
+
 ### Changed
 
 - Pointer wheel capture is opt-in via `HardwareSettings.isCapturingPointerScroll` (default `false`). Canvas wheel events

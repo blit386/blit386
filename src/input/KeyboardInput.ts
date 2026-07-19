@@ -3,6 +3,23 @@
  * and text accumulation via `beforeinput` (`inputString`).
  */
 
+/**
+ * `KeyboardEvent.code` values that scroll the host page by default.
+ * When {@link KeyboardInput.setIsCapturingScroll} is enabled, `keydown` calls
+ * `preventDefault` for these codes so games can map arrows / Space without moving the page.
+ */
+const SCROLL_CODES: ReadonlySet<string> = new Set([
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'Space',
+    'PageUp',
+    'PageDown',
+    'Home',
+    'End',
+]);
+
 /** Options supplied when attaching to the canvas. */
 export interface KeyboardAttachOptions {
     /**
@@ -46,6 +63,12 @@ export class KeyboardInput {
     private canvas: HTMLCanvasElement | null = null;
 
     private getTicks: (() => number) | null = null;
+
+    /**
+     * When true, scroll-key `keydown` events call `preventDefault`.
+     * Set from `HardwareSettings.isCapturingKeyboardScroll`.
+     */
+    private isCapturingScroll = false;
 
     private readonly onKeyDown: (event: KeyboardEvent) => void;
 
@@ -107,6 +130,19 @@ export class KeyboardInput {
         this.getTicks = null;
 
         this.clearAllState();
+    }
+
+    /**
+     * Enables or disables configure-time keyboard scroll capture on the canvas.
+     *
+     * When enabled, `keydown` for arrow keys, Space, PageUp/PageDown, Home, and End
+     * calls `preventDefault` so the host page does not scroll while the canvas is
+     * focused. When disabled (the default), those keys keep their browser defaults.
+     *
+     * @param enabled - Whether the demo opted into keyboard scroll capture.
+     */
+    public setIsCapturingScroll(enabled: boolean): void {
+        this.isCapturingScroll = enabled;
     }
 
     /**
@@ -333,6 +369,12 @@ export class KeyboardInput {
      */
     private handleKeyDown(event: KeyboardEvent): void {
         const code = event.code;
+
+        // Block browser page scroll before the held early-return so key-repeat
+        // keydowns stay suppressed while the key is held.
+        if (this.isCapturingScroll && SCROLL_CODES.has(code)) {
+            event.preventDefault();
+        }
 
         if (this.held.has(code)) {
             return;
