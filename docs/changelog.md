@@ -19,6 +19,17 @@ This page is editorial – release highlights and migration notes, not an exhaus
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.4.0 - Unreleased
+
+### Added
+
+- Engine-side hot-reload runtime: `registerHotReload` (wired automatically by the upcoming `blit386/vite` plugin), an
+  optional `IBTDemo.onHotReload(context)` hook, and a tiered hot-swap - a method-only prototype swap when only method
+  bodies changed, a full re-init when `init()` or the constructor changed, and a full page reload when hardware settings
+  changed. Demo/game state persists across method and re-init swaps: ticks, camera, palette, and palette effects are
+  never reset. This lands the engine half of BLIT386's HMR support; the `blit386/vite` plugin, asset hot-replace, and
+  adoption in `blit386-demos`/`create-blit386` ship in follow-up releases.
+
 ## 1.3.1 - 2026-07-19
 
 ### Added
