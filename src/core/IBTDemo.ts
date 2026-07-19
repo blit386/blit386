@@ -38,6 +38,7 @@ export type AudioBus = 'main' | 'music' | 'sfx';
  * @changed 1.3.1 Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}.
  * @changed 1.3.1 Shrink bottom-left overlay toggle hit region from 48x48 to 17x13.
  * @changed 1.3.1 Added {@link HardwareSettings.isCapturingPointerScroll}.
+ * @changed 1.3.1 Added {@link HardwareSettings.isWakeLockEnabled}.
  */
 export interface HardwareSettings {
     /**
@@ -136,6 +137,17 @@ export interface HardwareSettings {
      * @since 1.3.1
      */
     isCapturingPointerScroll?: boolean;
+
+    /**
+     * When `true`, the engine requests a screen wake lock after a successful `init()`
+     * and re-acquires it automatically once the page returns to the foreground. Prevents
+     * mobile browsers from dimming or locking the screen during active gameplay. Silently
+     * no-ops on browsers that do not support the Wake Lock API. Defaults to `false` in
+     * {@link defaultConfig}.
+     *
+     * @since 1.3.1
+     */
+    isWakeLockEnabled?: boolean;
 
     /**
      * Rendering backend to use. Defaults to `'webgpu'`.
@@ -535,6 +547,7 @@ export function defaultConfig(): HardwareSettings {
         backend: 'webgpu',
         audioVoices: 16,
         isCapturingPointerScroll: false,
+        isWakeLockEnabled: false,
         isOverlayEnabled: true,
         isOverlayVisibleAtStart: false,
         isOverlayToggleHintVisible: true,
@@ -702,6 +715,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'outputUpscaleFilter');
     pickIfDefinedPartial(picked, partial, 'isDetectingDroppedFrames');
     pickIfDefinedPartial(picked, partial, 'isCapturingPointerScroll');
+    pickIfDefinedPartial(picked, partial, 'isWakeLockEnabled');
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
     pickDefinedOverlaySettings(picked, partial);
@@ -832,6 +846,7 @@ function assignFullDefaultMergeVectors(
  * @param picked - Defined fields from `configure()`.
  * @param defaults - Baseline hardware settings.
  */
+// eslint-disable-next-line complexity
 function assignFullDefaultMergeScalars(
     optionals: Partial<HardwareSettings>,
     picked: Partial<HardwareSettings>,
@@ -848,6 +863,7 @@ function assignFullDefaultMergeScalars(
         'isCapturingPointerScroll',
         picked.isCapturingPointerScroll ?? defaults.isCapturingPointerScroll,
     );
+    assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled ?? defaults.isWakeLockEnabled);
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
 
@@ -987,6 +1003,7 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'outputUpscaleFilter', picked.outputUpscaleFilter);
     assignIfDefined(optionals, 'isDetectingDroppedFrames', picked.isDetectingDroppedFrames);
     assignIfDefined(optionals, 'isCapturingPointerScroll', picked.isCapturingPointerScroll);
+    assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
     assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);

@@ -112,6 +112,12 @@ describe('defaultConfig', () => {
         expect(settings.isOverlayAudioMetersEnabled).toBe(false);
     });
 
+    it('should disable wake lock by default', () => {
+        const settings = defaultConfig();
+
+        expect(settings.isWakeLockEnabled).toBe(false);
+    });
+
     it('should return a fresh object on each call', () => {
         const a = defaultConfig();
         const b = defaultConfig();
@@ -176,6 +182,30 @@ describe('mergeHardwareSettings', () => {
         });
 
         expect(settings.audioVoices).toBe(8);
+    });
+
+    it('merges isWakeLockEnabled-only partials with full defaults', () => {
+        const settings = mergeHardwareSettings({ isWakeLockEnabled: true });
+
+        expect(settings.isWakeLockEnabled).toBe(true);
+        expect(settings.targetFPS).toBe(60);
+    });
+
+    it('keeps isWakeLockEnabled unset when displaySize is provided without an explicit value', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+        });
+
+        expect(settings.isWakeLockEnabled).toBeUndefined();
+    });
+
+    it('applies an explicit isWakeLockEnabled alongside displaySize', () => {
+        const settings = mergeHardwareSettings({
+            displaySize: new Vector2i(320, 240),
+            isWakeLockEnabled: true,
+        });
+
+        expect(settings.isWakeLockEnabled).toBe(true);
     });
 
     it('applies only provided fields when displaySize is set', () => {
