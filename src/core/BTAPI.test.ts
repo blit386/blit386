@@ -1405,6 +1405,90 @@ describe('BTAPI', () => {
         });
     });
 
+    describe('wake lock', () => {
+        afterEach(() => {
+            Reflect.deleteProperty(globalThis.navigator, 'wakeLock');
+        });
+
+        function createFakeSentinel(): WakeLockSentinel {
+            const target = new EventTarget();
+
+            const sentinel = {
+                onrelease: null,
+                released: false,
+                type: 'screen' as const,
+                release: vi.fn(async () => {
+                    sentinel.released = true;
+                    target.dispatchEvent(new Event('release'));
+                }),
+                addEventListener: target.addEventListener.bind(target),
+                removeEventListener: target.removeEventListener.bind(target),
+                dispatchEvent: target.dispatchEvent.bind(target),
+            };
+
+            return sentinel as unknown as WakeLockSentinel;
+        }
+
+        function installMockWakeLock(request: (type?: WakeLockType) => Promise<WakeLockSentinel>): {
+            request: ReturnType<typeof vi.fn>;
+        } {
+            const mockWakeLock = { request: vi.fn(request) };
+
+            Object.defineProperty(globalThis, 'navigator', {
+                value: { ...globalThis.navigator, wakeLock: mockWakeLock },
+                configurable: true,
+            });
+
+            return mockWakeLock;
+        }
+
+        function makeWakeLockDemo(isWakeLockEnabled: boolean): IBTDemo {
+            return {
+                ...makeMockDemo(),
+                configure: vi.fn().mockReturnValue({
+                    displaySize: new Vector2i(320, 240),
+                    drawingBufferSize: new Vector2i(640, 480),
+                    targetFPS: 60,
+                    isWakeLockEnabled,
+                }),
+            };
+        }
+
+        it('requests a screen wake lock on successful init when isWakeLockEnabled is true', async () => {
+            const sentinel = createFakeSentinel();
+            const mockWakeLock = installMockWakeLock(async () => sentinel);
+
+            await BTAPI.instance.init(makeWakeLockDemo(true), makeMockCanvas());
+
+            await vi.waitFor(() => {
+                expect(mockWakeLock.request).toHaveBeenCalledWith('screen');
+            });
+        });
+
+        it('does not touch navigator.wakeLock when isWakeLockEnabled is omitted', async () => {
+            const mockWakeLock = installMockWakeLock(async () => createFakeSentinel());
+
+            await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+
+            expect(mockWakeLock.request).not.toHaveBeenCalled();
+        });
+
+        it('releases the wake lock on stop', async () => {
+            const sentinel = createFakeSentinel();
+            const mockWakeLock = installMockWakeLock(async () => sentinel);
+
+            await BTAPI.instance.init(makeWakeLockDemo(true), makeMockCanvas());
+
+            await vi.waitFor(() => {
+                expect(mockWakeLock.request).toHaveBeenCalled();
+            });
+
+            BTAPI.instance.stop();
+
+            expect(sentinel.release).toHaveBeenCalled();
+        });
+    });
+
     describe('assignTag', () => {
         it('forwards tags to Overlay when the timing chart is enabled', async () => {
             const assignSpy = vi.spyOn(Overlay.prototype, 'assignTag');
