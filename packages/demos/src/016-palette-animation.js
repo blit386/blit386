@@ -221,8 +221,9 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // Run one update cycle so all dynamic slots have real colors before the first render.
-        // Pass false so animTime is not incremented during this priming call.
-        this.update(false);
+        // update() takes no arguments - this priming call still advances animTime by one tick,
+        // same as every regular call from the engine's game loop.
+        this.update();
 
         console.log('[PaletteAnimationDemo] Initialized');
         return true;

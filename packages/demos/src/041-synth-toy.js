@@ -52,7 +52,7 @@
 import { AudioClip, bootstrap, BT } from 'blit386';
 
 import { randFloat } from './shared/rand.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, THEME_DEFAULT_START_SLOT, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
@@ -187,11 +187,11 @@ class Demo {
             // gapPaletteIndex fills both the thin seams between overlay rows and the empty
             // (unfilled) track behind each audio meter bar, so it must match the screen
             // background or those seams would show up as a mismatched color. The shared UI
-            // theme puts its background color in slot 240 (applyTheme()'s default start
-            // slot - see init() below); configure() runs before init(), so the number is
-            // written out here.
+            // theme puts its background color at THEME_DEFAULT_START_SLOT (applyTheme()'s
+            // default start slot - see init() below); configure() runs before init(), so we
+            // reference the constant directly instead of calling applyTheme() early.
             overlayStyle: {
-                gapPaletteIndex: 240,
+                gapPaletteIndex: THEME_DEFAULT_START_SLOT,
             },
         };
     }

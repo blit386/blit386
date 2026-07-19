@@ -362,6 +362,15 @@ class Demo {
             BT.systemPrint(new Vector2i(INNER_X0, DISPLAY_H - 16), C_FOOTER_DIM, SOFTWARE_FALLBACK_NOTE);
         }
 
+        // Browsers keep all sound muted until the player clicks or presses a key. This
+        // shared row shows the standard warm "enable sound" hint only while audio is still
+        // locked, then disappears on its own the moment a first move unlocks it - which is
+        // also the same gesture that starts the snake moving, so the hint is usually only
+        // visible for a single frame.
+        ui.begin('topLeft', { margin: 3 });
+        ui.audioUnlockHint();
+        ui.end();
+
         // The touch D-pad, drawn over the playfield in the bottom-right corner. It stays
         // invisible until the first touch contact, so mouse-and-keyboard players never see
         // it. This playfield is only 160x120 logical pixels, so the keys are scaled down

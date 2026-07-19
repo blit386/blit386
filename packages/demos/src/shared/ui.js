@@ -37,7 +37,7 @@
 import { UiContext } from './ui-core.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from './ui-dpad.js';
 import { stepGestures, swipeResult, tapIn } from './ui-gestures.js';
-import { applyTheme } from './ui-theme.js';
+import { applyTheme, THEME_DEFAULT_START_SLOT } from './ui-theme.js';
 import {
     audioUnlockHint,
     button,
@@ -276,4 +276,4 @@ const ui = {
     },
 };
 
-export { applyTheme, ui };
+export { applyTheme, THEME_DEFAULT_START_SLOT, ui };

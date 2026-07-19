@@ -183,7 +183,7 @@ class Demo {
         // No ui.panel() call means this group is just floating text - no box around it.
         if (ui.hasTouch()) {
             ui.begin('topLeft');
-            ui.label('Tap left/right half of the screen to move', { color: 'dim' });
+            ui.label('Tap left/right to move, tap A to hop', { color: 'dim' });
             ui.end();
         }
     }

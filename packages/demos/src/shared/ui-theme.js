@@ -54,6 +54,11 @@ const THEME_COLORS = [
 // stop being safe the moment two palettes/themes need to be live at once (multiple demos in
 // one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
 // patch here.
+// applyTheme()'s default startSlot. Exported so a demo that must reference this slot before
+// calling applyTheme() (for example inside configure(), which runs before init()) can point
+// at the same constant instead of repeating the literal 240.
+const THEME_DEFAULT_START_SLOT = 240;
+
 const T = {
     bg: 0,
     shadow: 0,
@@ -75,14 +80,15 @@ const T = {
  *
  * @param {import('blit386').Palette} palette - The palette the demo is about to activate.
  * @param {number} startSlot - First slot to write (the twelve colors fill startSlot..startSlot+11).
- *   The default of 240 sits at the top of a 256-slot palette, far away from scene colors,
- *   which conventionally grow up from slot 1. Demos whose effects animate high palette slots
- *   pass a different startSlot that stays clear of their animated range.
+ *   The default (THEME_DEFAULT_START_SLOT, 240) sits at the top of a 256-slot palette, far
+ *   away from scene colors, which conventionally grow up from slot 1. Demos whose effects
+ *   animate high palette slots pass a different startSlot that stays clear of their animated
+ *   range.
  * @returns {{ bg: number, shadow: number, panel: number, border: number, text: number,
  *   dim: number, header: number, accent: number, warm: number, info: number, button: number,
  *   buttonHover: number }} The palette slot of each theme color, for the demo's own drawing.
  */
-function applyTheme(palette, startSlot = 240) {
+function applyTheme(palette, startSlot = THEME_DEFAULT_START_SLOT) {
     // Fail fast with clear messages - a wrong startSlot would otherwise show up later as
     // mysteriously wrong UI colors, which is much harder to track down.
     if (!Number.isInteger(startSlot) || startSlot < 1) {
@@ -127,4 +133,4 @@ function applyTheme(palette, startSlot = 240) {
     };
 }
 
-export { applyTheme, T };
+export { applyTheme, T, THEME_DEFAULT_START_SLOT };
