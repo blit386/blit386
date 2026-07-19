@@ -1487,6 +1487,29 @@ describe('BTAPI', () => {
 
             expect(sentinel.release).toHaveBeenCalled();
         });
+
+        it('detaches the previous wake lock before attaching a new one on re-init', async () => {
+            const firstSentinel = createFakeSentinel();
+            const secondSentinel = createFakeSentinel();
+            const mockWakeLock = installMockWakeLock(async () => firstSentinel);
+
+            await BTAPI.instance.init(makeWakeLockDemo(true), makeMockCanvas());
+
+            await vi.waitFor(() => {
+                expect(mockWakeLock.request).toHaveBeenCalledTimes(1);
+            });
+
+            mockWakeLock.request.mockImplementation(async () => secondSentinel);
+
+            await BTAPI.instance.init(makeWakeLockDemo(true), makeMockCanvas());
+
+            await vi.waitFor(() => {
+                expect(mockWakeLock.request).toHaveBeenCalledTimes(2);
+            });
+
+            expect(firstSentinel.release).toHaveBeenCalled();
+            expect(secondSentinel.release).not.toHaveBeenCalled();
+        });
     });
 
     describe('assignTag', () => {

@@ -467,6 +467,9 @@ export class BTAPI {
 
         this.loop.start();
 
+        this.wakeLock?.detach();
+        this.wakeLock = null;
+
         if (hwSettings.isWakeLockEnabled === true) {
             this.wakeLock = new WakeLock();
             this.wakeLock.attach();
