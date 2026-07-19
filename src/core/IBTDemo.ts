@@ -38,6 +38,7 @@ export type AudioBus = 'main' | 'music' | 'sfx';
  * @changed 1.3.1 Added {@link HardwareSettings.isOverlayToggleHitDebugVisible}.
  * @changed 1.3.1 Shrink bottom-left overlay toggle hit region from 48x48 to 17x13.
  * @changed 1.3.1 Added {@link HardwareSettings.isCapturingPointerScroll}.
+ * @changed 1.3.1 Added {@link HardwareSettings.isCapturingKeyboardScroll}.
  */
 export interface HardwareSettings {
     /**
@@ -136,6 +137,17 @@ export interface HardwareSettings {
      * @since 1.3.1
      */
     isCapturingPointerScroll?: boolean;
+
+    /**
+     * When `true`, the engine calls `preventDefault()` on canvas `keydown` for keys that
+     * scroll the host page by default (arrow keys, Space, PageUp/PageDown, Home, End).
+     * Defaults to `false` in {@link defaultConfig} so those keys still scroll the page
+     * while the canvas is focused. Opt in when the demo or game maps those keys for
+     * gameplay.
+     *
+     * @since 1.3.1
+     */
+    isCapturingKeyboardScroll?: boolean;
 
     /**
      * Rendering backend to use. Defaults to `'webgpu'`.
@@ -535,6 +547,7 @@ export function defaultConfig(): HardwareSettings {
         backend: 'webgpu',
         audioVoices: 16,
         isCapturingPointerScroll: false,
+        isCapturingKeyboardScroll: false,
         isOverlayEnabled: true,
         isOverlayVisibleAtStart: false,
         isOverlayToggleHintVisible: true,
@@ -702,6 +715,7 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'outputUpscaleFilter');
     pickIfDefinedPartial(picked, partial, 'isDetectingDroppedFrames');
     pickIfDefinedPartial(picked, partial, 'isCapturingPointerScroll');
+    pickIfDefinedPartial(picked, partial, 'isCapturingKeyboardScroll');
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
     pickDefinedOverlaySettings(picked, partial);
@@ -832,6 +846,7 @@ function assignFullDefaultMergeVectors(
  * @param picked - Defined fields from `configure()`.
  * @param defaults - Baseline hardware settings.
  */
+// eslint-disable-next-line complexity -- flat fan-out of one assignIfDefined per field, not branching
 function assignFullDefaultMergeScalars(
     optionals: Partial<HardwareSettings>,
     picked: Partial<HardwareSettings>,
@@ -847,6 +862,11 @@ function assignFullDefaultMergeScalars(
         optionals,
         'isCapturingPointerScroll',
         picked.isCapturingPointerScroll ?? defaults.isCapturingPointerScroll,
+    );
+    assignIfDefined(
+        optionals,
+        'isCapturingKeyboardScroll',
+        picked.isCapturingKeyboardScroll ?? defaults.isCapturingKeyboardScroll,
     );
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
@@ -987,6 +1007,7 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'outputUpscaleFilter', picked.outputUpscaleFilter);
     assignIfDefined(optionals, 'isDetectingDroppedFrames', picked.isDetectingDroppedFrames);
     assignIfDefined(optionals, 'isCapturingPointerScroll', picked.isCapturingPointerScroll);
+    assignIfDefined(optionals, 'isCapturingKeyboardScroll', picked.isCapturingKeyboardScroll);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
     assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);

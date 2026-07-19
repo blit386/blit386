@@ -357,6 +357,21 @@ function configure(): Partial<HardwareSettings> {
 }
 ```
 
+Keyboard scroll capture is also opt-in. Set `isCapturingKeyboardScroll: true` in `configure()` so the engine calls
+`preventDefault()` on canvas `keydown` for keys that scroll the host page by default (arrow keys, Space,
+PageUp/PageDown, Home, End). When the flag is omitted (the default), those keys still scroll the page while the canvas
+is focused.
+
+```ts twoslash
+import { type HardwareSettings } from 'blit386';
+
+function configure(): Partial<HardwareSettings> {
+  return {
+    isCapturingKeyboardScroll: true,
+  };
+}
+```
+
 ## Cursor control
 
 <Since symbol="BT.hideCursor" />
@@ -399,11 +414,14 @@ Pointer transitions:
 - `wheel` with `{ passive: false }` – when `isCapturingPointerScroll` is `true` (or the overlay forces capture over the
   palette band), `preventDefault()` stops page scroll and the delta feeds `BT.pointerScrollDelta`. When capture is off,
   the page scrolls normally.
+- `keydown` – when `isCapturingKeyboardScroll` is `true`, `preventDefault()` stops page scroll for arrow keys, Space,
+  PageUp/PageDown, Home, and End while the canvas is focused. When capture is off, those keys keep their browser
+  defaults.
 - `canvas.style.touchAction = 'none'` – prevents iOS Safari pinch-zoom and double-tap-zoom.
 - `contextmenu` with `preventDefault()` – prevents the OS context menu on right-click so `BTN_POINTER_B` works.
 
-`detach()` reverses all three and removes all event listeners. This happens automatically when the engine stops or when
-`demo.init()` throws.
+`detach()` reverses the pointer and keyboard guards and removes all event listeners. This happens automatically when the
+engine stops or when `demo.init()` throws.
 
 ## Coordinate conversion
 
