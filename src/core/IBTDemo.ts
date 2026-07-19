@@ -42,6 +42,25 @@ export type AudioBus = 'main' | 'music' | 'sfx';
 export type PreferredOrientation = 'landscape' | 'portrait' | 'any';
 
 /**
+ * Passed to {@link IBTDemo.onHotReload} after a hot reload swaps in new code.
+ *
+ * @since 1.4.0
+ */
+export interface HotReloadContext {
+    /** Which swap tier ran: `'methods'` swapped the prototype in place; `'reinit'` re-ran `init()` on a fresh instance. */
+    reason: 'methods' | 'reinit';
+
+    /** Hot-swap generation number, incremented on every successful swap since page load. */
+    generation: number;
+
+    /**
+     * Own enumerable fields of the previous demo instance, captured just before `init()` ran on
+     * the new one. Present only when `reason` is `'reinit'`.
+     */
+    snapshot?: Record<string, unknown>;
+}
+
+/**
  * Engine-facing hardware configuration returned by `configure()` when a demo
  * implements that optional hook, or by {@link defaultConfig} otherwise.
  *
@@ -487,6 +506,7 @@ export interface OverlayRow {
  *
  * @since 0.1.0
  * @changed 1.3.1 Added optional {@link IBTDemo.onOrientationChange} hook.
+ * @changed 1.4.0 Added optional {@link IBTDemo.onHotReload} hook.
  */
 export interface IBTDemo {
     /**
@@ -576,6 +596,23 @@ export interface IBTDemo {
      *   `'landscape-primary'` or `'portrait-secondary'`).
      */
     onOrientationChange?(type: string): void;
+
+    /**
+     * Optional hook called after a hot reload swaps in new code for this demo.
+     *
+     * Fires for both swap tiers: `'methods'` (the prototype was swapped in place; this
+     * instance and its fields are untouched) and `'reinit'` (a fresh instance was
+     * constructed and its `init()` re-run; `snapshot` carries the previous instance's own
+     * enumerable fields so state can be restored). Never fires for a hardware-settings
+     * change, which triggers a full page reload instead.
+     *
+     * No-op in production - `import.meta.hot` never exists outside a Vite dev server, so
+     * this hook is only ever called during local development.
+     *
+     * @since 1.4.0
+     * @param context - Which tier ran, the new generation number, and (for `'reinit'`) a field snapshot of the previous instance.
+     */
+    onHotReload?(context: HotReloadContext): void;
 }
 
 /**
