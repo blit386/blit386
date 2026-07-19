@@ -52,6 +52,28 @@ periodically. This is why `AudioClip.load()` accepts an ordered fallback list (f
 
 </Callout>
 
+## Screen wake lock
+
+Set `HardwareSettings.isWakeLockEnabled: true` in `configure()` to keep the screen from dimming or locking during active
+gameplay via the [Screen Wake Lock API](https://developer.mozilla.org/docs/Web/API/Screen_Wake_Lock_API). The engine
+acquires the lock after a successful `init()` and re-acquires it automatically once the page returns to the foreground -
+the platform releases the lock on its own while the page is hidden.
+
+| Browser         | Minimum version | Support |
+| --------------- | --------------- | ------- |
+| Chrome/Edge     | 84+             | Yes     |
+| Safari          | 16.4+           | Yes     |
+| Firefox         | 126+            | Yes     |
+| Android WebView | -               | Yes     |
+
+<Callout title="Silent no-op fallback">
+
+Coverage is broad enough to treat this as a standard feature. On a browser without the Wake Lock API, or when the
+platform denies the request (for example a low-battery OS override), the engine logs a console warning and continues -
+it never fails `init()` and there is no fallback behavior to configure.
+
+</Callout>
+
 ## Safari render throttling (macOS Low Power Mode)
 
 macOS Low Power Mode makes Safari/WebKit halve its `requestAnimationFrame` dispatch rate to about `30 Hz`, even on a

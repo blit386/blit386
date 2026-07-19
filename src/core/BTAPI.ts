@@ -46,6 +46,7 @@ import {
     resolveOverlayTimingChartDiagnostics,
 } from './IBTDemo';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
+import { WakeLock } from './WakeLock';
 import { initWebGPU } from './WebGPUContext';
 
 /** Strips top-level `readonly` so a public snapshot type can be mutated in place internally. */
@@ -218,6 +219,10 @@ export class BTAPI {
     /** Audio context, bus graph, and unlock state. Created during {@link init}. */
     private audio: AudioManager | null = null;
 
+    /** Screen wake lock subsystem. Created and attached during {@link init} only when
+     *  {@link HardwareSettings.isWakeLockEnabled} is true. */
+    private wakeLock: WakeLock | null = null;
+
     // TODO: Additional subsystems for future implementation:
     // AssetManager
 
@@ -278,6 +283,7 @@ export class BTAPI {
      * - create the built-in system font and optional {@link Overlay}
      * - run the demo's async `init()`
      * - start the fixed-timestep game loop
+     * - request a screen wake lock when {@link HardwareSettings.isWakeLockEnabled} is true
      *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
@@ -461,21 +467,32 @@ export class BTAPI {
 
         this.loop.start();
 
+        this.wakeLock?.detach();
+        this.wakeLock = null;
+
+        if (hwSettings.isWakeLockEnabled === true) {
+            this.wakeLock = new WakeLock();
+            this.wakeLock.attach();
+        }
+
         console.log('[BT] Initialization complete');
 
         return true;
     }
 
     /**
-     * Stops the active game loop and detaches input and audio subsystems.
+     * Stops the active game loop and detaches input, audio, and wake lock subsystems.
      *
-     * Pointer, keyboard, gamepad, and audio subsystems are detached so listeners,
-     * polling state, and the audio context do not leak across engine restarts
-     * (relevant in tests where the same DOM persists).
+     * Pointer, keyboard, gamepad, audio, and wake lock subsystems are detached so
+     * listeners, polling state, the audio context, and the held wake lock sentinel do
+     * not leak across engine restarts (relevant in tests where the same DOM persists).
      */
     public stop(): void {
         this.loop?.stop();
         this.clearInputSubsystems();
+
+        this.wakeLock?.detach();
+        this.wakeLock = null;
     }
 
     /**
