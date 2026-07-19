@@ -298,14 +298,15 @@ Verify with `npm view blit386 version`. Full checklist (2FA/OTP, verify/smoke-te
 
 ### 15. Regenerate `docs/_api-history.json` – only after the tag exists
 
-The step most likely to get skipped or done in the wrong order. Do these four in sequence, after the tag from step 5
+The step most likely to get skipped or done in the wrong order. Do these four in sequence, after the tag from step 14
 exists:
 
 1. In `scripts/gen-api-history.mjs`, bump `UNRELEASED_VERSION` from the version just tagged to the next one (e.g.
    `1.3.1` -> `1.3.2`).
 2. Run `pnpm run api:history`.
 3. Verify: `pnpm run api:history:check`, `pnpm run api:since:check`, `pnpm run test:api-history`.
-4. Commit as a small follow-up (mirrors PR #364 for 1.3.0, merged the day after that tag).
+4. `main` is protected – branch, PR, squash-merge (mirrors PR #364 for 1.3.0, merged the day after that tag). Make sure
+   the regenerated `docs/_api-history.json` is part of that PR.
 
 Both possible mistakes here produce a subtly wrong `docs/_api-history.json` and neither fails loudly, so get the order
 right rather than debugging it after the fact:
