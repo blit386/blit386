@@ -209,4 +209,30 @@ describe('WakeLock', () => {
             expect(request).toHaveBeenCalledTimes(1);
         });
     });
+
+    it('releases the sentinel instead of storing it when detach races an in-flight request', async () => {
+        let resolveRequest: (sentinel: WakeLockSentinel) => void = () => {};
+        const pending = new Promise<WakeLockSentinel>((resolve) => {
+            resolveRequest = resolve;
+        });
+        const request = vi.fn(() => pending);
+
+        installMockWakeLock(request);
+
+        const wakeLock = new WakeLock();
+        wakeLock.attach();
+
+        await vi.waitFor(() => {
+            expect(request).toHaveBeenCalledTimes(1);
+        });
+
+        wakeLock.detach();
+
+        const sentinel = createFakeSentinel();
+        resolveRequest(sentinel);
+
+        await vi.waitFor(() => {
+            expect(sentinel.release).toHaveBeenCalled();
+        });
+    });
 });

@@ -14,6 +14,9 @@ export class WakeLock {
     /** True while a {@link request} call is in flight, to avoid overlapping requests. */
     private isRequesting = false;
 
+    /** True between {@link attach} and {@link detach}; guards a request that resolves after detach. */
+    private attached = false;
+
     /** Bound `visibilitychange` handler so it can be removed in {@link detach}. */
     private readonly onVisibilityChange: () => void;
 
@@ -55,6 +58,8 @@ export class WakeLock {
             globalThis.document.addEventListener('visibilitychange', this.onVisibilityChange);
         }
 
+        this.attached = true;
+
         void this.request();
     }
 
@@ -65,6 +70,8 @@ export class WakeLock {
      * because the browser does not support the Wake Lock API).
      */
     public detach(): void {
+        this.attached = false;
+
         if (typeof globalThis.document !== 'undefined') {
             globalThis.document.removeEventListener('visibilitychange', this.onVisibilityChange);
         }
@@ -102,7 +109,9 @@ export class WakeLock {
      * hide/show toggle while a previous request is still pending) never race.
      * Logs a warning and leaves {@link sentinel} null on failure (for example a
      * low-battery OS override) - never throws, so a failed acquire never fails
-     * `BTAPI.init()`.
+     * `BTAPI.init()`. If {@link detach} runs before this request resolves, the
+     * newly-acquired sentinel is released immediately instead of being stored,
+     * so no lock is left orphaned with no owner able to release it.
      */
     private async request(): Promise<void> {
         if (this.isRequesting) {
@@ -112,7 +121,17 @@ export class WakeLock {
         this.isRequesting = true;
 
         try {
-            this.sentinel = await globalThis.navigator.wakeLock.request('screen');
+            const sentinel = await globalThis.navigator.wakeLock.request('screen');
+
+            if (!this.attached) {
+                void sentinel.release().catch(() => {
+                    // Already released or releasing; nothing to do.
+                });
+
+                return;
+            }
+
+            this.sentinel = sentinel;
             this.sentinel.addEventListener('release', this.onSentinelRelease);
         } catch (error) {
             console.warn('[BT] Failed to acquire wake lock:', error);

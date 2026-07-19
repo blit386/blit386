@@ -846,7 +846,7 @@ function assignFullDefaultMergeVectors(
  * @param picked - Defined fields from `configure()`.
  * @param defaults - Baseline hardware settings.
  */
-// eslint-disable-next-line complexity
+// eslint-disable-next-line complexity -- flat fan-out of one assignIfDefined per field, not branching
 function assignFullDefaultMergeScalars(
     optionals: Partial<HardwareSettings>,
     picked: Partial<HardwareSettings>,
