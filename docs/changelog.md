@@ -19,7 +19,7 @@ This page is editorial – release highlights and migration notes, not an exhaus
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## 1.3.1 - Unreleased
+## 1.3.1 - 2026-07-19
 
 ### Added
 
@@ -34,6 +34,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `null` when unavailable); optional `IBTDemo.onOrientationChange(type)` fires on rotate;
   `HardwareSettings.preferredOrientation` (`'landscape' | 'portrait' | 'any'`, default `'any'`) attempts
   `screen.orientation.lock()` after init. Lock failures are silent no-ops (for example on iOS Safari).
+- `HardwareSettings.isOverlayToggleHitDebugVisible` (default `false`) draws a 1 pixel outline of the overlay's
+  bottom-left `17×13` toggle hit region, for tuning the hit zone.
 
 ### Changed
 
@@ -41,6 +43,8 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   no longer call `preventDefault()` by default, so host pages can scroll while the pointer is over the canvas. Demos
   that map `BT.pointerScrollDelta` must set the flag. The overlay palette grid still forces capture while the pointer is
   over its band.
+- The overlay's bottom-left toggle hit region shrinks from `48×48` to `17×13` pixels, matching the visible toggle icon
+  more closely.
 
 ## 1.3.0 - 2026-07-13
 
