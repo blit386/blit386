@@ -579,14 +579,14 @@ export interface IBTDemo {
 }
 
 /**
- * Creates a fresh default hardware configuration for quick demos.
+ * Creates a fresh default hardware configuration for demos.
  *
- * Matches the most common setup across BLIT386 demos: `320x240` logical resolution,
- * `640x480` canvas output (2x nearest upscale), `60` FPS fixed updates, and the engine
- * overlay enabled.
+ * The configuration uses a `320x240` display size, `640x480` drawing buffer,
+ * nearest-neighbor upscaling, a `60` FPS target, WebGPU rendering, and an
+ * enabled overlay. Screen orientation locking is disabled by default.
  *
  * @since 1.0.3
- * @returns Default HardwareSettings configuration.
+ * @returns A default `HardwareSettings` configuration.
  */
 export function defaultConfig(): HardwareSettings {
     return {
@@ -901,7 +901,13 @@ function assignFullDefaultMergeVectors(
  * @param picked - Defined fields from `configure()`.
  * @param defaults - Baseline hardware settings.
  */
-// eslint-disable-next-line complexity -- flat fan-out of one assignIfDefined per field, not branching
+/**
+ * Resolves optional scalar and overlay settings using picked values or defaults.
+ *
+ * @param optionals - Settings object to populate
+ * @param picked - Settings explicitly selected from the demo configuration
+ * @param defaults - Default hardware settings used for omitted values
+ */
 function assignFullDefaultMergeScalars(
     optionals: Partial<HardwareSettings>,
     picked: Partial<HardwareSettings>,
@@ -1040,11 +1046,11 @@ function buildFullDefaultMergeOptionals(
 }
 
 /**
- * Optional fields explicitly set in `configure()` when the demo provided `displaySize`.
+ * Builds explicitly configured optional settings for a display profile.
  *
- * @param partial - Raw `configure()` return value with explicit `displaySize`.
- * @param picked - Defined fields with vectors cloned.
- * @returns Partial settings to spread into the resolved profile.
+ * @param partial - Raw `configure()` settings, including explicit vector values.
+ * @param picked - Defined settings extracted from `partial`, with vector values cloned.
+ * @returns Optional settings with explicit values applied and style records shallow-cloned.
  */
 function buildExplicitDisplayOptionals(
     partial: Partial<HardwareSettings>,
