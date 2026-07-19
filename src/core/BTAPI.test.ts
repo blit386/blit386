@@ -2630,4 +2630,93 @@ describe('BTAPI', () => {
             expect(removeSpy).toHaveBeenCalledWith(effect);
         });
     });
+
+    describe('hot reload', () => {
+        describe('getDemo', () => {
+            it('returns null before initialization', () => {
+                expect(BTAPI.instance.getDemo()).toBeNull();
+            });
+
+            it('returns the active demo instance after initialization', async () => {
+                const demo = makeMockDemo();
+
+                await BTAPI.instance.init(demo, makeMockCanvas());
+
+                expect(BTAPI.instance.getDemo()).toBe(demo);
+            });
+        });
+
+        describe('isInitialized', () => {
+            it('returns false before initialization', () => {
+                expect(BTAPI.instance.isInitialized()).toBe(false);
+            });
+
+            it('returns true after a successful initialization', async () => {
+                await BTAPI.instance.init(makeMockDemo(), makeMockCanvas());
+
+                expect(BTAPI.instance.isInitialized()).toBe(true);
+            });
+        });
+
+        describe('hotReplaceDemo', () => {
+            it('swaps in the new demo and returns true when init() succeeds', async () => {
+                const oldDemo = makeMockDemo();
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const newDemo = makeMockDemo();
+                const result = await BTAPI.instance.hotReplaceDemo(newDemo);
+
+                expect(result).toBe(true);
+                expect(BTAPI.instance.getDemo()).toBe(newDemo);
+            });
+
+            it('keeps the previous demo and returns false when init() returns false', async () => {
+                const oldDemo = makeMockDemo();
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const newDemo = makeMockDemo(60, false);
+                const result = await BTAPI.instance.hotReplaceDemo(newDemo);
+
+                expect(result).toBe(false);
+                expect(BTAPI.instance.getDemo()).toBe(oldDemo);
+            });
+
+            it('keeps the previous demo and returns false when init() throws', async () => {
+                const oldDemo = makeMockDemo();
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const newDemo = { ...makeMockDemo(), init: vi.fn().mockRejectedValue(new Error('boom')) };
+                const result = await BTAPI.instance.hotReplaceDemo(newDemo);
+
+                expect(result).toBe(false);
+                expect(BTAPI.instance.getDemo()).toBe(oldDemo);
+            });
+
+            it('never touches input/audio subsystems on failure (unlike cold-boot init failure)', async () => {
+                const oldDemo = makeMockDemo();
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const clearSpy = vi.spyOn(
+                    BTAPI.instance as unknown as { clearInputSubsystems: () => void },
+                    'clearInputSubsystems',
+                );
+
+                const newDemo = makeMockDemo(60, false);
+                await BTAPI.instance.hotReplaceDemo(newDemo);
+
+                expect(clearSpy).not.toHaveBeenCalled();
+            });
+
+            it('returns false without swapping when the candidate is missing update()/render()', async () => {
+                const oldDemo = makeMockDemo();
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const broken = { ...makeMockDemo(), update: undefined } as unknown as IBTDemo;
+                const result = await BTAPI.instance.hotReplaceDemo(broken);
+
+                expect(result).toBe(false);
+                expect(BTAPI.instance.getDemo()).toBe(oldDemo);
+            });
+        });
+    });
 });
