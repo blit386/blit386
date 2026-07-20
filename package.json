@@ -45,6 +45,11 @@
       "types": "./dist/blit386.d.ts",
       "import": "./dist/blit386.js",
       "require": "./dist/blit386.cjs"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.cjs"
     }
   },
   "files": [
@@ -57,7 +62,7 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.node.config.ts",
     "build:check-declarations": "node scripts/check-declaration-tooling.mjs",
     "test:declarations": "node --test scripts/check-declaration-tooling.test.mjs",
     "lint": "eslint .",
