@@ -224,7 +224,7 @@ export class AudioClip {
      * Hot-reloads a previously loaded clip's audio data in place, keeping the same
      * `AudioClip` instance and cache key so demo-held references stay valid.
      *
-     * Internal - routed from `HotRuntime.handleAssetChanged` when the dev asset
+     * Internal – routed from `HotRuntime.handleAssetChanged` when the dev asset
      * watcher reports a changed audio file. Fetches and decodes a cache-busted copy
      * of `url`, swaps the decoded buffer in place, notifies the SFX unload seam so
      * any voice still playing the old buffer stops safely, and restarts the music

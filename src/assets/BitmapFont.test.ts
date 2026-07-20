@@ -760,6 +760,17 @@ describe('BitmapFont', () => {
 
                 expect(imageSources[0]).toMatch(/^fonts\/atlas\.png\?blit386-hmr=\d+$/);
             });
+
+            it('does not cache-bust an embedded data URI texture', async () => {
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(MOCK_FONT_DATA)));
+
+                const imageSources: string[] = [];
+                vi.stubGlobal('Image', createStubImage({ onSrcSet: (src) => imageSources.push(src) }));
+
+                await font.hotReload('test.btfont', null);
+
+                expect(imageSources[0]).toBe(MOCK_FONT_DATA.texture);
+            });
         });
     });
 });

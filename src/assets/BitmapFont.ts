@@ -144,7 +144,7 @@ function populateAsciiGlyph(asciiGlyphs: (Glyph | null)[], char: string, glyph: 
  * Dev-only registry of live bitmap fonts keyed by normalized `.btfont` source URL,
  * so `HotRuntime.handleAssetChanged` can find and hot-reload every font loaded from
  * a changed font file. Populated only while {@link isHotActive} (no production
- * memory cost). Entries are never pruned - unlike {@link SpriteSheet}, `BitmapFont`
+ * memory cost). Entries are never pruned – unlike {@link SpriteSheet}, `BitmapFont`
  * has no destroy/dispose lifecycle to hook; acceptable since the registry only
  * exists in dev mode.
  */
@@ -172,7 +172,7 @@ function registerFontForHotReload(url: string, font: BitmapFont): void {
 /**
  * Returns every registered font loaded from a URL matching `url` after normalization.
  *
- * Internal - used by `HotRuntime.handleAssetChanged` to route a `'font'`
+ * Internal – used by `HotRuntime.handleAssetChanged` to route a `'font'`
  * asset-changed event to the fonts that need reloading.
  *
  * @param url - Changed asset URL to look up.
@@ -889,13 +889,13 @@ export class BitmapFont {
      * Hot-reloads this font's `.btfont` descriptor and texture in place, keeping the
      * same `BitmapFont` instance so demo-held references stay valid.
      *
-     * Internal - routed from `HotRuntime.handleAssetChanged` when the dev asset
+     * Internal – routed from `HotRuntime.handleAssetChanged` when the dev asset
      * watcher reports a changed font file. Re-fetches a cache-busted copy of the
      * `.btfont` JSON, rebuilds the glyph tables and measurement cache in place, and
      * replaces the underlying sprite sheet's image via
      * {@link SpriteSheet.hotReplaceImage} (which itself re-indexizes it when it was
      * already indexized). `name`/`size`/`lineHeight`/`baseline` are not updated by a
-     * hot reload - only glyph data and the texture.
+     * hot reload – only glyph data and the texture.
      *
      * @param url - `.btfont` URL this font was originally loaded from.
      * @param palette - Active palette, forwarded to {@link SpriteSheet.hotReplaceImage}.

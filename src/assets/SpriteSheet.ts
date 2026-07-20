@@ -32,7 +32,7 @@ const hotReloadRegistry = new Map<string, Set<SpriteSheet>>();
 /**
  * Returns every registered sheet loaded from a URL matching `url` after normalization.
  *
- * Internal - used by `HotRuntime.handleAssetChanged` to route an `'image'`
+ * Internal – used by `HotRuntime.handleAssetChanged` to route an `'image'`
  * asset-changed event to the sheets that need their texture replaced.
  *
  * @param url - Changed asset URL to look up.
@@ -299,7 +299,7 @@ export class SpriteSheet {
      * Gets the sprite-sheet dimensions in pixels.
      *
      * @returns Sheet dimensions. Changes after a hot-replace image swap with
-     *   different dimensions - any `srcRect` a demo holds onto is the demo's own
+     *   different dimensions – any `srcRect` a demo holds onto is the demo's own
      *   responsibility to reconcile.
      */
     get size(): Vector2i {
@@ -605,18 +605,18 @@ export class SpriteSheet {
      * Replaces this sheet's source image in place after a hot-reloaded asset change.
      *
      * Swaps the image reference, validates and updates {@link size} (dimension
-     * changes are allowed - buffers rebuild to match), re-runs `indexize` against
+     * changes are allowed – buffers rebuild to match), re-runs `indexize` against
      * `palette` when the sheet was already indexized so `indexedPixels` stays in
      * sync with the new pixels, and invalidates the cached GPU texture so the next
      * `getTexture()` call re-uploads it.
      *
-     * No-op (with a console warning) for sheets created from raw indexed data - there
-     * is no source image to replace - and for an already-indexized sheet when `palette`
+     * No-op (with a console warning) for sheets created from raw indexed data – there
+     * is no source image to replace – and for an already-indexized sheet when `palette`
      * is `null`, since there is nothing safe to reindex against.
      *
      * If `indexize()` throws partway (a pixel color from the new image is missing from
      * `palette`), this sheet is left with the new image/size but a stale, mismatched
-     * `indexedPixels`/texture until a subsequent successful hot reload - an accepted
+     * `indexedPixels`/texture until a subsequent successful hot reload – an accepted
      * dev-only-path risk, not a production code path.
      *
      * @param image - Newly loaded replacement image.

@@ -12,7 +12,7 @@
  * Appends a cache-busting query parameter carrying the current timestamp, so a
  * re-fetch of an unchanged URL bypasses the browser's HTTP cache.
  *
- * The busted URL is only ever used for the actual `fetch`/`Image.src` request -
+ * The busted URL is only ever used for the actual `fetch`/`Image.src` request –
  * callers keep caching the result under the original, un-busted `url`.
  *
  * @param url - Original request URL.
