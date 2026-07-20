@@ -239,7 +239,7 @@ src/
     WakeLock.ts             # Screen Wake Lock subsystem: acquire/release/re-acquire on visibilitychange (HardwareSettings.isWakeLockEnabled)
     Orientation.ts          # Screen orientation detection + optional lock (HardwareSettings.preferredOrientation, IBTDemo.onOrientationChange, BT.screenOrientation)
   hot/
-    protocol.ts             # Shared types/constants for the hot-reload runtime (no value imports from src/; shared with the future src/vite/ plugin, BT-306)
+    protocol.ts             # Shared types/constants for the hot-reload runtime (no value imports from src/; shared with the src/vite/ plugin)
     HotRuntime.ts           # Vite HMR context registration, generation counter, hard-reload request, reload announce/broadcast
     HotSwap.ts              # Tiered demo hot-swap: prototype swap (methods-only), re-init (init()/constructor changed), hard reload (hardware settings changed)
   vite/

@@ -54,6 +54,7 @@ export function blit386(options?: Blit386PluginOptions): Plugin {
             return injectSnippet(code);
         },
 
+        // Method shorthand, not an arrow function - Vite needs its own `this` bound here for `this.environment`.
         hotUpdate(update) {
             return handleAssetHotUpdate({
                 file: update.file,

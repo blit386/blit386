@@ -7,7 +7,11 @@ import path from 'node:path';
 
 import type { AssetChangedPayload } from '../hot/protocol';
 
-/** Asset kind used to route a changed asset to the right hot-replace handler. */
+/**
+ * Asset kind used to route a changed asset to the right hot-replace handler.
+ *
+ * @since 1.4.0
+ */
 export type AssetKind = AssetChangedPayload['type'];
 
 /**
@@ -36,7 +40,11 @@ export interface Blit386PluginOptions {
     fullReloadOnUnknownAssets?: boolean;
 }
 
-/** Fully resolved plugin options, with `root` already applied to {@link Blit386PluginOptions.assetDirs}. */
+/**
+ * Fully resolved plugin options, with `root` already applied to {@link Blit386PluginOptions.assetDirs}.
+ *
+ * @since 1.4.0
+ */
 export interface ResolvedBlit386PluginOptions {
     /** See {@link Blit386PluginOptions.include}. */
     include: (id: string) => boolean;
@@ -78,9 +86,9 @@ const DEFAULT_ASSET_TYPES: Record<string, AssetKind> = {
  * @returns `true` when `id` (with any query suffix stripped) matches the default pattern.
  */
 export function defaultInclude(id: string): boolean {
-    const [pathWithoutQuery] = id.split('?');
+    const [pathWithoutQuery = id] = id.split('?');
 
-    return DEFAULT_INCLUDE_PATTERN.test(pathWithoutQuery ?? id);
+    return DEFAULT_INCLUDE_PATTERN.test(pathWithoutQuery);
 }
 
 /**

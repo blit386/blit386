@@ -2,7 +2,7 @@
  * Shared types and DOM/HMR event names for the engine hot-reload runtime.
  *
  * Value-free (types and string constants only) so it can be imported from both the
- * browser-facing `src/hot/` runtime and the future `src/vite/` plugin package (BT-306)
+ * browser-facing `src/hot/` runtime and the `src/vite/` plugin package
  * without pulling `vite` into the published engine bundle.
  */
 
