@@ -23,12 +23,17 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
-- Engine-side hot-reload runtime: `registerHotReload` (wired automatically by the upcoming `blit386/vite` plugin), an
-  optional `IBTDemo.onHotReload(context)` hook, and a tiered hot-swap - a method-only prototype swap when only method
-  bodies changed, a full re-init when `init()` or the constructor changed, and a full page reload when hardware settings
+- Engine-side hot-reload runtime: `registerHotReload` (wired automatically by the `blit386/vite` plugin), an optional
+  `IBTDemo.onHotReload(context)` hook, and a tiered hot-swap - a method-only prototype swap when only method bodies
+  changed, a full re-init when `init()` or the constructor changed, and a full page reload when hardware settings
   changed. Demo/game state persists across method and re-init swaps: ticks, camera, palette, and palette effects are
-  never reset. This lands the engine half of BLIT386's HMR support; the `blit386/vite` plugin, asset hot-replace, and
-  adoption in `blit386-demos`/`create-blit386` ship in follow-up releases.
+  never reset. This lands the engine half of BLIT386's HMR support; asset hot-replace and adoption in
+  `blit386-demos`/`create-blit386` ship in follow-up releases.
+- `blit386/vite` dev-server plugin: `import { blit386 } from 'blit386/vite'` in `vite.config.ts` appends the hot-reload
+  registration snippet to a demo/game's entry module (skipped in production builds) and broadcasts asset changes under
+  configured asset directories (default `public/`) as `blit386:asset-changed` HMR events, falling back to a full page
+  reload for an unrecognized asset extension. Ships as a second build entry (`dist/vite.js`/`.cjs`/`.d.ts`) with zero
+  runtime dependency on `vite` itself.
 
 ## 1.3.1 - 2026-07-19
 

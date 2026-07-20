@@ -7,7 +7,10 @@ import {
     findAlignmentFailures,
     findDriftWarnings,
     findMissingBtDeclarationMembers,
+    findMissingViteDeclarationMembers,
+    findViteDeclarationSizeFailure,
     REQUIRED_BT_DECLARATION_MEMBERS,
+    REQUIRED_VITE_DECLARATION_MEMBERS,
     validateDeclarationTooling,
 } from './check-declaration-tooling.mjs';
 
@@ -78,5 +81,42 @@ describe('check-declaration-tooling', () => {
     it('extractBtDeclarationBlock reads export declare const BT object type', () => {
         const dts = 'export declare const BT: { readonly ticks: number; };';
         assert.equal(extractBtDeclarationBlock(dts), '{ readonly ticks: number; }');
+    });
+
+    it('findViteDeclarationSizeFailure passes for a real-sized declaration file', () => {
+        assert.deepEqual(findViteDeclarationSizeFailure(3370), []);
+    });
+
+    it('findViteDeclarationSizeFailure fails for a collapsed export {} stub', () => {
+        const failures = findViteDeclarationSizeFailure(12);
+        assert.equal(failures.length, 1);
+        assert.match(failures[0], /12 bytes/);
+        assert.match(failures[0], /stub/);
+    });
+
+    it('findMissingViteDeclarationMembers passes when the plugin factory export is present', () => {
+        const dts = 'export declare function blit386(options?: Blit386PluginOptions): Plugin_2;';
+        assert.deepEqual(findMissingViteDeclarationMembers(dts), []);
+    });
+
+    it('findMissingViteDeclarationMembers fails when the plugin factory export is absent', () => {
+        const dts = 'export declare function unrelated(): void;';
+        const failures = findMissingViteDeclarationMembers(dts);
+        assert.equal(failures.length, REQUIRED_VITE_DECLARATION_MEMBERS.length);
+        assert.match(failures[0], /blit386/);
+    });
+
+    it('findMissingViteDeclarationMembers ignores similarly named functions', () => {
+        const dts = 'export declare function blit386Helper(): void;';
+        const failures = findMissingViteDeclarationMembers(dts);
+        assert.equal(failures.length, 1);
+        assert.match(failures[0], /missing export: blit386/);
+    });
+
+    it('validateDeclarationTooling skips both declaration output files when disabled', () => {
+        const log =
+            '[vite:dts] Analysis will use the bundled TypeScript version 5.9.3\n[vite:dts] Declaration files built';
+        const failures = validateDeclarationTooling(log, { requireOutputFile: false });
+        assert.deepEqual(failures, []);
     });
 });
