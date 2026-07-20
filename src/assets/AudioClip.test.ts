@@ -27,7 +27,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockAudioContext, type MockAudioContext } from '../__test__/webaudio-mock';
-import { setAudioClipUnloadHandler, setAudioDecodeContext } from '../audio/audioDecodeContext';
+import {
+    setAudioClipUnloadHandler,
+    setAudioDecodeContext,
+    setMusicHotReplaceHandler,
+} from '../audio/audioDecodeContext';
 import { AudioClip, type AudioClipProgress } from './AudioClip';
 import type { SynthParams } from './synth/SynthParams';
 
@@ -111,6 +115,7 @@ describe('AudioClip', () => {
     afterEach(() => {
         setAudioDecodeContext(null);
         setAudioClipUnloadHandler(() => {});
+        setMusicHotReplaceHandler(() => false);
         AudioClip.clear();
         vi.unstubAllGlobals();
     });
@@ -482,6 +487,97 @@ describe('AudioClip', () => {
                 clip.unload();
             }).not.toThrow();
             expect(clip.buffer).toBeNull();
+        });
+    });
+
+    describe('hotReload', () => {
+        it('returns false when no clip is cached under the URL', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            await expect(AudioClip.hotReload('never-loaded.mp3')).resolves.toBe(false);
+        });
+
+        it('returns false when the cached clip was already unloaded', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const clip = await AudioClip.load('unloaded.mp3');
+            clip.unload();
+
+            await expect(AudioClip.hotReload('unloaded.mp3')).resolves.toBe(false);
+        });
+
+        it('swaps the buffer in place, keeping the same instance and cache key', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const clip = await AudioClip.load('hot.mp3');
+            const oldBuffer = clip.buffer;
+
+            const nextBuffer = mockContext.decodeAudioDataImpl;
+            mockContext.decodeAudioDataImpl = () =>
+                Promise.resolve({ duration: 9, sampleRate: 48000 } as unknown as AudioBuffer);
+
+            const reloaded = await AudioClip.hotReload('hot.mp3');
+
+            expect(reloaded).toBe(true);
+            expect(AudioClip.getClip('hot.mp3')).toBe(clip);
+            expect(clip.buffer).not.toBe(oldBuffer);
+
+            mockContext.decodeAudioDataImpl = nextBuffer;
+        });
+
+        it('fetches with a cache-busting query parameter', async () => {
+            const fetchSpy = vi.fn().mockResolvedValue(mockAudioFetchResponse());
+            vi.stubGlobal('fetch', fetchSpy);
+
+            await AudioClip.load('bust.mp3');
+            fetchSpy.mockClear();
+
+            await AudioClip.hotReload('bust.mp3');
+
+            expect(fetchSpy).toHaveBeenCalledOnce();
+            const [requestedUrl] = fetchSpy.mock.calls[0] as [string];
+            expect(requestedUrl).toMatch(/^bust\.mp3\?blit386-hmr=\d+$/);
+        });
+
+        it('notifies the SFX unload seam with the old buffer', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const clip = await AudioClip.load('sfx.mp3');
+            const oldBuffer = clip.buffer;
+            const unloadHandler = vi.fn();
+            setAudioClipUnloadHandler(unloadHandler);
+
+            await AudioClip.hotReload('sfx.mp3');
+
+            expect(unloadHandler).toHaveBeenCalledExactlyOnceWith(oldBuffer);
+        });
+
+        it('notifies the music hot-replace seam with the old and new buffers', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const clip = await AudioClip.load('music.mp3');
+            const oldBuffer = clip.buffer;
+            const musicHandler = vi.fn().mockReturnValue(true);
+            setMusicHotReplaceHandler(musicHandler);
+
+            await AudioClip.hotReload('music.mp3');
+
+            expect(musicHandler).toHaveBeenCalledExactlyOnceWith(oldBuffer, clip.buffer);
+        });
+
+        it('rejects and leaves the old buffer in place when the re-fetch fails', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const clip = await AudioClip.load('flaky.mp3');
+            const oldBuffer = clip.buffer;
+
+            vi.stubGlobal(
+                'fetch',
+                vi.fn().mockResolvedValue({ ok: false, status: 500, headers: { get: () => null }, body: null }),
+            );
+
+            await expect(AudioClip.hotReload('flaky.mp3')).rejects.toThrow();
+            expect(clip.buffer).toBe(oldBuffer);
         });
     });
 });
