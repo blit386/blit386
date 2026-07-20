@@ -130,8 +130,9 @@ pnpm run dev:watch
 This runs two processes concurrently:
 
 - Watches `blit386/src` and rebuilds on changes (a full `blit386` dist rebuild still triggers a full page reload)
-- Runs the Vite dev server; editing a demo's own `src/<slug>.js` hot-swaps in place (state kept) instead of reloading –
-  see [CLAUDE.md](../CLAUDE.md#hot-reload) for the full tier breakdown
+- Runs the Vite dev server; a method-only edit to a demo's own `src/<slug>.js` hot-swaps in place (state kept), while an
+  edit to `init()`/the constructor re-initializes instead, and a `configure()` hardware-setting change still forces a
+  full reload – see [CLAUDE.md](../CLAUDE.md#hot-reload) for the full tier breakdown
 
 ## Building from Scratch
 
