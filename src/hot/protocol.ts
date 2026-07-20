@@ -8,7 +8,7 @@
 
 /**
  * Payload describing a changed asset, broadcast by the `blit386/vite` plugin's asset
- * watcher (BT-306) as a Vite custom HMR event.
+ * watcher (`src/vite/assets.ts`) as a Vite custom HMR event.
  *
  * `type` is an open string union: today's values are the asset kinds the engine can
  * hot-replace (BT-305); future kinds (levels, maps, animations) can extend this union
