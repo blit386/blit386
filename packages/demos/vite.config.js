@@ -2,6 +2,7 @@ import { copyFileSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileS
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { blit386 } from 'blit386/vite';
 import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
@@ -96,7 +97,10 @@ export default defineConfig(({ command }) => {
 
         plugins: [
             virtualDemos(),
-            ...(isServe ? [blit386WatchReload()] : []),
+            // blit386WatchReload() full-reloads on an engine dist rebuild (a changed bundle invalidates
+            // everything). blit386() from 'blit386/vite' wires per-demo hot reload: it injects the
+            // registerHotReload snippet into demo entry modules and watches public/ for asset changes.
+            ...(isServe ? [blit386WatchReload(), blit386()] : []),
             viteStaticCopy({
                 targets: [
                     {
