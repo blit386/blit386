@@ -118,19 +118,17 @@ export function initFingerprint(cls: DemoConstructor): string {
 
     let classSource = cls.toString().replace(CLASS_NAME_HEADER_PATTERN, 'class');
 
-    /* eslint-disable security/detect-object-injection -- name comes from Object.getOwnPropertyNames(cls.prototype), not external input */
     for (const name of Object.getOwnPropertyNames(cls.prototype)) {
         if (name === 'constructor') {
             continue;
         }
 
-        const member = prototype[name];
+        const member = Object.getOwnPropertyDescriptor(cls.prototype, name)?.value;
 
         if (typeof member === 'function') {
             classSource = classSource.replace(member.toString(), '');
         }
     }
-    /* eslint-enable security/detect-object-injection */
 
     return initSource + classSource;
 }
@@ -151,13 +149,34 @@ function constructCandidate(NewClass: DemoConstructor): IBTDemo | null {
     }
 }
 
+/** {@link tryHardReload} could not run at all because the candidate's `configure()` threw. */
+const HARD_RELOAD_OUTCOME_ABORTED = 'aborted';
+
+/** {@link tryHardReload} ran to completion and found no init-only hardware-settings diff. */
+const HARD_RELOAD_OUTCOME_NO_DIFF = 'no-diff';
+
+/** {@link tryHardReload} ran to completion, found a diff, and requested a hard reload. */
+const HARD_RELOAD_OUTCOME_RELOAD = 'reload';
+
+/**
+ * Outcome of the Tier 3 hardware-settings check. {@link HARD_RELOAD_OUTCOME_RELOAD} and
+ * {@link HARD_RELOAD_OUTCOME_NO_DIFF} mean the check itself ran to completion (settings
+ * differed, or they didn't); {@link HARD_RELOAD_OUTCOME_ABORTED} means the check could not
+ * run at all, so {@link hotSwapDemo} must stop without attempting any swap - a hard-reload
+ * result and an aborted check are not interchangeable "no swap happened" outcomes.
+ */
+type HardReloadOutcome =
+    | typeof HARD_RELOAD_OUTCOME_ABORTED
+    | typeof HARD_RELOAD_OUTCOME_NO_DIFF
+    | typeof HARD_RELOAD_OUTCOME_RELOAD;
+
 /**
  * Runs the Tier 3 check: a hardware-settings change forces a full page reload.
  *
  * @param newDemo - Constructed candidate instance.
- * @returns `true` when a hard reload was requested; the caller should stop and return `true`.
+ * @returns The check's outcome; see {@link HardReloadOutcome}.
  */
-function tryHardReload(newDemo: IBTDemo): boolean {
+function tryHardReload(newDemo: IBTDemo): HardReloadOutcome {
     let nextSettings: HardwareSettings;
 
     try {
@@ -165,7 +184,7 @@ function tryHardReload(newDemo: IBTDemo): boolean {
     } catch (err) {
         console.error('[BT] Hot reload failed; keeping the previous version running:', err);
 
-        return false;
+        return HARD_RELOAD_OUTCOME_ABORTED;
     }
 
     const previousSettings = BTAPI.instance.getHardwareSettings();
@@ -173,10 +192,10 @@ function tryHardReload(newDemo: IBTDemo): boolean {
     if (previousSettings && hasHardReloadDiff(previousSettings, nextSettings)) {
         requestHardReload('Hardware settings changed');
 
-        return true;
+        return HARD_RELOAD_OUTCOME_RELOAD;
     }
 
-    return false;
+    return HARD_RELOAD_OUTCOME_NO_DIFF;
 }
 
 /**
@@ -258,8 +277,14 @@ export async function hotSwapDemo(NewClass: DemoConstructor): Promise<boolean> {
         return false;
     }
 
-    if (tryHardReload(newDemo)) {
+    const hardReloadOutcome = tryHardReload(newDemo);
+
+    if (hardReloadOutcome === HARD_RELOAD_OUTCOME_RELOAD) {
         return true;
+    }
+
+    if (hardReloadOutcome === HARD_RELOAD_OUTCOME_ABORTED) {
+        return false;
     }
 
     if (initFingerprint(oldDemo.constructor as unknown as DemoConstructor) !== initFingerprint(NewClass)) {

@@ -67,12 +67,12 @@ function handleAssetChanged(payload: unknown): void {
  */
 export function registerHotContext(context: HotContext): void {
     try {
-        hot = context;
-
         if (!wired) {
+            context.on(ASSET_CHANGED_EVENT, handleAssetChanged);
             wired = true;
-            hot.on(ASSET_CHANGED_EVENT, handleAssetChanged);
         }
+
+        hot = context;
     } catch (err) {
         console.error('[BT] Failed to register the hot-reload context:', err);
     }

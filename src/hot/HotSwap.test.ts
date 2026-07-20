@@ -118,6 +118,26 @@ describe('initFingerprint', () => {
 
         expect(initFingerprint(A as unknown as DemoConstructor)).toBe(initFingerprint(B as unknown as DemoConstructor));
     });
+
+    it('never invokes a getter defined on the prototype', () => {
+        const getterCalls = vi.fn();
+
+        class WithGetter {
+            get currentScore(): number {
+                getterCalls();
+
+                return 0;
+            }
+            init() {
+                return Promise.resolve(true);
+            }
+            update() {}
+            render() {}
+        }
+
+        expect(() => initFingerprint(WithGetter as unknown as DemoConstructor)).not.toThrow();
+        expect(getterCalls).not.toHaveBeenCalled();
+    });
 });
 
 describe('hasHardReloadDiff', () => {
@@ -211,6 +231,34 @@ describe('hotSwapDemo', () => {
 
         expect(result).toBe(true);
         expect(HotRuntime.requestHardReload).toHaveBeenCalledOnce();
+    });
+
+    it('aborts without swapping when configure() throws, keeping the previous demo running', async () => {
+        const oldDemo = makeDemo();
+        await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        class NewClass {
+            configure(): never {
+                throw new Error('boom');
+            }
+            async init() {
+                return true;
+            }
+            update() {}
+            render() {}
+        }
+
+        const result = await hotSwapDemo(NewClass as unknown as DemoConstructor);
+
+        expect(result).toBe(false);
+        expect(BTAPI.instance.getDemo()).toBe(oldDemo);
+        expect(HotRuntime.requestHardReload).not.toHaveBeenCalled();
+        expect(errorSpy).toHaveBeenCalledWith(
+            expect.stringContaining('keeping the previous version running'),
+            expect.any(Error),
+        );
     });
 
     it('re-initializes and swaps the instance when init() changed (Tier 2), passing a snapshot to onHotReload', async () => {

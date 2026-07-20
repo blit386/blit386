@@ -2659,6 +2659,10 @@ describe('BTAPI', () => {
         });
 
         describe('hotReplaceDemo', () => {
+            afterEach(() => {
+                Reflect.deleteProperty(globalThis, 'screen');
+            });
+
             it('swaps in the new demo and returns true when init() succeeds', async () => {
                 const oldDemo = makeMockDemo();
                 await BTAPI.instance.init(oldDemo, makeMockCanvas());
@@ -2716,6 +2720,41 @@ describe('BTAPI', () => {
 
                 expect(result).toBe(false);
                 expect(BTAPI.instance.getDemo()).toBe(oldDemo);
+            });
+
+            it('rebinds orientation change events to the new demo after a successful swap', async () => {
+                const target = new EventTarget();
+                const mockOrientation = {
+                    type: 'landscape-primary',
+                    lock: vi.fn(async () => undefined),
+                    unlock: vi.fn(),
+                    addEventListener: vi.fn((event: string, listener: EventListener) =>
+                        target.addEventListener(event, listener),
+                    ),
+                    removeEventListener: vi.fn((event: string, listener: EventListener) =>
+                        target.removeEventListener(event, listener),
+                    ),
+                    dispatchEvent: (event: Event) => target.dispatchEvent(event),
+                };
+
+                Object.defineProperty(globalThis, 'screen', {
+                    configurable: true,
+                    value: { orientation: mockOrientation },
+                });
+
+                const oldOnOrientationChange = vi.fn();
+                const oldDemo = { ...makeMockDemo(), onOrientationChange: oldOnOrientationChange };
+                await BTAPI.instance.init(oldDemo, makeMockCanvas());
+
+                const newOnOrientationChange = vi.fn();
+                const newDemo = { ...makeMockDemo(), onOrientationChange: newOnOrientationChange };
+                await BTAPI.instance.hotReplaceDemo(newDemo);
+
+                mockOrientation.type = 'portrait-primary';
+                mockOrientation.dispatchEvent(new Event('change'));
+
+                expect(newOnOrientationChange).toHaveBeenCalledWith('portrait-primary');
+                expect(oldOnOrientationChange).not.toHaveBeenCalled();
             });
         });
     });

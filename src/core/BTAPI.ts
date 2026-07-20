@@ -521,6 +521,11 @@ export class BTAPI {
      * loop while this candidate's `init()` runs. A failed hot reload must leave the running
      * engine untouched.
      *
+     * On success, also rebinds the orientation subsystem's change callback to the new
+     * instance via {@link Orientation.setOnChange} - the listener installed at {@link init}
+     * closes over the *previous* demo's bound `onOrientationChange`, so without this,
+     * orientation events would keep reaching stale code after the swap.
+     *
      * @param newDemo - Freshly constructed candidate demo instance.
      * @returns `true` when `newDemo.init()` succeeds and {@link demo} was swapped to it.
      */
@@ -551,6 +556,7 @@ export class BTAPI {
         }
 
         this.demo = newDemo;
+        this.orientation?.setOnChange(newDemo.onOrientationChange?.bind(newDemo) ?? null);
 
         return true;
     }

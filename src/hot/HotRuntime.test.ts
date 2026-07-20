@@ -54,7 +54,7 @@ describe('HotRuntime', () => {
             expect(HotRuntime.isHotActive()).toBe(true);
         });
 
-        it('swallows a throw from a broken hot context and logs it', () => {
+        it('swallows a throw from a broken hot context and logs it, without permanently blocking future wiring', () => {
             const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             const broken = {
                 data: {},
@@ -67,6 +67,14 @@ describe('HotRuntime', () => {
 
             expect(() => HotRuntime.registerHotContext(broken)).not.toThrow();
             expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to register'), expect.any(Error));
+            expect(HotRuntime.isHotActive()).toBe(false);
+
+            const working = makeFakeHotContext();
+
+            HotRuntime.registerHotContext(working);
+
+            expect(working.on).toHaveBeenCalledExactlyOnceWith(ASSET_CHANGED_EVENT, expect.any(Function));
+            expect(HotRuntime.isHotActive()).toBe(true);
         });
     });
 

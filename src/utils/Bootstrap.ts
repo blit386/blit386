@@ -238,6 +238,10 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
  * while allowing customization through options.
  *
  * @since 0.2.0
+ * @changed 1.4.0 Calling `bootstrap()` again while already initialized now routes to a hot
+ *   swap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a
+ *   double-bootstrap guard and returns `false` otherwise - previously it silently started a
+ *   second, unstoppable `GameLoop`.
  * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options - Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.
