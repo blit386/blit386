@@ -385,8 +385,11 @@ describe('AssetLoader', () => {
             const second = await secondPromise;
 
             instances[0]?.onload?.();
-            await firstPromise;
+            const first = await firstPromise;
 
+            // The superseded request still resolves its own caller with its own image - only
+            // the shared cache skips it.
+            expect(first).toBe(instances[0]);
             expect(AssetLoader.getImage('race.png')).toBe(second);
         });
 
