@@ -124,6 +124,18 @@ export default [
         },
     },
 
+    // Browser-context client scripts served directly to the page (_partials/*.js). Not demo source
+    // (no beginner-comment requirement – see CLAUDE.md), but not Node either, so it needs DOM globals.
+    {
+        files: ['_partials/*.js'],
+        languageOptions: {
+            globals: {
+                ...globals.browser,
+                ...globals.es2022,
+            },
+        },
+    },
+
     // Config files - relaxed JSDoc
     {
         files: ['*.config.js', '*.config.mjs'],
