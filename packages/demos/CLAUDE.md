@@ -101,6 +101,64 @@ pnpm run security:mcp-preflight # MCP security preflight (script lives in the bl
 RTK: Use `pnpm run …` for scripts. Cursor `.cursor/hooks.json` runs `rtk hook cursor` on Shell; Claude Code uses
 `rtk hook claude` on Bash. Prefer shell + RTK over native Read/Grep for exploration. See `~/.claude/RTK.md`.
 
+## Hot Reload
+
+`pnpm run dev` / `pnpm run dev:watch` wire the `blit386/vite` plugin (`import { blit386 } from 'blit386/vite'` in
+`vite.config.js`) alongside the existing `virtual-demos` watcher. Editing a demo's own `src/NNN-*.js` file no longer
+full-reloads the page:
+
+- **Method-only change** (`render()`/`update()` bodies, etc.): the engine swaps the class prototype in place – state
+  kept, `init()` not re-run. Console shows `[BT] Hot reload #N (methods)`.
+- **`init()`/constructor/class-field change**: the engine re-creates the demo instance and re-runs `init()` while the
+  old instance keeps driving the loop, then swaps on success. `onHotReload(oldSnapshot)` fires if the demo class defines
+  it.
+- **`configure()` hardware-settings change** (`displaySize`, `backend`, `targetFPS`, `audioVoices`,
+  `outputUpscaleFilter`, `maxCanvasSize`, `overlay*` flags): full page reload – these are baked into the renderer/audio
+  graph at init and cannot be hot-swapped.
+- **Asset change** (`public/sprites`, `public/audio`, `public/fonts` – image, audio, `.btfont`): the plugin's asset
+  watcher replaces the loaded `SpriteSheet` / `AudioClip` / `BitmapFont` in place; no reload.
+
+What still always full-reloads: `_partials/*.html` edits (the page template), a `blit386` library dist rebuild (via
+`blit386WatchReload()` – a changed engine bundle invalidates everything), and adding or removing a `src/NNN-*.js` demo
+file (the registry and the page set changed).
+
+The live source panel (the highlighted code block under the canvas) updates itself on a demo-entry edit via a
+`blit386:source-updated` custom HMR event, independent of the code hot-swap – see `plugins/virtual-demos.js`'s
+`configureServer` watcher and `_partials/source-panel.js`.
+
+Editing `src/shared/*.js` (the shared UI kit) hot-swaps too, through Vite's own module-graph HMR rather than a
+`blit386:source-updated` event (the source panel only ever shows a demo's own file). This re-evaluates the shared UI
+kit's module-scope state: `src/shared/ui.js`'s singleton `const ctx = new UiContext()` gets replaced, and `ui-dpad.js` /
+`ui-gestures.js` reset their module-scope D-pad and swipe state. In practice this means the D-pad can briefly hide, an
+in-flight swipe or key press can be dropped, and `ui.hasTouch()` can revert to `false` until the next touch – all
+self-heals within a frame or two as `ui.tick()` repopulates the fresh instance. No `addEventListener` call in
+`ui-core.js`, `ui-dpad.js`, or `ui-gestures.js` runs at module scope, so a shared-UI edit never double-registers a DOM
+listener.
+
+If you change the engine's `blit386/vite` plugin itself (`blit386/src/vite/**`), `dev:watch`'s `pnpm run build --watch`
+only rebuilds the browser bundle (`dist/blit386.js`) – run a one-shot `pnpm run build` in `blit386` to pick up
+`dist/vite.js` changes, then restart `pnpm run dev`.
+
+### Manual hot-reload test script
+
+No automated test covers this (see Global Constraints in the implementation plan) – run this by hand after any change to
+the hot-reload wiring:
+
+1. `pnpm run dev:watch`; open `001-basics`.
+2. Edit a `render()` color constant – visual change, state (ticks/positions) kept, console shows
+   `[BT] Hot reload #1 (methods)`.
+3. Edit `init()` – re-init runs, `onHotReload` fires with a snapshot (add a temporary hook to verify), no page reload.
+4. Edit `configure()`'s `displaySize` – full page reload.
+5. Edit `public/sprites/*.png` used by 013/014 – texture updates in place, no reload.
+6. Edit `public/audio/blip.wav` (036) – the next `soundPlay` uses the new sound; replace the playing music clip (037) –
+   the track restarts.
+7. Edit `src/shared/ui.js` – demo keeps its own state, the UI kit still works (D-pad visibility may reset – expected,
+   see above).
+8. Edit `_partials/layout.html` – full reload; the source panel updates on demo edits without a reload.
+9. Edit an engine `src/` file – the lib rebuilds – full reload (`blit386WatchReload` preserved).
+10. Repeat steps 2-4 with `?backend=software` (software renderer parity).
+11. Introduce a syntax error in a demo – the Vite overlay appears, the old demo keeps running; fix it – it recovers.
+
 ## Workspace Integration
 
 This project depends on BLIT386 via pnpm workspace:

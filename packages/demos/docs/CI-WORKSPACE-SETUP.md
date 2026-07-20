@@ -101,7 +101,7 @@ parent-dir/
   blit386-demos/
 ```
 
-Hot reloading works perfectly with:
+True hot reload works with:
 
 ```bash
 cd blit386-demos
@@ -110,8 +110,9 @@ pnpm run dev:watch
 
 This script uses `concurrently` to watch both projects:
 
-- Watches BLIT386 for changes and rebuilds automatically
-- Runs Vite dev server for BLIT386 Demos with HMR
+- Watches BLIT386 for changes and rebuilds automatically (a dist rebuild still triggers a full page reload)
+- Runs the Vite dev server; editing a demo's own `src/<slug>.js` hot-swaps state-preserving in place instead of
+  reloading – see [CLAUDE.md](../CLAUDE.md#hot-reload) for the full tier breakdown
 
 ## Why This Works
 
@@ -122,7 +123,8 @@ This script uses `concurrently` to watch both projects:
    bundling incompatibilities with a changed engine API fail here immediately instead of at the next npm release. That
    is a build and bundling guarantee only: the demos are plain JavaScript with a `jsconfig.json` (no type-checking
    gate), and runtime behavior still needs a local run (`pnpm run dev` / `pnpm run preview`) or separate runtime tests
-5. Hot reload – Local dev:watch script provides excellent DX
+5. Hot reload – `dev:watch` hot-swaps demo code and assets in place (see [CLAUDE.md](../CLAUDE.md#hot-reload)); only a
+   `_partials` edit, an engine dist rebuild, or a `configure()` hardware-setting change still triggers a full reload
 
 ## Future Option: Switch Demos to npm Dependency
 

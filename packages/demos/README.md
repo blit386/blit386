@@ -217,6 +217,10 @@ The dev server opens `http://localhost:5173/demos/001-basics.html` in your brows
 is at `http://localhost:5173/demos/`. For the public build, open the flat URLs on
 [demos.blit386.dev](https://demos.blit386.dev/).
 
+Editing a demo's `src/<slug>.js` file hot-reloads the running page in place (state, camera, and music keep going)
+instead of triggering a full reload – see [CLAUDE.md](CLAUDE.md#hot-reload) for exactly what does and does not
+hot-reload.
+
 ## Community
 
 - [Discord](https://discord.gg/tC2wGt88Uj)
