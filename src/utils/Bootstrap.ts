@@ -269,7 +269,7 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
 export async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOptions = {}): Promise<boolean> {
     // One microtask yield before anything else runs. Module top-level evaluation is
     // synchronous and this function is async, so the snippet's un-awaited
-    // `registerHotReload(import.meta.hot)` call - which runs synchronously right after a
+    // `__blit386_registerHotReload(import.meta.hot)` call - which runs synchronously right after a
     // demo's own un-awaited `bootstrap(Game);` call, at the same module top level - always
     // completes before this function proceeds past this line, regardless of
     // `isWaitingForDOMReady`.

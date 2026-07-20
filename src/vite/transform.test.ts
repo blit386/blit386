@@ -45,8 +45,28 @@ describe('injectSnippet', () => {
 
         expect(result.code).toContain(INJECTION_MARKER);
         expect(result.code).toContain('import.meta.hot.accept()');
-        expect(result.code).toContain('registerHotReload(import.meta.hot)');
-        expect(result.code).toContain("import { registerHotReload } from 'blit386';");
+        expect(result.code).toContain('__blit386_registerHotReload(import.meta.hot)');
+        expect(result.code).toContain("import { registerHotReload as __blit386_registerHotReload } from 'blit386';");
+    });
+
+    it('aliases the injected import so it never collides with an existing registerHotReload binding', () => {
+        const codeWithExistingImport =
+            "import { bootstrap, registerHotReload } from 'blit386';\n" +
+            'if (import.meta.hot) {\n' +
+            '    registerHotReload(import.meta.hot);\n' +
+            '}\n' +
+            'bootstrap(Demo);\n';
+
+        const result = injectSnippet(codeWithExistingImport);
+        const injectedPortion = result.code.slice(result.code.indexOf(INJECTION_MARKER));
+
+        // Two import declarations binding the same local name - even from the same source - is a
+        // SyntaxError in ES modules, so the injected import must use a different local name than the
+        // entry module's own pre-existing `registerHotReload` import.
+        expect(injectedPortion).toContain(
+            "import { registerHotReload as __blit386_registerHotReload } from 'blit386';",
+        );
+        expect(injectedPortion).not.toMatch(/import\s*\{\s*registerHotReload\s*\}\s*from\s*'blit386'/);
     });
 
     it('appends after the original code rather than prepending', () => {

@@ -87,10 +87,10 @@ export function registerHotContext(context: HotContext): void {
  * `bootstrap(Game)` call:
  *
  * ```js
- * import { registerHotReload } from 'blit386';
+ * import { registerHotReload as __blit386_registerHotReload } from 'blit386';
  * if (import.meta.hot) {
  *     import.meta.hot.accept();
- *     registerHotReload(import.meta.hot);
+ *     __blit386_registerHotReload(import.meta.hot);
  * }
  * ```
  *
