@@ -1462,12 +1462,14 @@
       "BT.targetFPS",
       "BootstrapOptions",
       "HardwareSettings",
+      "HotReloadContext",
       "PreferredOrientation",
       "bootstrap",
       "defaultConfig",
       "displayError",
       "getCanvas",
-      "mergeHardwareSettings"
+      "mergeHardwareSettings",
+      "registerHotReload"
     ],
     "api/easing": [
       "EasingFunction",

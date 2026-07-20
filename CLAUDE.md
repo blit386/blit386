@@ -542,7 +542,7 @@ See `docs/developer-experience-guide.md` (File structure and member order) and `
 ## Commands
 
 ```bash
-pnpm run build              # Build library
+pnpm run build              # Build library (two Vite builds: the main dist/blit386.* plus dist/vite.* for the blit386/vite subpath)
 pnpm run lint               # ESLint
 pnpm run lint:fix           # ESLint with auto-fix
 pnpm run format             # Format all files (Biome + Prettier)

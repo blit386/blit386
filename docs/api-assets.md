@@ -70,6 +70,9 @@ if (AssetLoader.isLoaded('sprites.png')) {
 AssetLoader.evict('sprites.png');
 ```
 
+`AssetLoader.evict()` is also the manual escape hatch for forcing a fresh load outside the `blit386/vite` plugin's
+automatic asset watcher - see [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix).
+
 ## Sprite setup – preferred path
 
 <Since symbol="SpriteSheet" />
@@ -221,6 +224,24 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
 
 <DemoEmbed demo="022-bitmap-font" title="BLIT386 bitmap font demo" />
 
+## Hot-replacing assets
+
+Under a Vite dev server with the `blit386/vite` plugin installed, editing a sprite sheet's source image or a `.btfont`
+file under a watched asset directory (`public/` by default) updates the already-loaded asset in place - no page reload,
+and demo-held references (a `SpriteSheet` or `BitmapFont` instance, or an `IndexedSpriteLoadResult.sheet`) stay valid. A
+sprite sheet re-runs `indexize()` against the active palette when it was already indexized; a bitmap font rebuilds its
+glyph tables and texture.
+
+<Callout title="Demo-held srcRects and dimension changes">
+  If the replacement image has different dimensions, the sheet's `size` updates to match, but any `Rect2i` a demo is
+  holding onto as a `srcRect` into that sheet does not update itself - reconciling it is the demo's own
+  responsibility. Keep sprite sheet dimensions stable during a hot-reload session, or recompute `srcRect`s from the
+  sheet's current `width`/`height` when that matters.
+</Callout>
+
+See [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix) for the full asset type matrix, including audio and the
+fallback-to-full-reload behavior for unrecognized file types.
+
 ## System font
 
 A built-in 6×14 monospace font covering printable ASCII (characters 32–126). No load step needed.
@@ -251,6 +272,7 @@ BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
   <Card title="Palette Guide" href="/docs/guides/palette">Palette-first setup, offsets, refresh.</Card>
   <Card title="Palette Presets" href="/docs/guides/palette-presets">Built-in preset reference.</Card>
   <Card title="Bitmap Fonts" href="/docs/guides/bitmap-fonts">.btfont format, BMFont conversion.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Asset hot-replace matrix and srcRect caveats.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">System font for HUD text.</Card>
   <Card title="Testing" href="/docs/reference/testing">SpriteSheet and BitmapFont tests.</Card>
 </Cards>

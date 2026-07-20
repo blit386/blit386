@@ -163,6 +163,13 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
 - Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below; as looping, crossfading music
   in [Playback (Music)](#playback-music).
 
+Under a Vite dev server with the `blit386/vite` plugin installed, editing an audio file under a watched asset directory
+(`public/` by default) swaps the decoded buffer inside the same `AudioClip` instance - demo-held references stay valid.
+Any SFX voice still playing the old buffer is stopped; if the replaced clip is the currently playing music track,
+playback restarts immediately (`fadeMs: 0`, no crossfade). `duration`/`sampleRate` reflect the buffer decoded at initial
+load and are not updated by a hot reload. See [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix) for the full
+asset type matrix.
+
 ## Synth
 
 <Since symbol="SynthParams" />
@@ -504,4 +511,5 @@ allocation and stealing policy. Documented in [Hardware settings](api-core.md#ha
   <Card title="API: Core" href="/docs/api/core">Hardware settings, including audioVoices.</Card>
   <Card title="API: Overlay" href="/docs/api/overlay#audio-meters-optional">Live bus level bars and voices/steal/drop readout.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Audio clip hot-replace: SFX voices and music restart.</Card>
 </Cards>
