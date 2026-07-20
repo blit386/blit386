@@ -34,6 +34,7 @@ import {
     type Backend,
     defaultConfig,
     type HardwareSettings,
+    type HotReloadContext,
     type IBTDemo,
     mergeHardwareSettings,
     type OverlayAudioMeterStyle,
@@ -42,6 +43,8 @@ import {
     type OverlayTimingChartStyle,
     type PreferredOrientation,
 } from './core/IBTDemo';
+import type { HotContext } from './hot/HotRuntime';
+import { registerHotReload } from './hot/HotRuntime';
 import {
     createDefaultKeyboardRuntimeMaps,
     DEFAULT_KEYBOARD_PLAYER1,
@@ -2111,6 +2114,7 @@ export {
     PixelGlitch,
     PixelMosaic,
     Rect2i,
+    registerHotReload,
     RGBMask,
     RollLine,
     Scanlines,
@@ -2127,6 +2131,8 @@ export type {
     Effect,
     EffectTier,
     HardwareSettings,
+    HotContext,
+    HotReloadContext,
     IBTDemo,
     MusicPlayOptions,
     OverlayAudioMeterStyle,

@@ -8,6 +8,8 @@
 
 import { BTAPI } from '../core/BTAPI';
 import type { IBTDemo } from '../core/IBTDemo';
+import { isHotActive } from '../hot/HotRuntime';
+import { hotSwapDemo } from '../hot/HotSwap';
 import type { ErrorContent } from './BootstrapHelpers';
 import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID, displayError, getCanvas } from './BootstrapHelpers';
 import { CANVAS_NOT_FOUND_MESSAGE, INIT_FAILED_MESSAGE } from './errorMessages';
@@ -203,6 +205,31 @@ async function initDemo(
 }
 
 /**
+ * Routes an already-running engine's `bootstrap()` call to the hot-swap path, or logs a
+ * double-bootstrap guard error when no hot-reload context is registered.
+ *
+ * @param DemoClass - Newly evaluated demo class constructor.
+ * @returns The bootstrap result when the engine is already initialized (hot-swapped or
+ *   guarded); `null` when a cold boot should proceed instead.
+ */
+async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<boolean | null> {
+    if (!BTAPI.instance.isInitialized()) {
+        return null;
+    }
+
+    if (isHotActive()) {
+        return hotSwapDemo(DemoClass);
+    }
+
+    console.error(
+        '[BT] bootstrap() was called again while already initialized, with no hot-reload context ' +
+            'registered. Reload the page instead of calling bootstrap() a second time.',
+    );
+
+    return false;
+}
+
+/**
  * One-liner bootstrap function for BLIT386 demos.
  * Handles canvas retrieval and engine initialization. Backend selection
  * (WebGPU or software fallback) is managed internally by BTAPI.
@@ -211,6 +238,10 @@ async function initDemo(
  * while allowing customization through options.
  *
  * @since 0.2.0
+ * @changed 1.4.0 Calling `bootstrap()` again while already initialized now routes to a hot
+ *   swap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a
+ *   double-bootstrap guard and returns `false` otherwise - previously it silently started a
+ *   second, unstoppable `GameLoop`.
  * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options - Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.
@@ -236,6 +267,20 @@ async function initDemo(
  * }
  */
 export async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOptions = {}): Promise<boolean> {
+    // One microtask yield before anything else runs. Module top-level evaluation is
+    // synchronous and this function is async, so the snippet's un-awaited
+    // `registerHotReload(import.meta.hot)` call - which runs synchronously right after a
+    // demo's own un-awaited `bootstrap(Game);` call, at the same module top level - always
+    // completes before this function proceeds past this line, regardless of
+    // `isWaitingForDOMReady`.
+    await Promise.resolve();
+
+    const routedResult = await routeIfAlreadyInitialized(DemoClass);
+
+    if (routedResult !== null) {
+        return routedResult;
+    }
+
     const {
         canvasID: providedCanvasID,
         canvasId,

@@ -19,8 +19,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BTAPI } from '../core/BTAPI';
 import type { IBTDemo } from '../core/IBTDemo';
+import type * as HotRuntimeModule from '../hot/HotRuntime';
 import { bootstrap } from './Bootstrap';
 import { DEFAULT_CANVAS_ID, DEFAULT_CONTAINER_ID } from './BootstrapHelpers';
+
+vi.mock('../hot/HotRuntime', async (importOriginal) => {
+    const actual = await importOriginal<typeof HotRuntimeModule>();
+
+    return { ...actual, isHotActive: vi.fn(() => false) };
+});
+
+vi.mock('../hot/HotSwap', () => ({
+    hotSwapDemo: vi.fn(async () => true),
+}));
 
 class MockDemo implements IBTDemo {
     async init() {
@@ -257,6 +268,51 @@ describe('bootstrap', () => {
 
             expect(result).toBe(false);
             expect(onError).toHaveBeenCalledOnce();
+        });
+    });
+
+    describe('hot reload routing', () => {
+        it('routes to hotSwapDemo when already initialized and a hot context is registered', async () => {
+            const { isHotActive } = await import('../hot/HotRuntime');
+            const { hotSwapDemo } = await import('../hot/HotSwap');
+
+            vi.spyOn(BTAPI.instance, 'isInitialized').mockReturnValue(true);
+            vi.mocked(isHotActive).mockReturnValue(true);
+            vi.mocked(hotSwapDemo).mockResolvedValue(true);
+
+            const result = await bootstrap(MockDemo, { isWaitingForDOMReady: false });
+
+            expect(result).toBe(true);
+            expect(hotSwapDemo).toHaveBeenCalledExactlyOnceWith(MockDemo);
+        });
+
+        it('does not touch the canvas when routing to hotSwapDemo', async () => {
+            const { isHotActive } = await import('../hot/HotRuntime');
+
+            vi.spyOn(BTAPI.instance, 'isInitialized').mockReturnValue(true);
+            vi.mocked(isHotActive).mockReturnValue(true);
+
+            const initSpy = vi.spyOn(BTAPI.instance, 'init');
+
+            await bootstrap(MockDemo, { isWaitingForDOMReady: false });
+
+            expect(initSpy).not.toHaveBeenCalled();
+        });
+
+        it('logs an error and returns false when already initialized with no hot context (double-bootstrap guard)', async () => {
+            const { isHotActive } = await import('../hot/HotRuntime');
+
+            vi.spyOn(BTAPI.instance, 'isInitialized').mockReturnValue(true);
+            vi.mocked(isHotActive).mockReturnValue(false);
+
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const initSpy = vi.spyOn(BTAPI.instance, 'init');
+
+            const result = await bootstrap(MockDemo, { isWaitingForDOMReady: false });
+
+            expect(result).toBe(false);
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('bootstrap()'));
+            expect(initSpy).not.toHaveBeenCalled();
         });
     });
 });

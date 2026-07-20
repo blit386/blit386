@@ -58,6 +58,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How does pointer wheel / keyboard scroll capture work?            | `HardwareSettings.isCapturingPointerScroll` (`src/input/PointerInput.ts`) and `isCapturingKeyboardScroll` (`src/input/KeyboardInput.ts`), both opt-in and default `false`; `docs/guide-input.md` (Scroll delta section), `docs/api-core.md` (Hardware settings table) |
 | How does the screen wake lock work?                               | `src/core/WakeLock.ts`; `HardwareSettings.isWakeLockEnabled` in `src/core/IBTDemo.ts`; `docs/api-core.md` (Hardware settings table), `docs/api-browser-support.md` (Screen wake lock section)                                                                         |
 | How does screen orientation detection / lock work?                | `src/core/Orientation.ts`; `HardwareSettings.preferredOrientation` + `IBTDemo.onOrientationChange` in `src/core/IBTDemo.ts`; `BT.screenOrientation` in `src/BLIT386.ts`; `docs/api-core.md` (Screen orientation), `docs/api-browser-support.md` (Screen orientation)  |
+| How does the engine hot-swap runtime work?                        | `src/hot/` (`protocol.ts`, `HotRuntime.ts`, `HotSwap.ts`); `BTAPI.hotReplaceDemo`/`getDemo`/`isInitialized` in `src/core/BTAPI.ts`; `IBTDemo.onHotReload` in `src/core/IBTDemo.ts`; hot-aware routing in `src/utils/Bootstrap.ts`                                     |
 
 ## Onboarding and the scaffolder
 
@@ -236,6 +237,10 @@ src/
     RenderPaletteUsage.ts  # Per-frame palette index usage mask for overlay grid
     WakeLock.ts             # Screen Wake Lock subsystem: acquire/release/re-acquire on visibilitychange (HardwareSettings.isWakeLockEnabled)
     Orientation.ts          # Screen orientation detection + optional lock (HardwareSettings.preferredOrientation, IBTDemo.onOrientationChange, BT.screenOrientation)
+  hot/
+    protocol.ts             # Shared types/constants for the hot-reload runtime (no value imports from src/; shared with the future src/vite/ plugin, BT-306)
+    HotRuntime.ts           # Vite HMR context registration, generation counter, hard-reload request, reload announce/broadcast
+    HotSwap.ts              # Tiered demo hot-swap: prototype swap (methods-only), re-init (init()/constructor changed), hard reload (hardware settings changed)
   overlay/
     Overlay.ts             # Orchestrator: sample, toggle, layout plan, delegate draws
     OverlayDrawTarget.ts   # Internal draw port (drawBarFill / drawLabel); not on IRenderer or BT

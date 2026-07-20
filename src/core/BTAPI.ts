@@ -511,6 +511,57 @@ export class BTAPI {
     }
 
     /**
+     * Runs a Tier 2 hot-swap candidate's `init()` while the previous demo instance keeps
+     * driving the loop, swapping {@link demo} to it only on success.
+     *
+     * Deliberately does not delegate to {@link runDemoInit}: that method calls
+     * {@link clearInputSubsystems} on failure, which is correct for a cold-boot failure
+     * (nothing else is running yet) but would tear down the pointer/keyboard/gamepad/audio
+     * subsystems out from under the *previous* demo instance, which is still driving the
+     * loop while this candidate's `init()` runs. A failed hot reload must leave the running
+     * engine untouched.
+     *
+     * On success, also rebinds the orientation subsystem's change callback to the new
+     * instance via {@link Orientation.setOnChange} - the listener installed at {@link init}
+     * closes over the *previous* demo's bound `onOrientationChange`, so without this,
+     * orientation events would keep reaching stale code after the swap.
+     *
+     * @param newDemo - Freshly constructed candidate demo instance.
+     * @returns `true` when `newDemo.init()` succeeds and {@link demo} was swapped to it.
+     */
+    public async hotReplaceDemo(newDemo: IBTDemo): Promise<boolean> {
+        if (typeof newDemo.update !== 'function' || typeof newDemo.render !== 'function') {
+            console.error(
+                '[BT] Hot reload failed; keeping the previous version running: ' +
+                    'the new demo is missing update() or render()',
+            );
+
+            return false;
+        }
+
+        try {
+            const ok = await newDemo.init();
+
+            if (!ok) {
+                console.error(
+                    '[BT] Hot reload failed; keeping the previous version running: demo initialization failed',
+                );
+
+                return false;
+            }
+        } catch (err) {
+            console.error('[BT] Hot reload failed; keeping the previous version running:', err);
+
+            return false;
+        }
+
+        this.demo = newDemo;
+        this.orientation?.setOnChange(newDemo.onOrientationChange?.bind(newDemo) ?? null);
+
+        return true;
+    }
+
+    /**
      * Gets the current tick count.
      * Ticks increment once per fixed update step (target rate set by `targetFPS`).
      *
@@ -583,6 +634,24 @@ export class BTAPI {
      */
     public getCanvas(): HTMLCanvasElement | null {
         return this.canvas;
+    }
+
+    /**
+     * Gets the active demo instance.
+     *
+     * @returns Current demo, or null if not initialized.
+     */
+    public getDemo(): IBTDemo | null {
+        return this.demo;
+    }
+
+    /**
+     * Reports whether the engine has completed initialization.
+     *
+     * @returns `true` when both a demo and the game loop are live.
+     */
+    public isInitialized(): boolean {
+        return this.demo !== null && this.loop !== null;
     }
 
     /**

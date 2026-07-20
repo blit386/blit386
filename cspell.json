@@ -73,6 +73,7 @@
     "rects",
     "reindexing",
     "reindexize",
+    "reinit",
     "retroblit",
     "RGBA",
     "rgba8unorm",

@@ -147,6 +147,21 @@ export class Orientation {
     }
 
     /**
+     * Rebinds the demo callback for subsequent orientation changes, without touching the
+     * live listener, lock state, or attach/detach generation.
+     *
+     * Used when a hot reload swaps in a new demo instance ({@link BTAPI.hotReplaceDemo}):
+     * the `change` listener installed by {@link attach} closes over `this.onChange`, so
+     * without this, orientation events would keep reaching the *previous* demo's bound
+     * handler after the swap.
+     *
+     * @param onChange - Replacement demo callback, or `null` to stop forwarding events.
+     */
+    public setOnChange(onChange: ChangeHandler | null): void {
+        this.onChange = onChange;
+    }
+
+    /**
      * Removes the `change` listener and unlocks only when this instance holds a lock.
      *
      * Safe to call repeatedly or when {@link attach} was never called (for example
