@@ -1,7 +1,9 @@
 import { markIndexUsed } from '../core/RenderPaletteUsage';
+import { isHotActive } from '../hot/HotRuntime';
 import { assertDimensions, assertImageElementWithinLimits, assertIndexedPixelInput } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import { spriteColorNotInPaletteError } from '../utils/errorMessages';
+import { normalizeAssetUrl } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { AssetLoader } from './AssetLoader';
@@ -18,6 +20,27 @@ const RGBA_BYTES_PER_PIXEL = 4;
 
 /** Depth or array-layer count for a 2-D GPU texture descriptor. */
 const TEXTURE_LAYER_COUNT = 1;
+
+/**
+ * Dev-only registry of live sprite sheets keyed by normalized source URL, so
+ * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded
+ * from a changed image. Populated only while {@link isHotActive} (no production
+ * memory cost); entries are removed in {@link SpriteSheet.destroy}.
+ */
+const hotReloadRegistry = new Map<string, Set<SpriteSheet>>();
+
+/**
+ * Returns every registered sheet loaded from a URL matching `url` after normalization.
+ *
+ * Internal - used by `HotRuntime.handleAssetChanged` to route an `'image'`
+ * asset-changed event to the sheets that need their texture replaced.
+ *
+ * @param url - Changed asset URL to look up.
+ * @returns Matching sheets, or `undefined` when none are registered.
+ */
+export function getHotReloadSheets(url: string): ReadonlySet<SpriteSheet> | undefined {
+    return hotReloadRegistry.get(normalizeAssetUrl(url));
+}
 
 /**
  * Maps retained RGBA bytes to palette indices for one sprite sheet.
@@ -230,11 +253,14 @@ export type IndexedSpriteLoadResult = {
  * @since 0.1.0
  */
 export class SpriteSheet {
-    /** Sprite sheet dimensions in pixels. */
-    public readonly size: Vector2i;
-
     /** Source HTML image element (null for sheets created from raw indexed data). */
-    private readonly image: HTMLImageElement | null;
+    private image: HTMLImageElement | null;
+
+    /** Sprite sheet dimensions in pixels. Backing field for the public {@link size} getter. */
+    private sheetSize: Vector2i;
+
+    /** Source URL this sheet was loaded from via {@link SpriteSheet.load}, or `null` otherwise. */
+    private sourceUrl: string | null = null;
 
     /** Pre-decoded image bitmap for GPU upload (created by load()). */
     private imageBitmap: ImageBitmap | null = null;
@@ -260,13 +286,24 @@ export class SpriteSheet {
 
         if (image) {
             assertImageElementWithinLimits('sprite sheet', image);
-            this.size = new Vector2i(image.width, image.height);
+            this.sheetSize = new Vector2i(image.width, image.height);
         } else if (size) {
             assertDimensions('sprite sheet', size.x, size.y);
-            this.size = size;
+            this.sheetSize = size;
         } else {
             throw new Error('Either an image or explicit size must be provided.');
         }
+    }
+
+    /**
+     * Gets the sprite-sheet dimensions in pixels.
+     *
+     * @returns Sheet dimensions. Changes after a hot-replace image swap with
+     *   different dimensions - any `srcRect` a demo holds onto is the demo's own
+     *   responsibility to reconcile.
+     */
+    get size(): Vector2i {
+        return this.sheetSize;
     }
 
     /**
@@ -310,6 +347,9 @@ export class SpriteSheet {
     static async load(url: string): Promise<SpriteSheet> {
         const image = await AssetLoader.loadImage(url);
         const sheet = new SpriteSheet(image);
+
+        sheet.sourceUrl = url;
+        sheet.registerForHotReload();
 
         // Create ImageBitmap with explicit alpha handling.
         // - premultiplyAlpha: 'none' preserves original alpha values (avoids dark fringes)
@@ -562,6 +602,58 @@ export class SpriteSheet {
     }
 
     /**
+     * Replaces this sheet's source image in place after a hot-reloaded asset change.
+     *
+     * Swaps the image reference, validates and updates {@link size} (dimension
+     * changes are allowed - buffers rebuild to match), re-runs `indexize` against
+     * `palette` when the sheet was already indexized so `indexedPixels` stays in
+     * sync with the new pixels, and invalidates the cached GPU texture so the next
+     * `getTexture()` call re-uploads it.
+     *
+     * No-op (with a console warning) for sheets created from raw indexed data - there
+     * is no source image to replace - and for an already-indexized sheet when `palette`
+     * is `null`, since there is nothing safe to reindex against.
+     *
+     * If `indexize()` throws partway (a pixel color from the new image is missing from
+     * `palette`), this sheet is left with the new image/size but a stale, mismatched
+     * `indexedPixels`/texture until a subsequent successful hot reload - an accepted
+     * dev-only-path risk, not a production code path.
+     *
+     * @param image - Newly loaded replacement image.
+     * @param palette - Active palette, used to re-run `indexize` when the sheet was
+     *   already indexized.
+     */
+    hotReplaceImage(image: HTMLImageElement, palette: Palette | null): void {
+        if (!this.image) {
+            console.warn('[BT] Hot reload: sprite sheet has no source image (raw indexed data); skipping.');
+
+            return;
+        }
+
+        if (this.indexedPixels !== null && palette === null) {
+            console.warn(`[BT] Hot reload: ${this.sourceName} is indexized but no active palette is set; skipping.`);
+
+            return;
+        }
+
+        assertImageElementWithinLimits('sprite sheet', image);
+
+        this.image = image;
+        this.sheetSize = new Vector2i(image.width, image.height);
+
+        if (this.imageBitmap) {
+            this.imageBitmap.close();
+            this.imageBitmap = null;
+        }
+
+        if (this.indexedPixels !== null && palette !== null) {
+            this.indexize(palette);
+        } else {
+            this.invalidateTexture();
+        }
+    }
+
+    /**
      * Returns whether this sprite sheet has been converted to palette indices.
      *
      * @returns True if `indexize()` has been called successfully.
@@ -705,6 +797,7 @@ export class SpriteSheet {
      */
     destroy(): void {
         this.invalidateTexture();
+        this.unregisterFromHotReload();
 
         if (this.imageBitmap) {
             this.imageBitmap.close();
@@ -788,6 +881,45 @@ export class SpriteSheet {
         if (this.texture) {
             this.texture.destroy();
             this.texture = null;
+        }
+    }
+
+    /**
+     * Registers this sheet in the dev-only hot-reload registry under its normalized
+     * source URL, when a Vite HMR context is active. Called by {@link SpriteSheet.load}.
+     */
+    private registerForHotReload(): void {
+        if (this.sourceUrl === null || !isHotActive()) {
+            return;
+        }
+
+        const key = normalizeAssetUrl(this.sourceUrl);
+        const bucket = hotReloadRegistry.get(key) ?? new Set<SpriteSheet>();
+
+        bucket.add(this);
+        hotReloadRegistry.set(key, bucket);
+    }
+
+    /**
+     * Removes this sheet from the hot-reload registry, pruning an empty bucket.
+     * Called by {@link SpriteSheet.destroy}.
+     */
+    private unregisterFromHotReload(): void {
+        if (this.sourceUrl === null) {
+            return;
+        }
+
+        const key = normalizeAssetUrl(this.sourceUrl);
+        const bucket = hotReloadRegistry.get(key);
+
+        if (!bucket) {
+            return;
+        }
+
+        bucket.delete(this);
+
+        if (bucket.size === 0) {
+            hotReloadRegistry.delete(key);
         }
     }
 }
