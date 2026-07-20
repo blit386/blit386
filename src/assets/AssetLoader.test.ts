@@ -228,4 +228,119 @@ describe('AssetLoader', () => {
             );
         });
     });
+
+    describe('evict', () => {
+        beforeEach(() => {
+            vi.stubGlobal(
+                'Image',
+                class {
+                    onload: (() => void) | null = null;
+                    onerror: (() => void) | null = null;
+                    width = 100;
+                    height = 100;
+
+                    set src(_: string) {
+                        this.onload?.();
+                    }
+                },
+            );
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('returns false when nothing is cached under the URL', () => {
+            expect(AssetLoader.evict('never-loaded.png')).toBe(false);
+        });
+
+        it('returns true and clears the cache entry when a cached image is evicted', async () => {
+            await AssetLoader.loadImage('evict-me.png');
+            expect(AssetLoader.isLoaded('evict-me.png')).toBe(true);
+
+            expect(AssetLoader.evict('evict-me.png')).toBe(true);
+            expect(AssetLoader.isLoaded('evict-me.png')).toBe(false);
+            expect(AssetLoader.getImage('evict-me.png')).toBeNull();
+        });
+
+        it('allows a fresh load after eviction', async () => {
+            const first = await AssetLoader.loadImage('reload-me.png');
+            AssetLoader.evict('reload-me.png');
+            const second = await AssetLoader.loadImage('reload-me.png');
+
+            expect(second).not.toBe(first);
+        });
+    });
+
+    describe('hotReloadImage', () => {
+        let requestedUrls: string[];
+
+        beforeEach(() => {
+            requestedUrls = [];
+
+            vi.stubGlobal(
+                'Image',
+                class {
+                    onload: (() => void) | null = null;
+                    onerror: (() => void) | null = null;
+                    width = 100;
+                    height = 100;
+
+                    set src(value: string) {
+                        requestedUrls.push(value);
+                        this.onload?.();
+                    }
+                },
+            );
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('re-caches the result under the original URL, not the busted one', async () => {
+            await AssetLoader.loadImage('hot.png');
+
+            const reloaded = await AssetLoader.hotReloadImage('hot.png');
+
+            expect(reloaded).toBeDefined();
+            expect(AssetLoader.isLoaded('hot.png')).toBe(true);
+            expect(AssetLoader.getImage('hot.png')).toBe(reloaded);
+        });
+
+        it('requests the image with a cache-busting query parameter', async () => {
+            await AssetLoader.hotReloadImage('bust.png');
+
+            expect(requestedUrls).toHaveLength(1);
+            expect(requestedUrls[0]).toMatch(/^bust\.png\?blit386-hmr=\d+$/);
+        });
+
+        it('replaces a previously cached image with the freshly loaded one', async () => {
+            const before = await AssetLoader.loadImage('swap.png');
+            const after = await AssetLoader.hotReloadImage('swap.png');
+
+            expect(after).not.toBe(before);
+            expect(AssetLoader.getImage('swap.png')).toBe(after);
+        });
+
+        it('rejects with an error keyed to the original URL when the reload fails', async () => {
+            vi.stubGlobal(
+                'Image',
+                class {
+                    onload: (() => void) | null = null;
+                    onerror: (() => void) | null = null;
+                    width = 100;
+                    height = 100;
+
+                    set src(_: string) {
+                        this.onerror?.();
+                    }
+                },
+            );
+
+            await expect(AssetLoader.hotReloadImage('missing.png')).rejects.toThrow(
+                "Can't find the image 'missing.png'",
+            );
+        });
+    });
 });

@@ -1,4 +1,5 @@
 import { assertImageElementWithinLimits } from '../utils/AssetLimits';
+import { appendCacheBustQuery } from '../utils/HotReloadUrl';
 
 /**
  * Successfully loaded images keyed by request URL.
@@ -128,20 +129,23 @@ function clearInFlight(url: string): void {
 /**
  * Starts a browser image load and registers the in-flight promise.
  *
- * @param url - Path or URL to load.
+ * @param fetchUrl - Path or URL to actually request (may carry a hot-reload cache-bust query).
+ * @param cacheKey - Key to cache the result and track the in-flight load under. Defaults to
+ *   `fetchUrl` for a normal load; a hot reload passes the original, un-busted URL here so the
+ *   result re-caches under the same key callers already hold.
  * @returns Promise that resolves to the loaded image element.
  */
-function startLoading(url: string): Promise<HTMLImageElement> {
+function startLoading(fetchUrl: string, cacheKey: string = fetchUrl): Promise<HTMLImageElement> {
     const promise = new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
 
         img.onload = () => {
-            clearInFlight(url);
+            clearInFlight(cacheKey);
 
             try {
                 assertImageElementWithinLimits('image', img);
 
-                loadedImages.set(url, img);
+                loadedImages.set(cacheKey, img);
 
                 resolve(img);
             } catch (error) {
@@ -150,15 +154,15 @@ function startLoading(url: string): Promise<HTMLImageElement> {
         };
 
         img.onerror = () => {
-            clearInFlight(url);
+            clearInFlight(cacheKey);
 
-            reject(buildImageNotFoundError(url));
+            reject(buildImageNotFoundError(cacheKey));
         };
 
-        img.src = url;
+        img.src = fetchUrl;
     });
 
-    loadingPromises.set(url, promise);
+    loadingPromises.set(cacheKey, promise);
 
     return promise;
 }
@@ -218,6 +222,38 @@ export class AssetLoader {
      */
     static getImage(url: string): HTMLImageElement | null {
         return loadedImages.get(url) ?? null;
+    }
+
+    /**
+     * Removes a URL's cached image and any in-flight load, so a later call to
+     * {@link AssetLoader.loadImage} starts fresh.
+     *
+     * @param url - Path or URL whose cache entry (and in-flight load, if any) should be evicted.
+     * @returns `true` if a cached image was removed; `false` if nothing was cached under `url`.
+     * @since 1.4.0
+     */
+    static evict(url: string): boolean {
+        const removed = loadedImages.delete(url);
+
+        loadingPromises.delete(url);
+
+        return removed;
+    }
+
+    /**
+     * Re-loads an already-cached image with a cache-busted request, re-caching the
+     * result under the original `url` key so demo-held references from
+     * {@link AssetLoader.getImage} stay valid.
+     *
+     * Internal – routed from `HotRuntime.handleAssetChanged` when the dev asset
+     * watcher reports a changed image file.
+     *
+     * @param url - Cache key (and fetch URL) of the image to hot-reload.
+     * @returns The freshly loaded image element, cached under `url`.
+     * @throws Error if the cache-busted image fails to load.
+     */
+    static async hotReloadImage(url: string): Promise<HTMLImageElement> {
+        return startLoading(appendCacheBustQuery(url), url);
     }
 
     /**
