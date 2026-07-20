@@ -251,7 +251,9 @@ export class MusicPlayer {
             return false;
         }
 
-        this.play(newBuffer, { ...this.lastOptions, fadeMs: 0 });
+        const options = sanitizeLoopRegion(this.lastOptions, newBuffer.duration);
+
+        this.play(newBuffer, { ...options, fadeMs: 0 });
 
         return true;
     }
@@ -421,6 +423,33 @@ function applyLoopOptions(source: AudioBufferSourceNode, options: MusicPlayOptio
     }
 
     source.loop = options.loop ?? DEFAULT_LOOP;
+}
+
+/**
+ * Drops `loopStart`/`loopEnd` from `options` when they no longer describe a valid region for
+ * `duration`, instead of letting an invalid region reach {@link validateLoopRegion} and throw.
+ *
+ * Used by {@link MusicPlayer.hotReplaceCurrentBuffer}: `lastOptions` was captured for the
+ * previous buffer's duration, and a hot-reloaded replacement can be shorter, so its old loop
+ * points may no longer fit. Falls back to whole-buffer looping via `options.loop` in that case,
+ * so a valid buffer replacement always restarts successfully instead of throwing.
+ *
+ * @param options - Options to sanitize.
+ * @param duration - Duration in seconds of the buffer these options are about to be replayed against.
+ * @returns `options` unchanged when its loop region already fits `duration`; otherwise `options`
+ *   with `loopStart`/`loopEnd` removed.
+ */
+function sanitizeLoopRegion(options: MusicPlayOptions, duration: number): MusicPlayOptions {
+    const { loopStart, loopEnd, ...rest } = options;
+
+    const isValidRegion =
+        loopStart !== undefined &&
+        loopEnd !== undefined &&
+        loopStart >= 0 &&
+        loopStart < loopEnd &&
+        loopEnd <= duration;
+
+    return isValidRegion ? options : rest;
 }
 
 /**

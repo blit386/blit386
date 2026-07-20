@@ -343,4 +343,64 @@ describe('AssetLoader', () => {
             );
         });
     });
+
+    describe('stale-completion safety', () => {
+        /** Image stub whose `onload`/`onerror` must be fired manually, so tests control resolution order. */
+        class DeferredImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            width = 100;
+            height = 100;
+            src = '';
+        }
+
+        let instances: DeferredImage[];
+
+        beforeEach(() => {
+            instances = [];
+
+            vi.stubGlobal(
+                'Image',
+                class extends DeferredImage {
+                    constructor() {
+                        super();
+                        instances.push(this);
+                    }
+                },
+            );
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('keeps the newer hot-reloaded image when a superseded load resolves after it', async () => {
+            const firstPromise = AssetLoader.hotReloadImage('race.png');
+            const secondPromise = AssetLoader.hotReloadImage('race.png');
+
+            expect(instances).toHaveLength(2);
+
+            // The newer (second) request resolves first; the stale (first) one resolves after.
+            instances[1]?.onload?.();
+            const second = await secondPromise;
+
+            instances[0]?.onload?.();
+            await firstPromise;
+
+            expect(AssetLoader.getImage('race.png')).toBe(second);
+        });
+
+        it('does not repopulate the cache when a stale in-flight load resolves after evict()', async () => {
+            const promise = AssetLoader.loadImage('evicted.png');
+
+            expect(instances).toHaveLength(1);
+
+            AssetLoader.evict('evicted.png');
+
+            instances[0]?.onload?.();
+            await promise;
+
+            expect(AssetLoader.getImage('evicted.png')).toBeNull();
+        });
+    });
 });

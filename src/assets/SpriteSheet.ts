@@ -257,7 +257,7 @@ export class SpriteSheet {
     private image: HTMLImageElement | null;
 
     /** Sprite sheet dimensions in pixels. Backing field for the public {@link size} getter. */
-    private sheetSize: Vector2i;
+    private _size: Vector2i;
 
     /** Source URL this sheet was loaded from via {@link SpriteSheet.load}, or `null` otherwise. */
     private sourceUrl: string | null = null;
@@ -286,10 +286,10 @@ export class SpriteSheet {
 
         if (image) {
             assertImageElementWithinLimits('sprite sheet', image);
-            this.sheetSize = new Vector2i(image.width, image.height);
+            this._size = new Vector2i(image.width, image.height);
         } else if (size) {
             assertDimensions('sprite sheet', size.x, size.y);
-            this.sheetSize = size;
+            this._size = size;
         } else {
             throw new Error('Either an image or explicit size must be provided.');
         }
@@ -303,7 +303,7 @@ export class SpriteSheet {
      *   responsibility to reconcile.
      */
     get size(): Vector2i {
-        return this.sheetSize;
+        return this._size;
     }
 
     /**
@@ -639,7 +639,7 @@ export class SpriteSheet {
         assertImageElementWithinLimits('sprite sheet', image);
 
         this.image = image;
-        this.sheetSize = new Vector2i(image.width, image.height);
+        this._size = new Vector2i(image.width, image.height);
 
         if (this.imageBitmap) {
             this.imageBitmap.close();

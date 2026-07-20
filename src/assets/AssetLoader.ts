@@ -127,7 +127,48 @@ function clearInFlight(url: string): void {
 }
 
 /**
+ * Monotonic per-cache-key generation counter.
+ *
+ * Bumped whenever a fresh load starts for a key ({@link startLoading}) or the key is
+ * explicitly evicted ({@link AssetLoader.evict}), so a superseded in-flight request's
+ * `onload`/`onerror` handler can tell it is no longer the current request for that key and
+ * skip mutating the shared caches - otherwise a stale request that finishes after a newer one
+ * (or after an eviction) could silently overwrite the correct result with old data.
+ */
+const loadGenerations = new Map<string, number>();
+
+/**
+ * Advances and returns the generation for `cacheKey`.
+ *
+ * @param cacheKey - Cache key whose generation should advance.
+ * @returns The new, current generation number for `cacheKey`.
+ */
+function bumpGeneration(cacheKey: string): number {
+    const generation = (loadGenerations.get(cacheKey) ?? 0) + 1;
+
+    loadGenerations.set(cacheKey, generation);
+
+    return generation;
+}
+
+/**
+ * Reports whether `generation` is still the current one for `cacheKey`.
+ *
+ * @param cacheKey - Cache key to check.
+ * @param generation - Generation captured when the request being checked started.
+ * @returns `true` if no newer load or eviction has superseded `generation`.
+ */
+function isCurrentGeneration(cacheKey: string, generation: number): boolean {
+    return loadGenerations.get(cacheKey) === generation;
+}
+
+/**
  * Starts a browser image load and registers the in-flight promise.
+ *
+ * The returned promise always settles with this specific request's own outcome, even once
+ * superseded - only the shared `loadedImages`/`loadingPromises` caches are skipped for a
+ * superseded request, via the {@link loadGenerations} guard, so a stale completion can never
+ * clobber a newer load's result.
  *
  * @param fetchUrl - Path or URL to actually request (may carry a hot-reload cache-bust query).
  * @param cacheKey - Key to cache the result and track the in-flight load under. Defaults to
@@ -136,16 +177,24 @@ function clearInFlight(url: string): void {
  * @returns Promise that resolves to the loaded image element.
  */
 function startLoading(fetchUrl: string, cacheKey: string = fetchUrl): Promise<HTMLImageElement> {
+    const generation = bumpGeneration(cacheKey);
+
     const promise = new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
 
         img.onload = () => {
-            clearInFlight(cacheKey);
+            const isCurrent = isCurrentGeneration(cacheKey, generation);
+
+            if (isCurrent) {
+                clearInFlight(cacheKey);
+            }
 
             try {
                 assertImageElementWithinLimits('image', img);
 
-                loadedImages.set(cacheKey, img);
+                if (isCurrent) {
+                    loadedImages.set(cacheKey, img);
+                }
 
                 resolve(img);
             } catch (error) {
@@ -154,7 +203,9 @@ function startLoading(fetchUrl: string, cacheKey: string = fetchUrl): Promise<HT
         };
 
         img.onerror = () => {
-            clearInFlight(cacheKey);
+            if (isCurrentGeneration(cacheKey, generation)) {
+                clearInFlight(cacheKey);
+            }
 
             reject(buildImageNotFoundError(cacheKey));
         };
@@ -228,11 +279,17 @@ export class AssetLoader {
      * Removes a URL's cached image and any in-flight load, so a later call to
      * {@link AssetLoader.loadImage} starts fresh.
      *
+     * Also bumps the URL's load generation, so an in-flight request that was already under way
+     * before this call can no longer repopulate the cache once it completes - see
+     * {@link isCurrentGeneration}.
+     *
      * @param url - Path or URL whose cache entry (and in-flight load, if any) should be evicted.
      * @returns `true` if a cached image was removed; `false` if nothing was cached under `url`.
      * @since 1.4.0
      */
     static evict(url: string): boolean {
+        bumpGeneration(url);
+
         const removed = loadedImages.delete(url);
 
         loadingPromises.delete(url);

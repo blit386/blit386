@@ -26,14 +26,14 @@ import { AssetLoader } from './AssetLoader';
 import { Palette } from './Palette';
 import { getHotReloadSheets, SpriteSheet } from './SpriteSheet';
 
-// SpriteSheet.destroy() unconditionally normalizes `sourceUrl` against `location.origin`
+// SpriteSheet.destroy() unconditionally normalizes `sourceUrl` against `document.baseURI`
 // (see unregisterFromHotReload in SpriteSheet.ts) whenever a sheet was loaded via
 // SpriteSheet.load(), regardless of whether hot reload was ever active. Real browsers
-// always have `location`; this file's default Node test environment does not, so - like
+// always have `document`; this file's default Node test environment does not, so - like
 // the GPU/AudioContext stubs in src/__test__/setup.ts - install it once, only if missing,
 // so it survives every describe block's `vi.unstubAllGlobals()` call.
-if (typeof globalThis.location === 'undefined') {
-    (globalThis as unknown as { location?: URL }).location = new URL('http://localhost/');
+if (typeof globalThis.document === 'undefined') {
+    (globalThis as unknown as { document?: { baseURI: string } }).document = { baseURI: 'http://localhost/' };
 }
 
 /**

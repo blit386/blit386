@@ -26,13 +26,13 @@ import { Rect2i } from '../utils/Rect2i';
 import { BitmapFont, getHotReloadFonts } from './BitmapFont';
 import { SpriteSheet } from './SpriteSheet';
 
-// registerFontForHotReload() normalizes the source url against `location.origin`
+// registerFontForHotReload() normalizes the source url against `document.baseURI`
 // whenever hot reload is active (see BitmapFont.ts). Real browsers always have
-// `location`; this file's default Node test environment does not, so - like the
+// `document`; this file's default Node test environment does not, so - like the
 // GPU/AudioContext stubs in src/__test__/setup.ts - install it once, only if
 // missing, so it survives every describe block's `vi.unstubAllGlobals()` call.
-if (typeof globalThis.location === 'undefined') {
-    (globalThis as unknown as { location?: URL }).location = new URL('http://localhost/');
+if (typeof globalThis.document === 'undefined') {
+    (globalThis as unknown as { document?: { baseURI: string } }).document = { baseURI: 'http://localhost/' };
 }
 
 type GlyphData = { x: number; y: number; w: number; h: number; ox: number; oy: number; adv: number };
