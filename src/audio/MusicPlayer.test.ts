@@ -787,4 +787,46 @@ describe('MusicPlayer', () => {
             expect(player.isPlaying()).toBe(true);
         });
     });
+
+    describe('hotReplaceCurrentBuffer', () => {
+        it('returns false when nothing is playing', () => {
+            const { player } = createPlayer();
+            const oldBuffer = createMockAudioBuffer();
+            const newBuffer = createMockAudioBuffer();
+
+            expect(player.hotReplaceCurrentBuffer(oldBuffer, newBuffer)).toBe(false);
+        });
+
+        it('returns false when the current track is a different buffer', () => {
+            const { player } = createPlayer();
+            player.play(createMockAudioBuffer());
+
+            expect(player.hotReplaceCurrentBuffer(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
+        });
+
+        it('restarts the current track with the new buffer when it matches', () => {
+            const { player } = createPlayer();
+            const oldBuffer = createMockAudioBuffer();
+            const newBuffer = createMockAudioBuffer();
+            player.play(oldBuffer, { volume: 0.6, loop: false });
+
+            const restarted = player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
+
+            expect(restarted).toBe(true);
+            expect(player.isPlaying()).toBe(true);
+        });
+
+        it('restarts with fadeMs 0 regardless of the original play fadeMs', () => {
+            const { player, context } = createPlayer();
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const oldBuffer = createMockAudioBuffer();
+            const newBuffer = createMockAudioBuffer();
+            player.play(oldBuffer, { fadeMs: 2000 });
+
+            const sourceCallsBefore = context2.createBufferSourceCalls.length;
+            player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
+
+            expect(context2.createBufferSourceCalls.length).toBe(sourceCallsBefore + 1);
+        });
+    });
 });
