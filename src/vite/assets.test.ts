@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ASSET_CHANGED_EVENT } from '../hot/protocol';
 import { assetTypeForFile, handleAssetHotUpdate, resolveAssetUrl } from './assets';
+import type { AssetKind } from './options';
 
 describe('resolveAssetUrl', () => {
     it('maps a file under an asset dir to a leading-slash relative URL', () => {
@@ -24,7 +25,7 @@ describe('resolveAssetUrl', () => {
 });
 
 describe('assetTypeForFile', () => {
-    const assetTypes = new Map([
+    const assetTypes = new Map<string, AssetKind>([
         ['.png', 'image'],
         ['.wav', 'audio'],
         ['.btfont', 'font'],
@@ -41,7 +42,7 @@ describe('assetTypeForFile', () => {
 
 describe('handleAssetHotUpdate', () => {
     const assetDirs = ['/project/public'];
-    const assetTypes = new Map([['.png', 'image']]);
+    const assetTypes = new Map<string, AssetKind>([['.png', 'image']]);
 
     it('sends a custom asset-changed event for a recognized extension', () => {
         const send = vi.fn();
