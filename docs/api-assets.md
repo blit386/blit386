@@ -65,6 +65,9 @@ const images = await AssetLoader.loadImages(['sprites.png', 'tiles.png']);
 if (AssetLoader.isLoaded('sprites.png')) {
   // already cached
 }
+
+// Drop a single URL's cache entry (mainly for tests or explicit resets)
+AssetLoader.evict('sprites.png');
 ```
 
 ## Sprite setup – preferred path
