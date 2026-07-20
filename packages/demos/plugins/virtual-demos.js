@@ -21,6 +21,7 @@ export function virtualDemos() {
     let srcDir = resolve(rootDir, 'src');
     let registry = [];
     let layoutTemplate = '';
+    let isDevMode = false;
 
     /**
      * Re-read _partials/layout.html from disk into `layoutTemplate`.
@@ -93,13 +94,15 @@ export function virtualDemos() {
         ).replaceAll('<', '\\u003c');
 
         const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
+        const sourcePanelScript = isDevMode ? '<script type="module" src="/_partials/source-panel.js"></script>' : '';
 
         return layoutTemplate
             .replaceAll('{{title}}', escapeHtml(entry.title))
             .replaceAll('{{scriptFile}}', entry.scriptFile)
             .replaceAll('{{slug}}', entry.slug)
             .replace('{{demoList}}', () => demoListJson)
-            .replace('{{sourceHtml}}', () => sourceHtml);
+            .replace('{{sourceHtml}}', () => sourceHtml)
+            .replace('{{sourcePanelScript}}', () => sourcePanelScript);
     }
 
     return {
@@ -134,6 +137,7 @@ export function virtualDemos() {
             partialsDir = resolve(rootDir, '_partials');
             demosDir = resolve(rootDir, 'demos');
             srcDir = resolve(rootDir, 'src');
+            isDevMode = config.command === 'serve';
         },
 
         resolveId(source) {

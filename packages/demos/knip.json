@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/**/*.js", "plugins/*.js", "postcss.config.js"],
-  "project": ["src/**/*.js", "plugins/*.js"],
+  "entry": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "postcss.config.js"],
+  "project": ["src/**/*.js", "plugins/*.js", "_partials/*.js"],
   "ignore": [],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": ["blit386"]
