@@ -41,6 +41,12 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   is the current track), and bitmap fonts rebuild their glyph tables and texture - all without a page reload. Adoption
   in `blit386-demos`/`create-blit386` ships in a follow-up release.
 
+### Fixed
+
+- Calling `bootstrap()` a second time while already initialized no longer silently starts a second, unstoppable
+  `GameLoop`. With the `blit386/vite` plugin installed and a hot-reload context registered, a second call now routes to
+  a hot swap instead; without one, it logs an error and returns `false`.
+
 ## 1.3.1 - 2026-07-19
 
 ### Added

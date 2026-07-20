@@ -77,6 +77,48 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 - `bootstrap()` applies canvas layout CSS custom properties via `CanvasLayoutStyles` (logical size, CSS cap, pixelated
   scaling). Custom hosts can reuse the same helper when not using `bootstrap()`.
 
+### Hot reload
+
+<Since symbol="registerHotReload" />
+<Since symbol="HotReloadContext" />
+
+Under a Vite dev server with the `blit386/vite` plugin installed, calling `bootstrap()` again after the engine is
+already initialized - exactly what happens on every hot-reloaded save - routes to a hot swap instead of starting a
+second, unstoppable game loop. `registerHotReload(hot)` registers the active `import.meta.hot` context so the engine
+knows a swap is possible; the plugin injects the call to it automatically into the demo/game's entry module, so you
+never call it by hand.
+
+Depending on what changed, the swap is a prototype-only method swap, a full re-init, or a full page reload - see
+[Hot Reload](guide-hot-reload.md) for the three tiers with worked examples. `IBTDemo` has an optional
+`onHotReload(context: HotReloadContext)` hook for reacting to a swap:
+
+```ts twoslash
+import { type IBTDemo, type HotReloadContext } from 'blit386';
+
+class Demo implements IBTDemo {
+  onHotReload(context: HotReloadContext): void {
+    console.log(`hot reload #${context.generation} (${context.reason})`);
+  }
+
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+  render(): void {}
+}
+```
+
+<TypeTable type={{
+    reason: { type: "'methods' | 'reinit'", description: "Which swap tier ran: 'methods' swapped the prototype in place, 'reinit' re-ran init() on a fresh instance" },
+    generation: { type: 'number', description: 'Hot-swap generation number, incremented on every successful swap since page load' },
+    snapshot: { type: 'Record<string, unknown>', description: "Previous instance's own enumerable fields, captured just before init() ran on the new one. Present only when reason is 'reinit'" },
+  }} />
+
+`onHotReload` never fires for a hardware-settings change - that always triggers a full page reload instead. Without the
+`blit386/vite` plugin, `bootstrap()` behaves as before: calling it a second time while already initialized logs an error
+and returns `false` rather than starting a second loop.
+
 ## Initialization
 
 <Since symbol="BT.init" />
@@ -355,5 +397,6 @@ enabled, WebGPU backend, `16` SFX voices, and other defaults documented in the t
   <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, and the unlock getter.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Engine HUD subsystem, toggle, layout.</Card>
   <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effect chain and tiers.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Swap tiers, onHotReload, asset hot-replace, blit386/vite.</Card>
   <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed configure flags and getters.</Card>
 </Cards>

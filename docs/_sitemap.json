@@ -103,6 +103,11 @@
       "description": "The audio subsystem layout, locked vs. unlocked gesture state, and web audio constraints."
     },
     {
+      "src": "guide-hot-reload.md",
+      "path": "guides/hot-reload",
+      "description": "The three hot-reload swap tiers, onHotReload semantics, asset hot-replace, and the blit386/vite plugin."
+    },
+    {
       "src": "performance-best-practices.md",
       "path": "performance/best-practices",
       "description": "When and how to optimize demos: object allocation, batching, and hot-path guidance."

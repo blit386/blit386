@@ -192,6 +192,10 @@ You need an ESM bundler (Vite, esbuild, webpack, and friends) and Node 22+. The 
 quietly falls back to Canvas 2D when there is not one – see [Browser support](docs/api-browser-support.md) for the
 version details.
 
+On Vite, add the `blit386/vite` plugin to `vite.config.js` for hot reload during development – most code and asset edits
+apply to the running game without a page reload (a hardware setting change or an unrecognized asset type still falls
+back to one). See the [Hot Reload guide](docs/guide-hot-reload.md).
+
 ## Demos
 
 Play the [hosted demos at demos.blit386.dev](https://demos.blit386.dev), or read the source in the
