@@ -5,12 +5,26 @@ import { fileURLToPath } from 'node:url';
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE_JSON_PATH = path.join(REPO_ROOT, 'package.json');
 const DECLARATION_OUTPUT = path.join(REPO_ROOT, 'dist', 'blit386.d.ts');
+const VITE_DECLARATION_OUTPUT = path.join(REPO_ROOT, 'dist', 'vite.d.ts');
+
+/**
+ * Minimum acceptable byte size for `dist/vite.d.ts`. Guards against the plugin's
+ * `rollupTypes` single-entry mode silently collapsing the declaration file to a
+ * near-empty `export {}` stub (observed at 12 bytes) instead of the real ~3.3KB output.
+ */
+const VITE_DECLARATION_MIN_BYTES = 500;
 
 /**
  * Public `BT` getters that must appear in rolled-up `dist/blit386.d.ts`.
  * Add entries here when shipping new configure/runtime getters on the facade.
  */
 export const REQUIRED_BT_DECLARATION_MEMBERS = ['requestedBackend', 'activeBackend'];
+
+/**
+ * Top-level exports that must appear in rolled-up `dist/vite.d.ts`.
+ * Add entries here when shipping new public exports from the `blit386/vite` package entry.
+ */
+export const REQUIRED_VITE_DECLARATION_MEMBERS = ['blit386'];
 
 /** Substrings that indicate TS/API Extractor compiler drift during declaration rollup. */
 export const DRIFT_WARNING_PATTERNS = [
@@ -158,6 +172,46 @@ export function findMissingBtDeclarationMembers(dtsText, requiredMembers = REQUI
 }
 
 /**
+ * Verifies `dist/vite.d.ts` is not a collapsed near-empty stub (the plugin's silent
+ * `rollupTypes` failure mode observed at 12 bytes, versus a real output around 3.3KB).
+ *
+ * @param {number} fileSizeBytes Size in bytes of `dist/vite.d.ts`.
+ * @returns {string[]} Human-readable failure messages (empty when the size is acceptable).
+ */
+export function findViteDeclarationSizeFailure(fileSizeBytes) {
+    if (fileSizeBytes < VITE_DECLARATION_MIN_BYTES) {
+        return [
+            `dist/vite.d.ts is only ${fileSizeBytes} bytes, below the ${VITE_DECLARATION_MIN_BYTES}-byte ` +
+                'minimum (looks like a collapsed export {} stub, not the real declaration output)',
+        ];
+    }
+
+    return [];
+}
+
+/**
+ * Verifies rolled-up `dist/vite.d.ts` exports required top-level members. Unlike the `BT`
+ * facade, `dist/vite.d.ts` has no wrapping namespace/object block - it is flat top-level
+ * `export declare` statements - so this checks for a matching function declaration directly.
+ *
+ * @param {string} dtsText Contents of `dist/vite.d.ts`.
+ * @param {readonly string[]} [requiredMembers] Export names that must be present.
+ * @returns {string[]} Human-readable failure messages (empty when all members are found).
+ */
+export function findMissingViteDeclarationMembers(dtsText, requiredMembers = REQUIRED_VITE_DECLARATION_MEMBERS) {
+    const failures = [];
+
+    for (const member of requiredMembers) {
+        const pattern = new RegExp(`\\bdeclare\\s+function\\s+${member}\\s*\\(`, 'm');
+        if (!pattern.test(dtsText)) {
+            failures.push(`dist/vite.d.ts is missing export: ${member}`);
+        }
+    }
+
+    return failures;
+}
+
+/**
  * Validates declaration build output and log alignment.
  *
  * @param {string} logText Full stdout/stderr from `pnpm build`.
@@ -174,6 +228,16 @@ export function validateDeclarationTooling(logText, options = {}) {
     } else if (requireOutputFile) {
         const dtsText = fs.readFileSync(DECLARATION_OUTPUT, 'utf8');
         failures.push(...findMissingBtDeclarationMembers(dtsText));
+    }
+
+    if (requireOutputFile && !fs.existsSync(VITE_DECLARATION_OUTPUT)) {
+        failures.push(`Missing rolled-up declaration output: ${path.relative(REPO_ROOT, VITE_DECLARATION_OUTPUT)}`);
+    } else if (requireOutputFile) {
+        const viteFileSizeBytes = fs.statSync(VITE_DECLARATION_OUTPUT).size;
+        failures.push(...findViteDeclarationSizeFailure(viteFileSizeBytes));
+
+        const viteDtsText = fs.readFileSync(VITE_DECLARATION_OUTPUT, 'utf8');
+        failures.push(...findMissingViteDeclarationMembers(viteDtsText));
     }
 
     return failures;
@@ -211,7 +275,8 @@ function main() {
 
     const version = readPinnedTypeScriptVersion();
     console.log(
-        `Declaration tooling OK (TypeScript ${version}, ${path.relative(REPO_ROOT, DECLARATION_OUTPUT)} present)`,
+        `Declaration tooling OK (TypeScript ${version}, ${path.relative(REPO_ROOT, DECLARATION_OUTPUT)} and ` +
+            `${path.relative(REPO_ROOT, VITE_DECLARATION_OUTPUT)} present)`,
     );
 }
 
