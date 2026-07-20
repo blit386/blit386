@@ -156,8 +156,14 @@ the hot-reload wiring:
    see above).
 8. Edit `_partials/layout.html` – full reload; the source panel updates on demo edits without a reload.
 9. Edit an engine `src/` file – the lib rebuilds – full reload (`blit386WatchReload` preserved).
-10. Repeat steps 2-4 with `?backend=software` (software renderer parity).
-11. Introduce a syntax error in a demo – the Vite overlay appears, the old demo keeps running; fix it – it recovers.
+10. Repeat steps 2-3 with `?backend=software`: full reload is expected (verify against known gap below), not parity.
+11. Introduce a syntax error in a demo – the old demo keeps running (Vite may or may not show its error overlay,
+    depending on the failure class); fix it – it recovers with no reload at any point.
+
+Known gap: under `?backend=software`, any `src/NNN-*.js` edit currently full-reloads, even a pure `render()`-body change
+that hot-swaps cleanly under the default `webgpu` backend. This is a tier-detection parity gap in the engine's hot-swap
+runtime (`blit386` `src/hot/`), not in anything this repo's `vite.config.js` or `virtual-demos.js` wiring controls –
+tracked as a follow-up against the engine.
 
 ## Workspace Integration
 
