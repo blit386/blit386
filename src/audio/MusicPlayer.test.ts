@@ -787,4 +787,89 @@ describe('MusicPlayer', () => {
             expect(player.isPlaying()).toBe(true);
         });
     });
+
+    describe('hotReplaceCurrentBuffer', () => {
+        it('returns false when nothing is playing', () => {
+            const { player } = createPlayer();
+            const oldBuffer = createMockAudioBuffer();
+            const newBuffer = createMockAudioBuffer();
+
+            expect(player.hotReplaceCurrentBuffer(oldBuffer, newBuffer)).toBe(false);
+        });
+
+        it('returns false when the current track is a different buffer', () => {
+            const { player } = createPlayer();
+            player.play(createMockAudioBuffer());
+
+            expect(player.hotReplaceCurrentBuffer(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
+        });
+
+        it('restarts the current track with the new buffer when it matches', () => {
+            const { player } = createPlayer();
+            const oldBuffer = createMockAudioBuffer();
+            const newBuffer = createMockAudioBuffer();
+            player.play(oldBuffer, { volume: 0.6, loop: false });
+
+            const restarted = player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
+
+            expect(restarted).toBe(true);
+            expect(player.isPlaying()).toBe(true);
+        });
+
+        it('restarts with fadeMs 0 regardless of the original play fadeMs', () => {
+            const { player, context } = createPlayer();
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const oldBuffer = createMockAudioBuffer();
+            const newBuffer = createMockAudioBuffer();
+            player.play(oldBuffer, { fadeMs: 2000 });
+
+            const sourceCallsBefore = context2.createBufferSourceCalls.length;
+            player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
+
+            expect(context2.createBufferSourceCalls.length).toBe(sourceCallsBefore + 1);
+        });
+
+        it('restarts successfully when the old loop region no longer fits the new, shorter buffer', () => {
+            const { player } = createPlayer();
+            const oldBuffer = createMockAudioBuffer(1, 10, 10); // duration 1s at sampleRate 10
+            const newBuffer = createMockAudioBuffer(1, 5, 10); // duration 0.5s - shorter than the old loopEnd
+            player.play(oldBuffer, { loopStart: 0.2, loopEnd: 0.8 });
+
+            const restarted = player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
+
+            expect(restarted).toBe(true);
+            expect(player.isPlaying()).toBe(true);
+        });
+
+        it('drops the stale loop region instead of applying it to the new buffer', () => {
+            const { player, context } = createPlayer();
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const oldBuffer = createMockAudioBuffer(1, 10, 10);
+            const newBuffer = createMockAudioBuffer(1, 5, 10);
+            player.play(oldBuffer, { loopStart: 0.2, loopEnd: 0.8 });
+
+            player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
+
+            // applyLoopOptions() never touches loopStart/loopEnd when both are absent from
+            // options, so an unset value here proves the stale region was dropped, not applied.
+            const source = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+            expect(source.loopStart).toBeUndefined();
+            expect(source.loopEnd).toBeUndefined();
+            expect(source.loop).toBe(true); // DEFAULT_LOOP
+        });
+
+        it('keeps a loop region that still fits the new buffer', () => {
+            const { player, context } = createPlayer();
+            const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
+            const oldBuffer = createMockAudioBuffer(1, 10, 10);
+            const newBuffer = createMockAudioBuffer(1, 10, 10); // same duration - loop region still valid
+            player.play(oldBuffer, { loopStart: 0.2, loopEnd: 0.8 });
+
+            player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
+
+            const source = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
+            expect(source.loopStart).toBe(0.2);
+            expect(source.loopEnd).toBe(0.8);
+        });
+    });
 });

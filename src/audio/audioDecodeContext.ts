@@ -61,3 +61,40 @@ export function setAudioClipUnloadHandler(handler: (buffer: AudioBuffer) => void
 export function notifyAudioClipUnload(buffer: AudioBuffer): void {
     audioClipUnloadHandler(buffer);
 }
+
+/**
+ * Handler invoked by `AudioClip.hotReload()` after swapping a clip's buffer in
+ * place, to restart the music player if the replaced buffer was the current track.
+ *
+ * `AudioManager.attach()` registers `MusicPlayer.hotReplaceCurrentBuffer` here (see
+ * BT-305) so a hot-reloaded music track keeps playing without a manual `BT.musicPlay`
+ * call; `AudioManager.detach()` restores the no-op default. Defaults to a no-op
+ * returning `false` before the first `attach()`.
+ *
+ * @returns Whether the handler restarted playback with the new buffer.
+ */
+let musicHotReplaceHandler: (oldBuffer: AudioBuffer, newBuffer: AudioBuffer) => boolean = () => false;
+
+/**
+ * Registers the handler invoked by `AudioClip.hotReload()` to restart the current
+ * music track when its buffer was just hot-replaced.
+ *
+ * @param handler - Handler to invoke; returns whether it restarted playback.
+ */
+export function setMusicHotReplaceHandler(handler: (oldBuffer: AudioBuffer, newBuffer: AudioBuffer) => boolean): void {
+    musicHotReplaceHandler = handler;
+}
+
+/**
+ * Invokes the registered music hot-replace handler with the old and new buffers.
+ *
+ * Called by `AudioClip.hotReload()`; a no-op (returns `false`) until a music player
+ * registers a handler via {@link setMusicHotReplaceHandler}.
+ *
+ * @param oldBuffer - Buffer being replaced.
+ * @param newBuffer - Replacement buffer.
+ * @returns Whether the music player restarted playback with `newBuffer`.
+ */
+export function notifyMusicHotReplace(oldBuffer: AudioBuffer, newBuffer: AudioBuffer): boolean {
+    return musicHotReplaceHandler(oldBuffer, newBuffer);
+}

@@ -7,8 +7,12 @@
  * `import.meta.hot`, not an import from the `vite` package.
  */
 
+import { AssetLoader } from '../assets/AssetLoader';
+import { AudioClip } from '../assets/AudioClip';
+import { getHotReloadFonts } from '../assets/BitmapFont';
+import { getHotReloadSheets } from '../assets/SpriteSheet';
 import { BTAPI } from '../core/BTAPI';
-import { ASSET_CHANGED_EVENT, HOT_RELOAD_DOM_EVENT } from './protocol';
+import { ASSET_CHANGED_EVENT, type AssetChangedPayload, HOT_RELOAD_DOM_EVENT } from './protocol';
 
 /**
  * Minimal structural shape of Vite's `import.meta.hot` context that the engine
@@ -44,14 +48,123 @@ let generation = 0;
  */
 let wired = false;
 
+/** Asset kinds routed to a hot-replace handler; anything else falls through to a hard reload. */
+const KNOWN_ASSET_TYPES = new Set(['image', 'audio', 'font', 'other']);
+
 /**
- * Placeholder asset-changed handler; replaced with real hot-replace routing to
- * `AssetLoader`/`SpriteSheet`/`AudioClip`/`BitmapFont` in BT-305.
+ * Narrows an unknown HMR event payload to {@link AssetChangedPayload}.
+ *
+ * @param payload - Raw payload received from the Vite plugin's custom HMR event.
+ * @returns `true` when the payload has the expected shape.
+ */
+function isAssetChangedPayload(payload: unknown): payload is AssetChangedPayload {
+    if (typeof payload !== 'object' || payload === null) {
+        return false;
+    }
+
+    const candidate = payload as Record<string, unknown>;
+
+    return (
+        typeof candidate.url === 'string' &&
+        typeof candidate.type === 'string' &&
+        KNOWN_ASSET_TYPES.has(candidate.type) &&
+        typeof candidate.timestamp === 'number'
+    );
+}
+
+/**
+ * Hot-reloads an image asset: refreshes the `AssetLoader` cache, then walks the
+ * `SpriteSheet` registry for any sheet loaded from the same URL and replaces its
+ * image in place against the active palette.
+ *
+ * @param url - Changed image URL, matching whatever the engine cached it under.
+ */
+async function hotReloadImageAsset(url: string): Promise<void> {
+    const image = await AssetLoader.hotReloadImage(url);
+    const sheets = getHotReloadSheets(url);
+
+    if (!sheets || sheets.size === 0) {
+        return;
+    }
+
+    const palette = BTAPI.instance.getPalette();
+
+    for (const sheet of sheets) {
+        sheet.hotReplaceImage(image, palette);
+    }
+}
+
+/**
+ * Hot-reloads a bitmap font asset: walks the `BitmapFont` registry for any font
+ * loaded from the same `.btfont` URL and reloads its descriptor and texture.
+ *
+ * No-ops when no font is registered under `url` - a benign miss, not an error.
+ *
+ * @param url - Changed `.btfont` URL, matching whatever the font was loaded from.
+ */
+async function hotReloadFontAsset(url: string): Promise<void> {
+    const fonts = getHotReloadFonts(url);
+
+    if (!fonts || fonts.size === 0) {
+        return;
+    }
+
+    const palette = BTAPI.instance.getPalette();
+
+    await Promise.all([...fonts].map((font) => font.hotReload(url, palette)));
+}
+
+/**
+ * Async body for {@link handleAssetChanged}, split out so its `await`s can run
+ * under one try/catch without leaving a floating, unhandled promise at the call site.
+ *
+ * Routes by `payload.type`: `AssetLoader`/`SpriteSheet` for `'image'`, `AudioClip`
+ * for `'audio'`, the `BitmapFont` registry for `'font'`, and {@link requestHardReload}
+ * for anything else (belt-and-suspenders - the plugin already full-reloads
+ * unrecognized asset extensions itself).
+ *
+ * @param payload - Asset-changed event payload from the Vite plugin.
+ */
+async function routeAssetChanged(payload: unknown): Promise<void> {
+    if (!isAssetChangedPayload(payload)) {
+        console.error('[BT] Ignoring a malformed asset-changed event:', payload);
+
+        return;
+    }
+
+    try {
+        switch (payload.type) {
+            case 'image':
+                await hotReloadImageAsset(payload.url);
+                break;
+
+            case 'audio':
+                await AudioClip.hotReload(payload.url);
+                break;
+
+            case 'font':
+                await hotReloadFontAsset(payload.url);
+                break;
+
+            default:
+                requestHardReload(`Unrecognized asset type '${payload.type}' for '${payload.url}'`);
+                break;
+        }
+    } catch (err) {
+        console.error(`[BT] Asset hot reload failed for '${payload.url}':`, err);
+    }
+}
+
+/**
+ * Routes a `blit386:asset-changed` payload to the right hot-replace handler by
+ * asset kind. Wrapped entirely in try/catch (inside {@link routeAssetChanged}) so a
+ * broken or unexpected asset event can never crash the game loop - on failure this
+ * logs and leaves the currently running state intact.
  *
  * @param payload - Asset-changed event payload from the Vite plugin.
  */
 function handleAssetChanged(payload: unknown): void {
-    void payload;
+    void routeAssetChanged(payload);
 }
 
 /**

@@ -19,13 +19,14 @@
  * loading, caching, releasing, and synthesizing decoded buffers.
  */
 
-import { getAudioDecodeContext, notifyAudioClipUnload } from '../audio/audioDecodeContext';
+import { getAudioDecodeContext, notifyAudioClipUnload, notifyMusicHotReplace } from '../audio/audioDecodeContext';
 import {
     audioClipDecodeError,
     audioClipHttpError,
     audioClipNetworkError,
     audioClipNotReadyError,
 } from '../utils/errorMessages';
+import { appendCacheBustQuery } from '../utils/HotReloadUrl';
 import type { SynthParams } from './synth/SynthParams';
 import { renderSynthSamples } from './synth/synthRender';
 import { validateSynthParams } from './synth/synthValidation';
@@ -217,6 +218,41 @@ export class AudioClip {
     static clear(): void {
         resolvedClips.clear();
         inFlightLoads.clear();
+    }
+
+    /**
+     * Hot-reloads a previously loaded clip's audio data in place, keeping the same
+     * `AudioClip` instance and cache key so demo-held references stay valid.
+     *
+     * Internal – routed from `HotRuntime.handleAssetChanged` when the dev asset
+     * watcher reports a changed audio file. Fetches and decodes a cache-busted copy
+     * of `url`, swaps the decoded buffer in place, notifies the SFX unload seam so
+     * any voice still playing the old buffer stops safely, and restarts the music
+     * player if the replaced clip is the current track. `duration`/`sampleRate`
+     * reflect the buffer decoded at initial load time and are not updated by a
+     * hot reload.
+     *
+     * @param url - Cache key (and fetch URL) of the clip to hot-reload.
+     * @returns `true` if a cached clip was found and reloaded; `false` if no clip is
+     *   cached under `url` (never loaded, or already unloaded).
+     * @throws Error if the cache-busted fetch or decode fails.
+     */
+    static async hotReload(url: string): Promise<boolean> {
+        const clip = resolvedClips.get(url);
+
+        if (!clip || clip.decodedBuffer === null) {
+            return false;
+        }
+
+        const oldBuffer = clip.decodedBuffer;
+        const newBuffer = await AudioClip.fetchAndDecode(appendCacheBustQuery(url));
+
+        clip.decodedBuffer = newBuffer;
+
+        notifyAudioClipUnload(oldBuffer);
+        notifyMusicHotReplace(oldBuffer, newBuffer);
+
+        return true;
     }
 
     /**

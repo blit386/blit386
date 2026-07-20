@@ -14,6 +14,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { registerHotContext } from '../hot/HotRuntime';
 import {
     AssetLimitError,
     MAX_ASSET_DIMENSION,
@@ -22,8 +23,17 @@ import {
     MAX_GLYPH_COUNT,
 } from '../utils/AssetLimits';
 import { Rect2i } from '../utils/Rect2i';
-import { BitmapFont } from './BitmapFont';
+import { BitmapFont, getHotReloadFonts } from './BitmapFont';
 import { SpriteSheet } from './SpriteSheet';
+
+// registerFontForHotReload() normalizes the source url against `document.baseURI`
+// whenever hot reload is active (see BitmapFont.ts). Real browsers always have
+// `document`; this file's default Node test environment does not, so - like the
+// GPU/AudioContext stubs in src/__test__/setup.ts - install it once, only if
+// missing, so it survives every describe block's `vi.unstubAllGlobals()` call.
+if (typeof globalThis.document === 'undefined') {
+    (globalThis as unknown as { document?: { baseURI: string } }).document = { baseURI: 'http://localhost/' };
+}
 
 type GlyphData = { x: number; y: number; w: number; h: number; ox: number; oy: number; adv: number };
 type FontData = {
@@ -660,6 +670,107 @@ describe('BitmapFont', () => {
             const font = BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
 
             expect(font.measureText('Hi')).toBe(14); // 8 + 6
+        });
+    });
+
+    describe('hot reload', () => {
+        function activateHotReload() {
+            registerHotContext({
+                data: {},
+                on: vi.fn(),
+                invalidate: vi.fn(),
+                accept: vi.fn(),
+            });
+        }
+
+        it('does not register a loaded font when hot reload is inactive', () => {
+            expect(getHotReloadFonts('test.btfont')).toBeUndefined();
+        });
+
+        it('registers a loaded font under its normalized source URL once hot reload is active', async () => {
+            activateHotReload();
+            vi.stubGlobal('Image', createStubImage());
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(MOCK_FONT_DATA)));
+
+            const active = await BitmapFont.load('fonts/active.btfont');
+
+            expect(getHotReloadFonts('fonts/active.btfont')).toEqual(new Set([active]));
+        });
+
+        describe('hotReload', () => {
+            it('rebuilds glyph tables from the re-fetched .btfont data', async () => {
+                const updated = {
+                    ...MOCK_FONT_DATA,
+                    glyphs: { ...MOCK_FONT_DATA.glyphs, A: { x: 0, y: 0, w: 20, h: 12, ox: 0, oy: 0, adv: 21 } },
+                };
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(updated)));
+
+                await font.hotReload('test.btfont', null);
+
+                expect(font.getGlyph('A')?.advance).toBe(21);
+            });
+
+            it('fetches the .btfont JSON with a cache-busting query parameter', async () => {
+                const fetchSpy = vi.fn().mockResolvedValue(mockFontFetchResponse(MOCK_FONT_DATA));
+                vi.stubGlobal('fetch', fetchSpy);
+
+                await font.hotReload('test.btfont', null);
+
+                const [requestedUrl] = fetchSpy.mock.calls[0] as [string];
+                expect(requestedUrl).toMatch(/^test\.btfont\?blit386-hmr=\d+$/);
+            });
+
+            it('clears the measurement cache', async () => {
+                font.measureText('AB');
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(MOCK_FONT_DATA)));
+
+                const clearSpy = vi.spyOn(font, 'clearMeasureCache');
+                await font.hotReload('test.btfont', null);
+
+                expect(clearSpy).toHaveBeenCalledOnce();
+            });
+
+            it('replaces the underlying sprite sheet image', async () => {
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(MOCK_FONT_DATA)));
+                const replaceSpy = vi.spyOn(SpriteSheet.prototype, 'hotReplaceImage');
+
+                await font.hotReload('test.btfont', null);
+
+                expect(replaceSpy).toHaveBeenCalledOnce();
+            });
+
+            it('throws when the re-fetched .btfont file is missing', async () => {
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' }));
+
+                await expect(font.hotReload('test.btfont', null)).rejects.toThrow("Can't find the font file");
+            });
+
+            it('cache-busts a relative texture path but not an embedded data URI', async () => {
+                const relativeData = { ...MOCK_FONT_DATA, texture: 'atlas.png' };
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(relativeData)));
+
+                const imageSources: string[] = [];
+                vi.stubGlobal('Image', createStubImage({ onSrcSet: (src) => imageSources.push(src) }));
+
+                const relFont = await BitmapFont.load('fonts/rel.btfont');
+                imageSources.length = 0;
+
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(relativeData)));
+                await relFont.hotReload('fonts/rel.btfont', null);
+
+                expect(imageSources[0]).toMatch(/^fonts\/atlas\.png\?blit386-hmr=\d+$/);
+            });
+
+            it('does not cache-bust an embedded data URI texture', async () => {
+                vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockFontFetchResponse(MOCK_FONT_DATA)));
+
+                const imageSources: string[] = [];
+                vi.stubGlobal('Image', createStubImage({ onSrcSet: (src) => imageSources.push(src) }));
+
+                await font.hotReload('test.btfont', null);
+
+                expect(imageSources[0]).toBe(MOCK_FONT_DATA.texture);
+            });
         });
     });
 });

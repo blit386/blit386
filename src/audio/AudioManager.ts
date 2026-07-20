@@ -11,7 +11,7 @@
 import type { AudioBus } from '../core/IBTDemo';
 import { applyAudioParamRamp } from '../utils/AudioParamRamp';
 import type { EasingFunction } from '../utils/Easing';
-import { setAudioClipUnloadHandler, setAudioDecodeContext } from './audioDecodeContext';
+import { setAudioClipUnloadHandler, setAudioDecodeContext, setMusicHotReplaceHandler } from './audioDecodeContext';
 import { MusicPlayer, type MusicPlayOptions } from './MusicPlayer';
 import {
     DEFAULT_PAN,
@@ -155,6 +155,9 @@ export class AudioManager {
         setAudioClipUnloadHandler((buffer) => this.voicePool?.stopVoicesUsingBuffer(buffer));
 
         this.musicPlayer = new MusicPlayer(this.context, busNodes.music);
+        setMusicHotReplaceHandler(
+            (oldBuffer, newBuffer) => this.musicPlayer?.hotReplaceCurrentBuffer(oldBuffer, newBuffer) ?? false,
+        );
 
         this.target = target;
 
@@ -175,6 +178,7 @@ export class AudioManager {
         this.voicePool?.stopAll();
         this.voicePool = null;
         setAudioClipUnloadHandler(() => {});
+        setMusicHotReplaceHandler(() => false);
 
         this.musicPlayer?.stop();
         this.musicPlayer = null;

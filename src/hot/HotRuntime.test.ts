@@ -12,6 +12,28 @@ function makeFakeHotContext(onImpl?: (event: string, cb: (payload: unknown) => v
     };
 }
 
+function registerAndCaptureAssetHandler(
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    HotRuntimeModule: typeof import('./HotRuntime'),
+): (payload: unknown) => void {
+    let captured: ((payload: unknown) => void) | undefined;
+
+    HotRuntimeModule.registerHotContext({
+        data: {},
+        on: (_event, cb) => {
+            captured = cb;
+        },
+        invalidate: vi.fn(),
+        accept: vi.fn(),
+    });
+
+    if (!captured) {
+        throw new Error('asset-changed handler was not registered');
+    }
+
+    return captured;
+}
+
 describe('HotRuntime', () => {
     // Fresh module state per test - hot/generation/wired are module-scoped singletons
     // that mirror real page-load semantics (a fresh page load is a fresh module instance).
@@ -23,11 +45,23 @@ describe('HotRuntime', () => {
     let HotRuntime: typeof import('./HotRuntime');
     // eslint-disable-next-line @typescript-eslint/consistent-type-imports
     let BTAPI: typeof import('../core/BTAPI').BTAPI;
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    let AssetLoader: typeof import('../assets/AssetLoader').AssetLoader;
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    let AudioClip: typeof import('../assets/AudioClip').AudioClip;
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    let SpriteSheetModule: typeof import('../assets/SpriteSheet');
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    let BitmapFontModule: typeof import('../assets/BitmapFont');
 
     beforeEach(async () => {
         vi.resetModules();
         HotRuntime = await import('./HotRuntime');
         ({ BTAPI } = await import('../core/BTAPI'));
+        ({ AssetLoader } = await import('../assets/AssetLoader'));
+        ({ AudioClip } = await import('../assets/AudioClip'));
+        SpriteSheetModule = await import('../assets/SpriteSheet');
+        BitmapFontModule = await import('../assets/BitmapFont');
     });
 
     afterEach(() => {
@@ -156,6 +190,102 @@ describe('HotRuntime', () => {
             HotRuntime.announce('methods', 1, 1);
 
             expect(receivedDetail).toEqual({ reason: 'methods', generation: 1 });
+        });
+    });
+
+    describe('handleAssetChanged', () => {
+        afterEach(() => {
+            vi.restoreAllMocks();
+            vi.unstubAllGlobals();
+        });
+
+        it('ignores a malformed payload without throwing', () => {
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+
+            expect(() => handler({ not: 'a payload' })).not.toThrow();
+            expect(errorSpy).toHaveBeenCalled();
+        });
+
+        it('routes an image payload through AssetLoader.hotReloadImage', async () => {
+            const spy = vi.spyOn(AssetLoader, 'hotReloadImage').mockResolvedValue({} as HTMLImageElement);
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+
+            handler({ url: 'hero.png', type: 'image', timestamp: 1 });
+            await vi.waitFor(() => expect(spy).toHaveBeenCalledExactlyOnceWith('hero.png'));
+        });
+
+        it('replaces every registered sheet for a matching image URL', async () => {
+            vi.spyOn(AssetLoader, 'hotReloadImage').mockResolvedValue({ width: 8, height: 8 } as HTMLImageElement);
+            const fakeSheet = { hotReplaceImage: vi.fn() } as unknown as InstanceType<
+                typeof SpriteSheetModule.SpriteSheet
+            >;
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
+            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'hero.png', type: 'image', timestamp: 1 });
+
+            await vi.waitFor(() =>
+                expect(fakeSheet.hotReplaceImage).toHaveBeenCalledExactlyOnceWith({ width: 8, height: 8 }, null),
+            );
+        });
+
+        it('routes an audio payload through AudioClip.hotReload', async () => {
+            const spy = vi.spyOn(AudioClip, 'hotReload').mockResolvedValue(true);
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+
+            handler({ url: 'music.mp3', type: 'audio', timestamp: 1 });
+            await vi.waitFor(() => expect(spy).toHaveBeenCalledExactlyOnceWith('music.mp3'));
+        });
+
+        it('routes a font payload to every registered font for that URL', async () => {
+            const fakeFont = { hotReload: vi.fn().mockResolvedValue(undefined) } as unknown as Awaited<
+                ReturnType<typeof BitmapFontModule.BitmapFont.load>
+            >;
+            vi.spyOn(BitmapFontModule, 'getHotReloadFonts').mockReturnValue(new Set([fakeFont]));
+            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'font.btfont', type: 'font', timestamp: 1 });
+
+            await vi.waitFor(() => expect(fakeFont.hotReload).toHaveBeenCalledExactlyOnceWith('font.btfont', null));
+        });
+
+        it('no-ops when a font payload matches no registered font', async () => {
+            vi.spyOn(BitmapFontModule, 'getHotReloadFonts').mockReturnValue(undefined);
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'unmatched.btfont', type: 'font', timestamp: 1 });
+
+            await vi.waitFor(() => expect(errorSpy).not.toHaveBeenCalled());
+        });
+
+        it('requests a hard reload for an unrecognized asset type', () => {
+            // Capture the handler first, before anything has wired the listener - registerHotContext
+            // only calls context.on(...) once per module instance (guarded by the internal `wired`
+            // flag), so a second registerHotContext call updates which context requestHardReload
+            // targets without re-registering the listener.
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            const invalidate = vi.fn();
+            HotRuntime.registerHotContext({ data: {}, on: vi.fn(), invalidate, accept: vi.fn() });
+
+            handler({ url: 'level.json', type: 'other', timestamp: 1 });
+
+            expect(invalidate).toHaveBeenCalledWith(expect.stringContaining('level.json'));
+        });
+
+        it('logs and swallows a thrown error instead of crashing', async () => {
+            vi.spyOn(AudioClip, 'hotReload').mockRejectedValue(new Error('decode failed'));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'broken.mp3', type: 'audio', timestamp: 1 });
+
+            await vi.waitFor(() =>
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('broken.mp3'), expect.any(Error)),
+            );
         });
     });
 });

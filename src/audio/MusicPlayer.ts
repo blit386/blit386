@@ -99,6 +99,9 @@ export class MusicPlayer {
     /** Last requested target volume, reported by {@link volumeGet} regardless of fade state. */
     private volume = DEFAULT_VOLUME;
 
+    /** Options from the most recent {@link play} call, replayed (with `fadeMs` forced to `0`) by {@link hotReplaceCurrentBuffer}. */
+    private lastOptions: MusicPlayOptions = {};
+
     /**
      * Creates a player with no live voices.
      *
@@ -133,6 +136,8 @@ export class MusicPlayer {
      */
     public play(buffer: AudioBuffer, options: MusicPlayOptions = {}): void {
         validateLoopRegion(options, buffer.duration);
+
+        this.lastOptions = options;
 
         const now = this.context.currentTime;
         const fadeSeconds = Math.max(0, options.fadeMs ?? DEFAULT_FADE_MS) / 1000;
@@ -228,6 +233,29 @@ export class MusicPlayer {
      */
     public isPlaying(): boolean {
         return this.current !== null;
+    }
+
+    /**
+     * Hot-reload seam: if `oldBuffer` is the buffer of the currently playing track,
+     * restarts playback with `newBuffer` using the last {@link play} options but no
+     * crossfade (`fadeMs: 0`) so a hot-reloaded track picks up immediately. Same-
+     * position resume is out of scope - playback restarts from the beginning.
+     *
+     * @param oldBuffer - Buffer identity to match against the current track.
+     * @param newBuffer - Replacement buffer to play when `oldBuffer` matches.
+     * @returns `true` if the current track was restarted; `false` if it didn't
+     *   match, or nothing is currently playing.
+     */
+    public hotReplaceCurrentBuffer(oldBuffer: AudioBuffer, newBuffer: AudioBuffer): boolean {
+        if (this.currentBuffer() !== oldBuffer) {
+            return false;
+        }
+
+        const options = sanitizeLoopRegion(this.lastOptions, newBuffer.duration);
+
+        this.play(newBuffer, { ...options, fadeMs: 0 });
+
+        return true;
     }
 
     /**
@@ -355,6 +383,15 @@ export class MusicPlayer {
             this.previous = null;
         }
     }
+
+    /**
+     * Returns the `AudioBuffer` backing the current track's sole source node.
+     *
+     * @returns The current track's buffer, or `null` when nothing is playing.
+     */
+    private currentBuffer(): AudioBuffer | null {
+        return this.current?.sources[0]?.buffer ?? null;
+    }
 }
 
 /**
@@ -386,6 +423,33 @@ function applyLoopOptions(source: AudioBufferSourceNode, options: MusicPlayOptio
     }
 
     source.loop = options.loop ?? DEFAULT_LOOP;
+}
+
+/**
+ * Drops `loopStart`/`loopEnd` from `options` when they no longer describe a valid region for
+ * `duration`, instead of letting an invalid region reach {@link validateLoopRegion} and throw.
+ *
+ * Used by {@link MusicPlayer.hotReplaceCurrentBuffer}: `lastOptions` was captured for the
+ * previous buffer's duration, and a hot-reloaded replacement can be shorter, so its old loop
+ * points may no longer fit. Falls back to whole-buffer looping via `options.loop` in that case,
+ * so a valid buffer replacement always restarts successfully instead of throwing.
+ *
+ * @param options - Options to sanitize.
+ * @param duration - Duration in seconds of the buffer these options are about to be replayed against.
+ * @returns `options` unchanged when its loop region already fits `duration`; otherwise `options`
+ *   with `loopStart`/`loopEnd` removed.
+ */
+function sanitizeLoopRegion(options: MusicPlayOptions, duration: number): MusicPlayOptions {
+    const { loopStart, loopEnd, ...rest } = options;
+
+    const isValidRegion =
+        loopStart !== undefined &&
+        loopEnd !== undefined &&
+        loopStart >= 0 &&
+        loopStart < loopEnd &&
+        loopEnd <= duration;
+
+    return isValidRegion ? options : rest;
 }
 
 /**

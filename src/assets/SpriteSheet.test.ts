@@ -18,12 +18,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockGPUDevice } from '../__test__/webgpu-mock';
 import { collectUsedIndices, resetUsage } from '../core/RenderPaletteUsage';
+import { registerHotContext } from '../hot/HotRuntime';
 import { AssetLimitError, MAX_ASSET_DIMENSION, MAX_ASSET_PIXELS } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
 import { AssetLoader } from './AssetLoader';
 import { Palette } from './Palette';
-import { SpriteSheet } from './SpriteSheet';
+import { getHotReloadSheets, SpriteSheet } from './SpriteSheet';
+
+// SpriteSheet.destroy() unconditionally normalizes `sourceUrl` against `document.baseURI`
+// (see unregisterFromHotReload in SpriteSheet.ts) whenever a sheet was loaded via
+// SpriteSheet.load(), regardless of whether hot reload was ever active. Real browsers
+// always have `document`; this file's default Node test environment does not, so - like
+// the GPU/AudioContext stubs in src/__test__/setup.ts - install it once, only if missing,
+// so it survives every describe block's `vi.unstubAllGlobals()` call.
+if (typeof globalThis.document === 'undefined') {
+    (globalThis as unknown as { document?: { baseURI: string } }).document = { baseURI: 'http://localhost/' };
+}
 
 /**
  * Returns a minimal OffscreenCanvas mock whose getImageData yields the supplied
@@ -699,6 +710,124 @@ describe('SpriteSheet', () => {
             sheet.markPaletteIndicesInRect(new Rect2i(0, 0, 16, 16), 0, mask);
 
             expect(collectUsedIndices(mask, 16, scratch)).toEqual([]);
+        });
+    });
+
+    describe('hot reload', () => {
+        function activateHotReload() {
+            registerHotContext({
+                data: {},
+                on: vi.fn(),
+                invalidate: vi.fn(),
+                accept: vi.fn(),
+            });
+        }
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+            vi.unstubAllGlobals();
+        });
+
+        it('does not register a loaded sheet when hot reload is inactive', async () => {
+            vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('n/a')));
+            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
+
+            await SpriteSheet.load('inactive.png');
+
+            expect(getHotReloadSheets('inactive.png')).toBeUndefined();
+        });
+
+        it('registers a loaded sheet under its normalized source URL once hot reload is active', async () => {
+            activateHotReload();
+            vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('n/a')));
+            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
+
+            const sheet = await SpriteSheet.load('images/hero.png');
+
+            expect(getHotReloadSheets('images/hero.png')).toEqual(new Set([sheet]));
+            expect(getHotReloadSheets('/images/hero.png')).toEqual(new Set([sheet]));
+        });
+
+        it('removes a sheet from the registry on destroy', async () => {
+            activateHotReload();
+            vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('n/a')));
+            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
+
+            const sheet = await SpriteSheet.load('images/gone.png');
+            expect(getHotReloadSheets('images/gone.png')).toBeDefined();
+
+            sheet.destroy();
+
+            expect(getHotReloadSheets('images/gone.png')).toBeUndefined();
+        });
+
+        describe('hotReplaceImage', () => {
+            it('warns and does nothing for a raw-indexed sheet (no source image)', () => {
+                const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+                const sheet = SpriteSheet.fromIndexedPixels(2, 2, new Uint8Array(4) as Uint8Array<ArrayBuffer>);
+
+                sheet.hotReplaceImage(mockImage, null);
+
+                expect(warnSpy).toHaveBeenCalledOnce();
+            });
+
+            it('swaps the image and updates size for a non-indexized sheet', () => {
+                const sheet = new SpriteSheet(mockImage);
+                const newImage = { width: 64, height: 32 } as HTMLImageElement;
+
+                sheet.hotReplaceImage(newImage, null);
+
+                expect(sheet.getImage()).toBe(newImage);
+                expect(sheet.size.x).toBe(64);
+                expect(sheet.size.y).toBe(32);
+            });
+
+            it('invalidates the cached texture for a non-indexized sheet', () => {
+                const sheet = new SpriteSheet(mockImage);
+                const device = createMockGPUDevice();
+                const first = sheet.getTexture(device);
+
+                sheet.hotReplaceImage({ width: 64, height: 64 } as HTMLImageElement, null);
+                const second = sheet.getTexture(device);
+
+                expect(second).not.toBe(first);
+            });
+
+            it('re-indexizes an already-indexized sheet against the active palette', () => {
+                const pixels = new Uint8ClampedArray([255, 0, 0, 255]);
+                vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(pixels, 1, 1));
+
+                const palette = new Palette(16);
+                palette.set(1, new Color32(255, 0, 0, 255));
+
+                const sheet = new SpriteSheet({ width: 1, height: 1 } as HTMLImageElement);
+                sheet.indexize(palette);
+
+                const nextPixels = new Uint8ClampedArray([0, 255, 0, 255]);
+                vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(nextPixels, 1, 1));
+                palette.set(2, new Color32(0, 255, 0, 255));
+
+                expect(() => sheet.hotReplaceImage({ width: 1, height: 1 } as HTMLImageElement, palette)).not.toThrow();
+                expect(sheet.getIndexedPixels()[0]).toBe(2);
+            });
+
+            it('warns and skips when an indexized sheet has no active palette to reindex against', () => {
+                const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+                const pixels = new Uint8ClampedArray([0, 0, 0, 0]);
+                vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(pixels, 1, 1));
+
+                const palette = new Palette(16);
+                const originalImage = { width: 1, height: 1 } as HTMLImageElement;
+                const sheet = new SpriteSheet(originalImage);
+                sheet.indexize(palette);
+
+                const newImage = { width: 1, height: 1 } as HTMLImageElement;
+                sheet.hotReplaceImage(newImage, null);
+
+                expect(warnSpy).toHaveBeenCalledOnce();
+                expect(sheet.getImage()).toBe(originalImage);
+                expect(sheet.getImage()).not.toBe(newImage);
+            });
         });
     });
 });

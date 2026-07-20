@@ -27,13 +27,19 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `IBTDemo.onHotReload(context)` hook, and a tiered hot-swap - a method-only prototype swap when only method bodies
   changed, a full re-init when `init()` or the constructor changed, and a full page reload when hardware settings
   changed. Demo/game state persists across method and re-init swaps: ticks, camera, palette, and palette effects are
-  never reset. This lands the engine half of BLIT386's HMR support; asset hot-replace and adoption in
-  `blit386-demos`/`create-blit386` ship in follow-up releases.
+  never reset. This lands the engine half of BLIT386's HMR support; adoption in `blit386-demos`/`create-blit386` ships
+  in follow-up releases.
 - `blit386/vite` dev-server plugin: `import { blit386 } from 'blit386/vite'` in `vite.config.ts` appends the hot-reload
   registration snippet to a demo/game's entry module (skipped in production builds) and broadcasts asset changes under
   configured asset directories (default `public/`) as `blit386:asset-changed` HMR events, falling back to a full page
   reload for an unrecognized asset extension. Ships as a second build entry (`dist/vite.js`/`.cjs`/`.d.ts`) with zero
   runtime dependency on `vite` itself.
+- Engine-side asset hot-replace: `AssetLoader.evict`, plus internal routing in `HotRuntime.handleAssetChanged` for
+  `blit386:asset-changed` events. A changed image, audio, or `.btfont` file under `public/` updates the running demo in
+  place - sprite sheets swap their texture (calling `indexize()` against the active palette when needed), audio clips
+  swap their decoded buffer (stopping SFX voices on the old buffer and restarting the music player if the replaced clip
+  is the current track), and bitmap fonts rebuild their glyph tables and texture - all without a page reload. Adoption
+  in `blit386-demos`/`create-blit386` ships in a follow-up release.
 
 ## 1.3.1 - 2026-07-19
 

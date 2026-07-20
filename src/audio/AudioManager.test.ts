@@ -24,6 +24,7 @@ import {
 } from '../__test__/webaudio-mock';
 import { BTAPI } from '../core/BTAPI';
 import type { HardwareSettings } from '../core/IBTDemo';
+import { notifyMusicHotReplace } from './audioDecodeContext';
 import { AudioManager } from './AudioManager';
 import { INVALID_SOUND_REF } from './VoicePool';
 
@@ -121,6 +122,23 @@ describe('AudioManager', () => {
 
             expect(() => audio.attach(canvas)).not.toThrow();
             expect(audio.isUnlocked()).toBe(false);
+        });
+    });
+
+    describe('music hot-replace wiring', () => {
+        it('registers a music hot-replace handler on attach that delegates to the music player', () => {
+            audio.attach(canvas);
+
+            const restarted = notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer());
+
+            expect(restarted).toBe(false); // nothing playing yet, but the handler ran without throwing
+        });
+
+        it('resets the music hot-replace handler to a no-op on detach', () => {
+            audio.attach(canvas);
+            audio.detach();
+
+            expect(notifyMusicHotReplace(createMockAudioBuffer(), createMockAudioBuffer())).toBe(false);
         });
     });
 
