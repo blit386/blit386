@@ -36,7 +36,7 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   runtime dependency on `vite` itself.
 - Engine-side asset hot-replace: `AssetLoader.evict`, plus internal routing in `HotRuntime.handleAssetChanged` for
   `blit386:asset-changed` events. A changed image, audio, or `.btfont` file under `public/` updates the running demo in
-  place - sprite sheets swap their texture (calling `reindexize()` against the active palette when needed), audio clips
+  place - sprite sheets swap their texture (calling `indexize()` against the active palette when needed), audio clips
   swap their decoded buffer (stopping SFX voices on the old buffer and restarting the music player if the replaced clip
   is the current track), and bitmap fonts rebuild their glyph tables and texture - all without a page reload. Adoption
   in `blit386-demos`/`create-blit386` ships in a follow-up release.
