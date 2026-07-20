@@ -1,3 +1,4 @@
+import { isHotActive } from '../hot/HotRuntime';
 import {
     assertImageElementWithinLimits,
     AssetLimitError,
@@ -9,8 +10,10 @@ import {
     validateGlyphCount,
 } from '../utils/AssetLimits';
 import { btfontGlyphEntryNotObjectError } from '../utils/errorMessages';
+import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
 import { buildPathHint, extractExtension } from '../utils/urlHints';
+import type { Palette } from './Palette';
 import { SpriteSheet } from './SpriteSheet';
 
 /**
@@ -135,6 +138,48 @@ function populateAsciiGlyph(asciiGlyphs: (Glyph | null)[], char: string, glyph: 
             asciiGlyphs[code] = glyph;
         }
     }
+}
+
+/**
+ * Dev-only registry of live bitmap fonts keyed by normalized `.btfont` source URL,
+ * so `HotRuntime.handleAssetChanged` can find and hot-reload every font loaded from
+ * a changed font file. Populated only while {@link isHotActive} (no production
+ * memory cost). Entries are never pruned - unlike {@link SpriteSheet}, `BitmapFont`
+ * has no destroy/dispose lifecycle to hook; acceptable since the registry only
+ * exists in dev mode.
+ */
+const hotReloadRegistry = new Map<string, Set<BitmapFont>>();
+
+/**
+ * Registers `font` under its normalized source URL for hot-reload routing, when a
+ * Vite HMR context is active. Called by {@link BitmapFont.load}.
+ *
+ * @param url - Source URL the font was loaded from.
+ * @param font - Font to register.
+ */
+function registerFontForHotReload(url: string, font: BitmapFont): void {
+    if (!isHotActive()) {
+        return;
+    }
+
+    const key = normalizeAssetUrl(url);
+    const bucket = hotReloadRegistry.get(key) ?? new Set<BitmapFont>();
+
+    bucket.add(font);
+    hotReloadRegistry.set(key, bucket);
+}
+
+/**
+ * Returns every registered font loaded from a URL matching `url` after normalization.
+ *
+ * Internal - used by `HotRuntime.handleAssetChanged` to route a `'font'`
+ * asset-changed event to the fonts that need reloading.
+ *
+ * @param url - Changed asset URL to look up.
+ * @returns Matching fonts, or `undefined` when none are registered.
+ */
+export function getHotReloadFonts(url: string): ReadonlySet<BitmapFont> | undefined {
+    return hotReloadRegistry.get(normalizeAssetUrl(url));
 }
 
 /**
@@ -282,7 +327,7 @@ export class BitmapFont {
         const lineHeight = BitmapFont.resolvePositiveMetric(data.lineHeight, size);
         const baseline = BitmapFont.resolvePositiveMetric(data.baseline, size);
 
-        return new BitmapFont(
+        const font = new BitmapFont(
             spriteSheet,
             glyphs,
             asciiGlyphs,
@@ -291,6 +336,10 @@ export class BitmapFont {
             lineHeight,
             baseline,
         );
+
+        registerFontForHotReload(url, font);
+
+        return font;
     }
 
     /**
@@ -516,6 +565,19 @@ export class BitmapFont {
             : url.substring(0, url.lastIndexOf('/') + 1) + texture;
 
         return BitmapFont.loadImage(textureUrl);
+    }
+
+    /**
+     * Cache-busts a `.btfont` texture reference for a hot reload, unless it is an
+     * embedded data URI (always fresh from the just-re-fetched JSON, nothing to bust).
+     *
+     * @param texture - Raw `texture` field from the re-fetched `.btfont` JSON.
+     * @returns `texture` unchanged for a data URI; otherwise with a cache-bust query appended.
+     */
+    private static bustTextureUrl(texture: string): string {
+        return texture.toLowerCase().startsWith(BTFONT_EMBEDDED_TEXTURE_PREFIX)
+            ? texture
+            : appendCacheBustQuery(texture);
     }
 
     /**
@@ -821,5 +883,52 @@ export class BitmapFont {
      */
     clearMeasureCache(): void {
         this.measureCache.clear();
+    }
+
+    /**
+     * Hot-reloads this font's `.btfont` descriptor and texture in place, keeping the
+     * same `BitmapFont` instance so demo-held references stay valid.
+     *
+     * Internal - routed from `HotRuntime.handleAssetChanged` when the dev asset
+     * watcher reports a changed font file. Re-fetches a cache-busted copy of the
+     * `.btfont` JSON, rebuilds the glyph tables and measurement cache in place, and
+     * replaces the underlying sprite sheet's image via
+     * {@link SpriteSheet.hotReplaceImage} (which itself re-indexizes it when it was
+     * already indexized). `name`/`size`/`lineHeight`/`baseline` are not updated by a
+     * hot reload - only glyph data and the texture.
+     *
+     * @param url - `.btfont` URL this font was originally loaded from.
+     * @param palette - Active palette, forwarded to {@link SpriteSheet.hotReplaceImage}.
+     * @throws Error if the re-fetched `.btfont` file is missing or malformed (mirrors {@link BitmapFont.load}).
+     */
+    async hotReload(url: string, palette: Palette | null): Promise<void> {
+        const response = await fetch(appendCacheBustQuery(url));
+
+        if (!response.ok) {
+            throw new Error(BitmapFont.buildLoadErrorMessage(url, response.status));
+        }
+
+        const { data, glyphEntries } = BitmapFont.parseBtfontFile(url, await response.text());
+
+        BitmapFont.validateGlyphEntriesPreAtlas(glyphEntries);
+
+        const image = await BitmapFont.loadTexture(BitmapFont.bustTextureUrl(data.texture), url);
+
+        this.spriteSheet.hotReplaceImage(image, palette);
+
+        const { glyphs, asciiGlyphs } = BitmapFont.buildGlyphsFromEntries(
+            glyphEntries,
+            this.spriteSheet.width,
+            this.spriteSheet.height,
+        );
+
+        this.glyphs = glyphs;
+
+        for (let code = 0; code < this.asciiGlyphs.length; code++) {
+            // eslint-disable-next-line security/detect-object-injection -- code is a bounded loop index
+            this.asciiGlyphs[code] = asciiGlyphs[code] ?? null;
+        }
+
+        this.clearMeasureCache();
     }
 }
