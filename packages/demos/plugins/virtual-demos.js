@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 import { buildRegistry } from './demo-registry.js';
 import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
+import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
@@ -59,6 +60,21 @@ export function virtualDemos() {
     function findEntryBySlug(slug) {
         for (const entry of registry) {
             if (entry.slug === slug) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find the registry entry whose source file is the given absolute path. Used by the watcher to
+     * tell a top-level demo entry (src/NNN-*.js) apart from a src/shared/*.js change.
+     * @param {string} absPath - Absolute path, e.g. resolve(srcDir, "001-basics.js")
+     * @returns {object | null}
+     */
+    function findEntryBySourcePath(absPath) {
+        for (const entry of registry) {
+            if (entry.sourcePath === absPath) {
                 return entry;
             }
         }
@@ -147,14 +163,43 @@ export function virtualDemos() {
             server.watcher.add(join(srcDir, '*.js'));
             server.watcher.add(join(srcDir, 'shared', '*.js'));
 
-            server.watcher.on('change', (changedPath) => {
+            server.watcher.on('change', async (changedPath) => {
                 if (changedPath.startsWith(partialsDir)) {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
-                } else if (changedPath.startsWith(srcDir)) {
-                    clearHighlightCache();
-                    reload();
-                    server.ws.send({ type: 'full-reload' });
+                    return;
+                }
+
+                if (!changedPath.startsWith(srcDir)) {
+                    return;
+                }
+
+                clearHighlightCache();
+                reload();
+
+                // Only a top-level demo entry (src/NNN-*.js) drives the live source panel. A
+                // src/shared/*.js change needs neither a full-reload nor a source-panel event: Vite's
+                // own module-graph HMR propagates the update to every importing demo entry, which
+                // self-accepts via the blit386/vite-injected snippet (see vite.config.js).
+                if (dirname(changedPath) !== srcDir) {
+                    return;
+                }
+
+                const entry = findEntryBySourcePath(changedPath);
+
+                if (!entry) {
+                    return;
+                }
+
+                try {
+                    const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
+                    server.ws.send({
+                        type: 'custom',
+                        event: SOURCE_UPDATED_EVENT,
+                        data: { slug: entry.slug, sourceHtml },
+                    });
+                } catch (error) {
+                    console.error(`[virtual-demos] Failed to re-highlight ${entry.slug} after edit:`, error);
                 }
             });
             server.watcher.on('add', (addedPath) => {
