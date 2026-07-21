@@ -16,8 +16,8 @@
  * Usage:
  *   node scripts/check-agent-config.mjs
  */
-import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
-import { basename, dirname, extname, join, relative, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -127,6 +127,28 @@ export function findAgentsPointerFailures(agentsMdContent, claudeMdExists) {
     return failures;
 }
 
+/**
+ * Computes the skill name a resolved symlink target represents. The target must be a directory that is a
+ * *direct* child of `.claude/skills/` - a nested path or a file that merely shares a basename with a skill
+ * directory does not count as a valid link, even though its basename would otherwise match.
+ *
+ * @param {string} resolvedTargetPath Absolute, symlink-resolved path (`fs.realpathSync` output).
+ * @param {boolean} targetIsDirectory Whether `resolvedTargetPath` is a directory.
+ * @param {string} claudeSkillsDir Absolute path to `.claude/skills/`.
+ * @returns {string | null} The skill directory name, or `null` when the target is not a direct child directory.
+ */
+export function resolveSkillSymlinkTarget(resolvedTargetPath, targetIsDirectory, claudeSkillsDir) {
+    if (!targetIsDirectory) {
+        return null;
+    }
+
+    if (dirname(resolvedTargetPath) !== claudeSkillsDir) {
+        return null;
+    }
+
+    return basename(resolvedTargetPath);
+}
+
 /** @param {string} dir @param {string} ext @returns {string[]} Sorted basenames (extension stripped) of files matching `ext` in `dir`. */
 function readRuleNames(dir, ext) {
     return readdirSync(dir, { withFileTypes: true })
@@ -146,13 +168,12 @@ function readAgentsSkillEntries() {
 
         try {
             const target = realpathSync(linkPath);
-            const relativeToClaudeSkills = relative(CLAUDE_SKILLS_DIR, target);
-            const isInsideClaudeSkills = relativeToClaudeSkills !== '' && !relativeToClaudeSkills.startsWith('..');
+            const targetIsDirectory = statSync(target).isDirectory();
 
             return {
                 name: entry.name,
                 isSymlink: true,
-                resolvedName: isInsideClaudeSkills ? basename(target) : null,
+                resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, CLAUDE_SKILLS_DIR),
             };
         } catch {
             return { name: entry.name, isSymlink: true, resolvedName: null };

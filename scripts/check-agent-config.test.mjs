@@ -5,6 +5,7 @@ import {
     findAgentsPointerFailures,
     findRulesParityFailures,
     findSkillsSymlinkFailures,
+    resolveSkillSymlinkTarget,
 } from './check-agent-config.mjs';
 
 describe('check-agent-config', () => {
@@ -96,6 +97,27 @@ describe('check-agent-config', () => {
                 failures[0],
                 /\.claude\/skills\/bt-new-skill has no matching \.agents\/skills\/bt-new-skill symlink/,
             );
+        });
+    });
+
+    describe('resolveSkillSymlinkTarget', () => {
+        it('returns the skill name for a direct child skill directory', () => {
+            const resolved = resolveSkillSymlinkTarget('/repo/.claude/skills/bt-format', true, '/repo/.claude/skills');
+            assert.equal(resolved, 'bt-format');
+        });
+
+        it('rejects a target nested more than one level below .claude/skills', () => {
+            const resolved = resolveSkillSymlinkTarget(
+                '/repo/.claude/skills/bt-format-extra/nested/bt-format',
+                true,
+                '/repo/.claude/skills',
+            );
+            assert.equal(resolved, null);
+        });
+
+        it('rejects a target that is a file rather than a directory', () => {
+            const resolved = resolveSkillSymlinkTarget('/repo/.claude/skills/bt-format', false, '/repo/.claude/skills');
+            assert.equal(resolved, null);
         });
     });
 
