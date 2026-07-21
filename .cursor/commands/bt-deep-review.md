@@ -1,10 +1,3 @@
----
-name: bt-deep-review
-description:
-  Comprehensive pre-push review combining automated checks, a security audit, AI code analysis, and a PR-ready summary.
-  Use before pushing significant changes or opening a pull request.
----
-
 # Deep Review
 
 Comprehensive code review that combines automated checks, AI-powered analysis, and security auditing. Use this before
@@ -22,7 +15,7 @@ pushing significant changes or creating pull requests.
 
 - Run `/bt-security-run` or `pnpm run security:mcp-preflight` with the session MCP descriptor path and
   `--allow-fallback`
-- See [docs/security/security-runbook.md](../../../docs/security/security-runbook.md)
+- See [docs/security/security-runbook.md](../../docs/security/security-runbook.md)
 - Do not skip scans when Opsera/JFrog/Semgrep MCP is degraded; use documented fallbacks
 
 2. Run preflight checks

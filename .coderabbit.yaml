@@ -1,0 +1,10 @@
+# CodeRabbit configuration.
+#
+# `.cursor/commands/*.md` are generated verbatim from `.claude/skills/*/SKILL.md`
+# (frontmatter stripped) by `scripts/sync-cursor-commands.mjs` - see CLAUDE.md
+# ("Where do the .cursor/commands/*.md slash commands come from?"). Reviewing
+# them would just duplicate review of the source skill file, so they are
+# excluded here.
+reviews:
+  path_filters:
+    - '!.cursor/commands/**'

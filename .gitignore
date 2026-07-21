@@ -65,6 +65,8 @@ ai-rules/
 !.cursor/hooks/**
 !.cursor/rules/
 !.cursor/rules/**
+!.cursor/commands/
+!.cursor/commands/**
 *.swp
 *.swo
 *~
