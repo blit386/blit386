@@ -46,6 +46,13 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - Calling `bootstrap()` a second time while already initialized no longer silently starts a second, unstoppable
   `GameLoop`. With the `blit386/vite` plugin installed and a hot-reload context registered, a second call now routes to
   a hot swap instead; without one, it logs an error and returns `false`.
+- Running under `?backend=software` no longer forces a full page reload on every hot-swappable edit. The Tier 3
+  hardware-settings check now accounts for the URL override on both sides of the comparison, so only a genuine
+  `configure()` change triggers a reload, matching the behavior already seen under the default `webgpu` backend.
+- The `blit386/vite` plugin now syntax-checks a plain `.js`/`.mjs` entry module before injecting the hot-reload snippet.
+  Vite's own default transform pipeline excludes those extensions from server-side parsing, so a broken entry module
+  previously surfaced only as a silently caught client-side error - Vite's error overlay never appeared. `.ts`/`.mts`
+  entries are unaffected; they already get real syntax validation from Vite's own transform.
 
 ## 1.3.1 - 2026-07-19
 

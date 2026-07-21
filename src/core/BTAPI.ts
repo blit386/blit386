@@ -251,9 +251,13 @@ export class BTAPI {
     /**
      * Reads backend override from the current URL query string.
      *
+     * Also called by the hot-swap runtime ({@link tryHardReload} in `src/hot/HotSwap.ts`) so a
+     * hot-swap candidate's resolved settings can be normalized the same way `init()` normalizes
+     * the running settings, before the two are diffed for a Tier 3 hard reload.
+     *
      * @returns Supported backend override, or null when absent/invalid.
      */
-    private static getBackendQueryOverride(): Backend | null {
+    public static getBackendQueryOverride(): Backend | null {
         const search =
             typeof globalThis.location?.search === 'string'
                 ? globalThis.location.search

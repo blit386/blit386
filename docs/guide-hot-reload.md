@@ -155,6 +155,10 @@ class Demo implements IBTDemo {
 
 `onHotReload` never fires for a Tier 3 reload - the page is gone before there is anything left to notify.
 
+Running under `?backend=software` does not itself force a Tier 3 reload on every edit. The comparison accounts for the
+URL override on both sides, so only a genuine `configure()` change - not the override alone - triggers a full page
+reload.
+
 ## The `blit386:hot-reload` DOM event
 
 Every successful Tier 1 or Tier 2 swap also dispatches a `blit386:hot-reload` `CustomEvent` on the engine canvas
@@ -252,6 +256,11 @@ runtime cost or behavior change to ship):
   by static analysis, so an indirect call would not register self-acceptance and every edit would fall back to a full
   reload regardless of which tier should have applied. You never write or call `registerHotReload` yourself; the plugin
   injects it, and the engine handles everything from there.
+
+  For a plain `.js`/`.mjs` entry, the plugin also syntax-checks the module before injecting. Vite's own default
+  transform pipeline excludes those extensions from server-side parsing, so without this a broken entry module would
+  surface only as a silently caught client-side error - Vite's error overlay would never appear. A `.ts`/`.mts` entry is
+  unaffected; it already gets real syntax validation from Vite's own transform.
 
 - Watches the configured asset directories and broadcasts `blit386:asset-changed` events for recognized file types (see
   the [asset matrix](#asset-hot-replace-matrix) above), falling back to a full reload for anything else.
