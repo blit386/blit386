@@ -91,6 +91,7 @@ pushing significant changes or creating pull requests.
 - [PASS/FAIL] Agent config drift (agents:check)
 - [PASS/FAIL] Doc banners (sync:doc-banners:check)
 - [PASS/FAIL] Cursor commands drift (sync:cursor-commands:check)
+- [PASS/FAIL] Cursor command tests (test:cursor-commands)
 - [PASS/FAIL] API @since coverage (api:since:check)
 - [PASS/FAIL] API history manifest (api:history:check)
 - [PASS/FAIL] Unit tests (test:unit)

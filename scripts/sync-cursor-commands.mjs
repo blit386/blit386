@@ -40,18 +40,18 @@ const LINK_MATH_ROOT = '/repo';
 
 /**
  * Strips YAML frontmatter (a `---`...`---` block at the top) from a markdown file. Content without
- * frontmatter, or with an unterminated opening `---`, is returned unchanged.
+ * frontmatter, or with an unterminated opening `---`, is returned unchanged. The opening line must be
+ * exactly `---` (a bare `startsWith` check would also match ordinary Markdown that merely begins with
+ * those three characters, like `---not-frontmatter`).
  *
  * @param {string} content Raw markdown content.
  * @returns {string} Content with any leading frontmatter block removed.
  */
 export function stripFrontmatter(content) {
-    if (!content.startsWith('---')) {
-        return content;
-    }
-
     const firstLineEnd = content.indexOf('\n');
-    if (firstLineEnd === -1) {
+    const firstLine = (firstLineEnd === -1 ? content : content.slice(0, firstLineEnd)).replace(/\r$/u, '');
+
+    if (firstLine !== '---' || firstLineEnd === -1) {
         return content;
     }
 
@@ -81,10 +81,10 @@ export function rewriteParentLinks(content, skillDirRelPath) {
     const sourceAbsDir = posix.join(LINK_MATH_ROOT, skillDirRelPath);
     const destAbsDir = posix.join(LINK_MATH_ROOT, COMMANDS_DIR_REL);
 
-    return content.replace(/(\]\()(\.\.\/\S+?)(\))/gu, (_match, open, target, close) => {
+    return content.replace(/(\]\()(\.\.\/\S+?)(\s+["'][^"')]*["'])?(\))/gu, (_match, open, target, title, close) => {
         const resolved = posix.resolve(sourceAbsDir, target);
 
-        return `${open}${posix.relative(destAbsDir, resolved)}${close}`;
+        return `${open}${posix.relative(destAbsDir, resolved)}${title ?? ''}${close}`;
     });
 }
 

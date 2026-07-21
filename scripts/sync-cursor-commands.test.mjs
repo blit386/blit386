@@ -36,6 +36,11 @@ describe('sync-cursor-commands', () => {
             const content = '---\nname: bt-format\n--- not a close\n---\n\n# Format Code\n';
             assert.equal(stripFrontmatter(content), '# Format Code\n');
         });
+
+        it('preserves ordinary markdown whose first line merely starts with ---', () => {
+            const content = '---not-frontmatter\n\nsome body\n\n---\n\nmore text\n';
+            assert.equal(stripFrontmatter(content), content);
+        });
     });
 
     describe('rewriteParentLinks', () => {
@@ -69,6 +74,18 @@ describe('sync-cursor-commands', () => {
         it('leaves a same-directory relative link untouched', () => {
             const content = '[sibling](sibling-file.md)';
             assert.equal(rewriteParentLinks(content, '.claude/skills/bt-release'), content);
+        });
+
+        it('re-relativizes a titled link while preserving the title', () => {
+            const content = '[guide](../../../docs/guide.md "Guide")';
+            const rewritten = rewriteParentLinks(content, '.claude/skills/bt-security-run');
+            assert.equal(rewritten, '[guide](../../docs/guide.md "Guide")');
+        });
+
+        it('re-relativizes a single-quote titled link while preserving the title', () => {
+            const content = "[guide](../../../docs/guide.md 'Guide')";
+            const rewritten = rewriteParentLinks(content, '.claude/skills/bt-security-run');
+            assert.equal(rewritten, "[guide](../../docs/guide.md 'Guide')");
         });
     });
 
