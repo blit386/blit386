@@ -112,13 +112,13 @@ describe('PointerInput', () => {
     });
 
     describe('attach / detach', () => {
-        it('sets canvas.style.touchAction to "none" on attach', () => {
+        it('sets canvas.style.touchAction to "pan-y" on attach when scroll capture is not active', () => {
             const c = createCanvas();
             const p = new PointerInput();
 
             expect(c.style.touchAction).toBe('');
             p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
-            expect(c.style.touchAction).toBe('none');
+            expect(c.style.touchAction).toBe('pan-y');
 
             p.detach();
             c.remove();
@@ -126,14 +126,14 @@ describe('PointerInput', () => {
 
         it('restores the original touchAction on detach', () => {
             const c = createCanvas();
-            c.style.touchAction = 'pan-y';
+            c.style.touchAction = 'manipulation';
             const p = new PointerInput();
 
             p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
-            expect(c.style.touchAction).toBe('none');
+            expect(c.style.touchAction).toBe('pan-y');
 
             p.detach();
-            expect(c.style.touchAction).toBe('pan-y');
+            expect(c.style.touchAction).toBe('manipulation');
 
             c.remove();
         });
@@ -1087,6 +1087,54 @@ describe('PointerInput', () => {
             canvas.dispatchEvent(wheelEvent);
 
             expect(preventDefault).toHaveBeenCalled();
+        });
+    });
+
+    describe('dynamic touch-action gating', () => {
+        it('sets touchAction to "none" when setIsCapturingScroll(true) is called', () => {
+            input.setIsCapturingScroll(true);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('reverts touchAction to "pan-y" when setIsCapturingScroll(false) is called', () => {
+            input.setIsCapturingScroll(true);
+            input.setIsCapturingScroll(false);
+
+            expect(canvas.style.touchAction).toBe('pan-y');
+        });
+
+        it('sets touchAction to "none" when setIsScrollCaptureForced(true) is called', () => {
+            input.setIsScrollCaptureForced(true);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('reverts touchAction to "pan-y" when setIsScrollCaptureForced(false) is called and capture is not active', () => {
+            input.setIsScrollCaptureForced(true);
+            input.setIsScrollCaptureForced(false);
+
+            expect(canvas.style.touchAction).toBe('pan-y');
+        });
+
+        it('keeps touchAction "none" when setIsScrollCaptureForced(false) is called but setIsCapturingScroll is still true', () => {
+            input.setIsCapturingScroll(true);
+            input.setIsScrollCaptureForced(true);
+            input.setIsScrollCaptureForced(false);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('does not throw when setIsCapturingScroll is called before attach', () => {
+            const fresh = new PointerInput();
+
+            expect(() => fresh.setIsCapturingScroll(true)).not.toThrow();
+        });
+
+        it('does not throw when setIsScrollCaptureForced is called before attach', () => {
+            const fresh = new PointerInput();
+
+            expect(() => fresh.setIsScrollCaptureForced(true)).not.toThrow();
         });
     });
 

@@ -417,7 +417,9 @@ Pointer transitions:
 - `keydown` – when `isCapturingKeyboardScroll` is `true`, `preventDefault()` stops page scroll for arrow keys, Space,
   PageUp/PageDown, Home, and End while the canvas is focused. When capture is off, those keys keep their browser
   defaults.
-- `canvas.style.touchAction = 'none'` – prevents iOS Safari pinch-zoom and double-tap-zoom.
+- `canvas.style.touchAction` – `'none'` while `isCapturingPointerScroll` is `true` (or the overlay forces capture over
+  the palette band), preventing iOS Safari pinch-zoom, double-tap-zoom, and touch scroll from competing with capture.
+  `'pan-y'` otherwise, so the host page still scrolls vertically past the canvas on touch devices.
 - `contextmenu` with `preventDefault()` – prevents the OS context menu on right-click so `BTN_POINTER_B` works.
 
 `detach()` reverses the pointer and keyboard guards and removes all event listeners. This happens automatically when the
