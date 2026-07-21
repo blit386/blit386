@@ -57,4 +57,5 @@ const BTN_A = 20;       // OK — short local name
 - After shortening a local alias, update JSDoc that references **public** API to the correct public symbol (internal
   `BTN_A` comments must point at `BT.BTN_POINTER_A`, not `BT.BTN_A`).
 
-Full policy: `CLAUDE.md` (**Internal scoped naming**), `docs/developer-experience-guide.md` (Naming conventions).
+This file (and `.claude/rules/internal-scoped-naming.md`) is the full policy — `CLAUDE.md` carries only a short summary
+and points here. See also `docs/developer-experience-guide.md` (Naming conventions).

@@ -78,5 +78,5 @@ Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use prope
    field)
 4. Update `docs/api-*.md`, `CLAUDE.md`, demos if public; overlay behavior also updates `docs/guide-overlay.md`
 
-See `CLAUDE.md` section **BT API: getters vs methods**, **Boolean naming**, **Internal scoped naming**, and
-`docs/api-core.md`.
+This file (and `.claude/rules/bt-api-getters.md`) is the full policy — `CLAUDE.md` carries only a short summary and
+points here. See also `docs/api-core.md` and `.cursor/rules/internal-scoped-naming.mdc`.

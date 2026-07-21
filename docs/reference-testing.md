@@ -313,8 +313,6 @@ renderer, palette, or post-process changes; use `pnpm run test:visual:update` wh
 
 ### Known quirks
 
-See also [CLAUDE.md](../CLAUDE.md) (Known Testing Quirks):
-
 - `// @vitest-environment happy-dom` – required at the top of test files that touch DOM APIs without GPU mocks.
 - AssetLoader – tests stub `Image` with `vi`; do not rely on happy-dom data-URI `onload` behavior.
 - `Vector2i -0` vs. `0` – use `result.x + 0` in assertions when sign is meaningless.

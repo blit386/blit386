@@ -41,5 +41,5 @@ When adding or moving code in library TypeScript (`src/`). **Class member order 
 - One blank line between members; a blank line before `return` and between logical blocks inside method bodies.
 - JSDoc on every member, including private ones. Named exports only; no default exports.
 
-Full policy: `CLAUDE.md` (**TypeScript file structure**), `docs/developer-experience-guide.md` (File structure and
-member order).
+This file (and `.claude/rules/ts-file-structure.md`) is the full policy — `CLAUDE.md` carries only a short summary and
+points here. See also `docs/developer-experience-guide.md` (File structure and member order).

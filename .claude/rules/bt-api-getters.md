@@ -1,6 +1,7 @@
 # BT API: getters vs methods
 
-Canonical reference: [CLAUDE.md](../../CLAUDE.md) (BT API: getters vs methods, Boolean naming).
+This file (and `.cursor/rules/bt-api-getters.mdc`) is the full policy for BT API getters vs methods and Boolean naming;
+[CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/api-core.md`.
 
 Quick rules when changing `src/BLIT386.ts` or demos:
 

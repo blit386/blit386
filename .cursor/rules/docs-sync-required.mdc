@@ -38,22 +38,22 @@ alwaysApply: false
   in that script, not the docs.
 - Published docs are MDX-capable and **site-first**: use Fumadocs components (`Callout`, `TypeTable`, `Steps`, `Tabs`,
   `Accordions`, `Cards`, `Files`) where they improve the page. Full guidance — which components, when to use them, and
-  the authoring rules — is in `CLAUDE.md` (**Fumadocs components in published docs**). Key rules: author in block form
-  (blank lines around children) so Prettier stays stable; `Card href` must be a site-absolute `/docs/...` path (the
-  mirror rewrites Markdown links, not JSX props); do not add a manual or `InlineTOC` table of contents (the site renders
-  its own); components render only on the live site, so leave contributor-only docs as plain Markdown. Any component
-  used must be registered in `blit386-dev-fumapress/press.config.tsx` (`getMdxComponents`) or the build fails — verify
-  with `pnpm run sync:docs` + `pnpm run build` (or `typecheck`) in that repo.
+  the authoring rules — is in `.cursor/rules/docs-authoring.mdc` (Claude: `.claude/rules/docs-authoring.md`). Key rules:
+  author in block form (blank lines around children) so Prettier stays stable; `Card href` must be a site-absolute
+  `/docs/...` path (the mirror rewrites Markdown links, not JSX props); do not add a manual or `InlineTOC` table of
+  contents (the site renders its own); components render only on the live site, so leave contributor-only docs as plain
+  Markdown. Any component used must be registered in `blit386-dev-fumapress/press.config.tsx` (`getMdxComponents`) or
+  the build fails — verify with `pnpm run sync:docs` + `pnpm run build` (or `typecheck`) in that repo.
 - TypeScript code blocks in published docs must use ` ```ts twoslash ` (never plain ` ```ts `). Each block must compile
   on its own: self-contained blocks carry their own imports; fragment blocks add a hidden preamble above `// ---cut---`.
-  Full rules in `CLAUDE.md` (**Twoslash in published docs**) and `.cursor/rules/twoslash-docs.mdc`.
-- Follow the doc prose house style (`CLAUDE.md` **Documentation authoring style**): no bold (`**`) in prose, no `---`
-  separators, the `×` sign (not `x`) for dimensions except literal program output, break up walls of text, every `###`
-  has a parent `##`, and credit external inspirations with a link and author. Published-doc filenames mirror the sitemap
-  section (`api-*`, `guide-*`, `performance-*`, `reference-*`). To rename or split a page: `git mv`, update
-  `_sitemap.json` `src` (keep `path` stable unless the topic changes), rewrite inbound links with a `(?<![\w-])` guard
-  so compound names are not hit, keep cross-referenced anchors in the original on a split, then run `sync:doc-banners`,
-  `docs:links`, and `format`. Add new proper nouns to `cspell.json` (and the fumapress one for hand-authored content).
+  Full rules in `.cursor/rules/twoslash-docs.mdc`.
+- Follow the doc prose house style (`.cursor/rules/docs-authoring.mdc`): no bold (`**`) in prose, no `---` separators,
+  the `×` sign (not `x`) for dimensions except literal program output, break up walls of text, every `###` has a parent
+  `##`, and credit external inspirations with a link and author. Published-doc filenames mirror the sitemap section
+  (`api-*`, `guide-*`, `performance-*`, `reference-*`). To rename or split a page: `git mv`, update `_sitemap.json`
+  `src` (keep `path` stable unless the topic changes), rewrite inbound links with a `(?<![\w-])` guard so compound names
+  are not hit, keep cross-referenced anchors in the original on a split, then run `sync:doc-banners`, `docs:links`, and
+  `format`. Add new proper nouns to `cspell.json` (and the fumapress one for hand-authored content).
 - When architecture or subsystem structure changes, update `CLAUDE.md` architecture sections and the **Where to Find
   Information** table when paths change.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected

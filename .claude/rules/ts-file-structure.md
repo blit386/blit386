@@ -1,6 +1,8 @@
 # TypeScript file structure
 
-Canonical reference: [CLAUDE.md](../../CLAUDE.md) (TypeScript file structure).
+This file (and `.cursor/rules/ts-file-structure.mdc`) is the full policy for TypeScript file structure;
+[CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/developer-experience-guide.md`
+(File structure and member order).
 
 When adding or moving code in `src/`. Class member order is enforced by `perfectionist/sort-classes` (auto-fix with
 `pnpm run lint:fix`); it uses `type: 'unsorted'`, enforcing only the group order below and preserving the hand-tuned

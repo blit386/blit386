@@ -1,6 +1,8 @@
 # Internal scoped naming
 
-Canonical reference: [CLAUDE.md](../../CLAUDE.md) (Internal scoped naming).
+This file (and `.cursor/rules/internal-scoped-naming.mdc`) is the full policy for internal scoped naming;
+[CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/developer-experience-guide.md`
+(Naming conventions).
 
 When editing non-public symbols in `src/`:
 
