@@ -7,6 +7,8 @@
 
 set -u
 
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT" || exit 0
 
@@ -28,8 +30,12 @@ if [ -d node_modules ] && [ -f "$LOCKFILE_STAMP" ] && [ "$(cat "$LOCKFILE_STAMP"
     exit 0
 fi
 
-if ! pnpm install --frozen-lockfile; then
+INSTALL_OUTPUT="$(pnpm install --frozen-lockfile 2>&1)"
+INSTALL_STATUS=$?
+
+if [ "$INSTALL_STATUS" -ne 0 ]; then
     echo "[session-start] pnpm install failed; the session will continue without a warmed toolchain." >&2
+    printf '%s\n' "$INSTALL_OUTPUT" >&2
     exit 0
 fi
 
