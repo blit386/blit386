@@ -18,7 +18,8 @@ const MLC_BIN = require.resolve('markdown-link-check/markdown-link-check');
 const CONFIG = join(ROOT, '.github/markdown-link-check.json');
 const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', 'coverage', 'tmp', 'templates', '.remember']);
 const CONCURRENCY = 8;
-const CHECK_TIMEOUT_MS = 120_000;
+// Exceeds the ~170s worst-case single-link retry chain in .github/markdown-link-check.json.
+const CHECK_TIMEOUT_MS = 300_000;
 
 /** @param {string} dir @param {string[]} files */
 function walkMarkdownFiles(dir, files) {
@@ -66,7 +67,10 @@ function checkFile(filePath) {
         }
 
         child.on('error', (err) => {
-            output += `\n[spawn error] ${err.message}\n`;
+            output +=
+                err.name === 'AbortError'
+                    ? `\n[spawn error] check timed out after ${CHECK_TIMEOUT_MS}ms\n`
+                    : `\n[spawn error] ${err.message}\n`;
             finish(false);
         });
 
