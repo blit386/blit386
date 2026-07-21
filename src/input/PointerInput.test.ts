@@ -11,6 +11,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createOverlayLayout } from '../overlay/layout/layoutHelpers';
+import { paletteBandY } from '../overlay/layout/layoutPlan';
+import { Overlay } from '../overlay/Overlay';
+import { computeGrid } from '../overlay/palette/PaletteView';
+import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { POINTER_SLOT_COUNT, PointerInput } from './PointerInput';
 
@@ -112,13 +117,13 @@ describe('PointerInput', () => {
     });
 
     describe('attach / detach', () => {
-        it('sets canvas.style.touchAction to "none" on attach', () => {
+        it('sets canvas.style.touchAction to "pan-y" on attach when scroll capture is not active', () => {
             const c = createCanvas();
             const p = new PointerInput();
 
             expect(c.style.touchAction).toBe('');
             p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
-            expect(c.style.touchAction).toBe('none');
+            expect(c.style.touchAction).toBe('pan-y');
 
             p.detach();
             c.remove();
@@ -126,14 +131,14 @@ describe('PointerInput', () => {
 
         it('restores the original touchAction on detach', () => {
             const c = createCanvas();
-            c.style.touchAction = 'pan-y';
+            c.style.touchAction = 'manipulation';
             const p = new PointerInput();
 
             p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
-            expect(c.style.touchAction).toBe('none');
+            expect(c.style.touchAction).toBe('pan-y');
 
             p.detach();
-            expect(c.style.touchAction).toBe('pan-y');
+            expect(c.style.touchAction).toBe('manipulation');
 
             c.remove();
         });
@@ -1087,6 +1092,136 @@ describe('PointerInput', () => {
             canvas.dispatchEvent(wheelEvent);
 
             expect(preventDefault).toHaveBeenCalled();
+        });
+    });
+
+    describe('touch-action gating', () => {
+        it('leaves touchAction as "pan-y" when capture is off and not forced', () => {
+            expect(canvas.style.touchAction).toBe('pan-y');
+        });
+
+        it('sets touchAction to "none" when scroll capture is forced without configure opt-in', () => {
+            input.setIsScrollCaptureForced(true);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('sets touchAction to "none" when setIsCapturingScroll(true) is called', () => {
+            input.setIsCapturingScroll(true);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('reverts touchAction to "pan-y" when setIsCapturingScroll(false) is called', () => {
+            input.setIsCapturingScroll(true);
+            input.setIsCapturingScroll(false);
+
+            expect(canvas.style.touchAction).toBe('pan-y');
+        });
+
+        it('reverts touchAction to "pan-y" when setIsScrollCaptureForced(false) is called and capture is not active', () => {
+            input.setIsScrollCaptureForced(true);
+            input.setIsScrollCaptureForced(false);
+
+            expect(canvas.style.touchAction).toBe('pan-y');
+        });
+
+        it('keeps touchAction "none" when setIsScrollCaptureForced(false) is called but setIsCapturingScroll is still true', () => {
+            input.setIsCapturingScroll(true);
+            input.setIsScrollCaptureForced(true);
+            input.setIsScrollCaptureForced(false);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('does not throw when setIsCapturingScroll is called before attach', () => {
+            const fresh = new PointerInput();
+
+            expect(() => fresh.setIsCapturingScroll(true)).not.toThrow();
+        });
+
+        it('does not throw when setIsScrollCaptureForced is called before attach', () => {
+            const fresh = new PointerInput();
+
+            expect(() => fresh.setIsScrollCaptureForced(true)).not.toThrow();
+        });
+    });
+
+    describe('touch-action gating via overlay palette band', () => {
+        /**
+         * Converts a logical display coordinate to the physical `clientX`/`clientY` the
+         * happy-dom canvas expects, given the 2x CSS scale set up by {@link createCanvas}.
+         */
+        const toClient = (x: number, y: number): { clientX: number; clientY: number } => ({
+            clientX: RECT_LEFT + ((x + 0.5) / DISPLAY_WIDTH) * RECT_WIDTH,
+            clientY: RECT_TOP + ((y + 0.5) / DISPLAY_HEIGHT) * RECT_HEIGHT,
+        });
+
+        it('forces touchAction to "none" for a touch starting over the palette band, without configure opt-in', () => {
+            const overlay = new Overlay(
+                createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14),
+                'Test Demo',
+                60,
+                'webgpu',
+                undefined,
+                true,
+                undefined,
+                undefined,
+                false,
+                undefined,
+                undefined,
+                false,
+                false,
+                true,
+            );
+            const grid = computeGrid(DISPLAY_WIDTH);
+            const paletteBandTop = paletteBandY(DISPLAY_HEIGHT, grid.totalHeight);
+            const paletteBand = new Rect2i(0, paletteBandTop, DISPLAY_WIDTH, grid.totalHeight);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 300,
+                    pointerType: 'touch',
+                    button: 0,
+                    ...toClient(paletteBand.x, paletteBand.y),
+                }),
+            );
+
+            overlay.handleFrameInput(input, false, 1);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('leaves touchAction as "pan-y" for a touch starting outside the palette band', () => {
+            const overlay = new Overlay(
+                createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14),
+                'Test Demo',
+                60,
+                'webgpu',
+                undefined,
+                true,
+                undefined,
+                undefined,
+                false,
+                undefined,
+                undefined,
+                false,
+                false,
+                true,
+            );
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 301,
+                    pointerType: 'touch',
+                    button: 0,
+                    ...toClient(0, 0),
+                }),
+            );
+
+            overlay.handleFrameInput(input, false, 1);
+
+            expect(canvas.style.touchAction).toBe('pan-y');
         });
     });
 

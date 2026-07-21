@@ -165,8 +165,9 @@ export class PointerInput {
      * Installs page-interaction guards on the canvas:
      * - `wheel` with `{ passive: false }` so `preventDefault` can run when scroll
      *   capture is active ({@link setIsCapturingScroll} or {@link setIsScrollCaptureForced})
-     * - `canvas.style.touchAction = 'none'` so iOS Safari doesn't intercept
-     *   touches for pinch-zoom or double-tap-zoom
+     * - `canvas.style.touchAction` gated by the same scroll-capture state (see
+     *   {@link updateTouchAction}) so the host page keeps vertical touch scroll
+     *   over the canvas except while scroll capture is active
      * - `contextmenu.preventDefault()` so right-click feeds `BTN_B`
      *   instead of popping the OS context menu
      *
@@ -180,8 +181,9 @@ export class PointerInput {
         this.displaySize = displaySize;
 
         this.originalTouchAction = canvas.style.touchAction;
-        canvas.style.touchAction = 'none';
         this.originalCursor = canvas.style.cursor;
+
+        this.updateTouchAction();
 
         canvas.addEventListener('pointermove', this.onMove);
         canvas.addEventListener('pointerdown', this.onDown);
@@ -377,6 +379,7 @@ export class PointerInput {
      */
     public setIsCapturingScroll(enabled: boolean): void {
         this.isCapturingScroll = enabled;
+        this.updateTouchAction();
     }
 
     /**
@@ -389,6 +392,7 @@ export class PointerInput {
      */
     public setIsScrollCaptureForced(forced: boolean): void {
         this.isScrollCaptureForced = forced;
+        this.updateTouchAction();
     }
 
     /**
@@ -720,6 +724,23 @@ export class PointerInput {
         }
 
         this.scrollDeltaY += pixels;
+    }
+
+    /**
+     * Syncs `canvas.style.touchAction` to the current scroll-capture state:
+     * `'none'` while either {@link setIsCapturingScroll} or
+     * {@link setIsScrollCaptureForced} is active, so iOS Safari doesn't
+     * intercept touches for pinch-zoom or double-tap-zoom over a canvas that
+     * wants the wheel/scroll gesture; `'pan-y'` otherwise, so the host page
+     * still scrolls vertically past the canvas on touch devices. No-op
+     * when not attached.
+     */
+    private updateTouchAction(): void {
+        if (this.canvas === null) {
+            return;
+        }
+
+        this.canvas.style.touchAction = this.isCapturingScroll || this.isScrollCaptureForced ? 'none' : 'pan-y';
     }
 
     /**

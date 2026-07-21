@@ -344,8 +344,13 @@ Wheel capture is opt-in. Set `isCapturingPointerScroll: true` in `configure()` s
 canvas `wheel` events and fills `BT.pointerScrollDelta`. When the flag is omitted (the default), the host page scrolls
 normally while the pointer is over the canvas and `BT.pointerScrollDelta` stays `0`.
 
+The same flag also gates `canvas.style.touch-action`. When enabled, `touch-action` is `none` so the canvas does not
+compete with the wheel capture above. When the flag is omitted (the default) and no other capture source is active,
+`touch-action` is `pan-y`, so touch devices can still tap-hold-scroll the host page past the canvas.
+
 The overlay palette grid still captures wheel while the pointer is over its band, even without the configure flag, so
-scrolling palette rows does not move the page.
+scrolling palette rows does not move the page. The same palette-band capture also forces `touch-action` to `none` for as
+long as a pointer is over the band, independent of the configure flag.
 
 ```ts twoslash
 import { type HardwareSettings } from 'blit386';
@@ -417,7 +422,10 @@ Pointer transitions:
 - `keydown` – when `isCapturingKeyboardScroll` is `true`, `preventDefault()` stops page scroll for arrow keys, Space,
   PageUp/PageDown, Home, and End while the canvas is focused. When capture is off, those keys keep their browser
   defaults.
-- `canvas.style.touchAction = 'none'` – prevents iOS Safari pinch-zoom and double-tap-zoom.
+- `canvas.style.touchAction` – when `isCapturingPointerScroll` is `true` (or the overlay forces capture over the palette
+  band), touch-action is `'none'`, preventing iOS Safari pinch-zoom, double-tap-zoom, and touch scroll from competing
+  with capture. When capture is off, touch-action is `'pan-y'`, so the host page still scrolls vertically past the
+  canvas on touch devices.
 - `contextmenu` with `preventDefault()` – prevents the OS context menu on right-click so `BTN_POINTER_B` works.
 
 `detach()` reverses the pointer and keyboard guards and removes all event listeners. This happens automatically when the
