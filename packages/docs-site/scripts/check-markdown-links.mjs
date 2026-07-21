@@ -30,6 +30,7 @@ const IGNORED_DIRS = new Set([
     '.wrangler',
 ]);
 const CONCURRENCY = 8;
+const CHECK_TIMEOUT_MS = 120_000;
 
 /**
  * Repo-relative path patterns to skip. Generated doc pages
@@ -70,8 +71,13 @@ function checkFile(filePath) {
     const rel = relative(ROOT, filePath);
 
     return new Promise((settle) => {
-        const child = spawn(process.execPath, [MLC_BIN, rel, '-c', CONFIG], { cwd: ROOT });
+        const child = spawn(process.execPath, [MLC_BIN, rel, '-c', CONFIG], {
+            cwd: ROOT,
+            signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
+        });
         let output = '';
+        let settled = false;
+
         child.stdout.on('data', (chunk) => {
             output += chunk;
         });
@@ -79,16 +85,23 @@ function checkFile(filePath) {
             output += chunk;
         });
 
-        child.on('error', () => {
+        function finish(ok) {
+            if (settled) {
+                return;
+            }
+            settled = true;
             console.log(`\nFILE: ./${rel}`);
             process.stdout.write(output);
-            settle(false);
+            settle(ok);
+        }
+
+        child.on('error', (err) => {
+            output += `\n[spawn error] ${err.message}\n`;
+            finish(false);
         });
 
         child.on('close', (code) => {
-            console.log(`\nFILE: ./${rel}`);
-            process.stdout.write(output);
-            settle(code === 0);
+            finish(code === 0);
         });
     });
 }
