@@ -103,6 +103,10 @@ jobs:
         run: pnpm run sync:doc-banners:check
         background: true
 
+      - name: Check unused exports and dependencies
+        run: pnpm run knip
+        background: true
+
       - wait-all:
 
   build-library:
@@ -145,6 +149,67 @@ jobs:
           name: library-dist
           path: dist/
           retention-days: 7
+
+  bundle-size:
+    name: Check Bundle Size
+    runs-on: ubuntu-latest
+    needs: build-library
+    if: github.event_name != 'pull_request' || !contains(fromJSON('["labeled","unlabeled"]'), github.event.action)
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download library artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: library-dist
+          path: dist
+
+      - name: Check bundle size
+        id: size
+        run: |
+          ESM_SIZE=$(stat -c%s dist/blit386.js 2>/dev/null || stat -f%z dist/blit386.js)
+          CJS_SIZE=$(stat -c%s dist/blit386.cjs 2>/dev/null || stat -f%z dist/blit386.cjs)
+          ESM_GZIP=$(gzip -c dist/blit386.js | wc -c | tr -d ' ')
+          CJS_GZIP=$(gzip -c dist/blit386.cjs | wc -c | tr -d ' ')
+
+          echo "esm_size=$ESM_SIZE" >> $GITHUB_OUTPUT
+          echo "cjs_size=$CJS_SIZE" >> $GITHUB_OUTPUT
+          echo "esm_gzip=$ESM_GZIP" >> $GITHUB_OUTPUT
+          echo "cjs_gzip=$CJS_GZIP" >> $GITHUB_OUTPUT
+
+          # Convert to KB for display
+          ESM_KB=$(echo "scale=2; $ESM_SIZE / 1024" | bc)
+          CJS_KB=$(echo "scale=2; $CJS_SIZE / 1024" | bc)
+          ESM_GZIP_KB=$(echo "scale=2; $ESM_GZIP / 1024" | bc)
+          CJS_GZIP_KB=$(echo "scale=2; $CJS_GZIP / 1024" | bc)
+
+          echo "esm_kb=$ESM_KB" >> $GITHUB_OUTPUT
+          echo "cjs_kb=$CJS_KB" >> $GITHUB_OUTPUT
+          echo "esm_gzip_kb=$ESM_GZIP_KB" >> $GITHUB_OUTPUT
+          echo "cjs_gzip_kb=$CJS_GZIP_KB" >> $GITHUB_OUTPUT
+
+      - name: Bundle size report
+        run: |
+          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Format | Raw | Gzipped |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-----|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ESM (.js) | ${{ steps.size.outputs.esm_kb }} KB | ${{ steps.size.outputs.esm_gzip_kb }} KB |" >> $GITHUB_STEP_SUMMARY
+          echo "| CJS (.cjs) | ${{ steps.size.outputs.cjs_kb }} KB | ${{ steps.size.outputs.cjs_gzip_kb }} KB |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check size limits
+        run: |
+          # Fail if gzipped ESM exceeds 70 KB (adjust as needed)
+          ESM_GZIP=${{ steps.size.outputs.esm_gzip }}
+          MAX_SIZE=71680  # 70 KB in bytes
+
+          if [ "$ESM_GZIP" -gt "$MAX_SIZE" ]; then
+            echo "::error::Bundle size (${{ steps.size.outputs.esm_gzip_kb }} KB gzipped) exceeds limit (70 KB)"
+            exit 1
+          fi
+
+          echo "Bundle size is within limits"
 
   benchmark:
     name: Benchmarks
