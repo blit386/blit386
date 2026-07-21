@@ -29,4 +29,5 @@ must be left exactly as the spec defines them:
 - This repo's own `gray`/`grey` named-color alias in `src/utils/Color32.ts` (`alias('grey', 'gray')`), which
   deliberately mirrors the CSS Color Module's own dual spelling (`gray`/`grey`, `darkgray`/`darkgrey`, ...)
 
-Full policy: `CLAUDE.md` (American English spelling, Documentation authoring style).
+Full policy: `CLAUDE.md` (American English spelling). Applies to doc prose too — see `.cursor/rules/docs-authoring.mdc`
+(Documentation authoring style).

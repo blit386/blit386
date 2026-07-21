@@ -45,9 +45,9 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Where do I put a new field/method in a `.ts` file?                                    | TypeScript file structure below; `.cursor/rules/ts-file-structure.mdc`; `docs/developer-experience-guide.md` (File structure and member order)                                                                                                                                                                                                                                                 |
 | Where are Cursor agent rules and hooks?                                               | `.cursor/rules/*.mdc` (always-applied + glob-scoped); `.cursor/hooks.json`; condensed mirrors in `.claude/rules/`; see [Developer Experience](docs/developer-experience-guide.md#cursor)                                                                                                                                                                                                       |
 | Where is the public docs site (blit386.dev)?                                          | Sibling repo `blit386-dev-fumapress` (Fumapress + Waku) generates it from this repo's `docs/`; `docs/_sitemap.json` (schema `docs/_sitemap.schema.json`) controls which docs publish, their URL, sidebar order, and subtitle                                                                                                                                                                   |
-| Why does each published doc have a blit386.dev banner?                                | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see Public docs site banner below                                                                                                                                                                                                 |
-| Can I use Fumadocs components (Callout, TypeTable, …) in docs?                        | Yes, in published docs only (site-first). Which ones, when to use them, and the authoring rules: Fumadocs components in published docs below                                                                                                                                                                                                                                                   |
-| How do I write/rename/split a `docs/` page?                                           | Documentation authoring style below (prose rules: no bold, no `---`, `×` for dimensions; filename mirrors sitemap section; rename/split checklist). For runtime strings see `docs/voice.md` instead                                                                                                                                                                                            |
+| Why does each published doc have a blit386.dev banner?                                | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see Public docs site banner below and `.claude/rules/docs-authoring.md`                                                                                                                                                           |
+| Can I use Fumadocs components (Callout, TypeTable, …) in docs?                        | Yes, in published docs only (site-first). Which ones, when to use them, and the authoring rules: `.claude/rules/docs-authoring.md` (Cursor: `.cursor/rules/docs-authoring.mdc`)                                                                                                                                                                                                                |
+| How do I write/rename/split a `docs/` page?                                           | `.claude/rules/docs-authoring.md` (prose rules: no bold, no `---`, `×` for dimensions; filename mirrors sitemap section; rename/split checklist). For runtime strings see `docs/voice.md` instead                                                                                                                                                                                              |
 | What agent skills are available for this project?                                     | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) – `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format`, `bt-issue-audit`                                                                                                                                                 |
 | How do users start a new project with the engine?                                     | `npm create blit386@latest` – the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below                                                                                                                                                                                                                                                               |
 | How do I load an audio clip?                                                          | `src/assets/AudioClip.ts`, `docs/api-audio.md` (Loading section), `docs/guide-audio.md` (Preloading audio clips)                                                                                                                                                                                                                                                                               |
@@ -82,68 +82,27 @@ matching update. That repo has its own git history and is not part of this repo'
 ## Public docs site banner
 
 Every doc that publishes to blit386.dev (those listed in `docs/_sitemap.json`) carries a short banner just below its H1,
-pointing GitHub readers at the typeset copy on the site. It is wrapped in `<!-- blit386.dev-banner:start -->` /
-`<!-- blit386.dev-banner:end -->` sentinels.
+generated and owned entirely by `scripts/sync-doc-banners.mjs` – never hand-edit it. Run `pnpm run sync:doc-banners`
+after a sitemap change; `pnpm run sync:doc-banners:check` reports drift in CI. The public mirror strips the block, so it
+never appears on the live site.
 
-- Do not hand-edit or hand-add the banner block. It is generated and owned entirely by `scripts/sync-doc-banners.mjs`,
-  which derives each `https://blit386.dev/docs/<path>` URL from the sitemap so the link can never drift.
-- Run `pnpm run sync:doc-banners` after adding a doc to the sitemap or changing a doc's `path`; the banner is inserted
-  if missing and rewritten if stale. `pnpm run sync:doc-banners:check` reports drift without writing (for CI).
-- The banner is a GitHub-only signpost: the public mirror generator (`blit386-dev-fumapress`) strips the whole block, so
-  it never appears on the live site. Editing banner prose means editing the template in `scripts/sync-doc-banners.mjs`,
-  not the docs.
+Full detail: `.claude/rules/docs-authoring.md` (Cursor: `.cursor/rules/docs-authoring.mdc`).
 
 ## Fumadocs components in published docs
 
-Published docs (those in `docs/_sitemap.json`) are authored as MDX-capable Markdown: you may use Fumadocs/Fumapress
-components directly in the `.md` source. The mirror generator passes PascalCase tags through verbatim, and the live site
-renders them. These docs are site-first – components do not render on GitHub (they degrade to plain text or disappear),
-so the blit386.dev banner points GitHub readers to the typeset copy. Contributor-only docs (not in the sitemap:
-`developer-experience-guide.md`, `voice.md`, `tooling.md`, `security/*`) stay plain Markdown – components there would
-render nowhere.
+Published docs (those in `docs/_sitemap.json`) are authored as MDX-capable Markdown, site-first: Fumadocs/Fumapress
+components (`Callout`, `Card`/`Cards`, `Tabs`, `Steps`, `Accordions`, `Files`, `TypeTable`, …) render on blit386.dev but
+degrade or vanish on GitHub. Any component used must already be registered in `blit386-dev-fumapress/press.config.tsx`
+(`getMdxComponents`), or the mirror build throws.
 
-Registered components (wired up in `blit386-dev-fumapress/press.config.tsx`): `Callout`, `Card` / `Cards`, `Tabs` /
-`Tab`, `Steps` / `Step`, `Accordion` / `Accordions`, `Files` / `File` / `Folder`, `TypeTable`, `GithubInfo`,
-`InlineTOC`. Fenced code blocks already get the styled Fumadocs code block (copy button, `title="..."`). Adding a new
-component means registering it in that `getMdxComponents` map first, or the build throws.
-
-When to use which:
-
-- `Callout` – notes, tips, warnings, migration notes, important gotchas. `<Callout type="warn" title="...">` for
-  warnings; default type for notes. Replaces `> Note:` blockquotes.
-- `TypeTable` – option / field / parameter reference tables (name, type, default, description). Replaces Markdown tables
-  whose columns are field/type/default/purpose.
-- `Steps` – sequential procedures (setup flows, manual conversions). One `### heading` per step.
-- `Tabs` – genuine alternatives: per-OS commands, npm/pnpm, preferred-vs-manual paths, display-vs-pixel tiers.
-- `Accordions` – collapsible advanced detail or troubleshooting (one `Accordion` per item).
-- `Cards` – the trailing See Also section (one `Card` per link).
-- `Files` – directory trees without inline comments (it has no per-file description slot; keep comment-annotated trees
-  as ` ```text ` blocks).
-- Do not add a manual or `InlineTOC` table of contents – the site renders its own right-hand TOC panel.
-
-Authoring rules (learned the hard way; keep the build green):
-
-- Block form only. Put blank lines around component children (`<Callout>`, blank line, body, blank line, `</Callout>`).
-  Inline children get reflowed by Prettier into a less-readable single line; block form is stable under
-  `pnpm run format`.
-- JSX expression props work (`TypeTable type={{ ... }}`, `Tabs items={[ ... ]}`). The mirror generator is MDX-aware and
-  leaves braces verbatim inside component blocks; in plain prose a bare `{` is still escaped, so keep object/array props
-  on component lines.
-- `Card href` is a JSX prop the mirror does NOT rewrite. Use site-absolute paths from the sitemap
-  (`/docs/<section>/<topic>`, e.g. `/docs/api/core#overlay`), not relative `*.md` links. For unpublished docs, link to
-  the full GitHub URL.
-- Validate before considering it done: in `blit386-dev-fumapress`, run `pnpm run sync:docs` then `pnpm run build` (or at
-  least `pnpm run typecheck`). An undefined component or malformed prop fails the build, which would break the deploy.
+Full detail (component list, when to use which, authoring rules): `.claude/rules/docs-authoring.md` (Cursor:
+`.cursor/rules/docs-authoring.mdc`).
 
 ## Twoslash in published docs
 
 All TypeScript code blocks in published docs (`docs/api-*.md`, `docs/guide-*.md`, `docs/performance-*.md`,
-`docs/reference-*.md`) must use ` ```ts twoslash `. Plain ` ```ts ` is never acceptable in published docs. This is
-non-negotiable – the live site (blit386.dev) uses fumadocs-twoslash for type-on-hover popups.
-
-Every block must compile cleanly on its own. Two patterns:
-
-Self-contained block – full imports at the top, no cut needed:
+`docs/reference-*.md`) must use ` ```ts twoslash `. Plain ` ```ts ` is never acceptable – the live site (blit386.dev)
+uses fumadocs-twoslash for type-on-hover popups. Every block must compile cleanly on its own:
 
 ```ts twoslash
 import { BT, Color32, Palette } from 'blit386';
@@ -151,72 +110,22 @@ const palette = Palette.c64();
 BT.paletteSet(palette);
 ```
 
-Fragment block – shows a partial snippet whose variables come from surrounding prose – add a hidden preamble then
-`// ---cut---`. Everything above the cut is compiled but hidden from the reader:
+Self-contained blocks carry their own imports; fragment blocks (showing a snippet whose variables come from surrounding
+prose) add a hidden preamble above `// ---cut---`. Fix a broken preamble rather than adding `// @noErrors`.
 
-```ts twoslash
-import { BT, Palette } from 'blit386';
-const nightPalette = Palette.vga();
-// ---cut---
-BT.paletteFade(nightPalette, 2000, 'ease-in-out');
-```
-
-Preamble rules:
-
-- One `import { ... } from 'blit386'` line covering all engine names used in the block.
-- `const x = new Type(...)` for constructible types: `Palette`, `Vector2i`, `Rect2i`, `Color32`.
-- `declare const x: Type` for non-constructible types: `SpriteSheet`, `BitmapFont`.
-- `declare const indexed: { sheet: SpriteSheet; srcRect: Rect2i };` for `indexed.sheet` / `indexed.srcRect` patterns.
-- Named palette vars (`nightPalette`, `dangerPalette`, etc.): `const nightPalette = Palette.vga();`
-- Generic position/rect context vars: `const pos = new Vector2i(0, 0);`, `const rect = new Rect2i(0, 0, 320, 240);`
-
-After adding or editing a block, always verify: in `blit386-dev-fumapress` run `pnpm run sync:docs && pnpm run build`. A
-Twoslash compilation error fails the production build. Fix the preamble rather than adding `// @noErrors`.
+Full preamble rules and the fragment-block example: `.claude/rules/twoslash-docs.md` (Cursor:
+`.cursor/rules/twoslash-docs.mdc`).
 
 ## Documentation authoring style
 
-House style for the Markdown under `docs/` (the published reference and guides). This is about authoring the docs
-themselves, not runtime user-facing strings – for throws, console output, and canvas banners see `docs/voice.md`.
+House style for the Markdown under `docs/` (the published reference and guides), not runtime user-facing strings – for
+throws, console output, and canvas banners see `docs/voice.md`. Headline rules: no bold (`**`) in prose, no `---`
+separators, `×` (not `x`) for dimensions except literal program output, no walls of text, credit external inspirations
+with a link and author, American English spelling. Filenames mirror the sitemap section (`api-*`, `guide-*`,
+`performance-*`, `reference-*`).
 
-Prose rules:
-
-- No bold (`**`) in doc prose. Lead a paragraph or bullet with a strong sentence, not a bolded label; promote a
-  recurring label to a real `###` subsection instead. A `**` that sits inside inline code or a fenced block (a glob such
-  as `src/**/*.ts`, or a JSDoc comment opener) is not bold, so leave it.
-- No `---` horizontal-rule separators between sections. Let headings do the separating.
-- Dimensions use the multiplication sign `×`, not the letter `x`: `320×240`, `6×14`, `8192×8192`. The one exception is
-  literal program output quoted verbatim (for example the overlay's on-screen `webgpu | 320x240`, which the engine
-  renders with a lowercase `x`).
-- No walls of text. Break long paragraphs into short ones, bullet lists, `###` subsections, or `Callout`s. Every `###`
-  subsection needs a parent `##`; give orphaned ones a heading.
-- Credit external inspirations with a link and the author's name (for example RetroBlit at
-  `https://www.badcastle.com/retroblit.html` by Martin Cietwierkowski, `@daafu`).
-- American English spelling – see American English spelling under Code Style; the same convention applies to doc prose,
-  not just JSDoc.
-
-Filenames mirror the sitemap section: a doc whose `path` is `api/<topic>` is `api-<topic>.md`; `guides/<topic>` is
-`guide-<topic>.md`; `performance/<topic>` is `performance-<topic>.md`; `reference/<topic>` is `reference-<topic>.md`.
-New published docs follow this so the filename and URL stay legible together.
-
-Renaming or splitting a published doc:
-
-1. `git mv` the file (plain `mv` if it is still untracked).
-2. Update its `src` in `docs/_sitemap.json`. Keep `path` stable unless the topic name itself changed, so URLs and
-   banners do not move; if the filename topic changes, update `path` to match (filename mirrors section).
-3. Rewrite every inbound link. Guard substring matches so a compound name is not hit by accident – renaming `overlay.md`
-   must not touch `api-overlay.md` (use a `(?<![\w-])` lookbehind or equivalent).
-4. When splitting, keep in the original file any anchor other docs link to (`#resolution-model`,
-   `#requested-vs-active-backend`, …); move the rest. Add a `See also` `Cards` block to each new page.
-5. Run `pnpm run sync:doc-banners`, then `pnpm run docs:links`, then `pnpm run format` (longer filenames shift Markdown
-   table padding, so tables usually need reflowing).
-
-After any doc change:
-
-- Add new proper nouns / coined words to `cspell.json` (and to `blit386-dev-fumapress/cspell.json` if they land in that
-  repo's hand-authored content, e.g. the landing page – its `content/docs/**` is spell-ignored as generated).
-- The site mirrors `docs/` via the sibling `blit386-dev-fumapress` (`pnpm run sync:docs`); `content/docs/**` there is
-  generated, never hand-edit it. Adding, renaming, or removing a sitemap entry means that mirror needs a re-sync. See
-  Docs sync required rule and the sibling repo's `CLAUDE.md` (Documentation mirror).
+Full detail (prose rules, rename/split checklist, post-change cspell/sync obligations):
+`.claude/rules/docs-authoring.md` (Cursor: `.cursor/rules/docs-authoring.mdc`), `.claude/rules/docs-sync-required.md`.
 
 ## Architecture
 
@@ -384,91 +293,33 @@ Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
 
 ## BT API: getters vs methods
 
-The public `BT` namespace uses getters for read-only snapshots and methods for actions, parameterized queries, and async
-work. Do not add new zero-argument `BT.foo()` functions when a getter is appropriate.
+The public `BT` namespace uses getters for read-only snapshots (`BT.displaySize.y`, `BT.targetFPS`, `BT.activeBackend`)
+and methods for actions, parameterized queries, and async work (`BT.cameraSet(...)`, `BT.pointerPos(0)`,
+`await BT.captureFrame()`). Do not add new zero-argument `BT.foo()` functions when a getter is appropriate.
+`requestedBackend` is the resolved init request; `activeBackend` is what actually started (differs after a
+WebGPU→software fallback) and is what runtime gates (post-process, capture) should check.
 
-### Use getters (property access, no `()`)
-
-Full table in `docs/api-core.md` and `.claude/rules/bt-api-getters.md`. The categories:
-
-- Configure-time (mirror `HardwareSettings` field names): `displaySize`, `drawingBufferSize`, `targetFPS` (clone
-  `Vector2i` getters per read; `targetFPS` is the configured rate, not measured FPS).
-- Derived: `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field; clone per read).
-- Configure-time (backend): `requestedBackend` (resolved `HardwareSettings.backend` after merge and `?backend=software`;
-  `null` before init).
-- Loop timing: `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`.
-- Runtime state: `activeBackend` (what actually started after fallback; `null` before init or on failure), `camera`,
-  `palette` (live reference), `isAudioUnlocked` (`false` until the first user gesture resumes the audio context),
-  `isMusicPlaying` (`true` while the music player has a live current track), `screenOrientation`
-  (`screen.orientation.type` string, or `null` when the Screen Orientation API is unavailable).
-- Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount` (read once per frame).
-
-Examples: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 60`, `if (BT.activeBackend === 'software')`.
-
-### Use methods (call with `()`)
-
-- Lifecycle / mutations: `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`, `showCursor`,
-  `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`.
-- Palette effects: `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFlash`, `paletteSwap`,
-  `paletteClearEffects`.
-- Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`,
-  `green`).
-- Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`,
-  `soundPlay(clip, options?)`, `soundStop(ref, options?)`, `isSoundPlaying(ref)`,
-  `soundVolumeSet(ref, value, options?)`, `soundVolumeGet(ref)`, `soundPitchSet(ref, value, options?)`,
-  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`, `musicPlay(clip, options?)`,
-  `musicStop(options?)`, `musicVolumeSet(value, options?)`, `musicVolumeGet()`; procedural synthesis via
-  `AudioClip.synth(params)` (not a `BT` method); preset namespace `BT.synthPreset` (`jump`, `pickup`, `explosion`,
-  `laser`, `hit`, `blip`).
-- Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
-  `systemPrint`, `printFont`.
-- Parameterized queries: `pointerPos(index?)`, `pointerDelta`, `isPointerActive`, `isDown`, `isPressed`, `isReleased`,
-  `getAxis`, `isGamepadConnected`, `isKeyDown`, `isKeyPressed`, `isKeyReleased`.
-- Utilities with arguments: `cameraClamp(camera, worldSize, viewSize?)`, `systemPrintMeasure(text)`.
-- Async: `captureFrame`, `downloadFrame`.
-
-Deprecated aliases still on `BT` are enumerated in `docs/reference-deprecations.md` (`pointerPosValid`, `buttonDown`,
-`keyDown`, …). Top-level package exports outside the `BT` namespace (`bootstrap`, `defaultConfig`,
-`mergeHardwareSettings`, effect classes, preset functions, core types, `IndexedSpriteLoadResult`, …) are listed in the
-`BLIT386.ts` export block.
-
-### Naming when adding getters
-
-Match the `HardwareSettings` field name for configure values (`targetFPS`, not `fps` or `targetFps`); use a derived
-getter when the value is computed from configure fields (`outputSize`, no matching field); use a runtime-descriptive
-name when no configure field exists (`activeBackend`, not `renderer`). `requestedBackend` is the resolved init request,
-`activeBackend` is for runtime gates (post-process, capture) and differs after a WebGPU→software fallback.
-
-Full tables: `docs/api-core.md`. Style guide: `docs/developer-experience-guide.md` (Naming conventions).
+Full getter/method category tables: `docs/api-core.md`, `.claude/rules/bt-api-getters.md` (Cursor:
+`.cursor/rules/bt-api-getters.mdc`). Deprecated aliases: `docs/reference-deprecations.md`.
 
 ## Boolean naming
 
 Runtime queries and configure flags (`HardwareSettings`, `BootstrapOptions`) use grammatical `is*` / `has*`
 (`isPointerActive`, `hasGlyph`, `isOverlayEnabled`, `isDetectingDroppedFrames`). Side-effect or operation-result
 booleans use imperative verbs, not `is*` (`Timer.fireIfElapsed()`, `intersectTo(other, out): boolean`,
-`remove(): boolean`).
+`remove(): boolean`). Input hold vs edge on `BT`: `isDown`/`isKeyDown` (held) vs `isPressed`/`isReleased`,
+`isKeyPressed`/`isKeyReleased` (edges); never embed a second `Is` (audit: `\bis[A-Za-z]+Is[A-Z]`).
 
-Input hold vs edge on `BT`: `BT.isDown` / `BT.isKeyDown` (held), `BT.isPressed` / `BT.isReleased` (button masks),
-`BT.isKeyPressed` / `BT.isKeyReleased` (keyboard codes). Internal input classes mirror those names; never embed a second
-`Is`. Audit: `\bis[A-Za-z]+Is[A-Z]`. Identifier acronyms: `canvasID`, `containerID`.
-
-Full tiers: `docs/developer-experience-guide.md` (Boolean naming).
+Full tiers: `docs/developer-experience-guide.md` (Boolean naming), `.claude/rules/bt-api-getters.md`.
 
 ## Internal scoped naming
 
 Private fields, private methods, protected members, and module-local constants/types must not repeat the enclosing class
-or file name. The type or file already provides scope; strip redundant prefixes from internal identifiers.
+or file name – the type or file already provides scope. Example: `FrameCapture.request()` not `requestCapture()`. Does
+not apply to public API (`BT.*`, the `BLIT386.ts` export block, public class methods).
 
-Examples: `FrameCapture.request()` not `requestCapture()` (and `width` not `captureWidth`); `GamepadInput.poll()` not
-`pollGamepads()`; `FRAGMENT_WGSL` not `BLOOM_FRAGMENT_WGSL` in `Bloom.ts`; file-local `Serialized` not `PaletteJSON` or
-`JSON` in `Palette.ts`.
-
-Does not apply to public API: `BT.*`, the `BLIT386.ts` export block, public methods on exported classes, or documented
-configure field names. When JSDoc references public symbols, use their full public names (e.g. internal pointer wire
-codes map to `BT.BTN_POINTER_A`, not gamepad `BT.BTN_A`).
-
-Apply when adding new internal symbols or when refactoring a file you are already changing; do not rename public surface
-or drive breaking changes through consumers for naming-only cleanup.
+Full policy and examples: `.claude/rules/internal-scoped-naming.md` (Cursor:
+`.cursor/rules/internal-scoped-naming.mdc`), `docs/developer-experience-guide.md` (Naming conventions).
 
 ## API Conventions
 
@@ -505,41 +356,13 @@ Cursor: `.cursor/rules/american-english-spelling.mdc` (always applied in this re
 ## TypeScript file structure
 
 Applies to library TypeScript in `src/`. Class member order is enforced by `perfectionist/sort-classes` (imports by
-`simple-import-sort`); auto-fix with `pnpm run lint:fix`. It uses `type: 'unsorted'`, so it enforces only the group
-order below and preserves the hand-tuned order within each group. Never use `// #region` / `// #endregion` – region
-markers are banned everywhere.
+`simple-import-sort`); auto-fix with `pnpm run lint:fix`. It uses `type: 'unsorted'`, so it enforces only group order
+(static fields → instance fields → constructor → accessors → static methods → instance methods, each public before
+private) and preserves the hand-tuned order within each group. Never use `// #region` / `// #endregion` – region markers
+are banned everywhere.
 
-### File layout (top to bottom)
-
-1. Module JSDoc – a `/** … */` block describing the file's purpose.
-2. Imports – `import type` for type-only imports; inline `type` modifiers inside mixed imports
-   (`import { type Backend, defaultConfig } from …`). Ordering is auto-fixed by `pnpm run lint:fix`
-   (`simple-import-sort`).
-3. Leading module members – config/input constants (`MAX_VERTICES`, `INV_255`), validators/lookup tables
-   (`HEX_TOKEN_PATTERN`, `HEX_TABLE`), type aliases (`type EffectTier`), and module-level init loops.
-4. Primary export – the class / interface / function the file is named for.
-5. Trailing module members – large WGSL/template-literal constants (`const FRAGMENT_WGSL`) and pure helpers after the
-   class (exported helpers before private ones).
-
-### Class member order
-
-1. Static fields – cached singletons (`_zero`, `_white`), registries (`namedColors`).
-2. Instance fields – public → protected → private (`#field` or `private`); `readonly` grouped; each gets its own JSDoc
-   and a blank line (no packed field blocks).
-3. Constructor – parameter-properties carry inline `/** … */` JSDoc.
-4. Accessors – static getters first, then instance getters/setters.
-5. Static methods – public before private.
-6. Instance methods – public → protected → private; private helpers last.
-
-### Cross-cutting
-
-- Keep a deprecated alias next to its canonical member (`equals` after `isEqual`).
-- Cluster related instance-method families in a deliberate sub-order: new-allocating (`add`, `sub`) → `*To` zero-alloc →
-  `*InPlace` → queries (`isEqual`, `isZero`) → `clone` / `toString` last.
-- One blank line between members; a blank line before `return` and between logical blocks.
-- JSDoc on every member (including private); named exports only, no default exports.
-
-See `docs/developer-experience-guide.md` (File structure and member order) and `.cursor/rules/ts-file-structure.mdc`.
+Full file layout and class member order: `.claude/rules/ts-file-structure.md` (Cursor:
+`.cursor/rules/ts-file-structure.mdc`), `docs/developer-experience-guide.md` (File structure and member order).
 
 ## Commands
 
@@ -586,61 +409,24 @@ Test tiers:
 
 ### Visual Regression Tests
 
-`pnpm run test:visual` runs Playwright with Chromium + WebGPU and captures PNG snapshots of actual rendered frames. This
-is the primary tool for verifying that visual output is correct – not performance, but pixel-level correctness.
+`pnpm run test:visual` runs Playwright with Chromium + WebGPU and captures PNG snapshots of actual rendered frames – the
+primary tool for pixel-level correctness (not performance). Run it when changing post-process effects, sprite rendering,
+bitmap fonts, primitive drawing, palette-indexed rendering, or camera offsets. Run `pnpm run test:visual:update` to
+regenerate baselines after an intentional visual change.
 
-Use it when implementing or changing:
-
-- Post-process effects (CRT, bloom, or any new effect in the effect chain)
-- Sprite rendering, tinting, or blending
-- Bitmap font rendering
-- Primitive drawing (pixels, lines, rects)
-- Palette-indexed rendering
-- Camera offsets
-
-Run `pnpm run test:visual:update` to regenerate baselines after an intentional visual change. Snapshots live in
-`tests/visual/__snapshots__/`.
-
-The suite covers camera, fonts, mixed (primitives + sprites), primitives, sprites, and post-process (baseline, CRT,
-CRT+bloom, and individual display/pixel effects).
-
-WebGPU mocks: use `src/__test__/webgpu-mock.ts` for tests needing GPUDevice, GPUTexture, etc. See
-[docs/reference-testing.md](docs/reference-testing.md) for full details.
+Full coverage list, snapshot locations, and WebGPU mock usage: [docs/reference-testing.md](docs/reference-testing.md).
 
 ### Known Testing Quirks
 
-- DOM environment directive: Add `// @vitest-environment happy-dom` at the top of any test file that touches DOM APIs.
-  Without it, the test runs in Node and DOM APIs are undefined.
-- AssetLoader image tests: The suite stubs `Image` with `vi` rather than relying on happy-dom data-URI `onload` behavior
-  (which is unreliable in happy-dom).
-- Vector2i `-0` vs `0`: JavaScript can produce `-0` when negating vectors. Use `result.x + 0` to coerce in assertions
-  where sign is meaningless.
+Full list: [docs/reference-testing.md](docs/reference-testing.md) (Known quirks).
 
 ## Performance Testing
 
-Use the benchmark system when the user asks about performance, throughput, regressions, hot paths, or CI benchmark
-coverage.
+Use CPU benchmarks (`pnpm run bench`, `pnpm run bench:json`) for isolated methods, helpers, caches, and allocation
+patterns. For rendering correctness (not performance), use visual regression tests instead (`pnpm run test:visual`).
 
-- Use CPU benchmarks for isolated methods, helpers, caches, and allocation patterns
-- For rendering correctness, use visual regression tests (`pnpm run test:visual`) – they produce PNG snapshots
-
-Recommended commands:
-
-```bash
-pnpm run bench
-pnpm run bench:json
-```
-
-CI status:
-
-- CPU benchmarks run in GitHub Actions on `main` pushes and on PRs labeled `perf`
-- Labeled PR benchmark runs compare against the latest `main` baseline artifact
-- The benchmark job comments on the PR and fails on regressions greater than 25%
-
-Claude Code reusable skill:
-
-- Use `.claude/skills/bt-perf/SKILL.md` for benchmark-related work
-- Use it when adding a new `*.bench.ts` or reasoning about benchmark CI behavior
+Full CI behavior (labeled-PR runs, regression threshold, PR comment format): `docs/performance-testing.md`,
+`.claude/skills/bt-perf/SKILL.md` (use this skill for benchmark-related work).
 
 ## Git
 
@@ -666,44 +452,21 @@ Claude Code reusable skill:
 
 ## Environment bootstrap (SessionStart hook and devcontainer)
 
-A fresh remote/web/cloud checkout (Claude Code on the web, a Codespace, any ephemeral agent sandbox) starts with no
-`node_modules` and no warmed toolchain. `scripts/session-start-bootstrap.sh` fixes that: it runs
-`pnpm install --frozen-lockfile` (enabling `corepack` first if `pnpm` is not yet on `PATH`) so `pnpm run preflight` and
-the test suite work without manual setup. It stamps `node_modules/.session-start-lockfile.cksum` with a `cksum` of
-`pnpm-lock.yaml` and skips the install on the next call when the lockfile has not changed, so it stays a fast no-op on a
-machine that already has dependencies installed.
+A fresh remote/web/cloud checkout starts with no `node_modules` and no warmed toolchain.
+`scripts/session-start-bootstrap.sh` fixes that (`pnpm install --frozen-lockfile`, skips on an unchanged lockfile) and
+is wired into `.claude/settings.json` (SessionStart hook), `.cursor/hooks.json` (sessionStart hook), and
+`.devcontainer/devcontainer.json` (`postCreateCommand`) – one script, three call sites. None of the three block or fail
+the session on a bootstrap error.
 
-The same script is wired into three places, all pointing at this one file so the bootstrap logic is never duplicated:
-
-- `.claude/settings.json` – a `SessionStart` hook (`matcher: "startup|resume|clear|compact|fork"`) runs it at the start
-  of every Claude Code session.
-- `.cursor/hooks.json` – a `sessionStart` hook runs it when a new Cursor composer conversation begins (fire-and-forget;
-  it does not block the first prompt).
-- `.devcontainer/devcontainer.json` – an optional devcontainer (`typescript-node:22-bookworm`) for reproducible
-  Codespaces/cloud environments; `postCreateCommand` runs the same script once the container is created.
-
-None of the three block or fail the session/container on a bootstrap error – a missing `pnpm`/network failure is logged
-and the script exits `0`, since a `SessionStart` hook cannot prevent a session from starting anyway.
+Full detail: `.claude/rules/environment-bootstrap.md` (Cursor: `.cursor/rules/environment-bootstrap.mdc`).
 
 ## Environment and tooling gotchas
 
 Learned running preflight and the versioning workflow in ephemeral / CI-style checkouts (no git tags, no outbound
-network). These are environment artifacts, not code bugs - do not "fix" them by editing the checks.
+network): `_api-history.json` regeneration needs git tags (dates go `null` without them – restore the committed
+`versions` block after regenerating), and `docs:links` needs outbound network (external URLs 403 through a sandbox
+proxy; internal links still resolve). These are environment artifacts, not code bugs – do not "fix" them by editing the
+checks.
 
-- `_api-history.json` regeneration needs git tags. `pnpm run api:history` bakes each release date into the `versions`
-  map from git tag dates (`resolveTagDate`). In a tag-less checkout every date regenerates as `null`, wiping the
-  committed dates. After regenerating (for example to home a new `<Since symbol>` or add a page), restore the committed
-  `versions` block; the only real diff should be your intended `symbols` / `pages` change. `api:history:check` and the
-  `resolveTagDate` test in `scripts/gen-api-history.test.mjs` fail for the same tag-less reason and pass in CI.
-- `docs:links` needs outbound network. It fails only on external `https://` URLs (the `blit386.dev` banner links, the
-  Keep a Changelog and WebKit-bug references) returning 403 through a sandbox proxy; every relative / internal link
-  still resolves. Confirm all failures are external before treating one as real.
-- Hooks amplify those two artifacts. The pre-push hook runs `typecheck` + `lint` + `docs:links`; the lint-staged
-  pre-commit hook runs `biome` / `prettier` / `eslint --fix` / `cspell` on staged files. When the only failures are the
-  tag-less / no-network artifacts above, push with `--no-verify` after confirming the real checks (`typecheck`, `lint`,
-  `format:check`, `spellcheck`) pass on their own.
-- `.agents/skills/*` are symlinks to `.claude/skills/*`. Edit the `.claude` copy once and both update; do not treat them
-  as two files to patch.
-- `pnpm run spellcheck` scopes to `src/`, `docs/`, and `README.md`, so it does not scan `.claude/skills/` or `.cursor/`.
-  The lint-staged pre-commit `cspell` does scan them, so staging a skill or rule file can surface a pre-existing unknown
-  word (for example `astimezone`); add legitimate words to `cspell.json`.
+Full list (including hook interaction and `--no-verify` guidance): `.claude/rules/environment-gotchas.md` (Cursor:
+`.cursor/rules/environment-gotchas.mdc`, always applied).

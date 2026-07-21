@@ -1,0 +1,94 @@
+---
+description: Fumadocs components, doc banner internals, and prose house style for published docs/*.md
+globs: { docs/**/*.md }
+alwaysApply: false
+---
+
+# Docs Authoring
+
+How to write, rename, and split published `docs/*.md` pages (those listed in `docs/_sitemap.json`).
+
+## Public docs site banner
+
+Every published doc carries a short banner below its H1, wrapped in `<!-- blit386.dev-banner:start -->` /
+`<!-- blit386.dev-banner:end -->` sentinels, pointing GitHub readers at the typeset copy on blit386.dev.
+
+- Never hand-edit or hand-add the banner block. It is generated and owned entirely by `scripts/sync-doc-banners.mjs`,
+  which derives each `https://blit386.dev/docs/<path>` URL from the sitemap so the link can never drift.
+- Run `pnpm run sync:doc-banners` after adding a doc to the sitemap or changing a doc's `path`; the banner is inserted
+  if missing and rewritten if stale. `pnpm run sync:doc-banners:check` reports drift without writing (CI).
+- The banner is a GitHub-only signpost: the public mirror generator (`blit386-dev-fumapress`) strips the whole block, so
+  it never appears on the live site. Edit banner prose in the script's template, not the docs.
+
+## Fumadocs components in published docs
+
+Published docs are authored as MDX-capable Markdown: Fumadocs/Fumapress components render directly in the `.md` source
+on the live site. These docs are **site-first** — components do not render on GitHub (they degrade to plain text or
+disappear), which is why the blit386.dev banner exists. Contributor-only docs (not in the sitemap:
+`developer-experience-guide.md`, `voice.md`, `tooling.md`, `security/*`) stay plain Markdown — components there would
+render nowhere.
+
+Registered components (`blit386-dev-fumapress/press.config.tsx`, `getMdxComponents`): `Callout`, `Card` / `Cards`,
+`Tabs` / `Tab`, `Steps` / `Step`, `Accordion` / `Accordions`, `Files` / `File` / `Folder`, `TypeTable`, `GithubInfo`,
+`InlineTOC`. Fenced code blocks already get the styled Fumadocs code block. Adding a new component means registering it
+in `getMdxComponents` first, or the build throws.
+
+When to use which:
+
+- `Callout` — notes, tips, warnings, migration notes, gotchas. `<Callout type="warn" title="...">` for warnings, default
+  type for notes. Replaces `> Note:` blockquotes.
+- `TypeTable` — option/field/parameter reference tables (name, type, default, description).
+- `Steps` — sequential procedures (setup flows, manual conversions). One `### heading` per step.
+- `Tabs` — genuine alternatives: per-OS commands, npm/pnpm, preferred-vs-manual paths.
+- `Accordions` — collapsible advanced detail or troubleshooting (one `Accordion` per item).
+- `Cards` — the trailing See Also section (one `Card` per link).
+- `Files` — directory trees without inline comments (no per-file description slot; keep comment-annotated trees as
+  fenced ` ```text ` blocks).
+- Do not add a manual or `InlineTOC` table of contents — the site renders its own right-hand TOC panel.
+
+Authoring rules (keep the build green):
+
+- Block form only. Blank lines around component children (`<Callout>`, blank line, body, blank line, `</Callout>`).
+  Inline children get reflowed by Prettier into a less-readable single line; block form is stable under
+  `pnpm run format`.
+- JSX expression props work (`TypeTable type={{ ... }}`, `Tabs items={[ ... ]}`). The mirror generator is MDX-aware and
+  leaves braces verbatim inside component blocks; in plain prose a bare `{` is still escaped, so keep object/array props
+  on component lines.
+- `Card href` is a JSX prop the mirror does NOT rewrite. Use site-absolute paths from the sitemap
+  (`/docs/<section>/<topic>`), not relative `*.md` links. For unpublished docs, link to the full GitHub URL.
+- Validate before considering it done: in `blit386-dev-fumapress`, run `pnpm run sync:docs` then `pnpm run build` (or at
+  least `pnpm run typecheck`). An undefined component or malformed prop fails the build.
+
+## Documentation authoring style (prose)
+
+- No bold (`**`) in prose. Lead a paragraph or bullet with a strong sentence, not a bolded label; promote a recurring
+  label to a real `###` subsection instead. A `**` inside inline code or a fenced block (a glob such as `src/**/*.ts`,
+  or a JSDoc comment opener) is not bold — leave it.
+- No `---` horizontal-rule separators between sections. Let headings do the separating.
+- Dimensions use the multiplication sign `×`, not the letter `x`: `320×240`, `6×14`, `8192×8192`. Exception: literal
+  program output quoted verbatim (the overlay's on-screen `webgpu | 320x240`).
+- No walls of text. Break long paragraphs into short ones, bullet lists, `###` subsections, or `Callout`s. Every `###`
+  subsection needs a parent `##`.
+- Credit external inspirations with a link and the author's name.
+- American English spelling — see `.cursor/rules/american-english-spelling.mdc`.
+
+Filenames mirror the sitemap section: `api/<topic>` -> `api-<topic>.md`; `guides/<topic>` -> `guide-<topic>.md`;
+`performance/<topic>` -> `performance-<topic>.md`; `reference/<topic>` -> `reference-<topic>.md`.
+
+Renaming or splitting a published doc:
+
+1. `git mv` the file (plain `mv` if it is still untracked).
+2. Update its `src` in `docs/_sitemap.json`. Keep `path` stable unless the topic name itself changed.
+3. Rewrite every inbound link. Guard substring matches so a compound name is not hit by accident — renaming `overlay.md`
+   must not touch `api-overlay.md` (use a `(?<![\w-])` lookbehind or equivalent).
+4. When splitting, keep in the original file any anchor other docs link to; move the rest. Add a `See also` `Cards`
+   block to each new page.
+5. Run `pnpm run sync:doc-banners`, then `pnpm run docs:links`, then `pnpm run format` (longer filenames shift Markdown
+   table padding, so tables usually need reflowing).
+
+After any doc change: add new proper nouns / coined words to `cspell.json` (and to `blit386-dev-fumapress/cspell.json`
+if they land in that repo's hand-authored content). The site mirrors `docs/` via the sibling `blit386-dev-fumapress`
+(`pnpm run sync:docs`); re-sync when a sitemap entry changed.
+
+Full policy: `.claude/rules/docs-authoring.md` is the condensed Claude Code mirror of this file. Neither points back at
+`CLAUDE.md` for detail — this pair is the canonical source.
