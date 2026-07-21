@@ -11,6 +11,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createOverlayLayout } from '../overlay/layout/layoutHelpers';
+import { paletteBandY } from '../overlay/layout/layoutPlan';
+import { Overlay } from '../overlay/Overlay';
+import { computeGrid } from '../overlay/palette/PaletteView';
+import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { POINTER_SLOT_COUNT, PointerInput } from './PointerInput';
 
@@ -1139,6 +1144,84 @@ describe('PointerInput', () => {
             const fresh = new PointerInput();
 
             expect(() => fresh.setIsScrollCaptureForced(true)).not.toThrow();
+        });
+    });
+
+    describe('touch-action gating via overlay palette band', () => {
+        /**
+         * Converts a logical display coordinate to the physical `clientX`/`clientY` the
+         * happy-dom canvas expects, given the 2x CSS scale set up by {@link createCanvas}.
+         */
+        const toClient = (x: number, y: number): { clientX: number; clientY: number } => ({
+            clientX: RECT_LEFT + ((x + 0.5) / DISPLAY_WIDTH) * RECT_WIDTH,
+            clientY: RECT_TOP + ((y + 0.5) / DISPLAY_HEIGHT) * RECT_HEIGHT,
+        });
+
+        it('forces touchAction to "none" for a touch starting over the palette band, without configure opt-in', () => {
+            const overlay = new Overlay(
+                createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14),
+                'Test Demo',
+                60,
+                'webgpu',
+                undefined,
+                true,
+                undefined,
+                undefined,
+                false,
+                undefined,
+                undefined,
+                false,
+                false,
+                true,
+            );
+            const grid = computeGrid(DISPLAY_WIDTH);
+            const paletteBandTop = paletteBandY(DISPLAY_HEIGHT, grid.totalHeight);
+            const paletteBand = new Rect2i(0, paletteBandTop, DISPLAY_WIDTH, grid.totalHeight);
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 300,
+                    pointerType: 'touch',
+                    button: 0,
+                    ...toClient(paletteBand.x, paletteBand.y),
+                }),
+            );
+
+            overlay.handleFrameInput(input, false, 1);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
+        it('leaves touchAction as "pan-y" for a touch starting outside the palette band', () => {
+            const overlay = new Overlay(
+                createOverlayLayout(DISPLAY_WIDTH, DISPLAY_HEIGHT, 14),
+                'Test Demo',
+                60,
+                'webgpu',
+                undefined,
+                true,
+                undefined,
+                undefined,
+                false,
+                undefined,
+                undefined,
+                false,
+                false,
+                true,
+            );
+
+            canvas.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 301,
+                    pointerType: 'touch',
+                    button: 0,
+                    ...toClient(0, 0),
+                }),
+            );
+
+            overlay.handleFrameInput(input, false, 1);
+
+            expect(canvas.style.touchAction).toBe('pan-y');
         });
     });
 
