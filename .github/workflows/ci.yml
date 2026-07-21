@@ -99,6 +99,10 @@ jobs:
         run: pnpm run docs:links
         background: true
 
+      - name: Check agent config drift
+        run: pnpm run agents:check
+        background: true
+
       - name: Check doc site banners
         run: pnpm run sync:doc-banners:check
         background: true

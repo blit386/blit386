@@ -156,8 +156,10 @@ This runs:
 - Spell checking
 - Unused export and dependency checks (knip)
 - Markdown link check (`docs:links`)
+- Agent config drift check (`agents:check`)
 - Unit tests (`test:unit`)
 - Declaration tooling tests (`test:declarations`)
+- Agent config drift checker tests (`test:agent-config`)
 
 ### Available Commands
 
@@ -171,8 +173,10 @@ pnpm run typecheck        # Run TypeScript checks
 pnpm run spellcheck       # Check spelling
 pnpm run knip             # Find unused exports and dependencies
 pnpm run docs:links       # Check Markdown links
+pnpm run agents:check     # Check agent config drift (rules parity, skills symlinks, AGENTS.md pointer)
 pnpm run test:unit        # Run unit tests
 pnpm run test:declarations # Declaration tooling checker tests
+pnpm run test:agent-config # Agent config drift checker tests
 pnpm run test:visual      # Playwright visual regression (local; not in preflight)
 pnpm run bench            # CPU benchmarks (Vitest bench)
 pnpm run preflight        # Run all quality checks

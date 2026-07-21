@@ -1,9 +1,9 @@
 ---
 name: bt-preflight
 description:
-  Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, sync:doc-banners:check,
-  api:since:check, api:history:check, test:unit, test:declarations) before committing or pushing. Use when the user
-  wants to verify the code is ready to commit or run every check at once.
+  Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check,
+  api:since:check, api:history:check, test:unit, test:declarations, test:agent-config) before committing or pushing. Use
+  when the user wants to verify the code is ready to commit or run every check at once.
 ---
 
 # Preflight Checks
@@ -32,11 +32,13 @@ Run comprehensive quality checks before committing or pushing code.
   - `spellcheck` – Check spelling in code and docs
   - `knip` – Find unused exports and dependencies
   - `docs:links` – Verify Markdown links (all repo-root `*.md` / `*.mdx`)
+  - `agents:check` – Verify agent config hasn't drifted (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer)
   - `sync:doc-banners:check` – Verify the blit386.dev banner is current in every published doc
   - `api:since:check` – Verify every public export carries an `@since` tag
   - `api:history:check` – Verify `docs/_api-history.json` matches the source version tags
   - `test:unit` – Run all unit tests
   - `test:declarations` – Declaration tooling log checker tests
+  - `test:agent-config` – Agent config drift checker tests
 
 2. Report results
 
