@@ -1090,7 +1090,17 @@ describe('PointerInput', () => {
         });
     });
 
-    describe('dynamic touch-action gating', () => {
+    describe('touch-action gating', () => {
+        it('leaves touchAction as "pan-y" when capture is off and not forced', () => {
+            expect(canvas.style.touchAction).toBe('pan-y');
+        });
+
+        it('sets touchAction to "none" when scroll capture is forced without configure opt-in', () => {
+            input.setIsScrollCaptureForced(true);
+
+            expect(canvas.style.touchAction).toBe('none');
+        });
+
         it('sets touchAction to "none" when setIsCapturingScroll(true) is called', () => {
             input.setIsCapturingScroll(true);
 
@@ -1102,12 +1112,6 @@ describe('PointerInput', () => {
             input.setIsCapturingScroll(false);
 
             expect(canvas.style.touchAction).toBe('pan-y');
-        });
-
-        it('sets touchAction to "none" when setIsScrollCaptureForced(true) is called', () => {
-            input.setIsScrollCaptureForced(true);
-
-            expect(canvas.style.touchAction).toBe('none');
         });
 
         it('reverts touchAction to "pan-y" when setIsScrollCaptureForced(false) is called and capture is not active', () => {
