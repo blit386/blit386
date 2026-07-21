@@ -30,7 +30,8 @@ const IGNORED_DIRS = new Set([
     'playwright-report',
 ]);
 const CONCURRENCY = 8;
-const CHECK_TIMEOUT_MS = 120_000;
+// Exceeds the ~170s worst-case single-link retry chain in .github/markdown-link-check.json.
+const CHECK_TIMEOUT_MS = 300_000;
 
 /**
  * Cloudflare returns 403 to GitHub Actions datacenter IPs for the hosted demos site.
@@ -110,7 +111,10 @@ function checkFile(filePath) {
         }
 
         child.on('error', (err) => {
-            output += `\n[spawn error] ${err.message}\n`;
+            output +=
+                err.name === 'AbortError'
+                    ? `\n[spawn error] check timed out after ${CHECK_TIMEOUT_MS}ms\n`
+                    : `\n[spawn error] ${err.message}\n`;
             finish(false);
         });
 
