@@ -1,6 +1,6 @@
 ---
 description: Fumadocs components, doc banner internals, and prose house style for published docs/*.md
-globs: { docs/**/*.md }
+globs: [docs/**/*.md]
 alwaysApply: false
 ---
 

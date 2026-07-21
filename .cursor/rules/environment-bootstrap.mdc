@@ -1,7 +1,6 @@
 ---
 description: Fresh-checkout bootstrap script and its three wiring points (Claude/Cursor/devcontainer)
-globs:
-  { scripts/session-start-bootstrap.sh, .claude/settings.json, .cursor/hooks.json, .devcontainer/devcontainer.json }
+globs: [scripts/session-start-bootstrap.sh, .claude/settings.json, .cursor/hooks.json, .devcontainer/devcontainer.json]
 alwaysApply: false
 ---
 
