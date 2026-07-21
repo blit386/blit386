@@ -53,6 +53,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   Vite's own default transform pipeline excludes those extensions from server-side parsing, so a broken entry module
   previously surfaced only as a silently caught client-side error - Vite's error overlay never appeared. `.ts`/`.mts`
   entries are unaffected; they already get real syntax validation from Vite's own transform.
+- `canvas.style.touch-action` was hardcoded to `none` on attach, blocking touch tap-hold-scroll past the canvas even
+  when `HardwareSettings.isCapturingPointerScroll` was left at its default `false`. It is now gated by the same flag:
+  `none` while pointer scroll capture is active (configure-time opt-in or the overlay's palette-band force), `pan-y`
+  otherwise, updated live as either source of capture changes.
 
 ## 1.3.1 - 2026-07-19
 

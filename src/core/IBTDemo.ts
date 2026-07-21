@@ -163,10 +163,17 @@ export interface HardwareSettings {
      * in {@link defaultConfig} so the host page can scroll while the pointer is over the
      * canvas. Opt in when the demo or game maps the mouse wheel.
      *
+     * This flag also gates `canvas.style.touch-action`: it is `'none'` while capture is
+     * active (or the overlay forces capture over the palette band) and `'pan-y'`
+     * otherwise, so touch devices can tap-hold-scroll the host page past the canvas
+     * when this flag is `false`.
+     *
      * The overlay palette grid still captures wheel while the pointer is over its band,
      * even when this flag is `false`.
      *
      * @since 1.3.1
+     * @changed 1.4.0 Also gates `canvas.style.touch-action` (`'none'` while capturing,
+     *   `'pan-y'` otherwise) instead of the canvas unconditionally blocking touch scroll.
      */
     isCapturingPointerScroll?: boolean;
 
