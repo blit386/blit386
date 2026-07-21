@@ -1666,3 +1666,24 @@ describe('BT.activeBackend', () => {
         expect(BT.activeBackend).toBe('software');
     });
 });
+
+describe('BT.loadingAssetsCount', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.getLoadingAssetsCount', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'getLoadingAssetsCount').mockReturnValue(3);
+
+        const result = BT.loadingAssetsCount;
+
+        expect(spy).toHaveBeenCalled();
+        expect(result).toBe(3);
+    });
+
+    it('returns 0 when nothing is loading', () => {
+        vi.spyOn(BTAPI.instance, 'getLoadingAssetsCount').mockReturnValue(0);
+
+        expect(BT.loadingAssetsCount).toBe(0);
+    });
+});

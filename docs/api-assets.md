@@ -76,6 +76,20 @@ AssetLoader.loadingCount;
 `AssetLoader.evict()` is also the manual escape hatch for forcing a fresh load outside the `blit386/vite` plugin's
 automatic asset watcher - see [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix).
 
+<Since symbol="BT.loadingAssetsCount" />
+
+For a loading-screen indicator that covers both images and audio clips, use `BT.loadingAssetsCount` - it sums
+`AssetLoader.loadingCount` and `AudioClip.loadingCount` (see [API: Audio](api-audio.md#loading)) and drops back to `0`
+once every in-flight load has settled:
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+if (BT.loadingAssetsCount > 0) {
+  // show a spinner or progress bar
+}
+```
+
 ## Sprite setup – preferred path
 
 <Since symbol="SpriteSheet" />
