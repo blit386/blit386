@@ -104,6 +104,40 @@ describe('SpriteSheet', () => {
         });
     });
 
+    describe('status and progress', () => {
+        it('defaults to ready/1.0 for a normally constructed sheet', () => {
+            const sheet = new SpriteSheet(mockImage);
+
+            expect(sheet.status).toBe('ready');
+            expect(sheet.progress).toBe(1.0);
+        });
+
+        it('defaults to ready/1.0 for a sheet created from raw indexed pixels', () => {
+            const sheet = SpriteSheet.fromIndexedPixels(2, 2, new Uint8Array(4) as Uint8Array<ArrayBuffer>);
+
+            expect(sheet.status).toBe('ready');
+            expect(sheet.progress).toBe(1.0);
+        });
+
+        it('beginHotReplace marks the sheet loading with zero progress', () => {
+            const sheet = new SpriteSheet(mockImage);
+
+            sheet.beginHotReplace();
+
+            expect(sheet.status).toBe('loading');
+            expect(sheet.progress).toBe(0);
+        });
+
+        it('failHotReplace marks the sheet failed', () => {
+            const sheet = new SpriteSheet(mockImage);
+
+            sheet.beginHotReplace();
+            sheet.failHotReplace();
+
+            expect(sheet.status).toBe('failed');
+        });
+    });
+
     describe('getTexture', () => {
         it('should return a texture object from a mock device', () => {
             const sheet = new SpriteSheet(mockImage);
@@ -769,17 +803,31 @@ describe('SpriteSheet', () => {
                 sheet.hotReplaceImage(mockImage, null);
 
                 expect(warnSpy).toHaveBeenCalledOnce();
+                expect(sheet.status).toBe('failed');
             });
 
             it('swaps the image and updates size for a non-indexized sheet', () => {
                 const sheet = new SpriteSheet(mockImage);
                 const newImage = { width: 64, height: 32 } as HTMLImageElement;
 
+                sheet.beginHotReplace();
                 sheet.hotReplaceImage(newImage, null);
 
                 expect(sheet.getImage()).toBe(newImage);
                 expect(sheet.size.x).toBe(64);
                 expect(sheet.size.y).toBe(32);
+                expect(sheet.status).toBe('ready');
+                expect(sheet.progress).toBe(1.0);
+            });
+
+            it('marks the sheet failed and rethrows when the replacement image exceeds size limits', () => {
+                const sheet = new SpriteSheet(mockImage);
+                const oversized = { width: MAX_ASSET_DIMENSION + 1, height: 16 } as HTMLImageElement;
+
+                sheet.beginHotReplace();
+
+                expect(() => sheet.hotReplaceImage(oversized, null)).toThrow(AssetLimitError);
+                expect(sheet.status).toBe('failed');
             });
 
             it('invalidates the cached texture for a non-indexized sheet', () => {
@@ -807,8 +855,11 @@ describe('SpriteSheet', () => {
                 vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(nextPixels, 1, 1));
                 palette.set(2, new Color32(0, 255, 0, 255));
 
+                sheet.beginHotReplace();
+
                 expect(() => sheet.hotReplaceImage({ width: 1, height: 1 } as HTMLImageElement, palette)).not.toThrow();
                 expect(sheet.getIndexedPixels()[0]).toBe(2);
+                expect(sheet.status).toBe('ready');
             });
 
             it('warns and skips when an indexized sheet has no active palette to reindex against', () => {
@@ -822,11 +873,13 @@ describe('SpriteSheet', () => {
                 sheet.indexize(palette);
 
                 const newImage = { width: 1, height: 1 } as HTMLImageElement;
+                sheet.beginHotReplace();
                 sheet.hotReplaceImage(newImage, null);
 
                 expect(warnSpy).toHaveBeenCalledOnce();
                 expect(sheet.getImage()).toBe(originalImage);
                 expect(sheet.getImage()).not.toBe(newImage);
+                expect(sheet.status).toBe('failed');
             });
         });
     });

@@ -77,11 +77,34 @@ function isAssetChangedPayload(payload: unknown): payload is AssetChangedPayload
  * `SpriteSheet` registry for any sheet loaded from the same URL and replaces its
  * image in place against the active palette.
  *
+ * Every registered sheet is marked loading before the fetch starts and either
+ * failed (the fetch itself threw) or handed to `hotReplaceImage` (the fetch
+ * resolved), so `SpriteSheet.status`/`progress` track the replacement in flight.
+ *
  * @param url - Changed image URL, matching whatever the engine cached it under.
  */
 async function hotReloadImageAsset(url: string): Promise<void> {
-    const image = await AssetLoader.hotReloadImage(url);
     const sheets = getHotReloadSheets(url);
+
+    if (sheets) {
+        for (const sheet of sheets) {
+            sheet.beginHotReplace();
+        }
+    }
+
+    let image: HTMLImageElement;
+
+    try {
+        image = await AssetLoader.hotReloadImage(url);
+    } catch (error) {
+        if (sheets) {
+            for (const sheet of sheets) {
+                sheet.failHotReplace();
+            }
+        }
+
+        throw error;
+    }
 
     if (!sheets || sheets.size === 0) {
         return;

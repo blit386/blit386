@@ -136,6 +136,34 @@ describe('AudioClip', () => {
         });
     });
 
+    describe('loadingCount', () => {
+        it('is zero when nothing is loading', () => {
+            expect(AudioClip.loadingCount).toBe(0);
+        });
+
+        it('increments while a load is in flight and drops to zero once it resolves', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));
+
+            const promise = AudioClip.load('pending.mp3');
+
+            expect(AudioClip.loadingCount).toBe(1);
+            await promise;
+
+            expect(AudioClip.loadingCount).toBe(0);
+        });
+
+        it('drops to zero once an in-flight load rejects', async () => {
+            vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+
+            const promise = AudioClip.load('pending-fail.mp3');
+
+            expect(AudioClip.loadingCount).toBe(1);
+            await expect(promise).rejects.toThrow();
+
+            expect(AudioClip.loadingCount).toBe(0);
+        });
+    });
+
     describe('loading a single URL', () => {
         beforeEach(() => {
             vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockAudioFetchResponse()));

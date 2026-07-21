@@ -68,6 +68,9 @@ if (AssetLoader.isLoaded('sprites.png')) {
 
 // Drop a single URL's cache entry (mainly for tests or explicit resets)
 AssetLoader.evict('sprites.png');
+
+// Number of image loads currently in flight
+AssetLoader.loadingCount;
 ```
 
 `AssetLoader.evict()` is also the manual escape hatch for forcing a fresh load outside the `blit386/vite` plugin's
@@ -238,6 +241,11 @@ glyph tables and texture.
   responsibility. Keep sprite sheet dimensions stable during a hot-reload session, or recompute `srcRect`s from the
   sheet's current `width`/`height` when that matters.
 </Callout>
+
+Each `SpriteSheet` also exposes `status` (`'loading' | 'ready' | 'failed'`) and `progress` (`0` or `1` -
+`HTMLImageElement` reports no byte-level progress) tracking a replacement fetch while it's in flight. A normally loaded
+sheet is always `'ready'` with `progress: 1.0`, since its image has already resolved by the time the sheet is
+constructed.
 
 See [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix) for the full asset type matrix, including audio and the
 fallback-to-full-reload behavior for unrecognized file types.

@@ -128,6 +128,9 @@ const clips = await AudioClip.loadAll(['audio/theme.mp3', ['audio/hit.ogg', 'aud
 if (AudioClip.isLoaded('audio/theme.mp3')) {
   // already cached
 }
+
+// Number of clip loads currently in flight
+AudioClip.loadingCount;
 ```
 
 Pass `onProgress` to report phased load progress:
