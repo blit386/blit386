@@ -158,11 +158,13 @@ This runs:
 - Markdown link check (`docs:links`)
 - Agent config drift check (`agents:check`)
 - Doc site banner check (`sync:doc-banners:check`)
+- Cursor commands drift check (`sync:cursor-commands:check`)
 - API `@since` tag check (`api:since:check`)
 - API history manifest check (`api:history:check`)
 - Unit tests (`test:unit`)
 - Declaration tooling tests (`test:declarations`)
 - Agent config drift checker tests (`test:agent-config`)
+- Cursor commands drift checker tests (`test:cursor-commands`)
 
 ### Available Commands
 
@@ -177,9 +179,12 @@ pnpm run spellcheck       # Check spelling
 pnpm run knip             # Find unused exports and dependencies
 pnpm run docs:links       # Check Markdown links
 pnpm run agents:check     # Check agent config drift (rules parity, skills symlinks, AGENTS.md pointer)
+pnpm run sync:cursor-commands       # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
+pnpm run sync:cursor-commands:check # Check cursor commands drift
 pnpm run test:unit        # Run unit tests
 pnpm run test:declarations # Declaration tooling checker tests
 pnpm run test:agent-config # Agent config drift checker tests
+pnpm run test:cursor-commands # Cursor commands drift checker tests
 pnpm run test:visual      # Playwright visual regression (local; not in preflight)
 pnpm run bench            # CPU benchmarks (Vitest bench)
 pnpm run preflight        # Run all quality checks
