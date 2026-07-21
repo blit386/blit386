@@ -42,8 +42,12 @@ function checkFile(filePath) {
     return new Promise((settle) => {
         const child = spawn(process.execPath, [MLC_BIN, rel, '-c', CONFIG], { cwd: ROOT });
         let output = '';
-        child.stdout.on('data', (chunk) => (output += chunk));
-        child.stderr.on('data', (chunk) => (output += chunk));
+        child.stdout.on('data', (chunk) => {
+            output += chunk;
+        });
+        child.stderr.on('data', (chunk) => {
+            output += chunk;
+        });
 
         child.on('error', () => {
             console.log(`\nFILE: ./${rel}`);
