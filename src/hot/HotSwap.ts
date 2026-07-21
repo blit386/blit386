@@ -187,6 +187,17 @@ function tryHardReload(newDemo: IBTDemo): HardReloadOutcome {
         return HARD_RELOAD_OUTCOME_ABORTED;
     }
 
+    // The running settings already have any `?backend=software` URL override baked in (applied
+    // once at init by BTAPI.applyBackendQueryOverride). The candidate's configure() output never
+    // sees that override, so without reapplying it here `backend` would mismatch on every single
+    // check under an override - forcing a hard reload on every edit, not just a real configure()
+    // change.
+    const backendOverride = BTAPI.getBackendQueryOverride();
+
+    if (backendOverride) {
+        nextSettings.backend = backendOverride;
+    }
+
     const previousSettings = BTAPI.instance.getHardwareSettings();
 
     if (previousSettings && hasHardReloadDiff(previousSettings, nextSettings)) {

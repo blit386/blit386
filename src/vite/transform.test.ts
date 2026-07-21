@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { INJECTION_MARKER, injectSnippet, shouldInjectSnippet } from './transform';
+import { checkPlainJsSyntax, INJECTION_MARKER, injectSnippet, shouldInjectSnippet } from './transform';
 
 const INCLUDE_ALL = () => true;
 const INCLUDE_NONE = () => false;
@@ -36,6 +36,45 @@ describe('shouldInjectSnippet', () => {
         const injected = injectSnippet(validCode).code;
 
         expect(shouldInjectSnippet(injected, '/project/src/main.ts', INCLUDE_ALL)).toBe(false);
+    });
+});
+
+describe('checkPlainJsSyntax', () => {
+    it('is null for syntactically valid code in a .js module', () => {
+        const code = "import { bootstrap } from 'blit386';\nbootstrap(Demo);\n";
+
+        expect(checkPlainJsSyntax(code, '/project/src/001-basics.js')).toBeNull();
+    });
+
+    it('is null for syntactically valid code in a .mjs module', () => {
+        expect(checkPlainJsSyntax('export const x = 1;\n', '/project/src/main.mjs')).toBeNull();
+    });
+
+    it('reports the syntax error and its character offset for invalid code in a .js module', () => {
+        // The exact BT-318 repro: a dangling assignment.
+        const result = checkPlainJsSyntax('const x = ;\n', '/project/src/001-basics.js');
+
+        expect(result).not.toBeNull();
+        expect(result?.message).toContain('Unexpected token');
+        expect(result?.pos).toBe(10);
+    });
+
+    it('ignores a query suffix when matching the module id extension', () => {
+        const result = checkPlainJsSyntax('const x = ;\n', '/project/src/001-basics.js?t=1700000000000');
+
+        expect(result).not.toBeNull();
+    });
+
+    it('is null (skipped) for a .ts module even with invalid plain-JS/TypeScript-only syntax', () => {
+        // Valid TypeScript, invalid as plain ES - acorn (an ES-only parser) would reject this if it
+        // ran, which is exactly why .ts/.mts must be skipped rather than checked.
+        const code = 'const x: number = 1;\n';
+
+        expect(checkPlainJsSyntax(code, '/project/src/game.ts')).toBeNull();
+    });
+
+    it('is null (skipped) for a .mts module', () => {
+        expect(checkPlainJsSyntax('const x: number = ;\n', '/project/src/game.mts')).toBeNull();
     });
 });
 

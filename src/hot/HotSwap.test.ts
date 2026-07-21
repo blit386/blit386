@@ -197,7 +197,49 @@ describe('hotSwapDemo', () => {
     afterEach(() => {
         resetSingleton();
         vi.restoreAllMocks();
+        vi.unstubAllGlobals();
     });
+
+    /** Minimal 2D-context canvas mock, enough for {@link SoftwareRenderer.init} to succeed. */
+    function makeMock2DCanvas(): HTMLCanvasElement {
+        return {
+            ...makeMockCanvas(),
+            getContext: (type: string) =>
+                type === '2d'
+                    ? {
+                          imageSmoothingEnabled: false,
+                          createImageData: (w: number, h: number) =>
+                              ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }) as ImageData,
+                          putImageData: vi.fn(),
+                          clearRect: vi.fn(),
+                          drawImage: vi.fn(),
+                      }
+                    : null,
+        } as unknown as HTMLCanvasElement;
+    }
+
+    /** Stubs `OffscreenCanvas` with a 2D-context mock, matching {@link makeMock2DCanvas}. */
+    function stubOffscreenCanvas(): void {
+        vi.stubGlobal(
+            'OffscreenCanvas',
+            class MockOffscreenCanvas {
+                constructor(
+                    public width: number,
+                    public height: number,
+                ) {}
+                getContext(contextType?: string) {
+                    return contextType === '2d'
+                        ? {
+                              imageSmoothingEnabled: false,
+                              createImageData: (w: number, h: number) =>
+                                  ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }) as ImageData,
+                              putImageData: vi.fn(),
+                          }
+                        : null;
+                }
+            },
+        );
+    }
 
     function makeDemo(overrides: Partial<IBTDemo> = {}): IBTDemo {
         return {
@@ -231,6 +273,56 @@ describe('hotSwapDemo', () => {
 
         expect(result).toBe(true);
         expect(HotRuntime.requestHardReload).toHaveBeenCalledOnce();
+    });
+
+    it('does not request a hard reload for a render()-only edit when ?backend=software overrides configure()', async () => {
+        stubOffscreenCanvas();
+        vi.stubGlobal('location', { search: '?backend=software' });
+        // The software backend inits successfully here, unlike the other tests in this
+        // describe block (their makeMockCanvas() 2D/WebGPU contexts both return null, so
+        // init() fails before the loop starts). Stub rAF so GameLoop never actually ticks -
+        // no palette is set, and a real tick would throw after this test already returned.
+        vi.stubGlobal('requestAnimationFrame', vi.fn());
+
+        // configure() never mentions backend - mergeHardwareSettings() alone would default it to
+        // 'webgpu'; only the URL override (applied during init, see applyBackendQueryOverride())
+        // makes the running settings 'software'.
+        class OriginalClass {
+            async init() {
+                return true;
+            }
+            update() {}
+            render() {}
+            configure() {
+                return {};
+            }
+        }
+
+        const oldDemo = new OriginalClass();
+        await BTAPI.instance.init(oldDemo, makeMock2DCanvas());
+
+        expect(BTAPI.instance.getHardwareSettings()?.backend).toBe('software');
+
+        class NewClass {
+            async init() {
+                return true;
+            }
+            update() {}
+            render() {
+                // A pure render()-body edit - the exact BT-318 repro (changing a BT.clear
+                // argument). Must swap in place, not force a full reload.
+                return 'edited';
+            }
+            configure() {
+                return {};
+            }
+        }
+
+        const result = await hotSwapDemo(NewClass as unknown as DemoConstructor);
+
+        expect(result).toBe(true);
+        expect(HotRuntime.requestHardReload).not.toHaveBeenCalled();
+        expect(BTAPI.instance.getDemo()).toBe(oldDemo); // same instance: Tier 1 methods-only swap, not a reload
     });
 
     it('aborts without swapping when configure() throws, keeping the previous demo running', async () => {

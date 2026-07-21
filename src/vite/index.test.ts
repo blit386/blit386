@@ -50,6 +50,34 @@ describe('blit386', () => {
 
             expect(result).toBeNull();
         });
+
+        it('reports a syntax error through this.error() for a broken .js entry, instead of injecting', () => {
+            const plugin = blit386();
+            const brokenCode = "import { bootstrap } from 'blit386';\nconst x = ;\nbootstrap(Demo);\n";
+            const error = vi.fn(() => {
+                throw new Error('mocked this.error()');
+            });
+
+            expect(() => invokeHook(plugin.transform, { error }, brokenCode, '/project/src/001-basics.js')).toThrow(
+                'mocked this.error()',
+            );
+            expect(error).toHaveBeenCalledExactlyOnceWith(
+                expect.stringContaining('Unexpected token'),
+                expect.any(Number),
+            );
+        });
+
+        it('still injects a syntactically valid .ts entry without calling this.error()', () => {
+            const plugin = blit386();
+            const error = vi.fn();
+
+            const result = invokeHook(plugin.transform, { error }, code, '/project/src/main.ts') as {
+                code: string;
+            } | null;
+
+            expect(error).not.toHaveBeenCalled();
+            expect(result?.code).toContain(INJECTION_MARKER);
+        });
     });
 
     describe('hotUpdate', () => {

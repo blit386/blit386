@@ -15,7 +15,7 @@ import type { Plugin } from 'vite';
 import { handleAssetHotUpdate } from './assets';
 import type { Blit386PluginOptions } from './options';
 import { resolveOptions } from './options';
-import { injectSnippet, shouldInjectSnippet } from './transform';
+import { checkPlainJsSyntax, injectSnippet, shouldInjectSnippet } from './transform';
 
 export type { AssetKind, Blit386PluginOptions, ResolvedBlit386PluginOptions } from './options';
 
@@ -46,9 +46,17 @@ export function blit386(options?: Blit386PluginOptions): Plugin {
             resolved = resolveOptions(options, config.root);
         },
 
+        // Method shorthand, not an arrow function - `this.error()` below needs Vite's own plugin
+        // context bound here, same reason as `hotUpdate` below.
         transform(code, id) {
             if (!shouldInjectSnippet(code, id, resolved.include)) {
                 return null;
+            }
+
+            const syntaxError = checkPlainJsSyntax(code, id);
+
+            if (syntaxError) {
+                this.error(syntaxError.message, syntaxError.pos);
             }
 
             return injectSnippet(code);
