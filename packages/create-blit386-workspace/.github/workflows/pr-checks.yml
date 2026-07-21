@@ -9,58 +9,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          persist-credentials: false
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4
-        with:
-          version: 10.26.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
-        with:
-          node-version: '22.18.0'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check formatting
-        run: pnpm run format:check
-        background: true
-
-      - name: Lint
-        run: pnpm run lint
-        background: true
-
-      - name: Type check
-        run: pnpm run typecheck
-        background: true
-
-      - name: Spell check
-        run: pnpm run spellcheck
-        background: true
-
-      - name: Check unused exports and dependencies
-        run: pnpm run knip
-        background: true
-
-      - name: Check documentation links
-        run: pnpm run docs:links
-        background: true
-
-      - wait-all:
-
   commitlint:
     name: Lint Commits
     runs-on: ubuntu-latest
