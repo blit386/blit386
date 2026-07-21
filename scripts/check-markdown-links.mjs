@@ -29,6 +29,8 @@ const IGNORED_DIRS = new Set([
     'playwright-report',
 ]);
 const CONCURRENCY = 8;
+// Exceeds the ~170s worst-case single-link retry chain in .github/markdown-link-check.json.
+const CHECK_TIMEOUT_MS = 300_000;
 
 /** @param {string} dir @param {string[]} files */
 function walkMarkdownFiles(dir, files) {
@@ -51,21 +53,40 @@ function checkFile(filePath) {
     const rel = relative(ROOT, filePath);
 
     return new Promise((settle) => {
-        const child = spawn(process.execPath, [MLC_BIN, rel, '-c', CONFIG], { cwd: ROOT });
+        const child = spawn(process.execPath, [MLC_BIN, rel, '-c', CONFIG], {
+            cwd: ROOT,
+            signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
+        });
         let output = '';
-        child.stdout.on('data', (chunk) => (output += chunk));
-        child.stderr.on('data', (chunk) => (output += chunk));
+        let settled = false;
 
-        child.on('error', () => {
+        child.stdout.on('data', (chunk) => {
+            output += chunk;
+        });
+        child.stderr.on('data', (chunk) => {
+            output += chunk;
+        });
+
+        function finish(ok) {
+            if (settled) {
+                return;
+            }
+            settled = true;
             console.log(`\nFILE: ./${rel}`);
             process.stdout.write(output);
-            settle(false);
+            settle(ok);
+        }
+
+        child.on('error', (err) => {
+            output +=
+                err.name === 'AbortError'
+                    ? `\n[spawn error] check timed out after ${CHECK_TIMEOUT_MS}ms\n`
+                    : `\n[spawn error] ${err.message}\n`;
+            finish(false);
         });
 
         child.on('close', (code) => {
-            console.log(`\nFILE: ./${rel}`);
-            process.stdout.write(output);
-            settle(code === 0);
+            finish(code === 0);
         });
     });
 }
