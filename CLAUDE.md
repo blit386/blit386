@@ -61,6 +61,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How does screen orientation detection / lock work?                                    | `src/core/Orientation.ts`; `HardwareSettings.preferredOrientation` + `IBTDemo.onOrientationChange` in `src/core/IBTDemo.ts`; `BT.screenOrientation` in `src/BLIT386.ts`; `docs/api-core.md` (Screen orientation), `docs/api-browser-support.md` (Screen orientation)                                                                                                                           |
 | How does the engine hot-swap runtime work?                                            | `src/hot/` (`protocol.ts`, `HotRuntime.ts`, `HotSwap.ts`); `BTAPI.hotReplaceDemo`/`getDemo`/`isInitialized` in `src/core/BTAPI.ts`; `IBTDemo.onHotReload` in `src/core/IBTDemo.ts`; hot-aware routing in `src/utils/Bootstrap.ts`                                                                                                                                                              |
 | How does the `blit386/vite` dev plugin work?                                          | `src/vite/` (`options.ts`, `transform.ts`, `assets.ts`, `index.ts`); `package.json` `"./vite"` subpath export; dev-only (`apply: 'serve'`) – injects the hot-reload snippet and broadcasts `blit386:asset-changed`/full-reload for asset dir changes; `vite.node.config.ts` sets `root: '/'` to avoid collision with the main build's `dist/blit386.d.ts` (see inline comment for explanation) |
+| How does a fresh remote/web session bootstrap its toolchain?                          | Environment bootstrap below; `scripts/session-start-bootstrap.sh`; `.claude/settings.json` (`SessionStart`), `.cursor/hooks.json` (`sessionStart`), `.devcontainer/devcontainer.json`                                                                                                                                                                                                          |
 
 ## Onboarding and the scaffolder
 
@@ -662,6 +663,27 @@ Claude Code reusable skill:
   `CLAUDE.md` architecture map and the `## Where to Find Information` table; update `README.md` only if the change
   affects the Quick Start, prerequisites, features list, or browser compatibility. Never treat documentation as a
   separate step the user must request.
+
+## Environment bootstrap (SessionStart hook and devcontainer)
+
+A fresh remote/web/cloud checkout (Claude Code on the web, a Codespace, any ephemeral agent sandbox) starts with no
+`node_modules` and no warmed toolchain. `scripts/session-start-bootstrap.sh` fixes that: it runs
+`pnpm install --frozen-lockfile` (enabling `corepack` first if `pnpm` is not yet on `PATH`) so `pnpm run preflight` and
+the test suite work without manual setup. It stamps `node_modules/.session-start-lockfile.cksum` with a `cksum` of
+`pnpm-lock.yaml` and skips the install on the next call when the lockfile has not changed, so it stays a fast no-op on a
+machine that already has dependencies installed.
+
+The same script is wired into three places, all pointing at this one file so the bootstrap logic is never duplicated:
+
+- `.claude/settings.json` – a `SessionStart` hook (`matcher: "startup|resume|clear|compact|fork"`) runs it at the start
+  of every Claude Code session.
+- `.cursor/hooks.json` – a `sessionStart` hook runs it when a new Cursor composer conversation begins (fire-and-forget;
+  it does not block the first prompt).
+- `.devcontainer/devcontainer.json` – an optional devcontainer (`typescript-node:22-bookworm`) for reproducible
+  Codespaces/cloud environments; `postCreateCommand` runs the same script once the container is created.
+
+None of the three block or fail the session/container on a bootstrap error – a missing `pnpm`/network failure is logged
+and the script exits `0`, since a `SessionStart` hook cannot prevent a session from starting anyway.
 
 ## Environment and tooling gotchas
 

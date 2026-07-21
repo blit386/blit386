@@ -1,6 +1,12 @@
 {
   "version": 1,
   "hooks": {
+    "sessionStart": [
+      {
+        "command": "sh scripts/session-start-bootstrap.sh",
+        "timeout": 300
+      }
+    ],
     "preToolUse": [
       {
         "command": "rtk hook cursor",
