@@ -32,13 +32,9 @@ export type { OverlayLayout, OverlayLayoutConfig, OverlayLayoutPlan } from './la
 export { Overlay } from './Overlay';
 export type { OverlayDrawTarget, OverlayRenderer } from './OverlayDrawTarget';
 export {
-    drawOverlayToggleIcon,
     hintIconExclusionRect,
     hintIconPos,
     hintIconY,
-    overlayToggleHintIconExclusionRect,
-    overlayToggleHintIconPos,
-    overlayToggleHintIconY,
     toggleIcon,
 } from './OverlayToggleIcon';
 export { PaletteInteraction } from './palette/PaletteInteraction';

@@ -186,7 +186,7 @@ export function isTimingChartGridLineAtY(y: number, chartRect: Rect2i): boolean 
 /**
  * Backward-compatible alias for {@link isTimingChartGridLineAtY}.
  *
- * @deprecated Deprecated since 2026-05-31. Use {@link isTimingChartGridLineAtY} instead.
+ * @deprecated Deprecated since 1.1.0 (2026-05-31). Use {@link isTimingChartGridLineAtY} instead.
  * @param y - Screen Y from {@link computeTimingChartGridLineY}.
  * @param chartRect - Chart band bounds.
  * @returns `true` when the row is strictly inside the band and not the baseline.

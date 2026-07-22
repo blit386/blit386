@@ -26,17 +26,6 @@ export function hintIconY(hintBarTopY: number): number {
 }
 
 /**
- * Backward-compatible alias for {@link hintIconY}.
- *
- * @deprecated Deprecated since 2026-05-31. Use {@link hintIconY} instead.
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @returns Icon top Y in display pixels.
- */
-export function overlayToggleHintIconY(hintBarTopY: number): number {
-    return hintIconY(hintBarTopY);
-}
-
-/**
  * Returns the top-left screen position for the toggle hint icon inside the hint bar.
  *
  * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
@@ -47,17 +36,6 @@ export function hintIconPos(hintBarTopY: number): Vector2i {
 }
 
 /**
- * Backward-compatible alias for {@link hintIconPos}.
- *
- * @deprecated Deprecated since 2026-05-31. Use {@link hintIconPos} instead.
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @returns Icon anchor in display pixels.
- */
-export function overlayToggleHintIconPos(hintBarTopY: number): Vector2i {
-    return hintIconPos(hintBarTopY);
-}
-
-/**
  * Returns the screen-space rect reserved for the toggle hint icon (palette swatch exclusion).
  *
  * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
@@ -65,17 +43,6 @@ export function overlayToggleHintIconPos(hintBarTopY: number): Vector2i {
  */
 export function hintIconExclusionRect(hintBarTopY: number): Rect2i {
     return new Rect2i(overlayToggleHintIconX(), hintIconY(hintBarTopY), ICON_WIDTH, ICON_HEIGHT);
-}
-
-/**
- * Backward-compatible alias for {@link hintIconExclusionRect}.
- *
- * @deprecated Deprecated since 2026-05-31. Use {@link hintIconExclusionRect} instead.
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @returns Icon bounding rect in display pixels.
- */
-export function overlayToggleHintIconExclusionRect(hintBarTopY: number): Rect2i {
-    return hintIconExclusionRect(hintBarTopY);
 }
 
 /**
@@ -124,24 +91,6 @@ export function toggleIcon(
             target.drawBarFillOnTop(run, textPaletteIndex);
         }
     }
-}
-
-/**
- * Backward-compatible alias for {@link toggleIcon}.
- *
- * @deprecated Deprecated since 2026-05-31. Use {@link toggleIcon} instead.
- * @param target - Overlay draw target.
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @param textPaletteIndex - Overlay text palette index (`OverlayStyle.textPaletteIndex`, default `2`).
- * @param inverted - Legacy parameter name forwarded to `isInverted`.
- */
-export function drawOverlayToggleIcon(
-    target: OverlayDrawTarget,
-    hintBarTopY: number,
-    textPaletteIndex: number,
-    inverted = false,
-): void {
-    toggleIcon(target, hintBarTopY, textPaletteIndex, inverted);
 }
 
 /**

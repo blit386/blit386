@@ -334,7 +334,7 @@ export class Overlay {
     /**
      * Handles toggle input (Backquote and bottom-left corner press).
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link handleFrameInput} instead. Unlike
+     * @deprecated Deprecated since 1.1.0 (2026-05-31). Use {@link handleFrameInput} instead. Unlike
      * `handleFrameInput`, this reads the keyboard directly at call time, so it remains susceptible to
      * missing a Backquote press that a fixed-update tick already consumed this frame.
      *

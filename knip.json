@@ -5,8 +5,6 @@
   "ignoreExportsUsedInFile": true,
   "tags": ["-deprecated"],
   "ignoreIssues": {
-    "src/core/RenderPaletteUsage.ts": ["duplicates"],
-    "src/overlay/palette/PaletteView.ts": ["duplicates"],
     "src/overlay/timing-chart/style.ts": ["duplicates"]
   },
   "ignoreDependencies": ["vite-plugin-istanbul"],
