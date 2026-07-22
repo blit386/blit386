@@ -267,10 +267,15 @@ job in `ci.yml`) and a retired skill's stale command file is removed automatical
 Renovate is configured (`renovate.json` at the project root). Dependency update PRs open automatically each Monday
 before 6 AM:
 
-- Patch updates and GitHub Actions updates: auto-merge after 3 days
+- Patch updates and GitHub Actions updates: auto-merge after 7 days (`minimumReleaseAge`, aligned with `.npmrc`
+  `minimum-release-age`)
 - Minor updates: manual review required
 - Major updates: manual review with `major-update` label
 - Vulnerability alerts are enabled
+- GitHub Actions stay digest-pinned (SHA plus trailing `# vN` comment) via `helpers:pinGitHubActionDigests`
+
+Dependabot remains enabled for security-only updates; Renovate owns version and Actions bumps. See
+[dependency-policy.md](security/dependency-policy.md#renovate-vs-dependabot).
 
 CI workflows pin third-party actions by commit SHA (not `@vN` tags). See
 [dependency-policy.md](security/dependency-policy.md#github-actions-pinning) for bumping SHAs and job permissions.
