@@ -237,15 +237,18 @@ project.
 
 ## Questions?
 
-If you have questions about the DCO or contributing process, please open an issue on GitHub. Use the guided forms under
+For questions about the DCO or contributing process, use
+[GitHub Discussions](https://github.com/blit386/blit386/discussions) or the [Discord](https://discord.gg/tC2wGt88Uj)
+community. Blank issues are disabled.
+
+To report a bug, propose a feature, or flag a docs problem, use the guided forms under
 [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/):
 
 - [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml) – reproduction, expected vs actual, backend, environment
 - [Feature request](.github/ISSUE_TEMPLATE/feature_request.yml) – problem, proposed API, palette-first fit
 - [Docs issue](.github/ISSUE_TEMPLATE/docs_issue.yml) – affected page and what is wrong or missing
 
-Blank issues are disabled; see `.github/ISSUE_TEMPLATE/config.yml` for docs, demos, and private vulnerability reporting
-links.
+See `.github/ISSUE_TEMPLATE/config.yml` for docs, demos, and private vulnerability reporting links.
 
 ## Full Developer Certificate of Origin Text
 
