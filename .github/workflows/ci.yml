@@ -7,6 +7,12 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
+concurrency:
+  # Prefer PR number over head_ref so two forks/PRs with the same branch name do not
+  # cancel each other. Mirrors the benchmark job group below.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   security-audit:
     name: Dependency Security Audit
@@ -64,6 +70,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # api:history:check resolves release dates from git tags; without them dates go null and the
+          # committed docs/_api-history.json versions map looks drifted.
+          fetch-tags: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4
@@ -115,6 +125,14 @@ jobs:
         run: pnpm run knip
         background: true
 
+      - name: Check API @since tags
+        run: pnpm run api:since:check
+        background: true
+
+      - name: Check API history manifest
+        run: pnpm run api:history:check
+        background: true
+
       - wait-all:
 
   build-library:
@@ -149,7 +167,7 @@ jobs:
           NODE_ENV: production
 
       - name: Verify declaration tooling alignment
-        run: node scripts/check-declaration-tooling.mjs build.log
+        run: pnpm run build:check-declarations build.log
 
       - name: Upload library artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -421,6 +439,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          # test:api-history's resolveTagDate integration cases need real release tags present.
+          fetch-tags: true
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4
@@ -438,6 +459,12 @@ jobs:
 
       - name: Run unit tests with coverage
         run: pnpm run test:unit:coverage
+
+      - name: Run API history generator tests
+        run: pnpm run test:api-history
+
+      - name: Run security preflight tests
+        run: pnpm run test:security-preflight
 
       - name: Upload coverage
         uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5

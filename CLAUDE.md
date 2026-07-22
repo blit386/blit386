@@ -378,7 +378,7 @@ pnpm run spellcheck         # cspell check
 pnpm run knip               # Find unused exports/deps
 pnpm run docs:links         # Check Markdown links (all repo-root *.md / *.mdx)
 pnpm run agents:check       # Check agent config drift (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer)
-pnpm run preflight          # All checks (format + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:doc-banners:check + sync:cursor-commands:check + api:since:check + api:history:check + test:unit + test:declarations + test:agent-config + test:cursor-commands)
+pnpm run preflight          # All checks (format + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:doc-banners:check + sync:cursor-commands:check + api:since:check + api:history:check + test:unit + test:declarations + test:agent-config + test:cursor-commands + test:api-history + test:security-preflight)
 ```
 
 RTK: Shell commands are rewritten via `rtk hook cursor` (Cursor) / `rtk hook claude` (Claude Code). Use `pnpm run …` for
