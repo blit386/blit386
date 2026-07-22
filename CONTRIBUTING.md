@@ -132,8 +132,9 @@ All code must follow the project's style guidelines:
 - No emoji anywhere in code, comments, or documentation
 - TypeScript strict mode – All code must pass strict TypeScript checks
 - Formatting – Code is automatically formatted by Biome and Prettier
-- Linting – Code must pass all linting checks
-- JSDoc – Required for public APIs
+- Linting – Code must pass all linting checks with zero tolerance for warnings (`eslint --max-warnings 0`; Biome
+  diagnostics such as `noExplicitAny` are errors)
+- JSDoc – Required for public APIs (ESLint `warn` rules that fail CI via `--max-warnings 0`)
 
 ### Development environment
 
@@ -148,10 +149,10 @@ Before committing, run the preflight checks (requires the Node.js version above)
 pnpm run preflight
 ```
 
-This runs:
+Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnings and Biome errors. This runs:
 
 - Code formatting checks (`format:check`)
-- Linting
+- Linting (`lint`, with `--max-warnings 0`)
 - TypeScript type checks
 - Spell checking
 - Unused export and dependency checks (knip)
