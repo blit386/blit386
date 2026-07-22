@@ -45,6 +45,10 @@ Dependabot stays enabled for security-only alerts and updates (no `.github/depen
 or GitHub Actions PRs). Renovate owns version bumps, grouping, automerge, and GitHub Actions digest pinning. That split
 keeps the two systems from opening competing PRs for the same dependency.
 
+Renovate commits are shaped for this repo's gates: lowercase subjects (`commitMessageAction: "update"`) for commitlint,
+and the `:gitSignOff` preset for the DCO workflow. Workflow `node` / `pnpm` version pins are left to the
+`packageManager` / `engines` managers so Actions PRs do not drift away from `package.json`.
+
 ## Supply-chain settings
 
 [`.npmrc`](../../.npmrc) enables `minimum-release-age` (7 days) and related pnpm 10 hardening. Security-patched packages
