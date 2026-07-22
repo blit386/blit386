@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 /**
  * Check all Markdown files for dead links using markdown-link-check.
- * Recursively scans all directories from the repo root, skipping only those
- * listed in IGNORED_DIRS (node_modules, dist, .git, and other build artifacts).
+ *
+ * The file list comes from `git ls-files "*.md" "*.mdx"`, so enumeration honors
+ * `.gitignore` and only covers tracked markdown (no recursive walk / denylist).
+ * Symlinked `.agents/skills/*` entries are intentionally skipped: git tracks them
+ * as symlink blobs and lists the underlying `.claude/skills/*` markdown directly,
+ * so those files are checked exactly once and never double-processed.
+ *
  * Files are checked concurrently (bounded by CONCURRENCY); each file's output
  * prints as one block once it completes, so output order follows completion
  * order rather than file order.
  */
-import { spawn } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { execFileSync, spawn } from 'node:child_process';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -17,35 +21,39 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const MLC_BIN = require.resolve('markdown-link-check/markdown-link-check');
 const CONFIG = join(ROOT, '.github/markdown-link-check.json');
-const IGNORED_DIRS = new Set([
-    'node_modules',
-    'dist',
-    '.git',
-    'coverage',
-    'coverage-visual',
-    '.nyc_output',
-    'tmp',
-    'test-results',
-    'playwright-report',
-]);
 const CONCURRENCY = 8;
 // Exceeds the ~170s worst-case single-link retry chain in .github/markdown-link-check.json.
 const CHECK_TIMEOUT_MS = 300_000;
 
-/** @param {string} dir @param {string[]} files */
-function walkMarkdownFiles(dir, files) {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if (entry.isDirectory()) {
-            if (IGNORED_DIRS.has(entry.name)) {
-                continue;
-            }
-            walkMarkdownFiles(join(dir, entry.name), files);
-            continue;
-        }
-        if (/\.(md|mdx)$/u.test(entry.name)) {
-            files.push(join(dir, entry.name));
-        }
+/**
+ * Lists git-tracked markdown files under the repo root as absolute paths.
+ *
+ * @returns {string[]}
+ */
+function listTrackedMarkdownFiles() {
+    let output;
+    try {
+        output = execFileSync('git', ['ls-files', '*.md', '*.mdx'], {
+            cwd: ROOT,
+            encoding: 'utf8',
+        });
+    } catch {
+        console.error('ERROR: docs:links requires a git checkout to enumerate tracked markdown.');
+        process.exit(1);
     }
+
+    const files = output
+        .split('\n')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0)
+        .map((entry) => join(ROOT, entry));
+
+    if (files.length === 0) {
+        console.error('ERROR: docs:links found no tracked markdown files (git ls-files "*.md" "*.mdx").');
+        process.exit(1);
+    }
+
+    return files;
 }
 
 /** @param {string} filePath @returns {Promise<boolean>} */
@@ -112,9 +120,7 @@ async function checkAll(files) {
     return failed;
 }
 
-/** @type {string[]} */
-const files = [];
-walkMarkdownFiles(ROOT, files);
+const files = listTrackedMarkdownFiles();
 files.sort((a, b) => a.localeCompare(b));
 
 const failed = await checkAll(files);
