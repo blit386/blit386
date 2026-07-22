@@ -741,7 +741,7 @@ export class SpriteSheet {
     /**
      * Backward-compatible alias for {@link isIndexed}.
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link isIndexed} instead.
+     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isIndexed} instead.
      * @returns True if `indexize()` has been called successfully.
      */
     isIndexized(): boolean {

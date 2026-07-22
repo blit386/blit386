@@ -325,7 +325,7 @@ export class Rect2i {
     /**
      * Backward-compatible alias for {@link isContaining}.
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link isContaining} instead.
+     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isContaining} instead.
      * @param point - Point to test.
      * @returns True if point is inside the rectangle.
      */
@@ -347,7 +347,7 @@ export class Rect2i {
     /**
      * Backward-compatible alias for {@link isContainingXY}.
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link isContainingXY} instead.
+     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isContainingXY} instead.
      * @param px - X coordinate to test.
      * @param py - Y coordinate to test.
      * @returns True if point is inside the rectangle.
@@ -374,7 +374,7 @@ export class Rect2i {
     /**
      * Backward-compatible alias for {@link isIntersecting}.
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link isIntersecting} instead.
+     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isIntersecting} instead.
      * @param other - Rectangle to test against.
      * @returns True if rectangles overlap.
      */
@@ -428,7 +428,7 @@ export class Rect2i {
     /**
      * Backward-compatible alias for {@link intersectTo}.
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link intersectTo} instead.
+     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link intersectTo} instead.
      * @param other - Rectangle to intersect with.
      * @param out - Rectangle to write the result to.
      * @returns True if intersection exists (out is valid), false otherwise (out unchanged).
@@ -503,7 +503,7 @@ export class Rect2i {
     /**
      * Backward-compatible alias for {@link isEqual}.
      *
-     * @deprecated Deprecated since 2026-05-31. Use {@link isEqual} instead.
+     * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isEqual} instead.
      * @param other - Rectangle to compare with.
      * @returns True if position and size are identical.
      */

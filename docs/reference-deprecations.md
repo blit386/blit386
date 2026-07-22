@@ -20,6 +20,8 @@ These aliases were introduced to preserve backward compatibility after the API n
 
 ### `BT` namespace
 
+Removal target: 2.0.0
+
 - `BT.pointerPosValid()` → `BT.isPointerActive()`
 - `BT.buttonDown()` → `BT.isDown()`
 - `BT.buttonPressed()` → `BT.isPressed()`
@@ -30,6 +32,8 @@ These aliases were introduced to preserve backward compatibility after the API n
 - `BT.keyReleased()` → `BT.isKeyReleased()`
 
 ### `HardwareSettings` compatibility fields
+
+Removal target: 2.0.0
 
 - `detectDroppedFrames` → `isDetectingDroppedFrames`
 - `overlayEnabled` → `isOverlayEnabled`
@@ -42,11 +46,15 @@ These aliases were introduced to preserve backward compatibility after the API n
 
 ### `BootstrapOptions` compatibility fields
 
+Removal target: 2.0.0
+
 - `canvasId` → `canvasID`
 - `containerId` → `containerID`
 - `waitForDOMReady` → `isWaitingForDOMReady`
 
 ### Class method aliases
+
+Removal target: 2.0.0
 
 - `SpriteSheet.isIndexized()` → `SpriteSheet.isIndexed()`
 - `Timer.tick()` → `Timer.fireIfElapsed()`
@@ -60,13 +68,14 @@ These aliases were introduced to preserve backward compatibility after the API n
 
 ### Removal checklist
 
-- Search for `@deprecated Deprecated since 2026-05-31` in `src/`.
+- Search for `@deprecated Deprecated since` in `src/` (every public alias uses that versioned form).
 - Remove aliases only after confirming downstream demos/apps have migrated.
 
 <Callout title="Public aliases only">
 
-This tracker lists public compatibility aliases only. Internal deprecated helpers (overlay layout functions,
-`RenderPaletteUsage` re-exports, etc.) are omitted – search `@deprecated` in `src/` for the full set.
+This tracker lists public compatibility aliases only. Internal deprecated helpers that used to live beside overlay
+layout functions and `RenderPaletteUsage` re-exports were removed rather than carried forward – search `@deprecated` in
+`src/` for anything that remains outside this list.
 
 </Callout>
 

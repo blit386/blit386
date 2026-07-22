@@ -90,18 +90,6 @@ export function formatSize(width: number, height: number): string {
 }
 
 /**
- * Backward-compatible alias for {@link formatSize}.
- *
- * @deprecated Deprecated since 2026-05-31. Use {@link formatSize} instead.
- * @param width - Width in pixels.
- * @param height - Height in pixels.
- * @returns Size formatted as `WIDTHxHEIGHT`.
- */
-export function formatAssetSize(width: number, height: number): string {
-    return formatSize(width, height);
-}
-
-/**
  * Computes a safe pixel count when width and height are valid asset dimensions.
  *
  * @param width - Width in pixels.
@@ -178,19 +166,6 @@ export function validateDimensions(context: string, width: number, height: numbe
 }
 
 /**
- * Backward-compatible alias for {@link validateDimensions}.
- *
- * @deprecated Deprecated since 2026-05-31. Use {@link validateDimensions} instead.
- * @param context - Asset label used in error text (for example `'sprite sheet'`).
- * @param width - Width in pixels.
- * @param height - Height in pixels.
- * @returns A user-facing error message when invalid, otherwise `null`.
- */
-export function validateAssetDimensions(context: string, width: number, height: number): string | null {
-    return validateDimensions(context, width, height);
-}
-
-/**
  * Validates decoded image dimensions and throws when they exceed engine limits.
  *
  * @param context - Asset label used in error text.
@@ -204,19 +179,6 @@ export function assertDimensions(context: string, width: number, height: number)
     if (error) {
         throw new AssetLimitError(error);
     }
-}
-
-/**
- * Backward-compatible alias for {@link assertDimensions}.
- *
- * @deprecated Deprecated since 2026-05-31. Use {@link assertDimensions} instead.
- * @param context - Asset label used in error text.
- * @param width - Width in pixels.
- * @param height - Height in pixels.
- * @throws {@link AssetLimitError} when the dimensions are invalid.
- */
-export function assertAssetDimensions(context: string, width: number, height: number): void {
-    assertDimensions(context, width, height);
 }
 
 /**
