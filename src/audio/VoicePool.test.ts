@@ -59,7 +59,15 @@ const getLiveContext = (installed: ReturnType<typeof installMockAudioContext>): 
  * (main/music/sfx) are all created once during `attach()`, before any voice plays, so the last
  * entry is always the voice gain regardless of how many bus gains exist.
  */
-const getVoiceGain = (context: MockAudioContext): GainNode | undefined => context.createGainCalls.at(-1);
+const getVoiceGain = (context: MockAudioContext): GainNode => {
+    const gain = context.createGainCalls.at(-1);
+
+    if (gain === undefined) {
+        throw new Error('expected a voice GainNode; call pool.play() first');
+    }
+
+    return gain;
+};
 
 describe('VoicePool', () => {
     let canvas: HTMLCanvasElement;
@@ -210,7 +218,7 @@ describe('VoicePool', () => {
             const gain = getVoiceGain(context);
             const panner = context.createStereoPannerCalls[0];
 
-            expect(gain?.gain.value).toBe(0.5);
+            expect(gain.gain.value).toBe(0.5);
             expect(source?.playbackRate.value).toBe(1.5);
             expect(panner?.pan.value).toBe(-0.5);
         });
@@ -229,7 +237,7 @@ describe('VoicePool', () => {
             const source = context.createBufferSourceCalls[0];
             const panner = context.createStereoPannerCalls[0];
 
-            expect(gain?.gain.value).toBe(1);
+            expect(gain.gain.value).toBe(1);
             expect(source?.playbackRate.value).toBe(1);
             expect(panner?.pan.value).toBe(0);
         });
@@ -280,7 +288,7 @@ describe('VoicePool', () => {
             const gain = getVoiceGain(context);
 
             expect(
-                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number }> })
+                (gain.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number }> })
                     .linearRampToValueAtTimeCalls,
             ).toEqual([{ value: 0.8, endTime: 0.2 }]);
         });
@@ -301,14 +309,14 @@ describe('VoicePool', () => {
 
             expect(
                 (
-                    gain?.gain as unknown as {
+                    gain.gain as unknown as {
                         setValueAtTimeCalls: Array<{ value: number; startTime: number }>;
                         linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }>;
                     }
                 ).setValueAtTimeCalls,
             ).toEqual([{ value: 0, startTime: 10 }]);
             expect(
-                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                (gain.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
                     .linearRampToValueAtTimeCalls,
             ).toEqual([{ value: 0.8, endTime: 10.2 }]);
         });
@@ -447,7 +455,7 @@ describe('VoicePool', () => {
             pool.stop(ref, 500);
 
             expect(
-                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                (gain.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
                     .linearRampToValueAtTimeCalls,
             ).toEqual([{ value: 0, endTime: 0.5 }]);
             expect((source as unknown as { stopCalls: number[] }).stopCalls).toEqual([0.5]);
@@ -470,7 +478,7 @@ describe('VoicePool', () => {
             pool.stop(ref, 500);
 
             expect(
-                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                (gain.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
                     .linearRampToValueAtTimeCalls,
             ).toEqual([{ value: 0, endTime: 20.5 }]);
             expect((source as unknown as { stopCalls: number[] }).stopCalls).toEqual([20.5]);
@@ -563,7 +571,7 @@ describe('VoicePool', () => {
             const gain = getVoiceGain(context);
 
             expect(
-                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: unknown[] }).linearRampToValueAtTimeCalls,
+                (gain.gain as unknown as { linearRampToValueAtTimeCalls: unknown[] }).linearRampToValueAtTimeCalls,
             ).toHaveLength(1);
         });
 
@@ -583,7 +591,7 @@ describe('VoicePool', () => {
             pool.volumeSet(ref, 0.2, 100);
 
             expect(
-                (gain?.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
+                (gain.gain as unknown as { linearRampToValueAtTimeCalls: Array<{ value: number; endTime: number }> })
                     .linearRampToValueAtTimeCalls,
             ).toEqual([{ value: 0.2, endTime: 5.1 }]);
         });
