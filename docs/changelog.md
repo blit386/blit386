@@ -40,6 +40,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   swap their decoded buffer (stopping SFX voices on the old buffer and restarting the music player if the replaced clip
   is the current track), and bitmap fonts rebuild their glyph tables and texture - all without a page reload. Adoption
   in `blit386-demos`/`create-blit386` ships in a follow-up release.
+- Asset loading progress: `BT.loadingAssetsCount` is polled once per frame as a combined image+audio signal (the sum of
+  `AssetLoader.loadingCount` and `AudioClip.loadingCount`) to drive a loading spinner or progress bar until it returns
+  to `0`. `SpriteSheet.status` (`'loading' | 'ready' | 'failed'`) and `SpriteSheet.progress` expose per-sheet hot-reload
+  replacement state; `progress` is coarse-grained (`0` or `1.0`, not a percentage).
 
 ### Fixed
 
