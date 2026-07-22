@@ -4,15 +4,15 @@
  * NOTE: Prettier is used for Markdown and YAML files only.
  * TypeScript, JavaScript, JSON, and CSS are formatted by Biome.
  *
+ * Keep `singleQuote` and top-level `tabWidth`: Prettier still applies them to
+ * YAML and to fenced code inside Markdown (Biome does not).
+ *
  * @type {import('prettier').Config}
  */
 export default {
     // Base settings (applied to Markdown/YAML)
-    semi: true,
     singleQuote: true,
     tabWidth: 4,
-    useTabs: false,
-    trailingComma: 'all',
     printWidth: 120,
     endOfLine: 'lf',
     proseWrap: 'always',

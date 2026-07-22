@@ -1,4 +1,11 @@
-# Standard git attributes for binary files
+# Normalize text files to LF on checkout (portable across macOS / Linux / Windows)
+* text=auto eol=lf
+
+# Generated / lockfile – suppress noisy diffs in GitHub linguist
+pnpm-lock.yaml linguist-generated
+docs/_api-history.json linguist-generated
+
+# Binary assets
 *.jpg binary
 *.jpeg binary
 *.png binary
@@ -12,10 +19,13 @@
 *.mp3 binary
 *.wav binary
 *.flac binary
+*.ogg binary
+*.m4a binary
 *.woff binary
 *.woff2 binary
 *.ttf binary
 *.otf binary
+*.btfont binary
 *.pdf binary
 *.zip binary
 *.rar binary

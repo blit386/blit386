@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/**/*.test.ts", "src/**/*.bench.ts", "src/vite/index.ts"],
+  "entry": ["src/**/*.test.ts", "src/**/*.bench.ts"],
   "project": ["src/**/*.ts"],
   "ignoreExportsUsedInFile": true,
   "tags": ["-deprecated"],
