@@ -18,6 +18,13 @@ export default defineConfig({
                 branches: 80,
                 functions: 80,
                 lines: 80,
+                // Glob thresholds do not inherit the global values above.
+                'src/render/effects/**': {
+                    statements: 80,
+                    branches: 80,
+                    functions: 80,
+                    lines: 80,
+                },
             },
             reporter: ['text', 'text-summary', 'lcov', 'json'],
             reportsDirectory: 'coverage',

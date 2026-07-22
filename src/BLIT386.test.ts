@@ -17,6 +17,7 @@ import type { BitmapFont, HardwareSettings } from './BLIT386';
 import { BT, Palette, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import type { FaceButtonCode } from './input/defaultKeyboardMap';
+import { SoftwareRenderer } from './render/SoftwareRenderer';
 import { DEFAULT_CONTAINER_ID } from './utils/BootstrapHelpers';
 
 const mockHardwareSettings = (displaySize = new Vector2i(320, 240), targetFPS = 60): HardwareSettings => ({
@@ -1494,6 +1495,49 @@ describe('BT.effectAdd / BT.effectRemove / BT.effectClear', () => {
         };
     }
 
+    /** Builds an initialized software renderer for effect-API facade tests. */
+    async function makeSoftwareRenderer(): Promise<SoftwareRenderer> {
+        const canvas = {
+            width: 0,
+            height: 0,
+            style: { width: '', height: '' },
+            getContext: () =>
+                ({
+                    imageSmoothingEnabled: false,
+                    createImageData: (w: number, h: number) =>
+                        ({
+                            data: new Uint8ClampedArray(w * h * 4),
+                            width: w,
+                            height: h,
+                        }) as ImageData,
+                    putImageData: () => {},
+                    clearRect: () => {},
+                    drawImage: () => {},
+                }) as unknown as CanvasRenderingContext2D,
+            toBlob: (_cb: (blob: Blob | null) => void) => {},
+        } as unknown as HTMLCanvasElement;
+        const renderer = new SoftwareRenderer(canvas, new Vector2i(4, 4));
+        await renderer.init();
+        return renderer;
+    }
+
+    /**
+     * Temporarily installs a software renderer on the BTAPI singleton so
+     * {@link BT.effectAdd} / friends reach the real unsupported-effects path.
+     */
+    async function withSoftwareRenderer(callback: () => void | Promise<void>): Promise<void> {
+        const renderer = await makeSoftwareRenderer();
+        const api = BTAPI.instance as unknown as { renderer: SoftwareRenderer | null };
+        const previous = api.renderer;
+        api.renderer = renderer;
+
+        try {
+            await callback();
+        } finally {
+            api.renderer = previous;
+        }
+    }
+
     beforeEach(() => {
         vi.restoreAllMocks();
     });
@@ -1562,50 +1606,36 @@ describe('BT.effectAdd / BT.effectRemove / BT.effectClear', () => {
 
     it('effectAdd shows a clear software-renderer unsupported message', async () => {
         await withErrorContainer(async () => {
-            vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue({} as never);
-            vi.spyOn(BTAPI.instance, 'effectAdd').mockImplementation(() => {
-                throw new Error(
-                    "The software renderer doesn't support fullscreen effects. To use post-process effects, set backend to 'webgpu' in configure().",
-                );
+            await withSoftwareRenderer(() => {
+                BT.effectAdd(makeStubEffect());
+
+                const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+                expect(text).toContain("doesn't support fullscreen effects");
+                expect(text).toContain("set backend to 'webgpu' in configure()");
+                expect(text).toContain(SoftwareRenderer.EFFECTS_UNSUPPORTED_MESSAGE);
             });
-
-            BT.effectAdd(makeStubEffect());
-
-            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
-            expect(text).toContain("doesn't support fullscreen effects");
-            expect(text).toContain("set backend to 'webgpu' in configure()");
         });
     });
 
     it('effectRemove shows a clear software-renderer unsupported message', async () => {
         await withErrorContainer(async () => {
-            vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue({} as never);
-            vi.spyOn(BTAPI.instance, 'effectRemove').mockImplementation(() => {
-                throw new Error(
-                    "The software renderer doesn't support fullscreen effects. To use post-process effects, set backend to 'webgpu' in configure().",
-                );
+            await withSoftwareRenderer(() => {
+                BT.effectRemove(makeStubEffect());
+
+                const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+                expect(text).toContain(SoftwareRenderer.EFFECTS_UNSUPPORTED_MESSAGE);
             });
-
-            BT.effectRemove(makeStubEffect());
-
-            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
-            expect(text).toContain("doesn't support fullscreen effects");
         });
     });
 
     it('effectClear shows a clear software-renderer unsupported message', async () => {
         await withErrorContainer(async () => {
-            vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue({} as never);
-            vi.spyOn(BTAPI.instance, 'effectClear').mockImplementation(() => {
-                throw new Error(
-                    "The software renderer doesn't support fullscreen effects. To use post-process effects, set backend to 'webgpu' in configure().",
-                );
+            await withSoftwareRenderer(() => {
+                BT.effectClear();
+
+                const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+                expect(text).toContain(SoftwareRenderer.EFFECTS_UNSUPPORTED_MESSAGE);
             });
-
-            BT.effectClear();
-
-            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
-            expect(text).toContain("doesn't support fullscreen effects");
         });
     });
 });

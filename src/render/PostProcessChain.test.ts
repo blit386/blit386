@@ -164,6 +164,14 @@ describe('add()', () => {
         expect(pixelChain.isActive()).toBe(false);
     });
 
+    it('throws when a pixel-tier effect is added to a display chain', () => {
+        const displayChain = new PostProcessChain(createMockGPUDevice(), FORMAT, DISPLAY_SIZE, 'display');
+        const pixelEffect = createStubEffect('pixel');
+
+        expect(() => displayChain.add(pixelEffect)).toThrow(/does not match chain tier/);
+        expect(displayChain.isActive()).toBe(false);
+    });
+
     it('reuses the existing texB when re-adding a second effect after a 2 -> 1 remove', () => {
         const device = createMockGPUDevice();
         const createTexture = vi.spyOn(device, 'createTexture');

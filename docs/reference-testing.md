@@ -305,9 +305,15 @@ checks. It does not run unit or visual tests. There is no separate `docs-links` 
 
 <Callout type="warn" title="Visual tests run locally only">
 
-`pnpm run test:visual` requires Chrome with WebGPU and is not executed in GitHub Actions. Run it locally before merging
-renderer, palette, or post-process changes; use `pnpm run test:visual:update` when baselines change intentionally.
-`pnpm run preflight` does not include visual tests.
+`pnpm run test:visual` requires Chrome with WebGPU and is not executed in GitHub Actions. That is intentional: Actions
+minutes are a real cost for a solo project, so visual regression stays a manual gate (the decision recorded on
+[BT-319](https://linear.app/vancura/issue/BT-319/140-cleanup)). Run it locally before merging renderer, palette, or
+post-process changes; use `pnpm run test:visual:update` when baselines change intentionally. `pnpm run preflight` does
+not include visual tests.
+
+Unit-level coverage of `src/render/effects` (enforced by a per-directory Vitest threshold at 80%) is the primary
+automated protection for the post-process path. Visual snapshots remain the pixel-correctness check, but they are not
+what CI gates on.
 
 </Callout>
 

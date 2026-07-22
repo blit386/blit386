@@ -311,9 +311,9 @@ describe('SoftwareRenderer', () => {
 
         const effect: Effect = { tier: 'pixel', init: vi.fn(), updateUniforms: vi.fn(), encodePass: vi.fn() };
 
-        expect(() => renderer.addEffect(effect)).toThrow("doesn't support fullscreen effects");
-        expect(() => renderer.removeEffect(effect)).toThrow("doesn't support fullscreen effects");
-        expect(() => renderer.clearEffects()).toThrow("doesn't support fullscreen effects");
+        expect(() => renderer.addEffect(effect)).toThrow(SoftwareRenderer.EFFECTS_UNSUPPORTED_MESSAGE);
+        expect(() => renderer.removeEffect(effect)).toThrow(SoftwareRenderer.EFFECTS_UNSUPPORTED_MESSAGE);
+        expect(() => renderer.clearEffects()).toThrow(SoftwareRenderer.EFFECTS_UNSUPPORTED_MESSAGE);
     });
 
     it('resolves captureFrame on next endFrame', async () => {
