@@ -233,6 +233,7 @@ export class AssetLoader {
     /**
      * Gets the number of image loads currently in flight.
      *
+     * @since 1.4.0
      * @returns Count of URLs with a pending {@link AssetLoader.loadImage} or
      *   {@link AssetLoader.hotReloadImage} request.
      */

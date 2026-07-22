@@ -343,6 +343,7 @@ export class SpriteSheet {
     /**
      * Gets the lifecycle status of this sheet's backing image data.
      *
+     * @since 1.4.0
      * @returns `'ready'` once constructed (an image has always already resolved by
      *   then); `'loading'` or `'failed'` only while and after a hot-reload
      *   replacement image is in flight, respectively.
@@ -354,6 +355,7 @@ export class SpriteSheet {
     /**
      * Gets the load progress of this sheet's backing image data, in `[0, 1]`.
      *
+     * @since 1.4.0
      * @returns `1.0` once ready; `0.0` while a hot-reload replacement image is in
      *   flight. Coarse-grained - `HTMLImageElement` reports no byte-level progress.
      */
