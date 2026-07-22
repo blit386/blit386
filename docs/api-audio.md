@@ -133,6 +133,9 @@ if (AudioClip.isLoaded('audio/theme.mp3')) {
 AudioClip.loadingCount;
 ```
 
+For a single loading-screen signal that also covers sprite sheet images, see
+[`BT.loadingAssetsCount`](api-assets.md#loading-assets).
+
 Pass `onProgress` to report phased load progress:
 
 ```ts twoslash

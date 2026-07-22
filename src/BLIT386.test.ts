@@ -10,6 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
+import { AssetLoader } from './assets/AssetLoader';
 import type { AudioClip } from './assets/AudioClip';
 import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
 import type { BitmapFont, HardwareSettings } from './BLIT386';
@@ -1685,5 +1686,44 @@ describe('BT.loadingAssetsCount', () => {
         vi.spyOn(BTAPI.instance, 'getLoadingAssetsCount').mockReturnValue(0);
 
         expect(BT.loadingAssetsCount).toBe(0);
+    });
+
+    it('reflects a real pending AssetLoader image load, without mocking BTAPI', async () => {
+        /** Image stub whose `onload`/`onerror` must be fired manually, so the test controls timing. */
+        class DeferredImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            width = 10;
+            height = 10;
+            src = '';
+        }
+
+        const instances: DeferredImage[] = [];
+
+        vi.stubGlobal(
+            'Image',
+            class extends DeferredImage {
+                constructor() {
+                    super();
+                    instances.push(this);
+                }
+            },
+        );
+
+        try {
+            expect(BT.loadingAssetsCount).toBe(0);
+
+            const promise = AssetLoader.loadImage('pending-bt-aggregate.png');
+
+            expect(BT.loadingAssetsCount).toBe(1);
+
+            instances[0]?.onload?.();
+            await promise;
+
+            expect(BT.loadingAssetsCount).toBe(0);
+        } finally {
+            vi.unstubAllGlobals();
+            AssetLoader.clear();
+        }
     });
 });

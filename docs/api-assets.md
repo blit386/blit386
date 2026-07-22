@@ -256,10 +256,24 @@ glyph tables and texture.
   sheet's current `width`/`height` when that matters.
 </Callout>
 
-Each `SpriteSheet` also exposes `status` (`'loading' | 'ready' | 'failed'`) and `progress` (`0` or `1` -
-`HTMLImageElement` reports no byte-level progress) tracking a replacement fetch while it's in flight. A normally loaded
-sheet is always `'ready'` with `progress: 1.0`, since its image has already resolved by the time the sheet is
-constructed.
+Each `SpriteSheet` also exposes `status` (`'loading' | 'ready' | 'failed'`) and `progress` (`0` or `1`) tracking a
+replacement fetch while it's in flight - useful for a per-sheet loading indicator, or combine with
+[`BT.loadingAssetsCount`](#loading-assets) for a single engine-wide signal. A normally loaded sheet is always `'ready'`
+with `progress: 1.0`, since its image has already resolved by the time the sheet is constructed.
+
+```ts twoslash
+import { SpriteSheet } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+sheet.status; // 'loading' | 'ready' | 'failed'
+sheet.progress; // 0 while loading, 1.0 once ready
+```
+
+<Callout title="Coarse-grained progress">
+  `progress` is `0` or `1.0`, never a value in between - `HTMLImageElement` reports no byte-level download progress the
+  way `AudioClip`'s `onProgress` callback does (see [API: Audio](api-audio.md#loading)). Use `status`/`progress` to show
+  or hide a loading indicator, not to drive a percentage bar.
+</Callout>
 
 See [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix) for the full asset type matrix, including audio and the
 fallback-to-full-reload behavior for unrecognized file types.
