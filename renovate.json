@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits"],
+  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits", "helpers:pinGitHubActionDigests"],
   "timezone": "Europe/Prague",
   "schedule": ["before 6am on Monday"],
   "rangeStrategy": "bump",
@@ -9,6 +9,7 @@
   "prConcurrentLimit": 5,
   "prHourlyLimit": 4,
   "automerge": false,
+  "internalChecksFilter": "strict",
   "packageRules": [
     {
       "description": "Core build tools",
@@ -17,17 +18,17 @@
     },
     {
       "description": "Vite plugins",
-      "matchPackageNames": ["^vite-plugin-"],
+      "matchPackageNames": ["vite-plugin-*"],
       "groupName": "vite plugins"
     },
     {
       "description": "Linting and formatting tools",
-      "matchPackageNames": ["eslint", "prettier", "biome"],
+      "matchPackageNames": ["eslint", "prettier", "@biomejs/biome"],
       "groupName": "linting and formatting"
     },
     {
       "description": "TypeScript type definitions",
-      "matchPackageNames": ["^@types/"],
+      "matchPackageNames": ["@types/*"],
       "groupName": "type definitions"
     },
     {
@@ -36,7 +37,7 @@
       "groupName": "github actions",
       "automerge": true,
       "automergeType": "pr",
-      "minimumReleaseAge": "3 days"
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "All patches - automerge",
@@ -44,7 +45,7 @@
       "matchPackageNames": ["*"],
       "automerge": true,
       "automergeType": "pr",
-      "minimumReleaseAge": "3 days"
+      "minimumReleaseAge": "7 days"
     },
     {
       "description": "Minor updates - manual review",
@@ -56,19 +57,6 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "major-update"]
-    },
-    {
-      "description": "GitHub Actions",
-      "matchManagers": ["github-actions"],
-      "groupName": "github actions",
-      "automerge": true,
-      "automergeType": "pr",
-      "minimumReleaseAge": "3 days"
-    },
-    {
-      "description": "Pin pnpm version",
-      "matchPackageNames": ["pnpm"],
-      "rangeStrategy": "pin"
     }
   ],
   "vulnerabilityAlerts": {

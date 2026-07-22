@@ -35,8 +35,15 @@ re-running both commands.
 | Manual (monthly)    | Review `pnpm outdated`; run the [security runbook](./security-runbook.md) MCP preflight and audits                                      |
 | Per release         | Run `pnpm run security:audit` and `pnpm run security:audit:prod` before tagging                                                         |
 
-Patch updates for GitHub Actions and npm patches may automerge per [renovate.json](../../renovate.json). Minor and major
-updates require manual review.
+Patch updates for GitHub Actions and npm patches may automerge after 7 days (`minimumReleaseAge`), matching
+[`.npmrc`](../../.npmrc) `minimum-release-age` (10080 minutes), per [renovate.json](../../renovate.json). Minor and
+major updates require manual review.
+
+### Renovate vs Dependabot
+
+Dependabot stays enabled for security-only alerts and updates (no `.github/dependabot.yml`, so it does not open version
+or GitHub Actions PRs). Renovate owns version bumps, grouping, automerge, and GitHub Actions digest pinning. That split
+keeps the two systems from opening competing PRs for the same dependency.
 
 ## Supply-chain settings
 
@@ -56,10 +63,13 @@ job adds `actions: read` and `pull-requests: write` only where artifact lookup a
 
 ### Bumping pinned actions
 
-| Path    | Who updates SHAs                                                                                                      |
-| ------- | --------------------------------------------------------------------------------------------------------------------- |
-| Routine | [Renovate](../../renovate.json) `github-actions` manager – grouped PRs, 3-day `minimumReleaseAge`, patch automerge    |
-| Manual  | Resolve the release tag commit on the action repo, replace the SHA in the workflow, keep or update the `# vN` comment |
+Renovate extends `helpers:pinGitHubActionDigests`, so action references stay pinned to a 40-character commit SHA with a
+trailing `# vN` comment, and routine bumps update the SHA and comment together.
+
+| Path    | Who updates SHAs                                                                                                                   |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Routine | [Renovate](../../renovate.json) `github-actions` manager – grouped PRs, 7-day `minimumReleaseAge`, patch automerge, digest pinning |
+| Manual  | Resolve the release tag commit on the action repo, replace the SHA in the workflow, keep or update the `# vN` comment              |
 
 After any workflow edit, confirm the affected jobs still pass in CI (artifact upload, Codecov, benchmark baseline
 lookup, PR benchmark comments).
