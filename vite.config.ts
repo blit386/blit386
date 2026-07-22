@@ -13,7 +13,6 @@ export default defineConfig(() => {
         plugins: [
             dts({
                 include: ['src/**/*.ts'],
-                exclude: ['src/main.ts'],
                 rollupTypes: true,
                 beforeWriteFile: (filePath, content) => ({
                     filePath: filePath.replace(/BLIT386\.d\.ts$/, 'blit386.d.ts'),
@@ -44,12 +43,6 @@ export default defineConfig(() => {
                     propertyReadSideEffects: false,
                 } as const,
             },
-        },
-
-        // Optimize dependency pre-bundling
-        optimizeDeps: {
-            include: [],
-            exclude: [],
         },
     };
 });

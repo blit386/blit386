@@ -37,6 +37,8 @@ benchmark-results.json
 .claude/settings.local.json
 .claude/memory/
 .claude/worktrees/
+.claude/scheduled_tasks.*
+.claude/launch.json
 
 # MCP configs (local secrets; project MCP also lives under ~/.cursor/projects/)
 .mcp.json
@@ -74,6 +76,7 @@ ai-rules/
 # Logs and scratch
 *.log
 pnpm-debug.log*
+.remember/
 
 # Cache
 .eslintcache
