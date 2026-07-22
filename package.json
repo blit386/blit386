@@ -94,7 +94,7 @@
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
     "test:visual:coverage": "VISUAL_COVERAGE=1 playwright test && nyc report --reporter=lcov --reporter=text-summary --temp-dir=.nyc_output --report-dir=coverage-visual",
-    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run agents:check && pnpm run sync:doc-banners:check && pnpm run sync:cursor-commands:check && pnpm run api:since:check && pnpm run api:history:check && pnpm run test:unit && pnpm run test:declarations && pnpm run test:agent-config && pnpm run test:cursor-commands",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run agents:check && pnpm run sync:doc-banners:check && pnpm run sync:cursor-commands:check && pnpm run api:since:check && pnpm run api:history:check && pnpm run test:unit && pnpm run test:declarations && pnpm run test:agent-config && pnpm run test:cursor-commands && pnpm run test:api-history && pnpm run test:security-preflight",
     "clean": "rm -rf dist node_modules/.vite",
     "release": "pnpm run build && pnpm publish",
     "knip": "knip",

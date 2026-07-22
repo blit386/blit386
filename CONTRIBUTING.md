@@ -165,6 +165,8 @@ This runs:
 - Declaration tooling tests (`test:declarations`)
 - Agent config drift checker tests (`test:agent-config`)
 - Cursor commands drift checker tests (`test:cursor-commands`)
+- API history generator tests (`test:api-history`)
+- Security preflight tests (`test:security-preflight`)
 
 ### Available Commands
 
@@ -185,6 +187,8 @@ pnpm run test:unit        # Run unit tests
 pnpm run test:declarations # Declaration tooling checker tests
 pnpm run test:agent-config # Agent config drift checker tests
 pnpm run test:cursor-commands # Cursor commands drift checker tests
+pnpm run test:api-history # API history generator tests
+pnpm run test:security-preflight # Security preflight tests
 pnpm run test:visual      # Playwright visual regression (local; not in preflight)
 pnpm run bench            # CPU benchmarks (Vitest bench)
 pnpm run preflight        # Run all quality checks
