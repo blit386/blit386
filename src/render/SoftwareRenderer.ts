@@ -80,7 +80,12 @@ type Canvas2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
  * path, it does not use an `r8uint` index framebuffer.
  */
 export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
-    private static readonly EFFECTS_UNSUPPORTED_MESSAGE =
+    /**
+     * Shared error text for {@link addEffect}, {@link removeEffect}, and
+     * {@link clearEffects}. Kept public so unit tests can assert against the
+     * single source of truth.
+     */
+    static readonly EFFECTS_UNSUPPORTED_MESSAGE =
         "The software renderer doesn't support fullscreen effects. To use post-process effects, set backend to 'webgpu' in configure().";
 
     /** Vertices emitted for one filled rect or sprite quad (matches WebGPU batching). */

@@ -994,7 +994,7 @@ describe('post-process effects', () => {
     });
 
     /** Minimal stub effect that records lifecycle calls. */
-    function createStubEffect(): Effect & {
+    function createStubEffect(tier: Effect['tier'] = 'pixel'): Effect & {
         initSpy: ReturnType<typeof vi.fn>;
         updateSpy: ReturnType<typeof vi.fn>;
         encodeSpy: ReturnType<typeof vi.fn>;
@@ -1010,7 +1010,7 @@ describe('post-process effects', () => {
             updateSpy,
             encodeSpy,
             disposeSpy,
-            tier: 'pixel',
+            tier,
             init: (device, format, displaySize) => initSpy(device, format, displaySize),
             updateUniforms: (deltaMs, sourceSize) => updateSpy(deltaMs, sourceSize),
             encodePass: (encoder, sourceView, destView) => encodeSpy(encoder, sourceView, destView),
@@ -1215,5 +1215,43 @@ describe('post-process effects', () => {
         const resolveAttachment = (resolvePass?.colorAttachments as GPURenderPassColorAttachment[])[0];
         expect(resolveAttachment?.view).toBe(swapView);
         expect(beginRenderPassCalls).toHaveLength(2);
+    });
+
+    it('addEffect throws for display-tier effects when drawingBufferSize is unset', async () => {
+        const r = new WebGPURenderer(createMockGPUDevice(), createMockGPUCanvasContext(), new Vector2i(320, 240));
+        await r.init();
+
+        expect(() => r.addEffect(createStubEffect('display'))).toThrow(
+            /display-tier effects require drawingBufferSize/,
+        );
+    });
+
+    it('routes pixel and display effects into their respective chains when drawingBufferSize is set', async () => {
+        const device = createMockGPUDevice();
+        const displaySize = new Vector2i(320, 240);
+        const drawingBufferSize = new Vector2i(640, 480);
+        const r = new WebGPURenderer(device, createMockGPUCanvasContext(), displaySize, drawingBufferSize);
+
+        await r.init();
+        r.setPalette(createTestPalette());
+
+        const pixelEffect = createStubEffect('pixel');
+        const displayEffect = createStubEffect('display');
+
+        r.addEffect(pixelEffect);
+        r.addEffect(displayEffect);
+
+        expect(pixelEffect.initSpy).toHaveBeenCalledOnce();
+        expect(displayEffect.initSpy).toHaveBeenCalledOnce();
+        expect(pixelEffect.initSpy.mock.calls[0]?.[1]).toBe('r8uint');
+        expect(displayEffect.initSpy.mock.calls[0]?.[1]).not.toBe('r8uint');
+
+        r.beginFrame();
+        r.endFrame();
+
+        expect(pixelEffect.encodeSpy).toHaveBeenCalledTimes(1);
+        expect(displayEffect.encodeSpy).toHaveBeenCalledTimes(1);
+        expect(pixelEffect.updateSpy).toHaveBeenCalledTimes(1);
+        expect(displayEffect.updateSpy).toHaveBeenCalledTimes(1);
     });
 });
