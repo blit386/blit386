@@ -1,0 +1,104 @@
+name: Bug report
+description: Report a bug in blit386
+title: '[bug] '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Check [the docs](https://blit386.dev/docs) and
+        [CONTRIBUTING.md](../../CONTRIBUTING.md) before opening.
+
+        For environment details, see [Browser Support](../../docs/api-browser-support.md).
+        `BT.activeBackend` is the backend that actually started (`webgpu` or `software`); WebGPU can
+        silently fall back to software when init fails.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the bug
+      placeholder: Drawing a sprite at (0, 0) crashes under the software backend
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps to reproduce; include a short code snippet if helpful
+      placeholder: |
+        1. Create a demo with backend: 'software'
+        2. Call BT.drawSprite(...)
+        3. Observe the crash
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      description: >
+        Prefer the value of `BT.activeBackend` after init (not the requested backend). WebGPU can silently fall back to
+        software.
+      options:
+        - webgpu
+        - software
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: >
+        e.g. Chrome 131, Firefox 145, Safari 26. See [Browser Support](../../docs/api-browser-support.md) for the
+        supported matrix.
+      placeholder: Chrome 131.0.6778.85
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: e.g. macOS 15.2, Windows 11, Ubuntu 24.04
+      placeholder: macOS 15.2
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: blit386 version
+      description: >
+        Installed npm package version from package.json or `npm ls blit386` (there is no runtime `BT.VERSION`).
+      placeholder: 1.2.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: Relevant browser console errors or warnings (optional)
+      render: shell
+    validations:
+      required: false

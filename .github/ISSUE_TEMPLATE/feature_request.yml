@@ -1,0 +1,58 @@
+name: Feature request
+description: Propose a new API or engine capability
+title: '[feature] '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature. Skim [the docs](https://blit386.dev/docs) first so the
+        request builds on existing APIs rather than duplicating them.
+
+        blit386 is palette-first: primitives, sprites, and bitmap text resolve through a shared
+        indexed palette before final RGBA output.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem being solved
+      description: What user or author pain does this address?
+      placeholder: There is no way to ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-api
+    attributes:
+      label: Proposed API shape
+      description: >
+        Sketch the public surface (BT getters/methods, HardwareSettings fields, types). Prefer getters for zero-arg
+        read-only snapshots and methods for actions or parameterized queries.
+      placeholder: |
+        BT.foo(bar: Vector2i): void
+        // or a HardwareSettings.isFooEnabled configure flag
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you tried or rejected, and why
+    validations:
+      required: false
+
+  - type: dropdown
+    id: palette-first
+    attributes:
+      label: Fits the palette-first model?
+      description: >
+        Does the proposal keep colors flowing through the indexed palette (or explicitly opt out with a documented
+        reason)?
+      options:
+        - 'Yes'
+        - 'No'
+        - Unsure
+    validations:
+      required: true

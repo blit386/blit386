@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://blit386.dev/docs
+    about: API reference and guides for blit386
+  - name: Demos
+    url: https://demos.blit386.dev
+    about: Interactive demos covering rendering, input, audio, and more
+  - name: Report a vulnerability
+    url: https://github.com/blit386/blit386/security/advisories/new
+    about: Private vulnerability reporting (do not open a public issue)
+  - name: GitHub Discussions
+    url: https://github.com/blit386/blit386/discussions
+    about: Questions, ideas, and community conversation
+  - name: Discord
+    url: https://discord.gg/tC2wGt88Uj
+    about: Real-time chat with other blit386 users
