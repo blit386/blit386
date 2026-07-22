@@ -205,6 +205,10 @@ pnpm run preflight        # Run all quality checks
 7. Push to your fork
 8. Open a pull request against `main`
 
+The pull request form is pre-filled from [`.github/pull_request_template.md`](.github/pull_request_template.md). Use
+that checklist for DCO sign-off, Conventional Commit titles, `pnpm run preflight`, documentation updates, and visual
+tests when renderer output could change.
+
 All pull requests will be reviewed by maintainers. The DCO check and other CI checks must pass before a PR can be
 merged.
 
@@ -233,7 +237,18 @@ project.
 
 ## Questions?
 
-If you have questions about the DCO or contributing process, please open an issue on GitHub.
+For questions about the DCO or contributing process, use
+[GitHub Discussions](https://github.com/blit386/blit386/discussions) or the [Discord](https://discord.gg/tC2wGt88Uj)
+community. Blank issues are disabled.
+
+To report a bug, propose a feature, or flag a docs problem, use the guided forms under
+[`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/):
+
+- [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml) – reproduction, expected vs actual, backend, environment
+- [Feature request](.github/ISSUE_TEMPLATE/feature_request.yml) – problem, proposed API, palette-first fit
+- [Docs issue](.github/ISSUE_TEMPLATE/docs_issue.yml) – affected page and what is wrong or missing
+
+See `.github/ISSUE_TEMPLATE/config.yml` for docs, demos, and private vulnerability reporting links.
 
 ## Full Developer Certificate of Origin Text
 

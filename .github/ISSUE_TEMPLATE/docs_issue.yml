@@ -1,0 +1,37 @@
+name: Docs issue
+description: Report a docs problem, gap, or unclear page
+title: '[docs] '
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the docs. Prefer a link to the live page on
+        [blit386.dev](https://blit386.dev/docs) or a path under `docs/` in this repo.
+
+  - type: input
+    id: page
+    attributes:
+      label: Affected page
+      description: >
+        blit386.dev URL (e.g. https://blit386.dev/docs/api/core) or source path (e.g. docs/api-core.md)
+      placeholder: https://blit386.dev/docs/api/core
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is wrong, missing, or unclear?
+      description: Quote the confusing passage or describe the gap
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested correction
+      description: Optional rewrite, link, or outline of what should be there
+    validations:
+      required: false
