@@ -45,7 +45,7 @@ const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
  * (it is not yet tagged), so it is a maintained constant: bump it by hand in the same commit
  * that bumps `package.json` `version` after a release ships.
  */
-const UNRELEASED_VERSION = '1.3.2';
+const UNRELEASED_VERSION = '1.4.0';
 
 /** Compiler options used when no real tsconfig is supplied (fixture / unit-test programs). */
 export const DEFAULT_TEST_COMPILER_OPTIONS = {
@@ -285,7 +285,10 @@ function loadRepoCompilerOptions() {
  * @returns {ts.Program} Compiled program for `src/BLIT386.ts`.
  */
 function createRepoProgram() {
-    return ts.createProgram({ rootNames: [ENTRY_FILE], options: loadRepoCompilerOptions() });
+    return ts.createProgram({
+        rootNames: [ENTRY_FILE],
+        options: loadRepoCompilerOptions(),
+    });
 }
 
 /**
@@ -504,7 +507,10 @@ export function resolveTagDate(tag, runOptions = {}) {
     const cwd = runOptions.cwd ?? ROOT;
 
     try {
-        const output = execFileSync('git', ['log', '-1', '--format=%aI', tag], { cwd, encoding: 'utf8' }).trim();
+        const output = execFileSync('git', ['log', '-1', '--format=%aI', tag], {
+            cwd,
+            encoding: 'utf8',
+        }).trim();
 
         return output.length > 0 ? output : null;
     } catch {
@@ -632,7 +638,11 @@ export function buildApiHistoryJson(rawSymbols, params) {
             since: entry.since,
             changes,
             deprecated: entry.deprecated,
-            status: deriveStatus(entry, { packageVersion, unreleasedVersion, hasTag }),
+            status: deriveStatus(entry, {
+                packageVersion,
+                unreleasedVersion,
+                hasTag,
+            }),
         };
     }
 
