@@ -1,11 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":dependencyDashboard", ":semanticCommits", "helpers:pinGitHubActionDigests"],
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests",
+    ":gitSignOff"
+  ],
   "timezone": "Europe/Prague",
   "schedule": ["before 6am on Monday"],
   "rangeStrategy": "bump",
   "labels": ["dependencies"],
   "commitMessagePrefix": "chore(deps):",
+  "commitMessageAction": "update",
   "prConcurrentLimit": 5,
   "prHourlyLimit": 4,
   "automerge": false,
@@ -30,6 +37,12 @@
       "description": "TypeScript type definitions",
       "matchPackageNames": ["@types/*"],
       "groupName": "type definitions"
+    },
+    {
+      "description": "Do not bump workflow pnpm/node pins separately from packageManager/engines",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["node", "pnpm"],
+      "enabled": false
     },
     {
       "description": "GitHub Actions",

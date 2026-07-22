@@ -273,6 +273,8 @@ before 6 AM:
 - Major updates: manual review with `major-update` label
 - Vulnerability alerts are enabled
 - GitHub Actions stay digest-pinned (SHA plus trailing `# vN` comment) via `helpers:pinGitHubActionDigests`
+- Renovate commits use a lowercase subject (`commitMessageAction: "update"`) and the `:gitSignOff` preset so they pass
+  commitlint and the DCO check
 
 Dependabot remains enabled for security-only updates; Renovate owns version and Actions bumps. See
 [dependency-policy.md](security/dependency-policy.md#renovate-vs-dependabot).
