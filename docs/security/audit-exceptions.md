@@ -31,9 +31,8 @@ Do not use exceptions for low-severity findings (CI does not gate on them).
 
 ## Active exceptions
 
-| GHSA                                                                     | Package / path             | Severity | Accepted   | Review by  | Remediation issue                                                    | Owner   |
-| ------------------------------------------------------------------------ | -------------------------- | -------- | ---------- | ---------- | -------------------------------------------------------------------- | ------- |
-| [GHSA-gv7w-rqvm-qjhr](https://github.com/advisories/GHSA-gv7w-rqvm-qjhr) | `esbuild@0.25.12` via vite | high     | 2026-06-14 | 2026-06-21 | upgrade esbuild override to ^0.28.1 after minimum-release-age passes | vancura |
+| GHSA | Package / path | Severity | Accepted | Review by | Remediation issue | Owner |
+| ---- | -------------- | -------- | -------- | --------- | ----------------- | ----- |
 
 ## Technical notes
 
