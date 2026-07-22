@@ -17,10 +17,18 @@ const UINT_FORMAT: GPUTextureFormat = 'r8uint';
 const RGBA_FORMAT: GPUTextureFormat = 'rgba8unorm';
 const SIZE = new Vector2i(320, 240);
 
-const STUB_FRAGMENT = /* wgsl */ `
+const STUB_FRAGMENT_RGBA = /* wgsl */ `
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
     return vec4<f32>(0.0);
+}
+`;
+
+/** Matches the production `r8uint` contract (`fs_main` writes a palette index). */
+const STUB_FRAGMENT_UINT = /* wgsl */ `
+@fragment
+fn fs_main() -> @location(0) u32 {
+    return 0u;
 }
 `;
 
@@ -32,9 +40,9 @@ class StubPixelEffect extends FullscreenPixelEffect {
 
     protected readonly uniformBytes = 16;
 
-    protected readonly fragmentShaderRgba = STUB_FRAGMENT;
+    protected readonly fragmentShaderRgba = STUB_FRAGMENT_RGBA;
 
-    protected readonly fragmentShaderUint = STUB_FRAGMENT;
+    protected readonly fragmentShaderUint = STUB_FRAGMENT_UINT;
 
     protected writeUniforms(_deltaMs: number, _sourceSize: Vector2i): void {
         // No-op: tests do not inspect uniform contents.
@@ -251,8 +259,8 @@ describe('FullscreenPixelEffect uniformBytes validation', () => {
         class BadBytesEffect extends FullscreenPixelEffect {
             protected readonly label = 'BadBytesEffect';
             protected readonly uniformBytes = 8;
-            protected readonly fragmentShaderRgba = STUB_FRAGMENT;
-            protected readonly fragmentShaderUint = STUB_FRAGMENT;
+            protected readonly fragmentShaderRgba = STUB_FRAGMENT_RGBA;
+            protected readonly fragmentShaderUint = STUB_FRAGMENT_UINT;
             protected writeUniforms(): void {}
         }
 

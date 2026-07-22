@@ -64,18 +64,15 @@ describe('PixelGlitch', () => {
 
         const encoder = device.createCommandEncoder();
         const beginSpy = vi.spyOn(encoder, 'beginRenderPass');
+        const destView = { label: 'dst' } as unknown as GPUTextureView;
 
-        fx.encodePass(
-            encoder,
-            { label: 'src' } as unknown as GPUTextureView,
-            { label: 'dst' } as unknown as GPUTextureView,
-        );
+        fx.encodePass(encoder, { label: 'src' } as unknown as GPUTextureView, destView);
 
         const passDescriptor = beginSpy.mock.calls[0]?.[0];
         const firstColorAttachment = passDescriptor?.colorAttachments
             ? [...passDescriptor.colorAttachments][0]
             : undefined;
-        expect(firstColorAttachment?.view.label).toBe('dst');
+        expect(firstColorAttachment?.view).toBe(destView);
         expect(firstColorAttachment?.clearValue).toEqual({ r: 0, g: 0, b: 0, a: 0 });
     });
 
