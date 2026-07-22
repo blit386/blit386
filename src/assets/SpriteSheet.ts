@@ -22,6 +22,16 @@ const RGBA_BYTES_PER_PIXEL = 4;
 const TEXTURE_LAYER_COUNT = 1;
 
 /**
+ * Lifecycle status of a sprite sheet's backing image data.
+ *
+ * A sheet only ever reports `'loading'` or `'failed'` while a hot-reload
+ * replacement image is in flight - normal construction always resolves an
+ * image beforehand, so a sheet starts (and, once reloaded, settles back to)
+ * `'ready'`.
+ */
+type SpriteSheetStatus = 'loading' | 'ready' | 'failed';
+
+/**
  * Dev-only registry of live sprite sheets keyed by normalized source URL, so
  * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded
  * from a changed image. Populated only while {@link isHotActive} (no production
@@ -274,6 +284,12 @@ export class SpriteSheet {
     /** Palette index per pixel (set by indexize, uploaded as r8uint texture). */
     private indexedPixels: Uint8Array<ArrayBuffer> | null = null;
 
+    /** Lifecycle status. Backing field for the public {@link status} getter. */
+    private _status: SpriteSheetStatus = 'ready';
+
+    /** Load progress in `[0, 1]`. Backing field for the public {@link progress} getter. */
+    private _progress = 1.0;
+
     /**
      * Creates a sprite sheet from a loaded image.
      * Use the static load() method for easier loading from URL.
@@ -322,6 +338,29 @@ export class SpriteSheet {
      */
     get height(): number {
         return this.size.y;
+    }
+
+    /**
+     * Gets the lifecycle status of this sheet's backing image data.
+     *
+     * @since 1.4.0
+     * @returns `'ready'` once constructed (an image has always already resolved by
+     *   then); `'loading'` or `'failed'` only while and after a hot-reload
+     *   replacement image is in flight, respectively.
+     */
+    get status(): SpriteSheetStatus {
+        return this._status;
+    }
+
+    /**
+     * Gets the load progress of this sheet's backing image data, in `[0, 1]`.
+     *
+     * @since 1.4.0
+     * @returns `1.0` once ready; `0.0` while a hot-reload replacement image is in
+     *   flight. Coarse-grained - `HTMLImageElement` reports no byte-level progress.
+     */
+    get progress(): number {
+        return this._progress;
     }
 
     /**
@@ -602,54 +641,91 @@ export class SpriteSheet {
     }
 
     /**
+     * Marks this sheet as loading a hot-reloaded replacement image.
+     *
+     * Internal – called by `HotRuntime.handleAssetChanged` immediately before it
+     * starts fetching the changed image, so {@link status}/{@link progress} reflect
+     * the fetch while it's in flight. Followed by either {@link hotReplaceImage}
+     * (the fetch resolved) or {@link failHotReplace} (the fetch itself threw).
+     */
+    beginHotReplace(): void {
+        this._status = 'loading';
+        this._progress = 0;
+    }
+
+    /**
+     * Marks this sheet's in-flight hot-reload replacement as failed.
+     *
+     * Internal – called by `HotRuntime.handleAssetChanged` when the replacement
+     * image fetch itself throws, before {@link hotReplaceImage} is ever reached.
+     */
+    failHotReplace(): void {
+        this._status = 'failed';
+    }
+
+    /**
      * Replaces this sheet's source image in place after a hot-reloaded asset change.
      *
      * Swaps the image reference, validates and updates {@link size} (dimension
      * changes are allowed – buffers rebuild to match), re-runs `indexize` against
      * `palette` when the sheet was already indexized so `indexedPixels` stays in
      * sync with the new pixels, and invalidates the cached GPU texture so the next
-     * `getTexture()` call re-uploads it.
+     * `getTexture()` call re-uploads it. Sets {@link status} to `'ready'` on success.
      *
-     * No-op (with a console warning) for sheets created from raw indexed data – there
-     * is no source image to replace – and for an already-indexized sheet when `palette`
-     * is `null`, since there is nothing safe to reindex against.
+     * No-op (with a console warning, and {@link status} set to `'failed'`) for sheets
+     * created from raw indexed data – there is no source image to replace – and for
+     * an already-indexized sheet when `palette` is `null`, since there is nothing safe
+     * to reindex against.
      *
      * If `indexize()` throws partway (a pixel color from the new image is missing from
      * `palette`), this sheet is left with the new image/size but a stale, mismatched
      * `indexedPixels`/texture until a subsequent successful hot reload – an accepted
-     * dev-only-path risk, not a production code path.
+     * dev-only-path risk, not a production code path. {@link status} is set to
+     * `'failed'` and the error is rethrown.
      *
      * @param image - Newly loaded replacement image.
      * @param palette - Active palette, used to re-run `indexize` when the sheet was
      *   already indexized.
+     * @throws If the replacement image exceeds engine size limits, or `indexize()` throws.
      */
     hotReplaceImage(image: HTMLImageElement, palette: Palette | null): void {
         if (!this.image) {
             console.warn('[BT] Hot reload: sprite sheet has no source image (raw indexed data); skipping.');
+            this._status = 'failed';
 
             return;
         }
 
         if (this.indexedPixels !== null && palette === null) {
             console.warn(`[BT] Hot reload: ${this.sourceName} is indexized but no active palette is set; skipping.`);
+            this._status = 'failed';
 
             return;
         }
 
-        assertImageElementWithinLimits('sprite sheet', image);
+        try {
+            assertImageElementWithinLimits('sprite sheet', image);
 
-        this.image = image;
-        this._size = new Vector2i(image.width, image.height);
+            this.image = image;
+            this._size = new Vector2i(image.width, image.height);
 
-        if (this.imageBitmap) {
-            this.imageBitmap.close();
-            this.imageBitmap = null;
-        }
+            if (this.imageBitmap) {
+                this.imageBitmap.close();
+                this.imageBitmap = null;
+            }
 
-        if (this.indexedPixels !== null && palette !== null) {
-            this.indexize(palette);
-        } else {
-            this.invalidateTexture();
+            if (this.indexedPixels !== null && palette !== null) {
+                this.indexize(palette);
+            } else {
+                this.invalidateTexture();
+            }
+
+            this._status = 'ready';
+            this._progress = 1.0;
+        } catch (error) {
+            this._status = 'failed';
+
+            throw error;
         }
     }
 

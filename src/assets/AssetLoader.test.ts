@@ -344,6 +344,63 @@ describe('AssetLoader', () => {
         });
     });
 
+    describe('loadingCount', () => {
+        /** Image stub whose `onload`/`onerror` must be fired manually, so tests control timing. */
+        class DeferredImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            width = 100;
+            height = 100;
+            src = '';
+        }
+
+        let instances: DeferredImage[];
+
+        beforeEach(() => {
+            instances = [];
+
+            vi.stubGlobal(
+                'Image',
+                class extends DeferredImage {
+                    constructor() {
+                        super();
+                        instances.push(this);
+                    }
+                },
+            );
+        });
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+        });
+
+        it('is zero when nothing is loading', () => {
+            expect(AssetLoader.loadingCount).toBe(0);
+        });
+
+        it('increments while a load is in flight and drops to zero once it resolves', async () => {
+            const promise = AssetLoader.loadImage('pending.png');
+
+            expect(AssetLoader.loadingCount).toBe(1);
+
+            instances[0]?.onload?.();
+            await promise;
+
+            expect(AssetLoader.loadingCount).toBe(0);
+        });
+
+        it('drops to zero once an in-flight load rejects', async () => {
+            const promise = AssetLoader.loadImage('pending-fail.png');
+
+            expect(AssetLoader.loadingCount).toBe(1);
+
+            instances[0]?.onerror?.();
+            await expect(promise).rejects.toThrow();
+
+            expect(AssetLoader.loadingCount).toBe(0);
+        });
+    });
+
     describe('stale-completion safety', () => {
         /** Image stub whose `onload`/`onerror` must be fired manually, so tests control resolution order. */
         class DeferredImage {

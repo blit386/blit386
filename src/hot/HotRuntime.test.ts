@@ -217,9 +217,11 @@ describe('HotRuntime', () => {
 
         it('replaces every registered sheet for a matching image URL', async () => {
             vi.spyOn(AssetLoader, 'hotReloadImage').mockResolvedValue({ width: 8, height: 8 } as HTMLImageElement);
-            const fakeSheet = { hotReplaceImage: vi.fn() } as unknown as InstanceType<
-                typeof SpriteSheetModule.SpriteSheet
-            >;
+            const fakeSheet = {
+                beginHotReplace: vi.fn(),
+                failHotReplace: vi.fn(),
+                hotReplaceImage: vi.fn(),
+            } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
             vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
             vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
 
@@ -229,6 +231,69 @@ describe('HotRuntime', () => {
             await vi.waitFor(() =>
                 expect(fakeSheet.hotReplaceImage).toHaveBeenCalledExactlyOnceWith({ width: 8, height: 8 }, null),
             );
+        });
+
+        it('marks every registered sheet loading before the replacement image is fetched, then replaces once it resolves', async () => {
+            let resolveFetch: ((image: HTMLImageElement) => void) | undefined;
+            vi.spyOn(AssetLoader, 'hotReloadImage').mockImplementation(
+                () =>
+                    new Promise((resolve) => {
+                        resolveFetch = resolve;
+                    }),
+            );
+            const fakeSheet = {
+                beginHotReplace: vi.fn(),
+                failHotReplace: vi.fn(),
+                hotReplaceImage: vi.fn(),
+            } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
+            vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'hero.png', type: 'image', timestamp: 1 });
+
+            // The fetch is still pending here - beginHotReplace already ran, hotReplaceImage/failHotReplace have not.
+            expect(fakeSheet.beginHotReplace).toHaveBeenCalledOnce();
+            expect(fakeSheet.hotReplaceImage).not.toHaveBeenCalled();
+            expect(fakeSheet.failHotReplace).not.toHaveBeenCalled();
+
+            resolveFetch?.({ width: 8, height: 8 } as HTMLImageElement);
+
+            await vi.waitFor(() =>
+                expect(fakeSheet.hotReplaceImage).toHaveBeenCalledExactlyOnceWith({ width: 8, height: 8 }, null),
+            );
+            expect(fakeSheet.failHotReplace).not.toHaveBeenCalled();
+        });
+
+        it('marks every registered sheet failed only once the replacement fetch itself rejects', async () => {
+            let rejectFetch: ((error: Error) => void) | undefined;
+            vi.spyOn(AssetLoader, 'hotReloadImage').mockImplementation(
+                () =>
+                    new Promise((_resolve, reject) => {
+                        rejectFetch = reject;
+                    }),
+            );
+            const fakeSheet = {
+                beginHotReplace: vi.fn(),
+                failHotReplace: vi.fn(),
+                hotReplaceImage: vi.fn(),
+            } as unknown as InstanceType<typeof SpriteSheetModule.SpriteSheet>;
+            vi.spyOn(SpriteSheetModule, 'getHotReloadSheets').mockReturnValue(new Set([fakeSheet]));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            const handler = registerAndCaptureAssetHandler(HotRuntime);
+            handler({ url: 'hero.png', type: 'image', timestamp: 1 });
+
+            // The fetch is still pending here - beginHotReplace already ran, failHotReplace has not (yet).
+            expect(fakeSheet.beginHotReplace).toHaveBeenCalledOnce();
+            expect(fakeSheet.failHotReplace).not.toHaveBeenCalled();
+            expect(fakeSheet.hotReplaceImage).not.toHaveBeenCalled();
+
+            rejectFetch?.(new Error('404'));
+
+            await vi.waitFor(() => expect(fakeSheet.failHotReplace).toHaveBeenCalledOnce());
+            expect(fakeSheet.hotReplaceImage).not.toHaveBeenCalled();
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('hero.png'), expect.any(Error));
         });
 
         it('routes an audio payload through AudioClip.hotReload', async () => {

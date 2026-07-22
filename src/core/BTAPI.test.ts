@@ -25,7 +25,8 @@ import {
     installMockNavigatorGPU,
     uninstallMockNavigatorGPU,
 } from '../__test__/webgpu-mock';
-import type { AudioClip } from '../assets/AudioClip';
+import { AssetLoader } from '../assets/AssetLoader';
+import { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
 import { Palette } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
@@ -2628,6 +2629,23 @@ describe('BTAPI', () => {
             BTAPI.instance.effectRemove(effect);
 
             expect(removeSpy).toHaveBeenCalledWith(effect);
+        });
+    });
+
+    describe('getLoadingAssetsCount', () => {
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        it('returns 0 when nothing is loading', () => {
+            expect(BTAPI.instance.getLoadingAssetsCount()).toBe(0);
+        });
+
+        it('sums the AssetLoader and AudioClip in-flight counts', () => {
+            vi.spyOn(AssetLoader, 'loadingCount', 'get').mockReturnValue(2);
+            vi.spyOn(AudioClip, 'loadingCount', 'get').mockReturnValue(3);
+
+            expect(BTAPI.instance.getLoadingAssetsCount()).toBe(5);
         });
     });
 

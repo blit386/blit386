@@ -715,6 +715,19 @@ export const BT = {
     },
 
     /**
+     * Total number of asset loads currently in flight (images and audio clips combined).
+     *
+     * Useful for a loading-screen progress indicator: poll this each frame and show a
+     * spinner or bar until it drops back to `0`.
+     *
+     * @since 1.4.0
+     * @returns Combined count of in-flight `AssetLoader` and `AudioClip` loads.
+     */
+    get loadingAssetsCount(): number {
+        return BTAPI.instance.getLoadingAssetsCount();
+    },
+
+    /**
      * Current screen orientation type from the Screen Orientation API.
      *
      * Examples: `'landscape-primary'`, `'portrait-secondary'`. Returns `null` when

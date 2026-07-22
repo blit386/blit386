@@ -68,10 +68,27 @@ if (AssetLoader.isLoaded('sprites.png')) {
 
 // Drop a single URL's cache entry (mainly for tests or explicit resets)
 AssetLoader.evict('sprites.png');
+
+// Number of image loads currently in flight
+AssetLoader.loadingCount;
 ```
 
 `AssetLoader.evict()` is also the manual escape hatch for forcing a fresh load outside the `blit386/vite` plugin's
 automatic asset watcher - see [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix).
+
+<Since symbol="BT.loadingAssetsCount" />
+
+For a loading-screen indicator that covers both images and audio clips, use `BT.loadingAssetsCount` - it sums
+`AssetLoader.loadingCount` and `AudioClip.loadingCount` (see [API: Audio](api-audio.md#loading)) and drops back to `0`
+once every in-flight load has settled:
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+if (BT.loadingAssetsCount > 0) {
+  // show a spinner or progress bar
+}
+```
 
 ## Sprite setup – preferred path
 
@@ -237,6 +254,25 @@ glyph tables and texture.
   holding onto as a `srcRect` into that sheet does not update itself - reconciling it is the demo's own
   responsibility. Keep sprite sheet dimensions stable during a hot-reload session, or recompute `srcRect`s from the
   sheet's current `width`/`height` when that matters.
+</Callout>
+
+Each `SpriteSheet` also exposes `status` (`'loading' | 'ready' | 'failed'`) and `progress` (`0` or `1`) tracking a
+replacement fetch while it's in flight - useful for a per-sheet loading indicator, or combine with
+[`BT.loadingAssetsCount`](#loading-assets) for a single engine-wide signal. A normally loaded sheet is always `'ready'`
+with `progress: 1.0`, since its image has already resolved by the time the sheet is constructed.
+
+```ts twoslash
+import { SpriteSheet } from 'blit386';
+declare const sheet: SpriteSheet;
+// ---cut---
+sheet.status; // 'loading' | 'ready' | 'failed'
+sheet.progress; // 0 while loading, 1.0 once ready
+```
+
+<Callout title="Coarse-grained progress">
+  `progress` is `0` or `1.0`, never a value in between - `HTMLImageElement` reports no byte-level download progress the
+  way `AudioClip`'s `onProgress` callback does (see [API: Audio](api-audio.md#loading)). Use `status`/`progress` to show
+  or hide a loading indicator, not to drive a percentage bar.
 </Callout>
 
 See [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix) for the full asset type matrix, including audio and the

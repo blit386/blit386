@@ -665,6 +665,13 @@
       },
       "status": "deprecated"
     },
+    "BT.loadingAssetsCount": {
+      "kind": "getter",
+      "since": "1.4.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.musicPlay": {
       "kind": "method",
       "since": "1.3.0",
@@ -1403,6 +1410,7 @@
   "pages": {
     "api/assets": [
       "AssetLoader",
+      "BT.loadingAssetsCount",
       "BitmapFont",
       "IndexedSpriteLoadResult",
       "SpriteSheet"

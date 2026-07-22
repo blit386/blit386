@@ -1,4 +1,5 @@
-import type { AudioClip } from '../assets/AudioClip';
+import { AssetLoader } from '../assets/AssetLoader';
+import { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import {
@@ -656,6 +657,18 @@ export class BTAPI {
      */
     public isInitialized(): boolean {
         return this.demo !== null && this.loop !== null;
+    }
+
+    /**
+     * Gets the total number of asset loads currently in flight across all loaders.
+     *
+     * Computed fresh on each read by summing {@link AssetLoader.loadingCount} and
+     * {@link AudioClip.loadingCount} - stateless, no subscription or extra bookkeeping.
+     *
+     * @returns Combined count of in-flight image and audio clip loads.
+     */
+    public getLoadingAssetsCount(): number {
+        return AssetLoader.loadingCount + AudioClip.loadingCount;
     }
 
     /**

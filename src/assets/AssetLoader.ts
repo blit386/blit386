@@ -231,6 +231,17 @@ function startLoading(fetchUrl: string, cacheKey: string = fetchUrl): Promise<HT
  */
 export class AssetLoader {
     /**
+     * Gets the number of image loads currently in flight.
+     *
+     * @since 1.4.0
+     * @returns Count of URLs with a pending {@link AssetLoader.loadImage} or
+     *   {@link AssetLoader.hotReloadImage} request.
+     */
+    static get loadingCount(): number {
+        return loadingPromises.size;
+    }
+
+    /**
      * Loads an image and caches the resolved element by URL.
      *
      * Reuses an already-cached image immediately and shares a single in-flight

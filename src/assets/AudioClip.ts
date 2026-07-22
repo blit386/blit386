@@ -108,6 +108,17 @@ export class AudioClip {
     }
 
     /**
+     * Gets the number of clip loads currently in flight.
+     *
+     * @since 1.4.0
+     * @returns Count of URLs with a pending {@link AudioClip.load} (or
+     *   {@link AudioClip.loadAll}) request.
+     */
+    static get loadingCount(): number {
+        return inFlightLoads.size;
+    }
+
+    /**
      * Returns the decoded audio buffer.
      *
      * @returns The decoded buffer, or `null` after {@link unload}.

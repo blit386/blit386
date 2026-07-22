@@ -14,7 +14,7 @@
  * stubbed asset-loading/browser APIs.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockGPUDevice } from '../__test__/webgpu-mock';
 import { collectUsedIndices, resetUsage } from '../core/RenderPaletteUsage';
@@ -101,6 +101,40 @@ describe('SpriteSheet', () => {
             expect(rect.y).toBe(0);
             expect(rect.width).toBe(256);
             expect(rect.height).toBe(256);
+        });
+    });
+
+    describe('status and progress', () => {
+        it('defaults to ready/1.0 for a normally constructed sheet', () => {
+            const sheet = new SpriteSheet(mockImage);
+
+            expect(sheet.status).toBe('ready');
+            expect(sheet.progress).toBe(1.0);
+        });
+
+        it('defaults to ready/1.0 for a sheet created from raw indexed pixels', () => {
+            const sheet = SpriteSheet.fromIndexedPixels(2, 2, new Uint8Array(4) as Uint8Array<ArrayBuffer>);
+
+            expect(sheet.status).toBe('ready');
+            expect(sheet.progress).toBe(1.0);
+        });
+
+        it('beginHotReplace marks the sheet loading with zero progress', () => {
+            const sheet = new SpriteSheet(mockImage);
+
+            sheet.beginHotReplace();
+
+            expect(sheet.status).toBe('loading');
+            expect(sheet.progress).toBe(0);
+        });
+
+        it('failHotReplace marks the sheet failed', () => {
+            const sheet = new SpriteSheet(mockImage);
+
+            sheet.beginHotReplace();
+            sheet.failHotReplace();
+
+            expect(sheet.status).toBe('failed');
         });
     });
 
@@ -358,6 +392,60 @@ describe('SpriteSheet', () => {
             const sheet = await SpriteSheet.load('test.png');
             sheet.destroy();
             expect(closeSpy).toHaveBeenCalledOnce();
+        });
+
+        describe('AssetLoader.loadingCount via SpriteSheet.load', () => {
+            /** Image stub whose `onload`/`onerror` must be fired manually, so tests control timing. */
+            class DeferredImage {
+                onload: (() => void) | null = null;
+                onerror: (() => void) | null = null;
+                width = 100;
+                height = 100;
+                src = '';
+            }
+
+            let instances: DeferredImage[];
+
+            beforeEach(() => {
+                instances = [];
+
+                vi.stubGlobal(
+                    'Image',
+                    class extends DeferredImage {
+                        constructor() {
+                            super();
+                            instances.push(this);
+                        }
+                    },
+                );
+                vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('n/a')));
+            });
+
+            afterEach(() => {
+                AssetLoader.clear();
+            });
+
+            it('rises while the underlying image fetch is pending and drops to zero once it resolves', async () => {
+                const loadPromise = SpriteSheet.load('pending-sheet.png');
+
+                expect(AssetLoader.loadingCount).toBe(1);
+
+                instances[0]?.onload?.();
+                await loadPromise;
+
+                expect(AssetLoader.loadingCount).toBe(0);
+            });
+
+            it('drops to zero when the underlying image fetch rejects', async () => {
+                const loadPromise = SpriteSheet.load('pending-fail-sheet.png');
+
+                expect(AssetLoader.loadingCount).toBe(1);
+
+                instances[0]?.onerror?.();
+                await expect(loadPromise).rejects.toThrow();
+
+                expect(AssetLoader.loadingCount).toBe(0);
+            });
         });
     });
 
@@ -761,6 +849,37 @@ describe('SpriteSheet', () => {
             expect(getHotReloadSheets('images/gone.png')).toBeUndefined();
         });
 
+        it('reports ready/1.0 on a resolved sheet, then loading/0 and back to ready/1.0 across a hot-reload transition', async () => {
+            activateHotReload();
+            vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('n/a')));
+            vi.spyOn(AssetLoader, 'loadImage').mockResolvedValue(mockImage);
+
+            const sheet = await SpriteSheet.load('images/hot-status.png');
+
+            expect(sheet.status).toBe('ready');
+            expect(sheet.progress).toBe(1.0);
+
+            const registered = getHotReloadSheets('images/hot-status.png');
+            expect(registered).toEqual(new Set([sheet]));
+
+            for (const registeredSheet of registered ?? []) {
+                registeredSheet.beginHotReplace();
+            }
+
+            expect(sheet.status).toBe('loading');
+            expect(sheet.progress).toBe(0);
+
+            const replacementImage = { width: 32, height: 32 } as HTMLImageElement;
+
+            for (const registeredSheet of registered ?? []) {
+                registeredSheet.hotReplaceImage(replacementImage, null);
+            }
+
+            expect(sheet.status).toBe('ready');
+            expect(sheet.progress).toBe(1.0);
+            expect(sheet.getImage()).toBe(replacementImage);
+        });
+
         describe('hotReplaceImage', () => {
             it('warns and does nothing for a raw-indexed sheet (no source image)', () => {
                 const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -769,17 +888,31 @@ describe('SpriteSheet', () => {
                 sheet.hotReplaceImage(mockImage, null);
 
                 expect(warnSpy).toHaveBeenCalledOnce();
+                expect(sheet.status).toBe('failed');
             });
 
             it('swaps the image and updates size for a non-indexized sheet', () => {
                 const sheet = new SpriteSheet(mockImage);
                 const newImage = { width: 64, height: 32 } as HTMLImageElement;
 
+                sheet.beginHotReplace();
                 sheet.hotReplaceImage(newImage, null);
 
                 expect(sheet.getImage()).toBe(newImage);
                 expect(sheet.size.x).toBe(64);
                 expect(sheet.size.y).toBe(32);
+                expect(sheet.status).toBe('ready');
+                expect(sheet.progress).toBe(1.0);
+            });
+
+            it('marks the sheet failed and rethrows when the replacement image exceeds size limits', () => {
+                const sheet = new SpriteSheet(mockImage);
+                const oversized = { width: MAX_ASSET_DIMENSION + 1, height: 16 } as HTMLImageElement;
+
+                sheet.beginHotReplace();
+
+                expect(() => sheet.hotReplaceImage(oversized, null)).toThrow(AssetLimitError);
+                expect(sheet.status).toBe('failed');
             });
 
             it('invalidates the cached texture for a non-indexized sheet', () => {
@@ -807,8 +940,11 @@ describe('SpriteSheet', () => {
                 vi.stubGlobal('OffscreenCanvas', makeOffscreenCanvasMock(nextPixels, 1, 1));
                 palette.set(2, new Color32(0, 255, 0, 255));
 
+                sheet.beginHotReplace();
+
                 expect(() => sheet.hotReplaceImage({ width: 1, height: 1 } as HTMLImageElement, palette)).not.toThrow();
                 expect(sheet.getIndexedPixels()[0]).toBe(2);
+                expect(sheet.status).toBe('ready');
             });
 
             it('warns and skips when an indexized sheet has no active palette to reindex against', () => {
@@ -822,11 +958,13 @@ describe('SpriteSheet', () => {
                 sheet.indexize(palette);
 
                 const newImage = { width: 1, height: 1 } as HTMLImageElement;
+                sheet.beginHotReplace();
                 sheet.hotReplaceImage(newImage, null);
 
                 expect(warnSpy).toHaveBeenCalledOnce();
                 expect(sheet.getImage()).toBe(originalImage);
                 expect(sheet.getImage()).not.toBe(newImage);
+                expect(sheet.status).toBe('failed');
             });
         });
     });

@@ -128,7 +128,13 @@ const clips = await AudioClip.loadAll(['audio/theme.mp3', ['audio/hit.ogg', 'aud
 if (AudioClip.isLoaded('audio/theme.mp3')) {
   // already cached
 }
+
+// Number of clip loads currently in flight
+AudioClip.loadingCount;
 ```
+
+For a single loading-screen signal that also covers sprite sheet images, see
+[`BT.loadingAssetsCount`](api-assets.md#loading-assets).
 
 Pass `onProgress` to report phased load progress:
 
