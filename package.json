@@ -104,7 +104,7 @@
     "system-font:convert": "node scripts/convert-system-font.mjs",
     "prepublishOnly": "pnpm run build",
     "prepare": "husky",
-    "security:audit": "pnpm audit --audit-level=moderate --ignore GHSA-gv7w-rqvm-qjhr",
+    "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
     "security:audit:fix": "pnpm audit --fix",
     "security:mcp-preflight": "node scripts/security/mcp-preflight.mjs",
@@ -114,8 +114,9 @@
   "pnpm": {
     "overrides": {
       "vite-node": "^5.2.0",
-      "esbuild": "^0.25.0",
+      "esbuild": "^0.28.1",
       "brace-expansion@>=5.0.0 <5.0.6": "^5.0.6",
+      "fast-uri@>=3.0.0 <3.1.4": "^3.1.4",
       "ws@>=8.0.0 <8.20.1": "^8.20.1",
       "uuid@>=8.0.0 <11.1.1": "^11.1.1"
     },
@@ -136,6 +137,7 @@
     "@webgpu/types": "^0.1.71",
     "acorn": "^8.17.0",
     "cspell": "^10.0.1",
+    "esbuild": "^0.28.1",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^62.9.0",
