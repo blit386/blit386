@@ -644,8 +644,11 @@ describe('VoicePool', () => {
 
             const context = getMockContext(installed);
             const source = context.createBufferSourceCalls[0];
+            if (!source?.onended) {
+                throw new Error('expected onended handler from play()');
+            }
 
-            (source?.onended as () => void)();
+            (source.onended as () => void)();
 
             expect(pool.isPlaying(ref)).toBe(false);
         });
@@ -661,9 +664,12 @@ describe('VoicePool', () => {
 
             const context = getMockContext(installed);
             const source = context.createBufferSourceCalls[0];
+            if (!source?.onended) {
+                throw new Error('expected onended handler from play()');
+            }
             const disconnectSpy = vi.spyOn(source as AudioBufferSourceNode, 'disconnect');
 
-            (source?.onended as () => void)();
+            (source.onended as () => void)();
 
             expect(disconnectSpy).toHaveBeenCalledTimes(1);
         });
@@ -678,10 +684,13 @@ describe('VoicePool', () => {
 
             const context = getMockContext(installed);
             const firstSource = context.createBufferSourceCalls[0];
+            if (!firstSource?.onended) {
+                throw new Error('expected onended handler from play()');
+            }
 
             const second = pool.play(createMockAudioBuffer(), { priority: 5 });
 
-            (firstSource?.onended as () => void)();
+            (firstSource.onended as () => void)();
 
             expect(pool.isPlaying(second)).toBe(true);
             expect(first.voiceIndex).toBe(second.voiceIndex);
@@ -697,8 +706,11 @@ describe('VoicePool', () => {
 
             const context = getMockContext(installed);
             const source = context.createBufferSourceCalls[0];
+            if (!source?.onended) {
+                throw new Error('expected onended handler from play()');
+            }
 
-            (source?.onended as () => void)();
+            (source.onended as () => void)();
 
             const next = pool.play(createMockAudioBuffer());
 

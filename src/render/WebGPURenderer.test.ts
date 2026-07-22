@@ -1160,7 +1160,7 @@ describe('post-process effects', () => {
         // logical scene texture; palette resolve then targets the swap chain.
         const scenePass = beginRenderPassCalls[0];
         expect(scenePass).toBeDefined();
-        const sceneAttachment = (scenePass?.colorAttachments as GPURenderPassColorAttachment[])[0];
+        const sceneAttachment = scenePass?.colorAttachments ? [...scenePass.colorAttachments][0] : undefined;
         expect(sceneAttachment?.view).not.toBe(swapView);
 
         const encodeArgs = effect.encodeSpy.mock.calls[0];
@@ -1168,7 +1168,7 @@ describe('post-process effects', () => {
         expect(encodeArgs?.[2]).not.toBe(swapView);
 
         const resolvePass = beginRenderPassCalls[beginRenderPassCalls.length - 1];
-        const resolveAttachment = (resolvePass?.colorAttachments as GPURenderPassColorAttachment[])[0];
+        const resolveAttachment = resolvePass?.colorAttachments ? [...resolvePass.colorAttachments][0] : undefined;
         expect(resolveAttachment?.view).toBe(swapView);
     });
 
@@ -1207,12 +1207,12 @@ describe('post-process effects', () => {
         r.endFrame();
 
         const scenePass = beginRenderPassCalls[0];
-        const sceneAttachment = (scenePass?.colorAttachments as GPURenderPassColorAttachment[])[0];
+        const sceneAttachment = scenePass?.colorAttachments ? [...scenePass.colorAttachments][0] : undefined;
 
         expect(sceneAttachment?.view).not.toBe(swapView);
 
         const resolvePass = beginRenderPassCalls[1];
-        const resolveAttachment = (resolvePass?.colorAttachments as GPURenderPassColorAttachment[])[0];
+        const resolveAttachment = resolvePass?.colorAttachments ? [...resolvePass.colorAttachments][0] : undefined;
         expect(resolveAttachment?.view).toBe(swapView);
         expect(beginRenderPassCalls).toHaveLength(2);
     });
