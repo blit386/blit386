@@ -52,7 +52,12 @@
       "pattern": "^https?://github\\.com/[^/]+/[^/]+/compare/"
     },
     {
-      "pattern": "^https?://github\\.com/blit386/[^/]+(/|$)"
+      "pattern": "^https?://github\\.com/blit386/[^/]+/?$",
+      "comment": "Repo home pages can 429/flake; issues, pull, releases, and discussions are checked."
+    },
+    {
+      "pattern": "^https?://github\\.com/blit386/[^/]+/(blob|tree|raw)/",
+      "comment": "Blob/tree/raw paths can flake; keep them ignored while verifying issue/PR links."
     },
     {
       "pattern": "^https?://demos\\.blit386\\.dev(/|$)"
