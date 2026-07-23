@@ -3,8 +3,8 @@ name: bt-preflight
 description:
   Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check,
   sync:cursor-commands:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config,
-  test:cursor-commands) before committing or pushing. Use when the user wants to verify the code is ready to commit or
-  run every check at once.
+  test:cursor-commands, test:api-history, test:security-preflight) before committing or pushing. Use when the user wants
+  to verify the code is ready to commit or run every check at once.
 ---
 
 # Preflight Checks
@@ -42,6 +42,8 @@ Run comprehensive quality checks before committing or pushing code.
   - `test:declarations` – Declaration tooling log checker tests
   - `test:agent-config` – Agent config drift checker tests
   - `test:cursor-commands` – Cursor commands drift checker tests
+  - `test:api-history` – API history generator tests
+  - `test:security-preflight` – MCP security preflight tests
 
 2. Report results
 

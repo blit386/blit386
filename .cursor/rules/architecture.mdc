@@ -102,6 +102,8 @@ src/
     Rng.ts                 # Deterministic PRNG (mulberry32-style; internal, backs the synth engine's noise generation)
     FrameCapture.ts        # GPU readback + PNG export
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
+    errorMessages.ts       # Centralized user-facing bootstrap/runtime/asset error strings (two-tier voice); imported by Bootstrap and asset/runtime code
+    urlHints.ts            # Shared "can't find this file" URL hint helpers (hasExplicitLocation, buildPathHint, extractExtension); used by BitmapFont and AudioClip error builders
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests
     webaudio-mock.ts       # Web Audio mock factories for tests (AudioContext, GainNode, AudioParam, decodeAudioData/AudioBuffer mocks)

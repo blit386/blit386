@@ -29,7 +29,7 @@ pushing significant changes or creating pull requests.
 
 - Execute `pnpm run preflight` (format, lint, typecheck, spellcheck, knip, docs:links, agents:check,
   sync:doc-banners:check, sync:cursor-commands:check, api:since:check, api:history:check, test:unit, test:declarations,
-  test:agent-config, test:cursor-commands)
+  test:agent-config, test:cursor-commands, test:api-history, test:security-preflight)
 - If any check fails, report issues and stop
 - All automated checks must pass before AI review
 
@@ -97,6 +97,8 @@ pushing significant changes or creating pull requests.
 - [PASS/FAIL] Unit tests (test:unit)
 - [PASS/FAIL] Declaration tooling (test:declarations)
 - [PASS/FAIL] Agent config tests (test:agent-config)
+- [PASS/FAIL] API history tests (test:api-history)
+- [PASS/FAIL] Security preflight tests (test:security-preflight)
 - [PASS/FAIL] Security audit
 
 ### Code Review Findings
