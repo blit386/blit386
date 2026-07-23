@@ -14,7 +14,7 @@ releases reached end-of-life at 1.0.0 and no longer receive security updates.
 
 If you discover a security vulnerability in a supported 1.x release, please report it responsibly.
 
-Do not open a public issue. Instead, email the maintainers directly or use
+Do not open a public issue. Report privately through
 [GitHub's private vulnerability reporting](https://github.com/blit386/blit386/security/advisories/new).
 
 We will acknowledge receipt within 48 hours and provide a timeline for a fix. Once resolved, we will publish a fix on

@@ -1,6 +1,30 @@
 # Contributing to BLIT386
 
-Thank you for your interest in contributing to the BLIT386 project.
+Thank you for your interest in contributing to the BLIT386 project. By participating, you agree to follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Getting Started
+
+Clone the repository, install dependencies, and confirm the build and tests pass:
+
+```bash
+git clone https://github.com/blit386/blit386.git
+cd blit386
+pnpm install
+pnpm run build
+pnpm run test
+```
+
+Requirements:
+
+- Node.js >=22.18.0 (`engines` in `package.json`)
+- pnpm 10.26.2+ (`packageManager` in `package.json`)
+
+AI agent sessions (Claude Code / Cursor) and the optional [devcontainer](.devcontainer/devcontainer.json)
+(`typescript-node:22-bookworm`) auto-run `scripts/session-start-bootstrap.sh` via their SessionStart hooks /
+`postCreateCommand`, so a fresh checkout gets `pnpm install --frozen-lockfile` without a manual step. See
+[Environment bootstrap](CLAUDE.md#environment-bootstrap-sessionstart-hook-and-devcontainer) in `CLAUDE.md` for the full
+detail.
 
 ## Developer Certificate of Origin (DCO)
 
@@ -136,11 +160,6 @@ All code must follow the project's style guidelines:
   diagnostics such as `noExplicitAny` are errors)
 - JSDoc – Required for public APIs (ESLint `warn` rules that fail CI via `--max-warnings 0`)
 
-### Development environment
-
-- Node.js >=22.18.0 (`engines` in `package.json`)
-- pnpm 10.26.2+ (`packageManager` in `package.json`)
-
 ### Pre-commit Checks
 
 Before committing, run the preflight checks (requires the Node.js version above):
@@ -172,27 +191,35 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 ### Available Commands
 
 ```bash
-pnpm run build            # Build for production
-pnpm run lint             # Lint code
-pnpm run lint:fix         # Fix linting issues
-pnpm run format           # Format code
-pnpm run format:check     # Check formatting
-pnpm run typecheck        # Run TypeScript checks
-pnpm run spellcheck       # Check spelling
-pnpm run knip             # Find unused exports and dependencies
-pnpm run docs:links       # Check Markdown links
-pnpm run agents:check     # Check agent config drift (rules parity, skills symlinks, AGENTS.md pointer)
+pnpm run build                      # Build for production
+pnpm run lint                       # Lint code
+pnpm run lint:fix                   # Fix linting issues
+pnpm run format                     # Format code
+pnpm run format:check               # Check formatting
+pnpm run typecheck                  # Run TypeScript checks
+pnpm run spellcheck                 # Check spelling
+pnpm run knip                       # Find unused exports and dependencies
+pnpm run docs:links                 # Check Markdown links
+pnpm run agents:check               # Check agent config drift (rules parity, skills symlinks, AGENTS.md pointer)
+pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in published docs
+pnpm run sync:doc-banners:check     # Check doc site banner drift
 pnpm run sync:cursor-commands       # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
 pnpm run sync:cursor-commands:check # Check cursor commands drift
-pnpm run test:unit        # Run unit tests
-pnpm run test:declarations # Declaration tooling checker tests
-pnpm run test:agent-config # Agent config drift checker tests
-pnpm run test:cursor-commands # Cursor commands drift checker tests
-pnpm run test:api-history # API history generator tests
-pnpm run test:security-preflight # Security preflight tests
-pnpm run test:visual      # Playwright visual regression (local; not in preflight)
-pnpm run bench            # CPU benchmarks (Vitest bench)
-pnpm run preflight        # Run all quality checks
+pnpm run api:since:check            # Check public API @since / @changed / @deprecated tags
+pnpm run api:history:check          # Check API version-history manifest drift
+pnpm run security:audit             # Dependency security audit (moderate+)
+pnpm run security:audit:prod        # Production-deps-only security audit
+pnpm run security:mcp-preflight     # MCP security preflight checks
+pnpm run test                       # Run unit tests (alias for test:unit)
+pnpm run test:unit                  # Run unit tests
+pnpm run test:declarations          # Declaration tooling checker tests
+pnpm run test:agent-config          # Agent config drift checker tests
+pnpm run test:cursor-commands       # Cursor commands drift checker tests
+pnpm run test:api-history           # API history generator tests
+pnpm run test:security-preflight    # Security preflight tests
+pnpm run test:visual                # Playwright visual regression (local; not in preflight)
+pnpm run bench                      # CPU benchmarks (Vitest bench)
+pnpm run preflight                  # Run all quality checks
 ```
 
 ## Pull Request Process
