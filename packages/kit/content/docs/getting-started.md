@@ -43,7 +43,11 @@ folder, not on your whole computer.
 ## 5. Change something
 
 Open `src/game.js` (or `src/game.ts` if you chose TypeScript). Find a number or a color and change it. Save the file.
-The browser updates by itself. That is the whole loop: change a little, look, repeat.
+The browser updates by itself – and with the starter's `blit386` Vite plugin, most code edits keep the game running
+(score and position stay put) instead of wiping everything with a full page reload. Change a PNG or sound under
+`public/` and that asset updates in place too. That is the whole loop: change a little, look, repeat.
+
+More detail: `docs/hot-reload.md`.
 
 ## If something seems wrong
 

@@ -143,6 +143,8 @@ Build sounds in `init()`, never in `update()` – synthesizing takes real work a
   touches the graphics card, so every player hears it.
 - Sound arrived in blit386 1.3.0. If `BT.soundPlay` is not a function, you have an older engine – run
   `npx blit upgrade`.
+- Need a loading screen while clips load? Poll `BT.loadingAssetsCount` (engine 1.4.0) – see `docs/basics.md` and the
+  show-a-loading-screen skill.
 
 Next: `docs/input.md` for the button presses that trigger your sounds, `docs/when-something-breaks.md` when things go
 quiet in a way this page did not explain.
