@@ -3,8 +3,10 @@ import { describe, it } from 'node:test';
 
 import {
     findAgentsPointerFailures,
+    findCopilotPointerFailures,
     findRulesParityFailures,
     findSkillsSymlinkFailures,
+    findZedSettingsFailures,
     resolveSkillSymlinkTarget,
 } from './check-agent-config.mjs';
 
@@ -144,6 +146,72 @@ describe('check-agent-config', () => {
             const failures = findAgentsPointerFailures(content, false);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /CLAUDE\.md is missing/);
+        });
+    });
+
+    describe('findCopilotPointerFailures', () => {
+        const validContent = 'See [`AGENTS.md`](../AGENTS.md) and [`CLAUDE.md`](../CLAUDE.md) before non-trivial work.';
+
+        it('passes when Copilot instructions link to existing AGENTS.md and CLAUDE.md', () => {
+            assert.deepEqual(findCopilotPointerFailures(validContent, true, true), []);
+        });
+
+        it('fails when .github/copilot-instructions.md is missing', () => {
+            const failures = findCopilotPointerFailures(null, true, true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.github\/copilot-instructions\.md is missing/);
+        });
+
+        it('fails when Copilot instructions do not reference AGENTS.md', () => {
+            const content = 'See [`CLAUDE.md`](../CLAUDE.md) only.';
+            const failures = findCopilotPointerFailures(content, true, true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /does not reference AGENTS\.md/);
+        });
+
+        it('fails when Copilot instructions do not reference CLAUDE.md', () => {
+            const content = 'See [`AGENTS.md`](../AGENTS.md) only.';
+            const failures = findCopilotPointerFailures(content, true, true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /does not reference CLAUDE\.md/);
+        });
+
+        it('fails when AGENTS.md is missing even though Copilot instructions reference it', () => {
+            const failures = findCopilotPointerFailures(validContent, false, true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /AGENTS\.md is missing/);
+        });
+
+        it('fails when CLAUDE.md is missing even though Copilot instructions reference it', () => {
+            const failures = findCopilotPointerFailures(validContent, true, false);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /CLAUDE\.md is missing/);
+        });
+    });
+
+    describe('findZedSettingsFailures', () => {
+        it('passes when .zed/settings.json is valid JSON and .agents/skills layout exists', () => {
+            const content = '{\n  "agent": {}\n}\n';
+            assert.deepEqual(findZedSettingsFailures(content, true), []);
+        });
+
+        it('fails when .zed/settings.json is missing', () => {
+            const failures = findZedSettingsFailures(null, true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.zed\/settings\.json is missing/);
+        });
+
+        it('fails when .zed/settings.json is not parseable as JSON', () => {
+            const failures = findZedSettingsFailures('{not json', true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.zed\/settings\.json is not parseable as JSON/);
+        });
+
+        it('fails when .agents/skills layout is missing while .zed/settings.json exists', () => {
+            const content = '{\n  "agent": {}\n}\n';
+            const failures = findZedSettingsFailures(content, false);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.agents\/skills layout is missing while \.zed\/settings\.json exists/);
         });
     });
 });

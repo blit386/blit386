@@ -8,6 +8,9 @@
  *     symlink into `.claude/skills/<same-name>`, and every `.claude/skills/*`
  *     directory must have a matching symlink.
  *   - AGENTS.md still points at an existing CLAUDE.md.
+ *   - `.github/copilot-instructions.md` points at both AGENTS.md and CLAUDE.md.
+ *   - `.zed/settings.json` is present, parseable as JSON, and consistent with
+ *     the `.agents/skills` layout.
  *
  * This is read-only - unlike `sync-doc-banners.mjs` it never writes fixes,
  * it only reports drift for a human (or `pnpm run rules:sync`-style script)
@@ -27,6 +30,8 @@ const AGENTS_SKILLS_DIR = join(ROOT, '.agents', 'skills');
 const CLAUDE_SKILLS_DIR = join(ROOT, '.claude', 'skills');
 const AGENTS_MD_PATH = join(ROOT, 'AGENTS.md');
 const CLAUDE_MD_PATH = join(ROOT, 'CLAUDE.md');
+const COPILOT_INSTRUCTIONS_PATH = join(ROOT, '.github', 'copilot-instructions.md');
+const ZED_SETTINGS_PATH = join(ROOT, '.zed', 'settings.json');
 
 /**
  * Verifies `.cursor/rules/*.mdc` and `.claude/rules/*.md` define the same set
@@ -128,6 +133,79 @@ export function findAgentsPointerFailures(agentsMdContent, claudeMdExists) {
 }
 
 /**
+ * Verifies `.github/copilot-instructions.md` exists, references both AGENTS.md and
+ * CLAUDE.md via relative `../` links, and that both targets exist.
+ *
+ * @param {string | null} copilotContent Contents of `.github/copilot-instructions.md`, or `null` when missing.
+ * @param {boolean} agentsMdExists Whether AGENTS.md exists at the repo root.
+ * @param {boolean} claudeMdExists Whether CLAUDE.md exists at the repo root.
+ * @returns {string[]} Human-readable failure messages (empty when the pointer is valid).
+ */
+export function findCopilotPointerFailures(copilotContent, agentsMdExists, claudeMdExists) {
+    if (copilotContent === null) {
+        return ['.github/copilot-instructions.md is missing'];
+    }
+
+    const failures = [];
+    const referencesAgents = /\]\(\.\.\/AGENTS\.md\)/u.test(copilotContent);
+    const referencesClaude = /\]\(\.\.\/CLAUDE\.md\)/u.test(copilotContent);
+
+    if (!referencesAgents) {
+        failures.push('.github/copilot-instructions.md does not reference AGENTS.md');
+    }
+
+    if (!referencesClaude) {
+        failures.push('.github/copilot-instructions.md does not reference CLAUDE.md');
+    }
+
+    if (referencesAgents && !agentsMdExists) {
+        failures.push('.github/copilot-instructions.md points at AGENTS.md, but AGENTS.md is missing');
+    }
+
+    if (referencesClaude && !claudeMdExists) {
+        failures.push('.github/copilot-instructions.md points at CLAUDE.md, but CLAUDE.md is missing');
+    }
+
+    return failures;
+}
+
+/**
+ * Verifies `.zed/settings.json` exists, parses as JSON, and that the `.agents/skills`
+ * layout is present when the settings file exists. JSON parsing runs on the passed-in
+ * string so the function stays unit-testable without touching disk; parse errors become
+ * failure messages rather than throws. Full-line `//` comments are stripped first so
+ * Zed's JSONC settings still validate.
+ *
+ * @param {string | null} zedSettingsContent Contents of `.zed/settings.json`, or `null` when missing.
+ * @param {boolean} agentsSkillsLayoutExists Whether the `.agents/skills` directory exists.
+ * @returns {string[]} Human-readable failure messages (empty when settings are consistent).
+ */
+export function findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutExists) {
+    if (zedSettingsContent === null) {
+        return ['.zed/settings.json is missing'];
+    }
+
+    const failures = [];
+
+    try {
+        const withoutLineComments = zedSettingsContent
+            .split('\n')
+            .filter((line) => !/^\s*\/\//u.test(line))
+            .join('\n');
+        JSON.parse(withoutLineComments);
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        failures.push(`.zed/settings.json is not parseable as JSON: ${detail}`);
+    }
+
+    if (!agentsSkillsLayoutExists) {
+        failures.push('.agents/skills layout is missing while .zed/settings.json exists');
+    }
+
+    return failures;
+}
+
+/**
  * Computes the skill name a resolved symlink target represents. The target must be a directory that is a
  * *direct* child of `.claude/skills/` - a nested path or a file that merely shares a basename with a skill
  * directory does not count as a valid link, even though its basename would otherwise match.
@@ -189,7 +267,7 @@ function readClaudeSkillDirNames() {
         .sort();
 }
 
-/** @returns {string[]} All failure messages across the three checks (empty when config is in sync). */
+/** @returns {string[]} All failure messages across the five checks (empty when config is in sync). */
 function runAllChecks() {
     const cursorRuleNames = readRuleNames(CURSOR_RULES_DIR, '.mdc');
     const claudeRuleNames = readRuleNames(CLAUDE_RULES_DIR, '.md');
@@ -197,11 +275,19 @@ function runAllChecks() {
     const claudeSkillDirNames = readClaudeSkillDirNames();
     const agentsMdContent = existsSync(AGENTS_MD_PATH) ? readFileSync(AGENTS_MD_PATH, 'utf8') : null;
     const claudeMdExists = existsSync(CLAUDE_MD_PATH);
+    const copilotContent = existsSync(COPILOT_INSTRUCTIONS_PATH)
+        ? readFileSync(COPILOT_INSTRUCTIONS_PATH, 'utf8')
+        : null;
+    const agentsMdExists = existsSync(AGENTS_MD_PATH);
+    const zedSettingsContent = existsSync(ZED_SETTINGS_PATH) ? readFileSync(ZED_SETTINGS_PATH, 'utf8') : null;
+    const agentsSkillsLayoutExists = existsSync(AGENTS_SKILLS_DIR);
 
     return [
         ...findRulesParityFailures(cursorRuleNames, claudeRuleNames),
         ...findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames),
         ...findAgentsPointerFailures(agentsMdContent, claudeMdExists),
+        ...findCopilotPointerFailures(copilotContent, agentsMdExists, claudeMdExists),
+        ...findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutExists),
     ];
 }
 
@@ -216,7 +302,9 @@ function main() {
         process.exit(1);
     }
 
-    console.log('Agent config OK (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer).');
+    console.log(
+        'Agent config OK (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer, Copilot instructions, Zed settings).',
+    );
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
