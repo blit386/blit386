@@ -8,6 +8,7 @@
 #
 # Auto review is disabled by default. To enable it, add the `cr` label to the PR.
 reviews:
+  review_status: false
   path_filters:
     - '!.cursor/commands/**'
   auto_review:
