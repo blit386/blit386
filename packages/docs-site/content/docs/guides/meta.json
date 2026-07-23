@@ -8,6 +8,7 @@
     "overlay",
     "post-process-effects",
     "bitmap-fonts",
-    "audio"
+    "audio",
+    "hot-reload"
   ]
 }

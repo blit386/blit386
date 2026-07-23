@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Deprecation Timeline"
 description: "Central tracker for public API compatibility aliases and planned removals."
-lastModified: "2026-07-02T15:46:02+02:00"
+lastModified: "2026-07-22T16:23:13+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/reference-deprecations.md"
 ---
 
@@ -14,6 +14,8 @@ Use this file as the single source of truth when pruning old names.
 These aliases were introduced to preserve backward compatibility after the API naming refactor.
 
 ### `BT` namespace
+
+Removal target: 2.0.0
 
 - `BT.pointerPosValid()` → `BT.isPointerActive()`
 - `BT.buttonDown()` → `BT.isDown()`
@@ -26,6 +28,8 @@ These aliases were introduced to preserve backward compatibility after the API n
 
 ### `HardwareSettings` compatibility fields
 
+Removal target: 2.0.0
+
 - `detectDroppedFrames` → `isDetectingDroppedFrames`
 - `overlayEnabled` → `isOverlayEnabled`
 - `overlayVisibleAtStart` → `isOverlayVisibleAtStart`
@@ -37,11 +41,15 @@ These aliases were introduced to preserve backward compatibility after the API n
 
 ### `BootstrapOptions` compatibility fields
 
+Removal target: 2.0.0
+
 - `canvasId` → `canvasID`
 - `containerId` → `containerID`
 - `waitForDOMReady` → `isWaitingForDOMReady`
 
 ### Class method aliases
+
+Removal target: 2.0.0
 
 - `SpriteSheet.isIndexized()` → `SpriteSheet.isIndexed()`
 - `Timer.tick()` → `Timer.fireIfElapsed()`
@@ -55,13 +63,14 @@ These aliases were introduced to preserve backward compatibility after the API n
 
 ### Removal checklist
 
-- Search for `@deprecated Deprecated since 2026-05-31` in `src/`.
+- Search for `@deprecated Deprecated since` in `src/` (every public alias uses that versioned form).
 - Remove aliases only after confirming downstream demos/apps have migrated.
 
 <Callout title="Public aliases only">
 
-This tracker lists public compatibility aliases only. Internal deprecated helpers (overlay layout functions,
-`RenderPaletteUsage` re-exports, etc.) are omitted – search `@deprecated` in `src/` for the full set.
+This tracker lists public compatibility aliases only. Internal deprecated helpers that used to live beside overlay
+layout functions and `RenderPaletteUsage` re-exports were removed rather than carried forward – search `@deprecated` in
+`src/` for anything that remains outside this list.
 
 </Callout>
 
