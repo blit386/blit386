@@ -69,10 +69,10 @@ export class BTAPI {
     public static readonly VERSION_MAJOR = 1;
 
     /** Minor version number. */
-    public static readonly VERSION_MINOR = 3;
+    public static readonly VERSION_MINOR = 4;
 
     /** Patch version number. */
-    public static readonly VERSION_PATCH = 1;
+    public static readonly VERSION_PATCH = 0;
 
     /** Singleton instance of BTAPI. */
     private static _instance: BTAPI | null = null;
