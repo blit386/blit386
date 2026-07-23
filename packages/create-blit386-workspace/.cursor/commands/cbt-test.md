@@ -9,7 +9,16 @@ top-level `tests/` directory – each package owns its own `test/` folder.
 | `packages/create-blit386/test/env.test.mjs`      | 4     | `meetsNodeFloor`: the Node version floor guard, including pre-release and custom-floor strings                                                                                                                                                                                                              |
 | `packages/kit/test/codemod.test.mjs`             | 13    | The migration registry and the anchored codemod engine behind `blit migrate`: auto-applied renames vs. names reported for review, receiver anchoring, idempotence, and registry field completeness                                                                                                          |
 
-`pnpm run test` at the root is `pnpm -r test`, which runs all three.
+`pnpm run test` at the root is `pnpm -r test`, which runs all three package suites.
+
+Root-level script tests (also part of `pnpm run preflight`, not part of `pnpm run test`):
+
+| Script                          | File                                    | Covers                                                           |
+| ------------------------------- | --------------------------------------- | ---------------------------------------------------------------- |
+| `pnpm run test:agent-config`    | `scripts/check-agent-config.test.mjs`   | `.agents/skills` symlink integrity helpers                       |
+| `pnpm run test:cursor-commands` | `scripts/sync-cursor-commands.test.mjs` | Frontmatter strip, link rewrite, command build, orphan detection |
+
+Run them with those `pnpm run` scripts, or together via `pnpm run preflight`.
 
 ## Usage
 

@@ -144,7 +144,10 @@ function main() {
         })),
     );
     const orphanNames = findOrphanCommandNames(readExistingCommandNames(), skillNames);
-    const drifted = [];
+    /** @type {string[]} */
+    const updated = [];
+    /** @type {string[]} */
+    const removed = [];
 
     for (const file of commandFiles) {
         const filePath = join(COMMANDS_DIR, `${file.name}.md`);
@@ -154,7 +157,7 @@ function main() {
             continue;
         }
 
-        drifted.push(`.cursor/commands/${file.name}.md`);
+        updated.push(`.cursor/commands/${file.name}.md`);
 
         if (!isCheck) {
             mkdirSync(COMMANDS_DIR, { recursive: true });
@@ -163,12 +166,14 @@ function main() {
     }
 
     for (const orphanName of orphanNames) {
-        drifted.push(`.cursor/commands/${orphanName}.md (orphaned, no matching .claude/skills/${orphanName})`);
+        removed.push(`.cursor/commands/${orphanName}.md (orphaned, no matching .claude/skills/${orphanName})`);
 
         if (!isCheck) {
             rmSync(join(COMMANDS_DIR, `${orphanName}.md`));
         }
     }
+
+    const drifted = [...updated, ...removed];
 
     if (isCheck) {
         if (drifted.length > 0) {
@@ -193,11 +198,23 @@ function main() {
         return;
     }
 
-    for (const entry of drifted) {
+    for (const entry of updated) {
         console.log(`updated ${entry}`);
     }
 
-    console.log(`\n${drifted.length} of ${commandFiles.length} cursor command(s) updated.`);
+    for (const entry of removed) {
+        console.log(`removed ${entry}`);
+    }
+
+    const parts = [];
+    if (updated.length > 0) {
+        parts.push(`${updated.length} updated`);
+    }
+    if (removed.length > 0) {
+        parts.push(`${removed.length} removed`);
+    }
+
+    console.log(`\n${parts.join(', ')} (${commandFiles.length} skill command(s) on disk).`);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
