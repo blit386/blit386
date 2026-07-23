@@ -86,9 +86,24 @@ test('scaffolds a runnable game project', () => {
         );
         assert.ok(manifest.devDependencies?.['@blit386/kit'], '@blit386/kit devDependency is missing');
         assert.ok(manifest.devDependencies?.['@biomejs/biome'], '@biomejs/biome devDependency is missing');
+        assert.equal(
+            manifest.devDependencies['@biomejs/biome'],
+            '^2.5.2',
+            'generated games should pin @biomejs/biome ^2.5.2',
+        );
         assert.ok(manifest.scripts?.format, 'format script is missing');
         assert.ok(manifest.scripts?.lint, 'lint script is missing');
         assert.ok(manifest.scripts?.build, 'build script is missing');
+
+        const biomeConfig = JSON.parse(readFileSync(join(project, 'biome.json'), 'utf8'));
+        assert.ok(
+            Array.isArray(biomeConfig.files?.includes),
+            'biome.json files.includes should be an array',
+        );
+        assert.ok(
+            biomeConfig.files.includes.includes('src/**/*.js'),
+            'JS scaffold biome.json should include src/**/*.js',
+        );
 
         const viteConfig = readFileSync(join(project, 'vite.config.js'), 'utf8');
         assert.ok(viteConfig.includes("from 'blit386/vite'"), 'vite.config.js should import blit386/vite');
@@ -1143,6 +1158,21 @@ test('scaffolds a TypeScript project when language is ts', () => {
         assert.ok(pkg.scripts?.typecheck, 'typecheck script should be present for TS projects');
         assert.ok(pkg.dependencies?.['blit386'], 'blit386 should be a dependency');
         assert.ok(!pkg.dependencies['blit386'].includes('workspace:*'), 'no workspace:* in blit386 dependency');
+        assert.equal(
+            pkg.devDependencies?.['@biomejs/biome'],
+            '^2.5.2',
+            'TS scaffold should pin @biomejs/biome ^2.5.2',
+        );
+
+        const biomeConfig = JSON.parse(readFileSync(join(project, 'biome.json'), 'utf8'));
+        assert.ok(
+            Array.isArray(biomeConfig.files?.includes),
+            'biome.json files.includes should be an array',
+        );
+        assert.ok(
+            biomeConfig.files.includes.includes('src/**/*.ts'),
+            'TS scaffold biome.json should include src/**/*.ts',
+        );
 
         // Entry file references should point to the .ts file.
         const html = readFileSync(join(project, 'index.html'), 'utf8');
