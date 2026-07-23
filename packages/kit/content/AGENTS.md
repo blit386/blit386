@@ -82,12 +82,19 @@ From the project folder:
 The `blit` helper is installed inside the project (it ships with `@blit386/kit`), so it is not on the system PATH.
 Always invoke it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works inside package scripts.
 
+While the dev server is running, most saves hot-reload instead of wiping the page: edits to `update()` / `render()` keep
+your score and position; edits to `init()` re-run setup (optional `onHotReload` can copy fields across – see the
+commented example in `src/game.js` / `src/game.ts`); edits to `configure()` screen settings reload the page; files under
+`public/` swap in place. Details: `docs/hot-reload.md`.
+
 ## Good habits
 
 - Change one small thing, then look at the browser. Fast loops beat big rewrites.
 - Keep `update()` cheap: it runs 60 times a second. Avoid creating lots of new objects every frame in hot paths.
 - The starter game (`src/game.js`, or `src/game.ts` in a TypeScript project) is yours to change. Read its comments
   first; they explain every line.
+- Prefer method-body edits while you tweak gameplay so hot reload keeps state. Reach for `onHotReload` only when you
+  edit `init()` a lot and care about carrying score (or similar) across the re-init.
 
 ## Working with an AI assistant
 

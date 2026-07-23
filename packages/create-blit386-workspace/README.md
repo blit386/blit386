@@ -96,6 +96,8 @@ trailer is added for you. A CI check enforces it, so an unsigned commit blocks t
 
 ## Related
 
+- Design notes: [`CREATE_BLIT386_DESIGN.md`](CREATE_BLIT386_DESIGN.md) – durable product decisions (including how hot
+  reload is delivered to new vs existing games).
 - Docs: [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site.
 - Engine: [blit386](https://github.com/blit386/blit386) – the palette-first WebGPU retro engine these games run on
   ([npm](https://www.npmjs.com/package/blit386), [docs](https://blit386.dev)).

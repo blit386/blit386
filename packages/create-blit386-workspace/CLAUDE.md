@@ -142,23 +142,24 @@ effects. The engine has no physics, collision, entity, or scene system: say so, 
 
 When blit386 public API or naming changes in the sibling repo, audit these kit files for stale examples:
 
-| Kit file                                | Review when                                                                                |
-| --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `content/docs/getting-started.md`       | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload                         |
-| `content/docs/basics.md`                | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount`      |
-| `content/docs/drawing.md`               | `BT.clear`, primitives, text APIs                                                          |
-| `content/docs/input.md`                 | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action              |
-| `content/docs/palette.md`               | `paletteCreate`, slots, `Color32`                                                          |
-| `content/docs/audio.md`                 | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                                      |
-| `content/docs/hot-reload.md`            | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace                               |
-| `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `doctor`       |
-| `content/AGENTS.md`                     | Overall game shape, hard rules, doc routing                                                |
-| `content/rules/blit-api-names.md`       | `BT` getters (incl. `screenOrientation`, `loadingAssetsCount`), configure flags, wake lock |
-| `content/rules/blit-integer-coords.md`  | Integer-coordinate rule (`Vector2i` / `Rect2i`)                                            |
-| `content/skills/*/SKILL.md`             | 21 game-author skills; each demonstrates a slice of the `BT` surface                       |
-| `content/hooks/shell-safety.sh`         | Shell commands the hook blocks in a generated game                                         |
-| `content/hooks.manifest.json`           | Canonical hook intent; the Cursor `hooks.json` is generated from it                        |
-| `content/agents.config.json`            | Which files each adapter (claude / cursor) emits                                           |
+| Kit file                                 | Review when                                                                              |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `content/docs/getting-started.md`        | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload                       |
+| `content/docs/basics.md`                 | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount`    |
+| `content/docs/drawing.md`                | `BT.clear`, primitives, text APIs                                                        |
+| `content/docs/input.md`                  | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action            |
+| `content/docs/palette.md`                | `paletteCreate`, slots, `Color32`                                                        |
+| `content/docs/audio.md`                  | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                                    |
+| `content/docs/hot-reload.md`             | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace                             |
+| `content/docs/when-something-breaks.md`  | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `doctor`     |
+| `content/AGENTS.md`                      | Overall game shape, hard rules, doc routing, hot-reload tiers                            |
+| `content/rules/blit-api-names.md`        | `BT` getters, configure flags, wake lock, `onHotReload` / never call `registerHotReload` |
+| `content/rules/blit-integer-coords.md`   | Integer-coordinate rule (`Vector2i` / `Rect2i`)                                          |
+| `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games                            |
+| `content/skills/*/SKILL.md`              | Other game-author skills; each demonstrates a slice of the `BT` surface                  |
+| `content/hooks/shell-safety.sh`          | Shell commands the hook blocks in a generated game                                       |
+| `content/hooks.manifest.json`            | Canonical hook intent; the Cursor `hooks.json` is generated from it                      |
+| `content/agents.config.json`             | Which files each adapter (claude / cursor) emits                                         |
 
 Also check `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine
 version.
@@ -167,8 +168,8 @@ Shipping an engine feature is the trigger to come here. Nothing syncs this repo 
 docs and the shipped game-author skills are hand-authored beginner prose, so they drift silently when the engine
 changes. When you add or rename public API in the sibling `blit386` repo, review this repo in the same pass, not later:
 the kit docs in the table above, the shipped skills in `packages/kit/content/skills/` (for example `use-palette`,
-`read-gamepad`, `add-crt-effect`, `show-debug-overlay`) which demonstrate engine APIs the same way the docs do and stale
-the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to walk this checklist.
+`use-hot-reload`, `read-gamepad`, `add-crt-effect`, `show-debug-overlay`) which demonstrate engine APIs the same way the
+docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to walk this checklist.
 
 ## Where to find information
 
@@ -183,4 +184,5 @@ the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to walk this checklist.
 | Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts`              |
 | Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                         |
 | Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                       |
+| Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                              |
 | Contributing / DCO                     | `CONTRIBUTING.md`                                                                            |

@@ -82,6 +82,18 @@ Screen orientation: `BT.screenOrientation` is the current browser type string (f
 player rotates the device. Locking works on Android Chrome; iOS Safari silently ignores it. A "please rotate" prompt is
 your job – the engine only reports the orientation.
 
+## Demo class hooks (optional methods)
+
+Optional methods on your game class (the one you pass to `bootstrap()`):
+
+- `onOrientationChange(type)` – device orientation changed (see above).
+- `onHotReload(context)` – after a hot-reload swap (engine 1.4.0+). `context.reason` is `'methods'` or `'reinit'`;
+  `'reinit'` also provides `context.snapshot` (previous instance fields) so you can restore score and similar. Never
+  fires for a `configure()` hardware change (that reloads the page). See `docs/hot-reload.md`.
+
+Do not call `registerHotReload` yourself – it is tooling-only. The `blit386()` Vite plugin injects it. Hand-calling it
+from game code is unsupported.
+
 ## Do not use removed names
 
 `BT.isButtonDown` (use `BT.isDown`), `overlayEnabled` (use `isOverlayEnabled`), `canvasId` (use `canvasID`).
