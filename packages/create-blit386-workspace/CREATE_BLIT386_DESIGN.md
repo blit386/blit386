@@ -4,9 +4,10 @@
 > dist-tag `latest`). On `main`, local pins are already ahead of that cut: `blit386.engineRange` and `BLIT386_RANGE` are
 > `^1.4.0` (unpublished next cut), and hot-reload content is on `main` (section 12; kit docs/skills `hot-reload.md` /
 > `use-hot-reload`, Catcher `onHotReload` example). Publishing is manual-only (see the 2026-07-14 policy change below) –
-> there is no CI publish workflow. 24 skill directories under `packages/kit/content/skills/`; 47 tests pass (25
-> scaffolder + 22 kit); full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes stale within days.
-> Run `git log --oneline -1` for the current one.)
+> there is no CI publish workflow. 24 skill directories under `packages/kit/content/skills/`. Claude/Cursor agent
+> adapters are a single shared module (`packages/kit/src/adapters.ts`, `@blit386/kit/adapters`) used by both scaffold
+> and `blit agents sync` / `add` (BT-350). Full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes
+> stale within days. Run `git log --oneline -1` for the current one.)
 >
 > History: first published as `@blit386/kit@0.1.0` + `create-blit386@0.1.1` (section 11); 1.0.0 shipped 2026-06-14 (see
 > below). All Phase 1.x code items merged to `main` (PRs #7–#10). All Phase 2 "Agents on tap" work is merged to `main` –
@@ -1089,3 +1090,8 @@ scaffolder cut that expects 1.4.0 on npm, not as a silent side effect of a docs 
   hardcoded a 12-skill list that had already gone stale (missing four skills and `audio.md`), so its doc and skill steps
   now glob the directories instead of naming files; `packages/kit/README.md` gains the first human-facing table of the
   shipped skills, and `cbt-kit-audit` is responsible for keeping it complete.
+- 2026-07-23: Round 25 (BT-350). Shared agent adapters: deleted the duplicated Claude/Cursor generators from
+  `packages/create-blit386/src/scaffold.ts`. `packages/kit/src/adapters.ts` is now the single source of truth, exported
+  as `@blit386/kit/adapters` (tsup entry + package `exports`). Scaffold imports `generateClaudeAdapter` /
+  `generateCursorAdapter` and writes the `{ path, content }` pairs to disk; `blit agents sync` / `add` keep using the
+  same module in memory. Added a scaffold-vs-memory parity test; ownership model / manifest / `.blit/base/` unchanged.

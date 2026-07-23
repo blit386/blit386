@@ -16,6 +16,11 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { scaffold } from '../dist/scaffold.js';
+import {
+	generateClaudeAdapter,
+	generateCursorAdapter,
+	kitRoot,
+} from '@blit386/kit/adapters';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, '..');
@@ -439,6 +444,57 @@ function runBlit(project, args) {
 	}
 	return { exitCode, output };
 }
+
+/**
+ * Drift guard: scaffold writes must match `@blit386/kit/adapters` generate-to-memory for the same
+ * vars. After the shared-adapter refactor this is the same code path; the test still fails if
+ * scaffold reintroduces a local copy or skips writing a generated file.
+ */
+test("scaffold agent files match @blit386/kit/adapters memory output", () => {
+	const work = mkdtempSync(join(tmpdir(), "cbt-adapter-parity-"));
+
+	try {
+		const root = kitRoot();
+
+		for (const agent of ["claude", "cursor"]) {
+			const project = join(work, `${agent}-parity`);
+			scaffold({
+				targetDir: project,
+				projectName: `${agent}-parity`,
+				pmInstall: "pnpm install",
+				pmRunDev: "pnpm run dev",
+				pmRunBuild: "pnpm run build",
+				pmRunFormat: "pnpm run format",
+				pmRunLint: "pnpm run lint",
+				agent,
+			});
+
+			const manifest = JSON.parse(
+				readFileSync(join(project, ".blit", "manifest.json"), "utf8"),
+			);
+			assert.ok(manifest.vars, "manifest must record scaffold-time vars");
+
+			const generated =
+				agent === "claude"
+					? generateClaudeAdapter(root, manifest.vars)
+					: generateCursorAdapter(root, manifest.vars);
+
+			assert.ok(generated.length > 0, `${agent} adapter should emit files`);
+
+			for (const file of generated) {
+				const onDisk = join(project, file.path);
+				assert.ok(existsSync(onDisk), `scaffold should have written ${file.path}`);
+				assert.equal(
+					readFileSync(onDisk, "utf8"),
+					file.content,
+					`scaffold ${file.path} must match kit adapter memory output`,
+				);
+			}
+		}
+	} finally {
+		rmSync(work, { recursive: true, force: true });
+	}
+});
 
 test("blit agents sync (full) changes nothing on a freshly scaffolded Claude project", () => {
 	assert.ok(

@@ -13,10 +13,11 @@
  */
 
 import { createHash } from 'node:crypto';
-import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { type GeneratedFile, generateClaudeAdapter, generateCursorAdapter } from '@blit386/kit/adapters';
 
 const require = createRequire(import.meta.url);
 
@@ -241,329 +242,15 @@ function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer:
 }
 
 /**
- * Strip YAML frontmatter (a `---`…`---` block at the top) from a markdown file.
- *
- * Kit rules carry frontmatter used by the Cursor adapter (alwaysApply, globs). The Claude adapter uses
- * only the body, so it strips the frontmatter before emitting the file into `.claude/rules/`.
+ * Write kit-generated agent files under `targetDir` and record each path in `writtenPaths`.
+ * Generation lives in `@blit386/kit/adapters`; scaffold only persists the bytes to disk.
  */
-function stripFrontmatter(content: string): string {
-    if (!content.startsWith('---')) {
-        return content;
-    }
-
-    const firstLineEnd = content.indexOf('\n');
-    if (firstLineEnd === -1) {
-        return content;
-    }
-
-    // Closing delimiter must be alone on a line; YAML values may contain `---` inline.
-    const rest = content.slice(firstLineEnd + 1);
-    const closingMatch = rest.match(/^---\s*(?:\r?\n|$)/m);
-    if (!closingMatch || closingMatch.index === undefined) {
-        return content;
-    }
-
-    const bodyStart = firstLineEnd + 1 + closingMatch.index + closingMatch[0].length;
-
-    return content.slice(bodyStart).replace(/^\r?\n/, '');
-}
-
-/**
- * Extract the content between `<!-- blit-kit:managed:start -->` and `<!-- blit-kit:managed:end -->` markers,
- * skipping the ownership-comment block that immediately follows the start marker.
- */
-function extractManagedRegion(content: string): string {
-    const START = '<!-- blit-kit:managed:start -->';
-    const END = '<!-- blit-kit:managed:end -->';
-
-    const startIdx = content.indexOf(START);
-    const endIdx = content.indexOf(END);
-
-    if (startIdx === -1 || endIdx === -1) {
-        return content.trim();
-    }
-
-    // Skip the start marker itself.
-    let bodyStart = startIdx + START.length;
-
-    // If an HTML comment immediately follows (the kit ownership note), skip past it.
-    const afterStart = content.slice(bodyStart).trimStart();
-    if (afterStart.startsWith('<!--')) {
-        const commentEnd = content.indexOf('-->', bodyStart);
-        if (commentEnd !== -1) {
-            bodyStart = commentEnd + '-->'.length;
-        }
-    }
-
-    return content.slice(bodyStart, endIdx).trim();
-}
-
-/**
- * Generate the Claude Code adapter files from the kit's canonical IR:
- *   - `CLAUDE.md`                        (shared file with a managed region)
- *   - `.claude/rules/{name}.md`          (kit-owned, one per rule in content/rules/)
- *   - `.claude/skills/{name}/SKILL.md`   (kit-owned, one per skill in content/skills/)
- *
- * Replaces the static `templates/optional/claude/CLAUDE.md.tmpl`. The generator reads the kit content
- * and composes per-agent output, applying template-variable substitution throughout.
- */
-function generateClaudeAdapter(
-    kitContentRoot: string,
-    targetDir: string,
-    vars: TemplateVars,
-    writtenPaths: Set<string>,
-): void {
-    const contentRoot = join(kitContentRoot, 'content');
-
-    // Build CLAUDE.md: managed region = AGENTS.md body + project commands.
-    const agentsMd = readFileSync(join(contentRoot, 'AGENTS.md'), 'utf8');
-    const managedBody = extractManagedRegion(agentsMd);
-
-    const commandsBlock = [
-        '',
-        '## Commands',
-        '',
-        `- \`${vars.pmRunDev}\` - start the dev server`,
-        `- \`${vars.pmRunBuild}\` - build for production`,
-        `- \`${vars.pmRunFormat}\` - format the code`,
-        `- \`${vars.pmRunLint}\` - check code style`,
-        '- `npx blit doctor` - check your setup',
-        '- `npx blit upgrade` - update BLIT386',
-    ].join('\n');
-
-    const claudeMd = [
-        '<!-- blit-kit:managed:start -->',
-        '<!-- This block is managed by @blit386/kit. Run `npx blit agents sync` to update it. Put your own notes below the end marker. -->',
-        '',
-        managedBody,
-        commandsBlock,
-        '',
-        '<!-- blit-kit:managed:end -->',
-        '',
-        '## Your notes',
-        '',
-        'Add project-specific notes for Claude here. This section is yours.',
-        '',
-    ].join('\n');
-
-    const claudePath = join(targetDir, 'CLAUDE.md');
-    writeFileSync(claudePath, claudeMd);
-    writtenPaths.add(claudePath);
-
-    // Emit .claude/rules/ from content/rules/*.md (strip frontmatter; Claude reads plain markdown).
-    const rulesDir = join(contentRoot, 'rules');
-    if (existsSync(rulesDir)) {
-        const claudeRulesDir = join(targetDir, '.claude', 'rules');
-        mkdirSync(claudeRulesDir, { recursive: true });
-
-        for (const entry of readdirSync(rulesDir, { withFileTypes: true })) {
-            if (!entry.isFile() || !entry.name.endsWith('.md')) {
-                continue;
-            }
-
-            const src = join(rulesDir, entry.name);
-            const dest = join(claudeRulesDir, entry.name);
-            writeFileSync(dest, render(stripFrontmatter(readFileSync(src, 'utf8')), vars));
-            writtenPaths.add(dest);
-        }
-    }
-
-    // Emit .claude/skills/ from content/skills/*/SKILL.md. The frontmatter is kept
-    // verbatim: Claude Code reads name/description from it to discover and trigger
-    // the skill, so stripping it would make the skill inert.
-    const skillsDir = join(contentRoot, 'skills');
-    if (existsSync(skillsDir)) {
-        for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
-            if (!entry.isDirectory()) {
-                continue;
-            }
-
-            const skillSrc = join(skillsDir, entry.name, 'SKILL.md');
-            if (!existsSync(skillSrc)) {
-                continue;
-            }
-
-            const skillDestDir = join(targetDir, '.claude', 'skills', entry.name);
-            mkdirSync(skillDestDir, { recursive: true });
-            const dest = join(skillDestDir, 'SKILL.md');
-            writeFileSync(dest, render(readFileSync(skillSrc, 'utf8'), vars));
-            writtenPaths.add(dest);
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Cursor adapter types (mirrors the Cursor hooks.json wire format)
-// ---------------------------------------------------------------------------
-
-interface CursorHookEntry {
-    /** Shell command to run for this hook event. */
-    command?: string;
-    /** Regex string used by Cursor to match which tool calls trigger this hook. */
-    matcher?: string;
-    /** Seconds before the hook is considered timed out. */
-    timeout?: number;
-    /** When true, Cursor blocks the triggering action if the hook fails or exits non-zero. */
-    failClosed?: boolean;
-}
-
-interface CursorHooksJson {
-    version: number;
-    hooks: Record<string, CursorHookEntry[]>;
-}
-
-// ---------------------------------------------------------------------------
-// Hooks-manifest types (canonical intent format in content/hooks.manifest.json)
-// ---------------------------------------------------------------------------
-
-interface HookManifestCursorBlock extends CursorHookEntry {
-    /** Cursor hook event: "afterFileEdit" | "beforeShellExecution" | "preToolUse" */
-    event: string;
-}
-
-interface HookManifestEntry {
-    /** Stable identifier. */
-    id: string;
-    /** Human-readable intent used in AGENTS.md prose and as documentation. */
-    intent: string;
-    /** Cursor-specific rendering of this hook. */
-    cursor?: HookManifestCursorBlock;
-}
-
-interface HooksManifest {
-    version: string;
-    hooks: HookManifestEntry[];
-}
-
-/** Translate the canonical hooks manifest into Cursor's `hooks.json` structure, rendering template vars. */
-function buildCursorHooks(manifest: HooksManifest, vars: TemplateVars): CursorHooksJson {
-    const hooks: Record<string, CursorHookEntry[]> = {};
-
-    for (const hook of manifest.hooks) {
-        if (!hook.cursor) {
-            continue;
-        }
-
-        const { event, ...rest } = hook.cursor;
-        const entry: CursorHookEntry = {};
-
-        if (rest.command !== undefined) {
-            entry.command = render(rest.command, vars);
-        }
-
-        if (rest.matcher !== undefined) {
-            entry.matcher = rest.matcher;
-        }
-
-        if (rest.timeout !== undefined) {
-            entry.timeout = rest.timeout;
-        }
-
-        if (rest.failClosed !== undefined) {
-            entry.failClosed = rest.failClosed;
-        }
-
-        if (!hooks[event]) {
-            hooks[event] = [];
-        }
-
-        hooks[event].push(entry);
-    }
-
-    return { version: 1, hooks };
-}
-
-/**
- * Generate the Cursor adapter files from the kit's canonical IR:
- *   - `.cursor/rules/{name}.mdc`          (kit-owned, MDC format; frontmatter from rule files)
- *   - `.cursor/hooks.json`                (kit-owned; translated from content/hooks.manifest.json)
- *   - `.cursor/hooks/shell-safety.sh`     (kit-owned; shell hook script)
- *   - `.cursor/commands/{name}.md`        (kit-owned, one per skill in content/skills/)
- *
- * Replaces the static `templates/optional/cursor/` tree.
- */
-function generateCursorAdapter(
-    kitContentRoot: string,
-    targetDir: string,
-    vars: TemplateVars,
-    writtenPaths: Set<string>,
-): void {
-    const contentRoot = join(kitContentRoot, 'content');
-    const cursorDir = join(targetDir, CURSOR_DIR);
-    mkdirSync(cursorDir, { recursive: true });
-
-    // Emit .cursor/rules/*.mdc from content/rules/*.md.
-    // Kit rules carry YAML frontmatter with description/alwaysApply/globs — Cursor reads this as MDC.
-    const rulesDir = join(contentRoot, 'rules');
-    if (existsSync(rulesDir)) {
-        const cursorRulesDir = join(cursorDir, 'rules');
-        mkdirSync(cursorRulesDir, { recursive: true });
-
-        for (const entry of readdirSync(rulesDir, { withFileTypes: true })) {
-            if (!entry.isFile() || !entry.name.endsWith('.md')) {
-                continue;
-            }
-
-            const src = join(rulesDir, entry.name);
-            const destName = entry.name.replace(/\.md$/, '.mdc');
-            const dest = join(cursorRulesDir, destName);
-            writeFileSync(dest, render(readFileSync(src, 'utf8'), vars));
-            writtenPaths.add(dest);
-        }
-    }
-
-    // Emit .cursor/hooks.json from content/hooks.manifest.json.
-    const hookManifestPath = join(contentRoot, 'hooks.manifest.json');
-    if (existsSync(hookManifestPath)) {
-        const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
-        const cursorHooks = buildCursorHooks(manifest, vars);
-
-        const hooksJsonPath = join(cursorDir, 'hooks.json');
-        writeFileSync(hooksJsonPath, `${JSON.stringify(cursorHooks, null, 2)}\n`);
-        writtenPaths.add(hooksJsonPath);
-    }
-
-    // Copy hook scripts referenced in the manifest (e.g. shell-safety.sh).
-    const hooksScriptsDir = join(contentRoot, 'hooks');
-    if (existsSync(hooksScriptsDir)) {
-        const cursorHooksDir = join(cursorDir, 'hooks');
-        mkdirSync(cursorHooksDir, { recursive: true });
-
-        for (const entry of readdirSync(hooksScriptsDir, { withFileTypes: true })) {
-            if (!entry.isFile()) {
-                continue;
-            }
-
-            const src = join(hooksScriptsDir, entry.name);
-            const dest = join(cursorHooksDir, entry.name);
-            writeFileSync(dest, readFileSync(src, 'utf8'));
-            writtenPaths.add(dest);
-        }
-    }
-
-    // Emit .cursor/commands/ from content/skills/*/SKILL.md.
-    const skillsDir = join(contentRoot, 'skills');
-    if (existsSync(skillsDir)) {
-        const commandsDir = join(cursorDir, 'commands');
-        mkdirSync(commandsDir, { recursive: true });
-
-        for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
-            if (!entry.isDirectory()) {
-                continue;
-            }
-
-            const skillSrc = join(skillsDir, entry.name, 'SKILL.md');
-            if (!existsSync(skillSrc)) {
-                continue;
-            }
-
-            // Strip the skill's YAML frontmatter: a Cursor command is invoked by
-            // filename, so name/description add no value and would render as literal
-            // text. The Claude adapter keeps the frontmatter (a skill needs it).
-            const dest = join(commandsDir, `${entry.name}.md`);
-            writeFileSync(dest, render(stripFrontmatter(readFileSync(skillSrc, 'utf8')), vars));
-            writtenPaths.add(dest);
-        }
+function writeGeneratedFiles(targetDir: string, files: GeneratedFile[], writtenPaths: Set<string>): void {
+    for (const file of files) {
+        const dest = join(targetDir, file.path);
+        mkdirSync(dirname(dest), { recursive: true });
+        writeFileSync(dest, file.content);
+        writtenPaths.add(dest);
     }
 }
 
@@ -610,22 +297,23 @@ export function scaffold(options: ScaffoldOptions): void {
         );
     }
 
+    const kit = kitRoot();
+
     if (options.agent === 'cursor') {
-        generateCursorAdapter(kitRoot(), options.targetDir, vars, writtenPaths);
+        writeGeneratedFiles(options.targetDir, generateCursorAdapter(kit, vars), writtenPaths);
     }
 
     if (options.agent === 'claude') {
-        generateClaudeAdapter(kitRoot(), options.targetDir, vars, writtenPaths);
+        writeGeneratedFiles(options.targetDir, generateClaudeAdapter(kit, vars), writtenPaths);
     }
 
     // Copy the kit's canonical guidance (single source of truth for AGENTS.md + docs).
-    const content = kitRoot();
     const agentsPath = join(options.targetDir, 'AGENTS.md');
-    copyFileSync(join(content, 'content', 'AGENTS.md'), agentsPath);
+    copyFileSync(join(kit, 'content', 'AGENTS.md'), agentsPath);
     writtenPaths.add(agentsPath);
 
     const docsDestDir = join(options.targetDir, 'docs');
-    cpSync(join(content, 'content', 'docs'), docsDestDir, { recursive: true });
+    cpSync(join(kit, 'content', 'docs'), docsDestDir, { recursive: true });
 
     // cpSync does not tell us what it copied, so scan the written docs tree.
     collectTree(docsDestDir, writtenPaths);

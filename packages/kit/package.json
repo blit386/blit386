@@ -26,6 +26,13 @@
   "bin": {
     "blit": "./dist/cli.js"
   },
+  "exports": {
+    "./package.json": "./package.json",
+    "./adapters": {
+      "types": "./dist/adapters.d.ts",
+      "import": "./dist/adapters.js"
+    }
+  },
   "files": [
     "dist",
     "content"
