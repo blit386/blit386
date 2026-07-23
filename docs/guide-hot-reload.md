@@ -245,12 +245,16 @@ runtime cost or behavior change to ship):
   `bootstrap(...)`:
 
   ```js
-  import { registerHotReload } from 'blit386';
+  /* blit386:hot-reload-snippet */
+  import { registerHotReload as __blit386_registerHotReload } from 'blit386';
   if (import.meta.hot) {
     import.meta.hot.accept();
-    registerHotReload(import.meta.hot);
+    __blit386_registerHotReload(import.meta.hot);
   }
   ```
+
+  `registerHotReload` is imported under a plugin-specific alias so the snippet cannot collide with an entry module that
+  already binds `registerHotReload` itself (which would be a duplicate-declaration `SyntaxError`).
 
   The literal `import.meta.hot.accept()` call has to appear in the emitted source - Vite marks a module self-accepting
   by static analysis, so an indirect call would not register self-acceptance and every edit would fall back to a full

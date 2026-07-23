@@ -52,7 +52,7 @@ Vector2i.lerp(a, b, t); // interpolate, t clamped [0,1], result truncated
 Vector2i.lerpTo(a, b, t, out); // zero-allocation lerp into existing vector
 ```
 
-Instance methods: `.add()`, `.sub()`, `.scale()`, `.dot()`, `.clone()`, `.isEqual(other)`, `.isEqualXY(x, y)`,
+Instance methods: `.add()`, `.sub()`, `.mul()`, `.dot()`, `.clone()`, `.isEqual(other)`, `.isEqualXY(x, y)`,
 `.isZero()`, `.negate()`, `.abs()`, `.min()`, `.max()`, etc. See `src/utils/Vector2i.ts` for the full list.
 
 ## Rect2i

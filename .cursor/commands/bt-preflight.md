@@ -33,6 +33,8 @@ Run comprehensive quality checks before committing or pushing code.
   - `test:declarations` – Declaration tooling log checker tests
   - `test:agent-config` – Agent config drift checker tests
   - `test:cursor-commands` – Cursor commands drift checker tests
+  - `test:api-history` – API history generator tests
+  - `test:security-preflight` – MCP security preflight tests
 
 2. Report results
 
