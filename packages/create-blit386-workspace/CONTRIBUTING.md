@@ -33,9 +33,26 @@ Sign-off with `-s` adds a `Signed-off-by:` line to the commit message. CI verifi
 2. Keep changes focused; update `CLAUDE.md` when workflow or architecture changes.
 3. Sign off every commit with `-s`.
 
+The pull request form is pre-filled from [`.github/pull_request_template.md`](.github/pull_request_template.md). Use
+that checklist for DCO sign-off, Conventional Commit titles, `pnpm run preflight`, and docs/kit sync when relevant.
+
 ## Packages
 
 | Package          | Path                      | Purpose                                     |
 | ---------------- | ------------------------- | ------------------------------------------- |
 | `create-blit386` | `packages/create-blit386` | npm `create-*` CLI and templates            |
 | `@blit386/kit`   | `packages/kit`            | Canonical `AGENTS.md`, docs, and `blit` CLI |
+
+## Questions?
+
+For questions about the DCO or contributing process, use the [Discord](https://discord.gg/tC2wGt88Uj) community. Blank
+issues are disabled.
+
+To report a bug, propose a feature, or flag a docs problem, use the guided forms under
+[`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/):
+
+- [Bug report](.github/ISSUE_TEMPLATE/bug_report.yml) – reproduction, expected vs actual, package, environment
+- [Feature request](.github/ISSUE_TEMPLATE/feature_request.yml) – problem, proposed change, package scope
+- [Docs issue](.github/ISSUE_TEMPLATE/docs_issue.yml) – affected page and what is wrong or missing
+
+See `.github/ISSUE_TEMPLATE/config.yml` for docs, engine-issue, and private vulnerability reporting links.
