@@ -1,7 +1,8 @@
 /**
  * `blit` - the project-local BLIT386 helper CLI.
  *
- * Commands: run | doctor | upgrade | agents | help. Kept tiny and beginner-friendly; see ./messages for the voice.
+ * Commands: run | doctor | upgrade | migrate | agents | help. Kept tiny and beginner-friendly; see ./messages for the
+ * voice.
  */
 
 import { runAgents } from './commands/agents';
@@ -18,8 +19,8 @@ Usage: blit <command>
 Commands:
   ${color.cyan('run')}        Start your game in the browser
   ${color.cyan('doctor')}     Check your setup (Node, git, blit386 version)
-  ${color.cyan('upgrade')}    Update blit386 to the latest version
-  ${color.cyan('migrate')}    Update old BLIT386 names in your game (--write to apply)
+  ${color.cyan('upgrade')}    Update blit386 to the latest version (then offers migrate)
+  ${color.cyan('migrate')}    Update old names + enable hot reload (--write to apply)
   ${color.cyan('agents')}     Manage AI-assistant files (sync, add)
   ${color.cyan('help')}       Show this help
 `;

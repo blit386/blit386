@@ -174,12 +174,17 @@ test("migrationsThrough includes the 1.x rename migration and excludes future on
 	assert.equal(
 		migrationsThrough("1.1.0").length,
 		2,
-		"both migrations apply from 1.1.0",
+		"both rename migrations apply from 1.1.0",
+	);
+	assert.equal(
+		migrationsThrough("1.4.0").length,
+		3,
+		"hot-reload vite migration applies from 1.4.0",
 	);
 	assert.equal(
 		migrationsThrough("1.5.0").length,
-		2,
-		"both still apply on a newer 1.x",
+		3,
+		"all three still apply on a newer 1.x",
 	);
 	assert.equal(
 		migrationsThrough("0.9.0").length,

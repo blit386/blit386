@@ -62,27 +62,27 @@ export async function runUpgrade(): Promise<void> {
 
     const after = installedVersion(root, 'blit386');
 
-    if (!(before && after && before !== after)) {
+    if (before && after && before !== after) {
+        out(ui.success(`blit386 ${before} -> ${after}`));
+
+        if (majorChanged(before, after)) {
+            out(ui.warn('This was a big update, so some names may have changed.'));
+            out(ui.info(`Full list of changes: ${DEPRECATIONS_URL}`));
+        }
+    } else {
         out(ui.success(after ? `blit386 is already up to date (${after}).` : 'blit386 updated.'));
-        return;
     }
 
-    out(ui.success(`blit386 ${before} -> ${after}`));
-
-    if (majorChanged(before, after)) {
-        out(ui.warn('This was a big update, so some names may have changed.'));
-        out(ui.info(`Full list of changes: ${DEPRECATIONS_URL}`));
-    }
-
+    // Always run migrate after a successful install: renames plus enabling hot reload on 1.4.0+ vite configs.
     out('');
-    out(ui.info('Checking your game for old BLIT386 names...'));
+    out(ui.info('Checking your game for old BLIT386 names and hot-reload setup...'));
 
     const summary = await migrateProject(root, out, { write: false });
 
-    if (summary.appliedCount > 0) {
+    if (summary.appliedCount > 0 || summary.hotReloadPending) {
         out('');
 
-        if (await confirm('Apply these renames now?')) {
+        if (await confirm('Apply these updates now?')) {
             // upgrade already ran the no-git nag above, so do not repeat it here.
             await migrateProject(root, out, { write: true, skipGitNag: true });
         } else {
