@@ -1,6 +1,6 @@
 {
   "name": "create-blit386-workspace",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "description": "Monorepo for the BLIT386 scaffolder (create-blit386) and kit (@blit386/kit).",
@@ -15,7 +15,7 @@
   },
   "homepage": "https://blit386.dev",
   "bugs": {
-    "url": "https://github.com/blit386/blit386/issues"
+    "url": "https://github.com/blit386/create-blit386/issues"
   },
   "packageManager": "pnpm@10.26.2",
   "engines": {

@@ -6,16 +6,16 @@ echo "Running pre-push checks..."
 echo ""
 
 echo "[1/3] Type checking..."
-pnpm typecheck || {
+pnpm run typecheck || {
     echo ""
     echo "[FAIL] Type errors found. Please fix them before pushing."
     exit 1
 }
 
 echo "[2/3] Linting..."
-pnpm lint || {
+pnpm run lint || {
     echo ""
-    echo "[FAIL] Lint issues found. Run 'pnpm lint:fix' to fix them."
+    echo "[FAIL] Lint issues found. Run 'pnpm run lint:fix' to fix them."
     exit 1
 }
 
