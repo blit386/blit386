@@ -268,7 +268,7 @@ Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
 2. Integer coordinates – all rendering uses `Vector2i`/`Rect2i`, never floats
 3. Performance first – minimize allocations in update/render, reuse buffers, batch draws
 4. Use BT namespace – never access `BTAPI` directly from demo code
-5. No `any` types – use `unknown` or proper types
+5. No `any` types – use `unknown` or proper types (enforced as a Biome lint error; CI fails via `format:check`)
 6. Type-only imports – `import type { ... }` for types
 7. Documentation is part of every feature – after any public API change update the relevant `docs/api-*.md`; after any
    behavior change update the affected `docs/` guide; after any architecture change update the `CLAUDE.md` architecture
@@ -340,7 +340,7 @@ Full policy and examples: `.claude/rules/internal-scoped-naming.md` (Cursor:
 - Single quotes, always semicolons, always trailing commas
 - Always arrow parens
 - Named exports only (no default exports)
-- JSDoc required for public APIs
+- JSDoc required for public APIs (enforced as ESLint `warn` rules that fail CI via `--max-warnings 0`)
 - When implementing changes, always update JSDoc and inline comments alongside the code. Never leave stale comments that
   describe old behavior.
 

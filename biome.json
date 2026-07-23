@@ -51,14 +51,14 @@
     "rules": {
       "preset": "recommended",
       "style": {
-        "noNonNullAssertion": "warn",
+        "noNonNullAssertion": "error",
         "useConst": "error",
         "useBlockStatements": "off",
-        "noParameterAssign": "warn",
+        "noParameterAssign": "error",
         "useImportType": "error"
       },
       "suspicious": {
-        "noExplicitAny": "warn",
+        "noExplicitAny": "error",
         "noDebugger": "error",
         "noConsole": "off",
         "noImplicitAnyLet": "off"
