@@ -1,10 +1,3 @@
----
-name: cbt-review
-description:
-  Review the current changes against project rules, conventions, and quality standards. Use when the user asks to review
-  changes, check the diff before committing, or look over recent edits.
----
-
 # Review Changes
 
 Review current changes against create-blit386 conventions and quality standards.

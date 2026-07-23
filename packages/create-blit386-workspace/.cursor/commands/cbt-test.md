@@ -1,10 +1,3 @@
----
-name: cbt-test
-description:
-  Run the automated test suites and explain what testing exists here. Use when the user wants to run tests or verify the
-  scaffolder, the kit CLI, or the codemod engine still work.
----
-
 # Tests
 
 This repo has three `node --test` suites, 37 cases in total. There is no Vitest suite, no Playwright suite, and no

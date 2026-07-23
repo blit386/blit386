@@ -92,7 +92,7 @@ Also check whether `packages/kit/package.json`'s `blit386.engineRange` and `pack
 
 ```bash
 pnpm install
-pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + build + test
+pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:cursor-commands:check + test:agent-config + test:cursor-commands + build + test
 ```
 
 `main` is protected: push a branch, open a PR, wait for checks, and squash-merge it. The version bump has to be on
