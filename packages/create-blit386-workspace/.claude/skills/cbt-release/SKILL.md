@@ -25,9 +25,9 @@ is stale.
 
 There is no `.github/workflows/publish.yml` and no `NPM_TOKEN` secret. Nothing publishes on a tag push. Every release is
 `pnpm publish` run by hand from vancura's machine, after `npm login` locally. This is a deliberate policy (2026-07-14,
-see `CREATE_BLIT386_DESIGN.md` top status block and changelog) after the tag-driven workflow failed with `ENEEDAUTH` on
-the `1.2.1` release because the `NPM_TOKEN` secret was missing — rather than re-provision it, CI publishing was removed
-outright. Do not suggest re-adding a publish workflow or an `NPM_TOKEN` secret.
+see `../PUBLISHING.md` in the local workspace layout, or this repo's release history) after the tag-driven workflow
+failed with `ENEEDAUTH` on the `1.2.1` release because the `NPM_TOKEN` secret was missing — rather than re-provision it,
+CI publishing was removed outright. Do not suggest re-adding a publish workflow or an `NPM_TOKEN` secret.
 
 Tags are still cut and pushed after a manual publish, purely as a release marker in the repo history — they trigger
 nothing.
