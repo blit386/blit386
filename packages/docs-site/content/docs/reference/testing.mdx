@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Testing"
 description: "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
-lastModified: "2026-07-02T16:21:59+02:00"
+lastModified: "2026-07-23T11:41:52+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/reference-testing.md"
 ---
 
@@ -32,12 +32,18 @@ Code that requires WebGPU objects or DOM APIs. Most tests run in Node with `src/
 and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, BootstrapHelpers) opt into `happy-dom` via the
 `// @vitest-environment happy-dom` directive. Inventory is illustrative – not exhaustive.
 
-- AssetLoader – image caching and deduplication (Node + vi stubs for `Image`)
-- SpriteSheet – UV calculation, lazy texture creation, indexization, `loadIndexed()` convenience flow, and
-  `getIndexedPixels()` defensive-copy semantics (Node + GPU mocks)
+- AssetLoader – image caching and deduplication, `evict()`, and `loadingCount` (Node + vi stubs for `Image`)
+- SpriteSheet – UV calculation, lazy texture creation, indexization, `loadIndexed()` convenience flow,
+  `getIndexedPixels()` defensive-copy semantics, and `status`/`progress` load tracking (Node + GPU mocks)
+- AudioClip – decode cache, deduplication, fallback URL lists, `loadingCount`, and hot-replace wiring (Node + Web Audio
+  mocks)
 - BitmapFont – glyph lookup, text measurement (Node + vi stubs)
 - BootstrapHelpers – WebGPU support detection, canvas lookup (happy-dom)
-- Bootstrap – full bootstrap lifecycle, including `?backend=software` WebGPU-skip path (happy-dom)
+- Bootstrap – full bootstrap lifecycle, including `?backend=software` WebGPU-skip path, double-`bootstrap()` guard
+  (`Promise<boolean>`), and hot-swap delegation (happy-dom)
+- HotRuntime / HotSwap – Vite HMR context registration, tier selection, asset hot-replace routing (Node)
+- WakeLock / Orientation – acquire/release lifecycle, silent no-op fallbacks (Node + vi stubs)
+- PointerInput – `touch-action` gating for scroll capture and palette-band override (happy-dom)
 - WebGPURenderer – frame lifecycle, camera, pipeline delegation (Node + GPU mocks)
 - SoftwareRenderer – frame lifecycle, palette enforcement, camera offsets, indexed sprite blits, bitmap text,
   `captureFrame()` semantics, and unsupported-effects assertions (Node + 2D canvas mocks)
@@ -46,7 +52,7 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
 - WebGPUContext – initialization with mock adapter/device (Node + GPU mocks)
 - BTAPI – singleton coordinator; lazy-loads `WebGPURenderer` after WebGPU init succeeds; includes software-mode init,
   `?backend=software` URL override, `BT.requestedBackend` vs. `BT.activeBackend` after WebGPU fallback, `captureFrame()`
-  in software mode, and overlay render path (Node + GPU mocks + 2D canvas mocks)
+  in software mode, `BT.loadingAssetsCount`, and overlay render path (Node + GPU mocks + 2D canvas mocks)
 - Overlay – colocated tests under `src/overlay/*.test.ts`: label parsing, layout helpers, `layoutPlan` golden Y
   positions for 320×240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
   `PaletteView.computeGrid` width/size matrix, `PaletteInteraction` hit-test/scroll/tooltip helpers,
@@ -82,9 +88,8 @@ TypeScript to the same version API Extractor bundles (see [Developer Experience]
 
 - `pnpm run test:declarations` – Node test runner for `scripts/check-declaration-tooling.mjs` (drift patterns, required
   `BT` getters in rolled-up `.d.ts`, and alignment log parsing). Included in `pnpm run preflight`.
-- CI – after `pnpm run build`, `node scripts/check-declaration-tooling.mjs build.log` runs in both
-  `.github/workflows/ci.yml` (build-library job) and `.github/workflows/pr-checks.yml` (bundle-size job) to fail on
-  drift warnings and version mismatch.
+- CI – after `pnpm run build`, `node scripts/check-declaration-tooling.mjs build.log` runs in the
+  `.github/workflows/ci.yml` `build-library` and `bundle-size` jobs to fail on drift warnings and version mismatch.
 - Manual – `pnpm run build 2>&1 | tee build.log && node scripts/check-declaration-tooling.mjs build.log`
 
 ## Commands
@@ -275,48 +280,50 @@ GitHub Actions runs unit tests and quality gates in CI. Visual regression is loc
 Triggers on push to `main` and on pull requests targeting `main`. `labeled` / `unlabeled` PR events skip the `quality`,
 `build-library`, and `test` jobs unless the added label is `perf` (which enables the benchmark job).
 
-| Job              | What it runs                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------- |
-| `quality`        | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`                                    |
-| `build-library`  | `pnpm run build`, declaration tooling check, uploads `dist/` artifact                              |
-| `test`           | `pnpm run test:unit:coverage`, Codecov upload                                                      |
-| `security-audit` | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate)                 |
-| `benchmark`      | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold) |
+| Job              | What it runs                                                                                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`        | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`, `agents:check`, `sync:doc-banners:check`, `sync:cursor-commands:check`, `knip`, `api:since:check`, `api:history:check` |
+| `build-library`  | `pnpm run build`, declaration tooling check, uploads `dist/` artifact                                                                                                                   |
+| `bundle-size`    | `pnpm run build`, declaration tooling check, gzipped ESM size gate                                                                                                                      |
+| `test`           | `pnpm run test:unit:coverage`, Codecov upload                                                                                                                                           |
+| `security-audit` | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate)                                                                                                      |
+| `benchmark`      | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold)                                                                                      |
 
-On pull requests, `ci.yml` and `pr-checks.yml` overlap on format/lint/typecheck/spellcheck/docs:links; `pr-checks` adds
-knip and bundle-size gates.
+On pull requests, `pr-checks.yml` complements `ci.yml` with Conventional Commits validation only; every other gate –
+knip, bundle size, doc links, agent-config drift – runs inside `ci.yml`.
 
 ### `pr-checks.yml` (`PR Checks` workflow)
 
-Runs only on pull requests to `main`. Complements `ci.yml` with commit linting, bundle size limits, knip, and doc link
-checks. It does not run unit or visual tests. There is no separate `docs-links` job – link checking runs inside the
-`quality` job.
+Runs only on pull requests to `main`. Its single job validates commit messages; the quality, knip, bundle-size, and
+doc-link gates all live in `ci.yml`. It does not run unit or visual tests.
 
-| Job           | What it runs                                                          |
-| ------------- | --------------------------------------------------------------------- |
-| `quality`     | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`, knip |
-| `commitlint`  | Conventional Commits validation for PR commits                        |
-| `bundle-size` | `pnpm run build`, declaration tooling check, gzipped ESM size gate    |
+| Job          | What it runs                                   |
+| ------------ | ---------------------------------------------- |
+| `commitlint` | Conventional Commits validation for PR commits |
 
 ### Visual regression (not in CI)
 
 <Callout type="warn" title="Visual tests run locally only">
 
-`pnpm run test:visual` requires Chrome with WebGPU and is not executed in GitHub Actions. Run it locally before merging
-renderer, palette, or post-process changes; use `pnpm run test:visual:update` when baselines change intentionally.
-`pnpm run preflight` does not include visual tests.
+`pnpm run test:visual` requires Chrome with WebGPU and is not executed in GitHub Actions. That is intentional: Actions
+minutes are a real cost for a solo project, so visual regression stays a manual gate (the decision recorded on
+[BT-319](https://linear.app/vancura/issue/BT-319/140-cleanup)). Run it locally before merging renderer, palette, or
+post-process changes; use `pnpm run test:visual:update` when baselines change intentionally. `pnpm run preflight` does
+not include visual tests.
+
+Unit-level coverage of `src/render/effects` (enforced by a per-directory Vitest threshold at 80%) is the primary
+automated protection for the post-process path. Visual snapshots remain the pixel-correctness check, but they are not
+what CI gates on.
 
 </Callout>
 
 ### Known quirks
 
-See also [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) (Known Testing Quirks):
-
 - `// @vitest-environment happy-dom` – required at the top of test files that touch DOM APIs without GPU mocks.
 - AssetLoader – tests stub `Image` with `vi`; do not rely on happy-dom data-URI `onload` behavior.
 - `Vector2i -0` vs. `0` – use `result.x + 0` in assertions when sign is meaningless.
-- `docs:links` scope – `scripts/check-markdown-links.mjs` walks all repo-root `*.md` / `*.mdx` files (excluding ignored
-  dirs), not only `docs/` and README.
+- `docs:links` scope – `scripts/check-markdown-links.mjs` enumerates git-tracked `*.md` / `*.mdx` via `git ls-files`
+  (honors `.gitignore`), not only `docs/` and README.
 
 ## See also
 
@@ -325,7 +332,8 @@ See also [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) (Kn
   <Card title="Palette Guide" href="/docs/guides/palette">Palette-first workflow and refresh rules.</Card>
   <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact built-in preset and HUD color values.</Card>
   <Card title="API: Assets" href="/docs/api/assets">Indexed sprite setup and palette offsets.</Card>
-  <Card title="API: Core" href="/docs/api/core">Backend, overlay, and bootstrap tests.</Card>
+  <Card title="API: Core" href="/docs/api/core">Backend, overlay, bootstrap, and hot-reload tests.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Hot-swap tiers and asset hot-replace coverage.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Overlay integration test inventory.</Card>
   <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Visual regression for the effect chain.</Card>
   <Card title="Tooling" href="https://github.com/blit386/blit386/blob/main/docs/tooling.md">Declaration tooling checks.</Card>

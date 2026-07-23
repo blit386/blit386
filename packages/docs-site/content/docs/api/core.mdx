@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core"
 description: "Bootstrap, initialization, and default configuration."
-lastModified: "2026-07-19T15:33:20+02:00"
+lastModified: "2026-07-23T11:41:52+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
 ---
 
@@ -27,14 +27,15 @@ The rest of the core API surface lives in dedicated pages: [Overlay](/docs/api/o
 <Since symbol="BootstrapOptions" />
 
 The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
-(WebGPU or software fallback), and error display automatically.
+(WebGPU or software fallback), and error display automatically. It returns a `Promise<boolean>`: `true` on a successful
+cold start or hot swap, `false` when init fails or a second call is rejected without a hot-reload context.
 
 ```ts twoslash
 // One-liner – canvas id defaults to 'blit386-canvas', container to 'canvas-container'
-bootstrap(MyDemo);
+const started = await bootstrap(MyDemo);
 
 // With options
-bootstrap(MyDemo, {
+await bootstrap(MyDemo, {
   canvasID: 'my-canvas',
   containerID: 'error-wrapper',
   onSuccess: () => console.log('started'),
@@ -68,6 +69,54 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 - `bootstrap()` applies canvas layout CSS custom properties via `CanvasLayoutStyles` (logical size, CSS cap, pixelated
   scaling). Custom hosts can reuse the same helper when not using `bootstrap()`.
 
+### Hot reload
+
+<Since symbol="registerHotReload" />
+<Since symbol="HotContext" />
+<Since symbol="HotReloadContext" />
+
+Under a Vite dev server with the `blit386/vite` plugin installed, calling `bootstrap()` again after the engine is
+already initialized - exactly what happens on every hot-reloaded save - routes to a hot swap instead of starting a
+second, unstoppable game loop. `registerHotReload(hot)` registers the active `import.meta.hot` context so the engine
+knows a swap is possible; the plugin injects the call to it automatically into the demo/game's entry module, so you
+never call it by hand.
+
+`HotContext` is the structural type for that `hot` argument: the subset of Vite's `import.meta.hot` the engine depends
+on (`data`, `on`, `invalidate`, `accept`). It is kept structural on purpose so the published engine never imports from
+the `vite` package.
+
+Depending on what changed, the swap is a prototype-only method swap, a full re-init, or a full page reload - see
+[Hot Reload](/docs/guides/hot-reload) for the three tiers with worked examples. `IBTDemo` has an optional
+`onHotReload(context: HotReloadContext)` hook for reacting to a swap:
+
+```ts twoslash
+import { type IBTDemo, type HotReloadContext } from 'blit386';
+
+class Demo implements IBTDemo {
+  onHotReload(context: HotReloadContext): void {
+    console.log(`hot reload #${context.generation} (${context.reason})`);
+  }
+
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+  render(): void {}
+}
+```
+
+<TypeTable type={{
+    reason: { type: "'methods' | 'reinit'", description: "Which swap tier ran: 'methods' swapped the prototype in place, 'reinit' re-ran init() on a fresh instance" },
+    generation: { type: 'number', description: 'Hot-swap generation number, incremented on every successful swap since page load' },
+    snapshot: { type: 'Record<string, unknown>', description: "Previous instance's own enumerable fields, captured just before init() ran on the new one. Present only when reason is 'reinit'" },
+  }} />
+
+`onHotReload` never fires for a hardware-settings change - that always triggers a full page reload instead. Without a
+registered hot-reload context (no `blit386/vite` plugin, or a second `bootstrap()` call outside a Vite HMR session), a
+second call while already initialized logs an error and returns `false`. That guard is new in 1.4.0; before then a
+second call silently started another unstoppable `GameLoop`.
+
 ## Initialization
 
 <Since symbol="BT.init" />
@@ -83,6 +132,7 @@ BT.targetFPS; // number – fixed update() rate (simulation), not measured prese
 BT.requestedBackend; // 'webgpu' | 'software' | null – resolved request (see below)
 BT.activeBackend; // 'webgpu' | 'software' | null – backend that actually started
 BT.screenOrientation; // 'landscape-primary' | … | null – Screen Orientation API type
+BT.loadingAssetsCount; // number – in-flight image + audio loads (see API: Assets)
 ```
 
 - `BT.init()` selects WebGPU or falls back to the Canvas 2D software renderer automatically.
@@ -147,37 +197,37 @@ Resolved after `configure()`; the hook may return a partial object.
 - Include `displaySize` when you want a custom logical size; optional fields you omit then stay unset (for example no
   `drawingBufferSize` means a 1:1 drawing buffer).
 
-| Field                                    | Type                           | Default     | Description                                                                                                                                                          |
-| ---------------------------------------- | ------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `displaySize`                            | `Vector2i`                     | `320×240`   | Logical render resolution                                                                                                                                            |
-| `drawingBufferSize`                      | `Vector2i`                     | `640×480`   | Drawing buffer size; enables display-tier effects when set                                                                                                           |
-| `maxCanvasSize`                          | `Vector2i`                     | `960×720`   | CSS cap – maximum on-screen canvas size                                                                                                                              |
-| `targetFPS`                              | `number`                       | `60`        | Fixed `update()` rate (simulation ticks per second)                                                                                                                  |
-| `backend`                                | `'webgpu' \| 'software'`       | `'webgpu'`  | Force rendering backend                                                                                                                                              |
-| `audioVoices`                            | `number`                       | `16`        | Max simultaneous SFX voices, `1`-`64`; sizes the fixed SFX voice pool (when full, a new sound steals an eligible voice, or is dropped when no eligible voice exists) |
-| `outputUpscaleFilter`                    | `'nearest' \| 'linear'`        | `'nearest'` | Upscale filter                                                                                                                                                       |
-| `isDetectingDroppedFrames`               | `boolean`                      | `false`     | Log a console warning on missed vsync                                                                                                                                |
-| `isCapturingPointerScroll`               | `boolean`                      | `false`     | Opt into canvas wheel `preventDefault` and `BT.pointerScrollDelta` (page scrolls over the canvas when off)                                                           |
-| `isCapturingKeyboardScroll`              | `boolean`                      | `false`     | Opt into canvas `keydown` `preventDefault` for arrow keys, Space, PageUp/PageDown, Home, and End (page scrolls when off)                                             |
-| `isWakeLockEnabled`                      | `boolean`                      | `false`     | Request a screen wake lock after init to prevent mobile screen dimming/locking during gameplay (silent no-op if unsupported)                                         |
-| `preferredOrientation`                   | `PreferredOrientation`         | `'any'`     | Attempt `screen.orientation.lock()` after init (`'landscape'` / `'portrait'`); `'any'` skips the lock (silent no-op if unsupported)                                  |
-| `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                                                                                             |
-| `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                                                                                       |
-| `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                                                                                   |
-| `isOverlayToggleEnabled`                 | `boolean`                      | `true`      | Enable Backquote and bottom-left corner toggle input                                                                                                                 |
-| `isOverlayToggleHitDebugVisible`         | `boolean`                      | `false`     | Draw a 1 px outline of the bottom-left `17×13` toggle hit region (for hit-zone tuning)                                                                               |
-| `isOverlayPaletteEnabled`                | `boolean`                      | `false`     | Live palette swatch grid in the overlay bottom band (opt-in)                                                                                                         |
-| `overlayPaletteColumns`                  | `number`                       | _unset_     | Max palette swatches per grid row (default: widest fit)                                                                                                              |
-| `overlayPaletteRowsVisible`              | `number`                       | _unset_     | Max visible palette grid rows (default: all rows; band height capped)                                                                                                |
-| `overlayStyle`                           | `OverlayStyle`                 | _unset_     | Optional bar/text/gap palette indices for overlay                                                                                                                    |
-| `isOverlayTimingChartEnabled`            | `boolean`                      | `false`     | Scrolling update/render timing chart between title and metrics rows                                                                                                  |
-| `overlayTimingChartHeight`               | `number`                       | `22`        | Timing chart band height in pixels when the chart is enabled                                                                                                         |
-| `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                                                                                                 |
-| `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted)                                                                   |
-| `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                                                                                         |
-| `isOverlayAudioMetersEnabled`            | `boolean`                      | `false`     | Per-bus level bars and voices/steal/drop text readout band                                                                                                           |
-| `overlayAudioMeterHeight`                | `number`                       | `13`        | Audio meter band height in pixels when audio meters are enabled                                                                                                      |
-| `overlayAudioMeterStyle`                 | `OverlayAudioMeterStyle`       | _unset_     | Optional audio meter palette indices (defaults to overlay text/gap)                                                                                                  |
+| Field                                    | Type                           | Default     | Description                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------- | ------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `displaySize`                            | `Vector2i`                     | `320×240`   | Logical render resolution                                                                                                                                                                                                                                                                                                                                                |
+| `drawingBufferSize`                      | `Vector2i`                     | `640×480`   | Drawing buffer size; enables display-tier effects when set                                                                                                                                                                                                                                                                                                               |
+| `maxCanvasSize`                          | `Vector2i`                     | `960×720`   | CSS cap – maximum on-screen canvas size                                                                                                                                                                                                                                                                                                                                  |
+| `targetFPS`                              | `number`                       | `60`        | Fixed `update()` rate (simulation ticks per second)                                                                                                                                                                                                                                                                                                                      |
+| `backend`                                | `'webgpu' \| 'software'`       | `'webgpu'`  | Force rendering backend                                                                                                                                                                                                                                                                                                                                                  |
+| `audioVoices`                            | `number`                       | `16`        | Max simultaneous SFX voices, `1`-`64`; sizes the fixed SFX voice pool (when full, a new sound steals an eligible voice, or is dropped when no eligible voice exists)                                                                                                                                                                                                     |
+| `outputUpscaleFilter`                    | `'nearest' \| 'linear'`        | `'nearest'` | Upscale filter                                                                                                                                                                                                                                                                                                                                                           |
+| `isDetectingDroppedFrames`               | `boolean`                      | `false`     | Log a console warning on missed vsync                                                                                                                                                                                                                                                                                                                                    |
+| `isCapturingPointerScroll`               | `boolean`                      | `false`     | Opt into canvas wheel `preventDefault` and `BT.pointerScrollDelta`; also gates `touch-action` (`none` when capturing, `pan-y` otherwise) so touch tap-hold-scroll follows the same opt-in (page scrolls over the canvas when off). The overlay palette band can also force capture (and `touch-action: none`) while a pointer is over it, even when this flag is `false` |
+| `isCapturingKeyboardScroll`              | `boolean`                      | `false`     | Opt into canvas `keydown` `preventDefault` for arrow keys, Space, PageUp/PageDown, Home, and End (page scrolls when off)                                                                                                                                                                                                                                                 |
+| `isWakeLockEnabled`                      | `boolean`                      | `false`     | Request a screen wake lock after init to prevent mobile screen dimming/locking during gameplay (silent no-op if unsupported)                                                                                                                                                                                                                                             |
+| `preferredOrientation`                   | `PreferredOrientation`         | `'any'`     | Attempt `screen.orientation.lock()` after init (`'landscape'` / `'portrait'`); `'any'` skips the lock (silent no-op if unsupported)                                                                                                                                                                                                                                      |
+| `isOverlayEnabled`                       | `boolean`                      | `true`      | Engine overlay HUD after each `render()`                                                                                                                                                                                                                                                                                                                                 |
+| `isOverlayVisibleAtStart`                | `boolean`                      | `false`     | Show overlay body (metrics/palette/custom rows) on first frame                                                                                                                                                                                                                                                                                                           |
+| `isOverlayToggleHintVisible`             | `boolean`                      | `true`      | Draw toggle hint icon while overlay body is hidden                                                                                                                                                                                                                                                                                                                       |
+| `isOverlayToggleEnabled`                 | `boolean`                      | `true`      | Enable Backquote and bottom-left corner toggle input                                                                                                                                                                                                                                                                                                                     |
+| `isOverlayToggleHitDebugVisible`         | `boolean`                      | `false`     | Draw a 1 px outline of the bottom-left `17×13` toggle hit region (for hit-zone tuning)                                                                                                                                                                                                                                                                                   |
+| `isOverlayPaletteEnabled`                | `boolean`                      | `false`     | Live palette swatch grid in the overlay bottom band (opt-in)                                                                                                                                                                                                                                                                                                             |
+| `overlayPaletteColumns`                  | `number`                       | _unset_     | Max palette swatches per grid row (default: widest fit)                                                                                                                                                                                                                                                                                                                  |
+| `overlayPaletteRowsVisible`              | `number`                       | _unset_     | Max visible palette grid rows (default: all rows; band height capped)                                                                                                                                                                                                                                                                                                    |
+| `overlayStyle`                           | `OverlayStyle`                 | _unset_     | Optional bar/text/gap palette indices for overlay                                                                                                                                                                                                                                                                                                                        |
+| `isOverlayTimingChartEnabled`            | `boolean`                      | `false`     | Scrolling update/render timing chart between title and metrics rows                                                                                                                                                                                                                                                                                                      |
+| `overlayTimingChartHeight`               | `number`                       | `22`        | Timing chart band height in pixels when the chart is enabled                                                                                                                                                                                                                                                                                                             |
+| `overlayTimingChartStyle`                | `OverlayTimingChartStyle`      | _unset_     | Optional timing chart palette indices (defaults to overlay bar/text)                                                                                                                                                                                                                                                                                                     |
+| `overlayTimingChartDiagnostics`          | `false \| 'minimal' \| 'rich'` | _unset_     | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted)                                                                                                                                                                                                                                                                       |
+| `isOverlayRendererDiagnosticsBarEnabled` | `boolean`                      | `false`     | Optional GPU diagnostics text row below frame timing metrics                                                                                                                                                                                                                                                                                                             |
+| `isOverlayAudioMetersEnabled`            | `boolean`                      | `false`     | Per-bus level bars and voices/steal/drop text readout band                                                                                                                                                                                                                                                                                                               |
+| `overlayAudioMeterHeight`                | `number`                       | `13`        | Audio meter band height in pixels when audio meters are enabled                                                                                                                                                                                                                                                                                                          |
+| `overlayAudioMeterStyle`                 | `OverlayAudioMeterStyle`       | _unset_     | Optional audio meter palette indices (defaults to overlay text/gap)                                                                                                                                                                                                                                                                                                      |
 
 - `displaySize`, `drawingBufferSize`, and `maxCanvasSize` must be positive whole-number pixel dimensions.
 - Each size is capped at `8192×8192` per axis and `16,777,216` total pixels (`4096×4096`).
@@ -338,5 +388,6 @@ enabled, WebGPU backend, `16` SFX voices, and other defaults documented in the t
   <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, and the unlock getter.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Engine HUD subsystem, toggle, layout.</Card>
   <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effect chain and tiers.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Swap tiers, onHotReload, asset hot-replace, blit386/vite.</Card>
   <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed configure flags and getters.</Card>
 </Cards>

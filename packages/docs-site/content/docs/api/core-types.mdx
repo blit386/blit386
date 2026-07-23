@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core Types"
 description: "The integer core types: Vector2i, Rect2i, and Color32."
-lastModified: "2026-07-06T21:37:01+02:00"
+lastModified: "2026-07-23T10:26:02+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core-types.md"
 ---
 
@@ -41,7 +41,7 @@ Vector2i.lerp(a, b, t); // interpolate, t clamped [0,1], result truncated
 Vector2i.lerpTo(a, b, t, out); // zero-allocation lerp into existing vector
 ```
 
-Instance methods: `.add()`, `.sub()`, `.scale()`, `.dot()`, `.clone()`, `.isEqual(other)`, `.isEqualXY(x, y)`,
+Instance methods: `.add()`, `.sub()`, `.mul()`, `.dot()`, `.clone()`, `.isEqual(other)`, `.isEqualXY(x, y)`,
 `.isZero()`, `.negate()`, `.abs()`, `.min()`, `.max()`, etc. See `src/utils/Vector2i.ts` for the full list.
 
 ## Rect2i

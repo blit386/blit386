@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Assets"
 description: "Sprite sheets, bitmap fonts, and asset loading."
-lastModified: "2026-07-07T09:02:06+02:00"
+lastModified: "2026-07-23T11:41:52+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-assets.md"
 ---
 
@@ -59,6 +59,27 @@ const images = await AssetLoader.loadImages(['sprites.png', 'tiles.png']);
 // Check cache before loading
 if (AssetLoader.isLoaded('sprites.png')) {
   // already cached
+}
+
+// Drop a single URL's cache entry (manual reload or tests; blit386/vite watcher usually skips this)
+AssetLoader.evict('sprites.png');
+
+// Number of image loads currently in flight
+AssetLoader.loadingCount;
+```
+
+`AssetLoader.evict()` is also the manual escape hatch for forcing a fresh load outside the `blit386/vite` plugin's
+automatic asset watcher - see [Hot Reload](/docs/guides/hot-reload#asset-hot-replace-matrix).
+
+<Since symbol="BT.loadingAssetsCount" />
+
+For a loading-screen indicator that covers both images and audio clips, use `BT.loadingAssetsCount` - it sums
+`AssetLoader.loadingCount` and `AudioClip.loadingCount` (see [API: Audio](/docs/api/audio#loading)) and drops back to `0`
+once every in-flight load has settled:
+
+```ts twoslash
+if (BT.loadingAssetsCount > 0) {
+  // show a spinner or progress bar
 }
 ```
 
@@ -191,6 +212,40 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
 
 <DemoEmbed demo="022-bitmap-font" title="BLIT386 bitmap font demo" />
 
+## Hot-replacing assets
+
+Under a Vite dev server with the `blit386/vite` plugin installed, editing a sprite sheet's source image or a `.btfont`
+file under a watched asset directory (`public/` by default) updates the already-loaded asset in place - no page reload,
+and demo-held references (a `SpriteSheet` or `BitmapFont` instance, or an `IndexedSpriteLoadResult.sheet`) stay valid. A
+sprite sheet re-runs `indexize()` against the active palette when it was already indexized; a bitmap font rebuilds its
+glyph tables and texture.
+
+<Callout title="Demo-held srcRects and dimension changes">
+  If the replacement image has different dimensions, the sheet's `size` updates to match, but any `Rect2i` a demo is
+  holding onto as a `srcRect` into that sheet does not update itself - reconciling it is the demo's own
+  responsibility. Keep sprite sheet dimensions stable during a hot-reload session, or recompute `srcRect`s from the
+  sheet's current `width`/`height` when that matters.
+</Callout>
+
+Each `SpriteSheet` also exposes `status` (`'loading' | 'ready' | 'failed'`) and `progress` (`0` or `1`) tracking a
+replacement fetch while it's in flight - useful for a per-sheet loading indicator, or combine with
+[`BT.loadingAssetsCount`](#loading-assets) for a single engine-wide signal. A normally loaded sheet is always `'ready'`
+with `progress: 1.0`, since its image has already resolved by the time the sheet is constructed.
+
+```ts twoslash
+sheet.status; // 'loading' | 'ready' | 'failed'
+sheet.progress; // 0 while loading, 1.0 once ready
+```
+
+<Callout title="Coarse-grained progress">
+  `progress` is `0` or `1.0`, never a value in between - `HTMLImageElement` reports no byte-level download progress the
+  way `AudioClip`'s `onProgress` callback does (see [API: Audio](/docs/api/audio#loading)). Use `status`/`progress` to show
+  or hide a loading indicator, not to drive a percentage bar.
+</Callout>
+
+See [Hot Reload](/docs/guides/hot-reload#asset-hot-replace-matrix) for the full asset type matrix, including audio and the
+fallback-to-full-reload behavior for unrecognized file types.
+
 ## System font
 
 A built-in 6×14 monospace font covering printable ASCII (characters 32–126). No load step needed.
@@ -218,6 +273,7 @@ BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
   <Card title="Palette Guide" href="/docs/guides/palette">Palette-first setup, offsets, refresh.</Card>
   <Card title="Palette Presets" href="/docs/guides/palette-presets">Built-in preset reference.</Card>
   <Card title="Bitmap Fonts" href="/docs/guides/bitmap-fonts">.btfont format, BMFont conversion.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Asset hot-replace matrix and srcRect caveats.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">System font for HUD text.</Card>
   <Card title="Testing" href="/docs/reference/testing">SpriteSheet and BitmapFont tests.</Card>
 </Cards>

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-07-19T18:04:22+02:00"
+lastModified: "2026-07-23T12:30:32+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -15,6 +15,49 @@ This page is editorial – release highlights and migration notes, not an exhaus
 (exactly when a given class, method, or getter shipped) see the availability table and changelog on each `api/*` and
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
+
+## 1.4.0 - 2026-07-23
+
+### Added
+
+- Engine-side hot-reload runtime: `registerHotReload` (wired automatically by the `blit386/vite` plugin), an optional
+  `IBTDemo.onHotReload(context)` hook, and a tiered hot-swap - a method-only prototype swap when only method bodies
+  changed, a full re-init when `init()` or the constructor changed, and a full page reload when hardware settings
+  changed. Demo/game state persists across method and re-init swaps: ticks, camera, palette, and palette effects are
+  never reset. This lands the engine half of BLIT386's HMR support; adoption in `blit386-demos`/`create-blit386` ships
+  in follow-up releases.
+- `blit386/vite` dev-server plugin: `import { blit386 } from 'blit386/vite'` in `vite.config.ts` appends the hot-reload
+  registration snippet to a demo/game's entry module (skipped in production builds) and broadcasts asset changes under
+  configured asset directories (default `public/`) as `blit386:asset-changed` HMR events, falling back to a full page
+  reload for an unrecognized asset extension. Ships as a second build entry (`dist/vite.js`/`.cjs`/`.d.ts`) with zero
+  runtime dependency on `vite` itself.
+- Engine-side asset hot-replace: `AssetLoader.evict`, plus internal routing in `HotRuntime.handleAssetChanged` for
+  `blit386:asset-changed` events. A changed image, audio, or `.btfont` file under `public/` updates the running demo in
+  place - sprite sheets swap their texture (calling `indexize()` against the active palette when needed), audio clips
+  swap their decoded buffer (stopping SFX voices on the old buffer and restarting the music player if the replaced clip
+  is the current track), and bitmap fonts rebuild their glyph tables and texture - all without a page reload. Adoption
+  in `blit386-demos`/`create-blit386` ships in a follow-up release.
+- Asset loading progress: `BT.loadingAssetsCount` is polled once per frame as a combined image+audio signal (the sum of
+  `AssetLoader.loadingCount` and `AudioClip.loadingCount`) to drive a loading spinner or progress bar until it returns
+  to `0`. `SpriteSheet.status` (`'loading' | 'ready' | 'failed'`) and `SpriteSheet.progress` expose per-sheet hot-reload
+  replacement state; `progress` is coarse-grained (`0` or `1.0`, not a percentage).
+
+### Fixed
+
+- Calling `bootstrap()` a second time while already initialized no longer silently starts a second, unstoppable
+  `GameLoop`. With the `blit386/vite` plugin installed and a hot-reload context registered, a second call now routes to
+  a hot swap instead; without one, it logs an error and returns `false`.
+- Running under `?backend=software` no longer forces a full page reload on every hot-swappable edit. The Tier 3
+  hardware-settings check now accounts for the URL override on both sides of the comparison, so only a genuine
+  `configure()` change triggers a reload, matching the behavior already seen under the default `webgpu` backend.
+- The `blit386/vite` plugin now syntax-checks a plain `.js`/`.mjs` entry module before injecting the hot-reload snippet.
+  Vite's own default transform pipeline excludes those extensions from server-side parsing, so a broken entry module
+  previously surfaced only as a silently caught client-side error - Vite's error overlay never appeared. `.ts`/`.mts`
+  entries are unaffected; they already get real syntax validation from Vite's own transform.
+- `canvas.style.touch-action` was hardcoded to `none` on attach, blocking touch tap-hold-scroll past the canvas even
+  when `HardwareSettings.isCapturingPointerScroll` was left at its default `false`. It is now gated by the same flag:
+  `none` while pointer scroll capture is active (configure-time opt-in or the overlay's palette-band force), `pan-y`
+  otherwise, updated live as either source of capture changes.
 
 ## 1.3.1 - 2026-07-19
 

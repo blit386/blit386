@@ -1,6 +1,6 @@
 {
-  "packageVersion": "1.3.1",
-  "unreleasedVersion": "1.3.2",
+  "packageVersion": "1.4.0",
+  "unreleasedVersion": "1.4.1",
   "versions": {
     "0.1.0": "2025-12-13T11:02:41+01:00",
     "0.2.0": "2025-12-22T16:19:15+01:00",
@@ -11,7 +11,8 @@
     "1.1.1": "2026-06-07T14:08:44+02:00",
     "1.3.0": "2026-07-13T17:36:26+02:00",
     "1.3.1": "2026-07-19T18:11:00+02:00",
-    "1.3.2": null
+    "1.4.0": "2026-07-23T12:32:13+02:00",
+    "1.4.1": null
   },
   "symbols": {
     "AssetLoader": {
@@ -665,6 +666,13 @@
       },
       "status": "deprecated"
     },
+    "BT.loadingAssetsCount": {
+      "kind": "getter",
+      "since": "1.4.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
     "BT.musicPlay": {
       "kind": "method",
       "since": "1.3.0",
@@ -1077,6 +1085,20 @@
       "deprecated": null,
       "status": "stable"
     },
+    "HotContext": {
+      "kind": "interface",
+      "since": "1.4.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
+    "HotReloadContext": {
+      "kind": "interface",
+      "since": "1.4.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
+    },
     "IBTDemo": {
       "kind": "interface",
       "since": "0.1.0",
@@ -1084,6 +1106,10 @@
         {
           "version": "1.3.1",
           "note": "Added optional {@link IBTDemo.onOrientationChange} hook."
+        },
+        {
+          "version": "1.4.0",
+          "note": "Added optional {@link IBTDemo.onHotReload} hook."
         }
       ],
       "deprecated": null,
@@ -1316,7 +1342,12 @@
     "bootstrap": {
       "kind": "function",
       "since": "0.2.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.4.0",
+          "note": "Calling `bootstrap()` again while already initialized now routes to a hot\nswap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a\ndouble-bootstrap guard and returns `false` otherwise - previously it silently started a\nsecond, unstoppable `GameLoop`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1368,11 +1399,19 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "registerHotReload": {
+      "kind": "function",
+      "since": "1.4.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "stable"
     }
   },
   "pages": {
     "api/assets": [
       "AssetLoader",
+      "BT.loadingAssetsCount",
       "BitmapFont",
       "IndexedSpriteLoadResult",
       "SpriteSheet"
@@ -1431,12 +1470,15 @@
       "BT.targetFPS",
       "BootstrapOptions",
       "HardwareSettings",
+      "HotContext",
+      "HotReloadContext",
       "PreferredOrientation",
       "bootstrap",
       "defaultConfig",
       "displayError",
       "getCanvas",
-      "mergeHardwareSettings"
+      "mergeHardwareSettings",
+      "registerHotReload"
     ],
     "api/easing": [
       "EasingFunction",

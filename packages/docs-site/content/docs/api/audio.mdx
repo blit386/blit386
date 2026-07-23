@@ -2,8 +2,8 @@
 # Generated from blit386/docs/api-audio.md by scripts/sync-docs-from-engine.mjs.
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
-description: "Audio bus volume, mute, and the browser autoplay-unlock state."
-lastModified: "2026-07-13T18:09:45+02:00"
+description: "Audio buses, SFX voice pool, crossfading music, and procedural synthesis."
+lastModified: "2026-07-22T06:39:35+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-audio.md"
 ---
 
@@ -117,7 +117,13 @@ const clips = await AudioClip.loadAll(['audio/theme.mp3', ['audio/hit.ogg', 'aud
 if (AudioClip.isLoaded('audio/theme.mp3')) {
   // already cached
 }
+
+// Number of clip loads currently in flight
+AudioClip.loadingCount;
 ```
+
+For a single loading-screen signal that also covers sprite sheet images, see
+[`BT.loadingAssetsCount`](/docs/api/assets#loading-assets).
 
 Pass `onProgress` to report phased load progress:
 
@@ -146,6 +152,13 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
   in every browser - see [Audio formats](/docs/api/browser-support#audio-formats).
 - Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below; as looping, crossfading music
   in [Playback (Music)](#playback-music).
+
+Under a Vite dev server with the `blit386/vite` plugin installed, editing an audio file under a watched asset directory
+(`public/` by default) swaps the decoded buffer inside the same `AudioClip` instance - demo-held references stay valid.
+Any SFX voice still playing the old buffer is stopped; if the replaced clip is the currently playing music track,
+playback restarts immediately (`fadeMs: 0`, no crossfade). `duration`/`sampleRate` reflect the buffer decoded at initial
+load and are not updated by a hot reload. See [Hot Reload](/docs/guides/hot-reload#asset-hot-replace-matrix) for the full
+asset type matrix.
 
 ## Synth
 
@@ -478,4 +491,5 @@ allocation and stealing policy. Documented in [Hardware settings](/docs/api/core
   <Card title="API: Core" href="/docs/api/core">Hardware settings, including audioVoices.</Card>
   <Card title="API: Overlay" href="/docs/api/overlay#audio-meters-optional">Live bus level bars and voices/steal/drop readout.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Audio clip hot-replace: SFX voices and music restart.</Card>
 </Cards>
