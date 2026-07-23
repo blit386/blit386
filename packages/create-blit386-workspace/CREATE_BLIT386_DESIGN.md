@@ -1,19 +1,21 @@
 # create-blit386 – Design and Roadmap
 
-> Status: latest published npm release is 1.2.1 (`@blit386/kit@1.2.1` + `create-blit386@1.2.1`; dist-tag `latest`).
-> Publishing is manual-only now (see the 2026-07-14 policy change below) – there is no CI publish workflow. History:
-> first published as `@blit386/kit@0.1.0` + `create-blit386@0.1.1` (section 11); 1.0.0 shipped 2026-06-14 (see below).
-> All Phase 1.x code items merged to `main` (PRs #7–#10). All Phase 2 "Agents on tap" work is merged to `main` – the
-> full `blit agents sync` write path (PR #15) plus the review-driven bug fixes (sync baseline / manifest pruning / vars
-> persistence; shared-file note preservation across repeated syncs; test exit-code assertions) and the docs sweep. The
-> fully-qualified docs-sync-path commit (`9c37894`) is already in `main` – it merged as the second parent of the PR #16
-> merge commit, so there is no pending `agent-docs` follow-up (the earlier "not yet merged" note was stale). Pre-1.0
-> work in progress (Round 18): `blit agents add <claude|cursor>` is now implemented (the real post-scaffold setup
-> command, replacing the stub). `blit agents add` is merged to `main` (PR #17). Round 19 (PR #18): resolved the
-> kit-owned clean-merge drift wrinkle – a clean three-way-merged kit file is now treated as reconciled state (in-sync),
-> not drift, matching shared-file behavior. (No `main` HEAD SHA is pinned here on purpose: it went stale within days.
-> Run `git log --oneline -1` for the current one.) 37/37 tests pass across the three `node --test` suites; full
-> preflight green.
+> Status (2026-07-23): latest **published** npm release is still 1.2.1 (`@blit386/kit@1.2.1` + `create-blit386@1.2.1`;
+> dist-tag `latest`). On `main`, local pins are already ahead of that cut: `blit386.engineRange` and `BLIT386_RANGE` are
+> `^1.4.0` (unpublished next cut), and hot-reload content is on `main` (section 12; kit docs/skills `hot-reload.md` /
+> `use-hot-reload`, Catcher `onHotReload` example). Publishing is manual-only (see the 2026-07-14 policy change below) –
+> there is no CI publish workflow. 24 skill directories under `packages/kit/content/skills/`; 47 tests pass (25
+> scaffolder + 22 kit); full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes stale within days.
+> Run `git log --oneline -1` for the current one.)
+>
+> History: first published as `@blit386/kit@0.1.0` + `create-blit386@0.1.1` (section 11); 1.0.0 shipped 2026-06-14 (see
+> below). All Phase 1.x code items merged to `main` (PRs #7–#10). All Phase 2 "Agents on tap" work is merged to `main` –
+> the full `blit agents sync` write path (PR #15) plus the review-driven bug fixes (sync baseline / manifest pruning /
+> vars persistence; shared-file note preservation across repeated syncs; test exit-code assertions) and the docs sweep.
+> The fully-qualified docs-sync-path commit (`9c37894`) is already in `main` – it merged as the second parent of the PR
+> #16 merge commit, so there is no pending `agent-docs` follow-up (the earlier "not yet merged" note was stale).
+> `blit agents add <claude|cursor>` (Round 18, PR #17) and the kit-owned clean-merge drift fix (Round 19, PR #18) are
+> both on `main`.
 >
 > Release status: 1.0.0 SHIPPED (2026-06-14). Both packages are published to npm at `1.0.0` (dist-tag `latest`):
 > `@blit386/kit@1.0.0` and `create-blit386@1.0.0` (the published scaffolder manifest pins `@blit386/kit: 1.0.0`,
@@ -29,10 +31,10 @@
 > 1.0.0 tag (PRs #20–#22): (1) the `blit migrate` codemod feature – typed migration registry + a dependency-free
 > anchored codemod engine + `blit upgrade` wiring, with the auto-vs-review split (Round 21); and (2) the generated-game
 > skills – the `migrate` AI skill (Round 22) plus the game-author capability skills and `share-the-game` (Round 23; 14
-> at the time, 19 today), with Claude keeping skill YAML frontmatter and Cursor commands stripping it. Both packages
-> published to npm at `1.1.0`; the scaffolder manifest pins `@blit386/kit: 1.1.0` (pnpm `workspace:*` rewrite
-> confirmed). Landed via PR #22 (squash) to `main`; annotated git tag `1.1.0` (no `v` prefix) on merged commit
-> `a9e77fd`. `engineRange` and `BLIT386_RANGE` stay `^1.1.1`. Release notes: the GitHub Release at
+> at the time; 24 skill directories on disk today), with Claude keeping skill YAML frontmatter and Cursor commands
+> stripping it. Both packages published to npm at `1.1.0`; the scaffolder manifest pins `@blit386/kit: 1.1.0` (pnpm
+> `workspace:*` rewrite confirmed). Landed via PR #22 (squash) to `main`; annotated git tag `1.1.0` (no `v` prefix) on
+> merged commit `a9e77fd`. `engineRange` and `BLIT386_RANGE` stay `^1.1.1`. Release notes: the GitHub Release at
 > <https://github.com/blit386/create-blit386/releases/tag/1.1.0>.
 >
 > Release status: 1.2.0 SHIPPED (2026-06-19). Both packages published to npm at `1.2.0` (dist-tag `latest`):
@@ -71,16 +73,16 @@
 > work). Phase 3 migrations (Round 21–22): the kit ships a structured migration registry + codemod engine
 > (`packages/kit/src/migrations/`), a `blit migrate` command (preview by default, `--write` to apply), and
 > `blit upgrade` runs the applicable codemods after a version change. Safe renames auto-apply; ambiguous ones (`equals`,
-> `tick`, ...) are reported for review, and the new `migrate` AI skill (`content/skills/migrate/`) teaches the assistant
-> to resolve them. 19 game-author skills now cover the full renderer/input/palette/timing/audio/post-process surface in
-> `content/skills/` (14 shipped in Round 23; `share-the-game`, `run`, `fix`, `migrate` and the audio skill
-> `play-a-sound` since). `npx blit` verified (2026-06-14): `blit doctor` + `blit run` pass on npm, pnpm, and yarn for a
-> freshly scaffolded project (bun intentionally out of scope; see section 7). Still open: flip the engine's
-> `docs/deprecations.md` to be generated FROM this data (cross-repo, currently mirrored by hand), and the remaining
-> section 7 verification TODOs (StackBlitz boot, Windows, iPad/Safari). Repo:
-> <https://github.com/blit386/create-blit386> (public). Owner: Václav (vancura). First external user: Filipek. Started:
-> 2026-06-07. Purpose: shared source of truth for the BLIT386 project scaffolder. We return to this across sessions so
-> we do not lose decisions, findings, or deferred ideas.
+> `tick`, ...) are reported for review, and the `migrate` AI skill (`content/skills/migrate/`) teaches the assistant to
+> resolve them. 24 skill directories under `content/skills/` cover the full renderer / input / palette / timing / audio
+> / post-process / hot-reload surface (plus `run`, `fix`, `migrate`, `share-the-game`). `npx blit` verified
+> (2026-06-14): `blit doctor` + `blit run` pass on npm, pnpm, and yarn for a freshly scaffolded project (bun
+> intentionally out of scope; see section 7). Still open (roadmap only – do not treat deleted GitHub issues as live
+> links): generate engine `docs/deprecations.md` from the kit migration registry; auto-stamp `blit386.engineRange` at
+> release; section 7 verification TODOs (StackBlitz, Windows, iPad/Safari); Catcher starter catch/miss sounds (deferred
+> product work). Repo: <https://github.com/blit386/create-blit386> (public). Owner: Václav (vancura). First external
+> user: Filipek. Started: 2026-06-07. Purpose: shared source of truth for the BLIT386 project scaffolder. We return to
+> this across sessions so we do not lose decisions, findings, or deferred ideas.
 
 This is the planning doc: roadmap, decisions, and monetization notes. It moved into the scaffolder repo in PR #34 and
 now lives at the root of `blit386/create-blit386`, which is public – so write it as a doc a stranger may read, and keep
@@ -99,10 +101,10 @@ anything genuinely private out of it.
 > `1.2.1` on 2026-07-14 (PR #60, manual `pnpm publish` – see the top status block for why manual). Correction
 > (2026-07-14): the "no version-pin bump needed" call originally made here was wrong for `engineRange` – see the "why
 > this is safe" paragraph below, now corrected. `blit386.engineRange` in `packages/kit/package.json` and `BLIT386_RANGE`
-> in `scaffold.ts` both shipped at `^1.3.0` in the `1.2.1` release. Issue
-> [#50](https://github.com/blit386/create-blit386/issues/50) is closed except its "Catcher starter: catch + miss sounds"
-> checklist item, which did not ship in `1.2.1` and is deferred as a separate follow-up (the starter game has no
-> `BT.soundPlay`/`synthPreset` calls yet).
+> in `scaffold.ts` both shipped at `^1.3.0` in the `1.2.1` release. Catcher starter catch + miss sounds did not ship in
+> `1.2.1` and remain deferred product work (the starter game has no `BT.soundPlay`/`synthPreset` calls yet); tracked
+> historically under closed [#50](https://github.com/blit386/create-blit386/issues/50). Local pins on `main` have since
+> moved to `^1.4.0` (unpublished next cut) – see the top status block.
 
 The kit now documents the engine's audio subsystem – `content/docs/audio.md`, the `play-a-sound` skill, the audio rows
 in `content/AGENTS.md` and `content/rules/blit-api-names.md`, and the audio overlay flags in `show-debug-overlay`. All
@@ -492,10 +494,11 @@ in phase 2.
 - [x] Create the free `blit386` npm org. Done 2026-06-07: npmjs.com/org/blit386 is live; engine package left unscoped.
       Steps in section 10.
 - [ ] Manually confirm a Vite + blit386 project boots in a StackBlitz WebContainer and renders (WebGPU or software
-      fallback). 30 minutes. Record result here. → [#24](https://github.com/blit386/create-blit386/issues/24)
+      fallback). 30 minutes. Record result here. →
+      [BT-301](https://linear.app/vancura/issue/BT-301/stackblitz-webcontainer-boot-and-render-verification)
 - [ ] Confirm Safari on iPadOS 26 runs a scaffolded game (WebGPU or fallback). Requires touch input in Catcher first
       (phase 1.x) or the game is technically rendering but unplayable. →
-      [#25](https://github.com/blit386/create-blit386/issues/25)
+      [BT-302](https://linear.app/vancura/issue/BT-302/safari-ipados-26-scaffold-and-play-verification)
 - [x] Verify `npx blit run` / `npx blit doctor` work in a freshly scaffolded project under each detected package manager
       – the docs now promise the `npx` form (D12). DONE 2026-06-14 (macOS, Node 26.3.0) for npm, pnpm, and yarn. Tested
       against published `create-blit386@1.0.0` -> `@blit386/kit@1.0.0` + `blit386@1.1.1`. For each manager `blit doctor`
@@ -508,9 +511,9 @@ in phase 2.
       `localhost`/`[::1]` return 200. (2) A local pnpm `minimumReleaseAge` gate made `pnpm create blit386@latest`
       resolve the SCAFFOLDER to the older `create-blit386@0.1.0`; a clean pnpm install of a kit `^1.0.0` project
       installs 1.0.0 (auto-recorded in `minimumReleaseAgeExclude`) and `doctor`/`run` both pass.
-- [ ] Scaffold and run a game on Windows (PowerShell + cmd): wizard, `git init` absent-git path, install, `npm run dev`,
-      `npx blit doctor`. Most beginners are on Windows and nothing has been tested there. Record result here. →
-      [#23](https://github.com/blit386/create-blit386/issues/23)
+- [ ] Scaffold and run a game on Windows (PowerShell + cmd): wizard, `git init` absent-git path, install,
+      `npm run     dev`, `npx blit doctor`. Most beginners are on Windows and nothing has been tested there. Record
+      result here. → [BT-300](https://linear.app/vancura/issue/BT-300/windows-end-to-end-scaffold-and-play-verification)
 - [x] Prototype `blit agents sync` from the canonical kit IR (phase 2), implementing the ownership model in 4.10. Done
       2026-06-13 (Round 15): full write path in `packages/kit/src/commands/agents.ts` + generate-to-memory
       `packages/kit/src/adapters.ts`, manifest `vars` for deterministic regeneration, git three-way merge + `.new`
@@ -645,33 +648,34 @@ Phase 3 – "Stays fresh":
   skill for non-mechanical changes. Round 21: registry + codemod engine + `blit migrate` + `blit upgrade` wiring shipped
   kit-side (auto vs review split). Round 22: AI migration skill (`content/skills/migrate/`) ships into generated games
   for Claude and Cursor, teaching the assistant to apply `--write` autos and resolve `review` hits by receiver type.
-  Remaining: generate `deprecations.md` from this data (cross-repo). →
-  [#26](https://github.com/blit386/create-blit386/issues/26)
+  Remaining (roadmap): generate engine `docs/deprecations.md` from this data (cross-repo). →
+  [BT-299](https://linear.app/vancura/issue/BT-299/cross-repo-ci-to-generate-deprecationsmd-from-kit-migration-registry)
 - Auto-stamp `blit386.engineRange` during release + kit docs drift detection CI (replaces the original "generate kit
-  docs FROM engine `docs/api-*.md`" plan; full prose generation is not feasible – see issue for rationale). →
-  [#27](https://github.com/blit386/create-blit386/issues/27)
+  docs FROM engine `docs/api-*.md`" plan; full prose generation is not feasible). →
+  [BT-293](https://linear.app/vancura/issue/BT-293/auto-stamp-enginerange-and-kit-docs-drift-detection-ci)
 - [x] More game-author skills. Round 23 shipped 14 capability skills in `content/skills/` (`structure-a-game`,
       `draw-shapes`, `add-sprite`, `add-text`, `use-palette`, `animate-the-palette`, `move-and-time`,
       `scroll-with-camera`, `read-keyboard`, `read-pointer`, `read-gamepad`, `add-crt-effect`, `save-a-screenshot`,
       `show-debug-overlay`), later joined by `play-a-sound` and `share-the-game`, and by `smooth-the-motion`,
-      `design-a-sound`, and `keep-it-fast` in Round 24. With `run`, `fix`, and `migrate`, that is 22 skill directories
-      today, covering the full renderer / input / palette / timing / audio / post-process surface. `share-the-game` IS
-      the publish skill and it shipped: it teaches `build` + `preview` + upload `dist/` to a static host, which needs no
-      deploy config in the scaffold. Still no `add-enemy`/physics skill – the engine has no game systems, and inventing
-      one in a skill would be a lie. The current list is the directory itself, mirrored for humans in
-      `packages/kit/README.md` – do not re-enumerate it here.
+      `design-a-sound`, and `keep-it-fast` in Round 24, then `use-hot-reload` and `show-a-loading-screen` with the 1.4.0
+      hot-reload work. With `run`, `fix`, and `migrate`, that is 24 skill directories today, covering the full renderer
+      / input / palette / timing / audio / post-process / hot-reload surface. `share-the-game` IS the publish skill and
+      it shipped: it teaches `build` + `preview` + upload `dist/` to a static host, which needs no deploy config in the
+      scaffold. Still no `add-enemy`/physics skill – the engine has no game systems, and inventing one in a skill would
+      be a lie. The current list is the directory itself, mirrored for humans in `packages/kit/README.md` – do not
+      re-enumerate it here.
 
 Phase 4 – "Reach":
 
 - StackBlitz one-click (after the section 7 verify); iPad path. →
-  [#28](https://github.com/blit386/create-blit386/issues/28) (blocked by
-  [#24](https://github.com/blit386/create-blit386/issues/24))
+  [BT-292](https://linear.app/vancura/issue/BT-292/stackblitz-one-click-link-and-browser-first-onboarding-copy-rewrite)
+  (blocked by [BT-301](https://linear.app/vancura/issue/BT-301/stackblitz-webcontainer-boot-and-render-verification))
 - More agents (Zed, Gemini CLI, Windsurf) – cheap once the pipeline exists. →
-  [#29](https://github.com/blit386/create-blit386/issues/29) (umbrella; sub-issues:
-  [#30](https://github.com/blit386/create-blit386/issues/30) research,
-  [#31](https://github.com/blit386/create-blit386/issues/31) Zed,
-  [#32](https://github.com/blit386/create-blit386/issues/32) Gemini CLI,
-  [#33](https://github.com/blit386/create-blit386/issues/33) Windsurf)
+  [BT-295](https://linear.app/vancura/issue/BT-295/multi-agent-adapter-support) (umbrella; sub-issues:
+  [BT-296](https://linear.app/vancura/issue/BT-296/research-and-define-agent-adapter-spec-for-zed-gemini-cli-and-windsurf)
+  research, [BT-297](https://linear.app/vancura/issue/BT-297/zed-agent-adapter) Zed,
+  [BT-298](https://linear.app/vancura/issue/BT-298/gemini-cli-agent-adapter) Gemini CLI,
+  [BT-294](https://linear.app/vancura/issue/BT-294/windsurf-agent-adapter) Windsurf)
 
 Separate product (later): Ambilab (ambilab.games) hosted editor + game hosting; `blit publish` seam (section 6).
 
@@ -780,6 +784,12 @@ scaffolder cut that expects 1.4.0 on npm, not as a silent side effect of a docs 
 
 ## Changelog
 
+- 2026-07-23: Status accuracy pass (BT-341). Top banner now states published npm is still `1.2.1` while local
+  `engineRange` / `BLIT386_RANGE` on `main` are already `^1.4.0` (unpublished next cut), hot-reload content/section 12
+  is on `main`, skill count is 24, and tests are 47 (25 scaffolder + 22 kit). Deleted GitHub issue links #23–#33
+  (HTTP 410) replaced with Linear trackers (BT-300/301/302 for section 7 verifies; BT-299/293 for remaining Phase 3
+  roadmap; BT-292/295–298/294 for Phase 4). Catcher starter catch/miss sounds stay deferred product work. The 2026-07-13
+  changelog entry below is historical and superseded by later entries / this pass.
 - 2026-07-23: Section 12 added – hot reload for scaffolded games (engine 1.4.0+): snippet ↔ engine contract, tiered swap
   model, and the explicit "new games only" delivery decision (existing games opt in via a one-line `vite.config.js` edit
   or `blit migrate`). Kit docs/skills (`hot-reload.md`, `use-hot-reload`) and the Catcher commented `onHotReload`
