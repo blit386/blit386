@@ -10,9 +10,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Package-manager caches
-.pnpm-store/
-
 # Local env and secrets
 .env
 .env.*
@@ -62,6 +59,10 @@ pnpm-debug.log*
 .eslintcache
 .cache/
 .knip-output.json
+
+# Testing & coverage
+coverage/
+.nyc_output/
 
 # Temporary folders
 tmp/

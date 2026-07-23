@@ -1,5 +1,5 @@
 {
-  // Project-level Zed settings for blit386.
+  // Project-level Zed settings for create-blit386.
   // Global settings live in ~/.config/zed/settings.json.
   "agent": {
     "tool_permissions": {
