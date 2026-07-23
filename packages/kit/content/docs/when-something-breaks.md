@@ -95,6 +95,14 @@ game's address goes dead. Start the server again with `npm run dev` and reload t
 2. Did the change have a typo? Check the terminal and the browser console for red text.
 3. Still nothing? Reload the page yourself (Ctrl+R, or Cmd+R on a Mac).
 
+## My change didn't show up
+
+Same checklist as above. Also remember: a full page reload (so everything looks like a cold start) is expected when you
+edit `configure()` hardware settings (screen size, backend, FPS, audio voices, overlay flags), when you upgrade the
+`blit386` package itself, or when you change an unrecognized file under `public/`. Method and most asset edits should
+update without wiping the page – if they do not, confirm `vite.config.js` still has `plugins: [blit386()]` and restart
+the dev server once.
+
 ## I changed the code and the game acted weird
 
 With hot reload (the starter's `blit386` Vite plugin), most saves keep the game running:
@@ -109,6 +117,19 @@ With hot reload (the starter's `blit386` Vite plugin), most saves keep the game 
 If the page reloads on every tiny edit, check that `vite.config.js` still has `plugins: [blit386()]` and that you are on
 blit386 1.4.0 or newer (`npx blit doctor`). Older games can pick the plugin up with `npx blit migrate --write` (or
 `npx blit upgrade`), then restart the dev server once.
+
+## The game restarted and lost my score
+
+That usually means you edited `init()`, the constructor, or a class field initializer – hot reload builds a fresh
+instance and runs `init()` again, so fields reset unless you restore them in `onHotReload`. Editing `configure()`
+hardware settings reloads the whole page (score is gone either way). Method-only edits to `update()` / `render()` keep
+state. Details and a restore example: `docs/hot-reload.md`.
+
+## Hot reload seems stuck
+
+Stop the dev server (Ctrl+C) and start it again with `npm run dev` (or `npx blit run`). An engine package upgrade also
+forces a full reload – that is expected. If saves still do nothing after a restart, check the terminal for errors and
+confirm the `blit386()` plugin is still in `vite.config.js`.
 
 ## My change made everything weird and I want to go back
 
