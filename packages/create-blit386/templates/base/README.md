@@ -21,11 +21,14 @@ Catch the falling blocks before they reach the bottom.
 ## Change the game
 
 Open `{{gameFile}}`. Every line has a comment explaining what it does. Change a number or a color, save the file, and
-your browser updates by itself. A few things to try:
+your browser updates by itself – most edits keep the game running (hot reload) instead of wiping your score. Edit a PNG
+or sound under `public/` and that asset updates in place too. A few things to try:
 
 - Make the blocks fall faster: find `ITEM_FALL_SPEED`.
 - Make the paddle wider or narrower: `PADDLE_WIDTH`.
 - Change the colors: the `palette.set(...)` lines in `init`.
+
+More about hot reload: `docs/hot-reload.md`.
 
 ## Helpful commands
 
@@ -69,5 +72,5 @@ the usual suspects: blank screens, "command not found," forgotten `await`, and m
 ## Learn more
 
 - `AGENTS.md` – a short home base for you or an AI assistant.
-- `docs/` – friendly guides: getting started, the game loop, drawing, input, colors, and fixing problems.
+- `docs/` – friendly guides: getting started, the game loop, drawing, input, colors, hot reload, and fixing problems.
 - [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site.

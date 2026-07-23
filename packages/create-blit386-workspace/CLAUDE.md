@@ -119,14 +119,14 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 
 ## Kit content vs engine docs
 
-Generated games receive `AGENTS.md`, seven beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
-`drawing`, `input`, `palette`, `audio`, `when-something-breaks`), and the game-author skills in
+Generated games receive `AGENTS.md`, eight beginner docs from `packages/kit/content/docs/` (`getting-started`, `basics`,
+`drawing`, `input`, `palette`, `audio`, `hot-reload`, `when-something-breaks`), and the game-author skills in
 `packages/kit/content/skills/` (emitted as `.claude/skills/<name>/SKILL.md` and `.cursor/commands/<name>.md`; the skills
 table in `packages/kit/README.md` lists them). They are not copies of blit386's full `docs/` tree – they teach the
 starter game and point to GitHub for deep API reference.
 
 The whole of `packages/kit/content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/` (2
-files), `skills/` (22 directories – 19 game-author capability skills plus the `run`, `fix`, and `migrate` workflow
+files), `skills/` (24 directories – 21 game-author capability skills plus the `run`, `fix`, and `migrate` workflow
 skills), `hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are discovered by
 directory scan in `scaffold.ts` / `adapters.ts` – adding a skill folder is enough, nothing registers it by name.
 
@@ -136,28 +136,29 @@ that repo may be archived in favor of kit-based demos, and shipped content must 
 `demos.blit386.dev`; the old `blit386-demos.vancura.dev` host is dead.)
 
 Engine API surface the kit teaches: drawing (primitives, sprites, text), palette (+ effects), input (keyboard, pointer,
-gamepad), timing, audio (bus mixer, `AudioClip`, procedural synth – engine 1.3.0), the debug overlay, screenshots, and
-WebGPU-only post-process effects. The engine has no physics, collision, entity, or scene system: say so, and do not
-invent one.
+gamepad), timing, audio (bus mixer, `AudioClip`, procedural synth – engine 1.3.0), hot reload / `blit386/vite` / asset
+hot-replace / `BT.loadingAssetsCount` (engine 1.4.0), the debug overlay, screenshots, and WebGPU-only post-process
+effects. The engine has no physics, collision, entity, or scene system: say so, and do not invent one.
 
 When blit386 public API or naming changes in the sibling repo, audit these kit files for stale examples:
 
-| Kit file                                | Review when                                                          |
-| --------------------------------------- | -------------------------------------------------------------------- |
-| `content/docs/getting-started.md`       | Install/run flow, `npx blit run` / `doctor`                          |
-| `content/docs/basics.md`                | `configure()`, loop timing getters, bootstrap flow                   |
-| `content/docs/drawing.md`               | `BT.clear`, primitives, text APIs                                    |
-| `content/docs/input.md`                 | `BT.isDown`, edges, keyboard, pointer, gamepad                       |
-| `content/docs/palette.md`               | `paletteCreate`, slots, `Color32`                                    |
-| `content/docs/audio.md`                 | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                |
-| `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, `doctor`       |
-| `content/AGENTS.md`                     | Overall game shape, hard rules, doc routing                          |
-| `content/rules/blit-api-names.md`       | `BT` getter list, configure `is*` flags, input hold/edge naming      |
-| `content/rules/blit-integer-coords.md`  | Integer-coordinate rule (`Vector2i` / `Rect2i`)                      |
-| `content/skills/*/SKILL.md`             | 19 game-author skills; each demonstrates a slice of the `BT` surface |
-| `content/hooks/shell-safety.sh`         | Shell commands the hook blocks in a generated game                   |
-| `content/hooks.manifest.json`           | Canonical hook intent; the Cursor `hooks.json` is generated from it  |
-| `content/agents.config.json`            | Which files each adapter (claude / cursor) emits                     |
+| Kit file                                | Review when                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `content/docs/getting-started.md`       | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload                         |
+| `content/docs/basics.md`                | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount`      |
+| `content/docs/drawing.md`               | `BT.clear`, primitives, text APIs                                                          |
+| `content/docs/input.md`                 | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action              |
+| `content/docs/palette.md`               | `paletteCreate`, slots, `Color32`                                                          |
+| `content/docs/audio.md`                 | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                                      |
+| `content/docs/hot-reload.md`            | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace                               |
+| `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `doctor`       |
+| `content/AGENTS.md`                     | Overall game shape, hard rules, doc routing                                                |
+| `content/rules/blit-api-names.md`       | `BT` getters (incl. `screenOrientation`, `loadingAssetsCount`), configure flags, wake lock |
+| `content/rules/blit-integer-coords.md`  | Integer-coordinate rule (`Vector2i` / `Rect2i`)                                            |
+| `content/skills/*/SKILL.md`             | 21 game-author skills; each demonstrates a slice of the `BT` surface                       |
+| `content/hooks/shell-safety.sh`         | Shell commands the hook blocks in a generated game                                         |
+| `content/hooks.manifest.json`           | Canonical hook intent; the Cursor `hooks.json` is generated from it                        |
+| `content/agents.config.json`            | Which files each adapter (claude / cursor) emits                                           |
 
 Also check `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine
 version.
