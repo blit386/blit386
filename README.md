@@ -188,7 +188,7 @@ pnpm add blit386
 <script type="module" src="/src/main.js"></script>
 ```
 
-You need an ESM bundler (Vite, esbuild, webpack, and friends) and Node 22+. The engine wants a WebGPU browser and
+You need an ESM bundler (Vite, esbuild, webpack, and friends) and Node >=22.18.0. The engine wants a WebGPU browser and
 quietly falls back to Canvas 2D when there is not one – see [Browser support](docs/api-browser-support.md) for the
 version details.
 
