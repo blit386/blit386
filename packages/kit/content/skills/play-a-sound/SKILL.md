@@ -143,5 +143,6 @@ render() {
   needs a GPU, so every player hears it.
 - Audio arrived in blit386 1.3.0. If `BT.soundPlay` says it is not a function, your engine is older than that: run
   `npx blit upgrade`.
+- For a loading screen while clips decode, poll `BT.loadingAssetsCount` (see the show-a-loading-screen skill).
 
 See `docs/audio.md`.

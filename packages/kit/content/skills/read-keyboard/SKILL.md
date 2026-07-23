@@ -60,5 +60,7 @@ BT.inputMapReset(); // back to defaults
 - Read input in `update()`, not `render()` – presses, releases, and typed text are one-frame events that already reset
   by the time `render()` runs, so checking them there can silently drop taps under fast input.
 - "Down" means held every frame; "Pressed" / "Released" is the single edge frame.
+- Arrow keys and Space scroll the host page by default. Set `isCapturingKeyboardScroll: true` in `configure()` when your
+  game maps those keys so the page does not move while the canvas is focused.
 
 See `docs/input.md`.

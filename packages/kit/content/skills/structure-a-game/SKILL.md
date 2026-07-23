@@ -63,5 +63,7 @@ if (this.player.isIntersecting(this.coin)) {
 - `update()` decides; `render()` draws. Keep them apart (see `docs/basics.md`).
 - The engine runs on WebGPU and falls back to plain Canvas 2D, so a game always renders. Only fullscreen post-process
   effects need WebGPU (see the add-crt-effect skill); sound works on both.
+- Optional `onHotReload(context)` can restore fields after an `init()` edit while the Vite plugin keeps the session
+  alive – see the use-hot-reload skill and `docs/hot-reload.md`.
 
 See `docs/basics.md`.
