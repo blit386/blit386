@@ -1,6 +1,6 @@
 # Architecture
 
-Condensed mirror of `.cursor/rules/architecture.mdc`.
+Paired with `.cursor/rules/architecture.mdc` (same annotated tree).
 
 The file tree below is illustrative, not exhaustive – it highlights notable subsystems and entry points. Colocated
 `*.test.ts` / `*.bench.ts` files and small module-local `constants.ts` / `types.ts` helpers are omitted for readability.

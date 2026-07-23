@@ -27,6 +27,9 @@ Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
 
 Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use property forms)
 
+`Vector2i` getters return a clone per read. `palette` is a live reference – mutating slots affects rendering on the next
+frame.
+
 ## Keep as methods
 
 - **Lifecycle / mutations:** `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`,
@@ -53,15 +56,16 @@ Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use prope
 
 ## Boolean naming (three tiers)
 
-| Tier                         | Use               | Examples                                                                  |
-| ---------------------------- | ----------------- | ------------------------------------------------------------------------- |
-| **A** Runtime queries        | `is*` / `has*`    | `isPointerActive`, `isIndexed`, `hasGlyph`, `Palette.isDirty`             |
-| **B** Configure flags        | grammatical `is*` | `isOverlayEnabled`, `isDetectingDroppedFrames`, `isOverlayPaletteEnabled` |
-| **C** Side effects / results | imperative verbs  | `fireIfElapsed()`, `remove(): boolean`, `init(): Promise<boolean>`        |
+| Tier                         | Use               | Examples                                                                                                                                                                      |
+| ---------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A** Runtime queries        | `is*` / `has*`    | `isPointerActive`, `isIndexed`, `hasGlyph`, `Palette.isDirty`                                                                                                                 |
+| **B** Configure flags        | grammatical `is*` | `isOverlayEnabled`, `isDetectingDroppedFrames`, `isOverlayPaletteEnabled`, `isOverlayVisibleAtStart`, `isWaitingForDOMReady`, `isCapturingPointerScroll`, `isWakeLockEnabled` |
+| **C** Side effects / results | imperative verbs  | `fireIfElapsed()`, `remove(): boolean`, `init(): Promise<boolean>`                                                                                                            |
 
 - Use **`-ing`** for configure flags that enable ongoing behavior (`isDetectingDroppedFrames`).
-- **Hold vs edge on `BT`:** `isDown` / `isKeyDown`; `isPressed` / `isReleased`; `isKeyPressed` / `isKeyReleased`.
-  Internal input classes mirror those names. No embedded second `Is` — audit with `\bis[A-Za-z]+Is[A-Z]`.
+- **Hold vs edge on `BT`:** `isDown` / `isKeyDown`; `isPressed` / `isReleased`; `isKeyPressed` / `isKeyReleased`. Public
+  `BT` uses `isDown`; internal input classes use `isButtonDown` / `isKeyDown` and related names. No embedded second `Is`
+  — audit with `\bis[A-Za-z]+Is[A-Z]`.
 - Identifier acronyms: `canvasID`, `containerID` (not `canvasId`).
 
 ## Naming
@@ -77,7 +81,9 @@ Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use prope
 2. Takes args or mutates → **method**
 3. Mirrors configure? → **same field name** as `HardwareSettings` (exception: derived getters like `outputSize` have no
    field)
-4. Update `docs/api-*.md`, `CLAUDE.md`, demos if public; overlay behavior also updates `docs/guide-overlay.md`
+4. Update `docs/api-*.md`, demos if public; overlay behavior also updates `docs/guide-overlay.md`; structural `src/`
+   changes update `.claude/rules/architecture.md` / `.cursor/rules/architecture.mdc` and the Where to Find table in
+   `CLAUDE.md`
 
 This file (and `.claude/rules/bt-api-getters.md`) is the full policy — `CLAUDE.md` carries only a short summary and
 points here. See also `docs/api-core.md` and `.cursor/rules/internal-scoped-naming.mdc`.

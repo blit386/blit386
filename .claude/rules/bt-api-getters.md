@@ -3,47 +3,85 @@
 This file (and `.cursor/rules/bt-api-getters.mdc`) is the full policy for BT API getters vs methods and Boolean naming;
 [CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/api-core.md`.
 
-Quick rules when changing `src/BLIT386.ts` or demos:
+When editing `src/BLIT386.ts`, demos, or API docs:
 
-- Getter: zero-arg read-only snapshot (`BT.displaySize`, `BT.targetFPS`, `BT.ticks`, `BT.activeBackend`)
-- Method: mutation, parameters, or async (`BT.cameraSet`, `BT.pointerPos(0)`, `await BT.captureFrame()`)
-- Never reintroduce `BT.displaySize()` / `BT.getActiveBackend()`-style call syntax for these reads
+## Prefer getters (no parentheses)
 
-## Getter lists
+Zero-argument read-only values on `BT`:
 
-| Category                                         | Members                                                                                                                                                                                                    |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Configure-time (mirror `HardwareSettings` names) | `displaySize`, `drawingBufferSize`, `targetFPS`                                                                                                                                                            |
-| Derived                                          | `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field)                                                                                                                             |
-| Configure-time (backend)                         | `requestedBackend` (mirrors `HardwareSettings.backend`; `null` before init)                                                                                                                                |
-| Loop timing                                      | `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`                                                                                                                                                      |
-| Runtime state                                    | `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation`, `loadingAssetsCount` (`activeBackend` `null` before init; `screenOrientation` `null` when API unavailable) |
-| Per-frame input                                  | `pointerScrollDelta`, `inputString`, `gamepadCount`                                                                                                                                                        |
+- Configure-time (use same names as `HardwareSettings`): `displaySize`, `drawingBufferSize`, `targetFPS`
+- Derived: `outputSize` (`drawingBufferSize ?? displaySize`; no `HardwareSettings` field)
+- Configure-time (backend): `requestedBackend` mirrors resolved `HardwareSettings.backend` (includes
+  `?backend=software`); `null` before `BT.init()`
+- Loop: `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`
+- Runtime: `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation`,
+  `loadingAssetsCount` — `activeBackend` is `null` before init or on failure; `isAudioUnlocked` is `false` until the
+  first user gesture resumes the audio context; `isMusicPlaying` is `true` while the music player has a live current
+  track; `screenOrientation` is the current `screen.orientation.type` string, or `null` when the API is unavailable;
+  `loadingAssetsCount` is the combined count of in-flight `AssetLoader` + `AudioClip` loads (poll for a loading screen)
+- Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount`
+
+Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
+
+Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use property forms)
 
 `Vector2i` getters return a clone per read. `activeBackend` is what actually started after fallback, not
 `configure().backend`. `palette` is a live reference – mutating slots affects rendering on the next frame.
 
-## Boolean queries on `BT` (Tier A; always methods)
+## Keep as methods
 
-- Hold: `isDown(...)`, `isKeyDown(...)`
-- Edge: `isPressed(...)`, `isReleased(...)`, `isKeyPressed(...)`, `isKeyReleased(...)`
-- Pointer: `isPointerActive(slot?)`
-- Internal input classes mirror the same names (`isButtonDown`, `isKeyDown`, …). No embedded second `Is`
-  (`\bis[A-Za-z]+Is[A-Z]`).
+- Lifecycle / mutations: `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`, `showCursor`,
+  `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`
+- Palette effects: `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFlash`, `paletteSwap`,
+  `paletteClearEffects`
+- Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`, `green`)
+- Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`,
+  `soundPlay(clip, options?)`, `soundStop(ref, options?)`, `isSoundPlaying(ref)`,
+  `soundVolumeSet(ref, value, options?)`, `soundVolumeGet(ref)`, `soundPitchSet(ref, value, options?)`,
+  `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`, `musicPlay(clip, options?)`,
+  `musicStop(options?)`, `musicVolumeSet(value, options?)`, `musicVolumeGet()`
+- Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
+  `systemPrint`, `printFont` (4th arg is optional `paletteOffset`, not `Color32`)
+- Any parameter: `pointerPos(0)`, `isDown(BT.BTN_A)`, `cameraClamp(...)`
+- Boolean queries with parameters (Tier A; always methods on `BT`): `isPointerActive(0)`, `isDown(...)`,
+  `isPressed(...)`, `isReleased(...)`, `isKeyDown(...)`, `isKeyPressed(...)`, `isKeyReleased(...)`
+- Side-effect booleans (Tier C): `Timer.fireIfElapsed()` — not `is*` because the call advances state
+- Async: `captureFrame`, `downloadFrame`
 
-## Configure flags (Tier B)
+Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-deprecations.md` (`pointerPosValid`,
+`buttonDown`, `keyDown`, …).
 
-Mirror `HardwareSettings` / `BootstrapOptions` field names: `isOverlayEnabled`, `isOverlayVisibleAtStart`,
-`isDetectingDroppedFrames`, `isWaitingForDOMReady`, `canvasID`, `containerID`. Use `-ing` for ongoing behavior flags.
+## Boolean naming (three tiers)
 
-## Side-effect booleans (Tier C)
+| Tier                         | Use               | Examples                                                                                                                                                                      |
+| ---------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A** Runtime queries        | `is*` / `has*`    | `isPointerActive`, `isIndexed`, `hasGlyph`, `Palette.isDirty`                                                                                                                 |
+| **B** Configure flags        | grammatical `is*` | `isOverlayEnabled`, `isDetectingDroppedFrames`, `isOverlayPaletteEnabled`, `isOverlayVisibleAtStart`, `isWaitingForDOMReady`, `isCapturingPointerScroll`, `isWakeLockEnabled` |
+| **C** Side effects / results | imperative verbs  | `fireIfElapsed()`, `remove(): boolean`, `init(): Promise<boolean>`                                                                                                            |
 
-Not `is*`: `Timer.fireIfElapsed()`, `remove(): boolean`, `init(): Promise<boolean>`.
+- Use `-ing` for configure flags that enable ongoing behavior (`isDetectingDroppedFrames`).
+- Hold vs edge on `BT`: `isDown` / `isKeyDown`; `isPressed` / `isReleased`; `isKeyPressed` / `isKeyReleased`. Public
+  `BT` uses `isDown`; internal input classes use `isButtonDown` / `isKeyDown` and related names. No embedded second `Is`
+  — audit with `\bis[A-Za-z]+Is[A-Z]`.
+- Identifier acronyms: `canvasID`, `containerID` (not `canvasId`).
 
 ## Naming when adding getters
 
-- Match `HardwareSettings` field name exactly for configure values (`targetFPS`, not `fps` or `targetFps`)
+- Match `HardwareSettings` spelling: `targetFPS` (not `fps`, not `targetFps`)
+- `requestedBackend` = resolved request (`configure()` merge + URL override); `activeBackend` = backend that started
+  (after fallback)
+- Runtime feature gates (post-process, etc.) use `activeBackend`, not `requestedBackend`
 - Use a derived getter when the value is computed from configure fields (`outputSize`); do not add a matching field
 - Use a runtime-descriptive name when no configure field exists (`activeBackend`, not `renderer`)
+
+## New API checklist
+
+1. Zero args + read-only snapshot → getter on `BT`
+2. Takes args or mutates → method
+3. Mirrors configure? → same field name as `HardwareSettings` (exception: derived getters like `outputSize` have no
+   field)
+4. Update `docs/api-*.md`, demos if public; overlay behavior also updates `docs/guide-overlay.md`; structural `src/`
+   changes update `.claude/rules/architecture.md` / `.cursor/rules/architecture.mdc` and the Where to Find table in
+   `CLAUDE.md`
 
 Cursor: `.cursor/rules/bt-api-getters.mdc` (always applied in this repo).

@@ -38,7 +38,8 @@ Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
   `performance-*`, `reference-*`). Renames use `git mv`, update `_sitemap.json` `src`, rewrite inbound links with a
   `(?<![\w-])` guard, then `sync:doc-banners` + `docs:links` + `format`. New proper nouns go in `cspell.json` (and the
   fumapress one for hand-authored content).
-- Architecture changes: update `CLAUDE.md` architecture sections and the Where to Find Information table.
+- Architecture changes: update `.claude/rules/architecture.md` / `.cursor/rules/architecture.mdc` and the Where to Find
+  Information table in `CLAUDE.md`.
 - Script or preflight changes: update `.claude/skills/*/SKILL.md` and affected `.cursor/rules/*.mdc` cross-references.
 - Onboarding surface changes (`README.md` Quick Start, `bootstrap()` defaults, minimal demo shape): check sibling
   `create-blit386` templates, `@blit386/kit` docs, and pinned `blit386` version range.

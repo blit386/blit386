@@ -3,7 +3,7 @@
 A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit. Pixel-perfect 2D rendering where primitives
 and sprites resolve through a shared indexed palette, with a Canvas 2D software fallback.
 
-This file is a standalone quick start for tools that read `AGENTS.md` and not `CLAUDE.md`. For full architecture, API
+This file is a standalone quick start for tools that read `AGENTS.md` and not `CLAUDE.md`. For architecture routing, API
 conventions, and documentation rules, [`CLAUDE.md`](CLAUDE.md) is canonical – read it before non-trivial work.
 
 ## Tech stack
