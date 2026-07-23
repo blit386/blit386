@@ -28,7 +28,8 @@ and whether to add a GitHub Actions CI workflow – plus the folder name, if you
 Then it writes:
 
 - A Catcher starter game – a tiny, complete, heavily commented game you can read top to bottom.
-- A Vite project that builds and runs with one command.
+- A Vite project that builds and runs with one command. The Vite config includes the `blit386/vite` plugin so edits show
+  up in the running game without a restart (hot reload, engine 1.4.0+).
 - JavaScript by default, or TypeScript if you ask for it (`--ts`).
 - Local docs and an `AGENTS.md`, so your editor's AI actually knows how the engine works.
 - The `blit` CLI: `blit run`, `blit doctor`, `blit upgrade`, `blit migrate`, and `blit agents` for keeping assistant
@@ -84,7 +85,7 @@ The scaffolder suites read from `dist/`, so build before running them on their o
 a `pretest` script; `pnpm run preflight` builds first anyway).
 
 CI runs the same checks on every push and pull request to `main`. Publishing to npm is a deliberate, manual step (it is
-not automated here).
+not automated here) – maintainers follow [`PUBLISHING.md`](PUBLISHING.md).
 
 ### Contributing
 
