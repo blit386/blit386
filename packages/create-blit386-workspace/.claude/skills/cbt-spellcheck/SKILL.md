@@ -19,8 +19,10 @@ Run the project-wide spellcheck, then fix all reported errors.
 
 1. Run spellcheck
 
-   Execute `pnpm run spellcheck`. It runs cspell over `packages/*/src/**/*.ts`, `packages/kit/content/**/*.md`,
-   `README.md`, and `CLAUDE.md`. Capture the full error output.
+   Execute `pnpm run spellcheck`. It runs cspell over `packages/*/src/**/*.ts`, `packages/*/README.md`,
+   `packages/kit/content/**/*.md`, `.claude/skills/**/*.md`, `.claude/rules/**/*.md`, `README.md`, `CLAUDE.md`,
+   `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CREATE_BLIT386_DESIGN.md`, and `PUBLISHING.md`. Capture the full error
+   output.
 
 2. Analyze each error
 
