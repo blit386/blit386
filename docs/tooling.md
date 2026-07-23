@@ -31,7 +31,8 @@ More context: [Testing – Declaration tooling checks](reference-testing.md#decl
 
 ## See also
 
-| Guide                                                 | What it covers                                 |
-| ----------------------------------------------------- | ---------------------------------------------- |
-| [Developer Experience](developer-experience-guide.md) | TypeScript pin rationale, declaration rollup   |
-| [Testing](reference-testing.md)                       | declaration tooling test (`test:declarations`) |
+| Guide                                                                     | What it covers                                  |
+| ------------------------------------------------------------------------- | ----------------------------------------------- |
+| [Developer Experience](developer-experience-guide.md)                     | TypeScript pin rationale, declaration rollup    |
+| [Documentation and API Versioning](documentation-and-versioning-guide.md) | @since/@changed tagging, doc component workflow |
+| [Testing](reference-testing.md)                                           | declaration tooling test (`test:declarations`)  |

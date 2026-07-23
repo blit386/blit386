@@ -54,8 +54,8 @@ alwaysApply: false
   `src` (keep `path` stable unless the topic changes), rewrite inbound links with a `(?<![\w-])` guard so compound names
   are not hit, keep cross-referenced anchors in the original on a split, then run `sync:doc-banners`, `docs:links`, and
   `format`. Add new proper nouns to `cspell.json` (and the fumapress one for hand-authored content).
-- When architecture or subsystem structure changes, update `CLAUDE.md` architecture sections and the **Where to Find
-  Information** table when paths change.
+- When architecture or subsystem structure changes, update `.claude/rules/architecture.md` /
+  `.cursor/rules/architecture.mdc` and the **Where to Find Information** table in `CLAUDE.md` when paths change.
 - When `pnpm run` scripts or preflight steps change, update `.claude/skills/*/SKILL.md` and any affected
   `.cursor/rules/*.mdc` cross-references.
 - Update `README.md` only when quick start, prerequisites, feature list, or compatibility is affected.

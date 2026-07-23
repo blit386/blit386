@@ -76,7 +76,9 @@ class Demo implements IBTDemo {
 
 `AudioClip.load()` downloads and decodes audio even while the context is locked (suspended, pre-gesture) - decoding only
 needs a registered context, not an unlocked one. That makes a title screen or a loading state a good place to preload
-every clip a level needs, so they're ready the instant the player's first gesture unlocks audio.
+every clip a level needs, so they're ready the instant the player's first gesture unlocks audio. Poll
+[`BT.loadingAssetsCount`](api-assets.md#loading-assets) to show progress while image and audio loads are still in
+flight.
 
 ```ts twoslash
 import { AudioClip, type IBTDemo } from 'blit386';
@@ -284,6 +286,7 @@ const explosion = await AudioClip.synth(restored);
 
 <Cards>
   <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, unlock, SFX and music playback, and the synth engine.</Card>
+  <Card title="API: Assets" href="/docs/api/assets#loading-assets">AssetLoader and BT.loadingAssetsCount for loading screens.</Card>
   <Card title="API: Overlay" href="/docs/api/overlay#audio-meters-optional">Live bus level bars and voices/steal/drop readout.</Card>
   <Card title="API: Browser Support" href="/docs/api/browser-support">Browser/build support matrix.</Card>
   <Card title="Input Guide" href="/docs/guides/input">Pointer, keyboard, and gamepad input that can trigger unlock.</Card>

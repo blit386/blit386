@@ -159,6 +159,9 @@ bootstrap(Game);
   main) with volume, mute, and fades, synthesize blips and booms from scratch or reach for a built-in preset, and read
   live levels off the overlay's audio meters – all while tracking the browser's autoplay-gesture unlock honestly instead
   of pretending it doesn't exist.
+- Loading progress: `BT.loadingAssetsCount` tracks in-flight image and audio loads so you can drive a loading screen.
+- Mobile polish: wake lock, screen orientation lock and detection, and opt-in pointer and keyboard scroll capture.
+- Hot reload: the `blit386/vite` plugin swaps code and assets in place during development without a full page reload.
 
 ## Get started
 
@@ -212,18 +215,26 @@ important pages:
 | ---------------------------------------------------------- | ------------------------------------------------------ |
 | [API: Core](docs/api-core.md)                              | bootstrap, init, default configuration                 |
 | [API: Game Loop](docs/api-game-loop.md)                    | tick timing, present FPS, Timer                        |
+| [Game Loop Guide](docs/guide-game-loop.md)                 | render-time interpolation, smoothing motion            |
 | [API: Camera](docs/api-camera.md)                          | global pixel offset, world-clamp helpers               |
 | [API: Core Types](docs/api-core-types.md)                  | Vector2i, Rect2i, Color32                              |
 | [API: Rendering](docs/api-rendering.md)                    | primitives, sprites, text, post-process, frame capture |
 | [API: Palette](docs/api-palette.md)                        | palette setup, presets, effects, serialization         |
-| [API: Assets](docs/api-assets.md)                          | sprite sheets, bitmap fonts, asset loading             |
-| [API: Audio](docs/api-audio.md)                            | buses, sound effects, music, procedural synthesis      |
-| [Input Guide](docs/guide-input.md)                         | pointer, keyboard, gamepad                             |
+| [API: Assets](docs/api-assets.md)                          | sprite sheets, bitmap fonts, loading progress          |
+| [API: Audio](docs/api-audio.md)                            | buses, SFX voice pool, music, procedural synthesis     |
+| [API: Overlay](docs/api-overlay.md)                        | overlay configure flags and style                      |
+| [Overlay Guide](docs/guide-overlay.md)                     | engine HUD subsystem, toggle, custom rows, layout      |
+| [API: Browser Support](docs/api-browser-support.md)        | WebGPU matrix, wake lock, orientation, build toolchain |
+| [Input Guide](docs/guide-input.md)                         | pointer, keyboard, gamepad, scroll capture             |
+| [Hot Reload Guide](docs/guide-hot-reload.md)               | blit386/vite plugin, hot-swap, asset hot-replace       |
 | [Palette Guide](docs/guide-palette.md)                     | the palette-first workflow, offsets, and effects       |
 | [Audio Guide](docs/guide-audio.md)                         | loading, playing, and designing sound                  |
+| [Bitmap Fonts](docs/guide-bitmap-fonts.md)                 | .btfont format, BMFont conversion                      |
 | [Post-Process Effects](docs/guide-post-process-effects.md) | the effect chain, built-in effects, CRT presets        |
+| [Changelog](docs/changelog.md)                             | release history in Keep a Changelog style              |
 
-The full index – overlay HUD, palette presets, bitmap fonts, performance, testing, security – lives in [`docs/`](docs/).
+The full index – performance, testing, security, contributor guides – lives in
+[Developer Experience](docs/developer-experience-guide.md#documentation-index).
 
 ## Inspiration
 

@@ -35,12 +35,18 @@ Code that requires WebGPU objects or DOM APIs. Most tests run in Node with `src/
 and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, BootstrapHelpers) opt into `happy-dom` via the
 `// @vitest-environment happy-dom` directive. Inventory is illustrative – not exhaustive.
 
-- AssetLoader – image caching and deduplication (Node + vi stubs for `Image`)
-- SpriteSheet – UV calculation, lazy texture creation, indexization, `loadIndexed()` convenience flow, and
-  `getIndexedPixels()` defensive-copy semantics (Node + GPU mocks)
+- AssetLoader – image caching and deduplication, `evict()`, and `loadingCount` (Node + vi stubs for `Image`)
+- SpriteSheet – UV calculation, lazy texture creation, indexization, `loadIndexed()` convenience flow,
+  `getIndexedPixels()` defensive-copy semantics, and `status`/`progress` load tracking (Node + GPU mocks)
+- AudioClip – decode cache, deduplication, fallback URL lists, `loadingCount`, and hot-replace wiring (Node + Web Audio
+  mocks)
 - BitmapFont – glyph lookup, text measurement (Node + vi stubs)
 - BootstrapHelpers – WebGPU support detection, canvas lookup (happy-dom)
-- Bootstrap – full bootstrap lifecycle, including `?backend=software` WebGPU-skip path (happy-dom)
+- Bootstrap – full bootstrap lifecycle, including `?backend=software` WebGPU-skip path, double-`bootstrap()` guard
+  (`Promise<boolean>`), and hot-swap delegation (happy-dom)
+- HotRuntime / HotSwap – Vite HMR context registration, tier selection, asset hot-replace routing (Node)
+- WakeLock / Orientation – acquire/release lifecycle, silent no-op fallbacks (Node + vi stubs)
+- PointerInput – `touch-action` gating for scroll capture and palette-band override (happy-dom)
 - WebGPURenderer – frame lifecycle, camera, pipeline delegation (Node + GPU mocks)
 - SoftwareRenderer – frame lifecycle, palette enforcement, camera offsets, indexed sprite blits, bitmap text,
   `captureFrame()` semantics, and unsupported-effects assertions (Node + 2D canvas mocks)
@@ -49,7 +55,7 @@ and `vi` for browser API stubs. Tests that need a full DOM (Bootstrap, Bootstrap
 - WebGPUContext – initialization with mock adapter/device (Node + GPU mocks)
 - BTAPI – singleton coordinator; lazy-loads `WebGPURenderer` after WebGPU init succeeds; includes software-mode init,
   `?backend=software` URL override, `BT.requestedBackend` vs. `BT.activeBackend` after WebGPU fallback, `captureFrame()`
-  in software mode, and overlay render path (Node + GPU mocks + 2D canvas mocks)
+  in software mode, `BT.loadingAssetsCount`, and overlay render path (Node + GPU mocks + 2D canvas mocks)
 - Overlay – colocated tests under `src/overlay/*.test.ts`: label parsing, layout helpers, `layoutPlan` golden Y
   positions for 320×240 (including custom rows, palette grid variable bottom band, and timing chart scaffold cases),
   `PaletteView.computeGrid` width/size matrix, `PaletteInteraction` hit-test/scroll/tooltip helpers,
@@ -329,7 +335,8 @@ what CI gates on.
   <Card title="Palette Guide" href="/docs/guides/palette">Palette-first workflow and refresh rules.</Card>
   <Card title="Palette Presets" href="/docs/guides/palette-presets">Exact built-in preset and HUD color values.</Card>
   <Card title="API: Assets" href="/docs/api/assets">Indexed sprite setup and palette offsets.</Card>
-  <Card title="API: Core" href="/docs/api/core">Backend, overlay, and bootstrap tests.</Card>
+  <Card title="API: Core" href="/docs/api/core">Backend, overlay, bootstrap, and hot-reload tests.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Hot-swap tiers and asset hot-replace coverage.</Card>
   <Card title="Overlay Guide" href="/docs/guides/overlay">Overlay integration test inventory.</Card>
   <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Visual regression for the effect chain.</Card>
   <Card title="Tooling" href="https://github.com/blit386/blit386/blob/main/docs/tooling.md">Declaration tooling checks.</Card>

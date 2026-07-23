@@ -32,7 +32,8 @@ The rest of the core API surface lives in dedicated pages: [Overlay](api-overlay
 <Since symbol="BootstrapOptions" />
 
 The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
-(WebGPU or software fallback), and error display automatically.
+(WebGPU or software fallback), and error display automatically. It returns a `Promise<boolean>`: `true` on a successful
+cold start or hot swap, `false` when init fails or a second call is rejected without a hot-reload context.
 
 ```ts twoslash
 import { bootstrap, type IBTDemo, type BootstrapOptions } from 'blit386';
@@ -40,10 +41,10 @@ declare const MyDemo: new () => IBTDemo;
 declare function trackError(err: Error): void;
 // ---cut---
 // One-liner – canvas id defaults to 'blit386-canvas', container to 'canvas-container'
-bootstrap(MyDemo);
+const started = await bootstrap(MyDemo);
 
 // With options
-bootstrap(MyDemo, {
+await bootstrap(MyDemo, {
   canvasID: 'my-canvas',
   containerID: 'error-wrapper',
   onSuccess: () => console.log('started'),
@@ -80,6 +81,7 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 ### Hot reload
 
 <Since symbol="registerHotReload" />
+<Since symbol="HotContext" />
 <Since symbol="HotReloadContext" />
 
 Under a Vite dev server with the `blit386/vite` plugin installed, calling `bootstrap()` again after the engine is
@@ -87,6 +89,10 @@ already initialized - exactly what happens on every hot-reloaded save - routes t
 second, unstoppable game loop. `registerHotReload(hot)` registers the active `import.meta.hot` context so the engine
 knows a swap is possible; the plugin injects the call to it automatically into the demo/game's entry module, so you
 never call it by hand.
+
+`HotContext` is the structural type for that `hot` argument: the subset of Vite's `import.meta.hot` the engine depends
+on (`data`, `on`, `invalidate`, `accept`). It is kept structural on purpose so the published engine never imports from
+the `vite` package.
 
 Depending on what changed, the swap is a prototype-only method swap, a full re-init, or a full page reload - see
 [Hot Reload](guide-hot-reload.md) for the three tiers with worked examples. `IBTDemo` has an optional
@@ -115,9 +121,10 @@ class Demo implements IBTDemo {
     snapshot: { type: 'Record<string, unknown>', description: "Previous instance's own enumerable fields, captured just before init() ran on the new one. Present only when reason is 'reinit'" },
   }} />
 
-`onHotReload` never fires for a hardware-settings change - that always triggers a full page reload instead. Without the
-`blit386/vite` plugin, `bootstrap()` behaves as before: calling it a second time while already initialized logs an error
-and returns `false` rather than starting a second loop.
+`onHotReload` never fires for a hardware-settings change - that always triggers a full page reload instead. Without a
+registered hot-reload context (no `blit386/vite` plugin, or a second `bootstrap()` call outside a Vite HMR session), a
+second call while already initialized logs an error and returns `false`. That guard is new in 1.4.0; before then a
+second call silently started another unstoppable `GameLoop`.
 
 ## Initialization
 
@@ -138,6 +145,7 @@ BT.targetFPS; // number – fixed update() rate (simulation), not measured prese
 BT.requestedBackend; // 'webgpu' | 'software' | null – resolved request (see below)
 BT.activeBackend; // 'webgpu' | 'software' | null – backend that actually started
 BT.screenOrientation; // 'landscape-primary' | … | null – Screen Orientation API type
+BT.loadingAssetsCount; // number – in-flight image + audio loads (see API: Assets)
 ```
 
 - `BT.init()` selects WebGPU or falls back to the Canvas 2D software renderer automatically.

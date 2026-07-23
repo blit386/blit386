@@ -66,7 +66,7 @@ if (AssetLoader.isLoaded('sprites.png')) {
   // already cached
 }
 
-// Drop a single URL's cache entry (mainly for tests or explicit resets)
+// Drop a single URL's cache entry (manual reload or tests; blit386/vite watcher usually skips this)
 AssetLoader.evict('sprites.png');
 
 // Number of image loads currently in flight

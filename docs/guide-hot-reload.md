@@ -10,9 +10,9 @@
 
 <!-- blit386.dev-banner:end -->
 
-`registerHotReload`, `HotReloadContext`, and `IBTDemo.onHotReload` live in [API: Core](api-core.md#hot-reload). This
-guide covers the dev-loop hot reload enables, the three swap tiers with worked examples, the asset hot-replace matrix,
-and the `blit386/vite` plugin that wires it all up.
+`HotContext`, `registerHotReload`, `HotReloadContext`, and `IBTDemo.onHotReload` live in
+[API: Core](api-core.md#hot-reload). This guide covers the dev-loop hot reload enabled by the plugin, the three swap
+tiers with worked examples, the asset hot-replace matrix, and the `blit386/vite` plugin that wires it all up.
 
 <ApiAvailability page="guides/hot-reload" />
 
@@ -216,8 +216,8 @@ swap:
   module graph is concerned, so there is nothing to swap into.
 - An asset change with an unrecognized extension, when `fullReloadOnUnknownAssets` is left at its default `true`.
 - Calling `bootstrap()` a second time with no Vite HMR context registered at all (for example, calling it twice by
-  mistake outside of a dev server) logs an error and does nothing, rather than silently starting a second, unstoppable
-  game loop.
+  mistake outside of a dev server) logs an error and returns `false`, rather than silently starting a second,
+  unstoppable game loop. Before 1.4.0, the same mistake silently started a second GameLoop.
 
 This is a deliberate design choice, not a current limitation: a hard reload is always a full page reload, so there is
 never a point in the engine's lifetime where a renderer needs to tear itself down and rebuild in place - the whole page,
@@ -336,7 +336,7 @@ Not implemented yet - notes for where this could go next:
 ## See also
 
 <Cards>
-  <Card title="API: Core" href="/docs/api/core#hot-reload">registerHotReload, HotReloadContext, and IBTDemo.onHotReload.</Card>
+  <Card title="API: Core" href="/docs/api/core#hot-reload">HotContext, registerHotReload, HotReloadContext, and IBTDemo.onHotReload.</Card>
   <Card title="API: Assets" href="/docs/api/assets">Sprite sheets and bitmap fonts, including hot-replace behavior.</Card>
   <Card title="API: Audio" href="/docs/api/audio">Audio clips, including hot-replace behavior for SFX and music.</Card>
   <Card title="Changelog" href="/docs/reference/changelog">1.4.0 release notes for the full HMR feature set.</Card>

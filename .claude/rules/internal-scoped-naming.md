@@ -4,14 +4,56 @@ This file (and `.cursor/rules/internal-scoped-naming.mdc`) is the full policy fo
 [CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/developer-experience-guide.md`
 (Naming conventions).
 
-When editing non-public symbols in `src/`:
+When adding or renaming **non-public** symbols in `src/` (library TypeScript):
 
-- Do not repeat the class or file name in private fields, private methods, protected members, or module-local
-  constants/types.
-- Do rename redundant prefixes when you touch a file (`requestCapture` → `request` on `FrameCapture`, `pollGamepads` →
-  `poll` on `GamepadInput`, `BLOOM_FRAGMENT_WGSL` → `FRAGMENT_WGSL` in `Bloom.ts`).
-- Never rename `BT.*`, barrel exports, public class methods, or documented configure/API names.
-- JSDoc to public API: use full public names (`BT.BTN_POINTER_A`, not internal `BTN_A` or gamepad `BT.BTN_A`).
-- Avoid global shadows: do not use `JSON` as a file-local type alias; prefer neutral names like `Serialized`.
+## Rule
+
+**Private fields, private methods, protected members, and module-local constants/types must not repeat the enclosing
+class or file name.** Context already supplies that scope.
+
+| Scope                                           | Applies                          |
+| ----------------------------------------------- | -------------------------------- |
+| `#privateField`, `private method()`             | yes                              |
+| `protected readonly fragmentShader`             | yes                              |
+| Module `const`, file-local `type` / `interface` | yes                              |
+| `BT.*`, barrel exports, public class methods    | **no** — public API stays stable |
+| JSDoc `@link` to another module's public symbol | use the **full public name**     |
+
+## Good vs bad (same file provides context)
+
+```typescript
+// FrameCapture.ts
+request(); // not requestCapture()
+hasPending(); // not hasPendingCapture()
+private width = 0; // not captureWidth
+
+// GamepadInput.ts
+private poll(): void // not pollGamepads()
+
+// Bloom.ts
+const FRAGMENT_WGSL // not BLOOM_FRAGMENT_WGSL
+
+// Palette.ts (file-local type)
+type Serialized = { … } // not PaletteJSON or JSON (JSON shadows global)
+
+// PointerInput.ts (module-local wire codes)
+const BTN_A = 20; // OK — short local name
+// JSDoc: maps to BT.BTN_POINTER_A, not BT.BTN_A (gamepad)
+```
+
+## Do not rename
+
+- `BT` namespace members, `HardwareSettings` / `BootstrapOptions` fields, or anything in the `BLIT386.ts` export block
+- Public methods on exported classes (`Palette.toJSON()`, `SpriteSheet.loadIndexed()`, …)
+- Documented public constants (`BT.BTN_POINTER_*`, preset effect names, overlay configure flags)
+- Cross-subsystem method names when two types expose similar verbs (e.g. keep `Overlay.handleToggle()` vs
+  `Toggle.handleInput()`)
+
+## When refactoring existing code
+
+- Prefer shortening **internal** names in the same change that touches the file; do not drive renames through public
+  callers.
+- After shortening a local alias, update JSDoc that references **public** API to the correct public symbol (internal
+  `BTN_A` comments must point at `BT.BTN_POINTER_A`, not `BT.BTN_A`).
 
 Cursor: `.cursor/rules/internal-scoped-naming.mdc` (always applied in this repo).

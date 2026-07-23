@@ -52,6 +52,12 @@ package).
 | `pnpm run agents:check`               | Check agent config drift (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer)                                                                                                                                                                                                 |
 | `pnpm run sync:cursor-commands`       | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md`                                                                                                                                                                                                                         |
 | `pnpm run sync:cursor-commands:check` | Check `.cursor/commands/*.md` for drift against `.claude/skills/*/SKILL.md`                                                                                                                                                                                                               |
+| `pnpm run sync:doc-banners`           | Insert/refresh blit386.dev banners in published docs                                                                                                                                                                                                                                      |
+| `pnpm run sync:doc-banners:check`     | Check doc site banner drift                                                                                                                                                                                                                                                               |
+| `pnpm run api:history`                | Regenerate API version-history manifest (`docs/_api-history.json`)                                                                                                                                                                                                                        |
+| `pnpm run api:since:check`            | Check public API `@since` / `@changed` / `@deprecated` tags                                                                                                                                                                                                                               |
+| `pnpm run api:history:check`          | Check API version-history manifest drift                                                                                                                                                                                                                                                  |
+| `pnpm run test:api-history`           | API history generator unit tests (Node test)                                                                                                                                                                                                                                              |
 | `pnpm run knip`                       | Find unused exports and dependencies                                                                                                                                                                                                                                                      |
 | `pnpm run knip:fix`                   | Auto-fix unused exports and dependencies                                                                                                                                                                                                                                                  |
 | `pnpm run clean`                      | Remove dist and cache directories                                                                                                                                                                                                                                                         |
@@ -353,11 +359,5 @@ publish job; see [dependency-policy.md](security/dependency-policy.md#npm-publis
 
 ## Planned improvements
 
-The following items are tracked in Linear (VV team / BLIT386 project) as low-priority `feat(dx)` tickets:
-
-- GitHub issue templates (`.github/ISSUE_TEMPLATE/`)
-- Pull request template (`.github/PULL_REQUEST_TEMPLATE.md`)
-- Astro Starlight documentation site
-- GitHub repo settings / topics
-
-To file or view these tickets, use Linear with the VV team filter.
+Issue templates, the pull request template, the blit386.dev documentation site, and GitHub repo topics have shipped.
+Open DX work is tracked in Linear (VV team / BLIT386 project) – file or view tickets there for remaining backlog items.

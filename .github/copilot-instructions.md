@@ -4,7 +4,7 @@ A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit. Pixel
 and sprites resolve through a shared indexed palette, with a Canvas 2D software fallback.
 
 This file is a pointer for GitHub Copilot. [`AGENTS.md`](../AGENTS.md) is the standalone quick start and
-[`CLAUDE.md`](../CLAUDE.md) is canonical for full architecture, API conventions, and documentation rules – read them
+[`CLAUDE.md`](../CLAUDE.md) is canonical for architecture routing, API conventions, and documentation rules – read them
 before non-trivial work.
 
 ## Hard rules
@@ -20,5 +20,6 @@ before non-trivial work.
 ## Where to go next
 
 [`AGENTS.md`](../AGENTS.md) has the tech stack, quick-start commands, and the rest of the most-important rules.
-[`CLAUDE.md`](../CLAUDE.md) has the full architecture map, the "Where to Find Information" routing table, BT API
-conventions, TypeScript file structure, and the complete command list.
+[`CLAUDE.md`](../CLAUDE.md) has the "Where to Find Information" routing table, BT API conventions, TypeScript file
+structure, and the complete command list. The annotated `src/` architecture tree lives in
+`.claude/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`).

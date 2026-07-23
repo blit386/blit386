@@ -352,6 +352,14 @@ The overlay palette grid still captures wheel while the pointer is over its band
 scrolling palette rows does not move the page. The same palette-band capture also forces `touch-action` to `none` for as
 long as a pointer is over the band, independent of the configure flag.
 
+<Callout type="warn" title="Upgrading from 1.3.0 or earlier">
+
+Pointer wheel capture is opt-in as of 1.4.0. If your game relied on `BT.pointerScrollDelta` without setting
+`isCapturingPointerScroll: true` in `configure()`, add the flag - otherwise the delta stays zero and the host page
+scrolls normally.
+
+</Callout>
+
 ```ts twoslash
 import { type HardwareSettings } from 'blit386';
 

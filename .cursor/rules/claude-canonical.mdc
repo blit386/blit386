@@ -6,11 +6,13 @@ alwaysApply: true
 # blit386 CLAUDE Is Canonical
 
 - Treat `CLAUDE.md` (repo root) as canonical for implementation in this repo.
-- Follow its API conventions (especially BT getters vs methods), architecture map, command set, internal scoped naming,
-  and docs-update rules.
-- Subsystem guides: `docs/guide-overlay.md` (engine HUD), `docs/api-*.md` (public API), `docs/reference-deprecations.md`
-  (aliases).
-- Cursor-specific policy lives in `.cursor/rules/*.mdc` and `.cursor/hooks/`; condensed mirrors in `.claude/rules/`.
+- Follow its API conventions (especially BT getters vs methods), command set, internal scoped naming, and docs-update
+  rules. The annotated `src/` tree lives in `.claude/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`).
+- Subsystem guides: `docs/guide-overlay.md` (engine HUD), `docs/guide-hot-reload.md` (HMR), `docs/api-*.md` (public
+  API), `docs/reference-deprecations.md` (aliases).
+- Cursor-specific policy lives in `.cursor/rules/*.mdc` and `.cursor/hooks/`; paired mirrors in `.claude/rules/` (every
+  basename has a twin – some full-policy, some condensed). Cursor uses `alwaysApply` / globs; Claude Code auto-loads
+  `CLAUDE.md` and reads `.claude/rules/` as needed.
 - Do not invent alternate conventions when `CLAUDE.md` provides project-specific direction.
 - Public API or behavior changes must include matching docs updates in `docs/` as described in `CLAUDE.md`.
 - Keep performance-first and strict TypeScript standards from `CLAUDE.md` (no `any`, use type-only imports, integer

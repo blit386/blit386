@@ -114,18 +114,13 @@ Signed-off-by: Your Name <your.email@example.com>
 - `chore` – Other changes
 - `revert` – Revert a previous commit
 
-Suggested scopes are conventions only – commitlint does not enforce a scope enum.
+Suggested scopes are conventions only – commitlint does not enforce a scope enum. The canonical list (frequency order)
+lives in [`CLAUDE.md`](CLAUDE.md) under Git:
 
-### Suggested Scopes
+`docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`, `tests`, `utils`, `rules`, `release`, `security`,
+`input`, `deps` / `deps-dev`, `visual`, `camera`. Rare/legacy: `examples`.
 
-- `renderer` – Rendering system
-- `camera` – Camera system
-- `assets` – Asset loading
-- `api` – Public API (BT namespace)
-- `utils` – Utility classes
-- `examples` – Example projects
-- `ci` – CI/CD configuration
-- `docs` – Documentation
+Prefer an existing scope from that list over inventing a new one.
 
 ### Example Commits
 
@@ -205,6 +200,7 @@ pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in publ
 pnpm run sync:doc-banners:check     # Check doc site banner drift
 pnpm run sync:cursor-commands       # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
 pnpm run sync:cursor-commands:check # Check cursor commands drift
+pnpm run api:history                # Regenerate API version-history manifest
 pnpm run api:since:check            # Check public API @since / @changed / @deprecated tags
 pnpm run api:history:check          # Check API version-history manifest drift
 pnpm run security:audit             # Dependency security audit (moderate+)
