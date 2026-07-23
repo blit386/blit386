@@ -38,7 +38,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write . && prettier --write \"**/*.{md,mdx,mdc,yml,yaml}\"",
     "format:check": "biome check . && prettier --check \"**/*.{md,mdx,mdc,yml,yaml}\"",
-    "spellcheck": "cspell \"packages/*/src/**/*.ts\" \"packages/kit/content/**/*.md\" \"README.md\" \"CLAUDE.md\" \"CREATE_BLIT386_DESIGN.md\" --no-progress",
+    "spellcheck": "cspell \"packages/*/src/**/*.ts\" \"packages/kit/content/**/*.md\" \"README.md\" \"CLAUDE.md\" \"CREATE_BLIT386_DESIGN.md\" \"PUBLISHING.md\" --no-progress",
     "docs:links": "node scripts/check-markdown-links.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix",
