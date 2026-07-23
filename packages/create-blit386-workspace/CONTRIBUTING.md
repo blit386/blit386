@@ -43,6 +43,10 @@ that checklist for DCO sign-off, Conventional Commit titles, `pnpm run preflight
 | `create-blit386` | `packages/create-blit386` | npm `create-*` CLI and templates            |
 | `@blit386/kit`   | `packages/kit`            | Canonical `AGENTS.md`, docs, and `blit` CLI |
 
+## Releasing
+
+Maintainers: npm publish is manual-only. Follow [`PUBLISHING.md`](PUBLISHING.md).
+
 ## Questions?
 
 For questions about the DCO or contributing process, use the [Discord](https://discord.gg/tC2wGt88Uj) community. Blank

@@ -113,7 +113,7 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 - `cbt-review` – review changes against project rules
 - `cbt-pr` – create a pull request with checks
 - `cbt-spellcheck` – fix cspell errors and extend the dictionary
-- `cbt-test` – run the node:test suites (scaffolder, env, codemod)
+- `cbt-test` – run the node:test suites (scaffolder, kit CLI doctor/upgrade, env, codemod, hot-reload migrate)
 - `cbt-release` – npm publish procedure (`./PUBLISHING.md`)
 - `cbt-kit-audit` – re-audit shipped kit docs and skills against the current engine API (see Kit content vs engine docs)
 
@@ -185,4 +185,5 @@ docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to wal
 | Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                         |
 | Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                       |
 | Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                              |
+| Publishing / release                   | `./PUBLISHING.md`, `cbt-release`                                                             |
 | Contributing / DCO                     | `CONTRIBUTING.md`                                                                            |
