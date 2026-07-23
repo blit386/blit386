@@ -1,11 +1,3 @@
----
-name: cbt-preflight
-description:
-  Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, agents:check,
-  sync:cursor-commands:check, agent-config/cursor-command tests, build, test) before committing or pushing. Use when the
-  user wants to verify the code is ready to commit or run every check at once.
----
-
 # Preflight Checks
 
 Run comprehensive quality checks before committing or pushing code.

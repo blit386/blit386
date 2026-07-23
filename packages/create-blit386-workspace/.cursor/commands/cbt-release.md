@@ -1,10 +1,3 @@
----
-name: cbt-release
-description:
-  Publish @blit386/kit and create-blit386 to npm following ./PUBLISHING.md. Publishing is manual-only (pnpm publish from
-  vancura's machine) -- there is no CI publish workflow. Does not bump versions unless the user asks.
----
-
 # Release (npm publish)
 
 Guide a deliberate release of `@blit386/kit` and `create-blit386`. This skill does not auto-bump versions, open PRs,

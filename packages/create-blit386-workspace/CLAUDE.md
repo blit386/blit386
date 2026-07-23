@@ -26,18 +26,23 @@ The `blit` CLI (a project-local bin inside every generated game): `blit run`, `b
 Run from the repository root:
 
 ```bash
-pnpm run build          # Build both packages
-pnpm run typecheck      # TypeScript check (all packages)
-pnpm run lint           # Biome check
-pnpm run lint:fix       # Biome auto-fix
-pnpm run format         # Format all files
-pnpm run format:check   # Verify formatting
-pnpm run spellcheck     # cspell
-pnpm run knip           # Dead code / unused exports
-pnpm run docs:links     # Markdown link checker
-pnpm run test           # All node:test suites (pnpm -r test; scaffolder suites need a build first)
-pnpm run preflight      # All quality checks before commit
-pnpm run security:audit # Dependency audit (moderate+)
+pnpm run build                     # Build both packages
+pnpm run typecheck                 # TypeScript check (all packages)
+pnpm run lint                      # Biome check
+pnpm run lint:fix                  # Biome auto-fix
+pnpm run format                    # Format all files
+pnpm run format:check              # Verify formatting
+pnpm run spellcheck                # cspell
+pnpm run knip                      # Dead code / unused exports
+pnpm run docs:links                # Markdown link checker
+pnpm run agents:check              # .agents/skills symlink integrity
+pnpm run sync:cursor-commands      # Mirror .claude/skills -> .cursor/commands
+pnpm run sync:cursor-commands:check # Fail if Cursor commands drift from skills
+pnpm run test:agent-config         # Unit tests for agents:check helpers
+pnpm run test:cursor-commands      # Unit tests for sync-cursor-commands helpers
+pnpm run test                      # All package node:test suites (pnpm -r test; scaffolder suites need a build first)
+pnpm run preflight                 # All quality checks before commit
+pnpm run security:audit            # Dependency audit (moderate+)
 ```
 
 Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands.
@@ -105,7 +110,10 @@ generate-to-memory copies in `packages/kit/src/adapters.ts`.
 
 ## Agent skills
 
-Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
+Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`). Cursor gets matching slash commands in
+`.cursor/commands/` (frontmatter stripped); `pnpm run sync:cursor-commands` owns those files, and
+`pnpm run sync:cursor-commands:check` / `pnpm run agents:check` gate drift in preflight. Claude vs Cursor **rules**
+asymmetry is intentional (`claude-canonical` / `rtk-and-pnpm` are Cursor-only) – do not force basename parity.
 
 - `cbt-preflight` – run all quality checks
 - `cbt-format` – format and verify
@@ -184,6 +192,7 @@ docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to wal
 | Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts`              |
 | Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                         |
 | Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                       |
+| Maintainer Cursor commands / parity    | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs`                         |
 | Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                              |
 | Publishing / release                   | `./PUBLISHING.md`, `cbt-release`                                                             |
 | Contributing / DCO                     | `CONTRIBUTING.md`                                                                            |

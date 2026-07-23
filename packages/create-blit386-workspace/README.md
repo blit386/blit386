@@ -78,7 +78,7 @@ pnpm install
 pnpm run build        # build both packages with tsup
 pnpm run typecheck    # tsc --noEmit per package
 pnpm run test         # recursive workspace node:test suites (scaffolder, env, codemod, hot-reload migrate)
-pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + build + test
+pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:cursor-commands:check + test:agent-config + test:cursor-commands + build + test
 ```
 
 The scaffolder suites read from `dist/`, so build before running them on their own (the kit's suite rebuilds itself via
