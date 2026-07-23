@@ -104,7 +104,7 @@ src/
     setup.ts               # Vitest global setup (GPU constants)
 ```
 
-### Palette-First Rendering
+## Palette-First Rendering
 
 Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
 

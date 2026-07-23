@@ -191,7 +191,7 @@ describe('check-agent-config', () => {
 
     describe('findZedSettingsFailures', () => {
         it('passes when .zed/settings.json is valid JSON and .agents/skills layout exists', () => {
-            const content = '{\n  "agent": {}\n}\n';
+            const content = '// Project-level Zed settings\n{\n  "agent": {}\n}\n';
             assert.deepEqual(findZedSettingsFailures(content, true), []);
         });
 

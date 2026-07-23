@@ -271,7 +271,8 @@ function readClaudeSkillDirNames() {
 function runAllChecks() {
     const cursorRuleNames = readRuleNames(CURSOR_RULES_DIR, '.mdc');
     const claudeRuleNames = readRuleNames(CLAUDE_RULES_DIR, '.md');
-    const agentsSkillEntries = readAgentsSkillEntries();
+    const agentsSkillsLayoutExists = existsSync(AGENTS_SKILLS_DIR);
+    const agentsSkillEntries = agentsSkillsLayoutExists ? readAgentsSkillEntries() : [];
     const claudeSkillDirNames = readClaudeSkillDirNames();
     const agentsMdContent = existsSync(AGENTS_MD_PATH) ? readFileSync(AGENTS_MD_PATH, 'utf8') : null;
     const claudeMdExists = existsSync(CLAUDE_MD_PATH);
@@ -280,7 +281,6 @@ function runAllChecks() {
         : null;
     const agentsMdExists = existsSync(AGENTS_MD_PATH);
     const zedSettingsContent = existsSync(ZED_SETTINGS_PATH) ? readFileSync(ZED_SETTINGS_PATH, 'utf8') : null;
-    const agentsSkillsLayoutExists = existsSync(AGENTS_SKILLS_DIR);
 
     return [
         ...findRulesParityFailures(cursorRuleNames, claudeRuleNames),
