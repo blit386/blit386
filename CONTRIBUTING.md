@@ -114,28 +114,13 @@ Signed-off-by: Your Name <your.email@example.com>
 - `chore` – Other changes
 - `revert` – Revert a previous commit
 
-Suggested scopes are conventions only – commitlint does not enforce a scope enum.
+Suggested scopes are conventions only – commitlint does not enforce a scope enum. The canonical list (frequency order)
+lives in [`CLAUDE.md`](CLAUDE.md) under Git:
 
-### Suggested Scopes
+`docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`, `tests`, `utils`, `rules`, `release`, `security`,
+`input`, `deps` / `deps-dev`, `visual`, `camera`. Rare/legacy: `examples`.
 
-- `renderer` – Rendering system
-- `camera` – Camera system
-- `assets` – Asset loading
-- `audio` – Audio subsystem
-- `overlay` – Engine overlay HUD
-- `core` – Core engine loop, bootstrap, hardware settings
-- `input` – Pointer, keyboard, gamepad input
-- `api` – Public API (BT namespace)
-- `utils` – Utility classes
-- `tests` – Test additions and fixes
-- `security` – Security audits and policy
-- `release` – Release and versioning workflow
-- `deps` / `deps-dev` – Dependency updates
-- `rules` – Agent rules and Cursor/Claude config
-- `agents` – Agent skills, hooks, and config sync
-- `ci` – CI/CD configuration
-- `docs` – Documentation
-- `examples` – Example projects (rare; prefer demos repo)
+Prefer an existing scope from that list over inventing a new one.
 
 ### Example Commits
 

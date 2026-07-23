@@ -11,8 +11,8 @@
 <!-- blit386.dev-banner:end -->
 
 `HotContext`, `registerHotReload`, `HotReloadContext`, and `IBTDemo.onHotReload` live in
-[API: Core](api-core.md#hot-reload). This guide covers the dev-loop hot reload enables, the three swap tiers with worked
-examples, the asset hot-replace matrix, and the `blit386/vite` plugin that wires it all up.
+[API: Core](api-core.md#hot-reload). This guide covers the dev-loop hot reload enabled by the plugin, the three swap
+tiers with worked examples, the asset hot-replace matrix, and the `blit386/vite` plugin that wires it all up.
 
 <ApiAvailability page="guides/hot-reload" />
 
