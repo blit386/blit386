@@ -85,9 +85,8 @@ TypeScript to the same version API Extractor bundles (see [Developer Experience]
 
 - `pnpm run test:declarations` – Node test runner for `scripts/check-declaration-tooling.mjs` (drift patterns, required
   `BT` getters in rolled-up `.d.ts`, and alignment log parsing). Included in `pnpm run preflight`.
-- CI – after `pnpm run build`, `node scripts/check-declaration-tooling.mjs build.log` runs in both
-  `.github/workflows/ci.yml` (build-library job) and `.github/workflows/pr-checks.yml` (bundle-size job) to fail on
-  drift warnings and version mismatch.
+- CI – after `pnpm run build`, `node scripts/check-declaration-tooling.mjs build.log` runs in the
+  `.github/workflows/ci.yml` `build-library` and `bundle-size` jobs to fail on drift warnings and version mismatch.
 - Manual – `pnpm run build 2>&1 | tee build.log && node scripts/check-declaration-tooling.mjs build.log`
 
 ## Commands
@@ -278,28 +277,26 @@ GitHub Actions runs unit tests and quality gates in CI. Visual regression is loc
 Triggers on push to `main` and on pull requests targeting `main`. `labeled` / `unlabeled` PR events skip the `quality`,
 `build-library`, and `test` jobs unless the added label is `perf` (which enables the benchmark job).
 
-| Job              | What it runs                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------- |
-| `quality`        | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`                                    |
-| `build-library`  | `pnpm run build`, declaration tooling check, uploads `dist/` artifact                              |
-| `test`           | `pnpm run test:unit:coverage`, Codecov upload                                                      |
-| `security-audit` | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate)                 |
-| `benchmark`      | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold) |
+| Job              | What it runs                                                                                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`        | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`, `agents:check`, `sync:doc-banners:check`, `sync:cursor-commands:check`, `knip`, `api:since:check`, `api:history:check` |
+| `build-library`  | `pnpm run build`, declaration tooling check, uploads `dist/` artifact                                                                                                                   |
+| `bundle-size`    | `pnpm run build`, declaration tooling check, gzipped ESM size gate                                                                                                                      |
+| `test`           | `pnpm run test:unit:coverage`, Codecov upload                                                                                                                                           |
+| `security-audit` | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate)                                                                                                      |
+| `benchmark`      | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold)                                                                                      |
 
-On pull requests, `ci.yml` and `pr-checks.yml` overlap on format/lint/typecheck/spellcheck/docs:links; `pr-checks` adds
-knip and bundle-size gates.
+On pull requests, `pr-checks.yml` complements `ci.yml` with Conventional Commits validation only; every other gate –
+knip, bundle size, doc links, agent-config drift – runs inside `ci.yml`.
 
 ### `pr-checks.yml` (`PR Checks` workflow)
 
-Runs only on pull requests to `main`. Complements `ci.yml` with commit linting, bundle size limits, knip, and doc link
-checks. It does not run unit or visual tests. There is no separate `docs-links` job – link checking runs inside the
-`quality` job.
+Runs only on pull requests to `main`. Its single job validates commit messages; the quality, knip, bundle-size, and
+doc-link gates all live in `ci.yml`. It does not run unit or visual tests.
 
-| Job           | What it runs                                                          |
-| ------------- | --------------------------------------------------------------------- |
-| `quality`     | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`, knip |
-| `commitlint`  | Conventional Commits validation for PR commits                        |
-| `bundle-size` | `pnpm run build`, declaration tooling check, gzipped ESM size gate    |
+| Job          | What it runs                                   |
+| ------------ | ---------------------------------------------- |
+| `commitlint` | Conventional Commits validation for PR commits |
 
 ### Visual regression (not in CI)
 

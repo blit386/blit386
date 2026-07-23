@@ -12,7 +12,7 @@
 
 Configure-time flags, style objects, and worked examples for the engine overlay HUD. For the higher-level subsystem
 walkthrough (what the overlay is, when to use it), see the [Overlay Guide](guide-overlay.md). The overlay flags listed
-here are part of [`HardwareSettings`](api-core.md#hardwaresettings).
+here are part of [`HardwareSettings`](api-core.md#hardware-settings).
 
 When `isOverlayEnabled` is `true` (default), the engine draws a screen-space HUD after each demo `render()` call, on top
 of all demo content. The overlay body (title, metrics, timing chart, palette grid, custom rows) starts hidden unless
