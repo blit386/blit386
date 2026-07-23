@@ -114,7 +114,7 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`):
 - `cbt-pr` – create a pull request with checks
 - `cbt-spellcheck` – fix cspell errors and extend the dictionary
 - `cbt-test` – run the node:test suites (scaffolder, env, codemod)
-- `cbt-release` – npm publish procedure (`../PUBLISHING.md` in the local workspace layout)
+- `cbt-release` – npm publish procedure (`./PUBLISHING.md`)
 - `cbt-kit-audit` – re-audit shipped kit docs and skills against the current engine API (see Kit content vs engine docs)
 
 ## Kit content vs engine docs

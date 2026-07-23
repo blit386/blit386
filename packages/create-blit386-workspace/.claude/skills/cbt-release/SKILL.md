@@ -1,9 +1,8 @@
 ---
 name: cbt-release
 description:
-  Publish @blit386/kit and create-blit386 to npm following the workspace PUBLISHING.md procedure. Publishing is
-  manual-only (pnpm publish from vancura's machine) -- there is no CI publish workflow. Does not bump versions unless
-  the user asks.
+  Publish @blit386/kit and create-blit386 to npm following ./PUBLISHING.md. Publishing is manual-only (pnpm publish from
+  vancura's machine) -- there is no CI publish workflow. Does not bump versions unless the user asks.
 ---
 
 # Release (npm publish)
@@ -11,9 +10,8 @@ description:
 Guide a deliberate release of `@blit386/kit` and `create-blit386`. This skill does not auto-bump versions, open PRs,
 push tags, or publish unless the user explicitly requests those steps.
 
-Canonical procedure: workspace parent `PUBLISHING.md` (from this repo root: `../PUBLISHING.md` when the three repos
-share the `_BLIT386_` parent folder). This skill mirrors it — if they ever disagree, `PUBLISHING.md` wins and this skill
-is stale.
+Canonical procedure: `./PUBLISHING.md` at this repo root. This skill mirrors it — if they ever disagree, `PUBLISHING.md`
+wins and this skill is stale.
 
 ## Usage
 
@@ -25,9 +23,9 @@ is stale.
 
 There is no `.github/workflows/publish.yml` and no `NPM_TOKEN` secret. Nothing publishes on a tag push. Every release is
 `pnpm publish` run by hand from vancura's machine, after `npm login` locally. This is a deliberate policy (2026-07-14,
-see `../PUBLISHING.md` in the local workspace layout, or this repo's release history) after the tag-driven workflow
-failed with `ENEEDAUTH` on the `1.2.1` release because the `NPM_TOKEN` secret was missing — rather than re-provision it,
-CI publishing was removed outright. Do not suggest re-adding a publish workflow or an `NPM_TOKEN` secret.
+see `./PUBLISHING.md`, or this repo's release history) after the tag-driven workflow failed with `ENEEDAUTH` on the
+`1.2.1` release because the `NPM_TOKEN` secret was missing — rather than re-provision it, CI publishing was removed
+outright. Do not suggest re-adding a publish workflow or an `NPM_TOKEN` secret.
 
 Tags are still cut and pushed after a manual publish, purely as a release marker in the repo history — they trigger
 nothing.
