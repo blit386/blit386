@@ -76,6 +76,56 @@ test('enableHotReloadInViteConfig reports unsupported for non-defineConfig shape
     assert.equal(result.changed, false);
 });
 
+test('enableHotReloadInViteConfig adds plugins when only the import is present', () => {
+    const importOnly = `import { defineConfig } from 'vite';
+import { blit386 } from 'blit386/vite';
+
+export default defineConfig({
+    server: { open: true },
+});
+`;
+    const result = enableHotReloadInViteConfig(importOnly);
+    assert.equal(result.status, 'added');
+    assert.equal(result.changed, true);
+    assert.ok(result.text.includes('plugins: [blit386()]'), 'should register blit386() inside defineConfig');
+    assert.equal(
+        (result.text.match(/from\s+['"]blit386\/vite['"]/g) ?? []).length,
+        1,
+        'should not duplicate the existing import',
+    );
+});
+
+test('enableHotReloadInViteConfig ignores plugins arrays outside defineConfig', () => {
+    const outerPlugins = `import { defineConfig } from 'vite';
+
+const extra = {
+    plugins: [],
+};
+
+export default defineConfig({
+    server: { open: true },
+});
+`;
+    const result = enableHotReloadInViteConfig(outerPlugins);
+    assert.equal(result.status, 'added');
+    assert.ok(result.text.includes('plugins: [blit386()]'), 'should add plugins inside defineConfig');
+    assert.ok(
+        result.text.includes('const extra = {\n    plugins: [],\n};'),
+        'should leave the outer plugins array untouched',
+    );
+});
+
+test('enableHotReloadInViteConfig reports unsupported for ambiguous defineConfig calls', () => {
+    const ambiguous = `import { defineConfig } from 'vite';
+
+const a = defineConfig({ server: { open: true } });
+export default defineConfig({ server: { open: false } });
+`;
+    const result = enableHotReloadInViteConfig(ambiguous);
+    assert.equal(result.status, 'unsupported');
+    assert.equal(result.changed, false);
+});
+
 test('hasBlit386VitePlugin detects import and factory call', () => {
     assert.equal(hasBlit386VitePlugin("import { blit386 } from 'blit386/vite';\n"), true);
     assert.equal(hasBlit386VitePlugin('plugins: [blit386()],\n'), true);

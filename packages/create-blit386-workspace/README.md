@@ -76,7 +76,7 @@ A pnpm monorepo with two published packages:
 pnpm install
 pnpm run build        # build both packages with tsup
 pnpm run typecheck    # tsc --noEmit per package
-pnpm run test         # pnpm -r test: node:test suites (scaffolder, env, codemod, hot-reload migrate)
+pnpm run test         # recursive workspace node:test suites (scaffolder, env, codemod, hot-reload migrate)
 pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + build + test
 ```
 

@@ -172,15 +172,15 @@ the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to walk this checklist.
 
 ## Where to find information
 
-| Question                               | Where to look                                                                                     |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| What does the scaffolder generate?     | `packages/create-blit386/src/scaffold.ts`, `templates/`                                           |
-| What does `blit` CLI do?               | `packages/kit/src/cli.ts`, `packages/kit/README.md`                                               |
-| How are agent files generated?         | `src/scaffold.ts` (scaffold time), `packages/kit/src/adapters.ts` (sync, generate-to-memory)      |
-| What does `blit agents sync` do?       | `packages/kit/src/commands/agents.ts` (drift `--check` + full write path), design doc 4.10        |
-| What does `blit agents add` do?        | `packages/kit/src/commands/agents.ts` (`runAddAgent`), design doc 4.5                             |
-| How do API migrations / codemods work? | `packages/kit/src/migrations/` (registry + codemod engine), `commands/migrate.ts`, design doc 4.6 |
-| Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), design doc 4.10                                         |
-| Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                              |
-| Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                            |
-| Contributing / DCO                     | `CONTRIBUTING.md`                                                                                 |
+| Question                               | Where to look                                                                                |
+| -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| What does the scaffolder generate?     | `packages/create-blit386/src/scaffold.ts`, `templates/`                                      |
+| What does `blit` CLI do?               | `packages/kit/src/cli.ts`, `packages/kit/README.md`                                          |
+| How are agent files generated?         | `src/scaffold.ts` (scaffold time), `packages/kit/src/adapters.ts` (sync, generate-to-memory) |
+| What does `blit agents sync` do?       | `packages/kit/src/commands/agents.ts` (drift `--check` + full write path)                    |
+| What does `blit agents add` do?        | `packages/kit/src/commands/agents.ts` (`runAddAgent`)                                        |
+| How do API migrations / codemods work? | `packages/kit/src/migrations/` (registry + codemod engine), `commands/migrate.ts`            |
+| Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts`              |
+| Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                         |
+| Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                       |
+| Contributing / DCO                     | `CONTRIBUTING.md`                                                                            |

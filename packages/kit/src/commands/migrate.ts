@@ -371,7 +371,7 @@ export async function migrateProject(
 
     return {
         filesChanged: filesChanged + (wrote && hotReloadPending ? 1 : 0),
-        appliedCount: appliedCount + (hotReloadPending ? 1 : 0),
+        appliedCount: appliedCount + (wrote && hotReloadPending ? 1 : 0),
         reviewCount,
         wrote,
         hotReload,
