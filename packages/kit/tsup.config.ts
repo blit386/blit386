@@ -11,8 +11,10 @@ export default defineConfig([
         banner: { js: '#!/usr/bin/env node' },
     },
     {
-        // Emitted as standalone modules so the unit tests can import the codemod engine and migration registry.
+        // Emitted as standalone modules so the unit tests can import the codemod engine, migration
+        // registry, and env helpers (caret-range checks used by `blit doctor`).
         entry: {
+            env: 'src/env.ts',
             'migrations/codemod': 'src/migrations/codemod.ts',
             'migrations/registry': 'src/migrations/registry.ts',
             'migrations/enableHotReload': 'src/migrations/enableHotReload.ts',
