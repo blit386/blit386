@@ -7,6 +7,7 @@
  */
 
 import { compareVersions } from '../env';
+import { HOT_RELOAD_SINCE } from './enableHotReload';
 import type { Migration } from './types';
 
 /**
@@ -224,6 +225,14 @@ export const MIGRATIONS: readonly Migration[] = [
                 note: 'Rect2i.intersects(); "intersects" is too common to rewrite automatically.',
             },
         ],
+    },
+    {
+        id: '2026-07-23-hot-reload-vite-plugin',
+        date: '2026-07-23',
+        since: HOT_RELOAD_SINCE,
+        summary:
+            'Dev hot reload: wire the blit386() Vite plugin so code and public/ asset edits keep the game running. Applied by blit migrate / blit upgrade as a vite.config rewrite (not a source rename).',
+        renames: [],
     },
 ];
 

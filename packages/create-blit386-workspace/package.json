@@ -26,7 +26,8 @@
       "esbuild"
     ],
     "overrides": {
-      "undici": ">=8.5.0 <9"
+      "undici": ">=8.5.0 <9",
+      "fast-uri": ">=4.1.1"
     }
   },
   "scripts": {

@@ -15,6 +15,7 @@ export default defineConfig([
         entry: {
             'migrations/codemod': 'src/migrations/codemod.ts',
             'migrations/registry': 'src/migrations/registry.ts',
+            'migrations/enableHotReload': 'src/migrations/enableHotReload.ts',
         },
         format: ['esm'],
         target: 'node22',

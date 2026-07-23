@@ -53,15 +53,17 @@ bootstrap(Game);
 
 ## When you need detail, open the right doc
 
-| You want to...                                     | Read                            |
-| -------------------------------------------------- | ------------------------------- |
-| Install Node, run the game, edit your first line   | `docs/getting-started.md`       |
-| Understand init/update/render and timing           | `docs/basics.md`                |
-| Clear the screen, draw rectangles, lines, text     | `docs/drawing.md`               |
-| Read the keyboard, mouse, or a gamepad             | `docs/input.md`                 |
-| Make and use colors (palette, slots)               | `docs/palette.md`               |
-| Play sound effects and music, or fix a silent game | `docs/audio.md`                 |
-| Fix a blank screen, an error, a broken change      | `docs/when-something-breaks.md` |
+| You want to...                                     | Read                                  |
+| -------------------------------------------------- | ------------------------------------- |
+| Install Node, run the game, edit your first line   | `docs/getting-started.md`             |
+| Understand init/update/render, timing, orientation | `docs/basics.md`                      |
+| Clear the screen, draw rectangles, lines, text     | `docs/drawing.md`                     |
+| Read the keyboard, mouse, or a gamepad             | `docs/input.md`                       |
+| Make and use colors (palette, slots)               | `docs/palette.md`                     |
+| Play sound effects and music, or fix a silent game | `docs/audio.md`                       |
+| Keep playing while you edit code or assets         | `docs/hot-reload.md`                  |
+| Show a loading screen while assets load            | `docs/basics.md` (Waiting for assets) |
+| Fix a blank screen, an error, a broken change      | `docs/when-something-breaks.md`       |
 
 The full engine reference lives at https://github.com/blit386/blit386 – only go there if these local docs do not answer
 the question.
@@ -74,7 +76,8 @@ From the project folder:
 - `npx blit run` – the same thing, the friendly way.
 - `npx blit doctor` – check your setup if something seems off.
 - `npx blit upgrade` – update BLIT386 to the latest version (and offer to fix any renamed API names for you).
-- `npx blit migrate` – update old BLIT386 names in your game to the current ones. Add `--write` to apply the changes.
+- `npx blit migrate` – update old BLIT386 names in your game to the current ones (and enable hot reload on blit386
+  1.4.0+). Add `--write` to apply the changes.
 
 The `blit` helper is installed inside the project (it ships with `@blit386/kit`), so it is not on the system PATH.
 Always invoke it through `npx blit ...` (or `pnpm exec blit ...`); plain `blit` only works inside package scripts.

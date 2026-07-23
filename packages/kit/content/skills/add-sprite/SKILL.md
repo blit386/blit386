@@ -58,5 +58,8 @@ BT.drawSprite(this.hero, frame, new Vector2i(120, 90));
 - Sprites draw at whole-number positions only.
 - There is no built-in flip or rotate at draw time yet – the `FLIP_*` / `ROT_*` constants are not accepted by
   `drawSprite` today. To face the other way, author a flipped frame in the PNG.
+- Editing a PNG under `public/` while `npm run dev` is running hot-replaces the sheet in place (blit386 1.4.0+ with the
+  Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the
+  show-a-loading-screen skill (`BT.loadingAssetsCount`, `sheet.status`, `sheet.progress`).
 
 See `docs/drawing.md`.

@@ -95,6 +95,21 @@ game's address goes dead. Start the server again with `npm run dev` and reload t
 2. Did the change have a typo? Check the terminal and the browser console for red text.
 3. Still nothing? Reload the page yourself (Ctrl+R, or Cmd+R on a Mac).
 
+## I changed the code and the game acted weird
+
+With hot reload (the starter's `blit386` Vite plugin), most saves keep the game running:
+
+- Edited `update()` or `render()`? State stays. If something looks wrong, you may be looking at old values mixed with
+  new logic – reload the page once for a clean start.
+- Edited `init()`? The engine re-runs setup. Without an `onHotReload` hook, scores and positions reset. That is normal.
+  See `docs/hot-reload.md`.
+- Edited `configure()` (screen size, FPS, overlay flags)? A full page reload is expected.
+- Broke `init()` so it throws or returns `false`? The previous game should keep running. Fix the typo and save again.
+
+If the page reloads on every tiny edit, check that `vite.config.js` still has `plugins: [blit386()]` and that you are on
+blit386 1.4.0 or newer (`npx blit doctor`). Older games can pick the plugin up with `npx blit migrate --write` (or
+`npx blit upgrade`), then restart the dev server once.
+
 ## My change made everything weird and I want to go back
 
 - Just now? Press Ctrl+Z (Cmd+Z on a Mac) in your editor to undo, one step at a time.
@@ -120,6 +135,6 @@ what to do in plain language.
 - Make the problem smaller. Undo until the game works again, then redo your change in tiny steps, checking the browser
   after each one. The step where it breaks is the answer.
 - Read the matching guide. Drawing problems: `drawing.md`. Input problems: `input.md`. Color problems: `palette.md`.
-  Sound problems: `audio.md`. Game loop confusion: `basics.md`.
+  Sound problems: `audio.md`. Game loop confusion: `basics.md`. Hot reload surprises: `hot-reload.md`.
 - Ask for help with the error text. Whether you ask a person or an AI assistant, copy the exact error message from the
   console or terminal – it contains the clues they need.

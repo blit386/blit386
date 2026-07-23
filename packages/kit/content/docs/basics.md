@@ -13,6 +13,7 @@ class Game {
     return {
       displaySize: new Vector2i(320, 240), // the pixel grid you draw on
       targetFPS: 60, // how many times update/render run per second
+      // preferredOrientation: 'landscape', // optional; ask phones to stay landscape
     };
   }
 
@@ -21,6 +22,9 @@ class Game {
     // Return true when it worked.
     return true;
   }
+
+  // Optional. Called when the phone rotates (type is a string like 'landscape-primary').
+  // onOrientationChange(type) {}
 
   update() {
     // Runs ~60 times a second, before render(). Read input and change your game's state here.
@@ -52,6 +56,14 @@ The engine gives you a few read-only values (they are properties, so no parenthe
 - `BT.targetFPS` – the frames-per-second you asked for (default 60).
 - `BT.deltaSeconds` – how much time one step represents, in seconds. Use it for smooth motion if you prefer
   speed-per-second over speed-per-step.
+
+## Phones and screen orientation
+
+`BT.screenOrientation` is the current orientation type from the browser (for example `'landscape-primary'`), or `null`
+when the browser does not report one. Set `preferredOrientation: 'landscape'` or `'portrait'` in `configure()` if your
+game assumes one layout – the engine asks the browser to lock after start when it can (often Android Chrome; not iOS
+Safari). Optional `onOrientationChange(type)` on your game class runs when the player rotates the device. Drawing a
+"please rotate" message is still your code; the engine only tells you the orientation.
 
 ## Drawing between two steps
 
@@ -94,5 +106,27 @@ async init() {
 
 Forgetting `await` is the single most common beginner mistake. If something you loaded is `undefined`, check for a
 missing `await` first.
+
+## Waiting for assets (a loading screen)
+
+`BT.loadingAssetsCount` is how many image and audio loads are still in flight. It is a property (no parentheses). To
+draw a "Loading…" message, return from `init()` before every load finishes (start loads in a helper you do not await
+from `init()`), then poll the counter in `update()` / `render()`:
+
+```js
+if (BT.loadingAssetsCount > 0) {
+  BT.systemPrint(new Vector2i(8, 8), 1, 'Loading...');
+  return;
+}
+```
+
+If you `await` every load inside `init()`, the loop has not started yet, so there is nothing to draw on – that is fine
+for small games. Per-sheet hot-reload replacements also expose `sheet.status` (`'loading' | 'ready' | 'failed'`) and a
+coarse `sheet.progress` (`0` or `1.0`). Prefer `BT.loadingAssetsCount` for one engine-wide signal.
+
+## Keep playing while you edit
+
+New projects include the `blit386` Vite plugin, so most saves keep the running game alive. Optional
+`onHotReload(context)` on your game class can restore fields after an `init()` edit. Full detail: `docs/hot-reload.md`.
 
 Next: `docs/drawing.md` to put things on screen, `docs/input.md` to react to the player, `docs/palette.md` for colors.

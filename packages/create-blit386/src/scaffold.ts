@@ -21,7 +21,7 @@ import { fileURLToPath } from 'node:url';
 const require = createRequire(import.meta.url);
 
 /** blit386 version range written into the generated package.json. */
-const BLIT386_RANGE = '^1.3.0';
+const BLIT386_RANGE = '^1.4.0';
 
 /** Output directory names for optional wizard templates. */
 const GITHUB_DIR = '.github';

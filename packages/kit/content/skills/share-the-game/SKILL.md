@@ -46,5 +46,9 @@ address you can share.
 - Has sound? Expect the shared game to be silent until the player clicks, taps, or presses a key. Browsers refuse to
   make noise on a page nobody has touched yet, so this is not a broken upload. Give the game a "press a key to start"
   screen and the sound arrives with the first keypress. See the play-a-sound skill.
+- Played on a phone? Mobile browsers dim and then lock the screen after 30-60 seconds of no touches, even mid-game. Set
+  `isWakeLockEnabled: true` in `configure()` to keep the screen awake during active play. Landscape-only games can also
+  set `preferredOrientation: 'landscape'` (Android may lock; iOS will not) and read `BT.screenOrientation` or implement
+  `onOrientationChange(type)` to show a "please rotate" prompt. See the blit-api-names rule for the exact names.
 - Made a change you want to share? Run `{{pmRunBuild}}` again and re-upload `dist/`. The build does not update itself.
 - Do not hand-edit files inside `dist/` – they are generated from your `src/` code. Change the source, then rebuild.

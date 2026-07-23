@@ -76,7 +76,7 @@ A pnpm monorepo with two published packages:
 pnpm install
 pnpm run build        # build both packages with tsup
 pnpm run typecheck    # tsc --noEmit per package
-pnpm run test         # pnpm -r test: three node:test suites, 37 cases (scaffolder, env, codemod)
+pnpm run test         # recursive workspace node:test suites (scaffolder, env, codemod, hot-reload migrate)
 pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + build + test
 ```
 
@@ -84,7 +84,7 @@ The scaffolder suites read from `dist/`, so build before running them on their o
 a `pretest` script; `pnpm run preflight` builds first anyway).
 
 CI runs the same checks on every push and pull request to `main`. Publishing to npm is a deliberate, manual step (it is
-not automated here). The full roadmap lives in [`CREATE_BLIT386_DESIGN.md`](CREATE_BLIT386_DESIGN.md).
+not automated here).
 
 ### Contributing
 

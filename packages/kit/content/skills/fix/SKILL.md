@@ -32,3 +32,6 @@ Use when the game crashes, shows a blank screen, throws an error in the browser 
 - All screen coordinates must be whole numbers (`Vector2i`, `Rect2i`). Fractions cause off-by-one pixel issues.
 - If you see `{{` or `}}` in a file, a template placeholder was not substituted – this is a scaffolding bug, not a game
   bug.
+- After a save that breaks `init()`, hot reload should leave the previous game running – fix the typo and save again
+  (see `docs/hot-reload.md`). If every tiny edit full-reloads the page, confirm `vite.config.js` has
+  `plugins: [blit386()]` and blit386 is 1.4.0+.

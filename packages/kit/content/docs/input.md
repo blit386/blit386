@@ -38,6 +38,17 @@ update() {
 
 On a keyboard, the arrow keys map to the D-pad and Space maps to `BTN_A` by default, so these work with no extra setup.
 
+Arrow keys and Space also scroll the web page by default. When your game uses them, opt in so the page does not move
+while you play:
+
+```js
+configure() {
+  return {
+    isCapturingKeyboardScroll: true,
+  };
+}
+```
+
 ## Raw keyboard keys
 
 If you want a specific key by name, use its code (the same names the browser uses, like `'KeyW'`, `'Space'`,
@@ -54,6 +65,9 @@ if (BT.isKeyPressed('Enter')) {
 
 `isKeyDown` is "held", `isKeyPressed` and `isKeyReleased` are the one-frame edges, exactly like the buttons above.
 
+If you read raw arrow keys or Space (not only face buttons), set `isCapturingKeyboardScroll: true` in `configure()` the
+same way.
+
 ## Mouse, touch, and pen
 
 These share one set of calls (a "pointer"). Slot `0` is the main one:
@@ -64,5 +78,29 @@ if (BT.isPointerActive(0)) {
   // ...use p.x and p.y...
 }
 ```
+
+### Mouse wheel
+
+The mouse wheel also scrolls the web page by default. If your game reads `BT.pointerScrollDelta` (for example to zoom
+the camera), opt in so the page does not move while you play:
+
+```js
+configure() {
+  return {
+    isCapturingPointerScroll: true,
+  };
+}
+```
+
+```js
+update() {
+  const wheel = BT.pointerScrollDelta; // a getter; vertical wheel movement this frame, in pixels
+  this.zoom += wheel;
+}
+```
+
+The same flag also controls touch scrolling past the canvas. Left at the default `false`, phones can tap-hold-scroll the
+host page (`touch-action: pan-y`). Set it to `true` when your game owns vertical gestures (zoom, camera scroll) so the
+page does not compete.
 
 Next: `docs/drawing.md` to draw what the player controls.
