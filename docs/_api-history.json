@@ -1469,6 +1469,7 @@
       "BT.targetFPS",
       "BootstrapOptions",
       "HardwareSettings",
+      "HotContext",
       "HotReloadContext",
       "PreferredOrientation",
       "bootstrap",

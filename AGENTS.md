@@ -42,3 +42,8 @@ regression tests (`pnpm run test:visual`, run separately when renderer output ca
 conventions (getters vs methods, boolean naming), TypeScript file structure, and the complete command list. Condensed,
 always-applicable agent rules also live in `.claude/rules/*.md` (Claude Code) and `.cursor/rules/*.mdc` (Cursor) – both
 directories are kept in parity by `pnpm run agents:check`.
+
+1.4.0 surface highlights:
+
+- [Hot Reload guide](docs/guide-hot-reload.md) – `blit386/vite` plugin, hot-swap tiers, and asset hot-replace.
+- [API: Assets](docs/api-assets.md#loading-assets) – `BT.loadingAssetsCount` and asset loading progress.

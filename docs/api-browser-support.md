@@ -31,7 +31,8 @@ periodically.
 </Callout>
 
 Build toolchain: Node.js >= 22.18.0 (LTS) and an ESM bundler (Vite, webpack, esbuild, or similar) to load the published
-package in the browser.
+package in the browser. On Vite, the [`blit386/vite`](guide-hot-reload.md#the-blit386vite-plugin) plugin enables hot
+reload during development.
 
 ## Audio formats
 
@@ -118,9 +119,10 @@ page rendering updates near 60 fps" policy, not the display's full refresh rate)
 ## See also
 
 <Cards>
-  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, requested vs. active backend.</Card>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, wake lock, screen orientation, requested vs. active backend.</Card>
   <Card title="API: Audio" href="/docs/api/audio">Autoplay-unlock gesture requirement, independent of backend.</Card>
   <Card title="Loading Audio Clips" href="/docs/api/audio#loading">AudioClip.load(), fallback lists, and progress reporting.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">blit386/vite plugin and dev-server hot swap.</Card>
   <Card title="Software Fallback Smoke Matrix" href="/docs/performance/smoke-matrix">Manual Canvas 2D fallback checklist.</Card>
   <Card title="Game Loop" href="/docs/api/game-loop">Fixed-timestep accumulator and the update() xN overlay suffix.</Card>
 </Cards>

@@ -121,11 +121,21 @@ Suggested scopes are conventions only – commitlint does not enforce a scope en
 - `renderer` – Rendering system
 - `camera` – Camera system
 - `assets` – Asset loading
+- `audio` – Audio subsystem
+- `overlay` – Engine overlay HUD
+- `core` – Core engine loop, bootstrap, hardware settings
+- `input` – Pointer, keyboard, gamepad input
 - `api` – Public API (BT namespace)
 - `utils` – Utility classes
-- `examples` – Example projects
+- `tests` – Test additions and fixes
+- `security` – Security audits and policy
+- `release` – Release and versioning workflow
+- `deps` / `deps-dev` – Dependency updates
+- `rules` – Agent rules and Cursor/Claude config
+- `agents` – Agent skills, hooks, and config sync
 - `ci` – CI/CD configuration
 - `docs` – Documentation
+- `examples` – Example projects (rare; prefer demos repo)
 
 ### Example Commits
 
@@ -205,6 +215,7 @@ pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in publ
 pnpm run sync:doc-banners:check     # Check doc site banner drift
 pnpm run sync:cursor-commands       # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
 pnpm run sync:cursor-commands:check # Check cursor commands drift
+pnpm run api:history                # Regenerate API version-history manifest
 pnpm run api:since:check            # Check public API @since / @changed / @deprecated tags
 pnpm run api:history:check          # Check API version-history manifest drift
 pnpm run security:audit             # Dependency security audit (moderate+)

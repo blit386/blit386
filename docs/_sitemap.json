@@ -60,7 +60,7 @@
     {
       "src": "api-audio.md",
       "path": "api/audio",
-      "description": "Audio bus volume, mute, and the browser autoplay-unlock state."
+      "description": "Audio buses, SFX voice pool, crossfading music, and procedural synthesis."
     },
     {
       "src": "guide-input.md",
