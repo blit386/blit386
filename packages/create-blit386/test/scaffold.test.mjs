@@ -79,15 +79,29 @@ test('scaffolds a runnable game project', () => {
         const manifest = JSON.parse(manifestRaw);
         assert.equal(manifest.name, 'my-game', 'package name should match the folder');
         assert.ok(manifest.dependencies?.['blit386'], 'blit386 dependency is missing');
+        assert.equal(
+            manifest.dependencies['blit386'],
+            '^1.4.0',
+            'generated games should pin blit386 ^1.4.0',
+        );
         assert.ok(manifest.devDependencies?.['@blit386/kit'], '@blit386/kit devDependency is missing');
         assert.ok(manifest.devDependencies?.['@biomejs/biome'], '@biomejs/biome devDependency is missing');
         assert.ok(manifest.scripts?.format, 'format script is missing');
         assert.ok(manifest.scripts?.lint, 'lint script is missing');
         assert.ok(manifest.scripts?.build, 'build script is missing');
 
+        const viteConfig = readFileSync(join(project, 'vite.config.js'), 'utf8');
+        assert.ok(viteConfig.includes("from 'blit386/vite'"), 'vite.config.js should import blit386/vite');
+        assert.ok(viteConfig.includes('blit386()'), 'vite.config.js should register the blit386() plugin');
+
         const game = readFileSync(join(project, 'src', 'game.js'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.js is missing the bootstrap call');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
+
+        assert.ok(
+            existsSync(join(project, 'docs', 'hot-reload.md')),
+            'expected docs/hot-reload.md to be copied from the kit',
+        );
 
         // The base templates should use the entryFile and gameFile template vars, not hardcoded paths.
         const html = readFileSync(join(project, 'index.html'), 'utf8');
@@ -1044,6 +1058,57 @@ test('blit migrate --write rewrites safe names and reports ambiguous ones', { sk
         assert.ok(rewritten.includes('.equals('), 'the ambiguous equals() call should be left untouched');
         assert.ok(output.includes('closer look'), 'output should flag the ambiguous name for review');
         assert.ok(output.includes('equals'), 'output should name the ambiguous method');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+
+const OLD_VITE_CONFIG = `import { defineConfig } from 'vite';
+
+export default defineConfig({
+    server: {
+        open: true,
+    },
+});
+`;
+
+test('blit migrate --write enables hot reload in an older vite.config', { skip: !hasGit }, () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-migrate-hot-'));
+
+    try {
+        const project = join(work, 'migrate-hot');
+        scaffold({
+            targetDir: project,
+            projectName: 'migrate-hot',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        spawnSync('git', ['init'], { cwd: project, stdio: 'ignore' });
+
+        // Simulate a pre-1.4.0 scaffold: vite.config without the blit386 plugin.
+        const vitePath = join(project, 'vite.config.js');
+        writeFileSync(vitePath, OLD_VITE_CONFIG);
+
+        const { exitCode, output } = runBlit(project, ['migrate', '--write']);
+        assert.equal(exitCode, 0, '--write should exit 0');
+        assert.ok(output.includes('hot reload') || output.includes('vite.config'), 'output should mention hot reload');
+
+        const vite = readFileSync(vitePath, 'utf8');
+        assert.ok(vite.includes("from 'blit386/vite'"), 'vite.config should import blit386/vite');
+        assert.ok(vite.includes('blit386()'), 'vite.config should call blit386()');
+
+        // A second migrate should be a no-op for the vite plugin.
+        const second = runBlit(project, ['migrate']);
+        assert.equal(second.exitCode, 0);
+        assert.ok(
+            second.output.includes('hot reload is wired') || second.output.includes('Nothing to change'),
+            'second migrate should report nothing left to enable',
+        );
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
