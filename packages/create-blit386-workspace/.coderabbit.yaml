@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit configuration for create-blit386 (scaffolder + @blit386/kit monorepo).
+#
+# Review exclusions (path_filters): generated or duplicated trees that add noise
+# without unique review signal.
+#
+# - `.agents/skills/**` are relative symlinks into `.claude/skills/**`; reviewing
+#   both duplicates identical content (see CLAUDE.md "Agent skills").
+# - Root and per-package `pnpm-lock.yaml` files are generated lock files (listed
+#   explicitly even though they may already match CodeRabbit defaults). This repo
+#   is a nested pnpm monorepo (`packages/*`), so both levels are excluded.
+#
+# Auto review is disabled by default. To enable it, add the `cr` label to the PR.
+reviews:
+  review_status: false
+  path_filters:
+    - '!.agents/skills/**'
+    - '!pnpm-lock.yaml'
+    - '!packages/*/pnpm-lock.yaml'
+  path_instructions:
+    - path: 'packages/*/src/**/*.ts'
+      instructions: >-
+        This is TypeScript for the scaffolder CLI (`packages/create-blit386`) or the `blit` CLI / migrations
+        (`packages/kit`), not engine or generated-game code. Follow create-blit386 house rules: named exports only (no
+        default exports); prefer `import type` for type-only imports; American English spelling (see
+        `.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated name exemptions); no
+        emoji anywhere (CLAUDE.md Critical rules). Lint/format with Biome (this repo has no ESLint). Do not apply
+        blit386-engine-only rules here (BTAPI access bans, Vector2i rendering coords, internal scoped naming) unless the
+        change is documenting or scaffolding those APIs for games. Canonical detail: root CLAUDE.md.
+    - path: 'packages/create-blit386/templates/**'
+      instructions: >-
+        Scaffold output for end-user games. Keep beginner-friendly comments (explain what and why). Integer coordinates
+        via `Vector2i` / `Rect2i`; use the `BT` namespace, never `BTAPI`. Do NOT apply library-only TypeScript
+        conventions (no `any` bans, named-export rules, etc.) to generated game files – JS is the default; the TS
+        Catcher layer is intentionally approachable. Placeholders use `{{name}}` tokens; unknown tokens must stay
+        visible if mis-typed. Kit `AGENTS.md` / `docs/` are copied verbatim elsewhere (no placeholder substitution) – do
+        not introduce `{{gameFile}}` into those kit files from a template-only change. Canonical detail:
+        `.claude/rules/template-structure.md` / `.cursor/rules/template-structure.mdc`.
+    - path: 'packages/kit/content/**'
+      instructions: >-
+        Canonical kit IR shipped into every scaffolded game (`AGENTS.md`, `docs/`, `rules/`, `skills/`, hooks,
+        `agents.config.json`). American English; no emoji; beginner-friendly prose. Self-contained: reference only
+        `blit386` and other local kit files – never `blit386-demos` slugs or URLs. `AGENTS.md` and `docs/` are copied
+        byte-for-byte (no `{{placeholder}}` substitution), so spell out both `src/game.js` and `src/game.ts`. Skills and
+        rules are discovered by directory scan – adding a skill folder is enough (`agents.config.json` does not list
+        skills by name). Keep public `BT` / `configure()` names aligned with the sibling blit386 engine. Canonical
+        detail: CLAUDE.md "Kit content vs engine docs" and `.claude/rules/docs-sync-required.md`.
+    - path: 'CLAUDE.md'
+      instructions: >-
+        Repo contributor guide: American English spelling; no emoji; keep commands as `pnpm run <script>` (not bare
+        `pnpm <script>`). When scaffold or kit behavior changes, check whether the kit-audit table and "Where to find"
+        section still match (see `.claude/rules/docs-sync-required.md`).
+    - path: 'README.md'
+      instructions: >-
+        Public repo README: American English; no emoji; beginner-friendly. Keep install/run examples accurate for the
+        published scaffolder and kit.
+    - path: 'CREATE_BLIT386_DESIGN.md'
+      instructions: >-
+        Durable product decisions (not a release changelog). American English; no emoji. Prefer updating an existing
+        section (for example Hot reload §12) over duplicating decisions elsewhere.
+    - path: 'packages/*/README.md'
+      instructions: >-
+        Package READMEs for create-blit386 / @blit386/kit: American English; no emoji; keep CLI command lists and skill
+        tables aligned with shipped content.
+    - path: '.claude/skills/**/SKILL.md'
+      instructions: >-
+        Contributor skills for working on this monorepo (cbt-*). American English; no emoji; keep `pnpm run <script>`
+        command forms accurate.
+  auto_review:
+    enabled: false
+    labels: ['cr']
