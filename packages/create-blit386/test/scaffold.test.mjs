@@ -96,6 +96,7 @@ test('scaffolds a runnable game project', () => {
 
         const game = readFileSync(join(project, 'src', 'game.js'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.js is missing the bootstrap call');
+        assert.ok(game.includes('onHotReload'), 'game.js should include a commented onHotReload example');
         assert.ok(!game.includes('{{'), 'game.js still has unrendered placeholders');
 
         assert.ok(
@@ -1152,9 +1153,10 @@ test('scaffolds a TypeScript project when language is ts', () => {
         assert.ok(readme.includes('src/game.ts'), 'README.md should reference src/game.ts');
         assert.ok(!readme.includes('game.js'), 'README.md should not reference game.js for TS');
 
-        // game.ts should have bootstrap call and no unrendered placeholders.
+        // game.ts should have bootstrap call, commented onHotReload example, and no unrendered placeholders.
         const game = readFileSync(join(project, 'src', 'game.ts'), 'utf8');
         assert.ok(game.includes('bootstrap(Game)'), 'game.ts is missing the bootstrap call');
+        assert.ok(game.includes('onHotReload'), 'game.ts should include a commented onHotReload example');
         assert.ok(!game.includes('{{'), 'game.ts still has unrendered placeholders');
     } finally {
         rmSync(work, { recursive: true, force: true });

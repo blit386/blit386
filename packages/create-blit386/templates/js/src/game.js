@@ -10,6 +10,9 @@
 //   update() - runs about 60 times a second (we move things and check for catches here).
 //   render() - runs about 60 times a second (we draw everything here).
 //
+// Optional hooks you can add later: configure() for screen settings, onHotReload() to keep
+// score across init() edits while the Vite plugin hot-reloads (see the commented example below).
+//
 // We do not write a configure() method, so we get the default screen: 320 by 240 pixels at 60 frames per second.
 // Want to learn more? Read AGENTS.md or the docs/ folder next to this file.
 
@@ -150,6 +153,24 @@ class Game {
         BT.systemPrint(new Vector2i(6, 6), COLOR_TEXT, `Score ${this.score}`);
         BT.systemPrint(new Vector2i(6, 18), COLOR_TEXT, `Lives ${this.lives}`);
     }
+
+    // Optional hot-reload hook (engine 1.4.0+). The blit386() Vite plugin calls this after a
+    // save that re-runs init() (or after a method-only swap). Use the snapshot to keep score
+    // and other fields when you tweak init(). Leave it commented until you need it.
+    // Full detail: docs/hot-reload.md
+    //
+    // onHotReload(context) {
+    //     // Only restore after a re-init (not after a method-only swap).
+    //     if (context.reason !== 'reinit' || !context.snapshot) {
+    //         return;
+    //     }
+    //     if (typeof context.snapshot.score === 'number') {
+    //         this.score = context.snapshot.score;
+    //     }
+    //     if (typeof context.snapshot.lives === 'number') {
+    //         this.lives = context.snapshot.lives;
+    //     }
+    // }
 }
 
 // Hand the Game class to BLIT386. It builds one game, runs init() once, then update() and render() about 60 times a second.
