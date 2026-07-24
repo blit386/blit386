@@ -1,13 +1,13 @@
 # create-blit386 – Design and Roadmap
 
-> Status (2026-07-23): latest **published** npm release is still 1.2.1 (`@blit386/kit@1.2.1` + `create-blit386@1.2.1`;
-> dist-tag `latest`). On `main`, local pins are already ahead of that cut: `blit386.engineRange` and `BLIT386_RANGE` are
-> `^1.4.0` (unpublished next cut), and hot-reload content is on `main` (section 12; kit docs/skills `hot-reload.md` /
-> `use-hot-reload`, Catcher `onHotReload` example). Publishing is manual-only (see the 2026-07-14 policy change below) –
-> there is no CI publish workflow. 24 skill directories under `packages/kit/content/skills/`. Claude/Cursor agent
-> adapters are a single shared module (`packages/kit/src/adapters.ts`, `@blit386/kit/adapters`) used by both scaffold
-> and `blit agents sync` / `add` (BT-350). Full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes
-> stale within days. Run `git log --oneline -1` for the current one.)
+> Status (2026-07-24): latest **published** npm release is `1.3.0` (`@blit386/kit@1.3.0` + `create-blit386@1.3.0`;
+> dist-tag `latest`). `blit386.engineRange` and `BLIT386_RANGE` are `^1.4.0`. Hot-reload content ships in this cut
+> (section 12; kit docs/skills `hot-reload.md` / `use-hot-reload`, Catcher `onHotReload` example, starter `blit386()`
+> Vite plugin). Publishing is manual-only (see the 2026-07-14 policy change below) – there is no CI publish workflow. 24
+> skill directories under `packages/kit/content/skills/`. Claude/Cursor agent adapters are a single shared module
+> (`packages/kit/src/adapters.ts`, `@blit386/kit/adapters`) used by both scaffold and `blit agents sync` / `add`
+> (BT-350). Full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes stale within days. Run
+> `git log --oneline -1` for the current one.)
 >
 > History: first published as `@blit386/kit@0.1.0` + `create-blit386@0.1.1` (section 11); 1.0.0 shipped 2026-06-14 (see
 > below). All Phase 1.x code items merged to `main` (PRs #7–#10). All Phase 2 "Agents on tap" work is merged to `main` –
@@ -68,6 +68,21 @@
 > to describe manual publishing as the only path, not a fallback. Tags are still pushed after a manual publish so the
 > repo history keeps recording releases the same way; they no longer trigger anything.
 >
+> Engine update (2026-07-23): `blit386@1.4.0` is live on npm (`latest`), carrying hot reload / `blit386/vite` / asset
+> hot-replace / `BT.loadingAssetsCount`. That satisfies the release-order gate for the kit's hot-reload content
+> (section 12) the same way `blit386@1.3.0` did for audio in section 0.
+>
+> Release status: 1.3.0 SHIPPED (2026-07-24). Both packages published to npm at `1.3.0` (dist-tag `latest`):
+> `@blit386/kit@1.3.0` + `create-blit386@1.3.0`. Headline change: hot-reload kit content and the starter Vite plugin for
+> engine `blit386@1.4.0` (section 12; `content/docs/hot-reload.md`, `use-hot-reload` / loading-screen skills, Catcher
+> `onHotReload` example, `blit386()` in `templates/base/vite.config.js`), and `engineRange` / `BLIT386_RANGE` move to
+> `^1.4.0` (was `^1.3.0`). Existing games opt in via `npx blit upgrade` / `npx blit migrate` (migration
+> `2026-07-23-hot-reload-vite-plugin`). Also in this cut: shared `@blit386/kit/adapters` for scaffold + agents sync,
+> Claude `settings.json` hooks for guardrail parity with Cursor, and lockstep bump script hardening
+> (`pnpm run bump -- <x.y.z>`). Manual `pnpm publish` (kit first) per the 2026-07-14 policy. Landed via
+> `chore(release): 1.3.0` PR; tag `1.3.0` (no `v` prefix) on the merged `main` commit. Release notes: the GitHub Release
+> at <https://github.com/blit386/create-blit386/releases/tag/1.3.0>.
+>
 > Dogfood finding (Round 15, still holds): the kit IR is game-author altitude; the `blit386` / `blit386-demos` repos are
 > the kit's upstream maintainers, not consumer games – regenerating their `.cursor/`/`.claude/` from the current IR
 > would delete library-maintenance tooling, so those configs were left untouched (a maintainer-profile IR is future
@@ -104,8 +119,8 @@ anything genuinely private out of it.
 > this is safe" paragraph below, now corrected. `blit386.engineRange` in `packages/kit/package.json` and `BLIT386_RANGE`
 > in `scaffold.ts` both shipped at `^1.3.0` in the `1.2.1` release. Catcher starter catch + miss sounds did not ship in
 > `1.2.1` and remain deferred product work (the starter game has no `BT.soundPlay`/`synthPreset` calls yet); tracked
-> historically under closed [#50](https://github.com/blit386/create-blit386/issues/50). Local pins on `main` have since
-> moved to `^1.4.0` (unpublished next cut) – see the top status block.
+> historically under closed [#50](https://github.com/blit386/create-blit386/issues/50). Those pins later moved to
+> `^1.4.0` and shipped in the `1.3.0` release (hot reload) – see the top status block.
 
 The kit now documents the engine's audio subsystem – `content/docs/audio.md`, the `play-a-sound` skill, the audio rows
 in `content/AGENTS.md` and `content/rules/blit-api-names.md`, and the audio overlay flags in `show-debug-overlay`. All
@@ -704,13 +719,13 @@ Separate product (later): Ambilab (ambilab.games) hosted editor + game hosting; 
 
 ## 11. Publishing to npm (procedure + status)
 
-Status (verified 2026-07-14 against the npm registry): `@blit386/kit@1.2.1` and `create-blit386@1.2.1` are published and
-live (`dist-tags.latest = 1.2.1` on both). Prior releases: `0.1.0` / `0.1.1`, then `1.0.0` (2026-06-14), then `1.1.0`
+Status (verified 2026-07-24 against the npm registry): `@blit386/kit@1.3.0` and `create-blit386@1.3.0` are published and
+live (`dist-tags.latest = 1.3.0` on both). Prior releases: `0.1.0` / `0.1.1`, then `1.0.0` (2026-06-14), then `1.1.0`
 (2026-06-14; migrate codemods + game-author skills), then `1.2.0` (2026-06-19; `create-blit-tech`/`@blit-tech/kit`
-rename to `create-blit386`/`@blit386/kit`), then `1.2.1` (2026-07-14; audio content + `engineRange` fix, see the top
-status block). Git tag `1.2.1` (no `v` prefix) on merged commit `f19fafc`; release notes live in the GitHub Release at
-<https://github.com/blit386/create-blit386/releases/tag/1.2.1> and, as of this release, also in a `RELEASE.md` at the
-repo root (earlier text here said no such file existed – that was true until 1.2.1 added one).
+rename to `create-blit386`/`@blit386/kit`), then `1.2.1` (2026-07-14; audio content + `engineRange` fix), then `1.3.0`
+(2026-07-24; hot reload for engine 1.4.0 – see the top status block and section 12). Git tag `1.3.0` (no `v` prefix) on
+the merged `main` commit; release notes live in the GitHub Release at
+<https://github.com/blit386/create-blit386/releases/tag/1.3.0>.
 
 Publishing is manual-only (policy change 2026-07-14, see the top status block): there is no
 `.github/workflows/publish.yml` and no `NPM_TOKEN` secret. Nothing publishes on a tag push. Tags are still cut and
@@ -781,18 +796,25 @@ Kit `docs/` and skills **are** kit-owned, so `npx blit agents sync` delivers the
 games even before they enable the plugin.
 
 Engine range pins (`BLIT386_RANGE`, kit `blit386.engineRange`) are release concerns – bump them when publishing a kit /
-scaffolder cut that expects 1.4.0 on npm, not as a silent side effect of a docs PR.
+scaffolder cut that expects a newer engine floor on npm, not as a silent side effect of a docs PR. The `1.3.0` release
+ships both at `^1.4.0`.
 
 ---
 
 ## Changelog
 
-- 2026-07-23: Status accuracy pass (BT-341). Top banner now states published npm is still `1.2.1` while local
-  `engineRange` / `BLIT386_RANGE` on `main` are already `^1.4.0` (unpublished next cut), hot-reload content/section 12
-  is on `main`, skill count is 24, and tests are 47 (25 scaffolder + 22 kit). Deleted GitHub issue links #23–#33
+- 2026-07-24: `1.3.0` shipped. Hot-reload kit content and starter Vite plugin for engine `blit386@1.4.0` (section 12);
+  `engineRange` / `BLIT386_RANGE` at `^1.4.0`; existing games opt in via `blit upgrade` / `blit migrate`. Also: shared
+  `@blit386/kit/adapters`, Claude `settings.json` hooks, lockstep bump hardening. Top banner, section 0 pin note,
+  section 11 publish status updated; removed a stale claim that a root `RELEASE.md` exists (release notes live only in
+  GitHub Releases). Manual publish after merge, kit first.
+- 2026-07-23: Status accuracy pass (BT-341). Top banner then stated published npm was still `1.2.1` while local
+  `engineRange` / `BLIT386_RANGE` on `main` were already `^1.4.0` (unpublished next cut), hot-reload content/section 12
+  was on `main`, skill count is 24, and tests are 47 (25 scaffolder + 22 kit). Deleted GitHub issue links #23–#33
   (HTTP 410) replaced with Linear trackers (BT-300/301/302 for section 7 verifies; BT-299/293 for remaining Phase 3
   roadmap; BT-292/295–298/294 for Phase 4). Catcher starter catch/miss sounds stay deferred product work. The 2026-07-13
-  changelog entry below is historical and superseded by later entries / this pass.
+  changelog entry below is historical and superseded by later entries / this pass. Superseded for publish status by the
+  2026-07-24 `1.3.0` entry above.
 - 2026-07-23: Section 12 added – hot reload for scaffolded games (engine 1.4.0+): snippet ↔ engine contract, tiered swap
   model, and the explicit "new games only" delivery decision (existing games opt in via a one-line `vite.config.js` edit
   or `blit migrate`). Kit docs/skills (`hot-reload.md`, `use-hot-reload`) and the Catcher commented `onHotReload`
