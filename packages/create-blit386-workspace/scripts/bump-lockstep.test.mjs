@@ -70,7 +70,7 @@ describe('bump-lockstep', () => {
             const files = new Map(
                 LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
                     `/repo/${path}`,
-                    JSON.stringify({ name: path, version: '1.2.1' }, null, 4) + '\n',
+                    `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
                 ]),
             );
             /** @type {string[]} */
