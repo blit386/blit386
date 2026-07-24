@@ -43,14 +43,16 @@
     "agents:check": "node scripts/check-agent-config.mjs",
     "sync:cursor-commands": "node scripts/sync-cursor-commands.mjs",
     "sync:cursor-commands:check": "node scripts/sync-cursor-commands.mjs --check",
+    "bump": "node scripts/bump-lockstep.mjs",
     "test:agent-config": "node --test scripts/check-agent-config.test.mjs",
     "test:cursor-commands": "node --test scripts/sync-cursor-commands.test.mjs",
+    "test:bump-lockstep": "node --test scripts/bump-lockstep.test.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
     "security:audit:fix": "pnpm audit --fix",
-    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run agents:check && pnpm run sync:cursor-commands:check && pnpm run test:agent-config && pnpm run test:cursor-commands && pnpm run build && pnpm run test",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run agents:check && pnpm run sync:cursor-commands:check && pnpm run test:agent-config && pnpm run test:cursor-commands && pnpm run test:bump-lockstep && pnpm run build && pnpm run test",
     "prepare": "husky"
   },
   "lint-staged": {

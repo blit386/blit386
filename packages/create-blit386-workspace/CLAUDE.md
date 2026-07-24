@@ -128,7 +128,7 @@ settings), not in the repo.
 - `cbt-pr` – create a pull request with checks
 - `cbt-spellcheck` – fix cspell errors and extend the dictionary
 - `cbt-test` – run the node:test suites (scaffolder, kit CLI doctor/upgrade, env, codemod, hot-reload migrate)
-- `cbt-release` – npm publish procedure (`./PUBLISHING.md`)
+- `cbt-release` – npm publish procedure (canonical: `./PUBLISHING.md`; lockstep bump: `pnpm run bump -- <x.y.z>`)
 - `cbt-kit-audit` – re-audit shipped kit docs and skills against the current engine API (see Kit content vs engine docs)
 
 ## Kit content vs engine docs
@@ -201,5 +201,5 @@ docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to wal
 | Project blit386-docs MCP               | `.mcp.json` (Claude), `.cursor/mcp.json` (Cursor)                                      |
 | Maintainer Cursor commands / parity    | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs`                   |
 | Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                        |
-| Publishing / release                   | `./PUBLISHING.md`, `cbt-release`                                                       |
+| Publishing / release                   | `./PUBLISHING.md`, `cbt-release`, `pnpm run bump -- <x.y.z>`                           |
 | Contributing / DCO                     | `CONTRIBUTING.md`                                                                      |
