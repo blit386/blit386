@@ -116,6 +116,10 @@ Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`). Cursor get
 `pnpm run sync:cursor-commands:check` / `pnpm run agents:check` gate drift in preflight. Claude vs Cursor **rules**
 asymmetry is intentional (`claude-canonical` / `rtk-and-pnpm` are Cursor-only) – do not force basename parity.
 
+Project MCP: tracked `.mcp.json` (Claude Code) and `.cursor/mcp.json` (Cursor) declare the secret-free `blit386-docs`
+server at `https://blit386.dev/mcp`. Put personal MCP servers in user settings (`~/.cursor/mcp.json` / Claude user
+settings), not in the repo.
+
 - `cbt-preflight` – run all quality checks
 - `cbt-format` – format and verify
 - `cbt-quick-format` – format only, no verification
@@ -193,6 +197,7 @@ docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to wal
 | Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts`        |
 | Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                   |
 | Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                 |
+| Project blit386-docs MCP               | `.mcp.json` (Claude), `.cursor/mcp.json` (Cursor)                                      |
 | Maintainer Cursor commands / parity    | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs`                   |
 | Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                        |
 | Publishing / release                   | `./PUBLISHING.md`, `cbt-release`                                                       |

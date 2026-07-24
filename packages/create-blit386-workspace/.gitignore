@@ -20,8 +20,7 @@ dist/
 .claude/memory/
 .claude/worktrees/
 
-# MCP configs (local secrets; project MCP also lives under ~/.cursor/projects/)
-.mcp.json
+# Personal MCP overrides (project ships tracked .mcp.json + .cursor/mcp.json for blit386-docs)
 mcp.json
 
 # Other AI assistants (local only)
@@ -49,6 +48,7 @@ ai-rules/
 !.cursor/rules/**
 !.cursor/commands/
 !.cursor/commands/**
+!.cursor/mcp.json
 *.swp
 *.swo
 *~

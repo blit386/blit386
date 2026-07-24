@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "blit386-docs": {
+      "type": "http",
+      "url": "https://blit386.dev/mcp"
+    }
+  }
+}
