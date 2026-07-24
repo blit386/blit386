@@ -13,17 +13,23 @@ import {
 
 describe('bump-lockstep', () => {
     describe('parseVersionArg', () => {
-        it('accepts x.y.z', () => {
+        it('accepts x.y.z including bare zeros', () => {
             assert.equal(parseVersionArg('1.3.0'), '1.3.0');
             assert.equal(parseVersionArg(' 2.0.0 '), '2.0.0');
+            assert.equal(parseVersionArg('0.1.0'), '0.1.0');
+            assert.equal(parseVersionArg('0.0.0'), '0.0.0');
+            assert.ok(SEMVER_RE.test('10.20.30'));
         });
 
-        it('rejects prerelease, missing, and garbage', () => {
+        it('rejects prerelease, leading zeros, missing, and garbage', () => {
             assert.throws(() => parseVersionArg('1.3.0-beta.1'), /Expected a SemVer/);
             assert.throws(() => parseVersionArg('v1.3.0'), /Expected a SemVer/);
+            assert.throws(() => parseVersionArg('01.2.3'), /Expected a SemVer/);
+            assert.throws(() => parseVersionArg('1.02.3'), /Expected a SemVer/);
+            assert.throws(() => parseVersionArg('1.2.03'), /Expected a SemVer/);
             assert.throws(() => parseVersionArg(undefined), /missing/);
-            assert.ok(SEMVER_RE.test('0.1.0'));
             assert.equal(SEMVER_RE.test('1.2'), false);
+            assert.equal(SEMVER_RE.test('01.0.0'), false);
         });
     });
 
@@ -112,6 +118,79 @@ describe('bump-lockstep', () => {
                 },
             });
             assert.equal(writes, 0);
+        });
+
+        it('fails before any write when a later manifest cannot be read', () => {
+            /** @type {Map<string, string>} */
+            const files = new Map(
+                LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
+                    `/repo/${path}`,
+                    `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
+                ]),
+            );
+            let writes = 0;
+
+            assert.throws(
+                () =>
+                    bumpLockstep({
+                        root: '/repo',
+                        version: '1.3.0',
+                        readFile: (path) => {
+                            if (path.endsWith('packages/create-blit386/package.json')) {
+                                throw new Error('missing create-blit386 package.json');
+                            }
+                            const raw = files.get(path);
+                            if (raw === undefined) {
+                                throw new Error(`missing ${path}`);
+                            }
+                            return raw;
+                        },
+                        writeFile: () => {
+                            writes += 1;
+                        },
+                    }),
+                /missing create-blit386 package\.json/,
+            );
+            assert.equal(writes, 0);
+            for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
+                assert.equal(JSON.parse(files.get(`/repo/${rel}`)).version, '1.2.1');
+            }
+        });
+
+        it('rolls back earlier writes when a later write fails', () => {
+            /** @type {Map<string, string>} */
+            const files = new Map(
+                LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
+                    `/repo/${path}`,
+                    `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
+                ]),
+            );
+
+            assert.throws(
+                () =>
+                    bumpLockstep({
+                        root: '/repo',
+                        version: '1.3.0',
+                        readFile: (path) => {
+                            const raw = files.get(path);
+                            if (raw === undefined) {
+                                throw new Error(`missing ${path}`);
+                            }
+                            return raw;
+                        },
+                        writeFile: (path, data) => {
+                            if (path.endsWith('packages/kit/package.json')) {
+                                throw new Error('disk full');
+                            }
+                            files.set(path, data);
+                        },
+                    }),
+                /disk full/,
+            );
+
+            for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
+                assert.equal(JSON.parse(files.get(`/repo/${rel}`)).version, '1.2.1');
+            }
         });
     });
 

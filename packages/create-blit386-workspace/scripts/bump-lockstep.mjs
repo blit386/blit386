@@ -23,8 +23,8 @@ export const LOCKSTEP_PACKAGE_JSON_PATHS = [
     'packages/create-blit386/package.json',
 ];
 
-/** SemVer `x.y.z` only (no prerelease / build metadata). */
-export const SEMVER_RE = /^\d+\.\d+\.\d+$/u;
+/** SemVer `x.y.z` only (no prerelease / build metadata; no leading zeros). */
+export const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
 
 /**
  * @param {string | undefined} version Candidate version string.
@@ -79,17 +79,42 @@ export function bumpLockstep(options) {
     const readFile = options.readFile ?? ((path) => readFileSync(path, 'utf8'));
     const writeFile = options.writeFile ?? ((path, data) => writeFileSync(path, data, 'utf8'));
 
-    /** @type {{ path: string, previous: string, next: string }[]} */
-    const results = [];
+    /** @type {{ path: string, absolute: string, previous: string, contents: string, previousContents: string }[]} */
+    const staged = [];
 
     for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
         const absolute = join(root, rel);
         const raw = readFile(absolute);
         const { next, previous } = applyVersion(raw, version);
-        if (!dryRun && previous !== version) {
-            writeFile(absolute, next);
+        staged.push({ path: rel, absolute, previous, contents: next, previousContents: raw });
+    }
+
+    /** @type {{ path: string, previous: string, next: string }[]} */
+    const results = staged.map((entry) => ({
+        path: entry.path,
+        previous: entry.previous,
+        next: version,
+    }));
+
+    if (dryRun) {
+        return results;
+    }
+
+    /** @type {{ absolute: string, previousContents: string }[]} */
+    const written = [];
+    try {
+        for (const entry of staged) {
+            if (entry.previous === version) {
+                continue;
+            }
+            writeFile(entry.absolute, entry.contents);
+            written.push({ absolute: entry.absolute, previousContents: entry.previousContents });
         }
-        results.push({ path: rel, previous, next: version });
+    } catch (error) {
+        for (const entry of written.reverse()) {
+            writeFile(entry.absolute, entry.previousContents);
+        }
+        throw error;
     }
 
     return results;

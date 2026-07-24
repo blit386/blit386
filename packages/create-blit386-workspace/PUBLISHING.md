@@ -94,9 +94,9 @@ Choose the version from the checklist above, then set it in one shot – do not 
 package (that is how the two packages drift):
 
 ```bash
-pnpm run bump -- 1.3.0            # replace with the SemVer you chose
+pnpm run bump -- 1.3.0 --dry-run  # preview only; replace 1.3.0 with the SemVer you chose
+pnpm run bump -- 1.3.0            # write the lockstep bump
 # equivalent: node scripts/bump-lockstep.mjs 1.3.0
-pnpm run bump -- 1.3.0 --dry-run  # preview only
 ```
 
 `create-blit386`'s dependency on the kit is `workspace:*`, so it automatically tracks the kit's new version – no manual
