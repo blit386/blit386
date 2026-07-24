@@ -26,9 +26,10 @@ Works with npm, pnpm, yarn, or bun – the scaffolder uses whichever you ran it 
   `npx blit agents sync`), provided by [`@blit386/kit`](https://www.npmjs.com/package/@blit386/kit). It is a
   project-local bin, so invoke it through `npx`.
 
-If you pick an AI assistant in the wizard, the scaffolder also generates its config (Claude: `CLAUDE.md` + `.claude/`;
-Cursor: `.cursor/`) from the kit's canonical content, and `npx blit agents sync` keeps it current. Did not pick one at
-the start? Run `npx blit agents add claude` or `npx blit agents add cursor` later to set it up.
+If you pick an AI assistant in the wizard, the scaffolder also generates its config (Claude: `CLAUDE.md` + `.claude/`
+including `settings.json` hooks; Cursor: `.cursor/` including `hooks.json`) from the kit's canonical content, and
+`npx blit agents sync` keeps it current. Did not pick one at the start? Run `npx blit agents add claude` or
+`npx blit agents add cursor` later to set it up.
 
 ## Options
 

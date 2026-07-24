@@ -57,7 +57,8 @@ Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shel
 4. If an AI assistant was chosen, its config is generated from the kit IR (`generateClaudeAdapter` /
    `generateCursorAdapter` in `@blit386/kit/adapters`), rendering `{{placeholders}}` as it goes. The scaffolder writes
    those `{ path, content }` pairs to disk. Claude gets `CLAUDE.md` + `.claude/rules/` (from `content/rules/`) +
-   `.claude/skills/<name>/SKILL.md` (from `content/skills/`). Cursor gets `.cursor/rules/*.mdc`,
+   `.claude/skills/<name>/SKILL.md` (from `content/skills/`) + `.claude/settings.json` (hooks from
+   `content/hooks.manifest.json`) + `.claude/hooks/` (from `content/hooks/`). Cursor gets `.cursor/rules/*.mdc`,
    `.cursor/commands/<name>.md` (the same skills, frontmatter stripped), `.cursor/hooks.json` (built from
    `content/hooks.manifest.json`), and `.cursor/hooks/shell-safety.sh` (from `content/hooks/`). Which files each adapter
    emits is declared in `content/agents.config.json`.
@@ -155,24 +156,24 @@ effects. The engine has no physics, collision, entity, or scene system: say so, 
 
 When blit386 public API or naming changes in the sibling repo, audit these kit files for stale examples:
 
-| Kit file                                 | Review when                                                                              |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `content/docs/getting-started.md`        | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload                       |
-| `content/docs/basics.md`                 | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount`    |
-| `content/docs/drawing.md`                | `BT.clear`, primitives, text APIs                                                        |
-| `content/docs/input.md`                  | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action            |
-| `content/docs/palette.md`                | `paletteCreate`, slots, `Color32`                                                        |
-| `content/docs/audio.md`                  | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                                    |
-| `content/docs/hot-reload.md`             | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace                             |
-| `content/docs/when-something-breaks.md`  | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `doctor`     |
-| `content/AGENTS.md`                      | Overall game shape, hard rules, doc routing, hot-reload tiers                            |
-| `content/rules/blit-api-names.md`        | `BT` getters, configure flags, wake lock, `onHotReload` / never call `registerHotReload` |
-| `content/rules/blit-integer-coords.md`   | Integer-coordinate rule (`Vector2i` / `Rect2i`)                                          |
-| `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games                            |
-| `content/skills/*/SKILL.md`              | Other game-author skills; each demonstrates a slice of the `BT` surface                  |
-| `content/hooks/shell-safety.sh`          | Shell commands the hook blocks in a generated game                                       |
-| `content/hooks.manifest.json`            | Canonical hook intent; the Cursor `hooks.json` is generated from it                      |
-| `content/agents.config.json`             | Which files each adapter (claude / cursor) emits                                         |
+| Kit file                                 | Review when                                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `content/docs/getting-started.md`        | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload                          |
+| `content/docs/basics.md`                 | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount`       |
+| `content/docs/drawing.md`                | `BT.clear`, primitives, text APIs                                                           |
+| `content/docs/input.md`                  | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action               |
+| `content/docs/palette.md`                | `paletteCreate`, slots, `Color32`                                                           |
+| `content/docs/audio.md`                  | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                                       |
+| `content/docs/hot-reload.md`             | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace                                |
+| `content/docs/when-something-breaks.md`  | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `doctor`        |
+| `content/AGENTS.md`                      | Overall game shape, hard rules, doc routing, hot-reload tiers                               |
+| `content/rules/blit-api-names.md`        | `BT` getters, configure flags, wake lock, `onHotReload` / never call `registerHotReload`    |
+| `content/rules/blit-integer-coords.md`   | Integer-coordinate rule (`Vector2i` / `Rect2i`)                                             |
+| `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games                               |
+| `content/skills/*/SKILL.md`              | Other game-author skills; each demonstrates a slice of the `BT` surface                     |
+| `content/hooks/shell-safety.sh`          | Shell commands the hook blocks in a generated game (Cursor + Claude protocols)              |
+| `content/hooks.manifest.json`            | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` are generated from it |
+| `content/agents.config.json`             | Which files each adapter (claude / cursor) emits                                            |
 
 Also check `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine
 version.

@@ -216,6 +216,66 @@ test('scaffold copies optional CI and agent files when requested', () => {
         // The description may be inline or folded across lines, so match the key only.
         assert.ok(/\ndescription:/.test(runSkill), 'Claude skill frontmatter should include a description');
 
+        // Claude adapter: settings.json hooks and shell-safety script (parity with Cursor).
+        assert.ok(
+            existsSync(join(project, '.claude', 'settings.json')),
+            '.claude/settings.json should be generated',
+        );
+        assert.ok(
+            existsSync(join(project, '.claude', 'hooks', 'shell-safety.sh')),
+            '.claude/hooks/shell-safety.sh should be generated',
+        );
+
+        const claudeSettings = JSON.parse(
+            readFileSync(join(project, '.claude', 'settings.json'), 'utf8'),
+        );
+        assert.ok(
+            Array.isArray(claudeSettings.hooks?.PostToolUse),
+            'settings.json should have PostToolUse entries',
+        );
+        assert.ok(
+            claudeSettings.hooks.PostToolUse.length > 0,
+            'PostToolUse should contain at least one matcher group',
+        );
+        assert.ok(
+            Array.isArray(claudeSettings.hooks?.PreToolUse),
+            'settings.json should have PreToolUse entries',
+        );
+        assert.ok(
+            claudeSettings.hooks.PreToolUse.length > 0,
+            'PreToolUse should contain at least one matcher group',
+        );
+
+        const formatGroup = claudeSettings.hooks.PostToolUse[0];
+        assert.ok(
+            Array.isArray(formatGroup.hooks) && formatGroup.hooks.length > 0,
+            'PostToolUse group should contain command hooks',
+        );
+        assert.equal(formatGroup.hooks[0].type, 'command', 'format hook should be type command');
+        assert.ok(
+            formatGroup.hooks[0].command.includes('format'),
+            'format hook should reference the format command',
+        );
+        assert.ok(
+            !formatGroup.hooks[0].command.includes('{{'),
+            'format hook should not have unrendered placeholders',
+        );
+
+        const safetyGroup = claudeSettings.hooks.PreToolUse[0];
+        assert.ok(
+            Array.isArray(safetyGroup.hooks) && safetyGroup.hooks.length > 0,
+            'PreToolUse group should contain command hooks',
+        );
+        assert.equal(safetyGroup.hooks[0].type, 'command', 'shell safety hook should be type command');
+        assert.ok(
+            safetyGroup.hooks[0].command.includes('shell-safety.sh'),
+            'shell safety hook should reference shell-safety.sh',
+        );
+        assert.ok(
+            !('continueOnError' in safetyGroup.hooks[0]),
+            'Claude command hooks should not emit continueOnError (exit codes drive behavior)',
+        );
+
 		const cursorProject = join(work, "cursor-game");
 		scaffold({
 			targetDir: cursorProject,
@@ -522,6 +582,10 @@ test("blit agents sync (full) changes nothing on a freshly scaffolded Claude pro
 			"utf8",
 		);
 		const claudeBefore = readFileSync(join(project, "CLAUDE.md"), "utf8");
+		const settingsBefore = readFileSync(
+			join(project, ".claude", "settings.json"),
+			"utf8",
+		);
 
 		const { exitCode, output } = runBlit(project, ["agents", "sync"]);
 
@@ -543,6 +607,11 @@ test("blit agents sync (full) changes nothing on a freshly scaffolded Claude pro
 			readFileSync(join(project, "CLAUDE.md"), "utf8"),
 			claudeBefore,
 			"shared CLAUDE.md should be byte-identical after sync",
+		);
+		assert.equal(
+			readFileSync(join(project, ".claude", "settings.json"), "utf8"),
+			settingsBefore,
+			"generated settings.json should be byte-identical after sync",
 		);
 		assert.ok(
 			!existsSync(join(project, "CLAUDE.md.new")),
@@ -803,6 +872,14 @@ test("blit agents add claude sets up Claude files in a project that did not pick
 		assert.ok(
 			existsSync(join(project, ".claude", "skills", "run", "SKILL.md")),
 			".claude/skills should be created",
+		);
+		assert.ok(
+			existsSync(join(project, ".claude", "settings.json")),
+			".claude/settings.json should be created",
+		);
+		assert.ok(
+			existsSync(join(project, ".claude", "hooks", "shell-safety.sh")),
+			".claude/hooks/shell-safety.sh should be created",
 		);
 
 		// The new files are recorded in the manifest, so a drift check is clean.

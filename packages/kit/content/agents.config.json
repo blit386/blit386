@@ -3,7 +3,13 @@
   "adapters": {
     "claude": {
       "description": "Claude Code adapter",
-      "emits": ["CLAUDE.md", ".claude/rules/{name}.md", ".claude/skills/{name}/SKILL.md"]
+      "emits": [
+        "CLAUDE.md",
+        ".claude/rules/{name}.md",
+        ".claude/skills/{name}/SKILL.md",
+        ".claude/settings.json",
+        ".claude/hooks/{script}"
+      ]
     },
     "cursor": {
       "description": "Cursor adapter",
