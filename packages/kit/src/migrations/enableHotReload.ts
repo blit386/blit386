@@ -65,7 +65,10 @@ function findUniqueDefineConfigObject(source: string): { openBrace: number; clos
         return null;
     }
 
-    const openBrace = hits[0]!;
+    const openBrace = hits[0];
+    if (openBrace === undefined) {
+        return null;
+    }
     const closeBrace = matchingBraceEnd(source, openBrace);
     if (closeBrace === null) {
         return null;
@@ -84,7 +87,7 @@ function matchingBraceEnd(source: string, openIndex: number): number | null {
     let inBlockComment = false;
 
     for (let i = openIndex; i < source.length; i++) {
-        const ch = source[i]!;
+        const ch = source.charAt(i);
         const next = source[i + 1];
 
         if (inLineComment) {
