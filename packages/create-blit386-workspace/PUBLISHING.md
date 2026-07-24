@@ -67,6 +67,21 @@ audio.
 
 Run everything from the `create-blit386` repo root unless noted.
 
+### 0. Pre-bump checklist
+
+Walk this before choosing a version. Skip a row only when it truly does not apply.
+
+- [ ] `git checkout main && git pull` – release from a clean, up-to-date `main`, not a stale feature branch.
+- [ ] `git log <last-tag>..HEAD --oneline` – draft release-note bullets now (hand-written; see step 8). Split into
+      scaffolder/starter, kit content / `blit` CLI, migrations (`blit upgrade` / `blit migrate`), and maintainer-only.
+- [ ] SemVer choice – `patch` for fixes only; `minor` when you ship user-facing features or new kit docs/skills; `major`
+      only with a migration entry in `packages/kit/src/migrations/registry.ts`. Both packages always share one version.
+- [ ] Engine-first – if kit `content/` documents new engine API, `npm view blit386 version` already satisfies it.
+- [ ] `blit386.engineRange` (kit `package.json`) and `BLIT386_RANGE` (`packages/create-blit386/src/scaffold.ts`) – bump
+      together when kit content requires a newer engine floor; see "Versioning notes".
+- [ ] Migrations – new upgrade paths registered and covered by kit tests when behavior for existing games changes.
+- [ ] Templates – starter `vite.config`, Catcher examples, and optional CI still match what the kit docs teach.
+
 ### 1. Confirm the engine dependency is satisfied
 
 If this release's kit content documents any engine API, that engine version must already be on npm. See "Release order:
@@ -74,29 +89,28 @@ engine first" above.
 
 ### 2. Bump versions
 
-Both packages release in lockstep and must carry the same version. Bump the version number without letting npm create
-per-package git tags:
+Both publishable packages (and the private workspace root) release in lockstep and must carry the same `x.y.z` version.
+Choose the version from the checklist above, then set it in one shot – do not run separate `npm version` commands per
+package (that is how the two packages drift):
 
 ```bash
-cd packages/kit && npm version minor --no-git-tag-version && cd ../..
-cd packages/create-blit386 && npm version minor --no-git-tag-version && cd ../..
+pnpm run bump -- 1.3.0            # replace with the SemVer you chose
+# equivalent: node scripts/bump-lockstep.mjs 1.3.0
+pnpm run bump -- 1.3.0 --dry-run  # preview only
 ```
 
-Use `patch` or `major` instead of `minor` as appropriate. `create-blit386`'s dependency on the kit is `workspace:*`, so
-it automatically tracks the kit's new version – no manual edit needed.
-
-Also check whether `packages/kit/package.json`'s `blit386.engineRange` and `packages/create-blit386/src/scaffold.ts`'s
-`BLIT386_RANGE` need to move forward – see "Versioning notes" below. Both stay in sync with each other.
+`create-blit386`'s dependency on the kit is `workspace:*`, so it automatically tracks the kit's new version – no manual
+dependency edit needed.
 
 ### 3. Check locally, then land the bump through a PR
 
 ```bash
 pnpm install
-pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:cursor-commands:check + test:agent-config + test:cursor-commands + build + test
+pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:cursor-commands:check + test:agent-config + test:cursor-commands + test:bump-lockstep + build + test
 ```
 
 `main` is protected: push a branch, open a PR, wait for checks, and squash-merge it. The version bump has to be on
-`main` before you tag, because the tag must point at the merged commit.
+`main` before you publish, because you publish (and later tag) from the merged commit.
 
 ### 4. Publish
 
@@ -138,7 +152,7 @@ pnpm --filter create-blit386 publish           # --otp=... if 2FA
 Tags carry no `v` prefix. Tag the commit on `main` you just published from:
 
 ```bash
-git tag 1.3.0          # exactly the version you published
+git tag 1.3.0          # exactly the version you published (example)
 git push origin 1.3.0
 ```
 
@@ -162,14 +176,28 @@ npm run dev      # plays the Catcher starter game
 npx blit doctor  # should report blit386 installed and the kit-engine range compatible
 ```
 
+`blit doctor`'s "blit386 X.Y.Z is compatible with this kit (^X.Y.Z)" line is a good live check that an `engineRange`
+bump from step 2 actually took effect.
+
+When the release touches agents or hot reload, spend two extra minutes:
+
+- Scaffold once with Claude or Cursor selected and confirm the generated agent files look right (for Claude: hooks under
+  `.claude/` / `settings.json`; for Cursor: `.cursor/commands` and hooks).
+- Run `npx blit agents sync` on the smoke project and confirm it reports clean (or only expected drift).
+- If the starter ships `blit386/vite`, edit a `render()` line and confirm hot reload without a full page reload.
+
+For existing games (not the fresh smoke scaffold): release notes should mention `npx blit upgrade` / `npx blit migrate`
+when the kit ships a migration (for example enabling the Vite hot-reload plugin). Fresh scaffolds already get the new
+defaults; upgrades are how older projects catch up.
+
 ### 8. Publish the GitHub Release
 
 ```bash
 gh release create 1.3.0 --title "Release 1.3.0" --notes-file <path to your written notes>
 ```
 
-Release notes are hand-written, not generated from commit messages – see prior releases at
-<https://github.com/blit386/create-blit386/releases> for style and structure.
+Release notes are hand-written, not generated from commit messages – draft from the `git log` you captured in step 0 and
+match the style of prior releases at <https://github.com/blit386/create-blit386/releases>.
 
 ## What gets published
 
@@ -188,8 +216,10 @@ publishing the kit publishes the instructions an AI assistant will follow inside
 
 - Follow SemVer. Both packages are past 1.0 (currently `1.2.1`) and real users – including kids – depend on them, so
   breaking changes need a major bump and a migration entry (`packages/kit/src/migrations/registry.ts`, surfaced by
-  `blit migrate` / `blit upgrade`).
-- Both packages release in lockstep on the same version.
+  `blit migrate` / `blit upgrade`). There is no default bump size – choose `patch` / `minor` / `major` from the pre-bump
+  checklist, then pass the resulting `x.y.z` to `pnpm run bump`.
+- Both packages release in lockstep on the same version (`scripts/bump-lockstep.mjs` also updates the private workspace
+  root `package.json` so the monorepo version string stays aligned).
 - To make the scaffolder tolerate kit patch releases without a re-publish, change `create-blit386`'s dependency from
   `workspace:*` to `workspace:^` (it then publishes as `^x.y.z` instead of an exact pin).
 - The generated game's pinned engine version lives in `packages/create-blit386/src/scaffold.ts` (`const BLIT386_RANGE`,
