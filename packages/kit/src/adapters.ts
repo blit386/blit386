@@ -146,6 +146,8 @@ export function collectDocs(root: string): GeneratedFile[] {
  *   - `CLAUDE.md`                      (shared file with a managed region)
  *   - `.claude/rules/{name}.md`        (kit-owned; frontmatter stripped)
  *   - `.claude/skills/{name}/SKILL.md` (kit-owned)
+ *   - `.claude/settings.json`          (kit-owned; translated from content/hooks.manifest.json)
+ *   - `.claude/hooks/{script}`         (kit-owned; copied verbatim)
  *
  * @param root - The kit root directory.
  * @param vars - Template variables used when rendering generated content.
@@ -223,6 +225,27 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
         }
     }
 
+    const hookManifestPath = join(contentRoot, 'hooks.manifest.json');
+    if (existsSync(hookManifestPath)) {
+        const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
+        const claudeSettings = buildClaudeSettings(manifest, vars);
+        files.push({ path: '.claude/settings.json', content: `${JSON.stringify(claudeSettings, null, 2)}\n` });
+    }
+
+    const hooksScriptsDir = join(contentRoot, 'hooks');
+    if (existsSync(hooksScriptsDir)) {
+        for (const entry of readdirSync(hooksScriptsDir, { withFileTypes: true })) {
+            if (!entry.isFile()) {
+                continue;
+            }
+
+            files.push({
+                path: `.claude/hooks/${entry.name}`,
+                content: readFileSync(join(hooksScriptsDir, entry.name), 'utf8'),
+            });
+        }
+    }
+
     return files;
 }
 
@@ -242,10 +265,37 @@ interface HookManifestCursorBlock extends CursorHookEntry {
     event: string;
 }
 
+/** One command handler inside a Claude Code matcher group. */
+interface ClaudeHookCommand {
+    type: 'command';
+    command: string;
+    timeout?: number;
+    continueOnError?: boolean;
+}
+
+/** A Claude Code matcher group: tool-name matcher + one or more command hooks. */
+interface ClaudeMatcherGroup {
+    matcher?: string;
+    hooks: ClaudeHookCommand[];
+}
+
+interface ClaudeSettingsJson {
+    hooks: Record<string, ClaudeMatcherGroup[]>;
+}
+
+interface HookManifestClaudeBlock {
+    event: string;
+    command: string;
+    matcher?: string;
+    timeout?: number;
+    continueOnError?: boolean;
+}
+
 interface HookManifestEntry {
     id: string;
     intent: string;
     cursor?: HookManifestCursorBlock;
+    claude?: HookManifestClaudeBlock;
 }
 
 interface HooksManifest {
@@ -289,6 +339,47 @@ function buildCursorHooks(manifest: HooksManifest, vars: TemplateVars): CursorHo
     }
 
     return { version: 1, hooks };
+}
+
+/**
+ * Translate the canonical hooks manifest into Claude Code's `.claude/settings.json` hooks structure,
+ * rendering template vars. Claude nests command handlers under matcher groups per event.
+ */
+function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): ClaudeSettingsJson {
+    const hooks: Record<string, ClaudeMatcherGroup[]> = {};
+
+    for (const hook of manifest.hooks) {
+        if (!hook.claude) {
+            continue;
+        }
+
+        const { event, command, matcher, timeout, continueOnError } = hook.claude;
+        const commandHook: ClaudeHookCommand = {
+            type: 'command',
+            command: render(command, vars),
+        };
+
+        if (timeout !== undefined) {
+            commandHook.timeout = timeout;
+        }
+
+        if (continueOnError !== undefined) {
+            commandHook.continueOnError = continueOnError;
+        }
+
+        const group: ClaudeMatcherGroup = { hooks: [commandHook] };
+        if (matcher !== undefined) {
+            group.matcher = matcher;
+        }
+
+        if (!hooks[event]) {
+            hooks[event] = [];
+        }
+
+        hooks[event].push(group);
+    }
+
+    return { hooks };
 }
 
 /**

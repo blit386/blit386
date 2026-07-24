@@ -10,6 +10,13 @@
         "matcher": "Write|TabWrite",
         "timeout": 30,
         "failClosed": false
+      },
+      "claude": {
+        "event": "PostToolUse",
+        "command": "{{pmRunFormat}}",
+        "matcher": "Edit|MultiEdit|Write",
+        "timeout": 30,
+        "continueOnError": true
       }
     },
     {
@@ -20,6 +27,13 @@
         "command": "sh .cursor/hooks/shell-safety.sh",
         "timeout": 10,
         "failClosed": true
+      },
+      "claude": {
+        "event": "PreToolUse",
+        "command": "sh .claude/hooks/shell-safety.sh",
+        "matcher": "Bash",
+        "timeout": 10,
+        "continueOnError": false
       }
     }
   ]

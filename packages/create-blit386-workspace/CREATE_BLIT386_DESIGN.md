@@ -624,7 +624,9 @@ Code, TODO (each is small and independently shippable):
 Phase 2 – "Agents on tap" (COMPLETE 2026-06-13, all merged to `main`):
 
 - [x] TS language layer (`templates/ts/`, `--ts` flag, `ScaffoldOptions.language`; PR #11).
-- [x] Claude adapter (generated from kit IR into `CLAUDE.md` + `.claude/rules/` + `.claude/skills/`; PR #12).
+- [x] Claude adapter (generated from kit IR into `CLAUDE.md` + `.claude/rules/` + `.claude/skills/`; PR #12). Later
+      parity with Cursor guardrails: `.claude/settings.json` + `.claude/hooks/` from `hooks.manifest.json` `claude:`
+      blocks (BT-254).
 - [x] Cursor adapter (generated into `.cursor/rules/*.mdc` + `.cursor/hooks.json` + `.cursor/hooks/` +
       `.cursor/commands/`; PR #13).
 - [x] `blit agents sync --check`: drift detection, report-only, non-zero exit on drift (CI-safe); also integrated into
@@ -1095,3 +1097,7 @@ scaffolder cut that expects 1.4.0 on npm, not as a silent side effect of a docs 
   as `@blit386/kit/adapters` (tsup entry + package `exports`). Scaffold imports `generateClaudeAdapter` /
   `generateCursorAdapter` and writes the `{ path, content }` pairs to disk; `blit agents sync` / `add` keep using the
   same module in memory. Added a scaffold-vs-memory parity test; ownership model / manifest / `.blit/base/` unchanged.
+- 2026-07-24: Round 26 (BT-254). Claude adapter hook parity with Cursor: `hooks.manifest.json` gains `claude:` blocks;
+  `generateClaudeAdapter` emits `.claude/settings.json` (PreToolUse / PostToolUse) and copies `content/hooks/` into
+  `.claude/hooks/`. `shell-safety.sh` speaks both Cursor permission JSON and Claude exit-2 / permissionDecision
+  protocols. Ownership classifiers treat `.claude/hooks/` as kit-owned; scaffold twin tests cover settings.json.

@@ -196,6 +196,7 @@ function classifyFile(relPath: string): FileClass {
         normalized === '.cursor/hooks.json' ||
         normalized.startsWith('.claude/skills/') ||
         normalized.startsWith('.claude/rules/') ||
+        normalized.startsWith('.claude/hooks/') ||
         normalized === '.claude/settings.json'
     ) {
         return 'kit-owned';

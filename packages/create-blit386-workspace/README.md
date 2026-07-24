@@ -35,9 +35,10 @@ Then it writes:
 - The `blit` CLI: `blit run`, `blit doctor`, `blit upgrade`, `blit migrate`, and `blit agents` for keeping assistant
   files current.
 - Optional Claude or Cursor config, generated from the kit's canonical content – pick one in the wizard, or add it later
-  with `npx blit agents add`. Claude gets `CLAUDE.md`, `.claude/rules/`, and a `.claude/skills/<name>/SKILL.md` for each
-  game-author skill (add a sprite, play a sound, animate the palette, ...); Cursor gets `.cursor/rules/*.mdc`, the same
-  skills as `.cursor/commands/*.md`, plus `.cursor/hooks.json` and `.cursor/hooks/`.
+  with `npx blit agents add`. Claude gets `CLAUDE.md`, `.claude/rules/`, a `.claude/skills/<name>/SKILL.md` for each
+  game-author skill (add a sprite, play a sound, animate the palette, ...), plus `.claude/settings.json` hooks and
+  `.claude/hooks/`; Cursor gets `.cursor/rules/*.mdc`, the same skills as `.cursor/commands/*.md`, plus
+  `.cursor/hooks.json` and `.cursor/hooks/`.
 - Optional GitHub Actions CI (build + format check), if you say yes in the wizard.
 
 ## Never used Node.js before?
