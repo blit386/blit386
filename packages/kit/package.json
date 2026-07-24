@@ -26,6 +26,23 @@
   "bin": {
     "blit": "./dist/cli.js"
   },
+  "exports": {
+    "./package.json": "./package.json",
+    "./adapters": {
+      "types": "./src/adapters.ts",
+      "import": "./dist/adapters.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      "./adapters": {
+        "types": "./dist/adapters.d.ts",
+        "import": "./dist/adapters.js"
+      }
+    }
+  },
   "files": [
     "dist",
     "content"
@@ -43,9 +60,6 @@
     "gamedev",
     "webgpu"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "tsup",
     "prepack": "tsup",

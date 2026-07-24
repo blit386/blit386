@@ -55,11 +55,12 @@ Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shel
 3. Templates from `packages/create-blit386/templates/` (`base/` + the chosen language layer) are rendered with
    `{{placeholders}}`.
 4. If an AI assistant was chosen, its config is generated from the kit IR (`generateClaudeAdapter` /
-   `generateCursorAdapter` in `src/scaffold.ts`), rendering `{{placeholders}}` as it goes. Claude gets `CLAUDE.md` +
-   `.claude/rules/` (from `content/rules/`) + `.claude/skills/<name>/SKILL.md` (from `content/skills/`). Cursor gets
-   `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same skills, frontmatter stripped), `.cursor/hooks.json`
-   (built from `content/hooks.manifest.json`), and `.cursor/hooks/shell-safety.sh` (from `content/hooks/`). Which files
-   each adapter emits is declared in `content/agents.config.json`.
+   `generateCursorAdapter` in `@blit386/kit/adapters`), rendering `{{placeholders}}` as it goes. The scaffolder writes
+   those `{ path, content }` pairs to disk. Claude gets `CLAUDE.md` + `.claude/rules/` (from `content/rules/`) +
+   `.claude/skills/<name>/SKILL.md` (from `content/skills/`). Cursor gets `.cursor/rules/*.mdc`,
+   `.cursor/commands/<name>.md` (the same skills, frontmatter stripped), `.cursor/hooks.json` (built from
+   `content/hooks.manifest.json`), and `.cursor/hooks/shell-safety.sh` (from `content/hooks/`). Which files each adapter
+   emits is declared in `content/agents.config.json`.
 5. Kit content (`AGENTS.md` + `docs/`) is copied verbatim from `@blit386/kit`'s `content/`. `AGENTS.md` and `docs/` are
    copied byte-for-byte (`copyFileSync` / `cpSync`), so `{{placeholder}}` tokens are NOT substituted in them – only
    rules and skills pass through `render()`. Prose in `AGENTS.md` / `docs/` must therefore spell out both language cases
@@ -84,9 +85,9 @@ packages/create-blit386/templates/
 `gitignore` and `editorconfig` are renamed to `.gitignore` / `.editorconfig` on copy (`mapOutputName`); `.tmpl` is
 stripped.
 
-The Claude and Cursor configs are no longer static templates: they are generated at scaffold time from the kit IR
-(`packages/kit/content/`) by the adapters in `src/scaffold.ts`. `blit agents sync` regenerates the same output via the
-generate-to-memory copies in `packages/kit/src/adapters.ts`.
+The Claude and Cursor configs are generated from the kit IR (`packages/kit/content/`) by the shared adapters in
+`packages/kit/src/adapters.ts` (exported as `@blit386/kit/adapters`). Scaffold writes the generated files to disk;
+`blit agents sync` / `blit agents add` reuse the same generators in memory.
 
 ## Critical rules
 
@@ -136,7 +137,7 @@ starter game and point to GitHub for deep API reference.
 The whole of `packages/kit/content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/` (2
 files), `skills/` (24 directories – 21 game-author capability skills plus the `run`, `fix`, and `migrate` workflow
 skills), `hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are discovered by
-directory scan in `scaffold.ts` / `adapters.ts` – adding a skill folder is enough, nothing registers it by name.
+directory scan in `packages/kit/src/adapters.ts` – adding a skill folder is enough, nothing registers it by name.
 
 Kit content must be self-contained. Skills and docs may reference only `blit386` (the engine) and other local kit files
 (`docs/*.md`, `AGENTS.md`). Do not reference the `blit386-demos` repo (demo slugs like `029-snake-game`, or demo URLs) –
@@ -181,18 +182,18 @@ docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to wal
 
 ## Where to find information
 
-| Question                               | Where to look                                                                                |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| What does the scaffolder generate?     | `packages/create-blit386/src/scaffold.ts`, `templates/`                                      |
-| What does `blit` CLI do?               | `packages/kit/src/cli.ts`, `packages/kit/README.md`                                          |
-| How are agent files generated?         | `src/scaffold.ts` (scaffold time), `packages/kit/src/adapters.ts` (sync, generate-to-memory) |
-| What does `blit agents sync` do?       | `packages/kit/src/commands/agents.ts` (drift `--check` + full write path)                    |
-| What does `blit agents add` do?        | `packages/kit/src/commands/agents.ts` (`runAddAgent`)                                        |
-| How do API migrations / codemods work? | `packages/kit/src/migrations/` (registry + codemod engine), `commands/migrate.ts`            |
-| Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts`              |
-| Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                         |
-| Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                       |
-| Maintainer Cursor commands / parity    | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs`                         |
-| Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                              |
-| Publishing / release                   | `./PUBLISHING.md`, `cbt-release`                                                             |
-| Contributing / DCO                     | `CONTRIBUTING.md`                                                                            |
+| Question                               | Where to look                                                                          |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| What does the scaffolder generate?     | `packages/create-blit386/src/scaffold.ts`, `templates/`                                |
+| What does `blit` CLI do?               | `packages/kit/src/cli.ts`, `packages/kit/README.md`                                    |
+| How are agent files generated?         | `packages/kit/src/adapters.ts` (`@blit386/kit/adapters`); scaffold writes them to disk |
+| What does `blit agents sync` do?       | `packages/kit/src/commands/agents.ts` (drift `--check` + full write path)              |
+| What does `blit agents add` do?        | `packages/kit/src/commands/agents.ts` (`runAddAgent`)                                  |
+| How do API migrations / codemods work? | `packages/kit/src/migrations/` (registry + codemod engine), `commands/migrate.ts`      |
+| Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts`        |
+| Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                   |
+| Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                 |
+| Maintainer Cursor commands / parity    | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs`                   |
+| Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                        |
+| Publishing / release                   | `./PUBLISHING.md`, `cbt-release`                                                       |
+| Contributing / DCO                     | `CONTRIBUTING.md`                                                                      |

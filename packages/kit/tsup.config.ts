@@ -11,9 +11,10 @@ export default defineConfig([
         banner: { js: '#!/usr/bin/env node' },
     },
     {
-        // Emitted as standalone modules so the unit tests can import the codemod engine, migration
-        // registry, and env helpers (caret-range checks used by `blit doctor`).
+        // Emitted as standalone modules so the scaffolder, unit tests, and CLI can import them
+        // without pulling in the full blit bin (adapters, codemod engine, migration registry, env).
         entry: {
+            adapters: 'src/adapters.ts',
             env: 'src/env.ts',
             'migrations/codemod': 'src/migrations/codemod.ts',
             'migrations/registry': 'src/migrations/registry.ts',
@@ -22,5 +23,7 @@ export default defineConfig([
         format: ['esm'],
         target: 'node22',
         sourcemap: true,
+        // Declaration files so create-blit386 can typecheck `import … from '@blit386/kit/adapters'`.
+        dts: true,
     },
 ]);

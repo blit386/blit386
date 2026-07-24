@@ -28,7 +28,8 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
 - `content/` – everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
   project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), the
   agent `hooks/` plus `hooks.manifest.json`, and `agents.config.json`, which declares what each assistant's adapter
-  emits.
+  emits. Claude/Cursor file generation lives in `src/adapters.ts` and is exported as `@blit386/kit/adapters` so the
+  scaffolder and `blit agents sync` / `blit agents add` share one implementation.
 
 ## The game-author skills
 

@@ -1,14 +1,9 @@
 /**
- * Generate-to-memory versions of the kit's agent adapters.
+ * Shared agent adapters for Claude Code and Cursor.
  *
- * These produce the exact same bytes the scaffolder writes at create time, but return them as
- * `{ path, content }` pairs instead of writing to disk. `blit agents sync` uses them to recompute
- * what the installed kit would emit, then applies the ownership model (kit-owned / shared / user-owned)
- * to update a project without clobbering user edits.
- *
- * The transforms here MUST stay byte-for-byte identical to the scaffolder's adapters in
- * `create-blit386/src/scaffold.ts`. The "sync a freshly scaffolded project changes nothing" test
- * guards that contract.
+ * Single source of truth: both `create-blit386` (scaffold-time write-to-disk) and `blit agents sync` /
+ * `blit agents add` (generate-to-memory) import these generators. They return `{ path, content }`
+ * pairs; callers write to disk or apply the ownership model as needed.
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -32,7 +27,7 @@ export type TemplateVars = Record<string, string>;
 
 /** The kit package root (the folder containing this kit's package.json and content/). */
 export function kitRoot(): string {
-    // This module is bundled into dist/cli.js, so `../package.json` resolves to the kit package root.
+    // Emitted as dist/adapters.js (and also inlined into dist/cli.js); `../package.json` is the kit root.
     return dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 }
 
