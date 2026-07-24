@@ -76,7 +76,8 @@ respond_deny() {
     USER_MSG="$1"
     AGENT_MSG="$2"
     if [ "$IS_CLAUDE" = "1" ]; then
-        printf '%s\n' "$USER_MSG" >&2
+        # Exit 2 stderr is fed to the model, so use the agent-facing message.
+        printf '%s\n' "$AGENT_MSG" >&2
         exit 2
     fi
     printf '{"permission":"deny","user_message":"%s","agent_message":"%s"}\n' "$USER_MSG" "$AGENT_MSG"
@@ -87,7 +88,8 @@ respond_ask() {
     USER_MSG="$1"
     AGENT_MSG="$2"
     if [ "$IS_CLAUDE" = "1" ]; then
-        printf '%s\n' "$AGENT_MSG" | python3 -c "
+        # permissionDecisionReason for "ask" is shown to the user in the permission UI.
+        printf '%s\n' "$USER_MSG" | python3 -c "
 import json, sys
 reason = sys.stdin.read().rstrip('\n')
 print(json.dumps({

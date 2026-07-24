@@ -270,7 +270,6 @@ interface ClaudeHookCommand {
     type: 'command';
     command: string;
     timeout?: number;
-    continueOnError?: boolean;
 }
 
 /** A Claude Code matcher group: tool-name matcher + one or more command hooks. */
@@ -288,7 +287,6 @@ interface HookManifestClaudeBlock {
     command: string;
     matcher?: string;
     timeout?: number;
-    continueOnError?: boolean;
 }
 
 interface HookManifestEntry {
@@ -353,7 +351,7 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
             continue;
         }
 
-        const { event, command, matcher, timeout, continueOnError } = hook.claude;
+        const { event, command, matcher, timeout } = hook.claude;
         const commandHook: ClaudeHookCommand = {
             type: 'command',
             command: render(command, vars),
@@ -361,10 +359,6 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
 
         if (timeout !== undefined) {
             commandHook.timeout = timeout;
-        }
-
-        if (continueOnError !== undefined) {
-            commandHook.continueOnError = continueOnError;
         }
 
         const group: ClaudeMatcherGroup = { hooks: [commandHook] };

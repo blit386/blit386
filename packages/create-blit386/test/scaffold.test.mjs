@@ -266,10 +266,14 @@ test('scaffold copies optional CI and agent files when requested', () => {
             Array.isArray(safetyGroup.hooks) && safetyGroup.hooks.length > 0,
             'PreToolUse group should contain command hooks',
         );
-        assert.equal(
-            safetyGroup.hooks[0].continueOnError,
-            false,
-            'shell safety hook should have continueOnError false',
+        assert.equal(safetyGroup.hooks[0].type, 'command', 'shell safety hook should be type command');
+        assert.ok(
+            safetyGroup.hooks[0].command.includes('shell-safety.sh'),
+            'shell safety hook should reference shell-safety.sh',
+        );
+        assert.ok(
+            !('continueOnError' in safetyGroup.hooks[0]),
+            'Claude command hooks should not emit continueOnError (exit codes drive behavior)',
         );
 
 		const cursorProject = join(work, "cursor-game");

@@ -15,8 +15,7 @@
         "event": "PostToolUse",
         "command": "{{pmRunFormat}}",
         "matcher": "Edit|MultiEdit|Write",
-        "timeout": 30,
-        "continueOnError": true
+        "timeout": 30
       }
     },
     {
@@ -32,8 +31,7 @@
         "event": "PreToolUse",
         "command": "sh .claude/hooks/shell-safety.sh",
         "matcher": "Bash",
-        "timeout": 10,
-        "continueOnError": false
+        "timeout": 10
       }
     }
   ]
