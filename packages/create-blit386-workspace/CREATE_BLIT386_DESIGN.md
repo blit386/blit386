@@ -81,7 +81,7 @@
 > Claude `settings.json` hooks for guardrail parity with Cursor, and lockstep bump script hardening
 > (`pnpm run bump -- <x.y.z>`). Manual `pnpm publish` (kit first) per the 2026-07-14 policy. Landed via
 > `chore(release): 1.3.0` PR; tag `1.3.0` (no `v` prefix) on the merged `main` commit. Release notes: the GitHub Release
-> at <https://github.com/blit386/create-blit386/releases/tag/1.3.0>.
+> at <https://github.com/blit386/create-blit386/releases> (tag `1.3.0` after publish).
 >
 > Dogfood finding (Round 15, still holds): the kit IR is game-author altitude; the `blit386` / `blit386-demos` repos are
 > the kit's upstream maintainers, not consumer games – regenerating their `.cursor/`/`.claude/` from the current IR
@@ -725,7 +725,7 @@ live (`dist-tags.latest = 1.3.0` on both). Prior releases: `0.1.0` / `0.1.1`, th
 rename to `create-blit386`/`@blit386/kit`), then `1.2.1` (2026-07-14; audio content + `engineRange` fix), then `1.3.0`
 (2026-07-24; hot reload for engine 1.4.0 – see the top status block and section 12). Git tag `1.3.0` (no `v` prefix) on
 the merged `main` commit; release notes live in the GitHub Release at
-<https://github.com/blit386/create-blit386/releases/tag/1.3.0>.
+<https://github.com/blit386/create-blit386/releases> (tag `1.3.0` after publish).
 
 Publishing is manual-only (policy change 2026-07-14, see the top status block): there is no
 `.github/workflows/publish.yml` and no `NPM_TOKEN` secret. Nothing publishes on a tag push. Tags are still cut and
