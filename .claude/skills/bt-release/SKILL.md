@@ -302,7 +302,7 @@ The step most likely to get skipped or done in the wrong order. Do these four in
 exists:
 
 1. In `scripts/gen-api-history.mjs`, bump `UNRELEASED_VERSION` from the version just tagged to the next one (e.g.
-   `1.4.0` -> `1.4.1`).
+   `1.5.0` -> `1.5.1`).
 2. Run `pnpm run api:history`.
 3. Verify: `pnpm run api:history:check`, `pnpm run api:since:check`, `pnpm run test:api-history`.
 4. `main` is protected – branch, PR, squash-merge (mirrors PR #364 for 1.3.0, merged the day after that tag). Make sure

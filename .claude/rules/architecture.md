@@ -95,6 +95,7 @@ src/
     Color32.ts             # 32-bit RGBA color
     Easing.ts              # Easing functions for palette effects
     AudioParamRamp.ts       # Shared AudioParam ramp scheduling (bus fades + per-voice fades)
+    Random.ts              # Seeded PRNG (mulberry32; exported; int/float/pick/shuffle/weighted/fork)
     Rng.ts                 # Deterministic PRNG (mulberry32-style; internal, backs the synth engine's noise generation)
     FrameCapture.ts        # GPU readback + PNG export
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
