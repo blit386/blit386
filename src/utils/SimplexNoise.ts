@@ -6,7 +6,7 @@
  * approximately `[-1, 1]`. Distinct from the post-process {@link Noise} display effect (GPU grain).
  *
  * Based on Stefan Gustavson's simplex formulation
- * ([Simplex noise demystified](https://weber.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)).
+ * ([Simplex noise demystified](https://web.archive.org/web/20200929015611/http://weber.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)).
  *
  * @since 1.5.0
  */

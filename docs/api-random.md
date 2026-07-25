@@ -162,7 +162,8 @@ simplex.noise3D(1, 2, 3);
 
 Value noise interpolates hashed corner values (smooth but can look blocky at low frequency). Perlin uses lattice
 gradients ([Ken Perlin, SIGGRAPH 2002](https://mrl.cs.nyu.edu/~perlin/paper445.pdf)). Simplex reduces directional
-artifacts on square grids ([Stefan Gustavson](https://weber.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)).
+artifacts on square grids
+([Stefan Gustavson](https://web.archive.org/web/20200929015611/http://weber.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)).
 
 ## State and streams
 
