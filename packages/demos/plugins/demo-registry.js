@@ -14,7 +14,8 @@ const HEADER_SCAN_BYTES = 2000;
 
 // Demos excluded from the banner's dropdown and prev/next chain. They remain fully routable
 // and embeddable at their own URL; only navigation surfacing is suppressed.
-const NAV_HIDDEN_SLUGS = new Set(['barebones']);
+// Exported so `scripts/check-demo-registry.mjs` can flag stale entries.
+export const NAV_HIDDEN_SLUGS = new Set(['barebones']);
 
 /**
  * Build the list of demos by scanning src/*.js for number-free kebab-case files.

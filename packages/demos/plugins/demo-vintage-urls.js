@@ -5,9 +5,17 @@
  * the slug being vacated). Structurally separate from `DEMO_ORDER` in `demo-order.js` —
  * order is navigation; this file is permanent URL compatibility.
  *
- * Targets that no longer exist on disk (retired demos) stay listed for history; redirect
- * generation skips keys whose current slug is not in the live registry.
+ * Targets that no longer exist on disk (retired demos) stay listed for history and must
+ * also appear in `RETIRED_SLUGS` below. Redirect generation skips keys whose current slug
+ * is not in the live registry. `scripts/check-demo-registry.mjs` enforces live-or-retired.
  */
+
+/**
+ * Current-style slugs that vintage keys may target even though no `src/<slug>.js` exists.
+ * Keep in sync with retired rows in `VINTAGE_URLS` (and never with a live demo file).
+ */
+export const RETIRED_SLUGS = new Set(['error-preview']);
+
 export const VINTAGE_URLS = {
     '00a-barebones': 'barebones',
     '001-basics': 'basics',

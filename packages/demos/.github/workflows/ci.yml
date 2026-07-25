@@ -61,6 +61,12 @@ jobs:
           pnpm run docs:links
         background: true
 
+      - name: Check demo registry
+        run: |
+          cd blit386-demos
+          pnpm run check:demo-registry
+        background: true
+
       - wait-all:
 
   build:

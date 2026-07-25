@@ -80,10 +80,12 @@ The composite action performs these steps internally:
 
 The single CI workflow (`.github/workflows/ci.yml`) has three jobs:
 
-- quality-checks – format check, lint, spellcheck, knip, and the Markdown link check (`pnpm run docs:links`), all as
-  parallel steps in this one job. It runs on pull requests as well as on pushes to `main`, and it needs the workspace
-  like every other step (the checks run from inside `blit386-demos/` with its dependencies installed). The link check
-  walks every `.md` / `.mdx` file in the repo, not just `README.md`
+- quality-checks – format check, lint, spellcheck, knip, the Markdown link check (`pnpm run docs:links`), and the demo
+  registry check (`pnpm run check:demo-registry`), all as parallel steps in this one job. It runs on pull requests as
+  well as on pushes to `main`, and it needs the workspace like every other step (the checks run from inside
+  `blit386-demos/` with its dependencies installed). The link check walks every `.md` / `.mdx` file in the repo, not
+  just `README.md`. The registry check enforces bijection between `src/*.js`, `DEMO_ORDER`, and `VINTAGE_URLS`, plus
+  `RETIRED_SLUGS` and `NAV_HIDDEN_SLUGS` consistency
 - build – Build demos and upload artifacts (depends on `quality-checks`)
 - deploy – Deploy to Cloudflare Pages (main branch only; depends on `build`)
 

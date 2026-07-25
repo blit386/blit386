@@ -51,6 +51,7 @@ blit386-demos/
     demo-registry.js
   scripts/                     # Repo maintenance scripts (run via package scripts)
     check-markdown-links.mjs   # pnpm run docs:links – walks every .md/.mdx in the repo
+    check-demo-registry.mjs    # pnpm run check:demo-registry – order / vintage / RETIRED_SLUGS / NAV_HIDDEN / disk
     generate-audio-loops.mjs   # pnpm run generate:audio-loops – writes the *.loop.json loop points
   docs/                        # CI-WORKSPACE-SETUP, EXTERNAL-DEVELOPER-SETUP, SECURITY-HEADERS
 ```
@@ -80,6 +81,7 @@ pnpm run spellcheck             # Check spelling (src/**, docs/**, README.md)
 pnpm run knip                   # Find unused exports
 pnpm run knip:fix               # Auto-remove what knip flags (review the diff)
 pnpm run docs:links             # Check Markdown links (every .md/.mdx in the repo)
+pnpm run check:demo-registry    # DEMO_ORDER / VINTAGE_URLS / RETIRED_SLUGS / NAV_HIDDEN_SLUGS / src/*.js
 pnpm run generate:audio-loops   # Regenerate public/audio/*.loop.json loop points
 pnpm run preflight              # ALL quality checks before committing
 pnpm run clean                  # Clean build artifacts
@@ -480,7 +482,7 @@ Managed by Husky (auto-installed via `prepare` script).
 
 - Pre-commit (lint-staged): auto-formats and lints staged files
 - Commit-msg: commitlint (conventional commit type/subject rules)
-- Pre-push: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, build)
+- Pre-push: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, check:demo-registry, build)
 
 ## Deployment
 
@@ -493,15 +495,15 @@ Demos deploy to Cloudflare Pages via GitHub Actions on push to main. The product
 Skills live in `.claude/skills/` (Zed/Cursor also see them via `.agents/skills/*` symlinks – edit the `.claude` copy
 once). Available:
 
-| Skill                                 | Purpose                                                     |
-| ------------------------------------- | ----------------------------------------------------------- |
-| `demos-preflight`                     | Run format, lint, spellcheck, knip, docs:links, build       |
-| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify)         |
-| `demos-review` / `demos-deep-review`  | Diff review vs project rules; deep pre-push review          |
-| `demos-pr`                            | Preflight, conventional commit (DCO recommended), open a PR |
-| `demos-new`                           | Scaffold the next `NNN-topic.js` demo                       |
-| `demos-spellcheck`                    | Fix cspell errors and extend `cspell.json`                  |
-| `demos-test`                          | Explain that this repo has no automated tests               |
-| `demos-security-run`                  | MCP security preflight + audit fallbacks                    |
+| Skill                                 | Purpose                                                                                                             |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `demos-preflight`                     | Run format, lint, spellcheck, knip, docs:links, check:demo-registry (incl. RETIRED_SLUGS / NAV_HIDDEN_SLUGS), build |
+| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify)                                                                 |
+| `demos-review` / `demos-deep-review`  | Diff review vs project rules; deep pre-push review                                                                  |
+| `demos-pr`                            | Preflight, conventional commit (DCO recommended), open a PR                                                         |
+| `demos-new`                           | Scaffold the next `NNN-topic.js` demo                                                                               |
+| `demos-spellcheck`                    | Fix cspell errors and extend `cspell.json`                                                                          |
+| `demos-test`                          | Explain that this repo has no automated tests                                                                       |
+| `demos-security-run`                  | MCP security preflight + audit fallbacks                                                                            |
 
 `.agents/skills/*` are symlinks to `.claude/skills/*`. Do not treat them as two copies to patch.
