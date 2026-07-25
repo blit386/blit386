@@ -43,9 +43,13 @@ blit386-demos/
     demo-source.css            # Source panel / Shiki / Twoslash hover polish
     twoslash-rich.css          # Vendored from @shikijs/twoslash (Biome-ignored)
     demos-index.css            # Dev-only /demos/ index page
-  _partials/                   # Shared HTML template (plain HTML with {{title}}, {{scriptFile}},
-    layout.html                #   {{slug}}, {{demoList}}, {{sourceHtml}}, and {{sourcePanelScript}}
-                               #   placeholders; dual-mode: shell banner+iframe vs ?embed / ?embed&source)
+  _partials/                   # Shared HTML template + page chrome scripts
+    layout.html                # Dual-mode page ({{title}}, {{scriptFile}}, {{slug}}, {{demoList}},
+                               #   {{sourceHtml}}, {{sourcePanelScript}}); shell banner+iframe vs
+                               #   ?embed / ?embed&source
+    demo-shell.js              # Shell nav + dual-mode prepare/analytics (module from layout.html)
+    source-panel.js            # Dev-only live Twoslash source updates (HMR)
+    source-panel-protocol.js   # Shared HMR event name for the source panel
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
     virtual-demos.js           # Virtual HTML pages + injects Twoslash-highlighted source
     highlight-demo-source.js   # Shiki + @shikijs/twoslash highlighter (mtime cache)
@@ -115,9 +119,9 @@ full-reloads the page:
 - **Asset change** (`public/sprites`, `public/audio`, `public/fonts` – image, audio, `.btfont`): the plugin's asset
   watcher replaces the loaded `SpriteSheet` / `AudioClip` / `BitmapFont` in place; no reload.
 
-What still always full-reloads: `_partials/*.html` edits (the page template), a `blit386` library dist rebuild (via
-`blit386WatchReload()` – a changed engine bundle invalidates everything), and adding or removing a `src/NNN-*.js` demo
-file (the registry and the page set changed).
+What still always full-reloads: `_partials/*` edits (the page template and chrome scripts such as `demo-shell.js`), a
+`blit386` library dist rebuild (via `blit386WatchReload()` – a changed engine bundle invalidates everything), and adding
+or removing a `src/NNN-*.js` demo file (the registry and the page set changed).
 
 The live source panel (the highlighted code block under the canvas) updates itself on a demo-entry edit via a
 `blit386:source-updated` custom HMR event, independent of the code hot-swap – see `plugins/virtual-demos.js`'s
@@ -151,7 +155,8 @@ the hot-reload wiring:
    (music) – the track restarts.
 7. Edit `src/shared/ui.js` – demo keeps its own state, the UI kit still works (D-pad visibility may reset – expected,
    see above).
-8. Edit `_partials/layout.html` – full reload of the shell; the source panel updates on demo edits without a reload.
+8. Edit `_partials/layout.html` or `_partials/demo-shell.js` – full reload of the shell; the source panel updates on
+   demo edits without a reload.
 9. Jump to another demo via the banner dropdown – address bar updates via `pushState`, banner stays mounted, only the
    iframe reloads; browser back/forward restores the previous demo in the iframe.
 10. Edit an engine `src/` file – the lib rebuilds – full reload (`blit386WatchReload` preserved).

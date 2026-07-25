@@ -98,6 +98,13 @@ export function virtualDemos() {
      * @returns {Promise<string>}
      */
     async function renderHtml(entry) {
+        // Dev: always re-read the template. Vite's own watcher can full-reload the
+        // browser without our change handler running, which would otherwise leave a
+        // stale layoutTemplate (e.g. after extracting demo-shell.js).
+        if (isDevMode) {
+            reloadTemplate();
+        }
+
         const demoListJson = JSON.stringify(
             registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
         ).replaceAll('<', '\\u003c');
@@ -183,12 +190,14 @@ export function virtualDemos() {
         },
 
         configureServer(server) {
-            server.watcher.add(join(partialsDir, '*.html'));
+            // Watch the partials directory (not a glob): layout.html + chrome scripts
+            // (demo-shell.js, source-panel*.js). Any edit invalidates page chrome.
+            server.watcher.add(partialsDir);
             server.watcher.add(join(srcDir, '*.js'));
             server.watcher.add(join(srcDir, 'shared', '*.js'));
 
             server.watcher.on('change', async (changedPath) => {
-                if (changedPath.startsWith(partialsDir)) {
+                if (changedPath === partialsDir || changedPath.startsWith(`${partialsDir}/`)) {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
                     return;

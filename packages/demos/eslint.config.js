@@ -126,6 +126,8 @@ export default [
 
     // Browser-context client scripts served directly to the page (_partials/*.js). Not demo source
     // (no beginner-comment requirement – see CLAUDE.md), but not Node either, so it needs DOM globals.
+    // Inherits the Node/tooling block above except where overridden: shell chrome indexes the
+    // build-time demo list and DOM nodes (same false-positive class as src/** demos).
     {
         files: ['_partials/*.js'],
         languageOptions: {
@@ -133,6 +135,12 @@ export default [
                 ...globals.browser,
                 ...globals.es2022,
             },
+        },
+        rules: {
+            'security/detect-object-injection': 'off',
+
+            // Combobox key handling is one switch-like listener; splitting it hurts readability.
+            complexity: ['warn', { max: 20 }],
         },
     },
 
