@@ -1,3 +1,7 @@
+---
+paths: [src/**/*.ts, docs/**/*.md]
+---
+
 # Docs sync required
 
 Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.

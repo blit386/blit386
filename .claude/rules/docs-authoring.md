@@ -1,3 +1,7 @@
+---
+paths: [docs/**/*.md]
+---
+
 # Docs authoring
 
 Condensed mirror of `.cursor/rules/docs-authoring.mdc`. How to write, rename, and split published `docs/*.md` pages

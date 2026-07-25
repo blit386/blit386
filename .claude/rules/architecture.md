@@ -1,3 +1,7 @@
+---
+paths: [src/**]
+---
+
 # Architecture
 
 Paired with `.cursor/rules/architecture.mdc` (same annotated tree).
