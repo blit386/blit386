@@ -76,6 +76,7 @@ import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
 import { noActivePaletteError } from './utils/errorMessages';
+import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
 import { Random } from './utils/Random';
 import { Rect2i } from './utils/Rect2i';
 import { Timer } from './utils/Timer';
@@ -2121,6 +2122,12 @@ export {
     FullscreenPixelEffect,
     getCanvas,
     green,
+    hash1,
+    hash1i,
+    hash2,
+    hash2i,
+    hash3,
+    hash3i,
     Interference,
     interpolate,
     mergeHardwareSettings,

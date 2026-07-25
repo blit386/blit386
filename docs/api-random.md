@@ -11,7 +11,8 @@
 <!-- blit386.dev-banner:end -->
 
 Seeded, deterministic pseudo-random numbers for demos and games. The `Random` class uses a mulberry32 core so the same
-seed always produces the same sequence across platforms.
+seed always produces the same sequence across platforms. Stateless `hash1i` / `hash2i` / `hash3i` (and float forms) give
+per-coordinate randomness for chunked worlds without storing an RNG per cell.
 
 <ApiAvailability page="api/random" />
 
@@ -85,6 +86,43 @@ rng.insideRectTo(rect, out);
 rng.pointInRange(new Vector2i(10, 10), new Vector2i(20, 30));
 rng.direction4(); // (1,0) | (-1,0) | (0,1) | (0,-1)
 rng.direction8(); // cardinals plus diagonals
+```
+
+## Coordinate hashing
+
+Stateless spatial lookups for chunked and procedural worlds. Same coordinates and seed always return the same value - no
+stored RNG state, so you do not need an instance per chunk. Complements `Random` (a sequence generator).
+
+<Since symbol="hash1i" />
+
+<Since symbol="hash2i" />
+
+<Since symbol="hash3i" />
+
+<Since symbol="hash1" />
+
+<Since symbol="hash2" />
+
+<Since symbol="hash3" />
+
+| Function                 | Range                          |
+| ------------------------ | ------------------------------ |
+| `hash1i(x, seed?)`       | Unsigned 32-bit in `[0, 2^32)` |
+| `hash2i(x, y, seed?)`    | Unsigned 32-bit in `[0, 2^32)` |
+| `hash3i(x, y, z, seed?)` | Unsigned 32-bit in `[0, 2^32)` |
+| `hash1(x, seed?)`        | Float in `[0, 1)`              |
+| `hash2(x, y, seed?)`     | Float in `[0, 1)`              |
+| `hash3(x, y, z, seed?)`  | Float in `[0, 1)`              |
+
+Coordinates are truncated toward zero with `| 0`. Omit `seed` (or pass `0`) for a fixed default world seed. Float forms
+are the matching `hashNi` value scaled by `1 / 2^32`.
+
+```ts twoslash
+import { hash2, hash2i } from 'blit386';
+
+const tile = hash2i(12, -3, 9001); // uint32, same every call
+const chance = hash2(12, -3, 9001); // [0, 1)
+const shouldSpawn = chance < 0.15;
 ```
 
 ## State and streams

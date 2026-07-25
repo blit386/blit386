@@ -1410,6 +1410,48 @@
       "deprecated": null,
       "status": "stable"
     },
+    "hash1": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash1i": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash2": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash2i": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash3": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash3i": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "interpolate": {
       "kind": "function",
       "since": "1.5.0",
@@ -1537,7 +1579,13 @@
       "Palette"
     ],
     "api/random": [
-      "Random"
+      "Random",
+      "hash1",
+      "hash1i",
+      "hash2",
+      "hash2i",
+      "hash3",
+      "hash3i"
     ],
     "api/rendering": [
       "BT.FLIP_H",
