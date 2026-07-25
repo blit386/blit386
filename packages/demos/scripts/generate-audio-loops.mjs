@@ -1,7 +1,7 @@
 /**
  * Generates the three procedural background-music loops used by the audio demos
- * (037-music, 038-audio-buses) and their retrofit reuse (029-snake-game,
- * 014-game-scene). Run with: node scripts/generate-audio-loops.mjs
+ * (music, audio-buses) and their retrofit reuse (snake-game, game-scene).
+ * Run with: node scripts/generate-audio-loops.mjs
  *
  * No audio libraries or engine code are used here - this is a small standalone
  * PCM synthesizer that writes 16-bit mono WAV files directly, matching the
