@@ -318,6 +318,20 @@
             prevButton.disabled = currentIndex <= 0;
             nextButton.disabled = currentIndex === -1 || currentIndex >= demos.length - 1;
 
+            prevButton.setAttribute(
+                'aria-label',
+                currentIndex > 0
+                    ? 'Previous demo: ' + demos[currentIndex - 1].navLabel
+                    : 'Previous demo',
+            );
+
+            nextButton.setAttribute(
+                'aria-label',
+                currentIndex >= 0 && currentIndex < demos.length - 1
+                    ? 'Next demo: ' + demos[currentIndex + 1].navLabel
+                    : 'Next demo',
+            );
+
             var prevTip = prevButton.querySelector('.demo-banner-arrow-tooltip');
             var nextTip = nextButton.querySelector('.demo-banner-arrow-tooltip');
 
@@ -783,14 +797,16 @@
             });
 
             // Some automation / focus paths skip the focus event; click still opens.
+            // Select-all only when opening from closed – not on every click – so the
+            // user can place a caret and edit the filter with the mouse.
             input.addEventListener('click', function () {
                 if (!isOpen) {
                     isPristine = true;
 
                     openListbox();
-                }
 
-                input.select();
+                    input.select();
+                }
             });
 
             input.addEventListener('input', function () {
@@ -807,6 +823,38 @@
 
                 input.select();
             });
+
+            /**
+             * Escape while the listbox is open: first press clears a non-empty filter,
+             * second (or when already empty / pristine) closes and blurs.
+             * Shared by the input and by arrow-focused document keydown.
+             * @param {KeyboardEvent} event
+             * @returns {void}
+             */
+            function handleEscapeWhileOpen(event) {
+                event.preventDefault();
+
+                if (!isPristine && input.value.length > 0) {
+                    input.value = '';
+                    isPristine = false;
+
+                    renderOptions();
+
+                    // Return focus to the input so the cleared field is obvious.
+                    input.focus();
+                    input.select();
+                } else {
+                    closeListbox();
+
+                    input.blur();
+
+                    var active = document.activeElement;
+
+                    if (active && active.closest && active.closest('.demo-banner-arrow')) {
+                        active.blur();
+                    }
+                }
+            }
 
             input.addEventListener('keydown', function (event) {
                 // When closed, ignore arrow keys so they can reach the demo iframe
@@ -855,19 +903,21 @@
                         commitSelection(filtered[activeIndex].demo.slug);
                     }
                 } else if (event.key === 'Escape') {
-                    event.preventDefault();
+                    handleEscapeWhileOpen(event);
+                }
+            });
 
-                    // First Escape clears the filter; second closes the listbox.
-                    if (!isPristine && input.value.length > 0) {
-                        input.value = '';
-                        isPristine = false;
+            // Escape must also work when focus moved to prev/next while the listbox
+            // is still open (arrows stay coupled to the open combobox by design).
+            document.addEventListener('keydown', function (event) {
+                if (!isOpen || event.key !== 'Escape') {
+                    return;
+                }
 
-                        renderOptions();
-                    } else {
-                        closeListbox();
+                var active = document.activeElement;
 
-                        input.blur();
-                    }
+                if (active && active.closest && active.closest('.demo-banner-arrow')) {
+                    handleEscapeWhileOpen(event);
                 }
             });
 
@@ -903,6 +953,10 @@
 
                 if (!wrapper.contains(event.target) && !event.target.closest('.demo-banner-arrow')) {
                     closeListbox();
+
+                    // Blur so subsequent keys go to the demo iframe, not a focused input
+                    // sitting over a closed listbox.
+                    input.blur();
                 }
             });
 
