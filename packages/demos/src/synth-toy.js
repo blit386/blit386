@@ -1,12 +1,11 @@
 /**
  * Synth Toy Demo - procedural chip-tune sound effects with no audio files at all.
  *
- * Demo 041 in the BLIT386 demo series.
  * Prerequisites:
- *   028-Keyboard Input  https://demos.blit386.dev/028-keyboard-input
- *   036-Audio Basics    https://demos.blit386.dev/036-audio-basics
+ *   Keyboard Input  https://demos.blit386.dev/keyboard-input
+ *   Audio Basics    https://demos.blit386.dev/audio-basics
  *
- * Live version: https://demos.blit386.dev/041-synth-toy
+ * Live version: https://demos.blit386.dev/synth-toy
  *
  * Every sound on this page is built from scratch by the computer, the instant you press a
  * key or tap a button - there are no sound files to download. AudioClip.synth() takes a
@@ -28,7 +27,7 @@
  * The panels and buttons come from the shared UI kit in src/shared/ui.js, so every preset
  * works three ways: click it, tap it on a phone, or press its keyboard shortcut.
  *
- * This page unlocks sound the same "click or press a key first" way 036-audio-basics does -
+ * This page unlocks sound the same "click or press a key first" way audio-basics does -
  * browsers refuse to make any sound until you interact with the page at least once.
  *
  * The engine's built-in overlay also shows live audio meters: little bars that move
@@ -205,7 +204,7 @@ class Demo {
     async init() {
         // AudioClip.synth() is async - it has to calculate every sample before it can hand
         // back a clip. Promise.all() starts all six calculations at once and waits for them
-        // all to finish, the same way 036-audio-basics preloads its sound files up front.
+        // all to finish, the same way audio-basics preloads its sound files up front.
         this.presetClips = await Promise.all(PRESET_DEFINITIONS.map((def) => AudioClip.synth(def.factory())));
 
         this.palette = BT.paletteCreate(256);
@@ -225,7 +224,7 @@ class Demo {
      * The preset keys (J/P/E/L/H/B and R) are bound to the buttons declared in render()
      * via their { key } option. ui.tick() is where the kit safely catches those presses -
      * keyboard "was it just pressed?" flags can only be read reliably here in update(),
-     * never in render() (028-keyboard-input explains why in detail).
+     * never in render() (keyboard-input explains why in detail).
      */
     update() {
         ui.tick();

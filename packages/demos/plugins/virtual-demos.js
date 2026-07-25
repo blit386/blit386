@@ -1,14 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 
-import { buildRegistry } from './demo-registry.js';
-import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
+import { buildRegistry } from './demo-registry.js';
+import { VINTAGE_URLS } from './demo-vintage-urls.js';
+import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
 /**
- * Vite plugin that serves/generates demo HTML pages virtually from src/NNN-*.js files.
+ * Vite plugin that serves/generates demo HTML pages virtually from src/*.js demo files.
  * No per-demo HTML file is needed on disk; the template lives in _partials/layout.html
  * and is rendered via simple string substitution. Each page embeds a Shiki + Twoslash
  * highlighted copy of that demo's source below the canvas.
@@ -41,7 +42,7 @@ export function virtualDemos() {
 
     /**
      * Find the registry entry whose virtual HTML path matches an absolute module id.
-     * @param {string} absPath - Absolute path, e.g. resolve(demosDir, "001-basics.html")
+     * @param {string} absPath - Absolute path, e.g. resolve(demosDir, "basics.html")
      * @returns {object | null}
      */
     function findEntryByAbsPath(absPath) {
@@ -55,7 +56,7 @@ export function virtualDemos() {
 
     /**
      * Find the registry entry for a demo slug.
-     * @param {string} slug - Demo slug, e.g. "001-basics"
+     * @param {string} slug - Demo slug, e.g. "basics"
      * @returns {object | null}
      */
     function findEntryBySlug(slug) {
@@ -69,8 +70,8 @@ export function virtualDemos() {
 
     /**
      * Find the registry entry whose source file is the given absolute path. Used by the watcher to
-     * tell a top-level demo entry (src/NNN-*.js) apart from a src/shared/*.js change.
-     * @param {string} absPath - Absolute path, e.g. resolve(srcDir, "001-basics.js")
+     * tell a top-level demo entry (src/<slug>.js) apart from a src/shared/*.js change.
+     * @param {string} absPath - Absolute path, e.g. resolve(srcDir, "basics.js")
      * @returns {object | null}
      */
     function findEntryBySourcePath(absPath) {
@@ -121,7 +122,8 @@ export function virtualDemos() {
             const input = {};
             for (const entry of registry) {
                 const key = entry.slug.replace(/-/g, '_');
-                // eslint-disable-next-line security/detect-object-injection -- Safe: key is derived from a slug matched by /^([0-9]{2}a|[0-9]{3})-[a-z0-9-]+$/, so it only contains digits, lowercase letters, and underscores.
+                // `key` is derived from a lowercase slug and can contain only letters, digits, and underscores.
+                // eslint-disable-next-line security/detect-object-injection
                 input[key] = resolve(demosDir, `${entry.slug}.html`);
             }
 
@@ -181,7 +183,7 @@ export function virtualDemos() {
                 clearHighlightCache();
                 reload();
 
-                // Only a top-level demo entry (src/NNN-*.js) drives the live source panel. A
+                // Only a top-level demo entry (src/<slug>.js) drives the live source panel. A
                 // src/shared/*.js change needs neither a full-reload nor a source-panel event: Vite's
                 // own module-graph HMR propagates the update to every importing demo entry, which
                 // self-accepts via the blit386/vite-injected snippet (see vite.config.js).
@@ -258,7 +260,23 @@ export function virtualDemos() {
                     return next();
                 }
 
-                const entry = findEntryBySlug(demoMatch[1]);
+                const requestedSlug = demoMatch[1];
+                const vintageMapping = Object.entries(VINTAGE_URLS).find(
+                    ([vintageSlug]) => vintageSlug === requestedSlug,
+                );
+
+                if (vintageMapping) {
+                    const vintageEntry = findEntryBySlug(vintageMapping[1]);
+
+                    if (vintageEntry) {
+                        res.statusCode = 301;
+                        res.setHeader('Location', vintageEntry.urlPath);
+                        res.end();
+                        return;
+                    }
+                }
+
+                const entry = findEntryBySlug(requestedSlug);
 
                 if (!entry) {
                     return next();
@@ -287,7 +305,7 @@ function renderIndexPage(registry) {
     const items = registry
         .map(
             (entry) =>
-                `            <li><a href="/demos/${escapeHtml(entry.slug)}.html">${escapeHtml(entry.slug)} &mdash; ${escapeHtml(entry.title)}</a></li>`,
+                `            <li><a href="${escapeHtml(entry.urlPath)}">${escapeHtml(entry.slug)} &mdash; ${escapeHtml(entry.title)}</a></li>`,
         )
         .join('\n');
 

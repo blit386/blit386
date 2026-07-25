@@ -301,15 +301,17 @@ class Demo {
             // Later, render() will pass colorIndex to BT.drawRectFill() instead of a Color32.
             this.palette.set(colorIndex, new Color32(r, g, b));
 
-            this.buildings.push({
-                // Place the building anywhere in the world, with some margin so it fits.
-                pos: new Vector2i(
-                    Math.floor(Math.random() * (this.worldWidth - 50)),
-                    Math.floor(Math.random() * (this.worldHeight - 50)),
-                ),
+            // Size first, then place so the full rectangle stays inside the world.
+            // Vary the width (30-70 pixels) and height (40-100 pixels).
+            const size = new Vector2i(30 + Math.floor(Math.random() * 40), 40 + Math.floor(Math.random() * 60));
+            const pos = new Vector2i(
+                Math.floor(Math.random() * (this.worldWidth - size.x)),
+                Math.floor(Math.random() * (this.worldHeight - size.y)),
+            );
 
-                // Vary the width (30-70 pixels) and height (40-100 pixels).
-                size: new Vector2i(30 + Math.floor(Math.random() * 40), 40 + Math.floor(Math.random() * 60)),
+            this.buildings.push({
+                pos,
+                size,
 
                 // Store the palette index number, not a Color32 object.
                 // When drawing, we just pass this number to the draw call.
@@ -322,11 +324,16 @@ class Demo {
      * Creates 50 trees at random positions across the entire world.
      */
     generateTrees() {
+        // renderTree() draws foliage as a 12x12 square centered on pos, sitting 16 px above
+        // the ground point - so keep a 6 px side margin and a 16 px top margin.
+        const treeMarginX = 6;
+        const treeMarginTop = 16;
+
         for (let i = 0; i < 50; i++) {
             this.trees.push({
                 pos: new Vector2i(
-                    Math.floor(Math.random() * this.worldWidth),
-                    Math.floor(Math.random() * this.worldHeight),
+                    treeMarginX + Math.floor(Math.random() * (this.worldWidth - treeMarginX * 2)),
+                    treeMarginTop + Math.floor(Math.random() * (this.worldHeight - treeMarginTop)),
                 ),
             });
         }

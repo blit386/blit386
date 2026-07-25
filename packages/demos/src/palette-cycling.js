@@ -48,7 +48,7 @@
 //
 // Plus a palette swap demonstration every few seconds.
 
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
+import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 
 import { applyTheme, ui } from './shared/ui.js';
 
@@ -324,13 +324,9 @@ class Demo {
             }
         }
 
-        // Show swap label if active (printed over the tiles, like a caption).
+        // Show swap label if active (shared caption helper, same as patterns.js).
         if (this.showSwapLabel) {
-            BT.systemPrint(
-                new Vector2i(6, bandY + 44),
-                this.theme.text,
-                `Swapped slots ${this.swappedA} <-> ${this.swappedB}`,
-            );
+            ui.caption(6, bandY + 44, `Swapped slots ${this.swappedA} <-> ${this.swappedB}`);
         }
     }
 
@@ -361,8 +357,8 @@ class Demo {
             }
         }
 
-        // Explanatory text (printed over the tiles, like a caption).
-        BT.systemPrint(new Vector2i(6, bandY + 58), this.theme.text, 'BT.paletteCycle() runs automatically');
+        // Explanatory text over the tiles (shared caption helper, same as patterns.js).
+        ui.caption(6, bandY + 58, 'BT.paletteCycle() runs automatically');
     }
 }
 

@@ -233,6 +233,33 @@ function colorSlot(name) {
  * @implements {IBTDemo}
  */
 class Demo {
+    /** True once WebGPU post-process effects were installed in init(). */
+    effectsAvailable = false;
+
+    /** Tick count captured when the boot sequence started. */
+    bootStartTick = 0;
+
+    /** Ticks elapsed since bootStartTick - refreshed every update(). */
+    ticksSinceBoot = 0;
+
+    /** True after the first frame where the boot sequence is fully visible. */
+    bootTagged = false;
+
+    /** Ticks remaining until the next glitch burst starts. */
+    glitchCooldown = 0;
+
+    /** Ticks remaining in the current glitch burst (0 means idle). */
+    glitchTicksLeft = 0;
+
+    /** Full duration of the current burst, used to build the envelope. */
+    glitchDuration = 0;
+
+    /** Active glitch personality key, or 'none' when idle. */
+    glitchType = 'none';
+
+    /** Peak intensity of the current burst (0..1), scaled by the envelope each tick. */
+    glitchPeak = 0;
+
     /**
      * Pixel-art logical size, 4x drawing buffer for display-tier CRT, overlay tuned for terminal look.
      *

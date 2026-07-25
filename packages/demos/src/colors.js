@@ -83,6 +83,9 @@ const C_ALPHA_4 = 17; // (255, 255, 255, 70)  - almost-invisible white.
 const C_LERP_A = 18; // (180, 40, 220) - purple.
 const C_LERP_B = 19; // (40, 220, 160) - teal.
 
+// Static overlay bar color - never animated (configure() needs a fixed slot).
+const C_OVERLAY_BAR = 20; // Soft blue-gray for the engine overlay background strip.
+
 // Dynamic slots - recalculated every tick in update().
 
 // HSL rainbow strip: 64 hue slots covering the full 0..360 degree color wheel.
@@ -137,7 +140,8 @@ class Demo {
             overlayPaletteRowsVisible: 4,
 
             overlayStyle: {
-                barPaletteIndex: C_LERP_BASE,
+                // Dedicated static slot - not C_LERP_BASE, which update() rewrites every tick.
+                barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_ALPHA_2,
                 gapPaletteIndex: C_BLACK,
             },
@@ -189,12 +193,15 @@ class Demo {
         this.palette.set(C_LERP_A, this.lerpColorA);
         this.palette.set(C_LERP_B, this.lerpColorB);
 
+        // Overlay bar: a calm static color so the HUD strip does not pulse with the lerp demo.
+        this.palette.set(C_OVERLAY_BAR, new Color32(40, 48, 64));
+
         // HSL, lerp gradient, and pulse slots are left empty here.
         // update() will fill them before the first frame is drawn.
 
         // Step 3: Install the shared UI theme
         // applyTheme() writes the series' twelve standard UI colors into slots 240-251,
-        // safely above every slot this lesson uses (the static colors in 1-19 and the
+        // safely above every slot this lesson uses (the static colors in 1-20 and the
         // animated ranges 30-93, 94-125, and 126). The section headers draw with them.
         // This must happen BEFORE BT.paletteSet() below so the colors are included.
         this.theme = applyTheme(this.palette);

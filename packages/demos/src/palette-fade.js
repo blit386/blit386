@@ -76,6 +76,16 @@ const PHASE_FLASH = 12; // 200 ms
 const PHASE_NIGHT_HOLD_2 = 120; // 2 seconds
 const PHASE_FADE_TO_DAY = 120; // 2 seconds
 
+// Fixed day/night cycle graph: each phase holds for `duration` ticks, then advances to `next`.
+const PHASE_TRANSITIONS = {
+    day: { duration: PHASE_DAY_HOLD, next: 'fade-to-night' },
+    'fade-to-night': { duration: PHASE_FADE_TO_NIGHT, next: 'night' },
+    night: { duration: PHASE_NIGHT_HOLD, next: 'flash' },
+    flash: { duration: PHASE_FLASH, next: 'night-2' },
+    'night-2': { duration: PHASE_NIGHT_HOLD_2, next: 'fade-to-day' },
+    'fade-to-day': { duration: PHASE_FADE_TO_DAY, next: 'day' },
+};
+
 // Slot 0: always transparent.
 const C_LABEL = 3;
 const C_DIM = 4;
@@ -257,56 +267,6 @@ class Demo {
     }
 
     /**
-     * Fires the palette effect for the current phase, if not already triggered.
-     */
-    triggerPhaseEffect() {
-        if (this.effectTriggered) {
-            return;
-        }
-
-        if (this.phase === 'fade-to-night') {
-            // Smooth 2-second fade from current palette to night.
-            BT.paletteFade(this.night, 2000, 'ease-in-out');
-            BT.assignTag('Fade to night');
-            this.effectTriggered = true;
-        } else if (this.phase === 'flash') {
-            // Lightning! White flash for 200ms.
-            BT.paletteFlash(new Color32(255, 255, 255), 200);
-            BT.assignTag('Lightning flash');
-            this.effectTriggered = true;
-        } else if (this.phase === 'fade-to-day') {
-            // Dawn: 2-second fade back to day, with ease-out for a quick start.
-            BT.paletteFade(this.day, 2000, 'ease-out');
-            BT.assignTag('Fade to day');
-            this.effectTriggered = true;
-        }
-    }
-
-    /**
-     * Checks whether the current phase has run long enough and advances to the next.
-     *
-     * @param {number} elapsed - Ticks since the current phase started.
-     * @param {number} tick - Current tick count.
-     */
-    advancePhaseIfExpired(elapsed, tick) {
-        // Each phase has a fixed duration and a "next phase" to transition into.
-        const transitions = {
-            day: { duration: PHASE_DAY_HOLD, next: 'fade-to-night' },
-            'fade-to-night': { duration: PHASE_FADE_TO_NIGHT, next: 'night' },
-            night: { duration: PHASE_NIGHT_HOLD, next: 'flash' },
-            flash: { duration: PHASE_FLASH, next: 'night-2' },
-            'night-2': { duration: PHASE_NIGHT_HOLD_2, next: 'fade-to-day' },
-            'fade-to-day': { duration: PHASE_FADE_TO_DAY, next: 'day' },
-        };
-
-        const current = transitions[this.phase];
-
-        if (current && elapsed >= current.duration) {
-            this.startPhase(current.next, tick);
-        }
-    }
-
-    /**
      * Draws the pixel-art landscape. The scene geometry never changes; only the
      * palette colors shift via the fade/flash effects running in update().
      */
@@ -364,6 +324,46 @@ class Demo {
         this.phase = newPhase;
         this.phaseStartTick = tick;
         this.effectTriggered = false;
+    }
+
+    /**
+     * Fires the palette effect for the current phase, if not already triggered.
+     */
+    triggerPhaseEffect() {
+        if (this.effectTriggered) {
+            return;
+        }
+
+        if (this.phase === 'fade-to-night') {
+            // Smooth 2-second fade from current palette to night.
+            BT.paletteFade(this.night, 2000, 'ease-in-out');
+            BT.assignTag('Fade to night');
+            this.effectTriggered = true;
+        } else if (this.phase === 'flash') {
+            // Lightning! White flash for 200ms.
+            BT.paletteFlash(new Color32(255, 255, 255), 200);
+            BT.assignTag('Lightning flash');
+            this.effectTriggered = true;
+        } else if (this.phase === 'fade-to-day') {
+            // Dawn: 2-second fade back to day, with ease-out for a quick start.
+            BT.paletteFade(this.day, 2000, 'ease-out');
+            BT.assignTag('Fade to day');
+            this.effectTriggered = true;
+        }
+    }
+
+    /**
+     * Checks whether the current phase has run long enough and advances to the next.
+     *
+     * @param {number} elapsed - Ticks since the current phase started.
+     * @param {number} tick - Current tick count.
+     */
+    advancePhaseIfExpired(elapsed, tick) {
+        const current = PHASE_TRANSITIONS[this.phase];
+
+        if (current && elapsed >= current.duration) {
+            this.startPhase(current.next, tick);
+        }
     }
 
     /**

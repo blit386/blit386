@@ -414,12 +414,20 @@ class Demo {
         // Background music: a real intro-then-loop track, the same one 037-Music
         // demonstrates in isolation. BT.musicPlay() called before the page is unlocked is
         // "remembered" and starts for real the instant the player clicks or presses a key.
-        this.musicClip = await AudioClip.load('/audio/music-intro-loop.wav');
-        BT.musicPlay(this.musicClip, {
-            loop: true,
-            loopStart: MUSIC_LOOP_START_SECONDS,
-            loopEnd: MUSIC_LOOP_END_SECONDS,
-        });
+        //
+        // Wrap load + play like 029-snake-game: a missing or undecodable file must not
+        // abort the whole scene - the capstone still renders with SFX only.
+        try {
+            this.musicClip = await AudioClip.load('/audio/music-intro-loop.wav');
+            BT.musicPlay(this.musicClip, {
+                loop: true,
+                loopStart: MUSIC_LOOP_START_SECONDS,
+                loopEnd: MUSIC_LOOP_END_SECONDS,
+            });
+        } catch (error) {
+            console.warn('[GameSceneDemo] Failed to load background music, continuing without it.', error);
+            this.musicClip = null;
+        }
 
         // A soft rising chime for day/night transitions, and BT.synthPreset.blip() (the
         // same UI blip 041-Synth Toy uses) for a successful capture.

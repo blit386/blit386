@@ -1,12 +1,13 @@
 // Pixel Art Demo - draw tiny pictures from number grids and from math patterns.
 //
-// Demo 005 in the BLIT386 demo series for young learners (around 12).
+// Written for young learners (around 12).
 //
 // We learned about the demo lifecycle, coordinates, and clearing the screen in the Basics demo:
-// https://demos.blit386.dev/001-basics
+// https://demos.blit386.dev/basics
 //
-// Prerequisites: 001-Basics, 002-Primitives, 003-Colors
-// Live version: https://demos.blit386.dev/005-pixel-art
+// Prerequisites: https://demos.blit386.dev/basics , https://demos.blit386.dev/primitives ,
+// https://demos.blit386.dev/colors
+// Live version: https://demos.blit386.dev/pixel-art
 //
 // This demo shows:
 //   - A 2D array (grid) of small numbers that stand for colors, like a paint-by-number on graph paper
@@ -208,7 +209,7 @@ class Demo {
     /**
      * Fixed-step clock. Advances animTime and updates the animated checker colors in the palette.
      * See the Basics article for why update() and render() are separate steps:
-     * https://demos.blit386.dev/001-basics
+     * https://demos.blit386.dev/basics
      */
     update() {
         // Add one tick's worth of time. If targetFPS is 60, each tick is about 1/60 second.

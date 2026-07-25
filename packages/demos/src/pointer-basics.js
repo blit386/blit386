@@ -1,25 +1,25 @@
 /**
  * Pointer Basics Demo - read mouse position, buttons, delta, and scroll wheel.
  *
- * Demo 025 in the BLIT386 demo series.
- * Prerequisites: 001-Basics - https://demos.blit386.dev/001-basics
+ * Prerequisites: Basics - https://demos.blit386.dev/basics
  *
- * Live version: https://demos.blit386.dev/025-pointer-basics
+ * Live version: https://demos.blit386.dev/pointer-basics
  *
  * This demo is the simplest introduction to BT's pointer API. It draws a
- * crosshair that follows your mouse, lights up indicator pips when you press
- * mouse buttons, and fills a meter that follows the scroll wheel. All the
+ * crosshair that follows your mouse or finger, lights up indicator pips when you
+ * press mouse buttons, and fills a meter that follows the scroll wheel. All the
  * readout panels come from the shared UI kit in src/shared/ui.js; the raw
  * pointer reads (BT.pointerPos, BT.pointerDelta, BT.isDown, and friends) are
  * the lesson and stay hand-written below.
  *
  * Try this:
- * - Move the mouse over the demo to see the crosshair track your cursor.
+ * - Move the mouse over the demo to see the crosshair track your cursor (slot 0).
  * - Click left, right, or middle to light up the A, B, or C button pip.
  * - Spin the scroll wheel to fill or empty the scroll meter.
- * - On a touchscreen: tap and drag to move the crosshair on slot 0. Mouse
- *   buttons B/C/D and the wheel have no touch equivalent, so a note appears
- *   once a touch is detected. (See demo 026 for the full multi-touch paint
+ * - On a touchscreen: tap and drag to move the crosshair on touch slots 1-3
+ *   (slot 0 stays reserved for the mouse). Mouse buttons B/C/D and the wheel
+ *   have no touch equivalent, so a note appears once a touch is detected.
+ *   (See https://demos.blit386.dev/pointer-paint for the full multi-touch paint
  *   version with all four slots.)
  */
 
@@ -139,11 +139,13 @@ class Demo {
         // render()), and that answer is kept fresh here.
         ui.tick();
 
-        // Only record the trail when the pointer is over the canvas. If it
-        // isn't (mouse left the canvas, or no input yet), keep the previous
+        // Only record the trail when a pointer is over the canvas. Mouse uses
+        // slot 0; touches use slots 1-3. If none are active, keep the previous
         // trail intact so the line doesn't snap to (0, 0).
-        if (BT.isPointerActive(0)) {
-            const pos = BT.pointerPos(0);
+        const slot = this.activePointerSlot();
+
+        if (slot >= 0) {
+            const pos = BT.pointerPos(slot);
 
             // Drop the oldest sample and append the new one.
             this.trail.shift();
@@ -267,10 +269,10 @@ class Demo {
     }
 
     /**
-     * Polyline through the recent pointer positions, dimmest at the oldest end.
+     * Polyline through the recent pointer positions, all drawn in uniform C_TRAIL.
      */
     renderTrail() {
-        if (!BT.isPointerActive(0)) {
+        if (this.activePointerSlot() < 0) {
             return;
         }
 
@@ -282,15 +284,17 @@ class Demo {
     }
 
     /**
-     * Crosshair drawn at the current pointer position. Only shown while the
-     * pointer is over the canvas (slot 0 active).
+     * Crosshair drawn at the current pointer position. Only shown while a
+     * mouse (slot 0) or touch (slots 1-3) pointer is over the canvas.
      */
     renderCrosshair() {
-        if (!BT.isPointerActive(0)) {
+        const slot = this.activePointerSlot();
+
+        if (slot < 0) {
             return;
         }
 
-        const pos = BT.pointerPos(0);
+        const pos = BT.pointerPos(slot);
         const size = 6;
 
         // Horizontal arm.
@@ -303,11 +307,11 @@ class Demo {
 
     /**
      * "Move pointer over canvas" hint in the middle of the screen. Only shown
-     * while the pointer is NOT over the canvas, so newcomers know what to do.
-     * Uses the theme's dim text color so it matches the rest of the UI.
+     * while no mouse or touch pointer is over the canvas, so newcomers know what
+     * to do. Uses the theme's dim text color so it matches the rest of the UI.
      */
     renderPointerHint() {
-        if (BT.isPointerActive(0)) {
+        if (this.activePointerSlot() >= 0) {
             return;
         }
 
@@ -322,6 +326,25 @@ class Demo {
         );
 
         // The engine overlay (FPS + demo name) draws on top automatically.
+    }
+
+    /**
+     * First active pointer slot this frame: mouse (0) preferred, then touch (1-3).
+     *
+     * @returns {number} Slot index, or -1 when no pointer is over the canvas.
+     */
+    activePointerSlot() {
+        if (BT.isPointerActive(0)) {
+            return 0;
+        }
+
+        for (let slot = 1; slot < 4; slot++) {
+            if (BT.isPointerActive(slot)) {
+                return slot;
+            }
+        }
+
+        return -1;
     }
 }
 
