@@ -97,7 +97,7 @@ src/
     Vector2i.ts            # Integer 2D vector
     Rect2i.ts              # Integer rectangle
     Color32.ts             # 32-bit RGBA color
-    Easing.ts              # Easing functions for palette effects
+    Easing.ts              # Easing curves + interpolate() (number, Vector2i, Color32, Rect2i)
     AudioParamRamp.ts       # Shared AudioParam ramp scheduling (bus fades + per-voice fades)
     Random.ts              # Seeded PRNG (mulberry32; exported; int/float/pick/shuffle/weighted/fork)
     Rng.ts                 # Deterministic PRNG (mulberry32-style; internal, backs the synth engine's noise generation)

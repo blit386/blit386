@@ -19,6 +19,16 @@ This page is editorial – release highlights and migration notes, not an exhaus
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## Unreleased
+
+### Added
+
+- Full easing curve library on `EasingFunction` / `applyEasing`: sine, cubic, quartic, quintic, expo, circ, back,
+  elastic, and bounce families (in / out / in-out), alongside the existing linear and quadratic (`ease-*`) curves. Math
+  matches RetroBlit's `Ease` class.
+- `interpolate(easing, start, end, t)` for `number`, `Vector2i`, `Color32`, and `Rect2i`. Integer types round to the
+  nearest component; `Color32` channels also clamp to `[0, 255]`.
+
 ## 1.4.0 - 2026-07-23
 
 ### Added

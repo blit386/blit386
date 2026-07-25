@@ -1014,7 +1014,12 @@
     "EasingFunction": {
       "kind": "type",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.5.0",
+          "note": "Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1342,7 +1347,12 @@
     "applyEasing": {
       "kind": "function",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.5.0",
+          "note": "Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1399,6 +1409,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "interpolate": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "mergeHardwareSettings": {
       "kind": "function",
@@ -1489,7 +1506,8 @@
     ],
     "api/easing": [
       "EasingFunction",
-      "applyEasing"
+      "applyEasing",
+      "interpolate"
     ],
     "api/game-loop": [
       "BT.assignTag",

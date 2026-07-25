@@ -247,14 +247,16 @@ BT.paletteClearEffects();
 
 ## Easing functions
 
-Used by `paletteFade` and `paletteFadeRange`. Type: `EasingFunction`.
+Used by `paletteFade` and `paletteFadeRange`. Type: `EasingFunction`. Common values:
 
 | Value           | Curve                                |
 | --------------- | ------------------------------------ |
 | `'linear'`      | Constant rate (default when omitted) |
-| `'ease-in'`     | Slow start, fast end                 |
-| `'ease-out'`    | Fast start, slow end                 |
-| `'ease-in-out'` | Slow start and end                   |
+| `'ease-in'`     | Quadratic slow start, fast end       |
+| `'ease-out'`    | Quadratic fast start, slow end       |
+| `'ease-in-out'` | Quadratic slow start and end         |
+
+The full curve list (sine, cubic, bounce, and more) and the `interpolate` helper live in [API: Easing](api-easing.md).
 
 <Callout title="Timing">
 
