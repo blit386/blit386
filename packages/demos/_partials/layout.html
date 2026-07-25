@@ -301,15 +301,13 @@
         /**
          * Enable or disable the prev/next buttons for the given index into `demos`,
          * and refresh their neighbor-name tooltips (canonical order, never filtered).
-         * Arrows deactivate while the combobox listbox is closed so keyboard arrows
-         * stay free for the demo; they re-enable when the listbox opens (still
-         * clamped to registry ends).
+         * Buttons stay clickable whenever a neighbor exists; keyboard Up/Down are never
+         * bound to them, so demo arrow keys stay free while the listbox is closed.
          * @param {Array<{slug: string, navLabel: string}>} demos
          * @param {number} currentIndex
-         * @param {boolean} listboxOpen
          * @returns {void}
          */
-        function syncArrowDisabled(demos, currentIndex, listboxOpen) {
+        function syncArrowDisabled(demos, currentIndex) {
             var prevButton = document.getElementById('demo-banner-prev');
             var nextButton = document.getElementById('demo-banner-next');
 
@@ -317,11 +315,8 @@
                 return;
             }
 
-            var canPrev = listboxOpen && currentIndex > 0;
-            var canNext = listboxOpen && currentIndex >= 0 && currentIndex < demos.length - 1;
-
-            prevButton.disabled = !canPrev;
-            nextButton.disabled = !canNext;
+            prevButton.disabled = currentIndex <= 0;
+            nextButton.disabled = currentIndex === -1 || currentIndex >= demos.length - 1;
 
             var prevTip = prevButton.querySelector('.demo-banner-arrow-tooltip');
             var nextTip = nextButton.querySelector('.demo-banner-arrow-tooltip');
@@ -352,9 +347,6 @@
                 return demo.slug === slug;
             });
 
-            var listbox = document.getElementById('demo-banner-listbox');
-            var listboxOpen = Boolean(listbox && !listbox.hidden);
-
             if (input && document.activeElement !== input) {
                 if (currentIndex >= 0) {
                     input.value = demos[currentIndex].navLabel;
@@ -364,7 +356,7 @@
                 }
             }
 
-            syncArrowDisabled(demos, currentIndex, listboxOpen);
+            syncArrowDisabled(demos, currentIndex);
         }
 
         /**
@@ -425,8 +417,8 @@
 
         /**
          * Build the "previous demo" arrow button. Always steps the canonical ordered
-         * list (never the fuzzy-ranked results). Deactivated while the listbox is
-         * closed so arrow keys remain free for the demo iframe.
+         * list (never the fuzzy-ranked results). Keyboard arrows are not bound here,
+         * so when the listbox is closed they stay free for the demo iframe.
          * @param {Array<{slug: string, navLabel: string}>} demos
          * @returns {HTMLButtonElement}
          */
@@ -721,7 +713,7 @@
             function openListbox() {
                 if (isOpen) {
                     renderOptions();
-                    syncArrowDisabled(demos, findCurrentIndex(demos), true);
+                    syncArrowDisabled(demos, findCurrentIndex(demos));
 
                     return;
                 }
@@ -732,12 +724,12 @@
                 input.setAttribute('aria-expanded', 'true');
 
                 renderOptions();
-                syncArrowDisabled(demos, findCurrentIndex(demos), true);
+                syncArrowDisabled(demos, findCurrentIndex(demos));
             }
 
             /**
-             * Close the listbox, clear activedescendant, and deactivate prev/next so
-             * arrow keys stay free for the demo.
+             * Close the listbox, clear activedescendant, and restore the input label.
+             * Arrow keys are not intercepted while closed, so they stay free for the demo.
              * @param {{ restoreLabel?: boolean }} [options]
              * @returns {void}
              */
@@ -745,7 +737,7 @@
                 options = options || {};
 
                 if (!isOpen) {
-                    syncArrowDisabled(demos, findCurrentIndex(demos), false);
+                    syncArrowDisabled(demos, findCurrentIndex(demos));
 
                     return;
                 }
@@ -766,7 +758,7 @@
                     input.value = idx >= 0 ? demos[idx].navLabel : '';
                 }
 
-                syncArrowDisabled(demos, findCurrentIndex(demos), false);
+                syncArrowDisabled(demos, findCurrentIndex(demos));
             }
 
             /**
@@ -950,8 +942,7 @@
             banner.appendChild(buildLogo());
             banner.appendChild(buildNav(demos, currentIndex));
 
-            // Listbox starts closed: arrows deactivated so demo keyboard input is free.
-            syncArrowDisabled(demos, currentIndex, false);
+            syncArrowDisabled(demos, currentIndex);
 
             // Initial iframe src: this demo in embed mode (dev: /demos/<slug>.html?embed,
             // prod: /<slug>.html?embed). Same relative-path derivation as urlFor().
