@@ -61,6 +61,7 @@ to these URLs via `VINTAGE_URLS`.
   unregister
 - [filip-test-02](https://demos.blit386.dev/filip-test-02) – Pointer-centered rectangle, animated palette colors driven
   by the cursor, and a pixel-drawn circle
+- [hypercube](https://demos.blit386.dev/hypercube) – Fez-style rotating tesseract wireframe on a 256×256 PICO-8 canvas
 
 ### Text and Visual Art
 
@@ -145,8 +146,9 @@ to these URLs via `VINTAGE_URLS`.
 
 All on-screen demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
 D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 38 of the 40 demos. Two
-demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine overlay) and
-`filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all):
+demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine overlay),
+`filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all), and
+`hypercube` (a full-canvas tesseract with no shared UI kit):
 
 | File                      | What it provides                                                                    |
 | ------------------------- | ----------------------------------------------------------------------------------- |
