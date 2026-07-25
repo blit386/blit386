@@ -161,7 +161,12 @@ html[data-embed='true'] {
     align-items: center;
     gap: 0.75rem;
     padding: 8px 12px;
-    overflow: hidden;
+
+    /* Visible so the combobox listbox and arrow tooltips can extend below the bar. */
+    overflow: visible;
+
+    position: relative;
+    z-index: 20;
     background: oklch(97% 0 0);
     color: #2d2e31;
     font-family: 'DepartureMono', monospace;
@@ -223,16 +228,176 @@ html[data-embed='true'] {
         color: #2d2e31;
     }
 
-    & select {
+    & .demo-banner-arrow {
+        position: relative;
+    }
+
+    & .demo-banner-arrow-glyph {
+        display: block;
+    }
+
+    /*
+     * Neighbor-name tooltip - adapted from styles/twoslash-rich.css hover popup
+     * (absolute container, arrow pseudo-element, opacity / pointer-events toggle).
+     * Prev sits to the left of its button; next sits to the right.
+     */
+    & .demo-banner-arrow-tooltip {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 30;
+        max-width: 220px;
+        padding: 6px 8px;
+        border: 1px solid #8888;
+        border-radius: 4px;
+        background: #f8f8f8;
+        color: #2d2e31;
+        box-shadow: rgba(0, 0, 0, 0.08) 0px 1px 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: opacity 0.3s;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            margin-top: -3px;
+            background: #f8f8f8;
+            transform: rotate(45deg);
+            pointer-events: none;
+        }
+    }
+
+    & #demo-banner-prev .demo-banner-arrow-tooltip {
+        right: calc(100% + 8px);
+        left: auto;
+
+        &::before {
+            right: -4px;
+            left: auto;
+            border-top: 1px solid #8888;
+            border-right: 1px solid #8888;
+        }
+    }
+
+    & #demo-banner-next .demo-banner-arrow-tooltip {
+        left: calc(100% + 8px);
+        right: auto;
+
+        &::before {
+            left: -4px;
+            right: auto;
+            border-bottom: 1px solid #8888;
+            border-left: 1px solid #8888;
+        }
+    }
+
+    & .demo-banner-arrow:hover:not(:disabled) .demo-banner-arrow-tooltip:not(:empty),
+    & .demo-banner-arrow:focus-visible:not(:disabled) .demo-banner-arrow-tooltip:not(:empty) {
+        opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        & .demo-banner-arrow-tooltip {
+            transition: none;
+        }
+    }
+
+    & .demo-banner-combobox {
+        position: relative;
+        width: 30vw;
+        min-width: 140px;
+        max-width: 420px;
+    }
+
+    & .demo-banner-combobox-input {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
         background: transparent;
         color: inherit;
         border: 2px solid currentColor;
         border-radius: 0;
         padding: 6px 10px;
         font: inherit;
-        width: 30vw;
-        -webkit-user-select: none;
-        user-select: none;
+        outline: none;
+        -webkit-user-select: text;
+        user-select: text;
+
+        &:focus {
+            border-color: var(--color-accent);
+        }
+    }
+
+    & .demo-banner-listbox {
+        position: absolute;
+        top: calc(100% + 2px);
+        left: 0;
+        right: 0;
+        z-index: 40;
+        margin: 0;
+        padding: 4px 0;
+        list-style: none;
+        max-height: min(50vh, 320px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: oklch(97% 0 0);
+        color: #2d2e31;
+        border: 2px solid #2d2e31;
+        box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 12px;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    & .demo-banner-option {
+        padding: 6px 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &.is-active,
+        &:hover {
+            background: #2d2e31;
+            color: white;
+        }
+    }
+
+    & .demo-banner-match {
+        color: var(--color-accent);
+        font-weight: bold;
+    }
+
+    & .demo-banner-option.is-active .demo-banner-match,
+    & .demo-banner-option:hover .demo-banner-match {
+        color: #9ec5f8;
+    }
+
+    & .demo-banner-listbox-empty {
+        padding: 10px 12px;
+        opacity: 0.45;
+        pointer-events: none;
+        text-align: center;
+    }
+
+    /* Visually hidden; screen readers hear filter result counts via aria-live. */
+    & .demo-banner-live {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
     }
 
     /* After the default logo display rules so dark mode can override them. */
@@ -255,6 +420,45 @@ html[data-embed='true'] {
 
         & button:disabled {
             color: oklch(97% 0 0);
+        }
+
+        & .demo-banner-arrow-tooltip {
+            background: #2a2a2a;
+            color: oklch(97% 0 0);
+            border-color: #6668;
+            box-shadow: rgba(0, 0, 0, 0.35) 0px 1px 4px;
+
+            &::before {
+                background: #2a2a2a;
+            }
+        }
+
+        & #demo-banner-prev .demo-banner-arrow-tooltip::before {
+            border-top-color: #6668;
+            border-right-color: #6668;
+        }
+
+        & #demo-banner-next .demo-banner-arrow-tooltip::before {
+            border-bottom-color: #6668;
+            border-left-color: #6668;
+        }
+
+        & .demo-banner-listbox {
+            background: #222;
+            color: oklch(97% 0 0);
+            border-color: oklch(97% 0 0);
+            box-shadow: rgba(0, 0, 0, 0.45) 0px 4px 12px;
+        }
+
+        & .demo-banner-option.is-active,
+        & .demo-banner-option:hover {
+            background: oklch(97% 0 0);
+            color: black;
+        }
+
+        & .demo-banner-option.is-active .demo-banner-match,
+        & .demo-banner-option:hover .demo-banner-match {
+            color: #1a5fb4;
         }
     }
 }
