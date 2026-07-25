@@ -6,6 +6,8 @@ import { blit386 } from 'blit386/vite';
 import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
+import { buildRegistry } from './plugins/demo-registry.js';
+import { VINTAGE_URLS } from './plugins/demo-vintage-urls.js';
 import { virtualDemos } from './plugins/virtual-demos.js';
 
 /**
@@ -49,6 +51,51 @@ function flattenDemosPlugin() {
             } catch {
                 // Demos directory may not exist in dev mode.
             }
+        },
+    };
+}
+
+/**
+ * Write `dist/_redirects` as the single authoritative Cloudflare Pages redirect artifact:
+ * site-index rule (first nav-visible demo) plus 301s for every vintage slug whose current
+ * target still exists in the live registry. Overwrites any `public/` copy.
+ * @returns {import('vite').Plugin}
+ */
+function demoRedirectsPlugin() {
+    return {
+        name: 'demo-redirects',
+        apply: 'build',
+        closeBundle() {
+            const distDir = resolve(__dirname, 'dist');
+            const registry = buildRegistry(__dirname);
+            const liveSlugs = new Set(registry.map((entry) => entry.slug));
+            const firstVisible = registry.find((entry) => !entry.isNavHidden);
+
+            const lines = [
+                '# Generated at build time — do not edit dist/_redirects by hand.',
+                '# Sources: plugins/demo-vintage-urls.js + first nav-visible demo from the registry.',
+                '# Cloudflare Pages: first match wins; static/index rules before vintage 301s.',
+                '',
+            ];
+
+            if (firstVisible) {
+                lines.push('# Serve the first nav-visible demo as the site index.');
+                lines.push(`/ /${firstVisible.slug}.html 200`);
+                lines.push('');
+            }
+
+            lines.push('# Vintage (historical) slugs → current slugs (301 permanent).');
+
+            for (const [vintageSlug, currentSlug] of Object.entries(VINTAGE_URLS)) {
+                if (!liveSlugs.has(currentSlug)) {
+                    continue;
+                }
+
+                lines.push(`/${vintageSlug} /${currentSlug} 301`);
+                lines.push(`/${vintageSlug}.html /${currentSlug}.html 301`);
+            }
+
+            writeFileSync(join(distDir, '_redirects'), `${lines.join('\n')}\n`);
         },
     };
 }
@@ -114,6 +161,7 @@ export default defineConfig(({ command }) => {
                 ],
             }),
             flattenDemosPlugin(),
+            demoRedirectsPlugin(),
         ],
 
         build: {
@@ -141,7 +189,7 @@ export default defineConfig(({ command }) => {
         },
 
         server: {
-            open: '/demos/001-basics.html',
+            open: '/demos/basics.html',
             hmr: true,
             watch: {
                 // pnpm links ../blit386; watch its dist output during `dev:watch`.

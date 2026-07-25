@@ -23,7 +23,7 @@ at build time.
 | `object-src`                | `'none'`                                                       | No plugins (`<object>`, `<embed>`).                                                                                                                                                                         |
 | `script-src`                | `'self' 'unsafe-inline' https://plausible.io`                  | Vite emits same-origin ES module bundles; `'unsafe-inline'` covers the Plausible init snippet and the demo-navigation banner's inline script, both in [`_partials/layout.html`](../_partials/layout.html).  |
 | `style-src`                 | `'self' 'unsafe-inline'`                                       | Required: shared [`_partials/layout.html`](../_partials/layout.html) uses an inline `<style>` block.                                                                                                        |
-| `img-src`                   | `'self' data: blob:`                                           | Sprites/fonts from same origin; `blob:` for frame capture / download ([013-image-output](../src/013-image-output.js)).                                                                                      |
+| `img-src`                   | `'self' data: blob:`                                           | Sprites/fonts from same origin; `blob:` for frame capture / download ([image-output](../src/image-output.js)).                                                                                              |
 | `font-src`                  | `'self' https://fonts.vancura.dev`                             | Same-origin bitmap fonts and Departure Mono under `/fonts/`; Pragmata Pro for the source panel is loaded from `fonts.vancura.dev` (see [`styles/demo-source.css`](../styles/demo-source.css)).              |
 | `connect-src`               | `'self' https://plausible.io`                                  | `fetch` for PNG, `.btfont`, and `.wav` audio assets (the engine decodes audio through Web Audio, so audio loads are governed here, not by `media-src`); WebGPU init stays same-origin; Plausible analytics. |
 | `media-src`                 | `'none'`                                                       | Correct today, but read the note below before adding audio or video markup.                                                                                                                                 |
@@ -35,9 +35,9 @@ at build time.
 
 ### `media-src 'none'` and the audio demos
 
-The demos do play sound – see [036-audio-basics](../src/036-audio-basics.js), [037-music](../src/037-music.js),
-[038-audio-buses](../src/038-audio-buses.js), [041-synth-toy](../src/041-synth-toy.js), and the `.wav` files under
-`public/audio/` – yet `media-src` is still `'none'`, and that is not a contradiction.
+The demos do play sound – see [audio-basics](../src/audio-basics.js), [music](../src/music.js),
+[audio-buses](../src/audio-buses.js), [synth-toy](../src/synth-toy.js), and the `.wav` files under `public/audio/` – yet
+`media-src` is still `'none'`, and that is not a contradiction.
 
 `media-src` governs `<audio>` and `<video>` elements. The engine has neither: `AudioClip.load()` fetches the `.wav` file
 and hands the bytes to Web Audio's `decodeAudioData()`, producing an in-memory buffer played through an `AudioContext`.

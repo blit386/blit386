@@ -57,7 +57,7 @@
 
         /**
          * Index of the current page's demo within `demos`, or -1 if this demo is nav-hidden
-         * (e.g. 00a-barebones, excluded from the dropdown/prev-next chain).
+         * (e.g. barebones, excluded from the dropdown/prev-next chain).
          * @param {Array<{slug: string}>} demos
          * @returns {number}
          */
@@ -74,13 +74,13 @@
         // used to build a `location.href` navigation target, so a corrupted or tampered
         // demo-list payload (or select value) can never produce anything but a same-directory
         // "<slug>.html" path -- never a "javascript:" or other unexpected URL scheme.
-        var SLUG_PATTERN = /^(00a|[0-9]{3})-[a-z0-9-]+$/;
+        var SLUG_PATTERN = /^[a-z0-9-]+$/;
 
         /**
          * Build a same-directory link to another demo page. The directory is derived from
          * the current page's own pathname, so this resolves correctly under both dev
          * (/demos/<slug>.html) and the flattened production build (/<slug>.html).
-         * @param {string} slug - Demo slug, e.g. "001-basics"
+         * @param {string} slug - Demo slug, e.g. "basics"
          * @returns {string}
          */
         function urlFor(slug) {
