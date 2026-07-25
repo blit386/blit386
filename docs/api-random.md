@@ -12,7 +12,8 @@
 
 Seeded, deterministic pseudo-random numbers for demos and games. The `Random` class uses a mulberry32 core so the same
 seed always produces the same sequence across platforms. Stateless `hash1i` / `hash2i` / `hash3i` (and float forms) give
-per-coordinate randomness for chunked worlds without storing an RNG per cell.
+per-coordinate randomness for chunked worlds without storing an RNG per cell. `ValueNoise`, `PerlinNoise`, and
+`SimplexNoise` add smooth pattern-based fields for terrain, clouds, and organic motion.
 
 <ApiAvailability page="api/random" />
 
@@ -124,6 +125,45 @@ const tile = hash2i(12, -3, 9001); // uint32, same every call
 const chance = hash2(12, -3, 9001); // [0, 1)
 const shouldSpawn = chance < 0.15;
 ```
+
+## Pattern noise
+
+Smooth, seedable spatial noise for terrain, clouds, organic motion, and procedural textures. Lattice corners use the
+coordinate hashes above. Every sample is in approximately `[-1, 1]` (the same signed range as trig helpers). These
+classes are distinct from the post-process `Noise` display effect (GPU grain).
+
+<Since symbol="ValueNoise" />
+
+<Since symbol="PerlinNoise" />
+
+<Since symbol="SimplexNoise" />
+
+| Class          | Methods                                                        |
+| -------------- | -------------------------------------------------------------- |
+| `ValueNoise`   | `noise1D` / `noise2D` / `noise3D`, `fbm1D` / `fbm2D` / `fbm3D` |
+| `PerlinNoise`  | Same surface as `ValueNoise` (gradient Perlin)                 |
+| `SimplexNoise` | `noise2D` / `noise3D`, `fbm2D` / `fbm3D` (no 1D)               |
+
+Omit the constructor seed (or pass `0`) for a fixed default world seed - same convention as `hash2i`. Call `seed(n)` to
+switch fields. fBm defaults: `octaves = 4`, `persistence = 0.5`, `lacunarity = 2`. Octave amplitudes are normalized so
+fBm stays in approximately `[-1, 1]`.
+
+```ts twoslash
+import { PerlinNoise, SimplexNoise, ValueNoise } from 'blit386';
+
+const value = new ValueNoise(9001);
+const perlin = new PerlinNoise(9001);
+const simplex = new SimplexNoise(9001);
+
+value.noise2D(12.5, -3.25); // [-1, 1]
+perlin.fbm2D(0.1, 0.2); // multi-octave, still ~[-1, 1]
+simplex.noise3D(1, 2, 3);
+```
+
+Value noise interpolates hashed corner values (smooth but can look blocky at low frequency). Perlin uses lattice
+gradients ([Ken Perlin, SIGGRAPH 2002](https://mrl.cs.nyu.edu/~perlin/paper445.pdf)). Simplex reduces directional
+artifacts on square grids
+([Stefan Gustavson](https://web.archive.org/web/20200929015611/http://weber.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)).
 
 ## State and streams
 

@@ -1183,6 +1183,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "PerlinNoise": {
+      "kind": "class",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "PixelGlitch": {
       "kind": "class",
       "since": "1.0.3",
@@ -1238,6 +1245,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "SimplexNoise": {
+      "kind": "class",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "SoundParamSetOptions": {
       "kind": "interface",
@@ -1322,6 +1336,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "ValueNoise": {
+      "kind": "class",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "Vector2i": {
       "kind": "class",
@@ -1579,7 +1600,10 @@
       "Palette"
     ],
     "api/random": [
+      "PerlinNoise",
       "Random",
+      "SimplexNoise",
+      "ValueNoise",
       "hash1",
       "hash1i",
       "hash2",

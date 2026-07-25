@@ -97,6 +97,10 @@ src/
     AudioParamRamp.ts       # Shared AudioParam ramp scheduling (bus fades + per-voice fades)
     Random.ts              # Seeded PRNG (mulberry32; exported; int/float/pick/shuffle/weighted/fork; Vector2i/Rect2i helpers)
     hash.ts                # Stateless coordinate hashes (hash1i/2i/3i uint32 + hash1/2/3 [0,1); exported; for chunked/procedural worlds)
+    ValueNoise.ts          # Seedable value noise (1D/2D/3D + fBm; [-1,1]; exported; uses hash*i)
+    PerlinNoise.ts         # Seedable Perlin gradient noise (1D/2D/3D + fBm; [-1,1]; exported)
+    SimplexNoise.ts        # Seedable simplex noise (2D/3D + fBm; [-1,1]; exported)
+    noiseCommon.ts         # Private fade/lerp/fBm/gradient helpers for the noise classes (not exported)
     Rng.ts                 # Deterministic PRNG (mulberry32-style; internal, backs the synth engine's noise generation)
     FrameCapture.ts        # GPU readback + PNG export
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
