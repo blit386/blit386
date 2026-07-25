@@ -4,6 +4,10 @@
  * A tesseract is a 4D cube: two 3D cubes linked along a fourth axis (W).
  * We rotate in 4D, then project down to 2D so you can see the links stretch
  * and the "inner" cube pass through the "outer" one – like the Fez logo.
+ *
+ * Drag (mouse or touch) spins it like a trackball: horizontal = yaw around Y,
+ * vertical = pitch around X. On release the spin keeps the finger's 2D velocity
+ * (inertia), then that spin vector slowly fades back to the automatic tumble.
  */
 
 import { bootstrap, BT, Color32, Palette, Vector2i } from 'blit386';
@@ -24,7 +28,18 @@ import { bootstrap, BT, Color32, Palette, Vector2i } from 'blit386';
  * @property {number} color
  */
 
-const SIZE = 400;
+/**
+ * Angular velocity in each rotation plane (radians per second).
+ *
+ * @typedef {object} Spin
+ * @property {number} xw
+ * @property {number} yz
+ * @property {number} xy
+ * @property {number} zw
+ * @property {number} xz
+ */
+
+const SIZE = 320;
 const SCALE = 36;
 
 /** Perspective distance for the 4D → 3D step (larger = flatter). */
@@ -52,6 +67,42 @@ const LIGHT_PULSE = 10;
 const LIGHT_PULSE_RATE = 1.1;
 
 /**
+ * The automatic Fez tumble – the "home" spin vector we always fade back to.
+ * `xz` stays 0 at rest; drag/flick uses it for screen-space yaw.
+ *
+ * @type {Readonly<Spin>}
+ */
+const HOME_SPIN = Object.freeze({
+    xw: 0.55,
+    yz: 0.38,
+    xy: 0.12,
+    zw: 0.22,
+    xz: 0,
+});
+
+/**
+ * Radians of trackball turn per pixel of drag.
+ * Horizontal pixels yaw (XZ); vertical pixels pitch (YZ).
+ */
+const DRAG_SENSITIVITY = 0.01;
+
+/**
+ * How quickly we smooth the finger's instantaneous velocity while dragging
+ * (higher = snappier, lower = softer). Used so a noisy last frame does not
+ * become a wild flick.
+ */
+const VELOCITY_SMOOTH = 14;
+
+/**
+ * How quickly free spin eases back toward HOME_SPIN after release (per second).
+ * Lower = longer coast on the flick before the Fez tumble returns.
+ */
+const SPIN_FADE = 1.15;
+
+/** Cap on flick spin so a frantic swipe cannot spin forever. */
+const MAX_FLICK_SPIN = 8;
+
+/**
  * The 16 corners of a unit tesseract (±1 on x, y, z, w).
  * Built once at load; never mutated – each frame copies into a scratch vector.
  *
@@ -74,6 +125,16 @@ for (let i = 0; i < 16; i++) {
  */
 function compareEdgeDepth(a, b) {
     return a.depth - b.depth || a.i - b.i || a.j - b.j;
+}
+
+/**
+ * Clamp one spin component into ±MAX_FLICK_SPIN.
+ *
+ * @param {number} value
+ * @returns {number}
+ */
+function clampFlick(value) {
+    return Math.max(-MAX_FLICK_SPIN, Math.min(MAX_FLICK_SPIN, value));
 }
 
 /** @implements {IBTDemo} */
@@ -111,6 +172,23 @@ class Demo {
 
     /** @type {number} */
     angleZW = 0.2;
+
+    /** Screen-space yaw (XZ plane – around Y). @type {number} */
+    angleXZ = 0;
+
+    /** Free-motion angular velocity; eases toward HOME_SPIN. @type {Spin} */
+    spin = { ...HOME_SPIN };
+
+    /**
+     * Smoothed finger yaw/pitch (radians / sec) while dragging.
+     * On release these become spin.xz / spin.yz so the model coasts.
+     *
+     * @type {{ xz: number, yz: number }}
+     */
+    fingerSpin = { xz: 0, yz: 0 };
+
+    /** Pointer slot currently steering (−1 = none). @type {number} */
+    dragSlot = -1;
 
     /**
      * @returns {Partial<HardwareSettings>}
@@ -204,15 +282,117 @@ class Demo {
     }
 
     /**
+     * Mouse (slot 0): primary button held. Touch slots: contact active.
+     * Same rule as pointer-paint.
+     *
+     * @param {number} slot
+     * @returns {boolean}
+     */
+    isDragHeld(slot) {
+        if (!BT.isPointerActive(slot)) {
+            return false;
+        }
+
+        return slot === 0 ? BT.isDown(BT.BTN_POINTER_A, 0) : true;
+    }
+
+    /**
+     * @param {number} dt
+     * @returns {void}
+     */
+    integrateSpin(dt) {
+        this.angleXW += this.spin.xw * dt;
+        this.angleYZ += this.spin.yz * dt;
+        this.angleXY += this.spin.xy * dt;
+        this.angleZW += this.spin.zw * dt;
+        this.angleXZ += this.spin.xz * dt;
+    }
+
+    /**
+     * Exponential ease of `spin` toward HOME_SPIN (soft settle, no hard stop).
+     *
+     * @param {number} dt
+     * @returns {void}
+     */
+    fadeSpinToHome(dt) {
+        const t = 1 - Math.exp(-SPIN_FADE * dt);
+
+        this.spin.xw += (HOME_SPIN.xw - this.spin.xw) * t;
+        this.spin.yz += (HOME_SPIN.yz - this.spin.yz) * t;
+        this.spin.xy += (HOME_SPIN.xy - this.spin.xy) * t;
+        this.spin.zw += (HOME_SPIN.zw - this.spin.zw) * t;
+        this.spin.xz += (HOME_SPIN.xz - this.spin.xz) * t;
+    }
+
+    /**
+     * Trackball drag + flick inertia. While held: yaw/pitch from pointer delta
+     * and EMA the finger velocity. On release: that velocity becomes `spin`,
+     * then fades back to HOME_SPIN.
+     *
+     * @param {number} dt
+     * @returns {void}
+     */
+    updateDrag(dt) {
+        const wasDragging = this.dragSlot >= 0;
+
+        // Stick with the current finger; otherwise claim the first held slot.
+        if (this.dragSlot >= 0 && !this.isDragHeld(this.dragSlot)) {
+            this.dragSlot = -1;
+        }
+
+        if (this.dragSlot < 0) {
+            for (let slot = 0; slot < 4; slot++) {
+                if (this.isDragHeld(slot)) {
+                    this.dragSlot = slot;
+                    // Drop press-frame jitter so it cannot become a throw.
+                    this.fingerSpin.xz = 0;
+                    this.fingerSpin.yz = 0;
+                    break;
+                }
+            }
+        }
+
+        if (this.dragSlot >= 0) {
+            const delta = BT.pointerDelta(this.dragSlot);
+
+            // Trackball: horizontal → yaw (XZ / around Y); vertical → pitch (YZ / around X).
+            const dYaw = delta.x * DRAG_SENSITIVITY;
+            const dPitch = delta.y * DRAG_SENSITIVITY;
+
+            this.angleXZ += dYaw;
+            this.angleYZ += dPitch;
+
+            // Guard dt so a hitch cannot explode the velocity sample.
+            if (dt > 0.0001) {
+                const alpha = 1 - Math.exp(-VELOCITY_SMOOTH * dt);
+
+                this.fingerSpin.xz += (dYaw / dt - this.fingerSpin.xz) * alpha;
+                this.fingerSpin.yz += (dPitch / dt - this.fingerSpin.yz) * alpha;
+            }
+
+            return;
+        }
+
+        // Coast on the flick (trackball axes only); fade restores the Fez planes.
+        if (wasDragging) {
+            this.spin.xz = clampFlick(this.fingerSpin.xz);
+            this.spin.yz = clampFlick(this.fingerSpin.yz);
+            this.spin.xw = 0;
+            this.spin.xy = 0;
+            this.spin.zw = 0;
+        }
+
+        this.integrateSpin(dt);
+        this.fadeSpinToHome(dt);
+    }
+
+    /**
      * @returns {void}
      */
     update() {
         const dt = BT.deltaSeconds;
 
-        this.angleXW += 0.55 * dt;
-        this.angleYZ += 0.38 * dt;
-        this.angleXY += 0.12 * dt;
-        this.angleZW += 0.22 * dt;
+        this.updateDrag(dt);
 
         this.applyLineColors(BT.timeSeconds);
 
@@ -227,6 +407,8 @@ class Demo {
         const sXY = Math.sin(this.angleXY);
         const cZW = Math.cos(this.angleZW);
         const sZW = Math.sin(this.angleZW);
+        const cXZ = Math.cos(this.angleXZ);
+        const sXZ = Math.sin(this.angleXZ);
 
         const v = this.scratch;
 
@@ -238,11 +420,13 @@ class Demo {
             v[2] = src[2];
             v[3] = src[3];
 
-            // Spin in four planes so the two cubes tumble and the W-links twist.
+            // 4D tumble planes, then screen-space yaw (XZ) so a horizontal drag
+            // turns the projected object like a solid in front of you.
             this.rotatePlane(v, cXW, sXW, 0, 3);
             this.rotatePlane(v, cYZ, sYZ, 1, 2);
             this.rotatePlane(v, cXY, sXY, 0, 1);
             this.rotatePlane(v, cZW, sZW, 2, 3);
+            this.rotatePlane(v, cXZ, sXZ, 0, 2);
 
             // 4D → 3D perspective: points farther in W shrink toward the origin.
             const w = DIST_4 / (DIST_4 - v[3]);
