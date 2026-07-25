@@ -1,15 +1,15 @@
 /**
  * Pointer Drag-and-Flick Demo - grab balls, drag them, release to throw.
  *
- * Demo 027 in the BLIT386 demo series.
+ * Part of the BLIT386 demo series.
  * Prerequisites:
- *   025-Pointer Basics - https://demos.blit386.dev/025-pointer-basics
- *   026-Pointer Paint  - https://demos.blit386.dev/026-pointer-paint
+ *   Pointer Basics - https://demos.blit386.dev/pointer-basics
+ *   Pointer Paint  - https://demos.blit386.dev/pointer-paint
  *
- * Live version: https://demos.blit386.dev/027-pointer-drag-flick
+ * Live version: https://demos.blit386.dev/pointer-drag-flick
  *
- * This is the action-oriented sibling of demos 025 and 026. Where 025 reads
- * pointer state and 026 paints onto a canvas, this demo couples the pointer
+ * This is the action-oriented sibling of pointer-basics and pointer-paint. Where
+ * pointer-basics reads pointer state and pointer-paint paints onto a canvas, this demo couples the pointer
  * to a tiny physics simulation:
  *
  *   - Three balls bounce around inside a closed box under gravity.
@@ -20,7 +20,7 @@
  * On a touchscreen each finger can grab its own ball; up to three balls can
  * be dragged at once (slots 1, 2, 3). The mouse uses slot 0.
  *
- * What this demonstrates that 025 and 026 do not:
+ * What this demonstrates that pointer-basics and pointer-paint do not:
  *
  *   - BT.isPressed(...) as a "grab" edge: only fires the frame the
  *     button transitions to down, used to start the drag exactly once.
@@ -29,7 +29,7 @@
  *     edge to capture the user's release-time hand velocity.
  *   - BT.pointerDelta actively driving simulation, not just shown as text.
  *
- * Two custom sounds, both built with AudioClip.synth() (the technique 041-Synth Toy
+ * Two custom sounds, both built with AudioClip.synth() (the technique Synth Toy
  * explores in depth): a whoosh on every throw, whose pitch and volume scale with how hard
  * you flicked, and a thud every time a ball hits a wall or the floor hard enough to notice.
  *
@@ -384,7 +384,7 @@ class Demo {
     /**
      * Plays the flick whoosh, using throw speed to control pitch (faster flick = higher,
      * more urgent pitch) and volume (faster flick = louder). BT.soundPlay's `pitch` option
-     * is a playback-rate multiplier, the same trick 036-Audio Basics uses for its blip sound.
+     * is a playback-rate multiplier, the same trick Audio Basics uses for its blip sound.
      *
      * @param {number} speed - Pre-clamp launch speed in px/tick, from Math.hypot(vx, vy).
      */

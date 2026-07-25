@@ -1,15 +1,15 @@
-// @pageTitle BLIT386 Demo 037 - Music Playback
+// @pageTitle BLIT386 Demo - Music Playback
 
 /**
  * Music Demo - crossfading between two tracks and playing one with a seamless loop point.
  *
- * Demo 037 in the BLIT386 demo series.
+ * Part of the BLIT386 demo series.
  * Prerequisites:
- *   036-Audio Basics  https://demos.blit386.dev/036-audio-basics
+ *   Audio Basics  https://demos.blit386.dev/audio-basics
  *
- * Live version: https://demos.blit386.dev/037-music
+ * Live version: https://demos.blit386.dev/music
  *
- * Sound effects (036, 041) are short one-shot clips: press a key, hear a blip, done. Music
+ * Sound effects (audio-basics, synth-toy) are short one-shot clips: press a key, hear a blip, done. Music
  * is different - it is meant to loop forever in the background, and switching from one
  * track to another should not just cut off with a click. BT.musicPlay() handles both of
  * those jobs for you.
@@ -30,7 +30,7 @@
  * touch-friendly: tap a button with a finger, click it with a mouse, or press its number
  * key, and the kit reports all three the same way.
  *
- * Click or press a key to unlock sound first (see 036-Audio Basics for why browsers require
+ * Click or press a key to unlock sound first (see Audio Basics for why browsers require
  * that first click).
  */
 
@@ -152,7 +152,7 @@ class Demo {
      * ui.tick() is what safely catches the number-key shortcuts bound to the buttons in
      * render(). Keyboard presses can only be read reliably here in update(), never in
      * render() - the engine clears "was this just pressed?" flags once per tick, and that
-     * tick always finishes before this frame's render() runs (028-keyboard-input explains
+     * tick always finishes before this frame's render() runs (keyboard-input explains
      * this in more detail). The kit latches the presses now so the buttons can answer
      * later, during render().
      */

@@ -1,4 +1,4 @@
-// Demo 018 - Flurry: a retro screensaver built on particle physics and palette animation.
+// Flurry: a retro screensaver built on particle physics and palette animation.
 //
 // Ported from the classic macOS Flurry screensaver by Calum Robinson (2002).
 // Original source: https://github.com/calumr/flurry
@@ -25,11 +25,11 @@
 //     When the frequencies are slightly different, the path never exactly repeats.
 //
 // Prerequisites:
-//   001-Basics            https://demos.blit386.dev/001-basics
-//   016-Palette Animation https://demos.blit386.dev/016-palette-animation
+//   Basics            https://demos.blit386.dev/basics
+//   Palette Animation https://demos.blit386.dev/palette-animation
 //     (walkthrough: https://vancura.dev/articles/blit386-palette-animation)
 //
-// Live version: https://demos.blit386.dev/018-flurry
+// Live version: https://demos.blit386.dev/flurry
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 

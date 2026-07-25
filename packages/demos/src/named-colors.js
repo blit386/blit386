@@ -1,9 +1,9 @@
 /**
  * Named Colors Demo - Color32 named lookup table and custom registration APIs.
  *
- * Demo 032 in the BLIT386 demo series.
- * Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
- * 003-Colors (https://demos.blit386.dev/003-colors).
+ * Part of the BLIT386 demo series.
+ * Prerequisites: Basics (https://demos.blit386.dev/basics),
+ * Colors (https://demos.blit386.dev/colors).
  *
  * What this demo teaches:
  * - How to read built-in named colors with Color32.resolveNamedColor('tomato')
@@ -20,7 +20,7 @@
  * (src/shared/ui.js), so this demo's chrome matches every other demo. The color
  * swatches themselves stay hand-drawn - their palette slots ARE the lesson.
  *
- * Live version: https://demos.blit386.dev/032-named-colors
+ * Live version: https://demos.blit386.dev/named-colors
  */
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';

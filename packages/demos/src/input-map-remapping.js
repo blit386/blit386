@@ -1,11 +1,11 @@
 /**
  * Input Map Remapping Demo - runtime `BT.inputMap` and `BT.inputMapReset`.
  *
- * Demo 030 in the BLIT386 demo series.
- * Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
- * 028-Keyboard-Input (https://demos.blit386.dev/028-keyboard-input).
+ * Part of the BLIT386 demo series.
+ * Prerequisites: Basics (https://demos.blit386.dev/basics),
+ * Keyboard Input (https://demos.blit386.dev/keyboard-input).
  *
- * Live version: https://demos.blit386.dev/030-input-map-remapping
+ * Live version: https://demos.blit386.dev/input-map-remapping
  *
  * The engine stores two runtime keyboard tables (players 0 and 1). Each
  * face button (`BT.BTN_UP` through `BT.BTN_SELECT`) can list zero or more

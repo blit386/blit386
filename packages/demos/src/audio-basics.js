@@ -1,12 +1,12 @@
 /**
  * Audio Basics Demo - loading sounds, playing them, and the "click to allow sound" rule.
  *
- * Demo 036 in the BLIT386 demo series.
+ * Part of the BLIT386 demo series.
  * Prerequisites:
- *   025-Pointer Basics  https://demos.blit386.dev/025-pointer-basics
- *   028-Keyboard Input  https://demos.blit386.dev/028-keyboard-input
+ *   Pointer Basics  https://demos.blit386.dev/pointer-basics
+ *   Keyboard Input  https://demos.blit386.dev/keyboard-input
  *
- * Live version: https://demos.blit386.dev/036-audio-basics
+ * Live version: https://demos.blit386.dev/audio-basics
  *
  * Every web browser refuses to make any sound at all until you click or press a key on
  * the page - this is called the "autoplay policy," and it exists so a page you just
@@ -168,14 +168,14 @@ class Demo {
      * The pitch keys (1/2/3) are bound to the buttons declared in render() via their
      * { key } option. ui.tick() is where the kit safely catches those presses - keyboard
      * "was it just pressed?" flags can only be read reliably here in update(), never in
-     * render() (028-keyboard-input explains why in detail).
+     * render() (keyboard-input explains why in detail).
      */
     update() {
         ui.tick();
 
         // BT.BTN_POINTER_A is the primary click (left mouse button, or a touchscreen
         // tap). BT.isPressed fires only once, on the frame the click happens - the same
-        // way 025-pointer-basics and 026-pointer-paint read their clicks.
+        // way pointer-basics and pointer-paint read their clicks.
         if (BT.isPressed(BT.BTN_POINTER_A, 0)) {
             const pos = BT.pointerPos(0);
 

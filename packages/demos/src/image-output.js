@@ -1,4 +1,4 @@
-// Demo 013 - Image Output: demonstrates BT.downloadFrame().
+// Image Output: demonstrates BT.downloadFrame().
 //
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Click or tap the "Save PNG" button from the
@@ -6,7 +6,7 @@
 // touch screens too. Note: the kit panel is drawn on screen, so it appears in the
 // saved PNG as well. That is fine for this demo - see the comment in render().
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics).
+// Prerequisites: Basics (https://demos.blit386.dev/basics).
 // Live article: https://vancura.dev/articles/blit386-image-output
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';

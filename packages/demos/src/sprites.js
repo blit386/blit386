@@ -1,8 +1,8 @@
-// Demo 008 - Sprites: how to draw images (sprites) on screen using BLIT386.
+// Sprites: how to draw images (sprites) on screen using BLIT386.
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
-// 002-Primitives (https://demos.blit386.dev/002-primitives),
-// 003-Colors (https://demos.blit386.dev/003-colors).
+// Prerequisites: Basics (https://demos.blit386.dev/basics),
+// Primitives (https://demos.blit386.dev/primitives),
+// Colors (https://demos.blit386.dev/colors).
 // Live article: https://vancura.dev/articles/blit386-sprites
 //
 // A "sprite" is a 2D image used in a game - like a character, a coin, or an enemy.
@@ -34,8 +34,8 @@
 // to use palette[15..19] - a completely different color theme!
 // This is how retro games did "team colors" and environmental lighting.
 //
-// Demo 015 explores the palette system in depth:
-// https://demos.blit386.dev/015-palette-presets
+// Palette Presets demo explores the palette system in depth:
+// https://demos.blit386.dev/palette-presets
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 

@@ -1,8 +1,8 @@
 /**
  * Keyboard Diagnostic - visual keyboard with press / hold / release feedback.
  *
- * Demo 035 in the BLIT386 demo series.
- * Prerequisites: 028-Keyboard-Input (https://demos.blit386.dev/028-keyboard-input)
+ * Part of the BLIT386 demo series.
+ * Prerequisites: Keyboard Input (https://demos.blit386.dev/keyboard-input)
  *
  * Port of a standalone blit386 keyboard test: every key is drawn on screen and
  * lights up green while held, yellow on `BT.isKeyPressed` (edge), red on
@@ -14,7 +14,7 @@
  * hand-rolled. On touch devices the kit shows a warm notice that this demo
  * needs a physical keyboard.
  *
- * Live version: https://demos.blit386.dev/035-keyboard-diagnostic
+ * Live version: https://demos.blit386.dev/keyboard-diagnostic
  */
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';

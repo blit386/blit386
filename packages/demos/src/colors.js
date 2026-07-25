@@ -1,6 +1,6 @@
 // Colors Demo - a deep dive into Color32 and palettes in BLIT386.
 //
-// Demo 003 in the BLIT386 demo series, written for young learners (around 12)
+// Part of the BLIT386 demo series, written for young learners (around 12)
 // who are getting comfortable with code. You will see:
 //
 //   - Named shortcut colors (Color32.red and friends - static properties, not function calls)
@@ -10,9 +10,9 @@
 //   - Lerp: smoothly sliding between two colors (like a dimmer between two lights)
 //
 // We learned about the demo lifecycle, Vector2i, Rect2i, and clearing the screen in the Basics demo:
-// https://demos.blit386.dev/001-basics
+// https://demos.blit386.dev/basics
 //
-// Live version: https://demos.blit386.dev/003-colors
+// Live version: https://demos.blit386.dev/colors
 // Walkthrough article: https://vancura.dev/articles/blit386-colors
 //
 // IMPORTANT - palettes and how they changed from older demos:
@@ -43,7 +43,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 // The shared demo UI kit: applyTheme() installs the series' standard UI colors into the
 // palette, and ui.caption() prints the section headers with them. We met the kit in the
-// Basics demo: https://demos.blit386.dev/001-basics
+// Basics demo: https://demos.blit386.dev/basics
 import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */

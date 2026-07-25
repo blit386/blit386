@@ -1,17 +1,17 @@
-// Demo 033 - Basics Enhanced.
+// Basics Enhanced.
 //
-// Same bouncing-sprite behavior as demo 001 (https://demos.blit386.dev/001-basics),
+// Same bouncing-sprite behavior as the Basics demo (https://demos.blit386.dev/basics),
 // with the same PipBoy palette and overlay rows for position and bounces. Every
-// frame is also routed through a hand-built CRT stack on WebGPU. If 001 was "the engine
+// frame is also routed through a hand-built CRT stack on WebGPU. If Basics was "the engine
 // works", this demo is "the engine works, and here is the kind of finish you can layer
 // on top once you understand the post-process pipeline".
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
-// 023-PipBoy-CRT (https://demos.blit386.dev/023-crt-pipboy),
-// 024-CRT-Toggle (https://demos.blit386.dev/024-crt-toggle).
+// Prerequisites: Basics (https://demos.blit386.dev/basics),
+// PipBoy CRT (https://demos.blit386.dev/crt-pipboy),
+// CRT Toggle (https://demos.blit386.dev/crt-toggle).
 //
 // The pipeline has two tiers. Both come from the engine's post-process system we
-// explored in 023 and 024:
+// explored in crt-pipboy and crt-toggle:
 //
 //   1. Pixel tier - runs ON the logical index buffer (320x240, palette indices, BEFORE
 //      the palette is resolved into RGB). Effects here distort the indexed image itself.
@@ -23,7 +23,7 @@
 //      bloom the final image. The other ten effects in this demo live here.
 //
 // Why ten separate display-tier effects instead of one ready-made preset (like
-// BT.preset.crtPipBoy used in 024)? Because hand-composing the chain makes it possible
+// BT.preset.crtPipBoy used in crt-toggle)? Because hand-composing the chain makes it possible
 // to drive individual uniforms from a state machine - the glitch state machine below
 // picks ONE of five glitch styles, ramps it up for a few frames, and ramps it down again.
 //
@@ -31,7 +31,7 @@
 // demo still runs but the CRT stack is not registered. A warm on-canvas note (drawn with
 // the shared UI kit in src/shared/ui.js) and overlay rows explain the reduced mode.
 //
-// Live version: https://demos.blit386.dev/033-basics-enhanced
+// Live version: https://demos.blit386.dev/basics-enhanced
 
 import {
     BarrelDistortion,
@@ -74,7 +74,7 @@ import { applyTheme, ui } from './shared/ui.js';
 /** @typedef {import('blit386').Flicker} Flicker */
 /** @typedef {import('blit386').Bloom} Bloom */
 
-// Palette slots match demo 001 (Basics) so the two demos feel like the same scene.
+// Palette slots match the Basics demo so the two demos feel like the same scene.
 const C_BG = 1; // Almost-black with a faint green tint.
 const C_OVERLAY_BAR = 2; // Bar behind overlay custom rows.
 const C_OVERLAY_GREEN = 3; // PipBoy green (position, CRT status).
@@ -118,12 +118,12 @@ const GLITCH_LABELS = {
 const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 
 /**
- * Demo 001 plus a hand-built CRT post-process chain and periodic glitch bursts.
+ * Basics demo plus a hand-built CRT post-process chain and periodic glitch bursts.
  *
  * @implements {IBTDemo}
  */
 class Demo {
-    // --- Bouncing sprite (same roles as demo 001) ---
+    // --- Bouncing sprite (same roles as the Basics demo) ---
 
     // Top-left corner of the logo on screen (whole pixels only).
     pos = new Vector2i(160, 120);
@@ -134,7 +134,7 @@ class Demo {
     // Logo position at the START of the most recent update() tick, before that tick
     // moved it. render() blends between this and pos using BT.renderAlpha so the logo
     // glides smoothly between ticks instead of jumping - same fix and same reason as
-    // demo 001-Basics (see the big comment above its render() for the full
+    // Basics demo (see the big comment above its render() for the full
     // explanation, including why targetFPS 30 makes the stutter especially visible).
     prevPos = new Vector2i(160, 120);
 
@@ -184,7 +184,7 @@ class Demo {
     /** @type {Bloom | null} */
     bloom = null;
 
-    // --- Glitch state machine (same idea as demo 023) ---
+    // --- Glitch state machine (same idea as the PipBoy CRT demo) ---
 
     // Ticks until the next random glitch burst starts (counts down while idle).
     glitchCooldown = 0;
@@ -247,7 +247,7 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
-        // --- Palette (matches demo 001 PipBoy green scene) ---
+        // --- Palette (matches the Basics demo PipBoy green scene) ---
         this.palette = BT.paletteCreate(256);
 
         this.palette.set(C_BG, new Color32(16, 28, 16));
@@ -256,7 +256,7 @@ class Demo {
         this.palette.set(C_OVERLAY_AMBER, new Color32(220, 180, 60));
         this.palette.set(C_OVERLAY_ERROR, new Color32(200, 70, 70));
 
-        // --- Sprite load (same two-step path as demo 001) ---
+        // --- Sprite load (same two-step path as the Basics demo) ---
         // Step 1: scan the PNG and copy every unique color into palette slots
         // starting at SPRITE_BASE so indexed drawing knows which slot each pixel uses.
         await SpriteSheet.loadColorsIntoPalette(SPRITE_URL, this.palette, SPRITE_BASE);
@@ -360,7 +360,7 @@ class Demo {
     }
 
     update() {
-        // --- Bounce logic (same rules as demo 001; game logic lives only in update()) ---
+        // --- Bounce logic (same rules as the Basics demo; game logic lives only in update()) ---
         // Remember where the logo was BEFORE this tick moves it, so render() can
         // draw a smooth in-between position instead of a pop.
         this.prevPos = this.pos;
@@ -394,7 +394,7 @@ class Demo {
             return;
         }
 
-        // --- Glitch state machine (demo 023 pattern) ---
+        // --- Glitch state machine (PipBoy CRT demo pattern) ---
         if (this.glitchTicksLeft > 0) {
             // Inside a burst: build a 0 -> 1 -> 0 envelope so the effect ramps in and out.
             // t goes from 0 at burst start to 1 on the last tick; sin(t * PI) is a smooth hump.
@@ -431,7 +431,7 @@ class Demo {
 
         // Blend prevPos toward pos by BT.renderAlpha to get the logo's true position at
         // this exact render moment, instead of only its last-tick position. Same fix,
-        // same reason, as demo 001-Basics - see the big comment above its render().
+        // same reason, as the Basics demo - see the big comment above its render().
         const drawPos = Vector2i.lerp(this.prevPos, this.pos, BT.renderAlpha);
 
         // Draw the bouncing logo at its smoothed position (updated in update(), not here).
@@ -462,7 +462,7 @@ class Demo {
     }
 
     /**
-     * Position, bounces, CRT status, and glitch readout (same rows as 001 plus enhanced extras).
+     * Position, bounces, CRT status, and glitch readout (same rows as Basics plus enhanced extras).
      *
      * @returns {readonly { leftText: string }[]}
      */

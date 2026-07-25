@@ -1,15 +1,15 @@
-// Demo 015 - Palette Presets: six built-in color sets you can load instantly.
+// Palette Presets: six built-in color sets you can load instantly.
 //
-// Demo 015 in the BLIT386 series (written for readers about 12 years old).
+// Part of the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://demos.blit386.dev/001-basics
-//   002-Primitives https://demos.blit386.dev/002-primitives
-//   003-Colors     https://demos.blit386.dev/003-colors
-//   004-Fonts      https://demos.blit386.dev/004-fonts
+//   Basics     https://demos.blit386.dev/basics
+//   Primitives https://demos.blit386.dev/primitives
+//   Colors     https://demos.blit386.dev/colors
+//   Fonts      https://demos.blit386.dev/fonts
 //     (text drawing basics with BT.systemPrint; walkthrough: https://vancura.dev/articles/blit386-fonts)
 //
-// Live version: https://demos.blit386.dev/015-palette-presets
+// Live version: https://demos.blit386.dev/palette-presets
 // Live article: https://vancura.dev/articles/blit386-palette-presets
 //
 // WHAT IS A PALETTE PRESET?

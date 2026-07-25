@@ -1,12 +1,12 @@
 /**
  * Audio Buses Demo - mixer volume sliders, mute toggles, and a music-ducking alert.
  *
- * Demo 038 in the BLIT386 demo series.
+ * Part of the BLIT386 demo series.
  * Prerequisites:
- *   036-Audio Basics  https://demos.blit386.dev/036-audio-basics
- *   037-Music         https://demos.blit386.dev/037-music
+ *   Audio Basics  https://demos.blit386.dev/audio-basics
+ *   Music         https://demos.blit386.dev/music
  *
- * Live version: https://demos.blit386.dev/038-audio-buses
+ * Live version: https://demos.blit386.dev/audio-buses
  *
  * Every sound in the engine flows through one of three "buses" before it reaches your
  * speakers: `main`, `music`, and `sfx`. Think of a bus like a volume knob that affects a
@@ -29,7 +29,7 @@
  * "immediate-mode" style: render() simply declares the widgets it wants each frame, and the
  * kit draws them and answers clicks and taps on the spot.
  *
- * Click or press a key to unlock sound first (see 036-Audio Basics for why browsers require
+ * Click or press a key to unlock sound first (see Audio Basics for why browsers require
  * that first click).
  */
 
@@ -112,7 +112,7 @@ class Demo {
     async init() {
         this.musicClip = await AudioClip.load('/audio/music-calm.wav');
 
-        // BT.synthPreset.hit() is one of the six built-in sound recipes 041-Synth Toy
+        // BT.synthPreset.hit() is one of the six built-in sound recipes Synth Toy
         // explores - a short, punchy stinger, a good fit for an alert.
         this.alertClip = await AudioClip.synth(BT.synthPreset.hit());
 
@@ -139,7 +139,7 @@ class Demo {
      * ui.tick() must run first: it is the kit's once-per-tick housekeeping that (among
      * other things) safely catches the keyboard shortcuts bound to the widgets below.
      * Keyboard presses can only be read reliably here in update(), never in render() -
-     * 028-keyboard-input explains why in detail.
+     * keyboard-input explains why in detail.
      */
     update() {
         ui.tick();

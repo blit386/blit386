@@ -1,11 +1,11 @@
-// @pageTitle BLIT386 Demo 034 - Logo Low-Res
+// @pageTitle BLIT386 Demo - Logo Low-Res
 //
-// Demo 034 - Logo Low-Res: the BLIT386 logo on a very chunky low-res screen, wrapped
-// in the same Orava B/W CRT stack used in Demo 010-Sprite Effects.
+// Logo Low-Res: the BLIT386 logo on a very chunky low-res screen, wrapped
+// in the same Orava B/W CRT stack used in Sprite Effects demo.
 // Written for readers about 12 years old.
 //
 // What you will see:
-//   - The logo sprite from Demo 001-Basics centered on a tiny 80x60 pixel canvas.
+//   - The logo sprite from Basics demo centered on a tiny 80x60 pixel canvas.
 //     That is one quarter of the usual 320x240 in each direction - even smaller
 //     than an old Game Boy screen (160x144).
 //   - The engine upscales that 80x60 picture 3x to 240x180 using nearest-neighbor
@@ -26,10 +26,10 @@
 //   so they see 240x180 pixels and can paint convincing curved-tube scanlines across
 //   the whole frame - even though the game itself only used 80x60 logical pixels.
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
-//                010-Sprite Effects (https://demos.blit386.dev/010-sprite-effects).
+// Prerequisites: Basics (https://demos.blit386.dev/basics),
+//                Sprite Effects (https://demos.blit386.dev/sprite-effects).
 //
-// Live version: https://demos.blit386.dev/034-logo-lowres
+// Live version: https://demos.blit386.dev/logo-lowres
 
 import {
     Bloom,

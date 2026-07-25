@@ -1,11 +1,11 @@
-// Demo 011 - Starfield: parallax scrolling stars that feel like 3D depth.
+// Starfield: parallax scrolling stars that feel like 3D depth.
 //
-// Demo 011 in the BLIT386 demo series (written for readers about 12 years old).
+// Part of the BLIT386 demo series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics     https://demos.blit386.dev/001-basics
-//   002-Primitives https://demos.blit386.dev/002-primitives
-//   003-Colors     https://demos.blit386.dev/003-colors
+//   Basics     https://demos.blit386.dev/basics
+//   Primitives https://demos.blit386.dev/primitives
+//   Colors     https://demos.blit386.dev/colors
 //
 // Live article: https://vancura.dev/articles/blit386-starfield
 //
@@ -34,7 +34,7 @@
 // (src/shared/ui.js), so their colors and spacing match every other demo.
 //
 // The engine splits work the usual way: update() moves things; render() only draws.
-// See the Basics demo for the full story: https://demos.blit386.dev/001-basics
+// See the Basics demo for the full story: https://demos.blit386.dev/basics
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 

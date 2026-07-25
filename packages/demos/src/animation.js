@@ -1,7 +1,7 @@
-// Demo 009 - Animation and timing: how to animate sprites using tick-based timing.
+// Animation and timing: how to animate sprites using tick-based timing.
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
-// 008-Sprites (https://demos.blit386.dev/008-sprites).
+// Prerequisites: Basics (https://demos.blit386.dev/basics),
+// Sprites (https://demos.blit386.dev/sprites).
 // Live article: https://vancura.dev/articles/blit386-animation
 //
 // In BLIT386, the tick counter goes up once per update() call at a fixed rate (targetFPS),
@@ -29,8 +29,8 @@
 // and write it into that slot with palette.set(). In render(), we just
 // use the particle's slot number - no Color32 objects needed there.
 //
-// Demo 016 explores this palette-animation idea in depth:
-// https://demos.blit386.dev/016-palette-animation
+// Palette Animation demo explores this palette-animation idea in depth:
+// https://demos.blit386.dev/palette-animation
 //
 // The cooldown readout, spawn timer, concept summary, and state badge are drawn with the
 // shared UI kit (src/shared/ui.js), which installs its twelve UI colors high in the

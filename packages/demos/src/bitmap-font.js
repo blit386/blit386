@@ -1,14 +1,14 @@
 /**
  * Bitmap Font Demo - load a proportional .btfont and compare it to the built-in system font.
  *
- * Demo 022 in the BLIT386 demo series.
+ * Part of the BLIT386 demo series.
  * Prerequisites:
- *   001-Basics  https://demos.blit386.dev/001-basics
- *   004-Fonts   https://demos.blit386.dev/004-fonts
+ *   Basics  https://demos.blit386.dev/basics
+ *   Fonts   https://demos.blit386.dev/fonts
  *
- * Live version: https://demos.blit386.dev/022-bitmap-font
+ * Live version: https://demos.blit386.dev/bitmap-font
  *
- * Demos 002-020 use BT.systemPrint() - the built-in 6x14 pixel system font that needs no file.
+ * Earlier demos use BT.systemPrint() - the built-in 6x14 pixel system font that needs no file.
  * This demo shows the ALTERNATIVE: loading a proportional bitmap font from a .btfont file.
  *
  * A "bitmap font" is a font where every letter is pre-drawn as a small picture
@@ -83,7 +83,7 @@ const LABEL_X = 10;
 /**
  * Demonstrates bitmap font loading and rendering with various text effects.
  * Shows static colors, animated rainbow effects, text measurement, and font metadata.
- * Contrast this approach with BT.systemPrint() used in the Fonts demo (004).
+ * Contrast this approach with BT.systemPrint() used in the Fonts demo.
  *
  * @implements {IBTDemo}
  */
@@ -153,7 +153,7 @@ class Demo {
         // Tell the engine to use this palette for all drawing.
         BT.paletteSet(this.palette);
 
-        // Measure the built-in system font once (same helper as demo 004-fonts).
+        // Measure the built-in system font once (same helper as demo fonts).
         const glyphSize = BT.systemPrintMeasure('M');
         this.systemCharWidth = glyphSize.x;
         this.systemLineHeight = glyphSize.y;
@@ -185,7 +185,7 @@ class Demo {
     }
 
     // Runs at a fixed rate (60 times per second).
-    // We learned about the demo loop in the Basics demo: https://demos.blit386.dev/001-basics
+    // We learned about the demo loop in the Basics demo: https://demos.blit386.dev/basics
     // We advance the animation timer AND update dynamic palette colors here.
     update() {
         // Move the animation clock forward by one fixed update step in seconds.
@@ -208,7 +208,7 @@ class Demo {
         // and animTime. The font is always loaded here: the demo loop only starts after
         // init() finished successfully, and init() returns false when the font fails.
         // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
-        // https://demos.blit386.dev/003-colors
+        // https://demos.blit386.dev/colors
         let charX = RAINBOW_ORIGIN_X; // Starting x position - same as where render() draws the rainbow text.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
@@ -246,18 +246,18 @@ class Demo {
         // The colorOffset is a 0-based index FROM palette slot 1.
         // So offset 0 = slot 1 (C_WHITE), offset 2 = slot 3 (C_RED_TEXT), etc.
         // This is different from BT.systemPrint() which takes the palette slot number directly.
-        // We learned about palette offset math in demo 015-palette-presets and the palette guides.
+        // We learned about palette offset math in demo palette-presets and the palette guides.
 
         // Draw the title in both fonts, one below the other, so you can compare them side-by-side.
         // "A:" marks the bitmap font version (proportional spacing, each letter its own width).
         // "B:" marks the built-in system font (every character is a fixed 6x14 pixel block).
         BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'A:');
-        BT.printFont(this.font, new Vector2i(textX, y), 'BLIT386 Font Demo (022)', 0);
+        BT.printFont(this.font, new Vector2i(textX, y), 'BLIT386 Bitmap Font Demo', 0);
         y += bitmapLineHeight;
 
         // The same title text in the system font so the visual difference is obvious.
         BT.systemPrint(new Vector2i(LABEL_X, y), C_WHITE, 'B:');
-        BT.systemPrint(new Vector2i(textX, y), C_WHITE, 'BLIT386 Font Demo (022)');
+        BT.systemPrint(new Vector2i(textX, y), C_WHITE, 'BLIT386 Bitmap Font Demo');
 
         // Move down past both title lines, with a little extra gap before the next section.
         y += systemLineHeight + 4;

@@ -1,18 +1,18 @@
-// Demo 020 - Palette Fade & Flash: smooth color transitions and flash effects.
+// Palette Fade & Flash: smooth color transitions and flash effects.
 //
-// Demo 020 in the BLIT386 series (written for readers about 12 years old).
+// Part of the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics            https://demos.blit386.dev/001-basics
-//   002-Primitives        https://demos.blit386.dev/002-primitives
-//   015-Palette Presets   https://demos.blit386.dev/015-palette-presets
-//   016-Palette Animation https://demos.blit386.dev/016-palette-animation
-//   019-Palette Cycling   https://demos.blit386.dev/019-palette-cycling
+//   Basics            https://demos.blit386.dev/basics
+//   Primitives        https://demos.blit386.dev/primitives
+//   Palette Presets   https://demos.blit386.dev/palette-presets
+//   Palette Animation https://demos.blit386.dev/palette-animation
+//   Palette Cycling   https://demos.blit386.dev/palette-cycling
 //     (walkthroughs: https://vancura.dev/articles/blit386-palette-presets,
 //      https://vancura.dev/articles/blit386-palette-animation,
 //      https://vancura.dev/articles/blit386-palette-cycling)
 //
-// Live version: https://demos.blit386.dev/020-palette-fade
+// Live version: https://demos.blit386.dev/palette-fade
 // Live article: https://vancura.dev/articles/blit386-palette-fade
 //
 // WHAT ARE PALETTE FADES?

@@ -1,9 +1,9 @@
 /**
  * Gamepad Input Demo - analog sticks, triggers, and face-button masks.
  *
- * Demo 031 in the BLIT386 demo series.
- * Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
- * 028-Keyboard-Input (https://demos.blit386.dev/028-keyboard-input).
+ * Part of the BLIT386 demo series.
+ * Prerequisites: Basics (https://demos.blit386.dev/basics),
+ * Keyboard Input (https://demos.blit386.dev/keyboard-input).
  *
  * This demo gives you a tiny "hover pod" toy you can steer with a gamepad:
  * - Left stick moves the pod around the arena.
@@ -26,7 +26,7 @@
  * - Squeeze either trigger and watch the pod grow (whichever trigger reads higher wins).
  * - Hold A and B together and watch the "(A|B) mask" pip in the panel light up.
  *
- * Live version: https://demos.blit386.dev/031-gamepad-input
+ * Live version: https://demos.blit386.dev/gamepad-input
  */
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
@@ -411,7 +411,7 @@ class Demo {
      *
      * Everything read here is HELD state or an axis value, both safe to read in render().
      * Button EDGES (BT.isPressed - "did it go down this exact frame?") must stay in
-     * update(), where this demo already handles them (028-keyboard-input explains why).
+     * update(), where this demo already handles them (keyboard-input explains why).
      */
     renderStatusPanel() {
         // Bitmask OR: BT.BTN_A | BT.BTN_B builds one mask. isDown returns true when

@@ -1,22 +1,22 @@
-// Demo 017 - Palette Swap: change the active palette at runtime to switch color themes.
+// Palette Swap: change the active palette at runtime to switch color themes.
 //
-// Demo 017 in the BLIT386 series (written for readers about 12 years old).
+// Part of the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics            https://demos.blit386.dev/001-basics
-//   008-Sprites           https://demos.blit386.dev/008-sprites
-//   015-Palette Presets   https://demos.blit386.dev/015-palette-presets
-//   016-Palette Animation https://demos.blit386.dev/016-palette-animation
+//   Basics            https://demos.blit386.dev/basics
+//   Sprites           https://demos.blit386.dev/sprites
+//   Palette Presets   https://demos.blit386.dev/palette-presets
+//   Palette Animation https://demos.blit386.dev/palette-animation
 //     (walkthroughs: https://vancura.dev/articles/blit386-sprites,
 //      https://vancura.dev/articles/blit386-palette-presets,
 //      https://vancura.dev/articles/blit386-palette-animation)
 //
-// Live version: https://demos.blit386.dev/017-palette-swap
+// Live version: https://demos.blit386.dev/palette-swap
 // Live article: https://vancura.dev/articles/blit386-palette-swap
 //
 // WHAT IS PALETTE SWAP?
 //
-// In Demo 016 we changed palette SLOT VALUES while keeping the same Palette object.
+// In Palette Animation demo we changed palette SLOT VALUES while keeping the same Palette object.
 // "Palette swap" goes further: you have MULTIPLE Palette objects (one per color theme),
 // and at runtime you switch WHICH palette is active.
 //
