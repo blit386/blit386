@@ -1,10 +1,9 @@
 /**
  * Pointer Paint Demo - multi-touch finger painting with mouse + up to 3 touches.
  *
- * Demo 026 in the BLIT386 demo series.
- * Prerequisites: 025-Pointer Basics - https://demos.blit386.dev/025-pointer-basics
+ * Prerequisites: Pointer Basics - https://demos.blit386.dev/pointer-basics
  *
- * Live version: https://demos.blit386.dev/026-pointer-paint
+ * Live version: https://demos.blit386.dev/pointer-paint
  *
  * This demo shows how all four pointer slots work side by side. Each slot
  * paints in its own color:
@@ -39,7 +38,7 @@
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, THEME_DEFAULT_START_SLOT, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -126,14 +125,13 @@ class Demo {
             isOverlayRendererDiagnosticsBarEnabled: true,
 
             // The engine overlay bars reuse the shared UI theme colors so
-            // everything on screen matches. applyTheme() puts the panel color
-            // in slot 242 and the text color in slot 244 (its default start
-            // slot is 240 - see init() below); configure() runs before init(),
-            // so the numbers are written out here.
+            // everything on screen matches. applyTheme() writes panel at
+            // THEME_DEFAULT_START_SLOT+2 and text at +4; configure() runs before
+            // init(), so we derive those slot numbers here.
             overlayStyle: {
-                barPaletteIndex: 242,
-                textPaletteIndex: 244,
-                gapPaletteIndex: 242,
+                barPaletteIndex: THEME_DEFAULT_START_SLOT + 2,
+                textPaletteIndex: THEME_DEFAULT_START_SLOT + 4,
+                gapPaletteIndex: THEME_DEFAULT_START_SLOT + 2,
             },
 
             overlayTimingChartStyle: {
@@ -141,7 +139,7 @@ class Demo {
                 renderBarPaletteIndex: SLOT_PAINT[1],
                 warningPaletteIndex: SLOT_PAINT[2],
                 errorPaletteIndex: SLOT_PAINT[3],
-                tagPaletteIndex: 244,
+                tagPaletteIndex: THEME_DEFAULT_START_SLOT + 4,
             },
         };
     }

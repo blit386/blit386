@@ -261,8 +261,8 @@ class Demo {
         // (this.theme.bg, .text, ...). All on-screen text and the cooldown meter use them.
         this.theme = applyTheme(this.palette);
 
-        // Particle slots (50..69) start as transparent - update() fills them when particles spawn.
-        // We pre-fill with a dim white so nothing shows before the first particle.
+        // Particle slots (50..69) start fully transparent (alpha 0) so they stay invisible
+        // until update() writes real colors into them when particles spawn.
         for (let i = 0; i < MAX_PARTICLES; i++) {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }

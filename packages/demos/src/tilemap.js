@@ -426,12 +426,12 @@ class Demo {
         const mapPixelW = MAP_WIDTH_TILES * scale;
         const mapPixelH = MAP_HEIGHT_TILES * scale;
 
-        // Backing panel. The kit has no mini-map widget, so we draw this frame by
-        // hand - but we borrow the shared theme's panel and border slots so it
-        // matches the kit's look exactly.
-        this.tileRect.set(mapX - 2, mapY - 2, mapPixelW + 4, mapPixelH + 4);
-        BT.drawRectFill(this.tileRect, this.theme.panel);
-        BT.drawRect(this.tileRect, this.theme.border);
+        // Backing panel from the shared UI kit (same look as every other demo panel).
+        // spacer() reserves the tile area; the custom tile overlay draws on top after end().
+        ui.begin('topLeft', { x: mapX - 2, y: mapY - 2, width: mapPixelW + 4, margin: 0, pad: 2 });
+        ui.panel();
+        ui.spacer(mapPixelH);
+        ui.end();
 
         // Walk every tile in the entire world (the map is small, so this is cheap).
         for (let row = 0; row < MAP_HEIGHT_TILES; row++) {

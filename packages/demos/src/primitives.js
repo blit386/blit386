@@ -1,9 +1,8 @@
 /**
  * Primitives Demo - shows all the basic shapes you can draw with BLIT386.
  *
- * Demo 002 in the BLIT386 demo series.
- * Prerequisites: 001-Basics - https://demos.blit386.dev/001-basics
- * Live version: https://demos.blit386.dev/002-primitives
+ * Prerequisites: Basics - https://demos.blit386.dev/basics
+ * Live version: https://demos.blit386.dev/primitives
  *
  * "Primitives" means the simplest building blocks of drawing:
  * pixels (single dots), lines, rectangles, and filled rectangles.
@@ -19,7 +18,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 // The shared demo UI kit: applyTheme() installs the series' standard UI colors into the
 // palette, and ui.caption() prints the section captions with them. We met the kit in the
-// Basics demo: https://demos.blit386.dev/001-basics
+// Basics demo: https://demos.blit386.dev/basics
 import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
@@ -135,7 +134,7 @@ class Demo {
 
     /**
      * Runs at a fixed rate (60 times per second). See the Basics demo for the full explanation:
-     * https://demos.blit386.dev/001-basics
+     * https://demos.blit386.dev/basics
      * We count ticks AND pre-compute the rainbow pixel colors here so render() stays fast.
      */
     update() {

@@ -394,7 +394,7 @@ class Demo {
      * @param {Vector2i} center - The center of the circle.
      */
     drawCircleApproximation(center) {
-        // The radius pulses between 25 and 35 pixels using Math.sin.
+        // The radius pulses between 2 and 30 pixels (16 ± 14) using Math.sin.
         const radius = 16 + Math.sin(this.animTime) * 14;
 
         for (let i = 0; i < CIRCLE_SEGMENTS; i++) {
@@ -477,7 +477,8 @@ class Demo {
      */
     drawTunnel(center) {
         for (let i = 0; i < TUNNEL_RECTS; i++) {
-            // t goes from 1 (outer/near) down to 0 (inner/far).
+            // t goes from 0 (inner/far, i = 0) toward ~0.95 (outer/near, last rect),
+            // matching the color loop above (i / TUNNEL_RECTS).
             const t = i / TUNNEL_RECTS;
 
             // Outer rectangles are large, inner ones are small.

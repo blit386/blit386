@@ -16,6 +16,9 @@ class Demo {
 
     myRect = new Rect2i(0, 0, 50, 50);
 
+    // Reused every update() tick so the palette loop does not allocate 248 Color32s.
+    tempColor = new Color32(0, 0, 0);
+
     configure() {
         return {
             isOverlayPaletteEnabled: true,
@@ -66,12 +69,9 @@ class Demo {
 
         for (let i = 2; i < 250; i++) {
             // Color32 clamps out-of-range channels itself; floor keeps the recipe readable.
-            const r = Math.floor(pointer.y);
-            const g = Math.floor(pointer.x);
-            const b = Math.floor(8 + i * 10);
-            const col = new Color32(r, g, b);
-
-            this.palette.set(i, col);
+            // palette.set() clones the color, so one reused tempColor is enough.
+            this.tempColor.setRGBA(Math.floor(pointer.y), Math.floor(pointer.x), Math.floor(8 + i * 10), 255);
+            this.palette.set(i, this.tempColor);
         }
     }
 

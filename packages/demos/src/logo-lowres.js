@@ -49,9 +49,13 @@ import {
     Vignette,
 } from 'blit386';
 
-import { isAvailable } from './shared/post-process-backend.js';
+import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
 import { randFloat, randInt, randPick } from './shared/rand.js';
 import { applyTheme, ui } from './shared/ui.js';
+
+// Shared fallback note split at the sentence break (same approach as basics-enhanced /
+// sprite-effects). Two short lines fit the tiny 80px-wide status chip better than one.
+const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -434,10 +438,12 @@ class Demo {
         ui.panel();
 
         if (!this.effectsAvailable) {
-            // Software renderer: no post-process. The usual shared fallback note is
-            // far too long for an 80-pixel-wide screen, so we show a short version.
-            ui.label('CRT OFF', { color: 'warm' });
-            ui.label('No WebGPU', { color: 'dim' });
+            // Software renderer: no post-process. Draw the shared note as two lines.
+            ui.label(FALLBACK_LINES[0] ?? SOFTWARE_FALLBACK_NOTE, { color: 'warm' });
+
+            if (FALLBACK_LINES[1]) {
+                ui.label(FALLBACK_LINES[1], { color: 'dim' });
+            }
         } else if (this.glitchTicksLeft > 0) {
             // A fault burst is running: show its friendly name and how strong this
             // particular burst is, like "H-HOLD 82%". Math.round() turns the 0..1

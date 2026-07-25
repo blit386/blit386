@@ -133,10 +133,11 @@ class Demo {
         // Touch input: treat a tap on either half of the screen like a left or right press.
         // ui.tapIn() is true only on the single tick the tap lands, so one tap moves the
         // square one pixel - a tiny nudge, which is fine for this starter demo.
-        if (ui.tapIn(LEFT_ZONE)) {
+        // Skip taps that land on a UI widget (the on-screen A button sits in RIGHT_ZONE).
+        if (ui.tapIn(LEFT_ZONE) && !this.isTapOverWidget()) {
             this.player.x--;
         }
-        if (ui.tapIn(RIGHT_ZONE)) {
+        if (ui.tapIn(RIGHT_ZONE) && !this.isTapOverWidget()) {
             this.player.x++;
         }
 
@@ -186,6 +187,28 @@ class Demo {
             ui.label('Tap left/right to move, tap A to hop', { color: 'dim' });
             ui.end();
         }
+    }
+
+    /**
+     * True when any active pointer is over a UI kit widget this frame.
+     * Used so half-screen move taps do not also fire when hitting the A button.
+     *
+     * @returns {boolean}
+     */
+    isTapOverWidget() {
+        for (let slot = 0; slot < 4; slot++) {
+            if (!BT.isPointerActive(slot)) {
+                continue;
+            }
+
+            const pos = BT.pointerPos(slot);
+
+            if (ui.overWidget(pos.x, pos.y)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
