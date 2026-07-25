@@ -83,11 +83,11 @@ rng.setState(saved); // restore and replay
 | `clone()`     | New instance with identical state (identical subsequent draws)      |
 | `fork()`      | Advance this instance once; seed a child so the two streams diverge |
 
+<PageChangelog page="api/random" />
+
 ## See also
 
 <Cards>
   <Card title="API: Core Types" href="/docs/api/core-types">Vector2i, Rect2i, and Color32.</Card>
   <Card title="API: Audio" href="/docs/api/audio">Synth noise uses a related internal mulberry32 PRNG.</Card>
 </Cards>
-
-<PageChangelog page="api/random" />
