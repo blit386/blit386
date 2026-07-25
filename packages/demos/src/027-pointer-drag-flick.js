@@ -168,13 +168,21 @@ class Demo {
         return {
             // Set the logical display size (how many pixels the demo draws at).
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+
+            // Phones and tablets dim, then lock, the screen after 30-60 seconds without a touch -
+            // easy to hit while you are just watching a ball settle before flicking it again. This
+            // asks the browser to keep the screen on while you play; unsupported browsers ignore it.
+            isWakeLockEnabled: true,
+
             // Show the scrolling timing chart in the overlay so each frame's cost is visible.
             // configure() runs before init(), so the shared theme slots do not exist yet -
             // the chart uses two dedicated scene slots filled in init() instead.
             isOverlayTimingChartEnabled: true,
+
             overlayTimingChartStyle: {
                 // Dim gray makes update bars subtle so render bars stand out by contrast.
                 updateBarPaletteIndex: C_CHART_UPDATE,
+
                 // White gives render bars and milestone labels high contrast against the dark background.
                 renderBarPaletteIndex: C_CHART_RENDER,
                 tagPaletteIndex: C_CHART_RENDER,

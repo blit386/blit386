@@ -297,9 +297,9 @@ class Demo {
         const maxRadius = 35;
 
         for (let i = 0; i < SPIRAL_POINTS; i++) {
-            // t goes from animTime (inner) to animTime + 4*PI (outer).
-            // 4*PI is two full rotations, so the spiral wraps around twice.
-            const t = (i / SPIRAL_POINTS) * Math.PI * 4 + this.animTime;
+            // t goes from animTime (inner) to animTime + 2*PI (outer).
+            // 2*PI is one full rotation, so the spiral wraps around once.
+            const t = (i / SPIRAL_POINTS) * Math.PI * 2 + this.animTime;
 
             // How far from the center this dot is.
             // Point 0 is at the center, point 99 is at maxRadius pixels away.

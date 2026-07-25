@@ -137,6 +137,10 @@ class Demo {
      */
     configure() {
         return {
+            // Arrow keys and Space scroll the host page by default. This demo maps those keys
+            // (player 1 uses arrows), so opt in so pressing them does not move the page.
+            isCapturingKeyboardScroll: true,
+
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: THEME_DIM_SLOT,
