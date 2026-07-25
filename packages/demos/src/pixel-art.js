@@ -5,7 +5,8 @@
 // We learned about the demo lifecycle, coordinates, and clearing the screen in the Basics demo:
 // https://demos.blit386.dev/basics
 //
-// Prerequisites: https://demos.blit386.dev/basics , /primitives , /colors
+// Prerequisites: https://demos.blit386.dev/basics , https://demos.blit386.dev/primitives ,
+// https://demos.blit386.dev/colors
 // Live version: https://demos.blit386.dev/pixel-art
 //
 // This demo shows:

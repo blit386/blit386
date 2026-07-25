@@ -477,8 +477,8 @@ class Demo {
      */
     drawTunnel(center) {
         for (let i = 0; i < TUNNEL_RECTS; i++) {
-            // t goes from 0 (inner/far, i = 0) toward ~0.95 (outer/near, last rect),
-            // matching the color loop above (i / TUNNEL_RECTS).
+            // t = i / TUNNEL_RECTS: i = 0 is the outer/near largest rectangle;
+            // the final i is the inner/far smallest (size uses 1 - t below).
             const t = i / TUNNEL_RECTS;
 
             // Outer rectangles are large, inner ones are small.
