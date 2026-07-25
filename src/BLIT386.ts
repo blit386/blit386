@@ -76,6 +76,7 @@ import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing } from './utils/Easing';
 import { noActivePaletteError } from './utils/errorMessages';
+import { Random } from './utils/Random';
 import { Rect2i } from './utils/Rect2i';
 import { Timer } from './utils/Timer';
 import { Vector2i } from './utils/Vector2i';
@@ -2126,6 +2127,7 @@ export {
     Palette,
     PixelGlitch,
     PixelMosaic,
+    Random,
     Rect2i,
     registerHotReload,
     RGBMask,

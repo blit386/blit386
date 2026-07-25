@@ -33,6 +33,11 @@
       "description": "Named easing curves for palette fade effects via applyEasing."
     },
     {
+      "src": "api-random.md",
+      "path": "api/random",
+      "description": "Seeded Random PRNG: ints, floats, pick, shuffle, weighted choice, and stream control."
+    },
+    {
       "src": "api-core-types.md",
       "path": "api/core-types",
       "description": "The integer core types: Vector2i, Rect2i, and Color32."
