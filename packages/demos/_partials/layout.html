@@ -15,9 +15,9 @@
         (function () {
             var embedded = new URLSearchParams(location.search).has('embed');
 
-            document.documentElement.style.setProperty('--banner-height', embedded ? '0px' : '80px');
-
+            // Shell keeps the :root --banner-height from layout.css; embed overrides to 0.
             if (embedded) {
+                document.documentElement.style.setProperty('--banner-height', '0px');
                 document.documentElement.setAttribute('data-embed', 'true');
             } else {
                 document.documentElement.setAttribute('data-shell', 'true');
@@ -127,8 +127,24 @@
         }
 
         /**
-         * Look up the document title for a slug from the nav list, falling back to the
-         * current document title when the slug is nav-hidden (not in the list).
+         * Title-case a kebab-case slug, e.g. "sprite-effects" -> "Sprite Effects".
+         * Mirrors plugins/demo-registry.js's titleCaseTopic for nav-hidden fallbacks.
+         * @param {string} slug
+         * @returns {string}
+         */
+        function titleCaseSlug(slug) {
+            return slug
+                .split('-')
+                .map(function (word) {
+                    return word.length > 0 ? word[0].toUpperCase() + word.slice(1) : word;
+                })
+                .join(' ');
+        }
+
+        /**
+         * Look up the document title for a slug from the nav list. Nav-hidden slugs
+         * (absent from `demos`) get a stable slug-derived title so popstate does not
+         * leave a stale document.title from the previous demo.
          * @param {Array<{slug: string, title: string}>} demos
          * @param {string} slug
          * @returns {string}
@@ -140,7 +156,7 @@
                 }
             }
 
-            return document.title;
+            return 'BLIT386 Demo - ' + titleCaseSlug(slug);
         }
 
         /**
@@ -232,12 +248,24 @@
             options = options || {};
             var demos = options.demos || readDemoList();
             var frame = document.getElementById('demo-frame');
+            var embedUrl = embedUrlFor(slug);
 
             if (!frame) {
                 return;
             }
 
-            frame.src = embedUrlFor(slug);
+            // Replace the iframe's history entry so back/forward stays on the shell
+            // document; fall back to src assignment when the frame window is unavailable.
+            try {
+                if (frame.contentWindow && frame.contentWindow.location) {
+                    frame.contentWindow.location.replace(embedUrl);
+                } else {
+                    frame.src = embedUrl;
+                }
+            } catch {
+                frame.src = embedUrl;
+            }
+
             document.body.dataset.slug = slug;
             document.title = titleFor(demos, slug);
             syncNavUI(demos, slug);
@@ -420,10 +448,16 @@
     })();
 </script>
 
-<script async src="https://plausible.io/js/pa-Jy-1Ffqwh5Zpp2YOMEBr5.js"></script>
 <script>
-    // Analytics only on the shell document so the embed iframe does not double-count.
+    // Analytics only on the shell document: skip both the loader download and init
+    // inside embed iframes so demo swaps do not double-count.
     if (!window.__blit386IsEmbedded) {
+        var plausibleScript = document.createElement('script');
+
+        plausibleScript.async = true;
+        plausibleScript.src = 'https://plausible.io/js/pa-Jy-1Ffqwh5Zpp2YOMEBr5.js';
+        document.head.appendChild(plausibleScript);
+
         window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
         plausible.init()
     }

@@ -44,8 +44,8 @@ blit386-demos/
     twoslash-rich.css          # Vendored from @shikijs/twoslash (Biome-ignored)
     demos-index.css            # Dev-only /demos/ index page
   _partials/                   # Shared HTML template (plain HTML with {{title}}, {{scriptFile}},
-    layout.html                #   {{slug}}, {{demoList}}, and {{sourceHtml}} placeholders;
-                               #   dual-mode: shell banner+iframe vs ?embed canvas+source)
+    layout.html                #   {{slug}}, {{demoList}}, {{sourceHtml}}, and {{sourcePanelScript}}
+                               #   placeholders; dual-mode: shell banner+iframe vs ?embed canvas+source)
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
     virtual-demos.js           # Virtual HTML pages + injects Twoslash-highlighted source
     highlight-demo-source.js   # Shiki + @shikijs/twoslash highlighter (mtime cache)
