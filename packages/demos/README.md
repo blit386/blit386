@@ -9,19 +9,23 @@ explaining how everything works.
 Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
 scaffolder (`npm create blit386@latest my-game`).
 
-There are 40 demo modules today (39 numbered demos plus `00a-barebones`), covering drawing, palettes, post-process CRT
-effects, input (pointer, keyboard, gamepad), and audio. Each demo lives in a single file under `src/` (for example
-`src/001-basics.js`), and most import the shared UI kit in `src/shared/` for their on-screen panels and touch controls
-(see [Shared UI kit](#shared-ui-kit) below for the two exceptions). During development, Vite serves the matching page at
-`/demos/basics.html` (no HTML file is committed; the build wires a shared layout to each script). The default page is a
-persistent shell (navigation banner + iframe). The iframe loads the same demo with `?embed&source`, which runs the
-canvas, keeps the Twoslash source panel under it, and lets demo swaps discard the engine with the frame. Direct `?embed`
-URLs (and docs-site iframes) hide the banner and source panel for a centered full-viewport canvas.
+There are 40 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
+gamepad), and audio. Each demo lives in a single number-free kebab-case file under `src/` (for example `src/basics.js`).
+Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames. Most demos import the shared UI
+kit in `src/shared/` for their on-screen panels and touch controls (see [Shared UI kit](#shared-ui-kit) below for the
+two exceptions). During development, Vite serves the matching page at `/demos/basics.html` (no HTML file is committed;
+the build wires a shared layout to each script). The default page is a persistent shell (navigation banner + iframe).
+The banner's demo selector is a fuzzy-searchable combobox (type to filter by title). The iframe loads the same demo with
+`?embed&source`, which runs the canvas, keeps the Twoslash source panel under it, and lets demo swaps discard the engine
+with the frame. Direct `?embed` URLs (and docs-site iframes) hide the banner and source panel for a centered
+full-viewport canvas.
 
-Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/). Live URLs use a flat path per slug,
-for example `https://demos.blit386.dev/basics`.
+Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/). Live URLs use a flat, number-free
+path per slug, for example `https://demos.blit386.dev/basics`. Older numbered (vintage) URLs such as `/001-basics` still
+work: the build writes permanent 301 redirects from every entry in `plugins/demo-vintage-urls.js` (`VINTAGE_URLS`) into
+`dist/_redirects`.
 
-The demos build on each other in numeric order where it matters; later pages assume you have seen the ideas from earlier
+The demos build on each other in `DEMO_ORDER` where it matters; later pages assume you have seen the ideas from earlier
 ones.
 
 Each demo passes a class to `bootstrap()` from `blit386`. Optional `configure()` overrides resolution and FPS; if you
@@ -32,126 +36,117 @@ The engine draws a unified stats overlay on top of each frame (FPS, target FPS, 
 overlay body starts hidden; a small bitmap toggle hint sits in the bottom-left corner by default. Press Backquote (`~`)
 or tap the bottom-left 17x13 px corner to show or hide the body. Opt into a body that is visible on the first frame with
 `isOverlayVisibleAtStart: true`. Immersive demos hide the hint icon with `isOverlayToggleHintVisible: false` (see
-`013-image-output`, `014-game-scene`, `023-crt-pipboy`, and `029-snake-game`); the overlay still toggles with Backquote.
-Set `isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` in `configure()` to disable
-the overlay subsystem entirely.
+`image-output`, `game-scene`, `crt-pipboy`, and `snake-game`); the overlay still toggles with Backquote. Set
+`isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` in `configure()` to disable the
+overlay subsystem entirely.
 
 ## Demos
 
-Below, each title links to the deployed page.
-
-Numbering has two gaps. Slug `021-error-preview` was retired and its number stays unused; numbering resumes at `022`.
-Numbers `039` and `040` were never used at all, so the list jumps straight from `038` to `041`. A new demo takes the
-next free number after the highest one in use – never a retired or skipped one.
+Below, each title links to the deployed page (number-free slug). Vintage numbered paths such as `/001-basics` redirect
+to these URLs via `VINTAGE_URLS`.
 
 ### Drawing Basics
 
-- [001-basics](https://demos.blit386.dev/001-basics) – Engine basics, lifecycle, bouncing sprite, canvas text
-- [033-basics-enhanced](https://demos.blit386.dev/033-basics-enhanced) – Enhanced version of the basics demo with
-  optional visual effects
-- [034-logo-lowres](https://demos.blit386.dev/034-logo-lowres) – Logo sprite centered on a tiny 80x60 screen, upscaled
-  3x to 240x180 with nearest-neighbor filtering, then wrapped in the Tesla Orava black-and-white CRT stack (scanlines,
+- [basics](https://demos.blit386.dev/basics) – Engine basics, lifecycle, bouncing sprite, canvas text
+- [basics-enhanced](https://demos.blit386.dev/basics-enhanced) – Enhanced version of the basics demo with optional
+  visual effects
+- [logo-lowres](https://demos.blit386.dev/logo-lowres) – Logo sprite centered on a tiny 80x60 screen, upscaled 3x to
+  240x180 with nearest-neighbor filtering, then wrapped in the Tesla Orava black-and-white CRT stack (scanlines,
   scrolling roll line, flicker, RGB mask, vignette, bloom, and random analog-TV fault bursts) with a shared UI-kit
   status chip naming the current fault. The one demo that turns the engine overlay off entirely
   (`isOverlayEnabled: false`)
-- [002-primitives](https://demos.blit386.dev/002-primitives) – All primitive drawing: pixels, lines, rectangles
-- [003-colors](https://demos.blit386.dev/003-colors) – Color32 deep dive: named, HSL, alpha, lerp
-- [032-named-colors](https://demos.blit386.dev/032-named-colors) – Color32 named registry APIs: resolve, register,
-  update, unregister
-- [042-filip-test-02](https://demos.blit386.dev/042-filip-test-02) – Pointer-centered rectangle, animated palette colors
-  driven by the cursor, and a pixel-drawn circle
+- [primitives](https://demos.blit386.dev/primitives) – All primitive drawing: pixels, lines, rectangles
+- [colors](https://demos.blit386.dev/colors) – Color32 deep dive: named, HSL, alpha, lerp
+- [named-colors](https://demos.blit386.dev/named-colors) – Color32 named registry APIs: resolve, register, update,
+  unregister
+- [filip-test-02](https://demos.blit386.dev/filip-test-02) – Pointer-centered rectangle, animated palette colors driven
+  by the cursor, and a pixel-drawn circle
 
 ### Text and Visual Art
 
-- [004-fonts](https://demos.blit386.dev/004-fonts) – Built-in system font with `BT.systemPrint()` and text measurement
-- [005-pixel-art](https://demos.blit386.dev/005-pixel-art) – Programmatic pixel art with nested loops
-- [006-patterns](https://demos.blit386.dev/006-patterns) – Mathematical art: spirals, Lissajous, waves, tunnel
-- [022-bitmap-font](https://demos.blit386.dev/022-bitmap-font) – Load a proportional `.btfont` file and draw rainbow,
+- [fonts](https://demos.blit386.dev/fonts) – Built-in system font with `BT.systemPrint()` and text measurement
+- [pixel-art](https://demos.blit386.dev/pixel-art) – Programmatic pixel art with nested loops
+- [patterns](https://demos.blit386.dev/patterns) – Mathematical art: spirals, Lissajous, waves, tunnel
+- [bitmap-font](https://demos.blit386.dev/bitmap-font) – Load a proportional `.btfont` file and draw rainbow,
   alpha-pulsing, and measured text
 
 ### World Building
 
-- [007-camera](https://demos.blit386.dev/007-camera) – Camera scrolling, world vs screen space, mini-map
-- [008-sprites](https://demos.blit386.dev/008-sprites) – Programmatic sprite sheet, source rectangles, palette offsets
-- [009-animation](https://demos.blit386.dev/009-animation) – Tick-based animation, walk frame cycling, state machines,
-  particles
-- [010-sprite-effects](https://demos.blit386.dev/010-sprite-effects) – Damage flash, silhouette, ghost, team colors,
-  day/night
-- [011-starfield](https://demos.blit386.dev/011-starfield) – Parallax scrolling starfield
-- [012-tilemap](https://demos.blit386.dev/012-tilemap) – Grid-based tile world with camera
+- [camera](https://demos.blit386.dev/camera) – Camera scrolling, world vs screen space, mini-map
+- [sprites](https://demos.blit386.dev/sprites) – Programmatic sprite sheet, source rectangles, palette offsets
+- [animation](https://demos.blit386.dev/animation) – Tick-based animation, walk frame cycling, state machines, particles
+- [sprite-effects](https://demos.blit386.dev/sprite-effects) – Damage flash, silhouette, ghost, team colors, day/night
+- [starfield](https://demos.blit386.dev/starfield) – Parallax scrolling starfield
+- [tilemap](https://demos.blit386.dev/tilemap) – Grid-based tile world with camera
 
 ### Palette System
 
-- [015-palette-presets](https://demos.blit386.dev/015-palette-presets) – Six built-in color sets (VGA, CGA, C64, etc.)
-  you can load instantly
-- [016-palette-animation](https://demos.blit386.dev/016-palette-animation) – Change palette entries every tick for
-  instant visual effects
-- [017-palette-swap](https://demos.blit386.dev/017-palette-swap) – Switch the active palette at runtime to change color
-  themes
-- [018-flurry](https://demos.blit386.dev/018-flurry) – Retro screensaver: particle physics and palette animation (port
-  of macOS Flurry)
-- [019-palette-cycling](https://demos.blit386.dev/019-palette-cycling) – Classic retro color rotation using palette
-  cycling
-- [020-palette-fade](https://demos.blit386.dev/020-palette-fade) – Smooth color transitions and flash effects with
-  palette fade
+- [palette-presets](https://demos.blit386.dev/palette-presets) – Six built-in color sets (VGA, CGA, C64, etc.) you can
+  load instantly
+- [palette-animation](https://demos.blit386.dev/palette-animation) – Change palette entries every tick for instant
+  visual effects
+- [palette-swap](https://demos.blit386.dev/palette-swap) – Switch the active palette at runtime to change color themes
+- [flurry](https://demos.blit386.dev/flurry) – Retro screensaver: particle physics and palette animation (port of macOS
+  Flurry)
+- [palette-cycling](https://demos.blit386.dev/palette-cycling) – Classic retro color rotation using palette cycling
+- [palette-fade](https://demos.blit386.dev/palette-fade) – Smooth color transitions and flash effects with palette fade
 
 ### Putting It All Together
 
-- [013-image-output](https://demos.blit386.dev/013-image-output) – Frame capture and PNG export
-- [014-game-scene](https://demos.blit386.dev/014-game-scene) – Capstone: tilemap ground, patterns, sprites, camera,
-  animation, frame capture, and looping background music with a real intro/loop point in one scene
+- [image-output](https://demos.blit386.dev/image-output) – Frame capture and PNG export
+- [game-scene](https://demos.blit386.dev/game-scene) – Capstone: tilemap ground, patterns, sprites, camera, animation,
+  frame capture, and looping background music with a real intro/loop point in one scene
 
 ### Input
 
-- [025-pointer-basics](https://demos.blit386.dev/025-pointer-basics) – Mouse position, delta, scroll wheel, and four
-  pointer buttons (A/B/C/D) on slot 0 with a live crosshair, button indicators, and a wheel-driven scroll bar
-- [026-pointer-paint](https://demos.blit386.dev/026-pointer-paint) – Multi-touch finger painting using all four pointer
-  slots (mouse + up to three touches), with edge-triggered clear / brush-cycle on right and middle click
-- [027-pointer-drag-flick](https://demos.blit386.dev/027-pointer-drag-flick) – Drag-and-flick physics: grab one of three
+- [pointer-basics](https://demos.blit386.dev/pointer-basics) – Mouse position, delta, scroll wheel, and four pointer
+  buttons (A/B/C/D) on slot 0 with a live crosshair, button indicators, and a wheel-driven scroll bar
+- [pointer-paint](https://demos.blit386.dev/pointer-paint) – Multi-touch finger painting using all four pointer slots
+  (mouse + up to three touches), with edge-triggered clear / brush-cycle on right and middle click
+- [pointer-drag-flick](https://demos.blit386.dev/pointer-drag-flick) – Drag-and-flick physics: grab one of three
   bouncing balls, release with `pointerDelta` as launch velocity. Multi-touch grabs one ball per finger. Throws and wall
   bounces play synthesized whoosh/thud sound effects.
-- [028-keyboard-input](https://demos.blit386.dev/028-keyboard-input) – Keyboard face buttons for two players
-  (`BT.BTN_UP` … `BT.BTN_SELECT`), raw `BT.isKeyDown` / `BT.isKeyPressed` (optional tick repeat) / `BT.isKeyReleased`,
-  and typed text via `BT.inputString`
-- [035-keyboard-diagnostic](https://demos.blit386.dev/035-keyboard-diagnostic) – Full on-screen keyboard layout with
-  press / hold / release color feedback; use to verify fast taps on high-refresh displays
-- [029-snake-game](https://demos.blit386.dev/029-snake-game) – Grid snake with walls, food, keyboard, D-pad, and swipe
-  steering, PipBoy-style CRT post-processing, synth SFX on eat/game-over, and a looping background music track
-- [030-input-map-remapping](https://demos.blit386.dev/030-input-map-remapping) – Runtime face-button remapping with
-  `BT.inputMap` / `BT.inputMapReset` (defaults, custom OR keys, clearing a binding); complements demo 028
-- [031-gamepad-input](https://demos.blit386.dev/031-gamepad-input) – Tiny hover-pod playground showing gamepad connect
-  status, analog sticks, triggers, and face button masks (`BT.BTN_A | BT.BTN_B`) with `BT.getAxis` /
-  `BT.isGamepadConnected` / `BT.gamepadCount`
+- [keyboard-input](https://demos.blit386.dev/keyboard-input) – Keyboard face buttons for two players (`BT.BTN_UP` …
+  `BT.BTN_SELECT`), raw `BT.isKeyDown` / `BT.isKeyPressed` (optional tick repeat) / `BT.isKeyReleased`, and typed text
+  via `BT.inputString`
+- [keyboard-diagnostic](https://demos.blit386.dev/keyboard-diagnostic) – Full on-screen keyboard layout with press /
+  hold / release color feedback; use to verify fast taps on high-refresh displays
+- [snake-game](https://demos.blit386.dev/snake-game) – Grid snake with walls, food, keyboard, D-pad, and swipe steering,
+  PipBoy-style CRT post-processing, synth SFX on eat/game-over, and a looping background music track
+- [input-map-remapping](https://demos.blit386.dev/input-map-remapping) – Runtime face-button remapping with
+  `BT.inputMap` / `BT.inputMapReset` (defaults, custom OR keys, clearing a binding); complements `keyboard-input`
+- [gamepad-input](https://demos.blit386.dev/gamepad-input) – Tiny hover-pod playground showing gamepad connect status,
+  analog sticks, triggers, and face button masks (`BT.BTN_A | BT.BTN_B`) with `BT.getAxis` / `BT.isGamepadConnected` /
+  `BT.gamepadCount`
 
 ### Post-Process Effects
 
-- [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) – Faux Fallout terminal with the full CRT stack (barrel,
-  scanlines, mask, bloom, glitch state machine) built from individual decomposed effects
-- [024-crt-toggle](https://demos.blit386.dev/024-crt-toggle) – Toggle the entire `BT.preset.crtPipBoy()` CRT stack on
-  and off at runtime – auto-switches between clean and CRT output every two seconds
+- [crt-pipboy](https://demos.blit386.dev/crt-pipboy) – Faux Fallout terminal with the full CRT stack (barrel, scanlines,
+  mask, bloom, glitch state machine) built from individual decomposed effects
+- [crt-toggle](https://demos.blit386.dev/crt-toggle) – Toggle the entire `BT.preset.crtPipBoy()` CRT stack on and off at
+  runtime – auto-switches between clean and CRT output every two seconds
 
 ### Audio
 
-- [036-audio-basics](https://demos.blit386.dev/036-audio-basics) – Loading clips with `AudioClip.load()`, playing SFX on
-  a key press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt;
+- [audio-basics](https://demos.blit386.dev/audio-basics) – Loading clips with `AudioClip.load()`, playing SFX on a key
+  press and a pointer click with volume/pitch/pan variation, and the `BT.isAudioUnlocked` first-gesture prompt;
   `isOverlayAudioMetersEnabled` shows live bus-level meters and a voice-count readout in the overlay
-- [041-synth-toy](https://demos.blit386.dev/041-synth-toy) – Procedural chip-tune SFX built entirely with
-  `AudioClip.synth()`: six keyboard-triggered presets (jump/pickup/explosion/laser/hit/blip) via `BT.synthPreset`, plus
-  a randomize key that rolls a fresh `SynthParams` object to show off waveform, envelope, pitch-sweep, and noise-mix
-  variation; also opts into the overlay's live audio meters via `isOverlayAudioMetersEnabled`
-- [037-music](https://demos.blit386.dev/037-music) – Crossfading between two looping tracks with two different
-  `BT.musicPlay()` fade profiles, plus a third track demonstrating a seamless `loopStart`/`loopEnd` region after a
-  one-time intro
-- [038-audio-buses](https://demos.blit386.dev/038-audio-buses) – Mixer bus control: draggable `main`/`music`/`sfx`
-  volume sliders, per-bus mute toggles that preserve the stored volume, and an alert button that ducks the music bus
-  with `BT.audioVolumeSet()`
+- [synth-toy](https://demos.blit386.dev/synth-toy) – Procedural chip-tune SFX built entirely with `AudioClip.synth()`:
+  six keyboard-triggered presets (jump/pickup/explosion/laser/hit/blip) via `BT.synthPreset`, plus a randomize key that
+  rolls a fresh `SynthParams` object to show off waveform, envelope, pitch-sweep, and noise-mix variation; also opts
+  into the overlay's live audio meters via `isOverlayAudioMetersEnabled`
+- [music](https://demos.blit386.dev/music) – Crossfading between two looping tracks with two different `BT.musicPlay()`
+  fade profiles, plus a third track demonstrating a seamless `loopStart`/`loopEnd` region after a one-time intro
+- [audio-buses](https://demos.blit386.dev/audio-buses) – Mixer bus control: draggable `main`/`music`/`sfx` volume
+  sliders, per-bus mute toggles that preserve the stored volume, and an alert button that ducks the music bus with
+  `BT.audioVolumeSet()`
 
 ## Shared UI kit
 
 All on-screen demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
 D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 38 of the 40 demos. Two
-demos are deliberate exceptions: `018-flurry` (an immersive screensaver with no demo HUD, only the engine overlay) and
-`042-filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all):
+demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine overlay) and
+`filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all):
 
 | File                      | What it provides                                                                    |
 | ------------------------- | ----------------------------------------------------------------------------------- |
@@ -217,9 +212,10 @@ pnpm install
 pnpm run dev
 ```
 
-The dev server opens `http://localhost:5173/demos/001-basics.html` in your browser (configured by `server.open` in
+The dev server opens `http://localhost:5173/demos/basics.html` in your browser (configured by `server.open` in
 `vite.config.js`). Every demo is served at `http://localhost:5173/demos/<slug>.html`, and the index listing all of them
-is at `http://localhost:5173/demos/`. For the public build, open the flat URLs on
+is at `http://localhost:5173/demos/`. Vintage numbered paths redirect to the current slug in both dev (301 from the Vite
+plugin) and production (`dist/_redirects`). For the public build, open the flat URLs on
 [demos.blit386.dev](https://demos.blit386.dev/).
 
 Editing a demo's `src/<slug>.js` file usually avoids a full page reload: a method-only edit (`render()`/`update()`)

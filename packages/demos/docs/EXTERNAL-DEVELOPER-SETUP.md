@@ -80,12 +80,12 @@ blit386-workspace/            # Your workspace root
 │   ├── dist/                 # Built output
 │   └── package.json
 └── blit386-demos/            # The demos
-    ├── src/                  # One JS file per demo (single source of truth)
+    ├── src/                  # One number-free kebab-case JS file per demo (e.g. basics.js)
     │   └── shared/           # Shared UI kit (panels, buttons, touch D-pad) + helpers
-    ├── public/               # Static assets: sprites/, fonts/, audio/, _headers, _redirects
-    ├── _partials/            # Shared HTML template
-    ├── plugins/              # virtual-demos Vite plugin
-    ├── scripts/              # Repo scripts (Markdown link check, audio loop generator)
+    ├── public/               # Static assets: sprites/, fonts/, audio/, _headers
+    ├── _partials/            # Shared HTML template + persistent-shell chrome (demo-shell.js)
+    ├── plugins/              # virtual-demos + demo-order.js + demo-vintage-urls.js + registry
+    ├── scripts/              # Repo scripts (Markdown link check, registry check, audio loops)
     ├── docs/                 # This guide, CI setup, security headers
     └── package.json
 ```
@@ -116,7 +116,8 @@ cd blit386-demos
 pnpm run dev
 ```
 
-Opens the browser at `http://localhost:5173/demos/001-basics.html` (or visit `/demos/` for the full index).
+Opens the browser at `http://localhost:5173/demos/basics.html` (or visit `/demos/` for the full index). Vintage numbered
+paths such as `/demos/001-basics.html` 301 to the current slug.
 
 ### Development with Auto-Rebuild
 
