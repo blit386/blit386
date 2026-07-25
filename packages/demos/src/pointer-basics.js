@@ -267,7 +267,7 @@ class Demo {
     }
 
     /**
-     * Polyline through the recent pointer positions, dimmest at the oldest end.
+     * Polyline through the recent pointer positions, all drawn in uniform C_TRAIL.
      */
     renderTrail() {
         if (!BT.isPointerActive(0)) {

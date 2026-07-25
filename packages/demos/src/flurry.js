@@ -326,9 +326,10 @@ class Demo {
         // All PARTICLE_COUNT particles are created here and reused for the life of the demo.
         this.initParticles();
 
-        // Run one update cycle so all palette slots have real colors before the first render.
-        // Without this, every slot would be black on the very first frame.
-        this.update();
+        // Fill animated palette slots once without advancing physics (animTime / sparks /
+        // particles). Calling update() here would move the simulation before the engine's
+        // timing is available; updatePalette() only writes colors.
+        this.updatePalette();
 
         console.log('[FlurryDemo] Initialized');
         return true;

@@ -98,6 +98,8 @@ class Demo {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             // Live per-bus level meters and a voice-count readout in the overlay (off by default).
             isOverlayAudioMetersEnabled: true,
+            // Space is the Alert shortcut - keep the page from scrolling when it is pressed.
+            isCapturingKeyboardScroll: true,
         };
     }
 
@@ -214,6 +216,12 @@ class Demo {
 
         if (nextVolume !== volume) {
             BT.audioVolumeSet(row.bus, nextVolume, { fadeMs: 0 });
+
+            // While music is ducked, remember the user's latest Music slider value so
+            // update() restores that level (not the pre-duck capture) when the hold ends.
+            if (row.bus === 'music' && this.isDucking) {
+                this.preDuckMusicVolume = nextVolume;
+            }
         }
 
         const muted = BT.isAudioMuted(row.bus);

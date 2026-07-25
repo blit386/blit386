@@ -363,26 +363,22 @@ class Demo {
             return false;
         }
 
+        // Glitch state is shared by both backends - initialize once before the CRT check.
+        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        this.glitchTicksLeft = 0;
+        this.glitchDuration = 0;
+        this.glitchType = 'none';
+        this.glitchPeak = 0;
+
         this.effectsAvailable = isAvailable();
 
         if (!this.effectsAvailable) {
-            this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-            this.glitchTicksLeft = 0;
-            this.glitchDuration = 0;
-            this.glitchType = 'none';
-            this.glitchPeak = 0;
             console.log('[SpriteEffectsDemo] Initialization complete (no CRT stack).');
             return true;
         }
 
         // Build the full Orava CRT effect chain (see setupCrtStack() below render()).
         this.setupCrtStack();
-
-        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-        this.glitchTicksLeft = 0;
-        this.glitchDuration = 0;
-        this.glitchType = 'none';
-        this.glitchPeak = 0;
 
         this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
         this.bandWobbleTicksLeft = 0;
@@ -425,7 +421,9 @@ class Demo {
 
         // Extra update() work so the overlay timing chart shows green scrolling bars.
         // Math.sin swings between -1 and 1; * 0.5 + 0.5 remaps that to 0..1 for a smooth pulse.
-        const chartUpdateLoadMs = 2 + (Math.sin(BT.timeSeconds * 1.5) * 0.5 + 0.5) * 8;
+        // Keep the combined update+render busy-wait well under a 60 FPS frame (~16 ms)
+        // so low-power devices stay responsive while the timing chart still shows a pulse.
+        const chartUpdateLoadMs = 0.5 + (Math.sin(BT.timeSeconds * 1.5) * 0.5 + 0.5) * 2;
         burnCpuMs(chartUpdateLoadMs);
     }
 
@@ -438,7 +436,7 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // Extra render() work so the timing chart shows yellow scrolling bars.
-        const chartRenderLoadMs = 1 + (Math.cos(BT.timeSeconds * 2.2) * 0.5 + 0.5) * 6;
+        const chartRenderLoadMs = 0.3 + (Math.cos(BT.timeSeconds * 2.2) * 0.5 + 0.5) * 1.5;
         burnCpuMs(chartRenderLoadMs);
 
         // Draw both effect rows.
@@ -640,9 +638,10 @@ class Demo {
             const lum = Math.floor(base.luminance);
 
             // Block 1: Silhouette - near-black with slight variation to preserve depth cues.
+            // Floor channels like blocks 4-7 so every recipe hands Color32 whole bytes.
             this.palette.set(
                 COLOR_BASE + BLOCK_SILHOUETTE * n + i,
-                new Color32(lum * 0.08, lum * 0.08, lum * 0.1, base.a),
+                new Color32(Math.floor(lum * 0.08), Math.floor(lum * 0.08), Math.floor(lum * 0.1), base.a),
             );
 
             // Block 2: Damage white - everything shifted toward bright white.
@@ -655,7 +654,7 @@ class Demo {
             // Block 3: Damage red - everything shifted toward red.
             this.palette.set(
                 COLOR_BASE + BLOCK_DAMAGE_RED * n + i,
-                new Color32(Math.min(255, lum + 80), lum * 0.3, lum * 0.3, base.a),
+                new Color32(Math.min(255, lum + 80), Math.floor(lum * 0.3), Math.floor(lum * 0.3), base.a),
             );
 
             // Block 4: Team red - multiply base colors with a red tint.

@@ -151,7 +151,9 @@ class Demo {
         // This keeps ALL color math out of render() - the "palette animation" technique.
         for (let i = 0; i < PIXEL_COUNT; i++) {
             // hue is a position on the color wheel (0 = red, 120 = green, 240 = blue, 360 = back to red).
-            // We spread the pixels evenly by multiplying i by 17 (about 1/PIXEL_COUNT of 360).
+            // Multiplying i by 17 applies a 17-degree stride on the wheel - the sequence wraps
+            // several times across the PIXEL_COUNT pixels, which makes a denser rainbow than
+            // spacing hues evenly once around the circle.
             // Adding animTicks makes the whole rainbow rotate forward each tick.
             // The % 360 keeps the value inside 0-359 (it wraps around like a clock).
             const hue = (i * 17 + this.animTicks) % 360;

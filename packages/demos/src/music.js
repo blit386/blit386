@@ -120,9 +120,13 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
-        this.calmClip = await AudioClip.load('/audio/music-calm.wav');
-        this.upbeatClip = await AudioClip.load('/audio/music-upbeat.wav');
-        this.introLoopClip = await AudioClip.load('/audio/music-intro-loop.wav');
+        // Load all three tracks at once - Promise.all waits for the slowest fetch, not
+        // the sum of three sequential downloads.
+        [this.calmClip, this.upbeatClip, this.introLoopClip] = await Promise.all([
+            AudioClip.load('/audio/music-calm.wav'),
+            AudioClip.load('/audio/music-upbeat.wav'),
+            AudioClip.load('/audio/music-intro-loop.wav'),
+        ]);
 
         this.palette = BT.paletteCreate(256);
 

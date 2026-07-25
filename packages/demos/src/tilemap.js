@@ -143,8 +143,6 @@ class Demo {
      * @returns {Promise<boolean>} True when the demo is ready to run.
      */
     async init() {
-        console.log('[TilemapDemo] Initializing...');
-
         // Set up the color palette
         // A palette is like an artist's paint tray - we choose all our colors BEFORE
         // drawing anything. Each color gets a number (an "index") that we use in draw calls.
@@ -178,7 +176,6 @@ class Demo {
         // Fill tilemap with a simple outdoor scene: sky, grass, dirt, trees, water, rocks.
         this.buildLandscape();
 
-        console.log('[TilemapDemo] Initialized');
         return true;
     }
 

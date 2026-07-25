@@ -169,10 +169,9 @@ class Demo {
         this.palette.set(C_TOMATO, tomato);
         this.palette.set(C_CORNFLOWER, cornflower);
         this.palette.set(C_CUSTOM_DYNAMIC, this.resolveOr(CUSTOM_DYNAMIC_NAME, new Color32(255, 255, 255)));
-        this.palette.set(
-            C_OPTIONAL,
-            this.resolveOr(CUSTOM_OPTIONAL_NAME, this.resolveOr('gray', new Color32(128, 128, 128))),
-        );
+        // When demo-optional is unregistered, show the reserved C_OPTIONAL_FALLBACK slot
+        // (set in init()) instead of looking up the built-in name "gray".
+        this.palette.set(C_OPTIONAL, this.resolveOr(CUSTOM_OPTIONAL_NAME, this.palette.get(C_OPTIONAL_FALLBACK)));
     }
 
     /**

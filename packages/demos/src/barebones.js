@@ -146,12 +146,12 @@ class Demo {
         // Without a floor to land on (not added here), the square eventually flies off screen.
         this.fallSpeed += 0.1;
 
-        // Apply the fall: add the falling speed to the Y position.
+        // Apply fall and lift, then round back to a whole pixel.
+        // Vector2i only truncates in its constructor (and width/height setters) - assigning
+        // a float to .y directly would leave a fractional coordinate, which breaks the
+        // integer-pixel contract every demo drawing call expects.
         // Y increases downward in BLIT386 - 0 is the top edge of the screen.
-        this.player.y += this.fallSpeed;
-
-        // Apply the lift: subtract the lift speed from Y to push the square upward.
-        this.player.y -= this.liftSpeed;
+        this.player.y = Math.round(this.player.y + this.fallSpeed - this.liftSpeed);
     }
 
     /**

@@ -41,18 +41,18 @@ const C_BLUE_TEXT = 5; // Soft blue: "Blue Text" sample line
 const C_YELLOW_TEXT = 6; // Yellow: "Yellow Text" sample line
 const C_GRAY_TEXT = 7; // Light gray: secondary info lines
 
-// Dynamic slots: the rainbow text has 18 characters that each need a unique animated color.
-// We reserve palette slots 20..37 - one slot per character in RAINBOW_TEXT.
+// We define the rainbow text string here so both update() and render() use the exact same letters.
+// If you change this string, the rainbow slots and the pulse slot below stay contiguous.
+const RAINBOW_TEXT = 'Rainbow Animation!';
+
+// Dynamic slots: one animated color per character in RAINBOW_TEXT.
 // update() computes each character's current hue and stores it here.
 // render() then reads the slot index - no Color32 math happens during drawing!
-const C_RAINBOW_BASE = 20; // slots 20, 21, 22, ... 37 for the 18 rainbow characters
+const C_RAINBOW_BASE = 20; // first rainbow character; next slots follow contiguously
 
 // Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
-const C_PULSE = 38; // single slot for the pulsing-text color
-
-// We define the rainbow text string here so both update() and render() use the exact same letters.
-// If you change this string, update() will compute the right number of palette colors automatically.
-const RAINBOW_TEXT = 'Rainbow Animation!';
+// Always sits immediately after the last rainbow character slot.
+const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length;
 
 // Filled in init() from BT.systemPrintMeasure - width of one monospace system glyph.
 let systemCharWidth = 6;
@@ -273,7 +273,7 @@ class Demo {
      * @returns {number} The Y position after the text.
      */
     renderPulsingText(y) {
-        // C_PULSE (slot 38) holds an alpha (transparency) pulse precomputed in update():
+        // C_PULSE holds an alpha (transparency) pulse precomputed in update():
         // RGB stays fixed at (100, 100, 255) - a soft blue - and the alpha channel is
         // animated from 0 to 255 with Math.sin(), so the text fades in and out smoothly
         // rather than shifting hue. The engine blends the palette color against the

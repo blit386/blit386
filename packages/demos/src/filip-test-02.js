@@ -1,9 +1,11 @@
-import { bootstrap, BT, Color32, Rect2i } from 'blit386';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
 
 const C_BG = 1; // The screen background: a dark blue-gray.
+const DISPLAY_W = 320;
+const DISPLAY_H = 240;
 
 /**
  * @implements {IBTDemo}
@@ -35,22 +37,37 @@ class Demo {
     }
 
     drawCircle(radius) {
-        for (let i = 0; i < Math.PI * 2; i += 0.005) {
-            const x = Math.sin(i) * radius + 200;
-            const y = Math.cos(i) * radius + 100;
+        // Keep the ring on-screen: center is (200, 100), so the radius cannot reach past
+        // the nearest edge without clipping. Clamp so every plotted pixel can land inside.
+        const maxRadius = Math.min(200, 100, DISPLAY_W - 200, DISPLAY_H - 100);
+        const r = Math.max(0, Math.min(Math.round(radius), maxRadius));
+
+        // 0.05 radian steps are dense enough for a filled ring at this size without
+        // spending a whole frame drawing thousands of near-duplicate pixels.
+        for (let i = 0; i < Math.PI * 2; i += 0.05) {
+            const x = Math.round(Math.sin(i) * r + 200);
+            const y = Math.round(Math.cos(i) * r + 100);
+
+            if (x < 0 || x >= DISPLAY_W || y < 0 || y >= DISPLAY_H) {
+                continue;
+            }
+
             const col = Math.floor(i * 20) + 3;
 
-            BT.drawPixel(x, y, col);
+            BT.drawPixel(new Vector2i(x, y), col);
         }
     }
 
     update() {
-        this.myRect.x = BT.pointerPos().x - 25;
-        this.myRect.y = BT.pointerPos().y - 25;
+        const pointer = BT.pointerPos();
+
+        // Rect2i.setPosition truncates to integers (direct .x/.y writes would not).
+        this.myRect.setPosition(pointer.x - 25, pointer.y - 25);
 
         for (let i = 2; i < 250; i++) {
-            const r = BT.pointerPos().y;
-            const g = BT.pointerPos().x;
+            // Color32 clamps out-of-range channels itself; floor keeps the recipe readable.
+            const r = Math.floor(pointer.y);
+            const g = Math.floor(pointer.x);
             const b = Math.floor(8 + i * 10);
             const col = new Color32(r, g, b);
 

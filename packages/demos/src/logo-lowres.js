@@ -569,8 +569,9 @@ class Demo {
             this.noise.amount = NOISE_BASE + peak * 0.1;
         } else if (this.glitchType === 'flicker') {
             // DIM: the brightness drops as if the tube needs warming up.
-            // Lerp from FLICKER_BASE down to FLICKER_DIP based on the envelope.
-            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
+            // Lerp from FLICKER_BASE down to FLICKER_DIP, scaled by peak so the status
+            // chip's intensity percentage matches how deep the dim goes.
+            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * peak;
         } else if (this.glitchType === 'interference') {
             // GHOST: a faint ghost copy of the image appears (aerial reflection).
             this.interference.amount = peak * 0.07;
