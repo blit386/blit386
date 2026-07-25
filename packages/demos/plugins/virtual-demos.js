@@ -11,8 +11,15 @@ const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 /**
  * Vite plugin that serves/generates demo HTML pages virtually from src/*.js demo files.
  * No per-demo HTML file is needed on disk; the template lives in _partials/layout.html
- * and is rendered via simple string substitution. Each page embeds a Shiki + Twoslash
- * highlighted copy of that demo's source below the canvas.
+ * and is rendered via simple string substitution.
+ *
+ * Each page is dual-mode (static hosts serve one HTML for both URLs):
+ * - Shell (default): persistent banner + iframe pointing at the same path with `?embed`.
+ * - Embed (`?embed`): canvas + Shiki/Twoslash source panel (no banner). Used by the shell
+ *   iframe and by external embeds on blit386.dev.
+ *
+ * Client-side JS in the layout stamps `data-shell` / `data-embed` and strips the inactive
+ * region; the plugin always renders the full dual-mode template.
  * @returns {import('vite').Plugin}
  */
 export function virtualDemos() {
@@ -84,18 +91,27 @@ export function virtualDemos() {
     }
 
     /**
-     * Render a demo entry's HTML page from the shared layout template, including a
-     * Twoslash-highlighted copy of the demo source.
+     * Render a demo entry's dual-mode HTML page from the shared layout template
+     * (shell banner + iframe, and embed canvas + Twoslash source). The nav list
+     * includes `title` so the shell can update `document.title` on demo swaps.
      * @param {object} entry - Registry entry (see buildRegistry's return type).
      * @returns {Promise<string>}
      */
     async function renderHtml(entry) {
         const demoListJson = JSON.stringify(
-            registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel })),
+            registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
         ).replaceAll('<', '\\u003c');
 
         const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
-        const sourcePanelScript = isDevMode ? '<script type="module" src="/_partials/source-panel.js"></script>' : '';
+        // Dev-only live source panel: load only inside embed documents (shell strips
+        // #demo-source; the iframe is where highlighted source and HMR updates live).
+        const sourcePanelScript = isDevMode
+            ? `<script type="module">
+    if (window.__blit386IsEmbedded) {
+        await import('/_partials/source-panel.js');
+    }
+</script>`
+            : '';
 
         return layoutTemplate
             .replaceAll('{{title}}', escapeHtml(entry.title))

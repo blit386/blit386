@@ -9,47 +9,59 @@
     <link rel="stylesheet" href="../styles/layout.css"/>
     <link rel="stylesheet" href="../styles/twoslash-rich.css"/>
     <link rel="stylesheet" href="../styles/demo-source.css"/>
-</head>
+    <script>
+        // Stamp shell vs embed on <html> before the first paint so layout.css sizing
+        // (banner height, iframe vs canvas) is correct on the first frame.
+        (function () {
+            var embedded = new URLSearchParams(location.search).has('embed');
 
-<body data-slug="{{slug}}">
-
-<nav id="demo-banner" aria-label="Demo navigation"></nav>
-
-<script id="demo-list" type="application/json">{{demoList}}</script>
-
-<script>
-    (function () {
-        /**
-         * True when the page is being embedded (e.g. an iframe on blit386.dev) via a
-         * `?embed` query-string flag. Embedded pages never show the navigation banner.
-         * @returns {boolean}
-         */
-        function isEmbedded() {
-            return new URLSearchParams(location.search).has('embed');
-        }
-
-        /**
-         * Reserve (or collapse) the vertical space the banner occupies. Runs before
-         * #canvas-container is parsed, so the canvas sizing calc() chain in <style> picks
-         * up the correct value on first layout. Also stamps data-embed so CSS can hide
-         * the source panel and restore a centered full-viewport canvas.
-         * @param {boolean} embedded
-         * @returns {void}
-         */
-        function setBannerHeight(embedded) {
             document.documentElement.style.setProperty('--banner-height', embedded ? '0px' : '80px');
 
             if (embedded) {
                 document.documentElement.setAttribute('data-embed', 'true');
             } else {
-                document.documentElement.removeAttribute('data-embed');
+                document.documentElement.setAttribute('data-shell', 'true');
             }
-        }
 
+            window.__blit386IsEmbedded = embedded;
+        })();
+    </script>
+</head>
+
+<body data-slug="{{slug}}">
+
+<script id="demo-list" type="application/json">{{demoList}}</script>
+
+<!--
+  Shell mode (default): persistent banner + content iframe. Demo swaps change the iframe
+  src and history.pushState the clean demo URL; the banner never reloads.
+
+  Embed mode (?embed): #canvas-container + #demo-source only (no banner). Used by the
+  shell iframe and by external embeds on blit386.dev.
+
+  Both regions are in the markup; the inline script below removes the inactive one
+  before the engine or analytics run (static hosts serve one HTML for both URLs).
+-->
+<nav id="demo-banner" aria-label="Demo navigation"></nav>
+
+<iframe id="demo-frame" title="Demo content"></iframe>
+
+<div id="canvas-container">
+    <canvas id="blit386-canvas"></canvas>
+</div>
+
+<section id="demo-source" aria-label="Demo source">
+    <div class="demo-source-code">
+        {{sourceHtml}}
+    </div>
+</section>
+
+<script>
+    (function () {
         /**
          * Parse the demo list serialized into the page by the build (see plugins/virtual-demos.js).
          * Already filtered to nav-visible demos, in canonical order.
-         * @returns {Array<{slug: string, navLabel: string}>}
+         * @returns {Array<{slug: string, navLabel: string, title: string}>}
          */
         function readDemoList() {
             return JSON.parse(document.getElementById('demo-list').textContent);
@@ -71,9 +83,9 @@
 
         // Matches plugins/demo-registry.js's FILENAME_PATTERN (minus the .js extension).
         // Every slug that reaches urlFor() is validated against this allowlist before it is
-        // used to build a `location.href` navigation target, so a corrupted or tampered
-        // demo-list payload (or select value) can never produce anything but a same-directory
-        // "<slug>.html" path -- never a "javascript:" or other unexpected URL scheme.
+        // used to build a navigation target, so a corrupted or tampered demo-list payload
+        // (or select value) can never produce anything but a same-directory path -- never a
+        // "javascript:" or other unexpected URL scheme.
         var SLUG_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
         /**
@@ -91,6 +103,44 @@
             var dir = location.pathname.slice(0, location.pathname.lastIndexOf('/') + 1);
 
             return dir + slug + '.html';
+        }
+
+        /**
+         * Embed-mode URL for a demo (same path as urlFor, with ?embed). Loaded inside the
+         * shell iframe so the blit386 engine can be torn down by discarding the frame.
+         * @param {string} slug
+         * @returns {string}
+         */
+        function embedUrlFor(slug) {
+            return urlFor(slug) + '?embed';
+        }
+
+        /**
+         * Read the demo slug from the current location pathname
+         * (/demos/basics.html, /basics.html, or extensionless /basics).
+         * @returns {string}
+         */
+        function slugFromLocation() {
+            var name = location.pathname.slice(location.pathname.lastIndexOf('/') + 1);
+
+            return name.replace(/\.html$/, '');
+        }
+
+        /**
+         * Look up the document title for a slug from the nav list, falling back to the
+         * current document title when the slug is nav-hidden (not in the list).
+         * @param {Array<{slug: string, title: string}>} demos
+         * @param {string} slug
+         * @returns {string}
+         */
+        function titleFor(demos, slug) {
+            for (var i = 0; i < demos.length; i++) {
+                if (demos[i].slug === slug) {
+                    return demos[i].title;
+                }
+            }
+
+            return document.title;
         }
 
         /**
@@ -129,47 +179,118 @@
         }
 
         /**
-         * Build the "previous demo" arrow button, disabled at the start of the nav chain.
-         * @param {Array<{slug: string}>} demos
+         * Enable or disable the prev/next buttons for the given index into `demos`.
          * @param {number} currentIndex
+         * @param {number} demoCount
+         * @returns {void}
+         */
+        function syncArrowDisabled(currentIndex, demoCount) {
+            var prevButton = document.getElementById('demo-banner-prev');
+            var nextButton = document.getElementById('demo-banner-next');
+
+            if (!prevButton || !nextButton) {
+                return;
+            }
+
+            prevButton.disabled = currentIndex <= 0;
+            nextButton.disabled = currentIndex === -1 || currentIndex >= demoCount - 1;
+        }
+
+        /**
+         * Keep the dropdown and arrow enabled-state aligned with `slug`.
+         * @param {Array<{slug: string}>} demos
+         * @param {string} slug
+         * @returns {void}
+         */
+        function syncNavUI(demos, slug) {
+            var select = document.getElementById('demo-banner-select');
+            var currentIndex = demos.findIndex(function (demo) {
+                return demo.slug === slug;
+            });
+
+            if (select) {
+                if (currentIndex >= 0) {
+                    select.value = slug;
+                } else {
+                    // Nav-hidden demos are not in the list; leave the control unselected.
+                    select.selectedIndex = -1;
+                }
+            }
+
+            syncArrowDisabled(currentIndex, demos.length);
+        }
+
+        /**
+         * Swap the iframe to `slug`, update the shell title / body dataset, and optionally
+         * push a clean top-level URL into the address bar (no full navigation -- the shell
+         * stays loaded so the banner never reloads).
+         * @param {string} slug
+         * @param {{ pushState?: boolean, demos?: Array<{slug: string, title: string}> }} [options]
+         * @returns {void}
+         */
+        function selectDemo(slug, options) {
+            options = options || {};
+            var demos = options.demos || readDemoList();
+            var frame = document.getElementById('demo-frame');
+
+            if (!frame) {
+                return;
+            }
+
+            frame.src = embedUrlFor(slug);
+            document.body.dataset.slug = slug;
+            document.title = titleFor(demos, slug);
+            syncNavUI(demos, slug);
+
+            if (options.pushState !== false) {
+                history.pushState({ slug: slug }, '', urlFor(slug));
+            }
+        }
+
+        /**
+         * Build the "previous demo" arrow button.
+         * @param {Array<{slug: string}>} demos
          * @returns {HTMLButtonElement}
          */
-        function buildPrevButton(demos, currentIndex) {
+        function buildPrevButton(demos) {
             var prevButton = document.createElement('button');
 
             prevButton.type = 'button';
+            prevButton.id = 'demo-banner-prev';
             prevButton.setAttribute('aria-label', 'Previous demo');
             prevButton.textContent = '‹';
-            prevButton.disabled = currentIndex <= 0;
 
-            if (!prevButton.disabled) {
-                prevButton.addEventListener('click', function () {
-                    location.href = urlFor(demos[currentIndex - 1].slug);
-                });
-            }
+            prevButton.addEventListener('click', function () {
+                var currentIndex = findCurrentIndex(demos);
+
+                if (currentIndex > 0) {
+                    selectDemo(demos[currentIndex - 1].slug, { demos: demos });
+                }
+            });
 
             return prevButton;
         }
 
         /**
-         * Build the "next demo" arrow button, disabled at the end of the nav chain.
+         * Build the "next demo" arrow button.
          * @param {Array<{slug: string}>} demos
-         * @param {number} currentIndex
          * @returns {HTMLButtonElement}
          */
-        function buildNextButton(demos, currentIndex) {
+        function buildNextButton(demos) {
             var nextButton = document.createElement('button');
 
             nextButton.type = 'button';
+            nextButton.id = 'demo-banner-next';
             nextButton.setAttribute('aria-label', 'Next demo');
             nextButton.textContent = '›';
-            nextButton.disabled = currentIndex === -1 || currentIndex >= demos.length - 1;
 
-            if (!nextButton.disabled) {
-                nextButton.addEventListener('click', function () {
-                    location.href = urlFor(demos[currentIndex + 1].slug);
-                });
-            }
+            nextButton.addEventListener('click', function () {
+                var currentIndex = findCurrentIndex(demos);
+
+                if (currentIndex >= 0 && currentIndex < demos.length - 1) {
+                    selectDemo(demos[currentIndex + 1].slug, { demos: demos });
+                }
+            });
 
             return nextButton;
         }
@@ -184,6 +305,7 @@
         function buildSelect(demos, currentIndex) {
             var select = document.createElement('select');
 
+            select.id = 'demo-banner-select';
             select.setAttribute('aria-label', 'Jump to demo');
 
             demos.forEach(function (demo, index) {
@@ -200,7 +322,7 @@
             });
 
             select.addEventListener('change', function (event) {
-                location.href = urlFor(event.target.value);
+                selectDemo(event.target.value, { demos: demos });
             });
 
             return select;
@@ -216,53 +338,106 @@
             var nav = document.createElement('div');
 
             nav.className = 'demo-banner-nav';
-            nav.appendChild(buildPrevButton(demos, currentIndex));
+            nav.appendChild(buildPrevButton(demos));
             nav.appendChild(buildSelect(demos, currentIndex));
-            nav.appendChild(buildNextButton(demos, currentIndex));
+            nav.appendChild(buildNextButton(demos));
 
             return nav;
         }
 
         /**
-         * Populate the (initially empty) #demo-banner with the logo and nav group.
+         * Populate the (initially empty) #demo-banner with the logo and nav group, point
+         * the content iframe at this demo's embed URL, and wire back/forward navigation.
          * @returns {void}
          */
-        function renderBanner() {
+        function renderShell() {
             var demos = readDemoList();
             var currentIndex = findCurrentIndex(demos);
             var banner = document.getElementById('demo-banner');
+            var frame = document.getElementById('demo-frame');
+            var initialSlug = document.body.dataset.slug;
 
             banner.appendChild(buildLogo());
             banner.appendChild(buildNav(demos, currentIndex));
+            syncArrowDisabled(currentIndex, demos.length);
+
+            // Initial iframe src: this demo in embed mode (dev: /demos/<slug>.html?embed,
+            // prod: /<slug>.html?embed). Same relative-path derivation as urlFor().
+            frame.src = embedUrlFor(initialSlug);
+
+            window.addEventListener('popstate', function () {
+                var slug = slugFromLocation();
+
+                if (!SLUG_PATTERN.test(slug)) {
+                    return;
+                }
+
+                selectDemo(slug, { pushState: false, demos: demos });
+            });
         }
 
-        var embedded = isEmbedded();
+        /**
+         * Embed mode: drop the shell chrome so only the canvas + source panel remain.
+         * @returns {void}
+         */
+        function prepareEmbed() {
+            var banner = document.getElementById('demo-banner');
+            var frame = document.getElementById('demo-frame');
 
-        setBannerHeight(embedded);
+            if (banner) {
+                banner.remove();
+            }
 
-        if (!embedded) {
-            renderBanner();
+            if (frame) {
+                frame.remove();
+            }
+        }
+
+        /**
+         * Shell mode: drop the in-page canvas / source hosts. The live demo runs inside
+         * #demo-frame instead (workaround for the engine having no teardown API).
+         * @returns {void}
+         */
+        function prepareShell() {
+            var canvas = document.getElementById('canvas-container');
+            var source = document.getElementById('demo-source');
+
+            if (canvas) {
+                canvas.remove();
+            }
+
+            if (source) {
+                source.remove();
+            }
+        }
+
+        if (window.__blit386IsEmbedded) {
+            prepareEmbed();
+        } else {
+            prepareShell();
+            renderShell();
         }
     })();
 </script>
 
-<div id="canvas-container">
-    <canvas id="blit386-canvas"></canvas>
-</div>
-
-<section id="demo-source" aria-label="Demo source">
-    <div class="demo-source-code">
-        {{sourceHtml}}
-    </div>
-</section>
-
 <script async src="https://plausible.io/js/pa-Jy-1Ffqwh5Zpp2YOMEBr5.js"></script>
 <script>
-    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-    plausible.init()
+    // Analytics only on the shell document so the embed iframe does not double-count.
+    if (!window.__blit386IsEmbedded) {
+        window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+        plausible.init()
+    }
 </script>
 
-<script src="{{scriptFile}}.js" type="module"></script>
+<script type="module">
+    // Demo module only in embed mode. Shell mode hosts the demo inside #demo-frame so
+    // swapping demos discards the old engine instance with the frame.
+    // `scriptFile` is a root-absolute `/src/<slug>` path so Vite can resolve this import
+    // from the HTML proxy module in dev (relative `../src/...` fails there).
+    if (window.__blit386IsEmbedded) {
+        await import('{{scriptFile}}.js');
+    }
+</script>
 {{sourcePanelScript}}
 
 </body>

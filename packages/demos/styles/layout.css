@@ -43,14 +43,47 @@ body {
 }
 
 /*
- * Embed mode (iframe on blit386.dev): lock to the viewport and hide the
- * source panel so the embed stays a pure canvas view.
+ * Shell mode (default): persistent banner + content iframe. The demo runs inside
+ * the iframe (?embed) so swapping demos tears down the engine with the frame.
+ */
+html[data-shell='true'] {
+    &,
+    & body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* Hide embed-only hosts until JS removes them (avoids a flash of canvas chrome). */
+    & #canvas-container,
+    & #demo-source {
+        display: none;
+    }
+
+    & #demo-frame {
+        display: block;
+        width: 100%;
+        height: calc(100dvh - var(--banner-height));
+        border: 0;
+        background: black;
+    }
+}
+
+/*
+ * Embed mode (shell iframe, or external iframe on blit386.dev): lock to the
+ * viewport and hide the source panel so the embed stays a pure canvas view.
+ * --banner-height is 0 here; the parent shell already reserved the banner.
  */
 html[data-embed='true'] {
     &,
     & body {
         height: 100%;
         overflow: hidden;
+    }
+
+    /* Hide shell chrome until JS removes it. */
+    & #demo-banner,
+    & #demo-frame {
+        display: none;
     }
 
     & #demo-source {

@@ -39,12 +39,13 @@ blit386-demos/
     _headers                   # Cloudflare Pages headers
     _redirects                 # Cloudflare Pages redirects
   styles/                      # Demo chrome CSS (Vite + PostCSS: nesting, Autoprefixer)
-    layout.css                 # Banner, canvas sizing, embed mode (from layout.html)
+    layout.css                 # Banner, shell iframe, canvas sizing, embed mode (from layout.html)
     demo-source.css            # Source panel / Shiki / Twoslash hover polish
     twoslash-rich.css          # Vendored from @shikijs/twoslash (Biome-ignored)
     demos-index.css            # Dev-only /demos/ index page
   _partials/                   # Shared HTML template (plain HTML with {{title}}, {{scriptFile}},
-    layout.html                #   {{slug}}, {{demoList}}, and {{sourceHtml}} placeholders)
+    layout.html                #   {{slug}}, {{demoList}}, and {{sourceHtml}} placeholders;
+                               #   dual-mode: shell banner+iframe vs ?embed canvas+source)
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
     virtual-demos.js           # Virtual HTML pages + injects Twoslash-highlighted source
     highlight-demo-source.js   # Shiki + @shikijs/twoslash highlighter (mtime cache)
@@ -56,10 +57,13 @@ blit386-demos/
   docs/                        # CI-WORKSPACE-SETUP, EXTERNAL-DEVELOPER-SETUP, SECURITY-HEADERS
 ```
 
-The `/demos/NNN-name.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
-disk. Each demo page top-aligns the canvas (40px pad), then shows a Shiki + Twoslash highlighted copy of that demo's
-`src/<slug>.js` below it (Pragmata Pro, github-light / github-dark, CSS type-hover popovers). `?embed` hides the source
-panel and restores a centered full-viewport canvas for docs iframes.
+The `/demos/<slug>.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
+disk. Each page is dual-mode: the default **shell** keeps a persistent navigation banner and hosts the demo in a
+same-origin iframe pointed at the same path with `?embed` (so demo swaps can discard the engine instance – blit386 has
+no teardown API). Toolbar prev/next/select call `selectDemo(slug)`, which updates the iframe, `document.title`, and
+`history.pushState` to the clean demo URL; `popstate` keeps the iframe and selector in sync on back/forward. **Embed**
+mode (`?embed`) renders only `#canvas-container` + `#demo-source` (centered full-viewport canvas, source hidden) for the
+shell iframe and for external docs embeds on blit386.dev.
 
 Numbering has two gaps: `021` is retired (it was `021-error-preview`), and `039` / `040` were never used. New demos take
 the next free number after the highest one in use – never a retired or skipped one.
@@ -136,20 +140,23 @@ only rebuilds the browser bundle (`dist/blit386.js`) – run a one-shot `pnpm ru
 No automated test covers this (see Global Constraints in the implementation plan) – run this by hand after any change to
 the hot-reload wiring:
 
-1. `pnpm run dev:watch`; open `001-basics`.
+1. `pnpm run dev:watch`; open `basics` (shell URL; demo runs inside the `?embed` iframe).
 2. Edit a `render()` color constant – visual change, state (ticks/positions) kept, console shows
    `[BT] Hot reload #1 (methods)`.
 3. Edit `init()` – re-init runs, `onHotReload` fires with a snapshot (add a temporary hook to verify), no page reload.
 4. Edit `configure()`'s `displaySize` – full page reload.
-5. Edit `public/sprites/*.png` used by 013/014 – texture updates in place, no reload.
-6. Edit `public/audio/blip.wav` (036) – the next `soundPlay` uses the new sound; replace the playing music clip (037) –
-   the track restarts.
+5. Edit `public/sprites/*.png` used by image-output / game-scene – texture updates in place, no reload.
+6. Edit `public/audio/blip.wav` (audio-basics) – the next `soundPlay` uses the new sound; replace the playing music clip
+   (music) – the track restarts.
 7. Edit `src/shared/ui.js` – demo keeps its own state, the UI kit still works (D-pad visibility may reset – expected,
    see above).
-8. Edit `_partials/layout.html` – full reload; the source panel updates on demo edits without a reload.
-9. Edit an engine `src/` file – the lib rebuilds – full reload (`blit386WatchReload` preserved).
-10. Repeat steps 2-3 with `?backend=software`: full reload is expected (verify against known gap below), not parity.
-11. Introduce a syntax error in a demo – the old demo keeps running (Vite may or may not show its error overlay,
+8. Edit `_partials/layout.html` – full reload of the shell; the source panel updates on demo edits without a reload.
+9. Jump to another demo via the banner dropdown – address bar updates via `pushState`, banner stays mounted, only the
+   iframe reloads; browser back/forward restores the previous demo in the iframe.
+10. Edit an engine `src/` file – the lib rebuilds – full reload (`blit386WatchReload` preserved).
+11. Repeat steps 2-3 with `?backend=software` on the embed URL: full reload is expected (verify against known gap
+    below), not parity.
+12. Introduce a syntax error in a demo – the old demo keeps running (Vite may or may not show its error overlay,
     depending on the failure class); fix it – it recovers with no reload at any point.
 
 Known gap: under `?backend=software`, any `src/NNN-*.js` edit currently full-reloads, even a pure `render()`-body change
