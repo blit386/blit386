@@ -35,7 +35,7 @@
     {
       "src": "api-random.md",
       "path": "api/random",
-      "description": "Seeded Random PRNG: ints, floats, Vector2i/Rect2i helpers, pick, shuffle, weighted choice, and stream control."
+      "description": "Seeded Random PRNG plus stateless coordinate hashes (hash1i/2i/3i and float forms) for chunked worlds."
     },
     {
       "src": "api-core-types.md",
