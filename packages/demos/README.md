@@ -14,9 +14,9 @@ effects, input (pointer, keyboard, gamepad), and audio. Each demo lives in a sin
 `src/001-basics.js`), and most import the shared UI kit in `src/shared/` for their on-screen panels and touch controls
 (see [Shared UI kit](#shared-ui-kit) below for the two exceptions). During development, Vite serves the matching page at
 `/demos/basics.html` (no HTML file is committed; the build wires a shared layout to each script). The default page is a
-persistent shell (navigation banner + iframe). The iframe loads the same demo with `?embed`, which runs the canvas and
-keeps the banner from reloading when you jump between demos. Direct `?embed` URLs (and docs-site iframes) hide the
-banner and source panel for a centered full-viewport canvas.
+persistent shell (navigation banner + iframe). The iframe loads the same demo with `?embed&source`, which runs the
+canvas, keeps the Twoslash source panel under it, and lets demo swaps discard the engine with the frame. Direct `?embed`
+URLs (and docs-site iframes) hide the banner and source panel for a centered full-viewport canvas.
 
 Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/). Live URLs use a flat path per slug,
 for example `https://demos.blit386.dev/basics`.

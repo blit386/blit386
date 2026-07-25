@@ -13,12 +13,21 @@
         // Stamp shell vs embed on <html> before the first paint so layout.css sizing
         // (banner height, iframe vs canvas) is correct on the first frame.
         (function () {
-            var embedded = new URLSearchParams(location.search).has('embed');
+            var params = new URLSearchParams(location.search);
+            var embedded = params.has('embed');
+
+            // Shell iframe adds &source so the Twoslash panel stays under the canvas.
+            // Plain ?embed (docs site) stays canvas-only.
+            var showSource = params.has('source');
 
             // Shell keeps the :root --banner-height from layout.css; embed overrides to 0.
             if (embedded) {
                 document.documentElement.style.setProperty('--banner-height', '0px');
                 document.documentElement.setAttribute('data-embed', 'true');
+
+                if (showSource) {
+                    document.documentElement.setAttribute('data-source', 'true');
+                }
             } else {
                 document.documentElement.setAttribute('data-shell', 'true');
             }
@@ -36,8 +45,9 @@
   Shell mode (default): persistent banner + content iframe. Demo swaps change the iframe
   src and history.pushState the clean demo URL; the banner never reloads.
 
-  Embed mode (?embed): #canvas-container + #demo-source only (no banner). Used by the
-  shell iframe and by external embeds on blit386.dev.
+  Embed mode (?embed): #canvas-container only (no banner; source hidden). Used by
+  external embeds on blit386.dev. The shell iframe loads ?embed&source so the
+  Twoslash source panel stays under the canvas inside the frame.
 
   Both regions are in the markup; the inline script below removes the inactive one
   before the engine or analytics run (static hosts serve one HTML for both URLs).
@@ -106,13 +116,14 @@
         }
 
         /**
-         * Embed-mode URL for a demo (same path as urlFor, with ?embed). Loaded inside the
-         * shell iframe so the blit386 engine can be torn down by discarding the frame.
+         * Embed URL for the shell iframe: same path as urlFor, with ?embed&source.
+         * ?embed tears down the engine by discarding the frame; &source keeps the
+         * Twoslash panel under the canvas (plain ?embed stays canvas-only for docs).
          * @param {string} slug
          * @returns {string}
          */
         function embedUrlFor(slug) {
-            return urlFor(slug) + '?embed';
+            return urlFor(slug) + '?embed&source';
         }
 
         /**
@@ -998,8 +1009,8 @@
 
             syncArrowDisabled(demos, currentIndex);
 
-            // Initial iframe src: this demo in embed mode (dev: /demos/<slug>.html?embed,
-            // prod: /<slug>.html?embed). Same relative-path derivation as urlFor().
+            // Initial iframe src: this demo with source (dev: /demos/<slug>.html?embed&source,
+            // prod: /<slug>.html?embed&source). Same relative-path derivation as urlFor().
             frame.src = embedUrlFor(initialSlug);
 
             window.addEventListener('popstate', function () {

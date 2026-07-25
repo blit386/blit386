@@ -45,7 +45,7 @@ blit386-demos/
     demos-index.css            # Dev-only /demos/ index page
   _partials/                   # Shared HTML template (plain HTML with {{title}}, {{scriptFile}},
     layout.html                #   {{slug}}, {{demoList}}, {{sourceHtml}}, and {{sourcePanelScript}}
-                               #   placeholders; dual-mode: shell banner+iframe vs ?embed canvas+source)
+                               #   placeholders; dual-mode: shell banner+iframe vs ?embed / ?embed&source)
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
     virtual-demos.js           # Virtual HTML pages + injects Twoslash-highlighted source
     highlight-demo-source.js   # Shiki + @shikijs/twoslash highlighter (mtime cache)
@@ -59,11 +59,12 @@ blit386-demos/
 
 The `/demos/<slug>.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
 disk. Each page is dual-mode: the default **shell** keeps a persistent navigation banner and hosts the demo in a
-same-origin iframe pointed at the same path with `?embed` (so demo swaps can discard the engine instance – blit386 has
-no teardown API). Toolbar prev/next/select call `selectDemo(slug)`, which updates the iframe, `document.title`, and
-`history.pushState` to the clean demo URL; `popstate` keeps the iframe and selector in sync on back/forward. **Embed**
-mode (`?embed`) renders only `#canvas-container` + `#demo-source` (centered full-viewport canvas, source hidden) for the
-shell iframe and for external docs embeds on blit386.dev.
+same-origin iframe pointed at the same path with `?embed&source` (so demo swaps can discard the engine instance –
+blit386 has no teardown API – while the Twoslash source panel stays under the canvas inside the frame). Toolbar
+prev/next/select call `selectDemo(slug)`, which updates the iframe, `document.title`, and `history.pushState` to the
+clean demo URL; `popstate` keeps the iframe and selector in sync on back/forward. Plain **embed** mode (`?embed`, no
+`source`) renders only `#canvas-container` (centered full-viewport canvas, source hidden) for external docs embeds on
+blit386.dev.
 
 Numbering has two gaps: `021` is retired (it was `021-error-preview`), and `039` / `040` were never used. New demos take
 the next free number after the highest one in use – never a retired or skipped one.
@@ -140,7 +141,7 @@ only rebuilds the browser bundle (`dist/blit386.js`) – run a one-shot `pnpm ru
 No automated test covers this (see Global Constraints in the implementation plan) – run this by hand after any change to
 the hot-reload wiring:
 
-1. `pnpm run dev:watch`; open `basics` (shell URL; demo runs inside the `?embed` iframe).
+1. `pnpm run dev:watch`; open `basics` (shell URL; demo runs inside the `?embed&source` iframe).
 2. Edit a `render()` color constant – visual change, state (ticks/positions) kept, console shows
    `[BT] Hot reload #1 (methods)`.
 3. Edit `init()` – re-init runs, `onHotReload` fires with a snapshot (add a temporary hook to verify), no page reload.

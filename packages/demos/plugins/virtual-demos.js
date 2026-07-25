@@ -14,9 +14,9 @@ const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
  * and is rendered via simple string substitution.
  *
  * Each page is dual-mode (static hosts serve one HTML for both URLs):
- * - Shell (default): persistent banner + iframe pointing at the same path with `?embed`.
- * - Embed (`?embed`): canvas + Shiki/Twoslash source panel (no banner). Used by the shell
- *   iframe and by external embeds on blit386.dev.
+ * - Shell (default): persistent banner + iframe pointing at `?embed&source`.
+ * - Embed (`?embed`): canvas only (no banner; source hidden) for docs on blit386.dev.
+ *   Shell iframe adds `&source` so the Shiki/Twoslash panel stays under the canvas.
  *
  * Client-side JS in the layout stamps `data-shell` / `data-embed` and strips the inactive
  * region; the plugin always renders the full dual-mode template.
@@ -103,8 +103,10 @@ export function virtualDemos() {
         ).replaceAll('<', '\\u003c');
 
         const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
-        // Dev-only live source panel: load only inside embed documents (shell strips
-        // #demo-source; the iframe is where highlighted source and HMR updates live).
+
+        // Dev-only live source panel: load only inside embed documents. The shell strips
+        // #demo-source and loads the iframe with ?embed&source, where highlighted source
+        // and HMR updates live. Plain ?embed (docs) keeps the panel in the DOM but hidden.
         const sourcePanelScript = isDevMode
             ? `<script type="module">
     if (window.__blit386IsEmbedded) {

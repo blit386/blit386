@@ -69,9 +69,12 @@ html[data-shell='true'] {
 }
 
 /*
- * Embed mode (shell iframe, or external iframe on blit386.dev): lock to the
- * viewport and hide the source panel so the embed stays a pure canvas view.
- * --banner-height is 0 here; the parent shell already reserved the banner.
+ * Embed mode (?embed): lock to the viewport and hide the source panel so docs
+ * embeds on blit386.dev stay a pure canvas view. --banner-height is 0 here;
+ * the parent shell (when used) already reserved the banner.
+ *
+ * Shell iframe uses ?embed&source (data-source): same canvas sizing, but the
+ * Twoslash panel is visible below and the document scrolls inside the frame.
  */
 html[data-embed='true'] {
     &,
@@ -95,6 +98,32 @@ html[data-embed='true'] {
         height: var(--canvas-view-h);
         padding-top: 0;
         align-items: center;
+    }
+}
+
+html[data-embed='true'][data-source='true'] {
+    &,
+    & body {
+        height: auto;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    & #demo-source {
+        display: block;
+    }
+
+    /*
+     * Match the old shell page: canvas top-aligned under the toolbar.
+     * height:auto so the container hugs the canvas – the viewport-tall
+     * embed height would leave a gap above the source panel.
+     */
+    & #canvas-container {
+        --canvas-view-h: calc(100dvh - var(--banner-height) - var(--canvas-top-pad));
+        height: auto;
+        padding-top: var(--canvas-top-pad);
+        align-items: flex-start;
     }
 }
 
