@@ -84,7 +84,8 @@ The single CI workflow (`.github/workflows/ci.yml`) has three jobs:
   registry check (`pnpm run check:demo-registry`), all as parallel steps in this one job. It runs on pull requests as
   well as on pushes to `main`, and it needs the workspace like every other step (the checks run from inside
   `blit386-demos/` with its dependencies installed). The link check walks every `.md` / `.mdx` file in the repo, not
-  just `README.md`. The registry check enforces bijection between `src/*.js`, `DEMO_ORDER`, and `VINTAGE_URLS`
+  just `README.md`. The registry check enforces bijection between `src/*.js`, `DEMO_ORDER`, and `VINTAGE_URLS`, plus
+  `RETIRED_SLUGS` and `NAV_HIDDEN_SLUGS` consistency
 - build – Build demos and upload artifacts (depends on `quality-checks`)
 - deploy – Deploy to Cloudflare Pages (main branch only; depends on `build`)
 

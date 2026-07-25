@@ -30,7 +30,7 @@ Run comprehensive quality checks before committing or pushing code.
   - `spellcheck` – Check spelling in code and docs
   - `knip` – Find unused exports and dependencies
   - `docs:links` – Verify Markdown links (every `.md` / `.mdx` in the repo, including `README.md`, `docs/`, `.claude/`)
-  - `check:demo-registry` – DEMO_ORDER / VINTAGE_URLS / `src/*.js` consistency
+  - `check:demo-registry` – DEMO_ORDER / VINTAGE_URLS / RETIRED_SLUGS / NAV_HIDDEN_SLUGS / `src/*.js` consistency
   - `build` – Confirm the production build succeeds (CI and Cloudflare Pages depend on this)
 
 2. Report results
