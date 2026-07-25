@@ -65,7 +65,9 @@ export function buildRegistry(rootDir) {
             slug,
             title,
             navLabel,
-            scriptFile: `../src/${slug}`,
+            // Root-absolute URL so inline `import()` from the dual-mode layout resolves in
+            // Vite dev (HTML proxy) and is still rewritten to a hashed asset at build time.
+            scriptFile: `/src/${slug}`,
             urlPath: `/demos/${slug}.html`,
             sourcePath,
             isNavHidden: NAV_HIDDEN_SLUGS.has(slug),
