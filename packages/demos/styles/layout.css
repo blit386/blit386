@@ -239,12 +239,12 @@ html[data-embed='true'] {
     /*
      * Neighbor-name tooltip - adapted from styles/twoslash-rich.css hover popup
      * (absolute container, arrow pseudo-element, opacity / pointer-events toggle).
+     * Prev sits to the left of its button; next sits to the right.
      */
     & .demo-banner-arrow-tooltip {
         position: absolute;
-        left: 50%;
-        bottom: calc(100% + 8px);
-        transform: translateX(-50%);
+        top: 50%;
+        transform: translateY(-50%);
         opacity: 0;
         pointer-events: none;
         z-index: 30;
@@ -263,16 +263,37 @@ html[data-embed='true'] {
         &::before {
             content: '';
             position: absolute;
-            top: calc(100% - 4px);
-            left: 50%;
+            top: 50%;
             width: 6px;
             height: 6px;
-            margin-left: -3px;
-            border-bottom: 1px solid #8888;
-            border-right: 1px solid #8888;
+            margin-top: -3px;
             background: #f8f8f8;
             transform: rotate(45deg);
             pointer-events: none;
+        }
+    }
+
+    & #demo-banner-prev .demo-banner-arrow-tooltip {
+        right: calc(100% + 8px);
+        left: auto;
+
+        &::before {
+            right: -4px;
+            left: auto;
+            border-top: 1px solid #8888;
+            border-right: 1px solid #8888;
+        }
+    }
+
+    & #demo-banner-next .demo-banner-arrow-tooltip {
+        left: calc(100% + 8px);
+        right: auto;
+
+        &::before {
+            left: -4px;
+            right: auto;
+            border-bottom: 1px solid #8888;
+            border-left: 1px solid #8888;
         }
     }
 
@@ -409,9 +430,17 @@ html[data-embed='true'] {
 
             &::before {
                 background: #2a2a2a;
-                border-bottom-color: #6668;
-                border-right-color: #6668;
             }
+        }
+
+        & #demo-banner-prev .demo-banner-arrow-tooltip::before {
+            border-top-color: #6668;
+            border-right-color: #6668;
+        }
+
+        & #demo-banner-next .demo-banner-arrow-tooltip::before {
+            border-bottom-color: #6668;
+            border-left-color: #6668;
         }
 
         & .demo-banner-listbox {
