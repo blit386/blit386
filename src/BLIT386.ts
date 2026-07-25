@@ -74,7 +74,7 @@ import { displayError, getCanvas } from './utils/BootstrapHelpers';
 import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
-import { applyEasing } from './utils/Easing';
+import { applyEasing, interpolate } from './utils/Easing';
 import { noActivePaletteError } from './utils/errorMessages';
 import { Rect2i } from './utils/Rect2i';
 import { Timer } from './utils/Timer';
@@ -2121,6 +2121,7 @@ export {
     getCanvas,
     green,
     Interference,
+    interpolate,
     mergeHardwareSettings,
     Noise,
     Palette,

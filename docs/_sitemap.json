@@ -30,7 +30,7 @@
     {
       "src": "api-easing.md",
       "path": "api/easing",
-      "description": "Named easing curves for palette fade effects via applyEasing."
+      "description": "Named easing curves and interpolate() for number, Vector2i, Color32, and Rect2i."
     },
     {
       "src": "api-core-types.md",
