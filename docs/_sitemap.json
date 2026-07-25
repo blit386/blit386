@@ -35,7 +35,7 @@
     {
       "src": "api-random.md",
       "path": "api/random",
-      "description": "Seeded Random PRNG: ints, floats, pick, shuffle, weighted choice, and stream control."
+      "description": "Seeded Random PRNG: ints, floats, Vector2i/Rect2i helpers, pick, shuffle, weighted choice, and stream control."
     },
     {
       "src": "api-core-types.md",

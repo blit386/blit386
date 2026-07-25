@@ -5,7 +5,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { Random } from './Random';
+import { Rect2i } from './Rect2i';
 import { Rng } from './Rng';
+import { Vector2i } from './Vector2i';
 
 describe('Random', () => {
     describe('constructor and seed', () => {
@@ -229,6 +231,110 @@ describe('Random', () => {
             for (let i = 0; i < 100; i++) {
                 expect(Number.isFinite(rng.gaussian(10, 2))).toBe(true);
             }
+        });
+    });
+
+    describe('insideRect and pointInRange', () => {
+        it('should keep insideRect points inside the half-open rectangle', () => {
+            const rng = new Random(11);
+            const rect = new Rect2i(10, 20, 5, 7);
+
+            for (let i = 0; i < 500; i++) {
+                expect(rect.isContaining(rng.insideRect(rect))).toBe(true);
+            }
+        });
+
+        it('should keep pointInRange points in the half-open per-axis range', () => {
+            const rng = new Random(12);
+            const min = new Vector2i(3, -2);
+            const max = new Vector2i(8, 4);
+
+            for (let i = 0; i < 500; i++) {
+                const point = rng.pointInRange(min, max);
+
+                expect(point.x).toBeGreaterThanOrEqual(min.x);
+                expect(point.x).toBeLessThan(max.x);
+                expect(point.y).toBeGreaterThanOrEqual(min.y);
+                expect(point.y).toBeLessThan(max.y);
+            }
+        });
+
+        it('should mutate and return out from insideRectTo and pointInRangeTo', () => {
+            const rng = new Random(13);
+            const rect = new Rect2i(0, 0, 4, 4);
+            const min = new Vector2i(1, 2);
+            const max = new Vector2i(5, 6);
+            const outRect = new Vector2i(99, 99);
+            const outRange = new Vector2i(99, 99);
+
+            expect(rng.insideRectTo(rect, outRect)).toBe(outRect);
+            expect(rect.isContaining(outRect)).toBe(true);
+
+            expect(rng.pointInRangeTo(min, max, outRange)).toBe(outRange);
+            expect(outRange.x).toBeGreaterThanOrEqual(min.x);
+            expect(outRange.x).toBeLessThan(max.x);
+            expect(outRange.y).toBeGreaterThanOrEqual(min.y);
+            expect(outRange.y).toBeLessThan(max.y);
+        });
+
+        it('should draw the same sequence for allocating and *To variants', () => {
+            const rect = new Rect2i(2, 3, 6, 5);
+            const min = new Vector2i(-1, 0);
+            const max = new Vector2i(4, 3);
+            const a = new Random(42);
+            const b = new Random(42);
+            const out = new Vector2i();
+
+            for (let i = 0; i < 20; i++) {
+                const allocatedRect = a.insideRect(rect);
+                const writtenRect = b.insideRectTo(rect, out);
+
+                expect(writtenRect.x).toBe(allocatedRect.x);
+                expect(writtenRect.y).toBe(allocatedRect.y);
+
+                const allocatedRange = a.pointInRange(min, max);
+                const writtenRange = b.pointInRangeTo(min, max, out);
+
+                expect(writtenRange.x).toBe(allocatedRange.x);
+                expect(writtenRange.y).toBe(allocatedRange.y);
+            }
+        });
+
+        it('should throw when the rectangle or range is empty', () => {
+            const rng = new Random(1);
+
+            expect(() => rng.insideRect(new Rect2i(0, 0, 0, 4))).toThrow(RangeError);
+            expect(() => rng.pointInRange(new Vector2i(5, 0), new Vector2i(5, 3))).toThrow(RangeError);
+        });
+    });
+
+    describe('direction4 and direction8', () => {
+        it('should only return the four cardinal unit vectors from direction4', () => {
+            const rng = new Random(21);
+            const expected = new Set(['1,0', '-1,0', '0,1', '0,-1']);
+            const seen = new Set<string>();
+
+            for (let i = 0; i < 200; i++) {
+                const d = rng.direction4();
+
+                seen.add(`${d.x},${d.y}`);
+            }
+
+            expect(seen).toEqual(expected);
+        });
+
+        it('should only return the eight king-move unit vectors from direction8', () => {
+            const rng = new Random(22);
+            const expected = new Set(['1,0', '-1,0', '0,1', '0,-1', '1,1', '1,-1', '-1,1', '-1,-1']);
+            const seen = new Set<string>();
+
+            for (let i = 0; i < 400; i++) {
+                const d = rng.direction8();
+
+                seen.add(`${d.x},${d.y}`);
+            }
+
+            expect(seen).toEqual(expected);
         });
     });
 

@@ -1,9 +1,9 @@
 /**
  * Seeded, deterministic pseudo-random number generator (mulberry32).
  *
- * Integer-first helpers for demos and games: ints, floats, picks, shuffles, and
- * weighted choice. Same seed always produces the same sequence across platforms
- * (pure `>>> 0` integer ops in the core).
+ * Integer-first helpers for demos and games: ints, floats, picks, shuffles,
+ * weighted choice, and Vector2i/Rect2i spatial draws. Same seed always produces
+ * the same sequence across platforms (pure `>>> 0` integer ops in the core).
  *
  * @since 1.5.0
  */
@@ -16,12 +16,34 @@ import {
     randomWeightedLengthError,
     randomWeightedTotalError,
 } from './errorMessages';
+import type { Rect2i } from './Rect2i';
+import { Vector2i } from './Vector2i';
 
 /** Reciprocal of 2^32, used to map a uint32 into [0, 1). */
 const INV_2_32 = 1 / 4294967296;
 
 /** Two pi, used by {@link Random.angle}. */
 const TWO_PI = Math.PI * 2;
+
+/** Cardinal unit offsets for {@link Random.direction4} (Y-down). */
+const CARDINALS: readonly (readonly [number, number])[] = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+];
+
+/** Eight king-move unit offsets for {@link Random.direction8} (Y-down). */
+const DIRECTIONS8: readonly (readonly [number, number])[] = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
+];
 
 /**
  * Seeded PRNG with integer-first generators and stream control (`seed` / `clone` / `fork`).
@@ -316,6 +338,95 @@ export class Random {
         const mag = Math.sqrt(-2 * Math.log(u)) * Math.cos(TWO_PI * v);
 
         return mean + mag * stddev;
+    }
+
+    /**
+     * Returns a random integer point inside a rectangle (half-open, like {@link Rect2i.isContaining}).
+     *
+     * @param rect - Rectangle to sample; must have positive width and height.
+     * @returns New point with `x` in `[rect.x, rect.right)` and `y` in `[rect.y, rect.bottom)`.
+     * @since 1.5.0
+     */
+    public insideRect(rect: Rect2i): Vector2i {
+        return this.insideRectTo(rect, new Vector2i());
+    }
+
+    /**
+     * Writes a random integer point inside a rectangle into `out` (zero-alloc).
+     *
+     * Half-open bounds match {@link Rect2i.isContaining}: `x` in `[rect.x, rect.right)`,
+     * `y` in `[rect.y, rect.bottom)`.
+     *
+     * @param rect - Rectangle to sample; must have positive width and height.
+     * @param out - Vector to write into.
+     * @returns The same `out` reference.
+     * @since 1.5.0
+     */
+    public insideRectTo(rect: Rect2i, out: Vector2i): Vector2i {
+        out.x = this.int(rect.x, rect.right);
+        out.y = this.int(rect.y, rect.bottom);
+
+        return out;
+    }
+
+    /**
+     * Returns a random integer point with each axis drawn from a half-open range.
+     *
+     * Per axis uses {@link int}: `x` in `[min.x, max.x)`, `y` in `[min.y, max.y)`.
+     *
+     * @param min - Inclusive lower bound per axis.
+     * @param max - Exclusive upper bound per axis.
+     * @returns New point in the half-open range.
+     * @since 1.5.0
+     */
+    public pointInRange(min: Vector2i, max: Vector2i): Vector2i {
+        return this.pointInRangeTo(min, max, new Vector2i());
+    }
+
+    /**
+     * Writes a random integer point from a half-open per-axis range into `out` (zero-alloc).
+     *
+     * Per axis uses {@link int}: `x` in `[min.x, max.x)`, `y` in `[min.y, max.y)`.
+     *
+     * @param min - Inclusive lower bound per axis.
+     * @param max - Exclusive upper bound per axis.
+     * @param out - Vector to write into.
+     * @returns The same `out` reference.
+     * @since 1.5.0
+     */
+    public pointInRangeTo(min: Vector2i, max: Vector2i, out: Vector2i): Vector2i {
+        out.x = this.int(min.x, max.x);
+        out.y = this.int(min.y, max.y);
+
+        return out;
+    }
+
+    /**
+     * Returns one of the four cardinal unit directions (Y-down).
+     *
+     * Possible values: `(1, 0)`, `(-1, 0)`, `(0, 1)`, `(0, -1)`.
+     *
+     * @returns New unit vector.
+     * @since 1.5.0
+     */
+    public direction4(): Vector2i {
+        const [x, y] = CARDINALS[this.int(4)] as readonly [number, number];
+
+        return Vector2i.fromXYUnchecked(x, y);
+    }
+
+    /**
+     * Returns one of the eight king-move unit directions (Y-down).
+     *
+     * Cardinals plus diagonals: `(±1, 0)`, `(0, ±1)`, `(±1, ±1)`.
+     *
+     * @returns New unit vector.
+     * @since 1.5.0
+     */
+    public direction8(): Vector2i {
+        const [x, y] = DIRECTIONS8[this.int(8)] as readonly [number, number];
+
+        return Vector2i.fromXYUnchecked(x, y);
     }
 
     /**

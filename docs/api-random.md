@@ -33,6 +33,7 @@ rng.pick(['a', 'b', 'c']);
 rng.shuffle([1, 2, 3, 4]);
 rng.angle(); // [0, 2π) radians
 rng.gaussian(0, 1); // Box-Muller sample
+rng.direction4(); // cardinal unit vector
 ```
 
 Omit the constructor seed to time-seed from `Date.now()` (lower 32 bits). Call `seed(n)` later to restart from a known
@@ -40,24 +41,51 @@ value.
 
 ## Generators
 
-| Method                     | Range / behavior                                 |
-| -------------------------- | ------------------------------------------------ |
-| `next()`                   | Float in `[0, 1)`                                |
-| `float(min, max)`          | Float in `[min, max)`                            |
-| `int(maxExclusive)`        | Integer in `[0, maxExclusive)`                   |
-| `int(min, maxExclusive)`   | Integer in `[min, maxExclusive)`                 |
-| `intInclusive(min, max)`   | Integer in `[min, max]`                          |
-| `bool(probability?)`       | `true` with the given chance (default `0.5`)     |
-| `sign()`                   | `-1` or `1`                                      |
-| `pick(arr)`                | One element from a non-empty array               |
-| `shuffle(arr)`             | New shuffled copy (Fisher-Yates)                 |
-| `shuffleInPlace(arr)`      | Shuffle the array in place and return it         |
-| `weighted(items, weights)` | One item by relative non-negative weights        |
-| `angle()`                  | Float in `[0, 2π)` radians                       |
-| `gaussian(mean?, stddev?)` | Approximate normal sample (Box-Muller, no spare) |
+| Method                          | Range / behavior                                 |
+| ------------------------------- | ------------------------------------------------ |
+| `next()`                        | Float in `[0, 1)`                                |
+| `float(min, max)`               | Float in `[min, max)`                            |
+| `int(maxExclusive)`             | Integer in `[0, maxExclusive)`                   |
+| `int(min, maxExclusive)`        | Integer in `[min, maxExclusive)`                 |
+| `intInclusive(min, max)`        | Integer in `[min, max]`                          |
+| `bool(probability?)`            | `true` with the given chance (default `0.5`)     |
+| `sign()`                        | `-1` or `1`                                      |
+| `pick(arr)`                     | One element from a non-empty array               |
+| `shuffle(arr)`                  | New shuffled copy (Fisher-Yates)                 |
+| `shuffleInPlace(arr)`           | Shuffle the array in place and return it         |
+| `weighted(items, weights)`      | One item by relative non-negative weights        |
+| `angle()`                       | Float in `[0, 2π)` radians                       |
+| `gaussian(mean?, stddev?)`      | Approximate normal sample (Box-Muller, no spare) |
+| `insideRect(rect)`              | Integer point in half-open `rect`                |
+| `insideRectTo(rect, out)`       | Same as `insideRect`, writes into `out`          |
+| `pointInRange(min, max)`        | Integer point; per-axis `[min, max)`             |
+| `pointInRangeTo(min, max, out)` | Same as `pointInRange`, writes into `out`        |
+| `direction4()`                  | One of four cardinal unit vectors (Y-down)       |
+| `direction8()`                  | One of eight king-move unit vectors (Y-down)     |
 
 Integer helpers return true integers (`| 0` truncation), matching the engine's `Vector2i` philosophy. Half-open `int`
 ranges match the demo helpers (`randInt` / `randFloat`).
+
+## Spatial helpers
+
+`insideRect` / `insideRectTo` sample the same half-open region as `Rect2i.isContaining`: `x` in `[rect.x, rect.right)`,
+`y` in `[rect.y, rect.bottom)`. `pointInRange` / `pointInRangeTo` use `int` per axis (`[min.x, max.x)` and
+`[min.y, max.y)`). Empty or inverted ranges throw the same `RangeError` as `int`. Prefer the `*To(out)` variants in
+`update()` / `render()` loops to avoid per-frame allocation.
+
+```ts twoslash
+import { Random, Rect2i, Vector2i } from 'blit386';
+
+const rng = new Random(7);
+const rect = new Rect2i(0, 0, 320, 240);
+const out = new Vector2i();
+
+rng.insideRect(rect);
+rng.insideRectTo(rect, out);
+rng.pointInRange(new Vector2i(10, 10), new Vector2i(20, 30));
+rng.direction4(); // (1,0) | (-1,0) | (0,1) | (0,-1)
+rng.direction8(); // cardinals plus diagonals
+```
 
 ## State and streams
 
