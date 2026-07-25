@@ -121,6 +121,7 @@ html[data-embed='true'][data-source='true'] {
      */
     & #canvas-container {
         --canvas-view-h: calc(100dvh - var(--banner-height) - var(--canvas-top-pad));
+
         height: auto;
         padding-top: var(--canvas-top-pad);
         align-items: flex-start;
@@ -458,13 +459,13 @@ html[data-embed='true'][data-source='true'] {
         }
 
         & #demo-banner-prev .demo-banner-arrow-tooltip::before {
-            border-top-color: #6668;
-            border-right-color: #6668;
+            border-top-color: #f8f8f8;
+            border-right-color: #f8f8f8;
         }
 
         & #demo-banner-next .demo-banner-arrow-tooltip::before {
-            border-bottom-color: #6668;
-            border-left-color: #6668;
+            border-bottom-color: #f8f8f8;
+            border-left-color: #f8f8f8;
         }
 
         & .demo-banner-listbox {

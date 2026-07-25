@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
 import { buildRegistry } from './demo-registry.js';
@@ -197,7 +197,11 @@ export function virtualDemos() {
             server.watcher.add(join(srcDir, 'shared', '*.js'));
 
             server.watcher.on('change', async (changedPath) => {
-                if (changedPath === partialsDir || changedPath.startsWith(`${partialsDir}/`)) {
+                // `relative` is separator-safe: partialsDir itself and files under it match;
+                // siblings (e.g. `_partials-other/...`) resolve to a `..` path and are skipped.
+                const partialsRel = relative(partialsDir, changedPath);
+
+                if (partialsRel === '' || (!partialsRel.startsWith('..') && !isAbsolute(partialsRel))) {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
                     return;

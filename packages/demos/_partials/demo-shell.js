@@ -48,7 +48,13 @@ function initAnalytics() {
  * @returns {Array<{slug: string, navLabel: string, title: string}>}
  */
 function readDemoList() {
-    return JSON.parse(document.getElementById('demo-list').textContent);
+    const demoList = document.getElementById('demo-list');
+
+    if (!demoList) {
+        return [];
+    }
+
+    return JSON.parse(demoList.textContent);
 }
 
 /**
@@ -405,93 +411,85 @@ function attachArrowTooltip(button) {
 }
 
 /**
- * Build the "previous demo" arrow button. Always steps the canonical ordered
- * list (never the fuzzy-ranked results). Keyboard arrows are not bound here,
- * so when the listbox is closed they stay free for the demo iframe.
+ * Shared prev/next arrow button. Steps by canonical order (`step` of -1 or +1).
+ * @param {Array<{slug: string, navLabel: string}>} demos
+ * @param {{ id: string, glyph: string, ariaLabel: string, step: number }} options
+ * @returns {HTMLButtonElement}
+ */
+function buildArrowButton(demos, options) {
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.id = options.id;
+    button.className = 'demo-banner-arrow';
+
+    button.setAttribute('aria-label', options.ariaLabel);
+
+    const glyph = document.createElement('span');
+
+    glyph.className = 'demo-banner-arrow-glyph';
+    glyph.textContent = options.glyph;
+
+    button.appendChild(glyph);
+
+    attachArrowTooltip(button);
+
+    button.addEventListener('click', () => {
+        const currentIndex = findCurrentIndex(demos);
+
+        // Nav-hidden demos are index -1; refuse to step from an unknown position.
+        if (currentIndex < 0) {
+            return;
+        }
+
+        const targetIndex = currentIndex + options.step;
+
+        if (targetIndex < 0 || targetIndex >= demos.length) {
+            return;
+        }
+
+        selectDemo(demos[targetIndex].slug, { demos: demos });
+
+        // Keep the open combobox label in sync without re-filtering by it.
+        const input = document.getElementById('demo-banner-combobox-input');
+        const listbox = document.getElementById('demo-banner-listbox');
+
+        if (input && listbox && !listbox.hidden) {
+            input.value = demos[targetIndex].navLabel;
+
+            input.dispatchEvent(new CustomEvent('demo-banner-sync-label'));
+        }
+    });
+
+    return button;
+}
+
+/**
+ * Build the "previous demo" arrow button.
  * @param {Array<{slug: string, navLabel: string}>} demos
  * @returns {HTMLButtonElement}
  */
 function buildPrevButton(demos) {
-    const prevButton = document.createElement('button');
-
-    prevButton.type = 'button';
-    prevButton.id = 'demo-banner-prev';
-    prevButton.className = 'demo-banner-arrow';
-
-    prevButton.setAttribute('aria-label', 'Previous demo');
-
-    const glyph = document.createElement('span');
-
-    glyph.className = 'demo-banner-arrow-glyph';
-    glyph.textContent = '‹';
-
-    prevButton.appendChild(glyph);
-
-    attachArrowTooltip(prevButton);
-
-    prevButton.addEventListener('click', () => {
-        const currentIndex = findCurrentIndex(demos);
-
-        if (currentIndex > 0) {
-            selectDemo(demos[currentIndex - 1].slug, { demos: demos });
-
-            // Keep the open combobox label in sync without re-filtering by it.
-            const input = document.getElementById('demo-banner-combobox-input');
-            const listbox = document.getElementById('demo-banner-listbox');
-
-            if (input && listbox && !listbox.hidden) {
-                input.value = demos[currentIndex - 1].navLabel;
-
-                input.dispatchEvent(new CustomEvent('demo-banner-sync-label'));
-            }
-        }
+    return buildArrowButton(demos, {
+        id: 'demo-banner-prev',
+        glyph: '‹',
+        ariaLabel: 'Previous demo',
+        step: -1,
     });
-
-    return prevButton;
 }
 
 /**
- * Build the "next demo" arrow button. Same canonical-order contract as prev.
+ * Build the "next demo" arrow button.
  * @param {Array<{slug: string, navLabel: string}>} demos
  * @returns {HTMLButtonElement}
  */
 function buildNextButton(demos) {
-    const nextButton = document.createElement('button');
-
-    nextButton.type = 'button';
-    nextButton.id = 'demo-banner-next';
-    nextButton.className = 'demo-banner-arrow';
-
-    nextButton.setAttribute('aria-label', 'Next demo');
-
-    const glyph = document.createElement('span');
-
-    glyph.className = 'demo-banner-arrow-glyph';
-    glyph.textContent = '›';
-
-    nextButton.appendChild(glyph);
-
-    attachArrowTooltip(nextButton);
-
-    nextButton.addEventListener('click', () => {
-        const currentIndex = findCurrentIndex(demos);
-
-        if (currentIndex >= 0 && currentIndex < demos.length - 1) {
-            selectDemo(demos[currentIndex + 1].slug, { demos: demos });
-
-            // Keep the open combobox label in sync without re-filtering by it.
-            const input = document.getElementById('demo-banner-combobox-input');
-            const listbox = document.getElementById('demo-banner-listbox');
-
-            if (input && listbox && !listbox.hidden) {
-                input.value = demos[currentIndex + 1].navLabel;
-
-                input.dispatchEvent(new CustomEvent('demo-banner-sync-label'));
-            }
-        }
+    return buildArrowButton(demos, {
+        id: 'demo-banner-next',
+        glyph: '›',
+        ariaLabel: 'Next demo',
+        step: 1,
     });
-
-    return nextButton;
 }
 
 /**
@@ -651,33 +649,33 @@ function buildCombobox(demos, currentIndex) {
             setActiveIndex(-1);
         } else {
             for (let r = 0; r < filtered.length; r++) {
-                ((result, optionIndex) => {
-                    const option = document.createElement('li');
+                const result = filtered[r];
+                const optionIndex = r;
+                const option = document.createElement('li');
 
-                    option.id = `demo-banner-option-${optionIndex}`;
-                    option.className = 'demo-banner-option';
+                option.id = `demo-banner-option-${optionIndex}`;
+                option.className = 'demo-banner-option';
 
-                    option.setAttribute('role', 'option');
-                    option.setAttribute('aria-selected', 'false');
+                option.setAttribute('role', 'option');
+                option.setAttribute('aria-selected', 'false');
 
-                    option.dataset.slug = result.demo.slug;
+                option.dataset.slug = result.demo.slug;
 
-                    option.appendChild(buildHighlightedLabel(result.demo.navLabel, result.indices));
+                option.appendChild(buildHighlightedLabel(result.demo.navLabel, result.indices));
 
-                    // mousedown (not click) so the option commits before input blur
-                    // closes the listbox.
-                    option.addEventListener('mousedown', (event) => {
-                        event.preventDefault();
+                // mousedown (not click) so the option commits before input blur
+                // closes the listbox.
+                option.addEventListener('mousedown', (event) => {
+                    event.preventDefault();
 
-                        commitSelection(result.demo.slug);
-                    });
+                    commitSelection(result.demo.slug);
+                });
 
-                    option.addEventListener('mouseenter', () => {
-                        setActiveIndex(optionIndex);
-                    });
+                option.addEventListener('mouseenter', () => {
+                    setActiveIndex(optionIndex);
+                });
 
-                    listbox.appendChild(option);
-                })(filtered[r], r);
+                listbox.appendChild(option);
             }
 
             // Prefer the currently loaded demo when it is still in the filtered set.
@@ -953,10 +951,15 @@ function buildNav(demos, currentIndex) {
  * @returns {void}
  */
 function renderShell() {
-    const demos = readDemoList();
-    const currentIndex = findCurrentIndex(demos);
     const banner = document.getElementById('demo-banner');
     const frame = document.getElementById('demo-frame');
+
+    if (!banner || !frame) {
+        return;
+    }
+
+    const demos = readDemoList();
+    const currentIndex = findCurrentIndex(demos);
     const initialSlug = document.body.dataset.slug;
 
     banner.appendChild(buildLogo());
@@ -966,7 +969,9 @@ function renderShell() {
 
     // Initial iframe src: this demo with source (dev: /demos/<slug>.html?embed&source,
     // prod: /<slug>.html?embed&source). Same relative-path derivation as urlFor().
-    frame.src = embedUrlFor(initialSlug);
+    if (initialSlug) {
+        frame.src = embedUrlFor(initialSlug);
+    }
 
     window.addEventListener('popstate', () => {
         const slug = slugFromLocation();

@@ -75,7 +75,7 @@ test -f dist/_headers
 ```bash
 pnpm run build
 npx wrangler pages dev dist --port 8788
-curl -sI 'http://127.0.0.1:8788/001-basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
+curl -sI 'http://127.0.0.1:8788/basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
 ```
 
 After deploy, use production `curl` (below) and browser smoke tests.
