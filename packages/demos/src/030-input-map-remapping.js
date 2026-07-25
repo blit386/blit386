@@ -112,7 +112,9 @@ class Demo {
                 textPaletteIndex: THEME_SLOT_TEXT,
                 gapPaletteIndex: THEME_SLOT_PANEL,
             },
+
             isOverlayTimingChartEnabled: true,
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: THEME_SLOT_ACCENT,
                 renderBarPaletteIndex: THEME_SLOT_HEADER,
@@ -120,6 +122,10 @@ class Demo {
                 errorPaletteIndex: THEME_SLOT_WARM,
                 tagPaletteIndex: THEME_SLOT_ACCENT,
             },
+
+            // Arrow keys and Space scroll the host page by default. This demo maps those keys
+            // (player 1 uses arrows), so opt in so pressing them does not move the page.
+            isCapturingKeyboardScroll: true,
         };
     }
 

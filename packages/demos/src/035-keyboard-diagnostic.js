@@ -247,6 +247,10 @@ class Demo {
             maxCanvasSize: new Vector2i(960, 720),
             outputUpscaleFilter: 'nearest',
             targetFPS: 60,
+
+            // This page lights up arrow keys and Space on the on-screen keyboard. Opt in so
+            // those keys do not scroll the demo page while you are testing them.
+            isCapturingKeyboardScroll: true,
         };
     }
 

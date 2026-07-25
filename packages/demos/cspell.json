@@ -5,6 +5,7 @@
   "dictionaries": ["node", "html", "css", "fonts", "npm", "softwareTerms"],
   "words": [
     "biomejs",
+    "BTAPI",
     "blit",
     "blit386",
     "BLIT386",
@@ -16,6 +17,7 @@
     "desaturate",
     "desaturated",
     "esbuild",
+    "Filip",
     "hshift",
     "hypot",
     "indexization",
@@ -41,6 +43,7 @@
     "ROBCO",
     "Rollup",
     "scaffolder",
+    "sfmono",
     "shiki",
     "starfield",
     "tilemap",
@@ -53,11 +56,9 @@
     "Vite",
     "Vitest",
     "vroll",
+    "WASD",
     "WebGPU",
-    "Zhang",
-    "sfmono",
-    "shiki",
-    "WASD"
+    "Zhang"
   ],
   "flagWords": ["cant", "dont", "hte", "teh", "wont"],
   "ignorePaths": [

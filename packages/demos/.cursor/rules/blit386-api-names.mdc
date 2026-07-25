@@ -22,6 +22,7 @@ Use grammatical `is*` names from `HardwareSettings`:
 - `isOverlayEnabled`, `isOverlayVisibleAtStart`, `isOverlayToggleHintVisible`, `isOverlayToggleEnabled`
 - `isOverlayPaletteEnabled`, `isOverlayTimingChartEnabled`, `isOverlayRendererDiagnosticsBarEnabled`
 - `isDetectingDroppedFrames`, `isWaitingForDOMReady`
+- `isCapturingPointerScroll`, `isCapturingKeyboardScroll`
 - `canvasID`, `containerID` in bootstrap options (not `canvasId`)
 
 ## Input on `BT` (Tier A)

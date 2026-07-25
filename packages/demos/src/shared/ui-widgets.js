@@ -361,14 +361,22 @@ function meter(ctx, text, fraction, opts = {}) {
  * BT.isAudioUnlocked flips true, the row disappears on its own. Call it inside a
  * ui.begin()/ui.end() group like any other row.
  *
+ * Pass `opts.text` when the default sentence is too long for a tiny playfield
+ * (for example Snake at 160x120).
+ *
  * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {{ text?: string }} [opts] - Optional overrides. `text` replaces the default
+ *   "Click or press a key to enable sound" wording.
  */
-function audioUnlockHint(ctx) {
+function audioUnlockHint(ctx, opts = {}) {
     if (BT.isAudioUnlocked) {
         return;
     }
 
-    label(ctx, 'Click or press a key to enable sound', { color: 'warm' });
+    const text =
+        typeof opts.text === 'string' && opts.text.length > 0 ? opts.text : 'Click or press a key to enable sound';
+
+    label(ctx, text, { color: 'warm' });
 }
 
 /**

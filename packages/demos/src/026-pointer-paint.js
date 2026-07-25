@@ -116,9 +116,15 @@ class Demo {
      */
     configure() {
         return {
+            // Phones and tablets dim, then lock, the screen after 30-60 seconds without a touch -
+            // easy to hit during a slow, careful painting session. This asks the browser to keep
+            // the screen on while you paint; unsupported browsers just ignore the request.
+            isWakeLockEnabled: true,
+
             isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
             isOverlayRendererDiagnosticsBarEnabled: true,
+
             // The engine overlay bars reuse the shared UI theme colors so
             // everything on screen matches. applyTheme() puts the panel color
             // in slot 242 and the text color in slot 244 (its default start
@@ -129,6 +135,7 @@ class Demo {
                 textPaletteIndex: 244,
                 gapPaletteIndex: 242,
             },
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: SLOT_PAINT[0],
                 renderBarPaletteIndex: SLOT_PAINT[1],

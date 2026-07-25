@@ -2,17 +2,6 @@
 
 Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript.
 
-## Tech Stack
-
-- Node: >= 22.18.0 (required by cspell 10 and workspace sibling blit386)
-- Build Tool: Vite 8 with a custom virtual-demos plugin (no templating library)
-- Language: JavaScript (ES2022)
-- Styling: Plain CSS with CSS custom properties
-- Engine: BLIT386 (pixel engine: WebGPU default, optional software renderer; workspace dependency)
-- Package Manager: pnpm
-- Deployment: Cloudflare Pages via GitHub Actions
-- Linting: Biome + ESLint + Prettier
-
 ## Critical Rules
 
 - No emoji – no emoji in code, commits, docs, or UI strings (no exceptions)
@@ -29,7 +18,8 @@ blit386-demos/
     001-basics.js
     002-primitives.js
     ...                        # numbered demos under src/*.js (plugin discovers all)
-    shared/                    # Shared UI kit + cross-demo helpers (38 of 39 demos import it; 018-flurry is the exception)
+    shared/                    # Shared UI kit + cross-demo helpers (38 of 40 demos import it; 018-flurry and
+                               #   042-filip-test-02 are the exceptions)
       ui.js                    # The one entry point demos import: applyTheme() + the ui object
       ui-core.js               # Immediate-mode context: anchors, layout, pooled draws, hit testing
       ui-widgets.js            # panel, label, caption, kv, checkbox, pip, button, slider, meter,
@@ -221,17 +211,9 @@ bootstrap(Demo);
 
 ### Adding a New Demo
 
-Demos use kebab-case slugs: `NNN-topic` with three digits, e.g. `023-particles`.
-
-The `virtual-demos` plugin discovers demos automatically by scanning `src/*.js` for this pattern. Adding a demo is a
-single step:
-
-1. Create `src/NNN-your-topic.js` (or `00a-…`) with the next free number. Retired and skipped numbers stay unused (`021`
-   retired; `039` and `040` never used), so pick the next number above the highest one in use. The page title defaults
-   to `BLIT386 Demo NNN – Your Topic` (topic title-cased from the slug). To override, add a `// @pageTitle Custom Title`
-   comment in the first ~20 lines of the file (see `src/023-crt-pipboy.js` or `src/024-crt-toggle.js` for examples).
-
-No `vite.config.js` edit. No context file to update. No HTML file to create.
+Use the `demos-new` skill, which scaffolds `src/NNN-topic.js` with the next free slug, the standard demo class pattern,
+and beginner-friendly comments. No `vite.config.js` edit, context file, or HTML file needed – the `virtual-demos` plugin
+discovers the file automatically.
 
 ## Code Quality (Relaxed for Demos)
 
@@ -296,40 +278,8 @@ has no comment, or the comment only restates the code without explaining it, tha
 
 ## BLIT386 Engine API
 
-All engine functionality via static `BT` namespace:
-
-```js
-const BG = 1;
-const FG = 2;
-BT.clear(BG);
-BT.clearRect(rect, FG);
-BT.drawPixel(pos, FG); // or BT.drawPixel(x, y, FG)
-BT.drawLine(p0, p1, FG);
-BT.drawRect(rect, FG);
-BT.drawRectFill(rect, FG);
-BT.drawSprite(sheet, srcRect, destPos, paletteOffset); // default paletteOffset is 0
-BT.systemPrint(pos, paletteIndex, text); // built-in 6x14 system font (palette index, not Color32)
-BT.systemPrintMeasure(text); // Vector2i size in pixels
-BT.printFont(font, pos, text, paletteOffset?); // bitmap font; paletteOffset shifts glyph indices (default 0)
-BT.cameraSet(offset);
-BT.camera;
-BT.cameraReset();
-BT.cameraClamp(camera, worldSize, viewSize?); // clamp scroll position to world bounds
-BT.displaySize;
-BT.ticks;
-BT.ticksReset();
-BT.targetFPS;
-BT.deltaSeconds;
-BT.timeSeconds;
-BT.activeBackend; // 'webgpu' | 'software' | null – after successful init
-BT.isPointerActive(0); // pointer slot active (mouse hover or touch contact)
-BT.isDown(BT.BTN_A, 0); // button held (ANY-match for masks)
-BT.isPressed(BT.BTN_A, 0); // edge: up -> down this frame
-BT.isKeyDown('KeyW'); // raw keyboard hold
-BT.isKeyPressed('ArrowUp', 10); // edge + optional tick repeat
-await BT.captureFrame(); // returns a Blob
-await BT.downloadFrame(filename); // optional filename; default PNG name if omitted
-```
+All engine functionality via static `BT` namespace – see the current signatures in `blit386/src/BLIT386.ts` and
+`blit386/src/core/BTAPI.ts`.
 
 Read keyboard edges (`BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
 `BT.isPressed` / `BT.isReleased` for players 0/1) from `update()`, never `render()`. They clear once per fixed-update
@@ -340,34 +290,8 @@ state, not edges) have no such restriction and are safe from either lifecycle me
 ### Audio API
 
 Audio works on both backends (WebGPU and Canvas 2D software) – it is Web Audio only and never touches the GPU.
-Post-process effects remain the only WebGPU-only feature.
-
-```js
-import { AudioClip, BT } from 'blit386';
-
-// init(): load or synthesize clips. Both work before audio is unlocked – decoding needs no unlocked context.
-const blip = await AudioClip.load('/audio/blip.wav'); // pass an array for an ordered fallback list
-const [pop, music] = await AudioClip.loadAll(['/audio/pop.wav', '/audio/music-calm.wav']);
-const jump = await AudioClip.synth(BT.synthPreset.jump()); // synth() is never cached
-
-// One-shot sound effects. soundPlay() returns a SoundRef handle.
-const ref = BT.soundPlay(blip, { volume: 0.8, pitch: 1.2, pan: -0.3, loop: false, priority: 0, fadeInMs: 0 });
-BT.isSoundPlaying(ref); // still audible?
-BT.soundStop(ref, { fadeOutMs: 120 });
-BT.soundVolumeSet(ref, 0.5, { fadeMs: 100 }); // also soundPitchSet / soundPanSet (+ matching *Get)
-
-// Music: one track at a time, crossfaded by the engine.
-BT.musicPlay(music, { fadeMs: 800, loop: true, loopStart: 2.5, loopEnd: 30.0, overlap: 1 });
-BT.isMusicPlaying;
-BT.musicVolumeSet(0.6, { fadeMs: 400 });
-BT.musicStop({ fadeMs: 600 });
-
-// Buses: 'main' | 'music' | 'sfx' (sfx and music feed main; main feeds the speakers).
-BT.audioVolumeSet('music', 0.25, { fadeMs: 300, easing: 'ease-out' }); // duck the music bus
-BT.audioVolumeGet('sfx');
-BT.audioMuteSet('sfx', true); // mute preserves the stored volume
-BT.isAudioMuted('sfx');
-```
+Post-process effects remain the only WebGPU-only feature. See current signatures in `blit386/src/audio/` and
+`blit386/src/assets/AudioClip.ts`.
 
 `BT.synthPreset` has exactly six keys: `jump`, `pickup`, `explosion`, `laser`, `hit`, `blip`. Each is
 `(seed?) => SynthParams` – a plain, JSON-round-trippable recipe object (`waveform`, `frequency`, `duration`, `seed`,
@@ -477,6 +401,7 @@ ui.pip('A held', isHeld); // read-only indicator
 ui.meter('Level', fraction);
 ui.label('hint', { color: 'dim' }); // roles: text/dim/header/accent/warm/info
 ui.audioUnlockHint(); // audio demos: standard "enable sound" row, auto-hides once unlocked
+// ui.audioUnlockHint({ text: 'Click for sound' }); // optional shorter wording on tiny playfields
 ui.end();
 
 ui.caption(x, y, 'Pixels'); // pinned one-line caption (default amber); no begin()/end() needed

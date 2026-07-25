@@ -9,12 +9,13 @@ explaining how everything works.
 Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
 scaffolder (`npm create blit386@latest my-game`).
 
-There are 39 demo modules today (38 numbered demos plus `00a-barebones`), covering drawing, palettes, post-process CRT
+There are 40 demo modules today (39 numbered demos plus `00a-barebones`), covering drawing, palettes, post-process CRT
 effects, input (pointer, keyboard, gamepad), and audio. Each demo lives in a single file under `src/` (for example
-`src/001-basics.js`) and imports the shared UI kit in `src/shared/` for its on-screen panels and touch controls. During
-development, Vite serves the matching page at `/demos/001-basics.html` (no HTML file is committed; the build wires a
-shared layout to each script). Below the canvas, each page shows that demo's JavaScript source with syntax highlighting
-and Twoslash type-hover popovers. The entire source panel is hidden when the page is loaded with `?embed`.
+`src/001-basics.js`), and most import the shared UI kit in `src/shared/` for their on-screen panels and touch controls
+(see [Shared UI kit](#shared-ui-kit) below for the two exceptions). During development, Vite serves the matching page at
+`/demos/001-basics.html` (no HTML file is committed; the build wires a shared layout to each script). Below the canvas,
+each page shows that demo's JavaScript source with syntax highlighting and Twoslash type-hover popovers. The entire
+source panel is hidden when the page is loaded with `?embed`.
 
 Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/). Live URLs use a flat path per slug,
 for example `https://demos.blit386.dev/001-basics`.
@@ -56,6 +57,8 @@ next free number after the highest one in use – never a retired or skipped one
 - [003-colors](https://demos.blit386.dev/003-colors) – Color32 deep dive: named, HSL, alpha, lerp
 - [032-named-colors](https://demos.blit386.dev/032-named-colors) – Color32 named registry APIs: resolve, register,
   update, unregister
+- [042-filip-test-02](https://demos.blit386.dev/042-filip-test-02) – Bare-bones starter converted from the
+  getting-started example: a sliding, bouncing square with a line of text underneath it
 
 ### Text and Visual Art
 
@@ -145,8 +148,9 @@ next free number after the highest one in use – never a retired or skipped one
 ## Shared UI kit
 
 All on-screen demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
-D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 38 of the 39 demos
-(`018-flurry` is the deliberate exception: an immersive screensaver with no demo HUD, only the engine overlay):
+D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 38 of the 40 demos. Two
+demos are deliberate exceptions: `018-flurry` (an immersive screensaver with no demo HUD, only the engine overlay) and
+`042-filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all):
 
 | File                      | What it provides                                                                    |
 | ------------------------- | ----------------------------------------------------------------------------------- |

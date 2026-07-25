@@ -119,9 +119,12 @@ const ui = {
     /**
      * The standard "click or press a key to enable sound" row for audio demos.
      * Draws only while audio is still locked; call it inside a group each frame.
+     * Pass `{ text }` to shorten the wording on tiny playfields.
+     *
+     * @param {{ text?: string }} [opts]
      */
-    audioUnlockHint() {
-        audioUnlockHint(ctx);
+    audioUnlockHint(opts) {
+        audioUnlockHint(ctx, opts);
     },
 
     /**
