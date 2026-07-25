@@ -57,8 +57,8 @@ next free number after the highest one in use – never a retired or skipped one
 - [003-colors](https://demos.blit386.dev/003-colors) – Color32 deep dive: named, HSL, alpha, lerp
 - [032-named-colors](https://demos.blit386.dev/032-named-colors) – Color32 named registry APIs: resolve, register,
   update, unregister
-- [042-filip-test-02](https://demos.blit386.dev/042-filip-test-02) – Bare-bones starter converted from the
-  getting-started example: a sliding, bouncing square with a line of text underneath it
+- [042-filip-test-02](https://demos.blit386.dev/042-filip-test-02) – Pointer-centered rectangle, animated palette colors
+  driven by the cursor, and a pixel-drawn circle
 
 ### Text and Visual Art
 
