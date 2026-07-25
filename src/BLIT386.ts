@@ -77,9 +77,12 @@ import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
 import { noActivePaletteError } from './utils/errorMessages';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
+import { PerlinNoise } from './utils/PerlinNoise';
 import { Random } from './utils/Random';
 import { Rect2i } from './utils/Rect2i';
+import { SimplexNoise } from './utils/SimplexNoise';
 import { Timer } from './utils/Timer';
+import { ValueNoise } from './utils/ValueNoise';
 import { Vector2i } from './utils/Vector2i';
 
 /** Runtime face-button → key-code lists for keyboard player 0 (mutable via {@link BT.inputMap}). */
@@ -2133,6 +2136,7 @@ export {
     mergeHardwareSettings,
     Noise,
     Palette,
+    PerlinNoise,
     PixelGlitch,
     PixelMosaic,
     Random,
@@ -2141,8 +2145,10 @@ export {
     RGBMask,
     RollLine,
     Scanlines,
+    SimplexNoise,
     SpriteSheet,
     Timer,
+    ValueNoise,
     Vector2i,
     Vignette,
 };
