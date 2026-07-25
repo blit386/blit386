@@ -19,7 +19,7 @@ blit386-demos/
     primitives.js
     ...                        # number-free kebab-case demos under src/*.js (plugin discovers all)
     shared/                    # Shared UI kit + cross-demo helpers (38 of 40 demos import it; flurry and
-                               #   filip-test-02 are the exceptions)
+                               #   filip-test-02, hypercube are the exceptions)
       ui.js                    # The one entry point demos import: applyTheme() + the ui object
       ui-core.js               # Immediate-mode context: anchors, layout, pooled draws, hit testing
       ui-widgets.js            # panel, label, caption, kv, checkbox, pip, button, slider, meter,
