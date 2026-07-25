@@ -69,9 +69,12 @@ html[data-shell='true'] {
 }
 
 /*
- * Embed mode (shell iframe, or external iframe on blit386.dev): lock to the
- * viewport and hide the source panel so the embed stays a pure canvas view.
- * --banner-height is 0 here; the parent shell already reserved the banner.
+ * Embed mode (?embed): lock to the viewport and hide the source panel so docs
+ * embeds on blit386.dev stay a pure canvas view. --banner-height is 0 here;
+ * the parent shell (when used) already reserved the banner.
+ *
+ * Shell iframe uses ?embed&source (data-source): same canvas sizing, but the
+ * Twoslash panel is visible below and the document scrolls inside the frame.
  */
 html[data-embed='true'] {
     &,
@@ -95,6 +98,33 @@ html[data-embed='true'] {
         height: var(--canvas-view-h);
         padding-top: 0;
         align-items: center;
+    }
+}
+
+html[data-embed='true'][data-source='true'] {
+    &,
+    & body {
+        height: auto;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    & #demo-source {
+        display: block;
+    }
+
+    /*
+     * Match the old shell page: canvas top-aligned under the toolbar.
+     * height:auto so the container hugs the canvas – the viewport-tall
+     * embed height would leave a gap above the source panel.
+     */
+    & #canvas-container {
+        --canvas-view-h: calc(100dvh - var(--banner-height) - var(--canvas-top-pad));
+
+        height: auto;
+        padding-top: var(--canvas-top-pad);
+        align-items: flex-start;
     }
 }
 
@@ -250,11 +280,9 @@ html[data-embed='true'] {
         z-index: 30;
         max-width: 220px;
         padding: 6px 8px;
-        border: 1px solid #8888;
-        border-radius: 4px;
+        border: 1px solid #f8f8f8;
         background: #f8f8f8;
         color: #2d2e31;
-        box-shadow: rgba(0, 0, 0, 0.08) 0px 1px 4px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -280,8 +308,8 @@ html[data-embed='true'] {
         &::before {
             right: -4px;
             left: auto;
-            border-top: 1px solid #8888;
-            border-right: 1px solid #8888;
+            border-top: 1px solid #f8f8f8;
+            border-right: 1px solid #f8f8f8;
         }
     }
 
@@ -292,8 +320,8 @@ html[data-embed='true'] {
         &::before {
             left: -4px;
             right: auto;
-            border-bottom: 1px solid #8888;
-            border-left: 1px solid #8888;
+            border-bottom: 1px solid #f8f8f8;
+            border-left: 1px solid #f8f8f8;
         }
     }
 
@@ -322,7 +350,6 @@ html[data-embed='true'] {
         background: transparent;
         color: inherit;
         border: 2px solid currentColor;
-        border-radius: 0;
         padding: 6px 10px;
         font: inherit;
         outline: none;
@@ -341,7 +368,7 @@ html[data-embed='true'] {
         right: 0;
         z-index: 40;
         margin: 0;
-        padding: 4px 0;
+        padding: 2px;
         list-style: none;
         max-height: min(50vh, 320px);
         overflow-x: hidden;
@@ -349,7 +376,6 @@ html[data-embed='true'] {
         background: oklch(97% 0 0);
         color: #2d2e31;
         border: 2px solid #2d2e31;
-        box-shadow: rgba(0, 0, 0, 0.12) 0px 4px 12px;
 
         &[hidden] {
             display: none;
@@ -372,7 +398,7 @@ html[data-embed='true'] {
 
     & .demo-banner-match {
         color: var(--color-accent);
-        font-weight: bold;
+        text-decoration: underline;
     }
 
     & .demo-banner-option.is-active .demo-banner-match,
@@ -425,8 +451,7 @@ html[data-embed='true'] {
         & .demo-banner-arrow-tooltip {
             background: #2a2a2a;
             color: oklch(97% 0 0);
-            border-color: #6668;
-            box-shadow: rgba(0, 0, 0, 0.35) 0px 1px 4px;
+            border-color: #f8f8f8;
 
             &::before {
                 background: #2a2a2a;
@@ -434,20 +459,19 @@ html[data-embed='true'] {
         }
 
         & #demo-banner-prev .demo-banner-arrow-tooltip::before {
-            border-top-color: #6668;
-            border-right-color: #6668;
+            border-top-color: #f8f8f8;
+            border-right-color: #f8f8f8;
         }
 
         & #demo-banner-next .demo-banner-arrow-tooltip::before {
-            border-bottom-color: #6668;
-            border-left-color: #6668;
+            border-bottom-color: #f8f8f8;
+            border-left-color: #f8f8f8;
         }
 
         & .demo-banner-listbox {
             background: #222;
             color: oklch(97% 0 0);
             border-color: oklch(97% 0 0);
-            box-shadow: rgba(0, 0, 0, 0.45) 0px 4px 12px;
         }
 
         & .demo-banner-option.is-active,

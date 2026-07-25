@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
 import { buildRegistry } from './demo-registry.js';
@@ -14,9 +14,9 @@ const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
  * and is rendered via simple string substitution.
  *
  * Each page is dual-mode (static hosts serve one HTML for both URLs):
- * - Shell (default): persistent banner + iframe pointing at the same path with `?embed`.
- * - Embed (`?embed`): canvas + Shiki/Twoslash source panel (no banner). Used by the shell
- *   iframe and by external embeds on blit386.dev.
+ * - Shell (default): persistent banner + iframe pointing at `?embed&source`.
+ * - Embed (`?embed`): canvas only (no banner; source hidden) for docs on blit386.dev.
+ *   Shell iframe adds `&source` so the Shiki/Twoslash panel stays under the canvas.
  *
  * Client-side JS in the layout stamps `data-shell` / `data-embed` and strips the inactive
  * region; the plugin always renders the full dual-mode template.
@@ -98,13 +98,22 @@ export function virtualDemos() {
      * @returns {Promise<string>}
      */
     async function renderHtml(entry) {
+        // Dev: always re-read the template. Vite's own watcher can full-reload the
+        // browser without our change handler running, which would otherwise leave a
+        // stale layoutTemplate (e.g. after extracting demo-shell.js).
+        if (isDevMode) {
+            reloadTemplate();
+        }
+
         const demoListJson = JSON.stringify(
             registry.filter((e) => !e.isNavHidden).map((e) => ({ slug: e.slug, navLabel: e.navLabel, title: e.title })),
         ).replaceAll('<', '\\u003c');
 
         const sourceHtml = await highlightDemoSource(entry.sourcePath, rootDir);
-        // Dev-only live source panel: load only inside embed documents (shell strips
-        // #demo-source; the iframe is where highlighted source and HMR updates live).
+
+        // Dev-only live source panel: load only inside embed documents. The shell strips
+        // #demo-source and loads the iframe with ?embed&source, where highlighted source
+        // and HMR updates live. Plain ?embed (docs) keeps the panel in the DOM but hidden.
         const sourcePanelScript = isDevMode
             ? `<script type="module">
     if (window.__blit386IsEmbedded) {
@@ -181,12 +190,18 @@ export function virtualDemos() {
         },
 
         configureServer(server) {
-            server.watcher.add(join(partialsDir, '*.html'));
+            // Watch the partials directory (not a glob): layout.html + chrome scripts
+            // (demo-shell.js, source-panel*.js). Any edit invalidates page chrome.
+            server.watcher.add(partialsDir);
             server.watcher.add(join(srcDir, '*.js'));
             server.watcher.add(join(srcDir, 'shared', '*.js'));
 
             server.watcher.on('change', async (changedPath) => {
-                if (changedPath.startsWith(partialsDir)) {
+                // `relative` is separator-safe: partialsDir itself and files under it match;
+                // siblings (e.g. `_partials-other/...`) resolve to a `..` path and are skipped.
+                const partialsRel = relative(partialsDir, changedPath);
+
+                if (partialsRel === '' || (!partialsRel.startsWith('..') && !isAbsolute(partialsRel))) {
                     reloadTemplate();
                     server.ws.send({ type: 'full-reload' });
                     return;

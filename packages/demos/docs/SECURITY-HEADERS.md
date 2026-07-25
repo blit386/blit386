@@ -16,22 +16,22 @@ at build time.
 
 ### Content-Security-Policy directives
 
-| Directive                   | Policy                                                         | Compatibility note                                                                                                                                                                                          |
-| --------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `default-src`               | `'self'`                                                       | Fallback for unspecified fetch types.                                                                                                                                                                       |
-| `base-uri`                  | `'self'`                                                       | Blocks injected `<base>` tags.                                                                                                                                                                              |
-| `object-src`                | `'none'`                                                       | No plugins (`<object>`, `<embed>`).                                                                                                                                                                         |
-| `script-src`                | `'self' 'unsafe-inline' https://plausible.io`                  | Vite emits same-origin ES module bundles; `'unsafe-inline'` covers the Plausible init snippet and the demo-navigation banner's inline script, both in [`_partials/layout.html`](../_partials/layout.html).  |
-| `style-src`                 | `'self' 'unsafe-inline'`                                       | Required: shared [`_partials/layout.html`](../_partials/layout.html) uses an inline `<style>` block.                                                                                                        |
-| `img-src`                   | `'self' data: blob:`                                           | Sprites/fonts from same origin; `blob:` for frame capture / download ([image-output](../src/image-output.js)).                                                                                              |
-| `font-src`                  | `'self' https://fonts.vancura.dev`                             | Same-origin bitmap fonts and Departure Mono under `/fonts/`; Pragmata Pro for the source panel is loaded from `fonts.vancura.dev` (see [`styles/demo-source.css`](../styles/demo-source.css)).              |
-| `connect-src`               | `'self' https://plausible.io`                                  | `fetch` for PNG, `.btfont`, and `.wav` audio assets (the engine decodes audio through Web Audio, so audio loads are governed here, not by `media-src`); WebGPU init stays same-origin; Plausible analytics. |
-| `media-src`                 | `'none'`                                                       | Correct today, but read the note below before adding audio or video markup.                                                                                                                                 |
-| `worker-src`                | `'self' blob:`                                                 | Reserved for worker/blob patterns used by capture and asset helpers.                                                                                                                                        |
-| `child-src` / `frame-src`   | `'self'`                                                       | Same-origin only: the persistent shell loads each demo in an iframe (`?embed`) so demo swaps can discard the engine instance (no teardown API). External nested frames stay blocked.                        |
-| `form-action`               | `'none'`                                                       | No form submissions.                                                                                                                                                                                        |
-| `frame-ancestors`           | `https://vancura.dev https://*.framer.app https://blit386.dev` | Allows embedding in the Framer site, vancura.dev articles, and the Fumapress docs site ([blit386.dev](https://blit386.dev)), which iframes individual demos with `?embed` to hide the navigation banner.    |
-| `upgrade-insecure-requests` | (enabled)                                                      | Upgrades subresource requests to HTTPS on the production host.                                                                                                                                              |
+| Directive                   | Policy                                                                | Compatibility note                                                                                                                                                                                                                                                                                                           |
+| --------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `default-src`               | `'self'`                                                              | Fallback for unspecified fetch types.                                                                                                                                                                                                                                                                                        |
+| `base-uri`                  | `'self'`                                                              | Blocks injected `<base>` tags.                                                                                                                                                                                                                                                                                               |
+| `object-src`                | `'none'`                                                              | No plugins (`<object>`, `<embed>`).                                                                                                                                                                                                                                                                                          |
+| `script-src`                | `'self' 'unsafe-inline' https://plausible.io`                         | Vite emits same-origin ES module bundles ([`_partials/demo-shell.js`](../_partials/demo-shell.js), demo entries); `'unsafe-inline'` covers the first-paint shell/embed stamp and the embed-only demo `import()` snippet in [`_partials/layout.html`](../_partials/layout.html). Plausible loads from `https://plausible.io`. |
+| `style-src`                 | `'self' 'unsafe-inline'`                                              | Required: shared [`_partials/layout.html`](../_partials/layout.html) uses an inline `<style>` block.                                                                                                                                                                                                                         |
+| `img-src`                   | `'self' data: blob:`                                                  | Sprites/fonts from same origin; `blob:` for frame capture / download ([image-output](../src/image-output.js)).                                                                                                                                                                                                               |
+| `font-src`                  | `'self' https://fonts.vancura.dev`                                    | Same-origin bitmap fonts and Departure Mono under `/fonts/`; Pragmata Pro for the source panel is loaded from `fonts.vancura.dev` (see [`styles/demo-source.css`](../styles/demo-source.css)).                                                                                                                               |
+| `connect-src`               | `'self' https://plausible.io`                                         | `fetch` for PNG, `.btfont`, and `.wav` audio assets (the engine decodes audio through Web Audio, so audio loads are governed here, not by `media-src`); WebGPU init stays same-origin; Plausible analytics.                                                                                                                  |
+| `media-src`                 | `'none'`                                                              | Correct today, but read the note below before adding audio or video markup.                                                                                                                                                                                                                                                  |
+| `worker-src`                | `'self' blob:`                                                        | Reserved for worker/blob patterns used by capture and asset helpers.                                                                                                                                                                                                                                                         |
+| `child-src` / `frame-src`   | `'self'`                                                              | Same-origin only: the persistent shell loads each demo in an iframe (`?embed&source`) so demo swaps can discard the engine instance (no teardown API). External nested frames stay blocked.                                                                                                                                  |
+| `form-action`               | `'none'`                                                              | No form submissions.                                                                                                                                                                                                                                                                                                         |
+| `frame-ancestors`           | `'self' https://vancura.dev https://*.framer.app https://blit386.dev` | `'self'` is required so the persistent shell can iframe the same demo (`?embed` / `?embed&source`). Also allows embedding in the Framer site, vancura.dev articles, and the Fumapress docs site ([blit386.dev](https://blit386.dev)).                                                                                        |
+| `upgrade-insecure-requests` | (enabled)                                                             | Upgrades subresource requests to HTTPS on the production host.                                                                                                                                                                                                                                                               |
 
 ### `media-src 'none'` and the audio demos
 
@@ -75,7 +75,7 @@ test -f dist/_headers
 ```bash
 pnpm run build
 npx wrangler pages dev dist --port 8788
-curl -sI 'http://127.0.0.1:8788/001-basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
+curl -sI 'http://127.0.0.1:8788/basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
 ```
 
 After deploy, use production `curl` (below) and browser smoke tests.
@@ -83,16 +83,17 @@ After deploy, use production `curl` (below) and browser smoke tests.
 ### Production
 
 ```bash
-curl -sI 'https://demos.blit386.dev/001-basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
+curl -sI 'https://demos.blit386.dev/basics' | rg -i '^(content-security-policy|x-content-type-options|referrer-policy|permissions-policy):'
 ```
 
 Smoke-test in a browser:
 
-1. [001-basics](https://demos.blit386.dev/001-basics) – WebGPU + sprite load; source panel uses Pragmata Pro from
-   `fonts.vancura.dev` (no CSP `font-src` violation in the console).
-2. [013-image-output](https://demos.blit386.dev/013-image-output) – Space triggers PNG download (`blob:`).
-3. [023-crt-pipboy](https://demos.blit386.dev/023-crt-pipboy) – WebGPU post-process chain.
-4. Embed check – demo iframe on [vancura.dev](https://vancura.dev) articles still loads (`frame-ancestors`).
+1. [basics](https://demos.blit386.dev/basics) – shell iframe loads (`frame-ancestors` must include `'self'`); WebGPU +
+   source panel uses Pragmata Pro from `fonts.vancura.dev` (no CSP `font-src` violation in the console).
+2. [image-output](https://demos.blit386.dev/image-output) – Space triggers PNG download (`blob:`).
+3. [crt-pipboy](https://demos.blit386.dev/crt-pipboy) – WebGPU post-process chain.
+4. Embed check – demo iframe on [vancura.dev](https://vancura.dev) articles and [blit386.dev](https://blit386.dev) docs
+   still loads (`frame-ancestors`).
 
 Check the browser console for CSP violations after deploy.
 
