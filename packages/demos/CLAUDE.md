@@ -15,11 +15,11 @@ Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine 
 ```text
 blit386-demos/
   src/                         # JavaScript source – one file per demo (single source of truth)
-    001-basics.js
-    002-primitives.js
-    ...                        # numbered demos under src/*.js (plugin discovers all)
-    shared/                    # Shared UI kit + cross-demo helpers (38 of 40 demos import it; 018-flurry and
-                               #   042-filip-test-02 are the exceptions)
+    basics.js
+    primitives.js
+    ...                        # number-free kebab-case demos under src/*.js (plugin discovers all)
+    shared/                    # Shared UI kit + cross-demo helpers (38 of 40 demos import it; flurry and
+                               #   filip-test-02 are the exceptions)
       ui.js                    # The one entry point demos import: applyTheme() + the ui object
       ui-core.js               # Immediate-mode context: anchors, layout, pooled draws, hit testing
       ui-widgets.js            # panel, label, caption, kv, checkbox, pip, button, slider, meter,
@@ -37,7 +37,7 @@ blit386-demos/
     audio/                     # blip.wav, pop.wav, music-calm.wav, music-upbeat.wav,
                                #   music-intro-loop.wav + music-intro-loop.loop.json (loop points)
     _headers                   # Cloudflare Pages headers
-    _redirects                 # Cloudflare Pages redirects
+                               # (dist/_redirects is generated at build time – not stored under public/)
   styles/                      # Demo chrome CSS (Vite + PostCSS: nesting, Autoprefixer)
     layout.css                 # Banner, shell iframe, canvas sizing, embed mode (from layout.html)
     demo-source.css            # Source panel / Shiki / Twoslash hover polish
@@ -47,13 +47,15 @@ blit386-demos/
     layout.html                # Dual-mode page ({{title}}, {{scriptFile}}, {{slug}}, {{demoList}},
                                #   {{sourceHtml}}, {{sourcePanelScript}}); shell banner+iframe vs
                                #   ?embed / ?embed&source
-    demo-shell.js              # Shell nav + dual-mode prepare/analytics (module from layout.html)
+    demo-shell.js              # Persistent-shell nav (fuzzy combobox + prev/next) + dual-mode prepare/analytics
     source-panel.js            # Dev-only live Twoslash source updates (HMR)
     source-panel-protocol.js   # Shared HMR event name for the source panel
   plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
-    virtual-demos.js           # Virtual HTML pages + injects Twoslash-highlighted source
+    virtual-demos.js           # Virtual HTML pages + Twoslash source + vintage 301s in dev
     highlight-demo-source.js   # Shiki + @shikijs/twoslash highlighter (mtime cache)
-    demo-registry.js
+    demo-registry.js           # Scans src/<slug>.js; applies DEMO_ORDER / NAV_HIDDEN_SLUGS
+    demo-order.js              # Canonical nav order (DEMO_ORDER) – single source of truth for prev/next
+    demo-vintage-urls.js       # Historical slug → current slug (VINTAGE_URLS) + RETIRED_SLUGS
   scripts/                     # Repo maintenance scripts (run via package scripts)
     check-markdown-links.mjs   # pnpm run docs:links – walks every .md/.mdx in the repo
     check-demo-registry.mjs    # pnpm run check:demo-registry – order / vintage / RETIRED_SLUGS / NAV_HIDDEN / disk
@@ -62,21 +64,27 @@ blit386-demos/
 ```
 
 The `/demos/<slug>.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
-disk. Each page is dual-mode: the default **shell** keeps a persistent navigation banner and hosts the demo in a
-same-origin iframe pointed at the same path with `?embed&source` (so demo swaps can discard the engine instance –
-blit386 has no teardown API – while the Twoslash source panel stays under the canvas inside the frame). Toolbar
-prev/next/select call `selectDemo(slug)`, which updates the iframe, `document.title`, and `history.pushState` to the
-clean demo URL; `popstate` keeps the iframe and selector in sync on back/forward. Plain **embed** mode (`?embed`, no
-`source`) renders only `#canvas-container` (centered full-viewport canvas, source hidden) for external docs embeds on
-blit386.dev.
+disk. Filenames are number-free kebab-case (`src/basics.js`); discovery rejects legacy `001-topic.js` names. Prev/next
+and the banner selector follow `DEMO_ORDER` in `plugins/demo-order.js`, not disk order. Historical numbered paths
+(`001-basics`, `00a-barebones`, …) live forever in `plugins/demo-vintage-urls.js` (`VINTAGE_URLS`): the Vite plugin
+issues a 301 in dev, and the `demo-redirects` Vite plugin writes matching rules into `dist/_redirects` for Cloudflare
+Pages. Retired targets (no file on disk) stay in `VINTAGE_URLS` and `RETIRED_SLUGS` for history; redirect generation
+skips keys whose current slug is not live. `pnpm run check:demo-registry` enforces bijection between `src/*.js`,
+`DEMO_ORDER`, and live-or-retired vintage targets (plus `NAV_HIDDEN_SLUGS` / `RETIRED_SLUGS` freshness).
 
-Numbering has two gaps: `021` is retired (it was `021-error-preview`), and `039` / `040` were never used. New demos take
-the next free number after the highest one in use – never a retired or skipped one.
+Each page is dual-mode: the default **persistent shell** keeps a navigation banner and hosts the demo in a same-origin
+iframe pointed at the same path with `?embed&source` (so demo swaps can discard the engine instance – blit386 has no
+teardown API – while the Twoslash source panel stays under the canvas inside the frame). The banner selector is a
+fuzzy-searchable combobox (WAI-ARIA list-autocomplete in `_partials/demo-shell.js`): type to filter by `navLabel`, then
+choose with arrow keys / Enter / click. Toolbar prev/next and combobox selection call `selectDemo(slug)`, which updates
+the iframe, `document.title`, and `history.pushState` to the clean demo URL; `popstate` keeps the iframe and selector in
+sync on back/forward. Plain **embed** mode (`?embed`, no `source`) renders only `#canvas-container` (centered
+full-viewport canvas, source hidden) for external docs embeds on blit386.dev.
 
 ## Development Commands
 
 ```bash
-pnpm run dev                    # Start dev server (opens /demos/001-basics.html; index at /demos/)
+pnpm run dev                    # Start dev server (opens /demos/basics.html; index at /demos/)
 pnpm run dev:watch              # Dev server + watch BLIT386 library for changes
 pnpm run build                  # Build for production (output: dist/)
 pnpm run preview                # Preview production build
@@ -105,7 +113,7 @@ RTK: Use `pnpm run …` for scripts. Cursor `.cursor/hooks.json` runs `rtk hook 
 ## Hot Reload
 
 `pnpm run dev` / `pnpm run dev:watch` wire the `blit386/vite` plugin (`import { blit386 } from 'blit386/vite'` in
-`vite.config.js`) alongside the existing `virtual-demos` watcher. Editing a demo's own `src/NNN-*.js` file no longer
+`vite.config.js`) alongside the existing `virtual-demos` watcher. Editing a demo's own `src/<slug>.js` file no longer
 full-reloads the page:
 
 - **Method-only change** (`render()`/`update()` bodies, etc.): the engine swaps the class prototype in place – state
@@ -121,7 +129,7 @@ full-reloads the page:
 
 What still always full-reloads: `_partials/*` edits (the page template and chrome scripts such as `demo-shell.js`), a
 `blit386` library dist rebuild (via `blit386WatchReload()` – a changed engine bundle invalidates everything), and adding
-or removing a `src/NNN-*.js` demo file (the registry and the page set changed).
+or removing a `src/<slug>.js` demo file (the registry and the page set changed).
 
 The live source panel (the highlighted code block under the canvas) updates itself on a demo-entry edit via a
 `blit386:source-updated` custom HMR event, independent of the code hot-swap – see `plugins/virtual-demos.js`'s
@@ -157,18 +165,18 @@ the hot-reload wiring:
    see above).
 8. Edit `_partials/layout.html` or `_partials/demo-shell.js` – full reload of the shell; the source panel updates on
    demo edits without a reload.
-9. Jump to another demo via the banner dropdown – address bar updates via `pushState`, banner stays mounted, only the
-   iframe reloads; browser back/forward restores the previous demo in the iframe.
+9. Jump to another demo via the banner fuzzy combobox (or prev/next) – address bar updates via `pushState`, banner stays
+   mounted, only the iframe reloads; browser back/forward restores the previous demo in the iframe.
 10. Edit an engine `src/` file – the lib rebuilds – full reload (`blit386WatchReload` preserved).
 11. Repeat steps 2-3 with `?backend=software` on the embed URL: full reload is expected (verify against known gap
     below), not parity.
 12. Introduce a syntax error in a demo – the old demo keeps running (Vite may or may not show its error overlay,
     depending on the failure class); fix it – it recovers with no reload at any point.
 
-Known gap: under `?backend=software`, any `src/NNN-*.js` edit currently full-reloads, even a pure `render()`-body change
-that hot-swaps cleanly under the default `webgpu` backend. This is a tier-detection parity gap in the engine's hot-swap
-runtime (`blit386` `src/hot/`), not in anything this repo's `vite.config.js` or `virtual-demos.js` wiring controls –
-tracked as a follow-up against the engine.
+Known gap: under `?backend=software`, any `src/<slug>.js` edit currently full-reloads, even a pure `render()`-body
+change that hot-swaps cleanly under the default `webgpu` backend. This is a tier-detection parity gap in the engine's
+hot-swap runtime (`blit386` `src/hot/`), not in anything this repo's `vite.config.js` or `virtual-demos.js` wiring
+controls – tracked as a follow-up against the engine.
 
 ## Workspace Integration
 
@@ -191,15 +199,17 @@ CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.
 
 ## Demo File Conventions
 
-### JavaScript Demo Files (`src/NNN-name.js`)
+### JavaScript Demo Files (`src/<topic>.js`)
 
-Each demo is a single JS file under `src/`. Filenames are `NNN-topic.js` with three digits. The matching HTML page is
-served virtually at `/demos/<slug>.html` by the `virtual-demos` Vite plugin; no HTML file exists on disk. Follow this
+Each demo is a single JS file under `src/`. Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`) –
+the first path segment must start with a letter so legacy `001-topic.js` names are rejected. The matching HTML page is
+served virtually at `/demos/<slug>.html` by the `virtual-demos` Vite plugin; no HTML file exists on disk. Navigation
+order is **not** derived from the filename: append the slug to `DEMO_ORDER` in `plugins/demo-order.js`. Follow this
 pattern:
 
 ```js
 /**
- * 003 Colors – Brief description.
+ * Colors – Brief description.
  */
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
@@ -226,9 +236,17 @@ bootstrap(Demo);
 
 ### Adding a New Demo
 
-Use the `demos-new` skill, which scaffolds `src/NNN-topic.js` with the next free slug, the standard demo class pattern,
-and beginner-friendly comments. No `vite.config.js` edit, context file, or HTML file needed – the `virtual-demos` plugin
-discovers the file automatically.
+1. Create `src/<topic>.js` (kebab-case topic, no numeric prefix) with the standard demo class pattern and
+   beginner-friendly comments. The `demos-new` skill scaffolds this shape.
+2. Append the slug to `DEMO_ORDER` in `plugins/demo-order.js` (required – otherwise the registry check fails and the
+   demo is only soft-appended after ordered entries).
+3. No `vite.config.js` edit, HTML file, or vintage-map entry is needed for a brand-new slug. On a **rename**, update the
+   vacated slug's target in `plugins/demo-vintage-urls.js` (`VINTAGE_URLS`) and add a new mapping for the old public
+   path so bookmarks keep working.
+4. Run `pnpm run check:demo-registry` (also part of `pnpm run preflight`) so disk, order, vintage, and nav-hidden sets
+   stay consistent.
+5. Add the demo to the `## Demos` list in `README.md` under the right category, using the number-free hosted URL
+   (`https://demos.blit386.dev/<slug>`).
 
 ## Code Quality (Relaxed for Demos)
 
@@ -254,7 +272,7 @@ and why, not just restate it.
 - Never assume the reader knows what a function does just from its name.
 - Use short sentences. Avoid jargon unless you explain it immediately after.
 - Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
-  <https://demos.blit386.dev/001-basics>"
+  <https://demos.blit386.dev/basics>"
 - American English spelling – `color`, `center`, `canceled`, `traveling`, `gray`, never `colour`, `centre`, `cancelled`,
   `travelling`, `grey`. Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or `c`
   in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`, should this repo ever reference them) – do
@@ -330,9 +348,9 @@ Audio settings in `configure()`: `audioVoices` (default `16`, range 1–64 – s
 overlay; metering costs nothing while it is off). Style them with `overlayAudioMeterHeight` (default `13` px) and
 `overlayAudioMeterStyle`.
 
-Audio demos: `036-audio-basics` (loading and playing SFX), `037-music` (crossfades and loop points), `038-audio-buses`
-(mixer buses, mute, ducking), `041-synth-toy` (`AudioClip.synth()` and `BT.synthPreset`). Demos `014`, `027`, and `029`
-use audio as part of a larger scene.
+Audio demos: `audio-basics` (loading and playing SFX), `music` (crossfades and loop points), `audio-buses` (mixer buses,
+mute, ducking), `synth-toy` (`AudioClip.synth()` and `BT.synthPreset`). Demos `game-scene`, `pointer-drag-flick`, and
+`snake-game` use audio as part of a larger scene.
 
 Configure example (overlay flags use grammatical `is*`):
 
@@ -391,8 +409,7 @@ CRT and post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` f
 
 All demo UI (panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch D-pad, swipes, and
 tap zones) comes from the shared immediate-mode kit. NEVER hand-roll panels, buttons, or HUD text colors in a demo –
-import the kit. The one intentional exception is `018-flurry` (immersive screensaver with no demo HUD; engine overlay
-only):
+import the kit. The one intentional exception is `flurry` (immersive screensaver with no demo HUD; engine overlay only):
 
 ```js
 import { applyTheme, ui } from './shared/ui.js';
@@ -431,16 +448,16 @@ one-frame-old hit rects), so calling it from `render()` at 60 FPS is fine. `conf
 overlay styles that need theme colors use literal slot numbers (240 + offset) with a comment, or dedicated scene slots.
 
 Every demo must be usable on touch: actions triggered by keys get a `ui.button` with a `{ key }` binding, directional
-game input gets `ui.dpadWidget()` + `ui.swipe()`, and hardware-showcase demos (028, 031, 035) show a warm "needs a
-keyboard/gamepad" label when `ui.hasTouch()` is true.
+game input gets `ui.dpadWidget()` + `ui.swipe()`, and hardware-showcase demos (`keyboard-input`, `gamepad-input`,
+`keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true.
 
 The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
 The overlay body starts hidden; a bitmap toggle hint sits in the bottom-left corner by default. Toggle the body with
 Backquote or a primary press in the bottom-left 17x13 px corner. Use `isOverlayVisibleAtStart: true` to show the body on
 the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still toggles
-with Backquote; see `013-image-output`, `014-game-scene`, `023-crt-pipboy`, `029-snake-game`),
-`isOverlayToggleEnabled: false` to lock body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem
-(see [API: Core](https://blit386.dev/docs/api/core)). Set `isOverlayTimingChartEnabled: true` to opt in to the scrolling
+with Backquote; see `image-output`, `game-scene`, `crt-pipboy`, `snake-game`), `isOverlayToggleEnabled: false` to lock
+body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem (see
+[API: Core](https://blit386.dev/docs/api/core)). Set `isOverlayTimingChartEnabled: true` to opt in to the scrolling
 update/render timing chart band (~22 px under the title row). Chart renderer diagnostics default to minimal when the
 chart is on; set `overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to disable chart markers.
 Set `isOverlayRendererDiagnosticsBarEnabled: true` for a GPU pipeline text row below frame timings (off by default). Bar
@@ -453,7 +470,7 @@ enabled in `configure()`.
 
 Standard section order (matches `.cursor/rules/file-structure.mdc`):
 
-1. Header comment (`// Demo NNN – …`, prerequisites, hosted links; optional `// @pageTitle`)
+1. Header comment (`// Demo Topic – …`, prerequisites, hosted links; optional `// @pageTitle`)
 2. Imports
 3. Type definitions (`@typedef` JSDoc)
 4. Configuration constants
@@ -500,8 +517,11 @@ Managed by Husky (auto-installed via `prepare` script).
 ## Deployment
 
 Demos deploy to Cloudflare Pages via GitHub Actions on push to main. The production build copies each virtual demo to
-`dist/<slug>.html` at the site root (see `flattenDemosPlugin` in `vite.config.js`). Public URLs are listed in
-`README.md` (the hosted site uses short paths such as `/001-basics`; local dev still uses `/demos/<slug>.html`).
+`dist/<slug>.html` at the site root (see `flattenDemosPlugin` in `vite.config.js`) and generates `dist/_redirects` from
+`VINTAGE_URLS` plus a site-index rule for the first nav-visible demo (see `demo-redirects` in `vite.config.js`). Public
+URLs are listed in `README.md`: the hosted site uses short number-free paths such as `/basics`; local dev still uses
+`/demos/<slug>.html`. Vintage numbered paths (`/001-basics`, `/001-basics.html`, …) 301 to the current slug in both
+environments.
 
 ## Agent skills
 
@@ -514,7 +534,7 @@ once). Available:
 | `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify)                                                                 |
 | `demos-review` / `demos-deep-review`  | Diff review vs project rules; deep pre-push review                                                                  |
 | `demos-pr`                            | Preflight, conventional commit (DCO recommended), open a PR                                                         |
-| `demos-new`                           | Scaffold the next `NNN-topic.js` demo                                                                               |
+| `demos-new`                           | Scaffold `src/<topic>.js` and remind to append the slug to `DEMO_ORDER`                                             |
 | `demos-spellcheck`                    | Fix cspell errors and extend `cspell.json`                                                                          |
 | `demos-test`                          | Explain that this repo has no automated tests                                                                       |
 | `demos-security-run`                  | MCP security preflight + audit fallbacks                                                                            |

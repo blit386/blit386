@@ -1,15 +1,15 @@
-// Demo 016 - Palette Animation: change palette entries every tick for instant visual effects.
+// Palette Animation: change palette entries every tick for instant visual effects.
 //
-// Demo 016 in the BLIT386 series (written for readers about 12 years old).
+// Part of the BLIT386 series (written for readers about 12 years old).
 //
 // Prerequisites:
-//   001-Basics          https://demos.blit386.dev/001-basics
-//   002-Primitives      https://demos.blit386.dev/002-primitives
-//   003-Colors          https://demos.blit386.dev/003-colors
-//   015-Palette Presets https://demos.blit386.dev/015-palette-presets
+//   Basics          https://demos.blit386.dev/basics
+//   Primitives      https://demos.blit386.dev/primitives
+//   Colors          https://demos.blit386.dev/colors
+//   Palette Presets https://demos.blit386.dev/palette-presets
 //     (walkthrough: https://vancura.dev/articles/blit386-palette-presets)
 //
-// Live version: https://demos.blit386.dev/016-palette-animation
+// Live version: https://demos.blit386.dev/palette-animation
 // Live article: https://vancura.dev/articles/blit386-palette-animation
 //
 // WHAT IS PALETTE ANIMATION?

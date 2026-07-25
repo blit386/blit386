@@ -1,9 +1,9 @@
 /**
  * Fonts Demo - built-in system font and palette-animated text.
  *
- * Demo 004 in the BLIT386 demo series.
- * Prerequisites: 001-Basics - https://demos.blit386.dev/001-basics
- * Live version: https://demos.blit386.dev/004-fonts
+ * Part of the BLIT386 demo series.
+ * Prerequisites: Basics - https://demos.blit386.dev/basics
+ * Live version: https://demos.blit386.dev/fonts
  *
  * BT.systemPrint() draws text with the engine's built-in system font (6 pixels wide,
  * 14 pixels tall per character). No file loading, no await, no font object.
@@ -14,12 +14,12 @@
  *   - Rainbow text: one systemPrint call per character with its own palette slot
  *   - Pulsing text: animating alpha in update() on a single palette slot
  *
- * The title strip and the small pointer to Demo 022 are chrome drawn by the shared UI kit
+ * The title strip and the small pointer to Bitmap Font demo are chrome drawn by the shared UI kit
  * (src/shared/ui.js). The showcase lines themselves stay hand-rolled on purpose - drawing
  * text with BT.systemPrint() is the whole lesson of this demo.
  *
  * For custom bitmap fonts loaded from disk, variable glyph widths, and BT.printFont(),
- * see Demo 022 - Bitmap Font: https://demos.blit386.dev/022-bitmap-font
+ * see the Bitmap Font demo: https://demos.blit386.dev/bitmap-font
  */
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
@@ -60,7 +60,7 @@ let systemCharWidth = 6;
 /**
  * Demonstrates BT.systemPrint() with various text effects powered by palette animation.
  * Shows static colors, per-character rainbow animation, and pulsing brightness.
- * Compare with Demo 022 - Bitmap Font for BitmapFont.load() and BT.printFont().
+ * Compare with the Bitmap Font demo for BitmapFont.load() and BT.printFont().
  *
  * @implements {IBTDemo}
  */
@@ -99,7 +99,7 @@ class Demo {
 
     /**
      * Sets up the color palette.
-     * Unlike Demo 022, there is no font to load - BT.systemPrint() needs nothing.
+     * Unlike Bitmap Font demo, there is no font to load - BT.systemPrint() needs nothing.
      *
      * @returns {Promise<boolean>} Returns true when ready.
      */
@@ -142,7 +142,7 @@ class Demo {
 
     /**
      * Runs at a fixed rate (60 times per second). See the Basics demo for the full explanation:
-     * https://demos.blit386.dev/001-basics
+     * https://demos.blit386.dev/basics
      * We advance the animation timer AND update dynamic palette colors here.
      */
     update() {
@@ -199,7 +199,7 @@ class Demo {
         // No ui.panel() call inside the group means it is just floating text - no box.
         ui.begin('bottomLeft');
         ui.label('To see how to load bitmap fonts from disk,', { color: 'dim' });
-        ui.label('go to demo 022', { color: 'dim' });
+        ui.label('go to Bitmap Font demo', { color: 'dim' });
         ui.end();
     }
 
@@ -217,7 +217,7 @@ class Demo {
         let currentY = y;
 
         // BT.systemPrint(position, paletteSlot, text) - the slot number IS the color directly.
-        // Compare to BT.printFont() in Demo 022 which uses a 0-based palette offset per glyph.
+        // Compare to BT.printFont() in Bitmap Font demo which uses a 0-based palette offset per glyph.
         BT.systemPrint(new Vector2i(10, currentY), C_RED_TEXT, 'Red Text');
         const lineAdvance = BT.systemPrintMeasure('Red Text').y + 4;
         currentY += lineAdvance;
@@ -257,7 +257,7 @@ class Demo {
             BT.systemPrint(new Vector2i(x, y), C_RAINBOW_BASE + slotIndex, char);
 
             // Step right by the measured glyph width (6 px for the built-in system font).
-            // Demo 022 uses BitmapFont metrics per character instead of a fixed step.
+            // Bitmap Font demo uses BitmapFont metrics per character instead of a fixed step.
             x += systemCharWidth;
             slotIndex++;
         }

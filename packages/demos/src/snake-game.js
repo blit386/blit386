@@ -1,13 +1,13 @@
 /**
  * Snake - grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
  *
- * Demo 029 in the BLIT386 demo series.
+ * Part of the BLIT386 demo series.
  * Prerequisites:
- *   001-Basics         https://demos.blit386.dev/001-basics
- *   023-PipBoy CRT     https://demos.blit386.dev/023-crt-pipboy
- *   028-Keyboard Input https://demos.blit386.dev/028-keyboard-input
+ *   Basics         https://demos.blit386.dev/basics
+ *   PipBoy CRT     https://demos.blit386.dev/crt-pipboy
+ *   Keyboard Input https://demos.blit386.dev/keyboard-input
  *
- * Live version: https://demos.blit386.dev/029-snake-game
+ * Live version: https://demos.blit386.dev/snake-game
  *
  * Move with WASD or the arrow keys (both are mapped to player 0 face buttons). On a phone
  * or tablet, steer with the on-screen D-pad in the bottom-right corner (it appears at the
@@ -17,7 +17,7 @@
  * restarts after two seconds.
  * Gameplay uses rectangles; a short systemPrint note appears in software mode.
  *
- * Post-processing matches demo 023 when WebGPU is active. In software fallback mode the
+ * Post-processing matches the PipBoy CRT demo when WebGPU is active. In software fallback mode the
  * snake game still runs; CRT effects are skipped and a short note is shown on canvas.
  *
  * WebGPU path: PixelGlitch on the logical index buffer, then palette resolve + upscale,
@@ -25,7 +25,7 @@
  * line, scanlines, RGB mask, vignette, noise, flicker, bloom, and the glitch state machine.
  *
  * Eating food and dying both play a synthesized sound effect (built with AudioClip.synth(),
- * the same technique 041-Synth Toy explores in depth). An upbeat music loop plays in the
+ * the same technique Synth Toy explores in depth). An upbeat music loop plays in the
  * background; each food multiplies its playback rate so the beat climbs with snake length.
  */
 
@@ -119,7 +119,7 @@ const MUSIC_PITCH_FADE_MS = 120;
 // Two seconds at 60 ticks per second before a new round starts.
 const RESTART_DELAY_TICKS = 120;
 
-// CRT glitch state machine (same tuning as demo 023)
+// CRT glitch state machine (same tuning as crt-pipboy demo)
 const GLITCH_COOLDOWN_MIN = 120;
 const GLITCH_COOLDOWN_MAX = 360;
 const GLITCH_ACTIVE_MIN = 5;
@@ -137,7 +137,7 @@ const ABERRATION_BASE = 0;
 const NOISE_BASE = 0.025;
 
 /**
- * Minimal snake with PipBoy CRT post-processing from demo 023.
+ * Minimal snake with PipBoy CRT post-processing from crt-pipboy demo.
  *
  * @implements {IBTDemo}
  */
@@ -295,7 +295,7 @@ class Demo {
     }
 
     /**
-     * Palette, PipBoy CRT stack (023), glitch machine, then first round.
+     * Palette, PipBoy CRT stack (crt-pipboy), glitch machine, then first round.
      *
      * @returns {Promise<boolean>}
      */
@@ -306,13 +306,13 @@ class Demo {
         // Engine defaults put WASD on player 0 and arrows on player 1. This is a single-player
         // game, so fold both layouts into player 0: either set of keys steers the same snake.
         // BT.inputMap replaces the whole key list for that button; listing both codes means
-        // either key counts (logical OR), the same pattern demo 030 shows with Q|E for LEFT.
+        // either key counts (logical OR), the same pattern input-map-remapping demo shows with Q|E for LEFT.
         BT.inputMap(0, BT.BTN_UP, 'KeyW', 'ArrowUp');
         BT.inputMap(0, BT.BTN_DOWN, 'KeyS', 'ArrowDown');
         BT.inputMap(0, BT.BTN_LEFT, 'KeyA', 'ArrowLeft');
         BT.inputMap(0, BT.BTN_RIGHT, 'KeyD', 'ArrowRight');
 
-        // BT.synthPreset bundles ready-tuned sound recipes (041-Synth Toy explores all six).
+        // BT.synthPreset bundles ready-tuned sound recipes (Synth Toy explores all six).
         // Rendering them once here means eating and dying play back with zero delay later.
         this.eatClip = await AudioClip.synth(BT.synthPreset.pickup());
         this.gameOverClip = await AudioClip.synth(BT.synthPreset.explosion());
@@ -447,11 +447,11 @@ class Demo {
     }
 
     /**
-     * Builds the WebGPU CRT effect chain (same stack and tuning as demo 023) and seeds
+     * Builds the WebGPU CRT effect chain (same stack and tuning as crt-pipboy demo) and seeds
      * the glitch state machine. Called from init() only when WebGPU is active.
      */
     setupCrtEffects() {
-        // Pixel-tier glitch (same role as demo 023).
+        // Pixel-tier glitch (same role as crt-pipboy demo).
         this.pixelGlitch = new PixelGlitch();
         this.pixelGlitch.bandHeight = 6;
         this.pixelGlitch.intensity = 0;
@@ -596,7 +596,7 @@ class Demo {
     }
 
     /**
-     * Same state machine as demo 023: cooldown, burst envelope, random glitch type.
+     * Same state machine as crt-pipboy demo: cooldown, burst envelope, random glitch type.
      */
     tickGlitchMachine() {
         // A burst is running while there are ticks left on its countdown.

@@ -45,8 +45,10 @@
 <script id="demo-list" type="application/json">{{demoList}}</script>
 
 <!--
-  Shell mode (default): persistent banner + content iframe. Demo swaps change the iframe
-  src and history.pushState the clean demo URL; the banner never reloads.
+  Shell mode (default): persistent banner + content iframe. The banner hosts a
+  fuzzy-searchable combobox (plus prev/next). Demo swaps change the iframe src and
+  history.pushState the clean number-free demo URL (e.g. /demos/basics.html); the
+  banner never reloads. Vintage numbered paths 301 to the current slug.
 
   Embed mode (?embed): #canvas-container only (no banner; source hidden). Used by
   external embeds on blit386.dev. The shell iframe loads ?embed&source so the

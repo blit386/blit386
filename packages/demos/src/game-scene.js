@@ -1,35 +1,35 @@
-// Demo 014 - Game Scene (CAPSTONE): one small world that uses almost everything from the series.
+// Game Scene (CAPSTONE): one small world that uses almost everything from the series.
 //
 // This demo brings together everything you have learned!
 //
 // Written for readers about 12 years old. Prerequisites (do these first):
-//   001-Basics       https://demos.blit386.dev/001-basics
-//   002-Primitives   https://demos.blit386.dev/002-primitives
-//   003-Colors       https://demos.blit386.dev/003-colors
-//   004-Fonts        https://demos.blit386.dev/004-fonts
-//   005-Pixel Art    https://demos.blit386.dev/005-pixel-art
-//   006-Patterns     https://demos.blit386.dev/006-patterns
-//   007-Camera       https://demos.blit386.dev/007-camera
-//   008-Sprites      https://demos.blit386.dev/008-sprites
-//   009-Animation    https://demos.blit386.dev/009-animation
-//   010-Sprite-FX    https://demos.blit386.dev/010-sprite-effects
-//   011-Starfield    https://demos.blit386.dev/011-starfield
-//   012-Tilemap      https://demos.blit386.dev/012-tilemap
-//   013-Image Output https://demos.blit386.dev/013-image-output
+//   Basics       https://demos.blit386.dev/basics
+//   Primitives   https://demos.blit386.dev/primitives
+//   Colors       https://demos.blit386.dev/colors
+//   Fonts        https://demos.blit386.dev/fonts
+//   Pixel Art    https://demos.blit386.dev/pixel-art
+//   Patterns     https://demos.blit386.dev/patterns
+//   Camera       https://demos.blit386.dev/camera
+//   Sprites      https://demos.blit386.dev/sprites
+//   Animation    https://demos.blit386.dev/animation
+//   Sprite Effects    https://demos.blit386.dev/sprite-effects
+//   Starfield    https://demos.blit386.dev/starfield
+//   Tilemap      https://demos.blit386.dev/tilemap
+//   Image Output https://demos.blit386.dev/image-output
 //
 // Live article: https://vancura.dev/articles/blit386-game-scene
 //
 // WHAT YOU SEE (how the pieces connect):
-//   - Sky gradient and slow-moving clouds = colors (003) + parallax idea from starfield (011).
-//   - Scrolling ground, tile-ID sidewalk strip (012), checker buildings (006) = camera (007).
-//   - Moving rock hero = sprites (008) and timing (009).
-//   - Sparkles near the rock = small fading squares, like the particles in animation (009).
-//   - Day and night = palette-based ambient lighting (010); the world dims at night.
-//   - Background music with a real intro-then-loop point (037), plus a chime on every
+//   - Sky gradient and slow-moving clouds = colors + parallax idea from starfield.
+//   - Scrolling ground, tile-ID sidewalk strip (tilemap), checker buildings (patterns) = camera.
+//   - Moving rock hero = sprites and timing (animation).
+//   - Sparkles near the rock = small fading squares, like the particles in animation.
+//   - Day and night = palette-based ambient lighting (sprite-effects); the world dims at night.
+//   - Background music with a real intro-then-loop point (music), plus a chime on every
 //     day/night phase change and a blip on a successful PNG capture.
-//   - Score, rock position, and day phase = engine overlay rows (004 + built-in FPS bar).
+//   - Score, rock position, and day phase = engine overlay rows (fonts + built-in FPS bar).
 //   - A legend panel built with the shared UI kit (src/shared/ui.js) explains the mix and
-//     holds a Save PNG button (013): click it, tap it on a touchscreen, or press Space.
+//     holds a Save PNG button (image-output): click it, tap it on a touchscreen, or press Space.
 //
 // HOW THE DAY/NIGHT PALETTE WORKS:
 //
@@ -62,19 +62,19 @@ import { applyTheme, ui } from './shared/ui.js';
 // Internal game resolution.
 const DISPLAY_W = 320;
 
-// The level is wider than the screen so the camera can scroll (007-Camera).
+// The level is wider than the screen so the camera can scroll (Camera).
 const WORLD_W = 640;
 const WORLD_H = 240;
 
 // Where the sidewalk / grass starts.
 const GROUND_Y = 188;
 
-// One row of 16 px tiles along the sidewalk (012-Tilemap idea: small tile IDs in an array).
+// One row of 16 px tiles along the sidewalk (Tilemap idea: small tile IDs in an array).
 const GROUND_TILE_SIZE = 16;
 const TILE_GRASS_ID = 1;
 const TILE_DIRT_ID = 2;
 
-// Checker squares inside buildings (006-Patterns idea: repeating blocks, no images).
+// Checker squares inside buildings (Patterns idea: repeating blocks, no images).
 const BUILDING_PATTERN_CELL = 4;
 
 // How fast the rock moves along X each update tick.
@@ -96,7 +96,7 @@ const DAY_NIGHT_CYCLE_TICKS = 1200;
 const CAMERA_LERP = 0.14;
 
 // These two numbers come straight out of public/audio/music-intro-loop.loop.json, generated
-// by scripts/generate-audio-loops.mjs (see 037-Music for the same track used in isolation).
+// by scripts/generate-audio-loops.mjs (see Music for the same track used in isolation).
 const MUSIC_LOOP_START_SECONDS = 1.5;
 const MUSIC_LOOP_END_SECONDS = 7.9;
 
@@ -244,10 +244,10 @@ class Demo {
     buildings = [];
     clouds = [];
 
-    // Tile IDs for one sidewalk row (012): each entry is TILE_GRASS_ID or TILE_DIRT_ID.
+    // Tile IDs for one sidewalk row (tilemap): each entry is TILE_GRASS_ID or TILE_DIRT_ID.
     groundTileIds = [];
 
-    // PNG capture state (013): the legend's Save button (click, tap, or Space)
+    // PNG capture state (image-output): the legend's Save button (click, tap, or Space)
     // triggers BT.downloadFrame once per press.
     capturing = false;
     lastCaptureMessage = '';
@@ -345,7 +345,7 @@ class Demo {
             this.palette.set(PARTICLE_SLOT_START + i, new Color32(0, 0, 0, 0));
         }
 
-        // Build world decoration and the sidewalk tile-ID row (Demo 012).
+        // Build world decoration and the sidewalk tile-ID row (Tilemap demo).
         this.buildWorldDecor();
         this.buildGroundTileStrip();
 
@@ -376,7 +376,7 @@ class Demo {
         console.log(`[GameSceneDemo] Loaded sprite: ${this.heroSprite.width}x${this.heroSprite.height}px`);
 
         // Read the hero's real size from the loaded sheet (44x44 for test.png), the
-        // same way demos 033 and 034 do. Every bit of math below - movement bounds,
+        // same way basics-enhanced and logo-lowres do. Every bit of math below - movement bounds,
         // camera centering, particle spawns - uses this size, so the logic always
         // matches the picture on screen.
         this.heroSize.set(this.heroSheet.size.x, this.heroSheet.size.y);
@@ -411,11 +411,11 @@ class Demo {
      * Called once from init(); split out so the audio setup reads as one clear step.
      */
     async initAudio() {
-        // Background music: a real intro-then-loop track, the same one 037-Music
+        // Background music: a real intro-then-loop track, the same one Music
         // demonstrates in isolation. BT.musicPlay() called before the page is unlocked is
         // "remembered" and starts for real the instant the player clicks or presses a key.
         //
-        // Wrap load + play like 029-snake-game: a missing or undecodable file must not
+        // Wrap load + play like snake-game: a missing or undecodable file must not
         // abort the whole scene - the capstone still renders with SFX only.
         try {
             this.musicClip = await AudioClip.load('/audio/music-intro-loop.wav');
@@ -430,7 +430,7 @@ class Demo {
         }
 
         // A soft rising chime for day/night transitions, and BT.synthPreset.blip() (the
-        // same UI blip 041-Synth Toy uses) for a successful capture.
+        // same UI blip Synth Toy uses) for a successful capture.
         this.dayPhaseChimeClip = await AudioClip.synth({
             waveform: 'sine',
             frequency: 660,
@@ -481,7 +481,7 @@ class Demo {
     /**
      * Plays a short chime the instant the day/night phase label changes (Day -> Toward dusk
      * -> Night -> Toward dawn -> Day...). Comparing this tick's label against last tick's
-     * label is the same "edge detection" idea 028-Keyboard Input uses for key presses - we
+     * label is the same "edge detection" idea Keyboard Input uses for key presses - we
      * only care about the moment something changes, not every tick it stays the same.
      *
      * @param {number} tick - Current engine tick (BT.ticks).
@@ -544,7 +544,7 @@ class Demo {
     }
 
     /**
-     * Fills groundTileIds with alternating grass/dirt tile IDs for one 16 px row (Demo 012).
+     * Fills groundTileIds with alternating grass/dirt tile IDs for one 16 px row (Tilemap demo).
      */
     buildGroundTileStrip() {
         const cols = Math.ceil(WORLD_W / GROUND_TILE_SIZE);
@@ -724,10 +724,10 @@ class Demo {
         this.tempRect.set(0, GROUND_Y, WORLD_W, 3);
         BT.drawRectFill(this.tempRect, C_DIRTLINE);
 
-        // Sidewalk tile row: each cell is a tile ID mapped to a palette color (Demo 012).
+        // Sidewalk tile row: each cell is a tile ID mapped to a palette color (Tilemap demo).
         this.renderGroundTileStrip();
 
-        // Buildings: checker fill (Demo 006) plus outline frame.
+        // Buildings: checker fill (Patterns demo) plus outline frame.
         for (let i = 0; i < this.buildings.length; i++) {
             const b = this.buildings[i];
             const fillIdx = C_BUILDING_BASE + i * 2;
@@ -755,7 +755,7 @@ class Demo {
     }
 
     /**
-     * Fills a building with alternating 4x4 blocks (checker pattern from Demo 006).
+     * Fills a building with alternating 4x4 blocks (checker pattern from Patterns demo).
      *
      * @param {{ x: number, y: number, w: number, h: number }} building
      * @param {number} fillIdx palette index for "light" squares
@@ -952,7 +952,7 @@ class Demo {
     /**
      * Short legend for first-time viewers (screen space, top-left), built with the shared
      * UI kit. The Save button also listens for the Space key, so keyboard, mouse, and
-     * touch all trigger the same PNG capture (Demo 013).
+     * touch all trigger the same PNG capture (Image Output demo).
      */
     renderLegend() {
         // Anchor the group to the top-left corner; the kit sizes the panel to fit its rows.
@@ -962,7 +962,7 @@ class Demo {
         ui.panel('Capstone: scroll, tiles, sprite, day/night');
 
         // A dim (secondary) line pointing back at the demos these visuals come from.
-        ui.label('Tiles + checker = demos 012 + 006', { color: 'dim' });
+        ui.label('Tiles + checker = tilemap + patterns', { color: 'dim' });
 
         // The Save button returns true only on the frame it is clicked, tapped, or its
         // bound key (Space) is pressed. The `capturing` flag stops a second capture from
@@ -987,7 +987,7 @@ class Demo {
     }
 
     /**
-     * Starts one PNG download (Demo 013). BT.downloadFrame() is asynchronous - it hands
+     * Starts one PNG download (Image Output demo). BT.downloadFrame() is asynchronous - it hands
      * the browser a file and resolves later - so we flip `capturing` on now and set the
      * result message (shown for ~3 seconds via messageTimer) when the promise settles.
      */

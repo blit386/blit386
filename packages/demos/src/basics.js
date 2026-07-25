@@ -35,7 +35,7 @@
  * back, the engine catches up with a few extra update() calls (up to 8) so
  * your game does not jump forward in time by a huge amount.
  *
- * Live version: https://demos.blit386.dev/001-basics
+ * Live version: https://demos.blit386.dev/basics
  */
 
 /**

@@ -1,9 +1,9 @@
-// Demo 012 - Tilemap: build a grid world from a 2D array and scroll the camera across it.
+// Tilemap: build a grid world from a 2D array and scroll the camera across it.
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
-// 002-Primitives (https://demos.blit386.dev/002-primitives),
-// 007-Camera (https://demos.blit386.dev/007-camera).
-// Optional background: 008-Sprites (https://demos.blit386.dev/008-sprites) also
+// Prerequisites: Basics (https://demos.blit386.dev/basics),
+// Primitives (https://demos.blit386.dev/primitives),
+// Camera (https://demos.blit386.dev/camera).
+// Optional background: Sprites (https://demos.blit386.dev/sprites) also
 // places art on a grid, but this demo uses colored rectangles instead of a PNG sheet.
 //
 // Live walkthrough: https://vancura.dev/articles/blit386-tilemap

@@ -1,8 +1,8 @@
-// Demo 007 - Camera: shows how to scroll a view over a world larger than the screen.
+// Camera: shows how to scroll a view over a world larger than the screen.
 //
-// Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
-// (https://demos.blit386.dev/001-basics) and shapes in Demo 002-Primitives
-// (https://demos.blit386.dev/002-primitives).
+// Prerequisites: We learned about drawing and the game loop in Basics demo
+// (https://demos.blit386.dev/basics) and shapes in Primitives demo
+// (https://demos.blit386.dev/primitives).
 //
 // Live walkthrough: https://vancura.dev/articles/blit386-camera
 //

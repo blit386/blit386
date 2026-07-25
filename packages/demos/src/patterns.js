@@ -1,15 +1,15 @@
-// Demo 006 - Patterns: animated mathematical art using only primitive drawing.
+// Patterns: animated mathematical art using only primitive drawing.
 //
-// Prerequisites: We learned about drawing and the game loop in Demo 001-Basics
-// (https://demos.blit386.dev/001-basics), shapes in Demo 002-Primitives
-// (https://demos.blit386.dev/002-primitives), and color in Demo 003-Colors
-// (https://demos.blit386.dev/003-colors).
+// Prerequisites: We learned about drawing and the game loop in Basics demo
+// (https://demos.blit386.dev/basics), shapes in Primitives demo
+// (https://demos.blit386.dev/primitives), and color in Colors demo
+// (https://demos.blit386.dev/colors).
 //
-// We also use the palette system introduced in Demo 003-Colors
-// (https://demos.blit386.dev/003-colors). You will see much more of
-// palettes later, in demo 015 and beyond.
+// We also use the palette system introduced in Colors demo
+// (https://demos.blit386.dev/colors). You will see much more of
+// palettes later, in palette-presets demo and beyond.
 //
-// Live version: https://demos.blit386.dev/006-patterns
+// Live version: https://demos.blit386.dev/patterns
 // Walkthrough article: https://vancura.dev/articles/blit386-patterns
 //
 // All six patterns here are drawn using just pixels, lines, and rectangles

@@ -1,13 +1,13 @@
-// @pageTitle BLIT386 Demo 023 - PipBoy CRT
+// @pageTitle BLIT386 Demo - PipBoy CRT
 //
-// Demo 023 - PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
+// PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //
-// Demo 023 in the BLIT386 demo series.
+// Part of the BLIT386 demo series.
 // Prerequisites:
-//   001-Basics      https://demos.blit386.dev/001-basics
-//   022-Bitmap Font https://demos.blit386.dev/022-bitmap-font
+//   Basics      https://demos.blit386.dev/basics
+//   Bitmap Font https://demos.blit386.dev/bitmap-font
 //
-// Live version: https://demos.blit386.dev/023-crt-pipboy
+// Live version: https://demos.blit386.dev/crt-pipboy
 //
 // Live article: https://vancura.dev/articles/blit386-pipboy-crt
 //

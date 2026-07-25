@@ -1,12 +1,12 @@
 /**
  * Keyboard Input Demo - face buttons, raw keys, and typed text.
  *
- * Demo 028 in the BLIT386 demo series.
+ * Part of the BLIT386 demo series.
  * Prerequisites:
- *   001-Basics        https://demos.blit386.dev/001-basics
- *   025-Pointer Basics https://demos.blit386.dev/025-pointer-basics
+ *   Basics        https://demos.blit386.dev/basics
+ *   Pointer Basics https://demos.blit386.dev/pointer-basics
  *
- * Live version: https://demos.blit386.dev/028-keyboard-input
+ * Live version: https://demos.blit386.dev/keyboard-input
  *
  * This page shows three layers of keyboard support:
  * - Face buttons (BT.BTN_UP through BT.BTN_SELECT) for players 0 and 1. Each

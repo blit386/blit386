@@ -1,7 +1,7 @@
-// Demo 010 - Sprite Effects: shows how to use palette offsets to create game effects.
+// Sprite Effects: shows how to use palette offsets to create game effects.
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics),
-// 008-Sprites (https://demos.blit386.dev/008-sprites).
+// Prerequisites: Basics (https://demos.blit386.dev/basics),
+// Sprites (https://demos.blit386.dev/sprites).
 // Live article: https://vancura.dev/articles/blit386-sprite-effects
 //
 // In the palette-based rendering system, each sprite pixel stores a palette index.
@@ -23,18 +23,18 @@
 // For DYNAMIC effects (damage flash, ghost pulse, invincibility, poison, day/night):
 // we update the color block in update() every tick and draw with that offset in render().
 //
-// We learned about palette offsets in Demo 008-Sprites:
-// https://demos.blit386.dev/008-sprites
+// We learned about palette offsets in Sprites demo:
+// https://demos.blit386.dev/sprites
 //
 // FULLSCREEN CRT (Tesla Orava TV)
 // The sprite grid is drawn at 640x400, then the engine resolves and upscales it and runs
 // a display-tier stack tuned for 1970s Czechoslovak B/W CRT sets (Tesla Orava 131/226/229):
 // curved tube, soft phosphor halation, scanlines, light bezel vignette, a roll band
 // scrolling top-to-bottom, subtle offset-band wobble, and occasional TV faults (tear,
-// snow, dim, ghost, roll). Same building blocks as demo 033; chroma split is omitted (B/W).
+// snow, dim, ghost, roll). Same building blocks as basics-enhanced demo; chroma split is omitted (B/W).
 // Post-process needs WebGPU; the software renderer still shows the sprite effects without CRT.
 //
-// We learned about composing effects in 023-PipBoy CRT and 033-Basics Enhanced.
+// We learned about composing effects in PipBoy CRT and Basics Enhanced.
 //
 // Captions, the day/night legend, and the software fallback note are drawn with the shared
 // UI kit (src/shared/ui.js), which installs its twelve UI colors high in the palette
@@ -138,7 +138,7 @@ const DISPLAY_H = 400;
 const MAX_CANVAS_W = DISPLAY_W * 3;
 const MAX_CANVAS_H = DISPLAY_H * 3;
 
-// Display-tier CRT runs on the upscaled RGBA buffer (3x logical, like demo 033).
+// Display-tier CRT runs on the upscaled RGBA buffer (3x logical, like basics-enhanced demo).
 const OUTPUT_W = DISPLAY_W * 3;
 const OUTPUT_H = DISPLAY_H * 3;
 
@@ -163,7 +163,7 @@ const GLITCH_LABELS = {
 
 // The shared fallback note is one long sentence. split('. ') cuts the string at the
 // sentence break, giving us an array of two shorter lines the UI kit can draw one under
-// the other when the software renderer is active (same pattern as demo 033).
+// the other when the software renderer is active (same pattern as basics-enhanced demo).
 const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 
 const FLICKER_BASE = 1.0;

@@ -59,7 +59,7 @@ function readDemoList() {
 
 /**
  * Index of the current page's demo within `demos`, or -1 if this demo is nav-hidden
- * (e.g. barebones, excluded from the dropdown/prev-next chain).
+ * (e.g. barebones, excluded from the combobox/prev-next chain).
  * @param {Array<{slug: string}>} demos
  * @returns {number}
  */

@@ -12,8 +12,8 @@ const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
 const PAGE_TITLE_PREFIX_PATTERN = /^BLIT386 Demo (?:(?:[0-9]{3}|00a) )?-\s*/;
 const HEADER_SCAN_BYTES = 2000;
 
-// Demos excluded from the banner's dropdown and prev/next chain. They remain fully routable
-// and embeddable at their own URL; only navigation surfacing is suppressed.
+// Demos excluded from the banner's fuzzy combobox and prev/next chain. They remain fully
+// routable and embeddable at their own URL; only navigation surfacing is suppressed.
 // Exported so `scripts/check-demo-registry.mjs` can flag stale entries.
 export const NAV_HIDDEN_SLUGS = new Set(['barebones']);
 
@@ -124,7 +124,7 @@ function deriveTitle(slug, header) {
 }
 
 /**
- * Derive the short, unprefixed topic name used for nav UI (dropdown/prev-next labels), e.g.
+ * Derive the short, unprefixed topic name used for nav UI (combobox/prev-next labels), e.g.
  * "Flurry" or "PipBoy CRT". Strips a leading "BLIT386 Demo … - " prefix from `@pageTitle`
  * overrides that include it, so nav labels stay uniform regardless of how each demo's
  * `@pageTitle` is written.

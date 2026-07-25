@@ -1,13 +1,13 @@
-// @pageTitle BLIT386 Demo 024 - CRT Toggle
+// @pageTitle BLIT386 Demo - CRT Toggle
 //
-// Demo 024 - CRT Toggle: turn the post-process effects on and off in flight.
+// CRT Toggle: turn the post-process effects on and off in flight.
 //
-// Demo 024 in the BLIT386 demo series.
+// Part of the BLIT386 demo series.
 // Prerequisites:
-//   001-Basics     https://demos.blit386.dev/001-basics
-//   023-PipBoy CRT https://demos.blit386.dev/023-crt-pipboy
+//   Basics     https://demos.blit386.dev/basics
+//   PipBoy CRT https://demos.blit386.dev/crt-pipboy
 //
-// Live version: https://demos.blit386.dev/024-crt-toggle
+// Live version: https://demos.blit386.dev/crt-toggle
 //
 // Live article: https://vancura.dev/articles/blit386-crt-toggle
 //
@@ -46,7 +46,7 @@
 //
 // Why auto-toggle instead of a button? This page focuses on the effect API, not controls.
 // Auto-toggling keeps the ON/OFF comparison hands-free. Pointer and keyboard input are
-// covered in demos 025-028.
+// covered in the pointer and keyboard demos.
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
@@ -127,7 +127,7 @@ const BAR_COLORS = [C_RED, C_YELLOW, C_GREEN, C_CYAN, C_BLUE, C_MAGENTA];
  */
 class Demo {
     /**
-     * Same 320x240 logical / 1280x960 output setup as demo 023 for display-tier CRT presets.
+     * Same 320x240 logical / 1280x960 output setup as the PipBoy CRT demo for display-tier CRT presets.
      *
      * @returns {Partial<HardwareSettings>}
      */
@@ -218,7 +218,7 @@ class Demo {
         }
 
         // Step 4: start in the OFF state
-        // Demo 023 already shows what the CRT looks like straight away; here it's nicer
+        // PipBoy CRT demo already shows what the CRT looks like straight away; here it's nicer
         // to begin clean and then have the effect arrive after the first toggle.
         this.enabled = false;
         this.lastToggleTick = BT.ticks;
