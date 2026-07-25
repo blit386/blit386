@@ -15,9 +15,6 @@
 //     light noise, brightness waver (Flicker), soft RGB halation (RGBMask), a gentle
 //     vignette, soft bloom, and occasional analog-TV fault bursts (horizontal hold,
 //     snow, dimming, ghosting, vertical roll).
-//   - A tiny status chip in the bottom-left corner, drawn with the shared UI kit
-//     (src/shared/ui.js), names the TV fault that is firing right now. It is part
-//     of the picture, so the CRT effects wash over it too.
 //   - Post-process needs WebGPU. The software renderer shows the logo without CRT.
 //
 // Why upscale first and then add CRT?
@@ -49,13 +46,8 @@ import {
     Vignette,
 } from 'blit386';
 
-import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
+import { isAvailable } from './shared/post-process-backend.js';
 import { randFloat, randInt, randPick } from './shared/rand.js';
-import { applyTheme, ui } from './shared/ui.js';
-
-// Shared fallback note split at the sentence break (same approach as basics-enhanced /
-// sprite-effects). Two short lines fit the tiny 80px-wide status chip better than one.
-const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -123,16 +115,6 @@ const GLITCH_INTENSITY_MAX = 0.95; // Strongest fault (almost unwatchable).
 // The five kinds of B/W TV fault this demo can show.
 // (Chromatic aberration is omitted because a B/W set has no color to split.)
 const GLITCH_TYPES = ['hshift', 'noise', 'flicker', 'interference', 'vroll'];
-
-// Human-readable names shown in the on-screen status chip.
-const GLITCH_LABELS = {
-    none: 'NONE',
-    hshift: 'H-HOLD',
-    noise: 'SNOW',
-    flicker: 'DIM',
-    interference: 'GHOST',
-    vroll: 'V-ROLL',
-};
 
 // --- Occasional subtle band-wobble (pixel-tier PixelGlitch) ---
 // This is separate from the bigger TV fault bursts. A real CRT sometimes has a
@@ -272,12 +254,6 @@ class Demo {
         this.spriteSheet = indexed.sheet;
         this.spriteRect = indexed.srcRect;
 
-        // Install the shared UI kit colors for the status chip drawn in render().
-        // The scene only uses slot 1 (background) and slots 3-5 (the logo's three
-        // colors loaded above), so the kit's default range 240-251 - way up at the
-        // top of the palette - is provably free.
-        applyTheme(this.palette);
-
         // Activate our palette. Every draw call from here on uses these colors.
         BT.paletteSet(this.palette);
 
@@ -412,8 +388,7 @@ class Demo {
 
     /**
      * Called once per screen refresh. The logo does not move so this is simple:
-     * clear the screen, draw the sprite at its fixed center position, then draw
-     * the little status chip with the shared UI kit.
+     * clear the screen, draw the sprite at its fixed center position.
      */
     render() {
         // Erase the previous frame so nothing trails or ghosts.
@@ -424,38 +399,6 @@ class Demo {
         if (this.spriteSheet && this.spriteRect) {
             BT.drawSprite(this.spriteSheet, this.spriteRect, this.pos, 0);
         }
-
-        // --- Status chip (shared UI kit) ---
-        // The engine overlay is disabled in configure(), so this tiny one-row panel
-        // is the only readout: it says whether the Orava CRT stack is running and
-        // which TV fault is firing right now. Because it is drawn onto the 80x60
-        // picture BEFORE the post-process step, the CRT effects wash over it too.
-        // The screen is tiny, so margin, padding, and the words stay very small.
-        ui.begin('bottomLeft', { margin: 2, pad: 2 });
-
-        // panel() with no title gives the chip a dark background and border, so the
-        // text stays readable on top of the light gray backdrop.
-        ui.panel();
-
-        if (!this.effectsAvailable) {
-            // Software renderer: no post-process. Draw the shared note as two lines.
-            ui.label(FALLBACK_LINES[0] ?? SOFTWARE_FALLBACK_NOTE, { color: 'warm' });
-
-            if (FALLBACK_LINES[1]) {
-                ui.label(FALLBACK_LINES[1], { color: 'dim' });
-            }
-        } else if (this.glitchTicksLeft > 0) {
-            // A fault burst is running: show its friendly name and how strong this
-            // particular burst is, like "H-HOLD 82%". Math.round() turns the 0..1
-            // strength into the nearest whole percentage.
-            const pct = Math.round(this.glitchPeak * 100);
-            ui.label(`${GLITCH_LABELS[this.glitchType]} ${pct}%`, { color: 'warm' });
-        } else {
-            // Calm between faults: just confirm the CRT stack is on.
-            ui.label('CRT ON', { color: 'dim' });
-        }
-
-        ui.end();
     }
 
     /**
