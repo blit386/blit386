@@ -34,6 +34,7 @@ import {
     paletteIndexOutOfRangeError,
     spriteNotIndexizedError,
 } from '../utils/errorMessages';
+import { Random } from '../utils/Random';
 import type { Rect2i } from '../utils/Rect2i';
 import { RenderDimensionLimitError, validateDimensions } from '../utils/RenderLimits';
 import { Vector2i } from '../utils/Vector2i';
@@ -128,6 +129,9 @@ export class BTAPI {
 
     /** Manages animated palette effects (cycling, fading, flashing). */
     private readonly paletteEffects = new PaletteEffectManager();
+
+    /** Default engine PRNG; time-seeded when the singleton is created. */
+    private readonly random = new Random();
 
     /** Built-in 6x14 system font for BT.systemPrint(). */
     private systemFont: BitmapFont | null = null;
@@ -978,6 +982,27 @@ export class BTAPI {
      */
     public getPalette(): Palette | null {
         return this.palette;
+    }
+
+    /**
+     * Default engine PRNG (live reference).
+     *
+     * Time-seeded when the singleton is created. Call {@link randomSeed} for a
+     * reproducible sequence.
+     *
+     * @returns The shared {@link Random} instance.
+     */
+    public getRandom(): Random {
+        return this.random;
+    }
+
+    /**
+     * Reseeds the default engine PRNG.
+     *
+     * @param seed - Any finite number; only its lower 32 bits are used.
+     */
+    public randomSeed(seed: number): void {
+        this.random.seed(seed);
     }
 
     /**

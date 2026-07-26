@@ -14,7 +14,7 @@ import { AssetLoader } from './assets/AssetLoader';
 import type { AudioClip } from './assets/AudioClip';
 import { blip, explosion, hit, jump, laser, pickup } from './assets/synth/synthPresets';
 import type { BitmapFont, HardwareSettings } from './BLIT386';
-import { BT, Palette, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
+import { BT, Palette, Random, Rect2i, SpriteSheet, Vector2i } from './BLIT386';
 import { BTAPI } from './core/BTAPI';
 import type { FaceButtonCode } from './input/defaultKeyboardMap';
 import { SoftwareRenderer } from './render/SoftwareRenderer';
@@ -636,6 +636,41 @@ describe('BT.palette', () => {
         vi.spyOn(BTAPI.instance, 'getPalette').mockReturnValue(null);
 
         expect(() => BT.palette).toThrow('No palette set yet. Call BT.paletteSet');
+    });
+});
+
+describe('BT.random', () => {
+    it('returns the same live instance across reads', () => {
+        expect(BT.random).toBeInstanceOf(Random);
+        expect(BT.random).toBe(BT.random);
+    });
+});
+
+describe('BT.randomSeed', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.randomSeed', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'randomSeed').mockReturnValue(undefined);
+
+        BT.randomSeed(42);
+
+        expect(spy).toHaveBeenCalledWith(42);
+    });
+
+    it('makes a fixed call sequence reproducible', () => {
+        BT.randomSeed(1234);
+        const first = [BT.random.next(), BT.random.int(10, 20), BT.random.float(0, 1)];
+
+        BT.randomSeed(1234);
+        const second = [BT.random.next(), BT.random.int(10, 20), BT.random.float(0, 1)];
+
+        const expected = new Random(1234);
+        const reference = [expected.next(), expected.int(10, 20), expected.float(0, 1)];
+
+        expect(first).toEqual(reference);
+        expect(second).toEqual(reference);
     });
 });
 

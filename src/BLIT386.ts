@@ -1067,6 +1067,39 @@ export const BT = {
     },
 
     /**
+     * Default engine PRNG (live reference - not a copy).
+     *
+     * Time-seeded when the engine singleton is created. Call {@link BT.randomSeed}
+     * for a reproducible run. Mutating the instance (for example `BT.random.int(10)`)
+     * advances the shared stream.
+     *
+     * @since 1.5.0
+     * @returns The shared {@link Random} instance.
+     * @example
+     * BT.randomSeed(42);
+     * BT.random.int(150, 420);
+     * BT.random.pick(['a', 'b', 'c']);
+     */
+    get random(): Random {
+        return BTAPI.instance.getRandom();
+    },
+
+    /**
+     * Reseeds the default engine PRNG so subsequent draws are reproducible.
+     *
+     * @since 1.5.0
+     * @param seed - Any finite number; only its lower 32 bits are used.
+     * @example
+     * BT.randomSeed(1234);
+     * const a = BT.random.next();
+     * BT.randomSeed(1234);
+     * const b = BT.random.next(); // a === b
+     */
+    randomSeed: (seed: number): void => {
+        BTAPI.instance.randomSeed(seed);
+    },
+
+    /**
      * Starts rotating a range of palette entries at a constant speed.
      *
      * Classic water/fire/plasma animation technique. Runs indefinitely until

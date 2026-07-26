@@ -270,6 +270,8 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
   the session afterward. See [API: Audio](api-audio.md#unlock-state).
 - `screenOrientation` is runtime state from the Screen Orientation API (`null` when unavailable). See
   [Screen orientation](api-browser-support.md#screen-orientation).
+- `BT.random` is runtime state too: a live, always-present `Random` instance (time-seeded at engine start). Reseed with
+  `BT.randomSeed(seed)` for reproducible runs. See [API: Random](api-random.md#engine-default-btrandom).
 
 ### Screen orientation
 

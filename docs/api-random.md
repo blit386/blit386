@@ -41,6 +41,28 @@ rng.direction4(); // cardinal unit vector
 Omit the constructor seed to time-seed from `Date.now()` (lower 32 bits). Call `seed(n)` later to restart from a known
 value.
 
+## Engine default (`BT.random`)
+
+<Since symbol="BT.random" />
+
+<Since symbol="BT.randomSeed" />
+
+The engine keeps one shared `Random` instance on the `BT` facade. `BT.random` is a live reference (same instance across
+reads, like `BT.palette`). It is time-seeded when the engine singleton is created; call `BT.randomSeed(seed)` to make a
+run reproducible.
+
+```ts twoslash
+import { BT } from 'blit386';
+
+BT.randomSeed(42);
+BT.random.int(150, 420);
+BT.random.pick(['glitch', 'noise', 'static']);
+BT.random.float(0.3, 0.95);
+```
+
+Prefer `BT.random` for demo and game code. Construct a separate `new Random(seed)` when you need an independent stream
+(for example a local procedural subsystem that should not advance the shared engine RNG).
+
 ## Generators
 
 | Method                          | Range / behavior                                 |
