@@ -1,3 +1,8 @@
+---
+paths:
+  [src/**/*.ts, docs/**/*.md, docs/_sitemap.json, README.md, CLAUDE.md, .claude/skills/**/SKILL.md, .cursor/rules/*.mdc]
+---
+
 # Docs sync required
 
 Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.

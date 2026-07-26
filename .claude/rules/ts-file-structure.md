@@ -1,3 +1,7 @@
+---
+paths: [src/**/*.ts]
+---
+
 # TypeScript file structure
 
 This file (and `.cursor/rules/ts-file-structure.mdc`) is the full policy for TypeScript file structure;

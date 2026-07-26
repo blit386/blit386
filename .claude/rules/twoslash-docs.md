@@ -1,3 +1,7 @@
+---
+paths: [docs/api-*.md, docs/guide-*.md, docs/performance-*.md, docs/reference-*.md]
+---
+
 # Twoslash in published docs
 
 Condensed mirror of `.cursor/rules/twoslash-docs.mdc`.

@@ -1,3 +1,7 @@
+---
+paths: [scripts/session-start-bootstrap.sh, .claude/settings.json, .cursor/hooks.json, .devcontainer/devcontainer.json]
+---
+
 # Environment bootstrap
 
 Condensed mirror of `.cursor/rules/environment-bootstrap.mdc`. How a fresh remote/web/cloud checkout warms its toolchain

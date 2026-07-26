@@ -255,39 +255,17 @@ Full file layout and class member order: `.claude/rules/ts-file-structure.md` (C
 
 ## Commands
 
-```bash
-pnpm run build              # Build library (two Vite builds: the main dist/blit386.* plus dist/vite.* for the blit386/vite subpath)
-pnpm run lint               # ESLint
-pnpm run lint:fix           # ESLint with auto-fix
-pnpm run format             # Format all files (Biome + Prettier)
-pnpm run format:check       # Check formatting (Biome + Prettier)
-pnpm run typecheck          # TypeScript type checking
-pnpm run spellcheck         # cspell check
-pnpm run knip               # Find unused exports/deps
-pnpm run docs:links         # Check Markdown links (all repo-root *.md / *.mdx)
-pnpm run agents:check       # Check agent config drift (rules parity, skills symlinks, AGENTS.md pointer, Copilot, Zed)
-pnpm run preflight          # All checks (format + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:doc-banners:check + sync:cursor-commands:check + api:since:check + api:history:check + test:unit + test:declarations + test:agent-config + test:cursor-commands + test:api-history + test:security-preflight)
-```
+All commands are `pnpm run <script>` (see `package.json` for the full script list; `pnpm run preflight` runs the
+repository's gating checks — its exact definition lives in `package.json`).
 
 RTK: Shell commands are rewritten via `rtk hook cursor` (Cursor) / `rtk hook claude` (Claude Code). Use `pnpm run …` for
 scripts. Prefer `rtk read` / `rtk grep` / shell over native Read/Grep for exploration. See `~/.claude/RTK.md`.
 
 ## Testing
 
-Test files are colocated next to source: `src/utils/Vector2i.test.ts`.
-
-```bash
-pnpm run test                # Run all unit tests (alias for test:unit)
-pnpm run test:unit           # Run all unit tests
-pnpm run test:unit:watch     # Watch mode for development
-pnpm run test:unit:coverage  # Coverage report (80% minimum threshold)
-pnpm run test:declarations   # Declaration tooling log checker (Node test)
-pnpm run test:agent-config   # Agent config drift checker tests (Node test)
-pnpm run test:visual         # Playwright visual regression tests (requires Chrome with WebGPU)
-pnpm run test:visual:update  # Update visual test baselines
-pnpm run bench               # Run CPU benchmarks (Vitest bench)
-pnpm run bench:json          # Run benchmarks and write benchmark-results.json
-```
+Test files are colocated next to source: `src/utils/Vector2i.test.ts`. Test-related scripts (`test`, `test:unit`,
+`test:unit:watch`, `test:unit:coverage`, `test:declarations`, `test:agent-config`, `test:visual`, `test:visual:update`,
+`bench`, `bench:json`) are all `pnpm run <script>` — see `package.json` for exact invocations.
 
 Test tiers:
 
