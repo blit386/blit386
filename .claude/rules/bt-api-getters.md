@@ -14,11 +14,12 @@ Zero-argument read-only values on `BT`:
 - Configure-time (backend): `requestedBackend` mirrors resolved `HardwareSettings.backend` (includes
   `?backend=software`); `null` before `BT.init()`
 - Loop: `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`
-- Runtime: `activeBackend`, `camera`, `palette`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation`,
+- Runtime: `activeBackend`, `camera`, `palette`, `random`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation`,
   `loadingAssetsCount` — `activeBackend` is `null` before init or on failure; `isAudioUnlocked` is `false` until the
   first user gesture resumes the audio context; `isMusicPlaying` is `true` while the music player has a live current
   track; `screenOrientation` is the current `screen.orientation.type` string, or `null` when the API is unavailable;
-  `loadingAssetsCount` is the combined count of in-flight `AssetLoader` + `AudioClip` loads (poll for a loading screen)
+  `loadingAssetsCount` is the combined count of in-flight `AssetLoader` + `AudioClip` loads (poll for a loading screen);
+  `random` is a live, time-seeded `Random` (always present; reseed with `randomSeed`)
 - Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount`
 
 Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
@@ -26,12 +27,13 @@ Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
 Bad: `BT.displaySize()`, `BT.fps()`, `BT.getActiveBackend()` (removed; use property forms)
 
 `Vector2i` getters return a clone per read. `activeBackend` is what actually started after fallback, not
-`configure().backend`. `palette` is a live reference – mutating slots affects rendering on the next frame.
+`configure().backend`. `palette` and `random` are live references – mutating palette slots affects rendering on the next
+frame; calling methods on `BT.random` advances the shared stream.
 
 ## Keep as methods
 
-- Lifecycle / mutations: `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`, `showCursor`,
-  `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`
+- Lifecycle / mutations: `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`, `randomSeed`,
+  `showCursor`, `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`
 - Palette effects: `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFlash`, `paletteSwap`,
   `paletteClearEffects`
 - Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`, `green`)

@@ -822,6 +822,20 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.random": {
+      "kind": "getter",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.randomSeed": {
+      "kind": "method",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.renderAlpha": {
       "kind": "getter",
       "since": "1.3.0",
@@ -1600,6 +1614,8 @@
       "Palette"
     ],
     "api/random": [
+      "BT.random",
+      "BT.randomSeed",
       "PerlinNoise",
       "Random",
       "SimplexNoise",
