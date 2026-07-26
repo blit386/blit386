@@ -1,5 +1,6 @@
 ---
-paths: [src/**/*.ts, docs/**/*.md]
+paths:
+  [src/**/*.ts, docs/**/*.md, docs/_sitemap.json, README.md, CLAUDE.md, .claude/skills/**/SKILL.md, .cursor/rules/*.mdc]
 ---
 
 # Docs sync required

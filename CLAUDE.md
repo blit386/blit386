@@ -255,8 +255,8 @@ Full file layout and class member order: `.claude/rules/ts-file-structure.md` (C
 
 ## Commands
 
-All commands are `pnpm run <script>` (see `package.json` for the full script list; `pnpm run preflight` runs the gating
-checks listed under Testing below).
+All commands are `pnpm run <script>` (see `package.json` for the full script list; `pnpm run preflight` runs the
+repository's gating checks — its exact definition lives in `package.json`).
 
 RTK: Shell commands are rewritten via `rtk hook cursor` (Cursor) / `rtk hook claude` (Claude Code). Use `pnpm run …` for
 scripts. Prefer `rtk read` / `rtk grep` / shell over native Read/Grep for exploration. See `~/.claude/RTK.md`.
