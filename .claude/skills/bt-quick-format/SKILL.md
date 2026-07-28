@@ -1,8 +1,9 @@
 ---
 name: bt-quick-format
 description:
-  Quickly format all code with Biome and Prettier, skipping the verification step. Use for a fast cleanup after edits or
-  to fix formatting flagged by CI or a hook.
+  Quickly format all code with Biome and Prettier, skipping the format:check verification step. Use for a fast cleanup
+  right after edits, or as a lightweight pre-step before other checks, when you don't need confirmation that formatting
+  actually passed. If the result needs to be verified (before a commit or PR), use bt-format instead.
 ---
 
 # Quick Format
@@ -20,18 +21,10 @@ verification steps for maximum speed.
 
 1. Run formatters
 
-- Execute `pnpm run format` which runs:
-  - Biome for TypeScript/JavaScript/JSON/JSONC/CSS
-  - Prettier for Markdown/YAML/Cursor rules (`.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`)
+- Execute `pnpm run format` (Biome for TS/JS/JSON/JSONC/CSS, Prettier for MD/YAML/Cursor rules – see `/bt-format` for
+  the full file-type table)
 
 2. Brief confirmation
 
 - Report completion
 - Note any files that couldn't be formatted (usually indicate syntax errors)
-
-## When to Use
-
-- A quick cleanup after manual edits
-- Before running other checks
-- When you know you just need formatting (not verification)
-- To fix formatting issues reported by CI or hooks

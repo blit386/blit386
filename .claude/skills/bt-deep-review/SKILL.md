@@ -27,9 +27,7 @@ pushing significant changes or creating pull requests.
 
 2. Run preflight checks
 
-- Execute `pnpm run preflight` (format, lint, typecheck, spellcheck, knip, docs:links, agents:check,
-  sync:doc-banners:check, sync:cursor-commands:check, api:since:check, api:history:check, test:unit, test:declarations,
-  test:agent-config, test:cursor-commands, test:api-history, test:security-preflight)
+- Run `/bt-preflight` (or `pnpm run preflight` directly) – see that skill for the full breakdown of what it checks
 - If any check fails, report issues and stop
 - All automated checks must pass before AI review
 
@@ -58,12 +56,8 @@ pushing significant changes or creating pull requests.
 
 6. Check project-specific rules
 
-- No emoji anywhere (code, comments, docs, commits)
-- Integer coordinates (Vector2i, Rect2i) for all rendering
-- TypeScript strict types (no `any`)
-- Type imports use `import type` syntax
-- Internal scoped naming: private/protected/module-local names must not repeat class or file; public `BT.*` and exports
-  unchanged (`CLAUDE.md` Internal scoped naming)
+- Apply the same project-rule checklist as `/bt-review` (full detail: `CLAUDE.md` Critical Rules, BT API getters vs
+  methods, Internal scoped naming, plus the paired rule files – `.claude/rules/*.md`, Cursor: `.cursor/rules/*.mdc`)
 
 7. Generate PR-ready summary
 
@@ -82,23 +76,7 @@ pushing significant changes or creating pull requests.
 
 ### Automated Checks
 
-- [PASS/FAIL] Format check
-- [PASS/FAIL] Lint check
-- [PASS/FAIL] Type check
-- [PASS/FAIL] Spell check
-- [PASS/FAIL] Unused exports (knip)
-- [PASS/FAIL] Markdown links (docs:links)
-- [PASS/FAIL] Agent config drift (agents:check)
-- [PASS/FAIL] Doc banners (sync:doc-banners:check)
-- [PASS/FAIL] Cursor commands drift (sync:cursor-commands:check)
-- [PASS/FAIL] Cursor command tests (test:cursor-commands)
-- [PASS/FAIL] API @since coverage (api:since:check)
-- [PASS/FAIL] API history manifest (api:history:check)
-- [PASS/FAIL] Unit tests (test:unit)
-- [PASS/FAIL] Declaration tooling (test:declarations)
-- [PASS/FAIL] Agent config tests (test:agent-config)
-- [PASS/FAIL] API history tests (test:api-history)
-- [PASS/FAIL] Security preflight tests (test:security-preflight)
+- One [PASS/FAIL] line per check `pnpm run preflight` runs (see `/bt-preflight` for the current list)
 - [PASS/FAIL] Security audit
 
 ### Code Review Findings

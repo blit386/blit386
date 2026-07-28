@@ -1,6 +1,9 @@
 ---
 name: bt-security-run
-description: Run MCP security preflight, governance checks, and documented fallbacks for BLIT386 security workflows.
+description:
+  Run MCP security preflight, governance checks, and documented fallbacks for BLIT386 security workflows. Use before
+  comprehensive security scans or hardening passes, or whenever MCP security-scanner availability (Opsera, JFrog,
+  Semgrep) is uncertain and scans still need to happen via a documented fallback.
 ---
 
 # Security Run

@@ -1,6 +1,9 @@
 ---
 name: bt-perf
-description: Add or update BLIT386 CPU benchmarks and explain the CI benchmark workflow.
+description:
+  Add or update BLIT386 CPU benchmarks (`*.bench.ts`) and explain the CI benchmark workflow. Use when adding a benchmark
+  for a new hot method or allocation pattern, or when a `perf`-labeled PR's benchmark comparison or regression threshold
+  needs explaining.
 ---
 
 # Performance Testing
