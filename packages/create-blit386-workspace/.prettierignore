@@ -1,6 +1,4 @@
-# Prettier ignore - only for Markdown/YAML formatting
-
-# NOTE: TS/JS/JSON/CSS are handled by Biome, not Prettier
+# Prettier ignore - Markdown and YAML only (TS/JS/JSON/CSS use Biome)
 
 # Lock files (never format)
 pnpm-lock.yaml
@@ -14,9 +12,10 @@ node_modules/
 # Build outputs
 dist/
 
-# Git
+# Agent scratch space (not ours to format)
 .git/
 .remember/
+.superpowers/
 
 # Generated/minified files
 **/*.min.css
