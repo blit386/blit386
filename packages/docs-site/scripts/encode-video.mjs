@@ -519,42 +519,51 @@ const main = () => {
         return;
     }
 
-    const fps = options.fps ?? parseFrameRate(probe(options.input, 'r_frame_rate')) ?? 60;
-    const { width, height } = croppedDimensions(
-        Number(probe(options.input, 'width')),
-        Number(probe(options.input, 'height')),
-    );
-    const resolved = { ...options, gop: Math.max(1, Math.round(fps) * options.gopSeconds) };
-    const paths = buildOutputPaths(options.outDir, options.name);
+    try {
+        const fps = options.fps ?? parseFrameRate(probe(options.input, 'r_frame_rate')) ?? 60;
+        const { width, height } = croppedDimensions(
+            Number(probe(options.input, 'width')),
+            Number(probe(options.input, 'height')),
+        );
+        const resolved = { ...options, gop: Math.max(1, Math.round(fps) * options.gopSeconds) };
+        const paths = buildOutputPaths(options.outDir, options.name);
 
-    if (!options.dryRun) {
-        mkdirSync(options.outDir, { recursive: true });
-    }
+        if (!options.dryRun) {
+            mkdirSync(options.outDir, { recursive: true });
+        }
 
-    run('ffmpeg', buildAv1Args(options.input, paths.av1, resolved), options.dryRun);
-    run('ffmpeg', buildH264Args(options.input, paths.h264, resolved), options.dryRun);
-    run('ffmpeg', buildPosterFrameArgs(options.input, paths.posterPng, resolved), options.dryRun);
-    run('cwebp', buildCwebpArgs(paths.posterPng, paths.posterWebp, resolved), options.dryRun);
+        run('ffmpeg', buildAv1Args(options.input, paths.av1, resolved), options.dryRun);
+        run('ffmpeg', buildH264Args(options.input, paths.h264, resolved), options.dryRun);
+        run('ffmpeg', buildPosterFrameArgs(options.input, paths.posterPng, resolved), options.dryRun);
+        run('cwebp', buildCwebpArgs(paths.posterPng, paths.posterWebp, resolved), options.dryRun);
 
-    if (options.dryRun) return;
+        if (options.dryRun) return;
 
-    if (!options.keepPng) {
-        rmSync(paths.posterPng, { force: true });
-    }
+        if (!options.keepPng) {
+            rmSync(paths.posterPng, { force: true });
+        }
 
-    console.log('\nEncoded:');
-    for (const path of [paths.av1, paths.h264, paths.posterWebp]) {
-        console.log(`  ${formatBytes(fileSize(path)).padStart(9)}  ${path}`);
-    }
+        console.log('\nEncoded:');
+        for (const path of [paths.av1, paths.h264, paths.posterWebp]) {
+            console.log(`  ${formatBytes(fileSize(path)).padStart(9)}  ${path}`);
+        }
 
-    // The `src` prop is the path base, so strip the leading `public/` and the suffixes.
-    const srcBase = `/${options.outDir.replace(/^public\//u, '')}/${options.name}`.replace(/\/{2,}/gu, '/');
-    console.log(`\n<VideoEmbed
+        // The `src` prop is the path base, so strip the leading `public/` and the suffixes.
+        const srcBase = `/${options.outDir.replace(/^public\//u, '')}/${options.name}`.replace(/\/{2,}/gu, '/');
+        console.log(`\n<VideoEmbed
   src="${srcBase}"
   width={${width ?? 1280}}
   height={${height ?? 720}}
   caption="TODO"
 />\n`);
+    } catch (error) {
+        // A missing binary, a non-zero encoder exit, or an unwritable output directory. Print
+        // the summary line only: ffmpeg and cwebp run with `stdio: 'inherit'`, so their own
+        // diagnostics are already above this, and USAGE belongs to the argument-parsing path -
+        // an encoder or filesystem failure is not a usage error.
+        console.error(`\n${error.message}`);
+        process.exitCode = 1;
+    }
 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
