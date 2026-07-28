@@ -5,5 +5,6 @@
   "ignore": [".source/**", "src/pages.gen.ts", "dist/**"],
   "ignoreFiles": ["src/app.css"],
   "ignoreDependencies": ["@fuma-translate/react", "blit386", "react-server-dom-webpack", "tailwindcss"],
+  "ignoreBinaries": ["ffprobe"],
   "ignoreExportsUsedInFile": true
 }
