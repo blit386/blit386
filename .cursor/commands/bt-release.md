@@ -114,17 +114,17 @@ For each PR in the list from step 4, build a content object:
 Assign each PR to exactly one group based on its conventional commit type/scope. Use these groups in this order (omit
 any group with zero PRs):
 
-| Group heading  | Match pattern                                                                |
-| -------------- | ---------------------------------------------------------------------------- |
-| API Changes    | `feat(api)`, `fix(api)`, `refactor(api)`, BREAKING CHANGE in body            |
-| Asset System   | `feat(assets)`, `fix(assets)`, `refactor(assets)`, `chore(assets)`           |
-| Security       | `feat(security)`, `fix(security)`, `ci(security)`, `chore(security)`         |
+| Group heading | Match pattern |
+| --- | --- |
+| API Changes | `feat(api)`, `fix(api)`, `refactor(api)`, BREAKING CHANGE in body |
+| Asset System | `feat(assets)`, `fix(assets)`, `refactor(assets)`, `chore(assets)` |
+| Security | `feat(security)`, `fix(security)`, `ci(security)`, `chore(security)` |
 | CI and Tooling | `ci(*)`, `chore(ci)`, `chore(deps)`, `chore` (tool upgrades, config changes) |
-| Rendering      | `feat(renderer)`, `fix(renderer)`, `refactor(renderer)`                      |
-| Core and Utils | `feat(utils)`, `fix(utils)`, `refactor(utils)`, `feat(core)`, `fix(core)`    |
-| Tests          | `test(*)`                                                                    |
-| Documentation  | `docs(*)`                                                                    |
-| Examples       | `feat(examples)`, `fix(examples)`                                            |
+| Rendering | `feat(renderer)`, `fix(renderer)`, `refactor(renderer)` |
+| Core and Utils | `feat(utils)`, `fix(utils)`, `refactor(utils)`, `feat(core)`, `fix(core)` |
+| Tests | `test(*)` |
+| Documentation | `docs(*)` |
+| Examples | `feat(examples)`, `fix(examples)` |
 
 This table is not exhaustive – `blit386/CLAUDE.md`'s "Git scopes" list is longer (`audio`, `overlay`, `input`, `camera`,
 `assets`, `release`, `visual`, …). When a PR's scope isn't in the table above, give it its own topic-matched heading

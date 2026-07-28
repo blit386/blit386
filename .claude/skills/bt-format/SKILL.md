@@ -37,11 +37,11 @@ Format all code files using the project's formatters and verify results.
 
 ## Formatter Configuration
 
-| File Types                                                      | Tool     | Config               |
-| --------------------------------------------------------------- | -------- | -------------------- |
-| `.ts`, `.tsx`, `.js`, `.jsx`, `.cjs`, `.mjs`, `.json`, `.jsonc` | Biome    | `biome.json`         |
-| `.css`                                                          | Biome    | `biome.json`         |
-| `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`                          | Prettier | `prettier.config.js` |
+| File Types | Tool | Config |
+| --- | --- | --- |
+| `.ts`, `.tsx`, `.js`, `.jsx`, `.cjs`, `.mjs`, `.json`, `.jsonc` | Biome | `biome.json` |
+| `.css` | Biome | `biome.json` |
+| `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
 
 ## Formatting Rules
 

@@ -23,53 +23,53 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contributor workflow. Key
 These commands apply when building or maintaining blit386 from a repository checkout (not when consuming the npm
 package).
 
-| Command                               | Description                                                                                                                                                                                                                                                                               |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm run build`                      | Build the library for npm distribution                                                                                                                                                                                                                                                    |
-| `pnpm run lint`                       | Run ESLint                                                                                                                                                                                                                                                                                |
-| `pnpm run lint:fix`                   | Run ESLint with auto-fix                                                                                                                                                                                                                                                                  |
-| `pnpm run format`                     | Format all code (Biome + Prettier)                                                                                                                                                                                                                                                        |
-| `pnpm run format:check`               | Check all formatting without changes                                                                                                                                                                                                                                                      |
-| `pnpm run format:biome`               | Format TS/JS/JSON/CSS only (Biome)                                                                                                                                                                                                                                                        |
-| `pnpm run format:prettier`            | Format Markdown/MDX/MDC/YAML (Prettier)                                                                                                                                                                                                                                                   |
-| `pnpm run typecheck`                  | Run TypeScript type checking                                                                                                                                                                                                                                                              |
-| `pnpm run spellcheck`                 | Check spelling in source files                                                                                                                                                                                                                                                            |
-| `pnpm run test`                       | Run all unit tests (alias for `test:unit`)                                                                                                                                                                                                                                                |
-| `pnpm run test:unit`                  | Run all unit tests                                                                                                                                                                                                                                                                        |
-| `pnpm run test:unit:watch`            | Run unit tests in watch mode                                                                                                                                                                                                                                                              |
-| `pnpm run test:unit:coverage`         | Run unit tests with coverage report (80% threshold)                                                                                                                                                                                                                                       |
-| `pnpm run test:declarations`          | Declaration tooling log checker (Node test)                                                                                                                                                                                                                                               |
-| `pnpm run test:agent-config`          | Agent config drift checker tests (Node test)                                                                                                                                                                                                                                              |
-| `pnpm run test:cursor-commands`       | Cursor commands drift checker tests (Node test)                                                                                                                                                                                                                                           |
-| `pnpm run build:check-declarations`   | Build and run declaration tooling check on build log                                                                                                                                                                                                                                      |
-| `pnpm run test:visual`                | Playwright visual regression tests (requires Chrome with WebGPU)                                                                                                                                                                                                                          |
-| `pnpm run test:visual:update`         | Update visual test baseline screenshots                                                                                                                                                                                                                                                   |
-| `pnpm run test:visual:coverage`       | Run visual tests with Istanbul coverage report                                                                                                                                                                                                                                            |
-| `pnpm run bench`                      | Run CPU benchmarks – Tier 4 (Vitest bench; see [Testing](reference-testing.md))                                                                                                                                                                                                           |
-| `pnpm run bench:json`                 | Run Tier 4 benchmarks and write `benchmark-results.json`                                                                                                                                                                                                                                  |
-| `pnpm run preflight`                  | All checks: format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check, sync:cursor-commands:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config, test:cursor-commands, test:api-history, test:security-preflight |
-| `pnpm run docs:links`                 | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`)                                                                                                                                                                                                          |
-| `pnpm run agents:check`               | Check agent config drift (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer)                                                                                                                                                                                                 |
-| `pnpm run sync:cursor-commands`       | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md`                                                                                                                                                                                                                         |
-| `pnpm run sync:cursor-commands:check` | Check `.cursor/commands/*.md` for drift against `.claude/skills/*/SKILL.md`                                                                                                                                                                                                               |
-| `pnpm run sync:doc-banners`           | Insert/refresh blit386.dev banners in published docs                                                                                                                                                                                                                                      |
-| `pnpm run sync:doc-banners:check`     | Check doc site banner drift                                                                                                                                                                                                                                                               |
-| `pnpm run api:history`                | Regenerate API version-history manifest (`docs/_api-history.json`)                                                                                                                                                                                                                        |
-| `pnpm run api:since:check`            | Check public API `@since` / `@changed` / `@deprecated` tags                                                                                                                                                                                                                               |
-| `pnpm run api:history:check`          | Check API version-history manifest drift                                                                                                                                                                                                                                                  |
-| `pnpm run test:api-history`           | API history generator unit tests (Node test)                                                                                                                                                                                                                                              |
-| `pnpm run knip`                       | Find unused exports and dependencies                                                                                                                                                                                                                                                      |
-| `pnpm run knip:fix`                   | Auto-fix unused exports and dependencies                                                                                                                                                                                                                                                  |
-| `pnpm run clean`                      | Remove dist and cache directories                                                                                                                                                                                                                                                         |
-| `pnpm run release`                    | Build library and publish to npm                                                                                                                                                                                                                                                          |
-| `pnpm run convert-font`               | Convert BMFont to .btfont format                                                                                                                                                                                                                                                          |
-| `pnpm run system-font:export`         | Export system font data to PNG atlas (`assets/system-font.png`)                                                                                                                                                                                                                           |
-| `pnpm run system-font:convert`        | Regenerate `systemFontData.ts` from edited PNG atlas                                                                                                                                                                                                                                      |
-| `pnpm run security:audit`             | Run dependency security audit (all deps, moderate+; matches CI)                                                                                                                                                                                                                           |
-| `pnpm run security:audit:prod`        | Run production-only dependency audit (moderate+)                                                                                                                                                                                                                                          |
-| `pnpm run security:audit:fix`         | Run dependency security audit and auto-fix                                                                                                                                                                                                                                                |
-| `pnpm run security:mcp-preflight`     | MCP health/auth preflight and governance scan (requires `-- --mcps-dir`)                                                                                                                                                                                                                  |
-| `pnpm run test:security-preflight`    | Unit tests for MCP preflight script                                                                                                                                                                                                                                                       |
+| Command | Description |
+| --- | --- |
+| `pnpm run build` | Build the library for npm distribution |
+| `pnpm run lint` | Run ESLint |
+| `pnpm run lint:fix` | Run ESLint with auto-fix |
+| `pnpm run format` | Format all code (Biome + Prettier) |
+| `pnpm run format:check` | Check all formatting without changes |
+| `pnpm run format:biome` | Format TS/JS/JSON/CSS only (Biome) |
+| `pnpm run format:prettier` | Format Markdown/MDX/MDC/YAML (Prettier) |
+| `pnpm run typecheck` | Run TypeScript type checking |
+| `pnpm run spellcheck` | Check spelling in source files |
+| `pnpm run test` | Run all unit tests (alias for `test:unit`) |
+| `pnpm run test:unit` | Run all unit tests |
+| `pnpm run test:unit:watch` | Run unit tests in watch mode |
+| `pnpm run test:unit:coverage` | Run unit tests with coverage report (80% threshold) |
+| `pnpm run test:declarations` | Declaration tooling log checker (Node test) |
+| `pnpm run test:agent-config` | Agent config drift checker tests (Node test) |
+| `pnpm run test:cursor-commands` | Cursor commands drift checker tests (Node test) |
+| `pnpm run build:check-declarations` | Build and run declaration tooling check on build log |
+| `pnpm run test:visual` | Playwright visual regression tests (requires Chrome with WebGPU) |
+| `pnpm run test:visual:update` | Update visual test baseline screenshots |
+| `pnpm run test:visual:coverage` | Run visual tests with Istanbul coverage report |
+| `pnpm run bench` | Run CPU benchmarks – Tier 4 (Vitest bench; see [Testing](reference-testing.md)) |
+| `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
+| `pnpm run preflight` | All checks: format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check, sync:cursor-commands:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config, test:cursor-commands, test:api-history, test:security-preflight |
+| `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
+| `pnpm run agents:check` | Check agent config drift (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer) |
+| `pnpm run sync:cursor-commands` | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md` |
+| `pnpm run sync:cursor-commands:check` | Check `.cursor/commands/*.md` for drift against `.claude/skills/*/SKILL.md` |
+| `pnpm run sync:doc-banners` | Insert/refresh blit386.dev banners in published docs |
+| `pnpm run sync:doc-banners:check` | Check doc site banner drift |
+| `pnpm run api:history` | Regenerate API version-history manifest (`docs/_api-history.json`) |
+| `pnpm run api:since:check` | Check public API `@since` / `@changed` / `@deprecated` tags |
+| `pnpm run api:history:check` | Check API version-history manifest drift |
+| `pnpm run test:api-history` | API history generator unit tests (Node test) |
+| `pnpm run knip` | Find unused exports and dependencies |
+| `pnpm run knip:fix` | Auto-fix unused exports and dependencies |
+| `pnpm run clean` | Remove dist and cache directories |
+| `pnpm run release` | Build library and publish to npm |
+| `pnpm run convert-font` | Convert BMFont to .btfont format |
+| `pnpm run system-font:export` | Export system font data to PNG atlas (`assets/system-font.png`) |
+| `pnpm run system-font:convert` | Regenerate `systemFontData.ts` from edited PNG atlas |
+| `pnpm run security:audit` | Run dependency security audit (all deps, moderate+; matches CI) |
+| `pnpm run security:audit:prod` | Run production-only dependency audit (moderate+) |
+| `pnpm run security:audit:fix` | Run dependency security audit and auto-fix |
+| `pnpm run security:mcp-preflight` | MCP health/auth preflight and governance scan (requires `-- --mcps-dir`) |
+| `pnpm run test:security-preflight` | Unit tests for MCP preflight script |
 
 Dependency audit severity policy and CI gate: [dependency-policy.md](security/dependency-policy.md). Temporary
 exceptions: [audit-exceptions.md](security/audit-exceptions.md).
@@ -78,42 +78,42 @@ exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 
 ## Documentation index
 
-| Guide                                                                     | What it covers                                         |
-| ------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [API: Core](api-core.md)                                                  | bootstrap, init, default configuration                 |
-| [API: Game Loop](api-game-loop.md)                                        | tick timing, present FPS, Timer                        |
-| [Game Loop Guide](guide-game-loop.md)                                     | render-time interpolation, smoothing motion            |
-| [API: Camera](api-camera.md)                                              | global pixel offset, world-clamp helpers               |
-| [API: Core Types](api-core-types.md)                                      | Vector2i, Rect2i, Color32                              |
-| [API: Easing](api-easing.md)                                              | named easing curves for palette fades                  |
-| [API: Overlay](api-overlay.md)                                            | overlay configure flags and style                      |
-| [Overlay Guide](guide-overlay.md)                                         | engine HUD subsystem, toggle, custom rows, layout      |
-| [API: Rendering](api-rendering.md)                                        | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](api-palette.md)                                            | palette setup, presets, effects, serialization         |
-| [Palette Guide](guide-palette.md)                                         | palette-first workflow, offsets, effects, performance  |
-| [Palette Presets](guide-palette-presets.md)                               | built-in preset reference and exact color data         |
-| [API: Assets](api-assets.md)                                              | sprite sheets, bitmap fonts, asset loading             |
-| [API: Audio](api-audio.md)                                                | buses, sound effects, music, procedural synthesis      |
-| [Audio Guide](guide-audio.md)                                             | loading, playing, and designing sound                  |
-| [API: Browser Support](api-browser-support.md)                            | WebGPU support matrix, automatic fallback              |
-| [Input Guide](guide-input.md)                                             | pointer, keyboard, gamepad                             |
-| [Hot Reload](guide-hot-reload.md)                                         | blit386/vite plugin, hot-swap, asset hot-replace       |
-| [Post-Process Effects](guide-post-process-effects.md)                     | effect chain, built-in effects, custom effects         |
-| [Bitmap Fonts](guide-bitmap-fonts.md)                                     | .btfont format, BMFont conversion                      |
-| [Deprecation Timeline](reference-deprecations.md)                         | dated compatibility aliases and cleanup checklist      |
-| [Authors](reference-authors.md)                                           | credits and external inspirations                      |
-| [Changelog](changelog.md)                                                 | release history in Keep a Changelog style              |
-| [Testing](reference-testing.md)                                           | test tiers, WebGPU mocks, visual regression            |
-| [Performance Testing](performance-testing.md)                             | CPU benchmarks, CI regression checks                   |
-| [Performance Best Practices](performance-best-practices.md)               | optimization guidelines                                |
-| [Software Fallback Smoke Matrix](performance-smoke-matrix.md)             | manual software renderer verification matrix           |
-| [Developer Experience](developer-experience-guide.md)                     | contributing workflow, IDE setup                       |
-| [Documentation and API Versioning](documentation-and-versioning-guide.md) | @since/@changed tagging, doc component workflow        |
-| [Security runbook](security/security-runbook.md)                          | MCP preflight, fallbacks, governance, security runs    |
-| [Dependency policy](security/dependency-policy.md)                        | CI audit gate, severity threshold, refresh cadence     |
-| [Audit exceptions](security/audit-exceptions.md)                          | Temporary GHSA acceptance playbook                     |
-| [Tooling](tooling.md)                                                     | TypeScript pin, declaration checks, CI enforcement     |
-| [Voice Guide](voice.md)                                                   | error messages and user-facing string style            |
+| Guide | What it covers |
+| --- | --- |
+| [API: Core](api-core.md) | bootstrap, init, default configuration |
+| [API: Game Loop](api-game-loop.md) | tick timing, present FPS, Timer |
+| [Game Loop Guide](guide-game-loop.md) | render-time interpolation, smoothing motion |
+| [API: Camera](api-camera.md) | global pixel offset, world-clamp helpers |
+| [API: Core Types](api-core-types.md) | Vector2i, Rect2i, Color32 |
+| [API: Easing](api-easing.md) | named easing curves for palette fades |
+| [API: Overlay](api-overlay.md) | overlay configure flags and style |
+| [Overlay Guide](guide-overlay.md) | engine HUD subsystem, toggle, custom rows, layout |
+| [API: Rendering](api-rendering.md) | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](api-palette.md) | palette setup, presets, effects, serialization |
+| [Palette Guide](guide-palette.md) | palette-first workflow, offsets, effects, performance |
+| [Palette Presets](guide-palette-presets.md) | built-in preset reference and exact color data |
+| [API: Assets](api-assets.md) | sprite sheets, bitmap fonts, asset loading |
+| [API: Audio](api-audio.md) | buses, sound effects, music, procedural synthesis |
+| [Audio Guide](guide-audio.md) | loading, playing, and designing sound |
+| [API: Browser Support](api-browser-support.md) | WebGPU support matrix, automatic fallback |
+| [Input Guide](guide-input.md) | pointer, keyboard, gamepad |
+| [Hot Reload](guide-hot-reload.md) | blit386/vite plugin, hot-swap, asset hot-replace |
+| [Post-Process Effects](guide-post-process-effects.md) | effect chain, built-in effects, custom effects |
+| [Bitmap Fonts](guide-bitmap-fonts.md) | .btfont format, BMFont conversion |
+| [Deprecation Timeline](reference-deprecations.md) | dated compatibility aliases and cleanup checklist |
+| [Authors](reference-authors.md) | credits and external inspirations |
+| [Changelog](changelog.md) | release history in Keep a Changelog style |
+| [Testing](reference-testing.md) | test tiers, WebGPU mocks, visual regression |
+| [Performance Testing](performance-testing.md) | CPU benchmarks, CI regression checks |
+| [Performance Best Practices](performance-best-practices.md) | optimization guidelines |
+| [Software Fallback Smoke Matrix](performance-smoke-matrix.md) | manual software renderer verification matrix |
+| [Developer Experience](developer-experience-guide.md) | contributing workflow, IDE setup |
+| [Documentation and API Versioning](documentation-and-versioning-guide.md) | @since/@changed tagging, doc component workflow |
+| [Security runbook](security/security-runbook.md) | MCP preflight, fallbacks, governance, security runs |
+| [Dependency policy](security/dependency-policy.md) | CI audit gate, severity threshold, refresh cadence |
+| [Audit exceptions](security/audit-exceptions.md) | Temporary GHSA acceptance playbook |
+| [Tooling](tooling.md) | TypeScript pin, declaration checks, CI enforcement |
+| [Voice Guide](voice.md) | error messages and user-facing string style |
 
 ---
 
@@ -123,19 +123,19 @@ Format: `<type>(<scope>): <description>`
 
 Types:
 
-| Type       | When to use                                 |
-| ---------- | ------------------------------------------- |
-| `feat`     | New feature                                 |
-| `fix`      | Bug fix                                     |
+| Type | When to use |
+| --- | --- |
+| `feat` | New feature |
+| `fix` | Bug fix |
 | `refactor` | Code change that is neither fix nor feature |
-| `docs`     | Documentation only                          |
-| `test`     | Tests only                                  |
-| `chore`    | Build, config, tooling                      |
-| `perf`     | Performance improvement                     |
-| `ci`       | CI / workflow changes                       |
-| `style`    | Formatting, no code change                  |
-| `build`    | Build system or external dependencies       |
-| `revert`   | Revert a previous commit                    |
+| `docs` | Documentation only |
+| `test` | Tests only |
+| `chore` | Build, config, tooling |
+| `perf` | Performance improvement |
+| `ci` | CI / workflow changes |
+| `style` | Formatting, no code change |
+| `build` | Build system or external dependencies |
+| `revert` | Revert a previous commit |
 
 Scopes: `renderer`, `camera`, `assets`, `api`, `utils`, `examples`, `ci`, `docs` (convention only; not enforced)
 
@@ -183,11 +183,11 @@ Naming conventions:
 
 Boolean naming (three tiers):
 
-| Tier                                      | Use                         | Examples                                                                   |
-| ----------------------------------------- | --------------------------- | -------------------------------------------------------------------------- |
-| A Runtime read-only queries               | `is*` / `has*`              | `isPointerActive`, `isIndexed`, `hasGlyph`, `isDirty`                      |
-| B `HardwareSettings` / `BootstrapOptions` | grammatical `is*`           | `isOverlayEnabled`, `isDetectingDroppedFrames`                             |
-| C Side effects / operation results        | imperative verbs, not `is*` | `fireIfElapsed()`, `intersectTo(other, out): boolean`, `remove(): boolean` |
+| Tier | Use | Examples |
+| --- | --- | --- |
+| A Runtime read-only queries | `is*` / `has*` | `isPointerActive`, `isIndexed`, `hasGlyph`, `isDirty` |
+| B `HardwareSettings` / `BootstrapOptions` | grammatical `is*` | `isOverlayEnabled`, `isDetectingDroppedFrames` |
+| C Side effects / operation results | imperative verbs, not `is*` | `fireIfElapsed()`, `intersectTo(other, out): boolean`, `remove(): boolean` |
 
 - Use `-ing` for configure flags that enable ongoing behavior (`isDetectingDroppedFrames`, not `isDetectDroppedFrames`).
 - Hold vs. edge on `BT`: `isDown` / `isKeyDown` (held), `isPressed` / `isReleased` (button masks), `isKeyPressed` /
@@ -222,13 +222,13 @@ adding or moving code. Never use `// #region` / `// #endregion` – region marke
 
 ### Recommended extensions
 
-| Extension                   | Purpose                |
-| --------------------------- | ---------------------- |
-| `dbaeumer.vscode-eslint`    | ESLint integration     |
-| `biomejs.biome-vscode`      | Biome formatter        |
-| `editorconfig.editorconfig` | EditorConfig support   |
-| `ms-playwright.playwright`  | Playwright test runner |
-| `vitest.explorer`           | Vitest test explorer   |
+| Extension | Purpose |
+| --- | --- |
+| `dbaeumer.vscode-eslint` | ESLint integration |
+| `biomejs.biome-vscode` | Biome formatter |
+| `editorconfig.editorconfig` | EditorConfig support |
+| `ms-playwright.playwright` | Playwright test runner |
+| `vitest.explorer` | Vitest test explorer |
 
 `.vscode/settings.json` and `.vscode/extensions.json` are committed to the repository – clone the repo and they appear
 automatically in VS Code.
@@ -250,15 +250,15 @@ automatically in VS Code.
 Cursor reads agent policy from this repo's `.cursor/` directory (VS Code/Cursor share the same workspace settings in
 `.vscode/`).
 
-| Path                                | Purpose                                                                                                                       |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `.cursor/rules/*.mdc`               | Agent rules – `alwaysApply: true` for global policy; glob-scoped rules (for example `ts-file-structure.mdc` on `src/**/*.ts`) |
-| `.cursor/hooks.json`                | Hooks: `preToolUse` → RTK shell rewrite; `afterFileEdit` → format + spellcheck; `beforeShellExecution` → git safety           |
-| `.cursor/hooks/format-and-check.sh` | Post-edit Biome (TS/JS/JSON/CSS) + Prettier (MD/MDX/MDC/YAML) + cspell on touched files                                       |
-| `.cursor/hooks/shell-safety.sh`     | Blocks destructive git commands; asks before force-push                                                                       |
-| `.cursor/commands/*.md`             | Slash-command equivalents of the `.claude/skills/*` skills; generated, never hand-edited (see below)                          |
-| `.claude/rules/*.md`                | Condensed mirrors of key `.cursor/rules` topics for Claude Code                                                               |
-| `.claude/skills/*/SKILL.md`         | Reusable command workflows (`bt-preflight`, `bt-format`, …); Zed symlinks under `.agents/skills/`                             |
+| Path | Purpose |
+| --- | --- |
+| `.cursor/rules/*.mdc` | Agent rules – `alwaysApply: true` for global policy; glob-scoped rules (for example `ts-file-structure.mdc` on `src/**/*.ts`) |
+| `.cursor/hooks.json` | Hooks: `preToolUse` → RTK shell rewrite; `afterFileEdit` → format + spellcheck; `beforeShellExecution` → git safety |
+| `.cursor/hooks/format-and-check.sh` | Post-edit Biome (TS/JS/JSON/CSS) + Prettier (MD/MDX/MDC/YAML) + cspell on touched files |
+| `.cursor/hooks/shell-safety.sh` | Blocks destructive git commands; asks before force-push |
+| `.cursor/commands/*.md` | Slash-command equivalents of the `.claude/skills/*` skills; generated, never hand-edited (see below) |
+| `.claude/rules/*.md` | Condensed mirrors of key `.cursor/rules` topics for Claude Code |
+| `.claude/skills/*/SKILL.md` | Reusable command workflows (`bt-preflight`, `bt-format`, …); Zed symlinks under `.agents/skills/` |
 
 When changing `package.json` scripts or preflight steps, update matching `.claude/skills/*/SKILL.md` files and any
 `.cursor/rules/*.mdc` that reference those commands. Pair `.cursor/rules/*.mdc` edits with `.claude/rules/*.md`

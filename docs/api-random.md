@@ -65,27 +65,27 @@ Prefer `BT.random` for demo and game code. Construct a separate `new Random(seed
 
 ## Generators
 
-| Method                          | Range / behavior                                 |
-| ------------------------------- | ------------------------------------------------ |
-| `next()`                        | Float in `[0, 1)`                                |
-| `float(min, max)`               | Float in `[min, max)`                            |
-| `int(maxExclusive)`             | Integer in `[0, maxExclusive)`                   |
-| `int(min, maxExclusive)`        | Integer in `[min, maxExclusive)`                 |
-| `intInclusive(min, max)`        | Integer in `[min, max]`                          |
-| `bool(probability?)`            | `true` with the given chance (default `0.5`)     |
-| `sign()`                        | `-1` or `1`                                      |
-| `pick(arr)`                     | One element from a non-empty array               |
-| `shuffle(arr)`                  | New shuffled copy (Fisher-Yates)                 |
-| `shuffleInPlace(arr)`           | Shuffle the array in place and return it         |
-| `weighted(items, weights)`      | One item by relative non-negative weights        |
-| `angle()`                       | Float in `[0, 2π)` radians                       |
-| `gaussian(mean?, stddev?)`      | Approximate normal sample (Box-Muller, no spare) |
-| `insideRect(rect)`              | Integer point in half-open `rect`                |
-| `insideRectTo(rect, out)`       | Same as `insideRect`, writes into `out`          |
-| `pointInRange(min, max)`        | Integer point; per-axis `[min, max)`             |
-| `pointInRangeTo(min, max, out)` | Same as `pointInRange`, writes into `out`        |
-| `direction4()`                  | One of four cardinal unit vectors (Y-down)       |
-| `direction8()`                  | One of eight king-move unit vectors (Y-down)     |
+| Method | Range / behavior |
+| --- | --- |
+| `next()` | Float in `[0, 1)` |
+| `float(min, max)` | Float in `[min, max)` |
+| `int(maxExclusive)` | Integer in `[0, maxExclusive)` |
+| `int(min, maxExclusive)` | Integer in `[min, maxExclusive)` |
+| `intInclusive(min, max)` | Integer in `[min, max]` |
+| `bool(probability?)` | `true` with the given chance (default `0.5`) |
+| `sign()` | `-1` or `1` |
+| `pick(arr)` | One element from a non-empty array |
+| `shuffle(arr)` | New shuffled copy (Fisher-Yates) |
+| `shuffleInPlace(arr)` | Shuffle the array in place and return it |
+| `weighted(items, weights)` | One item by relative non-negative weights |
+| `angle()` | Float in `[0, 2π)` radians |
+| `gaussian(mean?, stddev?)` | Approximate normal sample (Box-Muller, no spare) |
+| `insideRect(rect)` | Integer point in half-open `rect` |
+| `insideRectTo(rect, out)` | Same as `insideRect`, writes into `out` |
+| `pointInRange(min, max)` | Integer point; per-axis `[min, max)` |
+| `pointInRangeTo(min, max, out)` | Same as `pointInRange`, writes into `out` |
+| `direction4()` | One of four cardinal unit vectors (Y-down) |
+| `direction8()` | One of eight king-move unit vectors (Y-down) |
 
 Integer helpers return true integers (`| 0` truncation), matching the engine's `Vector2i` philosophy. Half-open `int`
 ranges match the demo helpers (`randInt` / `randFloat`).
@@ -128,14 +128,14 @@ stored RNG state, so you do not need an instance per chunk. Complements `Random`
 
 <Since symbol="hash3" />
 
-| Function                 | Range                          |
-| ------------------------ | ------------------------------ |
-| `hash1i(x, seed?)`       | Unsigned 32-bit in `[0, 2^32)` |
-| `hash2i(x, y, seed?)`    | Unsigned 32-bit in `[0, 2^32)` |
+| Function | Range |
+| --- | --- |
+| `hash1i(x, seed?)` | Unsigned 32-bit in `[0, 2^32)` |
+| `hash2i(x, y, seed?)` | Unsigned 32-bit in `[0, 2^32)` |
 | `hash3i(x, y, z, seed?)` | Unsigned 32-bit in `[0, 2^32)` |
-| `hash1(x, seed?)`        | Float in `[0, 1)`              |
-| `hash2(x, y, seed?)`     | Float in `[0, 1)`              |
-| `hash3(x, y, z, seed?)`  | Float in `[0, 1)`              |
+| `hash1(x, seed?)` | Float in `[0, 1)` |
+| `hash2(x, y, seed?)` | Float in `[0, 1)` |
+| `hash3(x, y, z, seed?)` | Float in `[0, 1)` |
 
 Coordinates are truncated toward zero with `| 0`. Omit `seed` (or pass `0`) for a fixed default world seed. Float forms
 are the matching `hashNi` value scaled by `1 / 2^32`.
@@ -160,11 +160,11 @@ classes are distinct from the post-process `Noise` display effect (GPU grain).
 
 <Since symbol="SimplexNoise" />
 
-| Class          | Methods                                                        |
-| -------------- | -------------------------------------------------------------- |
-| `ValueNoise`   | `noise1D` / `noise2D` / `noise3D`, `fbm1D` / `fbm2D` / `fbm3D` |
-| `PerlinNoise`  | Same surface as `ValueNoise` (gradient Perlin)                 |
-| `SimplexNoise` | `noise2D` / `noise3D`, `fbm2D` / `fbm3D` (no 1D)               |
+| Class | Methods |
+| --- | --- |
+| `ValueNoise` | `noise1D` / `noise2D` / `noise3D`, `fbm1D` / `fbm2D` / `fbm3D` |
+| `PerlinNoise` | Same surface as `ValueNoise` (gradient Perlin) |
+| `SimplexNoise` | `noise2D` / `noise3D`, `fbm2D` / `fbm3D` (no 1D) |
 
 Omit the constructor seed (or pass `0`) for a fixed default world seed - same convention as `hash2i`. Call `seed(n)` to
 switch fields. fBm defaults: `octaves = 4`, `persistence = 0.5`, `lacunarity = 2`. Octave amplitudes are normalized so
@@ -203,13 +203,13 @@ const child = rng.fork(); // independent sub-stream; advances `rng` once
 rng.setState(saved); // restore and replay
 ```
 
-| Method        | Behavior                                                            |
-| ------------- | ------------------------------------------------------------------- |
-| `seed(n)`     | Reseed; same `n` restarts the same sequence                         |
-| `getState()`  | Current unsigned 32-bit state                                       |
-| `setState(n)` | Restore a saved state                                               |
-| `clone()`     | New instance with identical state (identical subsequent draws)      |
-| `fork()`      | Advance this instance once; seed a child so the two streams diverge |
+| Method | Behavior |
+| --- | --- |
+| `seed(n)` | Reseed; same `n` restarts the same sequence |
+| `getState()` | Current unsigned 32-bit state |
+| `setState(n)` | Restore a saved state |
+| `clone()` | New instance with identical state (identical subsequent draws) |
+| `fork()` | Advance this instance once; seed a child so the two streams diverge |
 
 <PageChangelog page="api/random" />
 

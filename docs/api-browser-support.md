@@ -17,11 +17,11 @@ init).
 
 <ApiAvailability page="api/browser-support" />
 
-| Browser     | Version        | Status                                                           |
-| ----------- | -------------- | ---------------------------------------------------------------- |
-| Chrome/Edge | 113+           | Enabled by default                                               |
-| Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
-| Safari      | 26+            | Enabled by default; Safari 18–25 available via Feature Flags     |
+| Browser | Version | Status |
+| --- | --- | --- |
+| Chrome/Edge | 113+ | Enabled by default |
+| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux/Android |
+| Safari | 26+ | Enabled by default; Safari 18–25 available via Feature Flags |
 
 <Callout title="Point-in-time snapshot">
 
@@ -39,11 +39,11 @@ reload during development.
 `AudioClip.load()` (see [Loading](api-audio.md#loading)) decodes through the browser's native `decodeAudioData()`, so
 codec support follows the browser, not BLIT386.
 
-| Browser     | MP3 | OGG (Vorbis) | WAV | WebM (Opus/Vorbis) |
-| ----------- | --- | ------------ | --- | ------------------ |
-| Chrome/Edge | Yes | Yes          | Yes | Yes                |
-| Firefox     | Yes | Yes          | Yes | Yes                |
-| Safari      | Yes | No           | Yes | No                 |
+| Browser | MP3 | OGG (Vorbis) | WAV | WebM (Opus/Vorbis) |
+| --- | --- | --- | --- | --- |
+| Chrome/Edge | Yes | Yes | Yes | Yes |
+| Firefox | Yes | Yes | Yes | Yes |
+| Safari | Yes | No | Yes | No |
 
 <Callout title="Point-in-time snapshot">
 
@@ -60,12 +60,12 @@ gameplay via the [Screen Wake Lock API](https://developer.mozilla.org/docs/Web/A
 acquires the lock after a successful `init()` and re-acquires it automatically once the page returns to the foreground -
 the platform releases the lock on its own while the page is hidden.
 
-| Browser         | Minimum version | Support |
-| --------------- | --------------- | ------- |
-| Chrome/Edge     | 84+             | Yes     |
-| Safari          | 16.4+           | Yes     |
-| Firefox         | 126+            | Yes     |
-| Android WebView | -               | Yes     |
+| Browser | Minimum version | Support |
+| --- | --- | --- |
+| Chrome/Edge | 84+ | Yes |
+| Safari | 16.4+ | Yes |
+| Firefox | 126+ | Yes |
+| Android WebView | - | Yes |
 
 <Callout title="Silent no-op fallback">
 
@@ -83,9 +83,9 @@ unavailable). After `init()`, the engine listens for orientation changes and cal
 attempt `screen.orientation.lock()` after init; the default `'any'` skips the lock. See
 [Screen orientation](api-core.md#screen-orientation) for the API surface and a usage example.
 
-| Capability                         | Chrome/Edge | Safari   | Firefox | Notes                                        |
-| ---------------------------------- | ----------- | -------- | ------- | -------------------------------------------- |
-| Detection (`type` + `change`)      | Yes         | Yes      | Yes     | All modern browsers                          |
+| Capability | Chrome/Edge | Safari | Firefox | Notes |
+| --- | --- | --- | --- | --- |
+| Detection (`type` + `change`) | Yes | Yes | Yes | All modern browsers |
 | Lock (`screen.orientation.lock()`) | Android Yes | No (iOS) | Limited | Desktop often requires fullscreen or similar |
 
 <Callout title="Silent no-op fallback">

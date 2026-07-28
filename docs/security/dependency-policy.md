@@ -4,10 +4,10 @@ Continuous dependency vulnerability gating for the `blit386` library repo.
 
 ## Severity gate
 
-| Scope                         | Command                        | Fail threshold     |
-| ----------------------------- | ------------------------------ | ------------------ |
-| All dependencies (dev + prod) | `pnpm run security:audit`      | Moderate and above |
-| Production / runtime only     | `pnpm run security:audit:prod` | Moderate and above |
+| Scope | Command | Fail threshold |
+| --- | --- | --- |
+| All dependencies (dev + prod) | `pnpm run security:audit` | Moderate and above |
+| Production / runtime only | `pnpm run security:audit:prod` | Moderate and above |
 
 Low and informational advisories do not fail CI or local gates.
 
@@ -28,12 +28,12 @@ re-running both commands.
 
 ## Dependency refresh cadence
 
-| Cadence             | Mechanism                                                                                                                               |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Automated (weekly)  | [Renovate](https://docs.renovatebot.com/) – Monday before 06:00 Europe/Prague; `vulnerabilityAlerts` open PRs with the `security` label |
-| Automated (monthly) | Renovate `lockFileMaintenance` – first day of the month                                                                                 |
-| Manual (monthly)    | Review `pnpm outdated`; run the [security runbook](./security-runbook.md) MCP preflight and audits                                      |
-| Per release         | Run `pnpm run security:audit` and `pnpm run security:audit:prod` before tagging                                                         |
+| Cadence | Mechanism |
+| --- | --- |
+| Automated (weekly) | [Renovate](https://docs.renovatebot.com/) – Monday before 06:00 Europe/Prague; `vulnerabilityAlerts` open PRs with the `security` label |
+| Automated (monthly) | Renovate `lockFileMaintenance` – first day of the month |
+| Manual (monthly) | Review `pnpm outdated`; run the [security runbook](./security-runbook.md) MCP preflight and audits |
+| Per release | Run `pnpm run security:audit` and `pnpm run security:audit:prod` before tagging |
 
 Patch updates for GitHub Actions and npm patches may automerge after 7 days (`minimumReleaseAge`), matching
 [`.npmrc`](../../.npmrc) `minimum-release-age` (10080 minutes), per [renovate.json](../../renovate.json). Minor and
@@ -70,10 +70,10 @@ job adds `actions: read` and `pull-requests: write` only where artifact lookup a
 Renovate extends `helpers:pinGitHubActionDigests`, so action references stay pinned to a 40-character commit SHA with a
 trailing `# vN` comment, and routine bumps update the SHA and comment together.
 
-| Path    | Who updates SHAs                                                                                                                   |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Path | Who updates SHAs |
+| --- | --- |
 | Routine | [Renovate](../../renovate.json) `github-actions` manager – grouped PRs, 7-day `minimumReleaseAge`, patch automerge, digest pinning |
-| Manual  | Resolve the release tag commit on the action repo, replace the SHA in the workflow, keep or update the `# vN` comment              |
+| Manual | Resolve the release tag commit on the action repo, replace the SHA in the workflow, keep or update the `# vN` comment |
 
 After any workflow edit, confirm the affected jobs still pass in CI (artifact upload, Codecov, benchmark baseline
 lookup, PR benchmark comments).

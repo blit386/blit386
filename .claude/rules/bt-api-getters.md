@@ -55,11 +55,11 @@ Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-d
 
 ## Boolean naming (three tiers)
 
-| Tier                         | Use               | Examples                                                                                                                                                                      |
-| ---------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A** Runtime queries        | `is*` / `has*`    | `isPointerActive`, `isIndexed`, `hasGlyph`, `Palette.isDirty`                                                                                                                 |
-| **B** Configure flags        | grammatical `is*` | `isOverlayEnabled`, `isDetectingDroppedFrames`, `isOverlayPaletteEnabled`, `isOverlayVisibleAtStart`, `isWaitingForDOMReady`, `isCapturingPointerScroll`, `isWakeLockEnabled` |
-| **C** Side effects / results | imperative verbs  | `fireIfElapsed()`, `remove(): boolean`, `init(): Promise<boolean>`                                                                                                            |
+| Tier | Use | Examples |
+| --- | --- | --- |
+| **A** Runtime queries | `is*` / `has*` | `isPointerActive`, `isIndexed`, `hasGlyph`, `Palette.isDirty` |
+| **B** Configure flags | grammatical `is*` | `isOverlayEnabled`, `isDetectingDroppedFrames`, `isOverlayPaletteEnabled`, `isOverlayVisibleAtStart`, `isWaitingForDOMReady`, `isCapturingPointerScroll`, `isWakeLockEnabled` |
+| **C** Side effects / results | imperative verbs | `fireIfElapsed()`, `remove(): boolean`, `init(): Promise<boolean>` |
 
 - Use `-ing` for configure flags that enable ongoing behavior (`isDetectingDroppedFrames`).
 - Hold vs edge on `BT`: `isDown` / `isKeyDown`; `isPressed` / `isReleased`; `isKeyPressed` / `isKeyReleased`. Public

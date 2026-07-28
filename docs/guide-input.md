@@ -23,12 +23,12 @@ All pointer coordinates are returned in logical display space (the `displaySize`
 
 The engine tracks up to four simultaneous pointers:
 
-| Slot | Source                                       |
-| ---- | -------------------------------------------- |
-| 0    | Mouse (always reserved)                      |
-| 1    | First touch / pen contact (in arrival order) |
-| 2    | Second touch / pen contact                   |
-| 3    | Third touch / pen contact                    |
+| Slot | Source |
+| --- | --- |
+| 0 | Mouse (always reserved) |
+| 1 | First touch / pen contact (in arrival order) |
+| 2 | Second touch / pen contact |
+| 3 | Third touch / pen contact |
 
 The engine tracks four pointer slots (indices `0`–`3`). Overflow contacts beyond slot 3 are dropped silently.
 
@@ -118,12 +118,12 @@ BT.isDown(BT.BTN_POINTER_A | BT.BTN_POINTER_B); // left or right mouse button he
 The mapping follows the [RetroBlit](https://www.badcastle.com/retroblit.html) canonical order, not the DOM
 `PointerEvent.button` index:
 
-| Button constant | Mouse button         | DOM button index |
-| --------------- | -------------------- | ---------------- |
-| `BTN_POINTER_A` | Left                 | 0                |
-| `BTN_POINTER_B` | Right                | 2                |
-| `BTN_POINTER_C` | Middle / wheel click | 1                |
-| `BTN_POINTER_D` | Back or forward      | 3 or 4           |
+| Button constant | Mouse button | DOM button index |
+| --- | --- | --- |
+| `BTN_POINTER_A` | Left | 0 |
+| `BTN_POINTER_B` | Right | 2 |
+| `BTN_POINTER_C` | Middle / wheel click | 1 |
+| `BTN_POINTER_D` | Back or forward | 3 or 4 |
 
 <Callout title="Credit">
 

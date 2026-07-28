@@ -3,9 +3,9 @@
 ## Supported Versions
 
 | Version | Supported |
-| ------- | --------- |
-| 1.x     | Yes       |
-| 0.x     | No        |
+| --- | --- |
+| 1.x | Yes |
+| 0.x | No |
 
 The 1.x release line is actively maintained. Security fixes are published as patch releases on 1.x. Pre-1.0 (0.x)
 releases reached end-of-life at 1.0.0 and no longer receive security updates.

@@ -10,15 +10,15 @@ alwaysApply: true
 
 Prose, JSDoc, and our own identifiers use American English, never British spellings:
 
-| American (use this)                                                                                                                                                                                                       | Never the British equivalent |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `color`                                                                                                                                                                                                                   | ✓                            |
-| `optimization`, `optimize`                                                                                                                                                                                                | ✓                            |
-| `canceled`, `canceling`                                                                                                                                                                                                   | ✓                            |
-| `center`, `centered`                                                                                                                                                                                                      | ✓                            |
-| `behavior`                                                                                                                                                                                                                | ✓                            |
-| `traveling`                                                                                                                                                                                                               | ✓                            |
-| `normalize`, `initialize`, `serialize`, `recognize`, `organize`, `customize`, `analyze`, `finalize`, `minimize`, `maximize`, `prioritize`, `categorize`, `synchronize`, `standardize`, `specialize`, `utilize`, `realize` | ✓                            |
+| American (use this) | Never the British equivalent |
+| --- | --- |
+| `color` | ✓ |
+| `optimization`, `optimize` | ✓ |
+| `canceled`, `canceling` | ✓ |
+| `center`, `centered` | ✓ |
+| `behavior` | ✓ |
+| `traveling` | ✓ |
+| `normalize`, `initialize`, `serialize`, `recognize`, `organize`, `customize`, `analyze`, `finalize`, `minimize`, `maximize`, `prioritize`, `categorize`, `synchronize`, `standardize`, `specialize`, `utilize`, `realize` | ✓ |
 
 ## Exemptions – do not "fix" these
 

@@ -60,10 +60,10 @@ After adding benchmarks for overlay work, label the PR `perf` if you want regres
 
 ### Overlay palette grid benchmarks
 
-| Benchmark file                             | What it measures                                              |
-| ------------------------------------------ | ------------------------------------------------------------- |
-| `src/assets/SpriteSheet.bench.ts`          | `markPaletteIndicesInRect` on 8x8 glyph vs 64x64 sprite rects |
-| `src/overlay/palette/PaletteView.bench.ts` | Full palette grid `draw()` for 16 vs 256 slots                |
+| Benchmark file | What it measures |
+| --- | --- |
+| `src/assets/SpriteSheet.bench.ts` | `markPaletteIndicesInRect` on 8x8 glyph vs 64x64 sprite rects |
+| `src/overlay/palette/PaletteView.bench.ts` | Full palette grid `draw()` for 16 vs 256 slots |
 
 Use these when changing palette usage gating, swatch draw scratch reuse, or unique-index marking in `SpriteSheet`.
 Compare locally with `pnpm run bench`; use `pnpm run bench:json` before opening a `perf`-labeled PR.
