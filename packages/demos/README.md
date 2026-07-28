@@ -150,15 +150,15 @@ demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo
 `filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all), and
 `hypercube` (a full-canvas tesseract with no shared UI kit):
 
-| File                      | What it provides                                                                    |
-| ------------------------- | ----------------------------------------------------------------------------------- |
-| `ui.js`                   | The single entry point demos import: `applyTheme()` and the `ui` object             |
-| `ui-core.js`              | Immediate-mode context: layout anchors, pooled draw commands, hit testing           |
-| `ui-widgets.js`           | Panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters          |
-| `ui-theme.js`             | `applyTheme(palette)` – installs the 12 shared UI colors (slots 240–251 by default) |
-| `ui-dpad.js`              | The virtual touch D-pad (`ui.dpadWidget()`, `ui.dpad.isDown` / `ui.dpad.isPressed`) |
-| `ui-gestures.js`          | Swipe recognition (`ui.swipe()`) and invisible tap zones (`ui.tapIn()`)             |
-| `post-process-backend.js` | `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` for effect demos that need WebGPU      |
+| File | What it provides |
+| --- | --- |
+| `ui.js` | The single entry point demos import: `applyTheme()` and the `ui` object |
+| `ui-core.js` | Immediate-mode context: layout anchors, pooled draw commands, hit testing |
+| `ui-widgets.js` | Panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters |
+| `ui-theme.js` | `applyTheme(palette)` – installs the 12 shared UI colors (slots 240–251 by default) |
+| `ui-dpad.js` | The virtual touch D-pad (`ui.dpadWidget()`, `ui.dpad.isDown` / `ui.dpad.isPressed`) |
+| `ui-gestures.js` | Swipe recognition (`ui.swipe()`) and invisible tap zones (`ui.tapIn()`) |
+| `post-process-backend.js` | `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` for effect demos that need WebGPU |
 
 The kit is immediate mode: a demo declares its widgets every frame inside `render()`, and each widget answers a click, a
 tap, or its bound key on the spot. Because every action is reachable by tap as well as by key, the demos are usable on a
@@ -180,11 +180,11 @@ on-screen note while the rest of the scene keeps running.
 
 WebGPU support (for the full experience) is typical in:
 
-| Browser     | Version        | Notes                                                        |
-| ----------- | -------------- | ------------------------------------------------------------ |
-| Chrome/Edge | 113+           | Enabled by default                                           |
-| Firefox     | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux     |
-| Safari      | 26+            | Enabled by default; Safari 18–25 available via Feature Flags |
+| Browser | Version | Notes |
+| --- | --- | --- |
+| Chrome/Edge | 113+ | Enabled by default |
+| Firefox | 141+ (Windows) | Enabled by default; 145+/147+ on macOS; Nightly on Linux |
+| Safari | 26+ | Enabled by default; Safari 18–25 available via Feature Flags |
 
 ## Engine documentation
 

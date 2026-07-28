@@ -490,6 +490,9 @@ Enforced by Biome (JS/JSON/CSS) and Prettier (Markdown/YAML):
 
 - Four spaces indent (two for JSON/YAML/Markdown)
 - 120 char line width, single quotes, always semicolons, always trailing commas
+- Markdown tables are compact by design – one space of padding, never aligned to the widest cell – so editing one cell
+  gives a one-line diff. That comes from `scripts/prettier-plugin-compact-tables.mjs`, a mirror of the canonical copy in
+  the `blit386` repo. Do not re-align a table by hand
 
 ## Git Commits
 
@@ -528,15 +531,15 @@ environments.
 Skills live in `.claude/skills/` (Zed/Cursor also see them via `.agents/skills/*` symlinks – edit the `.claude` copy
 once). Available:
 
-| Skill                                 | Purpose                                                                                                             |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `demos-preflight`                     | Run format, lint, spellcheck, knip, docs:links, check:demo-registry (incl. RETIRED_SLUGS / NAV_HIDDEN_SLUGS), build |
-| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify)                                                                 |
-| `demos-review` / `demos-deep-review`  | Diff review vs project rules; deep pre-push review                                                                  |
-| `demos-pr`                            | Preflight, conventional commit (DCO recommended), open a PR                                                         |
-| `demos-new`                           | Scaffold `src/<topic>.js` and remind to append the slug to `DEMO_ORDER`                                             |
-| `demos-spellcheck`                    | Fix cspell errors and extend `cspell.json`                                                                          |
-| `demos-test`                          | Explain that this repo has no automated tests                                                                       |
-| `demos-security-run`                  | MCP security preflight + audit fallbacks                                                                            |
+| Skill | Purpose |
+| --- | --- |
+| `demos-preflight` | Run format, lint, spellcheck, knip, docs:links, check:demo-registry (incl. RETIRED_SLUGS / NAV_HIDDEN_SLUGS), build |
+| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify) |
+| `demos-review` / `demos-deep-review` | Diff review vs project rules; deep pre-push review |
+| `demos-pr` | Preflight, conventional commit (DCO recommended), open a PR |
+| `demos-new` | Scaffold `src/<topic>.js` and remind to append the slug to `DEMO_ORDER` |
+| `demos-spellcheck` | Fix cspell errors and extend `cspell.json` |
+| `demos-test` | Explain that this repo has no automated tests |
+| `demos-security-run` | MCP security preflight + audit fallbacks |
 
 `.agents/skills/*` are symlinks to `.claude/skills/*`. Do not treat them as two copies to patch.
