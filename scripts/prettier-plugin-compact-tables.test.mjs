@@ -8,9 +8,16 @@ import prettier from 'prettier';
 /**
  * Everything here formats through `prettier.format`, the same entry point the repo's `format` script
  * and the editor integrations use. Calling the printer directly would let the plugin pass while the
- * wiring that selects it (parser name, plugin resolution) is broken.
+ * doc-building code around it is broken.
+ *
+ * Most cases pass `parser` and `plugins` explicitly so a behavior failure points straight at the
+ * plugin. That deliberately bypasses config resolution, so the `repository configuration` suite at
+ * the bottom formats through `prettier.config.js` instead - without it, deleting the plugin from the
+ * config would leave every other case in this file green while the repo formatted padded tables.
  */
-const PLUGIN = join(dirname(fileURLToPath(import.meta.url)), 'prettier-plugin-compact-tables.mjs');
+const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(SCRIPTS_DIR, '..');
+const PLUGIN = join(SCRIPTS_DIR, 'prettier-plugin-compact-tables.mjs');
 
 /** The Markdown options this repo's `prettier.config.js` resolves to, plus the plugin under test. */
 const OPTIONS = {
@@ -186,6 +193,43 @@ describe('prettier-plugin-compact-tables', () => {
             const around = ({ formatted, cursorOffset: offset }) => formatted.slice(offset - 3, offset + 3);
 
             assert.equal(around(compact), around(stock));
+        });
+    });
+
+    describe('repository configuration', () => {
+        /**
+         * Paths need not exist: `resolveConfig` locates `prettier.config.js` by walking up from the
+         * path and matches the `overrides` globs against it, so synthetic names keep this suite from
+         * breaking when a real doc is renamed.
+         */
+        const fixture = (name) => join(REPO_ROOT, name);
+
+        it('selects the compact parser and the plugin for every Markdown extension', async () => {
+            for (const name of ['fixture.md', 'fixture.mdx', 'fixture.mdc']) {
+                const config = await prettier.resolveConfig(fixture(name));
+
+                assert.equal(config?.parser, 'markdown-compact', `${name} should resolve to the compact parser`);
+                assert.ok(
+                    config?.plugins?.some((plugin) => plugin === PLUGIN),
+                    `${name} should resolve the compact-tables plugin`,
+                );
+            }
+        });
+
+        it('emits compact tables when formatting through the repo config alone', async () => {
+            const path = fixture('fixture.md');
+            const config = await prettier.resolveConfig(path);
+            const source = doc(
+                '| Command | Description |',
+                '| --- | --- |',
+                '| a | short |',
+                '| a-very-much-longer-command | a considerably longer description |',
+            );
+
+            // No parser and no plugins here on purpose: prettier.config.js has to supply both.
+            const formatted = await prettier.format(source, { ...config, filepath: path });
+
+            assert.equal(formatted, source);
         });
     });
 });
