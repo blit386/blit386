@@ -9,7 +9,7 @@ alwaysApply: true
 - **`pnpm run preflight`** runs: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `docs:links`,
   `agents:check`, `sync:doc-banners:check`, `sync:cursor-commands:check`, `api:since:check`, `api:history:check`,
   `test:unit`, `test:declarations`, `test:agent-config`, `test:cursor-commands`, `test:api-history`,
-  `test:security-preflight`.
+  `test:compact-tables`, `test:security-preflight`.
 - Built-ins without `run`: `pnpm install`, `pnpm audit`, `pnpm exec`, `pnpm add`, `pnpm --filter …`.
 - Cursor: `preToolUse` → `rtk hook cursor` on Shell; `afterFileEdit` → `.cursor/hooks/format-and-check.sh` (see
   `.cursor/hooks.json`).
