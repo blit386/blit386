@@ -61,6 +61,10 @@ ai-rules/
 *.swo
 *~
 
+# Raw screen-capture sources. Only the encoded output under public/media/ is committed;
+# the multi-hundred-MB .mov originals stay local (see scripts/encode-video.mjs).
+captures/
+
 # Logs and scratch
 *.log
 pnpm-debug.log*

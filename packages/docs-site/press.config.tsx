@@ -27,6 +27,7 @@ import { SidebarLogo } from './src/components/sidebar-logo';
 import { CommunityConnect } from './src/components/community-connect';
 import { DemoEmbed } from './src/components/demo-embed';
 import { DemoShowcase } from './src/components/demo-showcase';
+import { VideoEmbed } from './src/components/video-embed';
 import { HomeHero } from './src/components/home-hero';
 import { ApiAvailability } from './src/components/api-availability';
 import { PageChangelog } from './src/components/page-changelog';
@@ -458,6 +459,7 @@ export default defineConfig({
                     CommunityConnect,
                     DemoEmbed,
                     DemoShowcase,
+                    VideoEmbed,
                     HomeHero,
                     ApiAvailability,
                     PageChangelog,

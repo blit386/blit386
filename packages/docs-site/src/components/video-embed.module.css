@@ -1,0 +1,14 @@
+@reference '../app.css';
+
+.figure {
+    @apply my-8 flex flex-col gap-2;
+}
+
+/* `bg-fd-muted` fills the intrinsic aspect box while the poster decodes. */
+.video {
+    @apply block h-auto w-full bg-fd-muted;
+}
+
+.caption {
+    @apply text-sm text-fd-muted-foreground;
+}

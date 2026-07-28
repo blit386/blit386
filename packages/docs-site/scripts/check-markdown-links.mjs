@@ -28,6 +28,9 @@ const IGNORED_DIRS = new Set([
     '.nyc_output',
     'tmp',
     '.wrangler',
+    // Session notes written by the /remember skill. Gitignored, not documentation, and
+    // liable to quote prose that parses as a link (a bare `name@1.0` reads as a mailto).
+    '.remember',
 ]);
 const CONCURRENCY = 8;
 // Exceeds the ~170s worst-case single-link retry chain in .github/markdown-link-check.json.
