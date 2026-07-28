@@ -7,13 +7,13 @@ alwaysApply: true
 
 Demo source comments, JSDoc, and identifiers use American English, never British spellings:
 
-| American (use this)  | British (never this) |
-| -------------------- | -------------------- |
-| `color`, `colors`    | `colour`, `colours`  |
-| `center`, `centered` | `centre`, `centred`  |
-| `canceled`           | `cancelled`          |
-| `traveling`          | `travelling`         |
-| `gray`               | `grey`               |
+| American (use this) | British (never this) |
+| --- | --- |
+| `color`, `colors` | `colour`, `colours` |
+| `center`, `centered` | `centre`, `centred` |
+| `canceled` | `cancelled` |
+| `traveling` | `travelling` |
+| `gray` | `grey` |
 
 Exempt: literal third-party or spec-mandated names correctly spelled with a British `s`/`c` in their own spec (for
 example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those.

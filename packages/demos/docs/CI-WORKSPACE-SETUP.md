@@ -154,11 +154,11 @@ Third-party actions in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 40-character commit SHA, with a trailing `# vN` comment naming the release tag the SHA was resolved from. Mutable `@vN`
 references are not used.
 
-| Path    | Who refreshes pins                                                                                     |
-| ------- | ------------------------------------------------------------------------------------------------------ |
+| Path | Who refreshes pins |
+| --- | --- |
 | Routine | [Renovate](../renovate.json) `github-actions` manager – patch updates only, grouped, 3-day release age |
-| Manual  | Resolve the tag to a commit on the action repository                                                   |
-|         | (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), replace the SHA, update the `# vN` comment         |
+| Manual | Resolve the tag to a commit on the action repository |
+|  | (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`), replace the SHA, update the `# vN` comment |
 
 After changing pins, confirm CI still passes (workspace setup, quality checks, artifact upload/download, Cloudflare
 deploy).
