@@ -3,8 +3,8 @@
 ## Supported Versions
 
 | Version | Supported |
-| ------- | --------- |
-| 0.x     | Yes       |
+| --- | --- |
+| 0.x | Yes |
 
 This documentation site is pre-1.0. Security fixes ship on the default branch and deploy to blit386.dev.
 

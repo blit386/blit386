@@ -13,11 +13,11 @@ without registration or a token.
 This site serves public documentation only. There are no protected API scopes. Agents may read and index all content
 without credentials or registration. No claim ceremony or token exchange is needed.
 
-| Property                 | Value                        |
-| ------------------------ | ---------------------------- |
-| Scopes supported         | none (all content is public) |
-| Identity types supported | anonymous                    |
-| Bearer method            | header                       |
+| Property | Value |
+| --- | --- |
+| Scopes supported | none (all content is public) |
+| Identity types supported | anonymous |
+| Bearer method | header |
 
 ## Agent catalog
 

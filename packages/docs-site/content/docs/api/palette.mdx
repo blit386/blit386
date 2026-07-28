@@ -18,7 +18,7 @@ A palette is a fixed-size table of color slots (positions `0` through `size - 1`
 terms; they are not interchangeable.
 
 | Term            | Role                                                          | Typical APIs                                            |
-| --------------- | ------------------------------------------------------------- | ------------------------------------------------------- |
+| --- | --- | --- |
 | slot            | Prose name for a position in the palette table                | `palette.set()`, `palette.get()`, `applyHUD()`, effects |
 | `paletteIndex`  | Absolute slot number written to the framebuffer               | `BT.clear`, primitives, `BT.systemPrint`                |
 | `paletteOffset` | Per-draw shift added to each stored texel index before lookup | `BT.drawSprite`, `BT.printFont`                         |
@@ -52,7 +52,7 @@ palette slot `255` from the clamp, not an inherent error color.
 ### Active palette
 
 | Action                                                     | Use                                                                             |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| --- | --- |
 | First activation or swap to a different `Palette` instance | `BT.paletteSet(palette)`                                                        |
 | Edit colors on the current active palette                  | `BT.palette.set(slot, color)` – live reference, no second `paletteSet()` needed |
 | Read the active palette                                    | `BT.palette` (throws if none set)                                               |
@@ -112,7 +112,7 @@ BT.paletteSet(palette);
 The six slots in order, by alias:
 
 | Alias        | Purpose                 |
-| ------------ | ----------------------- |
+| --- | --- |
 | `hud_white`  | Foreground / label text |
 | `hud_bg`     | Panel background        |
 | `hud_label`  | Secondary label         |
@@ -209,7 +209,7 @@ BT.paletteClearEffects();
 Used by `paletteFade` and `paletteFadeRange`. Type: `EasingFunction`.
 
 | Value           | Curve                                |
-| --------------- | ------------------------------------ |
+| --- | --- |
 | `'linear'`      | Constant rate (default when omitted) |
 | `'ease-in'`     | Slow start, fast end                 |
 | `'ease-out'`    | Fast start, slow end                 |

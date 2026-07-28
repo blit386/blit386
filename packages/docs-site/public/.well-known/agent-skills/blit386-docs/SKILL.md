@@ -14,13 +14,13 @@ automatic Canvas 2D software fallback. All engine functionality is accessed thro
 
 ## Key resources
 
-| Resource              | URL                                         | Format     |
-| --------------------- | ------------------------------------------- | ---------- |
-| Documentation home    | https://blit386.dev/docs                    | HTML       |
-| Site summary for LLMs | https://blit386.dev/llms.txt                | plain text |
-| Full site content     | https://blit386.dev/llms-full.txt           | plain text |
-| Search API            | https://blit386.dev/api/search?query=<term> | JSON array |
-| Sitemap               | https://blit386.dev/sitemap.xml             | XML        |
+| Resource | URL | Format |
+| --- | --- | --- |
+| Documentation home | https://blit386.dev/docs | HTML |
+| Site summary for LLMs | https://blit386.dev/llms.txt | plain text |
+| Full site content | https://blit386.dev/llms-full.txt | plain text |
+| Search API | https://blit386.dev/api/search?query=<term> | JSON array |
+| Sitemap | https://blit386.dev/sitemap.xml | XML |
 
 ## Navigating the docs
 
