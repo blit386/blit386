@@ -35,10 +35,10 @@ visible and `isOverlayPaletteEnabled` is true).
 
 ## Visibility model
 
-| State                 | What draws                                                                                      |
-| --------------------- | ----------------------------------------------------------------------------------------------- |
-| Body hidden (default) | Optional bottom-left toggle hint icon when `isOverlayToggleHintVisible`                         |
-| Body visible          | Title, metrics, optional timing chart, optional palette grid, optional custom rows, footer hint |
+| State | What draws |
+| --- | --- |
+| Body hidden (default) | Optional bottom-left toggle hint icon when `isOverlayToggleHintVisible` |
+| Body visible | Title, metrics, optional timing chart, optional palette grid, optional custom rows, footer hint |
 
 Toggle the body at runtime:
 
@@ -74,13 +74,13 @@ Each `OverlayRow` supports `leftText`, optional `rightText`, and optional per-ro
 
 ## Optional bands
 
-| Feature             | Configure flag                           | Notes                                                                                      |
-| ------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Timing chart        | `isOverlayTimingChartEnabled`            | Scrolling dots for update/render ms; `BT.assignTag('label')` marks events                  |
-| Palette grid        | `isOverlayPaletteEnabled`                | Live swatch grid; wheel scroll when rows exceed visible cap (forces capture over the band) |
-| GPU diagnostics row | `isOverlayRendererDiagnosticsBarEnabled` | Text row below frame metrics                                                               |
-| Chart GPU markers   | `overlayTimingChartDiagnostics`          | `'minimal'` (default when chart on), `'rich'`, or `false`                                  |
-| Audio meters        | `isOverlayAudioMetersEnabled`            | Per-bus (main/music/sfx) level bars plus a voices/steal/drop text readout                  |
+| Feature | Configure flag | Notes |
+| --- | --- | --- |
+| Timing chart | `isOverlayTimingChartEnabled` | Scrolling dots for update/render ms; `BT.assignTag('label')` marks events |
+| Palette grid | `isOverlayPaletteEnabled` | Live swatch grid; wheel scroll when rows exceed visible cap (forces capture over the band) |
+| GPU diagnostics row | `isOverlayRendererDiagnosticsBarEnabled` | Text row below frame metrics |
+| Chart GPU markers | `overlayTimingChartDiagnostics` | `'minimal'` (default when chart on), `'rich'`, or `false` |
+| Audio meters | `isOverlayAudioMetersEnabled` | Per-bus (main/music/sfx) level bars plus a voices/steal/drop text readout |
 
 Reserve vertical space in demo layouts: ~42 px top, ~14 px per custom row, timing chart height (default 22 px), audio
 meter band height plus a 1 px gap when enabled (14 px default), palette grid height when enabled, and ~13 px footer hint

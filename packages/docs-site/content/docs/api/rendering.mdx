@@ -70,9 +70,9 @@ Stored sprite indices start at `1`; index `0` is always transparent and discarde
 before the palette lookup, so a pixel stored at index `i` renders as `palette[i + paletteOffset]`:
 
 | Stored index | `paletteOffset = 0` | `paletteOffset = N` |
-| ------------ | ------------------- | ------------------- |
-| `1`          | `palette[1]`        | `palette[1 + N]`    |
-| `2`          | `palette[2]`        | `palette[2 + N]`    |
+| --- | --- | --- |
+| `1` | `palette[1]` | `palette[1 + N]` |
+| `2` | `palette[2]` | `palette[2 + N]` |
 
 This drives palette-swap effects such as team colors or damage flashes – point the same sprite at a different band of
 the palette without re-uploading texels.
@@ -210,9 +210,9 @@ for (const fx of crtPipBoy()) BT.effectAdd(fx);
 
 Built-in effects:
 
-| Tier    | Classes                                                                                                                                |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Pixel   | `PixelGlitch`, `PixelMosaic`                                                                                                           |
+| Tier | Classes |
+| --- | --- |
+| Pixel | `PixelGlitch`, `PixelMosaic` |
 | Display | `BarrelDistortion`, `Scanlines`, `RGBMask`, `Vignette`, `ChromaticAberration`, `Flicker`, `RollLine`, `Interference`, `Noise`, `Bloom` |
 
 All effect classes are exported from `'blit386'`. Each instance owns its own GPU resources and may be mutated each frame

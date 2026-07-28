@@ -162,9 +162,10 @@ per-file static-asset limit is 25 MiB.
   `content/index.mdx`, `content/showcase.mdx`, `content/community.mdx`, `content/mcp-server.mdx`, `content/meta.json`,
   `content/blog/**`, and under `content/docs/`: `index.mdx`, `getting-started.mdx`, `faq.mdx`, and the root `meta.json`.
 - No emoji in content, code, commits, or UI strings
-- No MDX comments. Prettier formats `.mdx` with the **markdown** parser (`prettier.config.js` overrides), so remark
-  reads `{/* … */}` as emphasis and rewrites it to `{/_ … _/}` – which then renders as visible italic text on the page.
-  Delete the note or make it real prose instead.
+- No MDX comments. Prettier formats `.mdx` with the **markdown** parser (`prettier.config.js` overrides point `.mdx` at
+  `markdown-compact`, which is Prettier's own markdown parser with a compact table printer), so remark reads `{/* … */}`
+  as emphasis and rewrites it to `{/_ … _/}` – which then renders as visible italic text on the page. Delete the note or
+  make it real prose instead.
 - American English spelling in hand-authored content and source (`color`, `optimization`, `canceled`, `centered`, never
   the British equivalents). Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or
   `c` in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. Generated pages
@@ -254,6 +255,14 @@ pnpm run deploy           # Deploy to Cloudflare (requires build + wrangler auth
 | `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier |
 
 No ESLint in this repo (Biome-only, like create-blit386).
+
+Markdown tables are compact by design – one space of padding, never aligned to the widest cell – so editing one cell
+gives a one-line diff instead of rewriting the table. That comes from `scripts/prettier-plugin-compact-tables.mjs`, a
+mirror of the canonical copy in the `blit386` repo (knip ignores it; it is loaded by path from `prettier.config.js`) and
+covered by `scripts/__tests__/prettier-plugin-compact-tables.test.mjs`, which also asserts that this repo's own
+`prettier.config.js` still selects it. Because engine docs go through the same formatter upstream, the generated mirror
+under `content/docs/` inherits it – run `pnpm run sync:docs` after the engine reformats, never re-align a mirrored table
+here.
 
 ## Git
 

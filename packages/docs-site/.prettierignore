@@ -1,4 +1,4 @@
-# Prettier ignore - Markdown and YAML only (TS/JSON/CSS use Biome)
+# Prettier ignore - Markdown and YAML only (TS/JS/JSON/CSS use Biome)
 
 # Lock files (never format)
 pnpm-lock.yaml
@@ -11,19 +11,23 @@ node_modules/
 
 # Build outputs
 dist/
-.source/
 
-# Git
+# Agent scratch space (not ours to format)
 .git/
 .remember/
+.superpowers/
 
 # Generated/minified files
 **/*.min.css
+vite.config.*.timestamp-*
 
 # JSON is handled by Biome
 *.json
 
-# Generated docs mirror (produced by scripts/sync-docs-from-engine.mjs from
-# blit386/docs). Artifacts: not subject to this repo's format gate. The
+# Repo-specific: Waku/fumadocs-mdx codegen output
+.source/
+
+# Repo-specific: generated docs mirror (produced by scripts/sync-docs-from-engine.mjs
+# from blit386/docs). Artifacts: not subject to this repo's format gate. The
 # hand-authored hub (content/docs/index.mdx) and root meta stay formatted.
 content/docs/*/**

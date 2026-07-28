@@ -13,10 +13,10 @@ Fixed-timestep simulation timing, tick counters, and the `Timer` helper.
 
 BLIT386 runs two independent cadences:
 
-| Concept         | Where                                                      | Meaning                                                        |
-| --------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
-| Simulation rate | `targetFPS`, `BT.targetFPS`, `BT.deltaSeconds`, `BT.ticks` | Fixed `update()` step; game logic and `Timer` use ticks        |
-| Render rate     | Overlay `Present: N FPS`, `BT.renderAlpha`                 | Measured `requestAnimationFrame` cadence; `render()` runs here |
+| Concept | Where | Meaning |
+| --- | --- | --- |
+| Simulation rate | `targetFPS`, `BT.targetFPS`, `BT.deltaSeconds`, `BT.ticks` | Fixed `update()` step; game logic and `Timer` use ticks |
+| Render rate | Overlay `Present: N FPS`, `BT.renderAlpha` | Measured `requestAnimationFrame` cadence; `render()` runs here |
 
 `render()` may run more or fewer times per second than `update()` (for example 120 Hz display with `targetFPS: 60`). Use
 tick-based timing for gameplay; use overlay present FPS only to spot GPU or draw-call bottlenecks. Because the two
