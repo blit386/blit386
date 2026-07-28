@@ -19,7 +19,11 @@ const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(SCRIPTS_DIR, '..');
 const PLUGIN = join(SCRIPTS_DIR, 'prettier-plugin-compact-tables.mjs');
 
-/** The Markdown options this repo's `prettier.config.js` resolves to, plus the plugin under test. */
+/**
+ * The Markdown options this repo's `prettier.config.js` resolves to, plus the plugin under test.
+ *
+ * @type {import('prettier').Options}
+ */
 const OPTIONS = {
     parser: 'markdown-compact',
     plugins: [PLUGIN],
@@ -28,10 +32,21 @@ const OPTIONS = {
     tabWidth: 2,
 };
 
-/** Format a Markdown source string through the plugin. */
+/**
+ * Format a Markdown source string through the plugin.
+ *
+ * @param {string} source Markdown to format.
+ * @param {import('prettier').Options} [overrides] Options layered over {@link OPTIONS}.
+ * @returns {Promise<string>} The formatted document.
+ */
 const format = (source, overrides = {}) => prettier.format(source, { ...OPTIONS, ...overrides });
 
-/** Join lines into a Markdown document with a trailing newline, so fixtures stay readable. */
+/**
+ * Join lines into a Markdown document with a trailing newline, so fixtures stay readable.
+ *
+ * @param {...string} lines Lines of the document, without newlines.
+ * @returns {string} The joined document.
+ */
 const doc = (...lines) => `${lines.join('\n')}\n`;
 
 describe('prettier-plugin-compact-tables', () => {
@@ -190,6 +205,12 @@ describe('prettier-plugin-compact-tables', () => {
             });
             const compact = await prettier.formatWithCursor(source, { ...OPTIONS, cursorOffset });
 
+            /**
+             * The three characters on each side of where the caret ended up.
+             *
+             * @param {{ formatted: string, cursorOffset: number }} result A `formatWithCursor` result.
+             * @returns {string} The text the caret landed in.
+             */
             const around = ({ formatted, cursorOffset: offset }) => formatted.slice(offset - 3, offset + 3);
 
             assert.equal(around(compact), around(stock));
@@ -201,6 +222,9 @@ describe('prettier-plugin-compact-tables', () => {
          * Paths need not exist: `resolveConfig` locates `prettier.config.js` by walking up from the
          * path and matches the `overrides` globs against it, so synthetic names keep this suite from
          * breaking when a real doc is renamed.
+         *
+         * @param {string} name File name to resolve config for, relative to the repo root.
+         * @returns {string} Absolute path to the synthetic fixture.
          */
         const fixture = (name) => join(REPO_ROOT, name);
 
