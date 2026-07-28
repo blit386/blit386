@@ -8,10 +8,10 @@ non-trivial work.
 
 ## Packages
 
-| Package                   | npm name         | Purpose                                           |
-| ------------------------- | ---------------- | ------------------------------------------------- |
-| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` CLI and templates     |
-| `packages/kit`            | `@blit386/kit`   | Canonical kit content (the IR) and the `blit` CLI |
+| Package | npm name | Purpose |
+| --- | --- | --- |
+| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` CLI and templates |
+| `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI |
 
 ## Tech stack
 

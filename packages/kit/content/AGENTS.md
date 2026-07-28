@@ -53,17 +53,17 @@ bootstrap(Game);
 
 ## When you need detail, open the right doc
 
-| You want to...                                     | Read                                  |
-| -------------------------------------------------- | ------------------------------------- |
-| Install Node, run the game, edit your first line   | `docs/getting-started.md`             |
-| Understand init/update/render, timing, orientation | `docs/basics.md`                      |
-| Clear the screen, draw rectangles, lines, text     | `docs/drawing.md`                     |
-| Read the keyboard, mouse, or a gamepad             | `docs/input.md`                       |
-| Make and use colors (palette, slots)               | `docs/palette.md`                     |
-| Play sound effects and music, or fix a silent game | `docs/audio.md`                       |
-| Keep playing while you edit code or assets         | `docs/hot-reload.md`                  |
-| Show a loading screen while assets load            | `docs/basics.md` (Waiting for assets) |
-| Fix a blank screen, an error, a broken change      | `docs/when-something-breaks.md`       |
+| You want to... | Read |
+| --- | --- |
+| Install Node, run the game, edit your first line | `docs/getting-started.md` |
+| Understand init/update/render, timing, orientation | `docs/basics.md` |
+| Clear the screen, draw rectangles, lines, text | `docs/drawing.md` |
+| Read the keyboard, mouse, or a gamepad | `docs/input.md` |
+| Make and use colors (palette, slots) | `docs/palette.md` |
+| Play sound effects and music, or fix a silent game | `docs/audio.md` |
+| Keep playing while you edit code or assets | `docs/hot-reload.md` |
+| Show a loading screen while assets load | `docs/basics.md` (Waiting for assets) |
+| Fix a blank screen, an error, a broken change | `docs/when-something-breaks.md` |
 
 The full engine reference lives at https://github.com/blit386/blit386 – only go there if these local docs do not answer
 the question.

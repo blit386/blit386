@@ -38,10 +38,10 @@ that checklist for DCO sign-off, Conventional Commit titles, `pnpm run preflight
 
 ## Packages
 
-| Package          | Path                      | Purpose                                     |
-| ---------------- | ------------------------- | ------------------------------------------- |
-| `create-blit386` | `packages/create-blit386` | npm `create-*` CLI and templates            |
-| `@blit386/kit`   | `packages/kit`            | Canonical `AGENTS.md`, docs, and `blit` CLI |
+| Package | Path | Purpose |
+| --- | --- | --- |
+| `create-blit386` | `packages/create-blit386` | npm `create-*` CLI and templates |
+| `@blit386/kit` | `packages/kit` | Canonical `AGENTS.md`, docs, and `blit` CLI |
 
 ## Releasing
 

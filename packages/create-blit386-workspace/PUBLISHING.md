@@ -2,10 +2,10 @@
 
 This repo publishes two packages to npm:
 
-| Package                   | npm name         | Scope    | What it is                                                   |
-| ------------------------- | ---------------- | -------- | ------------------------------------------------------------ |
-| `packages/kit`            | `@blit386/kit`   | scoped   | The `blit` CLI plus the canonical `AGENTS.md` and game docs. |
-| `packages/create-blit386` | `create-blit386` | unscoped | The `npm create blit386` scaffolder. Depends on the kit.     |
+| Package | npm name | Scope | What it is |
+| --- | --- | --- | --- |
+| `packages/kit` | `@blit386/kit` | scoped | The `blit` CLI plus the canonical `AGENTS.md` and game docs. |
+| `packages/create-blit386` | `create-blit386` | unscoped | The `npm create blit386` scaffolder. Depends on the kit. |
 
 ## Golden rules (read these first)
 

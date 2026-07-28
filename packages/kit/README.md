@@ -38,32 +38,32 @@ Every scaffolded game gets these. Your AI assistant loads one on its own when th
 name them. In Claude Code they live in `.claude/skills/`; in Cursor they are slash commands in `.cursor/commands/`, so
 there you can also invoke one by name (`/add-sprite`).
 
-| Skill                   | What it is for                                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------------------ |
-| `structure-a-game`      | The shape of a game: `configure`, `init`, `update`, `render` – and what the engine does not do for you |
-| `run`                   | Start the dev server and see the game                                                                  |
-| `fix`                   | The game crashes, shows a black screen, or behaves oddly                                               |
-| `use-hot-reload`        | Keep playing while you edit code or assets (`blit386/vite`, `onHotReload`)                             |
-| `draw-shapes`           | Rectangles, lines, pixels, and clearing the screen                                                     |
-| `add-sprite`            | Load a PNG sprite sheet and draw it, whole or frame by frame                                           |
-| `show-a-loading-screen` | Wait for sprites and audio with `BT.loadingAssetsCount`                                                |
-| `add-text`              | Scores, labels, and titles with the built-in or a bitmap font                                          |
-| `use-palette`           | Set up colors as numbered palette slots                                                                |
-| `animate-the-palette`   | Cycle, fade, flash, and swap colors for motion and mood                                                |
-| `move-and-time`         | The frame clock, timers, cooldowns, and easing                                                         |
-| `smooth-the-motion`     | Make movement look smooth instead of stepped, with `BT.renderAlpha`                                    |
-| `scroll-with-camera`    | Scroll a world bigger than the screen, clamped to its bounds                                           |
-| `read-keyboard`         | Keys, face buttons, typed text, and remapping                                                          |
-| `read-pointer`          | Mouse, touch, and pen, up to four at once                                                              |
-| `read-gamepad`          | Controllers: buttons, sticks, and triggers                                                             |
-| `play-a-sound`          | Sound effects, music, volume, and why a game starts silent                                             |
-| `design-a-sound`        | Build a custom sound from scratch when the presets are not right                                       |
-| `add-crt-effect`        | Fullscreen post-process effects: CRT, scanlines, bloom, glitch (WebGPU only)                           |
-| `show-debug-overlay`    | FPS, timings, your own values, the palette grid, audio volume meters, and renderer diagnostics         |
-| `keep-it-fast`          | The game stutters, drops frames, or sprites start vanishing                                            |
-| `save-a-screenshot`     | Capture the frame as a PNG                                                                             |
-| `share-the-game`        | Build it and put it online for other people to play                                                    |
-| `migrate`               | Update the game's code after a BLIT386 upgrade (renames + enable hot reload)                           |
+| Skill | What it is for |
+| --- | --- |
+| `structure-a-game` | The shape of a game: `configure`, `init`, `update`, `render` – and what the engine does not do for you |
+| `run` | Start the dev server and see the game |
+| `fix` | The game crashes, shows a black screen, or behaves oddly |
+| `use-hot-reload` | Keep playing while you edit code or assets (`blit386/vite`, `onHotReload`) |
+| `draw-shapes` | Rectangles, lines, pixels, and clearing the screen |
+| `add-sprite` | Load a PNG sprite sheet and draw it, whole or frame by frame |
+| `show-a-loading-screen` | Wait for sprites and audio with `BT.loadingAssetsCount` |
+| `add-text` | Scores, labels, and titles with the built-in or a bitmap font |
+| `use-palette` | Set up colors as numbered palette slots |
+| `animate-the-palette` | Cycle, fade, flash, and swap colors for motion and mood |
+| `move-and-time` | The frame clock, timers, cooldowns, and easing |
+| `smooth-the-motion` | Make movement look smooth instead of stepped, with `BT.renderAlpha` |
+| `scroll-with-camera` | Scroll a world bigger than the screen, clamped to its bounds |
+| `read-keyboard` | Keys, face buttons, typed text, and remapping |
+| `read-pointer` | Mouse, touch, and pen, up to four at once |
+| `read-gamepad` | Controllers: buttons, sticks, and triggers |
+| `play-a-sound` | Sound effects, music, volume, and why a game starts silent |
+| `design-a-sound` | Build a custom sound from scratch when the presets are not right |
+| `add-crt-effect` | Fullscreen post-process effects: CRT, scanlines, bloom, glitch (WebGPU only) |
+| `show-debug-overlay` | FPS, timings, your own values, the palette grid, audio volume meters, and renderer diagnostics |
+| `keep-it-fast` | The game stutters, drops frames, or sprites start vanishing |
+| `save-a-screenshot` | Capture the frame as a PNG |
+| `share-the-game` | Build it and put it online for other people to play |
+| `migrate` | Update the game's code after a BLIT386 upgrade (renames + enable hot reload) |
 
 ## Usage
 

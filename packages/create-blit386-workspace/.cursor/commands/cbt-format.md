@@ -24,9 +24,9 @@ Format every file in the create-blit386 monorepo and verify the result.
 
 ## Formatter Configuration
 
-| File Types                             | Tool     | Config               |
-| -------------------------------------- | -------- | -------------------- |
-| `.ts`, `.js`, `.json`, `.jsonc`        | Biome    | `biome.json`         |
+| File Types | Tool | Config |
+| --- | --- | --- |
+| `.ts`, `.js`, `.json`, `.jsonc` | Biome | `biome.json` |
 | `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
 
 ## Formatting Rules
