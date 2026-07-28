@@ -1,8 +1,9 @@
 ---
 name: bt-format
 description:
-  Format all code with Biome and Prettier, then verify formatting passes. Use when the user asks to format, reformat, or
-  clean up code style, or to fix a failing format check.
+  Format all code with Biome and Prettier and verify the result with format:check. Use when the user wants formatting
+  done and confirmed – before a commit or PR, when a format check has failed in CI or a hook, or any time the result
+  needs to be trustworthy rather than just fast. For a no-verification quick pass, use bt-quick-format instead.
 ---
 
 # Format Code

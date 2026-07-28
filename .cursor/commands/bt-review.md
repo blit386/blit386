@@ -24,18 +24,20 @@ Review current changes against project rules and quality standards.
 
 3. Check against project rules
 
+Full detail lives in `CLAUDE.md` (Critical Rules, BT API: getters vs methods, Internal scoped naming, Boolean naming)
+and the paired rule files (`.claude/rules/*.md`, Cursor: `.cursor/rules/*.mdc`) – read those for the exact getter list,
+naming exceptions, and edge cases rather than relying on a paraphrase here. Rules below are cited by basename, which is
+the same in both directories. Quick checklist:
+
 - No emoji anywhere (code, comments, docs, commits)
 - Integer coordinates (Vector2i, Rect2i) for rendering
-- TypeScript strict types (no `any`)
-- Type imports use `import type` syntax
-- Proper error handling (guard clauses, null checks)
-- Consistent naming conventions
-- Internal scoped naming: private/protected/module-local names must not repeat class or file name (`request()` on
-  `FrameCapture`, not `requestCapture()`). Public `BT.*` and barrel exports stay unchanged. See `CLAUDE.md` (Internal
-  scoped naming).
-- BT API shape: read-only zero-arg snapshots use getters (`BT.displaySize`, `BT.targetFPS`), not `BT.foo()`. Actions and
-  parameterized queries stay methods. New configure mirrors use `HardwareSettings` field names (`targetFPS`, not `fps`).
-  Derived getters (e.g. `outputSize`) have no matching field. See `CLAUDE.md` (BT API: getters vs methods).
+- TypeScript strict types (no `any`); type-only imports for types
+- Proper error handling (guard clauses, null checks); consistent naming
+- Internal scoped naming: private/protected/module-local names don't repeat the class or file name (`request()` on
+  `FrameCapture`, not `requestCapture()`); public `BT.*` and barrel exports stay unchanged (`internal-scoped-naming`
+  rule)
+- BT API shape: read-only zero-arg snapshots are getters (`BT.displaySize`, `BT.targetFPS`), not `BT.foo()`; actions and
+  parameterized queries stay methods (`bt-api-getters` rule)
 
 4. Summarize findings
 
