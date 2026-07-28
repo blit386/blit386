@@ -211,27 +211,27 @@ The full, typeset documentation lives at [blit386.dev/docs](https://blit386.dev/
 [`docs/`](docs/) – start with [API: Core](docs/api-core.md) for `bootstrap()` and initialization. The rest of the
 important pages:
 
-| Documentation                                              | What it covers                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------ |
-| [API: Core](docs/api-core.md)                              | bootstrap, init, default configuration                 |
-| [API: Game Loop](docs/api-game-loop.md)                    | tick timing, present FPS, Timer                        |
-| [Game Loop Guide](docs/guide-game-loop.md)                 | render-time interpolation, smoothing motion            |
-| [API: Camera](docs/api-camera.md)                          | global pixel offset, world-clamp helpers               |
-| [API: Core Types](docs/api-core-types.md)                  | Vector2i, Rect2i, Color32                              |
-| [API: Rendering](docs/api-rendering.md)                    | primitives, sprites, text, post-process, frame capture |
-| [API: Palette](docs/api-palette.md)                        | palette setup, presets, effects, serialization         |
-| [API: Assets](docs/api-assets.md)                          | sprite sheets, bitmap fonts, loading progress          |
-| [API: Audio](docs/api-audio.md)                            | buses, SFX voice pool, music, procedural synthesis     |
-| [API: Overlay](docs/api-overlay.md)                        | overlay configure flags and style                      |
-| [Overlay Guide](docs/guide-overlay.md)                     | engine HUD subsystem, toggle, custom rows, layout      |
-| [API: Browser Support](docs/api-browser-support.md)        | WebGPU matrix, wake lock, orientation, build toolchain |
-| [Input Guide](docs/guide-input.md)                         | pointer, keyboard, gamepad, scroll capture             |
-| [Hot Reload Guide](docs/guide-hot-reload.md)               | blit386/vite plugin, hot-swap, asset hot-replace       |
-| [Palette Guide](docs/guide-palette.md)                     | the palette-first workflow, offsets, and effects       |
-| [Audio Guide](docs/guide-audio.md)                         | loading, playing, and designing sound                  |
-| [Bitmap Fonts](docs/guide-bitmap-fonts.md)                 | .btfont format, BMFont conversion                      |
-| [Post-Process Effects](docs/guide-post-process-effects.md) | the effect chain, built-in effects, CRT presets        |
-| [Changelog](docs/changelog.md)                             | release history in Keep a Changelog style              |
+| Documentation | What it covers |
+| --- | --- |
+| [API: Core](docs/api-core.md) | bootstrap, init, default configuration |
+| [API: Game Loop](docs/api-game-loop.md) | tick timing, present FPS, Timer |
+| [Game Loop Guide](docs/guide-game-loop.md) | render-time interpolation, smoothing motion |
+| [API: Camera](docs/api-camera.md) | global pixel offset, world-clamp helpers |
+| [API: Core Types](docs/api-core-types.md) | Vector2i, Rect2i, Color32 |
+| [API: Rendering](docs/api-rendering.md) | primitives, sprites, text, post-process, frame capture |
+| [API: Palette](docs/api-palette.md) | palette setup, presets, effects, serialization |
+| [API: Assets](docs/api-assets.md) | sprite sheets, bitmap fonts, loading progress |
+| [API: Audio](docs/api-audio.md) | buses, SFX voice pool, music, procedural synthesis |
+| [API: Overlay](docs/api-overlay.md) | overlay configure flags and style |
+| [Overlay Guide](docs/guide-overlay.md) | engine HUD subsystem, toggle, custom rows, layout |
+| [API: Browser Support](docs/api-browser-support.md) | WebGPU matrix, wake lock, orientation, build toolchain |
+| [Input Guide](docs/guide-input.md) | pointer, keyboard, gamepad, scroll capture |
+| [Hot Reload Guide](docs/guide-hot-reload.md) | blit386/vite plugin, hot-swap, asset hot-replace |
+| [Palette Guide](docs/guide-palette.md) | the palette-first workflow, offsets, and effects |
+| [Audio Guide](docs/guide-audio.md) | loading, playing, and designing sound |
+| [Bitmap Fonts](docs/guide-bitmap-fonts.md) | .btfont format, BMFont conversion |
+| [Post-Process Effects](docs/guide-post-process-effects.md) | the effect chain, built-in effects, CRT presets |
+| [Changelog](docs/changelog.md) | release history in Keep a Changelog style |
 
 The full index – performance, testing, security, contributor guides – lives in
 [Developer Experience](docs/developer-experience-guide.md#documentation-index).

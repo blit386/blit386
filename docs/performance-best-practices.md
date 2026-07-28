@@ -147,10 +147,10 @@ Cons:
 
 For a loop drawing 200 pixels per frame at 60 FPS:
 
-| Pattern        | Allocations/sec | GC Impact                          |
-| -------------- | --------------- | ---------------------------------- |
-| Inline         | 12,000/sec      | Moderate GC pauses every ~1 second |
-| Pre-allocation | 0/sec           | Minimal GC activity                |
+| Pattern | Allocations/sec | GC Impact |
+| --- | --- | --- |
+| Inline | 12,000/sec | Moderate GC pauses every ~1 second |
+| Pre-allocation | 0/sec | Minimal GC activity |
 
 Real-world impact: On modern browsers, inline allocation is fine for <50 operations/frame. Beyond that, pre-allocation
 provides measurable benefits.
@@ -234,10 +234,10 @@ while diagonal lines use Bresenham's algorithm. This section explains the cost t
 
 Line rendering performance varies significantly based on line orientation:
 
-| Line Type             | Vertices Used           | Example (100px line) |
-| --------------------- | ----------------------- | -------------------- |
-| Horizontal / Vertical | 6 (single quad)         | 6 vertices           |
-| Diagonal              | 6 per pixel (Bresenham) | ~600 vertices        |
+| Line Type | Vertices Used | Example (100px line) |
+| --- | --- | --- |
+| Horizontal / Vertical | 6 (single quad) | 6 vertices |
+| Diagonal | 6 per pixel (Bresenham) | ~600 vertices |
 
 Why diagonal lines cost more:
 
@@ -429,12 +429,12 @@ class BestStringDemo {
 
 ### Object allocation guidelines
 
-| Operations/Frame | Recommendation             | Example                                   |
-| ---------------- | -------------------------- | ----------------------------------------- |
-| < 10             | Inline allocation fine     | UI text, menu rendering                   |
-| 10–50            | Borderline, prefer clarity | Simple animations, small particle systems |
-| 50–100           | Consider pre-allocation    | Complex scenes, medium particle systems   |
-| 100+             | Definitely pre-allocate    | Pattern demos, large particle systems     |
+| Operations/Frame | Recommendation | Example |
+| --- | --- | --- |
+| < 10 | Inline allocation fine | UI text, menu rendering |
+| 10–50 | Borderline, prefer clarity | Simple animations, small particle systems |
+| 50–100 | Consider pre-allocation | Complex scenes, medium particle systems |
+| 100+ | Definitely pre-allocate | Pattern demos, large particle systems |
 
 ### When to use each pattern
 

@@ -36,19 +36,19 @@ const tint = interpolate('cubic-out', Color32.white, Color32.green, 0.4);
 `EasingFunction` is a string union. `'ease-in'`, `'ease-out'`, and `'ease-in-out'` are the quadratic family (kept for
 existing palette and audio call sites).
 
-| Family           | Identifiers                                         |
-| ---------------- | --------------------------------------------------- |
-| Linear           | `'linear'`                                          |
-| Quadratic        | `'ease-in'`, `'ease-out'`, `'ease-in-out'`          |
-| Sine             | `'sine-in'`, `'sine-out'`, `'sine-in-out'`          |
-| Cubic            | `'cubic-in'`, `'cubic-out'`, `'cubic-in-out'`       |
-| Quartic          | `'quartic-in'`, `'quartic-out'`, `'quartic-in-out'` |
-| Quintic          | `'quintic-in'`, `'quintic-out'`, `'quintic-in-out'` |
-| Exponential      | `'expo-in'`, `'expo-out'`, `'expo-in-out'`          |
-| Circular         | `'circ-in'`, `'circ-out'`, `'circ-in-out'`          |
-| Back (overshoot) | `'back-in'`, `'back-out'`, `'back-in-out'`          |
-| Elastic          | `'elastic-in'`, `'elastic-out'`, `'elastic-in-out'` |
-| Bounce           | `'bounce-in'`, `'bounce-out'`, `'bounce-in-out'`    |
+| Family | Identifiers |
+| --- | --- |
+| Linear | `'linear'` |
+| Quadratic | `'ease-in'`, `'ease-out'`, `'ease-in-out'` |
+| Sine | `'sine-in'`, `'sine-out'`, `'sine-in-out'` |
+| Cubic | `'cubic-in'`, `'cubic-out'`, `'cubic-in-out'` |
+| Quartic | `'quartic-in'`, `'quartic-out'`, `'quartic-in-out'` |
+| Quintic | `'quintic-in'`, `'quintic-out'`, `'quintic-in-out'` |
+| Exponential | `'expo-in'`, `'expo-out'`, `'expo-in-out'` |
+| Circular | `'circ-in'`, `'circ-out'`, `'circ-in-out'` |
+| Back (overshoot) | `'back-in'`, `'back-out'`, `'back-in-out'` |
+| Elastic | `'elastic-in'`, `'elastic-out'`, `'elastic-in-out'` |
+| Bounce | `'bounce-in'`, `'bounce-out'`, `'bounce-in-out'` |
 
 Every curve returns `0` at `t = 0` and `1` at `t = 1`. Values of `t` outside `[0, 1]` are not clamped. Back and elastic
 curves may overshoot outside `[0, 1]` for intermediate `t`.

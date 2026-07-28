@@ -17,10 +17,10 @@ CI details.
 
 ## Declaration tooling commands
 
-| Command                                                                      | Description                                                                                                                          |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm run test:declarations`                                                 | Node tests for `scripts/check-declaration-tooling.mjs` (drift patterns and alignment log parsing). Included in `pnpm run preflight`. |
-| `pnpm run build` then `node scripts/check-declaration-tooling.mjs build.log` | Manual check after a local build (same assertion CI runs).                                                                           |
+| Command | Description |
+| --- | --- |
+| `pnpm run test:declarations` | Node tests for `scripts/check-declaration-tooling.mjs` (drift patterns and alignment log parsing). Included in `pnpm run preflight`. |
+| `pnpm run build` then `node scripts/check-declaration-tooling.mjs build.log` | Manual check after a local build (same assertion CI runs). |
 
 CI runs the checker after `pnpm run build` in:
 
@@ -31,8 +31,8 @@ More context: [Testing – Declaration tooling checks](reference-testing.md#decl
 
 ## See also
 
-| Guide                                                                     | What it covers                                  |
-| ------------------------------------------------------------------------- | ----------------------------------------------- |
-| [Developer Experience](developer-experience-guide.md)                     | TypeScript pin rationale, declaration rollup    |
+| Guide | What it covers |
+| --- | --- |
+| [Developer Experience](developer-experience-guide.md) | TypeScript pin rationale, declaration rollup |
 | [Documentation and API Versioning](documentation-and-versioning-guide.md) | @since/@changed tagging, doc component workflow |
-| [Testing](reference-testing.md)                                           | declaration tooling test (`test:declarations`)  |
+| [Testing](reference-testing.md) | declaration tooling test (`test:declarations`) |

@@ -22,11 +22,11 @@ active palette with `BT.paletteSet()` before any draw calls. Valid sizes: `2, 4,
 A palette is a fixed-size table of color slots (positions `0` through `size - 1`). Docs and APIs use three related
 terms; they are not interchangeable.
 
-| Term            | Role                                                          | Typical APIs                                            |
-| --------------- | ------------------------------------------------------------- | ------------------------------------------------------- |
-| slot            | Prose name for a position in the palette table                | `palette.set()`, `palette.get()`, `applyHUD()`, effects |
-| `paletteIndex`  | Absolute slot number written to the framebuffer               | `BT.clear`, primitives, `BT.systemPrint`                |
-| `paletteOffset` | Per-draw shift added to each stored texel index before lookup | `BT.drawSprite`, `BT.printFont`                         |
+| Term | Role | Typical APIs |
+| --- | --- | --- |
+| slot | Prose name for a position in the palette table | `palette.set()`, `palette.get()`, `applyHUD()`, effects |
+| `paletteIndex` | Absolute slot number written to the framebuffer | `BT.clear`, primitives, `BT.systemPrint` |
+| `paletteOffset` | Per-draw shift added to each stored texel index before lookup | `BT.drawSprite`, `BT.printFont` |
 
 Slot and `paletteIndex` mean the same integer: which entry in the active palette a pixel uses. Parameter names use
 `paletteIndex` on draw calls; guides may say "slot" when reserving ranges or editing colors with `palette.set()`.
@@ -65,11 +65,11 @@ palette slot `255` from the clamp, not an inherent error color.
 
 ### Active palette
 
-| Action                                                     | Use                                                                             |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| First activation or swap to a different `Palette` instance | `BT.paletteSet(palette)`                                                        |
-| Edit colors on the current active palette                  | `BT.palette.set(slot, color)` – live reference, no second `paletteSet()` needed |
-| Read the active palette                                    | `BT.palette` (throws if none set)                                               |
+| Action | Use |
+| --- | --- |
+| First activation or swap to a different `Palette` instance | `BT.paletteSet(palette)` |
+| Edit colors on the current active palette | `BT.palette.set(slot, color)` – live reference, no second `paletteSet()` needed |
+| Read the active palette | `BT.palette` (throws if none set) |
 
 `BT.palette` returns the same object the engine draws with. Mutating slots updates colors on the next frame. Call
 `BT.paletteSet()` again only when replacing the whole palette object (for example a prebuilt day vs. night palette), or
@@ -132,14 +132,14 @@ BT.paletteSet(palette);
 
 The six slots in order, by alias:
 
-| Alias        | Purpose                 |
-| ------------ | ----------------------- |
-| `hud_white`  | Foreground / label text |
-| `hud_bg`     | Panel background        |
-| `hud_label`  | Secondary label         |
-| `hud_header` | Header / title text     |
-| `hud_dim`    | Dimmed / inactive text  |
-| `hud_code`   | Code / monospace text   |
+| Alias | Purpose |
+| --- | --- |
+| `hud_white` | Foreground / label text |
+| `hud_bg` | Panel background |
+| `hud_label` | Secondary label |
+| `hud_header` | Header / title text |
+| `hud_dim` | Dimmed / inactive text |
+| `hud_code` | Code / monospace text |
 
 Override individual slots after `applyHUD()`:
 
@@ -249,12 +249,12 @@ BT.paletteClearEffects();
 
 Used by `paletteFade` and `paletteFadeRange`. Type: `EasingFunction`. Common values:
 
-| Value           | Curve                                |
-| --------------- | ------------------------------------ |
-| `'linear'`      | Constant rate (default when omitted) |
-| `'ease-in'`     | Quadratic slow start, fast end       |
-| `'ease-out'`    | Quadratic fast start, slow end       |
-| `'ease-in-out'` | Quadratic slow start and end         |
+| Value | Curve |
+| --- | --- |
+| `'linear'` | Constant rate (default when omitted) |
+| `'ease-in'` | Quadratic slow start, fast end |
+| `'ease-out'` | Quadratic fast start, slow end |
+| `'ease-in-out'` | Quadratic slow start and end |
 
 The full curve list (sine, cubic, bounce, and more) and the `interpolate` helper live in [API: Easing](api-easing.md).
 

@@ -12,13 +12,13 @@ When adding or renaming **non-public** symbols in `src/` (library TypeScript):
 **Private fields, private methods, protected members, and module-local constants/types must not repeat the enclosing
 class or file name.** Context already supplies that scope.
 
-| Scope                                           | Applies                          |
-| ----------------------------------------------- | -------------------------------- |
-| `#privateField`, `private method()`             | yes                              |
-| `protected readonly fragmentShader`             | yes                              |
-| Module `const`, file-local `type` / `interface` | yes                              |
-| `BT.*`, barrel exports, public class methods    | **no** — public API stays stable |
-| JSDoc `@link` to another module's public symbol | use the **full public name**     |
+| Scope | Applies |
+| --- | --- |
+| `#privateField`, `private method()` | yes |
+| `protected readonly fragmentShader` | yes |
+| Module `const`, file-local `type` / `interface` | yes |
+| `BT.*`, barrel exports, public class methods | **no** — public API stays stable |
+| JSDoc `@link` to another module's public symbol | use the **full public name** |
 
 ## Good vs bad (same file provides context)
 

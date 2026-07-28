@@ -32,16 +32,16 @@ MVP; updated for auto-fallback and the engine overlay (backend shown on the top 
 
 ## Matrix
 
-| Scene                                   | What to verify                                   | Software expected result                                    | Notes                                  |
-| --------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- | -------------------------------------- |
-| Any page without `?backend=software`    | Auto-fallback when WebGPU is absent              | Demo boots; `BT.activeBackend` = `'software'`               | No error page or hard stop             |
-| Any page with software active           | Overlay top bar shows `software`                 | Top bar reads `software \| WxH` (toggle with `~` or corner) | Disable with `isOverlayEnabled: false` |
-| `tests/visual/fixtures/primitives.html` | clear + clearRect + primitive rasterization      | Matches expected primitive layout and colors                | Check pixel edges are crisp            |
-| `tests/visual/fixtures/camera.html`     | camera offset applied to all draw calls          | Geometry is shifted consistently by camera offset           | No partial drift between primitives    |
-| `tests/visual/fixtures/sprites.html`    | indexed sprites + palette offsets + transparency | Sprite shapes/colors match expected output                  | Transparent pixels stay see-through    |
-| `tests/visual/fixtures/fonts.html`      | system text + bitmap font rendering              | Text positions and glyph colors are correct                 | No missing glyph blocks                |
-| `tests/visual/fixtures/mixed.html`      | primitives + sprites + layering order            | Same stacking as WebGPU for this fixture                    | Parity covered by Playwright snapshot  |
-| Frame capture via `BT.captureFrame()`   | PNG export in software mode                      | Promise resolves with PNG blob                              | Repeat capture across multiple frames  |
+| Scene | What to verify | Software expected result | Notes |
+| --- | --- | --- | --- |
+| Any page without `?backend=software` | Auto-fallback when WebGPU is absent | Demo boots; `BT.activeBackend` = `'software'` | No error page or hard stop |
+| Any page with software active | Overlay top bar shows `software` | Top bar reads `software \| WxH` (toggle with `~` or corner) | Disable with `isOverlayEnabled: false` |
+| `tests/visual/fixtures/primitives.html` | clear + clearRect + primitive rasterization | Matches expected primitive layout and colors | Check pixel edges are crisp |
+| `tests/visual/fixtures/camera.html` | camera offset applied to all draw calls | Geometry is shifted consistently by camera offset | No partial drift between primitives |
+| `tests/visual/fixtures/sprites.html` | indexed sprites + palette offsets + transparency | Sprite shapes/colors match expected output | Transparent pixels stay see-through |
+| `tests/visual/fixtures/fonts.html` | system text + bitmap font rendering | Text positions and glyph colors are correct | No missing glyph blocks |
+| `tests/visual/fixtures/mixed.html` | primitives + sprites + layering order | Same stacking as WebGPU for this fixture | Parity covered by Playwright snapshot |
+| Frame capture via `BT.captureFrame()` | PNG export in software mode | Promise resolves with PNG blob | Repeat capture across multiple frames |
 
 ## Automated regression
 

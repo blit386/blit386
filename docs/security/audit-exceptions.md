@@ -32,7 +32,7 @@ Do not use exceptions for low-severity findings (CI does not gate on them).
 ## Active exceptions
 
 | GHSA | Package / path | Severity | Accepted | Review by | Remediation issue | Owner |
-| ---- | -------------- | -------- | -------- | --------- | ----------------- | ----- |
+| --- | --- | --- | --- | --- | --- | --- |
 
 ## Technical notes
 
