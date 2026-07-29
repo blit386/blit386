@@ -77,6 +77,22 @@ describe('bump-lockstep', () => {
             const { next } = applyVersion(raw, '1.3.0');
             assert.equal(next, raw.replace('"1.2.1"', '"1.3.0"'));
         });
+
+        it('is not fooled by an escaped quote in a preceding string value', () => {
+            const raw = '{\n  "description": "say \\"version\\": \\"9.9.9\\"",\n  "version": "1.2.1"\n}\n';
+            const { next, previous } = applyVersion(raw, '1.3.0');
+            assert.equal(previous, '1.2.1');
+            assert.equal(next, raw.replace('"1.2.1"', '"1.3.0"'));
+            assert.equal(JSON.parse(next).description, 'say "version": "9.9.9"');
+        });
+
+        it('rewrites the last of duplicate top-level keys, the one JSON.parse resolves to', () => {
+            const raw = '{\n  "version": "1.0.0",\n  "version": "1.2.1"\n}\n';
+            const { next, previous } = applyVersion(raw, '1.3.0');
+            assert.equal(previous, '1.2.1');
+            assert.equal(next, '{\n  "version": "1.0.0",\n  "version": "1.3.0"\n}\n');
+            assert.equal(JSON.parse(next).version, '1.3.0');
+        });
     });
 
     describe('parseArgv', () => {

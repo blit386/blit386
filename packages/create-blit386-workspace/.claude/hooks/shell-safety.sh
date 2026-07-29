@@ -36,19 +36,30 @@ NORMALIZED_TEXT="$(printf '%s' "$COMMAND_TEXT" | tr -d "'" | tr -d '"' | tr -d '
 
 GIT_PREFIX='git([[:space:]]+(-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?|--[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?))*[[:space:]]+'
 
-# `git clean` only deletes when it is forced, so match a force flag in any
-# argument position rather than one specific bundle: `-f` on its own already
-# removes untracked files, and it is just as destructive bundled (`-fd`,
-# `-xdf`) or spelled out (`--force`). Dry runs (`-n`, `--dry-run`) and
-# `--exclude` patterns stay allowed. The argument scan stops at a shell
-# separator so a force flag belonging to a later command
-# (`git clean -n && rm -f build.log`) does not trip this. A preview that still
-# bundles an f (`git clean -nfd`) is denied: over-matching is the safe
-# direction here, and the message says what to do instead.
+# `git clean` deletes untracked files, so treat every invocation as destructive
+# unless it is an explicit preview. Matching force flags alone was not enough:
+# `git -c clean.requireForce=false clean -d` deletes without ever naming a force
+# flag, and any other way around clean.requireForce would slip past the same way.
+# So only a dry run (`-n`, `--dry-run`) that carries no force flag is allowed
+# through; everything else, a bare `git clean` included, is denied. A preview
+# that still bundles an f (`git clean -nfd`) is denied too: over-matching is the
+# safe direction here, and the message says what to do instead. Each argument
+# scan stops at a shell separator, so flags belonging to a later command
+# (`git clean -n && rm -f build.log`) are never read as part of the clean.
+GIT_CLEAN='clean([[:space:]]|[;&|<>]|$)'
 GIT_CLEAN_FORCE='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+(-[[:alnum:]]*f[[:alnum:]]*|--force)([[:space:]]|[;&|<>]|$)'
+GIT_CLEAN_DRY_RUN='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+(-[[:alnum:]]*n[[:alnum:]]*|--dry-run)([[:space:]]|[;&|<>]|$)'
 
-if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}clean${GIT_CLEAN_FORCE}|${GIT_PREFIX}checkout[[:space:]]+--"; then
-    printf '[BLOCKED] Destructive git command detected (reset --hard / clean -f / checkout --). Use a safer git operation or ask for explicit approval.\n' >&2
+# Exit status 0 when the command runs a `git clean` that is not a no-force dry run.
+is_destructive_clean() {
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}${GIT_CLEAN}" || return 1
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}clean${GIT_CLEAN_FORCE}" && return 0
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}clean${GIT_CLEAN_DRY_RUN}" && return 1
+    return 0
+}
+
+if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}checkout[[:space:]]+--" || is_destructive_clean; then
+    printf '[BLOCKED] Destructive git command detected (reset --hard / clean without --dry-run / checkout --). Use a safer git operation or ask for explicit approval.\n' >&2
     exit 2
 fi
 

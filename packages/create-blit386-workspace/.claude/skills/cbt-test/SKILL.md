@@ -29,7 +29,7 @@ Root-level script tests (also part of `pnpm run preflight`, not part of `pnpm ru
 | `pnpm run test:agent-config` | `scripts/check-agent-config.test.mjs` | `.agents/skills` symlink integrity helpers |
 | `pnpm run test:bump-lockstep` | `scripts/bump-lockstep.test.mjs` | Version parsing and the lockstep rewrite of all three `package.json` files |
 | `pnpm run test:compact-tables` | `scripts/prettier-plugin-compact-tables.test.mjs` | Table padding, alignment, escaped pipes, nesting, idempotence, config wiring |
-| `pnpm run test:shell-safety` | `scripts/shell-safety.test.mjs` | Both `shell-safety.sh` hooks: destructive git detection, `git clean` force flags, quoting and escaping bypasses, force-push `ask` responses |
+| `pnpm run test:shell-safety` | `scripts/shell-safety.test.mjs` | Both `shell-safety.sh` hooks: destructive git detection, non-preview `git clean` detection, quoting and escaping bypasses, force-push `ask` responses |
 
 Run them with those `pnpm run` scripts, or together via `pnpm run preflight`.
 

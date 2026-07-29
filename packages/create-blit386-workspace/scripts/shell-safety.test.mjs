@@ -128,6 +128,20 @@ for (const hook of HOOKS) {
                 assert.match(result.stderr, hook.destructiveMessage);
             });
 
+            it('blocks a clean that turns off requireForce instead of passing -f', () => {
+                const result = runHook(hook.path, 'git -c clean.requireForce=false clean -d');
+
+                assert.equal(result.status, 2);
+                assert.match(result.stderr, hook.destructiveMessage);
+            });
+
+            it('blocks any clean that is not a preview, force flag or not', () => {
+                const result = runHook(hook.path, 'git clean -d');
+
+                assert.equal(result.status, 2);
+                assert.match(result.stderr, hook.destructiveMessage);
+            });
+
             it('allows a -n dry run', () => {
                 const result = runHook(hook.path, 'git clean -n');
 
