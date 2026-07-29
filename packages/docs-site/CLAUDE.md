@@ -171,8 +171,7 @@ per-file static-asset limit is 25 MiB.
   `c` in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. Generated pages
   under `content/docs/` inherit this from the canonical source in `blit386/docs/` (see blit386
   [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md), American English spelling) – fix the upstream
-  source and re-run `pnpm run sync:docs`, never the mirror directly. Cursor:
-  `.cursor/rules/american-english-spelling.mdc` (always applied in this repo).
+  source and re-run `pnpm run sync:docs`, never the mirror directly.
 
 ## Documentation mirror
 
@@ -252,7 +251,7 @@ pnpm run deploy           # Deploy to Cloudflare (requires build + wrangler auth
 | File types | Tool |
 | --- | --- |
 | `.ts`, `.tsx`, `.json`, `.css` | Biome |
-| `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier |
+| `.md`, `.mdx`, `.yml`, `.yaml` | Prettier |
 
 No ESLint in this repo (Biome-only, like create-blit386).
 
@@ -330,10 +329,10 @@ crashing the build. The canonical engine docs (`blit386/docs/`) are responsible 
 Twoslash in published docs). After editing engine docs, run `pnpm run sync:docs && pnpm run build` here to verify.
 
 **Dev-mode skip (memory constraint):** The transformer is gated on `!!process.env.CLOUDFLARE` in `source.config.ts`.
-`blit386.d.ts` is ~192 KB and imports WebGPU types; across the 35 MDX files in `content/` the TypeScript language
-service accumulates over 4 GB during `waku dev` and the process OOMs. `NODE_ENV` is not a reliable signal because
-`source.config.ts` is evaluated by the fumadocs-mdx Vite plugin before Vite writes `NODE_ENV=production` into the
-process environment. `CLOUDFLARE=1` is set by `cross-env` in the build script, which is deterministic. Twoslash
+`blit386.d.ts` is ~192 KB and imports WebGPU types; across the several dozen MDX files in `content/` the TypeScript
+language service accumulates over 4 GB during `waku dev` and the process OOMs. `NODE_ENV` is not a reliable signal
+because `source.config.ts` is evaluated by the fumadocs-mdx Vite plugin before Vite writes `NODE_ENV=production` into
+the process environment. `CLOUDFLARE=1` is set by `cross-env` in the build script, which is deterministic. Twoslash
 therefore only runs during `pnpm run build`. Type-on-hover popups are absent in the local dev server – use
 `pnpm run build && pnpm run start` to preview the full production build locally (served via Wrangler).
 

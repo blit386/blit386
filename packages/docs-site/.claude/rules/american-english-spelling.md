@@ -8,5 +8,3 @@ Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those.
 
 Generated pages under `content/docs/**` inherit this from the canonical source in `blit386/docs/` – fix upstream and
 re-run `pnpm run sync:docs`, never hand-edit the mirror.
-
-Cursor: `.cursor/rules/american-english-spelling.mdc` (always applied in this repo).

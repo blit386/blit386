@@ -12,5 +12,3 @@ that manifest and run `pnpm run sync:docs`.
 
 `src/data/api-history.generated.json` is also generated (copied from `blit386/docs/_api-history.json` by the same
 script). Never hand-edit it; it backs the `Since`, `ApiAvailability`, and `PageChangelog` components.
-
-Rules are mirrored: `.claude/rules/*.md` and `.cursor/rules/*.mdc` are twins. Change one, change the other.

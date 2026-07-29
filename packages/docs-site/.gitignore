@@ -43,20 +43,12 @@ ai-rules/
 .rules
 
 # IDE and editor files
-.vscode/launch.json
-.vscode/*.code-workspace
-!.vscode/settings.json
-!.vscode/extensions.json
+.vscode/
 .idea/
 *.iml
+.cursor/
 .zed/*
 !.zed/settings.json
-.cursor/*
-!.cursor/hooks.json
-!.cursor/hooks/
-!.cursor/hooks/**
-!.cursor/rules/
-!.cursor/rules/**
 *.swp
 *.swo
 *~
