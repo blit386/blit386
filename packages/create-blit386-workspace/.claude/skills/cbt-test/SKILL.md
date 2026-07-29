@@ -23,7 +23,6 @@ Root-level script tests (also part of `pnpm run preflight`, not part of `pnpm ru
 | Script | File | Covers |
 | --- | --- | --- |
 | `pnpm run test:agent-config` | `scripts/check-agent-config.test.mjs` | `.agents/skills` symlink integrity helpers |
-| `pnpm run test:cursor-commands` | `scripts/sync-cursor-commands.test.mjs` | Frontmatter strip, link rewrite, command build, orphan detection |
 | `pnpm run test:compact-tables` | `scripts/prettier-plugin-compact-tables.test.mjs` | Table padding, alignment, escaped pipes, nesting, idempotence, config wiring |
 
 Run them with those `pnpm run` scripts, or together via `pnpm run preflight`.

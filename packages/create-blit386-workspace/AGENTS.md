@@ -54,5 +54,4 @@ this repo's own contributor docs.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) – DCO and contribution guidelines.
 - [`PUBLISHING.md`](PUBLISHING.md) – npm publish procedure for both packages (`pnpm run bump -- <x.y.z>` for lockstep).
 
-Condensed, always-applicable agent rules also live in `.claude/rules/*.md` (Claude Code) and `.cursor/rules/*.mdc`
-(Cursor).
+Condensed, always-applicable agent rules also live in `.claude/rules/*.md` (Claude Code).

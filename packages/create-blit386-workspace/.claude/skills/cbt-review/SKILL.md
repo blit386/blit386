@@ -68,4 +68,4 @@ Overall assessment of the changes and readiness for a commit.
 ## Notes
 
 - Run or suggest `pnpm run preflight` (or `/cbt-preflight`) before approving; that is the full gate, including
-  `agents:check`, `sync:cursor-commands:check`, and the script-level agent/cursor unit tests as well as package suites.
+  `agents:check` and the script-level agent-config unit tests as well as package suites.

@@ -1,7 +1,5 @@
 # Scaffold template structure
 
-Condensed mirror of `.cursor/rules/template-structure.mdc`.
-
 - `templates/base/` – language-agnostic files (HTML, Vite config, README, `.editorconfig`, `biome.json`, `.gitignore`,
   `prettier.config.js`, `.prettierignore`, `scripts/prettier-plugin-compact-tables.mjs`, `public/`). Uses
   `{{entryFile}}` / `{{gameFile}}` placeholders so it stays language-neutral.

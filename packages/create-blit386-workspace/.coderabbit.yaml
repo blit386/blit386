@@ -35,7 +35,7 @@ reviews:
         Catcher layer is intentionally approachable. Placeholders use `{{name}}` tokens; unknown tokens must stay
         visible if mis-typed. Kit `AGENTS.md` / `docs/` are copied verbatim elsewhere (no placeholder substitution) – do
         not introduce `{{gameFile}}` into those kit files from a template-only change. Canonical detail:
-        `.claude/rules/template-structure.md` / `.cursor/rules/template-structure.mdc`.
+        `.claude/rules/template-structure.md`.
     - path: 'packages/kit/content/**'
       instructions: >-
         Canonical kit IR shipped into every scaffolded game (`AGENTS.md`, `docs/`, `rules/`, `skills/`, hooks,

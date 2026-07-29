@@ -1,8 +1,8 @@
 ---
 name: cbt-preflight
 description:
-  Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, agents:check,
-  sync:cursor-commands:check, agent-config/cursor-command tests, build, test) before committing or pushing. Use when the
+  Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, agents:check, agent-config tests,
+  lockstep-bump tests, compact-tables tests, shell-safety tests, build, test) before committing or pushing. Use when the
   user wants to verify the code is ready to commit or run every check at once.
 ---
 
@@ -33,10 +33,10 @@ Run comprehensive quality checks before committing or pushing code.
    - `knip` – Find unused exports and dependencies
    - `docs:links` – Verify Markdown links
    - `agents:check` – `.agents/skills` symlink integrity
-   - `sync:cursor-commands:check` – Cursor commands match Claude skills
    - `test:agent-config` – Unit tests for the agents check helpers
-   - `test:cursor-commands` – Unit tests for the cursor-command sync helpers
+   - `test:bump-lockstep` – Unit tests for the lockstep version-bump script
    - `test:compact-tables` – Unit tests for the compact Markdown table Prettier plugin
+   - `test:shell-safety` – Unit tests for the `.claude/hooks/shell-safety.sh` hook
    - `build` – Build both packages
    - `test` – `pnpm -r test`: package `node --test` suites (scaffolder, kit CLI, env, codemod)
 
@@ -49,6 +49,5 @@ Run comprehensive quality checks before committing or pushing code.
    - Lint: `pnpm run lint:fix`
    - Spelling: Add words to `cspell.json` or fix typos
    - Dead links: Fix URLs or run `pnpm run docs:links`
-   - Cursor command drift: `pnpm run sync:cursor-commands`
    - Broken `.agents/skills` symlink: recreate the symlink to `.claude/skills/<same-name>`
    - Unused exports: Remove unused code or update `knip.json`

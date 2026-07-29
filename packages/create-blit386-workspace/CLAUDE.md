@@ -38,10 +38,8 @@ pnpm run spellcheck                # cspell
 pnpm run knip                      # Dead code / unused exports
 pnpm run docs:links                # Markdown link checker
 pnpm run agents:check              # .agents/skills symlink integrity
-pnpm run sync:cursor-commands      # Mirror .claude/skills -> .cursor/commands
-pnpm run sync:cursor-commands:check # Fail if Cursor commands drift from skills
 pnpm run test:agent-config         # Unit tests for agents:check helpers
-pnpm run test:cursor-commands      # Unit tests for sync-cursor-commands helpers
+pnpm run test:bump-lockstep        # Unit tests for the lockstep version-bump script
 pnpm run test:compact-tables       # Unit tests for the compact Markdown table Prettier plugin
 pnpm run test                      # All package node:test suites (pnpm -r test; scaffolder suites need a build first)
 pnpm run preflight                 # All quality checks before commit
@@ -89,9 +87,8 @@ packages/create-blit386/templates/
 `gitignore` and `editorconfig` are renamed to `.gitignore` / `.editorconfig` on copy (`mapOutputName`); `.tmpl` is
 stripped.
 
-The Claude and Cursor configs are generated from the kit IR (`packages/kit/content/`) by the shared adapters in
-`packages/kit/src/adapters.ts` (exported as `@blit386/kit/adapters`). Scaffold writes the generated files to disk;
-`blit agents sync` / `blit agents add` reuse the same generators in memory.
+Adapter generation mechanics: see Scaffold flow step 4. `blit agents sync` / `blit agents add` reuse the same generators
+in memory (rather than re-scaffolding to disk).
 
 ## Critical rules
 
@@ -104,8 +101,7 @@ The Claude and Cursor configs are generated from the kit IR (`packages/kit/conte
 7. Documentation is part of every feature – update this file when workflow or architecture changes
 8. American English spelling – `color`, `optimization`, `canceled`, never the British equivalents. Exempt: literal
    third-party or spec-mandated names correctly spelled with a British `s`/`c` in their own spec (for example Web
-   Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. See `.claude/rules/american-english-spelling.md` /
-   `.cursor/rules/american-english-spelling.mdc`.
+   Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. See `.claude/rules/american-english-spelling.md`.
 
 ## Git
 
@@ -115,14 +111,11 @@ The Claude and Cursor configs are generated from the kit IR (`packages/kit/conte
 
 ## Agent skills
 
-Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`). Cursor gets matching slash commands in
-`.cursor/commands/` (frontmatter stripped); `pnpm run sync:cursor-commands` owns those files, and
-`pnpm run sync:cursor-commands:check` / `pnpm run agents:check` gate drift in preflight. Claude vs Cursor **rules**
-asymmetry is intentional (`claude-canonical` / `rtk-and-pnpm` are Cursor-only) – do not force basename parity.
+Skills live in `.claude/skills/` (Zed symlinks in `.agents/skills/`). `pnpm run agents:check` gates symlink drift in
+preflight.
 
-Project MCP: tracked `.mcp.json` (Claude Code) and `.cursor/mcp.json` (Cursor) declare the secret-free `blit386-docs`
-server at `https://blit386.dev/mcp`. Put personal MCP servers in user settings (`~/.cursor/mcp.json` / Claude user
-settings), not in the repo.
+Project MCP: tracked `.mcp.json` declares the secret-free `blit386-docs` server at `https://blit386.dev/mcp`. Put
+personal MCP servers in user settings (Claude user settings), not in the repo.
 
 - `cbt-preflight` – run all quality checks
 - `cbt-format` – format and verify
@@ -200,9 +193,8 @@ docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to wal
 | How do API migrations / codemods work? | `packages/kit/src/migrations/` (registry + codemod engine), `commands/migrate.ts` |
 | Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts` |
 | Engine API names for generated games | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md` |
-| Cursor hooks and rules | `.cursor/hooks.json`, `.cursor/rules/` |
-| Project blit386-docs MCP | `.mcp.json` (Claude), `.cursor/mcp.json` (Cursor) |
-| Maintainer Cursor commands / parity | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs` |
+| Project blit386-docs MCP | `.mcp.json` |
+| Maintainer agent-config drift check | `scripts/check-agent-config.mjs` |
 | Hot-reload delivery decision | `CREATE_BLIT386_DESIGN.md` (Hot reload section) |
 | Publishing / release | `./PUBLISHING.md`, `cbt-release`, `pnpm run bump -- <x.y.z>` |
 | Contributing / DCO | `CONTRIBUTING.md` |

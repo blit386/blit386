@@ -6,11 +6,6 @@
  * working symlink into `.claude/skills/<same-name>`, and every
  * `.claude/skills/*` directory must have a matching symlink.
  *
- * Intentionally does NOT check Cursor <-> Claude rules basename parity.
- * This repo keeps Cursor-only rules (`claude-canonical`, `rtk-and-pnpm`); that
- * asymmetry is deliberate. Cursor command <-> Claude skill content parity is
- * owned by `scripts/sync-cursor-commands.mjs` instead.
- *
  * This is read-only - it never writes fixes, only reports drift.
  *
  * Usage:
