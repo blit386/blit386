@@ -70,6 +70,13 @@ for (const hook of HOOKS) {
                 assert.match(result.stderr, hook.destructiveMessage);
             });
 
+            it('blocks a backslash-escaped reset --hard (escape-based bypass)', () => {
+                const result = runHook(hook.path, 'git \\reset --hard');
+
+                assert.equal(result.status, 2);
+                assert.match(result.stderr, hook.destructiveMessage);
+            });
+
             it('allows an unrelated git command', () => {
                 const result = runHook(hook.path, 'git status');
 
@@ -107,6 +114,15 @@ for (const hook of HOOKS) {
                 assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
             });
 
+            it('asks before a backslash-escaped plus-prefixed refspec push (escape-based bypass)', () => {
+                const result = runHook(hook.path, 'git push origin \\+main');
+
+                assert.equal(result.status, 0);
+                const parsed = JSON.parse(result.stdout);
+
+                assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+            });
+
             it('does not trip on a branch name that merely contains "force"', () => {
                 const result = runHook(hook.path, 'git push origin foo-force-branch');
 
@@ -116,6 +132,33 @@ for (const hook of HOOKS) {
 
             it('asks before --force-with-lease chained with a shell separator', () => {
                 const result = runHook(hook.path, 'git push --force-with-lease;echo done');
+
+                assert.equal(result.status, 0);
+                const parsed = JSON.parse(result.stdout);
+
+                assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+            });
+
+            it('asks before --force-with-lease chained with a background-job separator', () => {
+                const result = runHook(hook.path, 'git push --force-with-lease&echo done');
+
+                assert.equal(result.status, 0);
+                const parsed = JSON.parse(result.stdout);
+
+                assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+            });
+
+            it('asks before --force-with-lease chained with a pipe separator', () => {
+                const result = runHook(hook.path, 'git push --force-with-lease|cat');
+
+                assert.equal(result.status, 0);
+                const parsed = JSON.parse(result.stdout);
+
+                assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+            });
+
+            it('asks before a quoted -f push (quote-based bypass)', () => {
+                const result = runHook(hook.path, 'git push origin main "-f"');
 
                 assert.equal(result.status, 0);
                 const parsed = JSON.parse(result.stdout);
