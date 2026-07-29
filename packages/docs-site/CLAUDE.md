@@ -1,342 +1,164 @@
 # blit386-dev-fumapress
 
-Documentation site for [blit386.dev](https://blit386.dev), built with Fumapress, Waku, and Fumadocs.
+Documentation site for [blit386.dev](https://blit386.dev): Fumapress 0.6.x on Waku (React 19 RSC), MDX via Fumadocs MDX,
+Tailwind v4, TypeScript strict, deployed to Cloudflare Workers with Wrangler. Biome owns `.ts` / `.tsx` / `.json` /
+`.css`, Prettier owns `.md` / `.mdx` / YAML, and there is no ESLint here.
 
-## Tech Stack
+Scripts are `pnpm run <script>`; `package.json` is the list and `pnpm run preflight` is the gating set (it includes the
+build). Production builds require `CLOUDFLARE=1`, which `pnpm run build` already sets. Shell commands are rewritten by
+`rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
 
-- Framework: [Fumapress](https://press.fumadocs.dev/) 0.6.x on [Waku](https://waku.gg/) (React 19 RSC)
-- Content: MDX via Fumadocs MDX (`content/`)
-- Styling: Tailwind CSS v4 + Fumadocs/Fumapress presets
-- Language: TypeScript 6 (strict)
-- Package manager: pnpm 10.26.2
-- Node: >= 22.18.0
-- Deploy: Cloudflare Workers (Wrangler) to `blit386.dev`
+## Critical Rules
+
+1. Public engine docs are generated, not authored here. Edit the canonical copy in `blit386/docs/`, then run
+   `pnpm run sync:docs`. Never hand-edit anything under `content/docs/{api,guides,performance,reference}/` or
+   `src/data/api-history.generated.json`
+2. Documentation ships with the change – update `content/` and run `pnpm run docs:links` when adding links
+3. No emoji in content, code, commits, or UI strings
+4. No MDX comments. Prettier formats `.mdx` with the markdown parser, so remark reads `{/* … */}` as emphasis and
+   rewrites it to `{/_ … _/}`, which renders as visible italic text on the page. Delete the note or make it real prose
+5. American English in hand-authored content and source (`color`, `optimization`, `canceled`, `centered`). Exempt: names
+   correctly spelled with a British `s`/`c` in their own spec, such as Web Audio's `AnalyserNode`. Generated pages
+   inherit this from upstream – fix `blit386/docs/` and re-sync, never the mirror
+6. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `content`, `ci`, `docs`, `deps`, `config`. `main`
+   is protected – land changes via PR
 
 ## Where to Find Information
 
 | Question | Where to look |
 | --- | --- |
-| How is content organized? | `content/`, optional `meta.json` per folder |
-| Site and plugin config? | `press.config.tsx` |
-| MDX collection config? | `source.config.ts` |
-| Waku / Vite plugins? | `waku.config.ts` |
-| Global styles? | `src/app.css` |
-| Generated MDX loader? | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`) |
-| Engine API truth? | Canonical source is `blit386/docs/`; public pages are generated into `content/docs/` (see below) |
-| How is the mirror built? | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` (Documentation mirror below) |
-| CI and deploy? | `.github/workflows/ci.yml` |
-| Script test coverage? | `scripts/__tests__/*.test.mjs` (`node --test`, run via `pnpm run test`) |
-| Agent skills? | `.claude/skills/` (`fp-*` prefix) |
-| MCP server? | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
-| Twoslash type-on-hover? | `source.config.ts` (`defineConfig` with `rehypeCodeOptions`), `press.config.tsx` (`Popup` components), `src/app.css` |
+| Site and plugin config, layouts, global head, MDX component map | `press.config.tsx` |
+| MDX collection config, Twoslash wiring | `source.config.ts` |
+| Waku / Vite plugins | `waku.config.ts` |
+| Generated MDX loader | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`) |
+| Engine API truth | `blit386/docs/` in the sibling repo – never this repo |
+| How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
+| Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test`) |
+| MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
+| Cloudflare security headers | `public/_headers` |
 
-## Architecture
+Four Fumapress `ServerPlugin`s are local to this repo rather than upstream: `markdownNegotiationPlugin`
+(`src/markdown-negotiation.ts`), `mcpServerPlugin` (`src/mcp-server.ts`), `feedPlugin` (`src/feed.ts`), and the
+`blog-post-date` helper (`src/blog-post-date.ts`, which exists because the framework's adapter cannot read a post's
+`date` frontmatter). The rest of the chain in `press.config.tsx` is stock: flexsearch, blog, llms, sitemap, takumi OG
+images, and link validation.
 
-```text
-blit386-dev-fumapress/
-  content/
-    index.mdx                  Landing page (HomeHero, feature Cards, DemoShowcase, CommunityConnect)
-    showcase.mdx               Projects built with the engine
-    community.mdx              Where to ask, report, and follow
-    mcp-server.mdx             MCP setup docs (flat file, served at /mcp-server)
-    meta.json                  Root nav order
-    blog/                      Blog posts + meta.json (own fumadocs-mdx collection)
-    docs/
-      index.mdx                Hand-written docs hub (page tables)
-      getting-started.mdx      Hand-written
-      faq.mdx                  Hand-written
-      meta.json                Hand-written sidebar order
-      api/ guides/ performance/ reference/
-                               GENERATED mirror – flat `<topic>.mdx` files + a section meta.json
-  press.config.tsx      Fumapress site config, plugins, MDX adapter, layouts, global <head>
-  source.config.ts      Fumadocs MDX collections (docs + blog), Twoslash wiring
-  waku.config.ts        Waku Vite plugins (fumapress, fumadocs-mdx, tailwind)
-  src/app.css           Tailwind v4 + Fumadocs/Fumapress CSS imports
-  src/components/       15 React components (see UI components below) + CSS modules
-  src/data/
-    site.ts             SITE_NAME (single source of truth for the brand string)
-    authors.ts          Blog author metadata
-    community.ts        Channel list rendered by CommunityConnect
-    demos.ts            Flagship demo entries rendered by DemoShowcase
-    api-history.ts      Typed loader over api-history.generated.json
-    api-history.generated.json   GENERATED – copied from blit386/docs/_api-history.json (never hand-edit)
-  src/feed.ts           Fumapress ServerPlugin – RSS feed at /feed.xml
-  src/blog-post-date.ts Reads a post's `date` frontmatter (the framework's adapter cannot, see the file)
-  src/mcp-server.ts     Fumapress ServerPlugin – JSON-RPC 2.0 MCP endpoint at /mcp
-  src/markdown-negotiation.ts  Fumapress ServerPlugin – Accept: text/markdown content negotiation
-  public/_headers       Cloudflare security headers
-  public/webmcp.js      WebMCP browser-agent bridge, loaded from GLOBAL_HEAD
-  public/demos/         Demo thumbnails (SVG placeholders) used by DemoShowcase
-  public/media/         Self-hosted blog media (AV1 + H.264 mp4, WebP poster) used by VideoEmbed,
-                        encoded by scripts/encode-video.mjs; served immutable (see Blog media)
-  public/.well-known/   Agent-discovery files (MCP server card, agent skills, api-catalog, auth)
-  scripts/              Build/CI helpers (sync-docs-from-engine, watch-engine-docs, patch-wrangler,
-                        patch-html-title, check-markdown-links, encode-video) + __tests__/
-  .source/              Generated by fumadocs-mdx (not committed)
-  dist/                 Build output (public/ static + server/ worker)
-```
+## What is hand-authored and what is generated
 
-Enabled plugins (all nine, chained in `press.config.tsx` `.plugins(...)`, in order):
+Hand-authored: `content/index.mdx`, `showcase.mdx`, `community.mdx`, `mcp-server.mdx`, the root `content/meta.json`,
+`content/blog/**`, and under `content/docs/`: `index.mdx`, `getting-started.mdx`, `faq.mdx`, and the root `meta.json`.
 
-| Plugin | What it does |
-| --- | --- |
-| `flexsearchPlugin` | Client-side search (static index – see `mode: 'static'` and the Worker CPU note) |
-| `blogPlugin` | `/blog`, `/blog/tags`, post pages; layouts come from `src/components/blog-*` |
-| `markdownNegotiationPlugin` | Local plugin – `Accept: text/markdown` negotiation (see Markdown for Agents) |
-| `llmsPlugin` | `/llms.txt` plus `*.md` page variants (`autoRedirect: false`) |
-| `sitemapPlugin` | `sitemap.xml` with per-route priority/changefreq |
-| `mcpServerPlugin` | Local plugin – JSON-RPC 2.0 MCP endpoint at `/mcp` |
-| `feedPlugin` | Local plugin – RSS 2.0 feed at `/feed.xml` |
-| `takumiPlugin` | Open Graph images (Departure Mono + logo, inline styles only) |
-| `linkValidationPlugin` | Fails the build on broken internal links |
+Generated, never hand-edit: every `content/docs/<section>/<topic>.mdx` (flat files, not folder `index.mdx`), the section
+`meta.json` files, and `src/data/api-history.generated.json`. The MDX pages carry a "generated" banner in frontmatter;
+the section `meta.json` files carry no banner but are generated all the same.
 
-Custom Waku pages: optional `src/pages/**/*.{ts,tsx}` (not used in scaffold).
-
-## UI components
-
-`src/components/` (all registered in the `fumadocsMdx({ getMdxComponents })` map in `press.config.tsx`, so MDX can use
-them by name):
-
-- Landing and marketing: `HomeHero`, `DemoShowcase` (flagship demo grid from `src/data/demos.ts`), `DemoEmbed` (embeds a
-  single hosted demo in an iframe), `VideoEmbed` (a self-hosted, audio-free screen capture – see Blog media),
-  `CommunityConnect` (channel list from `src/data/community.ts`).
-- Version history: `Since` (an inline "since x.y.z" badge), `ApiAvailability` (a per-symbol availability table), and
-  `PageChangelog` (what changed on this page, by release). All three read `src/data/api-history.ts`, a typed loader over
-  `src/data/api-history.generated.json` – which the sync script copies verbatim from `blit386/docs/_api-history.json`.
-  That JSON is generated: never hand-edit it, and never add a symbol to it here. Fix the engine repo and re-sync.
-- Blog: `BlogLayout`, `BlogIndexPage`, `BlogPage`, `BlogTagsPage`/`BlogTagPage`, `AuthorByline` (authors from
-  `src/data/authors.ts`).
-- Chrome: `SidebarLogo`, `SidebarSocials`.
-
-## Blog and feed
-
-`content/blog/**` is a separate fumadocs-mdx collection (`source.config.ts`, `export const blog`) so it never mixes with
-the docs collection – note the `files:` include list on `docs`, which exists because negation globs do not work in that
-codegen. Posts carry `title`, `description`, `date`, and `author` frontmatter; `content/blog/meta.json` lists the posts.
-`blogPlugin` renders the routes and `feedPlugin` (`src/feed.ts`) serves an RSS 2.0 feed at `/feed.xml`, linked from
-every page via `<link rel="alternate">` in `GLOBAL_HEAD`.
-
-## Blog media
-
-Short screen captures are self-hosted, not embedded from a video platform. `scripts/encode-video.mjs`
-(`pnpm run encode:video -- <input> --out <dir>`) turns one capture into the three files `VideoEmbed` expects:
-`<name>.av1.mp4` (AV1 via libsvtav1), `<name>.h264.mp4` (H.264 `High@4.0` fallback), and `<name>.webp` (lossless
-poster). The encoder is tuned for flat pixel-art content – AV1 `scm=1` screen-content mode, x264 `-tune animation`, and
-a crop rather than a scale to reach even dimensions, so nothing is ever resampled. Audio is stripped entirely. Both
-codec levels are pinned so the `codecs=` strings in `src/components/video-embed.tsx` stay exact; a test in
-`scripts/__tests__/encode-video.test.mjs` guards that and the file-suffix contract between the script and the component.
-
-Output goes under `public/media/<section>/<version>/`. The `/media/` prefix is deliberate: `public/_headers` serves
-`/media/*` with a one-year immutable `Cache-Control`, and a `/blog/*` rule would have matched the post HTML routes too.
-The release-version path segment is the cache key – re-encoding a clip means a new directory, never a new file in the
-same one. Raw `.mov` sources stay local (`captures/` is gitignored); only the encoded output is committed, and the repo
-has no Git LFS.
-
-Three `_headers` entries exist for this and should not be tightened back: `media-src 'self'` in the CSP (it was
-`'none'`, which blocks all playback), and `autoplay=(self)` plus `fullscreen=(self)` in `Permissions-Policy`. Clips
-autoplay muted and loop, but `controls` is always rendered – a loop longer than five seconds needs a pause affordance
-(WCAG 2.2.2). An inline script beside the element cancels the autoplay under `prefers-reduced-motion: reduce`, since CSS
-cannot and a client component could only act after hydration.
-
-Keep clips short, and treat a few megabytes as the practical ceiling. Range requests are **not** honored for any static
-asset – verified against both `pnpm run start` and production, where a `Range:` GET returns `200` with the full body and
-no `Accept-Ranges`. That is a consequence of `run_worker_first: true`: the Worker serves assets by forwarding to the
-`ASSETS` binding (`src/markdown-negotiation.ts`), and that response carries no range support. Video is the only asset
-type that cares. The practical effect is that a viewer cannot seek past what has buffered, which is a non-issue for a
-20-second autoplay loop that finishes downloading in seconds, but would be a real one for a multi-minute clip.
-`-movflags +faststart` (set by the encode script) is what keeps playback starting early regardless. Cloudflare's
-per-file static-asset limit is 25 MiB.
-
-## Global head
-
-`GLOBAL_HEAD` in `press.config.tsx` injects the favicon, font preloads (self-hosted Departure Mono plus
-`fonts.vancura.dev`), Plausible analytics, `public/webmcp.js` (the WebMCP browser-agent bridge), and the RSS
-`<link rel="alternate">`. Per-page `<meta>` and JSON-LD are built in `meta.page(...)` in the same file.
-
-## Content Conventions
-
-- Doc files: `content/**/*.mdx` (or `.md`) with required frontmatter `title`; optional `description`, `icon`, `full`
-- Sidebar: optional `meta.json` or `meta.yaml` per folder (`title`, `pages`, `root`, `icon`, …)
-- Public engine docs under `content/docs/{api,guides,performance,reference}/` are generated from `blit386/docs/` (see
-  Documentation mirror); never hand-edit a generated page. Hand-authored content lives outside the generator's output:
-  `content/index.mdx`, `content/showcase.mdx`, `content/community.mdx`, `content/mcp-server.mdx`, `content/meta.json`,
-  `content/blog/**`, and under `content/docs/`: `index.mdx`, `getting-started.mdx`, `faq.mdx`, and the root `meta.json`.
-- No emoji in content, code, commits, or UI strings
-- No MDX comments. Prettier formats `.mdx` with the **markdown** parser (`prettier.config.js` overrides point `.mdx` at
-  `markdown-compact`, which is Prettier's own markdown parser with a compact table printer), so remark reads `{/* … */}`
-  as emphasis and rewrites it to `{/_ … _/}` – which then renders as visible italic text on the page. Delete the note or
-  make it real prose instead.
-- American English spelling in hand-authored content and source (`color`, `optimization`, `canceled`, `centered`, never
-  the British equivalents). Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or
-  `c` in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. Generated pages
-  under `content/docs/` inherit this from the canonical source in `blit386/docs/` (see blit386
-  [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md), American English spelling) – fix the upstream
-  source and re-run `pnpm run sync:docs`, never the mirror directly.
+Doc frontmatter: `title` required; `description`, `icon`, `full` optional. Sidebar order comes from an optional
+`meta.json` / `meta.yaml` per folder. When hand-authored content links to API reference, use site-absolute paths
+(`/docs/api/...`), never GitHub URLs – the published pages live here.
 
 ## Documentation mirror
 
-The public API and guide pages on this site are generated from the canonical engine docs. `blit386/docs/*.md` (engine
-repo) is the single source of truth; `scripts/sync-docs-from-engine.mjs` reads the subset listed in the engine repo's
-sitemap manifest (`blit386/docs/_sitemap.json`) and writes the matching MDX into `content/docs/`. The manifest – not
-this script – owns which docs publish, their URL, sidebar order, and subtitle; the script carries no per-page knowledge.
+`blit386/docs/*.md` is the single source of truth. `scripts/sync-docs-from-engine.mjs` reads the subset listed in the
+engine repo's `blit386/docs/_sitemap.json` and writes matching MDX into `content/docs/`. **The manifest, not the script,
+owns which docs publish, their URL, sidebar order, and subtitle** – the script carries no per-page knowledge, so adding
+a page means editing the manifest in the engine repo and re-running the sync, with no change here.
 
-- Run it: `pnpm run sync:docs` (formats output too). `pnpm run sync:docs:check` regenerates and then fails if
-  `content/docs` drifted. It is a LOCAL check only: nothing in `.github/workflows/` runs it today, so mirror drift is
-  not currently enforced in CI. Run it yourself after touching engine docs. The engine docs source resolves from
-  `ENGINE_DOCS_DIR` (default sibling `../blit386/docs`), so the engine repo must be checked out next to this one.
-- Generated, do not hand-edit: every `content/docs/<section>/<topic>.mdx` (flat files, not folder `index.mdx`) plus
-  `src/data/api-history.generated.json`. The MDX pages carry a "generated" comment banner in their frontmatter; the
-  section `meta.json` files are plain JSON and carry no banner but are generated all the same. To change any of them,
-  edit the engine source and re-run `sync:docs`.
-- What the generator does: drops the source H1 (title comes from it), drops a lead paragraph that duplicates the
-  description, rewrites intra-doc links to site paths (`/docs/...`) and all other links to absolute GitHub URLs, adds
-  frontmatter (`title`, `description`, `lastModified` from git, `editUrl` into the engine repo – both consumed by
-  `docsPageLayout` in `press.config.tsx`), and copies `blit386/docs/_api-history.json` to
-  `src/data/api-history.generated.json` for the version-history components.
-- MDX components in engine docs: the engine `.md` sources may use Fumadocs components (`Callout`, `TypeTable`, `Steps`,
-  `Tabs`, `Accordions`, `Cards`, `Files`, etc.). The generator passes PascalCase tags through verbatim and is MDX-aware:
-  it escapes stray braces in prose but leaves JSX expression props (`type={{ ... }}`, `items={[ ... ]}`) intact inside
-  component blocks. Any component the docs use must be registered in `press.config.tsx`
-  (`fumadocsMdx({ getMdxComponents })`) – `Callout`, `Card`/`Cards`, and code blocks come from `defaultMdxComponents`;
-  the rest are added explicitly there. Registering a new one means importing it from `fumadocs-ui/components/*` and
-  adding it to that map. Note `Card href` is a JSX prop and is not link-rewritten, so engine docs must use site-absolute
-  `/docs/...` href values.
-- Adding a page: add an entry to `pages` in `blit386/docs/_sitemap.json` (the array order is the sidebar order; add the
-  section to `sections` if it is new), then run `pnpm run sync:docs`. No change to this repo's script is needed.
-  Contributor-only pages (`developer-experience-guide.md`, `documentation-and-versioning-guide.md`, `tooling.md`,
-  `voice.md`, `security/security-runbook.md`, `security/dependency-policy.md`, `security/audit-exceptions.md`, and the
-  docs `README.md`) are intentionally not mirrored – just leave them out of the manifest and they stay link-only on
-  GitHub.
+`pnpm run sync:docs` regenerates and formats. `pnpm run sync:docs:check` fails on drift, but it is a **local check only
+– nothing in `.github/workflows/` runs it**, so mirror drift is not enforced in CI. Run it yourself after touching
+engine docs. The source resolves from `ENGINE_DOCS_DIR` (default `../blit386/docs`), so the engine repo must be checked
+out beside this one. `sync:docs:watch` re-syncs on every change alongside `pnpm run dev`.
 
-## Critical Rules
+What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
+description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds
+frontmatter (`title`, `description`, `lastModified` from git, `editUrl` into the engine repo – both consumed by
+`docsPageLayout`), and copies `blit386/docs/_api-history.json` across.
 
-1. Documentation ships with changes – update `content/` and run `pnpm run docs:links` when adding links
-2. Public engine docs are generated, not authored here – edit the canonical copy in `blit386/docs/`, then run
-   `pnpm run sync:docs`. Never hand-edit a generated page under `content/docs/`. See Documentation mirror.
-3. Use pnpm run – `pnpm run preflight`, not bare `pnpm preflight` (RTK hooks)
-4. Conventional Commits + DCO – `git commit -s`
-5. Cloudflare build – production builds require `CLOUDFLARE=1` (included in `pnpm run build`)
+MDX components: the generator passes PascalCase tags through verbatim and is MDX-aware, escaping stray braces in prose
+while leaving JSX expression props (`type={{ ... }}`, `items={[ ... ]}`) intact. Any component the engine docs use must
+be registered in `press.config.tsx` (`fumadocsMdx({ getMdxComponents })`) or the build breaks – `Callout`,
+`Card`/`Cards`, and code blocks come from `defaultMdxComponents`; the rest are added explicitly. `Card href` is a JSX
+prop and is **not** link-rewritten, so engine docs must use site-absolute `/docs/...` values.
 
-## Commands
+Contributor-only engine pages (developer-experience-guide, documentation-and-versioning-guide, tooling, voice,
+`security/*`, the docs README) are intentionally unmirrored – leaving them out of the manifest keeps them link-only on
+GitHub.
 
-```bash
-pnpm run dev              # Local dev server
-pnpm run build            # Production build (fumadocs-mdx + CLOUDFLARE=1 waku build)
-pnpm run postbuild        # Runs automatically after build: patch-wrangler.mjs + patch-html-title.mjs
-pnpm run start            # Preview production build via Wrangler (runs Cloudflare Worker locally)
-pnpm run typecheck        # Generate MDX types + tsc --noEmit
-pnpm run types:check      # Alias for typecheck
-pnpm run lint             # Biome check
-pnpm run lint:fix         # Biome auto-fix
-pnpm run format           # Biome + Prettier
-pnpm run format:check     # Verify formatting
-pnpm run spellcheck       # cspell on content and src
-pnpm run docs:links       # Markdown link checker
-pnpm run sync:docs        # Regenerate content/docs from blit386/docs (engine repo)
-pnpm run sync:docs:check  # Regenerate and fail if the mirror drifted (local only; not run in CI)
-pnpm run sync:docs:watch  # Watch blit386/docs and re-sync on every change (run alongside pnpm run dev)
-pnpm run encode:video -- <input> --out <dir>   # Encode a capture to AV1 + H.264 mp4 + WebP poster (Blog media)
-pnpm run knip             # Unused exports/deps
-pnpm run knip:fix         # Unused exports/deps, auto-fix
-pnpm run test             # Run scripts/__tests__ (node --test)
-pnpm run test:watch       # Run scripts/__tests__ in watch mode
-pnpm run security:audit        # pnpm audit, all deps (moderate+)
-pnpm run security:audit:prod   # pnpm audit, production deps only (moderate+)
-pnpm run preflight        # All quality checks + build (includes test)
-pnpm run deploy           # Deploy to Cloudflare (requires build + wrangler auth)
-```
-
-## Toolchain
-
-| File types | Tool |
-| --- | --- |
-| `.ts`, `.tsx`, `.json`, `.css` | Biome |
-| `.md`, `.mdx`, `.yml`, `.yaml` | Prettier |
-
-No ESLint in this repo (Biome-only, like create-blit386).
-
-Markdown tables are compact by design – one space of padding, never aligned to the widest cell – so editing one cell
-gives a one-line diff instead of rewriting the table. That comes from `scripts/prettier-plugin-compact-tables.mjs`, a
-mirror of the canonical copy in the `blit386` repo (knip ignores it; it is loaded by path from `prettier.config.js`) and
-covered by `scripts/__tests__/prettier-plugin-compact-tables.test.mjs`, which also asserts that this repo's own
-`prettier.config.js` still selects it. Because engine docs go through the same formatter upstream, the generated mirror
-under `content/docs/` inherits it – run `pnpm run sync:docs` after the engine reformats, never re-align a mirrored table
-here.
-
-## Git
-
-- Conventional Commits: `<type>(<scope>): <description>`
-- DCO sign-off required: `git commit -s`
-- Scopes: `content`, `ci`, `docs`, `deps`, `config`
-- `main` is protected – land changes via pull request
-
-## Deploy
-
-1. `pnpm run build` produces `dist/public/` (static) and `dist/server/` (Worker + `wrangler.json`)
-2. `pnpm run deploy` runs `wrangler deploy --config dist/server/wrangler.json --name blit386`
-3. CI deploys on push to `main` using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets
-
-The Worker is named `blit386` (custom domain `blit386.dev`). The root `wrangler.jsonc` still carries
-`"name": "blit386-dev-fumapress"`, but that value never reaches Cloudflare: both the local and the CI deploy pass
-`--name blit386` explicitly, which overrides it. The root config exists for parity (notably `run_worker_first`); the
-config actually deployed is `dist/server/wrangler.json`, regenerated by Waku on every build and then patched by
-`scripts/patch-wrangler.mjs`.
-
-## MCP Server
-
-The site exposes a JSON-RPC 2.0 MCP endpoint at `/mcp` (streamable-HTTP, no auth) via a Fumapress `ServerPlugin` defined
-in `src/mcp-server.ts` and registered in `press.config.tsx`.
-
-Two tools:
-
-- `search_docs` – full-text search via an in-process scan of the loader pages. Page title, description, and body text
-  (extracted through the `core:get-text` adapter and cached per loader instance) are scored with `countMatches`,
-  weighting heading (title + description) matches by `TITLE_WEIGHT` over body matches; results are filtered to a
-  positive score, sorted descending, and capped at `MAX_RESULTS`. It deliberately avoids building a FlexSearch index
-  in-process, which exceeds the Worker CPU limit (error 1102) – the same reason the site moved search to static mode
-- `get_docs_summary` – returns `/llms.txt`
-
-Agent discovery card: `public/.well-known/mcp/server-card.json`. User-facing setup docs: `content/mcp-server.mdx`
-(served at `/mcp-server`).
-
-## Markdown for Agents
-
-The site supports `Accept: text/markdown` content negotiation via the `markdownNegotiationPlugin` ServerPlugin
-(`src/markdown-negotiation.ts`, registered in `press.config.tsx`). A request to a canonical doc URL (for example
-`/docs/getting-started`) with `Accept: text/markdown` returns the page as markdown
-(`Content-Type: text/markdown; charset=utf-8`, plus an estimated `x-markdown-tokens` header); browsers without that
-header still get HTML. The markdown matches the `*.md` variants generated by the `llms.txt` plugin (whose `autoRedirect`
-is disabled so we return a direct 200 rather than a 302).
-
-This requires `run_worker_first: true` on the assets config: Cloudflare serves pre-rendered static HTML before the
-Worker runs (and matches assets by path only, ignoring `Accept`), so without it the Worker never sees canonical doc
-requests. With the Worker running first, the plugin re-implements assets-first by forwarding non-negotiated requests to
-the `ASSETS` binding. The deployed `dist/server/wrangler.json` is regenerated by Waku, so `scripts/patch-wrangler.mjs`
-injects `run_worker_first` there (the root `wrangler.jsonc` carries it for parity). Cloudflare's managed "Markdown for
-Agents" feature is not used: it needs the Pro+ tier and only rewrites origin HTML on proxied zones, not Worker-rendered
-responses.
+The `Since`, `ApiAvailability`, and `PageChangelog` components all read `src/data/api-history.ts`, a typed loader over
+the generated JSON. Never add a symbol to that JSON here; fix the engine repo and re-sync.
 
 ## Twoslash
 
-The site uses `fumadocs-twoslash` to render type-on-hover popups and `// ^?` inline type callouts in code blocks tagged
-` ```ts twoslash `. The transformer is wired in `source.config.ts` (`defineConfig` → `mdxOptions.rehypeCodeOptions`);
-the popup UI components (`Popup`, `PopupContent`, `PopupTrigger`) are registered in `press.config.tsx`; the CSS ships
-from `src/app.css` (`@import "fumadocs-twoslash/twoslash.css"`).
+`fumadocs-twoslash` renders type-on-hover popups and `// ^?` callouts for blocks tagged ` ```ts twoslash `. Wired in
+`source.config.ts`, popup components registered in `press.config.tsx`, CSS from `src/app.css`. `throws: false` means a
+block that fails compilation degrades to plain highlighting instead of crashing the build. Correctness is the engine
+repo's job – every twoslash block there must be self-contained or use a `// ---cut---` preamble.
 
-`throws: false` is set so blocks that fail TypeScript compilation fall back to plain syntax highlighting rather than
-crashing the build. The canonical engine docs (`blit386/docs/`) are responsible for Twoslash correctness: every
-` ```ts twoslash ` block there must be self-contained or use a `// ---cut---` preamble (see `blit386/CLAUDE.md`,
-Twoslash in published docs). After editing engine docs, run `pnpm run sync:docs && pnpm run build` here to verify.
+Dev-mode skip (memory constraint): the transformer is gated on `!!process.env.CLOUDFLARE`. `blit386.d.ts` is ~192 KB and
+imports WebGPU types; across the several dozen MDX files the TypeScript language service accumulates over 4 GB during
+`waku dev` and OOMs. `NODE_ENV` is not a usable signal because `source.config.ts` is evaluated by the fumadocs-mdx Vite
+plugin before Vite writes `NODE_ENV=production`. So Twoslash runs whenever `CLOUDFLARE` is truthy – in practice that
+means `pnpm run build` (which sets `CLOUDFLARE=1`), or any other command launched with `CLOUDFLARE=1` in the
+environment. Popups are absent from a plain `pnpm run dev` – use `pnpm run build && pnpm run start` to preview the real
+thing.
 
-**Dev-mode skip (memory constraint):** The transformer is gated on `!!process.env.CLOUDFLARE` in `source.config.ts`.
-`blit386.d.ts` is ~192 KB and imports WebGPU types; across the several dozen MDX files in `content/` the TypeScript
-language service accumulates over 4 GB during `waku dev` and the process OOMs. `NODE_ENV` is not a reliable signal
-because `source.config.ts` is evaluated by the fumadocs-mdx Vite plugin before Vite writes `NODE_ENV=production` into
-the process environment. `CLOUDFLARE=1` is set by `cross-env` in the build script, which is deterministic. Twoslash
-therefore only runs during `pnpm run build`. Type-on-hover popups are absent in the local dev server – use
-`pnpm run build && pnpm run start` to preview the full production build locally (served via Wrangler).
+## Markdown for Agents
 
-## Working with Claude
+`markdownNegotiationPlugin` serves a canonical doc URL as markdown when the request carries `Accept: text/markdown`
+(`Content-Type: text/markdown; charset=utf-8` plus an estimated `x-markdown-tokens` header); browsers still get HTML.
+The output matches the `*.md` variants from the llms.txt plugin, whose `autoRedirect` is disabled so we return a direct
+200 rather than a 302.
 
-- After content or config changes, run `pnpm run preflight` before committing
-- Update this file when architecture, scripts, or deploy flow changes
+This requires `run_worker_first: true` on the assets config. Cloudflare otherwise serves pre-rendered static HTML before
+the Worker runs and matches assets by path alone, ignoring `Accept`, so the Worker would never see canonical doc
+requests. With the Worker first, the plugin re-implements assets-first by forwarding non-negotiated requests to the
+`ASSETS` binding. Waku regenerates `dist/server/wrangler.json` on every build, so `scripts/patch-wrangler.mjs` injects
+`run_worker_first` there; the root `wrangler.jsonc` carries it only for parity. Cloudflare's managed "Markdown for
+Agents" feature is not used – it needs Pro+ and only rewrites origin HTML on proxied zones, not Worker-rendered
+responses.
+
+## MCP server
+
+A JSON-RPC 2.0 endpoint at `/mcp` (streamable-HTTP, no auth), with two tools: `search_docs` and `get_docs_summary`
+(which returns `/llms.txt`). `search_docs` scans loader pages in-process and scores title and description matches above
+body matches. It deliberately does **not** build a FlexSearch index in-process – that exceeds the Worker CPU limit
+(error 1102), the same reason site search runs in static mode.
+
+## Blog media
+
+Short screen captures are self-hosted, not embedded from a video platform.
+`pnpm run encode:video -- <input> --out <dir>` produces the three files `VideoEmbed` expects: `<name>.av1.mp4`,
+`<name>.h264.mp4`, and a lossless `<name>.webp` poster. The encoder is tuned for flat pixel art – AV1 `scm=1`
+screen-content mode, x264 `-tune animation`, and a crop rather than a scale to reach even dimensions, so nothing is
+resampled. Audio is stripped. Both codec levels are pinned so the `codecs=` strings in `src/components/video-embed.tsx`
+stay exact; `scripts/__tests__/encode-video.test.mjs` guards that and the file-suffix contract.
+
+Output goes under `public/media/<section>/<version>/`. The `/media/` prefix is deliberate: `public/_headers` serves
+`/media/*` with a one-year immutable `Cache-Control`, and a `/blog/*` rule would also have matched the post HTML routes.
+The version path segment is the cache key – re-encoding means a new directory, never a new file in the same one. Raw
+`.mov` sources stay local (`captures/` is gitignored) and the repo has no Git LFS.
+
+Three `_headers` entries exist for this and must not be tightened back: `media-src 'self'` in the CSP (it was `'none'`,
+which blocks all playback), plus `autoplay=(self)` and `fullscreen=(self)` in `Permissions-Policy`. Clips autoplay muted
+and loop, but `controls` is always rendered – a loop over five seconds needs a pause affordance (WCAG 2.2.2). An inline
+script beside the element cancels autoplay under `prefers-reduced-motion: reduce`, since CSS cannot and a client
+component could only act after hydration.
+
+Keep clips short; treat a few megabytes as the ceiling. A direct `ASSETS`-binding response does **not** honor Range
+requests – verified against both `pnpm run start` and production, where a `Range:` GET returns `200` with the full body
+and no `Accept-Ranges`. That follows from `run_worker_first: true`: the Worker forwards to the `ASSETS` binding, and
+that response carries no range support. Once Cloudflare's edge cache holds the object, though, a cache hit may still be
+served as `206 Partial Content` for a Range request – that is normal edge-cache behavior independent of what the origin
+supports, and not something this repo controls. A viewer therefore cannot reliably seek past what has buffered on a
+cache miss – a non-issue for a 20-second autoplay loop, a real one for a multi-minute clip. `-movflags +faststart` is
+what keeps playback starting early regardless. Cloudflare's per-file static-asset limit is 25 MiB.
+
+## Deploy
+
+`pnpm run build` produces `dist/public/` and `dist/server/`; `pnpm run deploy` runs
+`wrangler deploy --config dist/server/wrangler.json --name blit386`. CI deploys on push to `main` using
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+
+The Worker is named `blit386` (custom domain `blit386.dev`). The root `wrangler.jsonc` still says
+`"name": "blit386-dev-fumapress"`, but that value never reaches Cloudflare – both deploy paths pass `--name blit386`
+explicitly. The root config exists for parity (notably `run_worker_first`); the config actually deployed is
+`dist/server/wrangler.json`, regenerated by Waku on every build and then patched by `scripts/patch-wrangler.mjs`.
