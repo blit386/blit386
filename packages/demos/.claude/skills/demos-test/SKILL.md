@@ -58,4 +58,6 @@ Nothing automated covers hot reload. Run this by hand after any change to the ho
 11. Repeat steps 2-3 with `?backend=software` on the embed URL. Full reload is expected here, not parity – that is the
     known tier-detection gap, so verify it still matches the gap rather than treating it as a regression.
 12. Introduce a syntax error in a demo – the old demo keeps running (Vite may or may not show its error overlay,
-    depending on the failure class). Fix it – it recovers with no reload at any point.
+    depending on the failure class). Fix it – it recovers automatically, without you needing to refresh manually. Vite
+    may issue its own full reload to do so (the erroring module never registered an HMR accept handler), so this is not
+    a zero-reload guarantee.
