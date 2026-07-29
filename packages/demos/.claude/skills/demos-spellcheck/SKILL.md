@@ -18,7 +18,7 @@ Run project-wide spellcheck, then fix all reported errors.
 ## Steps
 
 1. Run spellcheck
-   - Execute `pnpm run spellcheck` to check `src/**/*.{js,md,mdx,mdc}`, `docs/**/*.{md,mdx,mdc}`, and `README.md`
+   - Execute `pnpm run spellcheck` to check `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, and `README.md`
    - Capture the full error output
 
 2. Analyze each error For every word flagged by cspell, determine if it is:

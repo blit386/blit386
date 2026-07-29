@@ -41,7 +41,19 @@ test-results/
 .mcp.json
 mcp.json
 
+# Other AI assistants (local only)
+.codex/
+.aider*
+.continue/
+.windsurf/
+ai-rules/
+.rules
+
 # IDE and editor files
+.vscode/launch.json
+.vscode/*.code-workspace
+.idea/
+*.iml
 .zed/*
 !.zed/settings.json
 *.swp
