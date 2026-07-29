@@ -1,6 +1,6 @@
 # npm ignore file
 # Even for private repos, good practice to define what would be published.
-# AI assistant dirs (.claude/, .cursor/, CLAUDE.md, MCP configs, etc.) are excluded via *.
+# AI assistant dirs (.claude/, CLAUDE.md, MCP configs, etc.) are excluded via *.
 
 # Ignore everything
 *

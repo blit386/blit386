@@ -12,5 +12,3 @@ Demo class member order: instance fields → `configure()` (optional) → `init(
 methods.
 
 Cross-cutting: beginner-friendly comments on nearly every block; integer coordinates only; library public API names.
-
-Cursor: `.cursor/rules/file-structure.mdc` (glob-scoped to `src/**/*.js` in this repo).

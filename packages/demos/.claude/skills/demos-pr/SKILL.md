@@ -48,7 +48,7 @@ The description after `/demos-pr` becomes the commit subject.
     - `ui` – the shared UI kit (`src/shared/ui*.js`)
     - `assets` – static assets in `public/` (sprites, fonts, audio, Cloudflare headers/redirects)
     - `docs` – documentation (`README.md`, `docs/`, `CLAUDE.md`)
-    - `skills` – Claude/Cursor skills and rules (`.claude/`, `.cursor/`)
+    - `skills` – Claude skills and rules (`.claude/`)
     - `deps` – dependency updates (Renovate uses this)
   - Only introduce a new scope when none of the above fits, and keep it a single lowercase word
 - Prefer DCO sign-off with `git commit -s` (recommended; this repo's history uses it, but hooks/CI do not enforce

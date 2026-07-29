@@ -107,8 +107,8 @@ pnpm run security:audit:fix     # Apply the audit's suggested fixes
 pnpm run security:mcp-preflight # MCP security preflight (script lives in the blit386 repo)
 ```
 
-RTK: Use `pnpm run …` for scripts. Cursor `.cursor/hooks.json` runs `rtk hook cursor` on Shell; Claude Code uses
-`rtk hook claude` on Bash. Prefer shell + RTK over native Read/Grep for exploration. See `~/.claude/RTK.md`.
+RTK: Use `pnpm run …` for scripts. Claude Code's `.claude/settings.json` runs `rtk hook claude` on Bash. Prefer shell +
+RTK over native Read/Grep for exploration. See `~/.claude/RTK.md`.
 
 ## Hot Reload
 
@@ -277,8 +277,7 @@ and why, not just restate it.
   `travelling`, `grey`. Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or `c`
   in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`, should this repo ever reference them) – do
   not "fix" those. See blit386 [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) (American English
-  spelling) for the full policy this repo follows. Cursor: `.cursor/rules/american-english-spelling.mdc` (always applied
-  in this repo).
+  spelling) for the full policy this repo follows.
 
 ### Example (do this)
 
@@ -468,7 +467,7 @@ enabled in `configure()`.
 
 ## File Organization
 
-Standard section order (matches `.cursor/rules/file-structure.mdc`):
+Standard section order (matches `.claude/rules/file-structure.md`):
 
 1. Header comment (`// Demo Topic – …`, prerequisites, hosted links; optional `// @pageTitle`)
 2. Imports
@@ -482,7 +481,7 @@ Standard section order (matches `.cursor/rules/file-structure.mdc`):
 Demo class member order: instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
 methods.
 
-Never use `// #region` / `// #endregion` – region markers are banned everywhere. See `.cursor/rules/file-structure.mdc`.
+Never use `// #region` / `// #endregion` – region markers are banned everywhere. See `.claude/rules/file-structure.md`.
 
 ## Formatting Rules
 
@@ -528,8 +527,8 @@ environments.
 
 ## Agent skills
 
-Skills live in `.claude/skills/` (Zed/Cursor also see them via `.agents/skills/*` symlinks – edit the `.claude` copy
-once). Available:
+Skills live in `.claude/skills/` (Zed also sees them via `.agents/skills/*` symlinks – edit the `.claude` copy once).
+Available:
 
 | Skill | Purpose |
 | --- | --- |
