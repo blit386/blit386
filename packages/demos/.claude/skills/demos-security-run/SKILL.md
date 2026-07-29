@@ -20,7 +20,7 @@ in `blit386`.
 
    ```bash
    pnpm run security:mcp-preflight -- \
-     --mcps-dir "<cursor-project-mcps-path>" \
+     --mcps-dir "<mcps-path>" \
      --repo-root . \
      --allow-fallback \
      --output-json security-reports/mcp-preflight-latest.json
@@ -30,7 +30,7 @@ in `blit386`.
 
    ```bash
    node ../blit386/scripts/security/mcp-preflight.mjs \
-     --mcps-dir "<cursor-project-mcps-path>" \
+     --mcps-dir "<mcps-path>" \
      --repo-root . \
      --allow-fallback \
      --output-json security-reports/mcp-preflight-latest.json
@@ -52,7 +52,7 @@ in `blit386`.
 
 ```bash
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<cursor-project-mcps-path>" \
+  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --governance-only \
   --include-user-config \

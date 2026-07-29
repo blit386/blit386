@@ -1,6 +1,6 @@
 # Docs sync required
 
-Canonical reference: [CLAUDE.md](../../CLAUDE.md); Cursor: `.cursor/rules/docs-sync-required.mdc`.
+Canonical reference: [CLAUDE.md](../../CLAUDE.md).
 
 Documentation is part of the implementation, not a separate cleanup step.
 

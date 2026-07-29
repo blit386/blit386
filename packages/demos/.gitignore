@@ -37,7 +37,7 @@ test-results/
 .claude/memory/
 .claude/worktrees/
 
-# MCP configs (local secrets; project MCP also lives under ~/.cursor/projects/)
+# MCP configs (local secrets)
 .mcp.json
 mcp.json
 
@@ -52,18 +52,10 @@ ai-rules/
 # IDE and editor files
 .vscode/launch.json
 .vscode/*.code-workspace
-!.vscode/settings.json
-!.vscode/extensions.json
 .idea/
 *.iml
 .zed/*
 !.zed/settings.json
-.cursor/*
-!.cursor/hooks.json
-!.cursor/hooks/
-!.cursor/hooks/**
-!.cursor/rules/
-!.cursor/rules/**
 *.swp
 *.swo
 *~
