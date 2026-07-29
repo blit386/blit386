@@ -96,8 +96,10 @@ repo's job – every twoslash block there must be self-contained or use a `// --
 Dev-mode skip (memory constraint): the transformer is gated on `!!process.env.CLOUDFLARE`. `blit386.d.ts` is ~192 KB and
 imports WebGPU types; across the several dozen MDX files the TypeScript language service accumulates over 4 GB during
 `waku dev` and OOMs. `NODE_ENV` is not a usable signal because `source.config.ts` is evaluated by the fumadocs-mdx Vite
-plugin before Vite writes `NODE_ENV=production`. So Twoslash runs only in `pnpm run build`, and popups are absent from
-the local dev server – use `pnpm run build && pnpm run start` to preview the real thing.
+plugin before Vite writes `NODE_ENV=production`. So Twoslash runs whenever `CLOUDFLARE` is truthy – in practice that
+means `pnpm run build` (which sets `CLOUDFLARE=1`), or any other command launched with `CLOUDFLARE=1` in the
+environment. Popups are absent from a plain `pnpm run dev` – use `pnpm run build && pnpm run start` to preview the real
+thing.
 
 ## Markdown for Agents
 
@@ -141,12 +143,14 @@ and loop, but `controls` is always rendered – a loop over five seconds needs a
 script beside the element cancels autoplay under `prefers-reduced-motion: reduce`, since CSS cannot and a client
 component could only act after hydration.
 
-Keep clips short; treat a few megabytes as the ceiling. Range requests are **not** honored for any static asset –
-verified against both `pnpm run start` and production, where a `Range:` GET returns `200` with the full body and no
-`Accept-Ranges`. That follows from `run_worker_first: true`: the Worker forwards to the `ASSETS` binding, and that
-response carries no range support. A viewer therefore cannot seek past what has buffered – a non-issue for a 20-second
-autoplay loop, a real one for a multi-minute clip. `-movflags +faststart` is what keeps playback starting early
-regardless. Cloudflare's per-file static-asset limit is 25 MiB.
+Keep clips short; treat a few megabytes as the ceiling. A direct `ASSETS`-binding response does **not** honor Range
+requests – verified against both `pnpm run start` and production, where a `Range:` GET returns `200` with the full body
+and no `Accept-Ranges`. That follows from `run_worker_first: true`: the Worker forwards to the `ASSETS` binding, and
+that response carries no range support. Once Cloudflare's edge cache holds the object, though, a cache hit may still be
+served as `206 Partial Content` for a Range request – that is normal edge-cache behavior independent of what the origin
+supports, and not something this repo controls. A viewer therefore cannot reliably seek past what has buffered on a
+cache miss – a non-issue for a 20-second autoplay loop, a real one for a multi-minute clip. `-movflags +faststart` is
+what keeps playback starting early regardless. Cloudflare's per-file static-asset limit is 25 MiB.
 
 ## Deploy
 
