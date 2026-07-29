@@ -25,7 +25,9 @@ function runHook(command) {
         const stdout = execFileSync('sh', [hookPath], { input: payload, encoding: 'utf8' });
         return { status: 0, stdout, stderr: '' };
     } catch (error) {
-        return { status: error.status, stdout: error.stdout ?? '', stderr: error.stderr ?? '' };
+        const execError = /** @type {{ status: number, stdout?: string, stderr?: string }} */ (error);
+
+        return { status: execError.status, stdout: execError.stdout ?? '', stderr: execError.stderr ?? '' };
     }
 }
 
