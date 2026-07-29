@@ -234,17 +234,7 @@ Coverage is collected via a custom Playwright fixture (`tests/visual/coverage-fi
 
 ## IDE setup
 
-<Tabs items={['WebStorm', 'Zed']}>
-
-<Tab value="WebStorm">
-
-Built-in Vitest support since 2023.3. Auto-detects `vitest.config.ts` and shows run gutters next to each test.
-
-</Tab>
-
-<Tab value="Zed">
-
-Use the Tasks system. Create `.zed/tasks.json`:
+Zed uses the Tasks system. Create `.zed/tasks.json`:
 
 ```json
 [
@@ -260,10 +250,6 @@ Use the Tasks system. Create `.zed/tasks.json`:
   }
 ]
 ```
-
-</Tab>
-
-</Tabs>
 
 ## CI integration
 
