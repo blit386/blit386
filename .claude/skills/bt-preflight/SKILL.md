@@ -2,9 +2,9 @@
 name: bt-preflight
 description:
   Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check,
-  sync:cursor-commands:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config,
-  test:cursor-commands, test:api-history, test:compact-tables, test:security-preflight) before committing or pushing.
-  Use when the user wants to verify the code is ready to commit or run every check at once.
+  api:since:check, api:history:check, test:unit, test:declarations, test:agent-config, test:api-history,
+  test:compact-tables, test:security-preflight) before committing or pushing. Use when the user wants to verify the code
+  is ready to commit or run every check at once.
 ---
 
 # Preflight Checks
@@ -35,13 +35,11 @@ Run comprehensive quality checks before committing or pushing code.
   - `docs:links` – Verify Markdown links (all repo-root `*.md` / `*.mdx`)
   - `agents:check` – Verify agent config hasn't drifted (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer)
   - `sync:doc-banners:check` – Verify the blit386.dev banner is current in every published doc
-  - `sync:cursor-commands:check` – Verify `.cursor/commands/*.md` matches `.claude/skills/*/SKILL.md`
   - `api:since:check` – Verify every public export carries an `@since` tag
   - `api:history:check` – Verify `docs/_api-history.json` matches the source version tags
   - `test:unit` – Run all unit tests
   - `test:declarations` – Declaration tooling log checker tests
   - `test:agent-config` – Agent config drift checker tests
-  - `test:cursor-commands` – Cursor commands drift checker tests
   - `test:api-history` – API history generator tests
   - `test:compact-tables` – compact Markdown table plugin tests
   - `test:security-preflight` – MCP security preflight tests

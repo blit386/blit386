@@ -31,7 +31,7 @@ package).
 | `pnpm run format` | Format all code (Biome + Prettier) |
 | `pnpm run format:check` | Check all formatting without changes |
 | `pnpm run format:biome` | Format TS/JS/JSON/CSS only (Biome) |
-| `pnpm run format:prettier` | Format Markdown/MDX/MDC/YAML (Prettier) |
+| `pnpm run format:prettier` | Format Markdown/MDX/YAML (Prettier) |
 | `pnpm run typecheck` | Run TypeScript type checking |
 | `pnpm run spellcheck` | Check spelling in source files |
 | `pnpm run test` | Run all unit tests (alias for `test:unit`) |
@@ -40,18 +40,15 @@ package).
 | `pnpm run test:unit:coverage` | Run unit tests with coverage report (80% threshold) |
 | `pnpm run test:declarations` | Declaration tooling log checker (Node test) |
 | `pnpm run test:agent-config` | Agent config drift checker tests (Node test) |
-| `pnpm run test:cursor-commands` | Cursor commands drift checker tests (Node test) |
 | `pnpm run build:check-declarations` | Build and run declaration tooling check on build log |
 | `pnpm run test:visual` | Playwright visual regression tests (requires Chrome with WebGPU) |
 | `pnpm run test:visual:update` | Update visual test baseline screenshots |
 | `pnpm run test:visual:coverage` | Run visual tests with Istanbul coverage report |
 | `pnpm run bench` | Run CPU benchmarks – Tier 4 (Vitest bench; see [Testing](reference-testing.md)) |
 | `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
-| `pnpm run preflight` | All checks: format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check, sync:cursor-commands:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config, test:cursor-commands, test:api-history, test:security-preflight |
+| `pnpm run preflight` | All checks: format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config, test:api-history, test:security-preflight |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
-| `pnpm run agents:check` | Check agent config drift (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer) |
-| `pnpm run sync:cursor-commands` | Generate `.cursor/commands/*.md` from `.claude/skills/*/SKILL.md` |
-| `pnpm run sync:cursor-commands:check` | Check `.cursor/commands/*.md` for drift against `.claude/skills/*/SKILL.md` |
+| `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer) |
 | `pnpm run sync:doc-banners` | Insert/refresh blit386.dev banners in published docs |
 | `pnpm run sync:doc-banners:check` | Check doc site banner drift |
 | `pnpm run api:history` | Regenerate API version-history manifest (`docs/_api-history.json`) |
@@ -149,7 +146,7 @@ Formatting:
 
 - 4-space indent, 120-character line width
 - Single quotes, always semicolons, always trailing commas
-- Biome formats TypeScript/JavaScript; Prettier formats Markdown/YAML/\*.mdc Cursor rules
+- Biome formats TypeScript/JavaScript; Prettier formats Markdown/YAML
 - Run `pnpm run format` to auto-format; `pnpm run format:check` to verify
 
 Linting:
@@ -220,57 +217,25 @@ adding or moving code. Never use `// #region` / `// #endregion` – region marke
 
 ## IDE setup
 
-### Recommended extensions
+### Zed
 
-| Extension | Purpose |
-| --- | --- |
-| `dbaeumer.vscode-eslint` | ESLint integration |
-| `biomejs.biome-vscode` | Biome formatter |
-| `editorconfig.editorconfig` | EditorConfig support |
-| `ms-playwright.playwright` | Playwright test runner |
-| `vitest.explorer` | Vitest test explorer |
+`.zed/settings.json` is committed to the repository – clone the repo and it applies automatically. It mirrors the repo
+toolchain: Biome (via its Zed extension/language server) formats TS/JS/JSON on save, Prettier (built in) formats
+Markdown/YAML on save, and `agent.tool_permissions` blocks the built-in agent from editing lock files or `.env` files
+(mirroring the `PreToolUse` file-block hook in `.claude/settings.json`).
 
-`.vscode/settings.json` and `.vscode/extensions.json` are committed to the repository – clone the repo and they appear
-automatically in VS Code.
+### Claude Code
 
-### Settings included
-
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "eslint.validate": ["javascript", "typescript"],
-  "files.associations": { "*.wgsl": "wgsl" }
-}
-```
-
-### Cursor
-
-Cursor reads agent policy from this repo's `.cursor/` directory (VS Code/Cursor share the same workspace settings in
-`.vscode/`).
+Claude Code reads agent policy from this repo's `.claude/` directory.
 
 | Path | Purpose |
 | --- | --- |
-| `.cursor/rules/*.mdc` | Agent rules – `alwaysApply: true` for global policy; glob-scoped rules (for example `ts-file-structure.mdc` on `src/**/*.ts`) |
-| `.cursor/hooks.json` | Hooks: `preToolUse` → RTK shell rewrite; `afterFileEdit` → format + spellcheck; `beforeShellExecution` → git safety |
-| `.cursor/hooks/format-and-check.sh` | Post-edit Biome (TS/JS/JSON/CSS) + Prettier (MD/MDX/MDC/YAML) + cspell on touched files |
-| `.cursor/hooks/shell-safety.sh` | Blocks destructive git commands; asks before force-push |
-| `.cursor/commands/*.md` | Slash-command equivalents of the `.claude/skills/*` skills; generated, never hand-edited (see below) |
-| `.claude/rules/*.md` | Condensed mirrors of key `.cursor/rules` topics for Claude Code |
+| `.claude/rules/*.md` | Agent rules – always-applied global policy plus glob-scoped rules (for example `ts-file-structure.md` on `src/**/*.ts`) |
+| `.claude/settings.json` | Hooks: `SessionStart` → toolchain bootstrap; `PreToolUse` → RTK shell rewrite + sensitive-file block; `PostToolUse` → format + spellcheck |
 | `.claude/skills/*/SKILL.md` | Reusable command workflows (`bt-preflight`, `bt-format`, …); Zed symlinks under `.agents/skills/` |
 
 When changing `package.json` scripts or preflight steps, update matching `.claude/skills/*/SKILL.md` files and any
-`.cursor/rules/*.mdc` that reference those commands. Pair `.cursor/rules/*.mdc` edits with `.claude/rules/*.md`
-summaries when the topic has a mirror (API getters, internal naming, file structure).
-
-Cursor has no equivalent of a Claude Code skill, but a `.cursor/commands/<name>.md` file becomes a `/<name>` slash
-command. `scripts/sync-cursor-commands.mjs` generates one per `.claude/skills/<name>/SKILL.md`, stripping the YAML
-frontmatter (Claude reads `name`/`description` from it to discover the skill; a Cursor command is invoked by filename,
-so the frontmatter would otherwise render as literal text) - the same transform `create-blit386`'s `@blit386/kit`
-applies for scaffolded projects. Run `pnpm run sync:cursor-commands` after adding, renaming, or removing a
-`.claude/skills/*` skill; `pnpm run sync:cursor-commands:check` reports drift (wired into `preflight` and the `quality`
-job in `ci.yml`) and a retired skill's stale command file is removed automatically.
+`.claude/rules/*.md` that reference those commands.
 
 ---
 

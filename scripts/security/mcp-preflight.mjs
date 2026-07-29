@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { parseArgs as nodeParseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
@@ -41,7 +42,7 @@ export const SECURITY_MCP_REGISTRY = [
     },
 ];
 
-const MCP_CONFIG_FILENAMES = ['.mcp.json', 'mcp.json', '.cursor/mcp.json'];
+const MCP_CONFIG_FILENAMES = ['.mcp.json', 'mcp.json'];
 const RUNLAYER_URL_PATTERN = /runlayer\.com/i;
 const RUNLAYER_COMMAND_PATTERN = /runlayer\s+run\b/i;
 
@@ -69,7 +70,7 @@ export function statusIndicatesError(statusText) {
 }
 
 /**
- * Classify one MCP server directory under the Cursor project mcps folder.
+ * Classify one MCP server directory under the session's MCP tool-state folder.
  *
  * @param {string} mcpsDir
  * @param {string} serverId
@@ -208,7 +209,12 @@ export function discoverMcpConfigPaths(repoRoot, options = {}) {
     }
 
     if (options.includeUserConfig) {
-        candidates.push(path.join(process.env.HOME ?? '', '.cursor', 'mcp.json'));
+        const homeDir = process.env.HOME ?? os.homedir();
+        if (homeDir) {
+            for (const name of MCP_CONFIG_FILENAMES) {
+                candidates.push(path.join(homeDir, name));
+            }
+        }
     }
 
     const existing = [...new Set(candidates)].filter((candidate) => fs.existsSync(candidate));
@@ -437,7 +443,7 @@ function main() {
 
     if (!args.mcpsDir) {
         console.error(
-            'Usage: node scripts/security/mcp-preflight.mjs --mcps-dir <cursor-project-mcps-path> [--repo-root <path>] [--include-user-config] [--governance-only] [--allow-fallback] [--output-json <path>]',
+            'Usage: node scripts/security/mcp-preflight.mjs --mcps-dir <mcps-path> [--repo-root <path>] [--include-user-config] [--governance-only] [--allow-fallback] [--output-json <path>]',
         );
         process.exit(1);
     }

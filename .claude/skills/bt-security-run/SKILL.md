@@ -19,7 +19,7 @@ hardening passes, or when MCP scanner availability is uncertain.
 
 ## Prerequisites
 
-- Cursor MCP descriptor path from the session (`mcps` folder for the active workspace).
+- The session's MCP descriptor path (`mcps` folder for the active workspace; agent/tooling-specific).
 - Node.js and pnpm per repo `package.json`.
 
 ## Steps
@@ -31,7 +31,7 @@ hardening passes, or when MCP scanner availability is uncertain.
 
   ```bash
   pnpm run security:mcp-preflight -- \
-    --mcps-dir "<cursor-project-mcps-path>" \
+    --mcps-dir "<mcps-path>" \
     --repo-root . \
     --allow-fallback \
     --output-json security-reports/mcp-preflight-latest.json
@@ -69,7 +69,7 @@ Run once per month for each repo:
 
 ```bash
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<cursor-project-mcps-path>" \
+  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --governance-only \
   --include-user-config \

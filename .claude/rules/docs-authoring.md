@@ -4,8 +4,7 @@ paths: [docs/**/*.md]
 
 # Docs authoring
 
-Condensed mirror of `.cursor/rules/docs-authoring.mdc`. How to write, rename, and split published `docs/*.md` pages
-(those listed in `docs/_sitemap.json`).
+How to write, rename, and split published `docs/*.md` pages (those listed in `docs/_sitemap.json`).
 
 ## Public docs site banner
 
@@ -76,5 +75,3 @@ Renaming or splitting a published doc:
 
 After any doc change: add new proper nouns / coined words to `cspell.json` (and the fumapress one for hand-authored
 content there); re-sync the mirror (`pnpm run sync:docs` in `blit386-dev-fumapress`) if a sitemap entry changed.
-
-Cursor: `.cursor/rules/docs-authoring.mdc` (glob-scoped to `docs/**/*.md` in this repo).

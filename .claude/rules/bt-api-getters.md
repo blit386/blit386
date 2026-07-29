@@ -1,7 +1,7 @@
 # BT API: getters vs methods
 
-This file (and `.cursor/rules/bt-api-getters.mdc`) is the full policy for BT API getters vs methods and Boolean naming;
-[CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/api-core.md`.
+This file is the full policy for BT API getters vs methods and Boolean naming; [CLAUDE.md](../../CLAUDE.md) carries only
+a short summary and points here. See also `docs/api-core.md`.
 
 When editing `src/BLIT386.ts`, demos, or API docs:
 
@@ -83,7 +83,4 @@ Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-d
 3. Mirrors configure? → same field name as `HardwareSettings` (exception: derived getters like `outputSize` have no
    field)
 4. Update `docs/api-*.md`, demos if public; overlay behavior also updates `docs/guide-overlay.md`; structural `src/`
-   changes update `.claude/rules/architecture.md` / `.cursor/rules/architecture.mdc` and the Where to Find table in
-   `CLAUDE.md`
-
-Cursor: `.cursor/rules/bt-api-getters.mdc` (always applied in this repo).
+   changes update `.claude/rules/architecture.md` and the Where to Find table in `CLAUDE.md`

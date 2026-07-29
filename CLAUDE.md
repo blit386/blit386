@@ -36,9 +36,8 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | Which preset has which exact color values? | `docs/guide-palette-presets.md` |
 | How do post-process effects work? | `docs/guide-post-process-effects.md` |
 | What does the CI do on this file? | `.github/workflows/ci.yml` |
-| How is agent config drift (rules parity, skills symlinks, AGENTS.md pointer, Copilot instructions, Zed settings) checked? | `scripts/check-agent-config.mjs`, wired into `pnpm run agents:check` / `preflight` and the `quality` job in `ci.yml` |
-| Where is the annotated `src/` architecture tree? | `.claude/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`) |
-| Where do the `.cursor/commands/*.md` slash commands come from? | Generated from `.claude/skills/*/SKILL.md` (frontmatter stripped) by `scripts/sync-cursor-commands.mjs`; never hand-edit them. `pnpm run sync:cursor-commands` regenerates, `pnpm run sync:cursor-commands:check` reports drift (wired into `preflight` and the `quality` job in `ci.yml`) |
+| How is agent config drift (skills symlinks, AGENTS.md pointer, Copilot instructions, Zed settings) checked? | `scripts/check-agent-config.mjs`, wired into `pnpm run agents:check` / `preflight` and the `quality` job in `ci.yml` |
+| Where is the annotated `src/` architecture tree? | `.claude/rules/architecture.md` |
 | Dependency security policy / CI audit gate? | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md` |
 | What is the benchmark threshold? | `.github/workflows/ci.yml` benchmark job (`--threshold 25` flag), not docs |
 | What error message style should I use? | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" URL hints live in `src/utils/urlHints.ts` (used by `BitmapFont` and the `AudioClip` messages) |
@@ -47,11 +46,11 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | What test mock do I need for Web Audio code? | `src/__test__/webaudio-mock.ts` |
 | Declaration tooling / TS version alignment? | `docs/tooling.md`, `docs/developer-experience-guide.md`, `scripts/check-declaration-tooling.mjs` |
 | Should this private name repeat the class/file? | Internal scoped naming below; `docs/developer-experience-guide.md` (Naming conventions) |
-| Where do I put a new field/method in a `.ts` file? | TypeScript file structure below; `.cursor/rules/ts-file-structure.mdc`; `docs/developer-experience-guide.md` (File structure and member order) |
-| Where are Cursor agent rules and hooks? | `.cursor/rules/*.mdc` (always-applied + glob-scoped); `.cursor/hooks.json`; condensed mirrors in `.claude/rules/`; see [Developer Experience](docs/developer-experience-guide.md#cursor) |
+| Where do I put a new field/method in a `.ts` file? | TypeScript file structure below; `.claude/rules/ts-file-structure.md`; `docs/developer-experience-guide.md` (File structure and member order) |
+| Where are Claude Code agent rules and hooks? | `.claude/rules/*.md` (always-applied + glob-scoped); `.claude/settings.json` |
 | Where is the public docs site (blit386.dev)? | Sibling repo `blit386-dev-fumapress` (Fumapress + Waku) generates it from this repo's `docs/`; `docs/_sitemap.json` (schema `docs/_sitemap.schema.json`) controls which docs publish, their URL, sidebar order, and subtitle |
 | Why does each published doc have a blit386.dev banner? | Auto-managed by `scripts/sync-doc-banners.mjs` (`pnpm run sync:doc-banners`); never hand-edit the `<!-- blit386.dev-banner -->` block. The mirror strips it; see Public docs site banner below and `.claude/rules/docs-authoring.md` |
-| Can I use Fumadocs components (Callout, TypeTable, …) in docs? | Yes, in published docs only (site-first). Which ones, when to use them, and the authoring rules: `.claude/rules/docs-authoring.md` (Cursor: `.cursor/rules/docs-authoring.mdc`) |
+| Can I use Fumadocs components (Callout, TypeTable, …) in docs? | Yes, in published docs only (site-first). Which ones, when to use them, and the authoring rules: `.claude/rules/docs-authoring.md` |
 | How do I write/rename/split a `docs/` page? | `.claude/rules/docs-authoring.md` (prose rules: no bold, no `---`, `×` for dimensions; filename mirrors sitemap section; rename/split checklist). For runtime strings see `docs/voice.md` instead |
 | What agent skills are available for this project? | `.agents/skills/` (Zed) and `.claude/skills/` (Claude Code) – `bt-preflight`, `bt-review`, `bt-pr`, `bt-format`, `bt-perf`, `bt-test`, `bt-release`, `bt-spellcheck`, `bt-security-run`, `bt-deep-review`, `bt-quick-format`, `bt-issue-audit` |
 | How do users start a new project with the engine? | `npm create blit386@latest` – the scaffolder lives in the sibling `create-blit386` repo; see Onboarding and the scaffolder below |
@@ -67,7 +66,7 @@ Before writing new code, reviewing existing code, or preflighting, check here fi
 | How does screen orientation detection / lock work? | `src/core/Orientation.ts`; `HardwareSettings.preferredOrientation` + `IBTDemo.onOrientationChange` in `src/core/IBTDemo.ts`; `BT.screenOrientation` in `src/BLIT386.ts`; `docs/api-core.md` (Screen orientation), `docs/api-browser-support.md` (Screen orientation) |
 | How does engine hot-reload / HMR work? | `docs/guide-hot-reload.md` (canonical guide); `src/hot/` (`protocol.ts`, `HotRuntime.ts`, `HotSwap.ts`); `BTAPI.hotReplaceDemo`/`getDemo`/`isInitialized` in `src/core/BTAPI.ts`; `IBTDemo.onHotReload` in `src/core/IBTDemo.ts`; hot-aware routing in `src/utils/Bootstrap.ts`; asset hot-replace via `AssetLoader.evict` + `src/utils/HotReloadUrl.ts` |
 | How does the `blit386/vite` dev plugin work? | `docs/guide-hot-reload.md`; `src/vite/` (`options.ts`, `transform.ts`, `assets.ts`, `index.ts`); `package.json` `"./vite"` subpath export; dev-only (`apply: 'serve'`) – injects the hot-reload snippet and broadcasts `blit386:asset-changed`/full-reload for asset dir changes; `vite.node.config.ts` sets `root: '/'` to avoid collision with the main build's `dist/blit386.d.ts` (see inline comment for explanation) |
-| How does a fresh remote/web session bootstrap its toolchain? | Environment bootstrap below; `scripts/session-start-bootstrap.sh`; `.claude/settings.json` (`SessionStart`), `.cursor/hooks.json` (`sessionStart`), `.devcontainer/devcontainer.json` |
+| How does a fresh remote/web session bootstrap its toolchain? | Environment bootstrap below; `scripts/session-start-bootstrap.sh`; `.claude/settings.json` (`SessionStart`), `.devcontainer/devcontainer.json` |
 
 ## Onboarding and the scaffolder
 
@@ -92,7 +91,7 @@ generated and owned entirely by `scripts/sync-doc-banners.mjs` – never hand-ed
 after a sitemap change; `pnpm run sync:doc-banners:check` reports drift in CI. The public mirror strips the block, so it
 never appears on the live site.
 
-Full detail: `.claude/rules/docs-authoring.md` (Cursor: `.cursor/rules/docs-authoring.mdc`).
+Full detail: `.claude/rules/docs-authoring.md`.
 
 ## Fumadocs components in published docs
 
@@ -101,8 +100,7 @@ components (`Callout`, `Card`/`Cards`, `Tabs`, `Steps`, `Accordions`, `Files`, `
 degrade or vanish on GitHub. Any component used must already be registered in `blit386-dev-fumapress/press.config.tsx`
 (`getMdxComponents`), or the mirror build throws.
 
-Full detail (component list, when to use which, authoring rules): `.claude/rules/docs-authoring.md` (Cursor:
-`.cursor/rules/docs-authoring.mdc`).
+Full detail (component list, when to use which, authoring rules): `.claude/rules/docs-authoring.md`.
 
 ## Twoslash in published docs
 
@@ -119,8 +117,7 @@ BT.paletteSet(palette);
 Self-contained blocks carry their own imports; fragment blocks (showing a snippet whose variables come from surrounding
 prose) add a hidden preamble above `// ---cut---`. Fix a broken preamble rather than adding `// @noErrors`.
 
-Full preamble rules and the fragment-block example: `.claude/rules/twoslash-docs.md` (Cursor:
-`.cursor/rules/twoslash-docs.mdc`).
+Full preamble rules and the fragment-block example: `.claude/rules/twoslash-docs.md`.
 
 ## Documentation authoring style
 
@@ -131,7 +128,7 @@ with a link and author, American English spelling. Filenames mirror the sitemap 
 `performance-*`, `reference-*`).
 
 Full detail (prose rules, rename/split checklist, post-change cspell/sync obligations):
-`.claude/rules/docs-authoring.md` (Cursor: `.cursor/rules/docs-authoring.mdc`), `.claude/rules/docs-sync-required.md`.
+`.claude/rules/docs-authoring.md`, `.claude/rules/docs-sync-required.md`.
 
 ## Architecture
 
@@ -139,8 +136,7 @@ All engine functionality is accessed through the static `BT` namespace. The arch
 sprites, and bitmap text resolve color through the active `Palette` before final RGBA output. Demos implement the
 `IBTDemo` interface (`configure?`, `init`, `update`, `render`, optional `overlayRows?`).
 
-The annotated `src/` tree (and palette-first rendering notes) live in `.claude/rules/architecture.md` (Cursor:
-`.cursor/rules/architecture.mdc`).
+The annotated `src/` tree (and palette-first rendering notes) live in `.claude/rules/architecture.md`.
 
 ### Core Types
 
@@ -161,9 +157,8 @@ The annotated `src/` tree (and palette-first rendering notes) live in `.claude/r
 6. Type-only imports – `import type { ... }` for types
 7. Documentation is part of every feature – after any public API change update the relevant `docs/api-*.md`; after any
    behavior change update the affected `docs/` guide; after any architecture change update
-   `.claude/rules/architecture.md` / `.cursor/rules/architecture.mdc` and the Where to Find table. Update `README.md`
-   only when the Quick Start, features list, prerequisites, or browser compatibility is affected. Never wait to be
-   asked.
+   `.claude/rules/architecture.md` and the Where to Find table. Update `README.md` only when the Quick Start, features
+   list, prerequisites, or browser compatibility is affected. Never wait to be asked.
 
 ## Input Conventions
 
@@ -190,8 +185,8 @@ and methods for actions, parameterized queries, and async work (`BT.cameraSet(..
 `requestedBackend` is the resolved init request; `activeBackend` is what actually started (differs after a
 WebGPU→software fallback) and is what runtime gates (post-process, capture) should check.
 
-Full getter/method category tables: `docs/api-core.md`, `.claude/rules/bt-api-getters.md` (Cursor:
-`.cursor/rules/bt-api-getters.mdc`). Deprecated aliases: `docs/reference-deprecations.md`.
+Full getter/method category tables: `docs/api-core.md`, `.claude/rules/bt-api-getters.md`. Deprecated aliases:
+`docs/reference-deprecations.md`.
 
 ## Boolean naming
 
@@ -209,8 +204,8 @@ Private fields, private methods, protected members, and module-local constants/t
 or file name – the type or file already provides scope. Example: `FrameCapture.request()` not `requestCapture()`. Does
 not apply to public API (`BT.*`, the `BLIT386.ts` export block, public class methods).
 
-Full policy and examples: `.claude/rules/internal-scoped-naming.md` (Cursor:
-`.cursor/rules/internal-scoped-naming.mdc`), `docs/developer-experience-guide.md` (Naming conventions).
+Full policy and examples: `.claude/rules/internal-scoped-naming.md`, `docs/developer-experience-guide.md` (Naming
+conventions).
 
 ## API Conventions
 
@@ -242,8 +237,6 @@ with a British `s` or `c` in their own spec – for example Web Audio's `Analyse
 own `gray`/`grey` named-color alias in `Color32.ts`, which mirrors the CSS Color Module's own dual spelling. Do not
 "fix" those.
 
-Cursor: `.cursor/rules/american-english-spelling.mdc` (always applied in this repo).
-
 ## TypeScript file structure
 
 Applies to library TypeScript in `src/`. Class member order is enforced by `perfectionist/sort-classes` (imports by
@@ -252,16 +245,16 @@ Applies to library TypeScript in `src/`. Class member order is enforced by `perf
 private) and preserves the hand-tuned order within each group. Never use `// #region` / `// #endregion` – region markers
 are banned everywhere.
 
-Full file layout and class member order: `.claude/rules/ts-file-structure.md` (Cursor:
-`.cursor/rules/ts-file-structure.mdc`), `docs/developer-experience-guide.md` (File structure and member order).
+Full file layout and class member order: `.claude/rules/ts-file-structure.md`, `docs/developer-experience-guide.md`
+(File structure and member order).
 
 ## Commands
 
 All commands are `pnpm run <script>` (see `package.json` for the full script list; `pnpm run preflight` runs the
 repository's gating checks — its exact definition lives in `package.json`).
 
-RTK: Shell commands are rewritten via `rtk hook cursor` (Cursor) / `rtk hook claude` (Claude Code). Use `pnpm run …` for
-scripts. Prefer `rtk read` / `rtk grep` / shell over native Read/Grep for exploration. See `~/.claude/RTK.md`.
+RTK: Shell commands are rewritten via `rtk hook claude` (Claude Code). Use `pnpm run …` for scripts. Prefer `rtk read` /
+`rtk grep` / shell over native Read/Grep for exploration. See `~/.claude/RTK.md`.
 
 ## Testing
 
@@ -316,19 +309,18 @@ Full CI behavior (labeled-PR runs, regression threshold, PR comment format): `do
 - Documentation is part of every feature: After completing any feature or fix, always update documentation without being
   asked. The rule: if you changed a public API, update the relevant `docs/api-*.md` file; if you changed engine
   behavior, update the affected `docs/` guide; if you changed architecture or added a new subsystem file, update
-  `.claude/rules/architecture.md` / `.cursor/rules/architecture.mdc` and the `## Where to Find Information` table in
-  `CLAUDE.md`; update `README.md` only if the change affects the Quick Start, prerequisites, features list, or browser
-  compatibility. Never treat documentation as a separate step the user must request.
+  `.claude/rules/architecture.md` and the `## Where to Find Information` table in `CLAUDE.md`; update `README.md` only
+  if the change affects the Quick Start, prerequisites, features list, or browser compatibility. Never treat
+  documentation as a separate step the user must request.
 
 ## Environment bootstrap (SessionStart hook and devcontainer)
 
 A fresh remote/web/cloud checkout starts with no `node_modules` and no warmed toolchain.
 `scripts/session-start-bootstrap.sh` fixes that (`pnpm install --frozen-lockfile`, skips on an unchanged lockfile) and
-is wired into `.claude/settings.json` (SessionStart hook), `.cursor/hooks.json` (sessionStart hook), and
-`.devcontainer/devcontainer.json` (`postCreateCommand`) – one script, three call sites. None of the three block or fail
-the session on a bootstrap error.
+is wired into `.claude/settings.json` (SessionStart hook) and `.devcontainer/devcontainer.json` (`postCreateCommand`) –
+one script, two call sites. Neither blocks or fails the session on a bootstrap error.
 
-Full detail: `.claude/rules/environment-bootstrap.md` (Cursor: `.cursor/rules/environment-bootstrap.mdc`).
+Full detail: `.claude/rules/environment-bootstrap.md`.
 
 ## Environment and tooling gotchas
 
@@ -338,5 +330,5 @@ network): `_api-history.json` regeneration needs git tags (dates go `null` witho
 proxy; internal links still resolve). These are environment artifacts, not code bugs – do not "fix" them by editing the
 checks.
 
-Full list (including hook interaction and `--no-verify` guidance): `.claude/rules/environment-gotchas.md` (Cursor:
-`.cursor/rules/environment-gotchas.mdc`, always applied).
+Full list (including hook interaction and `--no-verify` guidance): `.claude/rules/environment-gotchas.md` (always
+applied).

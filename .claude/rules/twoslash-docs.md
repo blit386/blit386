@@ -4,8 +4,6 @@ paths: [docs/api-*.md, docs/guide-*.md, docs/performance-*.md, docs/reference-*.
 
 # Twoslash in published docs
 
-Condensed mirror of `.cursor/rules/twoslash-docs.mdc`.
-
 All TypeScript code blocks in published docs (`docs/api-*.md`, `docs/guide-*.md`, `docs/performance-*.md`,
 `docs/reference-*.md`) must use ` ```ts twoslash ` so the live site (blit386.dev) renders type-on-hover popups. Plain
 ` ```ts ` is never acceptable in published docs. This is non-negotiable.

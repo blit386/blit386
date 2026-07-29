@@ -33,14 +33,13 @@ documented fallback instead of a fictional backup owner.
 
 ## MCP preflight (required first step)
 
-Agents must pass the Cursor project MCP descriptor path from the session (for example
-`~/.cursor/projects/<workspace-id>/mcps`).
+Agents must pass the session's MCP descriptor path (agent/tooling-specific; consult your agent's docs for its location).
 
 ```bash
 cd <repo-root>   # blit386: directory containing this repo's package.json
 
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<cursor-project-mcps-path>" \
+  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --allow-fallback \
   --output-json security-reports/mcp-preflight-latest.json
@@ -50,7 +49,7 @@ Governance-only (monthly):
 
 ```bash
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<cursor-project-mcps-path>" \
+  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --governance-only \
   --include-user-config \
@@ -72,7 +71,7 @@ the report.
 | Dependency / SCA | Opsera `security-scan`, JFrog | `pnpm run security:audit`, `pnpm run security:audit:prod` (per repo); CI gate in blit386 [dependency-policy.md](./dependency-policy.md) |
 | SAST / code patterns | Opsera, Semgrep MCP | `pnpm run lint` (eslint-plugin-security), targeted `rg` patterns (below), optional `semgrep --config auto` only if CLI is already installed (do not install) |
 | Compliance | Opsera `compliance-audit` | Manual checklist below |
-| Architecture | Opsera `architecture-analyze` | `security-threat-model` and `security-ownership-map` skills under `~/.codex/skills/` |
+| Architecture | Opsera `architecture-analyze` | `security-threat-model` and `security-ownership-map` skills, if available in your agent's skill library |
 | Supply chain metadata | JFrog MCP | `pnpm outdated --format json`, `npm view <pkg> version time.modified license` for key direct deps |
 | MCP governance | – | `pnpm run security:mcp-preflight --governance-only` plus Runlayer MCP governance rules |
 

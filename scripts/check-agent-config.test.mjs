@@ -4,49 +4,12 @@ import { describe, it } from 'node:test';
 import {
     findAgentsPointerFailures,
     findCopilotPointerFailures,
-    findRulesParityFailures,
     findSkillsSymlinkFailures,
     findZedSettingsFailures,
     resolveSkillSymlinkTarget,
 } from './check-agent-config.mjs';
 
 describe('check-agent-config', () => {
-    describe('findRulesParityFailures', () => {
-        it('passes when cursor and claude rule names match exactly', () => {
-            const failures = findRulesParityFailures(
-                ['american-english-spelling', 'bt-api-getters'],
-                ['american-english-spelling', 'bt-api-getters'],
-            );
-            assert.deepEqual(failures, []);
-        });
-
-        it('fails when a .cursor/rules/*.mdc has no .claude/rules/*.md mirror', () => {
-            const failures = findRulesParityFailures(
-                ['american-english-spelling', 'new-rule'],
-                ['american-english-spelling'],
-            );
-            assert.equal(failures.length, 1);
-            assert.match(failures[0], /\.cursor\/rules\/new-rule\.mdc has no matching \.claude\/rules\/new-rule\.md/);
-        });
-
-        it('fails when a .claude/rules/*.md has no .cursor/rules/*.mdc mirror', () => {
-            const failures = findRulesParityFailures(
-                ['american-english-spelling'],
-                ['american-english-spelling', 'orphaned-rule'],
-            );
-            assert.equal(failures.length, 1);
-            assert.match(
-                failures[0],
-                /\.claude\/rules\/orphaned-rule\.md has no matching \.cursor\/rules\/orphaned-rule\.mdc/,
-            );
-        });
-
-        it('reports both directions when both sides drift', () => {
-            const failures = findRulesParityFailures(['cursor-only'], ['claude-only']);
-            assert.equal(failures.length, 2);
-        });
-    });
-
     describe('findSkillsSymlinkFailures', () => {
         it('passes when every symlink resolves to a same-named claude skill directory', () => {
             const failures = findSkillsSymlinkFailures(

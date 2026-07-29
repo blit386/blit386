@@ -22,4 +22,4 @@ before non-trivial work.
 [`AGENTS.md`](../AGENTS.md) has the tech stack, quick-start commands, and the rest of the most-important rules.
 [`CLAUDE.md`](../CLAUDE.md) has the "Where to Find Information" routing table, BT API conventions, TypeScript file
 structure, and the complete command list. The annotated `src/` architecture tree lives in
-`.claude/rules/architecture.md` (Cursor: `.cursor/rules/architecture.mdc`).
+`.claude/rules/architecture.md`.

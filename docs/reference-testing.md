@@ -234,26 +234,7 @@ Coverage is collected via a custom Playwright fixture (`tests/visual/coverage-fi
 
 ## IDE setup
 
-<Tabs items={['Cursor / VS Code', 'WebStorm', 'Zed']}>
-
-<Tab value="Cursor / VS Code">
-
-Install the recommended extensions (prompted on first open):
-
-- Vitest (`vitest.explorer`) – inline test running, debugging, coverage gutter
-- Playwright (`ms-playwright.playwright`) – visual test runner
-
-</Tab>
-
-<Tab value="WebStorm">
-
-Built-in Vitest support since 2023.3. Auto-detects `vitest.config.ts` and shows run gutters next to each test.
-
-</Tab>
-
-<Tab value="Zed">
-
-Use the Tasks system. Create `.zed/tasks.json`:
+Zed uses the Tasks system. Create `.zed/tasks.json`:
 
 ```json
 [
@@ -264,15 +245,12 @@ Use the Tasks system. Create `.zed/tasks.json`:
   },
   {
     "label": "Test: Current File",
-    "command": "pnpm exec vitest run $ZED_FILE",
+    "command": "pnpm",
+    "args": ["exec", "vitest", "run", "$ZED_FILE"],
     "cwd": "$ZED_WORKTREE_ROOT"
   }
 ]
 ```
-
-</Tab>
-
-</Tabs>
 
 ## CI integration
 
@@ -285,7 +263,7 @@ Triggers on push to `main` and on pull requests targeting `main`. `labeled` / `u
 
 | Job | What it runs |
 | --- | --- |
-| `quality` | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`, `agents:check`, `sync:doc-banners:check`, `sync:cursor-commands:check`, `knip`, `api:since:check`, `api:history:check` |
+| `quality` | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`, `agents:check`, `sync:doc-banners:check`, `knip`, `api:since:check`, `api:history:check` |
 | `build-library` | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
 | `bundle-size` | `pnpm run build`, declaration tooling check, gzipped ESM size gate |
 | `test` | `pnpm run test:unit:coverage`, Codecov upload |

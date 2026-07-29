@@ -2,8 +2,6 @@
 /**
  * Verify the agent-facing config surface has not drifted:
  *
- *   - `.cursor/rules/*.mdc` <-> `.claude/rules/*.md` parity (a rule added to
- *     one side must exist on the other, by basename).
  *   - `.agents/skills/*` symlink integrity - every entry must be a working
  *     symlink into `.claude/skills/<same-name>`, and every `.claude/skills/*`
  *     directory must have a matching symlink.
@@ -20,47 +18,16 @@
  *   node scripts/check-agent-config.mjs
  */
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
-import { basename, dirname, extname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const CURSOR_RULES_DIR = join(ROOT, '.cursor', 'rules');
-const CLAUDE_RULES_DIR = join(ROOT, '.claude', 'rules');
 const AGENTS_SKILLS_DIR = join(ROOT, '.agents', 'skills');
 const CLAUDE_SKILLS_DIR = join(ROOT, '.claude', 'skills');
 const AGENTS_MD_PATH = join(ROOT, 'AGENTS.md');
 const CLAUDE_MD_PATH = join(ROOT, 'CLAUDE.md');
 const COPILOT_INSTRUCTIONS_PATH = join(ROOT, '.github', 'copilot-instructions.md');
 const ZED_SETTINGS_PATH = join(ROOT, '.zed', 'settings.json');
-
-/**
- * Verifies `.cursor/rules/*.mdc` and `.claude/rules/*.md` define the same set
- * of rule names. Mirrors are condensed summaries, not identical content, so
- * this checks basename parity rather than file contents.
- *
- * @param {string[]} cursorRuleNames Basenames (no extension) of `.cursor/rules/*.mdc`.
- * @param {string[]} claudeRuleNames Basenames (no extension) of `.claude/rules/*.md`.
- * @returns {string[]} Human-readable failure messages (empty when in parity).
- */
-export function findRulesParityFailures(cursorRuleNames, claudeRuleNames) {
-    const cursorSet = new Set(cursorRuleNames);
-    const claudeSet = new Set(claudeRuleNames);
-    const failures = [];
-
-    for (const name of cursorSet) {
-        if (!claudeSet.has(name)) {
-            failures.push(`.cursor/rules/${name}.mdc has no matching .claude/rules/${name}.md`);
-        }
-    }
-
-    for (const name of claudeSet) {
-        if (!cursorSet.has(name)) {
-            failures.push(`.claude/rules/${name}.md has no matching .cursor/rules/${name}.mdc`);
-        }
-    }
-
-    return failures.sort();
-}
 
 /**
  * Verifies every `.agents/skills/*` entry is a working symlink that resolves
@@ -227,14 +194,6 @@ export function resolveSkillSymlinkTarget(resolvedTargetPath, targetIsDirectory,
     return basename(resolvedTargetPath);
 }
 
-/** @param {string} dir @param {string} ext @returns {string[]} Sorted basenames (extension stripped) of files matching `ext` in `dir`. */
-function readRuleNames(dir, ext) {
-    return readdirSync(dir, { withFileTypes: true })
-        .filter((entry) => entry.isFile() && extname(entry.name) === ext)
-        .map((entry) => basename(entry.name, ext))
-        .sort();
-}
-
 /** @returns {Array<{ name: string, isSymlink: boolean, resolvedName: string | null }>} */
 function readAgentsSkillEntries() {
     return readdirSync(AGENTS_SKILLS_DIR, { withFileTypes: true }).map((entry) => {
@@ -267,10 +226,8 @@ function readClaudeSkillDirNames() {
         .sort();
 }
 
-/** @returns {string[]} All failure messages across the five checks (empty when config is in sync). */
+/** @returns {string[]} All failure messages across the four checks (empty when config is in sync). */
 function runAllChecks() {
-    const cursorRuleNames = readRuleNames(CURSOR_RULES_DIR, '.mdc');
-    const claudeRuleNames = readRuleNames(CLAUDE_RULES_DIR, '.md');
     const agentsSkillsLayoutExists = existsSync(AGENTS_SKILLS_DIR);
     const agentsSkillEntries = agentsSkillsLayoutExists ? readAgentsSkillEntries() : [];
     const claudeSkillDirNames = readClaudeSkillDirNames();
@@ -283,7 +240,6 @@ function runAllChecks() {
     const zedSettingsContent = existsSync(ZED_SETTINGS_PATH) ? readFileSync(ZED_SETTINGS_PATH, 'utf8') : null;
 
     return [
-        ...findRulesParityFailures(cursorRuleNames, claudeRuleNames),
         ...findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames),
         ...findAgentsPointerFailures(agentsMdContent, claudeMdExists),
         ...findCopilotPointerFailures(copilotContent, agentsMdExists, claudeMdExists),
@@ -303,7 +259,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer, Copilot instructions, Zed settings).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, Copilot instructions, Zed settings).',
     );
 }
 
