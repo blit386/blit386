@@ -45,7 +45,6 @@ benchmark-results.json
 mcp.json
 
 # Other AI assistants (local only)
-.codex/
 .aider*
 .continue/
 .windsurf/
