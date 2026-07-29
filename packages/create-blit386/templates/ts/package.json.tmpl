@@ -11,8 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,mdc,yml,yaml}\"",
+    "format:check": "biome format . && prettier --check \"**/*.{md,mdx,mdc,yml,yaml}\"",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write ."
   },
@@ -22,6 +22,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.2",
     "@blit386/kit": "{{kitVersion}}",
+    "prettier": "^3.9.6",
     "typescript": "^5.9.3",
     "vite": "^8.0.16"
   }

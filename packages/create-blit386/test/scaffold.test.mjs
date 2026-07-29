@@ -50,7 +50,10 @@ test('scaffolds a runnable game project', () => {
             'README.md',
             '.gitignore',
             '.editorconfig',
+            '.prettierignore',
             'biome.json',
+            'prettier.config.js',
+            join('scripts', 'prettier-plugin-compact-tables.mjs'),
             'jsconfig.json',
             'package.json',
             join('src', 'game.js'),
@@ -96,6 +99,7 @@ test('scaffolds a runnable game project', () => {
             '^2.5.2',
             'generated games should pin @biomejs/biome ^2.5.2',
         );
+        assert.ok(manifest.devDependencies?.['prettier'], 'prettier devDependency is missing');
         assert.ok(manifest.scripts?.format, 'format script is missing');
         assert.ok(manifest.scripts?.lint, 'lint script is missing');
         assert.ok(manifest.scripts?.build, 'build script is missing');
