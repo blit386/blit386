@@ -43,12 +43,15 @@ if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--ha
 fi
 
 # Require -f/--force/--force-with-lease to sit at an argument boundary
-# (whitespace, a shell command separator such as ; & |, or end of line) so it
-# does not match a substring inside a ref/branch name, e.g.
-# `git push origin foo-feature` must not trip this. A refspec prefixed with
-# `+` (e.g. `git push origin +main`) is git's other force-push spelling and
-# is matched separately.
-FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force|--force-with-lease(=[^[:space:]]*)?)([[:space:]]|[;&|]|$)'
+# (whitespace, a shell command separator such as ; & |, an unquoted
+# redirection > or <, or end of line) so it does not match a substring inside
+# a ref/branch name, e.g. `git push origin foo-feature` must not trip this.
+# The shell splits an unquoted `--force>out` / `--force<in` into the argument
+# `--force` plus a redirection with no whitespace needed, so > and < are
+# argument boundaries too, same as ; & |. A refspec prefixed with `+` (e.g.
+# `git push origin +main`) is git's other force-push spelling and is matched
+# separately.
+FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force|--force-with-lease(=[^[:space:]]*)?)([[:space:]]|[;&|<>]|$)'
 FORCE_REFSPEC='([[:space:]]+[^[:space:]]+)*[[:space:]]+\+[^[:space:]]+'
 
 if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}push(${FORCE_FLAG}|${FORCE_REFSPEC})"; then

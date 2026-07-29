@@ -165,6 +165,24 @@ for (const hook of HOOKS) {
 
                 assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
             });
+
+            it('asks before --force followed by an output redirect (redirection-based bypass)', () => {
+                const result = runHook(hook.path, 'git push --force>/tmp/out');
+
+                assert.equal(result.status, 0);
+                const parsed = JSON.parse(result.stdout);
+
+                assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+            });
+
+            it('asks before --force-with-lease followed by an input redirect (redirection-based bypass)', () => {
+                const result = runHook(hook.path, 'git push --force-with-lease</dev/null');
+
+                assert.equal(result.status, 0);
+                const parsed = JSON.parse(result.stdout);
+
+                assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+            });
         });
     });
 }
