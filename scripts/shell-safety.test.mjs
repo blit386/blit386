@@ -66,6 +66,85 @@ describe('destructive command detection', () => {
     });
 });
 
+describe('git clean detection', () => {
+    it('blocks a bare -f, which already deletes untracked files', () => {
+        const result = runHook('git clean -f');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks the long --force spelling', () => {
+        const result = runHook('git clean --force');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks a bundled -xdf', () => {
+        const result = runHook('git clean -xdf');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks a force flag in a later argument position', () => {
+        const result = runHook('git clean --exclude=build -d -f');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks a clean behind a global git option', () => {
+        const result = runHook('git -C /tmp/repo clean -fd');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks a quoted -f (quote-based bypass)', () => {
+        const result = runHook('git clean "-f"');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks a clean that turns off requireForce instead of passing -f', () => {
+        const result = runHook('git -c clean.requireForce=false clean -d');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks any clean that is not a preview, force flag or not', () => {
+        const result = runHook('git clean -d');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('allows a -n dry run', () => {
+        const result = runHook('git clean -n');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+
+    it('allows a --dry-run preview with an exclude pattern', () => {
+        const result = runHook('git clean --dry-run --exclude=dist');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+
+    it('does not trip on a force flag belonging to a later command', () => {
+        const result = runHook('git clean -n && rm -f build.log');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+});
+
 describe('force-push detection', () => {
     it('asks before a short -f push', () => {
         const result = runHook('git push -f origin main');
