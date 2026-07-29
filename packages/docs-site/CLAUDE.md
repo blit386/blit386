@@ -171,8 +171,7 @@ per-file static-asset limit is 25 MiB.
   `c` in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`) – do not "fix" those. Generated pages
   under `content/docs/` inherit this from the canonical source in `blit386/docs/` (see blit386
   [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md), American English spelling) – fix the upstream
-  source and re-run `pnpm run sync:docs`, never the mirror directly. Cursor:
-  `.cursor/rules/american-english-spelling.mdc` (always applied in this repo).
+  source and re-run `pnpm run sync:docs`, never the mirror directly.
 
 ## Documentation mirror
 

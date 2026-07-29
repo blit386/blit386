@@ -1,7 +1,7 @@
 /**
  * Prettier configuration for blit386-dev-fumapress
  *
- * NOTE: Prettier is used for Markdown, MDX, Cursor rules (`.mdc`), and YAML files only.
+ * NOTE: Prettier is used for Markdown, MDX, and YAML files only.
  * TypeScript, JavaScript, JSON, and CSS are formatted by Biome.
  *
  * The JS-looking options are not dead weight: Prettier applies them to fenced code
@@ -28,7 +28,7 @@ export default {
 
     overrides: [
         {
-            files: ['*.md', '*.mdx', '*.mdc'],
+            files: ['*.md', '*.mdx'],
             options: {
                 parser: 'markdown-compact',
                 proseWrap: 'always',
