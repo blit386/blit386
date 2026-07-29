@@ -245,7 +245,8 @@ Zed uses the Tasks system. Create `.zed/tasks.json`:
   },
   {
     "label": "Test: Current File",
-    "command": "pnpm exec vitest run $ZED_FILE",
+    "command": "pnpm",
+    "args": ["exec", "vitest", "run", "$ZED_FILE"],
     "cwd": "$ZED_WORKTREE_ROOT"
   }
 ]

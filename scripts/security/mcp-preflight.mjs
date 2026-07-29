@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { parseArgs as nodeParseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
@@ -208,9 +209,11 @@ export function discoverMcpConfigPaths(repoRoot, options = {}) {
     }
 
     if (options.includeUserConfig) {
-        const homeDir = process.env.HOME ?? '';
-        for (const name of MCP_CONFIG_FILENAMES) {
-            candidates.push(path.join(homeDir, name));
+        const homeDir = process.env.HOME ?? os.homedir();
+        if (homeDir) {
+            for (const name of MCP_CONFIG_FILENAMES) {
+                candidates.push(path.join(homeDir, name));
+            }
         }
     }
 
