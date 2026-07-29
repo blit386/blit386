@@ -36,6 +36,7 @@ Run comprehensive quality checks before committing or pushing code.
    - `sync:cursor-commands:check` – Cursor commands match Claude skills
    - `test:agent-config` – Unit tests for the agents check helpers
    - `test:cursor-commands` – Unit tests for the cursor-command sync helpers
+   - `test:compact-tables` – Unit tests for the compact Markdown table Prettier plugin
    - `build` – Build both packages
    - `test` – `pnpm -r test`: package `node --test` suites (scaffolder, kit CLI, env, codemod)
 

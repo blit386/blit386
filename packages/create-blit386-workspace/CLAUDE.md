@@ -4,10 +4,10 @@ Monorepo for the BLIT386 game scaffolder and project kit.
 
 ## Packages
 
-| Package                   | npm name         | Purpose                                           |
-| ------------------------- | ---------------- | ------------------------------------------------- |
-| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` CLI and templates     |
-| `packages/kit`            | `@blit386/kit`   | Canonical kit content (the IR) and the `blit` CLI |
+| Package | npm name | Purpose |
+| --- | --- | --- |
+| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` CLI and templates |
+| `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI |
 
 The `blit` CLI (a project-local bin inside every generated game): `blit run`, `blit doctor`, `blit upgrade`,
 `blit migrate`, `blit agents sync` / `blit agents add`, `blit help`.
@@ -16,7 +16,9 @@ The `blit` CLI (a project-local bin inside every generated game): `blit run`, `b
 
 - Language: TypeScript 5.9.3 (strict)
 - Build: tsup (ESM, Node 22)
-- Formatting: Biome (TS/JS/JSON) + Prettier (MD/YAML)
+- Formatting: Biome (TS/JS/JSON) + Prettier (MD/YAML). Markdown tables are compact by design (single-space padding,
+  never aligned) via `scripts/prettier-plugin-compact-tables.mjs`, a mirror of the canonical copy in `blit386`.
+  Generated games get the same setup from `templates/base/`
 - Linting: Biome (no ESLint in this repo)
 - Package manager: pnpm 10.26.2
 - Node: >= 22.18.0
@@ -40,6 +42,7 @@ pnpm run sync:cursor-commands      # Mirror .claude/skills -> .cursor/commands
 pnpm run sync:cursor-commands:check # Fail if Cursor commands drift from skills
 pnpm run test:agent-config         # Unit tests for agents:check helpers
 pnpm run test:cursor-commands      # Unit tests for sync-cursor-commands helpers
+pnpm run test:compact-tables       # Unit tests for the compact Markdown table Prettier plugin
 pnpm run test                      # All package node:test suites (pnpm -r test; scaffolder suites need a build first)
 pnpm run preflight                 # All quality checks before commit
 pnpm run security:audit            # Dependency audit (moderate+)
@@ -156,24 +159,24 @@ effects. The engine has no physics, collision, entity, or scene system: say so, 
 
 When blit386 public API or naming changes in the sibling repo, audit these kit files for stale examples:
 
-| Kit file                                 | Review when                                                                                 |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `content/docs/getting-started.md`        | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload                          |
-| `content/docs/basics.md`                 | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount`       |
-| `content/docs/drawing.md`                | `BT.clear`, primitives, text APIs                                                           |
-| `content/docs/input.md`                  | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action               |
-| `content/docs/palette.md`                | `paletteCreate`, slots, `Color32`                                                           |
-| `content/docs/audio.md`                  | `AudioClip`, `BT.synthPreset`, buses, the unlock rule                                       |
-| `content/docs/hot-reload.md`             | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace                                |
-| `content/docs/when-something-breaks.md`  | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `doctor`        |
-| `content/AGENTS.md`                      | Overall game shape, hard rules, doc routing, hot-reload tiers                               |
-| `content/rules/blit-api-names.md`        | `BT` getters, configure flags, wake lock, `onHotReload` / never call `registerHotReload`    |
-| `content/rules/blit-integer-coords.md`   | Integer-coordinate rule (`Vector2i` / `Rect2i`)                                             |
-| `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games                               |
-| `content/skills/*/SKILL.md`              | Other game-author skills; each demonstrates a slice of the `BT` surface                     |
-| `content/hooks/shell-safety.sh`          | Shell commands the hook blocks in a generated game (Cursor + Claude protocols)              |
-| `content/hooks.manifest.json`            | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` are generated from it |
-| `content/agents.config.json`             | Which files each adapter (claude / cursor) emits                                            |
+| Kit file | Review when |
+| --- | --- |
+| `content/docs/getting-started.md` | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload |
+| `content/docs/basics.md` | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount` |
+| `content/docs/drawing.md` | `BT.clear`, primitives, text APIs |
+| `content/docs/input.md` | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action |
+| `content/docs/palette.md` | `paletteCreate`, slots, `Color32` |
+| `content/docs/audio.md` | `AudioClip`, `BT.synthPreset`, buses, the unlock rule |
+| `content/docs/hot-reload.md` | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace |
+| `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises, `doctor` |
+| `content/AGENTS.md` | Overall game shape, hard rules, doc routing, hot-reload tiers |
+| `content/rules/blit-api-names.md` | `BT` getters, configure flags, wake lock, `onHotReload` / never call `registerHotReload` |
+| `content/rules/blit-integer-coords.md` | Integer-coordinate rule (`Vector2i` / `Rect2i`) |
+| `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games |
+| `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
+| `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
+| `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` are generated from it |
+| `content/agents.config.json` | Which files each adapter (claude / cursor) emits |
 
 Also check `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine
 version.
@@ -187,19 +190,19 @@ docs do and stale the same way, and `BLIT386_RANGE`. Run `/cbt-kit-audit` to wal
 
 ## Where to find information
 
-| Question                               | Where to look                                                                          |
-| -------------------------------------- | -------------------------------------------------------------------------------------- |
-| What does the scaffolder generate?     | `packages/create-blit386/src/scaffold.ts`, `templates/`                                |
-| What does `blit` CLI do?               | `packages/kit/src/cli.ts`, `packages/kit/README.md`                                    |
-| How are agent files generated?         | `packages/kit/src/adapters.ts` (`@blit386/kit/adapters`); scaffold writes them to disk |
-| What does `blit agents sync` do?       | `packages/kit/src/commands/agents.ts` (drift `--check` + full write path)              |
-| What does `blit agents add` do?        | `packages/kit/src/commands/agents.ts` (`runAddAgent`)                                  |
-| How do API migrations / codemods work? | `packages/kit/src/migrations/` (registry + codemod engine), `commands/migrate.ts`      |
-| Sync ownership model / manifest        | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts`        |
-| Engine API names for generated games   | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md`                                   |
-| Cursor hooks and rules                 | `.cursor/hooks.json`, `.cursor/rules/`                                                 |
-| Project blit386-docs MCP               | `.mcp.json` (Claude), `.cursor/mcp.json` (Cursor)                                      |
-| Maintainer Cursor commands / parity    | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs`                   |
-| Hot-reload delivery decision           | `CREATE_BLIT386_DESIGN.md` (Hot reload section)                                        |
-| Publishing / release                   | `./PUBLISHING.md`, `cbt-release`, `pnpm run bump -- <x.y.z>`                           |
-| Contributing / DCO                     | `CONTRIBUTING.md`                                                                      |
+| Question | Where to look |
+| --- | --- |
+| What does the scaffolder generate? | `packages/create-blit386/src/scaffold.ts`, `templates/` |
+| What does `blit` CLI do? | `packages/kit/src/cli.ts`, `packages/kit/README.md` |
+| How are agent files generated? | `packages/kit/src/adapters.ts` (`@blit386/kit/adapters`); scaffold writes them to disk |
+| What does `blit agents sync` do? | `packages/kit/src/commands/agents.ts` (drift `--check` + full write path) |
+| What does `blit agents add` do? | `packages/kit/src/commands/agents.ts` (`runAddAgent`) |
+| How do API migrations / codemods work? | `packages/kit/src/migrations/` (registry + codemod engine), `commands/migrate.ts` |
+| Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `packages/kit/src/commands/agents.ts` |
+| Engine API names for generated games | sibling repo `blit386/CLAUDE.md`, `docs/api-core.md` |
+| Cursor hooks and rules | `.cursor/hooks.json`, `.cursor/rules/` |
+| Project blit386-docs MCP | `.mcp.json` (Claude), `.cursor/mcp.json` (Cursor) |
+| Maintainer Cursor commands / parity | `scripts/sync-cursor-commands.mjs`, `scripts/check-agent-config.mjs` |
+| Hot-reload delivery decision | `CREATE_BLIT386_DESIGN.md` (Hot reload section) |
+| Publishing / release | `./PUBLISHING.md`, `cbt-release`, `pnpm run bump -- <x.y.z>` |
+| Contributing / DCO | `CONTRIBUTING.md` |
