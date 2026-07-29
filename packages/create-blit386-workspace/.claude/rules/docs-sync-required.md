@@ -1,7 +1,5 @@
 # Docs sync required
 
-Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
-
 - Docs and kit content are part of the implementation, not a follow-up task.
 - Scaffold/template/CLI changes that affect generated games: update `packages/kit/content/` and template READMEs.
 - `BT` API name or bootstrap usage changes: review kit `packages/kit/content/docs/*.md` and the kit rule sources

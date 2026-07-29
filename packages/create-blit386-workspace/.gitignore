@@ -20,10 +20,11 @@ dist/
 .claude/memory/
 .claude/worktrees/
 
-# Personal MCP overrides (project ships tracked .mcp.json + .cursor/mcp.json for blit386-docs)
+# Personal MCP overrides (project ships tracked .mcp.json for blit386-docs)
 mcp.json
 
-# Other AI assistants (local only)
+# Other AI assistants and editors (local only, not supported in this repo)
+.cursor/
 .codex/
 .aider*
 .continue/
@@ -32,23 +33,11 @@ ai-rules/
 .rules
 
 # IDE and editor files
-.vscode/launch.json
-.vscode/*.code-workspace
-!.vscode/settings.json
-!.vscode/extensions.json
+.vscode/
 .idea/
 *.iml
 .zed/*
 !.zed/settings.json
-.cursor/*
-!.cursor/hooks.json
-!.cursor/hooks/
-!.cursor/hooks/**
-!.cursor/rules/
-!.cursor/rules/**
-!.cursor/commands/
-!.cursor/commands/**
-!.cursor/mcp.json
 *.swp
 *.swo
 *~

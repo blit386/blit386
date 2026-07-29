@@ -17,7 +17,6 @@
       ".claude/**/*.json",
       ".github/**/*.json",
       ".zed/**/*.json",
-      ".vscode/**/*.json",
       "*.json",
       "*.js",
       "commitlint.config.js"

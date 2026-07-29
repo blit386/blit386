@@ -106,7 +106,7 @@ dependency edit needed.
 
 ```bash
 pnpm install
-pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + agents:check + sync:cursor-commands:check + test:agent-config + test:cursor-commands + test:bump-lockstep + build + test
+pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + agents:check + test:agent-config + test:bump-lockstep + build + test
 ```
 
 `main` is protected: push a branch, open a PR, wait for checks, and squash-merge it. The version bump has to be on

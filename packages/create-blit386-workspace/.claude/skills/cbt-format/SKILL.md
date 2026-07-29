@@ -20,7 +20,7 @@ Format every file in the create-blit386 monorepo and verify the result.
 1. Run formatters
    - Execute `pnpm run format` from the repository root, which runs:
      - Biome for TypeScript/JavaScript/JSON (`.ts`, `.js`, `.json`, `.jsonc`)
-     - Prettier for Markdown/YAML/Cursor rules (`.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`)
+     - Prettier for Markdown/YAML (`.md`, `.mdx`, `.yml`, `.yaml`)
 
 2. Show what changed
    - Run `git diff --stat` to summarize the reformatted files
@@ -34,7 +34,7 @@ Format every file in the create-blit386 monorepo and verify the result.
 | File Types | Tool | Config |
 | --- | --- | --- |
 | `.ts`, `.js`, `.json`, `.jsonc` | Biome | `biome.json` |
-| `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
+| `.md`, `.mdx`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
 
 ## Formatting Rules
 
