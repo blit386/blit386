@@ -57,7 +57,7 @@ Authoring rules:
   on-screen `webgpu | 320x240`).
 - No walls of text – short paragraphs, bullet lists, `###` subsections, or `Callout`s. Every `###` needs a parent `##`.
 - Credit external inspirations with a link and the author's name.
-- American English spelling (see `.claude/rules/american-english-spelling.md`).
+- American English spelling (see [CLAUDE.md](../../CLAUDE.md), Critical Rules).
 
 Filenames mirror the sitemap section: `api/<topic>` -> `api-<topic>.md`; `guides/<topic>` -> `guide-<topic>.md`;
 `performance/<topic>` -> `performance-<topic>.md`; `reference/<topic>` -> `reference-<topic>.md`.

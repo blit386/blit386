@@ -1,3 +1,7 @@
+---
+paths: [src/**/*.ts, docs/api-*.md]
+---
+
 # BT API: getters vs methods
 
 This file is the full policy for BT API getters vs methods and Boolean naming; [CLAUDE.md](../../CLAUDE.md) carries only
