@@ -1,285 +1,63 @@
-# Project Rules
+# blit386-demos
 
-Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript.
+Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript. Deployed to
+demos.blit386.dev via Cloudflare Pages. The engine is consumed as `workspace:*`; CI clones both repos to rebuild that
+layout (`docs/CI-WORKSPACE-SETUP.md`).
 
 ## Critical Rules
 
-- No emoji – no emoji in code, commits, docs, or UI strings (no exceptions)
-- Integer coordinates – all rendering uses `Vector2i` and `Rect2i` for pixel-perfect graphics
-- Plain JavaScript – demos use ES2022 JS for simplicity (no TypeScript)
-- Beginner-friendly comments – see Documentation Style section below
-- American English spelling – see Documentation Style below
+- No emoji – code, commits, docs, or UI strings, no exceptions
+- Integer coordinates – all rendering uses `Vector2i` and `Rect2i`
+- Plain JavaScript – ES2022, never TypeScript, even for a "small" helper
+- Beginner-friendly comments – see Documentation Style below. This is the point of the repo, not a nicety
+- American English spelling – `color`, `center`, `canceled`, `traveling`, `gray`. Exempt: spec-mandated names correctly
+  spelled with a British `s`/`c` in their own spec, such as Web Audio's `AnalyserNode`
+- Mutation is fine here – demo classes mutate instance state in `update()` / `render()` for performance. The general
+  prefer-immutability default does not apply to per-frame demo state
+- Relaxed linting versus the library: JSDoc is not required (though class-level `@implements {IBTDemo}` is encouraged)
+  and console logging is allowed. Clarity beats ceremony
 
-## Project Structure
+## Layout
 
-```text
-blit386-demos/
-  src/                         # JavaScript source – one file per demo (single source of truth)
-    basics.js
-    primitives.js
-    ...                        # number-free kebab-case demos under src/*.js (plugin discovers all)
-    shared/                    # Shared UI kit + cross-demo helpers (38 of 40 demos import it; flurry and
-                               #   filip-test-02, hypercube are the exceptions)
-      ui.js                    # The one entry point demos import: applyTheme() + the ui object
-      ui-core.js               # Immediate-mode context: anchors, layout, pooled draws, hit testing
-      ui-widgets.js            # panel, label, caption, kv, checkbox, pip, button, slider, meter,
-                               #   separator, spacer, audioUnlockHint
-      ui-theme.js              # applyTheme(palette) – installs the 12 shared UI colors (slots 240-251)
-      ui-dpad.js               # Virtual touch D-pad (ui.dpadWidget, ui.dpad.isDown / isPressed)
-      ui-gestures.js           # Swipe recognition (ui.swipe) and tap zones (ui.tapIn)
-      post-process-backend.js  # isAvailable() + SOFTWARE_FALLBACK_NOTE (WebGPU-only effect demos)
-      rand.js                  # randInt, randIntInclusive, randFloat, randPick (shared random helpers)
-      canvas-sprites.js        # canvasToImage() + registerCanvasColors() for canvas-built sprite sheets
-  public/                      # Static assets copied to dist/ verbatim
-    fonts/                     # Bitmap fonts (.btfont + .png) and DepartureMono/ (otf/woff/woff2 + LICENSE,
-                               #   the web font used by the demo navigation banner)
-    sprites/                   # Sprite sheets used by demos
-    audio/                     # blip.wav, pop.wav, music-calm.wav, music-upbeat.wav,
-                               #   music-intro-loop.wav + music-intro-loop.loop.json (loop points)
-    _headers                   # Cloudflare Pages headers
-                               # (dist/_redirects is generated at build time – not stored under public/)
-  styles/                      # Demo chrome CSS (Vite + PostCSS: nesting, Autoprefixer)
-    layout.css                 # Banner, shell iframe, canvas sizing, embed mode (from layout.html)
-    demo-source.css            # Source panel / Shiki / Twoslash hover polish
-    twoslash-rich.css          # Vendored from @shikijs/twoslash (Biome-ignored)
-    demos-index.css            # Dev-only /demos/ index page
-  _partials/                   # Shared HTML template + page chrome scripts
-    layout.html                # Dual-mode page ({{title}}, {{scriptFile}}, {{slug}}, {{demoList}},
-                               #   {{sourceHtml}}, {{sourcePanelScript}}); shell banner+iframe vs
-                               #   ?embed / ?embed&source
-    demo-shell.js              # Persistent-shell nav (fuzzy combobox + prev/next) + dual-mode prepare/analytics
-    source-panel.js            # Dev-only live Twoslash source updates (HMR)
-    source-panel-protocol.js   # Shared HMR event name for the source panel
-  plugins/                     # Vite plugin that renders virtual demo HTML at build and dev time
-    virtual-demos.js           # Virtual HTML pages + Twoslash source + vintage 301s in dev
-    highlight-demo-source.js   # Shiki + @shikijs/twoslash highlighter (mtime cache)
-    demo-registry.js           # Scans src/<slug>.js; applies DEMO_ORDER / NAV_HIDDEN_SLUGS
-    demo-order.js              # Canonical nav order (DEMO_ORDER) – single source of truth for prev/next
-    demo-vintage-urls.js       # Historical slug → current slug (VINTAGE_URLS) + RETIRED_SLUGS
-  scripts/                     # Repo maintenance scripts (run via package scripts)
-    check-markdown-links.mjs   # pnpm run docs:links – walks every .md/.mdx in the repo
-    check-demo-registry.mjs    # pnpm run check:demo-registry – order / vintage / RETIRED_SLUGS / NAV_HIDDEN / disk
-    generate-audio-loops.mjs   # pnpm run generate:audio-loops – writes the *.loop.json loop points
-  docs/                        # CI-WORKSPACE-SETUP, EXTERNAL-DEVELOPER-SETUP, SECURITY-HEADERS
-```
+One demo per file under `src/`, and that file is the single source of truth – no `demos/` directory exists on disk. The
+`virtual-demos` Vite plugin serves each at `/demos/<slug>.html` in dev; the production build flattens them to
+`https://demos.blit386.dev/<slug>`. `src/shared/` holds the UI kit and cross-demo helpers, `public/` static assets,
+`_partials/` the shared HTML template and shell scripts, `plugins/` the Vite plugin plus the order and vintage-URL
+registries, `scripts/` the check and generate scripts.
 
-The `/demos/<slug>.html` URLs are served virtually by the `virtual-demos` plugin. There is no `demos/` directory on
-disk. Filenames are number-free kebab-case (`src/basics.js`); discovery rejects legacy `001-topic.js` names. Prev/next
-and the banner selector follow `DEMO_ORDER` in `plugins/demo-order.js`, not disk order. Historical numbered paths
-(`001-basics`, `00a-barebones`, …) live forever in `plugins/demo-vintage-urls.js` (`VINTAGE_URLS`): the Vite plugin
-issues a 301 in dev, and the `demo-redirects` Vite plugin writes matching rules into `dist/_redirects` for Cloudflare
-Pages. Retired targets (no file on disk) stay in `VINTAGE_URLS` and `RETIRED_SLUGS` for history; redirect generation
-skips keys whose current slug is not live. `pnpm run check:demo-registry` enforces bijection between `src/*.js`,
-`DEMO_ORDER`, and live-or-retired vintage targets (plus `NAV_HIDDEN_SLUGS` / `RETIRED_SLUGS` freshness).
+Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`); the first path segment must start with a
+letter, so legacy `001-topic.js` names are rejected. Navigation order is **not** derived from the filename – it comes
+from `DEMO_ORDER` in `plugins/demo-order.js`.
 
-Each page is dual-mode: the default **persistent shell** keeps a navigation banner and hosts the demo in a same-origin
-iframe pointed at the same path with `?embed&source` (so demo swaps can discard the engine instance – blit386 has no
-teardown API – while the Twoslash source panel stays under the canvas inside the frame). The banner selector is a
-fuzzy-searchable combobox (WAI-ARIA list-autocomplete in `_partials/demo-shell.js`): type to filter by `navLabel`, then
-choose with arrow keys / Enter / click. Toolbar prev/next and combobox selection call `selectDemo(slug)`, which updates
-the iframe, `document.title`, and `history.pushState` to the clean demo URL; `popstate` keeps the iframe and selector in
-sync on back/forward. Plain **embed** mode (`?embed`, no `source`) renders only `#canvas-container` (centered
-full-viewport canvas, source hidden) for external docs embeds on blit386.dev.
+## Adding a New Demo
 
-## Development Commands
-
-```bash
-pnpm run dev                    # Start dev server (opens /demos/basics.html; index at /demos/)
-pnpm run dev:watch              # Dev server + watch BLIT386 library for changes
-pnpm run build                  # Build for production (output: dist/)
-pnpm run preview                # Preview production build
-pnpm run lint                   # Lint (ESLint)
-pnpm run lint:fix               # Auto-fix lint issues
-pnpm run format                 # Format (Biome + Prettier)
-pnpm run format:check           # Check formatting
-pnpm run format:biome           # Format JS/JSON/CSS only (Biome)
-pnpm run format:prettier        # Format Markdown/YAML only (Prettier)
-pnpm run spellcheck             # Check spelling (src/**, docs/**, README.md)
-pnpm run knip                   # Find unused exports
-pnpm run knip:fix               # Auto-remove what knip flags (review the diff)
-pnpm run docs:links             # Check Markdown links (every .md/.mdx in the repo)
-pnpm run check:demo-registry    # DEMO_ORDER / VINTAGE_URLS / RETIRED_SLUGS / NAV_HIDDEN_SLUGS / src/*.js
-pnpm run generate:audio-loops   # Regenerate public/audio/*.loop.json loop points
-pnpm run preflight              # ALL quality checks before committing
-pnpm run clean                  # Clean build artifacts
-pnpm run security:audit         # Run security audit on dependencies
-pnpm run security:audit:fix     # Apply the audit's suggested fixes
-pnpm run security:mcp-preflight # MCP security preflight (script lives in the blit386 repo)
-```
-
-RTK: Use `pnpm run …` for scripts. Claude Code's `.claude/settings.json` runs `rtk hook claude` on Bash. Prefer shell +
-RTK over native Read/Grep for exploration. See `~/.claude/RTK.md`.
-
-## Hot Reload
-
-`pnpm run dev` / `pnpm run dev:watch` wire the `blit386/vite` plugin (`import { blit386 } from 'blit386/vite'` in
-`vite.config.js`) alongside the existing `virtual-demos` watcher. Editing a demo's own `src/<slug>.js` file no longer
-full-reloads the page:
-
-- **Method-only change** (`render()`/`update()` bodies, etc.): the engine swaps the class prototype in place – state
-  kept, `init()` not re-run. Console shows `[BT] Hot reload #N (methods)`.
-- **`init()`/constructor/class-field change**: the engine re-creates the demo instance and re-runs `init()` while the
-  old instance keeps driving the loop, then swaps on success. `onHotReload(oldSnapshot)` fires if the demo class defines
-  it.
-- **`configure()` hardware-settings change** (`displaySize`, `backend`, `targetFPS`, `audioVoices`,
-  `outputUpscaleFilter`, `maxCanvasSize`, `overlay*` flags): full page reload – these are baked into the renderer/audio
-  graph at init and cannot be hot-swapped.
-- **Asset change** (`public/sprites`, `public/audio`, `public/fonts` – image, audio, `.btfont`): the plugin's asset
-  watcher replaces the loaded `SpriteSheet` / `AudioClip` / `BitmapFont` in place; no reload.
-
-What still always full-reloads: `_partials/*` edits (the page template and chrome scripts such as `demo-shell.js`), a
-`blit386` library dist rebuild (via `blit386WatchReload()` – a changed engine bundle invalidates everything), and adding
-or removing a `src/<slug>.js` demo file (the registry and the page set changed).
-
-The live source panel (the highlighted code block under the canvas) updates itself on a demo-entry edit via a
-`blit386:source-updated` custom HMR event, independent of the code hot-swap – see `plugins/virtual-demos.js`'s
-`configureServer` watcher and `_partials/source-panel.js`.
-
-Editing `src/shared/*.js` (the shared UI kit) hot-swaps too, through Vite's own module-graph HMR rather than a
-`blit386:source-updated` event (the source panel only ever shows a demo's own file). This re-evaluates the shared UI
-kit's module-scope state: `src/shared/ui.js`'s singleton `const ctx = new UiContext()` gets replaced, and `ui-dpad.js` /
-`ui-gestures.js` reset their module-scope D-pad and swipe state. In practice this means the D-pad can briefly hide, an
-in-flight swipe or key press can be dropped, and `ui.hasTouch()` can revert to `false` until the next touch – all
-self-heals within a frame or two as `ui.tick()` repopulates the fresh instance. No `addEventListener` call in
-`ui-core.js`, `ui-dpad.js`, or `ui-gestures.js` runs at module scope, so a shared-UI edit never double-registers a DOM
-listener.
-
-If you change the engine's `blit386/vite` plugin itself (`blit386/src/vite/**`), `dev:watch`'s `pnpm run build --watch`
-only rebuilds the browser bundle (`dist/blit386.js`) – run a one-shot `pnpm run build` in `blit386` to pick up
-`dist/vite.js` changes, then restart `pnpm run dev`.
-
-### Manual hot-reload test script
-
-No automated test covers this (see Global Constraints in the implementation plan) – run this by hand after any change to
-the hot-reload wiring:
-
-1. `pnpm run dev:watch`; open `basics` (shell URL; demo runs inside the `?embed&source` iframe).
-2. Edit a `render()` color constant – visual change, state (ticks/positions) kept, console shows
-   `[BT] Hot reload #1 (methods)`.
-3. Edit `init()` – re-init runs, `onHotReload` fires with a snapshot (add a temporary hook to verify), no page reload.
-4. Edit `configure()`'s `displaySize` – full page reload.
-5. Edit `public/sprites/*.png` used by image-output / game-scene – texture updates in place, no reload.
-6. Edit `public/audio/blip.wav` (audio-basics) – the next `soundPlay` uses the new sound; replace the playing music clip
-   (music) – the track restarts.
-7. Edit `src/shared/ui.js` – demo keeps its own state, the UI kit still works (D-pad visibility may reset – expected,
-   see above).
-8. Edit `_partials/layout.html` or `_partials/demo-shell.js` – full reload of the shell; the source panel updates on
-   demo edits without a reload.
-9. Jump to another demo via the banner fuzzy combobox (or prev/next) – address bar updates via `pushState`, banner stays
-   mounted, only the iframe reloads; browser back/forward restores the previous demo in the iframe.
-10. Edit an engine `src/` file – the lib rebuilds – full reload (`blit386WatchReload` preserved).
-11. Repeat steps 2-3 with `?backend=software` on the embed URL: full reload is expected (verify against known gap
-    below), not parity.
-12. Introduce a syntax error in a demo – the old demo keeps running (Vite may or may not show its error overlay,
-    depending on the failure class); fix it – it recovers with no reload at any point.
-
-Known gap: under `?backend=software`, any `src/<slug>.js` edit currently full-reloads, even a pure `render()`-body
-change that hot-swaps cleanly under the default `webgpu` backend. This is a tier-detection parity gap in the engine's
-hot-swap runtime (`blit386` `src/hot/`), not in anything this repo's `vite.config.js` or `virtual-demos.js` wiring
-controls – tracked as a follow-up against the engine.
-
-## Workspace Integration
-
-This project depends on BLIT386 via pnpm workspace:
-
-```json
-{ "dependencies": { "blit386": "workspace:*" } }
-```
-
-Local workspace structure:
-
-```text
-parent-dir/
-  pnpm-workspace.yaml
-  blit386/
-  blit386-demos/
-```
-
-CI recreates this structure by cloning both repos. See `docs/CI-WORKSPACE-SETUP.md` for details.
-
-## Demo File Conventions
-
-### JavaScript Demo Files (`src/<topic>.js`)
-
-Each demo is a single JS file under `src/`. Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`) –
-the first path segment must start with a letter so legacy `001-topic.js` names are rejected. The matching HTML page is
-served virtually at `/demos/<slug>.html` by the `virtual-demos` Vite plugin; no HTML file exists on disk. Navigation
-order is **not** derived from the filename: append the slug to `DEMO_ORDER` in `plugins/demo-order.js`. Follow this
-pattern:
-
-```js
-/**
- * Colors – Brief description.
- */
-
-import { bootstrap, BT, Color32, Vector2i } from 'blit386';
-
-class Demo {
-  // Optional: omit configure() to use engine defaultConfig (320x240 logical, 640x480 canvas, 60 FPS).
-  // In configure(), you may set `backend: 'software'` to force Canvas 2D; default is WebGPU with automatic fallback.
-  configure() {
-    /* ... */
-  }
-  async init() {
-    /* ... */
-  }
-  update() {
-    /* ... */
-  }
-  render() {
-    /* ... */
-  }
-}
-
-bootstrap(Demo);
-```
-
-### Adding a New Demo
-
-1. Create `src/<topic>.js` (kebab-case topic, no numeric prefix) with the standard demo class pattern and
-   beginner-friendly comments. The `demos-new` skill scaffolds this shape.
-2. Append the slug to `DEMO_ORDER` in `plugins/demo-order.js` (required – otherwise the registry check fails and the
-   demo is only soft-appended after ordered entries).
+1. Create `src/<topic>.js` with the standard demo class pattern (`configure?`, `init`, `update`, `render`, then
+   `bootstrap(Demo)`) and beginner-friendly comments. The `demos-new` skill scaffolds the shape.
+2. Append the slug to `DEMO_ORDER` in `plugins/demo-order.js`. Required – otherwise the registry check fails and the
+   demo is only soft-appended after the ordered entries.
 3. No `vite.config.js` edit, HTML file, or vintage-map entry is needed for a brand-new slug. On a **rename**, update the
-   vacated slug's target in `plugins/demo-vintage-urls.js` (`VINTAGE_URLS`) and add a new mapping for the old public
-   path so bookmarks keep working.
-4. Run `pnpm run check:demo-registry` (also part of `pnpm run preflight`) so disk, order, vintage, and nav-hidden sets
-   stay consistent.
-5. Add the demo to the `## Demos` list in `README.md` under the right category, using the number-free hosted URL
-   (`https://demos.blit386.dev/<slug>`).
+   vacated slug's target in `VINTAGE_URLS` (`plugins/demo-vintage-urls.js`) and add a mapping for the old public path so
+   bookmarks keep working.
+4. Run `pnpm run check:demo-registry` so disk, order, vintage, and nav-hidden sets stay consistent.
+5. Add the demo to the `## Demos` list in `README.md` under the right category, using the hosted URL.
 
-## Code Quality (Relaxed for Demos)
-
-Demos have relaxed linting compared to the library:
-
-- JSDoc not required (but class-level JSDoc with `@implements {IBTDemo}` is encouraged)
-- Console logging allowed
-- Mutation allowed for demo state – demo classes may mutate instance properties in `update()` and `render()` for
-  performance. The global immutability preference does not apply to per-frame demo state.
-
-Focus on clarity and readability over strict documentation.
+The page title defaults to `BLIT386 Demo - Title Cased Topic` (plain hyphen; only the sidebar `navLabel` uses an en
+dash). Override with a `// @pageTitle Custom Title` comment in the file header.
 
 ## Documentation Style
 
-Demo source files are written for readers with little or no coding experience. Comments must explain what the code does
-and why, not just restate it.
+Demo source is written for readers with little or no coding experience. Comments explain what the code does and why,
+never just restating it.
 
-### Rules
-
-- Comment nearly every line or logical block in plain English.
-- Explain programming concepts when they appear (e.g., what `Math.sin()` returns, what `%` does).
-- Use analogies where they help (e.g., "Like looking through a window" for camera offset).
-- Never assume the reader knows what a function does just from its name.
-- Use short sentences. Avoid jargon unless you explain it immediately after.
-- Reference earlier demos when a concept was already explained. Use the pattern: "We learned about X in the Basics demo:
+- Comment nearly every line or logical block in plain English
+- Explain programming concepts as they appear (what `Math.sin()` returns, what `%` does)
+- Use analogies where they help ("like looking through a window" for camera offset)
+- Never assume the reader knows what a function does from its name
+- Short sentences. No jargon unless you explain it immediately
+- Reference earlier demos when a concept was already covered: "We learned about X in the Basics demo:
   <https://demos.blit386.dev/basics>"
-- American English spelling – `color`, `center`, `canceled`, `traveling`, `gray`, never `colour`, `centre`, `cancelled`,
-  `travelling`, `grey`. Exempt: literal third-party or spec-mandated names correctly spelled with a British `s` or `c`
-  in their own spec (for example Web Audio's `AnalyserNode`/`createAnalyser`, should this repo ever reference them) – do
-  not "fix" those. See blit386 [CLAUDE.md](https://github.com/blit386/blit386/blob/main/CLAUDE.md) (American English
-  spelling) for the full policy this repo follows.
 
-### Example (do this)
+Do this:
 
 ```js
 // Move the square by adding its speed to its position.
@@ -294,7 +72,7 @@ if (this.pos.x >= BT.displaySize.x - this.size.x) {
 }
 ```
 
-### Example (do not do this)
+Not this:
 
 ```js
 // Update position.
@@ -305,240 +83,106 @@ if (this.pos.x >= BT.displaySize.x - this.size.x) {
 }
 ```
 
-When reviewing demo files, check that comments would make sense to someone who has never written code before. If a block
-has no comment, or the comment only restates the code without explaining it, that is a quality issue.
+When reviewing a demo, check that the comments would make sense to someone who has never written code. A block with no
+comment, or a comment that only restates the code, is a quality issue.
 
-## BLIT386 Engine API
+## Engine API in demos
 
-All engine functionality via static `BT` namespace – see the current signatures in `blit386/src/BLIT386.ts` and
-`blit386/src/core/BTAPI.ts`.
+Current signatures live in the engine: `blit386/src/BLIT386.ts`, `blit386/src/core/BTAPI.ts`, `blit386/src/audio/`.
+Match the library's public names exactly – configure flags use grammatical `is*`, runtime input uses `BT.isDown` /
+`BT.isPressed` / `BT.isKeyDown`. Prefer the built-ins over re-deriving them: `Color32#luminance` over inline luma
+weights, `Color32#multiply` over a hand-rolled tint, `palette.applyHUD(startSlot?)` over six `palette.set()` calls,
+`SpriteSheet.loadColorsIntoPalette` before `indexize`.
 
-Read keyboard edges (`BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
-`BT.isPressed` / `BT.isReleased` for players 0/1) from `update()`, never `render()`. They clear once per fixed-update
-tick, which always runs before that frame's `render()` – reading them from `render()` intermittently drops presses under
-rapid input (the tick already consumed and cleared the edge before render saw it). `BT.isKeyDown` / `BT.isDown` (held
-state, not edges) have no such restriction and are safe from either lifecycle method.
+Two engine behaviors that bite in demos:
 
-### Audio API
+**Keyboard edges clear per update tick.** Read `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the
+keyboard-mapped half of `BT.isPressed` / `BT.isReleased` (players 0/1) from `update()`, never `render()`. They clear
+once per fixed-update tick, which always runs before that frame's `render()`, so reading an edge from `render()`
+intermittently drops presses under rapid input. `BT.isKeyDown` / `BT.isDown` are held state and safe from either.
 
-Audio works on both backends (WebGPU and Canvas 2D software) – it is Web Audio only and never touches the GPU.
-Post-process effects remain the only WebGPU-only feature. See current signatures in `blit386/src/audio/` and
-`blit386/src/assets/AudioClip.ts`.
+**Audio unlock is asymmetric.** Browsers refuse sound until a user gesture; `BT.init()` installs one-shot `pointerdown`
+/ `keydown` / `touchstart` listeners and `BT.isAudioUnlocked` flips true on the first. Before unlock, `BT.soundPlay()`
+is dropped (inert `SoundRef`, no voice) while `BT.musicPlay()` is remembered and starts the instant the context unlocks.
+Loading and synthesizing clips work fine while locked. So every audio demo shows a "click or press a key to enable
+sound" prompt gated on `BT.isAudioUnlocked` and never assumes a first-frame SFX was heard. There is no
+`BT.audioUnlock()` and no `BT.soundLoad()`.
 
-`BT.synthPreset` has exactly six keys: `jump`, `pickup`, `explosion`, `laser`, `hit`, `blip`. Each is
-`(seed?) => SynthParams` – a plain, JSON-round-trippable recipe object (`waveform`, `frequency`, `duration`, `seed`,
-plus optional `volume`, `envelope`, `pitchSweep`, `vibrato`, `noiseMix`, `dutyCycle`). Waveforms: `sine`, `square`,
-`triangle`, `sawtooth`, `noise`. There is no `BT.audioUnlock()` and no `BT.soundLoad()`.
+## Shared UI kit
 
-The user-gesture unlock rule (get this right in every audio demo): browsers refuse to play any sound until the user
-interacts with the page. `BT.init()` installs one-shot `pointerdown` / `keydown` / `touchstart` listeners on the canvas;
-the first gesture unlocks the audio context for the session and `BT.isAudioUnlocked` flips to `true`. The asymmetry that
-matters:
+All demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch D-pad, swipes, tap
+zones – comes from the immediate-mode kit in `src/shared/ui.js`. Read that file for the current widget list and options.
+Never hand-roll panels, buttons, or HUD text colors in a demo. The one intentional exception is `flurry`, an immersive
+screensaver with no demo HUD.
 
-- `BT.soundPlay()` before unlock is dropped – it returns an inert `SoundRef` and no voice is allocated.
-- `BT.musicPlay()` before unlock is remembered and starts automatically the instant the context unlocks.
-- `AudioClip.load()` / `AudioClip.synth()` work fine while still locked.
+- `applyTheme(this.palette)` in `init()`, before `BT.paletteSet()` – installs the 12 shared UI colors (slots 240-251 by
+  default; pass a `startSlot` if that range collides)
+- `ui.tick()` as the first line of `update()` whenever the demo uses `{ key }` bindings, gestures, or the D-pad. This is
+  what makes keyboard bindings edge-safe – never read `BT.isKeyPressed` in `render()` yourself
+- `ui.begin(anchor)` / widgets / `ui.end()` in `render()`. Widget identity is the label; pass `{ id }` for duplicates.
+  The kit allocates nothing per frame, so calling it at 60 FPS is fine
+- `configure()` runs before `init()`, so overlay styles needing theme colors use literal slot numbers (240 + offset)
+  with a comment, or dedicated scene slots
+- Every demo must be usable on touch: key-triggered actions get a `ui.button` with a `{ key }` binding, directional
+  input gets `ui.dpadWidget()` + `ui.swipe()`, and hardware-showcase demos (`keyboard-input`, `gamepad-input`,
+  `keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true
+- Post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` from `src/shared/post-process-backend.js`, set
+  `this.effectsAvailable = isAvailable()` after `init()` (it checks `BT.activeBackend`, not `requestedBackend`), and
+  show the note when effects are skipped
 
-So every audio demo shows a "click or press a key to enable sound" prompt gated on `BT.isAudioUnlocked`, and never
-assumes an SFX triggered on the first frame was heard.
+## Hot Reload
 
-Audio settings in `configure()`: `audioVoices` (default `16`, range 1–64 – sizes the SFX voice pool) and
-`isOverlayAudioMetersEnabled` (default `false` – adds live per-bus level meters and a voice-count readout to the
-overlay; metering costs nothing while it is off). Style them with `overlayAudioMeterHeight` (default `13` px) and
-`overlayAudioMeterStyle`.
+`pnpm run dev` / `dev:watch` wire the `blit386/vite` plugin alongside the `virtual-demos` watcher. Editing a demo's own
+`src/<slug>.js` no longer full-reloads the page. What happens depends on what you changed:
 
-Audio demos: `audio-basics` (loading and playing SFX), `music` (crossfades and loop points), `audio-buses` (mixer buses,
-mute, ducking), `synth-toy` (`AudioClip.synth()` and `BT.synthPreset`). Demos `game-scene`, `pointer-drag-flick`, and
-`snake-game` use audio as part of a larger scene.
+| Change | Result |
+| --- | --- |
+| Method body (`render()`, `update()`, …) | Class prototype swapped in place; state kept, `init()` not re-run |
+| `init()`, constructor, class field | Instance re-created and `init()` re-run while the old one keeps driving the loop, then swapped on success; `onHotReload(oldSnapshot)` fires if defined |
+| `configure()` hardware settings | Full page reload – these are baked into the renderer/audio graph at init |
+| Asset in `public/sprites`, `public/audio`, `public/fonts` | Loaded `SpriteSheet` / `AudioClip` / `BitmapFont` replaced in place, no reload |
 
-Configure example (overlay flags use grammatical `is*`):
+Still always full-reloads: `_partials/*` edits, a `blit386` dist rebuild (a changed engine bundle invalidates
+everything), and adding or removing a `src/<slug>.js` file.
 
-```javascript
-configure() {
-    return {
-        isOverlayEnabled: true,
-        isOverlayVisibleAtStart: false,
-        isOverlayPaletteEnabled: true,
-    };
-}
-```
+Editing `src/shared/*.js` hot-swaps through Vite's own module graph rather than the engine's swap. That re-evaluates
+module-scope state: `ui.js`'s singleton `UiContext` is replaced, and `ui-dpad.js` / `ui-gestures.js` reset their D-pad
+and swipe state. So the D-pad can briefly hide, an in-flight swipe or keypress can drop, and `ui.hasTouch()` can revert
+to `false` until the next touch – all self-healing within a frame or two. No `addEventListener` runs at module scope in
+those files, so a shared-UI edit never double-registers a listener.
 
-## Boolean naming
+Known gap: under `?backend=software`, any `src/<slug>.js` edit currently full-reloads, even a pure `render()`-body
+change that hot-swaps cleanly under `webgpu`. That is a tier-detection parity gap in the engine's `src/hot/` runtime,
+not in this repo's wiring – tracked against the engine. There is no automated coverage for hot reload; the `demos-test`
+skill carries the manual check script to run after touching the wiring.
 
-Demos use the library's public names only. Configure flags (Tier B): grammatical `is*` in `configure()` –
-`isOverlayEnabled`, `isDetectingDroppedFrames`, `canvasID`. Runtime input (Tier A): `BT.isDown`, `BT.isPressed`,
-`BT.isKeyDown`, `BT.isPointerActive`. Full policy: blit386
-[docs/developer-experience-guide.md](https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md).
-
-Core types: `Vector2i`, `Rect2i`, `Color32`, `SpriteSheet`, `BitmapFont`.
-
-Static helpers on those types worth knowing:
-
-- `await SpriteSheet.load(url)` – loads a PNG as a GPU texture.
-- `sheet.width` / `sheet.height` – sprite-sheet dimensions in pixels.
-- `sheet.fullRect()` – returns `Rect2i(0, 0, sheet.width, sheet.height)` for whole-sheet draw calls.
-- `await SpriteSheet.loadColorsIntoPalette(url, palette, startSlot, options?)` – scans a PNG and registers every unique
-  opaque color into `palette` starting at `startSlot`. Returns the registered `Color32[]` in palette-write order (sorted
-  darkest-first by luminance by default; pass `{ sort: 'none' }` to keep raster scan order). Use this whenever a demo
-  needs a sprite's colors in the palette so subsequent `sheet.indexize(palette)` resolves.
-- `Color32#luminance` – perceived (Rec.601) brightness in the 0..255 range. Use this instead of writing inline
-  `0.299*r + 0.587*g + 0.114*b` formulas in demos.
-- `Color32#multiply(other)` – component-wise color multiply, returns a new Color32. Use this for ambient tints and
-  team-color modulation instead of writing your own helper.
-- `Color32.fromHex('#ff8800')` and `Color32.resolveNamedColor('cornflowerblue')` – use these when a demo needs to parse
-  user/authored string colors. You can extend names with `registerColor`, `updateColor`, and `unregisterColor`.
-- `palette.applyHUD(startSlot?)` – fills six contiguous slots starting at `startSlot` (default 1) with the canonical HUD
-  colors (white, background, label gray, header gold, dim gray, code blue) and registers named aliases (`hud_white`,
-  `hud_bg`, `hud_label`, `hud_header`, `hud_dim`, `hud_code`). Eliminates the repetitive `palette.set()` boilerplate for
-  UI text colors. Call in `init()` before `BT.paletteSet()`.
-
-Full input APIs (`BT.isKeyDown`, `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.isDown`, `BT.isPressed`, `BT.isReleased`,
-gamepad helpers, remapping) are documented in the engine [input guide](https://blit386.dev/docs/guides/input).
-Post-process presets and effect tiers are in the
-[post-process effects guide](https://blit386.dev/docs/guides/post-process-effects).
-
-### Shared demo helpers
-
-CRT and post-process demos import `isAvailable()` and `SOFTWARE_FALLBACK_NOTE` from
-`src/shared/post-process-backend.js`. After `init()`, call `this.effectsAvailable = isAvailable()` (checks
-`BT.activeBackend === 'webgpu'`, not `BT.requestedBackend`) before `BT.effectAdd(...)`. When effects are skipped, show
-`SOFTWARE_FALLBACK_NOTE` on the overlay or in demo HUD text.
-
-### Shared UI kit (src/shared/ui.js)
-
-All demo UI (panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch D-pad, swipes, and
-tap zones) comes from the shared immediate-mode kit. NEVER hand-roll panels, buttons, or HUD text colors in a demo –
-import the kit. The one intentional exception is `flurry` (immersive screensaver with no demo HUD; engine overlay only):
-
-```js
-import { applyTheme, ui } from './shared/ui.js';
-
-// init(): install the 12 shared UI colors (slots 240-251 by default; returns the slot map).
-this.theme = applyTheme(this.palette); // before BT.paletteSet(); pass a startSlot if 240-251 collides
-
-// update(): first line, whenever the demo uses { key } bindings, gestures, or the D-pad.
-ui.tick();
-
-// render(): declare UI each frame; widgets answer clicks/taps/keys immediately.
-ui.begin('bottomLeft'); // or topLeft/topRight/bottomRight/topBar; opts: { x, y, width, margin, pad, kvCols }
-ui.panel('Title'); // optional bg+border+amber title; first call after begin()
-if (ui.button('Play (Space)', { key: 'Space' })) {
-  this.play();
-}
-this.loop = ui.checkbox('Loop', this.loop);
-volume = ui.slider('Vol', volume);
-ui.kv('State', label);
-ui.pip('A held', isHeld); // read-only indicator
-ui.meter('Level', fraction);
-ui.label('hint', { color: 'dim' }); // roles: text/dim/header/accent/warm/info
-ui.audioUnlockHint(); // audio demos: standard "enable sound" row, auto-hides once unlocked
-// ui.audioUnlockHint({ text: 'Click for sound' }); // optional shorter wording on tiny playfields
-ui.end();
-
-ui.caption(x, y, 'Pixels'); // pinned one-line caption (default amber); no begin()/end() needed
-ui.dpadWidget(); // self-contained touch D-pad (outside begin/end); shows after first touch
-```
-
-Update-side queries: `ui.dpad.isDown/isPressed(dir)`, `ui.swipe()`, `ui.tapIn(rect)`, `ui.hasTouch()`,
-`ui.overWidget(x, y)` (skip raw-pointer painting/dragging under UI). Widget identity is the label; pass `{ id }` for
-duplicate labels. Keyboard `{ key }` bindings are edge-safe via `ui.tick()` - never read `BT.isKeyPressed` in
-`render()`. Pointer APIs stay safe in `render()`. The kit allocates nothing per frame (pooled draw commands, cached
-one-frame-old hit rects), so calling it from `render()` at 60 FPS is fine. `configure()` runs before `init()`, so
-overlay styles that need theme colors use literal slot numbers (240 + offset) with a comment, or dedicated scene slots.
-
-Every demo must be usable on touch: actions triggered by keys get a `ui.button` with a `{ key }` binding, directional
-game input gets `ui.dpadWidget()` + `ui.swipe()`, and hardware-showcase demos (`keyboard-input`, `gamepad-input`,
-`keyboard-diagnostic`) show a warm "needs a keyboard/gamepad" label when `ui.hasTouch()` is true.
-
-The engine draws a default stats overlay (FPS, target FPS, backend, resolution, demo title) after each `render()` call.
-The overlay body starts hidden; a bitmap toggle hint sits in the bottom-left corner by default. Toggle the body with
-Backquote or a primary press in the bottom-left 17x13 px corner. Use `isOverlayVisibleAtStart: true` to show the body on
-the first frame, `isOverlayToggleHintVisible: false` to hide the hint icon on immersive demos (the body still toggles
-with Backquote; see `image-output`, `game-scene`, `crt-pipboy`, `snake-game`), `isOverlayToggleEnabled: false` to lock
-body visibility, or `isOverlayEnabled: false` to disable the overlay subsystem (see
-[API: Core](https://blit386.dev/docs/api/core)). Set `isOverlayTimingChartEnabled: true` to opt in to the scrolling
-update/render timing chart band (~22 px under the title row). Chart renderer diagnostics default to minimal when the
-chart is on; set `overlayTimingChartDiagnostics: 'rich'` for vertex-pressure dots or `false` to disable chart markers.
-Set `isOverlayRendererDiagnosticsBarEnabled: true` for a GPU pipeline text row below frame timings (off by default). Bar
-colors default to `overlayStyle` indices; override with `overlayTimingChartStyle`. Milestone labels use
-`overlayTimingChartStyle.tagPaletteIndex` (engine default 5). The engine adds a Start tag when the chart resets (first
-layout and on resize). For gameplay events, call `BT.assignTag('...')` from `update()` or `init()` when the chart is
-enabled in `configure()`.
+If you change the engine's `blit386/vite` plugin itself, `dev:watch`'s `build --watch` only rebuilds the browser bundle.
+Run a one-shot `pnpm run build` in `blit386` to pick up `dist/vite.js`, then restart `pnpm run dev`.
 
 ## File Organization
 
-Standard section order (matches `.claude/rules/file-structure.md`):
+Section order: header comment (`// Demo Topic – …`, prerequisites, hosted links, optional `// @pageTitle`) → imports →
+`@typedef` JSDoc → configuration constants → module state → helper functions → the `Demo` class → `bootstrap(Demo);`
+last. Class member order: instance fields → `configure()` → `init()` → `update()` → `render()` → helpers. Region markers
+(`// #region`) are banned.
 
-1. Header comment (`// Demo Topic – …`, prerequisites, hosted links; optional `// @pageTitle`)
-2. Imports
-3. Type definitions (`@typedef` JSDoc)
-4. Configuration constants
-5. Module state
-6. Helper functions
-7. Main logic (`Demo` class)
-8. Exports / bootstrap – `bootstrap(Demo);` last
+## Commands, formatting, git
 
-Demo class member order: instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper
-methods.
+Scripts are `pnpm run <script>`; `package.json` is the list and `pnpm run preflight` is the gating set. Shell commands
+are rewritten by `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep.
 
-Never use `// #region` / `// #endregion` – region markers are banned everywhere. See `.claude/rules/file-structure.md`.
+Biome owns JS/JSON/CSS, Prettier owns Markdown/YAML: 4-space indent (2 for JSON/YAML/Markdown), 120 columns, single
+quotes, semicolons, trailing commas. Markdown tables are compact by design via
+`scripts/prettier-plugin-compact-tables.mjs`, a mirror of the canonical copy in `blit386` – never hand-align one.
 
-## Formatting Rules
+Conventional Commits with `git commit -s` (this repo's history follows DCO, though only commitlint runs in the hook –
+there is no DCO CI check here). Scopes are optional; prefer ones already in history: `demos`, `ui`, `assets`, `docs`,
+`skills`, `deps`. AI-assisted commits carry `Co-Authored-By: Claude <noreply@anthropic.com>`. Husky runs lint-staged on
+pre-commit, commitlint on commit-msg, and `pnpm run preflight` on pre-push.
 
-Enforced by Biome (JS/JSON/CSS) and Prettier (Markdown/YAML):
+Deployment is automatic on push to main. The build copies each virtual demo to `dist/<slug>.html` at the site root and
+generates `dist/_redirects` from `VINTAGE_URLS` plus a site-index rule, so vintage numbered paths (`/001-basics`) 301 to
+the current slug in both environments.
 
-- Four spaces indent (two for JSON/YAML/Markdown)
-- 120 char line width, single quotes, always semicolons, always trailing commas
-- Markdown tables are compact by design – one space of padding, never aligned to the widest cell – so editing one cell
-  gives a one-line diff. That comes from `scripts/prettier-plugin-compact-tables.mjs`, a mirror of the canonical copy in
-  the `blit386` repo. Do not re-align a table by hand
-
-## Git Commits
-
-Follow Conventional Commits: `<type>(<scope>): <description>`
-
-Types (commitlint-enforced): `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`,
-`revert`
-
-DCO sign-off is recommended: prefer `git commit -s` so commits carry a `Signed-off-by` trailer. This repo's history
-follows that convention, but the commit hook only runs commitlint (conventional commits) and there is no DCO CI check.
-
-Scopes are optional (not commitlint-enforced). Prefer ones already in history: `demos`, `ui`, `assets`, `docs`,
-`skills`, `deps`.
-
-AI-assisted commits: include `Co-Authored-By: Claude <noreply@anthropic.com>`
-
-## Git Hooks
-
-Managed by Husky (auto-installed via `prepare` script).
-
-- Pre-commit (lint-staged): auto-formats and lints staged files
-- Commit-msg: commitlint (conventional commit type/subject rules)
-- Pre-push: runs `pnpm run preflight` (format, lint, spellcheck, knip, docs:links, check:demo-registry, build)
-
-## Deployment
-
-Demos deploy to Cloudflare Pages via GitHub Actions on push to main. The production build copies each virtual demo to
-`dist/<slug>.html` at the site root (see `flattenDemosPlugin` in `vite.config.js`) and generates `dist/_redirects` from
-`VINTAGE_URLS` plus a site-index rule for the first nav-visible demo (see `demo-redirects` in `vite.config.js`). Public
-URLs are listed in `README.md`: the hosted site uses short number-free paths such as `/basics`; local dev still uses
-`/demos/<slug>.html`. Vintage numbered paths (`/001-basics`, `/001-basics.html`, …) 301 to the current slug in both
-environments.
-
-## Agent skills
-
-Skills live in `.claude/skills/` (Zed also sees them via `.agents/skills/*` symlinks – edit the `.claude` copy once).
-Available:
-
-| Skill | Purpose |
-| --- | --- |
-| `demos-preflight` | Run format, lint, spellcheck, knip, docs:links, check:demo-registry (incl. RETIRED_SLUGS / NAV_HIDDEN_SLUGS), build |
-| `demos-format` / `demos-quick-format` | Format with Biome + Prettier (verify / skip verify) |
-| `demos-review` / `demos-deep-review` | Diff review vs project rules; deep pre-push review |
-| `demos-pr` | Preflight, conventional commit (DCO recommended), open a PR |
-| `demos-new` | Scaffold `src/<topic>.js` and remind to append the slug to `DEMO_ORDER` |
-| `demos-spellcheck` | Fix cspell errors and extend `cspell.json` |
-| `demos-test` | Explain that this repo has no automated tests |
-| `demos-security-run` | MCP security preflight + audit fallbacks |
-
-`.agents/skills/*` are symlinks to `.claude/skills/*`. Do not treat them as two copies to patch.
+Skills live in `.claude/skills/`, and `.agents/skills/*` are symlinks to them – edit the `.claude` copy once, they are
+not two files to patch.

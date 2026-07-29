@@ -1,15 +1,14 @@
 ---
 name: demos-new
 description:
-  Scaffold a new blit386-demos demo file with the correct next NNN slug, the standard demo class pattern, and
-  beginner-friendly comments. Use when the user wants to add, create, or scaffold a new demo or example, or says 'make a
-  demo for X' or 'add a demo that shows Y'.
+  Scaffold a new blit386-demos demo file with the correct kebab-case slug, the standard demo class pattern, the
+  DEMO_ORDER registration, and beginner-friendly comments. Use when the user wants to add, create, or scaffold a new
+  demo or example, or says 'make a demo for X' or 'add a demo that shows Y'.
 ---
 
 # New Demo
 
-Create a new demo in `blit386-demos` following the project's slug, structure, and documentation rules. The
-`virtual-demos` plugin discovers the file automatically – there is no registry or `demos/` directory to edit.
+Create a new demo in `blit386-demos` following the project's slug, structure, and documentation rules.
 
 ## Usage
 
@@ -17,38 +16,32 @@ Create a new demo in `blit386-demos` following the project's slug, structure, an
 /demos-new sprite trails
 ```
 
-The text after `/demos-new` is the topic. It becomes the kebab-cased slug (`NNN-sprite-trails`) and the default page
-title.
+The text after `/demos-new` is the topic. It becomes the kebab-cased slug (`sprite-trails`) and the default page title.
 
 ## Steps
 
-### 1. Pick the next free number
+### 1. Pick the slug
 
-- List existing demos: `ls src/*.js`.
-- Take the highest three-digit prefix and add 1, zero-padded to three digits.
-- Numbering has gaps and they stay gaps – never reuse one. `021` is retired (it was `021-error-preview`), and `039` /
-  `040` were never used, so the current sequence runs `001`–`020`, `022`–`038`, `041`. The next free number is the one
-  above the highest in use (today: `042`), not the first hole in the sequence.
-- The only non-numeric slug is the lone `00a-barebones`. Do not create more `00a-*` files.
+Number-free kebab-case, derived from the topic: `sprite-trails`, `audio-buses`, `basics`. The first path segment must
+start with a letter – numeric prefixes such as `001-sprite-trails` are rejected by the registry check. Confirm the slug
+is free with `ls src/*.js` and check it does not collide with a retired or vintage path in
+`plugins/demo-vintage-urls.js`.
 
-### 2. Create src/NNN-topic.js
+### 2. Create src/<slug>.js
 
-File name is `src/NNN-topic.js` with the kebab-cased topic (e.g. `src/042-sprite-trails.js`). Every demo (except
-`018-flurry`, the immersive screensaver with no demo HUD) uses the shared UI kit for its on-screen panels and touch
-controls – `CLAUDE.md` forbids hand-rolling panels, buttons, or HUD text colors, and requires the demo to be usable on
-touch. Start from this shape:
+Every demo except `flurry` (the immersive screensaver with no demo HUD) uses the shared UI kit for on-screen panels and
+touch controls – `CLAUDE.md` forbids hand-rolling panels, buttons, or HUD text colors, and requires the demo to be
+usable on touch. Start from this shape:
 
 ```js
-// @pageTitle BLIT386 Demo NNN – Title Cased Topic
-//
-// Demo NNN – Topic: one-sentence summary of what this shows.
+// Demo Topic – one-sentence summary of what this shows.
 // Written for readers about 12 years old.
 //
 // What you will see:
 //   - ...
 //
-// Prerequisites: 001-Basics (https://demos.blit386.dev/001-basics)
-// Live version: https://demos.blit386.dev/NNN-topic
+// Prerequisites: Basics (https://demos.blit386.dev/basics)
+// Live version: https://demos.blit386.dev/<slug>
 
 import { bootstrap, BT } from 'blit386';
 
@@ -119,47 +112,57 @@ bootstrap(Demo);
 - Widgets: `ui.panel`, `ui.label` (roles `text`/`dim`/`header`/`accent`/`warm`/`info`), `ui.kv`, `ui.checkbox`,
   `ui.pip`, `ui.button`, `ui.slider`, `ui.meter`, `ui.separator`, `ui.spacer`. Update-side queries: `ui.dpad.isDown` /
   `isPressed`, `ui.swipe()`, `ui.tapIn(rect)`, `ui.hasTouch()`, `ui.overWidget(x, y)` (skip raw-pointer painting or
-  dragging that would land on a widget). Read `src/shared/ui.js` and a recent demo such as `src/041-synth-toy.js` for
-  the full pattern.
+  dragging that would land on a widget). Read `src/shared/ui.js` and a recent demo such as `src/synth-toy.js` for the
+  full pattern.
 - Widget identity is the label; pass `{ id }` when two widgets in one frame share a label.
 - Keyboard `{ key }` bindings are edge-safe because `ui.tick()` runs in `update()` – never read `BT.isKeyPressed` from
   `render()`.
-- The page title defaults to `BLIT386 Demo NNN – Title Cased Topic`. Only add the `// @pageTitle Custom Title` comment
-  (in the first ~20 lines) when that default is wrong for the demo.
-- If the demo builds on earlier ones, list them as prerequisites in the header comment the way existing numbered demos
-  do (slug plus hosted URL).
+- The page title defaults to `BLIT386 Demo - Title Cased Topic`. Only add a `// @pageTitle Custom Title` comment (in the
+  first ~20 lines) when that default is wrong for the demo.
+- If the demo builds on earlier ones, list them as prerequisites in the header comment the way existing demos do (slug
+  plus hosted URL).
 
-### 3. Write beginner-friendly comments
+### 3. Register it in DEMO_ORDER
 
-This is a hard rule for `src/*.js` demos: every logical block gets a plain-English comment explaining what it does and
-why, as if the reader has never written code before. Use analogies; never assume familiarity with math functions or
-language features. Comments that only restate the code (`// add 1 to i` above `i++`) are not enough. Match the bar set
-by `src/00a-barebones.js`; see `CLAUDE.md` (Documentation Style) for the full rules.
+Append the slug to `DEMO_ORDER` in `plugins/demo-order.js`. This is required: navigation order comes from that array,
+not from disk order or the filename, and `check:demo-registry` fails without it. An unregistered demo is only
+soft-appended after the ordered entries.
 
-### 4. Verify it runs
+No `vite.config.js` edit, HTML file, or vintage-map entry is needed for a brand-new slug. Only a **rename** needs
+`plugins/demo-vintage-urls.js` updated – repoint the vacated slug and add a mapping for the old public path so bookmarks
+keep working.
 
+### 4. Write beginner-friendly comments
+
+A hard rule for `src/*.js`: every logical block gets a plain-English comment explaining what it does and why, as if the
+reader has never written code before. Use analogies; never assume familiarity with math functions or language features.
+Comments that only restate the code (`// add 1 to i` above `i++`) are not enough. Match the bar set by
+`src/barebones.js`; see `CLAUDE.md` (Documentation Style) for the full rules.
+
+### 5. Verify it runs
+
+- `pnpm run check:demo-registry` – confirms disk, order, vintage, and nav-hidden sets agree.
 - `pnpm run dev`, then open `/demos/<slug>.html` and exercise the demo by hand. There are no automated tests here (see
   `/demos-test`).
 - `pnpm run build` to confirm the production build still succeeds (the Cloudflare Pages deploy gate).
 
-### 5. Update the docs
+### 6. Update the docs
 
-- Add the demo to the `## Demos` list in `README.md` under the right category (e.g. Drawing Basics, Input, Audio,
-  Palette System), matching the existing `- [NNN-slug](https://demos.blit386.dev/NNN-slug) – description` format. The
-  hosted URLs are flat (no `/demos/` prefix, no `.html`); `blit386-demos.vancura.dev` is a dead host and must never
-  appear in a link.
+Add the demo to the `## Demos` list in `README.md` under the right category (Drawing Basics, Input, Audio, Palette
+System, …), matching the existing `- [slug](https://demos.blit386.dev/slug) – description` format. Hosted URLs are flat:
+no `/demos/` prefix, no `.html`. `blit386-demos.vancura.dev` is a dead host and must never appear in a link.
 
-### 6. Review
+### 7. Review
 
-- Run `/demos-review` (or `/demos-preflight`) before committing. Keep integer coordinates (`Vector2i`, `Rect2i`) and no
-  emoji, per project rules.
+Run `/demos-review` (or `/demos-preflight`) before committing. Keep integer coordinates (`Vector2i`, `Rect2i`) and no
+emoji, per project rules.
 
 ## Rules recap
 
 - Plain JavaScript only (ES2022, no TypeScript).
-- Next free three-digit prefix above the highest in use; retired (`021`) and skipped (`039`, `040`) numbers stay unused;
-  `00a-barebones` is the only non-numeric slug (do not create more `00a-*` files).
-- Use the shared UI kit – never hand-roll panels, buttons, or HUD text colors (`018-flurry` is the only intentional
+- Number-free kebab-case slug; numeric prefixes are rejected.
+- Every new demo must be appended to `DEMO_ORDER`.
+- Use the shared UI kit – never hand-roll panels, buttons, or HUD text colors (`flurry` is the only intentional
   exception: no demo HUD).
 - Every demo must be usable on touch: key-triggered actions also get a `ui.button` with a `{ key }` binding, and
   directional input also gets `ui.dpadWidget()` / `ui.swipe()`.
