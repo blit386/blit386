@@ -11,6 +11,15 @@ COMMAND_TEXT="$(printf '%s' "$INPUT_JSON" | jq -r '
     | map(select(. != null and . != ""))
     | first // empty
 ' 2>/dev/null)"
+JQ_STATUS=$?
+
+# Fail closed: if jq itself failed (missing binary, malformed INPUT_JSON), we
+# cannot tell a genuinely command-less payload from an unreadable one, so block
+# rather than silently let an unchecked command through.
+if [ "$JQ_STATUS" -ne 0 ]; then
+    printf '[BLOCKED] Could not parse the tool payload to check for destructive git commands (jq exit %s).\n' "$JQ_STATUS" >&2
+    exit 2
+fi
 
 if [ -z "$COMMAND_TEXT" ]; then
     exit 0
@@ -24,7 +33,12 @@ if printf '%s' "$COMMAND_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|
     exit 2
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq "${GIT_PREFIX}push[^[:cntrl:]]*--force|${GIT_PREFIX}push[^[:cntrl:]]*-f"; then
+# Require -f/--force to sit at an argument boundary (whitespace on both sides,
+# or end of line) so it does not match a substring inside a ref/branch name,
+# e.g. `git push origin foo-feature` must not trip this.
+FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force)([[:space:]]|$)'
+
+if printf '%s' "$COMMAND_TEXT" | grep -Eq "${GIT_PREFIX}push${FORCE_FLAG}"; then
     printf '{"hookSpecificOutput":{"permissionDecision":"ask","permissionDecisionReason":"Force push detected. Confirm before continuing."}}\n'
     exit 0
 fi
