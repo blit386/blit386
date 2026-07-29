@@ -8,6 +8,12 @@
             "type": "command",
             "command": "rtk hook claude",
             "continueOnError": true
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/shell-safety.sh\"",
+            "continueOnError": false,
+            "timeout": 10
           }
         ]
       },
