@@ -33,10 +33,11 @@ if printf '%s' "$COMMAND_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|
     exit 2
 fi
 
-# Require -f/--force to sit at an argument boundary (whitespace on both sides,
-# or end of line) so it does not match a substring inside a ref/branch name,
-# e.g. `git push origin foo-feature` must not trip this.
-FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force)([[:space:]]|$)'
+# Require -f/--force/--force-with-lease to sit at an argument boundary
+# (whitespace, a shell command separator such as ; & |, or end of line) so it
+# does not match a substring inside a ref/branch name, e.g.
+# `git push origin foo-feature` must not trip this.
+FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force|--force-with-lease)([[:space:]]|[;&|]|$)'
 
 if printf '%s' "$COMMAND_TEXT" | grep -Eq "${GIT_PREFIX}push${FORCE_FLAG}"; then
     printf '{"hookSpecificOutput":{"permissionDecision":"ask","permissionDecisionReason":"Force push detected. Confirm before continuing."}}\n'

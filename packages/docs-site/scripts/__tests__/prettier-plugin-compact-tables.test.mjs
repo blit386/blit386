@@ -240,6 +240,12 @@ describe('prettier-plugin-compact-tables', () => {
             }
         });
 
+        it('does not select the compact parser for .mdc files', async () => {
+            const config = await prettier.resolveConfig(fixture('fixture.mdc'));
+
+            assert.notEqual(config?.parser, 'markdown-compact', 'fixture.mdc should not resolve to the compact parser');
+        });
+
         it('emits compact tables when formatting through the repo config alone', async () => {
             const path = fixture('fixture.md');
             const config = await prettier.resolveConfig(path);
