@@ -41,6 +41,7 @@ pnpm run agents:check              # .agents/skills symlink integrity
 pnpm run test:agent-config         # Unit tests for agents:check helpers
 pnpm run test:bump-lockstep        # Unit tests for the lockstep version-bump script
 pnpm run test:compact-tables       # Unit tests for the compact Markdown table Prettier plugin
+pnpm run test:shell-safety         # Regression tests for both shell-safety.sh hooks (maintainer + kit-shipped)
 pnpm run test                      # All package node:test suites (pnpm -r test; scaffolder suites need a build first)
 pnpm run preflight                 # All quality checks before commit
 pnpm run security:audit            # Dependency audit (moderate+)

@@ -7,23 +7,29 @@ description:
 
 # Tests
 
-This repo has three `node --test` suites, 37 cases in total. There is no Vitest suite, no Playwright suite, and no
+This repo has seven `node --test` suites, 57 cases in total. There is no Vitest suite, no Playwright suite, and no
 top-level `tests/` directory – each package owns its own `test/` folder.
 
 | Suite | Cases | Covers |
 | --- | --- | --- |
-| `packages/create-blit386/test/scaffold.test.mjs` | 20 | The scaffold path end to end (JS and TS), the non-TTY `--yes` fallback, optional CI and agent files, the `.blit/` ownership manifest, `blit agents sync` (drift, full sync, `--force`, note and merge preservation), `blit agents add` (including collision safety), and `blit migrate` preview + `--write` |
+| `packages/create-blit386/test/scaffold.test.mjs` | 22 | The scaffold path end to end (JS and TS), the non-TTY `--yes` fallback, optional CI and agent files, the `.blit/` ownership manifest, `blit agents sync` (drift, full sync, `--force`, note and merge preservation), `blit agents add` (including collision safety), and `blit migrate` preview + `--write` |
 | `packages/create-blit386/test/env.test.mjs` | 4 | `meetsNodeFloor`: the Node version floor guard, including pre-release and custom-floor strings |
 | `packages/kit/test/codemod.test.mjs` | 13 | The migration registry and the anchored codemod engine behind `blit migrate`: auto-applied renames vs. names reported for review, receiver anchoring, idempotence, and registry field completeness |
+| `packages/kit/test/enable-hot-reload.test.mjs` | 9 | `enableHotReloadInViteConfig`: wiring `blit386/vite` into a game's `vite.config.js`, no-op and unsupported-shape detection, plus `hasBlit386VitePlugin` |
+| `packages/kit/test/doctor.test.mjs` | 4 | `blit doctor`: engine range compatible, installed engine older or newer than the kit range, and a missing game `package.json` |
+| `packages/kit/test/env.test.mjs` | 3 | `satisfiesCaretRange` / `exceedsCaretRange`: the caret-range comparison behind `doctor` and `upgrade` |
+| `packages/kit/test/upgrade.test.mjs` | 2 | `blit upgrade`: the not-under-git abort, and the offline bump that offers `migrate` when renames are pending |
 
-`pnpm run test` at the root is `pnpm -r test`, which runs all three package suites.
+`pnpm run test` at the root is `pnpm -r test`, which runs all seven package suites.
 
 Root-level script tests (also part of `pnpm run preflight`, not part of `pnpm run test`):
 
 | Script | File | Covers |
 | --- | --- | --- |
 | `pnpm run test:agent-config` | `scripts/check-agent-config.test.mjs` | `.agents/skills` symlink integrity helpers |
+| `pnpm run test:bump-lockstep` | `scripts/bump-lockstep.test.mjs` | Version parsing and the lockstep rewrite of all three `package.json` files |
 | `pnpm run test:compact-tables` | `scripts/prettier-plugin-compact-tables.test.mjs` | Table padding, alignment, escaped pipes, nesting, idempotence, config wiring |
+| `pnpm run test:shell-safety` | `scripts/shell-safety.test.mjs` | Both `shell-safety.sh` hooks: destructive git detection, non-preview `git clean` detection, quoting and escaping bypasses, force-push `ask` responses |
 
 Run them with those `pnpm run` scripts, or together via `pnpm run preflight`.
 

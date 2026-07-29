@@ -45,6 +45,54 @@ describe('bump-lockstep', () => {
             assert.throws(() => applyVersion('{', '1.0.0'), /Invalid JSON/);
             assert.throws(() => applyVersion('{"name":"x"}', '1.0.0'), /missing a string "version"/);
         });
+
+        // Biome formats JSON at 2 spaces; a JSON.stringify round-trip here reindented every
+        // manifest and broke `format:check` on the next release step.
+        it('touches nothing but the version value', () => {
+            const raw = [
+                '{',
+                '  "name": "demo",',
+                '  "version": "1.2.1",',
+                '  "scripts": {',
+                '    "build": "tsup"',
+                '  },',
+                '  "keywords": ["a", "b"]',
+                '}',
+                '',
+            ].join('\n');
+            const { next } = applyVersion(raw, '1.3.0');
+            assert.equal(next, raw.replace('"1.2.1"', '"1.3.0"'));
+        });
+
+        it('ignores nested "version" keys', () => {
+            const raw = '{\n  "dependencies": {\n    "version": "^7.0.0"\n  },\n  "version": "1.2.1"\n}\n';
+            const { next, previous } = applyVersion(raw, '1.3.0');
+            assert.equal(previous, '1.2.1');
+            assert.deepEqual(JSON.parse(next), { dependencies: { version: '^7.0.0' }, version: '1.3.0' });
+            assert.ok(next.includes('"version": "^7.0.0"'));
+        });
+
+        it('is not fooled by a colon inside a preceding string value', () => {
+            const raw = '{\n  "description": "note: not a key",\n  "version": "1.2.1"\n}\n';
+            const { next } = applyVersion(raw, '1.3.0');
+            assert.equal(next, raw.replace('"1.2.1"', '"1.3.0"'));
+        });
+
+        it('is not fooled by an escaped quote in a preceding string value', () => {
+            const raw = '{\n  "description": "say \\"version\\": \\"9.9.9\\"",\n  "version": "1.2.1"\n}\n';
+            const { next, previous } = applyVersion(raw, '1.3.0');
+            assert.equal(previous, '1.2.1');
+            assert.equal(next, raw.replace('"1.2.1"', '"1.3.0"'));
+            assert.equal(JSON.parse(next).description, 'say "version": "9.9.9"');
+        });
+
+        it('rewrites the last of duplicate top-level keys, the one JSON.parse resolves to', () => {
+            const raw = '{\n  "version": "1.0.0",\n  "version": "1.2.1"\n}\n';
+            const { next, previous } = applyVersion(raw, '1.3.0');
+            assert.equal(previous, '1.2.1');
+            assert.equal(next, '{\n  "version": "1.0.0",\n  "version": "1.3.0"\n}\n');
+            assert.equal(JSON.parse(next).version, '1.3.0');
+        });
     });
 
     describe('parseArgv', () => {
