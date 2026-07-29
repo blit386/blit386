@@ -110,13 +110,30 @@ if [ -z "$COMMAND_TEXT" ]; then
     respond_allow
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+reset[[:space:]]+--hard|git[[:space:]]+clean[[:space:]]+-[^[:cntrl:]]*f|git[[:space:]]+checkout[[:space:]]+--'; then
+# Strip quote characters before matching so a quoted subcommand (e.g. `git
+# "reset" --hard`) cannot dodge the literal-word checks below -- the shell
+# drops the quotes at execution time and runs the same destructive command.
+NORMALIZED_TEXT="$(printf '%s' "$COMMAND_TEXT" | tr -d "'" | tr -d '"')"
+
+GIT_PREFIX='git([[:space:]]+(-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?|--[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?))*[[:space:]]+'
+GIT_CLEAN_FLAGS='(-[^[:cntrl:]]*f[^[:cntrl:]]*d|-[^[:cntrl:]]*d[^[:cntrl:]]*f|-([^[:cntrl:]]|[[:space:]])*-f([^[:cntrl:]]|[[:space:]])*-d|-([^[:cntrl:]]|[[:space:]])*-d([^[:cntrl:]]|[[:space:]])*-f)'
+
+if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}clean[[:space:]]+${GIT_CLEAN_FLAGS}|${GIT_PREFIX}checkout[[:space:]]+--"; then
     respond_deny \
         'Blocked a destructive git command that could lose your game changes.' \
         'Use safer git operations. Ask the user before discarding any work.'
 fi
 
-if printf '%s' "$COMMAND_TEXT" | grep -Eq 'git[[:space:]]+push[^[:cntrl:]]*--force|git[[:space:]]+push[^[:cntrl:]]*-f'; then
+# Require -f/--force/--force-with-lease to sit at an argument boundary
+# (whitespace, a shell command separator such as ; & |, or end of line) so it
+# does not match a substring inside a ref/branch name, e.g.
+# `git push origin foo-feature` must not trip this. A refspec prefixed with
+# `+` (e.g. `git push origin +main`) is git's other force-push spelling and
+# is matched separately.
+FORCE_FLAG='([[:space:]]+[^[:space:]]+)*[[:space:]]+(-f|--force|--force-with-lease(=[^[:space:]]*)?)([[:space:]]|[;&|]|$)'
+FORCE_REFSPEC='([[:space:]]+[^[:space:]]+)*[[:space:]]+\+[^[:space:]]+'
+
+if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}push(${FORCE_FLAG}|${FORCE_REFSPEC})"; then
     respond_ask \
         'Force push detected. Confirm before continuing.' \
         'Force push rewrites history. Ask the user for explicit confirmation first.'

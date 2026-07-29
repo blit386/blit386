@@ -94,4 +94,13 @@ describe('force-push detection', () => {
         assert.equal(result.status, 0);
         assert.equal(result.stdout, '');
     });
+
+    it('asks before --force-with-lease chained with a shell separator', () => {
+        const result = runHook('git push --force-with-lease;echo done');
+
+        assert.equal(result.status, 0);
+        const parsed = JSON.parse(result.stdout);
+
+        assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+    });
 });
