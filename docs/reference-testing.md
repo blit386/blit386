@@ -234,16 +234,7 @@ Coverage is collected via a custom Playwright fixture (`tests/visual/coverage-fi
 
 ## IDE setup
 
-<Tabs items={['VS Code', 'WebStorm', 'Zed']}>
-
-<Tab value="VS Code">
-
-Install the recommended extensions (prompted on first open):
-
-- Vitest (`vitest.explorer`) – inline test running, debugging, coverage gutter
-- Playwright (`ms-playwright.playwright`) – visual test runner
-
-</Tab>
+<Tabs items={['WebStorm', 'Zed']}>
 
 <Tab value="WebStorm">
 

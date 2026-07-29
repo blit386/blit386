@@ -217,30 +217,12 @@ adding or moving code. Never use `// #region` / `// #endregion` – region marke
 
 ## IDE setup
 
-### Recommended extensions
+### Zed
 
-| Extension | Purpose |
-| --- | --- |
-| `dbaeumer.vscode-eslint` | ESLint integration |
-| `biomejs.biome-vscode` | Biome formatter |
-| `editorconfig.editorconfig` | EditorConfig support |
-| `ms-playwright.playwright` | Playwright test runner |
-| `vitest.explorer` | Vitest test explorer |
-
-`.vscode/settings.json` and `.vscode/extensions.json` are committed to the repository – clone the repo and they appear
-automatically in VS Code.
-
-### Settings included
-
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" },
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "eslint.validate": ["javascript", "typescript"],
-  "files.associations": { "*.wgsl": "wgsl" }
-}
-```
+`.zed/settings.json` is committed to the repository – clone the repo and it applies automatically. It mirrors the repo
+toolchain: Biome (via its Zed extension/language server) formats TS/JS/JSON on save, Prettier (built in) formats
+Markdown/YAML on save, and `agent.tool_permissions` blocks the built-in agent from editing lock files or `.env` files
+(mirroring the `PreToolUse` file-block hook in `.claude/settings.json`).
 
 ### Claude Code
 

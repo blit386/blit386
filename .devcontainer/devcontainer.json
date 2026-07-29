@@ -4,21 +4,5 @@
   "postCreateCommand": "sh scripts/session-start-bootstrap.sh",
   "remoteEnv": {
     "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
-  },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "biomejs.biome-vscode",
-        "editorconfig.editorconfig",
-        "ms-playwright.playwright",
-        "vitest.explorer",
-        "esbenp.prettier-vscode",
-        "streetsidesoftware.code-spell-checker"
-      ],
-      "settings": {
-        "typescript.tsdk": "node_modules/typescript/lib"
-      }
-    }
   }
 }

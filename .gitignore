@@ -53,10 +53,7 @@ ai-rules/
 .rules
 
 # IDE and editor files
-.vscode/launch.json
-.vscode/*.code-workspace
-!.vscode/settings.json
-!.vscode/extensions.json
+.vscode/
 .idea/
 *.iml
 .zed/*
