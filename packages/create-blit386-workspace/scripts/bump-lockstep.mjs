@@ -42,6 +42,97 @@ export function parseVersionArg(version) {
 }
 
 /**
+ * Index just past the closing quote of the JSON string literal starting at `start`.
+ *
+ * @param {string} raw JSON text.
+ * @param {number} start Index of the opening quote.
+ * @returns {number} Index one past the closing quote.
+ * @throws {Error} When the literal is unterminated.
+ */
+function endOfStringLiteral(raw, start) {
+    let index = start + 1;
+    while (index < raw.length) {
+        const char = raw[index];
+        if (char === '\\') {
+            index += 2;
+            continue;
+        }
+        if (char === '"') {
+            return index + 1;
+        }
+        index += 1;
+    }
+    throw new Error('Invalid JSON: unterminated string literal');
+}
+
+/**
+ * Locate the top-level `"version"` string value inside already-valid JSON text.
+ *
+ * Scans with a depth counter so a nested `"version"` key (inside `dependencies`,
+ * `publishConfig`, a script body, ...) is never mistaken for the real one. When a
+ * manifest repeats the key at the top level, the last one wins, matching what
+ * `JSON.parse` resolved.
+ *
+ * @param {string} raw JSON text.
+ * @returns {{ start: number, end: number }} Half-open span of the value literal, quotes included.
+ * @throws {Error} When no top-level `"version"` string literal is present.
+ */
+function findTopLevelVersionSpan(raw) {
+    /** @type {{ start: number, end: number } | undefined} */
+    let span;
+    let depth = 0;
+    let index = 0;
+
+    while (index < raw.length) {
+        const char = raw[index];
+
+        if (char === '"') {
+            const literalEnd = endOfStringLiteral(raw, index);
+            if (depth !== 1) {
+                index = literalEnd;
+                continue;
+            }
+            let cursor = literalEnd;
+            while (cursor < raw.length && /\s/u.test(raw[cursor])) {
+                cursor += 1;
+            }
+            if (raw[cursor] !== ':') {
+                index = literalEnd;
+                continue;
+            }
+            cursor += 1;
+            while (cursor < raw.length && /\s/u.test(raw[cursor])) {
+                cursor += 1;
+            }
+            if (raw.slice(index, literalEnd) === '"version"' && raw[cursor] === '"') {
+                span = { start: cursor, end: endOfStringLiteral(raw, cursor) };
+            }
+            // Resume at the value so it is never re-read as a key.
+            index = cursor;
+            continue;
+        }
+
+        if (char === '{' || char === '[') {
+            depth += 1;
+        } else if (char === '}' || char === ']') {
+            depth -= 1;
+        }
+        index += 1;
+    }
+
+    if (span === undefined) {
+        throw new Error('package.json is missing a string "version" field');
+    }
+    return span;
+}
+
+/**
+ * Rewrite only the top-level `version` value, leaving every other byte alone.
+ *
+ * Deliberately textual rather than a `JSON.stringify` round-trip: re-serializing
+ * would reindent the whole manifest to this script's own spacing and break
+ * `format:check` on the next release step.
+ *
  * @param {string} raw Package.json file contents.
  * @param {string} version New version to write.
  * @returns {{ next: string, previous: string }} Updated JSON text and the prior version.
@@ -63,9 +154,12 @@ export function applyVersion(raw, version) {
     if (typeof record.version !== 'string') {
         throw new Error('package.json is missing a string "version" field');
     }
-    const previous = record.version;
-    record.version = version;
-    return { next: `${JSON.stringify(record, null, 4)}\n`, previous };
+
+    const { start, end } = findTopLevelVersionSpan(raw);
+    return {
+        next: `${raw.slice(0, start)}${JSON.stringify(version)}${raw.slice(end)}`,
+        previous: record.version,
+    };
 }
 
 /**

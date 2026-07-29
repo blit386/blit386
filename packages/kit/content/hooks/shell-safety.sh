@@ -120,9 +120,19 @@ fi
 NORMALIZED_TEXT="$(printf '%s' "$COMMAND_TEXT" | tr -d "'" | tr -d '"' | tr -d '\\')"
 
 GIT_PREFIX='git([[:space:]]+(-[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?|--[^[:space:]]+([[:space:]]+[^-][^[:space:]]*)?))*[[:space:]]+'
-GIT_CLEAN_FLAGS='(-[^[:cntrl:]]*f[^[:cntrl:]]*d|-[^[:cntrl:]]*d[^[:cntrl:]]*f|-([^[:cntrl:]]|[[:space:]])*-f([^[:cntrl:]]|[[:space:]])*-d|-([^[:cntrl:]]|[[:space:]])*-d([^[:cntrl:]]|[[:space:]])*-f)'
 
-if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}clean[[:space:]]+${GIT_CLEAN_FLAGS}|${GIT_PREFIX}checkout[[:space:]]+--"; then
+# `git clean` only deletes when it is forced, so match a force flag in any
+# argument position rather than one specific bundle: `-f` on its own already
+# removes untracked files, and it is just as destructive bundled (`-fd`,
+# `-xdf`) or spelled out (`--force`). Dry runs (`-n`, `--dry-run`) and
+# `--exclude` patterns stay allowed. The argument scan stops at a shell
+# separator so a force flag belonging to a later command
+# (`git clean -n && rm -f build.log`) does not trip this. A preview that still
+# bundles an f (`git clean -nfd`) is denied: over-matching is the safe
+# direction here, and the message says what to do instead.
+GIT_CLEAN_FORCE='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+(-[[:alnum:]]*f[[:alnum:]]*|--force)([[:space:]]|[;&|<>]|$)'
+
+if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}clean${GIT_CLEAN_FORCE}|${GIT_PREFIX}checkout[[:space:]]+--"; then
     respond_deny \
         'Blocked a destructive git command that could lose your game changes.' \
         'Use safer git operations. Ask the user before discarding any work.'
