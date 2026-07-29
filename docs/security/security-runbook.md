@@ -71,7 +71,7 @@ the report.
 | Dependency / SCA | Opsera `security-scan`, JFrog | `pnpm run security:audit`, `pnpm run security:audit:prod` (per repo); CI gate in blit386 [dependency-policy.md](./dependency-policy.md) |
 | SAST / code patterns | Opsera, Semgrep MCP | `pnpm run lint` (eslint-plugin-security), targeted `rg` patterns (below), optional `semgrep --config auto` only if CLI is already installed (do not install) |
 | Compliance | Opsera `compliance-audit` | Manual checklist below |
-| Architecture | Opsera `architecture-analyze` | `security-threat-model` and `security-ownership-map` skills under `~/.codex/skills/` |
+| Architecture | Opsera `architecture-analyze` | `security-threat-model` and `security-ownership-map` skills, if available in your agent's skill library |
 | Supply chain metadata | JFrog MCP | `pnpm outdated --format json`, `npm view <pkg> version time.modified license` for key direct deps |
 | MCP governance | – | `pnpm run security:mcp-preflight --governance-only` plus Runlayer MCP governance rules |
 

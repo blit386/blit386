@@ -233,8 +233,8 @@ merged.
 
 ## AI-Assisted Contributions
 
-If you use AI tools (like GitHub Copilot, ChatGPT, or Claude) to help write code, please include the AI trailer in your
-commit message:
+If you use AI tools (like GitHub Copilot or Claude) to help write code, please include the AI trailer in your commit
+message:
 
 ```text
 feat(renderer): add sprite batching optimization
