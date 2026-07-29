@@ -14,7 +14,7 @@
  * short-row padding behave exactly as before. The only behavioral change is the removal of alignment whitespace.
  *
  * Wiring: a config points its Markdown files at the `markdown-compact` parser exported below, which is Prettier's own
- * Markdown parser retargeted at this plugin's printer. The stock `markdown` parser is left untouched.
+ * Markdown parser pointed at this plugin's printer. The stock `markdown` parser is left untouched.
  */
 
 import { doc } from 'prettier';
@@ -142,7 +142,7 @@ const printer = {
 /**
  * Parsers this plugin contributes.
  *
- * `markdown-compact` is Prettier's own Markdown parser retargeted at the `mdast-compact` printer below. Naming it in a
+ * `markdown-compact` is Prettier's own Markdown parser pointed at the `mdast-compact` printer below. Naming it in a
  * config's `overrides` is what opts a file into compact tables; nothing changes for anyone who does not ask.
  *
  * @type {Record<string, import('prettier').Parser>}

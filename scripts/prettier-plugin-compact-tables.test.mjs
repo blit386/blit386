@@ -240,6 +240,18 @@ describe('prettier-plugin-compact-tables', () => {
             }
         });
 
+        it('does not select the compact parser for .mdc (Cursor rule files are gone)', async () => {
+            /**
+             * `plugins` in prettier.config.js is registered globally, not per-override, so it stays
+             * on the resolved config for every file including .mdc - that is harmless, since the
+             * plugin's custom table printer only runs under the `markdown-compact` astFormat, which
+             * only the `*.md` / `*.mdx` override selects. The parser is what actually gates behavior.
+             */
+            const config = await prettier.resolveConfig(fixture('fixture.mdc'));
+
+            assert.notEqual(config?.parser, 'markdown-compact', '.mdc should not resolve to the compact parser');
+        });
+
         it('emits compact tables when formatting through the repo config alone', async () => {
             const path = fixture('fixture.md');
             const config = await prettier.resolveConfig(path);
