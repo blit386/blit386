@@ -45,12 +45,13 @@
     "test:agent-config": "node --test scripts/check-agent-config.test.mjs",
     "test:bump-lockstep": "node --test scripts/bump-lockstep.test.mjs",
     "test:compact-tables": "node --test scripts/prettier-plugin-compact-tables.test.mjs",
+    "test:shell-safety": "node --test scripts/shell-safety.test.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix",
     "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate",
     "security:audit:fix": "pnpm audit --fix",
-    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run agents:check && pnpm run test:agent-config && pnpm run test:bump-lockstep && pnpm run test:compact-tables && pnpm run build && pnpm run test",
+    "preflight": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run agents:check && pnpm run test:agent-config && pnpm run test:bump-lockstep && pnpm run test:compact-tables && pnpm run test:shell-safety && pnpm run build && pnpm run test",
     "prepare": "husky"
   },
   "lint-staged": {

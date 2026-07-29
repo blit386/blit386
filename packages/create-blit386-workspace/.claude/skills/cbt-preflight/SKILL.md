@@ -2,8 +2,8 @@
 name: cbt-preflight
 description:
   Run all quality checks (format, lint, typecheck, spellcheck, knip, docs:links, agents:check, agent-config tests,
-  build, test) before committing or pushing. Use when the user wants to verify the code is ready to commit or run every
-  check at once.
+  lockstep-bump tests, compact-tables tests, shell-safety tests, build, test) before committing or pushing. Use when the
+  user wants to verify the code is ready to commit or run every check at once.
 ---
 
 # Preflight Checks
@@ -34,7 +34,9 @@ Run comprehensive quality checks before committing or pushing code.
    - `docs:links` – Verify Markdown links
    - `agents:check` – `.agents/skills` symlink integrity
    - `test:agent-config` – Unit tests for the agents check helpers
+   - `test:bump-lockstep` – Unit tests for the lockstep version-bump script
    - `test:compact-tables` – Unit tests for the compact Markdown table Prettier plugin
+   - `test:shell-safety` – Unit tests for the `.claude/hooks/shell-safety.sh` hook
    - `build` – Build both packages
    - `test` – `pnpm -r test`: package `node --test` suites (scaffolder, kit CLI, env, codemod)
 
