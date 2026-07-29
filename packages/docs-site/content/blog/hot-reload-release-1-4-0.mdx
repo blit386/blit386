@@ -1,0 +1,152 @@
+---
+title: BLIT386 1.4.0 – edit the game while it is still running
+description:
+  The hot reload release – a three-tier swap runtime, a blit386/vite dev plugin, in-place asset replacement, and asset
+  loading count for the waiting you cannot avoid.
+date: 2026-07-28
+tags: [release, hot-reload]
+author: vancura
+---
+
+<AuthorByline author="vancura" />
+
+The old loop went like this: you tweak a number in `update()`, hit save, the page blinks, and you are back at the title
+screen with a fresh palette, a camera at the origin, and a character standing exactly where they were not when you found
+the bug. So you walk them back. Twelve seconds, maybe fifteen, and you do it four hundred times a day. Nobody complains
+about that out loud because it has always been that way, which is the most reliable sign that something is worth fixing.
+
+1.4.0 fixes it. You edit, you save, and the game keeps running – same tick count, same camera, same palette, the sprite
+still mid-jump where you left it.
+
+<VideoEmbed
+  src="/media/blog/hot-reload-release-1-4-0/hot-reload-release-1-4-0"
+  width={1010}
+  height={1530}
+  caption="Editing size of canvas, value in render() and update(), saving, and watching the loop carry on – same tick count, same camera, no reload."
+/>
+
+## Three tiers, and you do not get to pick
+
+Every save, `bootstrap()` compares the newly evaluated class against the one currently on screen and decides how far it
+has to go. There are three answers:
+
+<Steps>
+
+<Step>
+  If only method bodies changed, the running instance keeps all of its fields and just gets a new prototype. `init()`
+  never re-runs, music keeps playing, the loop does not skip. Module-level constants count as method bodies here, which
+  surprised me the first time – change a `SPEED` at the top of the file and the next tick picks it up, because the new
+  `update` closes over the new module scope.
+</Step>
+
+<Step>
+  If `init()`, the constructor, or a field initializer changed, none of that is safe, so a fresh instance gets built and
+  its `init()` runs while the old instance is still driving the loop. Only when it succeeds does the engine swap it in.
+  A broken save leaves the previous instance running, which is the whole point – the thing you are editing is a game you
+  are also playing, and it should not die every time you leave a bracket open.
+</Step>
+
+<Step>
+  And if `configure()` changed, the canvas, the WebGPU device, or the audio graph would have to be rebuilt, so the
+  engine gives up honestly and reloads the page.
+</Step>
+
+</Steps>
+
+Nothing about any of that requires your demo to change. `onHotReload` is optional, and it exists only for the case where
+you want to carry state across a re-init instead of accepting a cold boot:
+
+```ts twoslash
+import { BT, type HotReloadContext, type IBTDemo, Vector2i } from 'blit386';
+
+class Demo implements IBTDemo {
+  private score = 0;
+
+  async init() {
+    return true;
+  }
+
+  onHotReload(context: HotReloadContext) {
+    if (context.reason !== 'reinit' || !context.snapshot) {
+      return;
+    }
+    if (typeof context.snapshot.score === 'number') {
+      this.score = context.snapshot.score;
+    }
+  }
+
+  update() {}
+
+  render() {
+    BT.systemPrint(new Vector2i(8, 8), 1, `score: ${this.score}`);
+  }
+}
+```
+
+The full tier rules, the `blit386:hot-reload` DOM event, and what happens under `?backend=software` are all in the new
+[Hot Reload Guide](/docs/guides/hot-reload).
+
+## The plugin that makes it happen
+
+None of it runs until Vite knows about it, and that is one line:
+
+```js
+// vite.config.js
+import { defineConfig } from 'vite';
+import { blit386 } from 'blit386/vite';
+
+export default defineConfig({
+  plugins: [blit386()],
+});
+```
+
+The plugin appends a small registration snippet to any served module that imports `blit386` and calls `bootstrap(...)`,
+and it watches your asset directories. It is dev-server only – `apply: 'serve'`, so a production build never sees it,
+and it has no runtime dependency on `vite` itself. If you scaffolded with `npm create blit386`, it is already wired up
+and you can skip this section entirely.
+
+## Assets swap in place too
+
+Editing a sprite sheet in Aseprite and having the browser throw away your game state was, if anything, more annoying
+than editing code, because the whole reason you were in Aseprite was to see the sprite in context. So images, audio, and
+`.btfont` files now replace themselves in place: the sheet re-decodes, the font re-parses, and music restarts if the
+buffer under the current track is the one that changed. A broken asset cannot take the game loop down with it – you get
+the error, the old asset stays, and you fix the file.
+
+## Other changes
+
+### A number for the waiting you cannot avoid
+
+Hot reload removes most of the waiting in development, and precisely none of the waiting your players do on first load.
+So `BT.loadingAssetsCount` is there now: the combined count of images and audio clips still in flight, which is exactly
+what a loading screen wants to poll. Per-sheet there is `SpriteSheet.status` – `'loading'`, `'ready'`, or `'failed'` –
+and a coarse `progress`. Details in [API: Assets](/docs/api/assets).
+
+### Touch scrolling stopped fighting the page
+
+Small, but it was a real bug in disguise. The canvas used to pin `touch-action: none` on attach, which meant that on a
+phone the page under your demo refused to scroll, whether or not the demo had asked for scroll capture. It now follows
+`HardwareSettings.isCapturingPointerScroll` – `none` while capturing, `pan-y` otherwise, updated live. Default is
+`false`, so a demo embedded halfway down a page behaves like the rest of the page again. See
+[Input Guide](/docs/guides/input).
+
+### Housekeeping, briefly
+
+Every remaining `@deprecated` tag in the source now carries the version it was deprecated in and a `2.0.0` removal
+target, so [the deprecations page](/docs/reference/deprecations) answers "how long do I have" instead of implying it.
+The expired `esbuild` audit exception is gone for real, not silenced. Lint runs with `--max-warnings 0` and three Biome
+rules moved from warn to error, which mostly means CI now agrees with the pre-commit hook instead of quietly
+disagreeing. Post-process effects grew their own 80 percent coverage floor. Renovate, which had been sitting in the repo
+doing nothing for months, was repaired and now signs off its own commits.
+
+And `CLAUDE.md` went from a monolith that ate half a session's context to a set of short summaries pointing at rule
+files, with a drift checker – `agents:check` – that fails the build when the Claude and Copilot copies disagree. If you
+are running an agent against this repo, that is the change you will feel.
+
+The full list, in the usual Keep a Changelog shape, is at [the changelog](/docs/reference/changelog).
+
+```bash
+npm create blit386@latest my-game
+```
+
+Go break something and watch it keep running.
