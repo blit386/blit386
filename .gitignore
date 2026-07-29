@@ -44,13 +44,6 @@ benchmark-results.json
 .mcp.json
 mcp.json
 
-# Other AI assistants (local only)
-.aider*
-.continue/
-.windsurf/
-ai-rules/
-.rules
-
 # IDE and editor files
 .vscode/
 .idea/
