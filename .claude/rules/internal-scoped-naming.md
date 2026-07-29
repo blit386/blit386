@@ -1,3 +1,7 @@
+---
+paths: [src/**/*.ts]
+---
+
 # Internal scoped naming
 
 This file is the full policy for internal scoped naming; [CLAUDE.md](../../CLAUDE.md) carries only a short summary and
