@@ -229,7 +229,7 @@ describe('prettier-plugin-compact-tables', () => {
         const fixture = (name) => join(REPO_ROOT, name);
 
         it('selects the compact parser and the plugin for every Markdown extension', async () => {
-            for (const name of ['fixture.md', 'fixture.mdx', 'fixture.mdc']) {
+            for (const name of ['fixture.md', 'fixture.mdx']) {
                 const config = await prettier.resolveConfig(fixture(name));
 
                 assert.equal(config?.parser, 'markdown-compact', `${name} should resolve to the compact parser`);

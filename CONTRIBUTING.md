@@ -20,9 +20,9 @@ Requirements:
 - Node.js >=22.18.0 (`engines` in `package.json`)
 - pnpm 10.26.2 (`packageManager` in `package.json`)
 
-AI agent sessions (Claude Code / Cursor) and the optional [devcontainer](.devcontainer/devcontainer.json)
-(`typescript-node:22-bookworm`) auto-run `scripts/session-start-bootstrap.sh` via their SessionStart hooks /
-`postCreateCommand`, so a fresh checkout gets `pnpm install --frozen-lockfile` without a manual step. See
+Claude Code sessions and the optional [devcontainer](.devcontainer/devcontainer.json) (`typescript-node:22-bookworm`)
+auto-run `scripts/session-start-bootstrap.sh` via their SessionStart hooks / `postCreateCommand`, so a fresh checkout
+gets `pnpm install --frozen-lockfile` without a manual step. See
 [Environment bootstrap](CLAUDE.md#environment-bootstrap-sessionstart-hook-and-devcontainer) in `CLAUDE.md` for the full
 detail.
 
@@ -173,13 +173,11 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - Markdown link check (`docs:links`)
 - Agent config drift check (`agents:check`)
 - Doc site banner check (`sync:doc-banners:check`)
-- Cursor commands drift check (`sync:cursor-commands:check`)
 - API `@since` tag check (`api:since:check`)
 - API history manifest check (`api:history:check`)
 - Unit tests (`test:unit`)
 - Declaration tooling tests (`test:declarations`)
 - Agent config drift checker tests (`test:agent-config`)
-- Cursor commands drift checker tests (`test:cursor-commands`)
 - API history generator tests (`test:api-history`)
 - Security preflight tests (`test:security-preflight`)
 
@@ -195,11 +193,9 @@ pnpm run typecheck                  # Run TypeScript checks
 pnpm run spellcheck                 # Check spelling
 pnpm run knip                       # Find unused exports and dependencies
 pnpm run docs:links                 # Check Markdown links
-pnpm run agents:check               # Check agent config drift (rules parity, skills symlinks, AGENTS.md pointer)
+pnpm run agents:check               # Check agent config drift (skills symlinks, AGENTS.md pointer)
 pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in published docs
 pnpm run sync:doc-banners:check     # Check doc site banner drift
-pnpm run sync:cursor-commands       # Generate .cursor/commands/*.md from .claude/skills/*/SKILL.md
-pnpm run sync:cursor-commands:check # Check cursor commands drift
 pnpm run api:history                # Regenerate API version-history manifest
 pnpm run api:since:check            # Check public API @since / @changed / @deprecated tags
 pnpm run api:history:check          # Check API version-history manifest drift
@@ -210,7 +206,6 @@ pnpm run test                       # Run unit tests (alias for test:unit)
 pnpm run test:unit                  # Run unit tests
 pnpm run test:declarations          # Declaration tooling checker tests
 pnpm run test:agent-config          # Agent config drift checker tests
-pnpm run test:cursor-commands       # Cursor commands drift checker tests
 pnpm run test:api-history           # API history generator tests
 pnpm run test:security-preflight    # Security preflight tests
 pnpm run test:visual                # Playwright visual regression (local; not in preflight)

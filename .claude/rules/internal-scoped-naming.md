@@ -1,8 +1,7 @@
 # Internal scoped naming
 
-This file (and `.cursor/rules/internal-scoped-naming.mdc`) is the full policy for internal scoped naming;
-[CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/developer-experience-guide.md`
-(Naming conventions).
+This file is the full policy for internal scoped naming; [CLAUDE.md](../../CLAUDE.md) carries only a short summary and
+points here. See also `docs/developer-experience-guide.md` (Naming conventions).
 
 When adding or renaming **non-public** symbols in `src/` (library TypeScript):
 
@@ -55,5 +54,3 @@ const BTN_A = 20; // OK — short local name
   callers.
 - After shortening a local alias, update JSDoc that references **public** API to the correct public symbol (internal
   `BTN_A` comments must point at `BT.BTN_POINTER_A`, not `BT.BTN_A`).
-
-Cursor: `.cursor/rules/internal-scoped-naming.mdc` (always applied in this repo).

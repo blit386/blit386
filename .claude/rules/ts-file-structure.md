@@ -4,9 +4,8 @@ paths: [src/**/*.ts]
 
 # TypeScript file structure
 
-This file (and `.cursor/rules/ts-file-structure.mdc`) is the full policy for TypeScript file structure;
-[CLAUDE.md](../../CLAUDE.md) carries only a short summary and points here. See also `docs/developer-experience-guide.md`
-(File structure and member order).
+This file is the full policy for TypeScript file structure; [CLAUDE.md](../../CLAUDE.md) carries only a short summary
+and points here. See also `docs/developer-experience-guide.md` (File structure and member order).
 
 When adding or moving code in library TypeScript (`src/`). **Class member order is enforced by
 `perfectionist/sort-classes`** (auto-fix with `pnpm run lint:fix`); it uses `type: 'unsorted'`, so it enforces only the
@@ -42,5 +41,3 @@ When adding or moving code in library TypeScript (`src/`). **Class member order 
   `clone` / `toString` last.
 - One blank line between members; a blank line before `return` and between logical blocks inside method bodies.
 - JSDoc on every member, including private ones. Named exports only; no default exports.
-
-Cursor: `.cursor/rules/ts-file-structure.mdc` (glob-scoped to `src/**/*.ts` in this repo).

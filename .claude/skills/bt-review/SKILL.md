@@ -32,9 +32,8 @@ Review current changes against project rules and quality standards.
 3. Check against project rules
 
 Full detail lives in `CLAUDE.md` (Critical Rules, BT API: getters vs methods, Internal scoped naming, Boolean naming)
-and the paired rule files (`.claude/rules/*.md`, Cursor: `.cursor/rules/*.mdc`) – read those for the exact getter list,
-naming exceptions, and edge cases rather than relying on a paraphrase here. Rules below are cited by basename, which is
-the same in both directories. Quick checklist:
+and the rule files under `.claude/rules/*.md` – read those for the exact getter list, naming exceptions, and edge cases
+rather than relying on a paraphrase here. Quick checklist:
 
 - No emoji anywhere (code, comments, docs, commits)
 - Integer coordinates (Vector2i, Rect2i) for rendering

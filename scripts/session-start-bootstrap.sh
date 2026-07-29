@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Bootstraps the pnpm toolchain for ephemeral remote/web/cloud sessions (Claude Code SessionStart
-# hook, Cursor sessionStart hook, and the devcontainer postCreateCommand). Installs dependencies
+# hook and the devcontainer postCreateCommand). Installs dependencies
 # only when pnpm-lock.yaml has changed since the last successful install here, so it is a fast
 # no-op on a machine that already has node_modules set up.
 

@@ -57,7 +57,7 @@ pushing significant changes or creating pull requests.
 6. Check project-specific rules
 
 - Apply the same project-rule checklist as `/bt-review` (full detail: `CLAUDE.md` Critical Rules, BT API getters vs
-  methods, Internal scoped naming, plus the paired rule files – `.claude/rules/*.md`, Cursor: `.cursor/rules/*.mdc`)
+  methods, Internal scoped naming, plus the rule files under `.claude/rules/*.md`)
 
 7. Generate PR-ready summary
 

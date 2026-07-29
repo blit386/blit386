@@ -117,10 +117,6 @@ jobs:
         run: pnpm run sync:doc-banners:check
         background: true
 
-      - name: Check cursor commands drift
-        run: pnpm run sync:cursor-commands:check
-        background: true
-
       - name: Check unused exports and dependencies
         run: pnpm run knip
         background: true

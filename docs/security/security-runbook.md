@@ -33,14 +33,13 @@ documented fallback instead of a fictional backup owner.
 
 ## MCP preflight (required first step)
 
-Agents must pass the Cursor project MCP descriptor path from the session (for example
-`~/.cursor/projects/<workspace-id>/mcps`).
+Agents must pass the session's MCP descriptor path (agent/tooling-specific; consult your agent's docs for its location).
 
 ```bash
 cd <repo-root>   # blit386: directory containing this repo's package.json
 
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<cursor-project-mcps-path>" \
+  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --allow-fallback \
   --output-json security-reports/mcp-preflight-latest.json
@@ -50,7 +49,7 @@ Governance-only (monthly):
 
 ```bash
 pnpm run security:mcp-preflight -- \
-  --mcps-dir "<cursor-project-mcps-path>" \
+  --mcps-dir "<mcps-path>" \
   --repo-root . \
   --governance-only \
   --include-user-config \

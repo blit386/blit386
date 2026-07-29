@@ -1,11 +1,8 @@
 ---
-paths:
-  [src/**/*.ts, docs/**/*.md, docs/_sitemap.json, README.md, CLAUDE.md, .claude/skills/**/SKILL.md, .cursor/rules/*.mdc]
+paths: [src/**/*.ts, docs/**/*.md, docs/_sitemap.json, README.md, CLAUDE.md, .claude/skills/**/SKILL.md]
 ---
 
 # Docs sync required
-
-Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
 
 - Documentation is part of the implementation, not a follow-up task.
 - Public API changes: update relevant `docs/api-*.md` and related examples.
@@ -28,24 +25,22 @@ Condensed mirror of `.cursor/rules/docs-sync-required.mdc`.
   and stripped from the public mirror. Edit banner prose in that script, not the docs.
 - Published docs are MDX-capable and site-first: use Fumadocs components (`Callout`, `TypeTable`, `Steps`, `Tabs`,
   `Accordions`, `Cards`, `Files`) where they help. Full guidance – which components, when, and the authoring rules – is
-  in `.claude/rules/docs-authoring.md` (Cursor: `.cursor/rules/docs-authoring.mdc`). Key rules: block form (blank lines
-  around children); `Card href` uses site-absolute `/docs/...` paths (the mirror does not rewrite JSX props); no
-  manual/`InlineTOC` table of contents (the site provides one); components only render on the site, so keep
-  contributor-only docs plain Markdown. Adding a component the site does not register
-  (`blit386-dev-fumapress/press.config.tsx`) breaks the build – register it there first, then verify with
-  `pnpm run sync:docs` + `pnpm run build` in that repo.
+  in `.claude/rules/docs-authoring.md`. Key rules: block form (blank lines around children); `Card href` uses
+  site-absolute `/docs/...` paths (the mirror does not rewrite JSX props); no manual/`InlineTOC` table of contents (the
+  site provides one); components only render on the site, so keep contributor-only docs plain Markdown. Adding a
+  component the site does not register (`blit386-dev-fumapress/press.config.tsx`) breaks the build – register it there
+  first, then verify with `pnpm run sync:docs` + `pnpm run build` in that repo.
 - TypeScript code blocks in published docs must use ` ```ts twoslash ` (never plain ` ```ts `). Each block must compile
   on its own: self-contained blocks carry their own imports; fragment blocks add a hidden preamble above `// ---cut---`.
-  Full rules in `.claude/rules/twoslash-docs.md` (Cursor: `.cursor/rules/twoslash-docs.mdc`).
+  Full rules in `.claude/rules/twoslash-docs.md`.
 - Doc prose house style (see `.claude/rules/docs-authoring.md`): no bold (`**`) in prose, no `---` separators, `×` (not
   `x`) for dimensions except literal program output, break up walls of text, every `###` needs a parent `##`, credit
   external inspirations with link + author. Published-doc filenames mirror the sitemap section (`api-*`, `guide-*`,
   `performance-*`, `reference-*`). Renames use `git mv`, update `_sitemap.json` `src`, rewrite inbound links with a
   `(?<![\w-])` guard, then `sync:doc-banners` + `docs:links` + `format`. New proper nouns go in `cspell.json` (and the
   fumapress one for hand-authored content).
-- Architecture changes: update `.claude/rules/architecture.md` / `.cursor/rules/architecture.mdc` and the Where to Find
-  Information table in `CLAUDE.md`.
-- Script or preflight changes: update `.claude/skills/*/SKILL.md` and affected `.cursor/rules/*.mdc` cross-references.
+- Architecture changes: update `.claude/rules/architecture.md` and the Where to Find Information table in `CLAUDE.md`.
+- Script or preflight changes: update `.claude/skills/*/SKILL.md`.
 - Onboarding surface changes (`README.md` Quick Start, `bootstrap()` defaults, minimal demo shape): check sibling
   `create-blit386` templates, `@blit386/kit` docs, and pinned `blit386` version range.
 - Update `README.md` only when quick start, prerequisites, features list, or compatibility is affected.

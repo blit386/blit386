@@ -4,8 +4,6 @@ paths: [src/**]
 
 # Architecture
 
-Paired with `.cursor/rules/architecture.mdc` (same annotated tree).
-
 The file tree below is illustrative, not exhaustive – it highlights notable subsystems and entry points. Colocated
 `*.test.ts` / `*.bench.ts` files and small module-local `constants.ts` / `types.ts` helpers are omitted for readability.
 
@@ -133,5 +131,3 @@ Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
   automatically when WebGPU init fails; force explicitly via `HardwareSettings.backend: 'software'` or the
   `?backend=software` URL query parameter. Use `BT.activeBackend` to query which backend started
   (`'webgpu' | 'software' | null`). The engine overlay shows the active backend on the top bar when enabled.
-
-Cursor: `.cursor/rules/architecture.mdc` (glob-scoped to `src/**` in this repo).

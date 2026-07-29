@@ -23,7 +23,7 @@ Format all code files using the project's formatters and verify results.
 - Execute `pnpm run format` which runs:
   - Biome for TypeScript/JavaScript/JSON/JSONC/CSS (`.ts`, `.tsx`, `.js`, `.jsx`, `.cjs`, `.mjs`, `.json`, `.jsonc`,
     `.css`)
-  - Prettier for Markdown/YAML/Cursor rules (`.md`, `.mdx`, `.mdc`, `.yml`, `.yaml`)
+  - Prettier for Markdown/YAML (`.md`, `.mdx`, `.yml`, `.yaml`)
 
 2. Show what changed
 

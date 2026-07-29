@@ -40,8 +40,7 @@ regression tests (`pnpm run test:visual`, run separately when renderer output ca
 
 [`CLAUDE.md`](CLAUDE.md) has the full architecture map, the "Where to Find Information" routing table, BT API
 conventions (getters vs methods, boolean naming), TypeScript file structure, and the complete command list. Condensed,
-always-applicable agent rules also live in `.claude/rules/*.md` (Claude Code) and `.cursor/rules/*.mdc` (Cursor) – both
-directories are kept in parity by `pnpm run agents:check`.
+always-applicable agent rules also live in `.claude/rules/*.md`.
 
 1.4.0 surface highlights:
 
