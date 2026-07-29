@@ -28,7 +28,7 @@ export default {
 
     overrides: [
         {
-            files: ['*.md', '*.mdx', '*.mdc'],
+            files: ['*.md', '*.mdc'],
             options: {
                 parser: 'markdown-compact',
                 proseWrap: 'always',

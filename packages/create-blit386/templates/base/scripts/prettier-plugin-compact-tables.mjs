@@ -76,9 +76,10 @@ const printCell = (cellPath, options, print) =>
 /**
  * Render a table with single-space cell padding instead of column alignment.
  *
- * The column count is the widest of the declared alignments and the longest row, so a row with missing cells is padded
- * out with empty ones exactly as Prettier's own printer would. Rows are joined with `hardline` rather than a literal
- * newline so that Prettier reapplies list indentation and blockquote `>` prefixes when the table is nested.
+ * The column count comes from the header row alone, matching GFM table semantics: a body row with missing cells is
+ * padded out with empty ones, and a body row with extra cells has the excess trimmed, exactly as Prettier's own
+ * printer would. Rows are joined with `hardline` rather than a literal newline so that Prettier reapplies list
+ * indentation and blockquote `>` prefixes when the table is nested.
  *
  * @param {import('prettier').AstPath} path Path positioned at a `table` node (`path.node` is a {@link TableNode}).
  * @param {import('prettier').ParserOptions} options Resolved Prettier options for the file being formatted.
@@ -93,7 +94,7 @@ const printTable = (path, options, print) => {
         'children',
     );
 
-    const columns = Math.max(node.align?.length ?? 0, ...rows.map((row) => row.length));
+    const columns = rows[0].length;
 
     /** Pad (or trim) one row's rendered cells to the table's column count. */
     const cellsOf = (row) => Array.from({ length: columns }, (_unused, index) => row.at(index) ?? '');
