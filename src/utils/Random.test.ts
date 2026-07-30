@@ -43,6 +43,47 @@ describe('Random', () => {
             expect(rng.next()).toBeGreaterThanOrEqual(0);
             expect(rng.next()).toBeLessThan(1);
         });
+
+        it('should report the seed passed to the constructor as seedValue', () => {
+            const rng = new Random(1234);
+
+            expect(rng.seedValue).toBe(1234);
+        });
+
+        it('should report the seed passed to seed() as seedValue', () => {
+            const rng = new Random(1234);
+
+            rng.seed(99);
+
+            expect(rng.seedValue).toBe(99);
+        });
+
+        it('should normalize a negative constructor seed to unsigned 32-bit', () => {
+            const rng = new Random(-1);
+
+            expect(rng.seedValue).toBe(0xffff_ffff);
+        });
+
+        it('should normalize an overflowing seed() value to unsigned 32-bit', () => {
+            const rng = new Random(0);
+
+            rng.seed(2 ** 32 + 1);
+
+            expect(rng.seedValue).toBe(1);
+        });
+
+        it('should report a reproducible seedValue for a time-seeded generator', () => {
+            const timeSeeded = new Random();
+            const reported = timeSeeded.seedValue;
+            const firstSequence = Array.from({ length: 10 }, () => timeSeeded.next());
+
+            expect(reported).toBeDefined();
+            expect(timeSeeded.seedValue).toBe(reported);
+
+            const reseeded = new Random(reported as number);
+
+            expect(Array.from({ length: 10 }, () => reseeded.next())).toEqual(firstSequence);
+        });
     });
 
     describe('next', () => {
@@ -353,6 +394,14 @@ describe('Random', () => {
             expect(Array.from({ length: 5 }, () => rng.next())).toEqual(afterSave);
         });
 
+        it('should clear seedValue after setState', () => {
+            const rng = new Random(50);
+
+            rng.setState(rng.getState());
+
+            expect(rng.seedValue).toBeUndefined();
+        });
+
         it('should clone to an identical stream', () => {
             const parent = new Random(77);
 
@@ -363,6 +412,24 @@ describe('Random', () => {
             expect(Array.from({ length: 10 }, () => parent.next())).toEqual(
                 Array.from({ length: 10 }, () => child.next()),
             );
+        });
+
+        it('should copy seedValue on clone', () => {
+            const parent = new Random(77);
+            const child = parent.clone();
+
+            expect(child.seedValue).toBe(parent.seedValue);
+        });
+
+        it('should copy an undefined seedValue on clone', () => {
+            const parent = new Random(77);
+
+            parent.setState(parent.getState());
+
+            const child = parent.clone();
+
+            expect(parent.seedValue).toBeUndefined();
+            expect(child.seedValue).toBeUndefined();
         });
 
         it('should fork to an independent stream and advance the parent', () => {
@@ -377,6 +444,16 @@ describe('Random', () => {
             const childSeq = Array.from({ length: 10 }, () => child.next());
 
             expect(parentSeq).not.toEqual(childSeq);
+        });
+
+        it('should never report a seedValue on a forked child, and should not affect the parent', () => {
+            const parent = new Random(88);
+            const parentSeedBefore = parent.seedValue;
+
+            const child = parent.fork();
+
+            expect(child.seedValue).toBeUndefined();
+            expect(parent.seedValue).toBe(parentSeedBefore);
         });
 
         it('should make fork reproducible for the same parent state', () => {

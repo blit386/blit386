@@ -54,6 +54,9 @@ export class Random {
     /** Internal 32-bit generator state, mutated on every draw. */
     private state: number;
 
+    /** Last seed passed to the constructor or {@link seed}; `undefined` when not known. */
+    private lastSeed: number | undefined;
+
     /**
      * Creates a PRNG. Omit `seed` to time-seed from `Date.now()` (lower 32 bits).
      *
@@ -62,16 +65,33 @@ export class Random {
      */
     public constructor(seed: number = Date.now()) {
         this.state = seed >>> 0;
+        this.lastSeed = this.state;
     }
 
     /**
-     * Reseeds the generator. Same seed restarts the same sequence.
+     * The last seed passed to the constructor or {@link seed}, normalized to an unsigned 32-bit value (the
+     * same representation {@link getState} uses, not necessarily the raw number passed in). `undefined`
+     * after {@link setState} (the stream position no longer corresponds to a known seed) or on a
+     * {@link fork}ed child (a fork is a new stream and should not claim to have been seeded by its caller).
+     * {@link clone} copies whatever value the parent currently holds.
+     *
+     * @returns Last known seed, or `undefined` if the origin seed is not known.
+     * @since 1.5.0
+     */
+    public get seedValue(): number | undefined {
+        return this.lastSeed;
+    }
+
+    /**
+     * Reseeds the generator. Same seed restarts the same sequence. Updates {@link seedValue} to the
+     * normalized `seed`.
      *
      * @param seed - Any finite number; only its lower 32 bits are used.
      * @since 1.5.0
      */
     public seed(seed: number): void {
         this.state = seed >>> 0;
+        this.lastSeed = this.state;
     }
 
     /**
@@ -85,17 +105,20 @@ export class Random {
     }
 
     /**
-     * Restores a previously saved 32-bit generator state.
+     * Restores a previously saved 32-bit generator state. Clears {@link seedValue} to `undefined`, since an
+     * arbitrary saved state does not correspond to a known seed.
      *
      * @param state - Value from {@link getState} (lower 32 bits used).
      * @since 1.5.0
      */
     public setState(state: number): void {
         this.state = state >>> 0;
+        this.lastSeed = undefined;
     }
 
     /**
-     * Returns a new generator with the same state (identical stream from this point).
+     * Returns a new generator with the same state (identical stream from this point). The copy also shares
+     * this generator's {@link seedValue}, including `undefined`.
      *
      * @returns Independent copy that will produce the same subsequent values.
      * @since 1.5.0
@@ -104,18 +127,24 @@ export class Random {
         const copy = new Random(0);
 
         copy.state = this.state;
+        copy.lastSeed = this.lastSeed;
 
         return copy;
     }
 
     /**
-     * Returns an independent sub-stream. Advances this generator once to seed the child.
+     * Returns an independent sub-stream. Advances this generator once to seed the child. The child's
+     * {@link seedValue} is always `undefined` - a fork should not claim a caller-chosen seed.
      *
      * @returns New generator whose sequence diverges from this one.
      * @since 1.5.0
      */
     public fork(): Random {
-        return new Random(this.nextUint32());
+        const child = new Random(this.nextUint32());
+
+        child.lastSeed = undefined;
+
+        return child;
     }
 
     /**
