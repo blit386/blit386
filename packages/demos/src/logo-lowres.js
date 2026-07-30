@@ -47,7 +47,6 @@ import {
 } from 'blit386';
 
 import { isAvailable } from './shared/post-process-backend.js';
-import { randFloat, randInt, randPick } from './shared/rand.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -370,8 +369,10 @@ class Demo {
         }
 
         // Pick a random delay before the first TV fault burst.
-        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-        this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+        // BT.random is the engine's shared random number generator.
+        // Its int() method returns a whole number from the first value up to (but not including) the second.
+        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
 
         return true;
     }
@@ -432,8 +433,8 @@ class Demo {
 
             if (this.glitchTicksLeft <= 0) {
                 // Burst finished - schedule the next cooldown and reset band-wobble too.
-                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-                this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
 
             // Return early: do not run the rest of the state machine during a burst.
@@ -454,16 +455,16 @@ class Demo {
 
             if (this.bandWobbleActive <= 0) {
                 this.pixelGlitch.intensity = 0;
-                this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
         } else {
             this.bandWobbleCooldown--;
 
             if (this.bandWobbleCooldown <= 0) {
                 // Start a new band-wobble burst.
-                this.bandWobbleDuration = randInt(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
+                this.bandWobbleDuration = BT.random.int(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
                 this.bandWobbleActive = this.bandWobbleDuration;
-                this.bandWobbleSeed = Math.random() * 1000; // Different seed = different row pattern.
+                this.bandWobbleSeed = BT.random.float(0, 1000); // Different seed = different row pattern.
             }
         }
 
@@ -471,12 +472,13 @@ class Demo {
         this.glitchCooldown--;
 
         if (this.glitchCooldown <= 0) {
-            // Time for a fault! Pick a random type and intensity.
-            this.glitchType = randPick(GLITCH_TYPES);
-            this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+            // Time for a fault! pick() draws one item out of a list, like taking a card
+            // off the top of a shuffled deck. float() is the decimal cousin of int().
+            this.glitchType = BT.random.pick(GLITCH_TYPES);
+            this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
-            this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
-            this.pixelGlitch.seed = Math.random() * 1000;
+            this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+            this.pixelGlitch.seed = BT.random.float(0, 1000);
         }
     }
 

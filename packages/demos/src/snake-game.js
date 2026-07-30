@@ -50,7 +50,6 @@ import {
 } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { randFloat, randInt, randIntInclusive, randPick } from './shared/rand.js';
 import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
@@ -508,7 +507,10 @@ class Demo {
             BT.effectAdd(fx);
         }
 
-        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // BT.random is the engine's shared random number generator.
+        // Its int() method returns a whole number from the first value up to (but not including) the second,
+        // so this picks how many ticks to wait before the first glitch burst.
+        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
         this.glitchType = 'none';
@@ -612,7 +614,7 @@ class Demo {
             // and roll a fresh cooldown until the next burst.
             if (this.glitchTicksLeft === 0) {
                 this.resetGlitchUniforms();
-                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
 
             return;
@@ -621,11 +623,13 @@ class Demo {
         this.glitchCooldown--;
 
         if (this.glitchCooldown <= 0) {
-            this.glitchType = randPick(GLITCH_TYPES);
-            this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+            // pick() draws one item out of a list, like taking a card off the top of a shuffled deck.
+            // float() is the decimal cousin of int(), for values that are not whole numbers.
+            this.glitchType = BT.random.pick(GLITCH_TYPES);
+            this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
-            this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
-            this.pixelGlitch.seed = Math.random() * 1000;
+            this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+            this.pixelGlitch.seed = BT.random.float(0, 1000);
         }
     }
 
@@ -786,8 +790,10 @@ class Demo {
         }
 
         for (let attempt = 0; attempt < 4000; attempt++) {
-            const x = randIntInclusive(0, CELLS_X - 1);
-            const y = randIntInclusive(0, CELLS_Y - 1);
+            // int() with a single argument counts from 0, so int(CELLS_X) lands on any column from 0 to CELLS_X - 1
+            // - exactly the valid grid positions.
+            const x = BT.random.int(CELLS_X);
+            const y = BT.random.int(CELLS_Y);
             const key = `${x},${y}`;
 
             if (!occupied.has(key)) {

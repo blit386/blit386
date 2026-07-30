@@ -291,22 +291,28 @@ class Demo {
             const colorIndex = C_BUILDING_BASE + i;
 
             // Give each building a slightly different blue-gray tint by randomizing R, G, B.
-            // Math.random() gives a number from 0 up to 1; multiplying stretches that range.
-            // Math.floor() rounds down to a whole number.
-            const r = 100 + Math.floor(Math.random() * 100);
-            const g = 100 + Math.floor(Math.random() * 100);
-            const b = 150 + Math.floor(Math.random() * 100);
+            // BT.random is the engine's shared random number generator.
+            // Its int() method gives a whole number from the first value up to (but not including) the second, so
+            // int(100, 200) can be 100, 101, ... 199 - but never 200.
+            const r = BT.random.int(100, 200);
+            const g = BT.random.int(100, 200);
+            const b = BT.random.int(150, 250);
 
-            // Register this building's color in the palette at its reserved slot.
-            // Later, render() will pass colorIndex to BT.drawRectFill() instead of a Color32.
+            // Register this building's color in the palette at its reserved slot. Later, render() will pass colorIndex
+            // to BT.drawRectFill() instead of a Color32.
             this.palette.set(colorIndex, new Color32(r, g, b));
 
             // Size first, then place so the full rectangle stays inside the world.
-            // Vary the width (30-70 pixels) and height (40-100 pixels).
-            const size = new Vector2i(30 + Math.floor(Math.random() * 40), 40 + Math.floor(Math.random() * 60));
-            const pos = new Vector2i(
-                Math.floor(Math.random() * (this.worldWidth - size.x)),
-                Math.floor(Math.random() * (this.worldHeight - size.y)),
+            // pointInRange() rolls both numbers of a Vector2i at once: the x lands somewhere between the two x values
+            // we hand it, and the y between the two y values we hand it.
+            // Here that means a width of 30-69 pixels and a height of 40-99.
+            const size = BT.random.pointInRange(new Vector2i(30, 40), new Vector2i(70, 100));
+
+            // Now the top-left corner. Stopping the range at "world size minus building size" guarantees the far edge
+            // of the building still fits on the map.
+            const pos = BT.random.pointInRange(
+                new Vector2i(0, 0),
+                new Vector2i(this.worldWidth - size.x, this.worldHeight - size.y),
             );
 
             this.buildings.push({
@@ -329,12 +335,20 @@ class Demo {
         const treeMarginX = 6;
         const treeMarginTop = 16;
 
+        // Describe the plantable area once as a rectangle: where it starts, and how wide and tall it is.
+        // Trimming the margins off each side keeps the foliage on-map.
+        const treeArea = new Rect2i(
+            treeMarginX,
+            treeMarginTop,
+            this.worldWidth - treeMarginX * 2,
+            this.worldHeight - treeMarginTop,
+        );
+
         for (let i = 0; i < 50; i++) {
             this.trees.push({
-                pos: new Vector2i(
-                    treeMarginX + Math.floor(Math.random() * (this.worldWidth - treeMarginX * 2)),
-                    treeMarginTop + Math.floor(Math.random() * (this.worldHeight - treeMarginTop)),
-                ),
+                // insideRect() hands back a Vector2i somewhere inside that rectangle - like closing your eyes and
+                // pointing at a spot on a map.
+                pos: BT.random.insideRect(treeArea),
             });
         }
     }

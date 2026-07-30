@@ -506,8 +506,11 @@ class Demo {
         const slot = PARTICLE_SLOT_START + (this.nextParticleSlot % MAX_PARTICLES);
         this.nextParticleSlot++;
 
-        const x = this.charPos.x + Math.floor(Math.random() * 30) - 5;
-        const y = this.charPos.y + Math.floor(Math.random() * 20) - 15;
+        // Scatter the particle around the rock. BT.random is the engine's shared random number generator, and int()
+        // returns a whole number from the first value up to (but not including) the second.
+        // Negative low ends nudge the spawn point left and up as often as right and down.
+        const x = this.charPos.x + BT.random.int(-5, 25);
+        const y = this.charPos.y + BT.random.int(-15, 5);
 
         this.particles.push({
             pos: new Vector2i(x, y),

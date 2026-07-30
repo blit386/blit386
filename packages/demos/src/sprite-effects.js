@@ -60,7 +60,6 @@ import {
 } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { randFloat, randInt, randPick } from './shared/rand.js';
 import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
@@ -364,7 +363,10 @@ class Demo {
         }
 
         // Glitch state is shared by both backends - initialize once before the CRT check.
-        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // BT.random is the engine's shared random number generator.
+        // Its int() method returns a whole number from the first value up to (but not including) the second,
+        // so this waits a random number of ticks before the first burst.
+        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
         this.glitchType = 'none';
@@ -380,7 +382,7 @@ class Demo {
         // Build the full Orava CRT effect chain (see setupCrtStack() below render()).
         this.setupCrtStack();
 
-        this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+        this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
         this.bandWobbleTicksLeft = 0;
         this.bandWobbleDuration = 0;
 
@@ -551,13 +553,17 @@ class Demo {
         if (this.glitchTicksLeft > 0) {
             const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
+
             this.applyRestingCrtUniforms();
             this.applyGlitchUniforms(envelope);
+
             this.glitchTicksLeft--;
+
             if (this.glitchTicksLeft <= 0) {
-                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-                this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
+
             return;
         }
 
@@ -566,29 +572,34 @@ class Demo {
         if (this.bandWobbleTicksLeft > 0) {
             const t = 1 - (this.bandWobbleTicksLeft - 1) / this.bandWobbleDuration;
             const envelope = Math.sin(t * Math.PI);
+
             this.pixelGlitch.intensity = BAND_WOBBLE_INTENSITY * envelope;
             this.pixelGlitch.seed = this.bandWobbleSeed;
             this.bandWobbleTicksLeft--;
+
             if (this.bandWobbleTicksLeft <= 0) {
                 this.pixelGlitch.intensity = 0;
-                this.bandWobbleCooldown = randInt(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
         } else {
             this.bandWobbleCooldown--;
+
             if (this.bandWobbleCooldown <= 0) {
-                this.bandWobbleDuration = randInt(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
+                this.bandWobbleDuration = BT.random.int(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
                 this.bandWobbleTicksLeft = this.bandWobbleDuration;
-                this.bandWobbleSeed = Math.random() * 1000;
+                this.bandWobbleSeed = BT.random.float(0, 1000);
             }
         }
 
         this.glitchCooldown--;
         if (this.glitchCooldown <= 0) {
-            this.glitchType = randPick(GLITCH_TYPES);
-            this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+            // pick() draws one item out of a list, like taking a card off the top of a shuffled deck.
+            // float() is the decimal cousin of int().
+            this.glitchType = BT.random.pick(GLITCH_TYPES);
+            this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
-            this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
-            this.pixelGlitch.seed = Math.random() * 1000;
+            this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+            this.pixelGlitch.seed = BT.random.float(0, 1000);
         }
     }
 
