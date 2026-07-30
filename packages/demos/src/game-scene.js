@@ -889,9 +889,11 @@ class Demo {
                 this.nextParticleSlot++;
 
                 // Scatter each sparkle around the rock.
-                // BT.random is the engine's shared random number generator, and int() returns a whole number from the
-                // first value up to (but not including) the second.
-                // Negative low ends nudge the sparkle left and up as often as right and down.
+                // BT.random is the engine's shared random number generator, and int() returns a whole number starting
+                // at the first value and stopping just before the second - so int(-10, 10) gives anything from -10 to
+                // 9, and 10 itself never comes up.
+                // Left and right come up about equally often. The y range is lopsided on purpose: most of those
+                // offsets are negative, which on screen means upward, so the sparkles gather above the rock.
                 const ox = BT.random.int(-10, 10);
                 const oy = BT.random.int(-12, 4);
 

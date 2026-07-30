@@ -451,8 +451,7 @@ class Demo {
 
             // Override age with a random value so this particle starts mid-life.
             // BT.random is the engine's shared random number generator.
-            // Its next() method returns a different decimal each time it is called, ranging from 0.0 (just born) to
-            // just under 1.0 (almost dead).
+            // Its next() method returns a decimal from 0.0 (just born) up to, but never reaching, 1.0 (almost dead).
             this.particles[i].age = BT.random.next();
         }
     }
@@ -565,7 +564,8 @@ class Demo {
      */
     spawnParticle(p) {
         // Pick a random spark to be born near.
-        // BT.random.int() with one argument counts from 0, so int(SPARK_COUNT) lands on any spark position in the array.
+        // BT.random.int() with one argument counts from 0, so int(SPARK_COUNT) lands on any spark position in
+        // the array.
         const sparkIndex = BT.random.int(SPARK_COUNT);
         const spark = this.sparks[sparkIndex];
 

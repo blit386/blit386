@@ -453,7 +453,8 @@ class Demo {
         // See the file header for what each field means. We start in a long cooldown so the first burst doesn't fire on
         // frame 1.
         // BT.random is the engine's shared random number generator. Its int() method returns a whole number from the
-        // first value up to (but not including) the second, so this waits a random number of ticks before the first burst.
+        // first value up to (but not including) the second, so this waits a random number of ticks before the
+        // first burst.
         this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0; // ticks remaining in the current burst; 0 means "no glitch right now"
         this.glitchDuration = 0;

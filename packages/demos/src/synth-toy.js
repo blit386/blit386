@@ -112,9 +112,9 @@ const RANDOM_SEED_MAX = 1_000_000;
  * @returns {SynthParams}
  */
 function buildRandomSynthParams() {
-    // BT.random is the engine's shared random number generator. pick() draws one item out of a list, float() returns
-    // a decimal between two values, bool() flips a weighted coin, and next() gives a plain decimal from 0 up to (but not
-    // including) 1 - which is exactly the range these normalized knobs want.
+    // BT.random is the engine's shared random number generator. pick() draws one item out of a list, float()
+    // returns a decimal between two values, bool() flips a weighted coin, and next() gives a plain decimal from
+    // 0 up to (but not including) 1 - which is exactly the range these normalized knobs want.
     const waveform = BT.random.pick(SYNTH_WAVEFORMS);
     const frequency = BT.random.float(RANDOM_FREQUENCY_MIN_HZ, RANDOM_FREQUENCY_MAX_HZ);
     const duration = BT.random.float(RANDOM_DURATION_MIN_S, RANDOM_DURATION_MAX_S);

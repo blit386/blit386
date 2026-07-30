@@ -507,8 +507,10 @@ class Demo {
         this.nextParticleSlot++;
 
         // Scatter the particle around the rock. BT.random is the engine's shared random number generator, and int()
-        // returns a whole number from the first value up to (but not including) the second.
-        // Negative low ends nudge the spawn point left and up as often as right and down.
+        // returns a whole number starting at the first value and stopping just before the second - so int(-5, 25)
+        // gives anything from -5 to 24, and 25 itself never comes up.
+        // Both ranges are deliberately lopsided. Most of the x offsets are positive, so dust trails off to the right,
+        // and most of the y offsets are negative, which on screen means upward - the dust rises off the rock.
         const x = this.charPos.x + BT.random.int(-5, 25);
         const y = this.charPos.y + BT.random.int(-15, 5);
 
