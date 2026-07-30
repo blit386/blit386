@@ -69,10 +69,11 @@ export class Random {
     }
 
     /**
-     * The last seed passed to the constructor or {@link seed}. `undefined` after {@link setState} (the
-     * stream position no longer corresponds to a known seed) or on a {@link fork}ed child (a fork is a new
-     * stream and should not claim to have been seeded by its caller). {@link clone} copies whatever value
-     * the parent currently holds.
+     * The last seed passed to the constructor or {@link seed}, normalized to an unsigned 32-bit value (the
+     * same representation {@link getState} uses, not necessarily the raw number passed in). `undefined`
+     * after {@link setState} (the stream position no longer corresponds to a known seed) or on a
+     * {@link fork}ed child (a fork is a new stream and should not claim to have been seeded by its caller).
+     * {@link clone} copies whatever value the parent currently holds.
      *
      * @returns Last known seed, or `undefined` if the origin seed is not known.
      * @since 1.5.0
@@ -82,7 +83,8 @@ export class Random {
     }
 
     /**
-     * Reseeds the generator. Same seed restarts the same sequence.
+     * Reseeds the generator. Same seed restarts the same sequence. Updates {@link seedValue} to the
+     * normalized `seed`.
      *
      * @param seed - Any finite number; only its lower 32 bits are used.
      * @since 1.5.0
@@ -103,7 +105,8 @@ export class Random {
     }
 
     /**
-     * Restores a previously saved 32-bit generator state.
+     * Restores a previously saved 32-bit generator state. Clears {@link seedValue} to `undefined`, since an
+     * arbitrary saved state does not correspond to a known seed.
      *
      * @param state - Value from {@link getState} (lower 32 bits used).
      * @since 1.5.0
@@ -114,7 +117,8 @@ export class Random {
     }
 
     /**
-     * Returns a new generator with the same state (identical stream from this point).
+     * Returns a new generator with the same state (identical stream from this point). The copy also shares
+     * this generator's {@link seedValue}, including `undefined`.
      *
      * @returns Independent copy that will produce the same subsequent values.
      * @since 1.5.0
@@ -129,7 +133,8 @@ export class Random {
     }
 
     /**
-     * Returns an independent sub-stream. Advances this generator once to seed the child.
+     * Returns an independent sub-stream. Advances this generator once to seed the child. The child's
+     * {@link seedValue} is always `undefined` - a fork should not claim a caller-chosen seed.
      *
      * @returns New generator whose sequence diverges from this one.
      * @since 1.5.0

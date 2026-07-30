@@ -64,6 +64,7 @@ describe('Random', () => {
             const firstSequence = Array.from({ length: 10 }, () => timeSeeded.next());
 
             expect(reported).toBeDefined();
+            expect(timeSeeded.seedValue).toBe(reported);
 
             const reseeded = new Random(reported as number);
 
