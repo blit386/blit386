@@ -216,7 +216,10 @@ class Demo {
         this.palette = Palette.pico8();
 
         // Spread the four line colors around the wheel; randomize the starting angle.
-        const start = Math.random() * 360;
+        // BT.random is the engine's shared random number generator.
+        // Its float() method returns a decimal from the first value up to (but not including) the second,
+        // so this lands anywhere on the 360-degree color wheel.
+        const start = BT.random.float(0, 360);
 
         this.baseHues = [start, start + 90, start + 180, start + 270];
         this.applyLineColors(0);

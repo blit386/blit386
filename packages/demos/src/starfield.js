@@ -202,7 +202,7 @@ class Demo {
 
         // Start the shooting-star timer at a pleasant "about 200 ticks" delay.
         this.ticksSinceShoot = 0;
-        this.nextShootDelay = 180 + Math.floor(Math.random() * 40);
+        this.nextShootDelay = BT.random.int(180, 220);
 
         console.log('[StarfieldDemo] Ready.');
         return true;
@@ -243,7 +243,8 @@ class Demo {
      * Returns objects with { x, y, speed, brightness } - paletteIndex is added later
      * in init() once the palette is ready.
      *
-     * Math.random() returns a fraction from 0 up to (but not including) 1.
+     * BT.random is the engine's shared random number generator.
+     * float() returns a decimal from the first value up to (but not including) the second.
      *
      * @param {number} count
      * @param {number} speedMin
@@ -257,14 +258,16 @@ class Demo {
 
         for (let i = 0; i < count; i++) {
             // Spread stars across the whole sky at the start so the screen looks full.
-            const x = Math.random() * DISPLAY_W;
-            const y = Math.random() * DISPLAY_H;
+            const x = BT.random.float(0, DISPLAY_W);
+            const y = BT.random.float(0, DISPLAY_H);
 
             // Speed: how many pixels left per update tick (float keeps motion smooth).
-            const speed = speedMin + Math.random() * (speedMax - speedMin);
+            const speed = BT.random.float(speedMin, speedMax);
 
             // Brightness: 0 = black, 255 = white. Used to make a gray Color32.
-            const brightness = Math.floor(brightMin + Math.random() * (brightMax - brightMin + 1));
+            // intInclusive() gives a whole number and, unlike int(), the top value is a possible answer too
+            // - so the brightest stars really can hit brightMax.
+            const brightness = BT.random.intInclusive(brightMin, brightMax);
 
             // paletteIndex starts at 0; init() will fill it in after palette setup.
             // prevX/prevY start equal to x/y - see moveLayer() for how they update.
@@ -295,8 +298,8 @@ class Demo {
             // If the whole star is past the left edge, teleport it to the right.
             // Think of a conveyor belt: exit left, re-enter right with a fresh row position.
             if (star.x < -wrapW) {
-                star.x = DISPLAY_W + Math.random() * 40;
-                star.y = Math.random() * DISPLAY_H;
+                star.x = BT.random.float(DISPLAY_W, DISPLAY_W + 40);
+                star.y = BT.random.float(0, DISPLAY_H);
 
                 // Snap prevX/prevY to match the teleported spot too. Without this,
                 // render() would blend from the old off-screen-left position all the
@@ -326,7 +329,7 @@ class Demo {
             if (this.streak.headX < -24) {
                 this.streak.active = false;
                 this.ticksSinceShoot = 0;
-                this.nextShootDelay = 180 + Math.floor(Math.random() * 60);
+                this.nextShootDelay = BT.random.int(180, 240);
             }
 
             return;
@@ -346,10 +349,12 @@ class Demo {
      */
     spawnStreak() {
         this.streak.active = true;
+
         // Start slightly off-screen to the right so it enters smoothly.
-        this.streak.headX = DISPLAY_W + 10 + Math.random() * 60;
+        this.streak.headX = BT.random.float(DISPLAY_W + 10, DISPLAY_W + 70);
+
         // Keep it in the upper half so it reads as "sky" above the labels.
-        this.streak.headY = 16 + Math.random() * (DISPLAY_H * 0.45);
+        this.streak.headY = BT.random.float(16, 16 + DISPLAY_H * 0.45);
 
         // Snap prevHeadX/prevHeadY to the spawn point too, so the very first render
         // after spawning does not blend in from wherever the last streak died.

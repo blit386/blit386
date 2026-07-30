@@ -888,8 +888,14 @@ class Demo {
                 const slot = PARTICLE_SLOT_START + (this.nextParticleSlot % MAX_PARTICLES);
                 this.nextParticleSlot++;
 
-                const ox = Math.floor(Math.random() * 20) - 10;
-                const oy = Math.floor(Math.random() * 16) - 12;
+                // Scatter each sparkle around the rock.
+                // BT.random is the engine's shared random number generator, and int() returns a whole number starting
+                // at the first value and stopping just before the second - so int(-10, 10) gives anything from -10 to
+                // 9, and 10 itself never comes up.
+                // Left and right come up about equally often. The y range is lopsided on purpose: most of those
+                // offsets are negative, which on screen means upward, so the sparkles gather above the rock.
+                const ox = BT.random.int(-10, 10);
+                const oy = BT.random.int(-12, 4);
 
                 this.particles.push({
                     // Spawn each sparkle near the center of the rock (half its real

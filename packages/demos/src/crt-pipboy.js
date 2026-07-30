@@ -90,7 +90,6 @@ import {
 } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { randFloat, randInt, randPick } from './shared/rand.js';
 import { applyTheme, ui } from './shared/ui.js';
 
 // The internal pixel resolution of the demo. Small numbers keep the pixel art look.
@@ -451,13 +450,17 @@ class Demo {
         this.bootStartTick = BT.ticks;
 
         // Step 7: glitch state machine state
-        // See the file header for what each field means. We start in a long cooldown so
-        // the first burst doesn't fire on frame 1.
-        this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // See the file header for what each field means. We start in a long cooldown so the first burst doesn't fire on
+        // frame 1.
+        // BT.random is the engine's shared random number generator. Its int() method returns a whole number from the
+        // first value up to (but not including) the second, so this waits a random number of ticks before the
+        // first burst.
+        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0; // ticks remaining in the current burst; 0 means "no glitch right now"
         this.glitchDuration = 0;
         this.glitchType = 'none';
         this.glitchPeak = 0;
+
         return true;
     }
 
@@ -582,20 +585,22 @@ class Demo {
             // When the burst ends, reset the uniforms so the screen calms down.
             if (this.glitchTicksLeft === 0) {
                 this.resetGlitchUniforms();
-                this.glitchCooldown = randInt(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
         } else {
             // No active glitch - count down to the next one.
             this.glitchCooldown--;
             if (this.glitchCooldown <= 0) {
-                // Roll a new burst. Pick a random type, duration, and peak strength.
-                this.glitchType = randPick(GLITCH_TYPES);
+                // Roll a new burst. pick() draws one item out of a list, like taking a
+                // card off the top of a shuffled deck. float() is the decimal cousin of
+                // int(), for values that are not whole numbers.
+                this.glitchType = BT.random.pick(GLITCH_TYPES);
                 BT.assignTag(`Glitch: ${this.glitchType}`);
-                this.glitchDuration = randInt(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+                this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
                 this.glitchTicksLeft = this.glitchDuration;
-                this.glitchPeak = randFloat(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
+                this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
                 // Reset the seed so the shader uses a new band-noise pattern this burst.
-                this.pixelGlitch.seed = Math.random() * 1000;
+                this.pixelGlitch.seed = BT.random.float(0, 1000);
             }
         }
     }

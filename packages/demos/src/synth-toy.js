@@ -50,7 +50,6 @@
 
 import { AudioClip, bootstrap, BT } from 'blit386';
 
-import { randFloat } from './shared/rand.js';
 import { applyTheme, THEME_DEFAULT_START_SLOT, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
@@ -113,32 +112,36 @@ const RANDOM_SEED_MAX = 1_000_000;
  * @returns {SynthParams}
  */
 function buildRandomSynthParams() {
-    const waveform = SYNTH_WAVEFORMS[Math.floor(Math.random() * SYNTH_WAVEFORMS.length)];
-    const frequency = randFloat(RANDOM_FREQUENCY_MIN_HZ, RANDOM_FREQUENCY_MAX_HZ);
-    const duration = randFloat(RANDOM_DURATION_MIN_S, RANDOM_DURATION_MAX_S);
-    const hasPitchSweep = Math.random() < RANDOM_PITCH_SWEEP_CHANCE;
+    // BT.random is the engine's shared random number generator. pick() draws one item out of a list, float()
+    // returns a decimal between two values, bool() flips a weighted coin, and next() gives a plain decimal from
+    // 0 up to (but not including) 1 - which is exactly the range these normalized knobs want.
+    const waveform = BT.random.pick(SYNTH_WAVEFORMS);
+    const frequency = BT.random.float(RANDOM_FREQUENCY_MIN_HZ, RANDOM_FREQUENCY_MAX_HZ);
+    const duration = BT.random.float(RANDOM_DURATION_MIN_S, RANDOM_DURATION_MAX_S);
+    const hasPitchSweep = BT.random.bool(RANDOM_PITCH_SWEEP_CHANCE);
 
     return {
         waveform,
         frequency,
         duration,
-        volume: randFloat(RANDOM_VOLUME_MIN, RANDOM_VOLUME_MAX),
+        volume: BT.random.float(RANDOM_VOLUME_MIN, RANDOM_VOLUME_MAX),
         envelope: {
-            attack: randFloat(0, RANDOM_ATTACK_MAX_S),
-            decay: randFloat(0, RANDOM_DECAY_MAX_S),
-            sustain: Math.random(),
-            release: randFloat(RANDOM_RELEASE_MIN_S, RANDOM_RELEASE_MAX_S),
+            attack: BT.random.float(0, RANDOM_ATTACK_MAX_S),
+            decay: BT.random.float(0, RANDOM_DECAY_MAX_S),
+            sustain: BT.random.next(),
+            release: BT.random.float(RANDOM_RELEASE_MIN_S, RANDOM_RELEASE_MAX_S),
         },
-        noiseMix: Math.random(),
-        dutyCycle: Math.random(),
-        seed: Math.floor(Math.random() * RANDOM_SEED_MAX),
+        noiseMix: BT.random.next(),
+        dutyCycle: BT.random.next(),
+        seed: BT.random.int(RANDOM_SEED_MAX),
         // Only glide the pitch about half the time, and only when we do, add the field at
         // all - AudioClip.synth() treats a missing pitchSweep as "stay at one pitch."
         ...(hasPitchSweep
             ? {
                   pitchSweep: {
                       toFrequency:
-                          frequency * randFloat(RANDOM_PITCH_SWEEP_MIN_MULTIPLIER, RANDOM_PITCH_SWEEP_MAX_MULTIPLIER),
+                          frequency *
+                          BT.random.float(RANDOM_PITCH_SWEEP_MIN_MULTIPLIER, RANDOM_PITCH_SWEEP_MAX_MULTIPLIER),
                   },
               }
             : {}),

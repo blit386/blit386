@@ -450,9 +450,9 @@ class Demo {
             this.spawnParticle(this.particles[i]);
 
             // Override age with a random value so this particle starts mid-life.
-            // Math.random() returns a different number each time it is called,
-            // ranging from 0.0 (just born) to just under 1.0 (almost dead).
-            this.particles[i].age = Math.random();
+            // BT.random is the engine's shared random number generator.
+            // Its next() method returns a decimal from 0.0 (just born) up to, but never reaching, 1.0 (almost dead).
+            this.particles[i].age = BT.random.next();
         }
     }
 
@@ -564,14 +564,16 @@ class Demo {
      */
     spawnParticle(p) {
         // Pick a random spark to be born near.
-        const sparkIndex = Math.floor(Math.random() * SPARK_COUNT);
+        // BT.random.int() with one argument counts from 0, so int(SPARK_COUNT) lands on any spark position in
+        // the array.
+        const sparkIndex = BT.random.int(SPARK_COUNT);
         const spark = this.sparks[sparkIndex];
 
         // Place the particle close to the spark, with a small random scatter.
-        // (Math.random() - 0.5) gives a range of -0.5 to +0.5;
-        // multiplying by SPAWN_SCATTER * 2 gives -SPAWN_SCATTER to +SPAWN_SCATTER.
-        p.x = spark.x + (Math.random() - 0.5) * SPAWN_SCATTER * 2;
-        p.y = spark.y + (Math.random() - 0.5) * SPAWN_SCATTER * 2;
+        // float() is the decimal version of int(). Handing it a negative low end and a positive high end scatters the
+        // particle on either side of the spark.
+        p.x = spark.x + BT.random.float(-SPAWN_SCATTER, SPAWN_SCATTER);
+        p.y = spark.y + BT.random.float(-SPAWN_SCATTER, SPAWN_SCATTER);
 
         // Snap prevX/prevY to the same spot as the new x/y. Without this, render()
         // would blend from wherever this particle died (maybe clear across the
@@ -581,14 +583,12 @@ class Demo {
         p.prevY = p.y;
 
         // Give the particle a random initial velocity in a random direction.
-        // Math.PI is the number pi (~3.14159). Multiplying by 2 gives the full circle in radians.
-        // (Radians are another way to measure angles: 2*PI radians = 360 degrees.)
-        // Math.random() * Math.PI * 2 picks any angle from 0 to 360 degrees, randomly.
-        const angle = Math.random() * Math.PI * 2;
+        // angle() picks any direction on the compass, measured in radians. (Radians are another way to measure angles:
+        // 2*PI radians, about 6.28, is a full 360-degree turn - and that is exactly the range angle() draws from.)
+        const angle = BT.random.angle();
 
         // Random speed between 50% and 150% of STREAM_SPEED.
-        // (0.5 + Math.random()) gives a range of 0.5 to 1.5.
-        const speed = STREAM_SPEED * (0.5 + Math.random());
+        const speed = STREAM_SPEED * BT.random.float(0.5, 1.5);
 
         // Math.cos(angle) is the horizontal part of the direction (left/right).
         // Math.sin(angle) is the vertical part of the direction (up/down).
@@ -608,7 +608,7 @@ class Demo {
         // Each particle ages at a slightly different rate so they don't all die together.
         // 0.0018 to 0.0025 per tick gives a lifetime of roughly 400..555 ticks.
         // At 60 FPS that is 6.7 to 9.3 seconds of life per particle.
-        p.ageRate = 0.0018 + Math.random() * 0.0007;
+        p.ageRate = BT.random.float(0.0018, 0.0025);
 
         p.age = 0;
         p.alive = true;

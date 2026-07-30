@@ -506,8 +506,13 @@ class Demo {
         const slot = PARTICLE_SLOT_START + (this.nextParticleSlot % MAX_PARTICLES);
         this.nextParticleSlot++;
 
-        const x = this.charPos.x + Math.floor(Math.random() * 30) - 5;
-        const y = this.charPos.y + Math.floor(Math.random() * 20) - 15;
+        // Scatter the particle around the rock. BT.random is the engine's shared random number generator, and int()
+        // returns a whole number starting at the first value and stopping just before the second - so int(-5, 25)
+        // gives anything from -5 to 24, and 25 itself never comes up.
+        // Both ranges are deliberately lopsided. Most of the x offsets are positive, so dust trails off to the right,
+        // and most of the y offsets are negative, which on screen means upward - the dust rises off the rock.
+        const x = this.charPos.x + BT.random.int(-5, 25);
+        const y = this.charPos.y + BT.random.int(-15, 5);
 
         this.particles.push({
             pos: new Vector2i(x, y),
