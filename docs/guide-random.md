@@ -58,6 +58,7 @@ a.pick(['fire', 'water', 'earth']) === b.pick(['fire', 'water', 'earth']); // tr
 
 a.seed(42); // rewind a to the beginning
 a.int(0, 1000); // same first value as before
+a.seedValue; // 42 – the seed itself, readable back after the fact
 ```
 
 The order of draws is part of the state. Adding a `rng.bool()` call between two `rng.int()` calls shifts every value
@@ -100,6 +101,14 @@ rng.int(0, 6); // advance
 
 rng.setState(checkpoint); // rewind and replay the same draws
 ```
+
+`seedValue` answers a different question than `getState()`: not "where am I in the sequence" but "what seed got me
+here." It reports the last seed passed to the constructor or `seed()`, for exactly as long as that claim stays true.
+`setState()` breaks the claim – an arbitrary saved state is not a seed – so it clears `seedValue` to `undefined` rather
+than report something misleading. `clone()` and `fork()` diverge for the same opposite reasons as before: a clone is
+defined to replay the parent's exact sequence, so it copies `seedValue` along with the state; a fork is defined to
+diverge, so its child never claims a seed the caller didn't choose, even though `fork()` seeds the child internally from
+a drawn value.
 
 ## Procedural patterns from coordinates
 

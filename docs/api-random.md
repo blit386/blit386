@@ -210,6 +210,13 @@ rng.setState(saved); // restore and replay
 | `setState(n)` | Restore a saved state |
 | `clone()` | New instance with identical state (identical subsequent draws) |
 | `fork()` | Advance this instance once; seed a child so the two streams diverge |
+| `seedValue` | Last seed passed to the constructor or `seed()`; `undefined` after `setState()`, or on a forked child |
+
+`seedValue` reads back the seed itself, not the current position in the sequence – the value `getState()` returns keeps
+changing as you draw, but `seedValue` stays put until the generator is genuinely reseeded. `setState()` clears it, since
+jumping to an arbitrary saved state does not correspond to any known seed. `clone()` copies it verbatim (including
+`undefined`), matching the identical stream a clone produces. `fork()`'s child always reports `undefined` – a fork is a
+new stream and should not claim a seed its caller never chose.
 
 <PageChangelog page="api/random" />
 

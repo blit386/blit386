@@ -54,6 +54,9 @@ export class Random {
     /** Internal 32-bit generator state, mutated on every draw. */
     private state: number;
 
+    /** Last seed passed to the constructor or {@link seed}; `undefined` when not known. */
+    private lastSeed: number | undefined;
+
     /**
      * Creates a PRNG. Omit `seed` to time-seed from `Date.now()` (lower 32 bits).
      *
@@ -62,6 +65,20 @@ export class Random {
      */
     public constructor(seed: number = Date.now()) {
         this.state = seed >>> 0;
+        this.lastSeed = this.state;
+    }
+
+    /**
+     * The last seed passed to the constructor or {@link seed}. `undefined` after {@link setState} (the
+     * stream position no longer corresponds to a known seed) or on a {@link fork}ed child (a fork is a new
+     * stream and should not claim to have been seeded by its caller). {@link clone} copies whatever value
+     * the parent currently holds.
+     *
+     * @returns Last known seed, or `undefined` if the origin seed is not known.
+     * @since 1.5.0
+     */
+    public get seedValue(): number | undefined {
+        return this.lastSeed;
     }
 
     /**
@@ -72,6 +89,7 @@ export class Random {
      */
     public seed(seed: number): void {
         this.state = seed >>> 0;
+        this.lastSeed = this.state;
     }
 
     /**
@@ -92,6 +110,7 @@ export class Random {
      */
     public setState(state: number): void {
         this.state = state >>> 0;
+        this.lastSeed = undefined;
     }
 
     /**
@@ -104,6 +123,7 @@ export class Random {
         const copy = new Random(0);
 
         copy.state = this.state;
+        copy.lastSeed = this.lastSeed;
 
         return copy;
     }
@@ -115,7 +135,11 @@ export class Random {
      * @since 1.5.0
      */
     public fork(): Random {
-        return new Random(this.nextUint32());
+        const child = new Random(this.nextUint32());
+
+        child.lastSeed = undefined;
+
+        return child;
     }
 
     /**
