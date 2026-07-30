@@ -216,6 +216,8 @@ important pages:
 | [API: Core](docs/api-core.md) | bootstrap, init, default configuration |
 | [API: Game Loop](docs/api-game-loop.md) | tick timing, present FPS, Timer |
 | [Game Loop Guide](docs/guide-game-loop.md) | render-time interpolation, smoothing motion |
+| [API: Random](docs/api-random.md) | seeded PRNG, coordinate hashes, Value/Perlin/Simplex noise |
+| [Random Guide](docs/guide-random.md) | reproducible runs, independent streams, procedural worlds |
 | [API: Camera](docs/api-camera.md) | global pixel offset, world-clamp helpers |
 | [API: Core Types](docs/api-core-types.md) | Vector2i, Rect2i, Color32 |
 | [API: Rendering](docs/api-rendering.md) | primitives, sprites, text, post-process, frame capture |

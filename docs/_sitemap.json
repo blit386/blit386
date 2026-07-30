@@ -78,6 +78,11 @@
       "description": "Smoothing motion between fixed update() steps using BT.renderAlpha and Vector2i.lerp."
     },
     {
+      "src": "guide-random.md",
+      "path": "guides/random",
+      "description": "Seeded determinism in practice: reproducible runs, independent streams, and procedural worlds from coordinates."
+    },
+    {
       "src": "guide-palette.md",
       "path": "guides/palette",
       "description": "The palette-first rendering workflow: setup, slot offsets, and palette effects."
