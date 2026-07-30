@@ -58,6 +58,20 @@ describe('Random', () => {
             expect(rng.seedValue).toBe(99);
         });
 
+        it('should normalize a negative constructor seed to unsigned 32-bit', () => {
+            const rng = new Random(-1);
+
+            expect(rng.seedValue).toBe(0xffff_ffff);
+        });
+
+        it('should normalize an overflowing seed() value to unsigned 32-bit', () => {
+            const rng = new Random(0);
+
+            rng.seed(2 ** 32 + 1);
+
+            expect(rng.seedValue).toBe(1);
+        });
+
         it('should report a reproducible seedValue for a time-seeded generator', () => {
             const timeSeeded = new Random();
             const reported = timeSeeded.seedValue;
