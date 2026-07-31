@@ -20,6 +20,11 @@
 #   (`pnpm run sync:docs` in `packages/docs-site`). Never hand-edit; fix the
 #   engine package and re-sync. Reviewing them here only duplicates engine-side
 #   review.
+# - Binary assets carry no text diff worth reviewing, and several are large
+#   enough to burn review budget for zero signal: `packages/docs-site/public/media/**`
+#   is self-hosted blog video (~24 MB of `.av1.mp4`/`.h264.mp4`/`.webp`, produced by
+#   `pnpm run encode:video`); fonts, sprites, audio clips, favicons, and the engine's
+#   own bundled logo/system-font PNGs are likewise opaque binaries.
 #
 # Banner blocks inside published engine docs (`<!-- blit386.dev-banner:start -->`
 # … `<!-- blit386.dev-banner:end -->`, owned by
@@ -40,6 +45,13 @@ reviews:
     - '!packages/docs-site/content/docs/performance/**'
     - '!packages/docs-site/content/docs/reference/**'
     - '!packages/docs-site/src/data/api-history.generated.json'
+    - '!packages/docs-site/public/media/**'
+    - '!packages/docs-site/public/fonts/**'
+    - '!packages/docs-site/public/logo/**'
+    - '!packages/demos/public/fonts/**'
+    - '!packages/demos/public/sprites/**'
+    - '!packages/demos/public/audio/**'
+    - '!packages/blit386/assets/**'
   path_instructions:
     - path: 'packages/blit386/src/**/*.ts'
       instructions: >-
