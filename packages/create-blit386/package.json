@@ -1,0 +1,61 @@
+{
+  "name": "create-blit386",
+  "version": "1.4.0",
+  "description": "Scaffold a new BLIT386 game in seconds.",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blit386/create-blit386.git",
+    "directory": "packages/create-blit386"
+  },
+  "bugs": {
+    "url": "https://github.com/blit386/create-blit386/issues"
+  },
+  "homepage": "https://github.com/blit386/create-blit386#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "bin": {
+    "create-blit386": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "keywords": [
+    "blit386",
+    "create-blit386",
+    "scaffold",
+    "starter",
+    "template",
+    "boilerplate",
+    "game-engine",
+    "gamedev",
+    "pixel-art",
+    "retro",
+    "webgpu",
+    "vite",
+    "javascript",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'test/**/*.test.mjs'"
+  },
+  "dependencies": {
+    "@blit386/kit": "workspace:*",
+    "@clack/prompts": "^0.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}

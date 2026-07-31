@@ -1,0 +1,64 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output (rebuilt on publish via each package's prepack; shipped via the "files" allowlist)
+dist/
+*.tsbuildinfo
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+
+# Claude Code (skills, rules, settings.json are tracked)
+.claude/settings.local.json
+.claude/memory/
+.claude/worktrees/
+
+# Personal MCP overrides (project ships tracked .mcp.json for blit386-docs)
+mcp.json
+
+# Other AI assistants and editors (local only, not supported in this repo)
+.cursor/
+.codex/
+.aider*
+.continue/
+.windsurf/
+ai-rules/
+.rules
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+.zed/*
+!.zed/settings.json
+*.swp
+*.swo
+*~
+
+# Logs and scratch
+*.log
+pnpm-debug.log*
+
+# Cache
+.eslintcache
+.cache/
+.knip-output.json
+
+# Testing & coverage
+coverage/
+.nyc_output/
+
+# Temporary folders
+tmp/
+temp/
+
+
+# Husky runtime
+.husky/_/

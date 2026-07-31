@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://blit386.dev
+    about: Guides and API reference for BLIT386
+  - name: Engine bugs (blit386)
+    url: https://github.com/blit386/blit386/issues
+    about: Report bugs in the blit386 engine library, not the scaffolder or kit
+  - name: Report a vulnerability
+    url: https://github.com/blit386/create-blit386/security/advisories/new
+    about: Private vulnerability reporting (do not open a public issue)
+  - name: Discord
+    url: https://discord.gg/tC2wGt88Uj
+    about: Real-time chat with other BLIT386 users

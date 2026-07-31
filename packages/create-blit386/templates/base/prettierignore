@@ -1,0 +1,17 @@
+# Files Prettier should leave alone.
+
+# Lock files (never format - the package manager owns these)
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Dependencies and build output
+node_modules/
+dist/
+
+# Pristine kit copies used by `blit agents sync` to detect your edits.
+# Formatting these would make sync think you changed files you did not.
+.blit/
+
+# JSON is handled by Biome
+*.json

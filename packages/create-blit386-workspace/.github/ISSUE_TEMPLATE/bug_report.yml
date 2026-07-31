@@ -1,0 +1,101 @@
+name: Bug report
+description: Report a bug in the scaffolder or kit
+title: '[bug] '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Check [the docs](https://blit386.dev) and
+        [CONTRIBUTING.md](../../CONTRIBUTING.md) before opening.
+
+        For bugs in the blit386 engine itself (rendering, audio, input), open an issue on
+        [blit386/blit386](https://github.com/blit386/blit386/issues) instead.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One-line description of the bug
+      placeholder: npm create blit386 fails when the target folder already exists
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps to reproduce; include the exact command or a short code snippet if helpful
+      placeholder: |
+        1. Run `npm create blit386@latest my-game`
+        2. Choose JavaScript and no AI assistant
+        3. Observe the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package is affected?
+      options:
+        - create-blit386
+        - '@blit386/kit'
+        - both
+        - unsure
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      description: >
+        Installed version from package.json or `npm ls create-blit386` / `npm ls @blit386/kit`
+      placeholder: 1.2.1
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      description: Output of `node --version` (create-blit386 requires Node >= 22.18.0)
+      placeholder: v22.18.0
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: e.g. macOS 15.2, Windows 11, Ubuntu 24.04
+      placeholder: macOS 15.2
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: CLI or console output
+      description: Relevant terminal output or browser console errors (optional)
+      render: shell
+    validations:
+      required: false
