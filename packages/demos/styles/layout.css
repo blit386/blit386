@@ -1,0 +1,488 @@
+@font-face {
+    font-family: 'DepartureMono';
+    src: url('/fonts/DepartureMono/DepartureMono-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --color-accent: #5da0f2;
+    --banner-height: 80px;
+    --canvas-top-pad: 23px;
+
+    /*
+     * Viewport height available for the canvas: below the banner and the
+     * top pad, so the first screen still fits the demo without scrolling.
+     */
+    --canvas-view-h: calc(100dvh - var(--banner-height) - var(--canvas-top-pad));
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+::selection {
+    background: var(--color-accent);
+    color: black;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    background: black;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/*
+ * Shell mode (default): persistent banner + content iframe. The demo runs inside
+ * the iframe (?embed) so swapping demos tears down the engine with the frame.
+ */
+html[data-shell='true'] {
+    &,
+    & body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* Hide embed-only hosts until JS removes them (avoids a flash of canvas chrome). */
+    & #canvas-container,
+    & #demo-source {
+        display: none;
+    }
+
+    & #demo-frame {
+        display: block;
+        width: 100%;
+        height: calc(100dvh - var(--banner-height));
+        border: 0;
+        background: black;
+    }
+}
+
+/*
+ * Embed mode (?embed): lock to the viewport and hide the source panel so docs
+ * embeds on blit386.dev stay a pure canvas view. --banner-height is 0 here;
+ * the parent shell (when used) already reserved the banner.
+ *
+ * Shell iframe uses ?embed&source (data-source): same canvas sizing, but the
+ * Twoslash panel is visible below and the document scrolls inside the frame.
+ */
+html[data-embed='true'] {
+    &,
+    & body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* Hide shell chrome until JS removes it. */
+    & #demo-banner,
+    & #demo-frame {
+        display: none;
+    }
+
+    & #demo-source {
+        display: none;
+    }
+
+    & #canvas-container {
+        --canvas-view-h: calc(100dvh - var(--banner-height));
+        height: var(--canvas-view-h);
+        padding-top: 0;
+        align-items: center;
+    }
+}
+
+html[data-embed='true'][data-source='true'] {
+    &,
+    & body {
+        height: auto;
+        min-height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    & #demo-source {
+        display: block;
+    }
+
+    /*
+     * Match the old shell page: canvas top-aligned under the toolbar.
+     * height:auto so the container hugs the canvas – the viewport-tall
+     * embed height would leave a gap above the source panel.
+     */
+    & #canvas-container {
+        --canvas-view-h: calc(100dvh - var(--banner-height) - var(--canvas-top-pad));
+
+        height: auto;
+        padding-top: var(--canvas-top-pad);
+        align-items: flex-start;
+    }
+}
+
+#demo-source {
+    & .shiki {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+}
+
+#canvas-container {
+    width: 100%;
+    padding-top: var(--canvas-top-pad);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+
+    & canvas {
+        display: block;
+        image-rendering: pixelated;
+        outline: none;
+        max-width: var(--canvas-max-w, 960px);
+        max-height: var(--canvas-max-h, 720px);
+
+        /*
+         * Largest size that fits the first viewport (minus banner + top pad)
+         * and the demo max cap while keeping aspect ratio.
+         * --canvas-aspect-w/h: aspect (from drawingBufferSize or displaySize).
+         * --canvas-max-w/h: max on-screen size (from configure() maxCanvasSize).
+         */
+        width: min(
+            100dvw,
+            calc(var(--canvas-view-h) * var(--canvas-aspect-w, 640) / var(--canvas-aspect-h, 480)),
+            var(--canvas-max-w, 960px),
+            calc(
+                var(--canvas-max-h, 720px) *
+                var(--canvas-aspect-w, 640) /
+                var(--canvas-aspect-h, 480)
+            )
+        );
+
+        height: min(
+            var(--canvas-view-h),
+            calc(100dvw * var(--canvas-aspect-h, 480) / var(--canvas-aspect-w, 640)),
+            var(--canvas-max-h, 720px),
+            calc(
+                var(--canvas-max-w, 960px) *
+                var(--canvas-aspect-h, 480) /
+                var(--canvas-aspect-w, 640)
+            )
+        );
+
+        @supports (image-rendering: crisp-edges) {
+            image-rendering: crisp-edges;
+        }
+    }
+}
+
+#demo-banner {
+    height: var(--banner-height);
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 8px 12px;
+
+    /* Visible so the combobox listbox and arrow tooltips can extend below the bar. */
+    overflow: visible;
+
+    position: relative;
+    z-index: 20;
+    background: oklch(97% 0 0);
+    color: #2d2e31;
+    font-family: 'DepartureMono', monospace;
+    font-size: 11px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    &:empty {
+        padding: 0;
+    }
+
+    & .demo-banner-logo {
+        grid-column: 1;
+        justify-self: start;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    & .demo-banner-logo-light,
+    & .demo-banner-logo-dark {
+        image-rendering: pixelated;
+    }
+
+    & .demo-banner-logo-light {
+        display: block;
+    }
+
+    & .demo-banner-logo-dark {
+        display: none;
+    }
+
+    & .demo-banner-nav {
+        grid-column: 2;
+        justify-self: center;
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        gap: 2px;
+    }
+
+    & button {
+        background: #2d2e31;
+        color: white;
+        border: none;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 11px;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    & button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        background: transparent;
+        color: #2d2e31;
+    }
+
+    & .demo-banner-arrow {
+        position: relative;
+    }
+
+    & .demo-banner-arrow-glyph {
+        display: block;
+    }
+
+    /*
+     * Neighbor-name tooltip - adapted from styles/twoslash-rich.css hover popup
+     * (absolute container, arrow pseudo-element, opacity / pointer-events toggle).
+     * Prev sits to the left of its button; next sits to the right.
+     */
+    & .demo-banner-arrow-tooltip {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 30;
+        max-width: 220px;
+        padding: 6px 8px;
+        border: 1px solid #f8f8f8;
+        background: #f8f8f8;
+        color: #2d2e31;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: opacity 0.3s;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            margin-top: -3px;
+            background: #f8f8f8;
+            transform: rotate(45deg);
+            pointer-events: none;
+        }
+    }
+
+    & #demo-banner-prev .demo-banner-arrow-tooltip {
+        right: calc(100% + 8px);
+        left: auto;
+
+        &::before {
+            right: -4px;
+            left: auto;
+            border-top: 1px solid #f8f8f8;
+            border-right: 1px solid #f8f8f8;
+        }
+    }
+
+    & #demo-banner-next .demo-banner-arrow-tooltip {
+        left: calc(100% + 8px);
+        right: auto;
+
+        &::before {
+            left: -4px;
+            right: auto;
+            border-bottom: 1px solid #f8f8f8;
+            border-left: 1px solid #f8f8f8;
+        }
+    }
+
+    & .demo-banner-arrow:hover:not(:disabled) .demo-banner-arrow-tooltip:not(:empty),
+    & .demo-banner-arrow:focus-visible:not(:disabled) .demo-banner-arrow-tooltip:not(:empty) {
+        opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        & .demo-banner-arrow-tooltip {
+            transition: none;
+        }
+    }
+
+    & .demo-banner-combobox {
+        position: relative;
+        width: 30vw;
+        min-width: 140px;
+        max-width: 420px;
+    }
+
+    & .demo-banner-combobox-input {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        background: transparent;
+        color: inherit;
+        border: 2px solid currentColor;
+        padding: 6px 10px;
+        font: inherit;
+        outline: none;
+        -webkit-user-select: text;
+        user-select: text;
+
+        &:focus {
+            border-color: var(--color-accent);
+        }
+    }
+
+    & .demo-banner-listbox {
+        position: absolute;
+        top: calc(100% + 2px);
+        left: 0;
+        right: 0;
+        z-index: 40;
+        margin: 0;
+        padding: 2px;
+        list-style: none;
+        max-height: min(50vh, 320px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: oklch(97% 0 0);
+        color: #2d2e31;
+        border: 2px solid #2d2e31;
+
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    & .demo-banner-option {
+        padding: 6px 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &.is-active,
+        &:hover {
+            background: #2d2e31;
+            color: white;
+        }
+    }
+
+    & .demo-banner-match {
+        color: var(--color-accent);
+        text-decoration: underline;
+    }
+
+    & .demo-banner-option.is-active .demo-banner-match,
+    & .demo-banner-option:hover .demo-banner-match {
+        color: #9ec5f8;
+    }
+
+    & .demo-banner-listbox-empty {
+        padding: 10px 12px;
+        opacity: 0.45;
+        pointer-events: none;
+        text-align: center;
+    }
+
+    /* Visually hidden; screen readers hear filter result counts via aria-live. */
+    & .demo-banner-live {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    /* After the default logo display rules so dark mode can override them. */
+    @media (prefers-color-scheme: dark) {
+        background: #222;
+        color: oklch(97% 0 0);
+
+        & .demo-banner-logo-light {
+            display: none;
+        }
+
+        & .demo-banner-logo-dark {
+            display: block;
+        }
+
+        & button {
+            background: oklch(97% 0 0);
+            color: black;
+        }
+
+        & button:disabled {
+            color: oklch(97% 0 0);
+        }
+
+        & .demo-banner-arrow-tooltip {
+            background: #2a2a2a;
+            color: oklch(97% 0 0);
+            border-color: #f8f8f8;
+
+            &::before {
+                background: #2a2a2a;
+            }
+        }
+
+        & #demo-banner-prev .demo-banner-arrow-tooltip::before {
+            border-top-color: #f8f8f8;
+            border-right-color: #f8f8f8;
+        }
+
+        & #demo-banner-next .demo-banner-arrow-tooltip::before {
+            border-bottom-color: #f8f8f8;
+            border-left-color: #f8f8f8;
+        }
+
+        & .demo-banner-listbox {
+            background: #222;
+            color: oklch(97% 0 0);
+            border-color: oklch(97% 0 0);
+        }
+
+        & .demo-banner-option.is-active,
+        & .demo-banner-option:hover {
+            background: oklch(97% 0 0);
+            color: black;
+        }
+
+        & .demo-banner-option.is-active .demo-banner-match,
+        & .demo-banner-option:hover .demo-banner-match {
+            color: #1a5fb4;
+        }
+    }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "blit386-demos",
+  "compatibility_date": "2025-12-20",
+  "pages_build_output_dir": "./dist"
+}
