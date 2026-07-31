@@ -112,10 +112,8 @@ function resolveConfigPath() {
     return tempConfig;
 }
 
-const configPath = resolveConfigPath();
-
-/** @param {string} filePath @returns {Promise<boolean>} */
-function checkFile(filePath) {
+/** @param {string} filePath @param {string} configPath @returns {Promise<boolean>} */
+function checkFile(filePath, configPath) {
     const rel = relative(ROOT, filePath);
 
     return new Promise((settle) => {
@@ -157,8 +155,8 @@ function checkFile(filePath) {
     });
 }
 
-/** @param {string[]} files @returns {Promise<number>} */
-async function checkAll(files) {
+/** @param {string[]} files @param {string} configPath @returns {Promise<number>} */
+async function checkAll(files, configPath) {
     let nextIndex = 0;
     let failed = 0;
 
@@ -166,7 +164,7 @@ async function checkAll(files) {
         while (nextIndex < files.length) {
             const filePath = files.at(nextIndex);
             nextIndex += 1;
-            const ok = await checkFile(filePath);
+            const ok = await checkFile(filePath, configPath);
             if (!ok) {
                 failed += 1;
             }
@@ -182,7 +180,8 @@ async function main() {
     const files = listTrackedMarkdownFiles();
     files.sort((a, b) => a.localeCompare(b));
 
-    const failed = await checkAll(files);
+    const configPath = resolveConfigPath();
+    const failed = await checkAll(files, configPath);
 
     if (failed > 0) {
         console.error(`\nERROR: ${failed} file(s) with dead links found!`);

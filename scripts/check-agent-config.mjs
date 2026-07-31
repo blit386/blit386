@@ -262,9 +262,18 @@ function checkRoot(root) {
     return failures;
 }
 
-/** @returns {string[]} Package directory names directly under packages/ that carry their own CLAUDE.md. */
-function discoverPackageAgentRoots() {
-    const packagesDir = join(REPO_ROOT, 'packages');
+/**
+ * A package counts as its own agent-config root if it carries any of these markers - not just
+ * CLAUDE.md, so a package with AGENTS.md but a missing CLAUDE.md still gets checked (that
+ * missing-pointer-target case is exactly what findAgentsPointerFailures exists to catch).
+ */
+const AGENT_CONFIG_MARKERS = ['CLAUDE.md', 'AGENTS.md', '.agents', '.claude', '.zed'];
+
+/**
+ * @param {string} packagesDir Absolute path to a `packages/` directory.
+ * @returns {string[]} Directory names directly under packagesDir that carry their own agent config.
+ */
+export function discoverPackageAgentRoots(packagesDir) {
     if (!existsSync(packagesDir)) {
         return [];
     }
@@ -272,7 +281,7 @@ function discoverPackageAgentRoots() {
     return readdirSync(packagesDir, { withFileTypes: true })
         .filter((entry) => entry.isDirectory())
         .map((entry) => entry.name)
-        .filter((name) => existsSync(join(packagesDir, name, 'CLAUDE.md')))
+        .filter((name) => AGENT_CONFIG_MARKERS.some((marker) => existsSync(join(packagesDir, name, marker))))
         .sort();
 }
 
@@ -292,7 +301,7 @@ function runAllChecks() {
         failures.push(`[.] ${failure}`);
     }
 
-    for (const packageName of discoverPackageAgentRoots()) {
+    for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
         for (const failure of checkRoot(root)) {
             failures.push(`[packages/${packageName}] ${failure}`);

@@ -53,6 +53,24 @@ reviews:
     - '!packages/demos/public/audio/**'
     - '!packages/blit386/assets/**'
   path_instructions:
+    - path: 'scripts/**'
+      instructions: >-
+        Shared tooling used by every package (`check-agent-config.mjs`, `check-markdown-links.mjs`,
+        `prettier-plugin-compact-tables.mjs`, plus their `*.test.mjs` suites) - not engine or game code. American
+        English spelling; no emoji anywhere; keep commands as `pnpm run <script>` (not bare `pnpm <script>`) in any
+        comment or doc reference. These scripts must stay runnable both directly (`node scripts/<name>.mjs`) and when
+        imported for their exported functions - side effects belong inside a `main()` gated on direct execution, never
+        at module scope. Canonical detail: root `CLAUDE.md` and `.claude/rules/environment-gotchas.md`.
+    - path: '{biome,cspell,knip,renovate}.json'
+      instructions: >-
+        Root-level shared config, one copy for the whole monorepo (`packages/*` no longer carry their own except where a
+        package genuinely needs to override the shared rules via `extends`). American English spelling; no emoji
+        anywhere. A change here affects every package - verify with `pnpm run format:check` / `pnpm run knip` at the
+        repo root before suggesting a tightened or loosened rule.
+    - path: '{prettier.config.js,.prettierignore,.lintstagedrc.json,.npmrc,tsconfig.base.json,pnpm-workspace.yaml}'
+      instructions: >-
+        Root-level shared config, one copy for the whole monorepo. American English spelling; no emoji anywhere. Keep
+        commands as `pnpm run <script>` (not bare `pnpm <script>`) in any comment or doc reference.
     - path: 'packages/blit386/src/**/*.ts'
       instructions: >-
         Follow BLIT386 TypeScript house rules: no `any` (use `unknown` or proper types); type-only imports (`import
@@ -171,10 +189,11 @@ reviews:
         Scaffold output for end-user games. Keep beginner-friendly comments (explain what and why). Integer coordinates
         via `Vector2i` / `Rect2i`; use the `BT` namespace, never `BTAPI`. Do NOT apply library-only TypeScript
         conventions (no `any` bans, named-export rules, etc.) to generated game files – JS is the default; the TS
-        Catcher layer is intentionally approachable. Placeholders use `{{name}}` tokens; unknown tokens must stay
-        visible if mis-typed. Kit `AGENTS.md` / `docs/` are copied verbatim elsewhere (no placeholder substitution) – do
-        not introduce `{{gameFile}}` into those kit files from a template-only change. Canonical detail:
-        `packages/create-blit386-workspace/.claude/rules/template-structure.md`.
+        Catcher layer is intentionally approachable. Placeholders are `{{entryFile}}`, `{{gameFile}}`, `{{kitVersion}}`,
+        `{{packageName}}`, `{{pmInstall}}`, `{{pmRunBuild}}`, `{{pmRunDev}}`, and `{{projectName}}` tokens; unknown
+        tokens must stay visible if mis-typed. Kit `AGENTS.md` / `docs/` are copied verbatim elsewhere (no placeholder
+        substitution) – do not introduce `{{gameFile}}` into those kit files from a template-only change. Canonical
+        detail: `packages/create-blit386-workspace/.claude/rules/template-structure.md`.
     - path: 'packages/kit/content/**'
       instructions: >-
         Canonical kit IR shipped into every scaffolded game (`AGENTS.md`, `docs/`, `rules/`, `skills/`, hooks,

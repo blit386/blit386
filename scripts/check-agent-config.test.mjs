@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
+    discoverPackageAgentRoots,
     findAgentsPointerFailures,
     findCopilotPointerFailures,
     findSkillsSymlinkFailures,
@@ -175,6 +179,44 @@ describe('check-agent-config', () => {
             const failures = findZedSettingsFailures(content, false);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /\.agents\/skills layout is missing while \.zed\/settings\.json exists/);
+        });
+    });
+
+    describe('discoverPackageAgentRoots', () => {
+        it('discovers a package with AGENTS.md but no CLAUDE.md, and the missing pointer target still surfaces', () => {
+            const packagesDir = mkdtempSync(join(tmpdir(), 'agent-config-test-'));
+            const packageDir = join(packagesDir, 'no-claude-md');
+            mkdirSync(packageDir, { recursive: true });
+            writeFileSync(
+                join(packageDir, 'AGENTS.md'),
+                'This repository uses [`CLAUDE.md`](CLAUDE.md) as the canonical policy document.\n',
+            );
+
+            try {
+                const roots = discoverPackageAgentRoots(packagesDir);
+                assert.deepEqual(roots, ['no-claude-md']);
+
+                // The same regression this discovery fix targets: once discovered, the missing
+                // CLAUDE.md pointer target must actually be reported, not silently skipped.
+                const agentsMdContent =
+                    'This repository uses [`CLAUDE.md`](CLAUDE.md) as the canonical policy document.';
+                const failures = findAgentsPointerFailures(agentsMdContent, false);
+                assert.equal(failures.length, 1);
+                assert.match(failures[0], /CLAUDE\.md is missing/);
+            } finally {
+                rmSync(packagesDir, { recursive: true, force: true });
+            }
+        });
+
+        it('does not discover a package with none of the agent-config markers', () => {
+            const packagesDir = mkdtempSync(join(tmpdir(), 'agent-config-test-'));
+            mkdirSync(join(packagesDir, 'plain-package'), { recursive: true });
+
+            try {
+                assert.deepEqual(discoverPackageAgentRoots(packagesDir), []);
+            } finally {
+                rmSync(packagesDir, { recursive: true, force: true });
+            }
         });
     });
 });
