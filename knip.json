@@ -1,11 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreExportsUsedInFile": true,
+  "tags": ["-deprecated"],
   "workspaces": {
     "packages/blit386": {
       "entry": ["src/**/*.test.ts", "src/**/*.bench.ts"],
       "project": ["src/**/*.ts"],
-      "tags": ["-deprecated"],
       "ignoreIssues": {
         "src/overlay/timing-chart/style.ts": ["duplicates"]
       },

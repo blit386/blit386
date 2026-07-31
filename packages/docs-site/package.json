@@ -40,8 +40,8 @@
     "types:check": "pnpm run typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
-    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
+    "format": "biome format --write . && prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
+    "format:check": "biome check . && prettier --ignore-path ../../.prettierignore --check \"**/*.{md,mdx,yml,yaml}\"",
     "spellcheck": "cspell \"content/**/*.{md,mdx}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx}\" \"CLAUDE.md\" --no-progress",
     "docs:links": "node ../../scripts/check-markdown-links.mjs",
     "sync:docs": "node scripts/sync-docs-from-engine.mjs",
@@ -58,17 +58,6 @@
     "deploy": "wrangler deploy --config dist/server/wrangler.json --name blit386",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "*.{ts,tsx,js,json,jsonc,css}": [
-      "biome check --write --no-errors-on-unmatched"
-    ],
-    "*.{md,mdx,yml,yaml}": [
-      "prettier --write"
-    ],
-    "*.{ts,tsx,md,mdx}": [
-      "cspell --no-progress --no-must-find-files"
-    ]
-  },
   "dependencies": {
     "@fuma-translate/react": "^1.0.2",
     "fumadocs-core": "^16.11.4",
@@ -83,8 +72,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",
-    "@commitlint/cli": "^20.5.3",
-    "@commitlint/config-conventional": "^20.5.3",
     "@tailwindcss/vite": "^4.3.2",
     "@types/mdx": "^2.0.14",
     "@types/node": "^25.9.5",
@@ -96,8 +83,6 @@
     "fumadocs-twoslash": "^3.3.0",
     "husky": "^9.1.7",
     "knip": "^6.26.0",
-    "lint-staged": "^16.4.0",
-    "markdown-link-check": "^3.14.2",
     "prettier": "^3.9.6",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",

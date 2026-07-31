@@ -25,6 +25,16 @@
       "quoteStyle": "single"
     }
   },
+  "overrides": [
+    {
+      "includes": ["src/data/api-history.generated.json"],
+      "json": {
+        "formatter": {
+          "expand": "always"
+        }
+      }
+    }
+  ],
   "linter": {
     "rules": {
       "style": {
