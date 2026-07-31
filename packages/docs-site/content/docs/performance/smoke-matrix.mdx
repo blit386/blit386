@@ -1,0 +1,76 @@
+---
+# Generated from blit386/docs/performance-smoke-matrix.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Software Fallback Smoke Matrix"
+description: "Manual smoke-test checklist for the Canvas 2D software renderer."
+lastModified: "2026-06-21T16:25:31+02:00"
+editUrl: "https://github.com/blit386/blit386/blob/main/docs/performance-smoke-matrix.md"
+---
+
+This checklist is for quick manual verification of the software renderer. Originally written for the software-renderer
+MVP; updated for auto-fallback and the engine overlay (backend shown on the top bar when `isOverlayEnabled` is true).
+
+## Scope
+
+- Backend under test: `software` (auto-fallback when WebGPU unavailable, `?backend=software`, or
+  `configure().backend = 'software'`)
+- Resolution target: low-res scenes (for example `320×240`)
+- In scope: auto-fallback detection, overlay backend line, clear, clearRect, primitives, sprites, system text, bitmap
+  text, camera offset, frame capture
+- Out of scope: fullscreen shader/post-process effects (`effectAdd`, `effectRemove`, `effectClear`) in software mode
+
+## Environment
+
+- Browser: latest Chrome or Edge; Firefox on Linux without WebGPU (software path / auto-fallback)
+- URL override for software mode:
+  - `?backend=software`
+- Optional baseline comparison:
+  - same page without override (WebGPU path)
+
+## Matrix
+
+| Scene | What to verify | Software expected result | Notes |
+| --- | --- | --- | --- |
+| Any page without `?backend=software` | Auto-fallback when WebGPU is absent | Demo boots; `BT.activeBackend` = `'software'` | No error page or hard stop |
+| Any page with software active | Overlay top bar shows `software` | Top bar reads `software \| WxH` (toggle with `~` or corner) | Disable with `isOverlayEnabled: false` |
+| `tests/visual/fixtures/primitives.html` | clear + clearRect + primitive rasterization | Matches expected primitive layout and colors | Check pixel edges are crisp |
+| `tests/visual/fixtures/camera.html` | camera offset applied to all draw calls | Geometry is shifted consistently by camera offset | No partial drift between primitives |
+| `tests/visual/fixtures/sprites.html` | indexed sprites + palette offsets + transparency | Sprite shapes/colors match expected output | Transparent pixels stay see-through |
+| `tests/visual/fixtures/fonts.html` | system text + bitmap font rendering | Text positions and glyph colors are correct | No missing glyph blocks |
+| `tests/visual/fixtures/mixed.html` | primitives + sprites + layering order | Same stacking as WebGPU for this fixture | Parity covered by Playwright snapshot |
+| Frame capture via `BT.captureFrame()` | PNG export in software mode | Promise resolves with PNG blob | Repeat capture across multiple frames |
+
+## Automated regression
+
+Visual parity for software mode is exercised by Playwright under `tests/visual/` (`primitives`, `camera`, `sprites`,
+`fonts`, `mixed` specs load fixtures with `?backend=software`). Run `pnpm run test:visual` after renderer changes that
+affect pixel output.
+
+## Known exclusions (expected in MVP)
+
+<Callout type="warn" title="Effects APIs fail in software mode">
+
+Calling fullscreen effects APIs in software mode should fail clearly:
+
+- `BT.effectAdd(...)`
+- `BT.effectRemove(...)`
+- `BT.effectClear()`
+
+Expected message intent: software mode does not support fullscreen effects and suggests switching to WebGPU.
+
+</Callout>
+
+## Pass criteria
+
+- All rows in the matrix pass in software mode.
+- Software output is visually stable run-to-run for the same scene.
+- Effect API failures are clear and actionable.
+
+## See also
+
+<Cards>
+  <Card title="API: Core" href="/docs/api/core#requested-vs-active-backend">Requested vs. active backend, BT.activeBackend.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effects excluded in the software backend.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Automated visual parity tests.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Backend name shown on the overlay top bar.</Card>
+</Cards>

@@ -1,0 +1,12 @@
+{
+  "title": "Documentation",
+  "pagesIndex": "[Documentation](/docs)",
+  "pages": [
+    "getting-started",
+    "faq",
+    "api",
+    "guides",
+    "performance",
+    "reference"
+  ]
+}

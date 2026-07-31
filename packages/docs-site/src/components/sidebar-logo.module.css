@@ -1,0 +1,23 @@
+/** biome-ignore-all lint/correctness/noUnknownPseudoClass: :global is valid CSS Modules syntax */
+
+@reference '../app.css';
+
+.wrapper {
+    @apply flex items-center;
+}
+
+.logoLight {
+    @apply block [image-rendering:pixelated];
+
+    :global(.dark) & {
+        display: none;
+    }
+}
+
+.logoDark {
+    @apply hidden [image-rendering:pixelated];
+
+    :global(.dark) & {
+        display: block;
+    }
+}

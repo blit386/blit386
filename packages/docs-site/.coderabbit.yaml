@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit configuration for blit386-dev-fumapress (blit386.dev docs site).
+#
+# Review exclusions (path_filters): generated or duplicated trees that add noise
+# without unique review signal.
+#
+# - `.agents/skills/**` are relative symlinks into `.claude/skills/**`; reviewing
+#   both duplicates identical content (see CLAUDE.md "Agent skills").
+# - `pnpm-lock.yaml` is a generated lock file (listed explicitly even though it
+#   may already match CodeRabbit defaults).
+# - `content/docs/{api,guides,performance,reference}/**` and
+#   `src/data/api-history.generated.json` are the Documentation mirror from
+#   `blit386/docs/` (`pnpm run sync:docs`). Never hand-edit; fix the engine repo
+#   and re-sync. Reviewing them here only duplicates engine-side review.
+#
+# Auto review is disabled by default. To enable it, add the `cr` label to the PR.
+reviews:
+  review_status: false
+  path_filters:
+    - '!.agents/skills/**'
+    - '!pnpm-lock.yaml'
+    - '!content/docs/api/**'
+    - '!content/docs/guides/**'
+    - '!content/docs/performance/**'
+    - '!content/docs/reference/**'
+    - '!src/data/api-history.generated.json'
+  path_instructions:
+    - path: 'src/**/*.{ts,tsx}'
+      instructions: >-
+        Site TypeScript for the Fumapress/Waku docs site (React components, ServerPlugins, data loaders) – not the
+        blit386 engine. Prefer `import type` for type-only imports; American English spelling (see
+        `.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated name exemptions); no
+        emoji anywhere (CLAUDE.md Critical Rules). Lint/format with Biome (this repo has no ESLint). Do not apply
+        blit386-engine-only rules here (BTAPI access bans, Vector2i rendering coords, internal scoped naming) unless the
+        change is documenting those APIs. Version-history UI (`Since`, `ApiAvailability`, `PageChangelog`) reads
+        `src/data/api-history.ts` over generated JSON – never invent symbols in the generated file; fix the engine and
+        re-sync. Canonical detail: root CLAUDE.md.
+    - path: 'scripts/**'
+      instructions: >-
+        Build/CI helpers (`sync-docs-from-engine.mjs`, `watch-engine-docs.mjs`, `patch-wrangler.mjs`,
+        `patch-html-title.mjs`, `check-markdown-links.mjs`) plus `scripts/__tests__`. The sync script is MDX-aware and
+        owns the Documentation mirror – it must not gain a hard-coded per-page list (publish set lives in
+        `blit386/docs/_sitemap.json`). American English; no emoji; keep `pnpm run <script>` command forms accurate.
+        Tests use `node --test` via `pnpm run test`.
+    - path: '{press.config.tsx,source.config.ts,waku.config.ts}'
+      instructions: >-
+        Site wiring: Fumapress plugins/layouts/`GLOBAL_HEAD` (`press.config.tsx`), fumadocs-mdx collections and Twoslash
+        (`source.config.ts`), Waku/Vite plugins (`waku.config.ts`). MDX components used in engine docs must be
+        registered in `fumadocsMdx({ getMdxComponents })`. Twoslash is gated on `CLOUDFLARE` (production builds only) –
+        do not "fix" that by enabling it in dev. American English; no emoji. When plugins or routing change, check
+        whether CLAUDE.md / README.md still match (see `.claude/rules/docs-sync-required.md`).
+    - path: 'content/**'
+      instructions: >-
+        Hand-authored MDX and meta (landing, showcase, community, mcp-server, blog, and docs hub pages such as
+        `content/docs/index.mdx`, `getting-started.mdx`, `faq.mdx`, plus root/docs `meta.json`). Generated engine-mirror
+        pages under `content/docs/{api,guides,performance,reference}/` are path-filtered out – if they appear anyway, do
+        not suggest hand-edits; point at `blit386/docs/` + `pnpm run sync:docs`. Required frontmatter includes `title`;
+        American English; no emoji. After link changes, `pnpm run docs:links`. Custom MDX components must be registered
+        in `press.config.tsx`. Canonical detail: CLAUDE.md Content Conventions and `.claude/rules/fumapress-content.md`.
+    - path: 'CLAUDE.md'
+      instructions: >-
+        Repo contributor guide: American English spelling; no emoji; keep commands as `pnpm run <script>` (not bare
+        `pnpm <script>`). When site config, plugins, sync behavior, or deploy flow changes, keep the Architecture /
+        Commands / Documentation mirror sections accurate (see `.claude/rules/docs-sync-required.md`).
+    - path: 'README.md'
+      instructions: >-
+        Public repo README: American English; no emoji; beginner-friendly. Keep install/run/deploy examples accurate for
+        this Fumapress site (not the engine or scaffolder).
+    - path: 'public/**'
+      instructions: >-
+        Static assets served as-is: Cloudflare `_headers`, WebMCP bridge (`webmcp.js`), demo thumbnails, and
+        `.well-known/` agent-discovery files. Keep security headers and discovery cards accurate; no emoji in
+        user-facing strings.
+    - path: '.claude/skills/**/SKILL.md'
+      instructions: >-
+        Contributor skills for working on this docs site (`fp-*`). American English; no emoji; keep `pnpm run <script>`
+        command forms accurate.
+  auto_review:
+    enabled: false
+    labels: ['cr']

@@ -1,0 +1,395 @@
+---
+# Generated from blit386/docs/api-core.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Core"
+description: "Bootstrap, initialization, and default configuration."
+lastModified: "2026-07-26T08:50:37+02:00"
+editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core.md"
+---
+
+The rest of the core API surface lives in dedicated pages: [Overlay](/docs/api/overlay) (HUD configure flags and style),
+[Game Loop](/docs/api/game-loop) (tick timing, `Timer`, and the `BT.renderAlpha` render-interpolation factor),
+[Camera](/docs/api/camera), [Easing](/docs/api/easing), [Core Types](/docs/api/core-types) (`Vector2i`, `Rect2i`, `Color32`),
+[Audio](/docs/api/audio) (bus volume, mute, unlock state), and [Browser Support](/docs/api/browser-support).
+
+<Callout title="Starting a new project?">
+  The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm, pnpm, yarn, or bun).
+  It generates a ready-to-run Vite project with the engine installed, a starter game, and local docs.
+  See [create-blit386](https://github.com/blit386/create-blit386). The rest of this page documents the `bootstrap()`
+  API for hand-wired or existing projects.
+</Callout>
+
+<ApiAvailability page="api/core" />
+
+## Bootstrap
+
+<Since symbol="bootstrap" />
+<Since symbol="BootstrapOptions" />
+
+The `bootstrap()` function is the recommended entry point. It handles DOM ready, canvas lookup, backend selection
+(WebGPU or software fallback), and error display automatically. It returns a `Promise<boolean>`: `true` on a successful
+cold start or hot swap, `false` when init fails or a second call is rejected without a hot-reload context.
+
+```ts twoslash
+// One-liner – canvas id defaults to 'blit386-canvas', container to 'canvas-container'
+const started = await bootstrap(MyDemo);
+
+// With options
+await bootstrap(MyDemo, {
+  canvasID: 'my-canvas',
+  containerID: 'error-wrapper',
+  onSuccess: () => console.log('started'),
+  onError: (err) => trackError(err),
+  isWaitingForDOMReady: true, // default true; set false in Electron after DOMContentLoaded
+});
+```
+
+`BootstrapOptions` fields:
+
+<TypeTable type={{
+    canvasID: { type: 'string', default: "'blit386-canvas'", description: 'Canvas element id' },
+    containerID: { type: 'string', default: "'canvas-container'", description: 'Container id for error display' },
+    onSuccess: { type: '() => void', description: 'Called after successful init' },
+    onError: { type: '(error: Error) => void', description: 'Called on any init failure' },
+    isWaitingForDOMReady: { type: 'boolean', default: 'true', description: 'Wait for DOMContentLoaded' },
+  }} />
+
+Manual utilities (for custom initialization flows):
+
+<Since symbol="getCanvas" />
+<Since symbol="displayError" />
+
+```ts twoslash
+import { displayError, getCanvas } from 'blit386';
+
+const canvas = getCanvas('my-canvas'); // returns null on missing element
+displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
+```
+
+- `bootstrap()` applies canvas layout CSS custom properties via `CanvasLayoutStyles` (logical size, CSS cap, pixelated
+  scaling). Custom hosts can reuse the same helper when not using `bootstrap()`.
+
+### Hot reload
+
+<Since symbol="registerHotReload" />
+<Since symbol="HotContext" />
+<Since symbol="HotReloadContext" />
+
+Under a Vite dev server with the `blit386/vite` plugin installed, calling `bootstrap()` again after the engine is
+already initialized - exactly what happens on every hot-reloaded save - routes to a hot swap instead of starting a
+second, unstoppable game loop. `registerHotReload(hot)` registers the active `import.meta.hot` context so the engine
+knows a swap is possible; the plugin injects the call to it automatically into the demo/game's entry module, so you
+never call it by hand.
+
+`HotContext` is the structural type for that `hot` argument: the subset of Vite's `import.meta.hot` the engine depends
+on (`data`, `on`, `invalidate`, `accept`). It is kept structural on purpose so the published engine never imports from
+the `vite` package.
+
+Depending on what changed, the swap is a prototype-only method swap, a full re-init, or a full page reload - see
+[Hot Reload](/docs/guides/hot-reload) for the three tiers with worked examples. `IBTDemo` has an optional
+`onHotReload(context: HotReloadContext)` hook for reacting to a swap:
+
+```ts twoslash
+import { type IBTDemo, type HotReloadContext } from 'blit386';
+
+class Demo implements IBTDemo {
+  onHotReload(context: HotReloadContext): void {
+    console.log(`hot reload #${context.generation} (${context.reason})`);
+  }
+
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+  render(): void {}
+}
+```
+
+<TypeTable type={{
+    reason: { type: "'methods' | 'reinit'", description: "Which swap tier ran: 'methods' swapped the prototype in place, 'reinit' re-ran init() on a fresh instance" },
+    generation: { type: 'number', description: 'Hot-swap generation number, incremented on every successful swap since page load' },
+    snapshot: { type: 'Record<string, unknown>', description: "Previous instance's own enumerable fields, captured just before init() ran on the new one. Present only when reason is 'reinit'" },
+  }} />
+
+`onHotReload` never fires for a hardware-settings change - that always triggers a full page reload instead. Without a
+registered hot-reload context (no `blit386/vite` plugin, or a second `bootstrap()` call outside a Vite HMR session), a
+second call while already initialized logs an error and returns `false`. That guard is new in 1.4.0; before then a
+second call silently started another unstoppable `GameLoop`.
+
+## Initialization
+
+<Since symbol="BT.init" />
+
+<DemoEmbed demo="001-basics" title="BLIT386 basics demo" />
+
+```ts twoslash
+const ok = await BT.init(demo, canvas); // low-level init; prefer bootstrap()
+BT.displaySize; // Vector2i – configured logical resolution (clone per read)
+BT.drawingBufferSize; // Vector2i | null – output buffer when set in configure()
+BT.outputSize; // Vector2i – effective drawing-buffer size (clone per read)
+BT.targetFPS; // number – fixed update() rate (simulation), not measured present FPS
+BT.requestedBackend; // 'webgpu' | 'software' | null – resolved request (see below)
+BT.activeBackend; // 'webgpu' | 'software' | null – backend that actually started
+BT.screenOrientation; // 'landscape-primary' | … | null – Screen Orientation API type
+BT.loadingAssetsCount; // number – in-flight image + audio loads (see API: Assets)
+```
+
+- `BT.init()` selects WebGPU or falls back to the Canvas 2D software renderer automatically.
+- When not using `bootstrap()`, set `canvas.tabIndex = 0` and call `canvas.focus()` so keyboard events reach the canvas.
+
+### Resolution model
+
+<Since symbol="BT.displaySize" />
+<Since symbol="BT.drawingBufferSize" />
+<Since symbol="BT.outputSize" />
+
+BLIT386 tracks several related pixel dimensions. Public configure/getter names (`displaySize`, `drawingBufferSize`,
+`maxCanvasSize`) map to the layers below; display-tier is a separate post-process term.
+
+| Term | What it is | Configure field | `BT` getter |
+| --- | --- | --- | --- |
+| Logical | Game/simulation coordinate space; where `render()` draws palette-indexed pixels | `displaySize` | `BT.displaySize` |
+| Drawing buffer | GPU/canvas backing-store resolution; upscale target and display-tier post-process resolution | `drawingBufferSize` | `BT.drawingBufferSize` |
+| _(derived)_ | Effective drawing-buffer size (`drawingBufferSize` when set, otherwise logical 1:1) | – | `BT.outputSize` |
+| CSS cap | Maximum on-screen canvas size in CSS pixels (layout scales to the viewport, not beyond this) | `maxCanvasSize` | _(no getter)_ |
+| Effect tier | Post-process chain stage: pixel tier at logical resolution; display tier at drawing buffer | _(requires drawing buffer)_ | _(see post-process docs)_ |
+
+Typical WebGPU flow at default `320×240` logical with `640×480` drawing buffer:
+
+```text
+render() @ logical (320×240)
+  → pixel-tier effects @ logical
+  → palette resolve + upscale @ drawing buffer (640×480)  ← BT.outputSize
+  → display-tier effects @ drawing buffer
+  → swap chain → browser scales canvas (up to CSS cap 960×720)
+```
+
+<Callout title="Which size for CRT?">
+
+CRT-style effects (scanlines, barrel distortion, RGB mask, bloom) are display-tier. They run at the drawing buffer – use
+`BT.outputSize`, not `BT.displaySize`. Set `drawingBufferSize` larger than `displaySize` (for example `320×240` logical
+and `1280×960` buffer) so curvature and scanlines are not quantized onto the logical pixel grid. Display-tier
+registration throws when `drawingBufferSize` is unset. Pixel-native effects (`PixelGlitch`, `PixelMosaic`) are
+pixel-tier and run at `BT.displaySize` (logical).
+
+</Callout>
+
+<Callout title="What is `BT.outputSize`?">
+
+The effective drawing-buffer width and height in pixels: `drawingBufferSize ?? displaySize`. Palette resolve/upscale and
+the display-tier chain both operate at this size. When `drawingBufferSize` is omitted, logical and drawing buffer match
+(1:1). Each read returns a clone. There is no `HardwareSettings.outputSize` field – only the runtime getter.
+
+See [Post-Process Effects](/docs/guides/post-process-effects) for tier routing and presets.
+
+</Callout>
+
+### Hardware settings
+
+<Since symbol="HardwareSettings" />
+
+Resolved after `configure()`; the hook may return a partial object.
+
+- `configure()` may return only the fields you want to override.
+- The engine merges them with `defaultConfig()` via `mergeHardwareSettings()` (also exported).
+- Omit `displaySize` to inherit the full default resolution and `640×480` output buffer.
+- Include `displaySize` when you want a custom logical size; optional fields you omit then stay unset (for example no
+  `drawingBufferSize` means a 1:1 drawing buffer).
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `displaySize` | `Vector2i` | `320×240` | Logical render resolution |
+| `drawingBufferSize` | `Vector2i` | `640×480` | Drawing buffer size; enables display-tier effects when set |
+| `maxCanvasSize` | `Vector2i` | `960×720` | CSS cap – maximum on-screen canvas size |
+| `targetFPS` | `number` | `60` | Fixed `update()` rate (simulation ticks per second) |
+| `backend` | `'webgpu' \| 'software'` | `'webgpu'` | Force rendering backend |
+| `audioVoices` | `number` | `16` | Max simultaneous SFX voices, `1`-`64`; sizes the fixed SFX voice pool (when full, a new sound steals an eligible voice, or is dropped when no eligible voice exists) |
+| `outputUpscaleFilter` | `'nearest' \| 'linear'` | `'nearest'` | Upscale filter |
+| `isDetectingDroppedFrames` | `boolean` | `false` | Log a console warning on missed vsync |
+| `isCapturingPointerScroll` | `boolean` | `false` | Opt into canvas wheel `preventDefault` and `BT.pointerScrollDelta`; also gates `touch-action` (`none` when capturing, `pan-y` otherwise) so touch tap-hold-scroll follows the same opt-in (page scrolls over the canvas when off). The overlay palette band can also force capture (and `touch-action: none`) while a pointer is over it, even when this flag is `false` |
+| `isCapturingKeyboardScroll` | `boolean` | `false` | Opt into canvas `keydown` `preventDefault` for arrow keys, Space, PageUp/PageDown, Home, and End (page scrolls when off) |
+| `isWakeLockEnabled` | `boolean` | `false` | Request a screen wake lock after init to prevent mobile screen dimming/locking during gameplay (silent no-op if unsupported) |
+| `preferredOrientation` | `PreferredOrientation` | `'any'` | Attempt `screen.orientation.lock()` after init (`'landscape'` / `'portrait'`); `'any'` skips the lock (silent no-op if unsupported) |
+| `isOverlayEnabled` | `boolean` | `true` | Engine overlay HUD after each `render()` |
+| `isOverlayVisibleAtStart` | `boolean` | `false` | Show overlay body (metrics/palette/custom rows) on first frame |
+| `isOverlayToggleHintVisible` | `boolean` | `true` | Draw toggle hint icon while overlay body is hidden |
+| `isOverlayToggleEnabled` | `boolean` | `true` | Enable Backquote and bottom-left corner toggle input |
+| `isOverlayToggleHitDebugVisible` | `boolean` | `false` | Draw a 1 px outline of the bottom-left `17×13` toggle hit region (for hit-zone tuning) |
+| `isOverlayPaletteEnabled` | `boolean` | `false` | Live palette swatch grid in the overlay bottom band (opt-in) |
+| `overlayPaletteColumns` | `number` | _unset_ | Max palette swatches per grid row (default: widest fit) |
+| `overlayPaletteRowsVisible` | `number` | _unset_ | Max visible palette grid rows (default: all rows; band height capped) |
+| `overlayStyle` | `OverlayStyle` | _unset_ | Optional bar/text/gap palette indices for overlay |
+| `isOverlayTimingChartEnabled` | `boolean` | `false` | Scrolling update/render timing chart between title and metrics rows |
+| `overlayTimingChartHeight` | `number` | `22` | Timing chart band height in pixels when the chart is enabled |
+| `overlayTimingChartStyle` | `OverlayTimingChartStyle` | _unset_ | Optional timing chart palette indices (defaults to overlay bar/text) |
+| `overlayTimingChartDiagnostics` | `false \| 'minimal' \| 'rich'` | _unset_ | Renderer diagnostic visualization on the timing chart (`'minimal'` when chart enabled and omitted) |
+| `isOverlayRendererDiagnosticsBarEnabled` | `boolean` | `false` | Optional GPU diagnostics text row below frame timing metrics |
+| `isOverlayAudioMetersEnabled` | `boolean` | `false` | Per-bus level bars and voices/steal/drop text readout band |
+| `overlayAudioMeterHeight` | `number` | `13` | Audio meter band height in pixels when audio meters are enabled |
+| `overlayAudioMeterStyle` | `OverlayAudioMeterStyle` | _unset_ | Optional audio meter palette indices (defaults to overlay text/gap) |
+
+- `displaySize`, `drawingBufferSize`, and `maxCanvasSize` must be positive whole-number pixel dimensions.
+- Each size is capped at `8192×8192` per axis and `16,777,216` total pixels (`4096×4096`).
+- Invalid sizes make initialization fail before the engine applies canvas layout, sets canvas backing dimensions, or
+  allocates renderer buffers.
+- `BT.init()` returns `false` and logs a specific `[BT]` message to the browser console (press F12); the on-canvas
+  bootstrap error stays a generic init failure message.
+- In WebGPU mode, the requested logical and output sizes must also fit the active adapter/device `maxTextureDimension2D`
+  limit.
+- GPU limit failures do not fall back to the software renderer.
+
+The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in detail in [Overlay](/docs/api/overlay).
+
+### Getters vs. configuration fields
+
+<Since symbol="BT.targetFPS" />
+
+| Kind | `BT` getter | `HardwareSettings` field |
+| --- | --- | --- |
+| Mirror | `displaySize`, `drawingBufferSize`, `targetFPS` | same names |
+| Mirror | `requestedBackend` | `backend` |
+| Derived | `outputSize` (`drawingBufferSize ?? displaySize`) | _(none)_ |
+
+- `activeBackend` is runtime state (what actually started; may differ from `requestedBackend` after WebGPU fallback).
+  See [Resolution model](#resolution-model) for drawing-buffer vocabulary.
+- `isAudioUnlocked` is runtime state too: `false` until a user gesture resumes the audio context, `true` for the rest of
+  the session afterward. See [API: Audio](/docs/api/audio#unlock-state).
+- `screenOrientation` is runtime state from the Screen Orientation API (`null` when unavailable). See
+  [Screen orientation](/docs/api/browser-support#screen-orientation).
+- `BT.random` is runtime state too: a live, always-present `Random` instance (time-seeded at engine start). Reseed with
+  `BT.randomSeed(seed)` for reproducible runs. See [API: Random](/docs/api/random#engine-default-btrandom).
+
+### Screen orientation
+
+<Since symbol="BT.screenOrientation" />
+<Since symbol="PreferredOrientation" />
+
+`BT.screenOrientation` reads the current `screen.orientation.type` string (for example `'landscape-primary'` or
+`'portrait-secondary'`), or `null` when the API is missing. After a successful `init()`, the engine also:
+
+- Listens for orientation `change` and calls optional `IBTDemo.onOrientationChange(type)` when the demo implements it.
+- Attempts `screen.orientation.lock()` when `HardwareSettings.preferredOrientation` is `'landscape'` or `'portrait'`
+  (default `'any'` skips the lock). Lock failures are silent no-ops and never fail `init()`.
+
+Showing a "please rotate your device" prompt is a demo concern - the engine only supplies the getter, the change hook,
+and the optional lock. Browser support details live in [Screen orientation](/docs/api/browser-support#screen-orientation).
+
+```ts twoslash
+import { BT, type HardwareSettings, type IBTDemo } from 'blit386';
+
+class Demo implements IBTDemo {
+  configure(): Partial<HardwareSettings> {
+    return { preferredOrientation: 'landscape' };
+  }
+
+  onOrientationChange(type: string): void {
+    console.log('orientation:', type, BT.screenOrientation);
+  }
+
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+
+  render(): void {}
+}
+```
+
+### Requested vs. active backend
+
+<Since symbol="BT.requestedBackend" />
+<Since symbol="BT.activeBackend" />
+
+Two getters disambiguate what you asked for from what is running:
+
+| Getter | When set | Meaning |
+| --- | --- | --- |
+| `BT.requestedBackend` | After hardware settings load (`configure()` merge + URL override), before or after renderer init | Backend the engine will try / tried to start (`'webgpu'` default when omitted) |
+| `BT.activeBackend` | After successful renderer init only | Backend that actually started (`null` before init or on init failure) |
+
+`configure().backend` and `BT.requestedBackend` both describe the request, but only the getter reflects post-merge
+resolution:
+
+- `demo.configure()` may return a partial object; the engine merges it with `defaultConfig()`.
+- `?backend=software` mutates the resolved `HardwareSettings.backend` before `initRenderer()` runs (during
+  `loadHardwareSettings()`). A page opened as `/demos/023-crt-pipboy.html?backend=software` therefore reports
+  `BT.requestedBackend === 'software'` even when `configure()` asked for WebGPU.
+
+Fallback: When `requestedBackend` is `'webgpu'` (explicit or default) and WebGPU init fails, the engine logs a warning
+and starts the software renderer. Then `activeBackend === 'software'` while `requestedBackend` stays `'webgpu'`.
+
+The WebGPU renderer module is loaded lazily during init (only after a successful adapter/device setup). Browsers without
+WebGPU globals (for example Firefox on Linux without Nightly) can therefore start the software backend or auto-fallback
+without hitting module-load errors from WebGPU-only code.
+
+### Runtime checks (post-process, capture, etc.)
+
+Use `activeBackend`, not `requestedBackend`:
+
+```ts twoslash
+// Correct: gate on the backend that actually started; BT.effectAdd takes one effect
+if (BT.activeBackend === 'webgpu') {
+  for (const fx of BT.preset.crtPipBoy()) {
+    BT.effectAdd(fx);
+  }
+}
+
+// Misleading after fallback: requestedBackend may still be 'webgpu'
+if (BT.requestedBackend === 'webgpu') {
+  for (const fx of BT.preset.crtPipBoy()) {
+    BT.effectAdd(fx); // throws once activeBackend is software
+  }
+}
+```
+
+Forcing software up front avoids the fallback path entirely:
+
+```ts twoslash
+function configure(): Partial<HardwareSettings> {
+  return { backend: 'software' /* ... */ };
+}
+// requestedBackend === activeBackend === 'software' after init
+```
+
+## Default configuration
+
+<Since symbol="defaultConfig" />
+<Since symbol="mergeHardwareSettings" />
+
+Import `defaultConfig` and `mergeHardwareSettings` when building custom configure flows outside `bootstrap()`:
+
+```ts twoslash
+import { defaultConfig, mergeHardwareSettings } from 'blit386';
+
+const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });
+```
+
+`defaultConfig()` returns a full `HardwareSettings` object (`320×240` logical, `640×480` drawing buffer, overlay
+enabled, WebGPU backend, `16` SFX voices, and other defaults documented in the table above).
+
+## Putting it together
+
+<DemoEmbed demo="014-game-scene" title="BLIT386 game scene capstone demo" />
+
+<PageChangelog page="api/core" />
+
+## See also
+
+<Cards>
+  <Card title="API: Overlay" href="/docs/api/overlay">Engine HUD configure flags, style objects, layout math.</Card>
+  <Card title="API: Game Loop" href="/docs/api/game-loop">Tick timing, present FPS, Timer.</Card>
+  <Card title="API: Camera" href="/docs/api/camera">Global pixel offset for draw calls.</Card>
+  <Card title="API: Easing" href="/docs/api/easing">Named easing curves for palette fades.</Card>
+  <Card title="API: Core Types" href="/docs/api/core-types">Vector2i, Rect2i, Color32.</Card>
+  <Card title="API: Browser Support" href="/docs/api/browser-support">WebGPU support matrix and fallback.</Card>
+  <Card title="API: Rendering" href="/docs/api/rendering">Primitives, sprites, text, post-process, frame capture.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Palette setup, presets, effects.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">Sprite sheets, bitmap fonts, asset loading.</Card>
+  <Card title="API: Audio" href="/docs/api/audio">Bus volume, mute, and the unlock getter.</Card>
+  <Card title="Overlay Guide" href="/docs/guides/overlay">Engine HUD subsystem, toggle, layout.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effect chain and tiers.</Card>
+  <Card title="Hot Reload Guide" href="/docs/guides/hot-reload">Swap tiers, onHotReload, asset hot-replace, blit386/vite.</Card>
+  <Card title="Deprecation Timeline" href="/docs/reference/deprecations">Renamed configure flags and getters.</Card>
+</Cards>

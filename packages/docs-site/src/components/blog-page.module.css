@@ -1,0 +1,21 @@
+@reference '../app.css';
+
+.header {
+    @apply mb-4 flex flex-col gap-2;
+}
+
+.backLink {
+    @apply w-fit text-sm text-fd-muted-foreground hover:text-fd-accent-foreground;
+}
+
+.meta {
+    @apply flex flex-wrap items-center gap-2 text-sm;
+}
+
+.date {
+    @apply text-fd-primary;
+}
+
+.tag {
+    @apply rounded-lg bg-fd-primary px-1.5 py-0.5 text-fd-primary-foreground;
+}

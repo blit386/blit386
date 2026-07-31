@@ -1,0 +1,13 @@
+@reference '../app.css';
+
+.container {
+    @apply flex items-center gap-0.5 rounded-lg p-0.5 text-fd-muted-foreground;
+}
+
+.link {
+    @apply flex items-center justify-center rounded-md p-1.5 transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground;
+}
+
+.srOnly {
+    @apply sr-only;
+}

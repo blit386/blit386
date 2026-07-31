@@ -1,0 +1,263 @@
+---
+# Generated from blit386/docs/api-rendering.md by scripts/sync-docs-from-engine.mjs.
+# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
+title: "Rendering"
+description: "Primitives, sprites, text, post-process effects, and frame capture."
+lastModified: "2026-07-07T08:45:47+02:00"
+editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-rendering.md"
+---
+
+All draw calls require a palette to be active (`BT.paletteSet(palette)` before the first `BT.drawSprite`,
+`BT.drawRectFill`, etc.). All coordinates are integer pixels – use `Vector2i` and `Rect2i`, never floats.
+
+Palette addressing: primitives and `BT.systemPrint` use an absolute `paletteIndex`. Sprites and `BT.printFont` use an
+optional `paletteOffset` added to stored texel indices. See [Palette addressing](/docs/api/palette#palette-addressing).
+
+<ApiAvailability page="api/rendering" />
+
+## Primitives
+
+<Since symbol="BT.clear" />
+<Since symbol="BT.clearRect" />
+<Since symbol="BT.drawPixel" />
+<Since symbol="BT.drawLine" />
+<Since symbol="BT.drawRect" />
+<Since symbol="BT.drawRectFill" />
+
+```ts twoslash
+BT.clear(paletteIndex); // fill entire display
+BT.clearRect(rect, paletteIndex); // fill rectangular region
+
+BT.drawPixel(pos, paletteIndex); // Vector2i overload
+BT.drawPixel(x, y, paletteIndex); // numeric overload
+
+BT.drawLine(p0, p1, paletteIndex); // pixel-perfect, no antialiasing
+BT.drawRect(rect, paletteIndex); // outline only
+BT.drawRectFill(rect, paletteIndex); // filled
+```
+
+All primitives write palette indices, not RGBA – the active palette resolves colors at frame end.
+
+<DemoEmbed demo="002-primitives" title="BLIT386 primitives demo" />
+
+Two more primitive-drawing demos: pixel art from number grids, and animated mathematical patterns.
+
+<DemoEmbed demo="005-pixel-art" title="BLIT386 pixel art demo" />
+
+<DemoEmbed demo="006-patterns" title="BLIT386 patterns demo" />
+
+## Sprites
+
+### Drawing
+
+<Since symbol="BT.drawSprite" />
+
+```ts twoslash
+BT.drawSprite(sheet, srcRect, destPos);
+BT.drawSprite(sheet, srcRect, destPos, paletteOffset);
+```
+
+- `sheet` – an indexed `SpriteSheet` (must have been prepared via `loadIndexed` or `indexize`).
+- `srcRect` – source region within the sheet in pixels.
+- `destPos` – top-left destination in display coordinates.
+- `paletteOffset` – shift added to every stored pixel index before palette lookup (default `0`).
+
+<DemoEmbed demo="008-sprites" title="BLIT386 sprites demo" />
+
+Palette offset semantics
+
+Stored sprite indices start at `1`; index `0` is always transparent and discarded. The offset shifts every stored index
+before the palette lookup, so a pixel stored at index `i` renders as `palette[i + paletteOffset]`:
+
+| Stored index | `paletteOffset = 0` | `paletteOffset = N` |
+| --- | --- | --- |
+| `1` | `palette[1]` | `palette[1 + N]` |
+| `2` | `palette[2]` | `palette[2 + N]` |
+
+This drives palette-swap effects such as team colors or damage flashes – point the same sprite at a different band of
+the palette without re-uploading texels.
+
+- Validation: `paletteOffset` must be a non-negative integer below the active palette size, or the draw throws.
+- Clamping: the WebGPU sprite shader computes `combined = storedIndex + paletteOffset` and clamps with
+  `index = min(combined, 255u)`, so any sum past `255` maps to palette slot `255`.
+
+```ts twoslash
+BT.drawSprite(sheet, srcRect, new Vector2i(10, 10)); // normal
+BT.drawSprite(sheet, srcRect, new Vector2i(10, 10), 16); // blue-team shift
+```
+
+Draws are auto-batched by texture. Group draws from the same sheet to minimize GPU state changes.
+
+<DemoEmbed demo="010-sprite-effects" title="BLIT386 sprite effects demo" />
+
+### Sprite transform constants
+
+<Since symbol="BT.FLIP_H" />
+<Since symbol="BT.FLIP_V" />
+<Since symbol="BT.ROT_90_CW" />
+<Since symbol="BT.ROT_180_CW" />
+<Since symbol="BT.ROT_270_CW" />
+
+The following flags are defined for future use. They are not yet accepted by `BT.drawSprite()`:
+
+```ts twoslash
+BT.FLIP_H; // horizontal flip
+BT.FLIP_V; // vertical flip
+BT.ROT_90_CW; // rotate 90° clockwise
+BT.ROT_180_CW; // rotate 180°
+BT.ROT_270_CW; // rotate 270° clockwise
+```
+
+### Refreshing after a palette-layout swap
+
+<Since symbol="BT.spritesRefresh" />
+
+```ts twoslash
+BT.paletteSet(newLayoutPalette);
+BT.spritesRefresh(); // re-maps all tracked sheets to the new slot positions
+```
+
+<Callout type="warn" title="Layout swap only">
+
+Call `spritesRefresh()` only after a palette-layout swap – when the same colors have moved to different slot indices. Do
+NOT call it after a palette-value swap (when you changed what color a slot holds). In the value-swap case the fragment
+shader picks up the new color automatically; calling `spritesRefresh()` is wasteful and will fail reindexing if original
+RGBA values are gone.
+
+</Callout>
+
+## Text
+
+### System font
+
+<Since symbol="BT.systemPrint" />
+<Since symbol="BT.systemPrintMeasure" />
+
+Built-in 6×14 monospace font covering printable ASCII (characters 32–126).
+
+```ts twoslash
+BT.systemPrint(pos, paletteIndex, text); // draw text at pos
+BT.systemPrintMeasure(text); // → Vector2i (pixel width × height)
+```
+
+<DemoEmbed demo="004-fonts" title="BLIT386 fonts demo" />
+
+### Bitmap fonts
+
+<Since symbol="BT.printFont" />
+
+Variable-width fonts from `.btfont` files. The font's sprite sheet must be indexized before use.
+
+```ts twoslash
+const font = await BitmapFont.load('fonts/MyFont.btfont');
+BT.printFont(font, pos, text);
+BT.printFont(font, pos, text, paletteOffset); // palette-swap variant
+```
+
+See [Bitmap Fonts Guide](/docs/guides/bitmap-fonts) for the `.btfont` format spec and BMFont conversion.
+
+## Post-process effects
+
+Two-tier fullscreen effect pipeline – a pixel tier and a display tier – running between scene render and swap-chain
+present, with a palette-resolve-and-upscale step bridging the two:
+
+1. Pixel tier – operates on the logical `r8uint` framebuffer (one palette index per pixel). Effects here stay
+   palette-native (chunky glitch, mosaic).
+2. Palette resolve + upscale – `PaletteResolveUpscalePass` converts indices to RGBA through the active palette LUT and
+   upscales to `drawingBufferSize`.
+3. Display tier – operates on the RGBA output image. Hosts CRT scanlines, barrel distortion, bloom, etc. Requires
+   `drawingBufferSize` in hardware settings.
+
+Both chains add zero cost when empty.
+
+<Callout type="warn" title="WebGPU only">
+
+Post-process is unsupported by the Canvas 2D software backend – calling `effectAdd` in software mode throws a clear
+error. Gate effect registration on `BT.activeBackend === 'webgpu'`.
+
+</Callout>
+
+<Since symbol="BT.effectAdd" />
+<Since symbol="BT.effectRemove" />
+<Since symbol="BT.effectClear" />
+<Since symbol="BT.preset" />
+<Since symbol="crtPipBoy" />
+<Since symbol="amber" />
+<Since symbol="green" />
+
+```ts twoslash
+// Add effect – routed to pixel or display chain by Effect.tier automatically
+BT.effectAdd(new BarrelDistortion());
+BT.effectAdd(new Scanlines());
+BT.effectAdd(new Bloom());
+BT.effectAdd(new PixelGlitch()); // pixel-tier effect
+
+// Remove or clear
+BT.effectRemove(effect); // remove one; no-op if not found
+BT.effectClear(); // remove all from both chains
+
+// One-line presets (return arrays of Effect)
+for (const fx of BT.preset.crtPipBoy()) BT.effectAdd(fx);
+for (const fx of BT.preset.amber()) BT.effectAdd(fx);
+for (const fx of BT.preset.green()) BT.effectAdd(fx);
+
+// Equivalent standalone imports also work:
+import { crtPipBoy, amber, green } from 'blit386';
+for (const fx of crtPipBoy()) BT.effectAdd(fx);
+```
+
+<DemoEmbed demo="023-crt-pipboy" title="BLIT386 PipBoy CRT demo" />
+
+Built-in effects:
+
+| Tier | Classes |
+| --- | --- |
+| Pixel | `PixelGlitch`, `PixelMosaic` |
+| Display | `BarrelDistortion`, `Scanlines`, `RGBMask`, `Vignette`, `ChromaticAberration`, `Flicker`, `RollLine`, `Interference`, `Noise`, `Bloom` |
+
+All effect classes are exported from `'blit386'`. Each instance owns its own GPU resources and may be mutated each frame
+from demo code.
+
+See [Post-Process Effects Guide](/docs/guides/post-process-effects) for parameter reference, the `Effect` interface,
+`EffectTier`, the `FullscreenEffect` base class, and how to write a custom effect.
+
+## Frame capture
+
+<Since symbol="BT.captureFrame" />
+<Since symbol="BT.downloadFrame" />
+
+Capture the current rendered frame as a PNG.
+
+```ts twoslash
+// Resolves after the next render pass completes
+const blob = await BT.captureFrame();
+const url = URL.createObjectURL(blob);
+
+// Convenience: capture and trigger a browser download
+await BT.downloadFrame();
+await BT.downloadFrame('screenshot-001.png'); // custom filename
+```
+
+<DemoEmbed demo="013-image-output" title="BLIT386 image output demo" />
+
+<Callout title="Internal implementation note">
+
+`BT.captureFrame()` uses the internal `FrameCapture` class (`src/utils/FrameCapture.ts`), which is not exported from
+`'blit386'`. Demos should use `BT.captureFrame()` and `BT.downloadFrame()` only.
+
+</Callout>
+
+<PageChangelog page="api/rendering" />
+
+## See also
+
+<Cards>
+  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, camera, core types.</Card>
+  <Card title="API: Palette" href="/docs/api/palette">Palette setup, presets, effects.</Card>
+  <Card title="Palette Guide" href="/docs/guides/palette">Palette-first workflow and offset patterns.</Card>
+  <Card title="API: Assets" href="/docs/api/assets">Sprite sheets, bitmap fonts, asset loading.</Card>
+  <Card title="Post-Process Effects" href="/docs/guides/post-process-effects">Effect chain, custom effects.</Card>
+  <Card title="Bitmap Fonts" href="/docs/guides/bitmap-fonts">.btfont format, BMFont conversion.</Card>
+  <Card title="Testing" href="/docs/reference/testing">Visual regression for rendering.</Card>
+  <Card title="Performance Best Practices" href="/docs/performance/best-practices">Batching and draw-call performance.</Card>
+</Cards>
