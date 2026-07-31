@@ -60,8 +60,9 @@ const KIND_NAMES = ['Value', 'Perlin', 'Simplex'];
 const BLOCK_SIZES = [8, 4];
 const DEFAULT_BLOCK_INDEX = 1;
 
-// The smallest block we ever draw decides how big the sample buffer has to be.
-const SMALLEST_BLOCK = 4;
+// The smallest block we ever draw decides how big the sample buffer has to be. Reading it
+// back out of the list means adding a finer size above cannot leave the buffer too small.
+const SMALLEST_BLOCK = Math.min(...BLOCK_SIZES);
 const MAX_CELLS = (DISPLAY_W / SMALLEST_BLOCK) * (DISPLAY_H / SMALLEST_BLOCK);
 
 // Zoom range. A smaller number stretches the landscape out; a bigger one crowds it together.
@@ -260,7 +261,7 @@ class Demo {
      * @returns {number} A value from about -1 to 1.
      */
     sample(generator, nx, ny) {
-        // With animation on, the third number is how far the drift has travelled. Without it,
+        // With animation on, the third number is how far the drift has traveled. Without it,
         // the flat 2D version is all we need and is cheaper to work out.
         if (this.animate) {
             if (this.octaves <= 1) {
@@ -382,9 +383,15 @@ class Demo {
             this.needsRebuild = true;
         }
 
-        // Switching this on may step the block size back; render() handles that at the top of
-        // the next frame, before any rebuilding happens.
-        this.animate = ui.checkbox('Drift (uses 3D)', this.animate, { key: 'KeyA' });
+        const nextAnimate = ui.checkbox('Drift (uses 3D)', this.animate, { key: 'KeyA' });
+
+        // Switching drift off has to ask for a rebuild as well. Drifting samples the 3D
+        // generators; standing still samples the 2D ones. Without this the picture would keep
+        // showing the last 3D frame while the panel claimed it was back to plain 2D.
+        if (nextAnimate !== this.animate) {
+            this.animate = nextAnimate;
+            this.needsRebuild = true;
+        }
 
         ui.separator();
 

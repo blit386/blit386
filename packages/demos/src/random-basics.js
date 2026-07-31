@@ -479,10 +479,11 @@ class Demo {
         }
 
         // Steps are 3 pixels so the trail is easy to see. clampInt keeps the bug from walking
-        // out of its own square.
+        // out of its own square. The last pixel inside a square is one short of its width, so
+        // the limits subtract 1 - a square 120 wide starting at x = 24 ends at x = 143.
         bug.pos = new Vector2i(
-            clampInt(bug.pos.x + step.x * 3, area.x, area.x + area.width),
-            clampInt(bug.pos.y + step.y * 3, area.y, area.y + area.height),
+            clampInt(bug.pos.x + step.x * 3, area.x, area.x + area.width - 1),
+            clampInt(bug.pos.y + step.y * 3, area.y, area.y + area.height - 1),
         );
     }
 

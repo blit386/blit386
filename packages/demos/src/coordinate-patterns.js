@@ -267,24 +267,44 @@ class Demo {
         const cols = Math.ceil(DISPLAY_W / TILE) + 1;
         const rows = Math.ceil(GRID_H / TILE) + 1;
 
+        // The grid is a window cut into the middle of the screen, not the whole screen, so
+        // the rows at its top and bottom have to be trimmed to fit. Skipping this lets tiles
+        // spill over the frame and cover the caption above and the panels below.
+        const gridBottom = GRID_Y + GRID_H;
+
         for (let row = 0; row < rows; row++) {
+            const tileTop = GRID_Y + row * TILE - offsetY;
+
+            // Keep only the slice of this row that lands inside the window.
+            const visibleTop = Math.max(tileTop, GRID_Y);
+            const visibleH = Math.min(tileTop + TILE, gridBottom) - visibleTop;
+
+            // A row that ended up entirely outside the window has nothing to draw.
+            if (visibleH <= 0) {
+                continue;
+            }
+
             for (let col = 0; col < cols; col++) {
                 const tx = firstTileX + col;
                 const ty = firstTileY + row;
 
                 const screenX = col * TILE - offsetX;
-                const screenY = GRID_Y + row * TILE - offsetY;
 
-                // Tiles near the edges hang off the screen; the engine simply ignores the
-                // parts that fall outside, so there is nothing to check here.
-                BT.drawRectFill(new Rect2i(screenX, screenY, TILE, TILE), C_TERRAIN_BASE + terrainAt(tx, ty));
+                // Left and right need no such care: those edges are the screen itself, and the
+                // engine already ignores whatever hangs off it.
+                BT.drawRectFill(new Rect2i(screenX, visibleTop, TILE, visibleH), C_TERRAIN_BASE + terrainAt(tx, ty));
 
                 // The decoration is the only thing that knows about the layer. hash3i takes a
                 // third coordinate, so changing the layer gives a completely different answer
                 // for the very same tile - while the ground underneath, which came from
                 // hash2i, does not budge.
-                if (hash3i(tx, ty, this.layer, WORLD_SEED) % 100 < 20) {
-                    BT.drawRectFill(new Rect2i(screenX + 6, screenY + 6, 3, 3), C_ROCK_DOT);
+                //
+                // A dot is too small to be worth trimming, so one that would poke outside the
+                // window is simply left out.
+                const dotY = tileTop + 6;
+
+                if (dotY >= GRID_Y && dotY + 3 <= gridBottom && hash3i(tx, ty, this.layer, WORLD_SEED) % 100 < 20) {
+                    BT.drawRectFill(new Rect2i(screenX + 6, dotY, 3, 3), C_ROCK_DOT);
                 }
             }
         }

@@ -189,6 +189,15 @@ class Demo {
     // A snapshot of what clone() and fork() do, worked out once in init().
     streams = { seed: 0, base: [], cloned: [], forked: [], forkSeed: undefined };
 
+    // A private generator used only for choosing new seeds.
+    //
+    // It cannot be the shared BT.random, because generateWorld() reseeds that one. Drawing the
+    // next seed from a stream we just reseeded makes the answer a fixed consequence of the
+    // seed we reseeded it with - so "Copy left seed" followed by "New right" would hand back
+    // the very same number every time, and the button would look broken.
+    /** @type {Random | null} */
+    seedPicker = null;
+
     /**
      * Builds the palette, then grows both worlds from seeds nobody chose.
      *
@@ -216,6 +225,10 @@ class Demo {
         this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
+
+        // Set up the seed picker before anything asks it for a number. Left to itself, a new
+        // Random seeds from the clock, so this stream is unrelated to the shared one.
+        this.seedPicker = new Random();
 
         // Nobody has chosen a seed yet. The engine seeded itself from the clock when it
         // started up, and seedValue hands that number back - so we can build a world from
@@ -360,7 +373,9 @@ class Demo {
     rollSeed() {
         // intInclusive(a, b) can return b itself, unlike int(a, b) which stops just short of
         // it. For a seed range meant to read as "1000 to 9999", inclusive is what we want.
-        return BT.random.intInclusive(SEED_MIN, SEED_MAX);
+        //
+        // This comes from seedPicker rather than BT.random - see the field for why.
+        return this.seedPicker.intInclusive(SEED_MIN, SEED_MAX);
     }
 
     /**
