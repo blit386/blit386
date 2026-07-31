@@ -49,4 +49,8 @@ export const DEMO_ORDER = [
     'synth-toy',
     'filip-test-02',
     'hypercube',
+    'random-basics',
+    'seeded-worlds',
+    'coordinate-patterns',
+    'noise',
 ];
