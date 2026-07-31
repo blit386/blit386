@@ -113,6 +113,12 @@ const BUG_AREA_A = new Rect2i(24, 28, 120, 94);
 const BUG_AREA_B = new Rect2i(176, 28, 120, 94);
 const TRAIL_LENGTH = 90;
 
+// Each bug is drawn as a small square centered on its position, reaching BUG_REACH pixels
+// out in every direction. The bug therefore has to stop BUG_REACH short of its square's
+// edge, or half the marker would hang outside the frame.
+const BUG_REACH = 2;
+const BUG_SIZE = BUG_REACH * 2 + 1;
+
 /**
  * Clamps a whole number so it never leaves the range min..max.
  *
@@ -479,11 +485,15 @@ class Demo {
         }
 
         // Steps are 3 pixels so the trail is easy to see. clampInt keeps the bug from walking
-        // out of its own square. The last pixel inside a square is one short of its width, so
-        // the limits subtract 1 - a square 120 wide starting at x = 24 ends at x = 143.
+        // out of its own square.
+        //
+        // The limits are pulled in twice over. The last pixel inside a square is one short of
+        // its width, so a square 120 wide starting at x = 24 ends at x = 143. Then BUG_REACH
+        // comes off each end as well, because the position is the middle of the marker rather
+        // than its corner - without that the square would straddle the frame.
         bug.pos = new Vector2i(
-            clampInt(bug.pos.x + step.x * 3, area.x, area.x + area.width - 1),
-            clampInt(bug.pos.y + step.y * 3, area.y, area.y + area.height - 1),
+            clampInt(bug.pos.x + step.x * 3, area.x + BUG_REACH, area.x + area.width - 1 - BUG_REACH),
+            clampInt(bug.pos.y + step.y * 3, area.y + BUG_REACH, area.y + area.height - 1 - BUG_REACH),
         );
     }
 
@@ -591,7 +601,7 @@ class Demo {
             BT.drawPixel(point, C_DIM);
         }
 
-        BT.drawRectFill(new Rect2i(bug.pos.x - 2, bug.pos.y - 2, 5, 5), colorSlot);
+        BT.drawRectFill(new Rect2i(bug.pos.x - BUG_REACH, bug.pos.y - BUG_REACH, BUG_SIZE, BUG_SIZE), colorSlot);
     }
 
     /**
