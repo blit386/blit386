@@ -9,16 +9,16 @@ explaining how everything works.
 Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
 scaffolder (`npm create blit386@latest my-game`).
 
-There are 40 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
-gamepad), and audio. Each demo lives in a single number-free kebab-case file under `src/` (for example `src/basics.js`).
-Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames. Most demos import the shared UI
-kit in `src/shared/` for their on-screen panels and touch controls (see [Shared UI kit](#shared-ui-kit) below for the
-two exceptions). During development, Vite serves the matching page at `/demos/basics.html` (no HTML file is committed;
-the build wires a shared layout to each script). The default page is a persistent shell (navigation banner + iframe).
-The banner's demo selector is a fuzzy-searchable combobox (type to filter by title). The iframe loads the same demo with
-`?embed&source`, which runs the canvas, keeps the Twoslash source panel under it, and lets demo swaps discard the engine
-with the frame. Direct `?embed` URLs (and docs-site iframes) hide the banner and source panel for a centered
-full-viewport canvas.
+There are 45 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
+gamepad), audio, and seeded randomness. Each demo lives in a single number-free kebab-case file under `src/` (for
+example `src/basics.js`). Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames. Most
+demos import the shared UI kit in `src/shared/` for their on-screen panels and touch controls (see
+[Shared UI kit](#shared-ui-kit) below for the two exceptions). During development, Vite serves the matching page at
+`/demos/basics.html` (no HTML file is committed; the build wires a shared layout to each script). The default page is a
+persistent shell (navigation banner + iframe). The banner's demo selector is a fuzzy-searchable combobox (type to filter
+by title). The iframe loads the same demo with `?embed&source`, which runs the canvas, keeps the Twoslash source panel
+under it, and lets demo swaps discard the engine with the frame. Direct `?embed` URLs (and docs-site iframes) hide the
+banner and source panel for a centered full-viewport canvas.
 
 Hosted site: Browse every demo at [demos.blit386.dev](https://demos.blit386.dev/). Live URLs use a flat, number-free
 path per slug, for example `https://demos.blit386.dev/basics`. Older numbered (vintage) URLs such as `/001-basics` still
@@ -79,6 +79,21 @@ to these URLs via `VINTAGE_URLS`.
 - [sprite-effects](https://demos.blit386.dev/sprite-effects) – Damage flash, silhouette, ghost, team colors, day/night
 - [starfield](https://demos.blit386.dev/starfield) – Parallax scrolling starfield
 - [tilemap](https://demos.blit386.dev/tilemap) – Grid-based tile world with camera
+
+### Randomness
+
+- [random-basics](https://demos.blit386.dev/random-basics) – Five switchable scenes for the `BT.random` generators the
+  other demos do not reach for: `shuffle` versus `shuffleInPlace`, `weighted` loot drops with a live tally, `gaussian`
+  scatter against flat `float` scatter, `sign` coin flips, and `direction4` versus `direction8` walkers
+- [seeded-worlds](https://demos.blit386.dev/seeded-worlds) – Two worlds side by side, each labeled with the seed read
+  back from `BT.random.seedValue`. Copy one seed onto the other and the halves become identical, plus a `clone()` versus
+  `fork()` stream comparison
+- [coordinate-patterns](https://demos.blit386.dev/coordinate-patterns) – An endless scrollable world computed from
+  `hash1i` / `hash2i` / `hash3i` that stores zero tiles. Jump thousands of tiles away and back to find it unchanged; the
+  layer slider shows terrain ignoring the third coordinate while decorations follow it
+- [noise](https://demos.blit386.dev/noise) – `ValueNoise`, `PerlinNoise`, and `SimplexNoise` at matched settings, with
+  an octaves slider switching between `noise2D` and `fbm2D`, a terrain or grayscale ramp, and a drift toggle driving the
+  3D variants
 
 ### Palette System
 
