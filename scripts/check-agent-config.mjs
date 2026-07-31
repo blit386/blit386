@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 /**
- * Verify the agent-facing config surface has not drifted:
+ * Verify the agent-facing config surface has not drifted, for the repo root and
+ * every package that carries its own AGENTS.md / CLAUDE.md / .claude/.agents
+ * layout (each absorbed repo kept its own when merged into packages/*):
  *
  *   - `.agents/skills/*` symlink integrity - every entry must be a working
  *     symlink into `.claude/skills/<same-name>`, and every `.claude/skills/*`
  *     directory must have a matching symlink.
  *   - AGENTS.md still points at an existing CLAUDE.md.
- *   - `.github/copilot-instructions.md` points at both AGENTS.md and CLAUDE.md.
  *   - `.zed/settings.json` is present, parseable as JSON, and consistent with
  *     the `.agents/skills` layout.
+ *   - Repo root only: `.github/copilot-instructions.md` points at both
+ *     AGENTS.md and CLAUDE.md. GitHub only reads the top-level `.github/`, so
+ *     this check does not apply to package roots.
  *
  * This is read-only - unlike `sync-doc-banners.mjs` it never writes fixes,
  * it only reports drift for a human (or `pnpm run rules:sync`-style script)
@@ -21,13 +25,7 @@ import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'n
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const AGENTS_SKILLS_DIR = join(ROOT, '.agents', 'skills');
-const CLAUDE_SKILLS_DIR = join(ROOT, '.claude', 'skills');
-const AGENTS_MD_PATH = join(ROOT, 'AGENTS.md');
-const CLAUDE_MD_PATH = join(ROOT, 'CLAUDE.md');
-const COPILOT_INSTRUCTIONS_PATH = join(ROOT, '.github', 'copilot-instructions.md');
-const ZED_SETTINGS_PATH = join(ROOT, '.zed', 'settings.json');
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
  * Verifies every `.agents/skills/*` entry is a working symlink that resolves
@@ -78,7 +76,7 @@ export function findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirName
  * Verifies AGENTS.md exists, still references CLAUDE.md, and CLAUDE.md exists.
  *
  * @param {string | null} agentsMdContent Contents of AGENTS.md, or `null` when the file is missing.
- * @param {boolean} claudeMdExists Whether CLAUDE.md exists at the repo root.
+ * @param {boolean} claudeMdExists Whether CLAUDE.md exists at the given root.
  * @returns {string[]} Human-readable failure messages (empty when the pointer is valid).
  */
 export function findAgentsPointerFailures(agentsMdContent, claudeMdExists) {
@@ -194,14 +192,15 @@ export function resolveSkillSymlinkTarget(resolvedTargetPath, targetIsDirectory,
     return basename(resolvedTargetPath);
 }
 
-/** @returns {Array<{ name: string, isSymlink: boolean, resolvedName: string | null }>} */
-function readAgentsSkillEntries() {
-    return readdirSync(AGENTS_SKILLS_DIR, { withFileTypes: true }).map((entry) => {
+/** @param {string} agentsSkillsDir @param {string} claudeSkillsDir
+ * @returns {Array<{ name: string, isSymlink: boolean, resolvedName: string | null }>} */
+function readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) {
+    return readdirSync(agentsSkillsDir, { withFileTypes: true }).map((entry) => {
         if (!entry.isSymbolicLink()) {
             return { name: entry.name, isSymlink: false, resolvedName: null };
         }
 
-        const linkPath = join(AGENTS_SKILLS_DIR, entry.name);
+        const linkPath = join(agentsSkillsDir, entry.name);
 
         try {
             const target = realpathSync(linkPath);
@@ -210,7 +209,7 @@ function readAgentsSkillEntries() {
             return {
                 name: entry.name,
                 isSymlink: true,
-                resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, CLAUDE_SKILLS_DIR),
+                resolvedName: resolveSkillSymlinkTarget(target, targetIsDirectory, claudeSkillsDir),
             };
         } catch {
             return { name: entry.name, isSymlink: true, resolvedName: null };
@@ -218,33 +217,89 @@ function readAgentsSkillEntries() {
     });
 }
 
-/** @returns {string[]} Directory names under `.claude/skills/` (dotfiles like `.DS_Store` excluded). */
-function readClaudeSkillDirNames() {
-    return readdirSync(CLAUDE_SKILLS_DIR, { withFileTypes: true })
+/** @param {string} claudeSkillsDir @returns {string[]} Directory names under `.claude/skills/` (dotfiles excluded). */
+function readClaudeSkillDirNames(claudeSkillsDir) {
+    return readdirSync(claudeSkillsDir, { withFileTypes: true })
         .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
         .map((entry) => entry.name)
         .sort();
 }
 
-/** @returns {string[]} All failure messages across the four checks (empty when config is in sync). */
-function runAllChecks() {
-    const agentsSkillsLayoutExists = existsSync(AGENTS_SKILLS_DIR);
-    const agentsSkillEntries = agentsSkillsLayoutExists ? readAgentsSkillEntries() : [];
-    const claudeSkillDirNames = readClaudeSkillDirNames();
-    const agentsMdContent = existsSync(AGENTS_MD_PATH) ? readFileSync(AGENTS_MD_PATH, 'utf8') : null;
-    const claudeMdExists = existsSync(CLAUDE_MD_PATH);
-    const copilotContent = existsSync(COPILOT_INSTRUCTIONS_PATH)
-        ? readFileSync(COPILOT_INSTRUCTIONS_PATH, 'utf8')
-        : null;
-    const agentsMdExists = existsSync(AGENTS_MD_PATH);
-    const zedSettingsContent = existsSync(ZED_SETTINGS_PATH) ? readFileSync(ZED_SETTINGS_PATH, 'utf8') : null;
+/**
+ * Runs the symlink, AGENTS.md-pointer, and Zed-settings checks against one root
+ * (the repo root or a package that carries its own AGENTS.md / CLAUDE.md / .claude layout).
+ *
+ * @param {string} root Absolute path to the root to check.
+ * @returns {string[]} Human-readable failure messages, prefixed with the root's relative path.
+ */
+function checkRoot(root) {
+    const agentsSkillsDir = join(root, '.agents', 'skills');
+    const claudeSkillsDir = join(root, '.claude', 'skills');
+    const agentsMdPath = join(root, 'AGENTS.md');
+    const claudeMdPath = join(root, 'CLAUDE.md');
+    const zedSettingsPath = join(root, '.zed', 'settings.json');
 
-    return [
-        ...findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames),
+    const claudeSkillsDirExists = existsSync(claudeSkillsDir);
+    if (!claudeSkillsDirExists) {
+        return ['.claude/skills directory is missing'];
+    }
+
+    const agentsSkillsLayoutExists = existsSync(agentsSkillsDir);
+    const agentsSkillEntries = agentsSkillsLayoutExists ? readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) : [];
+    const claudeSkillDirNames = readClaudeSkillDirNames(claudeSkillsDir);
+    const agentsMdContent = existsSync(agentsMdPath) ? readFileSync(agentsMdPath, 'utf8') : null;
+    const claudeMdExists = existsSync(claudeMdPath);
+    const zedSettingsContent = existsSync(zedSettingsPath) ? readFileSync(zedSettingsPath, 'utf8') : null;
+
+    const failures = [
+        ...(agentsSkillsLayoutExists
+            ? findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames)
+            : ['.agents/skills directory is missing']),
         ...findAgentsPointerFailures(agentsMdContent, claudeMdExists),
-        ...findCopilotPointerFailures(copilotContent, agentsMdExists, claudeMdExists),
         ...findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutExists),
     ];
+
+    return failures;
+}
+
+/** @returns {string[]} Package directory names directly under packages/ that carry their own CLAUDE.md. */
+function discoverPackageAgentRoots() {
+    const packagesDir = join(REPO_ROOT, 'packages');
+    if (!existsSync(packagesDir)) {
+        return [];
+    }
+
+    return readdirSync(packagesDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name)
+        .filter((name) => existsSync(join(packagesDir, name, 'CLAUDE.md')))
+        .sort();
+}
+
+/** @returns {string[]} All failure messages across the repo root and every package agent-config root. */
+function runAllChecks() {
+    const failures = [];
+
+    for (const failure of checkRoot(REPO_ROOT)) {
+        failures.push(`[.] ${failure}`);
+    }
+
+    const copilotInstructionsPath = join(REPO_ROOT, '.github', 'copilot-instructions.md');
+    const copilotContent = existsSync(copilotInstructionsPath) ? readFileSync(copilotInstructionsPath, 'utf8') : null;
+    const agentsMdExists = existsSync(join(REPO_ROOT, 'AGENTS.md'));
+    const claudeMdExists = existsSync(join(REPO_ROOT, 'CLAUDE.md'));
+    for (const failure of findCopilotPointerFailures(copilotContent, agentsMdExists, claudeMdExists)) {
+        failures.push(`[.] ${failure}`);
+    }
+
+    for (const packageName of discoverPackageAgentRoots()) {
+        const root = join(REPO_ROOT, 'packages', packageName);
+        for (const failure of checkRoot(root)) {
+            failures.push(`[packages/${packageName}] ${failure}`);
+        }
+    }
+
+    return failures;
 }
 
 function main() {
@@ -259,7 +314,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, Copilot instructions, Zed settings).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings).',
     );
 }
 

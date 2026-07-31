@@ -2,35 +2,34 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { isIgnoredFile, normalizeRelSep } from '../check-markdown-links.mjs';
+import { isIgnoredFile, normalizeRelSep } from './check-markdown-links.mjs';
 
 // ROOT as computed by check-markdown-links.mjs: resolve(dirname(scriptUrl), '..')
-// From scripts/__tests__/, two levels up gives us the project root.
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 describe('isIgnoredFile', () => {
-    test('ignores a file inside a content/docs section directory', () => {
-        const path = join(ROOT, 'content', 'docs', 'api', 'renderer', 'index.mdx');
+    test('ignores a file inside a docs-site content/docs section directory', () => {
+        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'api', 'renderer', 'index.mdx');
         assert.equal(isIgnoredFile(path), true);
     });
 
     test('ignores a deeply nested file under a section', () => {
-        const path = join(ROOT, 'content', 'docs', 'guide', 'getting-started', 'index.mdx');
+        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'guide', 'getting-started', 'index.mdx');
         assert.equal(isIgnoredFile(path), true);
     });
 
     test('does not ignore content/docs/index.mdx (hand-authored hub page)', () => {
-        const path = join(ROOT, 'content', 'docs', 'index.mdx');
+        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'index.mdx');
         assert.equal(isIgnoredFile(path), false);
     });
 
     test('does not ignore content/docs/meta.json (root meta file)', () => {
-        const path = join(ROOT, 'content', 'docs', 'meta.json');
+        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'meta.json');
         assert.equal(isIgnoredFile(path), false);
     });
 
     test('does not ignore files outside content/docs', () => {
-        const path = join(ROOT, 'content', 'guide', 'index.mdx');
+        const path = join(ROOT, 'packages', 'docs-site', 'content', 'guide', 'index.mdx');
         assert.equal(isIgnoredFile(path), false);
     });
 
@@ -44,7 +43,7 @@ describe('isIgnoredFile', () => {
         // isIgnoredFile delegates to normalizeRelSep before matching.
         // path.relative() never produces backslashes on POSIX, so we test
         // normalizeRelSep directly — the helper that isIgnoredFile calls.
-        const windowsRel = 'content\\docs\\api\\renderer\\index.mdx';
-        assert.equal(normalizeRelSep(windowsRel), 'content/docs/api/renderer/index.mdx');
+        const windowsRel = 'packages\\docs-site\\content\\docs\\api\\renderer\\index.mdx';
+        assert.equal(normalizeRelSep(windowsRel), 'packages/docs-site/content/docs/api/renderer/index.mdx');
     });
 });

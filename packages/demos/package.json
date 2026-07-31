@@ -43,11 +43,11 @@
     "format:biome": "biome format --write .",
     "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
     "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
-    "docs:links": "node scripts/check-markdown-links.mjs",
+    "docs:links": "node ../../scripts/check-markdown-links.mjs",
     "check:demo-registry": "node scripts/check-demo-registry.mjs",
     "generate:audio-loops": "node scripts/generate-audio-loops.mjs",
     "preflight": "pnpm run format:check && pnpm run lint && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run check:demo-registry && pnpm run build",
-    "knip": "knip",
+    "knip": "cd ../.. && knip --workspace packages/demos",
     "knip:fix": "knip --fix",
     "clean": "rm -rf dist node_modules/.vite",
     "prepare": "husky",
@@ -56,14 +56,6 @@
     "security:mcp-preflight": "node ../blit386/scripts/security/mcp-preflight.mjs"
   },
   "packageManager": "pnpm@10.26.2",
-  "pnpm": {
-    "overrides": {
-      "yaml@>=2.0.0 <2.8.3": "^2.8.3",
-      "undici@>=7.0.0 <7.28.0": "^7.28.0",
-      "js-yaml@>=4.0.0 <4.2.0": "^4.2.0",
-      "shell-quote@<1.8.4": "^1.8.4"
-    }
-  },
   "dependencies": {
     "blit386": "workspace:*"
   },

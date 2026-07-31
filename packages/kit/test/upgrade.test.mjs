@@ -124,14 +124,8 @@ test('blit upgrade nags and aborts when the game is not under git', () => {
     try {
         const { exitCode, output } = runUpgrade(root);
         assert.equal(exitCode, 0);
-        assert.ok(
-            output.includes('not saved with version control'),
-            `expected no-git nag, got:\n${output}`,
-        );
-        assert.ok(
-            output.includes('No changes made. Save your work first'),
-            `expected cancel message, got:\n${output}`,
-        );
+        assert.ok(output.includes('not saved with version control'), `expected no-git nag, got:\n${output}`);
+        assert.ok(output.includes('No changes made. Save your work first'), `expected cancel message, got:\n${output}`);
         // Must not have attempted a package-manager update.
         assert.ok(!output.includes('Updating blit386'), `should abort before PM update, got:\n${output}`);
     } finally {

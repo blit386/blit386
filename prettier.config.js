@@ -1,7 +1,7 @@
 /**
  * Prettier configuration for BLIT386
  *
- * NOTE: Prettier is used for Markdown and YAML files only.
+ * NOTE: Prettier is used for Markdown, MDX, and YAML files only.
  * TypeScript, JavaScript, JSON, and CSS are formatted by Biome.
  *
  * The JS-looking options are not dead weight: Prettier applies them to fenced code

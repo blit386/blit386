@@ -1,19 +1,24 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    /* This package predates the shared base and does not opt into its stricter
+       checks (noUnusedLocals, verbatimModuleSyntax, isolatedModules, etc.) - disabled
+       below to keep typecheck behavior identical to before the merge. */
     "target": "ES2023",
     "lib": ["dom", "dom.iterable", "ES2023"],
+    "types": ["mdx", "node", "react", "react-dom"],
     "jsx": "react-jsx",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "noUncheckedIndexedAccess": true,
-    "noEmit": true
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    "sourceMap": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": false,
+    "noImplicitOverride": false
   },
   "include": ["src", "content", "*.ts", "*.tsx", "scripts/__tests__"],
   "exclude": ["node_modules", "dist", ".source"]

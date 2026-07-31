@@ -15,7 +15,7 @@ import prettier from 'prettier';
  * the bottom formats through `prettier.config.js` instead - without it, deleting the plugin from the
  * config would leave every other case in this file green while the repo formatted padded tables.
  */
-const SCRIPTS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(SCRIPTS_DIR, '..');
 const PLUGIN = join(SCRIPTS_DIR, 'prettier-plugin-compact-tables.mjs');
 

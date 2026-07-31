@@ -17,10 +17,11 @@
   "prHourlyLimit": 4,
   "automerge": false,
   "internalChecksFilter": "strict",
+  "minimumReleaseAge": "7 days",
   "packageRules": [
     {
       "description": "Core build tools",
-      "matchPackageNames": ["vite", "typescript"],
+      "matchPackageNames": ["vite", "typescript", "tsup"],
       "groupName": "core build tools"
     },
     {
@@ -29,8 +30,23 @@
       "groupName": "vite plugins"
     },
     {
+      "description": "Fumapress and Fumadocs stack",
+      "matchPackageNames": ["fumapress", "fumadocs-core", "fumadocs-mdx", "fumadocs-ui"],
+      "groupName": "fumapress stack"
+    },
+    {
+      "description": "Waku and React",
+      "matchPackageNames": ["waku", "react", "react-dom", "react-server-dom-webpack"],
+      "groupName": "waku react"
+    },
+    {
+      "description": "Tailwind CSS",
+      "matchPackageNames": ["tailwindcss", "@tailwindcss/vite"],
+      "groupName": "tailwind"
+    },
+    {
       "description": "Linting and formatting tools",
-      "matchPackageNames": ["eslint", "prettier", "@biomejs/biome"],
+      "matchPackageNames": ["eslint", "prettier", "@biomejs/biome", "cspell", "knip"],
       "groupName": "linting and formatting"
     },
     {
@@ -70,6 +86,11 @@
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "major-update"]
+    },
+    {
+      "description": "Pin pnpm version",
+      "matchPackageNames": ["pnpm"],
+      "rangeStrategy": "pin"
     }
   ],
   "vulnerabilityAlerts": {

@@ -75,6 +75,11 @@ docs/superpowers/
 # Local security run reports (MCP preflight / governance)
 security-reports/
 
+# Scaffolder ownership manifest and pristine kit copies (create-blit386 test fixtures,
+# generated games). Never reformat .blit/base/ - it makes `blit agents sync` report
+# drift on files nobody edited.
+.blit/
+
 # Output of 'npm pack'
 *.tgz
 
