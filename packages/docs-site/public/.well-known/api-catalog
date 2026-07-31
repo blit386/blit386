@@ -1,0 +1,10 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://blit386.dev/mcp",
+      "service-doc": [
+        {"href": "https://blit386.dev/mcp-server", "type": "text/html"}
+      ]
+    }
+  ]
+}

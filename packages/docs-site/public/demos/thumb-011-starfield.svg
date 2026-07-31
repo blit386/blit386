@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240">
+  <rect width="320" height="240" fill="#090918"/>
+  <circle cx="42" cy="18" r="1" fill="#e2e8f0"/>
+  <circle cx="137" cy="34" r="1.5" fill="#cbd5e1"/>
+  <circle cx="218" cy="12" r="1" fill="#f8fafc"/>
+  <circle cx="290" cy="55" r="1" fill="#e2e8f0"/>
+  <circle cx="74" cy="78" r="2" fill="#f1f5f9"/>
+  <circle cx="163" cy="56" r="1" fill="#e2e8f0"/>
+  <circle cx="251" cy="89" r="1.5" fill="#cbd5e1"/>
+  <circle cx="308" cy="22" r="1" fill="#f8fafc"/>
+  <circle cx="19" cy="103" r="1" fill="#e2e8f0"/>
+  <circle cx="98" cy="120" r="2" fill="#f1f5f9"/>
+  <circle cx="185" cy="95" r="1" fill="#e2e8f0"/>
+  <circle cx="263" cy="118" r="1.5" fill="#cbd5e1"/>
+  <circle cx="47" cy="145" r="1" fill="#f8fafc"/>
+  <circle cx="128" cy="162" r="1" fill="#e2e8f0"/>
+  <circle cx="204" cy="140" r="2" fill="#f1f5f9"/>
+  <circle cx="281" cy="155" r="1" fill="#cbd5e1"/>
+  <circle cx="66" cy="188" r="1.5" fill="#e2e8f0"/>
+  <circle cx="152" cy="200" r="1" fill="#f8fafc"/>
+  <circle cx="237" cy="176" r="1" fill="#e2e8f0"/>
+  <circle cx="303" cy="195" r="2" fill="#f1f5f9"/>
+  <text x="160" y="220" text-anchor="middle" fill="#475569" font-family="monospace" font-size="11">011 - starfield</text>
+  <text x="160" y="232" text-anchor="middle" fill="#334155" font-family="monospace" font-size="9">placeholder - replace with screenshot</text>
+</svg>

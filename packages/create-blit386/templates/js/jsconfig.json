@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "module": "ESNext",
+        "target": "ES2022",
+        "moduleResolution": "bundler",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "checkJs": true,
+        "strict": true,
+        "noEmit": true
+    },
+    "include": ["src"]
+}

@@ -1,0 +1,8 @@
+{
+  "title": "Performance",
+  "pages": [
+    "best-practices",
+    "testing",
+    "smoke-matrix"
+  ]
+}

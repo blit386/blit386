@@ -1,0 +1,13 @@
+@reference '../app.css';
+
+.embed {
+    @apply aspect-4/3 w-full overflow-hidden mb-1;
+}
+
+.embedFill {
+    @apply absolute inset-0 h-full w-full overflow-hidden;
+}
+
+.frame {
+    @apply block h-full w-full;
+}

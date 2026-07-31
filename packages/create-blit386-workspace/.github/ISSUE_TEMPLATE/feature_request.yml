@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose a change to the scaffolder or kit
+title: '[feature] '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature. Skim [the docs](https://blit386.dev) and this repo's
+        [README](../../README.md) first so the request builds on existing tooling rather than
+        duplicating it.
+
+        Engine API ideas belong in [blit386/blit386](https://github.com/blit386/blit386/issues).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem being solved
+      description: What user or author pain does this address?
+      placeholder: There is no way to ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed change
+      description: >
+        Sketch the change (CLI flag, wizard step, kit doc, skill, scaffold template, or blit command). Keep it concrete
+        enough that a maintainer can estimate the work.
+      placeholder: |
+        Add a --ci flag to skip the CI prompt and always include the GitHub Actions workflow.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package would this live in?
+      options:
+        - create-blit386
+        - '@blit386/kit'
+        - both
+        - unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you tried or rejected, and why
+    validations:
+      required: false

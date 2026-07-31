@@ -1,0 +1,64 @@
+---
+title: Introducing BLIT386
+description:
+  BLIT386 is a palette-first WebGPU retro engine for the browser – here is what it does, how it works, and where it is
+  heading.
+date: 2026-06-25
+tags: [announcement]
+author: vancura
+---
+
+<AuthorByline author="vancura" />
+
+BLIT386 is a pixel-art rendering engine for TypeScript. Palette-indexed by default, WebGPU first, and when WebGPU is not
+there it quietly drops down to a Canvas 2D software renderer instead of falling over. It all runs in the browser – no
+server, nothing to deploy but static files.
+
+## What BLIT386 gives you
+
+A fixed 256-entry color palette and integer coordinates throughout. Sprites are loaded as `SpriteSheet` instances, fonts
+as `.btfont` bitmaps, and all draw calls go through the static `BT` namespace – `BT.drawSprite`, `BT.systemPrint`,
+`BT.drawRectFill`, and so on.
+
+The dual-backend design means the same demo code runs on WebGPU hardware and on older or locked-down devices without any
+changes. The active backend is queryable at runtime via `BT.activeBackend`.
+
+## Getting started
+
+The quickest path is the scaffolder:
+
+```bash
+npm create blit386@latest my-game
+```
+
+That drops a ready-to-run Catcher starter, a Vite config, and the `blit` CLI into a new directory. Run `blit run` to
+start the dev server.
+
+For manual setup, add the package and call `bootstrap`:
+
+```ts twoslash
+import { bootstrap, BT, Palette, Vector2i } from 'blit386';
+
+class MyDemo {
+  async init() {
+    BT.paletteSet(Palette.vga());
+    return true;
+  }
+  update() {}
+  render() {
+    BT.clear(0);
+    BT.systemPrint(new Vector2i(8, 8), 15, 'Hello, BLIT386');
+  }
+}
+
+bootstrap(MyDemo);
+```
+
+## What is next
+
+The interactive demos at [demos.blit386.dev](https://demos.blit386.dev) cover primitives, sprites, palette effects,
+tilemap rendering, pointer and keyboard input, and a small Snake game. Each one is a single JavaScript file – open it,
+read it, change a number, see what breaks.
+
+The docs on this site are generated straight from the engine source, so they do not drift. If something here is missing
+or wrong, the fix goes into the engine repo and shows up on the next sync – I am not hand-copying anything.

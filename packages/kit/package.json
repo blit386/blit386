@@ -1,0 +1,75 @@
+{
+  "name": "@blit386/kit",
+  "version": "1.4.0",
+  "description": "Canonical BLIT386 AI docs (AGENTS.md + local docs) and the blit project CLI.",
+  "author": {
+    "name": "Václav Vančura",
+    "url": "https://github.com/vancura"
+  },
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/blit386/create-blit386.git",
+    "directory": "packages/kit"
+  },
+  "bugs": {
+    "url": "https://github.com/blit386/create-blit386/issues"
+  },
+  "homepage": "https://github.com/blit386/create-blit386#readme",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "blit386": {
+    "engineRange": "^1.4.0"
+  },
+  "bin": {
+    "blit": "./dist/cli.js"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./adapters": {
+      "types": "./src/adapters.ts",
+      "import": "./dist/adapters.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./package.json": "./package.json",
+      "./adapters": {
+        "types": "./dist/adapters.d.ts",
+        "import": "./dist/adapters.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "content"
+  ],
+  "keywords": [
+    "blit386",
+    "blit",
+    "cli",
+    "agents",
+    "ai",
+    "claude",
+    "cursor",
+    "documentation",
+    "game-engine",
+    "gamedev",
+    "webgpu"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "typecheck": "tsc --noEmit",
+    "pretest": "pnpm run build",
+    "test": "node --test 'test/**/*.test.mjs'"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  }
+}

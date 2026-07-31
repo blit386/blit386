@@ -1,0 +1,6 @@
+# Cloudflare Pages ignores
+# Since we deploy pre-built artifacts via GitHub Actions,
+# skip building on Cloudflare side
+
+*
+!dist/**

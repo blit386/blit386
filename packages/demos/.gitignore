@@ -1,0 +1,88 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+
+# Package-manager caches
+.pnpm-store/
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+
+# Generated files
+vite.config.*.timestamp-*
+
+# TypeScript
+*.tsbuildinfo
+
+# Testing & coverage
+coverage/
+*.lcov
+playwright-report/
+test-results/
+.playwright-cli/
+.vitest/
+
+# Claude Code (skills, rules, settings.json are tracked)
+.claude/settings.local.json
+.claude/memory/
+.claude/worktrees/
+
+# MCP configs (local secrets)
+.mcp.json
+mcp.json
+
+# Other AI assistants (local only)
+.codex/
+.aider*
+.continue/
+.windsurf/
+ai-rules/
+.rules
+
+# IDE and editor files
+.vscode/launch.json
+.vscode/*.code-workspace
+.idea/
+*.iml
+.zed/*
+!.zed/settings.json
+*.swp
+*.swo
+*~
+
+# Logs and scratch
+*.log
+pnpm-debug.log*
+
+# Cache
+.eslintcache
+.cache/
+.wrangler/
+.knip-output.json
+
+# Temporary folders
+tmp/
+temp/
+
+# Local security run reports (MCP preflight / governance)
+security-reports/
+
+# Output of 'npm pack'
+*.tgz
+
+# Husky runtime
+.husky/_/
+
+# Minified files
+*.min.js
+*.min.css

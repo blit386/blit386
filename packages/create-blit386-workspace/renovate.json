@@ -1,0 +1,80 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests",
+    ":gitSignOff"
+  ],
+  "timezone": "Europe/Prague",
+  "schedule": ["before 6am on Monday"],
+  "rangeStrategy": "bump",
+  "labels": ["dependencies"],
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageAction": "update",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 4,
+  "automerge": false,
+  "internalChecksFilter": "strict",
+  "packageRules": [
+    {
+      "description": "Core build tools",
+      "matchPackageNames": ["typescript", "tsup"],
+      "groupName": "core build tools"
+    },
+    {
+      "description": "Linting and formatting tools",
+      "matchPackageNames": ["prettier", "@biomejs/biome", "cspell", "knip"],
+      "groupName": "linting and formatting"
+    },
+    {
+      "description": "TypeScript type definitions",
+      "matchPackageNames": ["@types/*"],
+      "groupName": "type definitions"
+    },
+    {
+      "description": "Do not bump workflow pnpm/node pins separately from packageManager/engines",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["node", "pnpm"],
+      "enabled": false
+    },
+    {
+      "description": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "All patches - automerge",
+      "matchUpdateTypes": ["patch"],
+      "matchPackageNames": ["*"],
+      "automerge": true,
+      "automergeType": "pr",
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Minor updates - manual review",
+      "matchUpdateTypes": ["minor"],
+      "automerge": false
+    },
+    {
+      "description": "Major updates - manual review with high priority",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-update"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "ignoreDeps": [],
+  "postUpdateOptions": ["pnpmDedupe"]
+}

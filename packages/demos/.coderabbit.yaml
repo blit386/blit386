@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit configuration for blit386-demos (interactive demo gallery).
+#
+# Review exclusions (path_filters): generated or duplicated trees that add noise
+# without unique review signal.
+#
+# - `.agents/skills/**` are relative symlinks into `.claude/skills/**`; reviewing
+#   both duplicates identical content (see CLAUDE.md "Agent skills").
+# - `pnpm-lock.yaml` is a generated lock file (listed explicitly even though it
+#   may already match CodeRabbit defaults).
+#
+# Auto review is disabled by default. To enable it, add the `cr` label to the PR.
+reviews:
+  review_status: false
+  path_filters:
+    - '!.agents/skills/**'
+    - '!pnpm-lock.yaml'
+  path_instructions:
+    - path: 'src/**/*.js'
+      instructions: >-
+        Demo source files, written for readers with little or no coding experience. Comment nearly every line or logical
+        block in plain English, explain programming concepts as they appear (what `Math.sin()` returns, what `%` does),
+        and use analogies where they help. Never assume the reader knows what a function does just from its name; a
+        comment that only restates the code without explaining it is a quality issue. Relaxed lint compared to the
+        library: JSDoc is not required, console logging is allowed, and demo classes may freely mutate instance state in
+        `update()`/`render()` for performance (the workspace immutability preference does not apply here). Integer
+        coordinates only (`Vector2i`/`Rect2i`, never raw floats); match the `blit386` library's public `BT` API names
+        (see blit386's CLAUDE.md, Boolean naming / Input conventions); American English spelling (see
+        `.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated name exemptions); no
+        emoji anywhere. Filenames are number-free kebab-case with no numeric prefix; follow the standard section and
+        lifecycle-method order in `.claude/rules/file-structure.md`. Canonical detail: CLAUDE.md ("Demo File
+        Conventions", "Documentation Style", "Code Quality (Relaxed for Demos)").
+    - path: 'docs/**/*.md'
+      instructions: >-
+        Contributor-facing docs (CI workspace setup, external developer setup, security headers) rather than published
+        demo docs. American English spelling (see `.claude/rules/american-english-spelling.md`); no emoji anywhere. Keep
+        instructions accurate to the current `pnpm run <script>` command set if referenced.
+    - path: 'CLAUDE.md'
+      instructions: >-
+        Repo contributor guide: American English spelling; no emoji; keep commands as `pnpm run <script>` (not bare
+        `pnpm <script>`). When demo conventions, workflow, or project structure change, keep the matching sections
+        accurate (see `.claude/rules/docs-sync-required.md`).
+    - path: 'README.md'
+      instructions: >-
+        Public repo README, including the `## Demos` list. American English; no emoji; beginner-friendly. New or renamed
+        demos must use the number-free hosted URL (`https://demos.blit386.dev/<slug>`) and sit under the right category;
+        keep in sync with `plugins/demo-order.js` (`DEMO_ORDER`).
+    - path: '.claude/skills/**/SKILL.md'
+      instructions: >-
+        Contributor skills for working on this repo (`demos-*`). American English; no emoji; keep `pnpm run <script>`
+        command forms accurate.
+  auto_review:
+    enabled: false
+    labels: ['cr']

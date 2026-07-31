@@ -1,0 +1,122 @@
+---
+title: BLIT386 1.3.0 – the engine learns to make noise
+description:
+  The audio release – buses, a voice pool, procedural synthesis, crossfading music – plus BT.renderAlpha, overlay level
+  meters, and a docs site that finally has room to breathe.
+date: 2026-07-13
+tags: [release, audio]
+author: vancura
+---
+
+<AuthorByline author="vancura" />
+
+For three releases BLIT386 could draw a sprite, cycle a palette, warp the whole screen through a CRT shader, and then
+sit there in complete silence, like a very pretty aquarium. Every demo I built ended the same way: I got the pixels
+right, moved on to the sound, remembered there was no sound, and shipped it anyway. That gap is closed now. 1.3.0 is the
+audio release.
+
+## Three buses, sixteen voices
+
+The shape is deliberately boring, because sound is the one subsystem where clever design bites you at 2am. There are
+three buses – `sfx` and `music`, both feeding `main` – and each one has volume, mute, and fades:
+
+```ts twoslash
+import { BT } from 'blit386';
+
+BT.audioVolumeSet('music', 0.6);
+BT.audioVolumeSet('sfx', 0.9, { fadeMs: 200 });
+BT.audioMuteSet('main', true);
+```
+
+Sound effects go through a fixed-size voice pool (16 by default, `HardwareSettings.audioVoices` if you want more or
+fewer). When the pool runs out, the lowest-priority voice gets stolen, which is the honest thing to do – the alternative
+is either dropping the sound the player is actually listening for, or letting a hundred explosions turn the mix into
+mud. `BT.soundPlay` hands you back a generational `SoundRef`, so you can re-pitch, re-pan, or stop a voice later, and
+the handle quietly no-ops once that voice has been recycled instead of retuning some other poor sound that inherited the
+slot.
+
+Clips load the way you would expect – `AudioClip.load`, `loadAll`, per-URL caching, in-flight deduplication, and an
+ordered fallback list for browsers that refuse your first codec. The full method-by-method reference is in
+[API: Audio](/docs/api/audio); the subsystem map, the bus graph, and the web platform constraints behind all of it live
+in the [Audio Guide](/docs/guides/audio).
+
+## Sounds with no sound files
+
+The part I enjoyed building most: `AudioClip.synth` renders a clip on the CPU from a small parameter object – waveforms,
+an ADSR envelope, a pitch sweep, vibrato, a noise mix – with no source file anywhere. It is deterministic and seeded, so
+the same params give you the same bytes every time. And there are six presets, because nobody wants to hand-tune an
+envelope just to make a coin go bloop:
+
+```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const coin = await AudioClip.synth(BT.synthPreset.pickup());
+
+BT.soundPlay(coin, { volume: 0.8 });
+```
+
+`jump`, `pickup`, `explosion`, `laser`, `hit`, `blip`. Each takes an optional seed, so the tenth coin in a row does not
+sound exactly like the first. It costs you zero kilobytes of assets, which for a game jam is not nothing.
+
+<DemoEmbed demo="041-synth-toy" title="BLIT386 synth toy demo" />
+
+## Music, and the asymmetry nobody warns you about
+
+Music is its own crossfading player – `BT.musicPlay`, `BT.musicStop`, configurable fade duration, crossfade overlap, and
+loop points, so an intro can play once and then hand off to a bridge that repeats forever.
+
+Then there is the browser autoplay rule, which is where the design gets slightly weird on purpose. Browsers will not let
+you make a sound until the player has touched something, so the engine installs one-shot gesture listeners at
+`BT.init()` and flips `BT.isAudioUnlocked` on the first pointer, key, or touch. Before that moment, a `BT.soundPlay` is
+dropped on the floor – it was a reaction to an input that, by definition, has not happened yet. A `BT.musicPlay` is
+remembered instead, and starts the instant the context unlocks. Asymmetric, yes, and it looks like a bug in the API
+until you think about what each call actually means: an effect that missed its moment is worthless, a theme song that
+was queued a second early is not.
+
+## BT.renderAlpha
+
+Fixed update, variable render. If your display runs at 144 Hz and your simulation ticks at 60, you are rendering
+somewhere between two update steps most of the time, and the engine now tells you where: `BT.renderAlpha` is the
+fractional progress in `[0, 1)` since the last tick. Lerp your positions with it and the motion stops looking slightly
+chunky. The worked pattern, with `Vector2i.lerp`, is in the new [Game Loop Guide](/docs/guides/game-loop); the timing
+API itself moved into its own page at [API: Game Loop](/docs/api/game-loop).
+
+## The overlay grew an ear
+
+Turn on `isOverlayAudioMetersEnabled` and the overlay gains a per-bus level band plus a voices used/total, steal, and
+drop readout – enough to see at a glance whether your explosions are eating the whole pool. The `AnalyserNode` is
+created lazily, so if you never set the flag you pay nothing for the feature.
+
+While I was in there, two small irritations got fixed. The overlay's separators are now real 1px dividers instead of `|`
+glyphs, and the numeric fields are padded to a fixed width, so the dividers no longer twitch sideways every time your
+FPS crosses from 99 to 100. It bothered me more than it should have.
+
+## Fixes
+
+Three of them worth naming. The camera offset now survives a render frame that ran zero update steps, so scrolling no
+longer snaps back to the previous origin on high-refresh displays. WebGPU canvas configuration asks for `COPY_SRC`
+usage, which means `BT.captureFrame()` stops handing you a beautifully transparent PNG of nothing. And
+`BT.systemPrintMeasure()` returns a fresh size object per call, instead of a shared one that let two measurements
+silently overwrite each other.
+
+## The docs took the release seriously
+
+`api-core.md` had quietly grown into one of those pages you scroll for a minute before finding anything, so it is now
+six: [Overlay](/docs/api/overlay), [Game Loop](/docs/api/game-loop), [Camera](/docs/api/camera),
+[Easing](/docs/api/easing), [Core Types](/docs/api/core-types), and [Browser Support](/docs/api/browser-support). Plus
+the two new audio pages – [API: Audio](/docs/api/audio) and the [Audio Guide](/docs/guides/audio) – and the
+[Game Loop Guide](/docs/guides/game-loop).
+
+Underneath that, every published page now carries per-symbol version history generated straight from `@since` /
+`@changed` / `@deprecated` tags in the source, so "when did this method actually ship" is a question the docs answer
+themselves rather than one you take to the git log. Every TypeScript block is Twoslash-checked, which means it compiles
+or the build fails – no more copy-pasting an example that stopped being true two releases ago. And the API pages now
+embed the live demos next to the prose, so you can read what `soundPlay` does and then hear it in the same scroll.
+
+The full list, in the usual Keep a Changelog shape, is at [the changelog](/docs/reference/changelog).
+
+```bash
+npm create blit386@latest my-game
+```
+
+Go make something loud.

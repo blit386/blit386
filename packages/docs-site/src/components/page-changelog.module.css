@@ -1,0 +1,50 @@
+@reference '../app.css';
+
+.changelog {
+    @apply flex flex-col gap-6 mt-4;
+}
+
+.version {
+    @apply flex flex-col gap-2;
+}
+
+.versionHeading {
+    @apply text-lg font-semibold text-fd-foreground;
+}
+
+.versionDate {
+    @apply text-sm font-normal text-fd-muted-foreground;
+}
+
+.eventList {
+    @apply flex list-none flex-col gap-1.5 pl-0;
+}
+
+.event {
+    @apply flex flex-wrap items-center gap-2 text-sm;
+}
+
+.category {
+    @apply inline-flex items-center px-1.5 py-0.5 border;
+    @apply whitespace-nowrap uppercase font-departure antialiased text-[11px] leading-5;
+}
+
+.added {
+    @apply border-fd-primary text-fd-primary;
+}
+
+.changed {
+    @apply bg-fd-card text-fd-card-foreground;
+}
+
+.deprecated {
+    @apply bg-fd-muted text-fd-muted-foreground;
+}
+
+.symbol {
+    @apply font-mono text-xs;
+}
+
+.note {
+    @apply text-fd-muted-foreground;
+}

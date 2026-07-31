@@ -1,0 +1,9 @@
+@reference '../app.css';
+
+.heading {
+    @apply mb-4 text-xl font-semibold text-fd-foreground;
+}
+
+.comingSoon {
+    @apply opacity-50 select-none;
+}

@@ -1,0 +1,10 @@
+{
+  "issuer": "https://blit386.dev/",
+  "agent_auth": {
+    "skill": "https://blit386.dev/auth.md",
+    "identity_types_supported": ["anonymous"],
+    "identity_assertion": {
+      "assertion_types_supported": []
+    }
+  }
+}

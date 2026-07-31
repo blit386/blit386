@@ -1,0 +1,16 @@
+{
+  "title": "API",
+  "pages": [
+    "core",
+    "overlay",
+    "game-loop",
+    "camera",
+    "easing",
+    "core-types",
+    "browser-support",
+    "rendering",
+    "palette",
+    "assets",
+    "audio"
+  ]
+}

@@ -1,0 +1,25 @@
+# Prettier ignore - Markdown and YAML only (TS/JS/JSON/CSS use Biome)
+
+# Lock files (never format)
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+
+# Agent scratch space (not ours to format)
+.git/
+.remember/
+.superpowers/
+
+# Generated/minified files
+**/*.min.css
+vite.config.*.timestamp-*
+
+# JSON is handled by Biome
+*.json

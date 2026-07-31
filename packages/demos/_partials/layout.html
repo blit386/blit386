@@ -1,0 +1,92 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+
+    <title>{{title}}</title>
+
+    <link rel="stylesheet" href="../styles/layout.css"/>
+    <link rel="stylesheet" href="../styles/twoslash-rich.css"/>
+    <link rel="stylesheet" href="../styles/demo-source.css"/>
+
+    <script>
+        // Stamp shell vs embed on <html> before the first paint so layout.css sizing
+        // (banner height, iframe vs canvas) is correct on the first frame.
+        (function () {
+            const params = new URLSearchParams(location.search);
+            const embedded = params.has('embed');
+
+            // Shell iframe adds &source so the Twoslash panel stays under the canvas.
+            // Plain ?embed (docs site) stays canvas-only.
+            const showSource = params.has('source');
+
+            // Shell keeps the :root --banner-height from layout.css; embed overrides to 0.
+            if (embedded) {
+                document.documentElement.style.setProperty('--banner-height', '0px');
+                document.documentElement.setAttribute('data-embed', 'true');
+
+                if (showSource) {
+                    document.documentElement.setAttribute('data-source', 'true');
+                }
+            } else {
+                document.documentElement.setAttribute('data-shell', 'true');
+            }
+
+            window.__blit386IsEmbedded = embedded;
+        })();
+    </script>
+</head>
+
+<body data-slug="{{slug}}">
+
+<script id="demo-list" type="application/json">{{demoList}}</script>
+
+<!--
+  Shell mode (default): persistent banner + content iframe. The banner hosts a
+  fuzzy-searchable combobox (plus prev/next). Demo swaps change the iframe src and
+  history.pushState the clean number-free demo URL (e.g. /demos/basics.html); the
+  banner never reloads. Vintage numbered paths 301 to the current slug.
+
+  Embed mode (?embed): #canvas-container only (no banner; source hidden). Used by
+  external embeds on blit386.dev. The shell iframe loads ?embed&source so the
+  Twoslash source panel stays under the canvas inside the frame.
+
+  Both regions are in the markup; demo-shell.js removes the inactive one before the
+  engine runs (static hosts serve one HTML for both URLs).
+-->
+<nav id="demo-banner" aria-label="Demo navigation"></nav>
+
+<iframe id="demo-frame" title="Demo content"></iframe>
+
+<div id="canvas-container">
+    <canvas id="blit386-canvas"></canvas>
+</div>
+
+<section id="demo-source" aria-label="Demo source">
+    <div class="demo-source-code">
+        {{sourceHtml}}
+    </div>
+</section>
+
+<script type="module">
+    // Dual-mode chrome (banner / iframe prepare / analytics). Root-absolute like
+    // scriptFile: relative `../_partials/...` fails from Vite's HTML proxy in dev.
+    await import('/_partials/demo-shell.js');
+
+    // Demo module only in embed mode. Shell mode hosts the demo inside #demo-frame so
+    // swapping demos discards the old engine instance with the frame.
+    // `scriptFile` is a root-absolute `/src/<slug>` path so Vite can resolve this import
+    // from the HTML proxy module in dev (relative `../src/...` fails there).
+    if (window.__blit386IsEmbedded) {
+        await import('{{scriptFile}}.js');
+    }
+</script>
+
+{{sourcePanelScript}}
+
+</body>
+
+</html>

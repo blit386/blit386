@@ -1,0 +1,38 @@
+name: Docs issue
+description: Report a docs problem, gap, or unclear page
+title: '[docs] '
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the docs. Prefer a path under this repo (for example
+        `packages/kit/content/docs/getting-started.md`, `README.md`, `AGENTS.md`, or
+        `CONTRIBUTING.md`) or a link to the live page on [blit386.dev](https://blit386.dev).
+
+  - type: input
+    id: page
+    attributes:
+      label: Affected page
+      description: >
+        Source path (e.g. packages/kit/content/docs/audio.md) or blit386.dev URL
+      placeholder: packages/kit/content/docs/getting-started.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is wrong, missing, or unclear?
+      description: Quote the confusing passage or describe the gap
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested correction
+      description: Optional rewrite, link, or outline of what should be there
+    validations:
+      required: false
