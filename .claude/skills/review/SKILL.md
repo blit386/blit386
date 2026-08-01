@@ -24,12 +24,18 @@ Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit
 
 - A package: run `git diff -- packages/<package>/` (unstaged) and `git diff --cached -- packages/<package>/` (staged) to
   see this package's changes; run `git ls-files --others --exclude-standard -- packages/<package>/` to catch newly
-  created (untracked) files a diff alone misses. Also check `git diff -- CLAUDE.md AGENTS.md .claude/` for root policy
-  changes that apply to every package.
-- `root`: run `git diff -- . ':!packages'` (unstaged) and `git diff --cached -- . ':!packages'` (staged) to see every
-  change outside `packages/*` – root `CLAUDE.md`/`AGENTS.md`, `.claude/` (hooks, skills, rules, settings), `.husky/`,
+  created (untracked) files a diff alone misses. Also check
+  `git diff -- CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json` for root policy
+  changes that apply to every package – an explicit allowlist of the repo-owned, committed agent config, not the whole
+  `.claude/` tree (`.claude/settings.local.json`, `.claude/launch.json`, `.claude/scheduled_tasks.*` are gitignored,
+  machine-local, and never in scope for a review).
+- `root`: run
+  `git diff -- . ':!packages' ':!.claude/settings.local.json' ':!.claude/launch.json' ':!.claude/scheduled_tasks.*'`
+  (unstaged) and the same with `--cached` (staged) to see every change outside `packages/*` – root
+  `CLAUDE.md`/`AGENTS.md`, `.claude/rules/`, `.claude/skills/`, `.claude/hooks/`, `.claude/settings.json`, `.husky/`,
   `.github/workflows/`, root `scripts/`, and root configs; run
-  `git ls-files --others --exclude-standard -- . ':!packages'` for untracked root files
+  `git ls-files --others --exclude-standard -- . ':!packages'` for untracked root files (`--exclude-standard` already
+  honors `.gitignore`, so the local/private `.claude/` files above never appear here either)
 - List which files changed and what changed
 
 2. Run automated checks
