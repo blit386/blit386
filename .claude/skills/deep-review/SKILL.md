@@ -34,10 +34,9 @@ pushing significant changes or creating pull requests.
 
 3. Run security audit
 
-- `blit386` / `demos`: `pnpm run security:audit` (their own `pnpm audit --audit-level=moderate` script)
-- `docs-site`, `kit`, `create-blit386`, `root`: no dedicated `security:audit` script – run
-  `pnpm audit --audit-level=moderate` directly (it audits the single shared lockfile regardless of cwd, so the result is
-  the same from any of these)
+- `blit386` / `demos` / `docs-site`: `pnpm run security:audit` (their own `pnpm audit --audit-level=moderate` script)
+- `kit`, `create-blit386`, `root`: no dedicated `security:audit` script – run `pnpm audit --audit-level=moderate`
+  directly (it audits the single shared lockfile regardless of cwd, so the result is the same from any of these)
 - Report any vulnerabilities found (moderate and above)
 
 4. Gather change context

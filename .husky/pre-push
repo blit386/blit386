@@ -10,13 +10,13 @@ echo ""
 # changed since ref; --if-present skips packages with no "preflight" script
 # (packages/kit, packages/create-blit386) instead of failing on them. --if-present
 # must come BEFORE "run": placed after the script name, pnpm forwards it as an
-# argument to the script's own command chain instead of consuming it itself - for
+# argument to the script's own command chain instead of consuming it itself – for
 # a package whose preflight ends in "&& pnpm run build", that appends a stray
 # "--if-present" to the build command, which the underlying build tool then
 # rejects as an unknown flag.
 #
 # Husky's wrapper runs this script with `sh -e`, so every command whose failure
-# is intentionally tolerated below is guarded with `|| true` or `|| VAR=$?` -
+# is intentionally tolerated below is guarded with `|| true` or `|| VAR=$?` –
 # under -e, a bare failing command inside a plain assignment or statement (not
 # itself an if/&&/|| condition) aborts the whole script immediately, which on a
 # first push (no upstream yet) killed this hook before the origin/main fallback,

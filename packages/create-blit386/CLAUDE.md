@@ -1,6 +1,6 @@
 # create-blit386
 
-`npm create blit386@latest` – the BLIT386 game scaffolder CLI and templates. Depends on `@blit386/kit` for
+`pnpm create blit386@latest` – the BLIT386 game scaffolder CLI and templates. Depends on `@blit386/kit` for
 generated-game content and the `blit` CLI; the two packages release in lockstep (one shared `x.y.z`) – see
 [`packages/kit/CLAUDE.md`](../kit/CLAUDE.md) for the kit's own detail.
 
@@ -12,7 +12,7 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 
 ## Scaffold flow
 
-1. User runs `npm create blit386@latest` (or `pnpm create blit386`).
+1. User runs `pnpm create blit386@latest` (or `npm create blit386@latest`).
 2. The CLI prompts for folder name, language (JavaScript or TypeScript; `--ts` skips the prompt), optional AI assistant
    (none / Claude / Cursor), optional CI.
 3. Templates from `templates/` (`base/` plus the chosen language layer) are rendered with `{{placeholders}}`.

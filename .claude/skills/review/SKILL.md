@@ -3,7 +3,7 @@ name: review
 description:
   Review the current changes against project rules, conventions, and quality standards. Use when the user asks to review
   changes, check the diff before committing, or look over recent edits. Takes a package argument (blit386, demos,
-  docs-site, kit, create-blit386).
+  docs-site, kit, create-blit386, or root).
 ---
 
 # Review Changes
@@ -16,17 +16,20 @@ Review current changes against project rules and quality standards.
 /review <package>
 ```
 
-Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit386`.
+Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit386`, or `root`.
 
 ## Steps
 
 1. Gather changes
 
-- Run `git diff -- packages/<package>/` (unstaged) and `git diff --cached -- packages/<package>/` (staged) to see this
-  package's changes
-- Run `git ls-files --others --exclude-standard -- packages/<package>/` to catch newly created (untracked) files a diff
-  alone misses
-- Also check `git diff -- CLAUDE.md AGENTS.md .claude/` for root policy changes that apply to every package
+- A package: run `git diff -- packages/<package>/` (unstaged) and `git diff --cached -- packages/<package>/` (staged) to
+  see this package's changes; run `git ls-files --others --exclude-standard -- packages/<package>/` to catch newly
+  created (untracked) files a diff alone misses. Also check `git diff -- CLAUDE.md AGENTS.md .claude/` for root policy
+  changes that apply to every package.
+- `root`: run `git diff -- . ':!packages'` (unstaged) and `git diff --cached -- . ':!packages'` (staged) to see every
+  change outside `packages/*` – root `CLAUDE.md`/`AGENTS.md`, `.claude/` (hooks, skills, rules, settings), `.husky/`,
+  `.github/workflows/`, root `scripts/`, and root configs; run
+  `git ls-files --others --exclude-standard -- . ':!packages'` for untracked root files
 - List which files changed and what changed
 
 2. Run automated checks
