@@ -1,13 +1,13 @@
 # Security runbook
 
-Deterministic security workflow for BLIT386 repos when MCP scanners are healthy, degraded, or unavailable. Use with the
-`/security-run` skill and `pnpm run security:mcp-preflight`.
+Deterministic security workflow for this monorepo's packages when MCP scanners are healthy, degraded, or unavailable.
+Use with the `/security-run` skill and `pnpm run security:mcp-preflight`.
 
 ## Maintainers
 
 | Role | Contact / owner | Notes |
 | --- | --- | --- |
-| Primary security | [@vancura](https://github.com/vancura) (`CODEOWNERS`) | Sole maintainer for `blit386` and `blit386-demos` (May 2026). |
+| Primary security | [@vancura](https://github.com/vancura) (`CODEOWNERS`) | Sole maintainer for this repo (May 2026). |
 | Backup / escalation | _None_ (solo project) | No secondary on-call; treat delayed response as accepted project risk. |
 
 Incident triage (solo maintainer):
@@ -16,7 +16,7 @@ Incident triage (solo maintainer):
    exists in the repository and you have permission; if it does not exist, create the issue and add the label when you
    can edit repository labels. If you cannot create or label issues, contact [@vancura](https://github.com/vancura)
    (primary security owner) and record the incident in Linear.
-2. Run [Repo-native commands](#repo-native-commands) for the affected repo (`pnpm run security:audit`,
+2. Run [Package-native commands](#package-native-commands) for the affected package (`pnpm run security:audit`,
    `pnpm run preflight`).
 3. Follow [dependency-policy.md](./dependency-policy.md) for CI failures or temporary risk acceptance.
 4. Record findings using the [Report template](#report-template) (issue tracker or PR description).
@@ -36,7 +36,7 @@ documented fallback instead of a fictional backup owner.
 Agents must pass the session's MCP descriptor path (agent/tooling-specific; consult your agent's docs for its location).
 
 ```bash
-cd <repo-root>   # blit386: directory containing this repo's package.json
+cd <package-root>   # e.g. packages/blit386 or packages/demos
 
 pnpm run security:mcp-preflight -- \
   --mcps-dir "<mcps-path>" \
@@ -68,7 +68,7 @@ the report.
 
 | Capability | Primary MCP | Fallback (always available) |
 | --- | --- | --- |
-| Dependency / SCA | Opsera `security-scan`, JFrog | `pnpm run security:audit`, `pnpm run security:audit:prod` (per repo); CI gate in blit386 [dependency-policy.md](./dependency-policy.md) |
+| Dependency / SCA | Opsera `security-scan`, JFrog | `pnpm run security:audit`, `pnpm run security:audit:prod` (per package); CI gate in this repo's [dependency-policy.md](./dependency-policy.md) |
 | SAST / code patterns | Opsera, Semgrep MCP | `pnpm run lint` (eslint-plugin-security), targeted `rg` patterns (below), optional `semgrep --config auto` only if CLI is already installed (do not install) |
 | Compliance | Opsera `compliance-audit` | Manual checklist below |
 | Architecture | Opsera `architecture-analyze` | `security-threat-model` and `security-ownership-map` skills, if available in your agent's skill library |
@@ -77,7 +77,7 @@ the report.
 
 ### SAST `rg` patterns (fallback)
 
-Run from each repo root when Semgrep/Opsera SAST is unavailable:
+Run from each package root when Semgrep/Opsera SAST is unavailable:
 
 ```bash
 rg -n "innerHTML|outerHTML|insertAdjacentHTML|document\\.write\\(|eval\\(|new Function|postMessage\\(|localStorage|sessionStorage" src/
@@ -95,16 +95,16 @@ When Opsera `compliance-audit` MCP is unavailable, gather evidence manually:
 | Code quality / static checks | `pnpm run preflight`, `pnpm run lint` |
 | Secrets in repo | `.gitignore`, hooks blocking `.env`; `rg` for hardcoded tokens (no secret values in reports) |
 | CI integrity | `.github/workflows/*.yml` – pinned actions, least privilege |
-| Deploy headers (demos) | `blit386-demos/public/_headers`, `curl -I` on deployed URLs |
+| Deploy headers (demos) | `packages/demos/public/_headers`, `curl -I` on deployed URLs |
 | Ownership / bus factor | [Maintainers](#maintainers) (solo); optional `security-ownership-map` skill output (`summary.json`) |
 | MCP governance | `pnpm run security:mcp-preflight --governance-only` |
 
-## Repo-native commands
+## Package-native commands
 
-### blit386
+### blit386 (`packages/blit386`)
 
 ```bash
-cd <repo-root>   # or: cd "$PWD" after cloning blit386
+cd packages/blit386
 
 pnpm run security:mcp-preflight -- --mcps-dir "<mcps>" --repo-root . --allow-fallback
 pnpm run security:audit
@@ -120,10 +120,10 @@ npm view vite version time.modified license
 npm view typescript version time.modified license
 ```
 
-### blit386-demos
+### blit386-demos (`packages/demos`)
 
 ```bash
-cd <repo-root>   # blit386-demos: directory containing this repo's package.json
+cd packages/demos
 
 pnpm run security:mcp-preflight -- \
   --mcps-dir "<mcps>" \
@@ -137,27 +137,24 @@ pnpm run build
 ```
 
 Note: `blit386-demos` has no `security:audit:prod` script – use `pnpm run security:audit` only for production-deps
-coverage in that repo, or run `pnpm audit --prod --audit-level=moderate` directly.
+coverage in that package, or run `pnpm audit --prod --audit-level=moderate` directly.
 
 After toolchain or dependency upgrades, always run `pnpm run build` as a smoke test.
 
-Demos can invoke the canonical preflight script from the library repo (prefer `pnpm run security:mcp-preflight` when the
-sibling layout matches `package.json`). If invoking the script directly, set `<blit386-root>` to the blit386 repo path
-(or export `BLIT386_ROOT` and use `"$BLIT386_ROOT"`):
+`packages/demos`'s own `security:mcp-preflight` script already resolves the canonical script at
+`../blit386/scripts/security/mcp-preflight.mjs` – prefer `pnpm run security:mcp-preflight` from `packages/demos` over
+invoking the script directly. If you do need to invoke it directly from `packages/demos`:
 
 ```bash
-node "<blit386-root>/scripts/security/mcp-preflight.mjs" \
+node ../blit386/scripts/security/mcp-preflight.mjs \
   --mcps-dir "<mcps>" \
   --repo-root . \
   --allow-fallback
-
-# Example: export BLIT386_ROOT=/path/to/blit386
-# node "$BLIT386_ROOT/scripts/security/mcp-preflight.mjs" --mcps-dir "<mcps>" --repo-root . --allow-fallback
 ```
 
 ## Periodic governance (monthly)
 
-1. Run governance-only preflight for both repos (use each repo as `--repo-root`).
+1. Run governance-only preflight for both packages (use each package directory as `--repo-root`).
 2. Review shadow MCP flags; migrate or remove unmanaged servers per organizational policy.
 3. Re-authenticate critical MCPs (Opsera) if status is `auth_required`.
 4. Store reports under `security-reports/` (gitignored).

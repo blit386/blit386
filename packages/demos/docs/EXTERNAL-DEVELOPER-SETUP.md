@@ -1,6 +1,6 @@
 # Quick Start Guide for External Developers
 
-This guide is for developers who want to run BLIT386 Demos locally with the latest BLIT386 source.
+This guide is for developers who want to run BLIT386 Demos locally against the local BLIT386 engine source.
 
 ## Why This Setup Is Needed
 
@@ -14,8 +14,10 @@ BLIT386 Demos depends on BLIT386 via a pnpm workspace dependency:
 }
 ```
 
-BLIT386 is published to npm, but this demos repository intentionally depends on `blit386` via `workspace:*` so the demos
-can track the local sibling repo during development. That means you still need both repositories in one pnpm workspace.
+BLIT386 is published to npm, but this package intentionally depends on `blit386` via `workspace:*` so the demos can
+track the local engine source during development. Both packages live in this same `blit386` monorepo –
+`packages/blit386` and `packages/demos` – wired together by the root `pnpm-workspace.yaml`, so a single clone and
+`pnpm install` gets you both, already linked.
 
 ## Browser and Renderer
 
@@ -34,85 +36,55 @@ WebGPU is supported in current versions of Chrome/Edge, recent Firefox and Safar
 
 ## One-Time Setup
 
-### 1. Create Workspace Directory
-
-```bash
-mkdir blit386-workspace
-cd blit386-workspace
-```
-
-### 2. Clone Both Repositories
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/blit386/blit386.git
-git clone https://github.com/blit386/blit386-demos.git
+cd blit386
 ```
 
-### 3. Create Workspace Configuration
-
-Create a `pnpm-workspace.yaml` file in the workspace root:
-
-```bash
-cat > pnpm-workspace.yaml << 'EOF'
-packages:
-  - "blit386"
-  - "blit386-demos"
-EOF
-```
-
-### 4. Install Dependencies
+### 2. Install Dependencies
 
 ```bash
 pnpm install
 ```
 
+That single install resolves every package in the workspace, including the `blit386` -> `demos` `workspace:*` link – no
+manual `pnpm-workspace.yaml` or second clone needed.
+
 ## Directory Structure
 
-After setup, your directory should look like this:
+The relevant parts of the repo look like this:
 
 ```text
-blit386-workspace/            # Your workspace root
-├── pnpm-workspace.yaml       # Links the two packages
-├── package.json              # Optional (see below)
-├── node_modules/             # Shared dependencies
-├── blit386/                  # The library
-│   ├── src/
-│   ├── dist/                 # Built output
-│   └── package.json
-└── blit386-demos/            # The demos
-    ├── src/                  # One number-free kebab-case JS file per demo (e.g. basics.js)
-    │   └── shared/           # Shared UI kit (panels, buttons, touch D-pad) + helpers
-    ├── public/               # Static assets: sprites/, fonts/, audio/, _headers
-    ├── _partials/            # Shared HTML template + persistent-shell chrome (demo-shell.js)
-    ├── plugins/              # virtual-demos + demo-order.js + demo-vintage-urls.js + registry
-    ├── scripts/              # Repo scripts (Markdown link check, registry check, audio loops)
-    ├── docs/                 # This guide, CI setup, security headers
-    └── package.json
+blit386/                        # This repo
+├── pnpm-workspace.yaml         # Links every package, including these two
+├── node_modules/                # Shared dependencies
+├── packages/
+│   ├── blit386/                 # The engine
+│   │   ├── src/
+│   │   ├── dist/                 # Built output
+│   │   └── package.json
+│   └── demos/                   # The demos (npm name: blit386-demos)
+│       ├── src/                  # One number-free kebab-case JS file per demo (e.g. basics.js)
+│       │   └── shared/            # Shared UI kit (panels, buttons, touch D-pad) + helpers
+│       ├── public/                # Static assets: sprites/, fonts/, audio/, _headers
+│       ├── _partials/             # Shared HTML template + persistent-shell chrome (demo-shell.js)
+│       ├── plugins/               # virtual-demos + demo-order.js + demo-vintage-urls.js + registry
+│       ├── scripts/                # Package scripts (Markdown link check, registry check, audio loops)
+│       ├── docs/                   # This guide, CI setup, security headers
+│       └── package.json
+└── package.json
 ```
 
-### Optional: Add package.json
-
-You can optionally create a `package.json` in the workspace root:
-
-Prerequisite: Node.js >= 22.18.0 is required for this workspace because the sibling `blit386` package requires it.
-
-```json
-{
-  "name": "blit386-workspace",
-  "version": "0.0.0",
-  "private": true,
-  "packageManager": "pnpm@10.26.2"
-}
-```
-
-This is not required but can help with pnpm version pinning.
+Prerequisite: Node.js >= 22.18.0 (`engines` in the root `package.json`).
 
 ## Running the Demos
 
 ### Standard Development
 
 ```bash
-cd blit386-demos
+cd packages/demos
 pnpm run dev
 ```
 
@@ -124,13 +96,14 @@ paths such as `/demos/001-basics.html` 301 to the current slug.
 To edit the BLIT386 library and see changes instantly:
 
 ```bash
-cd blit386-demos
+cd packages/demos
 pnpm run dev:watch
 ```
 
 This runs two processes concurrently:
 
-- Watches `blit386/src` and rebuilds on changes (a full `blit386` dist rebuild still triggers a full page reload)
+- Watches `packages/blit386/src` and rebuilds on changes (a full `blit386` dist rebuild still triggers a full page
+  reload)
 - Runs the Vite dev server; a method-only edit to a demo's own `src/<slug>.js` hot-swaps in place (state kept), while an
   edit to `init()`/the constructor re-initializes instead, and a `configure()` hardware-setting change still forces a
   full reload – see [CLAUDE.md](../CLAUDE.md#hot-reload) for the full tier breakdown
@@ -140,7 +113,7 @@ This runs two processes concurrently:
 To rebuild the library from scratch:
 
 ```bash
-cd blit386
+cd packages/blit386
 pnpm run build
 ```
 
@@ -150,23 +123,10 @@ Then the demos will use the newly built version.
 
 ### Error: "Cannot find package 'blit386'"
 
-Cause: Workspace structure not set up correctly
+Cause: dependencies were not installed from the workspace root.
 
-Fix: Ensure you have:
-
-- Both repos cloned as siblings
-- `pnpm-workspace.yaml` in the parent directory
-- Ran `pnpm install` from the workspace root
-
-### Error: "No matching version found for blit386@workspace:\*"
-
-Cause: pnpm can't find the workspace
-
-Fix: Check that:
-
-- `pnpm-workspace.yaml` exists in the parent directory
-- Both BLIT386 and BLIT386 Demos are listed in the config
-- You're running commands from inside the workspace structure
+Fix: run `pnpm install` from the repo root (`blit386/`), not from inside `packages/demos` alone – pnpm resolves
+`workspace:*` dependencies only when installed at the workspace root.
 
 ### Demos won't start – "TypeError: Cannot read properties..."
 
@@ -175,19 +135,19 @@ Cause: BLIT386 library not built
 Fix:
 
 ```bash
-cd blit386
+cd packages/blit386
 pnpm install
 pnpm run build
-cd ../blit386-demos
+cd ../demos
 pnpm run dev
 ```
 
 ## Alternative: Start your own game with the scaffolder
 
-The setup above is only needed to hack on this demos repo against the local engine source. If you just want to build
-your own game with the published engine, use the [create-blit386](https://github.com/blit386/create-blit386) scaffolder
-instead – it writes a ready-to-run project (starter game, Vite config, `index.html`, docs, and an optional AI-assistant
-config) that already depends on `blit386` from npm:
+The setup above is only needed to hack on the demos in this repo against the local engine source. If you just want to
+build your own game with the published engine, use the [create-blit386](https://github.com/blit386/create-blit386)
+scaffolder instead – it writes a ready-to-run project (starter game, Vite config, `index.html`, docs, and an optional
+AI-assistant config) that already depends on `blit386` from npm:
 
 ```bash
 npm create blit386@latest my-game

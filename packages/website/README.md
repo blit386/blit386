@@ -11,7 +11,7 @@ Workers.
 
 Beyond rendering MDX, the site ships a few things worth knowing about:
 
-- Full engine API reference and guides, generated from the engine repo (see [Content](#content) below).
+- Full engine API reference and guides, generated from `packages/blit386` (see [Content](#content) below).
 - Twoslash type-on-hover popups in TypeScript code blocks (production builds only – see `CLAUDE.md`, Twoslash).
 - An MCP server at `/mcp` so AI assistants can search the docs; setup instructions live on the site at `/mcp-server`.
 - `Accept: text/markdown` content negotiation: any canonical doc URL returns clean markdown to agents that ask for it,
@@ -26,8 +26,8 @@ Beyond rendering MDX, the site ships a few things worth knowing about:
 
 - Node.js >= 22.18.0
 - pnpm 10.26.2 (`corepack enable` recommended)
-- The engine repo checked out as a sibling directory (`../blit386`) if you intend to run `sync:docs` – see
-  [Content](#content)
+- This is a package within the `blit386` monorepo; `pnpm install` at the repo root sets up the whole workspace,
+  including `packages/blit386` needed to run `sync:docs` – see [Content](#content)
 
 ## Development
 
@@ -66,34 +66,34 @@ CI builds with `CLOUDFLARE=1` and deploys on every push to `main`. Deploys go to
 ## Content
 
 Documentation lives in `content/` as MDX files. The public API, guide, performance, and reference pages under
-`content/docs/` are generated from the canonical engine docs in the
-[blit386 repository](https://github.com/blit386/blit386) (`docs/`), which remains the single source of truth.
-`scripts/sync-docs-from-engine.mjs` produces the mirror:
+`content/docs/` are generated from the canonical engine docs in [`packages/blit386/docs/`](../blit386/docs), which
+remains the single source of truth. `scripts/sync-docs-from-engine.mjs` produces the mirror:
 
 ```bash
 pnpm run sync:docs         # regenerate content/docs from ../blit386/docs
 pnpm run sync:docs:check   # regenerate and fail if the mirror drifted
-pnpm run sync:docs:watch   # watch blit386/docs and re-sync on every change (run alongside pnpm run dev)
+pnpm run sync:docs:watch   # watch packages/blit386/docs and re-sync on every change (run alongside pnpm run dev)
 ```
 
-The engine docs directory resolves from `ENGINE_DOCS_DIR` and defaults to the sibling `../blit386/docs`.
+The engine docs directory resolves from `ENGINE_DOCS_DIR` and defaults to the sibling package path `../blit386/docs`.
 `sync:docs:check` is a local check: no workflow in `.github/workflows/` runs it today, so mirror drift is not enforced
 by CI – run it yourself after changing engine docs.
 
 Never hand-edit a generated page – edit the engine source and re-run `sync:docs`. The same applies to
-`src/data/api-history.generated.json`, which the script copies from the engine repo. See `CLAUDE.md` (Documentation
+`src/data/api-history.generated.json`, which the script copies from `packages/blit386`. See `CLAUDE.md` (Documentation
 mirror) for the conventions. For interactive examples, visit [demos.blit386.dev](https://demos.blit386.dev).
 
-Coverage: which docs publish, and their sidebar order, are defined by the engine repo's `blit386/docs/_sitemap.json`
-manifest – not by this repo's script. Links to engine docs not in the manifest resolve to their GitHub source instead of
-a site path, so the mirror never emits a dead `/docs/...` route; each upgrades to a site link automatically once the doc
-is added. Expanding coverage means adding an entry to that manifest (in the engine repo) and re-running
-`pnpm run sync:docs`; no change to this repo's script is needed.
+Coverage: which docs publish, and their sidebar order, are defined by `packages/blit386/docs/_sitemap.json` – not by
+this package's script. Links to engine docs not in the manifest resolve to their GitHub source instead of a site path,
+so the mirror never emits a dead `/docs/...` route; each upgrades to a site link automatically once the doc is added.
+Expanding coverage means adding an entry to that manifest (in `packages/blit386`) and re-running `pnpm run sync:docs`;
+no change to this package's script is needed.
 
-Contributor-only engine docs are intentionally left out of the manifest and stay on GitHub in the
-[engine repo](https://github.com/blit386/blit386/tree/main/docs): `developer-experience-guide.md`,
-`documentation-and-versioning-guide.md`, `tooling.md`, `voice.md`, `security/security-runbook.md`,
-`security/dependency-policy.md`, `security/audit-exceptions.md`, and the docs `README.md`.
+Contributor-only engine docs are intentionally left out of the manifest and stay on GitHub in
+[`packages/blit386/docs/`](https://github.com/blit386/blit386/tree/main/packages/blit386/docs):
+`developer-experience-guide.md`, `documentation-and-versioning-guide.md`, `tooling.md`, `voice.md`,
+`security/security-runbook.md`, `security/dependency-policy.md`, `security/audit-exceptions.md`, and the docs
+`README.md`.
 
 ## Commit conventions
 

@@ -117,8 +117,8 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
      *
      * `getGitHubFileUrl` (the framework's built-in edit-link resolver) is intentionally not
      * used: it needs `siteConfig.git`, which is unset here, and even if set it would compute a
-     * URL into this repo's generated MDX rather than the true source in the sibling `blit386`
-     * engine repo. `editUrl` is injected into each page's frontmatter by `sync-docs-from-engine.mjs`
+     * URL into this package's generated MDX rather than the true source in `packages/blit386`.
+     * `editUrl` is injected into each page's frontmatter by `sync-docs-from-engine.mjs`
      * instead (see `CLAUDE.md`, Documentation mirror), so it is read directly from `page.data`.
      */
     async render(page) {

@@ -3,25 +3,25 @@
 /**
  * Generate the public documentation mirror from the canonical engine docs.
  *
- * The engine repository (`blit386`) is the single source of truth for public
- * API and guide prose under `docs/`. This script reads the subset listed in the
- * engine repo's sitemap manifest (`docs/_sitemap.json`) and writes the matching
- * Fumadocs MDX pages into `content/docs/`, applying frontmatter, dropping the
- * source H1, and rewriting links to site-relative or GitHub URLs.
+ * `packages/blit386` is the single source of truth for public API and guide
+ * prose under `docs/`. This script reads the subset listed in that package's
+ * sitemap manifest (`docs/_sitemap.json`) and writes the matching Fumadocs MDX
+ * pages into `content/docs/`, applying frontmatter, dropping the source H1, and
+ * rewriting links to site-relative or GitHub URLs.
  *
  * The manifest is the single source of truth for which docs publish, their site
  * URL, sidebar order, and subtitle. This script carries no per-page knowledge:
  * editing doc prose, adding a page, or reordering the sidebar is done entirely
- * in the engine repo (`docs/_sitemap.json`), never here. See that file's schema
- * (`docs/_sitemap.schema.json`) for the contract.
+ * in `packages/blit386` (`docs/_sitemap.json`), never here. See that file's
+ * schema (`docs/_sitemap.schema.json`) for the contract.
  *
  * The generated files are committed artifacts: never hand-edit them. Edit the
- * canonical source in `blit386/docs/` and re-run `pnpm run sync:docs`. CI uses
- * `pnpm run sync:docs:check` to fail when the mirror drifts from the source.
+ * canonical source in `packages/blit386/docs/` and re-run `pnpm run sync:docs`.
+ * CI uses `pnpm run sync:docs:check` to fail when the mirror drifts from the
+ * source.
  *
- * Source location resolves from `ENGINE_DOCS_DIR` (used by CI with a checked-out
- * engine repo); locally it defaults to the sibling workspace path
- * `../blit386/docs`.
+ * Source location resolves from `ENGINE_DOCS_DIR` (used by CI); locally it
+ * defaults to the sibling package path `../blit386/docs`.
  */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -38,7 +38,7 @@ const API_HISTORY_SRC = join(ENGINE_DOCS, '_api-history.json');
 const API_HISTORY_DEST = join(ROOT, 'src', 'data', 'api-history.generated.json');
 
 /**
- * Load and validate the sitemap manifest from the engine repo. Presence in
+ * Load and validate the sitemap manifest from `packages/blit386`. Presence in
  * `pages` means a doc publishes; array order is the sidebar order. Validation is
  * fail-fast with a precise message so a malformed manifest never produces a
  * silently broken mirror.
@@ -356,8 +356,8 @@ const dropDuplicateIntro = (body, description) => {
 };
 
 /**
- * Match the "read this on blit386.dev" banner block (sentinels and all) that the
- * engine repo injects below each published doc's H1, plus the blank lines around
+ * Match the "read this on blit386.dev" banner block (sentinels and all) that
+ * `packages/blit386` injects below each published doc's H1, plus the blank lines around
  * it. The banner is a GitHub-only signpost; the live site must never tell its
  * own readers to go to the site, so it is stripped before anything else runs.
  * Owned upstream by `blit386/scripts/sync-doc-banners.mjs`.
@@ -440,7 +440,7 @@ const getLastModified = (src, engineRepoRoot = ENGINE_REPO_ROOT) => {
     }
 };
 
-/** Build the engine repo's GitHub blob URL for a source doc, for the page's "edit" link. */
+/** Build `packages/blit386`'s GitHub blob URL for a source doc, for the page's "edit" link. */
 const editUrlFor = (src) => `${GITHUB_BASE}/blob/main/docs/${src}`;
 
 /**

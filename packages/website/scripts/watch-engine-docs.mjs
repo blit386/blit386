@@ -9,7 +9,7 @@
  *
  * The watched directory resolves the same way the sync script does: the
  * ENGINE_DOCS_DIR environment variable when set, otherwise the sibling
- * workspace path `../blit386/docs`.
+ * package path `../blit386/docs`.
  */
 import { spawn } from 'node:child_process';
 import { watch } from 'node:fs';

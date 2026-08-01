@@ -284,8 +284,8 @@ describe('getLastModified', () => {
     // author date) under docs/, matching the "docs/<src>" pathspec getLastModified
     // queries, then confirm it reads that date back via `git log`. This exercises
     // the actual command (not a mock) while staying fully deterministic and
-    // independent of the real sibling engine repo, which is not checked out when
-    // this suite runs in CI.
+    // independent of packages/blit386's real commit history, whose dates are not
+    // fixed.
     const repoRoot = mkdtempSync(join(tmpdir(), 'sync-docs-git-'));
     const fixedDate = '2026-01-15T10:30:00+01:00';
 

@@ -201,9 +201,9 @@ back to one). See the [Hot Reload guide](docs/guide-hot-reload.md).
 
 ## Demos
 
-Play the [hosted demos at demos.blit386.dev](https://demos.blit386.dev), or read the source in the
-[blit386-demos repo](https://github.com/blit386/blit386-demos) – dozens of small, heavily commented examples from a
-single moving square up to a full Snake game.
+Play the [hosted demos at demos.blit386.dev](https://demos.blit386.dev), or read the source in
+[`packages/demos`](../demos) – dozens of small, heavily commented examples from a single moving square up to a full
+Snake game.
 
 ## Documentation
 

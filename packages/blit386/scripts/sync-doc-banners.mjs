@@ -6,7 +6,7 @@
  * `docs/_sitemap.json`) carries a short banner, just below its H1, pointing
  * GitHub readers at the typeset copy on blit386.dev. The banner is wrapped in
  * sentinel HTML comments so the public mirror generator
- * (`blit386-dev-fumapress/scripts/sync-docs-from-engine.mjs`) can strip it back
+ * (`packages/website/scripts/sync-docs-from-engine.mjs`) can strip it back
  * out - the live site should never tell its own readers to go to the site.
  *
  * This script is the single owner of that banner. It derives every URL from the
