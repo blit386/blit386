@@ -456,8 +456,8 @@ Use pre-allocation for:
 
 ## Example references
 
-Demos live in the sibling `blit386-demos` repo (`src/NNN-topic.js` files). The examples below demonstrate both
-approaches:
+Demos live in `packages/demos` (one number-free kebab-case `src/<slug>.js` file per demo, e.g. `basics.js`). The
+examples below demonstrate both approaches:
 
 ### Clarity-first examples (inline allocation)
 

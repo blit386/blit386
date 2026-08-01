@@ -23,7 +23,7 @@ are Phase 2 scope, opt-in per class, not covered yet). If you:
 then this workflow applies. Purely internal changes (private fields, internal-only helpers, refactors with no public
 surface change) do not need any of this.
 
-## The two-repo picture
+## The docs publishing pipeline
 
 ```text
 src/BLIT386.ts, src/**/*.ts     @since / @changed / @deprecated JSDoc tags   (you write these)
@@ -33,18 +33,18 @@ src/BLIT386.ts, src/**/*.ts     @since / @changed / @deprecated JSDoc tags   (yo
 docs/_api-history.json          committed, deterministic, generated - never hand-edit
       |
       | you add <Since>/<ApiAvailability>/<PageChangelog> tags to docs/*.md pages
-      | (this repo, blit386)
+      | (packages/blit386)
       v
-      | pnpm run sync:docs  (blit386-dev-fumapress repo)
+      | pnpm run sync:docs  (packages/website)
       v
 content/docs/**/*.mdx           generated mirror - never hand-edit
       |
 Fumapress components read docs/_api-history.json (copied as api-history.generated.json) -> rendered HTML
 ```
 
-All git and tag resolution happens only in this repo (`blit386` - the only one with full history and tags); the result
-is committed to `docs/_api-history.json`. The sibling `blit386-dev-fumapress` repo never touches git for this data, it
-only copies the JSON verbatim during `pnpm run sync:docs`.
+All git and tag resolution happens only in `packages/blit386` (the only package with the engine's full history and
+tags); the result is committed to `docs/_api-history.json`. `packages/website` never touches git for this data, it only
+copies the JSON verbatim during `pnpm run sync:docs`.
 
 ## Step 1: tag the symbol in source
 
@@ -131,8 +131,8 @@ symbol that page does claim; an occasional untagged symbol is a smaller problem 
 
 ## Step 4: add the components
 
-Three MDX components, registered on the `blit386-dev-fumapress` side and passed through verbatim by the sync script -
-write them directly into the engine `.md` source:
+Three MDX components, registered on the `packages/website` side and passed through verbatim by the sync script - write
+them directly into the engine `.md` source:
 
 ```
 <ApiAvailability page="api/core-types" />
@@ -180,11 +180,12 @@ to a page's first-ever publication, not to adding tags to an already-published p
 _other_ page's banner link still resolves (curl a couple, or trust that they were already passing before your change)
 before concluding it is this expected, deploy-order artifact rather than a real regression.
 
-In `blit386-dev-fumapress` (after pulling or having your engine-side commit available locally at `../blit386` relative
-to that repo, per `ENGINE_DOCS_DIR`):
+In `packages/website`:
 
 ```bash
-pnpm run sync:docs         # mirrors docs/*.md and docs/_api-history.json into content/docs
+pnpm run sync:docs         # mirrors docs/*.md into content/docs; copies docs/_api-history.json to
+                            # src/data/api-history.generated.json separately
+pnpm run sync:docs:check   # fails if the mirror drifted from source
 pnpm run build             # CLOUDFLARE=1 production build - the most conclusive check
 pnpm run test              # script test suite
 ```
@@ -213,8 +214,8 @@ This is the checklist a second pair of eyes (human or agent) should actually run
    `pages` object.
 5. Run the actual build and grep the rendered HTML for the expected badge text (see Step 5) - do not accept "the
    generator ran without errors" as proof of correct rendering.
-6. Run the full verification suite in both repos (Step 5) - a change that only touches one repo's docs is incomplete
-   until the sibling repo's sync and build are re-verified too.
+6. Run the full verification suite in both packages (Step 5) - a change that only touches `packages/blit386`'s docs is
+   incomplete until `packages/website`'s sync and build are re-verified too.
 
 ## See also
 
@@ -222,5 +223,4 @@ This is the checklist a second pair of eyes (human or agent) should actually run
   of.
 - [Deprecation Timeline](reference-deprecations.md) - the removal checklist `@deprecated` tags feed into.
 - [Developer Experience](developer-experience-guide.md) - general contributing workflow, code style, commit conventions.
-- `blit386-dev-fumapress/CLAUDE.md`, Documentation mirror section - how the sync script consumes what this guide
-  produces.
+- `packages/website/CLAUDE.md`, Documentation mirror section - how the sync script consumes what this guide produces.

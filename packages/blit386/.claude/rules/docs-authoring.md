@@ -15,8 +15,8 @@ Every published doc carries a short banner below its H1, wrapped in `<!-- blit38
   which derives each `https://blit386.dev/docs/<path>` URL from the sitemap.
 - Run `pnpm run sync:doc-banners` after adding a doc to the sitemap or changing a doc's `path`.
   `pnpm run sync:doc-banners:check` reports drift without writing (CI).
-- The public mirror generator (`blit386-dev-fumapress`) strips the whole block, so it never appears on the live site.
-  Edit banner prose in the script's template, not the docs.
+- The public mirror generator (`packages/website`) strips the whole block, so it never appears on the live site. Edit
+  banner prose in the script's template, not the docs.
 
 ## Fumadocs components in published docs
 
@@ -24,8 +24,8 @@ Published docs are MDX-capable Markdown: Fumadocs/Fumapress components render di
 (they degrade to plain text or vanish on GitHub, which is why the banner exists). Contributor-only docs
 (`developer-experience-guide.md`, `voice.md`, `tooling.md`, `security/*`) stay plain Markdown.
 
-Registered components (`blit386-dev-fumapress/press.config.tsx`, `getMdxComponents`): `Callout`, `Card` / `Cards`,
-`Tabs` / `Tab`, `Steps` / `Step`, `Accordion` / `Accordions`, `Files` / `File` / `Folder`, `TypeTable`, `GithubInfo`,
+Registered components (`packages/website/press.config.tsx`, `getMdxComponents`): `Callout`, `Card` / `Cards`, `Tabs` /
+`Tab`, `Steps` / `Step`, `Accordion` / `Accordions`, `Files` / `File` / `Folder`, `TypeTable`, `GithubInfo`,
 `InlineTOC`. A component not in that map fails the mirror build.
 
 When to use which:
@@ -46,7 +46,8 @@ Authoring rules:
 - JSX expression props (`TypeTable type={{ ... }}`) work; the mirror leaves braces verbatim inside component blocks.
 - `Card href` is a JSX prop the mirror does not rewrite – use site-absolute `/docs/<section>/<topic>` paths, not
   relative `*.md` links. Unpublished docs link to the full GitHub URL instead.
-- Validate: in `blit386-dev-fumapress`, run `pnpm run sync:docs` then `pnpm run build` (or `pnpm run typecheck`).
+- Validate: in `packages/website`, run `pnpm run sync:docs`, then `pnpm run sync:docs:check` and `pnpm run build`
+  (`pnpm run typecheck` alone is not a substitute for `build`).
 
 ## Documentation authoring style (prose)
 
@@ -73,5 +74,6 @@ Renaming or splitting a published doc:
 5. Run `pnpm run sync:doc-banners`, then `pnpm run docs:links`, then `pnpm run format` (longer filenames shift Markdown
    table padding).
 
-After any doc change: add new proper nouns / coined words to `cspell.json` (and the fumapress one for hand-authored
-content there); re-sync the mirror (`pnpm run sync:docs` in `blit386-dev-fumapress`) if a sitemap entry changed.
+After any doc change: add new proper nouns / coined words to the root `cspell.json`; re-sync the mirror
+(`pnpm run sync:docs` in `packages/website`) - required after every edit to a published doc's content, not just when a
+sitemap entry changes.

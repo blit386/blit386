@@ -1,9 +1,10 @@
 /**
  * Prettier plugin: compact Markdown tables.
  *
- * Canonical copy: `blit386/scripts/prettier-plugin-compact-tables.mjs`. The same file is mirrored into
- * `blit386-demos`, `blit386-dev-fumapress`, `create-blit386`, and `_GAMES_/blit-ball` - keep them identical. The
- * scaffolder template (`create-blit386/packages/create-blit386/templates/base/scripts/`) carries the same code under a
+ * Canonical copy: this file, at the repo root. Every package in this monorepo (`blit386`, `demos`, `website`, `kit`,
+ * `create-blit386`) shares it via the root Prettier config - no per-package mirror needed. It is still hand-mirrored
+ * into `_GAMES_/blit-ball`, which stays a separate repo outside this workspace - keep that copy identical. The
+ * scaffolder template (`packages/create-blit386/templates/base/scripts/`) carries the same code under a
  * beginner-facing opening comment.
  *
  * Prettier pads every table cell out to the width of the widest cell in its column, so editing a single cell rewrites
