@@ -13,14 +13,14 @@
 #   reviewing both duplicates identical content.
 # - `pnpm-lock.yaml` is the single generated workspace lock file (listed
 #   explicitly even though it may already match CodeRabbit defaults).
-# - `packages/docs-site/content/docs/{api,guides,performance,reference}/**` and
-#   `packages/docs-site/src/data/api-history.generated.json` are the
+# - `packages/website/content/docs/{api,guides,performance,reference}/**` and
+#   `packages/website/src/data/api-history.generated.json` are the
 #   Documentation mirror from `packages/blit386/docs/`
-#   (`pnpm run sync:docs` in `packages/docs-site`). Never hand-edit; fix the
+#   (`pnpm run sync:docs` in `packages/website`). Never hand-edit; fix the
 #   engine package and re-sync. Reviewing them here only duplicates engine-side
 #   review.
 # - Binary assets carry no text diff worth reviewing, and several are large
-#   enough to burn review budget for zero signal: `packages/docs-site/public/media/**`
+#   enough to burn review budget for zero signal: `packages/website/public/media/**`
 #   is self-hosted blog video (~24 MB of `.av1.mp4`/`.h264.mp4`/`.webp`, produced by
 #   `pnpm run encode:video`); fonts, sprites, audio clips, favicons, and the engine's
 #   own bundled logo/system-font PNGs are likewise opaque binaries.
@@ -38,14 +38,14 @@ reviews:
     - '!packages/blit386/tests/visual/__snapshots__/**'
     - '!.agents/skills/**'
     - '!pnpm-lock.yaml'
-    - '!packages/docs-site/content/docs/api/**'
-    - '!packages/docs-site/content/docs/guides/**'
-    - '!packages/docs-site/content/docs/performance/**'
-    - '!packages/docs-site/content/docs/reference/**'
-    - '!packages/docs-site/src/data/api-history.generated.json'
-    - '!packages/docs-site/public/media/**'
-    - '!packages/docs-site/public/fonts/**'
-    - '!packages/docs-site/public/logo/**'
+    - '!packages/website/content/docs/api/**'
+    - '!packages/website/content/docs/guides/**'
+    - '!packages/website/content/docs/performance/**'
+    - '!packages/website/content/docs/reference/**'
+    - '!packages/website/src/data/api-history.generated.json'
+    - '!packages/website/public/media/**'
+    - '!packages/website/public/fonts/**'
+    - '!packages/website/public/logo/**'
     - '!packages/demos/public/fonts/**'
     - '!packages/demos/public/sprites/**'
     - '!packages/demos/public/audio/**'
@@ -123,50 +123,49 @@ reviews:
         Public demos README, including the `## Demos` list. American English; no emoji; beginner-friendly. New or
         renamed demos must use the number-free hosted URL (`https://demos.blit386.dev/<slug>`) and sit under the right
         category; keep in sync with `plugins/demo-order.js` (`DEMO_ORDER`).
-    - path: 'packages/docs-site/src/**/*.{ts,tsx}'
+    - path: 'packages/website/src/**/*.{ts,tsx}'
       instructions: >-
         Site TypeScript for the Fumapress/Waku docs site (React components, ServerPlugins, data loaders) – not the
         blit386 engine. Prefer `import type` for type-only imports; American English spelling (see
-        `packages/docs-site/.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated
+        `packages/website/.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated
         name exemptions); no emoji anywhere. Lint/format with Biome (this package has no ESLint). Do not apply
         blit386-engine-only rules here (BTAPI access bans, Vector2i rendering coords, internal scoped naming) unless the
         change is documenting those APIs. Version-history UI (`Since`, `ApiAvailability`, `PageChangelog`) reads
         `src/data/api-history.ts` over generated JSON – never invent symbols in the generated file; fix the engine and
-        re-sync. Canonical detail: `packages/docs-site/CLAUDE.md`.
-    - path: 'packages/docs-site/scripts/**'
+        re-sync. Canonical detail: `packages/website/CLAUDE.md`.
+    - path: 'packages/website/scripts/**'
       instructions: >-
         Build/CI helpers (`sync-docs-from-engine.mjs`, `watch-engine-docs.mjs`, `patch-wrangler.mjs`,
         `patch-html-title.mjs`, `encode-video.mjs`) plus `scripts/__tests__`. The sync script is MDX-aware and owns the
         Documentation mirror – it must not gain a hard-coded per-page list (publish set lives in
         `packages/blit386/docs/_sitemap.json`). American English; no emoji; keep `pnpm run <script>` command forms
         accurate. Tests use `node --test` via `pnpm run test`.
-    - path: 'packages/docs-site/{press.config.tsx,source.config.ts,waku.config.ts}'
+    - path: 'packages/website/{press.config.tsx,source.config.ts,waku.config.ts}'
       instructions: >-
         Site wiring: Fumapress plugins/layouts/`GLOBAL_HEAD` (`press.config.tsx`), fumadocs-mdx collections and Twoslash
         (`source.config.ts`), Waku/Vite plugins (`waku.config.ts`). MDX components used in engine docs must be
         registered in `fumadocsMdx({ getMdxComponents })`. Twoslash is gated on `CLOUDFLARE` (production builds only) –
         do not "fix" that by enabling it in dev. American English; no emoji. When plugins or routing change, check
-        whether `CLAUDE.md` / `README.md` still match (see `packages/docs-site/.claude/rules/docs-sync-required.md`).
-    - path: 'packages/docs-site/content/**'
+        whether `CLAUDE.md` / `README.md` still match (see `packages/website/.claude/rules/docs-sync-required.md`).
+    - path: 'packages/website/content/**'
       instructions: >-
         Hand-authored MDX and meta (landing, showcase, community, mcp-server, blog, and docs hub pages such as
         `content/docs/index.mdx`, `getting-started.mdx`, `faq.mdx`, plus root/docs `meta.json`). Generated engine-mirror
         pages under `content/docs/{api,guides,performance,reference}/` are path-filtered out – if they appear anyway, do
         not suggest hand-edits; point at `packages/blit386/docs/` + `pnpm run sync:docs`. Required frontmatter includes
         `title`; American English; no emoji. After link changes, `pnpm run docs:links`. Custom MDX components must be
-        registered in `press.config.tsx`. Canonical detail: `packages/docs-site/CLAUDE.md` Content Conventions and
-        `packages/docs-site/.claude/rules/fumapress-content.md`.
-    - path: 'packages/docs-site/CLAUDE.md'
+        registered in `press.config.tsx`. Canonical detail: `packages/website/CLAUDE.md` Content Conventions and
+        `packages/website/.claude/rules/fumapress-content.md`.
+    - path: 'packages/website/CLAUDE.md'
       instructions: >-
         Repo contributor guide: American English spelling; no emoji; keep commands as `pnpm run <script>` (not bare
         `pnpm <script>`). When site config, plugins, sync behavior, or deploy flow changes, keep the Architecture /
-        Commands / Documentation mirror sections accurate (see
-        `packages/docs-site/.claude/rules/docs-sync-required.md`).
-    - path: 'packages/docs-site/README.md'
+        Commands / Documentation mirror sections accurate (see `packages/website/.claude/rules/docs-sync-required.md`).
+    - path: 'packages/website/README.md'
       instructions: >-
-        Public docs-site README: American English; no emoji; beginner-friendly. Keep install/run/deploy examples
-        accurate for this Fumapress site (not the engine or scaffolder).
-    - path: 'packages/docs-site/public/**'
+        Public website README: American English; no emoji; beginner-friendly. Keep install/run/deploy examples accurate
+        for this Fumapress site (not the engine or scaffolder).
+    - path: 'packages/website/public/**'
       instructions: >-
         Static assets served as-is: Cloudflare `_headers`, WebMCP bridge (`webmcp.js`), demo thumbnails, and
         `.well-known/` agent-discovery files. Keep security headers and discovery cards accurate; no emoji in

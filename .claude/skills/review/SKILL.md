@@ -3,7 +3,7 @@ name: review
 description:
   Review the current changes against project rules, conventions, and quality standards. Use when the user asks to review
   changes, check the diff before committing, or look over recent edits. Takes a package argument (blit386, demos,
-  docs-site, kit, create-blit386, or root).
+  website, kit, create-blit386, or root).
 ---
 
 # Review Changes
@@ -16,7 +16,7 @@ Review current changes against project rules and quality standards.
 /review <package>
 ```
 
-Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit386`, or `root`.
+Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit386`, or `root`.
 
 ## Steps
 
@@ -61,7 +61,7 @@ does, so a plain string variable silently collapses into one no-op pathspec argu
 - `blit386`: `pnpm run lint`, `pnpm run typecheck`, `pnpm run spellcheck` (all inside `packages/blit386`)
 - `demos`: `pnpm run lint`, `pnpm run spellcheck`, `pnpm run build` (production build is the deployment gate for
   Cloudflare Pages)
-- `docs-site`: covered by `/preflight docs-site` – run it before merge
+- `website`: covered by `/preflight website` – run it before merge
 - `kit` / `create-blit386`: `pnpm run typecheck` (per package); root `pnpm run format:check` covers lint via Biome
 
 3. Check against project rules
@@ -100,7 +100,7 @@ Shared across every package:
 - Audio: SFX never assumed to play before the first user gesture; audio demos gate their prompt on `BT.isAudioUnlocked`
 - New demo slugs: number-free kebab-case, first path segment starts with a letter
 
-`docs-site`:
+`website`:
 
 - MDX pages have `title` frontmatter; descriptions where helpful
 - Links point to stable URLs; engine API links go to site paths (`/docs/api/...`, `/docs/guides/...`) for anything in
