@@ -8,7 +8,7 @@ interface SinceProps {
 /**
  * Compact inline pill showing when a documented API symbol was introduced, or its status
  * if it is unreleased or deprecated. Renders nothing if `symbol` is not found in the
- * generated API history - a missing or misspelled symbol name silently omits the badge
+ * generated API history – a missing or misspelled symbol name silently omits the badge
  * rather than failing the docs build.
  */
 export function Since({ symbol }: SinceProps) {

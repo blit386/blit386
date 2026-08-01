@@ -72,18 +72,23 @@ console.log(`[watch] ${ENGINE_DOCS}`);
 console.log('[watch] run `pnpm run dev` in another terminal for HMR');
 console.log('[watch] ctrl+c to stop\n');
 
+const onWatchError = (error) => {
+    console.error(`[watch] cannot watch ${ENGINE_DOCS}: ${error.message}`);
+    console.error('[watch] is the blit386 repo checked out at the sibling path?');
+    process.exit(1);
+};
+
 try {
-    watch(ENGINE_DOCS, { recursive: true }, (_event, filename) => {
+    const watcher = watch(ENGINE_DOCS, { recursive: true }, (_event, filename) => {
         if (!filename || filename.startsWith('.') || filename === '_sitemap.schema.json') {
             return;
         }
 
         scheduleSync(filename);
     });
+    watcher.on('error', onWatchError);
 } catch (error) {
-    console.error(`[watch] cannot watch ${ENGINE_DOCS}: ${error.message}`);
-    console.error('[watch] is the blit386 repo checked out at the sibling path?');
-    process.exit(1);
+    onWatchError(error);
 }
 
 runSync();

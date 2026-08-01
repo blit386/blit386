@@ -79,21 +79,20 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
                             title: page.data.title ?? '',
                             description: page.data.description ?? '',
                             link: `${baseUrl}${page.url}`,
-                            date: date ?? new Date(0),
+                            date,
                         };
                     });
 
-                    items.sort((a, b) => b.date.getTime() - a.date.getTime());
+                    items.sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
 
                     const itemsXml = items
                         .map(({ title, description, link, date }) => {
-                            const pubDate = toRfc822(date);
                             return [
                                 '    <item>',
                                 `      <title>${escapeXml(title)}</title>`,
                                 `      <link>${escapeXml(link)}</link>`,
                                 `      <guid isPermaLink="true">${escapeXml(link)}</guid>`,
-                                `      <pubDate>${pubDate}</pubDate>`,
+                                ...(date ? [`      <pubDate>${toRfc822(date)}</pubDate>`] : []),
                                 ...(description ? [`      <description>${escapeXml(description)}</description>`] : []),
                                 '    </item>',
                             ].join('\n');
@@ -129,7 +128,13 @@ export function feedPlugin<C extends ConfigContext = ConfigContext>(): ServerPlu
                         return next();
                     }
 
-                    const xml = await buildFeed();
+                    let xml;
+                    try {
+                        xml = await buildFeed();
+                    } catch (error) {
+                        console.error('feed: failed to build RSS feed:', error);
+                        return new Response('Internal error: feed unavailable', { status: 500 });
+                    }
 
                     return new Response(c.req.method === 'HEAD' ? null : xml, {
                         headers: { 'content-type': 'application/rss+xml; charset=utf-8' },

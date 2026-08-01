@@ -60,8 +60,8 @@ CI builds with `CLOUDFLARE=1` and deploys on every push to `main`. Deploys go to
   the `deploy` job in `.github/workflows/ci.yml`.
 - `dist/server/wrangler.json`: the config actually deployed. Waku regenerates it on every build and
   `scripts/patch-wrangler.mjs` (run by `postbuild`) injects `run_worker_first` into it.
-- The root `wrangler.jsonc` is kept for parity and local reference only. Its `"name": "blit386-dev-fumapress"` is not
-  what the Worker is called: both `pnpm run deploy` and CI pass `--name blit386`, which overrides it.
+- The root `wrangler.jsonc` is kept for parity and local reference only. Its `"name": "blit386"` value never reaches
+  Cloudflare either: both `pnpm run deploy` and CI pass `--name blit386` explicitly, which overrides it.
 
 ## Content
 

@@ -36,7 +36,7 @@ export const getPageSymbols = (page: string): string[] => apiHistory.pages[page]
 /**
  * Compares two dot-separated version strings segment by segment as numbers, so
  * `"1.10.0"` sorts above `"1.2.0"` (a plain string comparison would sort them the other
- * way round). Missing trailing segments are treated as `0`. Returns a negative number,
+ * way around). Missing trailing segments are treated as `0`. Returns a negative number,
  * zero, or a positive number in the same sense as an `Array.prototype.sort` comparator.
  */
 export function compareVersions(a: string, b: string): number {

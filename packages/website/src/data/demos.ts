@@ -44,7 +44,7 @@ export const flagshipDemos: readonly DemoEntry[] = [
     },
     {
         title: 'Basics Enhanced',
-        description: 'Primitives, text, and sprites side-by-side — a quick tour of the core drawing API.',
+        description: 'Primitives, text, and sprites side-by-side – a quick tour of the core drawing API.',
         thumbnail: '/demos/thumb-033-basics-enhanced.svg',
         href: 'https://demos.blit386.dev/033-basics-enhanced',
     },

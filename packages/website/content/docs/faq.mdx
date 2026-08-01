@@ -12,8 +12,8 @@ Answers to the questions that come up most often. For live discussion, see the [
 Recent Chrome, Edge, Firefox, and Safari releases ship WebGPU; older versions either gate it behind a flag or lack it
 entirely, in which case the engine falls back to the Canvas 2D software renderer.
 
-The exact per-browser matrix is maintained with the engine and published at
-[Browser Support](/docs/api/browser-support) - that page is the single source of truth, so it is not duplicated here.
+The exact per-browser matrix is maintained with the engine and published at [Browser Support](/docs/api/browser-support)
+– that page is the single source of truth, so it is not duplicated here.
 
 ### What happens in a browser where WebGPU is not available?
 
@@ -73,7 +73,7 @@ This generates a ready-to-run Vite project with the engine, a starter game, and 
   `blit386-canvas`).
 - Check that `BT.paletteSet()` is called in `init()` before any draw calls in `render()`.
 - Open the browser DevTools Network tab and confirm that sprite sheets and font files loaded successfully.
-- Check `BT.activeBackend` - if it is `null`, the engine has not finished initializing yet.
+- Check `BT.activeBackend` – if it is `null`, the engine has not finished initializing yet.
 
 ### I am getting a TypeScript error about unknown properties on `HardwareSettings`. What is happening?
 
@@ -92,7 +92,7 @@ gesture unlocks the audio context for the rest of the session and `BT.isAudioUnl
 
 The two playback paths behave differently while still locked:
 
-- `BT.soundPlay()` is dropped - it returns an inert `SoundRef` and no voice is allocated.
+- `BT.soundPlay()` is dropped – it returns an inert `SoundRef` and no voice is allocated.
 - `BT.musicPlay()` is remembered and starts automatically the moment the context unlocks.
 
 Loading is unaffected: `AudioClip.load()` and `AudioClip.synth()` both work while locked, because decoding does not need

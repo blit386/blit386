@@ -550,11 +550,15 @@ const main = () => {
     // build time; it is a generated artifact like the MDX pages above. A missing
     // source (e.g. an engine checkout that predates the extractor) skips this
     // step rather than aborting the whole docs sync.
+    let apiHistorySrc;
     try {
-        writeFileSync(API_HISTORY_DEST, readFileSync(API_HISTORY_SRC, 'utf8'));
-        written.push(API_HISTORY_DEST);
+        apiHistorySrc = readFileSync(API_HISTORY_SRC, 'utf8');
     } catch {
         console.warn(`warning: ${relative(ROOT, API_HISTORY_SRC)} not found; skipping API history mirror.`);
+    }
+    if (apiHistorySrc !== undefined) {
+        writeFileSync(API_HISTORY_DEST, apiHistorySrc);
+        written.push(API_HISTORY_DEST);
     }
 
     for (const [section, entries] of sections) {

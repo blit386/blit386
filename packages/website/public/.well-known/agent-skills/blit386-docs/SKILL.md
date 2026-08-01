@@ -32,7 +32,7 @@ Main documentation sections:
 
 Use the search API to locate specific content:
 
-```
+```text
 GET https://blit386.dev/api/search?query=palette+animation
 ```
 
@@ -59,7 +59,7 @@ Query the active backend at runtime: `BT.activeBackend`
 
 ## Package
 
-```
+```shell
 npm install blit386
 ```
 

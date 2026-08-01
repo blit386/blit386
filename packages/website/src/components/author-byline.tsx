@@ -27,7 +27,7 @@ export function AuthorByline({ author }: AuthorBylineProps) {
             {entry.avatar && (
                 <img
                     src={entry.avatar}
-                    alt={entry.name}
+                    alt=""
                     width={32}
                     height={32}
                     className={styles.avatar}

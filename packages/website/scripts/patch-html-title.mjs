@@ -56,6 +56,6 @@ const main = () => {
     console.log(`[patch-html-title] ${count} file(s) updated`);
 };
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     main();
 }

@@ -128,7 +128,7 @@ function buildExcerpt(text: string, terms: readonly string[]): string {
  * corpus that is extracted once per loader and cached for the isolate. It deliberately
  * does NOT build a FlexSearch index: in static mode that index ships as an 8.4 MB asset
  * and rebuilding it per cold Worker isolate exceeds the Worker CPU limit (Cloudflare
- * error 1102) - the same reason the site itself moved search client-side (see
+ * error 1102) – the same reason the site itself moved search client-side (see
  * press.config.tsx). For ~30 pages a substring scan is well within the Worker budget.
  *
  * get_docs_summary returns /llms.txt via the ASSETS binding rather than fetching the
@@ -263,8 +263,14 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         const { name, arguments: args = {} } = params;
 
                         if (name === 'search_docs') {
-                            const queryValue = args.query;
-                            const query = typeof queryValue === 'string' ? queryValue : '';
+                            const query = args.query;
+                            if (typeof query !== 'string' || query.length === 0) {
+                                return c.json({
+                                    jsonrpc: '2.0',
+                                    id,
+                                    error: { code: -32602, message: 'Invalid params' },
+                                });
+                            }
                             try {
                                 const results = await searchDocs(query);
                                 return c.json({
@@ -282,7 +288,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                         }
 
                         if (name === 'get_docs_summary') {
-                            const assets = (c.env as { ASSETS?: AssetsBinding }).ASSETS;
+                            const assets = (c.env as { ASSETS?: AssetsBinding } | undefined)?.ASSETS;
                             if (!assets) {
                                 return c.json({
                                     jsonrpc: '2.0',
@@ -292,7 +298,7 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             }
                             try {
                                 // Resolve against the incoming request origin and serve from the
-                                // ASSETS binding - never fetch the public hostname from inside the
+                                // ASSETS binding – never fetch the public hostname from inside the
                                 // Worker (self-zone subrequests time out with Cloudflare 522).
                                 const assetUrl = new URL('/llms.txt', c.req.url);
                                 const res = await assets.fetch(new Request(assetUrl.href));

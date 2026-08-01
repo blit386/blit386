@@ -17,13 +17,13 @@ interface VideoEmbedProps {
 }
 
 // Both renditions come out of `pnpm run encode:video`, which pins the AV1 sequence level to
-// 4.0 and H.264 to High@4.0 - so these codec strings are exact rather than a guess, and a
+// 4.0 and H.264 to High@4.0 – so these codec strings are exact rather than a guess, and a
 // browser without AV1 skips the first source without opening a connection to it.
 const AV1_TYPE = 'video/mp4; codecs="av01.0.08M.08"';
 const H264_TYPE = 'video/mp4; codecs="avc1.640028"';
 
 // CSS cannot stop a video from autoplaying, and a client component would only get to run
-// after hydration - by which point the clip is already moving. This runs synchronously as
+// after hydration – by which point the clip is already moving. This runs synchronously as
 // soon as the element beside it is connected: during parse on the initial static HTML, and
 // on subtree insertion during a Waku client-side route change. If it never runs the clip
 // simply autoplays, which is the previous behavior rather than a broken page. `controls` is
@@ -42,7 +42,7 @@ const REDUCED_MOTION_SCRIPT = [
  * poster, and intrinsic width/height so the layout box exists before the first byte lands.
  *
  * `src` is the path base written by `scripts/encode-video.mjs`: this appends `.av1.mp4`,
- * `.h264.mp4`, and `.webp`. Keep the two in step - the encode script's test asserts the
+ * `.h264.mp4`, and `.webp`. Keep the two in step – the encode script's test asserts the
  * same suffixes.
  */
 export function VideoEmbed({ src, width, height, caption, className }: VideoEmbedProps) {

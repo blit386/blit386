@@ -22,15 +22,14 @@
                 required: ['path'],
             },
             execute: async ({ path }) => {
-                if (
-                    typeof path !== 'string' ||
-                    !path.startsWith('/') ||
-                    /^\/\//i.test(path) ||
-                    /javascript:/i.test(path)
-                ) {
+                if (typeof path !== 'string') {
                     return { error: 'Invalid path: must be a site-relative path starting with /' };
                 }
-                window.location.assign(path);
+                const resolved = new URL(path, window.location.origin);
+                if (resolved.origin !== window.location.origin) {
+                    return { error: 'Invalid path: must be a site-relative path starting with /' };
+                }
+                window.location.assign(resolved);
                 return { navigating: true, path };
             },
         },
