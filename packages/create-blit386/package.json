@@ -47,7 +47,9 @@
     "build": "tsup",
     "prepack": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "node --test 'test/**/*.test.mjs'"
+    "test": "node --test 'test/**/*.test.mjs'",
+    "bump": "node scripts/bump-lockstep.mjs",
+    "test:bump-lockstep": "node --test scripts/bump-lockstep.test.mjs"
   },
   "dependencies": {
     "@blit386/kit": "workspace:*",

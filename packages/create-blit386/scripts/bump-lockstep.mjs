@@ -13,10 +13,11 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/** This package's own root - `packages/create-blit386/`. */
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Packages whose `version` field must match on every release. */
-export const LOCKSTEP_PACKAGE_JSON_PATHS = ['packages/kit/package.json', 'packages/create-blit386/package.json'];
+/** Packages whose `version` field must match on every release, relative to `ROOT`. */
+export const LOCKSTEP_PACKAGE_JSON_PATHS = ['package.json', '../kit/package.json'];
 
 /** SemVer `x.y.z` only (no prerelease / build metadata; no leading zeros). */
 export const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;

@@ -300,9 +300,11 @@ that file and follow it. Do not invent a parallel checklist here – if this ski
    it before publishing (see `PUBLISHING.md` "Release order: engine first").
 2. Always `pnpm publish`, never `npm publish` – only pnpm rewrites `workspace:*` to a real version.
 3. Publish `@blit386/kit` before `create-blit386`.
-4. Versions are permanent and lockstep – both packages share one `x.y.z`. Bump with `pnpm run bump -- <x.y.z>` (see
-   `PUBLISHING.md` step 2). Never suggest separate per-package `npm version` commands, and never bias toward patch or
-   minor – choose SemVer from the pre-bump checklist in `PUBLISHING.md`.
+4. Versions are permanent and lockstep – both packages share one `x.y.z`. Bump with
+   `pnpm --filter create-blit386 run bump -- <x.y.z>` (see `PUBLISHING.md` step 2; the script lives at
+   `packages/create-blit386/scripts/bump-lockstep.mjs` and writes both `packages/create-blit386/package.json` and
+   `packages/kit/package.json`). Never suggest separate per-package `npm version` commands, and never bias toward patch
+   or minor – choose SemVer from the pre-bump checklist in `PUBLISHING.md`.
 5. Release tags carry no `v` prefix (`1.3.0`, not `v1.3.0`).
 6. Publishing is manual-only – no CI publish workflow, no `NPM_TOKEN`. Do not suggest re-adding either.
 7. `blit386.engineRange` (kit) and `BLIT386_RANGE` (scaffolder) are different mechanisms; bump both together when kit

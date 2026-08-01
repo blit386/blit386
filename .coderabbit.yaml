@@ -179,8 +179,9 @@ reviews:
         `packages/create-blit386/.claude/rules/american-english-spelling.md`, including literal third-party /
         spec-mandated name exemptions); no emoji anywhere. Lint/format with Biome (no ESLint here). Do not apply
         blit386-engine-only rules here (BTAPI access bans, Vector2i rendering coords, internal scoped naming) unless the
-        change is documenting or scaffolding those APIs for games. Canonical detail:
-        `packages/{create-blit386,kit}/CLAUDE.md` (one shared file, mirrored in both packages).
+        change is documenting or scaffolding those APIs for games. Canonical detail: that package's own `CLAUDE.md`
+        (`packages/create-blit386/CLAUDE.md` or `packages/kit/CLAUDE.md` - each covers only its own package now, not a
+        shared mirror).
     - path: 'packages/create-blit386/templates/**'
       instructions: >-
         Scaffold output for end-user games. Keep beginner-friendly comments (explain what and why). Integer coordinates
@@ -199,14 +200,14 @@ reviews:
         byte-for-byte (no `{{placeholder}}` substitution), so spell out both `src/game.js` and `src/game.ts`. Skills and
         rules are discovered by directory scan – adding a skill folder is enough (`agents.config.json` does not list
         skills by name). Keep public `BT` / `configure()` names aligned with the sibling blit386 engine. Canonical
-        detail: `packages/{create-blit386,kit}/CLAUDE.md` "Kit content vs engine docs" and root
-        `.claude/rules/docs-sync-required.md`.
+        detail: `packages/kit/CLAUDE.md` "Kit content vs engine docs" and root `.claude/rules/docs-sync-required.md`.
     - path: 'packages/{create-blit386,kit}/CLAUDE.md'
       instructions: >-
-        Repo contributor guide, shared verbatim between both packages (they release in lockstep). American English
-        spelling; no emoji; keep commands as `pnpm run <script>` (not bare `pnpm <script>`). When scaffold or kit
-        behavior changes, check whether the kit-audit table and "Where to find" section still match (see root
-        `.claude/rules/docs-sync-required.md`), and keep both copies of this file identical.
+        Repo contributor guide - each package has its own file (not a mirror); `create-blit386/CLAUDE.md` covers
+        scaffold flow and templates, `kit/CLAUDE.md` covers kit content and the `blit` CLI. American English spelling;
+        no emoji; keep commands as `pnpm run <script>` (not bare `pnpm <script>`). When scaffold or kit behavior
+        changes, check whether the relevant package's "Where to find information" table still matches (see root
+        `.claude/rules/docs-sync-required.md`).
     - path: 'packages/{create-blit386,kit}/README.md'
       instructions: >-
         Package READMEs for create-blit386 / @blit386/kit: American English; no emoji; keep CLI command lists and skill

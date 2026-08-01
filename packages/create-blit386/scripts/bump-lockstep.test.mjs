@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
@@ -123,7 +124,7 @@ describe('bump-lockstep', () => {
             /** @type {Map<string, string>} */
             const files = new Map(
                 LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
-                    `/repo/${path}`,
+                    join('/repo', path),
                     `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
                 ]),
             );
@@ -150,7 +151,7 @@ describe('bump-lockstep', () => {
             assert.ok(results.every((result) => result.previous === '1.2.1' && result.next === '1.3.0'));
             assert.equal(writes.length, 2);
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
-                assert.equal(JSON.parse(files.get(`/repo/${rel}`)).version, '1.3.0');
+                assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.3.0');
             }
         });
 
@@ -172,7 +173,7 @@ describe('bump-lockstep', () => {
             /** @type {Map<string, string>} */
             const files = new Map(
                 LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
-                    `/repo/${path}`,
+                    join('/repo', path),
                     `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
                 ]),
             );
@@ -184,8 +185,8 @@ describe('bump-lockstep', () => {
                         root: '/repo',
                         version: '1.3.0',
                         readFile: (path) => {
-                            if (path.endsWith('packages/create-blit386/package.json')) {
-                                throw new Error('missing create-blit386 package.json');
+                            if (path.endsWith(join('kit', 'package.json'))) {
+                                throw new Error('missing kit package.json');
                             }
                             const raw = files.get(path);
                             if (raw === undefined) {
@@ -197,11 +198,11 @@ describe('bump-lockstep', () => {
                             writes += 1;
                         },
                     }),
-                /missing create-blit386 package\.json/,
+                /missing kit package\.json/,
             );
             assert.equal(writes, 0);
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
-                assert.equal(JSON.parse(files.get(`/repo/${rel}`)).version, '1.2.1');
+                assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.2.1');
             }
         });
 
@@ -209,7 +210,7 @@ describe('bump-lockstep', () => {
             /** @type {Map<string, string>} */
             const files = new Map(
                 LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
-                    `/repo/${path}`,
+                    join('/repo', path),
                     `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
                 ]),
             );
@@ -227,7 +228,7 @@ describe('bump-lockstep', () => {
                             return raw;
                         },
                         writeFile: (path, data) => {
-                            if (path.endsWith('packages/kit/package.json')) {
+                            if (path.endsWith(join('kit', 'package.json'))) {
                                 throw new Error('disk full');
                             }
                             files.set(path, data);
@@ -237,7 +238,7 @@ describe('bump-lockstep', () => {
             );
 
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
-                assert.equal(JSON.parse(files.get(`/repo/${rel}`)).version, '1.2.1');
+                assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.2.1');
             }
         });
     });
@@ -248,12 +249,12 @@ describe('bump-lockstep', () => {
             const code = main(['node', 'bump-lockstep.mjs', '1.3.0', '--dry-run'], {
                 log: (message) => lines.push(message),
                 bump: () => [
-                    { path: 'packages/kit/package.json', previous: '1.2.1', next: '1.3.0' },
-                    { path: 'packages/create-blit386/package.json', previous: '1.2.1', next: '1.3.0' },
+                    { path: 'package.json', previous: '1.2.1', next: '1.3.0' },
+                    { path: '../kit/package.json', previous: '1.2.1', next: '1.3.0' },
                 ],
             });
             assert.equal(code, 0);
-            assert.ok(lines.some((line) => line.includes('Would set packages/kit/package.json')));
+            assert.ok(lines.some((line) => line.includes('Would set ../kit/package.json')));
             assert.ok(lines.some((line) => line.includes('(dry-run')));
 
             assert.equal(main(['node', 'bump-lockstep.mjs']), 1);

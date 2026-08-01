@@ -1,20 +1,11 @@
-# create-blit386 and @blit386/kit – agent quick start
+# create-blit386 – agent quick start
 
-This file is shared verbatim between `packages/create-blit386` and `packages/kit` (see their `CLAUDE.md` for why).
+The BLIT386 game scaffolder CLI (`npm create blit386@latest`). Depends on `@blit386/kit`; the two packages release in
+lockstep – see [`packages/kit/AGENTS.md`](../kit/AGENTS.md) for the kit's own quick start.
 
-Two packages: the BLIT386 game scaffolder (`create-blit386`) and project kit (`@blit386/kit`).
-
-This file is a standalone quick start for tools that read `AGENTS.md` and not `CLAUDE.md`. For scaffold flow, kit
-content rules, adapter generation, and the full command list, [`CLAUDE.md`](CLAUDE.md) is canonical – read it before
-non-trivial work. Shared monorepo conventions live in the repo root [`CLAUDE.md`](../../CLAUDE.md) and
-[`AGENTS.md`](../../AGENTS.md).
-
-## Packages
-
-| Package | npm name | Purpose |
-| --- | --- | --- |
-| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` CLI and templates |
-| `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI |
+This file is a standalone quick start for tools that read `AGENTS.md` and not `CLAUDE.md`. For the full scaffold flow
+and routing table, [`CLAUDE.md`](CLAUDE.md) is canonical – read it before non-trivial work. Shared monorepo conventions
+live in the repo root [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 
 ## Tech stack
 
@@ -24,36 +15,33 @@ spellchecked with cspell, dead code found with knip. Package manager is pnpm 10.
 ## Quick start
 
 ```bash
-pnpm install                          # from the repo root
-pnpm --filter @blit386/kit run build       # or: cd packages/kit && pnpm run build
-pnpm --filter create-blit386 run build     # or: cd packages/create-blit386 && pnpm run build
-pnpm --filter @blit386/kit run test        # scaffolder suite needs both packages built first
-pnpm --filter create-blit386 run test
+pnpm install                             # from the repo root
+pnpm --filter create-blit386 run build   # or: cd packages/create-blit386 && pnpm run build
+pnpm --filter create-blit386 run test    # needs both this package and @blit386/kit built first
 ```
 
-Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands. See `/preflight kit` (or
-`/preflight create-blit386`) for the current state of the quality gate for these two packages.
+Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands. See
+`/preflight create-blit386` for the current state of the quality gate.
 
 ## Rules that matter most
 
 - JavaScript by default in scaffolds – generated games are plain JS unless the user picks TypeScript (`--ts`).
-- Beginner-friendly – scaffold output and kit docs assume no prior coding experience.
+- Beginner-friendly – scaffold output assumes no prior coding experience.
 - Integer coordinates in generated games – `Vector2i` / `Rect2i` via blit386; use the `BT` namespace, never `BTAPI`.
-- Named exports only in library TypeScript; no default exports.
-- Documentation is part of every feature – update `CLAUDE.md` when workflow or architecture changes.
+- Named exports only in this package's own TypeScript; no default exports.
 
 ## Two different AGENTS.md files
 
-This file is for agents working on **this monorepo**. The file at `packages/kit/content/AGENTS.md` is the canonical kit
+This file is for agents working on **this package**. The file at `packages/kit/content/AGENTS.md` is the canonical kit
 IR copied into every scaffolded game. Do not confuse the two, and do not edit the kit copy when the task is about this
-repo's own contributor docs.
+package's own contributor docs.
 
 ## Where to go next
 
-- [`CLAUDE.md`](CLAUDE.md) – full scaffold flow, kit content vs engine docs checklist, and the routing table.
+- [`CLAUDE.md`](CLAUDE.md) – full scaffold flow and the routing table.
 - Root `CONTRIBUTING.md` – DCO and contribution guidelines.
-- `packages/create-blit386/PUBLISHING.md` – npm publish procedure for both packages (`pnpm run bump -- <x.y.z>` for
+- `PUBLISHING.md` – npm publish procedure for both packages (`pnpm --filter create-blit386 run bump -- <x.y.z>` for
   lockstep).
 
-Condensed, always-applicable agent rules also live in the root `.claude/rules/*.md` and
-`packages/create-blit386/.claude/rules/*.md` (Claude Code).
+Condensed, always-applicable agent rules also live in the root `.claude/rules/*.md` and `.claude/rules/*.md` here
+(Claude Code).
