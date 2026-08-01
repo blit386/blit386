@@ -22,13 +22,23 @@
                 required: ['path'],
             },
             execute: async ({ path }) => {
-                if (typeof path !== 'string') {
-                    return { error: 'Invalid path: must be a site-relative path starting with /' };
+                const invalid = { error: 'Invalid path: must be a site-relative path starting with /' };
+
+                if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//')) {
+                    return invalid;
                 }
-                const resolved = new URL(path, window.location.origin);
+
+                let resolved;
+                try {
+                    resolved = new URL(path, window.location.origin);
+                } catch {
+                    return invalid;
+                }
+
                 if (resolved.origin !== window.location.origin) {
-                    return { error: 'Invalid path: must be a site-relative path starting with /' };
+                    return invalid;
                 }
+
                 window.location.assign(resolved);
                 return { navigating: true, path };
             },
