@@ -1,0 +1,31 @@
+{
+  "packages/blit386/**/*.{ts,tsx}": [
+    "biome check --write --no-errors-on-unmatched",
+    "biome format --write --no-errors-on-unmatched",
+    "eslint --fix --max-warnings 0 --no-warn-ignored",
+    "cspell --no-progress --no-must-find-files"
+  ],
+  "packages/blit386/**/*.{js,cjs,mjs}": [
+    "biome check --write --no-errors-on-unmatched",
+    "biome format --write --no-errors-on-unmatched",
+    "eslint --fix --max-warnings 0 --no-warn-ignored"
+  ],
+  "packages/demos/**/*.{js,cjs,mjs}": [
+    "biome check --write --no-errors-on-unmatched",
+    "biome format --write --no-errors-on-unmatched",
+    "eslint --fix --max-warnings 0",
+    "cspell --no-progress --no-must-find-files"
+  ],
+  "packages/demos/{src/*.js,plugins/demo-order.js,plugins/demo-vintage-urls.js,plugins/demo-registry.js}": [
+    "node packages/demos/scripts/check-demo-registry.mjs"
+  ],
+  "packages/{docs-site,kit,create-blit386,create-blit386-workspace}/**/*.{ts,tsx,js,cjs,mjs}": [
+    "biome check --write --no-errors-on-unmatched",
+    "biome format --write --no-errors-on-unmatched",
+    "cspell --no-progress --no-must-find-files"
+  ],
+  "*.{json,jsonc}": ["biome format --write --no-errors-on-unmatched"],
+  "*.css": ["biome format --write --no-errors-on-unmatched"],
+  "*.{md,mdx}": ["prettier --write", "cspell --no-progress --no-must-find-files"],
+  "*.{yaml,yml}": ["prettier --write"]
+}

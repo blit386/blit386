@@ -1,38 +1,12 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    /* Language and Environment */
-    "target": "ES2022",
+    /* Language and Environment: adds DOM + WebGPU types over the shared base */
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["@webgpu/types", "node"],
 
-    /* Modules */
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "verbatimModuleSyntax": true,
-
-    /* Emit */
-    "noEmit": true,
-    "sourceMap": true,
-
     /* Interop Constraints */
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowSyntheticDefaultImports": true,
-
-    /* Type Checking */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitReturns": true,
-    "noImplicitOverride": true,
-
-    /* Completeness */
-    "skipLibCheck": true
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/**/*",

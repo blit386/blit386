@@ -1,0 +1,58 @@
+{
+  "name": "blit386-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
+    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
+    "format:biome": "biome format --write .",
+    "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
+    "docs:links": "node scripts/check-markdown-links.mjs",
+    "agents:check": "node scripts/check-agent-config.mjs",
+    "test:agent-config": "node --test scripts/check-agent-config.test.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
+    "cspell": "^10.0.1",
+    "husky": "^9.1.7",
+    "knip": "^6.26.0",
+    "lint-staged": "^16.4.0",
+    "markdown-link-check": "^3.14.2",
+    "prettier": "^3.9.6"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite-node": "^5.2.0",
+      "esbuild": "^0.28.1",
+      "brace-expansion@>=2.0.0 <5.0.8": "^5.0.8",
+      "postcss@>=8.0.0 <8.5.18": "^8.5.21",
+      "ws@>=8.0.0 <8.20.1": "^8.20.1",
+      "uuid@>=8.0.0 <11.1.1": "^11.1.1",
+      "yaml@>=2.0.0 <2.8.3": "^2.8.3",
+      "js-yaml@>=4.0.0 <4.2.0": "^4.2.0",
+      "shell-quote@<1.8.4": "^1.8.4",
+      "sharp@<0.35.0": "^0.35.0",
+      "@hono/node-server@>=2.0.0 <2.0.10": "^2.0.10",
+      "undici@>=7.0.0 <7.29.0": "^7.29.0",
+      "fast-uri@>=3.0.0 <3.1.4": "^3.1.4"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ],
+    "auditConfig": {
+      "ignoreCves": [
+        "GHSA-gv7w-rqvm-qjhr"
+      ]
+    }
+  }
+}

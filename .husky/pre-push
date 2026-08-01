@@ -5,26 +5,34 @@
 echo "Running pre-push checks..."
 echo ""
 
-echo "[1/3] Type checking..."
-pnpm typecheck || {
-    echo ""
-    echo "[FAIL] Type errors found. Please fix them before pushing."
-    exit 1
-}
+# Monorepo: dispatch preflight per changed package rather than running everything.
+# pnpm's "...[ref]" filter selects a package plus anything downstream of it that
+# changed since ref; --if-present skips packages with no "preflight" script
+# (packages/kit, packages/create-blit386) instead of failing on them.
+UPSTREAM_REF=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)
+BASE_REF="${UPSTREAM_REF:-origin/main}"
 
-echo "[2/3] Linting..."
-pnpm lint || {
-    echo ""
-    echo "[FAIL] Lint issues found. Run 'pnpm lint:fix' to fix them."
-    exit 1
-}
+if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
+    if git rev-parse --verify --quiet "HEAD~1" >/dev/null; then
+        BASE_REF="HEAD~1"
+    else
+        BASE_REF=""
+    fi
+fi
 
-echo "[3/3] Documentation links..."
-pnpm run docs:links || {
+if [ -n "$BASE_REF" ]; then
+    echo "Running preflight for packages changed since $BASE_REF..."
+    pnpm --filter "...[$BASE_REF]" run preflight --if-present
+else
+    echo "No valid base ref (neither upstream/origin/main nor HEAD~1); running preflight for every package..."
+    pnpm -r run preflight --if-present
+fi
+
+if [ $? -ne 0 ]; then
     echo ""
-    echo "[FAIL] Dead markdown links found. Run 'pnpm run docs:links' for details."
+    echo "[FAIL] Preflight checks failed. Fix issues above before pushing."
     exit 1
-}
+fi
 
 echo ""
 echo "Pre-push checks passed! Ready to push."

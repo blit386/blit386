@@ -89,10 +89,7 @@ test('blit doctor warns when the installed engine is newer than the kit was writ
             output.includes('guides were written for an older BLIT386'),
             `expected stale-kit warn, got:\n${output}`,
         );
-        assert.ok(
-            output.includes('blit agents sync'),
-            `expected kit sync hint, got:\n${output}`,
-        );
+        assert.ok(output.includes('blit agents sync'), `expected kit sync hint, got:\n${output}`);
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

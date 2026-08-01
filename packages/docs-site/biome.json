@@ -1,12 +1,8 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "root": false,
+  "extends": ["../../biome.json"],
   "files": {
-    "ignoreUnknown": true,
     "includes": [
       "src/**/*.{ts,tsx,css}",
       "*.{ts,tsx}",
@@ -21,24 +17,6 @@
       "!content/docs/*"
     ]
   },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 4,
-    "lineWidth": 120,
-    "lineEnding": "lf"
-  },
-  "assist": { "actions": { "source": { "organizeImports": "off" } } },
-  "javascript": {
-    "formatter": {
-      "quoteStyle": "single",
-      "trailingCommas": "all",
-      "semicolons": "always",
-      "arrowParentheses": "always",
-      "bracketSpacing": true,
-      "quoteProperties": "asNeeded"
-    }
-  },
   "css": {
     "parser": {
       "tailwindDirectives": true
@@ -47,28 +25,23 @@
       "quoteStyle": "single"
     }
   },
-  "json": {
-    "formatter": {
-      "indentWidth": 2,
-      "trailingCommas": "none"
+  "overrides": [
+    {
+      "includes": ["src/data/api-history.generated.json"],
+      "json": {
+        "formatter": {
+          "expand": "always"
+        }
+      }
     }
-  },
+  ],
   "linter": {
-    "enabled": true,
     "rules": {
-      "preset": "recommended",
       "style": {
-        "useConst": "error",
-        "useImportType": "error",
         "noNonNullAssertion": "warn"
       },
       "suspicious": {
-        "noExplicitAny": "warn",
-        "noConsole": "off"
-      },
-      "correctness": {
-        "noUnusedVariables": "error",
-        "noUnusedImports": "error"
+        "noExplicitAny": "warn"
       }
     }
   }

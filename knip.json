@@ -1,0 +1,44 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
+  "tags": ["-deprecated"],
+  "workspaces": {
+    "packages/blit386": {
+      "entry": ["src/**/*.test.ts", "src/**/*.bench.ts"],
+      "project": ["src/**/*.ts"],
+      "ignoreIssues": {
+        "src/overlay/timing-chart/style.ts": ["duplicates"]
+      },
+      "ignoreDependencies": ["vite-plugin-istanbul"],
+      "typescript": {
+        "config": ["tsconfig.json"]
+      }
+    },
+    "packages/demos": {
+      "entry": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "postcss.config.js"],
+      "project": ["src/**/*.js", "plugins/*.js", "_partials/*.js"],
+      "ignoreExportsUsedInFile": true,
+      "ignoreDependencies": ["blit386"]
+    },
+    "packages/docs-site": {
+      "entry": ["press.config.tsx", "source.config.ts", "waku.config.ts"],
+      "project": ["src/**/*.css", "scripts/**/*.mjs"],
+      "ignore": [".source/**", "src/pages.gen.ts", "dist/**", "scripts/prettier-plugin-compact-tables.mjs"],
+      "ignoreFiles": ["src/app.css"],
+      "ignoreDependencies": ["@fuma-translate/react", "blit386", "react-server-dom-webpack", "tailwindcss"],
+      "ignoreBinaries": ["ffprobe"]
+    },
+    "packages/create-blit386": {
+      "project": ["src/**/*.ts"],
+      "typescript": {
+        "config": ["tsconfig.json"]
+      }
+    },
+    "packages/kit": {
+      "project": ["src/**/*.ts"],
+      "typescript": {
+        "config": ["tsconfig.json"]
+      }
+    }
+  }
+}

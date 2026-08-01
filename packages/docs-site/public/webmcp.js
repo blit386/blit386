@@ -1,4 +1,4 @@
-(async function () {
+(async () => {
     const ctx = document.modelContext ?? navigator?.modelContext;
     if (!ctx) return;
 

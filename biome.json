@@ -1,5 +1,6 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+  "root": true,
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,7 +8,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**/*.ts", "**/*.js", "**/*.mjs", "**/*.cjs", "**/*.json", "**/*.jsonc"]
+    "includes": ["**/*.ts", "**/*.js", "**/*.mjs", "**/*.cjs", "**/*.json", "**/*.jsonc", "!.blit"]
   },
   "formatter": {
     "enabled": true,
@@ -38,7 +39,7 @@
   },
   "overrides": [
     {
-      "includes": ["docs/_api-history.json"],
+      "includes": ["packages/blit386/docs/_api-history.json"],
       "json": {
         "formatter": {
           "expand": "always"

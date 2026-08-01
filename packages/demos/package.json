@@ -38,16 +38,16 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "biome format --write . && prettier --write \"**/*.{md,mdx,yml,yaml}\"",
-    "format:check": "biome check . && prettier --check \"**/*.{md,mdx,yml,yaml}\"",
+    "format": "biome format --write . && prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
+    "format:check": "biome check . && prettier --ignore-path ../../.prettierignore --check \"**/*.{md,mdx,yml,yaml}\"",
     "format:biome": "biome format --write .",
-    "format:prettier": "prettier --write \"**/*.{md,mdx,yml,yaml}\"",
+    "format:prettier": "prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
     "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
-    "docs:links": "node scripts/check-markdown-links.mjs",
+    "docs:links": "node ../../scripts/check-markdown-links.mjs",
     "check:demo-registry": "node scripts/check-demo-registry.mjs",
     "generate:audio-loops": "node scripts/generate-audio-loops.mjs",
     "preflight": "pnpm run format:check && pnpm run lint && pnpm run spellcheck && pnpm run knip && pnpm run docs:links && pnpm run check:demo-registry && pnpm run build",
-    "knip": "knip",
+    "knip": "cd ../.. && knip --workspace packages/demos",
     "knip:fix": "knip --fix",
     "clean": "rm -rf dist node_modules/.vite",
     "prepare": "husky",
@@ -56,21 +56,11 @@
     "security:mcp-preflight": "node ../blit386/scripts/security/mcp-preflight.mjs"
   },
   "packageManager": "pnpm@10.26.2",
-  "pnpm": {
-    "overrides": {
-      "yaml@>=2.0.0 <2.8.3": "^2.8.3",
-      "undici@>=7.0.0 <7.28.0": "^7.28.0",
-      "js-yaml@>=4.0.0 <4.2.0": "^4.2.0",
-      "shell-quote@<1.8.4": "^1.8.4"
-    }
-  },
   "dependencies": {
     "blit386": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
-    "@commitlint/cli": "^20.5.3",
-    "@commitlint/config-conventional": "^20.5.3",
     "@eslint/js": "^10.0.1",
     "@shikijs/twoslash": "^4.3.1",
     "autoprefixer": "^10.5.4",
@@ -87,8 +77,6 @@
     "globals": "^17.5.0",
     "husky": "^9.1.7",
     "knip": "^6.14.1",
-    "lint-staged": "^16.4.0",
-    "markdown-link-check": "^3.14.2",
     "postcss-nesting": "^14.0.0",
     "prettier": "^3.9.6",
     "shiki": "^4.3.1",
