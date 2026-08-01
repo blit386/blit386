@@ -8,7 +8,12 @@ echo ""
 # Monorepo: dispatch preflight per changed package rather than running everything.
 # pnpm's "...[ref]" filter selects a package plus anything downstream of it that
 # changed since ref; --if-present skips packages with no "preflight" script
-# (packages/kit, packages/create-blit386) instead of failing on them.
+# (packages/kit, packages/create-blit386) instead of failing on them. --if-present
+# must come BEFORE "run": placed after the script name, pnpm forwards it as an
+# argument to the script's own command chain instead of consuming it itself - for
+# a package whose preflight ends in "&& pnpm run build", that appends a stray
+# "--if-present" to the build command, which the underlying build tool then
+# rejects as an unknown flag.
 UPSTREAM_REF=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)
 BASE_REF="${UPSTREAM_REF:-origin/main}"
 
@@ -22,10 +27,10 @@ fi
 
 if [ -n "$BASE_REF" ]; then
     echo "Running preflight for packages changed since $BASE_REF..."
-    pnpm --filter "...[$BASE_REF]" run preflight --if-present
+    pnpm --filter "...[$BASE_REF]" --if-present run preflight
 else
     echo "No valid base ref (neither upstream/origin/main nor HEAD~1); running preflight for every package..."
-    pnpm -r run preflight --if-present
+    pnpm -r --if-present run preflight
 fi
 
 if [ $? -ne 0 ]; then
