@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 /**
- * Verify the agent-facing config surface has not drifted, for the repo root and
- * every package that carries its own AGENTS.md / CLAUDE.md / .claude/.agents
- * layout (each absorbed repo kept its own when merged into packages/*):
+ * Verify the agent-facing config surface has not drifted. There is one `.claude/`
+ * (hooks, skills, settings) for the whole monorepo, at the repo root only – a
+ * package never carries its own `.claude/skills`, `.agents/skills`, or
+ * `.zed/settings.json`. A package may still carry its own `.claude/rules/` for
+ * package-scoped rules, and every package carries its own AGENTS.md / CLAUDE.md.
  *
+ * Repo root only:
  *   - `.agents/skills/*` symlink integrity - every entry must be a working
  *     symlink into `.claude/skills/<same-name>`, and every `.claude/skills/*`
  *     directory must have a matching symlink.
- *   - AGENTS.md still points at an existing CLAUDE.md.
  *   - `.zed/settings.json` is present, parseable as JSON, and consistent with
  *     the `.agents/skills` layout.
- *   - Repo root only: `.github/copilot-instructions.md` points at both
- *     AGENTS.md and CLAUDE.md. GitHub only reads the top-level `.github/`, so
- *     this check does not apply to package roots.
+ *   - `.github/copilot-instructions.md` points at both AGENTS.md and CLAUDE.md.
+ *     GitHub only reads the top-level `.github/`, so this does not apply to
+ *     package roots.
+ *
+ * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
+ *   - AGENTS.md still points at an existing CLAUDE.md.
  *
  * This is read-only - unlike `sync-doc-banners.mjs` it never writes fixes,
  * it only reports drift for a human (or `pnpm run rules:sync`-style script)
@@ -226,17 +231,15 @@ function readClaudeSkillDirNames(claudeSkillsDir) {
 }
 
 /**
- * Runs the symlink, AGENTS.md-pointer, and Zed-settings checks against one root
- * (the repo root or a package that carries its own AGENTS.md / CLAUDE.md / .claude layout).
+ * Runs the symlink and Zed-settings checks against the repo root - the only place
+ * `.claude/skills`, `.agents/skills`, and `.zed/settings.json` live in this monorepo.
  *
- * @param {string} root Absolute path to the root to check.
- * @returns {string[]} Human-readable failure messages, prefixed with the root's relative path.
+ * @param {string} root Absolute path to the repo root.
+ * @returns {string[]} Human-readable failure messages.
  */
-function checkRoot(root) {
+function checkRootSkillsLayout(root) {
     const agentsSkillsDir = join(root, '.agents', 'skills');
     const claudeSkillsDir = join(root, '.claude', 'skills');
-    const agentsMdPath = join(root, 'AGENTS.md');
-    const claudeMdPath = join(root, 'CLAUDE.md');
     const zedSettingsPath = join(root, '.zed', 'settings.json');
 
     const claudeSkillsDirExists = existsSync(claudeSkillsDir);
@@ -247,27 +250,41 @@ function checkRoot(root) {
     const agentsSkillsLayoutExists = existsSync(agentsSkillsDir);
     const agentsSkillEntries = agentsSkillsLayoutExists ? readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) : [];
     const claudeSkillDirNames = readClaudeSkillDirNames(claudeSkillsDir);
-    const agentsMdContent = existsSync(agentsMdPath) ? readFileSync(agentsMdPath, 'utf8') : null;
-    const claudeMdExists = existsSync(claudeMdPath);
     const zedSettingsContent = existsSync(zedSettingsPath) ? readFileSync(zedSettingsPath, 'utf8') : null;
 
-    const failures = [
+    return [
         ...(agentsSkillsLayoutExists
             ? findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames)
             : ['.agents/skills directory is missing']),
-        ...findAgentsPointerFailures(agentsMdContent, claudeMdExists),
         ...findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutExists),
     ];
-
-    return failures;
 }
 
 /**
- * A package counts as its own agent-config root if it carries any of these markers - not just
+ * Runs the AGENTS.md -> CLAUDE.md pointer check against one root (the repo root or a
+ * package that carries its own AGENTS.md / CLAUDE.md).
+ *
+ * @param {string} root Absolute path to the root to check.
+ * @returns {string[]} Human-readable failure messages.
+ */
+function checkAgentsPointer(root) {
+    const agentsMdPath = join(root, 'AGENTS.md');
+    const claudeMdPath = join(root, 'CLAUDE.md');
+
+    const agentsMdContent = existsSync(agentsMdPath) ? readFileSync(agentsMdPath, 'utf8') : null;
+    const claudeMdExists = existsSync(claudeMdPath);
+
+    return findAgentsPointerFailures(agentsMdContent, claudeMdExists);
+}
+
+/**
+ * A package counts as its own agent-config root if it carries either marker - not just
  * CLAUDE.md, so a package with AGENTS.md but a missing CLAUDE.md still gets checked (that
  * missing-pointer-target case is exactly what findAgentsPointerFailures exists to catch).
+ * `.claude/rules` alone (no CLAUDE.md/AGENTS.md) does not make a package its own root - only
+ * the AGENTS.md <-> CLAUDE.md pointer is package-level in this monorepo.
  */
-const AGENT_CONFIG_MARKERS = ['CLAUDE.md', 'AGENTS.md', '.agents', '.claude', '.zed'];
+const AGENT_CONFIG_MARKERS = ['CLAUDE.md', 'AGENTS.md'];
 
 /**
  * @param {string} packagesDir Absolute path to a `packages/` directory.
@@ -285,11 +302,15 @@ export function discoverPackageAgentRoots(packagesDir) {
         .sort();
 }
 
-/** @returns {string[]} All failure messages across the repo root and every package agent-config root. */
+/** @returns {string[]} All failure messages across the repo root skills layout and every AGENTS.md <-> CLAUDE.md pointer. */
 function runAllChecks() {
     const failures = [];
 
-    for (const failure of checkRoot(REPO_ROOT)) {
+    for (const failure of checkRootSkillsLayout(REPO_ROOT)) {
+        failures.push(`[.] ${failure}`);
+    }
+
+    for (const failure of checkAgentsPointer(REPO_ROOT)) {
         failures.push(`[.] ${failure}`);
     }
 
@@ -303,7 +324,7 @@ function runAllChecks() {
 
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
-        for (const failure of checkRoot(root)) {
+        for (const failure of checkAgentsPointer(root)) {
             failures.push(`[packages/${packageName}] ${failure}`);
         }
     }

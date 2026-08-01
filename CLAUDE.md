@@ -1,167 +1,72 @@
-# BLIT386
+# BLIT386 monorepo
 
-A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit. Pixel-perfect 2D rendering where primitives,
-sprites, and bitmap text resolve color through the active `Palette` before final RGBA output, with a Canvas 2D software
-fallback when WebGPU init fails. All engine functionality is reached through the static `BT` namespace; demos implement
-`IBTDemo` (`configure?`, `init`, `update`, `render`, optional `overlayRows?`).
+A pnpm workspace holding the BLIT386 engine, its demos, its published docs site, and the game scaffolder + kit. One
+`.claude/` (hooks, skills, rules) and one root `CLAUDE.md` govern every package; each package's own `CLAUDE.md` (read
+together with this one, nearest-file-wins for anything package-specific) carries what is genuinely local to it. Open
+Claude Code at this repo root, not a parent directory – that is what activates hooks, skills, and rules at all.
 
-The stack is in `package.json`. Two things it does not tell you: TypeScript is pinned to match API Extractor (the
-declaration rollup breaks when they drift), and Markdown tables are compact by design via
-`scripts/prettier-plugin-compact-tables.mjs` – this repo holds the canonical copy the sibling repos mirror. Never
-hand-align a table.
+## Packages
 
-## Where to Find Information
+| Package | npm name | Purpose |
+| --- | --- | --- |
+| `packages/blit386` | `blit386` | The engine – palette-first WebGPU retro rendering for TypeScript |
+| `packages/demos` | `blit386-demos` | Interactive demos and examples, deployed to demos.blit386.dev |
+| `packages/docs-site` | `blit386-dev-fumapress` | Docs site publishing this repo's `packages/blit386/docs/` to blit386.dev |
+| `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI for generated games |
+| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` scaffolder CLI and templates |
 
-Routing that is not obvious from the file tree. For "how does subsystem X work", read `src/<subsystem>/`.
+`packages/kit` and `packages/create-blit386` release in lockstep (one shared `x.y.z`, bumped together – see
+`/release kit` or `packages/create-blit386/PUBLISHING.md`). `packages/blit386` releases independently
+(`/release blit386`).
 
-| Question | Where to look |
-| --- | --- |
-| Is this API exported publicly? | The trailing `export { ... }` / `export type { ... }` block at the end of `src/BLIT386.ts` |
-| What are the render/asset dimension limits? | `src/utils/RenderLimits.ts`, `src/utils/AssetLimits.ts` – not docs |
-| What is the benchmark regression threshold? | `.github/workflows/ci.yml` benchmark job (`--threshold 25`) – not docs |
-| What error message style should I use? | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
-| What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio) |
-| How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md` |
-| Which preset has which exact color values? | `docs/guide-palette-presets.md` |
-| How do I smooth motion between fixed `update()` steps? | `BT.renderAlpha`; worked `Vector2i.lerp` pattern in `docs/guide-game-loop.md` |
-| Seeded / deterministic random? | `BT.random` / `BT.randomSeed`; `src/utils/Random.ts`, coordinate hashes in `src/utils/hash.ts`, `docs/api-random.md` |
-| How does hot-reload / HMR work? | `docs/guide-hot-reload.md` is canonical; runtime in `src/hot/`, dev plugin in `src/vite/` |
-| How is agent config drift checked? | `scripts/check-agent-config.mjs`, wired into `pnpm run agents:check` and the `quality` CI job |
-| Where is the public docs site? | Sibling repo `blit386-dev-fumapress` builds it from this repo's `docs/`; `docs/_sitemap.json` controls what publishes |
-| Dependency security policy / CI audit gate? | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md` |
-| Where is the annotated `src/` tree? | `.claude/rules/architecture.md` |
+## Shared conventions
 
-## Critical Rules
+These apply to every package; a package's own `CLAUDE.md` adds to them, never contradicts them.
 
-1. No emoji – nowhere: code, docs, commits, PR titles, errors, logs
-2. Integer coordinates – all rendering uses `Vector2i` / `Rect2i`, never floats
-3. Performance first – minimize allocations in update/render, reuse buffers, batch draws. Buffer reuse and in-place
-   mutation are correct in hot paths here; the general prefer-immutability default does not apply to the render loop
-4. Use the `BT` namespace – never reach for `BTAPI` from demo code
-5. No `any` – use `unknown` or a proper type (Biome lint error; CI fails via `format:check`)
-6. Type-only imports – `import type { ... }`
-7. Documentation is part of every feature – never wait to be asked. Full rule: `## Working with Claude` below
-8. American English in prose, JSDoc, and our own identifiers. Exempt: names correctly spelled with a British `s`/`c` in
-   their own spec (Web Audio's `AnalyserNode`, the CSS-mirroring `gray`/`grey` alias in `Color32.ts`) – do not "fix"
-   those
+- No emoji anywhere – code, docs, commits, PR titles, errors, logs.
+- Use the en dash (–) for parenthetical breaks and ranges (`word – word`, `10–20`, `2020–2026`). Never the em dash (—)
+  and never a double hyphen (`--`) as a dash substitute. Hyphens stay hyphens: compound words (`well-known`), CLI flags
+  (`--verbose`), and ISO dates (`2026-06-14`) are not dashes.
+- American English spelling in prose, JSDoc, and this project's own identifiers. Exempt: third-party or spec-mandated
+  names correctly spelled with a British `s`/`c` in their own spec (Web Audio's `AnalyserNode`, the CSS-mirroring
+  `gray`/`grey` alias in `packages/blit386/src/utils/Color32.ts`) – do not "fix" those.
+- Conventional Commits: `<type>(<scope>): <description>`. The type enum is commitlint-enforced; scope is convention only
+  – see each package's own `CLAUDE.md` for the scopes its history actually uses.
+- DCO sign-off on every commit: `git commit -s`. AI-assisted commits carry
+  `Co-Authored-By: Claude <noreply@anthropic.com>`.
+- `main` is protected – never push to it. Land through a PR (`gh pr create`, wait for checks, `gh pr merge`); PRs
+  squash-merge, so the merged commit gets a new SHA.
+- Release tags carry no `v` prefix (`1.2.0`, not `v1.2.0`), created after the PR merges, pointing at the resulting
+  `main` commit. Tag pushes are allowed; branch pushes to `main` are not.
+- pnpm only, and `pnpm run <script>` (not bare `pnpm <script>`) so the RTK shell hook rewrites it. Package manager
+  version is pinned in the root `package.json` (`packageManager`).
+- Markdown tables are deliberately compact – one space of padding, never aligned to the widest cell – so editing one
+  cell gives a one-line diff. This is not Prettier's default: it comes from
+  `scripts/prettier-plugin-compact-tables.mjs`, wired into the root Prettier config and shared by every package. Never
+  hand-align a table back, and do not add `.markdownlint.json`.
+- `.blit/` (the scaffolder's ownership manifest plus pristine kit copies, written into generated games) must stay out of
+  every formatter. It is already excluded in `.prettierignore`; a generated project's own `.blit/` mirrors that
+  exclusion.
+- A `packages/blit386/docs/` change reaches blit386.dev only after `pnpm run sync:docs` runs in `packages/docs-site`
+  (`packages/docs-site/scripts/sync-docs-from-engine.mjs`, default source `../blit386/docs`); `sync:docs:check` fails
+  when `packages/docs-site/content/docs` is stale.
 
-## Input Conventions
+## Where the detail lives
 
-- `BTN_*` constants are bit flags (powers of 2), not sequential integers
-- `BT.isDown` / `BT.isPressed` / `BT.isReleased` use ANY-match semantics for masks
-- Face buttons: players `0` and `1` are keyboard OR gamepad; players `2` and `3` are gamepad-only
-- Pointer and gamepad previous-state rollover is end-of-render-frame aligned. Keyboard is different: press/release edges
-  and `inputString` clear once per fixed-update tick (inside `demo.update()`), which always runs before that frame's
-  `render()`. Call `BT.isKeyPressed`, `BT.isKeyReleased`, `BT.inputString`, and the keyboard-mapped half of
-  `BT.isPressed` / `BT.isReleased` (players 0/1) from `update()`, never `render()` – reading an edge from `render()`
-  races the update tick that already cleared it and intermittently misses presses under rapid input. `BT.isKeyDown` /
-  `BT.isDown` (held state, not edges) have no such restriction. See `docs/guide-input.md` (Frame-timing semantics) and
-  the postmortem this rule came from: a demo user's rapid `~` taps toggling the engine overlay were dropped ~20% of the
-  time because the overlay itself read the toggle key's edge from the render phase
-- Default gamepad stick dead zone is `0.75`
-- Triggers are axis-only for now (`AXIS_TRIGGER_L` / `AXIS_TRIGGER_R`); dedicated trigger button constants do not exist
-
-## API Conventions
-
-The public `BT` namespace uses getters for read-only snapshots (`BT.displaySize.y`, `BT.targetFPS`, `BT.activeBackend`)
-and methods for actions, parameterized queries, and async work (`BT.cameraSet(...)`, `BT.pointerPos(0)`,
-`await BT.captureFrame()`). Do not add zero-argument `BT.foo()` functions where a getter fits. `requestedBackend` is the
-resolved init request; `activeBackend` is what actually started (they differ after a WebGPU to software fallback) and is
-what runtime gates such as post-process and capture must check.
-
-Boolean naming: runtime queries and configure flags use grammatical `is*` / `has*` (`isPointerActive`, `hasGlyph`,
-`isOverlayEnabled`). Side-effect or operation-result booleans use imperative verbs (`Timer.fireIfElapsed()`,
-`intersectTo(other, out): boolean`, `remove(): boolean`). Never embed a second `Is` (audit: `\bis[A-Za-z]+Is[A-Z]`).
-
-Private fields, private methods, protected members, and module-local constants must not repeat the enclosing class or
-file name – the type already supplies that scope (`FrameCapture.request()`, not `requestCapture()`). Public API is
-exempt.
-
-Prefer the built-in over re-deriving it: `SpriteSheet.loadIndexed(...)` for sprite setup, `getIndexedPixels()` for
-CPU-side pixel data in the software renderer, `Color32#luminance` over inlining the luma weights, `BT.deltaSeconds` /
-`BT.timeSeconds` over `1 / TARGET_FPS`, `BT.cameraClamp(...)` over ad-hoc clamp math, and `palette.applyHUD(startSlot?)`
-over six manual `palette.set()` calls.
-
-Full category tables, the new-API checklist, and the three boolean tiers: `.claude/rules/bt-api-getters.md` and
-`.claude/rules/internal-scoped-naming.md` (both load when you touch `src/`), plus `docs/api-core.md` and
-`docs/developer-experience-guide.md`. Deprecated aliases: `docs/reference-deprecations.md`.
-
-## Code Style
-
-4-space indent, 120 columns, single quotes, semicolons, trailing commas, always arrow parens, named exports only. JSDoc
-is required on public APIs (ESLint `warn` rules that fail CI via `--max-warnings 0`). Update JSDoc and inline comments
-alongside the code they describe – never leave a comment asserting old behavior.
-
-Class member order is enforced by `perfectionist/sort-classes` with `type: 'unsorted'`, so it fixes group order only
-(static fields, instance fields, constructor, accessors, static methods, instance methods – public before private) and
-preserves the hand-tuned order inside each group; `pnpm run lint:fix` applies it. Region markers (`// #region`) are
-banned. Full layout: `.claude/rules/ts-file-structure.md`.
-
-## Writing docs
-
-Everything about authoring `docs/` – prose house style, which Fumadocs components may appear, the twoslash requirement
-on every TypeScript block, filenames mirroring the sitemap section, the rename/split checklist, and the generated
-blit386.dev banner you must never hand-edit – lives in `.claude/rules/docs-authoring.md` and
-`.claude/rules/twoslash-docs.md`, which load automatically when you touch `docs/`. For runtime user-facing strings read
-`docs/voice.md` instead.
-
-## Commands
-
-Scripts are `pnpm run <script>`; `package.json` is the list, and `pnpm run preflight` is the gating set. Shell commands
-are rewritten by `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
-
-## Testing
-
-Test files sit next to their source (`src/utils/Vector2i.test.ts`). Four tiers:
-
-1. Unit (Vitest, node) – pure logic: Vector2i, Rect2i, Color32, Palette, PaletteEffect, Easing, GameLoop
-2. Integration (Vitest, Node + GPU mocks; happy-dom for DOM) – DOM and GPU code
-3. Visual regression (Playwright, Chromium + WebGPU) – PNG snapshots of real rendered frames
-4. CPU benchmarks (Vitest bench, `*.bench.ts`) – hot method and allocation throughput
-
-Run `pnpm run test:visual` when changing post-process effects, sprite rendering, bitmap fonts, primitive drawing,
-palette-indexed rendering, or camera offsets: it is the pixel-level correctness tool, not a performance one.
-`test:visual:update` regenerates baselines after an intentional visual change. Benchmarks cover isolated methods and
-allocation patterns; CI runs them on labeled PRs against a regression threshold.
-
-Coverage lists, snapshot locations, mock usage, and known quirks:
-[docs/reference-testing.md](docs/reference-testing.md). Benchmark workflow: `docs/performance-testing.md` and the
-`bt-perf` skill.
-
-## Git
-
-- Conventional Commits: `<type>(<scope>): <description>`, with DCO sign-off on every commit (`git commit -s`)
-- AI-assisted commits carry `Co-Authored-By: Claude <noreply@anthropic.com>`
-- Types (commitlint-enforced): feat, fix, refactor, docs, test, chore, perf, ci, style, build, revert
-- Scopes are convention only. By frequency: `docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`,
-  `tests`, `utils`, `rules`, `release`, `security`, `input`, `deps` / `deps-dev`, `visual`, `camera`
+- API version history: `packages/blit386/docs/documentation-and-versioning-guide.md` (how-to),
+  `packages/blit386/docs/changelog.md` (editorial), `packages/blit386/docs/_api-history.json` (per-symbol, regenerate
+  with `pnpm run api:history` inside `packages/blit386`)
+- Security runs, MCP preflight, governance checks, outage fallbacks:
+  [`packages/blit386/docs/security/security-runbook.md`](packages/blit386/docs/security/security-runbook.md). Use
+  `/security-run <package>`
+- RTK policy: `~/.claude/RTK.md`
+- Session notes written by the `/remember` skill live in `.remember/` and are not a repo artifact
 
 ## Working with Claude
 
 - Planning vs implementation sessions: during planning work (reviewing issues, discussing architecture) do not modify
   source files – only update Linear. Wait for a separate implementation session before touching code.
-- User-facing strings: follow the two-tier voice guide for every throw, error message, and canvas-visible string. Read
-  [docs/voice.md](docs/voice.md) first.
-- Documentation is part of every feature. After a public API change update the matching `docs/api-*.md`; after a
-  behavior change the affected guide; after an architecture change or a new subsystem file,
-  `.claude/rules/architecture.md` and the Where to Find Information table above. Update `README.md` only when the Quick
-  Start, prerequisites, features list, or browser compatibility changed. Never treat this as a step the user must ask
-  for.
-- Onboarding: users start with `npm create blit386@latest my-game`, from the sibling `create-blit386` repo. When this
-  repo's onboarding surface changes – README Quick Start, `bootstrap()` signature or defaults, the minimal demo shape –
-  check whether the scaffolder templates, kit docs, and the pinned `BLIT386_RANGE` need a matching change.
-
-## Environment bootstrap (SessionStart hook and devcontainer)
-
-A fresh remote or cloud checkout has no `node_modules`. `scripts/session-start-bootstrap.sh` fixes that
-(`pnpm install --frozen-lockfile`, skipped on an unchanged lockfile) and is wired into both `.claude/settings.json`
-(SessionStart) and `.devcontainer/devcontainer.json` (`postCreateCommand`) – one script, two call sites. Neither blocks
-or fails the session on a bootstrap error. Detail: `.claude/rules/environment-bootstrap.md`.
-
-## Environment and tooling gotchas
-
-Preflight behaves differently in ephemeral or CI-style checkouts, and the failures look like code bugs but are not – do
-not "fix" them by editing the checks. `_api-history.json` regeneration needs git tags (dates regenerate as `null`
-without them, wiping the committed ones; restore the `versions` block afterward), and `docs:links` needs outbound
-network (external URLs 403 through a sandbox proxy while internal links still resolve). Full list, including hook
-interaction and when `--no-verify` is legitimate: `.claude/rules/environment-gotchas.md`, which loads every session.
+- Documentation is part of every feature – never wait to be asked. Shared policy: `.claude/rules/docs-sync-required.md`.
+  Package-specific mechanics (versioning tags, doc-site sync, kit-content drift) live in that package's own rules.
+- Never treat a package's `README.md` update as optional when its quick start, prerequisites, features list, or
+  compatibility claims changed.

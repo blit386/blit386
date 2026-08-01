@@ -19,7 +19,7 @@
   "packages/demos/{src/*.js,plugins/demo-order.js,plugins/demo-vintage-urls.js,plugins/demo-registry.js}": [
     "node packages/demos/scripts/check-demo-registry.mjs"
   ],
-  "packages/{docs-site,kit,create-blit386,create-blit386-workspace}/**/*.{ts,tsx,js,cjs,mjs}": [
+  "packages/{docs-site,kit,create-blit386}/**/*.{ts,tsx,js,cjs,mjs}": [
     "biome check --write --no-errors-on-unmatched",
     "biome format --write --no-errors-on-unmatched",
     "cspell --no-progress --no-must-find-files"

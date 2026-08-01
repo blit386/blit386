@@ -9,9 +9,8 @@
 #   are mechanical version/symbol maps.
 # - `packages/blit386/tests/visual/__snapshots__/**` are binary PNG visual-
 #   regression baselines; content is not useful for text review.
-# - `.agents/skills/**` and `packages/*/.agents/skills/**` are relative symlinks
-#   into the matching `.claude/skills/**`; reviewing both duplicates identical
-#   content.
+# - `.agents/skills/**` is relative symlinks into the matching `.claude/skills/**`;
+#   reviewing both duplicates identical content.
 # - `pnpm-lock.yaml` is the single generated workspace lock file (listed
 #   explicitly even though it may already match CodeRabbit defaults).
 # - `packages/docs-site/content/docs/{api,guides,performance,reference}/**` and
@@ -38,7 +37,6 @@ reviews:
     - '!packages/blit386/docs/_api-history.json'
     - '!packages/blit386/tests/visual/__snapshots__/**'
     - '!.agents/skills/**'
-    - '!packages/*/.agents/skills/**'
     - '!pnpm-lock.yaml'
     - '!packages/docs-site/content/docs/api/**'
     - '!packages/docs-site/content/docs/guides/**'
@@ -125,10 +123,6 @@ reviews:
         Public demos README, including the `## Demos` list. American English; no emoji; beginner-friendly. New or
         renamed demos must use the number-free hosted URL (`https://demos.blit386.dev/<slug>`) and sit under the right
         category; keep in sync with `plugins/demo-order.js` (`DEMO_ORDER`).
-    - path: 'packages/demos/.claude/skills/**/SKILL.md'
-      instructions: >-
-        Contributor skills for working on the demos package (`demos-*`). American English; no emoji; keep `pnpm run
-        <script>` command forms accurate.
     - path: 'packages/docs-site/src/**/*.{ts,tsx}'
       instructions: >-
         Site TypeScript for the Fumapress/Waku docs site (React components, ServerPlugins, data loaders) – not the
@@ -177,20 +171,16 @@ reviews:
         Static assets served as-is: Cloudflare `_headers`, WebMCP bridge (`webmcp.js`), demo thumbnails, and
         `.well-known/` agent-discovery files. Keep security headers and discovery cards accurate; no emoji in
         user-facing strings.
-    - path: 'packages/docs-site/.claude/skills/**/SKILL.md'
-      instructions: >-
-        Contributor skills for working on the docs site (`fp-*`). American English; no emoji; keep `pnpm run <script>`
-        command forms accurate.
     - path: 'packages/{create-blit386,kit}/src/**/*.ts'
       instructions: >-
         This is TypeScript for the scaffolder CLI (`packages/create-blit386`) or the `blit` CLI / migrations
         (`packages/kit`), not engine or generated-game code. Follow create-blit386 house rules: named exports only (no
         default exports); prefer `import type` for type-only imports; American English spelling (see
-        `packages/create-blit386-workspace/.claude/rules/american-english-spelling.md`, including literal third-party /
+        `packages/create-blit386/.claude/rules/american-english-spelling.md`, including literal third-party /
         spec-mandated name exemptions); no emoji anywhere. Lint/format with Biome (no ESLint here). Do not apply
         blit386-engine-only rules here (BTAPI access bans, Vector2i rendering coords, internal scoped naming) unless the
         change is documenting or scaffolding those APIs for games. Canonical detail:
-        `packages/create-blit386-workspace/CLAUDE.md`.
+        `packages/{create-blit386,kit}/CLAUDE.md` (one shared file, mirrored in both packages).
     - path: 'packages/create-blit386/templates/**'
       instructions: >-
         Scaffold output for end-user games. Keep beginner-friendly comments (explain what and why). Integer coordinates
@@ -200,7 +190,7 @@ reviews:
         `{{packageName}}`, `{{pmInstall}}`, `{{pmRunBuild}}`, `{{pmRunDev}}`, and `{{projectName}}` tokens; unknown
         tokens must stay visible if mis-typed. Kit `AGENTS.md` / `docs/` are copied verbatim elsewhere (no placeholder
         substitution) – do not introduce `{{gameFile}}` into those kit files from a template-only change. Canonical
-        detail: `packages/create-blit386-workspace/.claude/rules/template-structure.md`.
+        detail: `packages/create-blit386/.claude/rules/template-structure.md`.
     - path: 'packages/kit/content/**'
       instructions: >-
         Canonical kit IR shipped into every scaffolded game (`AGENTS.md`, `docs/`, `rules/`, `skills/`, hooks,
@@ -209,25 +199,29 @@ reviews:
         byte-for-byte (no `{{placeholder}}` substitution), so spell out both `src/game.js` and `src/game.ts`. Skills and
         rules are discovered by directory scan – adding a skill folder is enough (`agents.config.json` does not list
         skills by name). Keep public `BT` / `configure()` names aligned with the sibling blit386 engine. Canonical
-        detail: `packages/create-blit386-workspace/CLAUDE.md` "Kit content vs engine docs" and
-        `packages/create-blit386-workspace/.claude/rules/docs-sync-required.md`.
-    - path: 'packages/create-blit386-workspace/CLAUDE.md'
+        detail: `packages/{create-blit386,kit}/CLAUDE.md` "Kit content vs engine docs" and root
+        `.claude/rules/docs-sync-required.md`.
+    - path: 'packages/{create-blit386,kit}/CLAUDE.md'
       instructions: >-
-        Repo contributor guide: American English spelling; no emoji; keep commands as `pnpm run <script>` (not bare
-        `pnpm <script>`). When scaffold or kit behavior changes, check whether the kit-audit table and "Where to find"
-        section still match (see `packages/create-blit386-workspace/.claude/rules/docs-sync-required.md`).
+        Repo contributor guide, shared verbatim between both packages (they release in lockstep). American English
+        spelling; no emoji; keep commands as `pnpm run <script>` (not bare `pnpm <script>`). When scaffold or kit
+        behavior changes, check whether the kit-audit table and "Where to find" section still match (see root
+        `.claude/rules/docs-sync-required.md`), and keep both copies of this file identical.
     - path: 'packages/{create-blit386,kit}/README.md'
       instructions: >-
         Package READMEs for create-blit386 / @blit386/kit: American English; no emoji; keep CLI command lists and skill
         tables aligned with shipped content.
-    - path: 'packages/create-blit386-workspace/CREATE_BLIT386_DESIGN.md'
+    - path: 'packages/create-blit386/CREATE_BLIT386_DESIGN.md'
       instructions: >-
         Durable product decisions (not a release changelog). American English; no emoji. Prefer updating an existing
         section (for example Hot reload §12) over duplicating decisions elsewhere.
-    - path: 'packages/create-blit386-workspace/.claude/skills/**/SKILL.md'
+    - path: '.claude/skills/**/SKILL.md'
       instructions: >-
-        Contributor skills for working on the scaffolder/kit monorepo (`cbt-*`). American English; no emoji; keep `pnpm
-        run <script>` command forms accurate.
+        Reusable command workflows shared by every package, most taking a package argument (`format <package>`,
+        `preflight <package>`, `pr <package>`, `review <package>`, `deep-review <package>`, `spellcheck <package>`,
+        `test <package>`, `security-run <package>`, `release <package>`); a few are package-fixed (`issue-audit`,
+        `perf`, `kit-audit`, `demos-new`). American English; no emoji; keep `pnpm run <script>` / `pnpm --filter <name>
+        run <script>` command forms accurate for the package they describe.
   auto_review:
     enabled: false
     labels: ['cr']

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${CLAUDE_PROJECT_DIR}/scripts/session-start-bootstrap.sh\"",
+            "command": "sh \"${CLAUDE_PROJECT_DIR}/packages/blit386/scripts/session-start-bootstrap.sh\"",
             "timeout": 300
           }
         ]
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | sed -n \"s/.*\\\"file_path\\\"[[:space:]]*:[[:space:]]*\\\"\\([^\\\"]*\\)\\\".*/\\1/p\" | head -1); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then cd \"$CLAUDE_PROJECT_DIR\" && pnpm exec biome check --write \"$FILE\" 2>/dev/null; pnpm exec prettier --write \"$FILE\" 2>/dev/null; fi; true"
+            "command": "FILE=$(echo \"$CLAUDE_TOOL_PARAMETERS\" | jq -r '.file_path // empty' 2>/dev/null); if [ -n \"$FILE\" ] && [ -f \"$FILE\" ]; then REAL_FILE=$(realpath \"$FILE\" 2>/dev/null); REAL_DIR=$(realpath \"$CLAUDE_PROJECT_DIR\" 2>/dev/null); if [ -n \"$REAL_FILE\" ] && [ -n \"$REAL_DIR\" ] && printf '%s' \"$REAL_FILE\" | grep -q \"^${REAL_DIR}/\"; then cd \"$CLAUDE_PROJECT_DIR\" && pnpm exec biome check --write \"$FILE\" 2>/dev/null; pnpm exec prettier --write \"$FILE\" 2>/dev/null; fi; fi; true"
           }
         ]
       }

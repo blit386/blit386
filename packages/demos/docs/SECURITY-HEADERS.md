@@ -99,7 +99,6 @@ Check the browser console for CSP violations after deploy.
 
 ## Related
 
-- Security runbook (the parent hardening program, in the engine repo):
-  [`blit386/docs/security/security-runbook.md`](https://github.com/blit386/blit386/blob/main/docs/security/security-runbook.md)
+- Security runbook (the parent hardening program, in the engine package):
+  [`packages/blit386/docs/security/security-runbook.md`](https://github.com/blit386/blit386/blob/main/packages/blit386/docs/security/security-runbook.md)
   – the deploy-headers row records the evidence for this page.
-- [CI-WORKSPACE-SETUP.md](CI-WORKSPACE-SETUP.md) – CI jobs, GitHub Actions SHA pinning, and the Renovate policy.

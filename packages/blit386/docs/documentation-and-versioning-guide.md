@@ -4,7 +4,7 @@ How to keep public API changes documented to the same standard as the rest of th
 accurate `@since`/`@changed`/`@deprecated` history, and every published doc page that discusses a symbol shows its
 version badge, availability table, and per-page changelog. This is not optional polish - it is part of shipping the
 feature, the same way updating `docs/api-*.md` prose already is (see
-[Docs sync required](../.claude/rules/docs-sync-required.md) and `CLAUDE.md`, rule 7).
+[Docs sync required](../../../.claude/rules/docs-sync-required.md) and the root `CLAUDE.md`, "Working with Claude").
 
 Contributor-only - not published to blit386.dev. See the
 [Documentation index](developer-experience-guide.md#documentation-index) for the published guides this one is about
@@ -218,7 +218,8 @@ This is the checklist a second pair of eyes (human or agent) should actually run
 
 ## See also
 
-- [Docs sync required](../.claude/rules/docs-sync-required.md) - the broader rule this workflow is one instance of.
+- [Docs sync required](../../../.claude/rules/docs-sync-required.md) - the broader rule this workflow is one instance
+  of.
 - [Deprecation Timeline](reference-deprecations.md) - the removal checklist `@deprecated` tags feed into.
 - [Developer Experience](developer-experience-guide.md) - general contributing workflow, code style, commit conventions.
 - `blit386-dev-fumapress/CLAUDE.md`, Documentation mirror section - how the sync script consumes what this guide

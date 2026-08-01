@@ -7,7 +7,7 @@ BLIT386 project.
 
 ## Contributing
 
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full contributor workflow. Key points:
+See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the full contributor workflow. Key points:
 
 - Fork the repository and create a feature branch from `main`.
 - Use Node.js >=22.18.0 and pnpm 10.26.2+ (see `engines` and `packageManager` in `package.json`).
