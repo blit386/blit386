@@ -14,26 +14,34 @@ echo ""
 # a package whose preflight ends in "&& pnpm run build", that appends a stray
 # "--if-present" to the build command, which the underlying build tool then
 # rejects as an unknown flag.
-UPSTREAM_REF=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)
+#
+# Husky's wrapper runs this script with `sh -e`, so every command whose failure
+# is intentionally tolerated below is guarded with `|| true` or `|| VAR=$?` -
+# under -e, a bare failing command inside a plain assignment or statement (not
+# itself an if/&&/|| condition) aborts the whole script immediately, which on a
+# first push (no upstream yet) killed this hook before the origin/main fallback,
+# and on a real preflight failure skipped the "[FAIL]" message entirely.
+UPSTREAM_REF=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
 BASE_REF="${UPSTREAM_REF:-origin/main}"
 
-if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
-    if git rev-parse --verify --quiet "HEAD~1" >/dev/null; then
+if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
+    if git rev-parse --verify --quiet "HEAD~1" >/dev/null 2>&1; then
         BASE_REF="HEAD~1"
     else
         BASE_REF=""
     fi
 fi
 
+PREFLIGHT_STATUS=0
 if [ -n "$BASE_REF" ]; then
     echo "Running preflight for packages changed since $BASE_REF..."
-    pnpm --filter "...[$BASE_REF]" --if-present run preflight
+    pnpm --filter "...[$BASE_REF]" --if-present run preflight || PREFLIGHT_STATUS=$?
 else
     echo "No valid base ref (neither upstream/origin/main nor HEAD~1); running preflight for every package..."
-    pnpm -r --if-present run preflight
+    pnpm -r --if-present run preflight || PREFLIGHT_STATUS=$?
 fi
 
-if [ $? -ne 0 ]; then
+if [ "$PREFLIGHT_STATUS" -ne 0 ]; then
     echo ""
     echo "[FAIL] Preflight checks failed. Fix issues above before pushing."
     exit 1
