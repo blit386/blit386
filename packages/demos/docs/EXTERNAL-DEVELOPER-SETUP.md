@@ -49,7 +49,7 @@ cd blit386
 pnpm install
 ```
 
-That single install resolves every package in the workspace, including the `blit386` -> `demos` `workspace:*` link – no
+That single install resolves every package in the workspace, including the `demos` -> `blit386` `workspace:*` link – no
 manual `pnpm-workspace.yaml` or second clone needed.
 
 ## Directory Structure

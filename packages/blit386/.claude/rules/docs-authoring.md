@@ -46,7 +46,8 @@ Authoring rules:
 - JSX expression props (`TypeTable type={{ ... }}`) work; the mirror leaves braces verbatim inside component blocks.
 - `Card href` is a JSX prop the mirror does not rewrite – use site-absolute `/docs/<section>/<topic>` paths, not
   relative `*.md` links. Unpublished docs link to the full GitHub URL instead.
-- Validate: in `packages/website`, run `pnpm run sync:docs` then `pnpm run build` (or `pnpm run typecheck`).
+- Validate: in `packages/website`, run `pnpm run sync:docs`, then `pnpm run sync:docs:check` and `pnpm run build`
+  (`pnpm run typecheck` alone is not a substitute for `build`).
 
 ## Documentation authoring style (prose)
 
@@ -74,4 +75,5 @@ Renaming or splitting a published doc:
    table padding).
 
 After any doc change: add new proper nouns / coined words to the root `cspell.json`; re-sync the mirror
-(`pnpm run sync:docs` in `packages/website`) if a sitemap entry changed.
+(`pnpm run sync:docs` in `packages/website`) - required after every edit to a published doc's content, not just when a
+sitemap entry changes.

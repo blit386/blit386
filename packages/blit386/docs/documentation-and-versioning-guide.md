@@ -183,7 +183,9 @@ before concluding it is this expected, deploy-order artifact rather than a real 
 In `packages/website`:
 
 ```bash
-pnpm run sync:docs         # mirrors docs/*.md and docs/_api-history.json into content/docs
+pnpm run sync:docs         # mirrors docs/*.md into content/docs; copies docs/_api-history.json to
+                            # src/data/api-history.generated.json separately
+pnpm run sync:docs:check   # fails if the mirror drifted from source
 pnpm run build             # CLOUDFLARE=1 production build - the most conclusive check
 pnpm run test              # script test suite
 ```
