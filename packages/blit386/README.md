@@ -259,7 +259,7 @@ BLIT386 is built by Václav Vančura ([@vancura](https://github.com/vancura)) �
 am an engine maker.
 
 Want to help? The contributor workflow, scripts, and release process live in
-[Developer Experience](docs/developer-experience-guide.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+[Developer Experience](docs/developer-experience-guide.md) and [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ## License
 

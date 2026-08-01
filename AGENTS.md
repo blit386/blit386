@@ -1,48 +1,33 @@
-# BLIT386 – agent quick start
+# BLIT386 monorepo – agent entry point
 
-A palette-first WebGPU retro engine for TypeScript, inspired by RetroBlit. Pixel-perfect 2D rendering where primitives
-and sprites resolve through a shared indexed palette, with a Canvas 2D software fallback.
+This repository uses [`CLAUDE.md`](CLAUDE.md) as the canonical policy document for agents. Read it first – it covers the
+package layout, shared conventions, and where each package's own detail lives.
 
-This file is a standalone quick start for tools that read `AGENTS.md` and not `CLAUDE.md`. For architecture routing, API
-conventions, and documentation rules, [`CLAUDE.md`](CLAUDE.md) is canonical – read it before non-trivial work.
+## Packages
 
-## Tech stack
+| Package | npm name | Purpose |
+| --- | --- | --- |
+| `packages/blit386` | `blit386` | The engine – palette-first WebGPU retro rendering for TypeScript |
+| `packages/demos` | `blit386-demos` | Interactive demos and examples |
+| `packages/docs-site` | `blit386-dev-fumapress` | Docs site publishing `packages/blit386/docs/` to blit386.dev |
+| `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI |
+| `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` scaffolder CLI and templates |
 
-TypeScript 5.9.3 (strict mode), built with Vite + vite-plugin-dts, formatted with Biome + Prettier, linted with ESLint,
-spellchecked with cspell, dead code found with knip. Package manager is pnpm; Node >= 22.18.0.
-
-## Quick start
-
-```bash
-pnpm install
-pnpm run build              # Build the library
-pnpm run test                # Run unit tests
-pnpm run preflight           # All quality gates (format, lint, typecheck, spellcheck, knip, docs, tests, ...)
-```
-
-`pnpm run preflight` is the single command to run before committing – it combines every check CI runs except visual
-regression tests (`pnpm run test:visual`, run separately when renderer output can change).
+Each package has its own `AGENTS.md` and `CLAUDE.md` with package-specific detail; read the nearest one to the code you
+are touching together with this file.
 
 ## Rules that matter most
 
 - No emoji anywhere – code, docs, commits, PR titles, errors, logs.
-- Integer coordinates always – use `Vector2i` / `Rect2i` for rendering, never raw floats.
-- Use the `BT` namespace – never access the internal `BTAPI` singleton directly from demo code.
-- No `any` types – use `unknown` or a proper type; type-only imports (`import type { ... }`).
-- Named exports only – no default exports.
-- Performance first – minimize allocations in `update()`/`render()`, reuse buffers, batch draws.
-- Package manager is pnpm, not npm or yarn.
+- Use the en dash (–) for parenthetical breaks and ranges; never the em dash or a double hyphen as a dash substitute.
+- American English spelling, with documented spec-mandated exceptions (see `CLAUDE.md`).
+- Package manager is pnpm, not npm or yarn; use `pnpm run <script>` so shell-rewrite hooks apply.
 - All commits require DCO sign-off (`git commit -s`); Conventional Commits format (`<type>(<scope>): <description>`).
-- Documentation is part of every feature: a public API change updates the relevant `docs/api-*.md`; a behavior change
-  updates the affected `docs/` guide. Never treat docs as a follow-up step.
+- `main` is protected – land changes through a PR; release tags carry no `v` prefix.
+- Documentation is part of every feature – never a follow-up step.
 
 ## Where to go next
 
-[`CLAUDE.md`](CLAUDE.md) has the full architecture map, the "Where to Find Information" routing table, BT API
-conventions (getters vs methods, boolean naming), TypeScript file structure, and the complete command list. Condensed,
-always-applicable agent rules also live in `.claude/rules/*.md`.
-
-1.4.0 surface highlights:
-
-- [Hot Reload guide](docs/guide-hot-reload.md) – `blit386/vite` plugin, hot-swap tiers, and asset hot-replace.
-- [API: Assets](docs/api-assets.md#loading-assets) – `BT.loadingAssetsCount` and asset loading progress.
+[`CLAUDE.md`](CLAUDE.md) has the full shared-conventions list and the "Where the detail lives" pointer table. Condensed,
+always-applicable agent rules also live in `.claude/rules/*.md`; reusable command workflows in
+`.claude/skills/*/SKILL.md`.

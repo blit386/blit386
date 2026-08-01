@@ -1,5 +1,6 @@
 /**
- * Regression tests for the maintainer-repo Claude Code shell-safety hook (.claude/hooks/shell-safety.sh).
+ * Regression tests for the monorepo-wide Claude Code shell-safety hook (root .claude/hooks/shell-safety.sh –
+ * one copy for every package since BT-404).
  *
  * Feeds a Bash-tool-shaped JSON payload on stdin, the same way Claude Code invokes the hook, and asserts
  * on the exit code / stdout / stderr the hook produces.
@@ -12,7 +13,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const hookPath = join(here, '..', '..', '.claude', 'hooks', 'shell-safety.sh');
+const hookPath = join(here, '..', '..', '..', '..', '.claude', 'hooks', 'shell-safety.sh');
 
 /**
  * @param {string} command The raw shell command text to run the hook against.

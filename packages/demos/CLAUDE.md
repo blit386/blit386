@@ -1,20 +1,20 @@
 # blit386-demos
 
 Interactive demos and examples for BLIT386, a palette-first WebGPU retro engine for TypeScript. Deployed to
-demos.blit386.dev via Cloudflare Pages. The engine is consumed as `workspace:*`; CI clones both repos to rebuild that
-layout (`docs/CI-WORKSPACE-SETUP.md`).
+demos.blit386.dev via Cloudflare Pages. The engine is consumed as `workspace:*` from the sibling `packages/blit386`
+package in this monorepo.
+
+Shared monorepo conventions (no emoji, dash typography, American English, commit format, DCO, `main` protection, compact
+tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together with this file.
 
 ## Critical Rules
 
-- No emoji – code, commits, docs, or UI strings, no exceptions
 - Integer coordinates – all rendering uses `Vector2i` and `Rect2i`
 - Plain JavaScript – ES2022, never TypeScript, even for a "small" helper
-- Beginner-friendly comments – see Documentation Style below. This is the point of the repo, not a nicety
-- American English spelling – `color`, `center`, `canceled`, `traveling`, `gray`. Exempt: spec-mandated names correctly
-  spelled with a British `s`/`c` in their own spec, such as Web Audio's `AnalyserNode`
+- Beginner-friendly comments – see Documentation Style below. This is the point of the package, not a nicety
 - Mutation is fine here – demo classes mutate instance state in `update()` / `render()` for performance. The general
   prefer-immutability default does not apply to per-frame demo state
-- Relaxed linting versus the library: JSDoc is not required (though class-level `@implements {IBTDemo}` is encouraged)
+- Relaxed linting versus the engine: JSDoc is not required (though class-level `@implements {IBTDemo}` is encouraged)
   and console logging is allowed. Clarity beats ceremony
 
 ## Layout
@@ -32,7 +32,7 @@ from `DEMO_ORDER` in `plugins/demo-order.js`.
 ## Adding a New Demo
 
 1. Create `src/<topic>.js` with the standard demo class pattern (`configure?`, `init`, `update`, `render`, then
-   `bootstrap(Demo)`) and beginner-friendly comments. The `demos-new` skill scaffolds the shape.
+   `bootstrap(Demo)`) and beginner-friendly comments. The `/demos-new` skill scaffolds the shape.
 2. Append the slug to `DEMO_ORDER` in `plugins/demo-order.js`. Required – otherwise the registry check fails and the
    demo is only soft-appended after the ordered entries.
 3. No `vite.config.js` edit, HTML file, or vintage-map entry is needed for a brand-new slug. On a **rename**, update the
@@ -88,11 +88,11 @@ comment, or a comment that only restates the code, is a quality issue.
 
 ## Engine API in demos
 
-Current signatures live in the engine: `blit386/src/BLIT386.ts`, `blit386/src/core/BTAPI.ts`, `blit386/src/audio/`.
-Match the library's public names exactly – configure flags use grammatical `is*`, runtime input uses `BT.isDown` /
-`BT.isPressed` / `BT.isKeyDown`. Prefer the built-ins over re-deriving them: `Color32#luminance` over inline luma
-weights, `Color32#multiply` over a hand-rolled tint, `palette.applyHUD(startSlot?)` over six `palette.set()` calls,
-`SpriteSheet.loadColorsIntoPalette` before `indexize`.
+Current signatures live in the engine: `packages/blit386/src/BLIT386.ts`, `packages/blit386/src/core/BTAPI.ts`,
+`packages/blit386/src/audio/`. Match the library's public names exactly – configure flags use grammatical `is*`, runtime
+input uses `BT.isDown` / `BT.isPressed` / `BT.isKeyDown`. Prefer the built-ins over re-deriving them:
+`Color32#luminance` over inline luma weights, `Color32#multiply` over a hand-rolled tint, `palette.applyHUD(startSlot?)`
+over six `palette.set()` calls, `SpriteSheet.loadColorsIntoPalette` before `indexize`.
 
 Two engine behaviors that bite in demos:
 
@@ -153,36 +153,32 @@ those files, so a shared-UI edit never double-registers a listener.
 
 Known gap: under `?backend=software`, any `src/<slug>.js` edit currently full-reloads, even a pure `render()`-body
 change that hot-swaps cleanly under `webgpu`. That is a tier-detection parity gap in the engine's `src/hot/` runtime,
-not in this repo's wiring – tracked against the engine. There is no automated coverage for hot reload; the `demos-test`
-skill carries the manual check script to run after touching the wiring.
+not in this package's wiring – tracked against the engine. There is no automated coverage for hot reload; the
+`/test demos` skill carries the manual check script to run after touching the wiring.
 
 If you change the engine's `blit386/vite` plugin itself, `dev:watch`'s `build --watch` only rebuilds the browser bundle.
-Run a one-shot `pnpm run build` in `blit386` to pick up `dist/vite.js`, then restart `pnpm run dev`.
+Run a one-shot `pnpm run build` in `packages/blit386`, then restart `pnpm run dev` here.
 
 ## File Organization
 
 Section order: header comment (`// Demo Topic – …`, prerequisites, hosted links, optional `// @pageTitle`) → imports →
 `@typedef` JSDoc → configuration constants → module state → helper functions → the `Demo` class → `bootstrap(Demo);`
 last. Class member order: instance fields → `configure()` → `init()` → `update()` → `render()` → helpers. Region markers
-(`// #region`) are banned.
+(`// #region`) are banned. Full detail: `.claude/rules/file-structure.md`.
 
 ## Commands, formatting, git
 
-Scripts are `pnpm run <script>`; `package.json` is the list and `pnpm run preflight` is the gating set. Shell commands
-are rewritten by `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep.
+Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-demos run <script>` from the
+repo root); `package.json` is the list and `pnpm run preflight` is the gating set. Shell commands are rewritten by
+`rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep.
 
 Biome owns JS/JSON/CSS, Prettier owns Markdown/YAML: 4-space indent (2 for JSON/YAML/Markdown), 120 columns, single
-quotes, semicolons, trailing commas. Markdown tables are compact by design via
-`scripts/prettier-plugin-compact-tables.mjs`, a mirror of the canonical copy in `blit386` – never hand-align one.
+quotes, semicolons, trailing commas. Markdown tables are compact by design via the shared root
+`scripts/prettier-plugin-compact-tables.mjs` – never hand-align one.
 
-Conventional Commits with `git commit -s` (this repo's history follows DCO, though only commitlint runs in the hook –
-there is no DCO CI check here). Scopes are optional; prefer ones already in history: `demos`, `ui`, `assets`, `docs`,
-`skills`, `deps`. AI-assisted commits carry `Co-Authored-By: Claude <noreply@anthropic.com>`. Husky runs lint-staged on
-pre-commit, commitlint on commit-msg, and `pnpm run preflight` on pre-push.
+Commit scopes (convention only – prefer one already in this package's history): `demos`, `ui`, `assets`, `docs`,
+`skills`, `deps`. Husky runs lint-staged on pre-commit, commitlint on commit-msg, and `pnpm run preflight` on pre-push.
 
 Deployment is automatic on push to main. The build copies each virtual demo to `dist/<slug>.html` at the site root and
 generates `dist/_redirects` from `VINTAGE_URLS` plus a site-index rule, so vintage numbered paths (`/001-basics`) 301 to
 the current slug in both environments.
-
-Skills live in `.claude/skills/`, and `.agents/skills/*` are symlinks to them – edit the `.claude` copy once, they are
-not two files to patch.

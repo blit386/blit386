@@ -14,7 +14,7 @@ Do not use exceptions for low-severity findings (CI does not gate on them).
 ## Process
 
 1. Open a risk-acceptance issue using the
-   [security risk acceptance template](../../.github/ISSUE_TEMPLATE/security-risk-acceptance.yml).
+   [security risk acceptance template](../../../../.github/ISSUE_TEMPLATE/security-risk-acceptance.yml).
 2. Link a remediation issue (Linear or GitHub) with an owner and target date.
 3. Add the GHSA to the `security:audit` script in `package.json`:
 
@@ -37,7 +37,7 @@ Do not use exceptions for low-severity findings (CI does not gate on them).
 ## Technical notes
 
 - Prefer `pnpm.overrides` and direct dependency upgrades over `ignoreGhsas` when a patched version exists.
-- If `minimum-release-age` in [`.npmrc`](../../.npmrc) blocks a security patch, add the package to
+- If `minimum-release-age` in [`.npmrc`](../../../../.npmrc) blocks a security patch, add the package to
   `minimum-release-age-exclude[]` in the same PR as the override and document why.
 - `pnpm.auditConfig.ignoreGhsas` in `package.json` does not work in pnpm 10.x. Use the `--ignore <GHSA>` flag in the
   `security:audit` script instead.

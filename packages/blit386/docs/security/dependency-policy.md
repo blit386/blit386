@@ -12,7 +12,7 @@ Continuous dependency vulnerability gating for the `blit386` library repo.
 Low and informational advisories do not fail CI or local gates.
 
 CI runs both checks on every pull request and push to `main` via the Dependency Security Audit job in
-[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
+[`.github/workflows/ci.yml`](../../../../.github/workflows/ci.yml).
 
 ## Local verification
 
@@ -36,8 +36,8 @@ re-running both commands.
 | Per release | Run `pnpm run security:audit` and `pnpm run security:audit:prod` before tagging |
 
 Patch updates for GitHub Actions and npm patches may automerge after 7 days (`minimumReleaseAge`), matching
-[`.npmrc`](../../.npmrc) `minimum-release-age` (10080 minutes), per [renovate.json](../../renovate.json). Minor and
-major updates require manual review.
+[`.npmrc`](../../../../.npmrc) `minimum-release-age` (10080 minutes), per [renovate.json](../../../../renovate.json).
+Minor and major updates require manual review.
 
 ### Renovate vs Dependabot
 
@@ -51,16 +51,16 @@ and the `:gitSignOff` preset for the DCO workflow. Workflow `node` / `pnpm` vers
 
 ## Supply-chain settings
 
-[`.npmrc`](../../.npmrc) enables `minimum-release-age` (7 days) and related pnpm 10 hardening. Security-patched packages
-blocked by release age may be listed in `minimum-release-age-exclude[]` together with `pnpm.overrides` in
-[`package.json`](../../package.json). Document the reason in the PR that introduces the exclude or override.
+[`.npmrc`](../../../../.npmrc) enables `minimum-release-age` (7 days) and related pnpm 10 hardening. Security-patched
+packages blocked by release age may be listed in `minimum-release-age-exclude[]` together with `pnpm.overrides` in
+[`package.json`](../../../../package.json). Document the reason in the PR that introduces the exclude or override.
 
 ## GitHub Actions pinning
 
-Workflows under [`.github/workflows/`](../../.github/workflows/) pin third-party actions to a 40-character commit SHA,
-with an optional trailing comment for the human-readable tag (for example `actions/checkout@<sha> # v6`). Mutable `@vN`
-tags are not used in [`ci.yml`](../../.github/workflows/ci.yml) or
-[`pr-checks.yml`](../../.github/workflows/pr-checks.yml).
+Workflows under [`.github/workflows/`](../../../../.github/workflows/) pin third-party actions to a 40-character commit
+SHA, with an optional trailing comment for the human-readable tag (for example `actions/checkout@<sha> # v6`). Mutable
+`@vN` tags are not used in [`ci.yml`](../../../../.github/workflows/ci.yml) or
+[`pr-checks.yml`](../../../../.github/workflows/pr-checks.yml).
 
 Each job declares the minimum `permissions` it needs (for example `contents: read` for build-only jobs; the benchmark
 job adds `actions: read` and `pull-requests: write` only where artifact lookup and PR comments require it).
@@ -72,7 +72,7 @@ trailing `# vN` comment, and routine bumps update the SHA and comment together.
 
 | Path | Who updates SHAs |
 | --- | --- |
-| Routine | [Renovate](../../renovate.json) `github-actions` manager – grouped PRs, 7-day `minimumReleaseAge`, patch automerge, digest pinning |
+| Routine | [Renovate](../../../../renovate.json) `github-actions` manager – grouped PRs, 7-day `minimumReleaseAge`, patch automerge, digest pinning |
 | Manual | Resolve the release tag commit on the action repo, replace the SHA in the workflow, keep or update the `# vN` comment |
 
 After any workflow edit, confirm the affected jobs still pass in CI (artifact upload, Codecov, benchmark baseline
@@ -88,7 +88,7 @@ workflow). That flow is not wired today; provenance would be a separate change i
 
 Do not merge with a failing audit unless the finding is formally accepted:
 
-1. Open a [security risk acceptance](../../.github/ISSUE_TEMPLATE/security-risk-acceptance.yml) issue.
+1. Open a [security risk acceptance](../../../../.github/ISSUE_TEMPLATE/security-risk-acceptance.yml) issue.
 2. Record the GHSA in [audit-exceptions.md](./audit-exceptions.md).
 3. Add the GHSA via the `--ignore <GHSA>` flag in the `security:audit` script in `package.json` (review and remove by
    the expiry date). Do not use `pnpm.auditConfig.ignoreGhsas` – it does not work in pnpm 10.x.

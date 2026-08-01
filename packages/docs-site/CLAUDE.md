@@ -1,26 +1,26 @@
-# blit386-dev-fumapress
+# blit386-dev-fumapress (docs site)
 
 Documentation site for [blit386.dev](https://blit386.dev): Fumapress 0.6.x on Waku (React 19 RSC), MDX via Fumadocs MDX,
 Tailwind v4, TypeScript strict, deployed to Cloudflare Workers with Wrangler. Biome owns `.ts` / `.tsx` / `.json` /
 `.css`, Prettier owns `.md` / `.mdx` / YAML, and there is no ESLint here.
 
-Scripts are `pnpm run <script>`; `package.json` is the list and `pnpm run preflight` is the gating set (it includes the
-build). Production builds require `CLOUDFLARE=1`, which `pnpm run build` already sets. Shell commands are rewritten by
+Shared monorepo conventions (no emoji, dash typography, American English, commit format, DCO, `main` protection, compact
+tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together with this file.
+
+Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-dev-fumapress run <script>`
+from the repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it includes the build).
+Production builds require `CLOUDFLARE=1`, which `pnpm run build` already sets. Shell commands are rewritten by
 `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
 
 ## Critical Rules
 
-1. Public engine docs are generated, not authored here. Edit the canonical copy in `blit386/docs/`, then run
+1. Public engine docs are generated, not authored here. Edit the canonical copy in `packages/blit386/docs/`, then run
    `pnpm run sync:docs`. Never hand-edit anything under `content/docs/{api,guides,performance,reference}/` or
    `src/data/api-history.generated.json`
 2. Documentation ships with the change – update `content/` and run `pnpm run docs:links` when adding links
-3. No emoji in content, code, commits, or UI strings
-4. No MDX comments. Prettier formats `.mdx` with the markdown parser, so remark reads `{/* … */}` as emphasis and
+3. No MDX comments. Prettier formats `.mdx` with the Markdown parser, so remark reads `{/* … */}` as emphasis and
    rewrites it to `{/_ … _/}`, which renders as visible italic text on the page. Delete the note or make it real prose
-5. American English in hand-authored content and source (`color`, `optimization`, `canceled`, `centered`). Exempt: names
-   correctly spelled with a British `s`/`c` in their own spec, such as Web Audio's `AnalyserNode`. Generated pages
-   inherit this from upstream – fix `blit386/docs/` and re-sync, never the mirror
-6. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `content`, `ci`, `docs`, `deps`, `config`. `main`
+4. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `content`, `ci`, `docs`, `deps`, `config`. `main`
    is protected – land changes via PR
 
 ## Where to Find Information
@@ -31,13 +31,13 @@ build). Production builds require `CLOUDFLARE=1`, which `pnpm run build` already
 | MDX collection config, Twoslash wiring | `source.config.ts` |
 | Waku / Vite plugins | `waku.config.ts` |
 | Generated MDX loader | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`) |
-| Engine API truth | `blit386/docs/` in the sibling repo – never this repo |
+| Engine API truth | `packages/blit386/docs/` in this monorepo – never this package |
 | How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
 | Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test`) |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Cloudflare security headers | `public/_headers` |
 
-Four Fumapress `ServerPlugin`s are local to this repo rather than upstream: `markdownNegotiationPlugin`
+Four Fumapress `ServerPlugin`s are local to this package rather than upstream: `markdownNegotiationPlugin`
 (`src/markdown-negotiation.ts`), `mcpServerPlugin` (`src/mcp-server.ts`), `feedPlugin` (`src/feed.ts`), and the
 `blog-post-date` helper (`src/blog-post-date.ts`, which exists because the framework's adapter cannot read a post's
 `date` frontmatter). The rest of the chain in `press.config.tsx` is stock: flexsearch, blog, llms, sitemap, takumi OG
@@ -58,20 +58,21 @@ Doc frontmatter: `title` required; `description`, `icon`, `full` optional. Sideb
 
 ## Documentation mirror
 
-`blit386/docs/*.md` is the single source of truth. `scripts/sync-docs-from-engine.mjs` reads the subset listed in the
-engine repo's `blit386/docs/_sitemap.json` and writes matching MDX into `content/docs/`. **The manifest, not the script,
-owns which docs publish, their URL, sidebar order, and subtitle** – the script carries no per-page knowledge, so adding
-a page means editing the manifest in the engine repo and re-running the sync, with no change here.
+`packages/blit386/docs/*.md` is the single source of truth. `scripts/sync-docs-from-engine.mjs` reads the subset listed
+in the engine package's `docs/_sitemap.json` and writes matching MDX into `content/docs/`. **The manifest, not the
+script, owns which docs publish, their URL, sidebar order, and subtitle** – the script carries no per-page knowledge, so
+adding a page means editing the manifest in `packages/blit386` and re-running the sync, with no change here.
 
 `pnpm run sync:docs` regenerates and formats. `pnpm run sync:docs:check` fails on drift, but it is a **local check only
 – nothing in `.github/workflows/` runs it**, so mirror drift is not enforced in CI. Run it yourself after touching
-engine docs. The source resolves from `ENGINE_DOCS_DIR` (default `../blit386/docs`), so the engine repo must be checked
-out beside this one. `sync:docs:watch` re-syncs on every change alongside `pnpm run dev`.
+engine docs. The source resolves from `ENGINE_DOCS_DIR` (default `../blit386/docs`, which already resolves correctly to
+the sibling `packages/blit386/docs` in this monorepo). `sync:docs:watch` re-syncs on every change alongside
+`pnpm run dev`.
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds
-frontmatter (`title`, `description`, `lastModified` from git, `editUrl` into the engine repo – both consumed by
-`docsPageLayout`), and copies `blit386/docs/_api-history.json` across.
+frontmatter (`title`, `description`, `lastModified` from git, `editUrl` into the engine's GitHub path – both consumed by
+`docsPageLayout`), and copies `packages/blit386/docs/_api-history.json` across.
 
 MDX components: the generator passes PascalCase tags through verbatim and is MDX-aware, escaping stray braces in prose
 while leaving JSX expression props (`type={{ ... }}`, `items={[ ... ]}`) intact. Any component the engine docs use must
@@ -84,14 +85,14 @@ Contributor-only engine pages (developer-experience-guide, documentation-and-ver
 GitHub.
 
 The `Since`, `ApiAvailability`, and `PageChangelog` components all read `src/data/api-history.ts`, a typed loader over
-the generated JSON. Never add a symbol to that JSON here; fix the engine repo and re-sync.
+the generated JSON. Never add a symbol to that JSON here; fix `packages/blit386` and re-sync.
 
 ## Twoslash
 
 `fumadocs-twoslash` renders type-on-hover popups and `// ^?` callouts for blocks tagged ` ```ts twoslash `. Wired in
 `source.config.ts`, popup components registered in `press.config.tsx`, CSS from `src/app.css`. `throws: false` means a
-block that fails compilation degrades to plain highlighting instead of crashing the build. Correctness is the engine
-repo's job – every twoslash block there must be self-contained or use a `// ---cut---` preamble.
+block that fails compilation degrades to plain highlighting instead of crashing the build. Correctness is
+`packages/blit386`'s job – every twoslash block there must be self-contained or use a `// ---cut---` preamble.
 
 Dev-mode skip (memory constraint): the transformer is gated on `!!process.env.CLOUDFLARE`. `blit386.d.ts` is ~192 KB and
 imports WebGPU types; across the several dozen MDX files the TypeScript language service accumulates over 4 GB during
@@ -135,7 +136,7 @@ stay exact; `scripts/__tests__/encode-video.test.mjs` guards that and the file-s
 Output goes under `public/media/<section>/<version>/`. The `/media/` prefix is deliberate: `public/_headers` serves
 `/media/*` with a one-year immutable `Cache-Control`, and a `/blog/*` rule would also have matched the post HTML routes.
 The version path segment is the cache key – re-encoding means a new directory, never a new file in the same one. Raw
-`.mov` sources stay local (`captures/` is gitignored) and the repo has no Git LFS.
+`.mov` sources stay local (`captures/` is gitignored) and this package has no Git LFS.
 
 Three `_headers` entries exist for this and must not be tightened back: `media-src 'self'` in the CSP (it was `'none'`,
 which blocks all playback), plus `autoplay=(self)` and `fullscreen=(self)` in `Permissions-Policy`. Clips autoplay muted
@@ -148,7 +149,7 @@ requests – verified against both `pnpm run start` and production, where a `Ran
 and no `Accept-Ranges`. That follows from `run_worker_first: true`: the Worker forwards to the `ASSETS` binding, and
 that response carries no range support. Once Cloudflare's edge cache holds the object, though, a cache hit may still be
 served as `206 Partial Content` for a Range request – that is normal edge-cache behavior independent of what the origin
-supports, and not something this repo controls. A viewer therefore cannot reliably seek past what has buffered on a
+supports, and not something this package controls. A viewer therefore cannot reliably seek past what has buffered on a
 cache miss – a non-issue for a 20-second autoplay loop, a real one for a multi-minute clip. `-movflags +faststart` is
 what keeps playback starting early regardless. Cloudflare's per-file static-asset limit is 25 MiB.
 

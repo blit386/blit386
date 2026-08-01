@@ -1,6 +1,2 @@
 packages:
   - 'packages/*'
-  # Temporary. BT-402 parks create-blit386's workspace-root files here; it is a holding
-  # directory, not a real package, and the glob above would otherwise pick up its
-  # package.json as a phantom workspace member. BT-404 deletes the directory and this line.
-  - '!packages/create-blit386-workspace'
