@@ -71,6 +71,13 @@ reviews:
       instructions: >-
         Root-level shared config, one copy for the whole monorepo. American English spelling; no emoji anywhere. Keep
         commands as `pnpm run <script>` (not bare `pnpm <script>`) in any comment or doc reference.
+    - path: 'package.json'
+      instructions: >-
+        Root-level manifest: centralizes shared scripts, `pnpm.overrides`, and `pnpm.onlyBuiltDependencies` for the
+        whole monorepo (`packages/*` no longer carry their own overrides - pnpm ignores them anywhere but the workspace
+        root). American English spelling; no emoji anywhere. A change here affects every package - verify with `pnpm run
+        format:check` and the relevant `pnpm -r run build` / `pnpm -r run typecheck` at the repo root before suggesting
+        a modification.
     - path: 'packages/blit386/src/**/*.ts'
       instructions: >-
         Follow BLIT386 TypeScript house rules: no `any` (use `unknown` or proper types); type-only imports (`import
