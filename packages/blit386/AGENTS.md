@@ -15,8 +15,8 @@ spellchecked with cspell, dead code found with knip. Package manager is pnpm; No
 ## Quick start
 
 ```bash
-cd packages/blit386
 pnpm install                 # from the repo root
+cd packages/blit386
 pnpm run build               # Build the library
 pnpm run test                # Run unit tests
 pnpm run preflight           # All quality gates (format, lint, typecheck, spellcheck, knip, docs, tests, ...)

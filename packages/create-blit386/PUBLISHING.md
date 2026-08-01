@@ -57,10 +57,12 @@ audio.
 - Node.js >= 22.18.0 and pnpm 10.26.2 (this repo pins pnpm via `packageManager`).
 - An npm account (`vancura`) that owns the free `blit386` organization – that org grants the `@blit386` scope.
 - Log in and confirm:
+
   ```bash
   npm login
   npm whoami        # must print: vancura
   ```
+
 - If you have 2FA enabled, have your authenticator app ready for OTP codes.
 
 ## Release procedure
@@ -72,8 +74,9 @@ Run everything from the `create-blit386` repo root unless noted.
 Walk this before choosing a version. Skip a row only when it truly does not apply.
 
 - [ ] `git checkout main && git pull` – release from a clean, up-to-date `main`, not a stale feature branch.
-- [ ] `git log <last-tag>..HEAD --oneline` – draft release-note bullets now (hand-written; see step 8). Split into
-      scaffolder/starter, kit content / `blit` CLI, migrations (`blit upgrade` / `blit migrate`), and maintainer-only.
+- [ ] `git log "$(git describe --tags --abbrev=0)"..HEAD --oneline` – draft release-note bullets now (hand-written; see
+      step 8). Split into scaffolder/starter, kit content / `blit` CLI, migrations (`blit upgrade` / `blit migrate`),
+      and maintainer-only.
 - [ ] SemVer choice – `patch` for fixes only; `minor` when you ship user-facing features or new kit docs/skills; `major`
       only with a migration entry in `packages/kit/src/migrations/registry.ts`. Both packages always share one version.
 - [ ] Engine-first – if kit `content/` documents new engine API, `npm view blit386 version` already satisfies it.
@@ -89,9 +92,9 @@ engine first" above.
 
 ### 2. Bump versions
 
-Both publishable packages (and the private workspace root) release in lockstep and must carry the same `x.y.z` version.
-Choose the version from the checklist above, then set it in one shot – do not run separate `npm version` commands per
-package (that is how the two packages drift):
+Both publishable packages release in lockstep and must carry the same `x.y.z` version. Choose the version from the
+checklist above, then set it in one shot – do not run separate `npm version` commands per package (that is how the two
+packages drift):
 
 ```bash
 pnpm run bump -- 1.3.0 --dry-run  # preview only; replace 1.3.0 with the SemVer you chose
@@ -145,7 +148,8 @@ pnpm --filter create-blit386 publish           # --otp=... if 2FA
 
 `create-blit386` is unscoped, so it is public by default – no `--access` flag needed.
 
-`pnpm publish` refuses to publish with uncommitted changes; commit first, or append `--no-git-checks`.
+`pnpm publish` refuses to publish with uncommitted changes. Commit the release changes first – publish and tag from that
+same commit, never from a dirty tree.
 
 ### 5. Tag the release
 
@@ -193,7 +197,7 @@ defaults; upgrades are how older projects catch up.
 ### 8. Publish the GitHub Release
 
 ```bash
-gh release create 1.3.0 --title "Release 1.3.0" --notes-file <path to your written notes>
+gh release create 1.3.0 --title "Release 1.3.0" --notes-file release-notes.md
 ```
 
 Release notes are hand-written, not generated from commit messages – draft from the `git log` you captured in step 0 and
@@ -218,8 +222,8 @@ publishing the kit publishes the instructions an AI assistant will follow inside
   breaking changes need a major bump and a migration entry (`packages/kit/src/migrations/registry.ts`, surfaced by
   `blit migrate` / `blit upgrade`). There is no default bump size – choose `patch` / `minor` / `major` from the pre-bump
   checklist, then pass the resulting `x.y.z` to `pnpm run bump`.
-- Both packages release in lockstep on the same version (`scripts/bump-lockstep.mjs` also updates the private workspace
-  root `package.json` so the monorepo version string stays aligned).
+- Both packages release in lockstep on the same version (`scripts/bump-lockstep.mjs` updates only these two packages'
+  `package.json` files – not the monorepo root, which stays at its own private `0.0.0`).
 - To make the scaffolder tolerate kit patch releases without a re-publish, change `create-blit386`'s dependency from
   `workspace:*` to `workspace:^` (it then publishes as `^x.y.z` instead of an exact pin).
 - The generated game's pinned engine version lives in `packages/create-blit386/src/scaffold.ts` (`const BLIT386_RANGE`,
@@ -244,8 +248,8 @@ publishing the kit publishes the instructions an AI assistant will follow inside
 - `EOTP` / "This operation requires a one-time password": pass `--otp=<code>` from your authenticator app. If the
   browser-based auth URL npm prints is redacted or unusable in your current terminal (some sandboxed/relayed shells
   redact anything that looks like an auth token), run the publish command in a plain, unproxied terminal instead.
-- pnpm refuses to publish (working tree not clean / not on the publish branch): commit and push first, or add
-  `--no-git-checks`.
+- pnpm refuses to publish (working tree not clean / not on the publish branch): commit and push first – publish only
+  from a clean tree on the release commit.
 - `You cannot publish over the previously published versions`: bump the version; versions cannot be reused.
 - `402 Payment Required` / package went private: ensure the scoped package is public (`--access public`; it is set in
   `publishConfig`). Free orgs can only publish public packages.

@@ -3,7 +3,7 @@ name: preflight
 description:
   Run all quality checks for a package (format, lint, typecheck, spellcheck, knip, docs:links, tests, build, and
   package-specific gates) before committing or pushing. Use when the user wants to verify code is ready to commit or run
-  every check at once. Takes a package argument (blit386, demos, docs-site, kit, create-blit386).
+  every check at once. Takes a package argument (blit386, demos, docs-site, kit, create-blit386, or root).
 ---
 
 # Preflight Checks
@@ -16,7 +16,7 @@ Run comprehensive quality checks before committing or pushing code.
 /preflight <package>
 ```
 
-Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit386`.
+Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit386`, or `root`.
 
 ## Prerequisites
 
@@ -94,3 +94,16 @@ package, plus the root-wide ones that already cover both:
 
 See `/test kit` (or `create-blit386`) for the full suite breakdown and `/kit-audit` for the drift checklist that a
 preflight run does not cover.
+
+## root
+
+Files outside every package (root `CLAUDE.md`, `AGENTS.md`, `.claude/`, `.husky/`, root `scripts/*.mjs`, root configs).
+No combined `preflight` script exists at root; run what does:
+
+- `pnpm run format:check` – Biome + Prettier across the whole tree
+- `pnpm run docs:links` – Markdown link checker
+- `pnpm run agents:check` – skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings
+- `pnpm run test:agent-config` – unit tests for the `agents:check` script itself
+
+This is also what `.husky/pre-push` runs unconditionally on every push, since pnpm's per-package `--filter` dispatch
+only looks at files under `packages/*` and would otherwise miss a root-only change entirely.

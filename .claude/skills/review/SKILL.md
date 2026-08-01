@@ -22,8 +22,11 @@ Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit
 
 1. Gather changes
 
-- Run `git diff` (unstaged) and `git diff --cached` (staged)
-- Run `git ls-files --others --exclude-standard` to catch newly created (untracked) files a diff alone misses
+- Run `git diff -- packages/<package>/` (unstaged) and `git diff --cached -- packages/<package>/` (staged) to see this
+  package's changes
+- Run `git ls-files --others --exclude-standard -- packages/<package>/` to catch newly created (untracked) files a diff
+  alone misses
+- Also check `git diff -- CLAUDE.md AGENTS.md .claude/` for root policy changes that apply to every package
 - List which files changed and what changed
 
 2. Run automated checks

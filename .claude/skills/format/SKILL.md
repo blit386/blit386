@@ -48,7 +48,7 @@ repo tree from root.
 | File Types | Tool | Config |
 | --- | --- | --- |
 | `.ts`, `.tsx`, `.js`, `.jsx`, `.cjs`, `.mjs`, `.json`, `.jsonc`, `.css` | Biome | `biome.json` |
-| `.md`, `.mdx`, `.mdc`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
+| `.md`, `.mdx`, `.yml`, `.yaml` | Prettier | `prettier.config.js` |
 
 ## Formatting Rules
 
@@ -61,7 +61,8 @@ repo tree from root.
 ## Per-package notes
 
 - `packages/demos`: plain JavaScript, no `.ts`/`.tsx` files to format.
-- `packages/docs-site`: also formats `.mdc` files; MDX is Prettier's markdown parser, so never leave an MDX comment
-  (`{/* ... */}`) in hand-authored content – it renders as visible italic text.
+- `packages/docs-site`: MDX is Prettier's Markdown parser, so never leave an MDX comment (`{/* ... */}`) in
+  hand-authored content – it renders as visible italic text.
 - `packages/create-blit386`: files under `templates/**` are scaffolder output but follow the same formatting rules.
-- No ESLint anywhere outside `packages/blit386` – Biome handles lint and format together for every other package.
+- ESLint runs in `packages/blit386` and `packages/demos` (see `/preflight <package>` for the `lint` step); every other
+  package relies on Biome alone for both lint and format.

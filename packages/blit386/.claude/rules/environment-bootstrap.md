@@ -21,5 +21,5 @@ never duplicated:
 - Root `.devcontainer/devcontainer.json` – an optional devcontainer (`typescript-node:22-bookworm`) for reproducible
   Codespaces/cloud environments; `postCreateCommand` runs the same script once the container is created.
 
-Neither blocks or fails the session/container on a bootstrap error – a missing `pnpm`/network failure is logged and the
+Neither blocks nor fails the session/container on a bootstrap error – a missing `pnpm`/network failure is logged and the
 script exits `0`, since a `SessionStart` hook cannot prevent a session from starting anyway.

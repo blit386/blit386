@@ -41,6 +41,14 @@ else
     pnpm -r --if-present run preflight || PREFLIGHT_STATUS=$?
 fi
 
+# pnpm's "...[ref]" filter only selects files under packages/*, so a push that
+# changes nothing there (root CLAUDE.md, .claude/, .husky/, root scripts/, root
+# configs) would otherwise run zero checks. Always run the root-level gate too.
+if [ "$PREFLIGHT_STATUS" -eq 0 ]; then
+    echo "Running root-level checks (format:check, docs:links, agents:check)..."
+    pnpm run format:check && pnpm run docs:links && pnpm run agents:check || PREFLIGHT_STATUS=$?
+fi
+
 if [ "$PREFLIGHT_STATUS" -ne 0 ]; then
     echo ""
     echo "[FAIL] Preflight checks failed. Fix issues above before pushing."

@@ -17,6 +17,6 @@
 - Generated games ship beginner-friendly comments; explain what and why, not just restate code.
 - Do not add ESLint, Husky, cspell, or knip to generated projects unless explicitly requested in a future phase.
   Prettier is the one deliberate exception: generated games ship it for Markdown and YAML only (Biome keeps the code),
-  because they receive `AGENTS.md`, `CLAUDE.md`, and `docs/` from the kit and those need the same formatting the kit
-  authored them with. The compact-tables plugin ships alongside it so `pnpm run format` in a game does not re-pad the
-  tables in the kit's own docs.
+  because they receive `AGENTS.md` and `docs/` unconditionally, plus `CLAUDE.md` when Claude was the chosen assistant,
+  from the kit – and those need the same formatting the kit authored them with. The compact-tables plugin ships
+  alongside it so `pnpm run format` in a game does not re-pad the tables in the kit's own docs.

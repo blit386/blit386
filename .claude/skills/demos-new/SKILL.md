@@ -113,7 +113,7 @@ bootstrap(Demo);
   `ui.pip`, `ui.button`, `ui.slider`, `ui.meter`, `ui.separator`, `ui.spacer`. Update-side queries: `ui.dpad.isDown` /
   `isPressed`, `ui.swipe()`, `ui.tapIn(rect)`, `ui.hasTouch()`, `ui.overWidget(x, y)` (skip raw-pointer painting or
   dragging that would land on a widget). Read `packages/demos/src/shared/ui.js` and a recent demo such as
-  `src/synth-toy.js` for the full pattern.
+  `packages/demos/src/synth-toy.js` for the full pattern.
 - Widget identity is the label; pass `{ id }` when two widgets in one frame share a label.
 - Keyboard `{ key }` bindings are edge-safe because `ui.tick()` runs in `update()` – never read `BT.isKeyPressed` from
   `render()`.

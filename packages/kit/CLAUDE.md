@@ -81,6 +81,6 @@ list of what ships, and it has no automated guard.
 | Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `src/commands/agents.ts` |
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |
 | What does the scaffolder generate? | `packages/create-blit386/CLAUDE.md` |
-| Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release kit`, `pnpm --filter create-blit386 run bump -- <x.y.z>` |
+| Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release kit`, `pnpm --filter create-blit386 run bump -- 1.3.0` (replace `1.3.0` with the target version) |
 | Maintainer agent-config drift check | `scripts/check-agent-config.mjs` (root) |
 | Contributing / DCO | root `CONTRIBUTING.md` |

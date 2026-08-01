@@ -16,8 +16,9 @@ spellchecked with cspell, dead code found with knip. Package manager is pnpm 10.
 
 ```bash
 pnpm install                             # from the repo root
+pnpm --filter @blit386/kit run build     # kit must be built first; the test suite shells out to its dist/cli.js
 pnpm --filter create-blit386 run build   # or: cd packages/create-blit386 && pnpm run build
-pnpm --filter create-blit386 run test    # needs both this package and @blit386/kit built first
+pnpm --filter create-blit386 run test
 ```
 
 Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands. See
@@ -40,8 +41,8 @@ package's own contributor docs.
 
 - [`CLAUDE.md`](CLAUDE.md) – full scaffold flow and the routing table.
 - Root `CONTRIBUTING.md` – DCO and contribution guidelines.
-- `PUBLISHING.md` – npm publish procedure for both packages (`pnpm --filter create-blit386 run bump -- <x.y.z>` for
-  lockstep).
+- `PUBLISHING.md` – pnpm publish procedure for both packages (`pnpm --filter create-blit386 run bump -- 1.3.0`,
+  replacing `1.3.0` with the target version, for lockstep).
 
 Condensed, always-applicable agent rules also live in the root `.claude/rules/*.md` and `.claude/rules/*.md` here
 (Claude Code).

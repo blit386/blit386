@@ -78,8 +78,8 @@ no emoji.
      changed verdict if it landed strictly after the issue was last audited
      (`git log --since=<issue.lastAuditDate> -- <relevant paths>`).
    - Do not trust commit subjects alone. Confirm the actual public surface with `rg` / `git grep` and by reading the
-     relevant `packages/blit386/src/` files (e.g. confirm an API exists in `src/BLIT386.ts`, a type field in
-     `src/core/IBTDemo.ts`, a metric in `src/overlay/`).
+     relevant `packages/blit386/src/` files (e.g. confirm an API exists in `packages/blit386/src/BLIT386.ts`, a type
+     field in `packages/blit386/src/core/IBTDemo.ts`, a metric in `packages/blit386/src/overlay/`).
    - Re-read the issue body so the verdict addresses what the ticket actually asked for, including partial coverage
      (some sub-points shipped, others not).
 

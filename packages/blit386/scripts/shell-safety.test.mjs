@@ -1,5 +1,5 @@
 /**
- * Regression tests for the monorepo-wide Claude Code shell-safety hook (root .claude/hooks/shell-safety.sh -
+ * Regression tests for the monorepo-wide Claude Code shell-safety hook (root .claude/hooks/shell-safety.sh –
  * one copy for every package since BT-404).
  *
  * Feeds a Bash-tool-shaped JSON payload on stdin, the same way Claude Code invokes the hook, and asserts

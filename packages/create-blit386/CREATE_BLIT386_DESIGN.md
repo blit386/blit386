@@ -9,12 +9,13 @@
 > (BT-350). Full preflight green. (No `main` HEAD SHA is pinned here on purpose: it goes stale within days. Run
 > `git log --oneline -1` for the current one.)
 >
-> History: first published as `@blit386/kit@0.1.0` + `create-blit386@0.1.1` (section 11); 1.0.0 shipped 2026-06-14 (see
-> below). All Phase 1.x code items merged to `main` (PRs #7–#10). All Phase 2 "Agents on tap" work is merged to `main` –
-> the full `blit agents sync` write path (PR #15) plus the review-driven bug fixes (sync baseline / manifest pruning /
-> vars persistence; shared-file note preservation across repeated syncs; test exit-code assertions) and the docs sweep.
-> The fully-qualified docs-sync-path commit (`9c37894`) is already in `main` – it merged as the second parent of the PR
-> #16 merge commit, so there is no pending `agent-docs` follow-up (the earlier "not yet merged" note was stale).
+> History: first published 2026-06-09 as `@blit-tech/kit@0.1.0` + `create-blit-tech@0.1.0` (section 11); renamed to
+> `@blit386/kit` + `create-blit386` at `1.2.0` (2026-06-19); 1.0.0 shipped 2026-06-14 (see below). All Phase 1.x code
+> items merged to `main` (PRs #7–#10). All Phase 2 "Agents on tap" work is merged to `main` – the full
+> `blit agents sync` write path (PR #15) plus the review-driven bug fixes (sync baseline / manifest pruning / vars
+> persistence; shared-file note preservation across repeated syncs; test exit-code assertions) and the docs sweep. The
+> fully-qualified docs-sync-path commit (`9c37894`) is already in `main` – it merged as the second parent of the PR #16
+> merge commit, so there is no pending `agent-docs` follow-up (the earlier "not yet merged" note was stale).
 > `blit agents add <claude|cursor>` (Round 18, PR #17) and the kit-owned clean-merge drift fix (Round 19, PR #18) are
 > both on `main`.
 >
@@ -401,7 +402,7 @@ Flags for pros and CI (built): `--yes`/`-y` (skip prompts, defaults), `--ts` (Ty
 `--no-git`. Still unimplemented: `--agent=<name>` (the assistant can only be chosen in the wizard, or added afterwards
 with `blit agents add`).
 
-Robustness rules (v0.1.x backlog, required for agent-driven and CI use):
+Robustness rules (required for agent-driven and CI use; both DONE 2026-06-13, see section 9's phase-roadmap checklist):
 
 - Non-TTY input: when `stdin` or `stdout` is not a TTY (an AI agent or CI invoked the scaffolder), do not start the
   clack wizard – it would hang. Behave as `--yes` and print one informational line saying defaults were used and which
@@ -735,7 +736,7 @@ Procedure (repeat for each release; bump versions first – a version, once publ
 
 1. Commit first (`pnpm publish` refuses a dirty tree; otherwise pass `--no-git-checks`).
 2. `npm login`, then `npm whoami` must print `vancura` (sole owner of the free `blit386` org).
-3. `pnpm install && pnpm -r build` (the `prepack` script also rebuilds on publish).
+3. `pnpm install && pnpm -r run build` (the `prepack` script also rebuilds on publish).
 4. Publish the KIT FIRST (the scaffolder depends on it): `pnpm --filter @blit386/kit publish` (try `--dry-run` first;
    add `--otp=<code>` if 2FA). It is scoped; `publishConfig.access: public` keeps it a free public package.
 5. Publish the SCAFFOLDER SECOND: `pnpm --filter create-blit386 publish`. In `--dry-run`, confirm the manifest shows

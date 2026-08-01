@@ -4,10 +4,17 @@ paths:
     packages/*/src/**,
     packages/*/docs/**/*.md,
     packages/*/content/**,
+    packages/*/templates/**,
+    packages/*/scripts/**,
+    packages/*/package.json,
+    packages/*/.claude/rules/**,
     README.md,
     CLAUDE.md,
     packages/*/CLAUDE.md,
     .claude/skills/**/SKILL.md,
+    .claude/hooks/**,
+    .claude/settings.json,
+    .husky/**,
   ]
 ---
 

@@ -9,7 +9,7 @@ set -u
 
 export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$REPO_ROOT" || exit 0
 
 if ! command -v pnpm >/dev/null 2>&1; then

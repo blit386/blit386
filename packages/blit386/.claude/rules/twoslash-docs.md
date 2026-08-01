@@ -40,10 +40,10 @@ Preamble rules:
 - Position/rect variables assumed from context: `const pos = new Vector2i(0, 0);`,
   `const rect = new Rect2i(0, 0, 320, 240);`
 
-After adding or editing blocks, verify in `blit386-dev-fumapress`:
+After adding or editing blocks, verify from `packages/docs-site`:
 
 ```bash
-pnpm run sync:docs && pnpm run build
+pnpm run sync:docs && pnpm run sync:docs:check && pnpm run build
 ```
 
 A Twoslash compilation error fails the build. Fix the preamble rather than adding `// @noErrors`.

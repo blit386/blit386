@@ -43,7 +43,7 @@ is about this package's own contributor docs.
 
 - [`CLAUDE.md`](CLAUDE.md) – kit content vs engine docs, the drift checklist, and the routing table.
 - Root `CONTRIBUTING.md` – DCO and contribution guidelines.
-- `packages/create-blit386/PUBLISHING.md` – npm publish procedure for both packages
-  (`pnpm --filter create-blit386 run bump -- <x.y.z>` for lockstep).
+- `packages/create-blit386/PUBLISHING.md` – pnpm publish procedure for both packages
+  (`pnpm --filter create-blit386 run bump -- 1.3.0`, replacing `1.3.0` with the target version, for lockstep).
 
 Condensed, always-applicable agent rules also live in the root `.claude/rules/*.md`.

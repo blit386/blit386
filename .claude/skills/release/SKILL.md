@@ -2,8 +2,8 @@
 name: release
 description:
   'Prepare and run a release for a package: for blit386, generate a polished RELEASE.md from PR history and walk the
-  rest of the release lifecycle (version bump, changelog, docs coverage, downstream repos, npm publish, API-history
-  regeneration); for kit / create-blit386, guide a deliberate lockstep npm publish following PUBLISHING.md. Takes a
+  rest of the release lifecycle (version bump, changelog, docs coverage, downstream repos, pnpm publish, API-history
+  regeneration); for kit / create-blit386, guide a deliberate lockstep pnpm publish following PUBLISHING.md. Takes a
   package argument (blit386, or kit / create-blit386, which release together).'
 ---
 
@@ -301,10 +301,11 @@ that file and follow it. Do not invent a parallel checklist here – if this ski
 2. Always `pnpm publish`, never `npm publish` – only pnpm rewrites `workspace:*` to a real version.
 3. Publish `@blit386/kit` before `create-blit386`.
 4. Versions are permanent and lockstep – both packages share one `x.y.z`. Bump with
-   `pnpm --filter create-blit386 run bump -- <x.y.z>` (see `PUBLISHING.md` step 2; the script lives at
-   `packages/create-blit386/scripts/bump-lockstep.mjs` and writes both `packages/create-blit386/package.json` and
-   `packages/kit/package.json`). Never suggest separate per-package `npm version` commands, and never bias toward patch
-   or minor – choose SemVer from the pre-bump checklist in `PUBLISHING.md`.
+   `pnpm --filter create-blit386 run bump -- 1.3.0` (replace `1.3.0` with the target version; see `PUBLISHING.md` step
+   2; the script lives at `packages/create-blit386/scripts/bump-lockstep.mjs` and writes both
+   `packages/create-blit386/package.json` and `packages/kit/package.json`). Never suggest separate per-package
+   `npm version` commands, and never bias toward patch or minor – choose SemVer from the pre-bump checklist in
+   `PUBLISHING.md`.
 5. Release tags carry no `v` prefix (`1.3.0`, not `v1.3.0`).
 6. Publishing is manual-only – no CI publish workflow, no `NPM_TOKEN`. Do not suggest re-adding either.
 7. `blit386.engineRange` (kit) and `BLIT386_RANGE` (scaffolder) are different mechanisms; bump both together when kit

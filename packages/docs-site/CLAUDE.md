@@ -18,7 +18,7 @@ Production builds require `CLOUDFLARE=1`, which `pnpm run build` already sets. S
    `pnpm run sync:docs`. Never hand-edit anything under `content/docs/{api,guides,performance,reference}/` or
    `src/data/api-history.generated.json`
 2. Documentation ships with the change – update `content/` and run `pnpm run docs:links` when adding links
-3. No MDX comments. Prettier formats `.mdx` with the markdown parser, so remark reads `{/* … */}` as emphasis and
+3. No MDX comments. Prettier formats `.mdx` with the Markdown parser, so remark reads `{/* … */}` as emphasis and
    rewrites it to `{/_ … _/}`, which renders as visible italic text on the page. Delete the note or make it real prose
 4. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `content`, `ci`, `docs`, `deps`, `config`. `main`
    is protected – land changes via PR

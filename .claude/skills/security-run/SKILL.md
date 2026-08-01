@@ -41,9 +41,9 @@ Where `<package>` is `blit386` or `demos`. `docs-site`, `kit`, and `create-blit3
     --output-json security-reports/mcp-preflight-latest.json
   ```
 
-  For `demos`, run the same command with `--repo-root packages/demos`, or invoke the script directly:
-  `node ../blit386/scripts/security/mcp-preflight.mjs --mcps-dir "<mcps-path>" --repo-root . --allow-fallback ...` from
-  inside `packages/demos`.
+  For `demos`, either run from `packages/blit386` with `--repo-root ../demos`, or `cd packages/demos` and run with
+  `--repo-root .`:
+  `node ../blit386/scripts/security/mcp-preflight.mjs --mcps-dir "<mcps-path>" --repo-root . --allow-fallback ...`.
 
 - Record each security MCP status: `healthy`, `auth_required`, `errored`, or `absent`
 - If Opsera (`plugin-opsera-devsecops-opsera`) is not `healthy`, do not skip scans; continue with fallbacks from
