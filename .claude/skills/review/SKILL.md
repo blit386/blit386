@@ -22,20 +22,36 @@ Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit
 
 1. Gather changes
 
-- A package: run `git diff -- packages/<package>/` (unstaged) and `git diff --cached -- packages/<package>/` (staged) to
-  see this package's changes; run `git ls-files --others --exclude-standard -- packages/<package>/` to catch newly
-  created (untracked) files a diff alone misses. Also check
-  `git diff -- CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json` for root policy
-  changes that apply to every package – an explicit allowlist of the repo-owned, committed agent config, not the whole
-  `.claude/` tree (`.claude/settings.local.json`, `.claude/launch.json`, `.claude/scheduled_tasks.*` are gitignored,
-  machine-local, and never in scope for a review).
-- `root`: run
-  `git diff -- . ':!packages' ':!.claude/settings.local.json' ':!.claude/launch.json' ':!.claude/scheduled_tasks.*'`
-  (unstaged) and the same with `--cached` (staged) to see every change outside `packages/*` – root
-  `CLAUDE.md`/`AGENTS.md`, `.claude/rules/`, `.claude/skills/`, `.claude/hooks/`, `.claude/settings.json`, `.husky/`,
-  `.github/workflows/`, root `scripts/`, and root configs; run
-  `git ls-files --others --exclude-standard -- . ':!packages'` for untracked root files (`--exclude-standard` already
-  honors `.gitignore`, so the local/private `.claude/` files above never appear here either)
+Never collect `.claude/settings.local.json`, `.claude/launch.json`, or `.claude/scheduled_tasks.*` – gitignored,
+machine-local, never in scope for a review. Use an explicit allowlist rather than a broad exclusion pattern, so a new
+root file that isn't yet gitignored can't slip into the review context either.
+
+- A package: run `git diff`, `git diff --cached`, and `git ls-files --others --exclude-standard` (each with
+  `-- packages/<package>/`) to see this package's changes, staged and unstaged, plus newly created files a diff alone
+  misses. Also run the same three commands against this root-policy allowlist, for root policy changes that apply to
+  every package:
+
+  ```bash
+  POLICY_ALLOWLIST="CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json"
+  git diff -- $POLICY_ALLOWLIST
+  git diff --cached -- $POLICY_ALLOWLIST
+  git ls-files --others --exclude-standard -- $POLICY_ALLOWLIST
+  ```
+
+- `root`: run the same three commands against the full root-owned allowlist – everything a root-level change could
+  touch, and nothing else:
+
+  ```bash
+  ROOT_ALLOWLIST="CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json .husky/ \
+    .github/workflows/ scripts/ .coderabbit.yaml .editorconfig .gitattributes .gitignore .lintstagedrc.json \
+    .markdownlint.jsonc .npmrc .prettierignore CODEOWNERS CODE_OF_CONDUCT.md CONTRIBUTING.md LICENSE SECURITY.md \
+    biome.json commitlint.config.js cspell.json knip.json package.json pnpm-lock.yaml pnpm-workspace.yaml \
+    prettier.config.js renovate.json tsconfig.base.json"
+  git diff -- $ROOT_ALLOWLIST
+  git diff --cached -- $ROOT_ALLOWLIST
+  git ls-files --others --exclude-standard -- $ROOT_ALLOWLIST
+  ```
+
 - List which files changed and what changed
 
 2. Run automated checks
