@@ -8,7 +8,7 @@
  * as symlink blobs and lists the underlying `.claude/skills/*` markdown directly,
  * so those files are checked exactly once and never double-processed.
  *
- * Generated doc pages under `packages/docs-site/content/docs/<section>/**` are also
+ * Generated doc pages under `packages/website/content/docs/<section>/**` are also
  * skipped: they are mirrored from `packages/blit386/docs/` via
  * `pnpm run sync:docs`, where the source is already link-checked. The hand-authored
  * hub (`content/docs/index.mdx`) and root `content/docs/meta.json` stay in scope.
@@ -35,11 +35,11 @@ const CHECK_TIMEOUT_MS = 300_000;
 
 /**
  * Repo-relative path patterns to skip. Generated doc pages
- * (`packages/docs-site/content/docs/<section>/**`) are mirrored from
+ * (`packages/website/content/docs/<section>/**`) are mirrored from
  * `packages/blit386/docs/`, where they are already link-checked; the hand-authored hub
  * (`content/docs/index.mdx`) and root meta stay in scope.
  */
-const IGNORED_PATH_PATTERNS = [/^packages\/docs-site\/content\/docs\/[^/]+\//u];
+const IGNORED_PATH_PATTERNS = [/^packages\/website\/content\/docs\/[^/]+\//u];
 
 /** @param {string} rel @returns {string} */
 export const normalizeRelSep = (rel) => rel.split('\\').join('/');

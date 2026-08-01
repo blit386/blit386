@@ -2,7 +2,7 @@
 name: spellcheck
 description:
   Run cspell across a package, fix typos, and add legitimate words to the dictionary. Use when the user wants to
-  spellcheck, fix spelling, or resolve cspell failures. Takes a package argument (blit386, demos, docs-site, kit,
+  spellcheck, fix spelling, or resolve cspell failures. Takes a package argument (blit386, demos, website, kit,
   create-blit386).
 ---
 
@@ -24,7 +24,7 @@ Run the package's spellcheck, then fix all reported errors.
 - `demos`: `pnpm run spellcheck` checks `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`. Files outside those
   paths (`CLAUDE.md`, `.claude/**`, `plugins/**`, config files) aren't covered by the script – lint-staged spellchecks
   them when staged for a commit; check one by hand with `pnpm exec cspell <path>`
-- `docs-site`: `pnpm run spellcheck` checks `content/` and `src/`
+- `website`: `pnpm run spellcheck` checks `content/` and `src/`
 - `kit` / `create-blit386`: no package-local `spellcheck` script yet (the combined one lived in the retired
   `create-blit386-workspace` root and covered `packages/*/src/**/*.ts`, `packages/*/README.md`,
   `packages/kit/content/**/*.md`, `.claude/skills/**/*.md`, `.claude/rules/**/*.md`, and the repo-root Markdown files

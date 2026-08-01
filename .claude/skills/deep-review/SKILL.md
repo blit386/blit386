@@ -2,7 +2,7 @@
 name: deep-review
 description:
   Comprehensive pre-push review combining automated checks, a security audit, AI code analysis, and a PR-ready summary.
-  Use before pushing significant changes or opening a pull request. Takes a package argument (blit386, demos, docs-site,
+  Use before pushing significant changes or opening a pull request. Takes a package argument (blit386, demos, website,
   kit, create-blit386, or root).
 ---
 
@@ -25,7 +25,7 @@ pushing significant changes or creating pull requests.
   `pnpm run security:mcp-preflight` with the session MCP descriptor path and `--allow-fallback`. See
   [docs/security/security-runbook.md](../../../packages/blit386/docs/security/security-runbook.md). Do not skip scans
   when Opsera/JFrog/Semgrep MCP is degraded; use documented fallbacks.
-- `docs-site`, `kit`, `create-blit386`, `root` have no MCP security preflight – skip straight to step 3.
+- `website`, `kit`, `create-blit386`, `root` have no MCP security preflight – skip straight to step 3.
 
 2. Run preflight checks
 
@@ -34,7 +34,7 @@ pushing significant changes or creating pull requests.
 
 3. Run security audit
 
-- `blit386` / `demos` / `docs-site`: `pnpm run security:audit` (their own `pnpm audit --audit-level=moderate` script)
+- `blit386` / `demos` / `website`: `pnpm run security:audit` (their own `pnpm audit --audit-level=moderate` script)
 - `kit`, `create-blit386`, `root`: no dedicated `security:audit` script – run `pnpm audit --audit-level=moderate`
   directly (it audits the single shared lockfile regardless of cwd, so the result is the same from any of these)
 - Report any vulnerabilities found (moderate and above)

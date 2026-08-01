@@ -4,7 +4,7 @@ description:
   Quickly format code with Biome and Prettier, skipping the format:check verification step. Use for a fast cleanup right
   after edits, or as a lightweight pre-step before other checks, when you don't need confirmation that formatting
   actually passed. If the result needs to be verified (before a commit or PR), use format instead. Takes a package
-  argument (blit386, demos, docs-site, kit, create-blit386, or root).
+  argument (blit386, demos, website, kit, create-blit386, or root).
 ---
 
 # Quick Format
@@ -18,7 +18,7 @@ for maximum speed.
 /quick-format <package>
 ```
 
-Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit386`, or `root`. Omit the argument to
+Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit386`, or `root`. Omit the argument to
 format the whole repo tree from root.
 
 ## Steps

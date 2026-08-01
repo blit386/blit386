@@ -3,7 +3,7 @@ name: preflight
 description:
   Run all quality checks for a package (format, lint, typecheck, spellcheck, knip, docs:links, tests, build, and
   package-specific gates) before committing or pushing. Use when the user wants to verify code is ready to commit or run
-  every check at once. Takes a package argument (blit386, demos, docs-site, kit, create-blit386, or root).
+  every check at once. Takes a package argument (blit386, demos, website, kit, create-blit386, or root).
 ---
 
 # Preflight Checks
@@ -16,7 +16,7 @@ Run comprehensive quality checks before committing or pushing code.
 /preflight <package>
 ```
 
-Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit386`, or `root`.
+Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit386`, or `root`.
 
 ## Prerequisites
 
@@ -63,9 +63,9 @@ Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit
 
 No unit tests here by design – see `/test demos`.
 
-## packages/docs-site
+## packages/website
 
-`cd packages/docs-site && pnpm run preflight`, or `pnpm --filter blit386-dev-fumapress run preflight`. Runs:
+`cd packages/website && pnpm run preflight`, or `pnpm --filter blit386-website run preflight`. Runs:
 
 - `format:check` – Biome + Prettier
 - `lint` – Biome

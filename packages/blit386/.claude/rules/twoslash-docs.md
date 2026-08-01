@@ -40,7 +40,7 @@ Preamble rules:
 - Position/rect variables assumed from context: `const pos = new Vector2i(0, 0);`,
   `const rect = new Rect2i(0, 0, 320, 240);`
 
-After adding or editing blocks, verify from `packages/docs-site`:
+After adding or editing blocks, verify from `packages/website`:
 
 ```bash
 pnpm run sync:docs && pnpm run sync:docs:check && pnpm run build

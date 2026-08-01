@@ -31,11 +31,11 @@ vite.config.*.timestamp-*
 # packages/demos: HTML pages use Handlebars syntax, Prettier would break them
 *.html
 
-# packages/docs-site: Waku/fumadocs-mdx codegen output
+# packages/website: Waku/fumadocs-mdx codegen output
 .source/
 
-# packages/docs-site: generated docs mirror (produced by
-# packages/docs-site/scripts/sync-docs-from-engine.mjs from packages/blit386/docs).
+# packages/website: generated docs mirror (produced by
+# packages/website/scripts/sync-docs-from-engine.mjs from packages/blit386/docs).
 # Artifacts: not subject to this repo's format gate. The hand-authored hub
 # (content/docs/index.mdx) and root meta stay formatted.
-packages/docs-site/content/docs/*/**
+packages/website/content/docs/*/**

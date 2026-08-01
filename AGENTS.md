@@ -9,7 +9,7 @@ package layout, shared conventions, and where each package's own detail lives.
 | --- | --- | --- |
 | `packages/blit386` | `blit386` | The engine – palette-first WebGPU retro rendering for TypeScript |
 | `packages/demos` | `blit386-demos` | Interactive demos and examples |
-| `packages/docs-site` | `blit386-dev-fumapress` | Docs site publishing `packages/blit386/docs/` to blit386.dev |
+| `packages/website` | `blit386-website` | Docs site publishing `packages/blit386/docs/` to blit386.dev |
 | `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI |
 | `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` scaffolder CLI and templates |
 

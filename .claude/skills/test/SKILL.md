@@ -3,7 +3,7 @@ name: test
 description:
   Run a package's test suite – unit, coverage, watch, visual regression, or a single file – or explain what testing
   exists when a package has none. Use when the user wants to run tests or check coverage. Takes a package argument
-  (blit386, demos, docs-site, kit, create-blit386).
+  (blit386, demos, website, kit, create-blit386).
 ---
 
 # Run Tests
@@ -70,7 +70,7 @@ Manual hot-reload check (nothing automated covers this – run by hand after tou
     regression
 12. Introduce a syntax error in a demo – the old demo keeps running; fixing it recovers automatically
 
-## packages/docs-site
+## packages/website
 
 `node --test scripts/__tests__/*.test.mjs`, run via `pnpm run test` (or `pnpm run test:watch`). Covers the sync and
 build helper scripts, not the rendered site itself – visual/content correctness is verified by `pnpm run build` + manual

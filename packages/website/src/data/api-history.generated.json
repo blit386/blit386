@@ -1,6 +1,6 @@
 {
   "packageVersion": "1.4.0",
-  "unreleasedVersion": "1.4.1",
+  "unreleasedVersion": "1.5.0",
   "versions": {
     "0.1.0": "2025-12-13T11:02:41+01:00",
     "0.2.0": "2025-12-22T16:19:15+01:00",
@@ -12,7 +12,7 @@
     "1.3.0": "2026-07-13T17:36:26+02:00",
     "1.3.1": "2026-07-19T18:11:00+02:00",
     "1.4.0": "2026-07-23T12:32:13+02:00",
-    "1.4.1": null
+    "1.5.0": null
   },
   "symbols": {
     "AssetLoader": {
@@ -822,6 +822,20 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.random": {
+      "kind": "getter",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "BT.randomSeed": {
+      "kind": "method",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.renderAlpha": {
       "kind": "getter",
       "since": "1.3.0",
@@ -1014,7 +1028,12 @@
     "EasingFunction": {
       "kind": "type",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.5.0",
+          "note": "Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1178,6 +1197,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "PerlinNoise": {
+      "kind": "class",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "PixelGlitch": {
       "kind": "class",
       "since": "1.0.3",
@@ -1206,6 +1232,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "Random": {
+      "kind": "class",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "Rect2i": {
       "kind": "class",
       "since": "0.1.0",
@@ -1226,6 +1259,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "SimplexNoise": {
+      "kind": "class",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "SoundParamSetOptions": {
       "kind": "interface",
@@ -1311,6 +1351,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "ValueNoise": {
+      "kind": "class",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "Vector2i": {
       "kind": "class",
       "since": "0.1.0",
@@ -1335,7 +1382,12 @@
     "applyEasing": {
       "kind": "function",
       "since": "1.0.3",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.5.0",
+          "note": "Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1392,6 +1444,55 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "hash1": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash1i": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash2": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash2i": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash3": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "hash3i": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
+    "interpolate": {
+      "kind": "function",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "mergeHardwareSettings": {
       "kind": "function",
@@ -1482,7 +1583,8 @@
     ],
     "api/easing": [
       "EasingFunction",
-      "applyEasing"
+      "applyEasing",
+      "interpolate"
     ],
     "api/game-loop": [
       "BT.assignTag",
@@ -1510,6 +1612,20 @@
       "BT.paletteSet",
       "BT.paletteSwap",
       "Palette"
+    ],
+    "api/random": [
+      "BT.random",
+      "BT.randomSeed",
+      "PerlinNoise",
+      "Random",
+      "SimplexNoise",
+      "ValueNoise",
+      "hash1",
+      "hash1i",
+      "hash2",
+      "hash2i",
+      "hash3",
+      "hash3i"
     ],
     "api/rendering": [
       "BT.FLIP_H",

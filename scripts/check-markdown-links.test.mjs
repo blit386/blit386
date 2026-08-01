@@ -8,28 +8,28 @@ import { isIgnoredFile, normalizeRelSep } from './check-markdown-links.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 describe('isIgnoredFile', () => {
-    test('ignores a file inside a docs-site content/docs section directory', () => {
-        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'api', 'renderer', 'index.mdx');
+    test('ignores a file inside a website content/docs section directory', () => {
+        const path = join(ROOT, 'packages', 'website', 'content', 'docs', 'api', 'renderer', 'index.mdx');
         assert.equal(isIgnoredFile(path), true);
     });
 
     test('ignores a deeply nested file under a section', () => {
-        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'guide', 'getting-started', 'index.mdx');
+        const path = join(ROOT, 'packages', 'website', 'content', 'docs', 'guide', 'getting-started', 'index.mdx');
         assert.equal(isIgnoredFile(path), true);
     });
 
     test('does not ignore content/docs/index.mdx (hand-authored hub page)', () => {
-        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'index.mdx');
+        const path = join(ROOT, 'packages', 'website', 'content', 'docs', 'index.mdx');
         assert.equal(isIgnoredFile(path), false);
     });
 
     test('does not ignore content/docs/meta.json (root meta file)', () => {
-        const path = join(ROOT, 'packages', 'docs-site', 'content', 'docs', 'meta.json');
+        const path = join(ROOT, 'packages', 'website', 'content', 'docs', 'meta.json');
         assert.equal(isIgnoredFile(path), false);
     });
 
     test('does not ignore files outside content/docs', () => {
-        const path = join(ROOT, 'packages', 'docs-site', 'content', 'guide', 'index.mdx');
+        const path = join(ROOT, 'packages', 'website', 'content', 'guide', 'index.mdx');
         assert.equal(isIgnoredFile(path), false);
     });
 
@@ -43,7 +43,7 @@ describe('isIgnoredFile', () => {
         // isIgnoredFile delegates to normalizeRelSep before matching.
         // path.relative() never produces backslashes on POSIX, so we test
         // normalizeRelSep directly — the helper that isIgnoredFile calls.
-        const windowsRel = 'packages\\docs-site\\content\\docs\\api\\renderer\\index.mdx';
-        assert.equal(normalizeRelSep(windowsRel), 'packages/docs-site/content/docs/api/renderer/index.mdx');
+        const windowsRel = 'packages\\website\\content\\docs\\api\\renderer\\index.mdx';
+        assert.equal(normalizeRelSep(windowsRel), 'packages/website/content/docs/api/renderer/index.mdx');
     });
 });

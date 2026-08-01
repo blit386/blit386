@@ -2,8 +2,8 @@
 name: pr
 description:
   Create a pull request with automatic quality checks, a conventional commit, and the gh CLI. Use when the user wants to
-  open a PR or push a branch for review. Takes a package argument (blit386, demos, docs-site, kit, create-blit386, or
-  root for repo-wide files) to pick the right preflight gate and commit scope conventions.
+  open a PR or push a branch for review. Takes a package argument (blit386, demos, website, kit, create-blit386, or root
+  for repo-wide files) to pick the right preflight gate and commit scope conventions.
 ---
 
 # Create Pull Request
@@ -73,7 +73,7 @@ The description after the package argument becomes the commit subject.
 - `blit386`: `docs`, `audio`, `assets`, `overlay`, `core`, `api`, `ci`, `renderer`, `tests`, `utils`, `rules`,
   `release`, `security`, `input`, `deps` / `deps-dev`, `visual`, `camera` (rare/legacy: `examples`)
 - `demos`: `demos` (most common – demo JS source), `ui` (shared UI kit), `assets`, `docs`, `skills`, `deps`
-- `docs-site`: `content`, `ci`, `docs`, `deps`, `config`
+- `website`: `content`, `ci`, `docs`, `deps`, `config`
 - `kit` / `create-blit386`: no fixed convention beyond the general type enum – pick a scope that matches the changed
   area (`kit`, `scaffold`, `templates`, `cli`, `migrations`, `docs`, `deps`)
 - `root` (files outside every package: root `CLAUDE.md`, `.claude/`, `.husky/`, `.github/`, root configs): `repo` is the

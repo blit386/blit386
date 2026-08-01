@@ -11,7 +11,7 @@ Claude Code at this repo root, not a parent directory – that is what activates
 | --- | --- | --- |
 | `packages/blit386` | `blit386` | The engine – palette-first WebGPU retro rendering for TypeScript |
 | `packages/demos` | `blit386-demos` | Interactive demos and examples, deployed to demos.blit386.dev |
-| `packages/docs-site` | `blit386-dev-fumapress` | Docs site publishing this repo's `packages/blit386/docs/` to blit386.dev |
+| `packages/website` | `blit386-website` | Docs site publishing this repo's `packages/blit386/docs/` to blit386.dev |
 | `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI for generated games |
 | `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` scaffolder CLI and templates |
 
@@ -47,9 +47,9 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
 - `.blit/` (the scaffolder's ownership manifest plus pristine kit copies, written into generated games) must stay out of
   every formatter. It is already excluded in `.prettierignore`; a generated project's own `.blit/` mirrors that
   exclusion.
-- A `packages/blit386/docs/` change reaches blit386.dev only after `pnpm run sync:docs` runs in `packages/docs-site`
-  (`packages/docs-site/scripts/sync-docs-from-engine.mjs`, default source `../blit386/docs`); `sync:docs:check` fails
-  when `packages/docs-site/content/docs` is stale.
+- A `packages/blit386/docs/` change reaches blit386.dev only after `pnpm run sync:docs` runs in `packages/website`
+  (`packages/website/scripts/sync-docs-from-engine.mjs`, default source `../blit386/docs`); `sync:docs:check` fails when
+  `packages/website/content/docs` is stale.
 
 ## Where the detail lives
 

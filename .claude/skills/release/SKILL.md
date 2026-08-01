@@ -239,10 +239,10 @@ shipping a similarly-sized feature didn't, that's a real gap, not a style choice
 - `packages/kit` and `packages/create-blit386`: grep `packages/kit/content/{docs,rules,skills}/` for anything describing
   the changed API. A default-value flip is the dangerous case – it can make existing skill/doc prose actively wrong, not
   just stale, and won't show up as a missing mention. Run `/preflight kit` afterward.
-- `packages/docs-site`: if `packages/blit386/docs/` changed, the mirror is stale. `pnpm run sync:docs` there reads the
-  sibling `../blit386/docs` path directly off disk (now `../blit386/docs` relative to `packages/docs-site`) – it does
-  not need those changes pushed to GitHub first. Follow with `pnpm run sync:docs:check` and `pnpm run build` to confirm
-  the site still compiles (a Twoslash code block that doesn't compile standalone fails the build, not just the check).
+- `packages/website`: if `packages/blit386/docs/` changed, the mirror is stale. `pnpm run sync:docs` there reads the
+  sibling `../blit386/docs` path directly off disk (now `../blit386/docs` relative to `packages/website`) – it does not
+  need those changes pushed to GitHub first. Follow with `pnpm run sync:docs:check` and `pnpm run build` to confirm the
+  site still compiles (a Twoslash code block that doesn't compile standalone fails the build, not just the check).
 
 #### 14. Land it, tag it, publish it
 

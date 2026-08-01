@@ -20,7 +20,7 @@
       "ignoreExportsUsedInFile": true,
       "ignoreDependencies": ["blit386"]
     },
-    "packages/docs-site": {
+    "packages/website": {
       "entry": ["press.config.tsx", "source.config.ts", "waku.config.ts"],
       "project": ["src/**/*.css", "scripts/**/*.mjs"],
       "ignore": [".source/**", "src/pages.gen.ts", "dist/**", "scripts/prettier-plugin-compact-tables.mjs"],

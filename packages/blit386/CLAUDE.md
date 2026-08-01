@@ -29,7 +29,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | Seeded / deterministic random? | `BT.random` / `BT.randomSeed`; `src/utils/Random.ts`, coordinate hashes in `src/utils/hash.ts`, `docs/api-random.md` |
 | How does hot-reload / HMR work? | `docs/guide-hot-reload.md` is canonical; runtime in `src/hot/`, dev plugin in `src/vite/` |
 | How is agent config drift checked? | `scripts/check-agent-config.mjs` (root), wired into `pnpm run agents:check` and the `quality` CI job |
-| Where is the public docs site? | `packages/docs-site` builds it from this package's `docs/`; `docs/_sitemap.json` controls what publishes |
+| Where is the public docs site? | `packages/website` builds it from this package's `docs/`; `docs/_sitemap.json` controls what publishes |
 | Dependency security policy / CI audit gate? | `docs/security/dependency-policy.md`, `docs/security/audit-exceptions.md` |
 | Where is the annotated `src/` tree? | `.claude/rules/architecture.md` |
 
