@@ -24,7 +24,9 @@ Where `<package>` is one of `blit386`, `demos`, `docs-site`, `kit`, `create-blit
 
 Never collect `.claude/settings.local.json`, `.claude/launch.json`, or `.claude/scheduled_tasks.*` – gitignored,
 machine-local, never in scope for a review. Use an explicit allowlist rather than a broad exclusion pattern, so a new
-root file that isn't yet gitignored can't slip into the review context either.
+root file that isn't yet gitignored can't slip into the review context either. The allowlists below are shell arrays,
+not space-separated strings – zsh (macOS's default shell) does not word-split an unquoted `"$VAR"` scalar the way bash
+does, so a plain string variable silently collapses into one no-op pathspec argument there.
 
 - A package: run `git diff`, `git diff --cached`, and `git ls-files --others --exclude-standard` (each with
   `-- packages/<package>/`) to see this package's changes, staged and unstaged, plus newly created files a diff alone
@@ -32,24 +34,24 @@ root file that isn't yet gitignored can't slip into the review context either.
   every package:
 
   ```bash
-  POLICY_ALLOWLIST="CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json"
-  git diff -- $POLICY_ALLOWLIST
-  git diff --cached -- $POLICY_ALLOWLIST
-  git ls-files --others --exclude-standard -- $POLICY_ALLOWLIST
+  POLICY_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json)
+  git diff -- "${POLICY_ALLOWLIST[@]}"
+  git diff --cached -- "${POLICY_ALLOWLIST[@]}"
+  git ls-files --others --exclude-standard -- "${POLICY_ALLOWLIST[@]}"
   ```
 
 - `root`: run the same three commands against the full root-owned allowlist – everything a root-level change could
   touch, and nothing else:
 
   ```bash
-  ROOT_ALLOWLIST="CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json .husky/ \
-    .github/workflows/ scripts/ .coderabbit.yaml .editorconfig .gitattributes .gitignore .lintstagedrc.json \
-    .markdownlint.jsonc .npmrc .prettierignore CODEOWNERS CODE_OF_CONDUCT.md CONTRIBUTING.md LICENSE SECURITY.md \
-    biome.json commitlint.config.js cspell.json knip.json package.json pnpm-lock.yaml pnpm-workspace.yaml \
-    prettier.config.js renovate.json tsconfig.base.json"
-  git diff -- $ROOT_ALLOWLIST
-  git diff --cached -- $ROOT_ALLOWLIST
-  git ls-files --others --exclude-standard -- $ROOT_ALLOWLIST
+  ROOT_ALLOWLIST=(CLAUDE.md AGENTS.md .claude/rules/ .claude/skills/ .claude/hooks/ .claude/settings.json .husky/ \
+    .github/ .zed/ scripts/ .devcontainer/ .coderabbit.yaml .editorconfig .gitattributes .gitignore \
+    .lintstagedrc.json .markdownlint.jsonc .npmrc .prettierignore CODEOWNERS CODE_OF_CONDUCT.md CONTRIBUTING.md \
+    LICENSE SECURITY.md biome.json commitlint.config.js cspell.json knip.json package.json pnpm-lock.yaml \
+    pnpm-workspace.yaml prettier.config.js renovate.json tsconfig.base.json)
+  git diff -- "${ROOT_ALLOWLIST[@]}"
+  git diff --cached -- "${ROOT_ALLOWLIST[@]}"
+  git ls-files --others --exclude-standard -- "${ROOT_ALLOWLIST[@]}"
   ```
 
 - List which files changed and what changed
