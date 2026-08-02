@@ -427,13 +427,30 @@ const stripTwoslashCutPreambles = (markdown) => {
  * history for the path (e.g. a shallow clone), or the call otherwise fails, so a CI
  * environment without full git history still produces a valid page: the field is
  * omitted rather than written as an empty or error value.
+ *
+ * `--follow` walks back through renames, so a doc's real edit history survives the
+ * move that put the engine under `packages/blit386/`. `--diff-filter=AM` is what makes
+ * that reachable: without it `-1` stops at the move commit itself, which is genuinely
+ * the most recent commit touching every path, and every page reports the merge date.
+ * Selecting additions and modifications skips the rename (`R`) the move recorded.
+ *
+ * `AM`, not `M`. A doc added and never edited since (`docs/reference-authors.md`) has
+ * no `M` commit at all, so `M` alone returns an empty string and `renderPage` silently
+ * drops the frontmatter field rather than failing loudly. `A` is the fallback that
+ * gives those pages their creation date.
+ *
+ * `packages/blit386/scripts/gen-api-history.mjs` uses `--follow` for the same reason.
  */
 const getLastModified = (src, engineRepoRoot = ENGINE_REPO_ROOT) => {
     try {
-        const output = execFileSync('git', ['-C', engineRepoRoot, 'log', '-1', '--format=%aI', '--', `docs/${src}`], {
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'ignore'],
-        }).trim();
+        const output = execFileSync(
+            'git',
+            ['-C', engineRepoRoot, 'log', '-1', '--follow', '--diff-filter=AM', '--format=%aI', '--', `docs/${src}`],
+            {
+                encoding: 'utf8',
+                stdio: ['ignore', 'pipe', 'ignore'],
+            },
+        ).trim();
 
         return output === '' ? undefined : output;
     } catch {

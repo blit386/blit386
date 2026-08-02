@@ -1,0 +1,96 @@
+name: Deploy
+
+# Ported from the demos and docs-site repos with their triggers unchanged: merging to
+# main deploys both sites, exactly as it did before the monorepo merge. BT-406 owns the
+# move to tag-driven production deploys with next.* preview targets - deliberately not
+# done here, because converting now would leave a window where nothing deploys at all.
+#
+# No path filter, on purpose. A wrong filter here means a site silently stays stale
+# rather than failing loudly, and BT-406 rewrites this file anyway.
+#
+# Each job builds its own site rather than downloading ci.yml's artifacts. That means
+# two builds per site on every merge - one in CI, one here - which is a real cost,
+# accepted because a tag-triggered job (BT-406) cannot reuse artifacts from a
+# push-triggered run. Wiring up a cross-workflow hand-off now would be torn out next
+# phase.
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  # Never run two deploys of the same site at once, and never cancel one in flight -
+  # a half-finished deploy is worse than a queued one.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-demos:
+    name: Deploy Demos to Cloudflare Pages
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # demos consumes the engine as workspace:*, so the engine build is a prerequisite.
+      - name: Build engine (workspace dependency)
+        run: pnpm --filter blit386 run build
+
+      - name: Build demos
+        run: pnpm --filter blit386-demos run build
+        env:
+          NODE_ENV: production
+
+      # `command` is the pre-merge command verbatim; workingDirectory is what keeps the
+      # relative `dist/` in it correct from the monorepo root.
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/demos
+          command: pages deploy dist/ --project-name=blit386-demos
+
+  deploy-website:
+    name: Deploy Website to Cloudflare Workers
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # No engine build: website resolves `blit386` from npm, not the workspace.
+      # `build` sets CLOUDFLARE=1 (Twoslash) and its postbuild lifecycle patches
+      # dist/server/wrangler.json, which is the config deployed below.
+      - name: Build site
+        run: pnpm --filter blit386-website run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/website
+          command: deploy --config dist/server/wrangler.json --name blit386
+          wranglerVersion: '4.67.0'

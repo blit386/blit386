@@ -6,6 +6,7 @@
     "game-loop",
     "camera",
     "easing",
+    "random",
     "core-types",
     "browser-support",
     "rendering",
