@@ -65,6 +65,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/demos
           command: pages deploy dist/ --project-name=blit386-demos
+          packageManager: pnpm
 
   deploy-website:
     name: Deploy Website to Cloudflare Workers
@@ -98,7 +99,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/website
           command: deploy --config dist/server/wrangler.json --name blit386
-          wranglerVersion: '4.67.0'
+          wranglerVersion: '4.114.0'
 
   deploy-demos-next:
     name: Deploy Demos to Cloudflare Pages (next preview)
@@ -134,6 +135,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/demos
           command: pages deploy dist/ --project-name=blit386-demos-next
+          packageManager: pnpm
 
   deploy-website-next:
     name: Deploy Website to Cloudflare Workers (next preview)
@@ -166,4 +168,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/website
           command: deploy --config dist/server/wrangler.json --name blit386-next
-          wranglerVersion: '4.67.0'
+          wranglerVersion: '4.114.0'
