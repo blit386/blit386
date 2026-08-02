@@ -85,7 +85,8 @@ html[data-embed='true'] {
 
     /* Hide shell chrome until JS removes it. */
     & #demo-banner,
-    & #demo-frame {
+    & #demo-frame,
+    & #channel-banner {
         display: none;
     }
 

@@ -8,6 +8,23 @@ import { clearHighlightCache, highlightDemoSource } from './highlight-demo-sourc
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
+// Set only in the deploy-demos-next CI job (see .github/workflows/deploy.yml). Read directly
+// from process.env here (this plugin runs in Node during the build, not the browser), so no
+// client-side env var plumbing is needed for the noindex meta tag or the unreleased-work banner.
+const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
+
+const ROBOTS_NOINDEX_META = '<meta name="robots" content="noindex">';
+
+// id="channel-banner" lets layout.css hide this in embed mode (styles/layout.css,
+// html[data-embed='true']) - the shell iframe loads this same page at ?embed, so without
+// that rule the banner would render a second time inside the canvas iframe.
+const CHANNEL_BANNER_HTML =
+    '<div id="channel-banner" style="position:relative;padding:8px 16px;text-align:center;font:14px/1.4 system-ui,sans-serif;' +
+    'background:#f5c518;color:#000;">' +
+    'This site tracks unreleased work and may document features not yet on npm. ' +
+    '<a href="https://demos.blit386.dev" style="color:#000;font-weight:600;">Go to the released site</a>.' +
+    '</div>';
+
 /**
  * Vite plugin that serves/generates demo HTML pages virtually from src/*.js demo files.
  * No per-demo HTML file is needed on disk; the template lives in _partials/layout.html
@@ -128,7 +145,9 @@ export function virtualDemos() {
             .replaceAll('{{slug}}', entry.slug)
             .replace('{{demoList}}', () => demoListJson)
             .replace('{{sourceHtml}}', () => sourceHtml)
-            .replace('{{sourcePanelScript}}', () => sourcePanelScript);
+            .replace('{{sourcePanelScript}}', () => sourcePanelScript)
+            .replace('{{robotsMeta}}', () => (IS_NEXT_CHANNEL ? ROBOTS_NOINDEX_META : ''))
+            .replace('{{channelBanner}}', () => (IS_NEXT_CHANNEL ? CHANNEL_BANNER_HTML : ''));
     }
 
     return {

@@ -52,6 +52,26 @@ describe('patchWranglerConfig', () => {
         const result = patchWranglerConfig({ name: 'worker', compatibility_flags: [] });
         assert.equal(result.name, 'worker');
     });
+
+    test('does not set a vars key by default', () => {
+        const result = patchWranglerConfig({ name: 'worker' });
+        assert.equal('vars' in result, false);
+    });
+
+    test('sets BLIT386_CHANNEL=next when isNextChannel is true', () => {
+        const result = patchWranglerConfig({ name: 'worker' }, { isNextChannel: true });
+        assert.deepEqual(result.vars, { BLIT386_CHANNEL: 'next' });
+    });
+
+    test('preserves existing vars alongside BLIT386_CHANNEL', () => {
+        const result = patchWranglerConfig({ vars: { OTHER: 'value' } }, { isNextChannel: true });
+        assert.deepEqual(result.vars, { OTHER: 'value', BLIT386_CHANNEL: 'next' });
+    });
+
+    test('leaves vars untouched when isNextChannel is false', () => {
+        const result = patchWranglerConfig({ vars: { OTHER: 'value' } }, { isNextChannel: false });
+        assert.deepEqual(result.vars, { OTHER: 'value' });
+    });
 });
 
 describe('patchRequireMetaUrl', () => {

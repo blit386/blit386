@@ -17,6 +17,7 @@ import { EditOnGitHub } from 'fumadocs-ui/layouts/docs/page';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
+import { channelHeadersPlugin } from './src/channel-headers';
 import { AuthorByline } from './src/components/author-byline';
 import { BlogIndexPage } from './src/components/blog-index';
 import { BlogLayout } from './src/components/blog-layout';
@@ -25,6 +26,7 @@ import { BlogTagPage, BlogTagsPage } from './src/components/blog-tags-page';
 import { SidebarSocials } from './src/components/sidebar-socials';
 import { SidebarLogo } from './src/components/sidebar-logo';
 import { CommunityConnect } from './src/components/community-connect';
+import { ChannelBanner } from './src/components/channel-banner';
 import { DemoEmbed } from './src/components/demo-embed';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { VideoEmbed } from './src/components/video-embed';
@@ -43,7 +45,13 @@ import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { Popup, PopupContent, PopupTrigger } from 'fumadocs-twoslash/ui';
 import { blog, docs } from './.source/server';
 
-const SITE_BASE_URL = 'https://blit386.dev';
+// Set only in the deploy-website-next CI job (see .github/workflows/deploy.yml). Each channel
+// is a fully separate build and deploy, so this is resolved once here rather than threaded
+// into the deployed Worker as a wrangler var read at request time.
+const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
+
+const SITE_BASE_URL = IS_NEXT_CHANNEL ? 'https://next.blit386.dev' : 'https://blit386.dev';
+const PRODUCTION_SITE_URL = 'https://blit386.dev';
 
 // Reads and caches the Departure Mono font file used for Open Graph image generation
 // (`takumiPlugin` below), so disk access happens once per Worker isolate rather than per request.
@@ -196,6 +204,8 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
  */
 const GLOBAL_HEAD = (
     <>
+        {IS_NEXT_CHANNEL && <meta name="robots" content="noindex" />}
+
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
         <link rel="preconnect" href="https://fonts.vancura.dev" crossOrigin="" />
@@ -366,8 +376,15 @@ export default defineConfig({
     // markdownNegotiationPlugin runs before llmsPlugin so canonical doc URLs return a
     // direct `text/markdown` 200 (with x-markdown-tokens); autoRedirect is disabled to
     // avoid the llms middleware issuing a 302 to the `.md` file instead.
+    //
+    // channelHeadersPlugin runs first of all: markdownNegotiationPlugin's assets-first
+    // fallback serves most requests (including /robots.txt) directly from the ASSETS
+    // binding and returns without calling next(), so a plugin registered after it would
+    // never see those requests to override robots.txt or set a response header on them.
 
     .plugins(
+        channelHeadersPlugin(),
+
         flexsearchPlugin(),
 
         blogPlugin({
@@ -471,7 +488,16 @@ export default defineConfig({
 
     .layouts({
         root({ lang, children }) {
-            return rootLayout({ lang, children });
+            const content = IS_NEXT_CHANNEL ? (
+                <>
+                    <ChannelBanner productionUrl={PRODUCTION_SITE_URL} />
+                    {children}
+                </>
+            ) : (
+                children
+            );
+
+            return rootLayout({ lang, children: content });
         },
 
         defaultProps() {

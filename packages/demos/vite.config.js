@@ -7,6 +7,7 @@ import { defineConfig } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 import { buildRegistry } from './plugins/demo-registry.js';
+import { channelHeadersPlugin } from './plugins/channel-headers.js';
 import { VINTAGE_URLS } from './plugins/demo-vintage-urls.js';
 import { virtualDemos } from './plugins/virtual-demos.js';
 
@@ -162,6 +163,7 @@ export default defineConfig(({ command }) => {
             }),
             flattenDemosPlugin(),
             demoRedirectsPlugin(),
+            channelHeadersPlugin(),
         ],
 
         build: {

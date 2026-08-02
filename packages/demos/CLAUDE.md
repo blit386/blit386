@@ -179,6 +179,14 @@ quotes, semicolons, trailing commas. Markdown tables are compact by design via t
 Commit scopes (convention only – prefer one already in this package's history): `demos`, `ui`, `assets`, `docs`,
 `skills`, `deps`. Husky runs lint-staged on pre-commit, commitlint on commit-msg, and `pnpm run preflight` on pre-push.
 
-Deployment is automatic on push to main. The build copies each virtual demo to `dist/<slug>.html` at the site root and
-generates `dist/_redirects` from `VINTAGE_URLS` plus a site-index rule, so vintage numbered paths (`/001-basics`) 301 to
-the current slug in both environments.
+The build copies each virtual demo to `dist/<slug>.html` at the site root and generates `dist/_redirects` from
+`VINTAGE_URLS` plus a site-index rule, so vintage numbered paths (`/001-basics`) 301 to the current slug everywhere.
+
+`.github/workflows/deploy.yml` runs two jobs against this package: `deploy-demos` deploys to the `blit386-demos` Pages
+project (`demos.blit386.dev`) on a release tag push (`x.y.z`, no `v` prefix, no prerelease suffix) or a manual
+`workflow_dispatch`; `deploy-demos-next` deploys to the `blit386-demos-next` Pages project (`next.demos.blit386.dev`) on
+every push to main, no path filter. The `-next` job sets `BLIT386_CHANNEL=next` on the build step, which
+`plugins/virtual-demos.js` and `plugins/channel-headers.js` read directly (Node context, at build time – no client-side
+env var involved) to render the unreleased-work banner and a `noindex` meta tag into every page, append
+`X-Robots-Tag: noindex` to `dist/_headers`, and write a disallow-all `dist/robots.txt`. Production gets none of that –
+no banner, no noindex header, and (same as before this) no `robots.txt` at all.

@@ -17,18 +17,33 @@ const REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
  * (Accept: text/markdown) can intercept canonical doc URLs. Without this, Cloudflare
  * serves pre-rendered HTML directly and the Worker never sees the request. The Worker
  * re-implements assets-first via the ASSETS binding (see src/markdown-negotiation.ts).
+ *
+ * `isNextChannel` also sets a `BLIT386_CHANNEL: 'next'` var. This can't be a plain
+ * `process.env.BLIT386_CHANNEL` read inside `src/channel-headers.ts` instead: that
+ * module's top level re-runs inside the deployed Worker on every cold start (to
+ * reconstruct the Fumapress plugin list), and the Worker has no access to the
+ * shell env the CI build step ran in – only to whatever `wrangler.json` declares as
+ * `vars`, surfaced at request time via `c.env`. Verified locally with `wrangler dev`:
+ * without this, `X-Robots-Tag` and the `/robots.txt` override silently never fired,
+ * even though `BLIT386_CHANNEL=next` was set for the build (which is why the SSG'd
+ * HTML's noindex meta, banner, and canonical URLs were correct regardless – those are
+ * baked in once during the Node build, not re-evaluated in the Worker).
+ * @param {{ isNextChannel?: boolean }} [options]
  */
-export const patchWranglerConfig = (config) => {
+export const patchWranglerConfig = (config, options = {}) => {
+    const { isNextChannel = false } = options;
     const existingFlags = Array.isArray(config.compatibility_flags) ? config.compatibility_flags : [];
     const flags = existingFlags.includes(REQUIRED_FLAG) ? existingFlags : [...existingFlags, REQUIRED_FLAG];
     const assets =
         config.assets && config.assets.run_worker_first !== true
             ? { ...config.assets, run_worker_first: true }
             : config.assets;
+    const vars = isNextChannel ? { ...config.vars, BLIT386_CHANNEL: 'next' } : config.vars;
     return {
         ...config,
         compatibility_flags: flags,
         ...(config.assets !== undefined ? { assets } : {}),
+        ...(vars !== undefined ? { vars } : {}),
     };
 };
 
@@ -40,7 +55,8 @@ export const patchWranglerConfig = (config) => {
 export const patchRequireMetaUrl = (content) => content.replace(PATTERN, REPLACEMENT);
 
 const main = () => {
-    const patchedConfig = patchWranglerConfig(JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8')));
+    const isNextChannel = process.env.BLIT386_CHANNEL === 'next';
+    const patchedConfig = patchWranglerConfig(JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8')), { isNextChannel });
     writeFileSync(WRANGLER_CONFIG, `${JSON.stringify(patchedConfig, null, 2)}\n`);
 
     // Scan the whole server bundle recursively, not just dist/server/assets: the
