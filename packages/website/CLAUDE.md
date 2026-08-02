@@ -73,6 +73,12 @@ yourself after touching engine docs; CI is the backstop, not the workflow. The s
 That job checks out with `fetch-depth: 0`. The generator reads each page's `lastModified` with `git log --follow`, to
 see past the commit that moved the engine into `packages/blit386/`, and `--follow` finds nothing on a shallow clone.
 
+**Commit the engine doc before you sync.** `lastModified` comes from git, so a sync run before the commit records the
+doc's _previous_ date, and CI – which sees the commit – regenerates a different value and fails the check. The order is
+edit `packages/blit386/docs/…`, commit, then `pnpm run sync:docs`, then commit the mirror. Amending works too: the
+lookup reads the author date, which `git commit --amend` preserves. It converges after one extra sync either way, since
+the mirror commit does not touch the engine doc.
+
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds
 frontmatter (`title`, `description`, `lastModified` from git, `editUrl` into the engine's GitHub path – both consumed by
