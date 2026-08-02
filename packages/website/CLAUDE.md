@@ -63,11 +63,15 @@ in the engine package's `docs/_sitemap.json` and writes matching MDX into `conte
 script, owns which docs publish, their URL, sidebar order, and subtitle** – the script carries no per-page knowledge, so
 adding a page means editing the manifest in `packages/blit386` and re-running the sync, with no change here.
 
-`pnpm run sync:docs` regenerates and formats. `pnpm run sync:docs:check` fails on drift, but it is a **local check only
-– nothing in `.github/workflows/` runs it**, so mirror drift is not enforced in CI. Run it yourself after touching
-engine docs. The source resolves from `ENGINE_DOCS_DIR` (default `../blit386/docs`, which already resolves correctly to
-the sibling `packages/blit386/docs` in this monorepo). `sync:docs:watch` re-syncs on every change alongside
-`pnpm run dev`.
+`pnpm run sync:docs` regenerates and formats. `pnpm run sync:docs:check` fails on drift and **is enforced in CI** – it
+runs in the `quality-website` job of `.github/workflows/ci.yml`, gated on the `website` path filter, which includes
+`packages/blit386/docs/**`. So editing an engine doc without re-syncing turns the pull request red. Still run it
+yourself after touching engine docs; CI is the backstop, not the workflow. The source resolves from `ENGINE_DOCS_DIR`
+(default `../blit386/docs`, which already resolves correctly to the sibling `packages/blit386/docs` in this monorepo).
+`sync:docs:watch` re-syncs on every change alongside `pnpm run dev`.
+
+That job checks out with `fetch-depth: 0`. The generator reads each page's `lastModified` with `git log --follow`, to
+see past the commit that moved the engine into `packages/blit386/`, and `--follow` finds nothing on a shallow clone.
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds
@@ -156,8 +160,10 @@ what keeps playback starting early regardless. Cloudflare's per-file static-asse
 ## Deploy
 
 `pnpm run build` produces `dist/public/` and `dist/server/`; `pnpm run deploy` runs
-`wrangler deploy --config dist/server/wrangler.json --name blit386`. CI deploys on push to `main` using
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+`wrangler deploy --config dist/server/wrangler.json --name blit386`. The `deploy-website` job in
+`.github/workflows/deploy.yml` deploys on push to `main` using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, both
+org-level secrets. It builds the site itself rather than reusing `ci.yml`'s artifact, so that BT-406 can switch it to a
+tag trigger without needing a cross-workflow hand-off.
 
 The Worker is named `blit386` (custom domain `blit386.dev`). The root `wrangler.jsonc` also declares
 `"name": "blit386"`, but that value never actually reaches Cloudflare – both deploy paths pass `--name blit386`

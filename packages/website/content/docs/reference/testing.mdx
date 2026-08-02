@@ -255,20 +255,43 @@ GitHub Actions runs unit tests and quality gates in CI. Visual regression is loc
 
 ### `ci.yml` (`CI` workflow)
 
-Triggers on push to `main` and on pull requests targeting `main`. `labeled` / `unlabeled` PR events skip the `quality`,
-`build-library`, and `test` jobs unless the added label is `perf` (which enables the benchmark job).
+Triggers on push to `main` and on pull requests targeting `main`. `labeled` / `unlabeled` PR events skip every job
+except `quality-engine`, and that one only when the added label is `perf` (which enables the benchmark job).
 
-| Job | What it runs |
-| --- | --- |
-| `quality` | `format:check`, `lint`, `typecheck`, `spellcheck`, `docs:links`, `agents:check`, `sync:doc-banners:check`, `knip`, `api:since:check`, `api:history:check` |
-| `build-library` | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
-| `bundle-size` | `pnpm run build`, declaration tooling check, gzipped ESM size gate |
-| `test` | `pnpm run test:unit:coverage`, Codecov upload |
-| `security-audit` | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate) |
-| `benchmark` | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold) |
+The pipeline is path-filtered. A `changes` job runs [`dorny/paths-filter`](https://github.com/dorny/paths-filter) first
+and emits one boolean per package plus a `shared` flag for root configs, `scripts/`, and `.github/`; every package job
+is gated on its own filter or on `shared`. So an engine-only pull request does not rebuild the demos, and a website-only
+one touches neither. Two filters deliberately span packages: `demos` includes `packages/blit386/**` because demos
+consumes the engine as `workspace:*`, and `website` includes `packages/blit386/docs/**` because that is what
+`sync:docs:check` mirrors.
 
-On pull requests, `pr-checks.yml` complements `ci.yml` with Conventional Commits validation only; every other gate –
-knip, bundle size, doc links, agent-config drift – runs inside `ci.yml`.
+| Job | Gated on | What it runs |
+| --- | --- | --- |
+| `changes` | always | Path filters; emits the per-package booleans every job below reads |
+| `quality-root` | always | `format:check`, `docs:links`, `agents:check` – repo-wide, so they run once rather than per package |
+| `security-audit` | always | `pnpm run security:audit`, `pnpm run security:audit:prod` (dependency policy gate), workspace-wide |
+| `quality-engine` | engine | `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check` |
+| `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
+| `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (80 KB) |
+| `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
+| `benchmark` | engine | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold) |
+| `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry` |
+| `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |
+| `quality-website` | website | `lint`, `typecheck`, `spellcheck`, `test`, `knip`, and `sync:docs:check` |
+| `build-website` | website | `pnpm run build` (sets `CLOUDFLARE=1`, so Twoslash runs) |
+| `quality-kit` / `build-test-kit` | kit | `typecheck`, `knip`; then build and `node --test` |
+| `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests |
+
+Jobs needing full git history ask the shared setup action for it: `quality-engine` and `test-engine` take
+`fetch-depth: 0` plus `fetch-tags: true` (release dates come from tags, and the API-history generator walks history with
+`git log --follow`), and `quality-website` takes `fetch-depth: 0` for the same `--follow` reason in the docs mirror.
+
+`sync:docs:check` runs here and nowhere else. It could not run before the monorepo merge, because the docs-site
+repository had no engine checkout to sync against – so a stale published mirror was only ever caught by hand.
+
+The four workflow files are `ci.yml`, `pr-checks.yml`, `dco.yml`, and `deploy.yml`; CodeQL runs from GitHub's default
+setup rather than a checked-in workflow. On pull requests, `pr-checks.yml` complements `ci.yml` with Conventional
+Commits validation only; every other gate – knip, bundle size, doc links, agent-config drift – runs inside `ci.yml`.
 
 ### `pr-checks.yml` (`PR Checks` workflow)
 

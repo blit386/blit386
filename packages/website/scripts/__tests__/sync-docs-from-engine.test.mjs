@@ -335,11 +335,13 @@ describe('getLastModified', () => {
         const editDate = '2026-03-02T09:00:00+01:00';
         const renameDate = '2026-04-20T09:00:00+01:00';
         const renameRepo = mkdtempSync(join(tmpdir(), 'sync-docs-rename-'));
-        const commit = (message, date) =>
+        /** @type {(message: string, date: string) => void} */
+        const commit = (message, date) => {
             execFileSync('git', ['commit', '--quiet', '-m', message], {
                 cwd: renameRepo,
                 env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
             });
+        };
 
         try {
             mkdirSync(join(renameRepo, 'docs'), { recursive: true });

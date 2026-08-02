@@ -14,30 +14,115 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  security-audit:
-    name: Dependency Security Audit
+  changes:
+    name: Detect Changed Packages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    outputs:
+      engine: ${{ steps.filter.outputs.engine }}
+      demos: ${{ steps.filter.outputs.demos }}
+      website: ${{ steps.filter.outputs.website }}
+      kit: ${{ steps.filter.outputs.kit }}
+      scaffolder: ${{ steps.filter.outputs.scaffolder }}
+      shared: ${{ steps.filter.outputs.shared }}
+      # Adding or removing a label re-triggers the workflow so the `perf` label can turn
+      # benchmarks on mid-PR. Everything else would just re-run unchanged code, so most
+      # jobs opt out via this flag.
+      label-event:
+        ${{ github.event_name == 'pull_request' && contains(fromJSON('["labeled","unlabeled"]'), github.event.action) }}
+
+    steps:
+      # paths-filter uses the API on pull_request events but needs a working tree on
+      # push. Plain checkout, not ./.github/actions/setup - this job never runs a script,
+      # so installing the workspace would be pure latency in front of every other job.
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4
+        with:
+          # On a push to main, `base` defaults to the branch that was pushed to, which
+          # makes the action diff against the commit before the push. On a pull_request
+          # it diffs the PR against its base. Both are what we want, so `base` is unset.
+          filters: |
+            shared:
+              - '.github/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.npmrc'
+              - 'tsconfig.base.json'
+              - 'biome.json'
+              - 'knip.json'
+              - 'cspell.json'
+              - 'prettier.config.js'
+              - '.prettierignore'
+              - 'commitlint.config.js'
+              - 'scripts/**'
+              - '.husky/**'
+            engine:
+              - 'packages/blit386/**'
+            demos:
+              - 'packages/demos/**'
+              - 'packages/blit386/**'
+            website:
+              - 'packages/website/**'
+              - 'packages/blit386/docs/**'
+            kit:
+              - 'packages/kit/**'
+            scaffolder:
+              - 'packages/create-blit386/**'
+              - 'packages/kit/**'
+
+  quality-root:
+    name: Code Quality (root)
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.label-event != 'true'
     permissions:
       contents: read
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up workspace
+        uses: ./.github/actions/setup
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-        with:
-          version: 10.26.2
+      # Repo-wide by design: `biome check .` walks every package from the root, and the
+      # Prettier and link globs are equally global. Running these once here is why the
+      # per-package quality jobs below carry only package-scoped checks.
+      - name: Check formatting
+        run: pnpm run format:check
+        background: true
 
-      - name: Setup Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22.23.1'
-          cache: 'pnpm'
+      - name: Check documentation links
+        run: pnpm run docs:links
+        background: true
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Check agent config drift
+        run: pnpm run agents:check
+        background: true
 
+      - wait-all:
+
+  security-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.label-event != 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # One workspace-wide audit. `pnpm audit` from the root covers every package, which
+      # is what lets this single job replace the four per-repo audits.
       - name: Audit all dependencies (moderate+)
         run: pnpm run security:audit
 
@@ -55,134 +140,102 @@ jobs:
             echo '| All dependencies | `pnpm run security:audit` |'
             echo '| Production only | `pnpm run security:audit:prod` |'
             echo ''
-            echo "Policy: moderate and above fail CI. See docs/security/dependency-policy.md."
+            echo "Policy: moderate and above fail CI. See packages/blit386/docs/security/dependency-policy.md."
           } >> "$GITHUB_STEP_SUMMARY"
 
-  quality:
-    name: Code Quality
+  quality-engine:
+    name: Code Quality (engine)
     runs-on: ubuntu-latest
+    needs: changes
+    # The `perf` label is the one label change that must reach a quality job, because
+    # the benchmark job below depends on this one.
     if:
-      github.event_name != 'pull_request' || !contains(fromJSON('["labeled","unlabeled"]'), github.event.action) ||
-      (github.event.action == 'labeled' && contains(fromJSON('["perf"]'), github.event.label.name))
+      (needs.changes.outputs.engine == 'true' || needs.changes.outputs.shared == 'true') &&
+      (needs.changes.outputs.label-event != 'true' || (github.event.action == 'labeled' && github.event.label.name ==
+      'perf'))
     permissions:
       contents: read
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up workspace
+        uses: ./.github/actions/setup
         with:
-          # api:history:check resolves release dates from git tags; without them dates go null and the
-          # committed docs/_api-history.json versions map looks drifted.
-          fetch-tags: true
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-        with:
-          version: 10.26.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22.23.1'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check formatting
-        run: pnpm run format:check
-        background: true
+          # api:since:check and api:history:check resolve release dates from tags, and
+          # gen-api-history.mjs walks history with `git log --follow`, which returns
+          # nothing on a shallow clone.
+          fetch-depth: '0'
+          fetch-tags: 'true'
 
       - name: Lint code
-        run: pnpm run lint
+        run: pnpm --filter blit386 run lint
         background: true
 
       - name: Type check
-        run: pnpm run typecheck
+        run: pnpm --filter blit386 run typecheck
         background: true
 
       - name: Spell check
-        run: pnpm run spellcheck
-        background: true
-
-      - name: Check documentation links
-        run: pnpm run docs:links
-        background: true
-
-      - name: Check agent config drift
-        run: pnpm run agents:check
-        background: true
-
-      - name: Check doc site banners
-        run: pnpm run sync:doc-banners:check
+        run: pnpm --filter blit386 run spellcheck
         background: true
 
       - name: Check unused exports and dependencies
-        run: pnpm run knip
+        run: pnpm --filter blit386 run knip
+        background: true
+
+      - name: Check doc site banners
+        run: pnpm --filter blit386 run sync:doc-banners:check
         background: true
 
       - name: Check API @since tags
-        run: pnpm run api:since:check
+        run: pnpm --filter blit386 run api:since:check
         background: true
 
       - name: Check API history manifest
-        run: pnpm run api:history:check
+        run: pnpm --filter blit386 run api:history:check
         background: true
 
       - wait-all:
 
-  build-library:
+  build-engine:
     name: Build Library
     runs-on: ubuntu-latest
-    needs: quality
-    if: github.event_name != 'pull_request' || !contains(fromJSON('["labeled","unlabeled"]'), github.event.action)
+    needs: [changes, quality-engine]
     permissions:
       contents: read
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-        with:
-          version: 10.26.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22.23.1'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up workspace
+        uses: ./.github/actions/setup
 
       - name: Build library
+        working-directory: packages/blit386
         run: pnpm run build 2>&1 | tee build.log
         env:
           NODE_ENV: production
 
       - name: Verify declaration tooling alignment
+        working-directory: packages/blit386
         run: pnpm run build:check-declarations build.log
 
       - name: Upload library artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: library-dist
-          path: dist/
+          path: packages/blit386/dist/
           retention-days: 7
 
   bundle-size:
     name: Check Bundle Size
     runs-on: ubuntu-latest
-    needs: build-library
-    if: github.event_name != 'pull_request' || !contains(fromJSON('["labeled","unlabeled"]'), github.event.action)
+    needs: build-engine
     permissions:
       contents: read
 
     steps:
+      # upload-artifact has no v8 major; v7 output paired with download-artifact v8 is
+      # the current combination, and is what the demos pipeline shipped on pre-merge.
       - name: Download library artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: library-dist
           path: dist
@@ -212,31 +265,71 @@ jobs:
           echo "cjs_gzip_kb=$CJS_GZIP_KB" >> $GITHUB_OUTPUT
 
       - name: Bundle size report
+        env:
+          ESM_KB: ${{ steps.size.outputs.esm_kb }}
+          CJS_KB: ${{ steps.size.outputs.cjs_kb }}
+          ESM_GZIP_KB: ${{ steps.size.outputs.esm_gzip_kb }}
+          CJS_GZIP_KB: ${{ steps.size.outputs.cjs_gzip_kb }}
         run: |
-          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Format | Raw | Gzipped |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|-----|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| ESM (.js) | ${{ steps.size.outputs.esm_kb }} KB | ${{ steps.size.outputs.esm_gzip_kb }} KB |" >> $GITHUB_STEP_SUMMARY
-          echo "| CJS (.cjs) | ${{ steps.size.outputs.cjs_kb }} KB | ${{ steps.size.outputs.cjs_gzip_kb }} KB |" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Bundle Size Report"
+            echo ""
+            echo "| Format | Raw | Gzipped |"
+            echo "|--------|-----|---------|"
+            echo "| ESM (.js) | ${ESM_KB} KB | ${ESM_GZIP_KB} KB |"
+            echo "| CJS (.cjs) | ${CJS_KB} KB | ${CJS_GZIP_KB} KB |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check size limits
+        env:
+          ESM_GZIP: ${{ steps.size.outputs.esm_gzip }}
+          ESM_GZIP_KB: ${{ steps.size.outputs.esm_gzip_kb }}
         run: |
-          # Fail if gzipped ESM exceeds 80 KB (adjust as needed)
-          ESM_GZIP=${{ steps.size.outputs.esm_gzip }}
+          # Fail if gzipped ESM exceeds 80 KB
           MAX_SIZE=81920  # 80 KB in bytes
 
           if [ "$ESM_GZIP" -gt "$MAX_SIZE" ]; then
-            echo "::error::Bundle size (${{ steps.size.outputs.esm_gzip_kb }} KB gzipped) exceeds limit (80 KB)"
+            echo "::error::Bundle size (${ESM_GZIP_KB} KB gzipped) exceeds limit (80 KB)"
             exit 1
           fi
 
           echo "Bundle size is within limits"
 
+  test-engine:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: [changes, quality-engine]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+        with:
+          # test:api-history's resolveTagDate integration cases need real release tags,
+          # and the generator walks history with `git log --follow`.
+          fetch-depth: '0'
+          fetch-tags: 'true'
+
+      - name: Run unit tests with coverage
+        run: pnpm --filter blit386 run test:unit:coverage
+
+      - name: Run API history generator tests
+        run: pnpm --filter blit386 run test:api-history
+
+      - name: Run security preflight tests
+        run: pnpm --filter blit386 run test:security-preflight
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
+        if: always()
+        with:
+          files: ./packages/blit386/coverage/coverage-final.json
+
   benchmark:
     name: Benchmarks
     runs-on: ubuntu-latest
-    needs: quality
+    needs: [changes, quality-engine]
     if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'perf')
     concurrency:
       group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-benchmark
@@ -247,31 +340,18 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-        with:
-          version: 10.26.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22.23.1'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Set up workspace
+        uses: ./.github/actions/setup
 
       - name: Run benchmarks
+        working-directory: packages/blit386
         run: pnpm run bench:json
 
       - name: Upload current benchmark results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: benchmark-results-current
-          path: benchmark-results.json
+          path: packages/blit386/benchmark-results.json
           if-no-files-found: error
           retention-days: 14
 
@@ -280,7 +360,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: benchmark-baseline
-          path: benchmark-results.json
+          path: packages/blit386/benchmark-results.json
           if-no-files-found: error
           retention-days: 90
 
@@ -331,6 +411,7 @@ jobs:
 
       - name: Download main benchmark baseline
         if: github.event_name == 'pull_request' && steps.find-baseline.outputs.found == 'true'
+        working-directory: packages/blit386
         env:
           GITHUB_TOKEN: ${{ github.token }}
           BASELINE_URL: ${{ steps.find-baseline.outputs.download-url }}
@@ -345,6 +426,7 @@ jobs:
 
       - name: Compare benchmark results
         if: github.event_name == 'pull_request'
+        working-directory: packages/blit386
         run: >
           node scripts/compare-tier-1-benchmarks.mjs --current benchmark-results.json --baseline
           baseline-artifact/benchmark-results.json --json-out benchmark-comparison.json --markdown-out
@@ -356,9 +438,9 @@ jobs:
         with:
           name: benchmark-comparison
           path: |
-            benchmark-comparison.json
-            benchmark-comment.md
-            benchmark-results.json
+            packages/blit386/benchmark-comparison.json
+            packages/blit386/benchmark-comment.md
+            packages/blit386/benchmark-results.json
           if-no-files-found: ignore
           retention-days: 14
 
@@ -368,7 +450,7 @@ jobs:
           'dependabot[bot]'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
-          BENCHMARK_COMMENT_PATH: benchmark-comment.md
+          BENCHMARK_COMMENT_PATH: packages/blit386/benchmark-comment.md
         with:
           script: |
             const fs = require('node:fs');
@@ -403,6 +485,7 @@ jobs:
 
       - name: Fail on benchmark regressions
         if: github.event_name == 'pull_request'
+        working-directory: packages/blit386
         run: |
           node --input-type=module <<'EOF'
           import fs from 'node:fs';
@@ -424,46 +507,243 @@ jobs:
           }
           EOF
 
-  test:
-    name: Run Tests
+  quality-demos:
+    name: Code Quality (demos)
     runs-on: ubuntu-latest
-    needs: quality
-    if: github.event_name != 'pull_request' || !contains(fromJSON('["labeled","unlabeled"]'), github.event.action)
+    needs: changes
+    if:
+      (needs.changes.outputs.demos == 'true' || needs.changes.outputs.shared == 'true') &&
+      needs.changes.outputs.label-event != 'true'
     permissions:
       contents: read
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # No typecheck: demos is plain JavaScript. None of these resolve the engine's
+      # types, so they do not need packages/blit386/dist - only the build below does.
+      - name: Lint code
+        run: pnpm --filter blit386-demos run lint
+        background: true
+
+      - name: Spell check
+        run: pnpm --filter blit386-demos run spellcheck
+        background: true
+
+      - name: Check unused exports and dependencies
+        run: pnpm --filter blit386-demos run knip
+        background: true
+
+      - name: Check demo registry
+        run: pnpm --filter blit386-demos run check:demo-registry
+        background: true
+
+      - wait-all:
+
+  build-demos:
+    name: Build Demos
+    runs-on: ubuntu-latest
+    needs: [changes, quality-demos]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # demos depends on blit386 via workspace:*, and packages/demos/vite.config.js
+      # imports `blit386/vite` unconditionally, so the engine must be built first. This
+      # is inline rather than inherited from build-engine on purpose: when only demos
+      # changed, build-engine does not run at all.
+      - name: Build engine (workspace dependency)
+        run: pnpm --filter blit386 run build
+
+      - name: Build demos
+        run: pnpm --filter blit386-demos run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          # test:api-history's resolveTagDate integration cases need real release tags present.
-          fetch-tags: true
+          name: demos-dist
+          path: packages/demos/dist/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+  quality-website:
+    name: Code Quality (website)
+    runs-on: ubuntu-latest
+    needs: changes
+    if:
+      (needs.changes.outputs.website == 'true' || needs.changes.outputs.shared == 'true') &&
+      needs.changes.outputs.label-event != 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
         with:
-          version: 10.26.2
+          # sync:docs:check regenerates the mirror, and the generator reads each doc's
+          # last-modified date with `git log --follow`, which needs full history.
+          fetch-depth: '0'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - name: Lint code
+        run: pnpm --filter blit386-website run lint
+        background: true
+
+      - name: Type check
+        run: pnpm --filter blit386-website run typecheck
+        background: true
+
+      - name: Spell check
+        run: pnpm --filter blit386-website run spellcheck
+        background: true
+
+      - name: Run tests
+        run: pnpm --filter blit386-website run test
+        background: true
+
+      - name: Check unused exports and dependencies
+        run: pnpm --filter blit386-website run knip
+        background: true
+
+      - wait-all:
+
+      # Deliberately after the join rather than alongside the checks above: this one
+      # regenerates content/docs in the working tree and asserts the result matches what
+      # is committed, so running it concurrently with steps reading the same tree would
+      # make a failure ambiguous.
+      #
+      # This is the guard BT-400 was written around. It could never run in the old
+      # docs-site repo, whose CI had no engine checkout to sync from.
+      - name: Check docs mirror is in sync with the engine
+        run: pnpm --filter blit386-website run sync:docs:check
+
+  build-website:
+    name: Build Website
+    runs-on: ubuntu-latest
+    needs: [changes, quality-website]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # No engine build needed: website resolves `blit386` from the npm registry, not
+      # from the workspace. `pnpm run build` sets CLOUDFLARE=1, which is what turns
+      # Twoslash on, and postbuild patches the generated wrangler config.
+      - name: Build site
+        run: pnpm --filter blit386-website run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          node-version: '22.23.1'
-          cache: 'pnpm'
+          name: website-dist
+          path: packages/website/dist/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+  quality-kit:
+    name: Code Quality (kit)
+    runs-on: ubuntu-latest
+    needs: changes
+    if:
+      (needs.changes.outputs.kit == 'true' || needs.changes.outputs.shared == 'true') &&
+      needs.changes.outputs.label-event != 'true'
+    permissions:
+      contents: read
 
-      - name: Run unit tests with coverage
-        run: pnpm run test:unit:coverage
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
 
-      - name: Run API history generator tests
-        run: pnpm run test:api-history
+      - name: Type check
+        run: pnpm --filter @blit386/kit run typecheck
+        background: true
 
-      - name: Run security preflight tests
-        run: pnpm run test:security-preflight
+      # Invoked from the root rather than through a package script: kit is published to
+      # npm, and npm ships a package's `scripts` block verbatim, so a `knip` entry would
+      # follow the tarball into every generated game's node_modules.
+      - name: Check unused exports and dependencies
+        run: pnpm exec knip --workspace packages/kit
+        background: true
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
-        if: always()
-        with:
-          files: ./coverage/coverage-final.json
+      - wait-all:
+
+  build-test-kit:
+    name: Build and Test Kit
+    runs-on: ubuntu-latest
+    needs: [changes, quality-kit]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # kit's own `pretest` runs the build, but naming it as its own step keeps a build
+      # failure distinguishable from a test failure in the job log.
+      - name: Build kit
+        run: pnpm --filter @blit386/kit run build
+
+      - name: Run kit tests
+        run: pnpm --filter @blit386/kit run test
+
+  quality-scaffolder:
+    name: Code Quality (scaffolder)
+    runs-on: ubuntu-latest
+    needs: changes
+    if:
+      (needs.changes.outputs.scaffolder == 'true' || needs.changes.outputs.shared == 'true') &&
+      needs.changes.outputs.label-event != 'true'
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      - name: Type check
+        run: pnpm --filter create-blit386 run typecheck
+        background: true
+
+      # From the root for the same reason as the kit job above.
+      - name: Check unused exports and dependencies
+        run: pnpm exec knip --workspace packages/create-blit386
+        background: true
+
+      - wait-all:
+
+  build-test-scaffolder:
+    name: Build and Test Scaffolder
+    runs-on: ubuntu-latest
+    needs: [changes, quality-scaffolder]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # create-blit386's tests import from its own dist/ and from @blit386/kit's dist/,
+      # and unlike kit it has no `pretest` to build itself. Both builds are therefore
+      # prerequisites, in this order.
+      - name: Build kit (workspace dependency)
+        run: pnpm --filter @blit386/kit run build
+
+      - name: Build scaffolder
+        run: pnpm --filter create-blit386 run build
+
+      - name: Run scaffolder tests
+        run: pnpm --filter create-blit386 run test
+
+      - name: Run lockstep bump tests
+        run: pnpm --filter create-blit386 run test:bump-lockstep
