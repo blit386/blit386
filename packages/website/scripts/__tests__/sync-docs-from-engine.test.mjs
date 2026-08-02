@@ -321,6 +321,53 @@ describe('getLastModified', () => {
         }
     });
 
+    // Regression guard for the monorepo move: a rename must not become the doc's
+    // last-modified date. Without --follow --diff-filter=AM, `git log -1` stops at the
+    // rename commit, which is how 32 of 34 engine docs came to report the phase-1 merge
+    // date. Reproduce that shape in its own repo (so the tests above keep their fixture
+    // unmoved): create, edit, then move, and assert the edit wins over the move.
+    //
+    // The second case is why the filter is AM and not M: a doc added and never edited
+    // has no M commit, so M alone yields an empty string and the frontmatter field is
+    // silently dropped instead of falling back to the creation date.
+    test('skips a rename, and falls back to the creation date for a never-edited doc', () => {
+        const createDate = '2026-02-01T09:00:00+01:00';
+        const editDate = '2026-03-02T09:00:00+01:00';
+        const renameDate = '2026-04-20T09:00:00+01:00';
+        const renameRepo = mkdtempSync(join(tmpdir(), 'sync-docs-rename-'));
+        const commit = (message, date) =>
+            execFileSync('git', ['commit', '--quiet', '-m', message], {
+                cwd: renameRepo,
+                env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+            });
+
+        try {
+            mkdirSync(join(renameRepo, 'docs'), { recursive: true });
+            execFileSync('git', ['init', '--quiet'], { cwd: renameRepo });
+            execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: renameRepo });
+            execFileSync('git', ['config', 'user.name', 'Test'], { cwd: renameRepo });
+
+            writeFileSync(join(renameRepo, 'docs', 'edited.md'), '# Edited\n');
+            writeFileSync(join(renameRepo, 'docs', 'untouched.md'), '# Untouched\n');
+            execFileSync('git', ['add', '-A'], { cwd: renameRepo });
+            commit('add docs', createDate);
+
+            writeFileSync(join(renameRepo, 'docs', 'edited.md'), '# Edited\n\nMore.\n');
+            execFileSync('git', ['add', '-A'], { cwd: renameRepo });
+            commit('edit one doc', editDate);
+
+            mkdirSync(join(renameRepo, 'docs', 'nested'), { recursive: true });
+            execFileSync('git', ['mv', 'docs/edited.md', 'docs/nested/edited.md'], { cwd: renameRepo });
+            execFileSync('git', ['mv', 'docs/untouched.md', 'docs/nested/untouched.md'], { cwd: renameRepo });
+            commit('move docs', renameDate);
+
+            assert.equal(getLastModified('nested/edited.md', renameRepo), editDate);
+            assert.equal(getLastModified('nested/untouched.md', renameRepo), createDate);
+        } finally {
+            rmSync(renameRepo, { recursive: true, force: true });
+        }
+    });
+
     after(() => {
         rmSync(repoRoot, { recursive: true, force: true });
     });
@@ -347,9 +394,11 @@ describe('renderPage frontmatter (lastModified, editUrl)', () => {
         assert.ok(!contents.includes('lastModified:'));
     });
 
-    test('omits lastModified by default against the non-git fixture directory', () => {
-        // FIXTURE_DIR (scripts/__fixtures__/sync-docs) is not a git repo, so the real
-        // (non-injected) getLastModified must fail closed rather than throw.
+    test('omits lastModified by default when the fixture path has no history', () => {
+        // FIXTURE_DIR (scripts/__fixtures__/sync-docs) *is* inside this repo, so git
+        // runs fine here - it just has no commit matching the "docs/api/with-components.md"
+        // pathspec relative to that directory. The real (non-injected) getLastModified
+        // must therefore return undefined on empty output rather than throwing.
         const { contents } = renderPage(FIXTURE_PAGE);
         assert.ok(!contents.includes('lastModified:'));
     });
