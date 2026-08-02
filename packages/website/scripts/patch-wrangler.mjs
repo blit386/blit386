@@ -28,7 +28,6 @@ const REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
  * even though `BLIT386_CHANNEL=next` was set for the build (which is why the SSG'd
  * HTML's noindex meta, banner, and canonical URLs were correct regardless – those are
  * baked in once during the Node build, not re-evaluated in the Worker).
- * @param {Record<string, unknown>} config
  * @param {{ isNextChannel?: boolean }} [options]
  */
 export const patchWranglerConfig = (config, options = {}) => {
