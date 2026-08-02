@@ -1,11 +1,25 @@
 # Publishing
 
-This repo publishes two packages to npm:
+`blit386`, `@blit386/kit`, and `create-blit386` release in **lockstep**: one shared `x.y.z` version across all three,
+bumped together by `scripts/bump-lockstep.mjs` (repo root). This file documents the publish steps for the two packages
+published from here; the engine's own build-and-publish step is `pnpm run release` inside `packages/blit386` (see
+`/release`). Both flows are one release: the engine publishes first, then this file's two packages.
 
 | Package | npm name | Scope | What it is |
 | --- | --- | --- | --- |
 | `packages/kit` | `@blit386/kit` | scoped | The `blit` CLI plus the canonical `AGENTS.md` and game docs. |
 | `packages/create-blit386` | `create-blit386` | unscoped | The `npm create blit386` scaffolder. Depends on the kit. |
+
+## Semver policy: the engine anchors semver
+
+Lockstep means one version number, but the three packages do not carry equal semver weight. The **engine anchors
+semver**: a breaking change confined to the scaffolder CLI or to kit content is absorbed as a **minor**, not a major,
+because a major would tell engine users their game code might break when it will not. Only a breaking change in the
+`blit386` engine's own public API justifies a major bump.
+
+This is the one place lockstep loses information – a major bump no longer means "the CLI changed its flags," it always
+means "the engine broke compatibility." Treat that loss as intentional and keep this rule written down rather than
+assumed; see the SemVer choice bullet in the pre-bump checklist below.
 
 ## Golden rules (read these first)
 
@@ -15,14 +29,18 @@ This repo publishes two packages to npm:
 2. Always use `pnpm publish`, never `npm publish`. `create-blit386` depends on `@blit386/kit` via `workspace:*`, and
    only pnpm rewrites that to a real version number when publishing. `npm publish` would ship a broken
    `"@blit386/kit": "workspace:*"` dependency.
-3. Publish `@blit386/kit` before `create-blit386`. The scaffolder depends on the kit, so the kit must exist on npm
-   first.
+3. Publish `@blit386/kit` before `create-blit386`, and both only after the engine (`blit386`) is confirmed live on npm.
+   The scaffolder depends on the kit, so the kit must exist on npm first; the kit's docs may describe engine API that
+   must already be published (golden rule 1).
 4. Versions are permanent. You can never reuse or overwrite a published version – bump the version before republishing.
-5. Release tags carry no `v` prefix (`1.2.0`, not `v1.2.0`), matching every existing tag in the repo (`0.1.0`, `1.0.0`,
+   Every release publishes all three packages, including any with no changes since the last release – that is the
+   accepted cost of lockstep, matching how Babel and Angular operate. Do not add logic to skip an unchanged package.
+5. Release tags carry no `v` prefix (`1.2.0`, not `v1.2.0`). One tag per release, covering all three packages – there is
+   only one tag series now that they share a version, matching every existing tag in the repo (`0.1.0`, `1.0.0`,
    `1.1.0`, `1.2.0`, `1.2.1`).
 6. Publishing is manual-only. There is no CI publish workflow and no `NPM_TOKEN` secret – see "Publishing is
-   manual-only" below for why. Every release is `pnpm publish` from vancura's machine. With two-factor auth on, that
-   means one package at a time, each needing a fresh one-time code (`--otp`).
+   manual-only" below for why. Every release is `pnpm publish` (or, for the engine, `pnpm run release`) from vancura's
+   machine. With two-factor auth on, that means one package at a time, each needing a fresh one-time code (`--otp`).
 
 ## Publishing is manual-only
 
@@ -67,7 +85,7 @@ audio.
 
 ## Release procedure
 
-Run everything from the `create-blit386` repo root unless noted.
+Run everything from the repo root (`blit386/`) unless noted.
 
 ### 0. Pre-bump checklist
 
@@ -75,13 +93,13 @@ Walk this before choosing a version. Skip a row only when it truly does not appl
 
 - [ ] `git checkout main && git pull` – release from a clean, up-to-date `main`, not a stale feature branch.
 - [ ] `git log "$(git describe --tags --abbrev=0)"..HEAD --oneline` – draft release-note bullets now (hand-written; see
-      step 8). Split into scaffolder/starter, kit content / `blit` CLI, migrations (`blit upgrade` / `blit migrate`),
-      and maintainer-only.
-- [ ] SemVer choice – `patch` for fixes only; `minor` when you ship user-facing features or new kit docs/skills; `major`
-      only with a migration entry in `packages/kit/src/migrations/registry.ts`. Both packages always share one version.
+      step 8). Split by package (engine, kit content / `blit` CLI, scaffolder/starter), plus migrations (`blit upgrade`
+      / `blit migrate`) and maintainer-only.
+- [ ] SemVer choice – the engine anchors semver (see "Semver policy" above): `patch` for fixes only; `minor` when you
+      ship user-facing features, new kit docs/skills, or a breaking change confined to the CLI or kit content; `major`
+      only for a breaking change in the engine's own public API, with a migration entry in
+      `packages/kit/src/migrations/registry.ts`. All three packages always share one version.
 - [ ] Engine-first – if kit `content/` documents new engine API, `npm view blit386 version` already satisfies it.
-- [ ] `blit386.engineRange` (kit `package.json`) and `BLIT386_RANGE` (`packages/create-blit386/src/scaffold.ts`) – bump
-      together when kit content requires a newer engine floor; see "Versioning notes".
 - [ ] Migrations – new upgrade paths registered and covered by kit tests when behavior for existing games changes.
 - [ ] Templates – starter `vite.config`, Catcher examples, and optional CI still match what the kit docs teach.
 
@@ -92,15 +110,20 @@ engine first" above.
 
 ### 2. Bump versions
 
-Both publishable packages release in lockstep and must carry the same `x.y.z` version. Choose the version from the
-checklist above, then set it in one shot – do not run separate `npm version` commands per package (that is how the two
+All three packages release in lockstep and must carry the same `x.y.z` version. Choose the version from the checklist
+above, then set it in one shot from the repo root – do not run separate `npm version` commands per package (that is how
 packages drift):
 
 ```bash
-pnpm run bump -- 1.3.0 --dry-run  # preview only; replace 1.3.0 with the SemVer you chose
-pnpm run bump -- 1.3.0            # write the lockstep bump
-# equivalent: node scripts/bump-lockstep.mjs 1.3.0
+pnpm run bump -- 1.5.0 --dry-run  # preview only; replace 1.5.0 with the SemVer you chose
+pnpm run bump -- 1.5.0            # write the lockstep bump
+# equivalent: node scripts/bump-lockstep.mjs 1.5.0
 ```
+
+One command updates six things in one pass: `packages/blit386/package.json`, `packages/blit386/src/core/BTAPI.ts`'s
+`VERSION_MAJOR` / `VERSION_MINOR` / `VERSION_PATCH`, `packages/kit/package.json` (both its own `version` and its derived
+`blit386.engineRange`), `packages/create-blit386/package.json`, and `packages/create-blit386/src/scaffold.ts`'s derived
+`BLIT386_RANGE`. Neither derived range needs a manual edit – see "Versioning notes".
 
 `create-blit386`'s dependency on the kit is `workspace:*`, so it automatically tracks the kit's new version – no manual
 dependency edit needed.
@@ -109,15 +132,24 @@ dependency edit needed.
 
 ```bash
 pnpm install
-pnpm run preflight    # format:check + lint + typecheck + spellcheck + knip + docs:links + agents:check + test:agent-config + test:bump-lockstep + test:compact-tables + test:shell-safety + build + test
+pnpm run test:bump-lockstep         # unit tests for the bump script itself
+pnpm run format:check && pnpm run docs:links && pnpm run agents:check && pnpm run test:agent-config
+pnpm --filter blit386 run preflight
+pnpm --filter @blit386/kit run typecheck && pnpm --filter @blit386/kit run test
+pnpm --filter create-blit386 run typecheck && pnpm --filter create-blit386 run test
 ```
+
+Neither `packages/kit` nor `packages/create-blit386` has its own combined `preflight` script – see `/preflight kit` (or
+`create-blit386`) for the full per-package check breakdown.
 
 `main` is protected: push a branch, open a PR, wait for checks, and squash-merge it. The version bump has to be on
 `main` before you publish, because you publish (and later tag) from the merged commit.
 
 ### 4. Publish
 
-Run this from the merged `main` commit (checkout and pull first).
+Run this from the merged `main` commit (checkout and pull first). This step assumes the engine (`blit386`) already
+published from this same commit – `cd packages/blit386 && pnpm run release` – and `npm view blit386 version` confirms it
+is live (golden rule 3).
 
 ```bash
 git checkout main && git pull
@@ -153,18 +185,22 @@ same commit, never from a dirty tree.
 
 ### 5. Tag the release
 
-Tags carry no `v` prefix. Tag the commit on `main` you just published from:
+Tags carry no `v` prefix. One tag covers all three packages – tag the commit on `main` you published all three from:
 
 ```bash
-git tag 1.3.0          # exactly the version you published (example)
-git push origin 1.3.0
+git tag 1.5.0          # exactly the version you published (example)
+git push origin 1.5.0
 ```
 
-This is a record, not a trigger – nothing listens for it.
+This is a record, not a trigger for these two packages – nothing listens for it here. It IS a trigger for the docs and
+demos site production deploys (`deploy.yml`, tag pattern `[0-9]+.[0-9]+.[0-9]+`), which is exactly why there is only one
+tag series: a kit- or scaffolder-only release still deploys the sites, which is correct now that a single tag means "the
+whole release."
 
 ### 6. Verify the registry
 
 ```bash
+npm view blit386 version
 npm view @blit386/kit version
 npm view create-blit386 version
 ```
@@ -196,12 +232,15 @@ defaults; upgrades are how older projects catch up.
 
 ### 8. Publish the GitHub Release
 
+One release, one `RELEASE.md`, grouped by package (engine / kit / scaffolder) – see `/release`, which generates it.
+Always `--latest`; with one tag series there is no `--latest=false` case:
+
 ```bash
-gh release create 1.3.0 --title "Release 1.3.0" --notes-file release-notes.md
+gh release create 1.5.0 --title "1.5.0" --notes-file RELEASE.md --latest
 ```
 
-Release notes are hand-written, not generated from commit messages – draft from the `git log` you captured in step 0 and
-match the style of prior releases at <https://github.com/blit386/create-blit386/releases>.
+Release notes are hand-written, not generated verbatim from commit messages – draft from the `git log` you captured in
+step 0 and match the style of prior releases at <https://github.com/blit386/blit386/releases>.
 
 ## What gets published
 
@@ -218,26 +257,28 @@ publishing the kit publishes the instructions an AI assistant will follow inside
 
 ## Versioning notes
 
-- Follow SemVer. Both packages are past 1.0 (currently `1.2.1`) and real users – including kids – depend on them, so
-  breaking changes need a major bump and a migration entry (`packages/kit/src/migrations/registry.ts`, surfaced by
-  `blit migrate` / `blit upgrade`). There is no default bump size – choose `patch` / `minor` / `major` from the pre-bump
-  checklist, then pass the resulting `x.y.z` to `pnpm run bump`.
-- Both packages release in lockstep on the same version (`scripts/bump-lockstep.mjs` updates only these two packages'
-  `package.json` files – not the monorepo root, which stays at its own private `0.0.0`).
+- Follow SemVer, anchored to the engine (see "Semver policy" above). All three packages are past 1.0 and real users –
+  including kids – depend on them, so an engine-breaking change needs a major bump and a migration entry
+  (`packages/kit/src/migrations/registry.ts`, surfaced by `blit migrate` / `blit upgrade`). There is no default bump
+  size – choose `patch` / `minor` / `major` from the pre-bump checklist, then pass the resulting `x.y.z` to
+  `pnpm run bump`.
+- All three packages release in lockstep on the same version. `scripts/bump-lockstep.mjs` lives at the repo root (not
+  inside this package – it reaches across `packages/*`, so a scaffolder-scoped location was the wrong shape) and updates
+  all three `package.json` files plus every derived constant in one pass – not the monorepo root `package.json`, which
+  stays at its own private `0.0.0`.
 - To make the scaffolder tolerate kit patch releases without a re-publish, change `create-blit386`'s dependency from
   `workspace:*` to `workspace:^` (it then publishes as `^x.y.z` instead of an exact pin).
-- The generated game's pinned engine version lives in `packages/create-blit386/src/scaffold.ts` (`const BLIT386_RANGE`,
-  currently `^1.4.0`). It is a caret range, so it already admits future patch/minor engine releases within the same
-  major – only bump it when new games must start on an engine version the current range excludes. The kit version
+- The generated game's pinned engine version lives in `packages/create-blit386/src/scaffold.ts` (`const BLIT386_RANGE`).
+  It is a caret range, so it already admits future patch/minor engine releases within the same major. The kit version
   written into generated projects is read automatically from the kit's own `package.json`.
-- `packages/kit/package.json` declares `blit386.engineRange` (currently `^1.4.0`), the engine range the kit's docs
-  describe. `blit doctor` compares it against the installed engine via `satisfiesCaretRange()`
-  (`packages/kit/src/env.ts`) and reports drift. This is not the same thing as `BLIT386_RANGE`: `engineRange` is checked
-  against an already-installed engine on an existing project, so it must be bumped the moment the kit's own content
-  documents a newer engine API – leaving it stale makes `blit doctor` report a false "compatible" for a project that has
-  synced in docs describing API it doesn't have yet. `BLIT386_RANGE` only affects what a fresh scaffold's `package.json`
-  pins, and `npm install` always resolves that to the latest version satisfying the range regardless of its exact floor
-  – bump it to match `engineRange` for consistency, but it is not the field doing the safety-critical work.
+- `packages/kit/package.json` declares `blit386.engineRange`, the engine range the kit's docs describe. `blit doctor`
+  compares it against the installed engine via `satisfiesCaretRange()` (`packages/kit/src/env.ts`) and reports drift.
+  This is not the same thing as `BLIT386_RANGE`: `engineRange` is checked against an already-installed engine on an
+  existing project, while `BLIT386_RANGE` only affects what a fresh scaffold's `package.json` pins.
+- Both `engineRange` and `BLIT386_RANGE` are **derived**, not hand-edited: `pnpm run bump -- x.y.0` sets both to
+  `^x.y.0` (major.minor from the lockstep version, patch pinned to `0`) automatically. Neither can drift from the
+  version or from each other, and neither needs a checklist row of its own – this is the concrete payoff of lockstep
+  versioning (BT-410).
 
 ## Troubleshooting
 

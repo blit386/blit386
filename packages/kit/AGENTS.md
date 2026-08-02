@@ -1,7 +1,7 @@
 # @blit386/kit – agent quick start
 
 Canonical kit content (the IR) and the `blit` CLI, shipped into every scaffolded game. Depends on nothing published by
-`create-blit386`, but the two packages release in lockstep – see
+`create-blit386`, but this package, `create-blit386`, and the `blit386` engine release in lockstep – see
 [`packages/create-blit386/AGENTS.md`](../create-blit386/AGENTS.md) for the scaffolder's own quick start.
 
 This file is a standalone quick start for tools that read `AGENTS.md` and not `CLAUDE.md`. For kit content vs engine
@@ -43,7 +43,7 @@ is about this package's own contributor docs.
 
 - [`CLAUDE.md`](CLAUDE.md) – kit content vs engine docs, the drift checklist, and the routing table.
 - Root `CONTRIBUTING.md` – DCO and contribution guidelines.
-- `packages/create-blit386/PUBLISHING.md` – pnpm publish procedure for both packages
-  (`pnpm --filter create-blit386 run bump -- 1.3.0`, replacing `1.3.0` with the target version, for lockstep).
+- `packages/create-blit386/PUBLISHING.md` – pnpm publish procedure for all three lockstep packages
+  (`pnpm run bump -- 1.5.0` from the repo root, replacing `1.5.0` with the target version).
 
 Condensed, always-applicable agent rules also live in the root `.claude/rules/*.md`.

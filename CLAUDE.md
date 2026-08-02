@@ -15,9 +15,10 @@ Claude Code at this repo root, not a parent directory – that is what activates
 | `packages/kit` | `@blit386/kit` | Canonical kit content (the IR) and the `blit` CLI for generated games |
 | `packages/create-blit386` | `create-blit386` | `npm create blit386@latest` scaffolder CLI and templates |
 
-`packages/kit` and `packages/create-blit386` release in lockstep (one shared `x.y.z`, bumped together – see
-`/release kit` or `packages/create-blit386/PUBLISHING.md`). `packages/blit386` releases independently
-(`/release blit386`).
+`packages/blit386`, `packages/kit`, and `packages/create-blit386` release in lockstep: one shared `x.y.z` version across
+all three, bumped together by `scripts/bump-lockstep.mjs` – see `/release` or `packages/create-blit386/PUBLISHING.md`.
+**The engine anchors semver**: a breaking change confined to the scaffolder CLI or to kit content is a `minor`, not a
+`major` – only a breaking change in the engine's own public API justifies a major bump.
 
 ## Shared conventions
 

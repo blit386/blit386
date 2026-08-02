@@ -1,47 +1,46 @@
 ---
 name: release
 description:
-  'Prepare and run a release for a package: for blit386, generate a polished RELEASE.md from PR history and walk the
-  rest of the release lifecycle (version bump, changelog, docs coverage, downstream repos, pnpm publish, API-history
-  regeneration); for kit / create-blit386, guide a deliberate lockstep pnpm publish following PUBLISHING.md. Takes a
-  package argument (blit386, or kit / create-blit386, which release together).'
+  'Prepare and run a release covering all three lockstep-versioned packages (blit386, @blit386/kit, create-blit386):
+  generate a polished RELEASE.md grouped by package from PR history, then walk the rest of the release lifecycle
+  (version bump, changelog, docs coverage, pnpm publish in engine-then-kit-then-scaffolder order, API-history
+  regeneration). One shared x.y.z version, one tag series, one GitHub Release.'
 ---
 
 # Release
 
-Two independent release procedures live under this one skill, because they publish independently and have materially
-different steps. Pick the section for the package being released.
+One release procedure, because BT-410 moved all three publishable packages to a single lockstep version: one tag series,
+one GitHub Release, no separate per-package flow to pick between.
 
 ## Usage
 
 ```text
-/release blit386
-/release kit
+/release
 ```
 
-`kit` and `create-blit386` release together (lockstep versioning) – either argument runs the same procedure.
+Covers `blit386`, `@blit386/kit`, and `create-blit386` together. A package name passed as an argument is accepted but
+ignored – there is only one release now.
 
----
+The `RELEASE.md` generation itself (steps 1-9 below) does not modify `package.json`, `src/core/BTAPI.ts`,
+`packages/kit/src/scaffold.ts`, or any other source file, and does not create branches, commits, or tags. When the user
+asks for more than `RELEASE.md` – "do the whole release", "bump the version", "publish it" – see
+[After RELEASE.md](#after-releasemd-the-rest-of-the-release) below; that part does touch other files and publish
+packages, but only when asked.
 
-## blit386
-
-Generate a polished `RELEASE.md` for pasting into GitHub Releases. Reads every PR merged since the last tag from GitHub,
-groups changes semantically, and writes clear human-readable release notes.
-
-The `RELEASE.md` generation itself (steps 1-9 below) does not modify `package.json`, `src/core/BTAPI.ts`, or any other
-source file, and does not create branches, commits, or tags. When the user asks for more than `RELEASE.md` – "do the
-whole release", "bump the version", "mark the changelog released", "remind me of the npm workflow" – see
-[After RELEASE.md](#after-releasemd-the-rest-of-the-release) below; that part does touch other files, but only when
-asked.
-
-All commands below run from `packages/blit386`.
+All commands below run from the repo root unless a step says otherwise.
 
 ### 1. Ask for the new version
 
-Ask the user: "What version are you releasing? (e.g. 1.0.5, 1.1.0, 2.0.0)"
+Ask the user: "What version are you releasing? (applies to blit386, @blit386/kit, and create-blit386 together, e.g.
+1.0.5, 1.1.0, 2.0.0)"
 
 Wait for the answer. Validate it is a valid semver (three dot-separated non-negative integers). If invalid, ask again.
-Store the answer as NEW_VERSION (e.g. `1.0.5`).
+Store the answer as NEW_VERSION (e.g. `1.5.0`).
+
+Remind the user of the semver policy if the choice looks off: **the engine anchors semver**. A breaking change confined
+to the scaffolder CLI or to kit content is a `minor`, not a `major` – a major bump means the `blit386` engine's own
+public API broke compatibility, nothing else. See `packages/create-blit386/PUBLISHING.md` ("Semver policy") for the full
+rule.
 
 ### 2. Find the last tag and its UTC timestamp
 
@@ -64,7 +63,8 @@ print(dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
 echo "Last tag: $LAST_TAG, UTC date: $TAG_DATE"
 ```
 
-Store `$TAG_DATE` for use in step 3 and `$LAST_TAG` for the changelog URL at the end.
+Store `$TAG_DATE` for use in step 3 and `$LAST_TAG` for the changelog URL at the end. This is correct unfiltered now:
+one tag series covers the whole repo, so there is no separate per-package "last tag" to reconcile.
 
 ### 3. Get all commits since the last tag
 
@@ -72,19 +72,21 @@ Store `$TAG_DATE` for use in step 3 and `$LAST_TAG` for the changelog URL at the
 git log $LAST_TAG..HEAD --format="%H %s"
 ```
 
-Store the list of commit SHAs and subjects. These are the commits the release notes must cover.
+Store the list of commit SHAs and subjects. These are the commits the release notes must cover – every package is in
+scope, since it is one repo and one release.
 
 ### 4. Fetch PRs merged since the last tag
 
 ```bash
 # 500 is a safe ceiling for a single-maintainer repo; raise if a release ever spans more PRs
 gh pr list --state merged --limit 500 \
-  --json number,title,body,mergedAt | \
+  --json number,title,body,mergedAt,files | \
   jq --arg tag_date "$TAG_DATE" \
   '[.[] | select(.mergedAt > $tag_date) | select(.title | test("^(feat|chore|fix): release ") | not)]'
 ```
 
-This returns a JSON array where each element has `.number`, `.title`, `.body`, `.mergedAt`.
+This returns a JSON array where each element has `.number`, `.title`, `.body`, `.mergedAt`, and `.files` (changed file
+paths – needed for step 7's package grouping).
 
 If the list is empty, tell the user there are no PRs since the last tag and stop.
 
@@ -125,10 +127,24 @@ For each PR in the list from step 4, build a content object:
      If only a human description exists, use that. If both exist, lead with the human description (one sentence) and use
      the CodeRabbit summary for detail.
 
-### 7. Group PRs by topic
+### 7. Group PRs – first by package, then by topic
 
-Assign each PR to exactly one group based on its conventional commit type/scope. Use these groups in this order (omit
-any group with zero PRs):
+**First, assign each PR to exactly one top-level package section**, from its `.files` (step 4):
+
+| Section | A PR belongs here when its changed files are... |
+| --- | --- |
+| `## Engine (blit386)` | under `packages/blit386/` |
+| `## Kit (@blit386/kit)` | under `packages/kit/` |
+| `## Scaffolder (create-blit386)` | under `packages/create-blit386/` |
+| `## Repo-wide` | only root-level files (`CLAUDE.md`, `.claude/`, `.github/`, root `scripts/*`, root configs) or `packages/demos/` / `packages/website/` |
+
+A PR touching more than one published package's directory goes in each relevant section (cross-cutting changes are real
+– do not force a single "primary" pick). Omit `## Repo-wide` entirely if it would be empty; a PR touching only
+`packages/demos/` or `packages/website/` (unpublished, internal) belongs there too since neither ships to npm.
+
+**Within `## Engine (blit386)`**, sub-group by topic using this table (this is presentational grouping carried over from
+when RELEASE.md was engine-only – it is not exhaustive, the root `CLAUDE.md` scope list is longer). Give each
+non-matching scope its own topic-matched `###` heading instead of forcing it into a generic bucket:
 
 | Group heading | Match pattern |
 | --- | --- |
@@ -142,28 +158,27 @@ any group with zero PRs):
 | Documentation | `docs(*)` |
 | Examples | `feat(examples)`, `fix(examples)` |
 
-This table is not exhaustive – the root `CLAUDE.md`'s scope list is longer (`audio`, `overlay`, `input`, `camera`,
-`assets`, `release`, `visual`, …). When a PR's scope isn't in the table above, give it its own topic-matched heading
-("Audio", "Overlay", "Input") instead of forcing it into a generic bucket. Reserve a final `## Other` section only for
-PRs with no clear topic at all.
+**Within `## Kit (@blit386/kit)`, `## Scaffolder (create-blit386)`, and `## Repo-wide`**, use a single flat bullet list
+per section – no topic subheadings. These sections rarely carry enough PR volume per release to need them, and forcing
+subheadings onto three PRs is noise, not clarity.
 
 ### 8. Write the RELEASE.md narrative
 
-Write `packages/blit386/RELEASE.md` following this exact structure.
+Write `RELEASE.md` at the repo root following this exact structure.
 
 #### Lead paragraph
 
-One to three sentences capturing the theme of this release: what was the main focus, which systems changed, what a user
-upgrading should know first. Be specific. Name actual things: "`BT` namespace", "btfont validation", "WebGPU adapter
-limits". No marketing fluff. No passive voice.
+One to three sentences capturing the theme of this release: what was the main focus, which package(s) changed, what a
+user upgrading should know first. Be specific. Name actual things: "`BT` namespace", "the `blit` CLI's `agents sync`
+command", "hot-reload template". No marketing fluff. No passive voice.
 
 After drafting the lead paragraph, tighten it: lead with the release's single most important change, cut every hedge and
 adverb that does not carry information, and read it aloud once to catch passive voice.
 
-#### Per-group sections
+#### Per-section content
 
-For each non-empty group, write a `## <Group Heading>` section. Start each section with one short prose sentence (no
-more than 20 words) introducing the changes. Then one bullet per PR:
+For each non-empty section from step 7, write the `##` (or, inside Engine, `###`) heading. Start each section with one
+short prose sentence (no more than 20 words) introducing the changes. Then one bullet per PR:
 
 - Write the concrete change, not the commit type. "Bitmap font textures must now use `data:image/png;base64`" not "added
   validation for bitmap fonts".
@@ -196,6 +211,8 @@ End with a blank line then:
 Full Changelog: https://github.com/blit386/blit386/compare/LAST_TAG...NEW_VERSION
 ```
 
+One compare link, one repo – no separate per-package changelog URLs.
+
 ### 9. Report to the user
 
 After writing `RELEASE.md`, report:
@@ -203,71 +220,89 @@ After writing `RELEASE.md`, report:
 - "Wrote `RELEASE.md` covering N PRs across M sections" (and how many direct commits if any)
 - "Last tag: LAST_TAG – New version: NEW_VERSION"
 - "Review, edit as needed, then delete RELEASE.md after you paste it into GitHub Releases."
-- "To bump the version in `package.json` and `src/core/BTAPI.ts`, do that manually or I can do it if you ask."
+- "To bump all three packages' versions, do that manually or I can do it if you ask."
 
 ### After RELEASE.md: the rest of the release
 
-`/release blit386` only writes `RELEASE.md` by default. Everything below is manual-on-request, not automatic – walk
-through it in this order when the user asks for more, since later steps depend on earlier ones (the API-history step in
-particular is order-sensitive and silently produces wrong data if done too early).
+`/release` only writes `RELEASE.md` by default. Everything below is manual-on-request, not automatic – walk through it
+in this order when the user asks for more, since later steps depend on earlier ones (the API-history step in particular
+is order-sensitive and silently produces wrong data if done too early).
 
-#### 10. Bump the version
+### Agent guardrails (never skip)
 
-Two places, kept in lockstep: `package.json` -> `"version"`, and `src/core/BTAPI.ts` -> `VERSION_MAJOR` /
-`VERSION_MINOR` / `VERSION_PATCH`.
+1. **Engine first** – publish `blit386` before `@blit386/kit`, and confirm it with `npm view blit386 version` before
+   publishing the kit if kit `content/` documents new engine API (`packages/create-blit386/PUBLISHING.md`, "Release
+   order: engine first").
+2. Always `pnpm publish`, never `npm publish` for the kit and scaffolder – only pnpm rewrites `workspace:*` to a real
+   version number.
+3. Publish `@blit386/kit` before `create-blit386`.
+4. Versions are permanent and lockstep – all three packages share one `x.y.z`. Bump with `pnpm run bump -- 1.5.0` from
+   the repo root (replace `1.5.0` with the target version; the script lives at `scripts/bump-lockstep.mjs` and writes
+   `packages/blit386/package.json`, `packages/blit386/src/core/BTAPI.ts`, `packages/kit/package.json` (including its
+   derived `blit386.engineRange`), `packages/create-blit386/package.json`, and
+   `packages/create-blit386/src/scaffold.ts`'s derived `BLIT386_RANGE`, all in one pass). Never suggest separate
+   per-package `npm version` commands, and never bias toward patch or minor – choose SemVer from the pre-bump checklist
+   in `PUBLISHING.md`, anchored to the engine (see guardrail 8).
+5. Release tags carry no `v` prefix (`1.5.0`, not `v1.5.0`). One tag per release – there is exactly one series now.
+6. Publishing is manual-only – no CI publish workflow, no `NPM_TOKEN`. Do not suggest re-adding either.
+7. Every release publishes all three packages, even ones with no changes since the last release. Do not add
+   skip-unchanged-package logic – that reintroduces the version drift lockstep exists to remove.
+8. **The engine anchors semver.** A breaking change confined to the CLI or kit content is absorbed as a minor; only an
+   engine-breaking change justifies a major. See `PUBLISHING.md` "Semver policy".
 
-#### 11. Mark the changelog as released
+### How to run the release
 
-`docs/changelog.md` usually already has a `## X.Y.Z - Unreleased` section – features add their own entries as they
-merge. Change the heading to `## X.Y.Z - <today's date>`.
+1. Bump: `pnpm run bump -- X.Y.Z --dry-run` then `pnpm run bump -- X.Y.Z` from the repo root. Confirm the dry-run output
+   lists all three `package.json` files, the engine's version constants, `engineRange`, and `BLIT386_RANGE`.
+2. Mark the changelog as released (below) and verify docs coverage (below).
+3. Land the bump through a PR: `main` is protected – branch, PR, wait for checks, squash-merge.
+4. From the merged `main` commit: publish the engine (`cd packages/blit386 && pnpm run release`, which builds then
+   `pnpm publish`), confirm `npm view blit386 version`, then follow `packages/create-blit386/PUBLISHING.md` steps 4-8
+   exactly (kit dry-run -> kit publish -> scaffolder dry-run, confirming `@blit386/kit` resolves to a real version, not
+   `workspace:*` -> scaffolder publish -> one tag covering all three -> verify all three on the registry -> smoke test
+   -> `gh release create X.Y.Z --title "X.Y.Z" --notes-file RELEASE.md --latest`).
+5. Use a plain, unproxied terminal for `pnpm publish` / `pnpm run release` when OTP / auth URLs would be redacted in a
+   sandboxed shell.
+6. When the release ships migrations or hot-reload / agent changes, include the extra smoke checks and the
+   `blit upgrade` / `blit migrate` callout for existing games from `PUBLISHING.md` step 7.
+7. Regenerate `packages/blit386/docs/_api-history.json` – see below, only after the tag exists.
+
+#### Mark the changelog as released
+
+`packages/blit386/docs/changelog.md` usually already has a `## X.Y.Z - Unreleased` section – features add their own
+entries as they merge. Change the heading to `## X.Y.Z - <today's date>`.
 
 Do not assume that section is complete just because it exists. A PR can ship a fully `@since`-tagged feature with
 correct API docs and still skip the editorial changelog entry. Cross-check every `{ version: NEW_VERSION, note }` entry
 in `docs/_api-history.json`'s `symbols[*].changes` arrays against the changelog section – anything present there but
 missing from the changelog is a gap to add.
 
-#### 12. Verify docs coverage
+#### Verify docs coverage
 
-For each new/changed public symbol in this release, grep across `docs/*.md` (api-core.md, the relevant guide-*.md,
-api-browser-support.md, …) to confirm it's actually documented, not just `@since`-tagged. Also check the root
-`CLAUDE.md`'s "Where to Find Information" table: a release that adds a new subsystem or notable API surface usually
-needs a row there. Compare sibling PRs in the same release – if one PR added a table row for its feature and another PR
-shipping a similarly-sized feature didn't, that's a real gap, not a style choice.
+For each new/changed public symbol in this release, grep across `packages/blit386/docs/*.md` (api-core.md, the relevant
+guide-*.md, api-browser-support.md, …) to confirm it's actually documented, not just `@since`-tagged. Also check the
+root `CLAUDE.md`'s "Where the detail lives" table: a release that adds a new subsystem or notable API surface usually
+needs a row there.
 
-#### 13. Check downstream packages
+Then check the two downstream packages:
 
 - `packages/kit` and `packages/create-blit386`: grep `packages/kit/content/{docs,rules,skills}/` for anything describing
   the changed API. A default-value flip is the dangerous case – it can make existing skill/doc prose actively wrong, not
-  just stale, and won't show up as a missing mention. Run `/preflight kit` afterward.
+  just stale, and won't show up as a missing mention.
 - `packages/website`: if `packages/blit386/docs/` changed, the mirror is stale. `pnpm run sync:docs` there reads the
-  sibling `../blit386/docs` path directly off disk (now `../blit386/docs` relative to `packages/website`) – it does not
-  need those changes pushed to GitHub first. Follow with `pnpm run sync:docs:check` and `pnpm run build` to confirm the
-  site still compiles (a Twoslash code block that doesn't compile standalone fails the build, not just the check).
+  sibling `../blit386/docs` path directly off disk – it does not need those changes pushed to GitHub first. Follow with
+  `pnpm run sync:docs:check` and `pnpm run build` to confirm the site still compiles.
 
-#### 14. Land it, tag it, publish it
+#### Regenerate `docs/_api-history.json` – only after the tag exists
 
-`main` is protected – branch, PR, squash-merge, then from the merged commit:
-
-```bash
-git checkout main && git pull
-git tag X.Y.Z              # no "v" prefix, e.g. 1.3.2 not v1.3.2
-git push origin X.Y.Z
-cd packages/blit386 && pnpm run release          # = pnpm run build && pnpm publish
-gh release create X.Y.Z --title "Release X.Y.Z" --notes-file RELEASE.md
-```
-
-Verify with `npm view blit386 version`. Full checklist (2FA/OTP, verify/smoke-test steps, troubleshooting): see
-`packages/blit386/docs/developer-experience-guide.md` ("Before releases").
-
-#### 15. Regenerate `docs/_api-history.json` – only after the tag exists
-
-The step most likely to get skipped or done in the wrong order. Do these four in sequence, after the tag from step 14
-exists:
+The step most likely to get skipped or done in the wrong order. Do these four in sequence, after the single release tag
+from "How to run the release" step 4 exists:
 
 1. In `packages/blit386/scripts/gen-api-history.mjs`, bump `UNRELEASED_VERSION` from the version just tagged to the next
    one (e.g. `1.5.0` -> `1.5.1`).
-2. Run `pnpm run api:history`.
-3. Verify: `pnpm run api:history:check`, `pnpm run api:since:check`, `pnpm run test:api-history`.
+2. Run `pnpm --filter blit386 run api:history`.
+3. Verify: `pnpm --filter blit386 run api:history:check`, `pnpm --filter blit386 run api:since:check`,
+   `pnpm --filter blit386 run test:api-history`.
 4. `main` is protected – branch, PR, squash-merge. Make sure the regenerated `docs/_api-history.json` is part of that
    PR.
 
@@ -283,55 +318,20 @@ right rather than debugging it after the fact:
   equal, so the generator's "future and untagged -> unreleased" rule never fires. Every symbol from this release flips
   straight to `"stable"` with a `null` date, claiming it shipped when it hasn't.
 
----
-
-## kit / create-blit386
-
-Guide a deliberate release of `@blit386/kit` and `create-blit386`. This does not auto-bump versions, open PRs, push
-tags, or publish unless the user explicitly requests those steps.
-
-**Canonical procedure: [`packages/create-blit386/PUBLISHING.md`](../../../packages/create-blit386/PUBLISHING.md).** Read
-that file and follow it. Do not invent a parallel checklist here – if this skill and `PUBLISHING.md` ever disagree,
-`PUBLISHING.md` wins and this skill is stale.
-
-### Agent guardrails (never skip)
-
-1. **Engine first** – if kit `content/` documents new engine API, confirm `npm view blit386 version` already satisfies
-   it before publishing (see `PUBLISHING.md` "Release order: engine first").
-2. Always `pnpm publish`, never `npm publish` – only pnpm rewrites `workspace:*` to a real version.
-3. Publish `@blit386/kit` before `create-blit386`.
-4. Versions are permanent and lockstep – both packages share one `x.y.z`. Bump with
-   `pnpm --filter create-blit386 run bump -- 1.3.0` (replace `1.3.0` with the target version; see `PUBLISHING.md` step
-   2; the script lives at `packages/create-blit386/scripts/bump-lockstep.mjs` and writes both
-   `packages/create-blit386/package.json` and `packages/kit/package.json`). Never suggest separate per-package
-   `npm version` commands, and never bias toward patch or minor – choose SemVer from the pre-bump checklist in
-   `PUBLISHING.md`.
-5. Release tags carry no `v` prefix (`1.3.0`, not `v1.3.0`).
-6. Publishing is manual-only – no CI publish workflow, no `NPM_TOKEN`. Do not suggest re-adding either.
-7. `blit386.engineRange` (kit) and `BLIT386_RANGE` (scaffolder) are different mechanisms; bump both together when kit
-   content requires a newer engine floor (`PUBLISHING.md` "Versioning notes").
-
-### How to run the release
-
-1. Open `PUBLISHING.md` and walk **step 0** (pre-bump checklist) with the user – including drafting release-note bullets
-   from `git log <last-tag>..HEAD`.
-2. Follow steps 1-8 in that file exactly (bump -> preflight -> PR -> merge -> publish kit then scaffolder -> tag ->
-   verify -> smoke -> GitHub Release).
-3. Use a plain, unproxied terminal for `pnpm publish` when OTP / auth URLs would be redacted in a sandboxed shell.
-4. When the release ships migrations or hot-reload / agent changes, include the extra smoke checks and the
-   `blit upgrade` / `blit migrate` callout for existing games from `PUBLISHING.md` step 7.
-
 ### Troubleshooting
 
-See Troubleshooting in `PUBLISHING.md`.
+See Troubleshooting in `packages/create-blit386/PUBLISHING.md` (OTP/auth, propagation lag, dirty-tree publish refusal,
+scope publish errors).
 
 ### Report to the user
 
 After a successful release:
 
-- Published versions for `@blit386/kit` and `create-blit386`
-- Whether the engine-first gate applied, and what `npm view blit386 version` showed
-- Whether `BLIT386_RANGE` / `blit386.engineRange` or kit `content/` were updated in the same release
+- Published versions for `blit386`, `@blit386/kit`, and `create-blit386` (should be identical)
+- Confirmation of the engine-first order: engine published and verified live before the kit
+- Whether `engineRange` / `BLIT386_RANGE` derivation matched what `pnpm run bump` produced
 - Confirmation the release tag (no `v` prefix) is pushed and points at the merged `main` commit, and that the GitHub
-  Release is published
+  Release is published with `--latest`
+- Whether the tag also triggered the docs/demos production deploy (`deploy.yml`) and whether it succeeded
 - Whether release notes mentioned `blit upgrade` / `blit migrate` for existing games
+- Whether `docs/_api-history.json` was regenerated after the tag

@@ -3,14 +3,57 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
+    applyBlit386Range,
+    applyEngineRange,
+    applyEngineVersionConstants,
     applyVersion,
     bumpLockstep,
+    deriveCaretRange,
+    ENGINE_VERSION_FILE,
     LOCKSTEP_PACKAGE_JSON_PATHS,
     main,
     parseArgv,
     parseVersionArg,
+    SCAFFOLD_RANGE_FILE,
     SEMVER_RE,
 } from './bump-lockstep.mjs';
+
+/** Builds a fixture file map for `bumpLockstep`, keyed by absolute path under `/repo`. */
+function makeFixtureFiles() {
+    return new Map([
+        [
+            join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[0]),
+            `${JSON.stringify({ name: 'blit386', version: '1.2.1' }, null, 4)}\n`,
+        ],
+        [
+            join('/repo', ENGINE_VERSION_FILE),
+            [
+                'export class BTAPI {',
+                '    public static readonly VERSION_MAJOR = 1;',
+                '    public static readonly VERSION_MINOR = 2;',
+                '    public static readonly VERSION_PATCH = 1;',
+                '}',
+                '',
+            ].join('\n'),
+        ],
+        [
+            join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[1]),
+            `${JSON.stringify(
+                { name: '@blit386/kit', version: '1.2.1', blit386: { engineRange: '^1.2.0' } },
+                null,
+                4,
+            )}\n`,
+        ],
+        [
+            join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[2]),
+            `${JSON.stringify({ name: 'create-blit386', version: '1.2.1' }, null, 4)}\n`,
+        ],
+        [
+            join('/repo', SCAFFOLD_RANGE_FILE),
+            ["const BLIT386_RANGE = '^1.2.0';", 'export function scaffold() {}', ''].join('\n'),
+        ],
+    ]);
+}
 
 describe('bump-lockstep', () => {
     describe('parseVersionArg', () => {
@@ -31,6 +74,14 @@ describe('bump-lockstep', () => {
             assert.throws(() => parseVersionArg(undefined), /missing/);
             assert.equal(SEMVER_RE.test('1.2'), false);
             assert.equal(SEMVER_RE.test('01.0.0'), false);
+        });
+    });
+
+    describe('deriveCaretRange', () => {
+        it('pins major.minor from the version and zeroes the patch', () => {
+            assert.equal(deriveCaretRange('1.5.0'), '^1.5.0');
+            assert.equal(deriveCaretRange('1.5.3'), '^1.5.0');
+            assert.equal(deriveCaretRange('2.0.0'), '^2.0.0');
         });
     });
 
@@ -96,6 +147,74 @@ describe('bump-lockstep', () => {
         });
     });
 
+    describe('applyEngineRange', () => {
+        it('rewrites blit386.engineRange and preserves other fields', () => {
+            const raw = `${JSON.stringify(
+                { name: '@blit386/kit', version: '1.2.1', blit386: { engineRange: '^1.2.0' } },
+                null,
+                4,
+            )}\n`;
+            const { next, previous } = applyEngineRange(raw, '^1.3.0');
+            assert.equal(previous, '^1.2.0');
+            assert.deepEqual(JSON.parse(next), {
+                name: '@blit386/kit',
+                version: '1.2.1',
+                blit386: { engineRange: '^1.3.0' },
+            });
+        });
+
+        it('throws when engineRange is missing', () => {
+            assert.throws(() => applyEngineRange('{"name":"x"}', '^1.3.0'), /missing a string "engineRange"/);
+        });
+    });
+
+    describe('applyEngineVersionConstants', () => {
+        it('rewrites all three constants and preserves surrounding source', () => {
+            const raw = [
+                'export class BTAPI {',
+                '    /** Major. */',
+                '    public static readonly VERSION_MAJOR = 1;',
+                '',
+                '    /** Minor. */',
+                '    public static readonly VERSION_MINOR = 4;',
+                '',
+                '    /** Patch. */',
+                '    public static readonly VERSION_PATCH = 0;',
+                '}',
+                '',
+            ].join('\n');
+            const { next, previous } = applyEngineVersionConstants(raw, '1.5.0');
+            assert.equal(previous, '1.4.0');
+            assert.match(next, /VERSION_MAJOR = 1;/);
+            assert.match(next, /VERSION_MINOR = 5;/);
+            assert.match(next, /VERSION_PATCH = 0;/);
+            assert.equal(next.replace(/= \d+;/g, '= N;'), raw.replace(/= \d+;/g, '= N;'));
+        });
+
+        it('throws when a constant is missing', () => {
+            assert.throws(
+                () => applyEngineVersionConstants('export class BTAPI {}', '1.5.0'),
+                /missing one of VERSION_MAJOR/,
+            );
+        });
+    });
+
+    describe('applyBlit386Range', () => {
+        it('rewrites the constant and preserves surrounding source', () => {
+            const raw = "const BLIT386_RANGE = '^1.4.0';\nexport function scaffold() {}\n";
+            const { next, previous } = applyBlit386Range(raw, '^1.5.0');
+            assert.equal(previous, '^1.4.0');
+            assert.equal(next, "const BLIT386_RANGE = '^1.5.0';\nexport function scaffold() {}\n");
+        });
+
+        it('throws when the constant is missing', () => {
+            assert.throws(
+                () => applyBlit386Range('export function scaffold() {}\n', '^1.5.0'),
+                /missing the BLIT386_RANGE/,
+            );
+        });
+    });
+
     describe('parseArgv', () => {
         it('parses version and optional --dry-run', () => {
             assert.deepEqual(parseArgv(['node', 'bump-lockstep.mjs', '1.3.0']), {
@@ -120,20 +239,14 @@ describe('bump-lockstep', () => {
     });
 
     describe('bumpLockstep', () => {
-        it('updates every lockstep package.json', () => {
-            /** @type {Map<string, string>} */
-            const files = new Map(
-                LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
-                    join('/repo', path),
-                    `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
-                ]),
-            );
+        it('updates all three package.json files, BTAPI.ts, engineRange, and BLIT386_RANGE in one pass', () => {
+            const files = makeFixtureFiles();
             /** @type {string[]} */
             const writes = [];
 
             const results = bumpLockstep({
                 root: '/repo',
-                version: '1.3.0',
+                version: '1.5.0',
                 readFile: (path) => {
                     const raw = files.get(path);
                     if (raw === undefined) {
@@ -147,46 +260,59 @@ describe('bump-lockstep', () => {
                 },
             });
 
-            assert.equal(results.length, 2);
-            assert.ok(results.every((result) => result.previous === '1.2.1' && result.next === '1.3.0'));
-            assert.equal(writes.length, 2);
+            // 3 package.json versions + engineRange + BTAPI constants + BLIT386_RANGE = 6 rows.
+            assert.equal(results.length, 6);
+            assert.equal(writes.length, 5);
+
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
-                assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.3.0');
+                assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.5.0');
             }
+            assert.deepEqual(JSON.parse(files.get(join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[1]))).blit386, {
+                engineRange: '^1.5.0',
+            });
+            assert.match(files.get(join('/repo', ENGINE_VERSION_FILE)), /VERSION_MAJOR = 1;/);
+            assert.match(files.get(join('/repo', ENGINE_VERSION_FILE)), /VERSION_MINOR = 5;/);
+            assert.match(files.get(join('/repo', ENGINE_VERSION_FILE)), /VERSION_PATCH = 0;/);
+            assert.match(files.get(join('/repo', SCAFFOLD_RANGE_FILE)), /BLIT386_RANGE = '\^1\.5\.0';/);
         });
 
         it('dry-run does not write', () => {
+            const files = makeFixtureFiles();
             let writes = 0;
-            bumpLockstep({
+
+            const results = bumpLockstep({
                 root: '/repo',
                 version: '9.9.9',
                 dryRun: true,
-                readFile: () => '{"version":"1.0.0"}\n',
+                readFile: (path) => {
+                    const raw = files.get(path);
+                    if (raw === undefined) {
+                        throw new Error(`missing ${path}`);
+                    }
+                    return raw;
+                },
                 writeFile: () => {
                     writes += 1;
                 },
             });
+
             assert.equal(writes, 0);
+            assert.equal(results.length, 6);
+            assert.ok(results.every((result) => result.next.includes('9.9.9') || result.next.includes('9.9.0')));
         });
 
-        it('fails before any write when a later manifest cannot be read', () => {
-            /** @type {Map<string, string>} */
-            const files = new Map(
-                LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
-                    join('/repo', path),
-                    `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
-                ]),
-            );
+        it('fails before any write when a later file cannot be read', () => {
+            const files = makeFixtureFiles();
             let writes = 0;
 
             assert.throws(
                 () =>
                     bumpLockstep({
                         root: '/repo',
-                        version: '1.3.0',
+                        version: '1.5.0',
                         readFile: (path) => {
-                            if (path.endsWith(join('kit', 'package.json'))) {
-                                throw new Error('missing kit package.json');
+                            if (path.endsWith(join('create-blit386', 'src', 'scaffold.ts'))) {
+                                throw new Error('missing scaffold.ts');
                             }
                             const raw = files.get(path);
                             if (raw === undefined) {
@@ -198,7 +324,7 @@ describe('bump-lockstep', () => {
                             writes += 1;
                         },
                     }),
-                /missing kit package\.json/,
+                /missing scaffold\.ts/,
             );
             assert.equal(writes, 0);
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
@@ -207,19 +333,13 @@ describe('bump-lockstep', () => {
         });
 
         it('rolls back earlier writes when a later write fails', () => {
-            /** @type {Map<string, string>} */
-            const files = new Map(
-                LOCKSTEP_PACKAGE_JSON_PATHS.map((path) => [
-                    join('/repo', path),
-                    `${JSON.stringify({ name: path, version: '1.2.1' }, null, 4)}\n`,
-                ]),
-            );
+            const files = makeFixtureFiles();
 
             assert.throws(
                 () =>
                     bumpLockstep({
                         root: '/repo',
-                        version: '1.3.0',
+                        version: '1.5.0',
                         readFile: (path) => {
                             const raw = files.get(path);
                             if (raw === undefined) {
@@ -228,7 +348,7 @@ describe('bump-lockstep', () => {
                             return raw;
                         },
                         writeFile: (path, data) => {
-                            if (path.endsWith(join('kit', 'package.json'))) {
+                            if (path.endsWith(join('create-blit386', 'src', 'scaffold.ts'))) {
                                 throw new Error('disk full');
                             }
                             files.set(path, data);
@@ -240,6 +360,7 @@ describe('bump-lockstep', () => {
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
                 assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.2.1');
             }
+            assert.match(files.get(join('/repo', ENGINE_VERSION_FILE)), /VERSION_MINOR = 2;/);
         });
     });
 
@@ -249,12 +370,12 @@ describe('bump-lockstep', () => {
             const code = main(['node', 'bump-lockstep.mjs', '1.3.0', '--dry-run'], {
                 log: (message) => lines.push(message),
                 bump: () => [
-                    { path: 'package.json', previous: '1.2.1', next: '1.3.0' },
-                    { path: '../kit/package.json', previous: '1.2.1', next: '1.3.0' },
+                    { path: 'packages/blit386/package.json', previous: '1.2.1', next: '1.3.0' },
+                    { path: 'packages/kit/package.json', previous: '1.2.1', next: '1.3.0' },
                 ],
             });
             assert.equal(code, 0);
-            assert.ok(lines.some((line) => line.includes('Would set ../kit/package.json')));
+            assert.ok(lines.some((line) => line.includes('Would set packages/kit/package.json')));
             assert.ok(lines.some((line) => line.includes('(dry-run')));
 
             assert.equal(main(['node', 'bump-lockstep.mjs']), 1);
