@@ -2,22 +2,74 @@
 # Generated from blit386/docs/api-easing.md by scripts/sync-docs-from-engine.mjs.
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Easing"
-description: "Named easing curves for palette fade effects via applyEasing."
-lastModified: "2026-07-23T10:26:02+02:00"
+description: "Named easing curves and interpolate() for number, Vector2i, Color32, and Rect2i."
+lastModified: "2026-07-28T16:49:29+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-easing.md"
 ---
 
-Palette fade effects accept an `EasingFunction`. Use `applyEasing` to evaluate named curves:
+Named easing curves for palette fades, audio fades, and demo animation. Evaluate a curve with `applyEasing`, or
+interpolate `number` / `Vector2i` / `Color32` / `Rect2i` values with `interpolate`.
+
+Curve math matches [RetroBlit](https://www.badcastle.com/retroblit.html) by Martin Cietwierkowski (`Ease` class, Robert
+Penner's easing equations).
 
 <ApiAvailability page="api/easing" />
 
 <Since symbol="EasingFunction" />
 <Since symbol="applyEasing" />
+<Since symbol="interpolate" />
+
+```ts twoslash
+import { applyEasing, interpolate, Color32, Vector2i } from 'blit386';
+
+const t = applyEasing(0.5, 'ease-in-out'); // 0..1 progress → eased value
+
+const pos = interpolate('bounce-out', new Vector2i(0, -40), new Vector2i(0, 80), 0.7);
+const tint = interpolate('cubic-out', Color32.white, Color32.green, 0.4);
+```
+
+## Curves
+
+`EasingFunction` is a string union. `'ease-in'`, `'ease-out'`, and `'ease-in-out'` are the quadratic family (kept for
+existing palette and audio call sites).
+
+| Family | Identifiers |
+| --- | --- |
+| Linear | `'linear'` |
+| Quadratic | `'ease-in'`, `'ease-out'`, `'ease-in-out'` |
+| Sine | `'sine-in'`, `'sine-out'`, `'sine-in-out'` |
+| Cubic | `'cubic-in'`, `'cubic-out'`, `'cubic-in-out'` |
+| Quartic | `'quartic-in'`, `'quartic-out'`, `'quartic-in-out'` |
+| Quintic | `'quintic-in'`, `'quintic-out'`, `'quintic-in-out'` |
+| Exponential | `'expo-in'`, `'expo-out'`, `'expo-in-out'` |
+| Circular | `'circ-in'`, `'circ-out'`, `'circ-in-out'` |
+| Back (overshoot) | `'back-in'`, `'back-out'`, `'back-in-out'` |
+| Elastic | `'elastic-in'`, `'elastic-out'`, `'elastic-in-out'` |
+| Bounce | `'bounce-in'`, `'bounce-out'`, `'bounce-in-out'` |
+
+Every curve returns `0` at `t = 0` and `1` at `t = 1`. Values of `t` outside `[0, 1]` are not clamped. Back and elastic
+curves may overshoot outside `[0, 1]` for intermediate `t`.
+
+## `applyEasing`
 
 ```ts twoslash
 import { applyEasing } from 'blit386';
 
-const t = applyEasing(0.5, 'ease-in-out'); // 0..1 progress → eased value
+const eased = applyEasing(0.5, 'cubic-in'); // 0.125
+```
+
+## `interpolate`
+
+Applies the curve to `t`, then interpolates from `start` to `end`.
+
+- `number` – floating-point blend
+- `Vector2i` / `Rect2i` – each component rounded to the nearest integer
+- `Color32` – each channel rounded and clamped to `[0, 255]`
+
+```ts twoslash
+import { interpolate, Rect2i } from 'blit386';
+
+const bounds = interpolate('sine-in-out', new Rect2i(0, 0, 16, 16), new Rect2i(40, 20, 64, 48), 0.5);
 ```
 
 <DemoEmbed demo="020-palette-fade" title="BLIT386 palette fade and flash demo" />
@@ -28,5 +80,6 @@ const t = applyEasing(0.5, 'ease-in-out'); // 0..1 progress → eased value
 
 <Cards>
   <Card title="API: Palette" href="/docs/api/palette">Palette fade effects that consume easing curves.</Card>
-  <Card title="API: Core" href="/docs/api/core">Bootstrap, init, default configuration.</Card>
+  <Card title="API: Audio" href="/docs/api/audio">Bus and music fades that accept `EasingFunction`.</Card>
+  <Card title="API: Core Types" href="/docs/api/core-types">`Vector2i`, `Rect2i`, and `Color32` used by `interpolate`.</Card>
 </Cards>

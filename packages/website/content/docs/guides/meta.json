@@ -3,6 +3,7 @@
   "pages": [
     "input",
     "game-loop",
+    "random",
     "palette",
     "palette-presets",
     "overlay",
