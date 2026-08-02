@@ -1,40 +1,24 @@
 name: Setup workspace
-description: Checkout, pnpm, Node.js, and a frozen-lockfile install for the blit386 monorepo.
+description: pnpm, Node.js, and a frozen-lockfile install for the blit386 monorepo.
 
-# Every CI job starts the same four steps, so they live here rather than being repeated
-# a dozen times. This is also the single place the toolchain and action pins are
-# declared - bump them once, not once per job.
+# Every CI job repeats these three steps, so they live here rather than a dozen times
+# over. This is also the single place the toolchain pins are declared.
+#
+# Checkout is deliberately NOT here. A local composite action is resolved from the
+# checked-out working tree, so a job must run actions/checkout before the runner can
+# even find this file - putting checkout inside it cannot work. Jobs therefore check out
+# first, which is also what lets the three jobs that need full history or tags pass
+# their own fetch-depth / fetch-tags without this action having to proxy them.
 #
 # Not to be confused with the `workspace-setup` composite action this replaced, which
 # cloned blit386/blit386 from GitHub, hand-wrote a two-package pnpm-workspace.yaml, and
 # installed without a frozen lockfile. The monorepo has one lockfile, so every install
 # here is frozen.
 
-inputs:
-  fetch-depth:
-    description: >-
-      Number of commits to fetch. Use '0' for full history in any job whose steps run `git log --follow` -
-      sync:docs:check and api:history:check both do, and both return nothing on a shallow clone.
-    required: false
-    default: '1'
-  fetch-tags:
-    description: >-
-      Whether to fetch tags. api:history:check and test:api-history resolve release dates from them; without tags the
-      dates go null and the committed manifest looks drifted.
-    required: false
-    default: 'false'
-
 runs:
   using: composite
 
   steps:
-    - name: Checkout code
-      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      with:
-        fetch-depth: ${{ inputs.fetch-depth }}
-        fetch-tags: ${{ inputs.fetch-tags }}
-        persist-credentials: false
-
     - name: Setup pnpm
       # No `version` input on purpose: pnpm/action-setup reads `packageManager` from the
       # root package.json, which is already the pinned source of truth. Declaring it here

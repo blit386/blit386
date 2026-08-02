@@ -10,7 +10,15 @@ on:
 concurrency:
   # Prefer PR number over head_ref so two forks/PRs with the same branch name do not
   # cancel each other. Mirrors the benchmark job group below.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  #
+  # Label events get their own group. They exist only so adding `perf` can start a
+  # benchmark run mid-PR, but they share a PR number with the real run - and since
+  # labelling a PR `cr` to request a review is routine here, a shared group meant every
+  # review request cancelled that PR's actual CI and replaced it with a run where every
+  # job correctly skipped. Green, having tested nothing.
+  group: >-
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{
+    contains(fromJSON('["labeled","unlabeled"]'), github.event.action) && 'label' || 'code' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -89,6 +97,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -118,6 +131,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -157,14 +175,18 @@ jobs:
       contents: read
 
     steps:
-      - name: Set up workspace
-        uses: ./.github/actions/setup
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           # api:since:check and api:history:check resolve release dates from tags, and
           # gen-api-history.mjs walks history with `git log --follow`, which returns
           # nothing on a shallow clone.
-          fetch-depth: '0'
-          fetch-tags: 'true'
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
 
       - name: Lint code
         run: pnpm --filter blit386 run lint
@@ -204,6 +226,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -303,13 +330,17 @@ jobs:
       contents: read
 
     steps:
-      - name: Set up workspace
-        uses: ./.github/actions/setup
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           # test:api-history's resolveTagDate integration cases need real release tags,
           # and the generator walks history with `git log --follow`.
-          fetch-depth: '0'
-          fetch-tags: 'true'
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
 
       - name: Run unit tests with coverage
         run: pnpm --filter blit386 run test:unit:coverage
@@ -340,6 +371,11 @@ jobs:
       pull-requests: write
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -518,6 +554,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -549,6 +590,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -584,12 +630,16 @@ jobs:
       contents: read
 
     steps:
-      - name: Set up workspace
-        uses: ./.github/actions/setup
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           # sync:docs:check regenerates the mirror, and the generator reads each doc's
           # last-modified date with `git log --follow`, which needs full history.
-          fetch-depth: '0'
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
 
       - name: Lint code
         run: pnpm --filter blit386-website run lint
@@ -631,6 +681,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -662,6 +717,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -686,6 +746,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -708,6 +773,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
@@ -730,6 +800,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
       - name: Set up workspace
         uses: ./.github/actions/setup
 
