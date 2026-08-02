@@ -1,0 +1,9 @@
+@reference '../app.css';
+
+.banner {
+    @apply sticky top-0 z-50 border-b border-amber-600/30 bg-amber-500/90 px-4 py-2 text-center text-sm text-black;
+}
+
+.link {
+    @apply font-medium underline underline-offset-2;
+}

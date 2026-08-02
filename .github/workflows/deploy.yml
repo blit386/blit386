@@ -1,22 +1,27 @@
 name: Deploy
 
-# Ported from the demos and docs-site repos with their triggers unchanged: merging to
-# main deploys both sites, exactly as it did before the monorepo merge. BT-406 owns the
-# move to tag-driven production deploys with next.* preview targets - deliberately not
-# done here, because converting now would leave a window where nothing deploys at all.
+# BT-406: production deploys are tag-triggered (a release tag such as `1.5.0`, no `v` prefix,
+# no prerelease suffix), plus workflow_dispatch for a manual redeploy without cutting a tag.
+# main still deploys continuously, but to the next.* preview targets below - never to
+# production. That is the fix for the original problem this phase exists to solve: before
+# this, both sites deployed from every push to main, so demos and docs describing unreleased
+# engine features went live before the release that documents them.
 #
-# No path filter, on purpose. A wrong filter here means a site silently stays stale
-# rather than failing loudly, and BT-406 rewrites this file anyway.
+# No path filter on the next.* jobs, on purpose - matches deploy-demos/deploy-website's
+# existing no-filter design. A wrong filter here means a preview site silently stays stale
+# rather than failing loudly, and the whole point of a preview channel is that it never lags
+# main. The website depends on packages/blit386/docs and demos depends on the engine, so a
+# path filter would also have to track those cross-package edges correctly, which a push-to-
+# main preview channel should not have to get right to do its job.
 #
-# Each job builds its own site rather than downloading ci.yml's artifacts. That means
-# two builds per site on every merge - one in CI, one here - which is a real cost,
-# accepted because a tag-triggered job (BT-406) cannot reuse artifacts from a
-# push-triggered run. Wiring up a cross-workflow hand-off now would be torn out next
-# phase.
+# Each job builds its own site rather than downloading ci.yml's artifacts, same as before -
+# a tag-triggered job cannot reuse artifacts from a push-triggered ci.yml run anyway.
 
 on:
   push:
     branches: [main]
+    tags: ['[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
 
 concurrency:
   # Never run two deploys of the same site at once, and never cancel one in flight -
@@ -28,7 +33,7 @@ jobs:
   deploy-demos:
     name: Deploy Demos to Cloudflare Pages
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       deployments: write
@@ -64,7 +69,7 @@ jobs:
   deploy-website:
     name: Deploy Website to Cloudflare Workers
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       deployments: write
@@ -93,4 +98,72 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/website
           command: deploy --config dist/server/wrangler.json --name blit386
+          wranglerVersion: '4.67.0'
+
+  deploy-demos-next:
+    name: Deploy Demos to Cloudflare Pages (next preview)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # demos consumes the engine as workspace:*, so the engine build is a prerequisite.
+      - name: Build engine (workspace dependency)
+        run: pnpm --filter blit386 run build
+
+      - name: Build demos (next channel)
+        run: pnpm --filter blit386-demos run build
+        env:
+          NODE_ENV: production
+          BLIT386_CHANNEL: next
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/demos
+          command: pages deploy dist/ --project-name=blit386-demos-next
+
+  deploy-website-next:
+    name: Deploy Website to Cloudflare Workers (next preview)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up workspace
+        uses: ./.github/actions/setup
+
+      # No engine build: website resolves `blit386` from npm, not the workspace.
+      - name: Build site (next channel)
+        run: pnpm --filter blit386-website run build
+        env:
+          NODE_ENV: production
+          BLIT386_CHANNEL: next
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/website
+          command: deploy --config dist/server/wrangler.json --name blit386-next
           wranglerVersion: '4.67.0'
