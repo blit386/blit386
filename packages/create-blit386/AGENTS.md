@@ -1,7 +1,7 @@
 # create-blit386 – agent quick start
 
-The BLIT386 game scaffolder CLI (`npm create blit386@latest`). Depends on `@blit386/kit`; the two packages release in
-lockstep – see [`packages/kit/AGENTS.md`](../kit/AGENTS.md) for the kit's own quick start.
+The BLIT386 game scaffolder CLI (`npm create blit386@latest`). Depends on `@blit386/kit`; this package, the kit, and the
+`blit386` engine release in lockstep – see [`packages/kit/AGENTS.md`](../kit/AGENTS.md) for the kit's own quick start.
 
 This file is a standalone quick start for tools that read `AGENTS.md` and not `CLAUDE.md`. For the full scaffold flow
 and routing table, [`CLAUDE.md`](CLAUDE.md) is canonical – read it before non-trivial work. Shared monorepo conventions
@@ -41,8 +41,8 @@ package's own contributor docs.
 
 - [`CLAUDE.md`](CLAUDE.md) – full scaffold flow and the routing table.
 - Root `CONTRIBUTING.md` – DCO and contribution guidelines.
-- `PUBLISHING.md` – pnpm publish procedure for both packages (`pnpm --filter create-blit386 run bump -- 1.3.0`,
-  replacing `1.3.0` with the target version, for lockstep).
+- `PUBLISHING.md` – pnpm publish procedure for all three lockstep packages (`pnpm run bump -- 1.5.0` from the repo root,
+  replacing `1.5.0` with the target version).
 
 Condensed, always-applicable agent rules also live in the root `.claude/rules/*.md` and `.claude/rules/*.md` here
 (Claude Code).

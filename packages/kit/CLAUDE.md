@@ -1,8 +1,8 @@
 # @blit386/kit
 
-Canonical kit content (the IR) and the `blit` CLI, shipped into every game scaffolded by `create-blit386`. The two
-packages release in lockstep (one shared `x.y.z`) – see
-[`packages/create-blit386/CLAUDE.md`](../create-blit386/CLAUDE.md) for the scaffolder's own detail.
+Canonical kit content (the IR) and the `blit` CLI, shipped into every game scaffolded by `create-blit386`. This package,
+`create-blit386`, and the `blit386` engine release in lockstep (one shared `x.y.z`, anchored to the engine's semver) –
+see [`packages/create-blit386/CLAUDE.md`](../create-blit386/CLAUDE.md) for the scaffolder's own detail.
 
 Shared monorepo conventions (no emoji, dash typography, American English, commit format, DCO, `main` protection, compact
 tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together with this file.
@@ -81,6 +81,6 @@ list of what ships, and it has no automated guard.
 | Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `src/commands/agents.ts` |
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |
 | What does the scaffolder generate? | `packages/create-blit386/CLAUDE.md` |
-| Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release kit`, `pnpm --filter create-blit386 run bump -- 1.3.0` (replace `1.3.0` with the target version) |
+| Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release`, `pnpm run bump -- 1.5.0` from the repo root (replace `1.5.0` with the target version) |
 | Maintainer agent-config drift check | `scripts/check-agent-config.mjs` (root) |
 | Contributing / DCO | root `CONTRIBUTING.md` |
