@@ -395,10 +395,30 @@ export function bumpLockstep(options) {
             written.push({ absolute: entry.absolute, previousContents: entry.previousContents });
         }
     } catch (error) {
+        /** @type {{ absolute: string, error: unknown }[]} */
+        const rollbackFailures = [];
         for (const entry of written.reverse()) {
-            writeFile(entry.absolute, entry.previousContents);
+            try {
+                writeFile(entry.absolute, entry.previousContents);
+            } catch (rollbackError) {
+                rollbackFailures.push({ absolute: entry.absolute, error: rollbackError });
+            }
         }
-        throw error;
+
+        if (rollbackFailures.length === 0) {
+            throw error;
+        }
+
+        const originalMessage = error instanceof Error ? error.message : String(error);
+        const rollbackMessage = rollbackFailures
+            .map(
+                (failure) =>
+                    `  ${failure.absolute}: ${failure.error instanceof Error ? failure.error.message : String(failure.error)}`,
+            )
+            .join('\n');
+        throw new Error(
+            `${originalMessage}\nAdditionally, rollback failed for ${rollbackFailures.length} file(s), left at the bumped version:\n${rollbackMessage}`,
+        );
     }
 
     return results;

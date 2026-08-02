@@ -362,6 +362,56 @@ describe('bump-lockstep', () => {
             }
             assert.match(files.get(join('/repo', ENGINE_VERSION_FILE)), /VERSION_MINOR = 2;/);
         });
+
+        it('reports rollback failures alongside the original error, and still rolls back the rest', () => {
+            const files = makeFixtureFiles();
+            const scaffoldRangePath = join('/repo', SCAFFOLD_RANGE_FILE);
+            const engineVersionPath = join('/repo', ENGINE_VERSION_FILE);
+            let engineWriteCount = 0;
+
+            assert.throws(
+                () =>
+                    bumpLockstep({
+                        root: '/repo',
+                        version: '1.5.0',
+                        readFile: (path) => {
+                            const raw = files.get(path);
+                            if (raw === undefined) {
+                                throw new Error(`missing ${path}`);
+                            }
+                            return raw;
+                        },
+                        writeFile: (path, data) => {
+                            if (path === scaffoldRangePath) {
+                                throw new Error('disk full');
+                            }
+                            if (path === engineVersionPath) {
+                                engineWriteCount += 1;
+                                // First call is the forward write (let it succeed); second call is this
+                                // entry's own rollback, which fails so a later rollback entry (blit386's
+                                // package.json, earlier in write order, later in rollback order) can prove
+                                // the loop keeps going past a failed rollback instead of aborting.
+                                if (engineWriteCount === 2) {
+                                    throw new Error('engine rollback failed');
+                                }
+                            }
+                            files.set(path, data);
+                        },
+                    }),
+                (error) => {
+                    assert.match(error.message, /disk full/);
+                    assert.match(error.message, /engine rollback failed/);
+                    return true;
+                },
+            );
+
+            // Rolled back successfully: entries written after the engine file, and the one written before it.
+            assert.equal(JSON.parse(files.get(join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[1]))).version, '1.2.1');
+            assert.equal(JSON.parse(files.get(join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[2]))).version, '1.2.1');
+            assert.equal(JSON.parse(files.get(join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[0]))).version, '1.2.1');
+            // Left at the bumped value: its own rollback write failed.
+            assert.match(files.get(engineVersionPath), /VERSION_MINOR = 5;/);
+        });
     });
 
     describe('main', () => {
