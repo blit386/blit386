@@ -12,7 +12,7 @@ does not.
 
 It is small, it is fast, and it is built to feel like a toy. That is the whole point.
 
-![BLIT386 logo](https://github.com/blit386/blit386/raw/main/assets/logo.png)
+![BLIT386 logo](https://github.com/blit386/blit386/raw/main/packages/blit386/assets/logo.png)
 
 ## Quick overview
 
@@ -175,8 +175,7 @@ npm run dev
 ```
 
 Works with npm, pnpm, yarn, or bun – it uses whichever you ran it with. Open the address it prints and edit
-`src/game.js`. See [create-blit386](https://github.com/blit386/create-blit386) for the options and what lands in the
-project.
+`src/game.js`. See [create-blit386](../create-blit386) for the options and what lands in the project.
 
 ### Add it to a project you already have
 
