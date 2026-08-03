@@ -22,7 +22,7 @@ overrides:
   js-yaml@>=4.0.0 <4.2.0: ^4.2.0
   shell-quote@<1.8.4: ^1.8.4
   sharp@<0.35.0: ^0.35.0
-  '@hono/node-server@>=2.0.0 <2.0.10': ^2.0.10
+  '@hono/node-server@>=2.0.0 <2.0.10': ^2.0.12
   undici@>=7.0.0 <7.29.0: ^7.29.0
   fast-uri@>=3.0.0 <3.1.4: ^3.1.4
 
@@ -1135,8 +1135,8 @@ packages:
       tailwindcss:
         optional: true
 
-  '@hono/node-server@2.0.11':
-    resolution: {integrity: sha512-bjD221KPLoJTWUwso1J6fGKiTXEUFedG/s0visavY4zakFPkeGURMRNly+FhBHs7T8Dz4qHaZIMX9ZoJHSJtKA==}
+  '@hono/node-server@2.0.12':
+    resolution: {integrity: sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4
@@ -6723,7 +6723,7 @@ snapshots:
     optionalDependencies:
       tailwindcss: 4.3.3
 
-  '@hono/node-server@2.0.11(hono@4.12.32)':
+  '@hono/node-server@2.0.12(hono@4.12.32)':
     dependencies:
       hono: 4.12.32
 
@@ -11690,7 +11690,7 @@ snapshots:
 
   waku@1.0.0-beta.3(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))(react-server-dom-webpack@19.2.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.109.0(esbuild@0.28.1)))(react@19.2.8)(terser@5.49.0)(yaml@2.9.0):
     dependencies:
-      '@hono/node-server': 2.0.11(hono@4.12.32)
+      '@hono/node-server': 2.0.12(hono@4.12.32)
       '@vitejs/plugin-react': 6.0.4(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       '@vitejs/plugin-rsc': 0.5.30(react-dom@19.2.8(react@19.2.8))(react-server-dom-webpack@19.2.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.109.0(esbuild@0.28.1)))(react@19.2.8)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       dotenv: 17.4.2
