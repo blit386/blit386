@@ -5,15 +5,21 @@ Thank you for your interest in contributing to the BLIT386 project. By participa
 
 ## Getting Started
 
-Clone the repository, install dependencies, and confirm the build and tests pass:
+Clone the repository, install dependencies for the whole workspace, then build and test the package you're changing.
+This is a pnpm workspace of five packages (`packages/blit386`, `demos`, `website`, `kit`, `create-blit386`);
+`pnpm install` at the root sets up all of them, but `build`/`test`/`lint`/etc. are per-package scripts, not root
+scripts:
 
 ```bash
 git clone https://github.com/blit386/blit386.git
 cd blit386
 pnpm install
-pnpm run build
-pnpm run test
+pnpm --filter blit386 run build
+pnpm --filter blit386 run test
 ```
+
+(Substitute `blit386` for whichever package you're working in – `blit386-demos`, `blit386-website`, `@blit386/kit`, or
+`create-blit386`. See each package's own `package.json` for the scripts it defines.)
 
 Requirements:
 
@@ -21,10 +27,10 @@ Requirements:
 - pnpm 10.26.2 (`packageManager` in `package.json`)
 
 Claude Code sessions and the optional [devcontainer](.devcontainer/devcontainer.json) (`typescript-node:22-bookworm`)
-auto-run `scripts/session-start-bootstrap.sh` via their SessionStart hooks / `postCreateCommand`, so a fresh checkout
-gets `pnpm install --frozen-lockfile` without a manual step. See
-[Environment bootstrap](CLAUDE.md#environment-bootstrap-sessionstart-hook-and-devcontainer) in `CLAUDE.md` for the full
-detail.
+auto-run `packages/blit386/scripts/session-start-bootstrap.sh` via their SessionStart hooks / `postCreateCommand`, so a
+fresh checkout gets `pnpm install --frozen-lockfile` without a manual step. See
+[Environment bootstrap](packages/blit386/CLAUDE.md#environment-bootstrap-sessionstart-hook-and-devcontainer) in that
+package's `CLAUDE.md` for the full detail.
 
 ## Developer Certificate of Origin (DCO)
 
@@ -157,13 +163,14 @@ All code must follow the project's style guidelines:
 
 ### Pre-commit Checks
 
-Before committing, run the preflight checks (requires the Node.js version above):
+Before committing, run the preflight checks for the package you changed (requires the Node.js version above):
 
 ```bash
-pnpm run preflight
+pnpm --filter blit386 run preflight   # or the package you're working in
 ```
 
-Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnings and Biome errors. This runs:
+Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnings and Biome errors. The example above,
+`packages/blit386`'s `preflight`, runs:
 
 - Code formatting checks (`format:check`)
 - Linting (`lint`, with `--max-warnings 0`)
@@ -182,6 +189,12 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - Security preflight tests (`test:security-preflight`)
 
 ### Available Commands
+
+These are `packages/blit386`'s scripts – the most heavily-tooled package and the one most contributions touch. Run them
+from `packages/blit386` directly, or from the repo root with `pnpm --filter blit386 run <script>`. Other packages define
+a subset of this list in their own `package.json` (`kit` and `create-blit386` have no combined `preflight`). A handful
+of shared checks (`format:check`, `format`, `docs:links`, `agents:check`, `security:audit`, `security:audit:prod`) also
+exist as root-level scripts covering files outside any single package.
 
 ```bash
 pnpm run build                      # Build for production

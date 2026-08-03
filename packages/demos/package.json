@@ -10,7 +10,8 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/blit386/blit386-demos.git"
+    "url": "git+https://github.com/blit386/blit386.git",
+    "directory": "packages/demos"
   },
   "homepage": "https://demos.blit386.dev",
   "keywords": [

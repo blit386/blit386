@@ -26,7 +26,7 @@ Published docs are MDX-capable Markdown: Fumadocs/Fumapress components render di
 
 Registered components (`packages/website/press.config.tsx`, `getMdxComponents`): `Callout`, `Card` / `Cards`, `Tabs` /
 `Tab`, `Steps` / `Step`, `Accordion` / `Accordions`, `Files` / `File` / `Folder`, `TypeTable`, `GithubInfo`,
-`InlineTOC`. A component not in that map fails the mirror build.
+`InlineTOC`, `DemoEmbed`. A component not in that map fails the mirror build.
 
 When to use which:
 

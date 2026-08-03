@@ -27,7 +27,7 @@ automatic Canvas 2D software fallback. All engine functionality is accessed thro
 Main documentation sections:
 
 - `/docs` – Documentation hub (start here)
-- `/docs/guide/getting-started` – Installation and first steps
+- `/docs/getting-started` – Installation and first steps
 - `/docs/api/` – Full API reference for the `BT` namespace
 
 Use the search API to locate specific content:

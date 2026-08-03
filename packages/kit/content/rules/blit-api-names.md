@@ -96,6 +96,6 @@ from game code is unsupported.
 
 ## Do not use removed names
 
-`BT.isButtonDown` (use `BT.isDown`), `overlayEnabled` (use `isOverlayEnabled`), `canvasId` (use `canvasID`).
+`BT.buttonDown` (use `BT.isDown`), `overlayEnabled` (use `isOverlayEnabled`), `canvasId` (use `canvasID`).
 
 Full reference: `AGENTS.md` and `docs/` in this project.

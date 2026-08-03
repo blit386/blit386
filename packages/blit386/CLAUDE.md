@@ -8,9 +8,9 @@ fallback when WebGPU init fails. All engine functionality is reached through the
 Shared monorepo conventions (no emoji, dash typography, American English, commit format, DCO, `main` protection, compact
 tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together with this file.
 
-This package's stack is in `package.json`. Two things it does not tell you: TypeScript is pinned to match API Extractor
-(the declaration rollup breaks when they drift), and this package holds the canonical copy of
-`scripts/prettier-plugin-compact-tables.mjs` that the root Prettier config and every other package share.
+This package's stack is in `package.json`. One thing it does not tell you: TypeScript is pinned to match API Extractor
+(the declaration rollup breaks when they drift). The compact-tables Prettier plugin every package shares
+(`scripts/prettier-plugin-compact-tables.mjs`) is owned by the monorepo root, not this package.
 
 ## Where to Find Information
 

@@ -51,13 +51,14 @@ pnpm run build
 pnpm run deploy      # requires wrangler login or CI secrets
 ```
 
-CI builds with `CLOUDFLARE=1` and deploys on every push to `main`. Deploys go to the Cloudflare Worker named `blit386`
-(custom domain `blit386.dev`).
+CI builds with `CLOUDFLARE=1`. A release tag push (`x.y.z`) or manual `workflow_dispatch` deploys to the production
+Cloudflare Worker named `blit386` (custom domain `blit386.dev`); a plain push to `main` instead deploys to the
+`blit386-next` preview Worker (`next.blit386.dev`).
 
 ### What the deploy needs
 
 - GitHub repository secrets `CLOUDFLARE_API_TOKEN` (Workers deploy permission) and `CLOUDFLARE_ACCOUNT_ID`, consumed by
-  the `deploy` job in `.github/workflows/ci.yml`.
+  the `deploy-website` and `deploy-website-next` jobs in `.github/workflows/deploy.yml`.
 - `dist/server/wrangler.json`: the config actually deployed. Waku regenerates it on every build and
   `scripts/patch-wrangler.mjs` (run by `postbuild`) injects `run_worker_first` into it.
 - The root `wrangler.jsonc` is kept for parity and local reference only. Its `"name": "blit386"` value never reaches
@@ -76,8 +77,9 @@ pnpm run sync:docs:watch   # watch packages/blit386/docs and re-sync on every ch
 ```
 
 The engine docs directory resolves from `ENGINE_DOCS_DIR` and defaults to the sibling package path `../blit386/docs`.
-`sync:docs:check` is a local check: no workflow in `.github/workflows/` runs it today, so mirror drift is not enforced
-by CI – run it yourself after changing engine docs.
+`sync:docs:check` is enforced in CI – it runs as the last step of the `quality-website` job in
+`.github/workflows/ci.yml` – but still run it yourself after changing engine docs rather than relying on CI to catch
+drift.
 
 Never hand-edit a generated page – edit the engine source and re-run `sync:docs`. The same applies to
 `src/data/api-history.generated.json`, which the script copies from `packages/blit386`. See `CLAUDE.md` (Documentation
