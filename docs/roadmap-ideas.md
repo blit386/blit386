@@ -285,7 +285,7 @@ enabler in-engine regardless.
 
 ### 9.4 Audio-reactive visuals
 
-`BT.audioLevel(bus)` – expose the #324 analyser publicly (peak/RMS per bus). VU-reactive demoscene visuals, rhythm
+`BT.audioLevel(bus)` – expose the #324 analyzer publicly (peak/RMS per bus). VU-reactive demoscene visuals, rhythm
 minigames, mouth-flap dialogue portraits.
 
 ### 9.5 Misc audio
