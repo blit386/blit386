@@ -167,7 +167,7 @@ importers:
         specifier: ^22.19.19
         version: 22.20.1
       tsup:
-        specifier: ^8.5.0
+        specifier: ^8.5.1
         version: 8.5.1(@microsoft/api-extractor@7.58.12(@types/node@22.20.1))(jiti@2.7.0)(postcss@8.5.25)(typescript@5.9.3)(yaml@2.9.0)
       typescript:
         specifier: ^5.9.3
@@ -243,7 +243,7 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
       vite:
-        specifier: ^8.1.4
+        specifier: ^8.1.5
         version: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
       vite-plugin-static-copy:
         specifier: ^4.1.0
@@ -255,7 +255,7 @@ importers:
         specifier: ^22.19.19
         version: 22.20.1
       tsup:
-        specifier: ^8.5.0
+        specifier: ^8.5.1
         version: 8.5.1(@microsoft/api-extractor@7.58.12(@types/node@22.20.1))(jiti@2.7.0)(postcss@8.5.25)(typescript@5.9.3)(yaml@2.9.0)
       typescript:
         specifier: ^5.9.3
