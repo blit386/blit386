@@ -72,7 +72,6 @@ jobs:
               - 'prettier.config.js'
               - '.prettierignore'
               - 'commitlint.config.js'
-              - 'scripts/**'
               - '.husky/**'
             engine:
               - 'packages/blit386/**'
@@ -84,9 +83,16 @@ jobs:
               - 'packages/blit386/docs/**'
             kit:
               - 'packages/kit/**'
+            # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
+            # build-test-scaffolder is the only CI job that exercises them (test:bump-lockstep). The rest of
+            # scripts/ (check-markdown-links.mjs, check-agent-config.mjs, prettier-plugin-compact-tables.mjs,
+            # ...) only feeds quality-root's format:check/docs:links/agents:check steps, which already run
+            # unconditionally - see quality-root's `if` below - so it deliberately has no filter entry here.
             scaffolder:
               - 'packages/create-blit386/**'
               - 'packages/kit/**'
+              - 'scripts/bump-lockstep.mjs'
+              - 'scripts/bump-lockstep.test.mjs'
 
   quality-root:
     name: Code Quality (root)

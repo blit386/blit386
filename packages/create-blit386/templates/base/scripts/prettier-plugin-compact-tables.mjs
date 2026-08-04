@@ -15,7 +15,7 @@
  */
 
 import { doc } from 'prettier';
-import * as markdown from 'prettier/plugins/markdown.mjs';
+import * as markdown from 'prettier/plugins/markdown';
 
 /**
  * One column's alignment as mdast records it, read from the source delimiter row.

@@ -18,11 +18,20 @@ import { fileURLToPath } from 'node:url';
 /** Repo root, resolved from this script's own location at repo-root `scripts/`. */
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+/** The engine's `package.json` path, relative to `ROOT`. */
+export const ENGINE_PACKAGE_JSON_PATH = 'packages/blit386/package.json';
+
+/** The kit's `package.json` path, relative to `ROOT`. */
+export const KIT_PACKAGE_JSON_PATH = 'packages/kit/package.json';
+
+/** The scaffolder's `package.json` path, relative to `ROOT`. */
+export const CREATE_BLIT386_PACKAGE_JSON_PATH = 'packages/create-blit386/package.json';
+
 /** The three publishable packages' `package.json` paths, relative to `ROOT`. */
 export const LOCKSTEP_PACKAGE_JSON_PATHS = [
-    'packages/blit386/package.json',
-    'packages/kit/package.json',
-    'packages/create-blit386/package.json',
+    ENGINE_PACKAGE_JSON_PATH,
+    KIT_PACKAGE_JSON_PATH,
+    CREATE_BLIT386_PACKAGE_JSON_PATH,
 ];
 
 /** Source file holding the engine's own version constants, relative to `ROOT`. */
@@ -41,11 +50,13 @@ export const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
  */
 export function parseVersionArg(version) {
     const trimmed = version?.trim() ?? '';
+
     if (!SEMVER_RE.test(trimmed)) {
         throw new Error(
             `Expected a SemVer x.y.z version (got ${version === undefined ? '(missing)' : JSON.stringify(version)}).`,
         );
     }
+
     return trimmed;
 }
 
@@ -60,6 +71,7 @@ export function parseVersionArg(version) {
  */
 export function deriveCaretRange(version) {
     const [major, minor] = parseVersionArg(version).split('.');
+
     return `^${major}.${minor}.0`;
 }
 
@@ -73,17 +85,22 @@ export function deriveCaretRange(version) {
  */
 function endOfStringLiteral(raw, start) {
     let index = start + 1;
+
     while (index < raw.length) {
         const char = raw[index];
+
         if (char === '\\') {
             index += 2;
             continue;
         }
+
         if (char === '"') {
             return index + 1;
         }
+
         index += 1;
     }
+
     throw new Error('Invalid JSON: unterminated string literal');
 }
 
@@ -110,25 +127,33 @@ function findTopLevelVersionSpan(raw) {
 
         if (char === '"') {
             const literalEnd = endOfStringLiteral(raw, index);
+
             if (depth !== 1) {
                 index = literalEnd;
                 continue;
             }
+
             let cursor = literalEnd;
+
             while (cursor < raw.length && /\s/u.test(raw[cursor])) {
                 cursor += 1;
             }
+
             if (raw[cursor] !== ':') {
                 index = literalEnd;
                 continue;
             }
+
             cursor += 1;
+
             while (cursor < raw.length && /\s/u.test(raw[cursor])) {
                 cursor += 1;
             }
+
             if (raw.slice(index, literalEnd) === '"version"' && raw[cursor] === '"') {
                 span = { start: cursor, end: endOfStringLiteral(raw, cursor) };
             }
+
             // Resume at the value so it is never re-read as a key.
             index = cursor;
             continue;
@@ -139,12 +164,14 @@ function findTopLevelVersionSpan(raw) {
         } else if (char === '}' || char === ']') {
             depth -= 1;
         }
+
         index += 1;
     }
 
     if (span === undefined) {
         throw new Error('package.json is missing a string "version" field');
     }
+
     return span;
 }
 
@@ -164,27 +191,34 @@ function findStringFieldSpan(raw, key) {
 
     while (index < raw.length) {
         const char = raw[index];
+
         if (char !== '"') {
             index += 1;
             continue;
         }
 
         const literalEnd = endOfStringLiteral(raw, index);
+
         if (raw.slice(index, literalEnd) === keyLiteral) {
             let cursor = literalEnd;
+
             while (cursor < raw.length && /\s/u.test(raw[cursor])) {
                 cursor += 1;
             }
+
             if (raw[cursor] === ':') {
                 cursor += 1;
+
                 while (cursor < raw.length && /\s/u.test(raw[cursor])) {
                     cursor += 1;
                 }
+
                 if (raw[cursor] === '"') {
                     return { start: cursor, end: endOfStringLiteral(raw, cursor) };
                 }
             }
         }
+
         index = literalEnd;
     }
 
@@ -206,21 +240,26 @@ function findStringFieldSpan(raw, key) {
 export function applyVersion(raw, version) {
     /** @type {unknown} */
     let parsed;
+
     try {
         parsed = JSON.parse(raw);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(`Invalid JSON: ${message}`);
     }
+
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new Error('package.json must be a JSON object');
     }
+
     const record = /** @type {Record<string, unknown>} */ (parsed);
+
     if (typeof record.version !== 'string') {
         throw new Error('package.json is missing a string "version" field');
     }
 
     const { start, end } = findTopLevelVersionSpan(raw);
+
     return {
         next: `${raw.slice(0, start)}${JSON.stringify(version)}${raw.slice(end)}`,
         previous: record.version,
@@ -238,6 +277,7 @@ export function applyVersion(raw, version) {
 export function applyEngineRange(raw, range) {
     const { start, end } = findStringFieldSpan(raw, 'engineRange');
     const previous = JSON.parse(raw.slice(start, end));
+
     return {
         next: `${raw.slice(0, start)}${JSON.stringify(range)}${raw.slice(end)}`,
         previous,
@@ -260,6 +300,7 @@ export function applyEngineVersionConstants(raw, version) {
     const majorMatch = raw.match(VERSION_MAJOR_RE);
     const minorMatch = raw.match(VERSION_MINOR_RE);
     const patchMatch = raw.match(VERSION_PATCH_RE);
+
     if (!majorMatch || !minorMatch || !patchMatch) {
         throw new Error('BTAPI.ts is missing one of VERSION_MAJOR / VERSION_MINOR / VERSION_PATCH');
     }
@@ -286,11 +327,14 @@ const BLIT386_RANGE_RE = /(const BLIT386_RANGE = ')([^']+)(';)/u;
  */
 export function applyBlit386Range(raw, range) {
     const match = raw.match(BLIT386_RANGE_RE);
+
     if (!match) {
         throw new Error('scaffold.ts is missing the BLIT386_RANGE constant');
     }
+
     const previous = match[2];
     const next = raw.replace(BLIT386_RANGE_RE, `$1${range}$3`);
+
     return { next, previous };
 }
 
@@ -302,15 +346,26 @@ export function applyBlit386Range(raw, range) {
  * @typedef {{ path: string, apply: (raw: string, version: string) => { next: string, results: { path: string, previous: string, next: string }[] } }} LockstepTarget
  */
 
-/** @type {LockstepTarget[]} */
-const LOCKSTEP_TARGETS = [
-    {
-        path: LOCKSTEP_PACKAGE_JSON_PATHS[0],
+/**
+ * A lockstep target whose `apply` only rewrites its `package.json`'s top-level `version` – no
+ * derived fields. Shared by the engine's and scaffolder's manifests, which are otherwise identical.
+ *
+ * @param {string} path Package.json path, relative to `ROOT`.
+ * @returns {LockstepTarget}
+ */
+function versionOnlyTarget(path) {
+    return {
+        path,
         apply: (raw, version) => {
             const { next, previous } = applyVersion(raw, version);
-            return { next, results: [{ path: LOCKSTEP_PACKAGE_JSON_PATHS[0], previous, next: version }] };
+            return { next, results: [{ path, previous, next: version }] };
         },
-    },
+    };
+}
+
+/** @type {LockstepTarget[]} */
+const LOCKSTEP_TARGETS = [
+    versionOnlyTarget(ENGINE_PACKAGE_JSON_PATH),
     {
         path: ENGINE_VERSION_FILE,
         apply: (raw, version) => {
@@ -322,7 +377,7 @@ const LOCKSTEP_TARGETS = [
         },
     },
     {
-        path: LOCKSTEP_PACKAGE_JSON_PATHS[1],
+        path: KIT_PACKAGE_JSON_PATH,
         apply: (raw, version) => {
             const versionResult = applyVersion(raw, version);
             const range = deriveCaretRange(version);
@@ -330,9 +385,9 @@ const LOCKSTEP_TARGETS = [
             return {
                 next: rangeResult.next,
                 results: [
-                    { path: LOCKSTEP_PACKAGE_JSON_PATHS[1], previous: versionResult.previous, next: version },
+                    { path: KIT_PACKAGE_JSON_PATH, previous: versionResult.previous, next: version },
                     {
-                        path: `${LOCKSTEP_PACKAGE_JSON_PATHS[1]} (blit386.engineRange)`,
+                        path: `${KIT_PACKAGE_JSON_PATH} (blit386.engineRange)`,
                         previous: rangeResult.previous,
                         next: range,
                     },
@@ -340,13 +395,7 @@ const LOCKSTEP_TARGETS = [
             };
         },
     },
-    {
-        path: LOCKSTEP_PACKAGE_JSON_PATHS[2],
-        apply: (raw, version) => {
-            const { next, previous } = applyVersion(raw, version);
-            return { next, results: [{ path: LOCKSTEP_PACKAGE_JSON_PATHS[2], previous, next: version }] };
-        },
-    },
+    versionOnlyTarget(CREATE_BLIT386_PACKAGE_JSON_PATH),
     {
         path: SCAFFOLD_RANGE_FILE,
         apply: (raw, version) => {
@@ -386,17 +435,21 @@ export function bumpLockstep(options) {
 
     /** @type {{ absolute: string, previousContents: string }[]} */
     const written = [];
+
     try {
         for (const entry of staged) {
             if (entry.next === entry.previousContents) {
                 continue;
             }
+
             writeFile(entry.absolute, entry.next);
+
             written.push({ absolute: entry.absolute, previousContents: entry.previousContents });
         }
     } catch (error) {
         /** @type {{ absolute: string, error: unknown }[]} */
         const rollbackFailures = [];
+
         for (const entry of written.reverse()) {
             try {
                 writeFile(entry.absolute, entry.previousContents);
@@ -416,6 +469,7 @@ export function bumpLockstep(options) {
                     `  ${failure.absolute}: ${failure.error instanceof Error ? failure.error.message : String(failure.error)}`,
             )
             .join('\n');
+
         throw new Error(
             `${originalMessage}\nAdditionally, rollback failed for ${rollbackFailures.length} file(s), left at the bumped version:\n${rollbackMessage}`,
         );
@@ -426,21 +480,23 @@ export function bumpLockstep(options) {
 
 /**
  * @param {string[]} argv Process argv (including node + script path).
- * @returns {{ version: string, dryRun: boolean }}
+ * @returns {{ version: string, dryRun: boolean }} The parsed command-line arguments.
  */
 export function parseArgv(argv) {
     const args = argv.slice(2).filter((arg) => arg !== '--');
     const dryRun = args.includes('--dry-run');
     const positional = args.filter((arg) => arg !== '--dry-run');
+
     if (positional.length !== 1) {
         throw new Error('Usage: node scripts/bump-lockstep.mjs <x.y.z> [--dry-run]');
     }
+
     return { version: parseVersionArg(positional[0]), dryRun };
 }
 
 /**
- * @param {string[]} argv
- * @param {{ log?: (message: string) => void, bump?: typeof bumpLockstep }} [hooks]
+ * @param {string[]} argv Process argv (including node + script path).
+ * @param {{ log?: (message: string) => void, bump?: typeof bumpLockstep }} [hooks] Optional hooks for logging and bumping.
  * @returns {number} Process exit code.
  */
 export function main(argv, hooks = {}) {
@@ -451,9 +507,11 @@ export function main(argv, hooks = {}) {
         const { version, dryRun } = parseArgv(argv);
         const results = bump({ version, dryRun });
         const label = dryRun ? 'Would set' : 'Set';
+
         for (const result of results) {
             log(`${label} ${result.path}: ${result.previous} -> ${result.next}`);
         }
+
         if (dryRun) {
             log('(dry-run; no files written)');
         }
@@ -466,6 +524,7 @@ export function main(argv, hooks = {}) {
 }
 
 const isDirectRun = process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
 if (isDirectRun) {
     process.exitCode = main(process.argv);
 }
