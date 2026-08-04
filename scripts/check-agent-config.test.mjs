@@ -186,15 +186,16 @@ describe('check-agent-config', () => {
     describe('checkRootSkillsLayout', () => {
         it('reports .agents/skills and .zed/settings.json failures even when .claude/skills is missing', () => {
             const root = mkdtempSync(join(tmpdir(), 'agent-config-test-'));
-            const agentsSkillsDir = join(root, '.agents', 'skills');
-            const zedDir = join(root, '.zed');
-
-            mkdirSync(agentsSkillsDir, { recursive: true });
-            writeFileSync(join(agentsSkillsDir, 'bt-format'), 'not a symlink');
-            mkdirSync(zedDir, { recursive: true });
-            writeFileSync(join(zedDir, 'settings.json'), '{not json');
 
             try {
+                const agentsSkillsDir = join(root, '.agents', 'skills');
+                const zedDir = join(root, '.zed');
+
+                mkdirSync(agentsSkillsDir, { recursive: true });
+                writeFileSync(join(agentsSkillsDir, 'bt-format'), 'not a symlink');
+                mkdirSync(zedDir, { recursive: true });
+                writeFileSync(join(zedDir, 'settings.json'), '{not json');
+
                 const failures = checkRootSkillsLayout(root);
                 assert.equal(failures.length, 3);
                 assert.ok(failures.some((failure) => /\.claude\/skills directory is missing/.test(failure)));
