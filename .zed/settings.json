@@ -1,81 +1,62 @@
 {
-  // Project-level Zed settings for blit386.
-  // Global settings live in ~/.config/zed/settings.json.
-  "agent": {
-    "tool_permissions": {
-      // Global default is "allow"; tighten specific tools below.
-      "tools": {
-        // Block the agent from silently editing lock files or secrets.
-        // Mirrors the PreToolUse file-block hook in .claude/settings.json.
-        "edit_file": {
-          "always_deny": [
-            { "pattern": "pnpm-lock\\.yaml$" },
-            { "pattern": "\\.lock$" },
-            { "pattern": "\\.env(\\..*)?$" }
-          ]
-        },
-        "write_file": {
-          "always_deny": [
-            { "pattern": "pnpm-lock\\.yaml$" },
-            { "pattern": "\\.lock$" },
-            { "pattern": "\\.env(\\..*)?$" }
-          ]
-        },
-        // Require confirmation for destructive or side-effecting terminal commands.
-        "terminal": {
-          "default": "allow",
-          "always_allow": [
-            { "pattern": "^pnpm\\s+" },
-            { "pattern": "^npx\\s+" },
-            { "pattern": "^node\\s+" },
-            { "pattern": "^git\\s+(diff|log|status|show|blame|stash\\s+show)(\\s+[^;&|`()><\\n]*)?$" },
-            { "pattern": "^cat\\s+" },
-            { "pattern": "^ls\\s+" },
-            { "pattern": "^echo\\s+" }
-          ],
-          "always_confirm": [
-            { "pattern": "^git\\s+(push|tag|release)" },
-            { "pattern": "^gh\\s+" },
-            { "pattern": "rm\\s+-rf" },
-            { "pattern": "sudo\\s+" }
-          ]
-        }
-      }
-    }
-  },
-
-  // Editor formatting mirrors the repo toolchain: Biome for TS/JS/JSON, Prettier for MD/YAML.
-  // Biome runs via its Zed extension (language server); Prettier is built in and reads
-  // prettier.config.js. organizeImports is intentionally omitted - ESLint perfectionist owns
+  // Project-level Zed settings for the blit386 monorepo - the only .zed/settings.json in this
+  // repo (see scripts/check-agent-config.mjs). Zed cascades local settings down from the opened
+  // worktree root, so opening Zed at this repo root (not a package subdirectory) already applies
+  // these to every package, including packages/website and packages/demos.
+  //
+  // `agent.tool_permissions` cannot live here - as of this Zed version it is a global-only
+  // setting and Zed silently strips it from local settings.json on save ("Property agent is not
+  // allowed"). Those permissions are configured in the global ~/.config/zed/settings.json instead.
+  //
+  // Editor formatting mirrors the repo toolchain: Biome for TS/TSX/JS/JSON/CSS, Prettier for
+  // MD/MDX/YAML. Biome runs via its Zed extension (language server); Prettier is built in and
+  // reads prettier.config.js. organizeImports is intentionally omitted - ESLint perfectionist owns
   // import ordering here.
+
   "languages": {
     "TypeScript": {
       "formatter": { "language_server": { "name": "biome" } },
       "code_actions_on_format": { "source.fixAll.biome": true },
       "format_on_save": "on"
     },
+
     "TSX": {
       "formatter": { "language_server": { "name": "biome" } },
       "code_actions_on_format": { "source.fixAll.biome": true },
       "format_on_save": "on"
     },
+
     "JavaScript": {
       "formatter": { "language_server": { "name": "biome" } },
       "code_actions_on_format": { "source.fixAll.biome": true },
       "format_on_save": "on"
     },
+
     "JSON": {
       "formatter": { "language_server": { "name": "biome" } },
       "format_on_save": "on"
     },
+
     "JSONC": {
       "formatter": { "language_server": { "name": "biome" } },
       "format_on_save": "on"
     },
+
+    "CSS": {
+      "formatter": { "language_server": { "name": "biome" } },
+      "format_on_save": "on"
+    },
+
     "Markdown": {
       "formatter": "prettier",
       "format_on_save": "on"
     },
+
+    "MDX": {
+      "formatter": "prettier",
+      "format_on_save": "on"
+    },
+
     "YAML": {
       "formatter": "prettier",
       "format_on_save": "on"
