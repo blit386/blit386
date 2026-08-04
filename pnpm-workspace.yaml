@@ -1,2 +1,80 @@
 packages:
   - 'packages/*'
+
+trustPolicy: no-downgrade
+
+# Packages published more than a year ago predate widespread npm provenance adoption
+# and legitimately lack trust evidence newer releases of the same package now carry
+# (e.g. chokidar@4.0.3, semver@6.3.1) - age itself is the trust signal for those. Real
+# takeovers of actively-maintained packages show up as violations well inside a year.
+trustPolicyIgnoreAfter: 525600
+
+overrides:
+  vite-node: ^5.2.0
+  esbuild: ^0.28.1
+  tmp@<=0.2.3: '>=0.2.4 <0.3.0'
+  lodash-es@>=4.0.0 <=4.17.22: '>=4.17.23 <5.0.0'
+  lodash@>=4.0.0 <=4.17.22: '>=4.17.23 <5.0.0'
+  axios@<=1.13.4: '>=1.13.5 <2.0.0'
+  qs@>=6.7.0 <=6.14.1: '>=6.14.2 <7.0.0'
+  devalue@<5.6.4: '>=5.6.4 <6.0.0'
+  flatted@<3.4.0: '>=3.4.0 <4.0.0'
+  brace-expansion@>=2.0.0 <5.0.8: ^5.0.8
+  postcss@>=8.0.0 <8.5.18: ^8.5.21
+  ws@>=8.0.0 <8.20.1: ^8.20.1
+  uuid@>=8.0.0 <11.1.1: ^11.1.1
+  yaml@>=2.0.0 <2.8.3: ^2.8.3
+  js-yaml@>=4.0.0 <4.2.0: ^4.2.0
+  shell-quote@<1.8.4: ^1.8.4
+  sharp@<0.35.0: ^0.35.0
+  '@hono/node-server@>=2.0.0 <2.0.10': ^2.0.12
+  undici@>=7.0.0 <7.29.0: ^7.29.0
+  fast-uri@>=3.0.0 <3.1.5: ^3.1.5
+  ip-address@>=10.1.1 <=10.3.0: '>=10.3.1 <11.0.0'
+  hono@<4.12.34: '>=4.12.34 <5.0.0'
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
+
+audit:
+  ignore:
+    - GHSA-gv7w-rqvm-qjhr
+
+# Supply-chain hardening for pnpm 11. pnpm 11 only reads auth/registry settings from
+# .npmrc; everything else (this block, overrides, allowBuilds, audit above) must live
+# here instead.
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+strictDepBuilds: true
+
+minimumReleaseAgeExclude:
+  - ws
+  - brace-expansion
+  - postcss
+  - uuid
+  - fast-uri
+  - undici
+  - '@types/node'
+  - '@commitlint/cli'
+  - '@commitlint/config-conventional'
+  - cspell
+  - knip
+  - lint-staged
+  - markdown-link-check
+  - husky
+  - eslint-plugin-jsdoc@63.3.3
+  # Transitive dependencies of markdown-link-check; excluded because installs stalled on them.
+  - chalk
+  - link-check
+  - markdown-link-extractor
+  # packages/website: Fumapress/Waku/Fumadocs pull transitive deps (Takumi, Hono,
+  # lucide-react) that publish more often than the 7-day gate tolerates. Extend this
+  # list rather than weaken the window if installs stall on a new fast-moving dep.
+  - waku
+  - fumadocs
+  - fumapress
+  - takumi
+  - hono
+  - lucide-react

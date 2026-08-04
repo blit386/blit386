@@ -109,7 +109,7 @@
     "security:mcp-preflight": "node scripts/security/mcp-preflight.mjs",
     "test:security-preflight": "node --test scripts/security/mcp-preflight.test.mjs"
   },
-  "packageManager": "pnpm@10.26.2",
+  "packageManager": "pnpm@11.20.0",
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@eslint/js": "^10.0.1",

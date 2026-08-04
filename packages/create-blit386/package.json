@@ -51,10 +51,10 @@
   },
   "dependencies": {
     "@blit386/kit": "workspace:*",
-    "@clack/prompts": "^0.10.0"
+    "@clack/prompts": "^1.7.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.19",
+    "@types/node": "^22.20.1",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
   }
