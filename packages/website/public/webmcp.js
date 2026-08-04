@@ -16,7 +16,7 @@
                 properties: {
                     path: {
                         type: 'string',
-                        description: 'Site-relative path, e.g. /docs/guide/getting-started',
+                        description: 'Site-relative path, e.g. /docs/getting-started',
                     },
                 },
                 required: ['path'],

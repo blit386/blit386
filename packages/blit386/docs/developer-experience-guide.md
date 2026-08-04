@@ -232,7 +232,7 @@ Claude Code reads agent policy from this repo's `.claude/` directory.
 | --- | --- |
 | `.claude/rules/*.md` | Agent rules – always-applied global policy plus glob-scoped rules (for example `ts-file-structure.md` on `src/**/*.ts`) |
 | `.claude/settings.json` | Hooks: `SessionStart` → toolchain bootstrap; `PreToolUse` → RTK shell rewrite + sensitive-file block; `PostToolUse` → format + spellcheck |
-| `.claude/skills/*/SKILL.md` | Reusable command workflows (`bt-preflight`, `bt-format`, …); Zed symlinks under `.agents/skills/` |
+| `.claude/skills/*/SKILL.md` | Reusable command workflows (`preflight`, `format`, …); Zed symlinks under `.agents/skills/` |
 
 When changing `package.json` scripts or preflight steps, update matching `.claude/skills/*/SKILL.md` files and any
 `.claude/rules/*.md` that reference those commands.

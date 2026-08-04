@@ -13,7 +13,7 @@ There are 45 demo modules today, covering drawing, palettes, post-process CRT ef
 gamepad), audio, and seeded randomness. Each demo lives in a single number-free kebab-case file under `src/` (for
 example `src/basics.js`). Navigation order comes from `plugins/demo-order.js` (`DEMO_ORDER`), not from filenames. Most
 demos import the shared UI kit in `src/shared/` for their on-screen panels and touch controls (see
-[Shared UI kit](#shared-ui-kit) below for the two exceptions). During development, Vite serves the matching page at
+[Shared UI kit](#shared-ui-kit) below for the four exceptions). During development, Vite serves the matching page at
 `/demos/basics.html` (no HTML file is committed; the build wires a shared layout to each script). The default page is a
 persistent shell (navigation banner + iframe). The banner's demo selector is a fuzzy-searchable combobox (type to filter
 by title). The iframe loads the same demo with `?embed&source`, which runs the canvas, keeps the Twoslash source panel
@@ -160,10 +160,10 @@ to these URLs via `VINTAGE_URLS`.
 ## Shared UI kit
 
 All on-screen demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, a virtual touch
-D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 38 of the 40 demos. Two
-demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine overlay),
-`filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all), and
-`hypercube` (a full-canvas tesseract with no shared UI kit):
+D-pad, swipes, and tap zones – comes from a small shared kit in `src/shared/`. It is imported by 41 of the 45 demos.
+Four demos are deliberate exceptions: `flurry` (an immersive screensaver with no demo HUD, only the engine overlay),
+`filip-test-02` (a bare-bones starter kept close to the getting-started example, with no demo UI at all), `hypercube` (a
+full-canvas tesseract with no shared UI kit), and `logo-lowres` (a full-canvas showcase with no demo HUD):
 
 | File | What it provides |
 | --- | --- |

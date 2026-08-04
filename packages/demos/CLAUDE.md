@@ -112,8 +112,9 @@ sound" prompt gated on `BT.isAudioUnlocked` and never assumes a first-frame SFX 
 
 All demo UI – panels, labels, key-value rows, checkboxes, pips, buttons, sliders, meters, the touch D-pad, swipes, tap
 zones – comes from the immediate-mode kit in `src/shared/ui.js`. Read that file for the current widget list and options.
-Never hand-roll panels, buttons, or HUD text colors in a demo. The one intentional exception is `flurry`, an immersive
-screensaver with no demo HUD.
+Never hand-roll panels, buttons, or HUD text colors in a demo. Of the 45 demos, 41 import it; the intentional exceptions
+are `filip-test-02` (a bare-bones starter with no demo UI at all) and `flurry`, `hypercube`, `logo-lowres`
+(immersive/showcase pieces with no demo HUD).
 
 - `applyTheme(this.palette)` in `init()`, before `BT.paletteSet()` – installs the 12 shared UI colors (slots 240-251 by
   default; pass a `startSlot` if that range collides)
