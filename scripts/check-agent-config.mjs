@@ -258,22 +258,19 @@ function readClaudeSkillDirNames(claudeSkillsDir) {
  * @param {string} root Absolute path to the repo root.
  * @returns {string[]} Human-readable failure messages.
  */
-function checkRootSkillsLayout(root) {
+export function checkRootSkillsLayout(root) {
     const agentsSkillsDir = join(root, '.agents', 'skills');
     const claudeSkillsDir = join(root, '.claude', 'skills');
     const zedSettingsPath = join(root, '.zed', 'settings.json');
     const claudeSkillsDirExists = existsSync(claudeSkillsDir);
 
-    if (!claudeSkillsDirExists) {
-        return ['.claude/skills directory is missing'];
-    }
-
     const agentsSkillsLayoutExists = existsSync(agentsSkillsDir);
     const agentsSkillEntries = agentsSkillsLayoutExists ? readAgentsSkillEntries(agentsSkillsDir, claudeSkillsDir) : [];
-    const claudeSkillDirNames = readClaudeSkillDirNames(claudeSkillsDir);
+    const claudeSkillDirNames = claudeSkillsDirExists ? readClaudeSkillDirNames(claudeSkillsDir) : [];
     const zedSettingsContent = readFileIfExists(zedSettingsPath);
 
     return [
+        ...(claudeSkillsDirExists ? [] : ['.claude/skills directory is missing']),
         ...(agentsSkillsLayoutExists
             ? findSkillsSymlinkFailures(agentsSkillEntries, claudeSkillDirNames)
             : ['.agents/skills directory is missing']),

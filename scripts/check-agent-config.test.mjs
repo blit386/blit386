@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
+    checkRootSkillsLayout,
     discoverPackageAgentRoots,
     findAgentsPointerFailures,
     findCopilotPointerFailures,
@@ -179,6 +180,29 @@ describe('check-agent-config', () => {
             const failures = findZedSettingsFailures(content, false);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /\.agents\/skills layout is missing while \.zed\/settings\.json exists/);
+        });
+    });
+
+    describe('checkRootSkillsLayout', () => {
+        it('reports .agents/skills and .zed/settings.json failures even when .claude/skills is missing', () => {
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-test-'));
+            const agentsSkillsDir = join(root, '.agents', 'skills');
+            const zedDir = join(root, '.zed');
+
+            mkdirSync(agentsSkillsDir, { recursive: true });
+            writeFileSync(join(agentsSkillsDir, 'bt-format'), 'not a symlink');
+            mkdirSync(zedDir, { recursive: true });
+            writeFileSync(join(zedDir, 'settings.json'), '{not json');
+
+            try {
+                const failures = checkRootSkillsLayout(root);
+                assert.equal(failures.length, 3);
+                assert.ok(failures.some((failure) => /\.claude\/skills directory is missing/.test(failure)));
+                assert.ok(failures.some((failure) => /\.agents\/skills\/bt-format is not a symlink/.test(failure)));
+                assert.ok(failures.some((failure) => /\.zed\/settings\.json is not parseable as JSON/.test(failure)));
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
         });
     });
 
