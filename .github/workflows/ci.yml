@@ -821,4 +821,4 @@ jobs:
         run: pnpm --filter create-blit386 run test
 
       - name: Run lockstep bump tests
-        run: pnpm --filter create-blit386 run test:bump-lockstep
+        run: pnpm run test:bump-lockstep
