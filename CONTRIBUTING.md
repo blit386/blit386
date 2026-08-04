@@ -163,11 +163,15 @@ All code must follow the project's style guidelines:
 
 ### Pre-commit Checks
 
-Before committing, run the preflight checks for the package you changed (requires the Node.js version above):
+Before committing, run the checks for the package you changed (requires the Node.js version above). Most packages define
+a combined `preflight` script – run it if the package has one:
 
 ```bash
 pnpm --filter blit386 run preflight   # or the package you're working in
 ```
+
+`kit` and `create-blit386` have no combined `preflight` script (see Available Commands below) – run their individual
+`build`, `typecheck`, and `test` scripts, plus the root-level `pnpm run format:check` (neither package defines its own).
 
 Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnings and Biome errors. The example above,
 `packages/blit386`'s `preflight`, runs:

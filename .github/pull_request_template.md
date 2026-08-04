@@ -8,7 +8,8 @@
 2. PR title follows Conventional Commits: `<type>(<scope>): <description>`
    - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
    - Scope is optional; subject is lowercase with no trailing period
-3. `pnpm --filter <package> run preflight` passes locally for every package this PR touches.
+3. `pnpm --filter <package> run preflight` passes locally for every touched package that defines it (`kit` and
+   `create-blit386` have no combined `preflight` – run their individual checks instead).
 4. Documentation updated where this change touches public API or behavior:
    - Public API: relevant `packages/blit386/docs/api-*.md`
    - Behavior: affected `docs/` guides

@@ -6,7 +6,8 @@ Pixel-perfect 2D rendering where primitives and sprites resolve through a shared
 software fallback. GitHub Copilot only reads root-level instruction files, so this is the one place to look regardless
 of which package you're in; other packages carry their own `AGENTS.md` / `CLAUDE.md` with package-specific conventions.
 
-This file is a pointer for GitHub Copilot. Root [`AGENTS.md`](../AGENTS.md) is the workspace quick start and
+This file is a pointer for GitHub Copilot. Root [`AGENTS.md`](../AGENTS.md) is the workspace quick start, root
+[`CLAUDE.md`](../CLAUDE.md) has the package table and shared monorepo conventions, and
 [`packages/blit386/CLAUDE.md`](../packages/blit386/CLAUDE.md) is canonical for the engine's architecture routing, API
 conventions, and documentation rules – read them before non-trivial work.
 
@@ -22,7 +23,8 @@ conventions, and documentation rules – read them before non-trivial work.
 
 ## Where to go next
 
-Root [`AGENTS.md`](../AGENTS.md) has the workspace's package table and points into each package's own docs.
+Root [`AGENTS.md`](../AGENTS.md) has the workspace's package table and points into each package's own docs. Root
+[`CLAUDE.md`](../CLAUDE.md) has the shared conventions (commit format, DCO, dash typography, American English).
 [`packages/blit386/CLAUDE.md`](../packages/blit386/CLAUDE.md) has the "Where to Find Information" routing table, BT API
 conventions, TypeScript file structure, and the engine's command list. The annotated `src/` architecture tree lives in
 `packages/blit386/.claude/rules/architecture.md`.
