@@ -30,15 +30,11 @@ const MLC_BIN = require.resolve('markdown-link-check/markdown-link-check');
 const CONFIG = join(ROOT, '.github/markdown-link-check.json');
 const HOSTED_DEMOS_PATTERN = '^https://demos\\.blit386\\.dev(/|$)';
 const CONCURRENCY = 8;
+
 // Exceeds the ~170s worst-case single-link retry chain in .github/markdown-link-check.json.
 const CHECK_TIMEOUT_MS = 300_000;
 
-/**
- * Repo-relative path patterns to skip. Generated doc pages
- * (`packages/website/content/docs/<section>/**`) are mirrored from
- * `packages/blit386/docs/`, where they are already link-checked; the hand-authored hub
- * (`content/docs/index.mdx`) and root meta stay in scope.
- */
+/** Repo-relative path patterns to skip; see the file header for what and why. */
 const IGNORED_PATH_PATTERNS = [/^packages\/website\/content\/docs\/[^/]+\//u];
 
 /** @param {string} rel @returns {string} */
@@ -55,10 +51,11 @@ export function isIgnoredFile(filePath) {
  * Lists git-tracked markdown files under the repo root as absolute paths, excluding
  * generated doc-mirror pages (see `isIgnoredFile`).
  *
- * @returns {string[]}
+ * @returns {string[]} Absolute paths to tracked markdown files.
  */
 function listTrackedMarkdownFiles() {
     let output;
+
     try {
         output = execFileSync('git', ['ls-files', '*.md', '*.mdx'], {
             cwd: ROOT,
@@ -88,7 +85,7 @@ function listTrackedMarkdownFiles() {
  * Cloudflare returns 403 to GitHub Actions datacenter IPs for the hosted demos site.
  * Keep local link checks; skip those URLs only in CI.
  *
- * @returns {string}
+ * @returns {string} Path to the markdown-link-check config file.
  */
 function resolveConfigPath() {
     if (process.env.GITHUB_ACTIONS !== 'true') {
@@ -96,11 +93,8 @@ function resolveConfigPath() {
     }
 
     const config = JSON.parse(readFileSync(CONFIG, 'utf8'));
-    const alreadyIgnored = config.ignorePatterns.some(({ pattern }) => pattern === HOSTED_DEMOS_PATTERN);
 
-    if (!alreadyIgnored) {
-        config.ignorePatterns.push({ pattern: HOSTED_DEMOS_PATTERN });
-    }
+    config.ignorePatterns.push({ pattern: HOSTED_DEMOS_PATTERN });
 
     const tempDir = mkdtempSync(join(tmpdir(), 'mlc-config-'));
     const tempConfig = join(tempDir, 'markdown-link-check.json');
@@ -112,7 +106,15 @@ function resolveConfigPath() {
     return tempConfig;
 }
 
-/** @param {string} filePath @param {string} configPath @returns {Promise<boolean>} */
+/**
+ * Runs markdown-link-check on one file and resolves whether it passed. Never rejects
+ * (spawn errors and timeouts resolve `false`), and buffers stdout/stderr to print as a
+ * single block on completion so concurrent workers don't interleave output.
+ *
+ * @param {string} filePath File path to check.
+ * @param {string} configPath Path to the markdown-link-check config file.
+ * @returns {Promise<boolean>} Whether the file passed the link check.
+ */
 function checkFile(filePath, configPath) {
     const rel = relative(ROOT, filePath);
 
@@ -121,23 +123,27 @@ function checkFile(filePath, configPath) {
             cwd: ROOT,
             signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
         });
+
         let output = '';
         let settled = false;
 
-        child.stdout.on('data', (chunk) => {
+        const collect = (chunk) => {
             output += chunk;
-        });
-        child.stderr.on('data', (chunk) => {
-            output += chunk;
-        });
+        };
+
+        child.stdout.on('data', collect);
+        child.stderr.on('data', collect);
 
         function finish(ok) {
             if (settled) {
                 return;
             }
+
             settled = true;
+
             console.log(`\nFILE: ./${rel}`);
             process.stdout.write(output);
+
             settle(ok);
         }
 
@@ -146,6 +152,7 @@ function checkFile(filePath, configPath) {
                 err.name === 'AbortError'
                     ? `\n[spawn error] check timed out after ${CHECK_TIMEOUT_MS}ms\n`
                     : `\n[spawn error] ${err.message}\n`;
+
             finish(false);
         });
 
@@ -155,7 +162,15 @@ function checkFile(filePath, configPath) {
     });
 }
 
-/** @param {string[]} files @param {string} configPath @returns {Promise<number>} */
+/**
+ * Checks all files concurrently via a fixed-size worker pool (bounded by CONCURRENCY)
+ * pulling from a shared index, so output order follows completion order rather than
+ * `files` order.
+ *
+ * @param {string[]} files
+ * @param {string} configPath
+ * @returns {Promise<number>} the number of files that failed
+ */
 async function checkAll(files, configPath) {
     let nextIndex = 0;
     let failed = 0;
@@ -163,8 +178,11 @@ async function checkAll(files, configPath) {
     async function worker() {
         while (nextIndex < files.length) {
             const filePath = files.at(nextIndex);
+
             nextIndex += 1;
+
             const ok = await checkFile(filePath, configPath);
+
             if (!ok) {
                 failed += 1;
             }
@@ -178,6 +196,7 @@ async function checkAll(files, configPath) {
 
 async function main() {
     const files = listTrackedMarkdownFiles();
+
     files.sort((a, b) => a.localeCompare(b));
 
     const configPath = resolveConfigPath();

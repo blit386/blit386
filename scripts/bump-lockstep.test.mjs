@@ -8,8 +8,11 @@ import {
     applyEngineVersionConstants,
     applyVersion,
     bumpLockstep,
+    CREATE_BLIT386_PACKAGE_JSON_PATH,
     deriveCaretRange,
+    ENGINE_PACKAGE_JSON_PATH,
     ENGINE_VERSION_FILE,
+    KIT_PACKAGE_JSON_PATH,
     LOCKSTEP_PACKAGE_JSON_PATHS,
     main,
     parseArgv,
@@ -22,7 +25,7 @@ import {
 function makeFixtureFiles() {
     return new Map([
         [
-            join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[0]),
+            join('/repo', ENGINE_PACKAGE_JSON_PATH),
             `${JSON.stringify({ name: 'blit386', version: '1.2.1' }, null, 4)}\n`,
         ],
         [
@@ -37,7 +40,7 @@ function makeFixtureFiles() {
             ].join('\n'),
         ],
         [
-            join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[1]),
+            join('/repo', KIT_PACKAGE_JSON_PATH),
             `${JSON.stringify(
                 { name: '@blit386/kit', version: '1.2.1', blit386: { engineRange: '^1.2.0' } },
                 null,
@@ -45,7 +48,7 @@ function makeFixtureFiles() {
             )}\n`,
         ],
         [
-            join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[2]),
+            join('/repo', CREATE_BLIT386_PACKAGE_JSON_PATH),
             `${JSON.stringify({ name: 'create-blit386', version: '1.2.1' }, null, 4)}\n`,
         ],
         [
@@ -406,9 +409,9 @@ describe('bump-lockstep', () => {
             );
 
             // Rolled back successfully: entries written after the engine file, and the one written before it.
-            assert.equal(JSON.parse(files.get(join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[1]))).version, '1.2.1');
-            assert.equal(JSON.parse(files.get(join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[2]))).version, '1.2.1');
-            assert.equal(JSON.parse(files.get(join('/repo', LOCKSTEP_PACKAGE_JSON_PATHS[0]))).version, '1.2.1');
+            assert.equal(JSON.parse(files.get(join('/repo', KIT_PACKAGE_JSON_PATH))).version, '1.2.1');
+            assert.equal(JSON.parse(files.get(join('/repo', CREATE_BLIT386_PACKAGE_JSON_PATH))).version, '1.2.1');
+            assert.equal(JSON.parse(files.get(join('/repo', ENGINE_PACKAGE_JSON_PATH))).version, '1.2.1');
             // Left at the bumped value: its own rollback write failed.
             assert.match(files.get(engineVersionPath), /VERSION_MINOR = 5;/);
         });

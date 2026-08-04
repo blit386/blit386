@@ -19,7 +19,7 @@
  */
 
 import { doc } from 'prettier';
-import * as markdown from 'prettier/plugins/markdown.mjs';
+import * as markdown from 'prettier/plugins/markdown';
 
 /**
  * One column's alignment as mdast records it, read from the source delimiter row.
@@ -54,7 +54,7 @@ const basePrinter = markdown.printers.mdast;
  * Three dashes is the form every Markdown renderer accepts, so the output stays portable. A column with no explicit
  * alignment is absent from this map on purpose and falls through to the `---` default at the call site.
  *
- * @type {Record<Exclude<ColumnAlignment, null>, string>}
+ * @type {Record<Exclude<ColumnAlignment, null>, string>} The delimiter row cell for each alignment value.
  */
 const DELIMITERS = {
     left: ':---',
@@ -100,12 +100,12 @@ const printTable = (path, options, print) => {
     const columns = Math.max(node.align?.length ?? 0, ...rows.map((row) => row.length));
 
     /** Pad (or trim) one row's rendered cells to the table's column count. */
-    const cellsOf = (row) => Array.from({ length: columns }, (_unused, index) => row.at(index) ?? '');
+    const cellsOf = (row) => Array.from({ length: columns }, (_, index) => row.at(index) ?? '');
 
     /** Wrap one row's cells in pipes with exactly one space of padding on each side. */
     const lineOf = (row) => `| ${cellsOf(row).join(' | ')} |`;
 
-    const delimiters = Array.from({ length: columns }, (_unused, index) => DELIMITERS[node.align?.at(index)] ?? '---');
+    const delimiters = Array.from({ length: columns }, (_, index) => DELIMITERS[node.align?.at(index)] ?? '---');
     const [head, ...body] = rows;
 
     return join(hardline, [lineOf(head), `| ${delimiters.join(' | ')} |`, ...body.map(lineOf)]);
@@ -117,7 +117,7 @@ const printTable = (path, options, print) => {
  * Everything else - paragraphs, lists, code fences, prose wrapping - delegates to {@link basePrinter}, so this plugin
  * can only ever change table layout.
  *
- * @type {import('prettier').Printer}
+ * @type {import('prettier').Printer} The custom printer implementation.
  */
 const printer = {
     ...basePrinter,
@@ -146,7 +146,7 @@ const printer = {
  * `markdown-compact` is Prettier's own Markdown parser pointed at the `mdast-compact` printer below. Naming it in a
  * config's `overrides` is what opts a file into compact tables; nothing changes for anyone who does not ask.
  *
- * @type {Record<string, import('prettier').Parser>}
+ * @type {Record<string, import('prettier').Parser>} The custom parser implementation.
  */
 export const parsers = {
     'markdown-compact': { ...markdown.parsers.markdown, astFormat: 'mdast-compact' },
@@ -155,7 +155,7 @@ export const parsers = {
 /**
  * Printers this plugin contributes, keyed by the `astFormat` the parsers above declare.
  *
- * @type {Record<string, import('prettier').Printer>}
+ * @type {Record<string, import('prettier').Printer>} The custom printer implementation.
  */
 export const printers = {
     'mdast-compact': printer,
