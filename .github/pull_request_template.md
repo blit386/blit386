@@ -13,7 +13,7 @@
 4. Documentation updated where this change touches public API or behavior:
    - Public API: relevant `packages/blit386/docs/api-*.md`
    - Behavior: affected `docs/` guides
-   - Architecture / new subsystem: that package's own `CLAUDE.md` architecture map
+   - Architecture / new subsystem: that package's canonical architecture map and information-routing documentation
 5. If renderer output could change, `pnpm --filter blit386 run test:visual` was run (and baselines updated if the change
    is intentional).
 6. If AI tools helped write this change, each commit includes an AI trailer after `Signed-off-by` (as documented in
