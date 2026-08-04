@@ -51,9 +51,10 @@ and the `:gitSignOff` preset for the DCO workflow. Workflow `node` / `pnpm` vers
 
 ## Supply-chain settings
 
-[`.npmrc`](../../../../.npmrc) enables `minimum-release-age` (7 days) and related pnpm 10 hardening. Security-patched
-packages blocked by release age may be listed in `minimum-release-age-exclude[]` together with `pnpm.overrides` in
-[`package.json`](../../../../package.json). Document the reason in the PR that introduces the exclude or override.
+[`pnpm-workspace.yaml`](../../../../pnpm-workspace.yaml) sets `minimumReleaseAge` (7 days), `trustPolicy`, and related
+pnpm 11 hardening – pnpm 11 only reads auth/registry settings from `.npmrc`, so this is the single home for all of it.
+Security-patched packages blocked by release age may be listed in `minimumReleaseAgeExclude` together with `overrides`
+in the same file. Document the reason in the PR that introduces the exclude or override.
 
 ## GitHub Actions pinning
 
@@ -91,7 +92,8 @@ Do not merge with a failing audit unless the finding is formally accepted:
 1. Open a [security risk acceptance](../../../../.github/ISSUE_TEMPLATE/security-risk-acceptance.yml) issue.
 2. Record the GHSA in [audit-exceptions.md](./audit-exceptions.md).
 3. Add the GHSA via the `--ignore <GHSA>` flag in the `security:audit` script in `package.json` (review and remove by
-   the expiry date). Do not use `pnpm.auditConfig.ignoreGhsas` – it does not work in pnpm 10.x.
+   the expiry date). Do not use `package.json`'s `pnpm` field – pnpm 11 does not read it at all; permanent exceptions
+   belong in `audit.ignore` in [`pnpm-workspace.yaml`](../../../../pnpm-workspace.yaml) instead.
 
 See [audit-exceptions.md](./audit-exceptions.md) for the full playbook.
 

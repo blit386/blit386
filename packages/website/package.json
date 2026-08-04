@@ -30,7 +30,7 @@
   "engines": {
     "node": ">=22.18.0"
   },
-  "packageManager": "pnpm@10.26.2",
+  "packageManager": "pnpm@11.20.0",
   "sideEffects": false,
   "scripts": {
     "dev": "waku dev",

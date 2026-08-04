@@ -21,7 +21,7 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 ## Prerequisites
 
 - Node.js >= 22.18.0 (`engines` in the root `package.json`)
-- pnpm 10.26.2+ (`packageManager` in the root `package.json`)
+- pnpm 11.20.0+ (`packageManager` in the root `package.json`)
 
 ## Steps
 

@@ -12,7 +12,7 @@ work. Shared monorepo conventions live in the repo root [`CLAUDE.md`](../../CLAU
 ## Tech stack
 
 TypeScript 5.9.3 (strict mode), built with tsup (ESM, Node 22), formatted with Biome + Prettier, linted with Biome,
-spellchecked with cspell, dead code found with knip. Package manager is pnpm 10.26.2; Node >= 22.18.0.
+spellchecked with cspell, dead code found with knip. Package manager is pnpm 11.20.0; Node >= 22.18.0.
 
 ## Quick start
 

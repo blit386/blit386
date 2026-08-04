@@ -7,7 +7,7 @@ acceptance.
 
 - Upstream has no patched release yet.
 - A major toolchain bump is required and is scheduled on a tracked issue.
-- `pnpm.overrides` are insufficient and the only alternative is a documented temporary ignore.
+- `overrides` in `pnpm-workspace.yaml` are insufficient and the only alternative is a documented temporary ignore.
 
 Do not use exceptions for low-severity findings (CI does not gate on them).
 
@@ -22,7 +22,8 @@ Do not use exceptions for low-severity findings (CI does not gate on them).
    "security:audit": "pnpm audit --audit-level=moderate --ignore GHSA-xxxx-xxxx-xxxx"
    ```
 
-   Note: `pnpm.auditConfig.ignoreGhsas` does not work in pnpm 10.x; use the `--ignore` CLI flag instead.
+   Note: `package.json`'s `pnpm` field is not read at all under pnpm 11; use the `--ignore` CLI flag for a temporary,
+   time-boxed exception, or `audit.ignore` in `pnpm-workspace.yaml` for a permanent one.
 
 4. Record the exception in the table below (one row per GHSA).
 5. Set a review-by date (default: 30 days; extend only with written rationale in the issue).
@@ -36,11 +37,12 @@ Do not use exceptions for low-severity findings (CI does not gate on them).
 
 ## Technical notes
 
-- Prefer `pnpm.overrides` and direct dependency upgrades over `ignoreGhsas` when a patched version exists.
-- If `minimum-release-age` in [`.npmrc`](../../../../.npmrc) blocks a security patch, add the package to
-  `minimum-release-age-exclude[]` in the same PR as the override and document why.
-- `pnpm.auditConfig.ignoreGhsas` in `package.json` does not work in pnpm 10.x. Use the `--ignore <GHSA>` flag in the
-  `security:audit` script instead.
+- Prefer `overrides` in `pnpm-workspace.yaml` and direct dependency upgrades over an ignore when a patched version
+  exists.
+- If `minimumReleaseAge` in [`pnpm-workspace.yaml`](../../../../pnpm-workspace.yaml) blocks a security patch, add the
+  package to `minimumReleaseAgeExclude` in the same PR as the override and document why.
+- `package.json`'s `pnpm` field is not read at all under pnpm 11. Use the `--ignore <GHSA>` flag in the `security:audit`
+  script for a temporary exception, or `audit.ignore` in `pnpm-workspace.yaml` for a permanent one.
 - After any exception, still run `pnpm run security:audit:prod` – production dependencies must remain clean unless
   explicitly documented otherwise.
 

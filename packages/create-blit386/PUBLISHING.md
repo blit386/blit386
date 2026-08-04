@@ -72,7 +72,7 @@ audio.
 
 ## One-time setup
 
-- Node.js >= 22.18.0 and pnpm 10.26.2 (this repo pins pnpm via `packageManager`).
+- Node.js >= 22.18.0 and pnpm 11.20.0 (this repo pins pnpm via `packageManager`).
 - An npm account (`vancura`) that owns the free `blit386` organization – that org grants the `@blit386` scope.
 - Log in and confirm:
 

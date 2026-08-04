@@ -24,7 +24,7 @@ pnpm --filter blit386 run test
 Requirements:
 
 - Node.js >=22.18.0 (`engines` in `package.json`)
-- pnpm 10.26.2 (`packageManager` in `package.json`)
+- pnpm 11.20.0 (`packageManager` in `package.json`)
 
 Claude Code sessions and the optional [devcontainer](.devcontainer/devcontainer.json) (`typescript-node:22-bookworm`)
 auto-run `packages/blit386/scripts/session-start-bootstrap.sh` via their SessionStart hooks / `postCreateCommand`, so a
