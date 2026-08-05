@@ -28,10 +28,12 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 `docs:links` and `agents:check` are not package-scoped – each package's copy of the script
 (`node ../../scripts/check-markdown-links.mjs`) always walks the whole repo from the root, regardless of which package's
 `package.json` invoked it. They used to be listed in every package's `preflight` chain too, which meant
-`.husky/pre-push` (per-package preflight dispatch, then the root-level pass) ran the same full-repo check 2-4 times on
+`.husky/pre-push` (per-package preflight dispatch, then the root-level pass) ran the same full-repo check 2–4 times on
 one push – most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
 `preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`) or via
-`/preflight root` when checking a package in isolation, and trust the root-level pass for a push or CI run.
+`/preflight root` when checking a package in isolation. The root-level pass only runs when `PREFLIGHT_STATUS` is zero –
+a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`, and `agents:check` entirely, so a
+push or CI run only exercises them once the per-package checks are clean.
 
 ## Steps
 
