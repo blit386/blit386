@@ -53,4 +53,5 @@ export const DEMO_ORDER = [
     'seeded-worlds',
     'coordinate-patterns',
     'noise',
+    'palette-exposure-fade',
 ];
