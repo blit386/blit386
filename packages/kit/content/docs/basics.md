@@ -129,4 +129,5 @@ coarse `sheet.progress` (`0` or `1.0`). Prefer `BT.loadingAssetsCount` for one e
 New projects include the `blit386` Vite plugin, so most saves keep the running game alive. Optional
 `onHotReload(context)` on your game class can restore fields after an `init()` edit. Full detail: `docs/hot-reload.md`.
 
-Next: `docs/drawing.md` to put things on screen, `docs/input.md` to react to the player, `docs/palette.md` for colors.
+Next: `docs/drawing.md` to put things on screen, `docs/input.md` to react to the player, `docs/palette.md` for colors,
+`docs/random.md` for dice rolls and generated worlds.

@@ -45,7 +45,8 @@ BT.paletteClearEffects();
 - `BT.paletteFlash(color, durationMs)`
 - `BT.paletteSwap(indexA, indexB)`
 - `BT.paletteClearEffects()`
-- Easing names: `'linear'`, `'ease-in'`, `'ease-out'`, `'ease-in-out'`.
+- Easing names: `'linear'`, `'ease-in'`, `'ease-out'`, `'ease-in-out'`, plus the full curve library on blit386 1.5.0+
+  (`'sine-*'`, `'cubic-*'`, `'expo-*'`, `'bounce-*'`, and more – see the `move-and-time` skill).
 
 ## Notes
 

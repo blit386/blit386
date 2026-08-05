@@ -60,6 +60,8 @@ bootstrap(Game);
 | Clear the screen, draw rectangles, lines, text | `docs/drawing.md` |
 | Read the keyboard, mouse, or a gamepad | `docs/input.md` |
 | Make and use colors (palette, slots) | `docs/palette.md` |
+| Roll dice, pick, shuffle, or seed a run so it repeats | `docs/random.md` |
+| Generate terrain, caves, or patterns you can walk back to | `docs/random.md` (Terrain and patterns) |
 | Play sound effects and music, or fix a silent game | `docs/audio.md` |
 | Keep playing while you edit code or assets | `docs/hot-reload.md` |
 | Show a loading screen while assets load | `docs/basics.md` (Waiting for assets) |

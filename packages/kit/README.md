@@ -50,7 +50,9 @@ there you can also invoke one by name (`/add-sprite`).
 | `add-text` | Scores, labels, and titles with the built-in or a bitmap font |
 | `use-palette` | Set up colors as numbered palette slots |
 | `animate-the-palette` | Cycle, fade, flash, and swap colors for motion and mood |
-| `move-and-time` | The frame clock, timers, cooldowns, and easing |
+| `move-and-time` | The frame clock, timers, cooldowns, easing curves, and `interpolate` |
+| `use-random` | Dice, picks, shuffles, weighted drops, and seeds that replay the same game |
+| `use-noise` | Terrain, caves, clouds, and procedural textures from noise and coordinate hashing |
 | `smooth-the-motion` | Make movement look smooth instead of stepped, with `BT.renderAlpha` |
 | `scroll-with-camera` | Scroll a world bigger than the screen, clamped to its bounds |
 | `read-keyboard` | Keys, face buttons, typed text, and remapping |

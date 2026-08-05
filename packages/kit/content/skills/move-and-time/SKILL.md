@@ -1,9 +1,9 @@
 ---
 name: move-and-time
 description:
-  Move things smoothly and schedule actions using the engine frame clock, the Timer helper, and easing. Use for
-  movement, timers, cooldowns, spawn intervals, animation frames, or anything that should happen 'every N frames' or
-  'over N seconds'.
+  Move things smoothly and schedule actions using the engine frame clock, the Timer helper, and the easing curve library
+  (`applyEasing`, `interpolate`). Use for movement, timers, cooldowns, spawn intervals, animation frames, tweening a
+  position or color between two values, or anything that should happen 'every N frames' or 'over N seconds'.
 ---
 
 # Move and time things
@@ -48,6 +48,8 @@ if (this.fireTimer.fireIfElapsed(BT.ticks)) {
 
 ## Easing for smooth motion
 
+Easing bends a straight 0..1 progress value into something that accelerates, overshoots, or bounces.
+
 ```js
 import { applyEasing } from 'blit386';
 
@@ -55,6 +57,41 @@ const t = (BT.ticks % 60) / 60; // 0..1
 const eased = applyEasing(t, 'ease-in-out');
 this.y = Math.floor(100 + eased * 50); // round before drawing
 ```
+
+### Which curve
+
+Every family below comes in three versions: `-in` (slow start), `-out` (slow finish), and `-in-out` (both). So
+`'sine-in'`, `'sine-out'`, and `'sine-in-out'` all exist, and the same for the rest.
+
+| Name | Feels like |
+| --- | --- |
+| `'linear'` | No easing – constant speed |
+| `'ease-in'` / `'ease-out'` / `'ease-in-out'` | The gentle default (quadratic) |
+| `'sine-*'` | Very soft, barely noticeable |
+| `'cubic-*'`, `'quartic-*'`, `'quintic-*'` | Progressively sharper acceleration |
+| `'expo-*'` | Extreme – near-still, then a rush |
+| `'circ-*'` | Slow, then a sudden hard pull |
+| `'back-*'` | Overshoots slightly and settles – good for menus popping in |
+| `'elastic-*'` | Springs past the target and wobbles |
+| `'bounce-*'` | Bounces like a dropped ball |
+
+`'back-*'` and `'elastic-*'` deliberately leave the 0..1 range mid-animation, so leave room around whatever you are
+moving.
+
+### Interpolating between two values
+
+`interpolate` applies a curve and blends two values in one call, so you do not do the arithmetic yourself. It works on
+plain numbers and on `Vector2i`, `Color32`, and `Rect2i`, rounding integer types for you:
+
+```js
+import { interpolate, Vector2i } from 'blit386';
+
+const t = (BT.ticks % 90) / 90; // 0..1
+this.pos = interpolate('bounce-out', new Vector2i(20, 20), new Vector2i(200, 180), t);
+```
+
+Watch the argument order – it is the reverse of `applyEasing`: `interpolate(easing, start, end, t)` but
+`applyEasing(t, easing)`.
 
 ## Notes
 

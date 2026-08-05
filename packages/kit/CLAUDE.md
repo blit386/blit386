@@ -15,12 +15,12 @@ The `blit` CLI is a project-local bin inside every generated game: `blit run`, `
 
 ## Kit content vs engine docs
 
-Generated games receive `AGENTS.md`, eight beginner docs from `content/docs/` (`getting-started`, `basics`, `drawing`,
-`input`, `palette`, `audio`, `hot-reload`, `when-something-breaks`), and the game-author skills in `content/skills/`.
-These are not copies of the engine's full `docs/` tree – they teach the starter game and point to GitHub for deep API
-reference.
+Generated games receive `AGENTS.md`, nine beginner docs from `content/docs/` (`getting-started`, `basics`, `drawing`,
+`input`, `palette`, `random`, `audio`, `hot-reload`, `when-something-breaks`), and the game-author skills in
+`content/skills/`. These are not copies of the engine's full `docs/` tree – they teach the starter game and point to
+GitHub for deep API reference.
 
-The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (21
+The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (24
 game-author capability skills plus the `run`, `fix`, and `migrate` workflow skills), `hooks/shell-safety.sh` +
 `hooks.manifest.json`, and `agents.config.json`. Skills and rules are discovered by directory scan in `src/adapters.ts`
 – adding a skill folder is enough, nothing registers it by name.
@@ -30,9 +30,10 @@ kit files. Do not reference the `packages/demos` package, its demo slugs, or its
 favor of kit-based demos, and shipped content must not break with it.
 
 The engine has no physics, collision, entity, or scene system. Say so; do not invent one. What the kit does teach:
-drawing (primitives, sprites, text), palette and effects, input (keyboard, pointer, gamepad), timing, audio (bus mixer,
-`AudioClip`, procedural synth – engine 1.3.0), hot reload / `blit386/vite` / asset hot-replace / `BT.loadingAssetsCount`
-(engine 1.4.0), the debug overlay, screenshots, and WebGPU-only post-process effects.
+drawing (primitives, sprites, text), palette and effects, input (keyboard, pointer, gamepad), timing and easing, audio
+(bus mixer, `AudioClip`, procedural synth – engine 1.3.0), hot reload / `blit386/vite` / asset hot-replace /
+`BT.loadingAssetsCount` (engine 1.4.0), `BT.isDevMode` dev/release detection plus `BT.random` and the noise/hash world
+generation surface (engine 1.5.0), the debug overlay, screenshots, and WebGPU-only post-process effects.
 
 ### Drift is the standing risk here
 
@@ -48,6 +49,7 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/docs/drawing.md` | `BT.clear`, primitives, text APIs |
 | `content/docs/input.md` | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action |
 | `content/docs/palette.md` | `paletteCreate`, slots, `Color32` |
+| `content/docs/random.md` | `BT.random` / `BT.randomSeed`, seeding a run, noise and hash world generation |
 | `content/docs/audio.md` | `AudioClip`, `BT.synthPreset`, buses, the unlock rule |
 | `content/docs/hot-reload.md` | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace |
 | `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises |
@@ -55,6 +57,10 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/rules/blit-api-names.md` | `BT` getters, configure flags, wake lock, `onHotReload` / never `registerHotReload` |
 | `content/rules/blit-integer-coords.md` | Integer-coordinate rule (`Vector2i` / `Rect2i`) |
 | `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games |
+| `content/skills/use-dev-mode/SKILL.md` | `BT.isDevMode` resolution order, cheat-key / debug-HUD gating examples |
+| `content/skills/use-random/SKILL.md` | `BT.random` / `BT.randomSeed`, `Random` methods, state and stream helpers |
+| `content/skills/use-noise/SKILL.md` | `hash*` functions, `ValueNoise` / `PerlinNoise` / `SimplexNoise`, fBm defaults |
+| `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
