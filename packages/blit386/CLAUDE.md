@@ -25,6 +25,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio) |
 | How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md`, `.claude/rules/bt-api-getters.md` |
 | Which preset has which exact color values? | `docs/guide-palette-presets.md` |
+| How do I fade a palette cinematically, or do color math in linear light? | `BT.paletteFadeExposure`, `Color32#toLinear` / `#toSrgb`; `docs/api-palette.md#exposure-fade`, `docs/guide-palette.md` |
 | How do I smooth motion between fixed `update()` steps? | `BT.renderAlpha`; worked `Vector2i.lerp` pattern in `docs/guide-game-loop.md` |
 | Seeded / deterministic random? | `BT.random` / `BT.randomSeed`; `src/utils/Random.ts`, coordinate hashes in `src/utils/hash.ts`, `docs/api-random.md` |
 | How does hot-reload / HMR work? | `docs/guide-hot-reload.md` is canonical; runtime in `src/hot/`, dev plugin in `src/vite/` |

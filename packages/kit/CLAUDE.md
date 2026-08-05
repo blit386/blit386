@@ -32,8 +32,9 @@ favor of kit-based demos, and shipped content must not break with it.
 The engine has no physics, collision, entity, or scene system. Say so; do not invent one. What the kit does teach:
 drawing (primitives, sprites, text), palette and effects, input (keyboard, pointer, gamepad), timing and easing, audio
 (bus mixer, `AudioClip`, procedural synth – engine 1.3.0), hot reload / `blit386/vite` / asset hot-replace /
-`BT.loadingAssetsCount` (engine 1.4.0), `BT.isDevMode` dev/release detection plus `BT.random` and the noise/hash world
-generation surface (engine 1.5.0), the debug overlay, screenshots, and WebGPU-only post-process effects.
+`BT.loadingAssetsCount` (engine 1.4.0), `BT.isDevMode` dev/release detection, `BT.random` and the noise/hash world
+generation surface, and the exposure-curve palette fade (engine 1.5.0), the debug overlay, screenshots, and WebGPU-only
+post-process effects.
 
 ### Drift is the standing risk here
 
@@ -48,7 +49,7 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/docs/basics.md` | `configure()`, loop timing getters, bootstrap flow, orientation, `loadingAssetsCount` |
 | `content/docs/drawing.md` | `BT.clear`, primitives, text APIs |
 | `content/docs/input.md` | `BT.isDown`, edges, keyboard, pointer, gamepad, scroll-capture / touch-action |
-| `content/docs/palette.md` | `paletteCreate`, slots, `Color32` |
+| `content/docs/palette.md` | `paletteCreate`, slots, `Color32`, the two whole-screen fades |
 | `content/docs/random.md` | `BT.random` / `BT.randomSeed`, seeding a run, noise and hash world generation |
 | `content/docs/audio.md` | `AudioClip`, `BT.synthPreset`, buses, the unlock rule |
 | `content/docs/hot-reload.md` | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace, `BT.isDevMode` |
@@ -61,6 +62,7 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/skills/use-random/SKILL.md` | `BT.random` / `BT.randomSeed`, `Random` methods, state and stream helpers |
 | `content/skills/use-noise/SKILL.md` | `hash*` functions, `ValueNoise` / `PerlinNoise` / `SimplexNoise`, fBm defaults |
 | `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
+| `content/skills/animate-the-palette/SKILL.md` | Cycle / fade / exposure fade / flash / swap, `highlightLead` |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |

@@ -72,7 +72,7 @@ src/
     AudioClip.ts           # Decoded AudioBuffer asset: streamed fetch+decode, cache/dedup, fallback URL lists, synth() factory
     synth/                 # Deterministic synthesis engine backing AudioClip.synth (SynthParams, envelope/pitch/waveform math, validation, synthPresets sound library)
     Palette.ts             # 256-entry indexed color palette
-    PaletteEffect.ts       # Palette effect system (cycle, fade, flash, swap)
+    PaletteEffect.ts       # Palette effect system (cycle, fade, exposure fade, flash, swap)
     palettes/              # Built-in preset palette data (presetData.ts, hudData.ts)
   input/
     PointerInput.ts        # DOM-backed pointer / mouse / touch / pen tracker (4 slots)
@@ -95,7 +95,7 @@ src/
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
     Vector2i.ts            # Integer 2D vector
     Rect2i.ts              # Integer rectangle
-    Color32.ts             # 32-bit RGBA color
+    Color32.ts             # 32-bit RGBA color (+ srgbToLinear/linearToSrgb piecewise transfer helpers)
     Easing.ts              # Easing curves + interpolate() (number, Vector2i, Color32, Rect2i)
     AudioParamRamp.ts       # Shared AudioParam ramp scheduling (bus fades + per-voice fades)
     Random.ts              # Seeded PRNG (mulberry32; exported; int/float/pick/shuffle/weighted/fork; Vector2i/Rect2i helpers)
