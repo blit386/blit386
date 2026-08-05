@@ -1,9 +1,9 @@
 ---
 name: preflight
 description:
-  Run all quality checks for a package (format, lint, typecheck, spellcheck, knip, docs:links, tests, build, and
-  package-specific gates) before committing or pushing. Use when the user wants to verify code is ready to commit or run
-  every check at once. Takes a package argument (blit386, demos, website, kit, create-blit386, or root).
+  Run all quality checks for a package (format, lint, typecheck, spellcheck, knip, tests, build, and package-specific
+  gates) before committing or pushing. Use when the user wants to verify code is ready to commit or run every check at
+  once. Takes a package argument (blit386, demos, website, kit, create-blit386, or root).
 ---
 
 # Preflight Checks
@@ -23,6 +23,16 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 - Node.js >= 22.18.0 (`engines` in the root `package.json`)
 - pnpm 11.20.0 (`packageManager` in the root `package.json`)
 
+## docs:links and agents:check are root-only
+
+`docs:links` and `agents:check` are not package-scoped – each package's copy of the script
+(`node ../../scripts/check-markdown-links.mjs`) always walks the whole repo from the root, regardless of which package's
+`package.json` invoked it. They used to be listed in every package's `preflight` chain too, which meant
+`.husky/pre-push` (per-package preflight dispatch, then the root-level pass) ran the same full-repo check 2-4 times on
+one push – most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
+`preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`) or via
+`/preflight root` when checking a package in isolation, and trust the root-level pass for a push or CI run.
+
 ## Steps
 
 1. Run the package's preflight gate (see the per-package breakdown below)
@@ -41,8 +51,6 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 - `typecheck` – TypeScript strict
 - `spellcheck` – cspell over `src/**/*.{ts,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
 - `knip` – unused exports and dependencies
-- `docs:links` – Markdown link checker
-- `agents:check` – agent config drift (rules parity, skills symlinks, AGENTS.md <-> CLAUDE.md pointer)
 - `sync:doc-banners:check` – blit386.dev banner freshness on every published doc
 - `api:since:check` – every public export carries an `@since` tag
 - `api:history:check` – `docs/_api-history.json` matches the source version tags
@@ -57,7 +65,6 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 - `lint` – ESLint
 - `spellcheck` – cspell over `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
 - `knip` – unused exports and dependencies
-- `docs:links` – Markdown link checker
 - `check:demo-registry` – `DEMO_ORDER` / `VINTAGE_URLS` / `RETIRED_SLUGS` / `NAV_HIDDEN_SLUGS` / `src/*.js` consistency
 - `build` – production build succeeds (CI and Cloudflare Pages depend on this)
 
@@ -73,7 +80,6 @@ No unit tests here by design – see `/test demos`.
 - `test` – `node --test scripts/__tests__/*.test.mjs`
 - `spellcheck` – cspell on `content/` and `src/`
 - `knip` – unused exports/deps
-- `docs:links` – Markdown link checker
 - `build` – `CLOUDFLARE=1 waku build`
 
 No MCP security preflight here (unlike `blit386` – see `/security-run`).

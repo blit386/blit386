@@ -11,10 +11,12 @@ network). These are environment artifacts, not code bugs – do not "fix" them b
 - `docs:links` needs outbound network. It fails only on external `https://` URLs (the `blit386.dev` banner links, the
   Keep a Changelog and WebKit-bug references) returning 403 through a sandbox proxy; every relative/internal link still
   resolves. Confirm all failures are external before treating one as real.
-- Hooks amplify those two artifacts. The pre-push hook runs `typecheck` + `lint` + `docs:links`; the lint-staged
-  pre-commit hook runs `biome` / `prettier` / `eslint --fix` / `cspell` on staged files. When the only failures are the
-  tag-less / no-network artifacts above, push with `--no-verify` after confirming the real checks (`typecheck`, `lint`,
-  `format:check`, `spellcheck`) pass on their own.
+- Hooks amplify those two artifacts. The pre-push hook runs each changed package's `preflight` (which includes
+  `typecheck` + `lint`), then a root-level pass that includes `docs:links` once for the whole push (`docs:links` and
+  `agents:check` are not package-scoped, so they were removed from every package's own `preflight` chain to stop running
+  2-4x per push – see the `preflight` skill). The lint-staged pre-commit hook runs `biome` / `prettier` / `eslint --fix`
+  / `cspell` on staged files. When the only failures are the tag-less / no-network artifacts above, push with
+  `--no-verify` after confirming the real checks (`typecheck`, `lint`, `format:check`, `spellcheck`) pass on their own.
 - `.agents/skills/*` are symlinks to `.claude/skills/*`. Edit the `.claude` copy once and both update; do not treat them
   as two files to patch.
 - `pnpm run spellcheck` (from `packages/blit386`) scopes to `src/`, `docs/`, and `README.md`, so it does not scan the
