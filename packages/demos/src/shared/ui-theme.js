@@ -59,6 +59,13 @@ const THEME_COLORS = [
 // at the same constant instead of repeating the literal 240.
 const THEME_DEFAULT_START_SLOT = 240;
 
+// Offsets of individual theme colors within the twelve-color block, for demos that need a
+// slot number before applyTheme() has run (see configure() below, which runs before init()).
+// Exported so those demos derive from THEME_COLORS' actual order instead of repeating a
+// literal offset that would silently go stale if the color list above is ever reordered.
+const THEME_PANEL_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'panel');
+const THEME_TEXT_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'text');
+
 const T = {
     bg: 0,
     shadow: 0,
@@ -133,4 +140,4 @@ function applyTheme(palette, startSlot = THEME_DEFAULT_START_SLOT) {
     };
 }
 
-export { applyTheme, T, THEME_DEFAULT_START_SLOT };
+export { applyTheme, T, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET };

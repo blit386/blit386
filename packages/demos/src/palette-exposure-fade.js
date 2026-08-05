@@ -31,17 +31,17 @@
 // WHY FADING UP LOOKS DIFFERENT FROM FADING DOWN
 //
 // The two directions are not simple reverses of each other, and that is on
-// purpose. Every color's start time is set by how bright its LIT end is - but
+// purpose. Every color's start time is set by how bright its LIT end is – but
 // which end counts as "lit" depends on which way the fade is going:
 //
-//   Fading up   - timed by where each color is headed. A color heading toward
+//   Fading up   – timed by where each color is headed. A color heading toward
 //                 white starts rising almost at once and arrives early. A color
 //                 heading toward near-black waits, then rushes to catch up.
-//   Fading down - timed by where each color started. A color that started bright
+//   Fading down – timed by where each color started. A color that started bright
 //                 keeps its brightness for a while before it begins to dim. A
 //                 color that started dark begins dropping right away.
 //
-// Same rule both times - "the brightest end of the trip gets the head start" -
+// Same rule both times – "the brightest end of the trip gets the head start" –
 // just pointed at a different end of the trip. That is why, on the way up, the
 // shadows are the ones that wait; on the way down, the lamp is the one that
 // waits instead.
@@ -100,21 +100,23 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, THEME_DEFAULT_START_SLOT, ui } from './shared/ui.js';
+import { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// How long each step of the cycle lasts, counted in ticks. The engine runs 60
-// update ticks every second, so 120 ticks is 2 seconds.
-const FADE_TICKS = 120; // 2 seconds
+// The engine runs this many update ticks every second.
+const TICKS_PER_SECOND = 60;
+
+// How long each step of the cycle lasts, counted in ticks.
+const FADE_TICKS = 2 * TICKS_PER_SECOND; // 2 seconds
 const HOLD_LIT_TICKS = 90; // 1.5 seconds
 const HOLD_DARK_TICKS = 60; // 1 second
 
-// The same durations again, but in milliseconds, because the fade calls want
+// The fade duration again, but in milliseconds, because the fade calls want
 // milliseconds rather than ticks.
-const FADE_MS = 2000;
+const FADE_MS = (FADE_TICKS / TICKS_PER_SECOND) * 1000;
 
 // The cycle as a simple map: each step says how long it lasts and what comes next.
 const PHASE_TRANSITIONS = {
@@ -326,12 +328,11 @@ class Demo {
             // this demo are the lamp bulb and its glow, and fade to black along with
             // everything else. So point it at the shared UI theme colors instead,
             // which neither fade can reach. configure() runs before init(), so the
-            // slot numbers are derived here rather than read from this.theme:
-            // applyTheme() writes panel at THEME_DEFAULT_START_SLOT+2 and text at +4.
+            // slot numbers are derived here rather than read from this.theme.
             overlayStyle: {
-                barPaletteIndex: THEME_DEFAULT_START_SLOT + 2,
-                textPaletteIndex: THEME_DEFAULT_START_SLOT + 4,
-                gapPaletteIndex: THEME_DEFAULT_START_SLOT + 2,
+                barPaletteIndex: THEME_DEFAULT_START_SLOT + THEME_PANEL_OFFSET,
+                textPaletteIndex: THEME_DEFAULT_START_SLOT + THEME_TEXT_OFFSET,
+                gapPaletteIndex: THEME_DEFAULT_START_SLOT + THEME_PANEL_OFFSET,
             },
         };
     }
@@ -409,8 +410,6 @@ class Demo {
         // Dragging this changes the next fade, not the one already running - a fade
         // captures its settings the moment it starts.
         this.highlightLead = ui.slider('Highlight lead', this.highlightLead, { min: 0, max: 0.95, width: 456 });
-
-        // The step of the cycle is named in the overlay row instead of here.
 
         // A tap target as well as a key, so the demo works on a phone.
         if (ui.button('Restart [R]', { key: 'KeyR' })) {
