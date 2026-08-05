@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Core Types"
 description: "The integer core types: Vector2i, Rect2i, and Color32."
-lastModified: "2026-07-23T10:26:02+02:00"
+lastModified: "2026-08-05T18:46:46+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-core-types.md"
 ---
 
@@ -113,7 +113,29 @@ c.toFloat32Array(); // [r/255, g/255, b/255, a/255]
 c.luminance; // perceived brightness: 0.299r + 0.587g + 0.114b
 c.toHex(); // '#rrggbb' string
 c.isEqual(other); // boolean – all RGBA channels match
+
+// Linear light (real sRGB piecewise transfer, not a 2.2 power)
+c.toLinear(); // encoded sRGB → linear light; alpha untouched
+c.toSrgb(); // linear light → encoded sRGB
+c.toLinearInPlace(); // same, mutating; returns this
+c.toSrgbInPlace();
 ```
+
+### Linear light
+
+Color math that models light – exposure, additive glow, physically sensible blending – belongs in linear space, not in
+the encoded values a palette stores. `toLinear` and `toSrgb` convert between the two using the real sRGB piecewise
+transfer function, including the straight toe below the 0.04045 breakpoint. A bare 2.2 power is close enough in the
+midtones and an order of magnitude wrong near black, which is exactly where a fade spends its most visible frames.
+
+<Callout title="8-bit precision">
+
+Channels stay 8-bit, so a round trip through linear light is exact in the upper half of the range and drifts by up to
+about eight levels near black. Convert, do the math, convert back – do not use linear light as a storage format.
+
+</Callout>
+
+`BT.paletteFadeExposure` is these helpers applied to a whole palette; see [Palette](/docs/api/palette).
 
 <DemoEmbed demo="032-named-colors" title="BLIT386 named colors demo" />
 

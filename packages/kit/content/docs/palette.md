@@ -40,6 +40,9 @@ render() {
 - `new Color32(r, g, b, a)` – add alpha (0 transparent, 255 solid).
 - Handy presets are properties, not calls: `Color32.white`, `Color32.black`, `Color32.red`, `Color32.green`,
   `Color32.blue` (no parentheses).
+- `color.luminance` – how bright a color looks, 0 to 255. Use it instead of writing the brightness formula yourself.
+- `color.toLinear()` / `color.toSrgb()` – switch between the numbers a color is stored as and actual light (blit386
+  1.5.0+). Only needed if you are doing your own brightness math; the palette effects already do this for you.
 
 ## The transparent slot
 
@@ -57,5 +60,21 @@ update() {
     }
 }
 ```
+
+## Fading the whole screen
+
+Two fades, same start and end, different middle:
+
+```js
+// A crossfade: every slot dims by the same share at the same time.
+BT.paletteFade(this.nightPalette, 2000, 'ease-in-out');
+
+// A camera fade: bright slots come up first and hold on longest, dark slots
+// arrive late and crush early (blit386 1.5.0+).
+BT.paletteFadeExposure(this.gamePalette, 2000);
+```
+
+Use the first for a cross-dissolve between themes, the second for a title card or a fade up into the game. The
+`animate-the-palette` skill covers cycling, flashing, and swapping too.
 
 Next: `docs/drawing.md` for the full list of things you can draw.

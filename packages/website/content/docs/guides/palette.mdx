@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Palette"
 description: "The palette-first rendering workflow: setup, slot offsets, and palette effects."
-lastModified: "2026-07-07T17:38:09+02:00"
+lastModified: "2026-08-05T19:54:35+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-palette.md"
 ---
 
@@ -139,6 +139,9 @@ BT.paletteCycle(240, 248, 4);
 // Full-palette fade
 BT.paletteFade(nightPalette, 2000, 'ease-in-out');
 
+// Full-palette fade shaped like an iris pull
+BT.paletteFadeExposure(nightPalette, 2000);
+
 // Range-only fade
 BT.paletteFadeRange(32, 63, dangerPalette, 400, 'ease-out');
 
@@ -153,6 +156,40 @@ BT.paletteClearEffects();
 ```
 
 <DemoEmbed demo="018-flurry" title="BLIT386 Flurry demo" />
+
+### Exposure fades vs. crossfades
+
+`paletteFade` interpolates the encoded 8-bit values a palette stores. That is precisely what a post-production crossfade
+does: every color drops by the same proportion, the whole way, and the image sags uniformly into a muddy gray-black. A
+camera does not behave that way. Closing an iris multiplies light, and only then does the sensor encode it, so the image
+holds its brightness and then collapses near the end.
+
+`paletteFadeExposure` works in that same linear light: it interpolates each entry's RGB between its starting color and
+its target there, rather than in the encoded values. Fading up from black or down to black – the case a cinematic fade
+almost always is – that interpolation reduces to scaling light up or down, exactly as an iris does.
+
+Worth recording so nobody re-derives it wrong later: fading in linear light does not by itself make highlights linger
+relative to shadows. sRGB is close to a pure power curve, and a power curve is scale-invariant – multiplying linear
+light by `k` multiplies every encoded value by roughly the same factor. You get a better-shaped curve, not a
+differential between white and dark gray.
+
+On real film that differential comes from headroom. A practical lamp in frame can sit far above diffuse white in linear
+scene terms, so stopping down two stops leaves it still clipping at pure white while everything else has visibly
+dropped. A palette engine has no headroom: 255 is the ceiling. So `paletteFadeExposure` approximates it by offsetting
+each entry's schedule by its luminance – bright entries start rising earlier and finish falling later, dark entries
+start late and crush early. That is the toe and shoulder behavior, with one knob (`highlightLead`).
+
+Every entry still reaches the target exactly at the end, so nothing drifts and no color is left one step off after the
+fade lands.
+
+<Callout type="warn" title="A palette fade is per-index, not per-pixel">
+
+The schedule offset comes from a palette entry's own luminance, so a dark object sitting in a bright scene fades on the
+dark schedule regardless of what surrounds it – the engine only knows its palette slot, and real exposure has no such
+notion. For a fade up from black or down to black this reads correctly. In a busier scene, look at the result before
+committing to it, or fall back to `paletteFade`.
+
+</Callout>
 
 </Step>
 
@@ -197,6 +234,7 @@ Why: sprite textures store indices. If your palette layout changes, old indices 
 - Cycling water: reserve 8 contiguous slots and run `paletteCycle`.
 - Damage flash: trigger `paletteFlash(Color32.white, durationMs)`.
 - Day/night: prebuild day/night palettes and use `paletteFade`.
+- Title-card open: fade up from black with `paletteFadeExposure` so the highlights arrive first.
 - HUD stability: reserve a dedicated slot range and avoid cycling over it.
 - Variant economy: organize palette in fixed ranges and use sprite offsets instead of duplicate art.
 

@@ -16,6 +16,7 @@ import { AudioClip } from './assets/AudioClip';
 import type { TextSize } from './assets/BitmapFont';
 import { BitmapFont } from './assets/BitmapFont';
 import { Palette } from './assets/Palette';
+import type { ExposureFadeOptions } from './assets/PaletteEffect';
 import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
 import { SpriteSheet } from './assets/SpriteSheet';
 import type {
@@ -1152,6 +1153,45 @@ export const BT = {
     },
 
     /**
+     * Fades all palette entries toward a target the way an iris pull does.
+     *
+     * {@link BT.paletteFade} interpolates encoded color values, which is a
+     * post-production crossfade: every entry drops by the same proportion for the
+     * whole fade and the image sags uniformly into gray. This one interpolates
+     * each RGB channel in linear light instead, and offsets each entry's schedule
+     * by its luminance, so bright entries come up first and hold on longest while
+     * dark entries arrive late and crush early. The fade still lands exactly on
+     * the target at completion.
+     *
+     * Fading up from black or down to black, which is the usual case, that
+     * interpolation is exactly scaling light the way an iris does.
+     *
+     * `highlightLead` is the knob: `0` is a plain linear-light fade with every
+     * entry on one schedule, higher values push the highlights further ahead.
+     * Defaults to `0.5`.
+     *
+     * This is a per-index effect, not a per-pixel one - a dark object in a bright
+     * scene fades on the dark schedule regardless of what surrounds it, because
+     * the engine only knows its palette slot.
+     *
+     * Slots past the end of `target` are left alone, so passing a smaller target
+     * palette scopes the fade to its own slots.
+     *
+     * Common patterns:
+     * - Cinematic fade up from black: `BT.paletteFadeExposure(gamePalette, 1500)`
+     * - Subtle version: `BT.paletteFadeExposure(gamePalette, 1500, { highlightLead: 0.2 })`
+     * - Fade out: `BT.paletteFadeExposure(blackPalette, 1000)`
+     *
+     * @since 1.5.0
+     * @param target - Target palette to fade toward.
+     * @param durationMs - Fade duration in milliseconds.
+     * @param options - Highlight lead and easing curve.
+     */
+    paletteFadeExposure: (target: Palette, durationMs: number, options?: ExposureFadeOptions): void => {
+        BTAPI.instance.paletteFadeExposure(target, durationMs, options);
+    },
+
+    /**
      * Fades only a subset of palette indices toward a target over time.
      *
      * Same as {@link BT.paletteFade} but restricted to the range `[start, end]`.
@@ -2207,6 +2247,7 @@ export type {
     EasingFunction,
     Effect,
     EffectTier,
+    ExposureFadeOptions,
     HardwareSettings,
     HotContext,
     HotReloadContext,

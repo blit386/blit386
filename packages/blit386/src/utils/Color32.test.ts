@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { clampByte, Color32, INV_255 } from './Color32';
+import { clampByte, Color32, INV_255, linearToSrgb, srgbToLinear } from './Color32';
 
 describe('clampByte', () => {
     it('passes through values in valid range', () => {
@@ -1103,5 +1103,143 @@ describe('luminance', () => {
 describe('INV_255 constant', () => {
     it('is approximately 1/255', () => {
         expect(INV_255).toBeCloseTo(1 / 255, 10);
+    });
+});
+
+describe('srgbToLinear', () => {
+    it('maps the endpoints to themselves', () => {
+        expect(srgbToLinear(0)).toBeCloseTo(0, 10);
+        expect(srgbToLinear(1)).toBeCloseTo(1, 10);
+    });
+
+    it('matches the sRGB power segment at mid gray', () => {
+        // ((0.5 + 0.055) / 1.055) ** 2.4
+        expect(srgbToLinear(0.5)).toBeCloseTo(0.21404, 5);
+    });
+
+    it('uses the linear toe below the 0.04045 breakpoint', () => {
+        // 0.02 / 12.92 - a bare 2.2 power would give 0.000178 here, an order of magnitude darker.
+        expect(srgbToLinear(0.02)).toBeCloseTo(0.001548, 6);
+    });
+
+    it('is continuous across the breakpoint', () => {
+        const below = srgbToLinear(0.04044);
+        const above = srgbToLinear(0.04046);
+
+        expect(above - below).toBeCloseTo(0, 5);
+    });
+});
+
+describe('linearToSrgb', () => {
+    it('maps the endpoints to themselves', () => {
+        expect(linearToSrgb(0)).toBeCloseTo(0, 10);
+        expect(linearToSrgb(1)).toBeCloseTo(1, 10);
+    });
+
+    it('uses the linear toe below the 0.0031308 breakpoint', () => {
+        expect(linearToSrgb(0.001)).toBeCloseTo(0.01292, 8);
+    });
+
+    it('lifts near-black linear values the way the sRGB toe does', () => {
+        // 1/255 in linear light encodes to ~0.0498 - a bare 2.2 power would give ~0.0806.
+        expect(linearToSrgb(1 / 255)).toBeCloseTo(0.0498, 3);
+    });
+
+    it('inverts srgbToLinear across the whole unit interval', () => {
+        for (let i = 0; i <= 1000; i++) {
+            const c = i / 1000;
+
+            expect(linearToSrgb(srgbToLinear(c))).toBeCloseTo(c, 9);
+        }
+    });
+});
+
+describe('toLinear / toSrgb', () => {
+    it('leaves the byte endpoints untouched', () => {
+        expect(new Color32(0, 0, 0, 255).toLinear().r).toBe(0);
+        expect(new Color32(255, 255, 255, 255).toLinear().r).toBe(255);
+        expect(new Color32(0, 0, 0, 255).toSrgb().r).toBe(0);
+        expect(new Color32(255, 255, 255, 255).toSrgb().r).toBe(255);
+    });
+
+    it('darkens mid gray when converting to linear light', () => {
+        // 128/255 encoded is ~0.2159 in linear light, i.e. byte 55.
+        expect(new Color32(128, 128, 128, 255).toLinear().r).toBe(55);
+    });
+
+    it('follows the sRGB toe rather than a 2.2 power near black', () => {
+        // Linear byte 1 encodes to ~12.7. A bare 2.2 power would land near 21.
+        const encoded = new Color32(1, 1, 1, 255).toSrgb().r;
+
+        expect(encoded).toBeGreaterThanOrEqual(12);
+        expect(encoded).toBeLessThanOrEqual(14);
+    });
+
+    it('preserves alpha in both directions', () => {
+        expect(new Color32(128, 64, 32, 77).toLinear().a).toBe(77);
+        expect(new Color32(128, 64, 32, 77).toSrgb().a).toBe(77);
+    });
+
+    it('round-trips every byte value within 8-bit linear precision', () => {
+        for (let v = 0; v <= 255; v++) {
+            const back = new Color32(v, v, v, 255).toLinear().toSrgb().r;
+
+            // 8-bit linear storage crushes the darks - the toe is where the loss lands.
+            expect(Math.abs(back - v)).toBeLessThanOrEqual(10);
+        }
+    });
+
+    it('round-trips the upper half of the range near-exactly', () => {
+        for (let v = 64; v <= 255; v++) {
+            const back = new Color32(v, v, v, 255).toLinear().toSrgb().r;
+
+            expect(Math.abs(back - v)).toBeLessThanOrEqual(2);
+        }
+    });
+
+    it('is monotonic across the byte range', () => {
+        let previous = -1;
+
+        for (let v = 0; v <= 255; v++) {
+            const linear = new Color32(v, v, v, 255).toLinear().r;
+
+            expect(linear).toBeGreaterThanOrEqual(previous);
+
+            previous = linear;
+        }
+    });
+
+    it('returns a new instance rather than mutating the receiver', () => {
+        const source = new Color32(128, 128, 128, 255);
+        const converted = source.toLinear();
+
+        expect(source.r).toBe(128);
+        expect(converted).not.toBe(source);
+    });
+});
+
+describe('toLinearInPlace / toSrgbInPlace', () => {
+    it('mutates the receiver and returns it for chaining', () => {
+        const color = new Color32(128, 128, 128, 255);
+        const returned = color.toLinearInPlace();
+
+        expect(returned).toBe(color);
+        expect(color.r).toBe(55);
+    });
+
+    it('matches the allocating variants', () => {
+        for (let v = 0; v <= 255; v += 17) {
+            const inPlace = new Color32(v, v, v, 255).toLinearInPlace();
+            const allocating = new Color32(v, v, v, 255).toLinear();
+
+            expect(inPlace.r).toBe(allocating.r);
+        }
+
+        for (let v = 0; v <= 255; v += 17) {
+            const inPlace = new Color32(v, v, v, 255).toSrgbInPlace();
+            const allocating = new Color32(v, v, v, 255).toSrgb();
+
+            expect(inPlace.r).toBe(allocating.r);
+        }
     });
 });

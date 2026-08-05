@@ -44,6 +44,7 @@ Mutations, actions, and parameterized queries always use parentheses.
 ```js
 BT.clear(COLOR_BG); // clear the screen
 BT.paletteSet(palette); // activate a palette
+BT.paletteFadeExposure(palette, 1500); // camera-style fade; options bag is 3rd (engine 1.5.0+)
 BT.isDown(BT.BTN_LEFT, 0); // check held button (player 0)
 BT.isPressed(BT.BTN_A, 0); // check just-pressed edge
 BT.isKeyDown('ArrowLeft'); // keyboard hold

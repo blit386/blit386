@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-08-05T08:47:46+02:00"
+lastModified: "2026-08-05T19:54:35+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -39,6 +39,16 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   matches RetroBlit's `Ease` class.
 - `interpolate(easing, start, end, t)` for `number`, `Vector2i`, `Color32`, and `Rect2i`. Integer types round to the
   nearest component; `Color32` channels also clamp to `[0, 255]`.
+- `BT.paletteFadeExposure(target, durationMs, options?)`: a palette fade shaped like an in-camera iris pull rather than
+  a post-production crossfade. It interpolates each RGB channel in linear light instead of in encoded values (which is a
+  straight scaling of light when one end of the fade is black), and offsets each entry's schedule by its luminance, so
+  bright entries rise first and hold longest while dark entries arrive late and crush early – toe and shoulder behavior
+  from one knob, `highlightLead` (`0` is a plain linear-light fade, default `0.5`). Every entry still lands exactly on
+  the target, so nothing drifts. Note the effect is per palette index, not per pixel. See
+  [Palette](/docs/api/palette#exposure-fade) and [Palette guide](/docs/guides/palette).
+- `Color32#toLinear` / `#toSrgb`, plus `#toLinearInPlace` / `#toSrgbInPlace`, converting between encoded sRGB and linear
+  light with the real sRGB piecewise transfer function (straight toe below the 0.04045 breakpoint), not a bare 2.2
+  power. Channels stay 8-bit, so treat linear light as a working space, not a storage format.
 - `BT.isDevMode`: engine-level dev vs. release build detection. Resolves from the `blit386/vite` plugin's runtime
   marker, falling back to a live Vite HMR context, otherwise release. The plugin now sets that marker as a second
   responsibility beyond hot reload. See [Core](/docs/api/core#dev-vs-release-mode) and
