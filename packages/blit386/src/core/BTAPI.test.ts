@@ -2676,6 +2676,20 @@ describe('BTAPI', () => {
             });
         });
 
+        describe('isDevMode', () => {
+            afterEach(() => {
+                Reflect.deleteProperty(globalThis, '__BLIT386_DEV__');
+            });
+
+            it('delegates to devMode.isDevMode', () => {
+                expect(BTAPI.instance.isDevMode()).toBe(false);
+
+                globalThis.__BLIT386_DEV__ = true;
+
+                expect(BTAPI.instance.isDevMode()).toBe(true);
+            });
+        });
+
         describe('hotReplaceDemo', () => {
             afterEach(() => {
                 Reflect.deleteProperty(globalThis, 'screen');

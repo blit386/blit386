@@ -529,6 +529,19 @@ describe('BT.isMusicPlaying', () => {
     });
 });
 
+describe('BT.isDevMode', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.isDevMode', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'isDevMode').mockReturnValue(true);
+
+        expect(BT.isDevMode).toBe(true);
+        expect(spy).toHaveBeenCalledWith();
+    });
+});
+
 describe('BT.musicVolumeSet / BT.musicVolumeGet', () => {
     beforeEach(() => {
         vi.restoreAllMocks();

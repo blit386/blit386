@@ -563,6 +563,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.isDevMode": {
+      "kind": "getter",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.isDown": {
       "kind": "method",
       "since": "1.1.1",
@@ -1565,6 +1572,7 @@
       "BT.displaySize",
       "BT.drawingBufferSize",
       "BT.init",
+      "BT.isDevMode",
       "BT.outputSize",
       "BT.requestedBackend",
       "BT.screenOrientation",

@@ -32,8 +32,8 @@ favor of kit-based demos, and shipped content must not break with it.
 The engine has no physics, collision, entity, or scene system. Say so; do not invent one. What the kit does teach:
 drawing (primitives, sprites, text), palette and effects, input (keyboard, pointer, gamepad), timing and easing, audio
 (bus mixer, `AudioClip`, procedural synth – engine 1.3.0), hot reload / `blit386/vite` / asset hot-replace /
-`BT.loadingAssetsCount` (engine 1.4.0), `BT.isDevMode` dev/release detection plus `BT.random` and the noise/hash world
-generation surface (engine 1.5.0), the debug overlay, screenshots, and WebGPU-only post-process effects.
+`BT.loadingAssetsCount` (engine 1.4.0), `BT.isDevMode` dev/release detection (engine 1.5.0), the debug overlay,
+screenshots, and WebGPU-only post-process effects.
 
 ### Drift is the standing risk here
 
@@ -51,16 +51,13 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/docs/palette.md` | `paletteCreate`, slots, `Color32` |
 | `content/docs/random.md` | `BT.random` / `BT.randomSeed`, seeding a run, noise and hash world generation |
 | `content/docs/audio.md` | `AudioClip`, `BT.synthPreset`, buses, the unlock rule |
-| `content/docs/hot-reload.md` | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace |
+| `content/docs/hot-reload.md` | `blit386/vite`, swap tiers, `onHotReload`, asset hot-replace, `BT.isDevMode` |
 | `content/docs/when-something-breaks.md` | Common errors, `await`, palette slot 0, silent audio, hot-reload surprises |
 | `content/AGENTS.md` | Overall game shape, hard rules, doc routing, hot-reload tiers |
 | `content/rules/blit-api-names.md` | `BT` getters, configure flags, wake lock, `onHotReload` / never `registerHotReload` |
 | `content/rules/blit-integer-coords.md` | Integer-coordinate rule (`Vector2i` / `Rect2i`) |
 | `content/skills/use-hot-reload/SKILL.md` | Swap tiers, `onHotReload`, vite plugin opt-in for older games |
 | `content/skills/use-dev-mode/SKILL.md` | `BT.isDevMode` resolution order, cheat-key / debug-HUD gating examples |
-| `content/skills/use-random/SKILL.md` | `BT.random` / `BT.randomSeed`, `Random` methods, state and stream helpers |
-| `content/skills/use-noise/SKILL.md` | `hash*` functions, `ValueNoise` / `PerlinNoise` / `SimplexNoise`, fBm defaults |
-| `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |

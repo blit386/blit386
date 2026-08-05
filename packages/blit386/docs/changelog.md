@@ -42,6 +42,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   matches RetroBlit's `Ease` class.
 - `interpolate(easing, start, end, t)` for `number`, `Vector2i`, `Color32`, and `Rect2i`. Integer types round to the
   nearest component; `Color32` channels also clamp to `[0, 255]`.
+- `BT.isDevMode`: engine-level dev vs. release build detection. Resolves from the `blit386/vite` plugin's runtime
+  marker, falling back to a live Vite HMR context, otherwise release. The plugin now sets that marker as a second
+  responsibility beyond hot reload. See [Core](api-core.md#dev-vs-release-mode) and
+  [Hot Reload](guide-hot-reload.md#the-blit386vite-plugin).
 
 ## 1.4.0 - 2026-07-23
 

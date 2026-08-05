@@ -720,6 +720,21 @@ export const BT = {
     },
 
     /**
+     * Whether this is a development build, not a release build.
+     *
+     * Resolves from the `blit386/vite` plugin's injected runtime marker, falling back to a live
+     * Vite HMR context, otherwise release. (The underlying resolver also accepts an explicit
+     * override that always wins over both; nothing in the public `BT` surface supplies one today.)
+     * This is UX/DX gating, not DRM – any consumer can flip the underlying global by hand.
+     *
+     * @since 1.5.0
+     * @returns `true` for a dev build, `false` for release.
+     */
+    get isDevMode(): boolean {
+        return BTAPI.instance.isDevMode();
+    },
+
+    /**
      * Total number of asset loads currently in flight (images and audio clips combined).
      *
      * Useful for a loading-screen progress indicator: poll this each frame and show a
