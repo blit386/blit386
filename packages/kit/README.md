@@ -44,6 +44,7 @@ there you can also invoke one by name (`/add-sprite`).
 | `run` | Start the dev server and see the game |
 | `fix` | The game crashes, shows a black screen, or behaves oddly |
 | `use-hot-reload` | Keep playing while you edit code or assets (`blit386/vite`, `onHotReload`) |
+| `use-dev-mode` | Gate debug HUDs, cheat keys, and verbose logging on `BT.isDevMode` |
 | `draw-shapes` | Rectangles, lines, pixels, and clearing the screen |
 | `add-sprite` | Load a PNG sprite sheet and draw it, whole or frame by frame |
 | `show-a-loading-screen` | Wait for sprites and audio with `BT.loadingAssetsCount` |

@@ -42,6 +42,7 @@ export default [
                 ecmaVersion: 'latest',
                 sourceType: 'module',
                 project: TSCONFIG_PATH,
+                tsconfigRootDir: import.meta.dirname,
             },
             globals: {
                 ...globals.browser,

@@ -82,4 +82,22 @@ The plugin needs blit386 1.4.0 or newer.
 - Editing a file under `public/` that the plugin does not recognize as an image, audio, or `.btfont` (by default that
   reloads the page).
 
+## Telling a dev build from a release build
+
+Installing the plugin above also gets you `BT.isDevMode` (blit386 1.5.0+) – `true` while `npm run dev` is running the
+game, `false` once you `npm run build` it. Use it to gate things you only want while developing:
+
+```js
+update() {
+    if (BT.isDevMode) {
+        console.log('dev build – extra logging on');
+    }
+}
+```
+
+Read it inside `update()` or `render()`, not at the top of a file – the plugin marks the build as dev after the rest of
+your entry file has already run, so a check outside those methods can see `false` even while developing.
+
+See the use-dev-mode skill for cheat-key and debug-HUD examples.
+
 Next: `docs/basics.md` for the game loop, `docs/when-something-breaks.md` if a save did something unexpected.

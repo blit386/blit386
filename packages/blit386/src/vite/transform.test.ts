@@ -108,6 +108,16 @@ describe('injectSnippet', () => {
         expect(injectedPortion).not.toMatch(/import\s*\{\s*registerHotReload\s*\}\s*from\s*'blit386'/);
     });
 
+    it('marks the build as dev via globalThis.__BLIT386_DEV__, unconditionally on import.meta.hot', () => {
+        const result = injectSnippet('bootstrap(Demo);\n');
+        const injectedPortion = result.code.slice(result.code.indexOf(INJECTION_MARKER));
+        const devMarkerIndex = injectedPortion.indexOf('globalThis.__BLIT386_DEV__ = true;');
+        const hotGuardIndex = injectedPortion.indexOf('if (import.meta.hot)');
+
+        expect(devMarkerIndex).toBeGreaterThan(-1);
+        expect(devMarkerIndex).toBeLessThan(hotGuardIndex);
+    });
+
     it('appends after the original code rather than prepending', () => {
         const result = injectSnippet('bootstrap(Demo);\n');
 

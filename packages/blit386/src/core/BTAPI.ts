@@ -26,6 +26,7 @@ import { SoftwareRenderer } from '../render/SoftwareRenderer';
 import { WebGPURenderer } from '../render/WebGPURenderer';
 import { applyCanvasLayoutStyles, DEFAULT_MAX_CANVAS_SIZE } from '../utils/CanvasLayoutStyles';
 import type { Color32 } from '../utils/Color32';
+import { isDevMode } from '../utils/devMode';
 import type { EasingFunction } from '../utils/Easing';
 import * as errorMessages from '../utils/errorMessages';
 import {
@@ -661,6 +662,15 @@ export class BTAPI {
      */
     public isInitialized(): boolean {
         return this.demo !== null && this.loop !== null;
+    }
+
+    /**
+     * Reports whether this is a development build; see {@link isDevMode}.
+     *
+     * @returns `true` for a dev build, `false` for release.
+     */
+    public isDevMode(): boolean {
+        return isDevMode();
     }
 
     /**

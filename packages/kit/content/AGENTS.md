@@ -62,6 +62,7 @@ bootstrap(Game);
 | Make and use colors (palette, slots) | `docs/palette.md` |
 | Play sound effects and music, or fix a silent game | `docs/audio.md` |
 | Keep playing while you edit code or assets | `docs/hot-reload.md` |
+| Tell a dev build from a release build (debug HUDs, cheat keys) | `docs/hot-reload.md` (Telling a dev build from a release build) |
 | Show a loading screen while assets load | `docs/basics.md` (Waiting for assets) |
 | Fix a blank screen, an error, a broken change | `docs/when-something-breaks.md` |
 

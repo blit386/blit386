@@ -238,7 +238,7 @@ export default defineConfig({
 });
 ```
 
-The plugin does two things, both dev-server only (`apply: 'serve'` - a production build never sees it, so there is zero
+The plugin does three things, all dev-server only (`apply: 'serve'` – a production build never sees it, so there is zero
 runtime cost or behavior change to ship):
 
 - Appends a small hot-reload registration snippet to any served module that imports `blit386` and calls
@@ -247,6 +247,7 @@ runtime cost or behavior change to ship):
   ```js
   /* blit386:hot-reload-snippet */
   import { registerHotReload as __blit386_registerHotReload } from 'blit386';
+  globalThis.__BLIT386_DEV__ = true;
   if (import.meta.hot) {
     import.meta.hot.accept();
     __blit386_registerHotReload(import.meta.hot);
@@ -265,6 +266,16 @@ runtime cost or behavior change to ship):
   transform pipeline excludes those extensions from server-side parsing, so without this a broken entry module would
   surface only as a silently caught client-side error - Vite's error overlay would never appear. A `.ts`/`.mts` entry is
   unaffected; it already gets real syntax validation from Vite's own transform.
+
+- Marks the build as dev for [`BT.isDevMode`](api-core.md#dev-vs-release-mode) via the snippet's
+  `globalThis.__BLIT386_DEV__ = true` line – a responsibility this plugin has beyond hot reload itself. It runs
+  unconditionally, not only inside the `import.meta.hot` guard, because the snippet as a whole is only ever injected by
+  this dev-server-only plugin. This is the standard, automatic signal `BT.isDevMode` looks for; the same snippet's
+  `registerHotReload(import.meta.hot)` call also registers a live Vite HMR context, which `BT.isDevMode` checks as a
+  late fallback (see [Dev vs. release mode](api-core.md#dev-vs-release-mode)). A consumer who skips this plugin gets
+  neither signal, so `BT.isDevMode` reads as release. Because the snippet is appended after the rest of the entry
+  module, a module-scope `BT.isDevMode` read (rather than one inside `update()`/`render()`) can still observe `false` in
+  a dev build.
 
 - Watches the configured asset directories and broadcasts `blit386:asset-changed` events for recognized file types (see
   the [asset matrix](#asset-hot-replace-matrix) above), falling back to a full reload for anything else.
