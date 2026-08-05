@@ -370,6 +370,55 @@ function configure(): Partial<HardwareSettings> {
 // requestedBackend === activeBackend === 'software' after init
 ```
 
+### Dev vs. release mode
+
+<Since symbol="BT.isDevMode" />
+
+`BT.isDevMode` answers one question: is this a development build. Games and demos can gate debug HUDs, cheat keys,
+verbose logging, or test fixtures on it instead of inventing a build-mode signal of their own.
+
+```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
+if (BT.isDevMode) {
+  console.log('dev build - verbose logging enabled');
+}
+```
+
+Resolution order, first match wins:
+
+1. `globalThis.__BLIT386_DEV__`, set at runtime by the
+   [`blit386/vite` plugin](guide-hot-reload.md#the-blit386vite-plugin)'s injected snippet. A runtime assignment, not a
+   bundler define, so it works regardless of how the engine itself was built or bundled.
+2. A live Vite HMR context, as a late fallback (see [Hot Reload](guide-hot-reload.md)).
+3. Otherwise, release.
+
+The underlying resolver also accepts an explicit override that always wins over both signals above; nothing in the
+public `BT` surface offers one today, so this only matters if you call the internal resolver directly.
+
+Neither `import.meta.env.DEV` nor a bundler `define` can back this getter: the engine ships both ESM and CJS builds and
+is pre-built into `dist` before a consumer's bundler ever sees it, so a define declared in the consumer's config does
+not reliably reach a pre-bundled dependency.
+
+<Callout title="This is DX gating, not DRM">
+
+Any consumer can flip `globalThis.__BLIT386_DEV__` by hand. `BT.isDevMode` exists to make ordinary dev-vs-release
+decisions easy, not to make release builds tamper-proof.
+
+</Callout>
+
+<Callout type="warn" title="Read it from update()/render(), not module scope">
+
+The `blit386/vite` plugin's snippet is appended after the rest of the entry module, so it runs after that module's own
+top-level code but before `update()`/`render()` ever run. A module-scope `BT.isDevMode` read (for example a
+`const isDev = BT.isDevMode;` at the top of a file the entry module imports) can observe `false` even in a dev build.
+Read it inside a lifecycle method instead.
+
+</Callout>
+
+A consumer who skips the `blit386/vite` plugin reads as release everywhere the plugin's marker would otherwise apply –
+see [The `blit386/vite` plugin](guide-hot-reload.md#the-blit386vite-plugin) for what installing it actually does.
+
 ## Default configuration
 
 <Since symbol="defaultConfig" />

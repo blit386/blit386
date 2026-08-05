@@ -23,10 +23,16 @@ export const INJECTION_MARKER = '/* blit386:hot-reload-snippet */';
  * be a duplicate lexical declaration - a hard `SyntaxError` - if the entry module already imports or
  * declares a `registerHotReload` binding of its own (for example, a game that wired hot reload by hand
  * before adopting this plugin).
+ *
+ * The `globalThis.__BLIT386_DEV__ = true` assignment is this plugin's second responsibility beyond hot
+ * reload: marking the build as dev for `BT.isDevMode` (`src/utils/devMode.ts`). It runs unconditionally
+ * (not gated on `import.meta.hot`), because the plugin itself is dev-server only (`apply: 'serve'`) – a
+ * production build never sees this snippet at all.
  */
 const SNIPPET = `
 ${INJECTION_MARKER}
 import { registerHotReload as __blit386_registerHotReload } from 'blit386';
+globalThis.__BLIT386_DEV__ = true;
 if (import.meta.hot) {
     import.meta.hot.accept();
     __blit386_registerHotReload(import.meta.hot);

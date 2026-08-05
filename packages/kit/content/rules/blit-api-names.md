@@ -27,6 +27,8 @@ These are read-only values; access them as properties, not function calls.
 - Audio: `BT.isAudioUnlocked`, `BT.isMusicPlaying`
 - Input: `BT.inputString`, `BT.pointerScrollDelta`, `BT.gamepadCount`
 - Scene: `BT.camera`, `BT.palette` (throws if no palette has been set yet)
+- Build mode: `BT.isDevMode` (engine 1.5.0+) – gate debug HUDs, cheat keys, and verbose logging; see
+  `skills/use-dev-mode/`
 
 ```js
 const w = BT.displaySize.x; // correct
