@@ -8,6 +8,24 @@
 /** Reciprocal of 255 used for fast byte-to-float normalization. */
 export const INV_255 = 1 / 255;
 
+/** Encoded-value breakpoint below which the sRGB transfer function is a straight line. */
+const SRGB_ENCODED_BREAKPOINT = 0.04045;
+
+/** Linear-light breakpoint below which the inverse sRGB transfer function is a straight line. */
+const SRGB_LINEAR_BREAKPOINT = 0.0031308;
+
+/** Slope of the straight toe segment of the sRGB transfer function. */
+const SRGB_TOE_SLOPE = 12.92;
+
+/** Offset applied to the power segment of the sRGB transfer function. */
+const SRGB_OFFSET = 0.055;
+
+/** Scale applied to the power segment of the sRGB transfer function. */
+const SRGB_SCALE = 1.055;
+
+/** Exponent of the power segment of the sRGB transfer function. */
+const SRGB_GAMMA = 2.4;
+
 /** Precomputed lookup table for byte-to-hex conversion. */
 const HEX_TABLE: string[] = new Array(256);
 
@@ -801,6 +819,67 @@ export class Color32 {
     }
 
     /**
+     * Converts this color from encoded sRGB to linear light.
+     *
+     * Uses the real sRGB piecewise transfer function, including the straight toe
+     * below the 0.04045 breakpoint, not a bare 2.2 power. Alpha is untouched.
+     *
+     * Channels stay 8-bit, so the darks lose precision on the way through linear
+     * light: a round trip through {@link toSrgb} is exact in the upper half of the
+     * range and drifts by up to ~8 levels near black. Use it for a conversion,
+     * not as a storage format.
+     *
+     * @since 1.5.0
+     * @returns New color with RGB channels in linear light.
+     */
+    toLinear(): Color32 {
+        return Color32.fromRGBAUnchecked(linearizeByte(this.r), linearizeByte(this.g), linearizeByte(this.b), this.a);
+    }
+
+    /**
+     * Converts this color from linear light to encoded sRGB.
+     *
+     * Inverse of {@link toLinear}, using the same piecewise transfer function.
+     * Alpha is untouched.
+     *
+     * @since 1.5.0
+     * @returns New color with RGB channels encoded as sRGB.
+     */
+    toSrgb(): Color32 {
+        return Color32.fromRGBAUnchecked(encodeByte(this.r), encodeByte(this.g), encodeByte(this.b), this.a);
+    }
+
+    /**
+     * Converts this color from encoded sRGB to linear light, modifying in place.
+     * Use this in hot loops to avoid object allocation.
+     *
+     * @since 1.5.0
+     * @returns This color instance for chaining.
+     */
+    toLinearInPlace(): this {
+        this.r = linearizeByte(this.r);
+        this.g = linearizeByte(this.g);
+        this.b = linearizeByte(this.b);
+
+        return this;
+    }
+
+    /**
+     * Converts this color from linear light to encoded sRGB, modifying in place.
+     * Use this in hot loops to avoid object allocation.
+     *
+     * @since 1.5.0
+     * @returns This color instance for chaining.
+     */
+    toSrgbInPlace(): this {
+        this.r = encodeByte(this.r);
+        this.g = encodeByte(this.g);
+        this.b = encodeByte(this.b);
+
+        return this;
+    }
+
+    /**
      * Sets all RGBA channels at once, with validation.
      * Use this to reuse a Color32 instance instead of creating a new one.
      *
@@ -879,6 +958,66 @@ export function clampByte(n: number): number {
  */
 export function clampUnit(t: number): number {
     return t < 0 ? 0 : t > 1 ? 1 : t;
+}
+
+/**
+ * Converts one encoded sRGB channel to linear light.
+ *
+ * The real IEC 61966-2-1 piecewise curve: a straight toe below the 0.04045
+ * breakpoint, an offset power curve above it. A bare 2.2 power is roughly right
+ * in the midtones and an order of magnitude wrong near black, which is exactly
+ * where a fade spends its most visible frames.
+ *
+ * Exported for other utilities that need linear-light math; not part of the
+ * public `blit386` surface.
+ *
+ * @param channel - Encoded channel value in range 0-1.
+ * @returns Linear-light value in range 0-1.
+ */
+export function srgbToLinear(channel: number): number {
+    return channel <= SRGB_ENCODED_BREAKPOINT
+        ? channel / SRGB_TOE_SLOPE
+        : ((channel + SRGB_OFFSET) / SRGB_SCALE) ** SRGB_GAMMA;
+}
+
+/**
+ * Converts one linear-light channel to encoded sRGB.
+ *
+ * Inverse of {@link srgbToLinear}, sharing its breakpoint and constants.
+ *
+ * Exported for other utilities that need linear-light math; not part of the
+ * public `blit386` surface.
+ *
+ * @param linear - Linear-light value in range 0-1.
+ * @returns Encoded channel value in range 0-1.
+ */
+export function linearToSrgb(linear: number): number {
+    return linear <= SRGB_LINEAR_BREAKPOINT
+        ? linear * SRGB_TOE_SLOPE
+        : SRGB_SCALE * linear ** (1 / SRGB_GAMMA) - SRGB_OFFSET;
+}
+
+/**
+ * Converts one encoded sRGB byte to a linear-light byte.
+ *
+ * Rounds to nearest so a {@link linearizeByte} / {@link encodeByte} round trip
+ * does not drift downward one level at a time.
+ *
+ * @param value - Encoded channel byte in range 0-255.
+ * @returns Linear-light channel byte in range 0-255.
+ */
+function linearizeByte(value: number): number {
+    return clampByte(Math.round(srgbToLinear(value * INV_255) * 255));
+}
+
+/**
+ * Converts one linear-light byte to an encoded sRGB byte.
+ *
+ * @param value - Linear-light channel byte in range 0-255.
+ * @returns Encoded channel byte in range 0-255.
+ */
+function encodeByte(value: number): number {
+    return clampByte(Math.round(linearToSrgb(value * INV_255) * 255));
 }
 
 /**

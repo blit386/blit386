@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { Color32 } from '../utils/Color32';
+import { Color32, srgbToLinear } from '../utils/Color32';
 import { Palette } from './Palette';
 import {
     CycleEffect,
+    ExposureFadeEffect,
     FadeEffect,
     FadeRangeEffect,
     FlashEffect,
@@ -531,5 +532,293 @@ describe('paletteSwap', () => {
 
         expect(palette.getRef(5).isEqual(original)).toBe(true);
         expect(palette.isDirty).toBe(false);
+    });
+});
+
+/** Palette index used for the bright entry in exposure-ordering tests. */
+const BRIGHT_SLOT = 1;
+
+/** Palette index used for the dark entry in exposure-ordering tests. */
+const DARK_SLOT = 2;
+
+/** Bright test color - near the top of the range, so it has the most headroom to emulate. */
+const BRIGHT_COLOR = new Color32(240, 240, 240);
+
+/** Dark test color - low enough to sit deep in the sRGB toe. */
+const DARK_COLOR = new Color32(40, 40, 40);
+
+/**
+ * Builds a two-entry palette holding the bright and dark exposure test colors.
+ *
+ * @returns Palette with {@link BRIGHT_SLOT} and {@link DARK_SLOT} populated.
+ */
+function makeExposurePalette(): Palette {
+    const p = new Palette(16);
+
+    p.set(BRIGHT_SLOT, BRIGHT_COLOR);
+    p.set(DARK_SLOT, DARK_COLOR);
+
+    return p;
+}
+
+/** Builds a 16-entry palette with every non-transparent slot black. */
+function makeBlackPalette(): Palette {
+    const p = new Palette(16);
+
+    fillNonTransparentSlots(p, new Color32(0, 0, 0));
+
+    return p;
+}
+
+/**
+ * Fraction of the way an entry has traveled from black to `reference`, in linear light.
+ *
+ * Linear light is the space the exposure curve actually works in, so this is the
+ * quantity the per-entry timing offset is supposed to reorder.
+ *
+ * @param current - Current palette entry.
+ * @param reference - Fully lit color the entry is measured against.
+ * @returns Fraction in range 0-1.
+ */
+function linearFraction(current: Color32, reference: Color32): number {
+    const referenceLinear = srgbToLinear(reference.r / 255);
+
+    return referenceLinear === 0 ? 0 : srgbToLinear(current.r / 255) / referenceLinear;
+}
+
+describe('ExposureFadeEffect', () => {
+    it('lands exactly on the target at t = 1 for every entry', () => {
+        [0, 0.25, 0.5, 0.9].forEach((highlightLead) => {
+            const palette = makeTestPalette();
+            const target = makeTestPalette();
+
+            fillNonTransparentSlots(target, new Color32(200, 130, 60));
+
+            const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead });
+
+            effect.update(palette, 1000);
+
+            expectNonTransparentSlotsRgb(palette, 200, 130, 60);
+        });
+    });
+
+    it('lands exactly on the target without the completion snap', () => {
+        // One frame short of the end: the curve itself must already be converging on
+        // the target, not jumping to it from far away when the clock runs out.
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0.5 });
+
+        effect.update(palette, 999);
+
+        expect(palette.getRef(BRIGHT_SLOT).r).toBeGreaterThanOrEqual(239);
+        expect(palette.getRef(DARK_SLOT).r).toBeGreaterThanOrEqual(39);
+    });
+
+    it('auto-removes when complete', () => {
+        const palette = makeExposurePalette();
+        const target = makeBlackPalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 1000);
+
+        expect(effect.update(palette, 500)).toBe(true);
+        expect(effect.update(palette, 500)).toBe(false);
+    });
+
+    it('brings a high-luminance entry past any fraction before a low-luminance one', () => {
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0.5 });
+
+        // Step the fade and record where each entry sits at every sample.
+        for (let step = 1; step <= 9; step++) {
+            effect.update(palette, 100);
+
+            const bright = linearFraction(palette.getRef(BRIGHT_SLOT), BRIGHT_COLOR);
+            const dark = linearFraction(palette.getRef(DARK_SLOT), DARK_COLOR);
+
+            expect(bright).toBeGreaterThan(dark);
+        }
+    });
+
+    it('leaves a high-luminance entry trailing a low-luminance one on the way out', () => {
+        const palette = makeExposurePalette();
+        const target = makeBlackPalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0.5 });
+
+        // Fading out, "trailing" means still holding more of its original light.
+        for (let step = 1; step <= 9; step++) {
+            effect.update(palette, 100);
+
+            const bright = linearFraction(palette.getRef(BRIGHT_SLOT), BRIGHT_COLOR);
+            const dark = linearFraction(palette.getRef(DARK_SLOT), DARK_COLOR);
+
+            expect(bright).toBeGreaterThan(dark);
+        }
+    });
+
+    it('holds the bright entry near its start while the dark entry has collapsed', () => {
+        const palette = makeExposurePalette();
+        const target = makeBlackPalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0.6 });
+
+        effect.update(palette, 700);
+
+        // Every entry still lands on black together at t = 1 - the shoulder is about
+        // how much light each one is still carrying on the way there.
+        expect(palette.getRef(BRIGHT_SLOT).r).toBeGreaterThan(BRIGHT_COLOR.r * 0.8);
+        expect(palette.getRef(DARK_SLOT).r).toBeLessThan(DARK_COLOR.r * 0.6);
+    });
+
+    it('treats every entry on the same schedule when highlightLead is 0', () => {
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0 });
+
+        effect.update(palette, 500);
+
+        const bright = linearFraction(palette.getRef(BRIGHT_SLOT), BRIGHT_COLOR);
+        const dark = linearFraction(palette.getRef(DARK_SLOT), DARK_COLOR);
+
+        expect(bright).toBeCloseTo(dark, 1);
+    });
+
+    it('fades light rather than encoded values when highlightLead is 0', () => {
+        const palette = makeBlackPalette();
+        const target = new Palette(16);
+
+        target.set(BRIGHT_SLOT, new Color32(255, 255, 255));
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0 });
+
+        effect.update(palette, 500);
+
+        // Half the light encodes to ~188, not to the ~128 an encoded-space lerp gives.
+        expect(palette.getRef(BRIGHT_SLOT).r).toBeGreaterThan(180);
+        expect(palette.getRef(BRIGHT_SLOT).r).toBeLessThan(195);
+    });
+
+    it('stays finite and lands on target when highlightLead is driven to 1', () => {
+        [1, 5, Number.POSITIVE_INFINITY].forEach((highlightLead) => {
+            const palette = makeBlackPalette();
+            const target = makeExposurePalette();
+
+            const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead });
+
+            effect.update(palette, 500);
+
+            expect(Number.isFinite(palette.getRef(BRIGHT_SLOT).r)).toBe(true);
+            expect(Number.isFinite(palette.getRef(DARK_SLOT).r)).toBe(true);
+
+            effect.update(palette, 500);
+
+            expect(palette.getRef(BRIGHT_SLOT).r).toBe(BRIGHT_COLOR.r);
+            expect(palette.getRef(DARK_SLOT).r).toBe(DARK_COLOR.r);
+        });
+    });
+
+    it('clamps a negative highlightLead to a uniform fade', () => {
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: -2 });
+
+        effect.update(palette, 500);
+
+        const bright = linearFraction(palette.getRef(BRIGHT_SLOT), BRIGHT_COLOR);
+        const dark = linearFraction(palette.getRef(DARK_SLOT), DARK_COLOR);
+
+        expect(bright).toBeCloseTo(dark, 1);
+    });
+
+    it('applies the easing curve to the global schedule', () => {
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        const linear = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0 });
+
+        linear.update(palette, 500);
+
+        const linearValue = palette.getRef(BRIGHT_SLOT).r;
+
+        const eased = makeBlackPalette();
+        const easedEffect = new ExposureFadeEffect(eased, target, 1000, { highlightLead: 0, easing: 'ease-in' });
+
+        easedEffect.update(eased, 500);
+
+        expect(eased.getRef(BRIGHT_SLOT).r).toBeLessThan(linearValue);
+    });
+
+    it('leaves entries beyond the target palette alone', () => {
+        // Pinning the contract a side-by-side comparison depends on: a smaller target
+        // palette scopes the fade to its own slots, so another effect can own the rest.
+        const palette = makeTestPalette();
+        const target = new Palette(4);
+
+        target.set(1, new Color32(255, 0, 0));
+        target.set(2, new Color32(255, 0, 0));
+        target.set(3, new Color32(255, 0, 0));
+
+        const untouched = palette.get(8);
+
+        const effect = new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0.5 });
+
+        effect.update(palette, 1000);
+
+        expect(palette.getRef(1).r).toBe(255);
+        expect(palette.getRef(8).isEqual(untouched)).toBe(true);
+    });
+
+    it('leaves the transparent sentinel at index 0 alone', () => {
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        palette.set(0, new Color32(0, 0, 0, 0));
+
+        const effect = new ExposureFadeEffect(palette, target, 1000);
+
+        effect.update(palette, 1000);
+
+        expect(palette.getRef(0).a).toBe(0);
+    });
+
+    it('completes on a clock stepped through the manager', () => {
+        const clock = makeTimeClock();
+        const manager = new PaletteEffectManager(clock.provider);
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        manager.add(new ExposureFadeEffect(palette, target, 1000, { highlightLead: 0.5 }));
+
+        // First update seeds the clock with delta 0.
+        manager.update(palette);
+
+        clock.advance(500);
+        manager.update(palette);
+
+        expect(manager.activeCount).toBe(1);
+        expect(palette.getRef(BRIGHT_SLOT).r).toBeLessThan(BRIGHT_COLOR.r);
+
+        clock.advance(500);
+        manager.update(palette);
+
+        expect(manager.activeCount).toBe(0);
+        expect(palette.getRef(BRIGHT_SLOT).r).toBe(BRIGHT_COLOR.r);
+        expect(palette.getRef(DARK_SLOT).r).toBe(DARK_COLOR.r);
+    });
+
+    it('completes immediately for a zero duration', () => {
+        const palette = makeBlackPalette();
+        const target = makeExposurePalette();
+
+        const effect = new ExposureFadeEffect(palette, target, 0, { highlightLead: 0.5 });
+
+        expect(effect.update(palette, 0)).toBe(false);
+        expect(palette.getRef(BRIGHT_SLOT).r).toBe(BRIGHT_COLOR.r);
     });
 });

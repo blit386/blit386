@@ -4,6 +4,8 @@ import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
 import {
     CycleEffect,
+    ExposureFadeEffect,
+    type ExposureFadeOptions,
     FadeEffect,
     FadeRangeEffect,
     FlashEffect,
@@ -1325,6 +1327,25 @@ export class BTAPI {
 
         this.assertFiniteDuration('paletteFade', durationMs);
         this.paletteEffects.add(new FadeEffect(this.palette, target, durationMs, easing));
+    }
+
+    /**
+     * Fades all palette entries toward a target the way an iris pull does.
+     *
+     * Multiplies light rather than encoded values, and offsets each entry's
+     * schedule by its luminance. Auto-removes when complete.
+     *
+     * @param target - Target palette to fade toward.
+     * @param durationMs - Fade duration in milliseconds.
+     * @param options - Highlight lead and easing curve.
+     */
+    public paletteFadeExposure(target: Palette, durationMs: number, options?: ExposureFadeOptions): void {
+        if (!this.palette) {
+            throw new Error(noActivePaletteError());
+        }
+
+        this.assertFiniteDuration('paletteFadeExposure', durationMs);
+        this.paletteEffects.add(new ExposureFadeEffect(this.palette, target, durationMs, options));
     }
 
     /**

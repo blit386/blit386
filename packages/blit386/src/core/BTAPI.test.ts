@@ -2791,3 +2791,42 @@ describe('BTAPI', () => {
         });
     });
 });
+
+describe('BTAPI.paletteFadeExposure', () => {
+    /**
+     * Reads the private effect manager's active count.
+     *
+     * @returns Number of palette effects currently registered.
+     */
+    function activeEffectCount(): number {
+        return (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount;
+    }
+
+    afterEach(() => {
+        BTAPI.instance.paletteClearEffects();
+    });
+
+    it('registers an effect when a palette is active', () => {
+        BTAPI.instance.setPalette(new Palette(16));
+        BTAPI.instance.paletteClearEffects();
+
+        BTAPI.instance.paletteFadeExposure(new Palette(16), 500);
+
+        expect(activeEffectCount()).toBe(1);
+    });
+
+    it('accepts a highlight lead and easing curve', () => {
+        BTAPI.instance.setPalette(new Palette(16));
+        BTAPI.instance.paletteClearEffects();
+
+        expect(() =>
+            BTAPI.instance.paletteFadeExposure(new Palette(16), 500, { highlightLead: 0.75, easing: 'ease-out' }),
+        ).not.toThrow();
+    });
+
+    it('throws for a non-finite duration', () => {
+        BTAPI.instance.setPalette(new Palette(16));
+
+        expect(() => BTAPI.instance.paletteFadeExposure(new Palette(16), NaN)).toThrow(/paletteFadeExposure/);
+    });
+});

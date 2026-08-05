@@ -1805,3 +1805,28 @@ describe('BT.loadingAssetsCount', () => {
         }
     });
 });
+
+describe('BT.paletteFadeExposure', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('delegates to BTAPI.instance.paletteFadeExposure', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'paletteFadeExposure').mockReturnValue(undefined);
+        const target = new Palette(16);
+
+        BT.paletteFadeExposure(target, 500);
+
+        expect(spy).toHaveBeenCalledWith(target, 500, undefined);
+    });
+
+    it('passes the options bag through unchanged', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'paletteFadeExposure').mockReturnValue(undefined);
+        const target = new Palette(16);
+        const options = { highlightLead: 0.8, easing: 'ease-in-out' } as const;
+
+        BT.paletteFadeExposure(target, 500, options);
+
+        expect(spy).toHaveBeenCalledWith(target, 500, options);
+    });
+});
