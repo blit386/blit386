@@ -43,10 +43,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - `interpolate(easing, start, end, t)` for `number`, `Vector2i`, `Color32`, and `Rect2i`. Integer types round to the
   nearest component; `Color32` channels also clamp to `[0, 255]`.
 - `BT.paletteFadeExposure(target, durationMs, options?)`: a palette fade shaped like an in-camera iris pull rather than
-  a post-production crossfade. It multiplies light instead of encoded values, and offsets each entry's schedule by its
-  luminance, so bright entries rise first and hold longest while dark entries arrive late and crush early – toe and
-  shoulder behavior from one knob, `highlightLead` (`0` is a plain linear-light fade, default `0.5`). Every entry still
-  lands exactly on the target, so nothing drifts. Note the effect is per palette index, not per pixel. See
+  a post-production crossfade. It interpolates each RGB channel in linear light instead of in encoded values (which is a
+  straight scaling of light when one end of the fade is black), and offsets each entry's schedule by its luminance, so
+  bright entries rise first and hold longest while dark entries arrive late and crush early – toe and shoulder behavior
+  from one knob, `highlightLead` (`0` is a plain linear-light fade, default `0.5`). Every entry still lands exactly on
+  the target, so nothing drifts. Note the effect is per palette index, not per pixel. See
   [Palette](api-palette.md#exposure-fade) and [Palette guide](guide-palette.md).
 - `Color32#toLinear` / `#toSrgb`, plus `#toLinearInPlace` / `#toSrgbInPlace`, converting between encoded sRGB and linear
   light with the real sRGB piecewise transfer function (straight toe below the 0.04045 breakpoint), not a bare 2.2

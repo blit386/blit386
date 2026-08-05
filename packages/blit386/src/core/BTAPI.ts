@@ -1332,8 +1332,9 @@ export class BTAPI {
     /**
      * Fades all palette entries toward a target the way an iris pull does.
      *
-     * Multiplies light rather than encoded values, and offsets each entry's
-     * schedule by its luminance. Auto-removes when complete.
+     * Interpolates each RGB channel in linear light rather than in encoded
+     * values, and offsets each entry's schedule by its luminance. With black at
+     * one end that is a straight scaling of light. Auto-removes when complete.
      *
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.

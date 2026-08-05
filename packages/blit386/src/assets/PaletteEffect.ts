@@ -585,9 +585,13 @@ function applyExposureEntry(
  *
  * {@link FadeEffect} interpolates encoded sRGB values, which is a post-production
  * crossfade: every entry drops by the same proportion for the whole fade and the
- * image sags uniformly into gray. This effect multiplies light instead, and gives
- * each entry a luminance-derived timing offset, so bright entries come up first
- * and hold on longest while dark entries arrive late and crush early.
+ * image sags uniformly into gray. This effect interpolates each RGB channel in
+ * linear light instead, and gives each entry a luminance-derived timing offset,
+ * so bright entries come up first and hold on longest while dark entries arrive
+ * late and crush early.
+ *
+ * With black at one end of the fade, which is the usual case, interpolating in
+ * linear light is exactly scaling light up or down, the way an iris does.
  *
  * Every entry still reaches `tc = 1` at `t = 1`, so the fade lands exactly on the
  * target palette with no drift.

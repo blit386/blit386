@@ -255,10 +255,13 @@ BT.paletteClearEffects();
 <Since symbol="ExposureFadeOptions" />
 
 `BT.paletteFade` interpolates encoded color values, which is what a post-production crossfade does: every entry drops by
-the same proportion for the whole fade, and the image sags uniformly into a muddy gray. `BT.paletteFadeExposure` fades
-light instead, and gives each entry a timing offset derived from its luminance, so bright entries come up first and hold
-on longest while dark entries arrive late and crush early. Both fades start and end in the same place; only the middle
-differs.
+the same proportion for the whole fade, and the image sags uniformly into a muddy gray. `BT.paletteFadeExposure`
+interpolates each RGB channel in linear light instead, and gives each entry a timing offset derived from its luminance,
+so bright entries come up first and hold on longest while dark entries arrive late and crush early. Both fades start and
+end in the same place; only the middle differs.
+
+Fading up from black or down to black – the usual case – interpolating in linear light is exactly scaling light up or
+down, which is what closing an iris does.
 
 `highlightLead` is the single knob. At `0` every entry runs on one schedule and you get a plain linear-light fade; the
 default `0.5` reads as a cinematic iris pull.
@@ -290,7 +293,7 @@ BT.paletteFadeExposure(gamePalette, 1500);
 // Softer differential between highlights and shadows
 BT.paletteFadeExposure(gamePalette, 1500, { highlightLead: 0.2 });
 
-// Fade out - the same curve mirrored, highlights linger
+// Fade out – the same curve mirrored, highlights linger
 BT.paletteFadeExposure(blackPalette, 1000, { easing: 'ease-in-out' });
 ```
 

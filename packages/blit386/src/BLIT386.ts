@@ -1157,10 +1157,14 @@ export const BT = {
      *
      * {@link BT.paletteFade} interpolates encoded color values, which is a
      * post-production crossfade: every entry drops by the same proportion for the
-     * whole fade and the image sags uniformly into gray. This one multiplies
-     * light instead, and offsets each entry's schedule by its luminance, so bright
-     * entries come up first and hold on longest while dark entries arrive late and
-     * crush early. The fade still lands exactly on the target at completion.
+     * whole fade and the image sags uniformly into gray. This one interpolates
+     * each RGB channel in linear light instead, and offsets each entry's schedule
+     * by its luminance, so bright entries come up first and hold on longest while
+     * dark entries arrive late and crush early. The fade still lands exactly on
+     * the target at completion.
+     *
+     * Fading up from black or down to black, which is the usual case, that
+     * interpolation is exactly scaling light the way an iris does.
      *
      * `highlightLead` is the knob: `0` is a plain linear-light fade with every
      * entry on one schedule, higher values push the highlights further ahead.
