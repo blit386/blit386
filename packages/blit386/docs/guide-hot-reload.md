@@ -75,6 +75,17 @@ The `SPEED` case is the detail worth understanding: a Tier 1 swap does not touch
 new module's top-level scope - so the new value of `SPEED` takes effect on the very next tick, even though no field on
 the instance changed. Module-level constants referenced from methods are effectively live-editable.
 
+<Callout type="warn" title="A constant baked into an instance field by init() is not live-editable">
+  The live-editable behavior above only holds while every reader of the constant is a method that runs fresh each
+  tick. If `init()` also reads the same constant to build data cached in an instance field - filling a scene buffer,
+  precomputing a lookup table, seeding a starting position - editing the constant is still a methods-only change as
+  far as the fingerprint in [Tier 2](#tier-2-initconstructor-change) is concerned: `init()`'s own source text did not
+  change, only the value an unrelated top-level `const` resolves to. So the swap stays Tier 1, `init()` does not
+  re-run, and the instance field keeps whatever it was built from before the edit - while methods swapped in by the
+  same save read the new value immediately. The two go out of sync until you force a Tier 2 path yourself (touch
+  `init()`, the constructor, or a class field initializer) or fall back to a full page reload / dev server restart.
+</Callout>
+
 ### Tier 2: init/constructor change
 
 If `init()`, the constructor, or a class field initializer changed, a Tier 1 swap is not safe - the running instance was

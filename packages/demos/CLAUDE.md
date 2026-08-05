@@ -146,6 +146,10 @@ are `filip-test-02` (a bare-bones starter with no demo UI at all) and `flurry`, 
 Still always full-reloads: `_partials/*` edits, a `blit386` dist rebuild (a changed engine bundle invalidates
 everything), and adding or removing a `src/<slug>.js` file.
 
+A module-level constant that `init()` also reads to build a cached instance field (not just one a method reads fresh
+each tick) does not get the "Method body" row's live-edit treatment – see the caveat in
+[the engine's hot-reload guide](../blit386/docs/guide-hot-reload.md#tier-1-method-only-change).
+
 Editing `src/shared/*.js` hot-swaps through Vite's own module graph rather than the engine's swap. That re-evaluates
 module-scope state: `ui.js`'s singleton `UiContext` is replaced, and `ui-dpad.js` / `ui-gestures.js` reset their D-pad
 and swipe state. So the D-pad can briefly hide, an in-flight swipe or keypress can drop, and `ui.hasTouch()` can revert
