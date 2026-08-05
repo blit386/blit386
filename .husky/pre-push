@@ -1,9 +1,35 @@
 #!/bin/sh
 
 . "$(dirname "$0")/ensure-pnpm.sh"
+. "$(dirname "$0")/check-author.sh"
 
 echo "Running pre-push checks..."
 echo ""
+
+# Reject any commit about to be pushed whose author/committer is a placeholder
+# identity (see check-author.sh). Catches commits that bypassed pre-commit -
+# rebase, cherry-pick, amend --no-verify, or a commit made in another
+# worktree/session with a bad local .git/config override.
+ZERO_SHA="0000000000000000000000000000000000000000"
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "$ZERO_SHA" ] && continue # deleting the remote ref
+
+    if [ "$remote_sha" = "$ZERO_SHA" ]; then
+        push_range="$local_sha"
+    else
+        push_range="$remote_sha..$local_sha"
+    fi
+
+    # Written to a temp file rather than piped into the while loop: a piped
+    # while runs in a subshell, so check_author_identity's `exit 1` would only
+    # kill the subshell and the push would proceed anyway.
+    author_log=$(mktemp)
+    git log "$push_range" --format='%H%x09%an%x09%ae' >"$author_log"
+    while IFS="$(printf '\t')" read -r sha an ae; do
+        check_author_identity "$an" "$ae" "Commit $sha"
+    done <"$author_log"
+    rm -f "$author_log"
+done
 
 # Monorepo: dispatch preflight per changed package rather than running everything.
 # pnpm's "...[ref]" filter selects a package plus anything downstream of it that
