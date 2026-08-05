@@ -2,5 +2,8 @@
 
 # Load Node.js environment and ensure pnpm is available
 . "$(dirname "$0")/ensure-pnpm.sh"
+. "$(dirname "$0")/check-author.sh"
+
+check_author_identity "$(git config user.name)" "$(git config user.email)" "Configured git identity"
 
 pnpm lint-staged
