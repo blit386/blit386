@@ -195,6 +195,7 @@ const slot = palette.findColor(color); // → index, or -1 if not found
 
 <Since symbol="BT.paletteCycle" />
 <Since symbol="BT.paletteFade" />
+<Since symbol="BT.paletteFadeExposure" />
 <Since symbol="BT.paletteFadeRange" />
 <Since symbol="BT.paletteFlash" />
 <Since symbol="BT.paletteSwap" />
@@ -223,6 +224,10 @@ BT.paletteCycle(start, end, speed);
 BT.paletteFade(targetPalette, durationMs);
 BT.paletteFade(targetPalette, durationMs, 'ease-in-out');
 
+// Fade the whole palette like an iris pull rather than a crossfade
+BT.paletteFadeExposure(targetPalette, durationMs);
+BT.paletteFadeExposure(targetPalette, durationMs, { highlightLead: 0.2, easing: 'ease-out' });
+
 // Fade a sub-range only
 BT.paletteFadeRange(start, end, targetPalette, durationMs);
 BT.paletteFadeRange(start, end, targetPalette, durationMs, 'ease-out');
@@ -245,9 +250,61 @@ BT.paletteClearEffects();
 
 <DemoEmbed demo="016-palette-animation" title="BLIT386 palette animation demo" />
 
+### Exposure fade
+
+<Since symbol="ExposureFadeOptions" />
+
+`BT.paletteFade` interpolates encoded color values, which is what a post-production crossfade does: every entry drops by
+the same proportion for the whole fade, and the image sags uniformly into a muddy gray. `BT.paletteFadeExposure` fades
+light instead, and gives each entry a timing offset derived from its luminance, so bright entries come up first and hold
+on longest while dark entries arrive late and crush early. Both fades start and end in the same place; only the middle
+differs.
+
+`highlightLead` is the single knob. At `0` every entry runs on one schedule and you get a plain linear-light fade; the
+default `0.5` reads as a cinematic iris pull.
+
+Slots past the end of the target palette are left alone, so passing a smaller target scopes the fade to its own slots
+and leaves the rest of the palette free for another effect.
+
+<TypeTable type={{
+    highlightLead: {
+      type: 'number',
+      default: '0.5',
+      description: 'How far ahead of the schedule a fully lit entry runs, 0-1. Clamped; 0 is a uniform linear-light fade.',
+    },
+    easing: {
+      type: 'EasingFunction',
+      default: "'linear'",
+      description: 'Easing curve applied to the global schedule.',
+    },
+  }} />
+
+```ts twoslash
+import { BT, Palette } from 'blit386';
+const gamePalette = Palette.vga();
+const blackPalette = Palette.vga();
+// ---cut---
+// Cinematic fade up from black
+BT.paletteFadeExposure(gamePalette, 1500);
+
+// Softer differential between highlights and shadows
+BT.paletteFadeExposure(gamePalette, 1500, { highlightLead: 0.2 });
+
+// Fade out - the same curve mirrored, highlights linger
+BT.paletteFadeExposure(blackPalette, 1000, { easing: 'ease-in-out' });
+```
+
+<Callout type="warn" title="Per-index, not per-pixel">
+
+A palette fade acts on color indices, not pixels. A dark object sitting in a bright scene fades on the dark schedule
+regardless of what surrounds it, because the engine only knows its palette slot – real exposure has no such notion. For
+a fade up from black or down to black this reads correctly; in a busier scene, check the result before shipping it.
+
+</Callout>
+
 ## Easing functions
 
-Used by `paletteFade` and `paletteFadeRange`. Type: `EasingFunction`. Common values:
+Used by `paletteFade`, `paletteFadeRange`, and `paletteFadeExposure`. Type: `EasingFunction`. Common values:
 
 | Value | Curve |
 | --- | --- |
