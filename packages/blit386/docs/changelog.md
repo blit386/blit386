@@ -23,6 +23,20 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 ### Added
 
+- Seeded random: the `Random` class (a mulberry32 PRNG) plus `BT.random` and `BT.randomSeed(seed)` on the facade.
+  `BT.random` is a live reference to one shared instance, time-seeded at singleton creation, so the engine default is
+  deterministic the moment you seed it. Beyond `next()` / `float()` / `int()` / `intInclusive()` it carries the draws
+  games actually reach for – `bool`, `sign`, `pick`, `shuffle` / `shuffleInPlace`, `weighted`, `angle`, `gaussian` – and
+  spatial helpers `insideRect`, `pointInRange`, `direction4`, `direction8`, each with an allocation-free `*To(out)`
+  variant. Stream control is `seed`, `seedValue`, `getState`, `setState`, `clone`, and `fork`. Prefer it over
+  `Math.random()`, which cannot be seeded. See [Random](api-random.md) and [Random guide](guide-random.md).
+- Coordinate hashing: `hash1i` / `hash2i` / `hash3i` return an unsigned 32-bit value and `hash1` / `hash2` / `hash3`
+  return the same value scaled into `[0, 1)`. These are stateless spatial lookups – identical coordinates and seed
+  always give an identical result – so a chunked or procedural world needs no stored generator per chunk.
+- Pattern noise: `ValueNoise`, `PerlinNoise`, and `SimplexNoise`, each seedable and sampling to approximately `[-1, 1]`.
+  Value and Perlin expose `noise1D` / `noise2D` / `noise3D` and the matching `fbm*`; Simplex is 2D and 3D only. fBm
+  defaults to `octaves = 4`, `persistence = 0.5`, `lacunarity = 2`, with octave amplitudes normalized so the sum stays
+  in range. Distinct from the post-process `Noise` display effect, which is unrelated GPU grain.
 - Full easing curve library on `EasingFunction` / `applyEasing`: sine, cubic, quartic, quintic, expo, circ, back,
   elastic, and bounce families (in / out / in-out), alongside the existing linear and quadratic (`ease-*`) curves. Math
   matches RetroBlit's `Ease` class.

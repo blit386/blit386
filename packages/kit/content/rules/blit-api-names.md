@@ -27,6 +27,8 @@ These are read-only values; access them as properties, not function calls.
 - Audio: `BT.isAudioUnlocked`, `BT.isMusicPlaying`
 - Input: `BT.inputString`, `BT.pointerScrollDelta`, `BT.gamepadCount`
 - Scene: `BT.camera`, `BT.palette` (throws if no palette has been set yet)
+- Random: `BT.random` (engine 1.5.0+) – the shared seedable generator; a live reference, like `BT.palette`. See
+  `skills/use-random/`
 - Build mode: `BT.isDevMode` (engine 1.5.0+) – gate debug HUDs, cheat keys, and verbose logging; see
   `skills/use-dev-mode/`
 
@@ -47,7 +49,13 @@ BT.isPressed(BT.BTN_A, 0); // check just-pressed edge
 BT.isKeyDown('ArrowLeft'); // keyboard hold
 BT.isPointerActive(0); // mouse or touch slot 0 is active
 BT.pointerPos(0); // pointer position (Vector2i)
+BT.randomSeed(1234); // reseed the shared generator (engine 1.5.0+)
 ```
+
+`BT.random` is the getter, `BT.randomSeed(n)` is the method – the pair works like `BT.palette` / `BT.paletteSet`. Draws
+go through the getter: `BT.random.int(0, 320)`, `BT.random.pick(list)`. Prefer it over `Math.random()`, which cannot be
+seeded. Import `Random` from `blit386` for an independent stream, and `hash2` / `PerlinNoise` and friends for
+coordinate-based world generation; see `skills/use-random/` and `skills/use-noise/`.
 
 ## Configure flags
 
