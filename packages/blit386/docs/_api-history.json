@@ -750,6 +750,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.paletteFadeExposure": {
+      "kind": "method",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.paletteFadeRange": {
       "kind": "method",
       "since": "1.0.3",
@@ -1057,6 +1064,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "ExposureFadeOptions": {
+      "kind": "interface",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "Flicker": {
       "kind": "class",
@@ -1615,10 +1629,12 @@
       "BT.paletteCreate",
       "BT.paletteCycle",
       "BT.paletteFade",
+      "BT.paletteFadeExposure",
       "BT.paletteFadeRange",
       "BT.paletteFlash",
       "BT.paletteSet",
       "BT.paletteSwap",
+      "ExposureFadeOptions",
       "Palette"
     ],
     "api/random": [
