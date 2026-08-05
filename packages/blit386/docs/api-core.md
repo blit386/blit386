@@ -378,10 +378,20 @@ function configure(): Partial<HardwareSettings> {
 verbose logging, or test fixtures on it instead of inventing a build-mode signal of their own.
 
 ```ts twoslash
-import { BT } from 'blit386';
-// ---cut---
-if (BT.isDevMode) {
-  console.log('dev build - verbose logging enabled');
+import { BT, type IBTDemo } from 'blit386';
+
+class Demo implements IBTDemo {
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {
+    if (BT.isDevMode) {
+      console.log('dev build – verbose logging enabled');
+    }
+  }
+
+  render(): void {}
 }
 ```
 

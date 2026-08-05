@@ -90,7 +90,7 @@ game, `false` once you `npm run build` it. Use it to gate things you only want w
 ```js
 update() {
     if (BT.isDevMode) {
-        console.log('dev build - extra logging on');
+        console.log('dev build – extra logging on');
     }
 }
 ```
