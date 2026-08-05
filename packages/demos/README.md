@@ -106,6 +106,8 @@ to these URLs via `VINTAGE_URLS`.
   Flurry)
 - [palette-cycling](https://demos.blit386.dev/palette-cycling) – Classic retro color rotation using palette cycling
 - [palette-fade](https://demos.blit386.dev/palette-fade) – Smooth color transitions and flash effects with palette fade
+- [palette-exposure-fade](https://demos.blit386.dev/palette-exposure-fade) – Side by side: the plain fade against the
+  camera-style exposure fade, on one palette
 
 ### Putting It All Together
 
