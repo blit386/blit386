@@ -3,8 +3,8 @@
 Games need surprise: which enemy appears, where the coin lands, how the ground is shaped. BLIT386 gives you two tools
 for that, and picking the right one saves a lot of trouble.
 
-- `BT.random` – a generator you ask for the next value. Ask twice, get two different answers. Use it for dice rolls,
-  picks, and shuffles.
+- `BT.random` – a getter that returns a shared generator. Reading `BT.random` alone does nothing; call a method on it
+  (`BT.random.int()`, `BT.random.float()`, ...) to draw the next value. Use it for dice rolls, picks, and shuffles.
 - Noise and hashing – lookups by coordinate. Ask about the same spot twice, get the same answer twice. Use them for
   terrain, caves, and anything the player can walk away from and come back to.
 

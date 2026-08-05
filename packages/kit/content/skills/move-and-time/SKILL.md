@@ -86,7 +86,7 @@ plain numbers and on `Vector2i`, `Color32`, and `Rect2i`, rounding integer types
 ```js
 import { interpolate, Vector2i } from 'blit386';
 
-const t = (BT.ticks % 90) / 90; // 0..1
+const t = (BT.ticks % 90) / 89; // 0..1, reaching 1 on the last frame of the cycle
 this.pos = interpolate('bounce-out', new Vector2i(20, 20), new Vector2i(200, 180), t);
 ```
 

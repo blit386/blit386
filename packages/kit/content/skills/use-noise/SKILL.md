@@ -18,9 +18,9 @@ identical every time the player walks back.
 Use for terrain height, cave layouts, clouds, water, procedural textures, tile variation, or scattering trees and rocks
 across a world larger than memory.
 
-This is the opposite tool to the `use-random` skill. `BT.random` gives you the _next_ value in a sequence, so calling it
-twice gives two different answers. Noise and hashing are _stateless lookups_ by coordinate – ask for tile `(12, -3)` a
-thousand times and you get the same answer a thousand times.
+This is the opposite tool to the `use-random` skill. `BT.random` is a getter for a shared generator – calling a method
+on it (`BT.random.int()`, ...) draws the _next_ value in a sequence. Noise and hashing are _stateless lookups_ by
+coordinate – ask for tile `(12, -3)` a thousand times and you get the same answer a thousand times.
 
 (Not to be confused with the `Noise` post-process effect from the `add-crt-effect` skill – that one is a fullscreen
 grain filter on the GPU, nothing to do with world generation.)
