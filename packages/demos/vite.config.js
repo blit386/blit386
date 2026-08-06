@@ -80,6 +80,9 @@ function demoRedirectsPlugin() {
             ];
 
             if (firstVisible) {
+                // A 200 rewrite names the asset, so this one keeps `.html`. Pages then applies
+                // its own clean-URL handling on top and 308s `/` to `/basics`, which is where
+                // the visitor should land anyway.
                 lines.push('# Serve the first nav-visible demo as the site index.');
                 lines.push(`/ /${firstVisible.slug}.html 200`);
                 lines.push('');
@@ -92,8 +95,10 @@ function demoRedirectsPlugin() {
                     continue;
                 }
 
+                // Both forms target the extensionless slug. Pages 308s /<slug>.html to /<slug>
+                // anyway, so a `.html` target here would only chain a second hop.
                 lines.push(`/${vintageSlug} /${currentSlug} 301`);
-                lines.push(`/${vintageSlug}.html /${currentSlug}.html 301`);
+                lines.push(`/${vintageSlug}.html /${currentSlug} 301`);
             }
 
             writeFileSync(join(distDir, '_redirects'), `${lines.join('\n')}\n`);

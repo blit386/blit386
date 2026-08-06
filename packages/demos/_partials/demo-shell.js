@@ -76,10 +76,17 @@ function findCurrentIndex(demos) {
 // "javascript:" or other unexpected URL scheme.
 const SLUG_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
+// Stamped into <body> by plugins/virtual-demos.js: '.html' in dev, where the Vite
+// middleware routes only /demos/<slug>.html, and empty in the production build, where
+// Cloudflare Pages serves dist/<slug>.html at the extensionless /<slug>. Nullish (not
+// truthy) fallback: an empty attribute is a real "no suffix", only an absent one falls
+// back to the dev form.
+const PAGE_SUFFIX = document.body.dataset.pageSuffix ?? '.html';
+
 /**
  * Build a same-directory link to another demo page. The directory is derived from
  * the current page's own pathname, so this resolves correctly under both dev
- * (/demos/<slug>.html) and the flattened production build (/<slug>.html).
+ * (/demos/<slug>.html) and the flattened production build (/<slug>).
  * @param {string} slug - Demo slug, e.g. "basics"
  * @returns {string}
  */
@@ -90,7 +97,7 @@ function urlFor(slug) {
 
     const dir = location.pathname.slice(0, location.pathname.lastIndexOf('/') + 1);
 
-    return `${dir + slug}.html`;
+    return `${dir + slug}${PAGE_SUFFIX}`;
 }
 
 /**
@@ -968,7 +975,7 @@ function renderShell() {
     syncArrowDisabled(demos, currentIndex);
 
     // Initial iframe src: this demo with source (dev: /demos/<slug>.html?embed&source,
-    // prod: /<slug>.html?embed&source). Same relative-path derivation as urlFor().
+    // prod: /<slug>?embed&source). Same relative-path derivation as urlFor().
     if (initialSlug) {
         frame.src = embedUrlFor(initialSlug);
     }

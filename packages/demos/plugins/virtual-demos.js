@@ -139,10 +139,14 @@ export function virtualDemos() {
 </script>`
             : '';
 
+        // `pageSuffix` is what the shell appends when it builds navigation targets: dev serves
+        // only /demos/<slug>.html (see URL_PATTERN), while the production build flattens pages
+        // to dist/<slug>.html, which Cloudflare Pages serves at the extensionless /<slug>.
         return layoutTemplate
             .replaceAll('{{title}}', escapeHtml(entry.title))
             .replaceAll('{{scriptFile}}', entry.scriptFile)
             .replaceAll('{{slug}}', entry.slug)
+            .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
             .replace('{{demoList}}', () => demoListJson)
             .replace('{{sourceHtml}}', () => sourceHtml)
             .replace('{{sourcePanelScript}}', () => sourcePanelScript)
