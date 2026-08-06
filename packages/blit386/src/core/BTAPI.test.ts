@@ -29,6 +29,7 @@ import { AssetLoader } from '../assets/AssetLoader';
 import { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
 import { Palette } from '../assets/Palette';
+import { PaletteEffectManager } from '../assets/PaletteEffect';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import { AudioManager } from '../audio/AudioManager';
 import { INVALID_SOUND_REF } from '../audio/VoicePool';
@@ -44,6 +45,9 @@ import {
     PALETTE_SWATCH_GAP_PX,
 } from '../overlay/palette/PaletteView';
 import type { Effect } from '../render/effects/Effect';
+import { HANDOFF_FADE_MS } from '../splash';
+import { RAMP_PALETTE_SIZE } from '../splash/constants';
+import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { BTAPI } from './BTAPI';
@@ -2828,5 +2832,168 @@ describe('BTAPI.paletteFadeExposure', () => {
         BTAPI.instance.setPalette(new Palette(16));
 
         expect(() => BTAPI.instance.paletteFadeExposure(new Palette(16), NaN)).toThrow(/paletteFadeExposure/);
+    });
+});
+
+describe('BTAPI splash palette capture', () => {
+    let now = 0;
+
+    /**
+     * Replaces the private effect manager with one on a fake clock, and installs
+     * a palette as if the splash owned it.
+     *
+     * @param splashPalette - Palette standing in for the splash's own ramp.
+     */
+    function armWithSplashPalette(splashPalette: Palette): void {
+        now = 0;
+
+        (BTAPI.instance as unknown as { paletteEffects: PaletteEffectManager }).paletteEffects =
+            new PaletteEffectManager(() => now);
+        (BTAPI.instance as unknown as { palette: Palette | null }).palette = splashPalette;
+
+        BTAPI.instance.beginPaletteCapture();
+    }
+
+    /**
+     * Reads the palette the renderer would resolve indices through.
+     *
+     * @returns The engine's active palette, bypassing the capture indirection.
+     */
+    function renderPalette(): Palette | null {
+        return (BTAPI.instance as unknown as { palette: Palette | null }).palette;
+    }
+
+    /**
+     * Reads the private effect manager's active count.
+     *
+     * @returns Number of palette effects currently registered.
+     */
+    function activeEffectCount(): number {
+        return (BTAPI.instance as unknown as { paletteEffects: { activeCount: number } }).paletteEffects.activeCount;
+    }
+
+    /**
+     * Runs the effect manager forward on the fake clock.
+     *
+     * The manager reports a zero delta on its first update after an idle gap, so
+     * this primes it before stepping.
+     *
+     * @param ms - Milliseconds to advance.
+     */
+    function advanceEffects(ms: number): void {
+        const manager = (BTAPI.instance as unknown as { paletteEffects: PaletteEffectManager }).paletteEffects;
+        const palette = renderPalette();
+
+        if (!palette) {
+            return;
+        }
+
+        now += 1;
+        manager.update(palette);
+
+        now += ms;
+        manager.update(palette);
+    }
+
+    afterEach(() => {
+        BTAPI.instance.paletteClearEffects();
+        (BTAPI.instance as unknown as { isCapturingPalette: boolean }).isCapturingPalette = false;
+        (BTAPI.instance as unknown as { pendingPalette: Palette | null }).pendingPalette = null;
+    });
+
+    it('defers a paletteSet made while capture is armed', () => {
+        const splashPalette = new Palette(RAMP_PALETTE_SIZE);
+
+        armWithSplashPalette(splashPalette);
+
+        const gamePalette = new Palette(16);
+        gamePalette.set(1, Color32.red);
+
+        BTAPI.instance.setPalette(gamePalette);
+
+        expect(renderPalette()).toBe(splashPalette);
+    });
+
+    it('shows the game its own palette while capture is armed', () => {
+        armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
+
+        expect(BTAPI.instance.getPalette()).toBeNull();
+
+        const gamePalette = new Palette(16);
+
+        BTAPI.instance.setPalette(gamePalette);
+
+        expect(BTAPI.instance.getPalette()).toBe(gamePalette);
+    });
+
+    it('installs the captured palette blackened at handoff', () => {
+        armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
+
+        const gamePalette = new Palette(16);
+        gamePalette.set(1, Color32.white);
+
+        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.endPaletteCapture();
+
+        const live = renderPalette();
+
+        expect(live).toBe(gamePalette);
+        expect(live?.get(1).r).toBe(0);
+    });
+
+    it('lands exactly on the captured colors once the handoff fade completes', () => {
+        armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
+
+        const gamePalette = new Palette(16);
+        gamePalette.set(1, Color32.white);
+        gamePalette.set(2, new Color32(40, 60, 80));
+
+        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.endPaletteCapture();
+
+        advanceEffects(HANDOFF_FADE_MS);
+
+        expect([gamePalette.get(1).r, gamePalette.get(1).g, gamePalette.get(1).b]).toEqual([255, 255, 255]);
+        expect([gamePalette.get(2).r, gamePalette.get(2).g, gamePalette.get(2).b]).toEqual([40, 60, 80]);
+    });
+
+    it('applies paletteSet immediately again after handoff', () => {
+        armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
+
+        BTAPI.instance.setPalette(new Palette(16));
+        BTAPI.instance.endPaletteCapture();
+
+        const later = new Palette(16);
+
+        BTAPI.instance.setPalette(later);
+
+        expect(renderPalette()).toBe(later);
+    });
+
+    it('fades the splash palette to black when the game never set one', () => {
+        const splashPalette = new Palette(RAMP_PALETTE_SIZE);
+        splashPalette.set(16, Color32.white);
+
+        armWithSplashPalette(splashPalette);
+
+        BTAPI.instance.endPaletteCapture();
+
+        advanceEffects(HANDOFF_FADE_MS);
+
+        expect(splashPalette.get(16).r).toBe(0);
+    });
+
+    it('drops palette effects started during capture', () => {
+        armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
+
+        const gamePalette = new Palette(16);
+        gamePalette.set(1, Color32.white);
+
+        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.paletteFade(new Palette(16), 1000);
+        BTAPI.instance.endPaletteCapture();
+
+        // Only the handoff fade survives.
+        expect(activeEffectCount()).toBe(1);
     });
 });

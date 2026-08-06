@@ -26,8 +26,9 @@ import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
 import { WebGPURenderer } from '../render/WebGPURenderer';
+import { createBlackened, HANDOFF_FADE_MS } from '../splash';
 import { applyCanvasLayoutStyles, DEFAULT_MAX_CANVAS_SIZE } from '../utils/CanvasLayoutStyles';
-import type { Color32 } from '../utils/Color32';
+import { Color32 } from '../utils/Color32';
 import { isDevMode } from '../utils/devMode';
 import type { EasingFunction } from '../utils/Easing';
 import * as errorMessages from '../utils/errorMessages';
@@ -123,6 +124,18 @@ export class BTAPI {
 
     /** Active engine palette used by palette-first rendering. */
     private palette: Palette | null = null;
+
+    /**
+     * Whether {@link setPalette} defers instead of applying.
+     *
+     * Armed for the splash's duration only. The splash owns the palette while it
+     * is on screen, so a game's `init()` calling `BT.paletteSet()` is captured and
+     * applied at handoff rather than resolving every color through the splash's ramp.
+     */
+    private isCapturingPalette: boolean = false;
+
+    /** Palette captured from the game's `init()`, applied at handoff. */
+    private pendingPalette: Palette | null = null;
 
     /** Registry of all sprite sheets that have been passed to drawSprite, for spritesRefresh. */
     private readonly spriteSheets: Set<SpriteSheet> = new Set();
@@ -993,7 +1006,12 @@ export class BTAPI {
      * @returns Active palette, or null if none has been set.
      */
     public getPalette(): Palette | null {
-        return this.palette;
+        // While the splash owns the palette, the game must see its own palette,
+        // not the splash's ramp - otherwise in-place slot edits and
+        // spritesRefresh() would both target the wrong object. Null until the
+        // game sets one, which matches the pre-paletteSet behavior it already
+        // expects.
+        return this.isCapturingPalette ? this.pendingPalette : this.palette;
     }
 
     /**
@@ -1032,12 +1050,67 @@ export class BTAPI {
             console.warn('[BT] Active palette structure changed. Call BT.spritesRefresh() to update loaded sprites.');
         }
 
-        // In-flight effects hold snapshots of the old palette. Drop them so they
-        // don't apply stale colors to the new palette.
-        this.paletteEffects.clear();
+        if (this.isCapturingPalette) {
+            // The splash is on screen and owns the palette. Hold this until
+            // handoff; the warning above still fires now, when the caller can
+            // act on it.
+            this.pendingPalette = palette;
 
-        this.palette = palette;
-        this.renderer?.setPalette(palette);
+            return;
+        }
+
+        this.installPalette(palette);
+    }
+
+    /**
+     * Arms palette capture for the splash's duration.
+     *
+     * From here until {@link endPaletteCapture}, {@link setPalette} defers instead
+     * of applying, and {@link getPalette} reports the deferred palette.
+     */
+    public beginPaletteCapture(): void {
+        this.isCapturingPalette = true;
+        this.pendingPalette = null;
+    }
+
+    /**
+     * Disarms capture and performs the handoff into the game's palette.
+     *
+     * Installs the captured palette blackened, then brings it up with an exposure
+     * fade so the splash fading down and the game fading up read as one continuous
+     * in-camera move rather than a cut. When the game never called
+     * `BT.paletteSet()` during `init()`, the splash's own palette is faded to black
+     * instead, so the screen is black rather than showing stale splash greys until
+     * the game sets a palette of its own.
+     *
+     * Palette effects started during capture are dropped: they hold snapshots of a
+     * palette that is about to be replaced wholesale.
+     */
+    public endPaletteCapture(): void {
+        const captured = this.pendingPalette;
+
+        this.isCapturingPalette = false;
+        this.pendingPalette = null;
+
+        if (!captured) {
+            const current = this.palette;
+
+            if (current) {
+                this.paletteEffects.clear();
+                this.paletteEffects.add(new ExposureFadeEffect(current, createBlackened(current), HANDOFF_FADE_MS));
+            }
+
+            return;
+        }
+
+        const target = captured.clone();
+
+        for (let slot = 1; slot < captured.size; slot++) {
+            captured.set(slot, Color32.black);
+        }
+
+        this.installPalette(captured);
+        this.paletteEffects.add(new ExposureFadeEffect(captured, target, HANDOFF_FADE_MS));
     }
 
     /**
@@ -1952,5 +2025,23 @@ export class BTAPI {
         if (this.palette && index >= this.palette.size) {
             throw new Error(paletteIndexOutOfRangeError(index, this.palette.size));
         }
+    }
+
+    /**
+     * Stores a palette as the active engine palette and propagates it to the renderer.
+     *
+     * The warning-free half of {@link setPalette}: the splash handoff installs an
+     * already-warned-about palette, and warning twice for one `BT.paletteSet()`
+     * call would be noise.
+     *
+     * @param palette - Palette to store as the active engine palette.
+     */
+    private installPalette(palette: Palette): void {
+        // In-flight effects hold snapshots of the old palette. Drop them so they
+        // don't apply stale colors to the new palette.
+        this.paletteEffects.clear();
+
+        this.palette = palette;
+        this.renderer?.setPalette(palette);
     }
 }
