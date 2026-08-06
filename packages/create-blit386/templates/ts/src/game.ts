@@ -10,8 +10,9 @@
 //   update() - runs about 60 times a second (we move things and check for catches here).
 //   render() - runs about 60 times a second (we draw everything here).
 //
-// Optional hooks you can add later: configure() for screen settings, onHotReload() to keep
-// score across init() edits while the Vite plugin hot-reloads (see the commented example below).
+// Optional hooks you can add later: configure() for screen settings or to turn off the BLIT386
+// splash, onHotReload() to keep score across init() edits while the Vite plugin hot-reloads
+// (see the commented examples below).
 //
 // We do not write a configure() method, so we get the default screen: 320 by 240 pixels at 60 frames per second.
 // Want to learn more? Read AGENTS.md or the docs/ folder next to this file.
@@ -155,6 +156,16 @@ class Game {
         BT.systemPrint(new Vector2i(6, 6), COLOR_TEXT, `Score ${this.score}`);
         BT.systemPrint(new Vector2i(6, 18), COLOR_TEXT, `Lives ${this.lives}`);
     }
+
+    // Optional hardware settings. Uncomment to change the screen, or to turn off the
+    // BLIT386 splash that plays when you build your game for real.
+    // Full detail: docs/basics.md
+    //
+    // configure() {
+    //     return {
+    //         isSplashEnabled: false,
+    //     };
+    // }
 
     // Optional hot-reload hook (engine 1.4.0+). The blit386() Vite plugin calls this after a
     // save that re-runs init() (or after a method-only swap). Use the snapshot to keep score
