@@ -26,7 +26,8 @@ import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
 import { WebGPURenderer } from '../render/WebGPURenderer';
-import { createBlackened, HANDOFF_FADE_MS } from '../splash';
+import type { SplashState } from '../splash';
+import { createBlackened, HANDOFF_FADE_MS, isSplashEnabled, Splash } from '../splash';
 import { applyCanvasLayoutStyles, DEFAULT_MAX_CANVAS_SIZE } from '../utils/CanvasLayoutStyles';
 import { Color32 } from '../utils/Color32';
 import { isDevMode } from '../utils/devMode';
@@ -136,6 +137,9 @@ export class BTAPI {
 
     /** Palette captured from the game's `init()`, applied at handoff. */
     private pendingPalette: Palette | null = null;
+
+    /** Active splash, or null when gating turned it off. One-shot per page load. */
+    private splash: Splash | null = null;
 
     /** Registry of all sprite sheets that have been passed to drawSprite, for spritesRefresh. */
     private readonly spriteSheets: Set<SpriteSheet> = new Set();
@@ -358,9 +362,13 @@ export class BTAPI {
         this.attachInputSubsystems(canvas);
         this.attachAudioSubsystem(canvas);
 
+        // Splash gating resolves here, before the game's init() is invoked, so
+        // init() observes 'disabled' or 'fadingIn' and never an undecided state.
+        this.splash = createSplashIfEnabled(hwSettings);
+
         console.log('[BT] Initializing demo');
 
-        if (!(await this.runDemoInit(demo))) {
+        if (!(await this.runDemoInitWithSplash(demo, hwSettings))) {
             return false;
         }
 
@@ -686,6 +694,27 @@ export class BTAPI {
      */
     public isDevMode(): boolean {
         return isDevMode();
+    }
+
+    /**
+     * Current splash lifecycle state.
+     *
+     * Reports `'disabled'` when gating turned the splash off, so no caller has to
+     * branch on the animation states to answer "is it on screen".
+     *
+     * @returns The splash's state.
+     */
+    public getSplashState(): SplashState {
+        return this.splash?.state ?? 'disabled';
+    }
+
+    /**
+     * Whether the splash is on screen.
+     *
+     * @returns `true` while the splash is fading in, holding, or fading out.
+     */
+    public isSplashVisible(): boolean {
+        return this.splash?.isVisible ?? false;
     }
 
     /**
@@ -2028,6 +2057,116 @@ export class BTAPI {
     }
 
     /**
+     * Drives the splash's own animation frames until it reaches `done`.
+     *
+     * Deliberately not the {@link GameLoop}: running the splash on a separate
+     * driver keeps the loop's fixed-timestep accumulator, its `lastUpdateTime`,
+     * and its rolling dropped-frame baseline from ever seeing splash time.
+     *
+     * The splash frame deliberately skips `beginRenderFrame()` and the overlay –
+     * the overlay would draw over the logo and resolve its HUD slots through the
+     * splash's ramp, and keeping it out is also what keeps the overlay free of
+     * splash-state branching.
+     *
+     * @param displaySize - Logical display size the splash centers its logo in.
+     * @returns Promise resolving once the splash is done.
+     */
+    private async runSplash(displaySize: Vector2i): Promise<void> {
+        const splash = this.splash;
+        const renderer = this.renderer;
+
+        if (!splash || !renderer) {
+            return;
+        }
+
+        await new Promise<void>((resolve) => {
+            const frame = (): void => {
+                splash.advance();
+
+                if (splash.state === 'done') {
+                    resolve();
+
+                    return;
+                }
+
+                renderer.beginFrame();
+                renderer.setCameraOffset(Vector2i.zero());
+                splash.draw(renderer, displaySize);
+                renderer.endFrame();
+
+                requestAnimationFrame(frame);
+            };
+
+            requestAnimationFrame(frame);
+        });
+    }
+
+    /**
+     * Consumes input state accumulated while the splash was up.
+     *
+     * The skip press must not reach the game's first frame. `endUpdate` clears the
+     * pending press and release sets and snapshots the held keys into `prevHeld`,
+     * so a key still physically down reads as held (`BT.isKeyDown`) but produces no
+     * press edge. Pointer and gamepad previous-state rollover works the same way.
+     */
+    private drainInputEdges(): void {
+        this.keyboard?.endUpdate(0);
+        this.pointer?.endFrame();
+        this.gamepad?.endFrame(0);
+    }
+
+    /**
+     * Runs the game's `init()`, behind the splash when one is playing.
+     *
+     * @param demo - Demo whose `init()` runs.
+     * @param hwSettings - Resolved hardware settings for this run.
+     * @returns Whatever the demo's `init()` resolved to.
+     */
+    private async runDemoInitWithSplash(demo: IBTDemo, hwSettings: HardwareSettings): Promise<boolean> {
+        const splash = this.splash;
+
+        if (!splash) {
+            return this.runDemoInit(demo);
+        }
+
+        return this.runDemoInitBehindSplash(demo, splash, hwSettings.displaySize);
+    }
+
+    /**
+     * Runs the game's `init()` behind the splash, then performs the handoff.
+     *
+     * The two run concurrently, so the splash doubles as a loading screen and
+     * costs close to zero perceived time.
+     *
+     * @param demo - Demo whose `init()` runs behind the splash.
+     * @param splash - The splash covering the screen.
+     * @param displaySize - Logical display size passed through to the splash.
+     * @returns Whatever the demo's `init()` resolved to.
+     */
+    private async runDemoInitBehindSplash(demo: IBTDemo, splash: Splash, displaySize: Vector2i): Promise<boolean> {
+        this.beginPaletteCapture();
+        this.renderer?.setPalette(splash.palette);
+        splash.attachSkipInput(globalThis);
+        splash.start();
+
+        // markInitSettled fires on failure too, so a failed init() cannot leave the
+        // hold running forever.
+        const initPromise = this.runDemoInit(demo).then((ok) => {
+            splash.markInitSettled();
+
+            return ok;
+        });
+
+        const [initOk] = await Promise.all([initPromise, this.runSplash(displaySize)]);
+
+        splash.detachSkipInput();
+        this.endPaletteCapture();
+        this.drainInputEdges();
+
+        return initOk;
+    }
+
+    /**
      * Stores a palette as the active engine palette and propagates it to the renderer.
      *
      * The warning-free half of {@link setPalette}: the splash handoff installs an
@@ -2044,4 +2183,21 @@ export class BTAPI {
         this.palette = palette;
         this.renderer?.setPalette(palette);
     }
+}
+
+/**
+ * Creates the splash when gating says it should play on this page load.
+ *
+ * A module-level helper rather than a method so `init()` stays within its
+ * complexity budget; it needs no instance state.
+ *
+ * @param hwSettings - Resolved hardware settings for this run.
+ * @returns A fresh splash, or `null` when gating turned it off.
+ */
+function createSplashIfEnabled(hwSettings: HardwareSettings): Splash | null {
+    if (!isSplashEnabled(hwSettings.isSplashEnabled)) {
+        return null;
+    }
+
+    return new Splash({ colorDark: hwSettings.splashColorDark, colorLight: hwSettings.splashColorLight });
 }

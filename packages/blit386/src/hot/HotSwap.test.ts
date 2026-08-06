@@ -246,7 +246,7 @@ describe('hotSwapDemo', () => {
             // No overrides: mergeHardwareSettings() treats an omitted displaySize identically
             // to an explicit `undefined` value, so this is behaviorally the same as
             // `{ displaySize: undefined }` while satisfying exactOptionalPropertyTypes.
-            configure: () => ({}),
+            configure: () => ({ isSplashEnabled: false }),
             init: vi.fn().mockResolvedValue(true),
             update: vi.fn(),
             render: vi.fn(),
@@ -294,7 +294,7 @@ describe('hotSwapDemo', () => {
             update() {}
             render() {}
             configure() {
-                return {};
+                return { isSplashEnabled: false };
             }
         }
 
@@ -314,7 +314,7 @@ describe('hotSwapDemo', () => {
                 return 'edited';
             }
             configure() {
-                return {};
+                return { isSplashEnabled: false };
             }
         }
 

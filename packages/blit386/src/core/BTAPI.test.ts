@@ -34,6 +34,7 @@ import type { SpriteSheet } from '../assets/SpriteSheet';
 import { AudioManager } from '../audio/AudioManager';
 import { INVALID_SOUND_REF } from '../audio/VoicePool';
 import { BT } from '../BLIT386';
+import { KeyboardInput } from '../input/KeyboardInput';
 import type { OverlayDrawTarget } from '../overlay';
 import { DEFAULT_IDX_TEXT, Overlay, paletteBandY } from '../overlay';
 import { AUDIO_METER_BAR_GAP_PX, AUDIO_METER_BAR_WIDTH_PX } from '../overlay/audio-meter/constants';
@@ -51,7 +52,8 @@ import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { BTAPI } from './BTAPI';
-import type { IBTDemo, OverlayRow } from './IBTDemo';
+import type { GameLoop } from './GameLoop';
+import type { HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
 import { collectUsedIndices } from './RenderPaletteUsage';
 
 function resetSingleton(): void {
@@ -64,6 +66,10 @@ function resetSingleton(): void {
 function makeMockDemo(targetFPS = 60, initResult = true, audioVoices?: number): IBTDemo {
     return {
         configure: vi.fn().mockReturnValue({
+            // These tests stub requestAnimationFrame with a no-op, so the splash's own
+            // frame driver would never reach 'done' and init() would never resolve.
+            // Splash behavior has its own suite below.
+            isSplashEnabled: false,
             displaySize: new Vector2i(320, 240),
             drawingBufferSize: new Vector2i(640, 480),
             targetFPS,
@@ -643,6 +649,7 @@ describe('BTAPI', () => {
         it('rejects invalid displaySize before layout or renderer setup', async () => {
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: { x: 0, y: 240 } as Vector2i,
                     targetFPS: 60,
                 }),
@@ -667,6 +674,7 @@ describe('BTAPI', () => {
         it('rejects invalid software drawingBufferSize before software renderer allocation', async () => {
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: { x: 8193, y: 480 } as Vector2i,
                     targetFPS: 60,
@@ -691,6 +699,7 @@ describe('BTAPI', () => {
         it('rejects invalid maxCanvasSize before layout or renderer setup', async () => {
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     maxCanvasSize: { x: Number.NaN, y: 720 } as Vector2i,
                     targetFPS: 60,
@@ -732,6 +741,7 @@ describe('BTAPI', () => {
             });
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(2048, 1024),
                     targetFPS: 60,
                     backend: 'webgpu',
@@ -770,6 +780,7 @@ describe('BTAPI', () => {
             });
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(2048, 1024),
                     targetFPS: 60,
@@ -812,6 +823,7 @@ describe('BTAPI', () => {
             });
             const demo: IBTDemo = {
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(1024, 768),
                     targetFPS: 60,
@@ -862,6 +874,7 @@ describe('BTAPI', () => {
             );
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
                     targetFPS: 60,
@@ -899,6 +912,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
                     targetFPS: 60,
@@ -925,6 +939,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
                     targetFPS: 60,
@@ -1010,7 +1025,7 @@ describe('BTAPI', () => {
 
         it('should merge partial configure with defaultConfig', async () => {
             const demo: IBTDemo = {
-                configure: () => ({ targetFPS: 30 }),
+                configure: () => ({ isSplashEnabled: false, targetFPS: 30 }),
                 init: vi.fn().mockResolvedValue(true),
                 update: vi.fn(),
                 render: vi.fn(),
@@ -1035,6 +1050,10 @@ describe('BTAPI', () => {
                 render: vi.fn(),
             };
 
+            // This demo has no configure() to opt out of the splash with, so gate it
+            // off the way a development build does. Splash behavior has its own suite.
+            globalThis.__BLIT386_DEV__ = true;
+
             const result = await BTAPI.instance.init(demo, makeMockCanvas());
 
             expect(result).toBe(true);
@@ -1048,6 +1067,8 @@ describe('BTAPI', () => {
             expect(hw?.drawingBufferSize?.y).toBe(480);
             expect(hw?.outputUpscaleFilter).toBe('nearest');
             expect(hw?.targetFPS).toBe(60);
+
+            Reflect.deleteProperty(globalThis, '__BLIT386_DEV__');
         });
 
         it('stop detaches pointer and keyboard input so subsequent accessors return null', async () => {
@@ -1099,6 +1120,7 @@ describe('BTAPI', () => {
             const demo: IBTDemo = {
                 ...makeMockDemo(),
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
                     targetFPS: 60,
@@ -1268,6 +1290,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
                     targetFPS: 60,
@@ -1310,6 +1333,7 @@ describe('BTAPI', () => {
             );
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     // No backend field - defaults to 'webgpu', should auto-fallback
@@ -1361,6 +1385,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     backend: 'webgpu',
@@ -1394,6 +1419,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                 }),
@@ -1451,6 +1477,7 @@ describe('BTAPI', () => {
             return {
                 ...makeMockDemo(),
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
                     targetFPS: 60,
@@ -1565,6 +1592,7 @@ describe('BTAPI', () => {
             const demo: IBTDemo = {
                 ...makeMockDemo(),
                 configure: vi.fn().mockReturnValue({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     drawingBufferSize: new Vector2i(640, 480),
                     targetFPS: 60,
@@ -1648,6 +1676,7 @@ describe('BTAPI', () => {
             const assignSpy = vi.spyOn(Overlay.prototype, 'assignTag');
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayTimingChartEnabled: true,
@@ -1668,6 +1697,7 @@ describe('BTAPI', () => {
             const assignSpy = vi.spyOn(TimingChart.prototype, 'assignTag');
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayTimingChartEnabled: false,
@@ -1742,6 +1772,7 @@ describe('BTAPI', () => {
             );
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayTimingChartEnabled: true,
@@ -1763,6 +1794,7 @@ describe('BTAPI', () => {
             );
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayTimingChartEnabled: false,
@@ -1785,6 +1817,7 @@ describe('BTAPI', () => {
             );
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayTimingChartEnabled: false,
@@ -1815,6 +1848,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayTimingChartEnabled: true,
@@ -1842,6 +1876,7 @@ describe('BTAPI', () => {
             const meteringSpy = vi.spyOn(AudioManager.prototype, 'enableBusMetering');
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayAudioMetersEnabled: true,
@@ -1868,6 +1903,7 @@ describe('BTAPI', () => {
             const meteringSpy = vi.spyOn(AudioManager.prototype, 'enableBusMetering');
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayEnabled: false,
@@ -1938,6 +1974,7 @@ describe('BTAPI', () => {
         it('passes an audio snapshot into updateAndRender when isOverlayAudioMetersEnabled is enabled', async () => {
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayAudioMetersEnabled: true,
@@ -1968,6 +2005,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayAudioMetersEnabled: true,
@@ -2084,6 +2122,7 @@ describe('BTAPI', () => {
         it('draws audio meter bars when isOverlayAudioMetersEnabled and the overlay body are enabled', async () => {
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayAudioMetersEnabled: true,
@@ -2103,6 +2142,7 @@ describe('BTAPI', () => {
         it('does not draw audio meter bars when isOverlayAudioMetersEnabled is disabled', async () => {
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayVisibleAtStart: true,
@@ -2146,6 +2186,7 @@ describe('BTAPI', () => {
             const mockFont = { getSpriteSheet: () => mockSheet } as unknown as BitmapFont;
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: false,
@@ -2174,6 +2215,7 @@ describe('BTAPI', () => {
             } as unknown as BitmapFont;
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: true,
@@ -2199,6 +2241,7 @@ describe('BTAPI', () => {
             const mockSheet = makeIndexizedSpriteSheet(markSpy);
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: true,
@@ -2227,6 +2270,7 @@ describe('BTAPI', () => {
             const mockSheet = makeIndexizedSpriteSheet(markSpy);
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: true,
@@ -2267,6 +2311,7 @@ describe('BTAPI', () => {
             const usedSlots = [5, 6] as const;
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: true,
@@ -2377,6 +2422,7 @@ describe('BTAPI', () => {
             const glyphScanSpy = vi.fn();
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: true,
@@ -2421,6 +2467,7 @@ describe('BTAPI', () => {
             } as unknown as BitmapFont;
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: true,
@@ -2483,6 +2530,7 @@ describe('BTAPI', () => {
 
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayPaletteEnabled: true,
@@ -2525,6 +2573,7 @@ describe('BTAPI', () => {
             const canvas = makeMockCanvas();
             const demo: IBTDemo = {
                 configure: () => ({
+                    isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
                     isOverlayVisibleAtStart: false,
@@ -2995,5 +3044,186 @@ describe('BTAPI splash palette capture', () => {
 
         // Only the handoff fade survives.
         expect(activeEffectCount()).toBe(1);
+    });
+});
+
+describe('BTAPI splash lifecycle in init', () => {
+    /**
+     * Builds a demo whose `configure()` returns `settings` and whose `init()` runs
+     * `initBody` before resolving.
+     *
+     * @param settings - Extra hardware settings merged over the display defaults.
+     * @param initBody - Optional body run inside `init()`.
+     * @param initResult - Value `init()` resolves to.
+     * @returns A demo suitable for `BTAPI.init`.
+     */
+    function makeSplashDemo(
+        settings: Partial<HardwareSettings>,
+        initBody?: () => void | Promise<void>,
+        initResult = true,
+    ): IBTDemo {
+        return {
+            configure: vi.fn().mockReturnValue({
+                displaySize: new Vector2i(320, 240),
+                drawingBufferSize: new Vector2i(640, 480),
+                targetFPS: 60,
+                ...settings,
+            }),
+            init: vi.fn(async () => {
+                await initBody?.();
+
+                return initResult;
+            }),
+            update: vi.fn(),
+            render: vi.fn(),
+        };
+    }
+
+    /**
+     * Stubs `requestAnimationFrame` and `performance.now` with a fake frame clock,
+     * so the splash's own driver runs to completion without sleeping in real time.
+     *
+     * @param stepMs - Milliseconds each frame advances the clock.
+     */
+    function driveAnimationFrames(stepMs = 16): void {
+        let clock = 0;
+
+        vi.spyOn(performance, 'now').mockImplementation(() => clock);
+        vi.stubGlobal(
+            'requestAnimationFrame',
+            vi.fn((callback: FrameRequestCallback) => {
+                setTimeout(() => {
+                    clock += stepMs;
+                    callback(clock);
+                }, 0);
+
+                return 1;
+            }),
+        );
+    }
+
+    /**
+     * Reads the palette the renderer would resolve indices through.
+     *
+     * @returns The engine's active palette.
+     */
+    function renderPalette(): Palette | null {
+        return (BTAPI.instance as unknown as { palette: Palette | null }).palette;
+    }
+
+    beforeEach(() => {
+        resetSingleton();
+
+        vi.resetAllMocks();
+        installMockNavigatorGPU();
+        driveAnimationFrames();
+    });
+
+    afterEach(() => {
+        // These tests give requestAnimationFrame a real implementation, so unlike the
+        // rest of the suite the game loop actually runs. Stop it before the stub goes
+        // away, or its next queued frame throws into an unrelated test.
+        (BTAPI.instance as unknown as { loop: GameLoop | null }).loop?.stop();
+
+        resetSingleton();
+
+        uninstallMockNavigatorGPU();
+
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
+    it('reports disabled when gating turns the splash off', async () => {
+        await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: false }), makeMockCanvas());
+
+        expect(BTAPI.instance.getSplashState()).toBe('disabled');
+        expect(BTAPI.instance.isSplashVisible()).toBe(false);
+    });
+
+    it('lets the game observe fadingIn from its own init()', async () => {
+        let observed: string | null = null;
+
+        await BTAPI.instance.init(
+            makeSplashDemo({ isSplashEnabled: true }, () => {
+                observed = BTAPI.instance.getSplashState();
+            }),
+            makeMockCanvas(),
+        );
+
+        expect(observed).toBe('fadingIn');
+    });
+
+    it('reports done once init() returns', async () => {
+        await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+        expect(BTAPI.instance.getSplashState()).toBe('done');
+        expect(BTAPI.instance.isSplashVisible()).toBe(false);
+    });
+
+    it('does not start the game loop until the splash is done', async () => {
+        let loopExistedDuringInit = true;
+
+        await BTAPI.instance.init(
+            makeSplashDemo({ isSplashEnabled: true }, () => {
+                loopExistedDuringInit = BTAPI.instance.isInitialized();
+            }),
+            makeMockCanvas(),
+        );
+
+        expect(loopExistedDuringInit).toBe(false);
+    });
+
+    it('extends the hold until a slow init() resolves', async () => {
+        let initFinishedAt = -1;
+
+        await BTAPI.instance.init(
+            makeSplashDemo({ isSplashEnabled: true }, async () => {
+                await new Promise((resolve) => {
+                    setTimeout(resolve, 50);
+                });
+
+                initFinishedAt = performance.now();
+            }),
+            makeMockCanvas(),
+        );
+
+        expect(BTAPI.instance.getSplashState()).toBe('done');
+        expect(initFinishedAt).toBeGreaterThan(0);
+    });
+
+    it('reaches done even when init() fails', async () => {
+        const ok = await BTAPI.instance.init(
+            makeSplashDemo({ isSplashEnabled: true }, undefined, false),
+            makeMockCanvas(),
+        );
+
+        expect(ok).toBe(false);
+        expect(BTAPI.instance.getSplashState()).toBe('done');
+    });
+
+    it('keeps the splash done and applies paletteSet immediately across a hot re-init', async () => {
+        await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+        const replacement = new Palette(16);
+        const swapped = await BTAPI.instance.hotReplaceDemo(
+            makeSplashDemo({}, () => {
+                BTAPI.instance.setPalette(replacement);
+            }),
+        );
+
+        expect(swapped).toBe(true);
+        expect(BTAPI.instance.getSplashState()).toBe('done');
+        expect(renderPalette()).toBe(replacement);
+    });
+
+    it('drains input edges at handoff so the skip press never reaches the first update', async () => {
+        const endUpdate = vi.spyOn(KeyboardInput.prototype, 'endUpdate');
+
+        // The skip listeners themselves are covered in Splash.dom.test.ts; this asserts
+        // the other half of the swallow - that BTAPI consumes the pending edges before
+        // the game's first update() can observe them.
+        await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+        expect(endUpdate).toHaveBeenCalled();
     });
 });

@@ -229,6 +229,13 @@ export class Splash {
     public attachSkipInput(target: EventTarget): void {
         this.detachSkipInput();
 
+        // Not every host is an event target. The engine's own unit tests run in node,
+        // where `globalThis` has no `addEventListener`, and the splash still has to
+        // run to completion there rather than throwing out of `BTAPI.init()`.
+        if (typeof target?.addEventListener !== 'function') {
+            return;
+        }
+
         this.skipTarget = target;
 
         target.addEventListener('keydown', this.onSkipEvent, { capture: true });
