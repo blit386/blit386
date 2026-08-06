@@ -175,3 +175,67 @@ describe('Splash state machine', () => {
         expect(splash.palette.size).toBe(RAMP_PALETTE_SIZE);
     });
 });
+
+describe('Splash dissolve', () => {
+    it('adds no effect until the dissolve is enabled', () => {
+        const splash = new Splash({}, () => 0);
+
+        expect(splash.dissolveEffect).toBeNull();
+    });
+
+    it('exposes a glitch effect once enabled', () => {
+        const splash = new Splash({}, () => 0);
+
+        splash.enableDissolve();
+
+        expect(splash.dissolveEffect).not.toBeNull();
+    });
+
+    it('drives intensity up during fadingIn and down to zero in shown', () => {
+        let now = 0;
+        const splash = new Splash({}, () => now);
+
+        splash.enableDissolve();
+        splash.start();
+
+        now += Math.floor(FADE_IN_MS / 2);
+        splash.advance();
+
+        const midFade = splash.dissolveEffect?.intensity ?? 0;
+
+        expect(midFade).toBeGreaterThan(0);
+
+        now += FADE_IN_MS;
+        splash.advance();
+
+        expect(splash.dissolveEffect?.intensity).toBe(0);
+    });
+
+    it('drives intensity back up during fadingOut', () => {
+        let now = 0;
+        const splash = new Splash({}, () => now);
+
+        splash.enableDissolve();
+        splash.start();
+        splash.markInitSettled();
+
+        now += FADE_IN_MS + HOLD_MIN_MS;
+        splash.advance();
+
+        now += Math.floor(FADE_OUT_MS / 2);
+        splash.advance();
+
+        expect(splash.dissolveEffect?.intensity).toBeGreaterThan(0);
+    });
+
+    it('leaves intensity at zero when the dissolve was never enabled', () => {
+        let now = 0;
+        const splash = new Splash({}, () => now);
+
+        splash.start();
+        now += Math.floor(FADE_IN_MS / 2);
+
+        expect(() => splash.advance()).not.toThrow();
+        expect(splash.dissolveEffect).toBeNull();
+    });
+});

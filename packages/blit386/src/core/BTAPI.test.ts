@@ -3216,6 +3216,30 @@ describe('BTAPI splash lifecycle in init', () => {
         expect(renderPalette()).toBe(replacement);
     });
 
+    it('runs the splash on the software backend with no dissolve and no thrown error', async () => {
+        uninstallMockNavigatorGPU();
+        vi.stubGlobal(
+            'OffscreenCanvas',
+            class MockOffscreenCanvas {
+                constructor(
+                    public width: number,
+                    public height: number,
+                ) {}
+                getContext(contextType?: string): OffscreenCanvas2DMock | null {
+                    return contextType === '2d' ? makeOffscreenCanvas2dContext() : null;
+                }
+            },
+        );
+
+        // The dissolve is pixel-tier post-process, which the Canvas 2D renderer throws
+        // on. Software must get the palette fades alone rather than an exception.
+        const ok = await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMock2DCanvas());
+
+        expect(ok).toBe(true);
+        expect(BTAPI.instance.getActiveBackend()).toBe('software');
+        expect(BTAPI.instance.getSplashState()).toBe('done');
+    });
+
     it('drains input edges at handoff so the skip press never reaches the first update', async () => {
         const endUpdate = vi.spyOn(KeyboardInput.prototype, 'endUpdate');
 

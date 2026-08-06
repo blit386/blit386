@@ -101,6 +101,7 @@
     "convert-font": "node scripts/convert-bmfont.mjs",
     "system-font:export": "node scripts/export-system-font.mjs",
     "system-font:convert": "node scripts/convert-system-font.mjs",
+    "splash-logo:convert": "node scripts/convert-splash-logo.mjs",
     "prepublishOnly": "pnpm run build",
     "prepare": "husky",
     "security:audit": "pnpm audit --audit-level=moderate",

@@ -17,10 +17,18 @@
 import type { Palette } from '../assets/Palette';
 import { ExposureFadeEffect, PaletteEffectManager } from '../assets/PaletteEffect';
 import { SpriteSheet } from '../assets/SpriteSheet';
+import { PixelGlitch } from '../render/effects/pixel/PixelGlitch';
 import type { IRenderer } from '../render/IRenderer';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
-import { FADE_IN_MS, FADE_OUT_MS, HOLD_MIN_MS, RAMP_FIRST_SLOT } from './constants';
+import {
+    FADE_IN_MS,
+    FADE_OUT_MS,
+    GLITCH_BAND_HEIGHT,
+    GLITCH_MAX_INTENSITY,
+    HOLD_MIN_MS,
+    RAMP_FIRST_SLOT,
+} from './constants';
 import { LOGO_HEIGHT, LOGO_PIXELS, LOGO_WIDTH } from './logoData';
 import { createBlackened, createRamp } from './ramp';
 import type { SplashOptions, SplashState } from './types';
@@ -67,6 +75,9 @@ export class Splash {
 
     /** Clock function returning milliseconds. */
     private readonly timeProvider: () => number;
+
+    /** WebGPU-only dissolve effect, or null on the software backend. */
+    private glitch: PixelGlitch | null = null;
 
     /** Event target the skip listeners are attached to, or null when detached. */
     private skipTarget: EventTarget | null = null;
@@ -135,6 +146,19 @@ export class Splash {
     }
 
     /**
+     * The dissolve effect, when one is running.
+     *
+     * Exposed so the caller can register and, critically, *unregister it by exact
+     * reference* – the game's `init()` runs concurrently and may have added effects
+     * of its own, so clearing the chain is never correct here.
+     *
+     * @returns The glitch effect, or null on the software backend.
+     */
+    get dissolveEffect(): PixelGlitch | null {
+        return this.glitch;
+    }
+
+    /**
      * Begins the splash, entering `fadingIn` and starting the fade up from black.
      *
      * Calling this more than once is a no-op, so a re-entrant caller cannot
@@ -147,6 +171,19 @@ export class Splash {
 
         this.enter('fadingIn', this.timeProvider());
         this.effects.add(new ExposureFadeEffect(this.live, this.ramp, FADE_IN_MS));
+    }
+
+    /**
+     * Turns on the pixelated dissolve.
+     *
+     * Called only when the active backend is WebGPU: the effect is pixel-tier and
+     * the Canvas 2D software renderer throws on post-process. Software gets the
+     * palette fades alone, which is the accepted lower-fidelity floor.
+     */
+    public enableDissolve(): void {
+        this.glitch = new PixelGlitch();
+        this.glitch.bandHeight = GLITCH_BAND_HEIGHT;
+        this.glitch.intensity = 0;
     }
 
     /**
@@ -167,6 +204,10 @@ export class Splash {
         while (this.transition()) {
             // Keep going while boundaries remain crossed in this frame.
         }
+
+        // After the transitions settle, so intensity reflects the state actually
+        // being drawn this frame rather than the one entered on the way here.
+        this.updateDissolve(this.timeProvider() - this.stateEnteredAt);
     }
 
     /**
@@ -328,6 +369,43 @@ export class Splash {
         this.effects.add(new ExposureFadeEffect(this.live, createBlackened(this.live), FADE_OUT_MS));
 
         return true;
+    }
+
+    /**
+     * Drives dissolve intensity from the current state's progress.
+     *
+     * Peaks at the start of the fade-in and the end of the fade-out, and sits at
+     * zero through the hold, so the logo is clean while it is being read.
+     *
+     * @param elapsed - Milliseconds since the current state was entered.
+     */
+    private updateDissolve(elapsed: number): void {
+        const glitch = this.glitch;
+
+        if (!glitch) {
+            return;
+        }
+
+        // Vary the band noise per frame so consecutive frames do not shear identically.
+        glitch.seed = elapsed;
+
+        if (this.currentState === 'fadingIn') {
+            const t = Math.min(1, elapsed / FADE_IN_MS);
+
+            glitch.intensity = GLITCH_MAX_INTENSITY * (1 - t);
+
+            return;
+        }
+
+        if (this.currentState === 'fadingOut') {
+            const t = Math.min(1, elapsed / FADE_OUT_MS);
+
+            glitch.intensity = GLITCH_MAX_INTENSITY * t;
+
+            return;
+        }
+
+        glitch.intensity = 0;
     }
 
     /**

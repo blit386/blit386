@@ -47,3 +47,9 @@ export const FADE_OUT_MS = 400;
  * read as one continuous in-camera move rather than two separate fades.
  */
 export const HANDOFF_FADE_MS = FADE_OUT_MS;
+
+/** Peak band-displacement intensity of the WebGPU-only dissolve. */
+export const GLITCH_MAX_INTENSITY = 0.6;
+
+/** Band height in logical pixels for the WebGPU-only dissolve. */
+export const GLITCH_BAND_HEIGHT = 3;

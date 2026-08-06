@@ -2149,6 +2149,18 @@ export class BTAPI {
         splash.attachSkipInput(globalThis);
         splash.start();
 
+        // Gate on activeBackend, not requestedBackend: this is a runtime feature
+        // gate, and the software renderer throws on post-process.
+        if (this.activeBackend === 'webgpu') {
+            splash.enableDissolve();
+
+            const dissolve = splash.dissolveEffect;
+
+            if (dissolve) {
+                this.effectAdd(dissolve);
+            }
+        }
+
         // markInitSettled fires on failure too, so a failed init() cannot leave the
         // hold running forever.
         const initPromise = this.runDemoInit(demo).then((ok) => {
@@ -2160,6 +2172,15 @@ export class BTAPI {
         const [initOk] = await Promise.all([initPromise, this.runSplash(displaySize)]);
 
         splash.detachSkipInput();
+
+        const dissolve = splash.dissolveEffect;
+
+        if (dissolve) {
+            // By exact reference, never effectClear(): the game's init() ran
+            // concurrently and may have registered effects of its own.
+            this.effectRemove(dissolve);
+        }
+
         this.endPaletteCapture();
         this.drainInputEdges();
 

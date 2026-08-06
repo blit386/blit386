@@ -12,10 +12,13 @@
  * RAMP_LAST_SLOT is the light end.
  *
  * Usage:
- *   node scripts/convert-splash-logo.mjs [input-path]
+ *   pnpm run splash-logo:convert [input-path]
  *
  * Default input: assets/splash-logo.png
  * Output: src/splash/logoData.ts (always overwritten)
+ *
+ * The generated file is one row per line; run `pnpm run format` afterwards to
+ * reflow it the way the committed copy is formatted.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
