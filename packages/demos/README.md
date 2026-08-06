@@ -183,6 +183,10 @@ phone without a keyboard.
 
 ## Browser and Renderer
 
+The BLIT386 splash plays on [demos.blit386.dev](https://demos.blit386.dev) and in any local production build
+(`pnpm run build && pnpm run preview`), because those read as release builds. It does not play under `pnpm run dev`,
+where the `blit386()` Vite plugin marks the build as development. Add `?nosplash` to any demo URL to skip it.
+
 BLIT386 uses two backends (WebGPU and Canvas 2D software). The default path is WebGPU (indexed framebuffer, full
 post-process chain, CRT presets, and related demos). If WebGPU is unavailable or fails to initialize, the engine
 automatically switches to a Canvas 2D software renderer. There is no on-canvas banner for this: the engine logs

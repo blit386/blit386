@@ -31,6 +31,8 @@ These are read-only values; access them as properties, not function calls.
   `skills/use-random/`
 - Build mode: `BT.isDevMode` (engine 1.5.0+) – gate debug HUDs, cheat keys, and verbose logging; see
   `skills/use-dev-mode/`
+- Splash: `BT.isSplashVisible` (engine 1.5.0+) – true while the BLIT386 splash covers the screen; `BT.splashState` for
+  the raw lifecycle state
 
 ```js
 const w = BT.displaySize.x; // correct

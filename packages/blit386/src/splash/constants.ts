@@ -36,17 +36,26 @@ export const FADE_IN_MS = 250;
  */
 export const HOLD_MIN_MS = 900;
 
+/**
+ * The one duration behind both halves of the handoff.
+ *
+ * The splash fading down and the game's palette fading up have to match, or the
+ * two read as separate fades instead of one continuous in-camera move. Kept
+ * module-local and re-exported under two names so each side reads clearly at its
+ * own call site while there is still only one number to change.
+ */
+const HANDOFF_MS = 400;
+
 /** Fade-out duration in milliseconds. */
-export const FADE_OUT_MS = 400;
+export const FADE_OUT_MS = HANDOFF_MS;
 
 /**
  * Duration of the exposure fade that brings the game's captured palette up at
  * handoff, in milliseconds.
  *
- * Matches {@link FADE_OUT_MS} so the splash fading down and the game fading up
- * read as one continuous in-camera move rather than two separate fades.
+ * Always equal to {@link FADE_OUT_MS}; both derive from the same value.
  */
-export const HANDOFF_FADE_MS = FADE_OUT_MS;
+export const HANDOFF_FADE_MS = HANDOFF_MS;
 
 /** Peak band-displacement intensity of the WebGPU-only dissolve. */
 export const GLITCH_MAX_INTENSITY = 0.6;

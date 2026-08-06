@@ -3048,6 +3048,9 @@ describe('BTAPI splash palette capture', () => {
 });
 
 describe('BTAPI splash lifecycle in init', () => {
+    /** Timer handles for frames scheduled by the fake requestAnimationFrame. */
+    const pendingFrames: ReturnType<typeof setTimeout>[] = [];
+
     /**
      * Builds a demo whose `configure()` returns `settings` and whose `init()` runs
      * `initBody` before resolving.
@@ -3092,12 +3095,14 @@ describe('BTAPI splash lifecycle in init', () => {
         vi.stubGlobal(
             'requestAnimationFrame',
             vi.fn((callback: FrameRequestCallback) => {
-                setTimeout(() => {
-                    clock += stepMs;
-                    callback(clock);
-                }, 0);
+                pendingFrames.push(
+                    setTimeout(() => {
+                        clock += stepMs;
+                        callback(clock);
+                    }, 0),
+                );
 
-                return 1;
+                return pendingFrames.length;
             }),
         );
     }
@@ -3114,6 +3119,8 @@ describe('BTAPI splash lifecycle in init', () => {
     beforeEach(() => {
         resetSingleton();
 
+        pendingFrames.length = 0;
+
         vi.resetAllMocks();
         installMockNavigatorGPU();
         driveAnimationFrames();
@@ -3121,9 +3128,17 @@ describe('BTAPI splash lifecycle in init', () => {
 
     afterEach(() => {
         // These tests give requestAnimationFrame a real implementation, so unlike the
-        // rest of the suite the game loop actually runs. Stop it before the stub goes
-        // away, or its next queued frame throws into an unrelated test.
+        // rest of the suite the game loop actually runs. Stop it and drop any frame
+        // still queued before the stub goes away: GameLoop.start() nests a second
+        // requestAnimationFrame inside the first without rechecking isRunning, so an
+        // in-flight outer frame would reach for a global that no longer exists.
         (BTAPI.instance as unknown as { loop: GameLoop | null }).loop?.stop();
+
+        for (const handle of pendingFrames) {
+            clearTimeout(handle);
+        }
+
+        pendingFrames.length = 0;
 
         resetSingleton();
 

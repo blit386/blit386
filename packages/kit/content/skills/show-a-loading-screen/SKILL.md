@@ -2,8 +2,9 @@
 name: show-a-loading-screen
 description:
   Show a loading spinner or progress UI while sprites and audio finish loading, using BT.loadingAssetsCount and optional
-  SpriteSheet.status / progress. Use when the user wants a loading screen, splash screen, progress bar, or asks how to
-  wait for assets before starting play.
+  SpriteSheet.status / progress. Use when the user wants a loading screen, progress bar, or asks how to wait for assets
+  before starting play. For the built-in BLIT386 splash (which already covers init() in release builds), see
+  docs/basics.md.
 ---
 
 # Show a loading screen
@@ -15,6 +16,16 @@ description:
 
 Use when the user wants a loading or splash screen, a progress bar while assets load, or asks how to wait for sprites
 and sounds before gameplay starts.
+
+## The BLIT386 splash already covers init()
+
+In a real build the BLIT386 splash plays before your game starts, and its hold extends until `init()` settles. So in a
+release build there is already something on screen while you load, and awaiting your loads inside `init()` costs the
+player nothing.
+
+Write your own loading UI when you need it _after_ the splash has gone – a level load mid-game, or assets you
+deliberately start after `init()` returns. Also remember the splash never plays in a development build, so a spinner you
+only see under `npx blit run` is still worth having if loads are slow.
 
 ## How to do it
 
@@ -81,4 +92,4 @@ A normally loaded sheet is `'ready'` with `progress` `1.0`. Use these for a per-
   want the player to see progress (or when hot-reload replacements should show a brief "Loading…" state).
 - Do not invent a fine-grained byte percentage from `progress`; it is intentionally coarse.
 
-See `docs/basics.md` and `docs/hot-reload.md`.
+See `docs/basics.md` (including The splash) and `docs/hot-reload.md`.
