@@ -164,8 +164,13 @@ change that hot-swaps cleanly under `webgpu`. That is a tier-detection parity ga
 not in this package's wiring – tracked against the engine. There is no automated coverage for hot reload; the
 `/test demos` skill carries the manual check script to run after touching the wiring.
 
-If you change the engine's `blit386/vite` plugin itself, `dev:watch`'s `build --watch` only rebuilds the browser bundle.
-Run a one-shot `pnpm run build` in `packages/blit386`, then restart `pnpm run dev` here.
+Editing engine source under `packages/blit386/src/` (anything feeding the browser bundle, `dist/blit386.js`) rebuilds
+automatically under `dev:watch` and full-reloads this page – no restart needed.
+
+If you change the engine's `blit386/vite` plugin itself (`packages/blit386/src/vite/**`, the Node-targeted
+`dist/vite.js` bundle), `dev:watch` does not watch it: `packages/demos/vite.config.js` loads that plugin once at its own
+server startup, so a rebuilt `dist/vite.js` is not picked up by a running server regardless. Run a one-shot
+`pnpm run build` in `packages/blit386`, then restart `pnpm run dev` here.
 
 ## File Organization
 

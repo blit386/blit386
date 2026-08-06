@@ -62,7 +62,9 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "vite build && vite build --config vite.node.config.ts",
+    "build:browser": "vite build",
+    "build:node": "vite build --config vite.node.config.ts",
+    "build": "pnpm run build:browser && pnpm run build:node",
     "build:check-declarations": "node scripts/check-declaration-tooling.mjs",
     "test:declarations": "node --test scripts/check-declaration-tooling.test.mjs",
     "lint": "eslint . --max-warnings 0",
