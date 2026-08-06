@@ -68,6 +68,12 @@ export class Splash {
     /** Clock function returning milliseconds. */
     private readonly timeProvider: () => number;
 
+    /** Event target the skip listeners are attached to, or null when detached. */
+    private skipTarget: EventTarget | null = null;
+
+    /** Bound skip handler, retained so it can be removed again. */
+    private readonly onSkipEvent: (event: Event) => void;
+
     /**
      * Creates a splash.
      *
@@ -82,6 +88,18 @@ export class Splash {
         this.effects = new PaletteEffectManager(timeProvider);
         this.logo = SpriteSheet.fromIndexedPixels(LOGO_WIDTH, LOGO_HEIGHT, Uint8Array.from(LOGO_PIXELS));
         this.logoSrc = new Rect2i(0, 0, LOGO_WIDTH, LOGO_HEIGHT);
+
+        this.onSkipEvent = (event: Event): void => {
+            // Capture phase, so this runs before anything the page or the game
+            // wired up. preventDefault stops the browser's own reaction (scroll,
+            // zoom, focus move); the engine input subsystems are drained by the
+            // caller at handoff so the game's first update() sees no press edge.
+            if (event.cancelable) {
+                event.preventDefault();
+            }
+
+            this.skip();
+        };
     }
 
     /**
@@ -198,6 +216,35 @@ export class Splash {
         }
 
         this.isSkipped = true;
+    }
+
+    /**
+     * Installs capture-phase skip listeners.
+     *
+     * Any key, click, or tap skips. The game loop is suspended for the splash's
+     * whole duration, so the input is free to take.
+     *
+     * @param target - Event target to listen on, normally `window`.
+     */
+    public attachSkipInput(target: EventTarget): void {
+        this.detachSkipInput();
+
+        this.skipTarget = target;
+
+        target.addEventListener('keydown', this.onSkipEvent, { capture: true });
+        target.addEventListener('pointerdown', this.onSkipEvent, { capture: true });
+    }
+
+    /** Removes the skip listeners. Safe to call when nothing is attached. */
+    public detachSkipInput(): void {
+        if (!this.skipTarget) {
+            return;
+        }
+
+        this.skipTarget.removeEventListener('keydown', this.onSkipEvent, { capture: true });
+        this.skipTarget.removeEventListener('pointerdown', this.onSkipEvent, { capture: true });
+
+        this.skipTarget = null;
     }
 
     /**
