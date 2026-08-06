@@ -72,6 +72,9 @@ export interface HotReloadContext {
  * @changed 1.3.1 Added {@link HardwareSettings.isCapturingKeyboardScroll}.
  * @changed 1.3.1 Added {@link HardwareSettings.isWakeLockEnabled}.
  * @changed 1.3.1 Added {@link HardwareSettings.preferredOrientation}.
+ * @changed 1.5.0 Added {@link HardwareSettings.isSplashEnabled}.
+ * @changed 1.5.0 Added {@link HardwareSettings.splashColorDark}.
+ * @changed 1.5.0 Added {@link HardwareSettings.splashColorLight}.
  */
 export interface HardwareSettings {
     /**

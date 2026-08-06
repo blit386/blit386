@@ -118,6 +118,11 @@
       "description": "The three hot-reload swap tiers, onHotReload semantics, asset hot-replace, and the blit386/vite plugin."
     },
     {
+      "src": "guide-splash.md",
+      "path": "guides/splash",
+      "description": "The BLIT386 splash: gating, the loading-screen hold, the palette handoff, and the skip."
+    },
+    {
       "src": "performance-best-practices.md",
       "path": "performance/best-practices",
       "description": "When and how to optimize demos: object allocation, batching, and hot-path guidance."
