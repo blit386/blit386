@@ -150,8 +150,9 @@ out. That is an accepted difference in fidelity, not a bug.
 
 ## Customizing the ramp
 
-The splash's palette is a 16-step ramp between two endpoints, generated in linear light so the steps are physically even
-rather than perceptually even – consistent with what the exposure fade does to them. Both endpoints are configurable:
+The splash's palette is a 16-step ramp between two endpoints, spaced evenly in encoded sRGB. That makes it perceptually
+even, so a tone you draw in an image editor lands on the step you drew it as - the logo converter picks a step straight
+from each pixel's value. Both endpoints are configurable:
 
 ```ts twoslash
 import { Color32, type HardwareSettings } from 'blit386';
@@ -165,6 +166,12 @@ function configure(): Partial<HardwareSettings> {
 ```
 
 Because the splash's palette and your game's palette never coexist, the splash's slot count costs your game nothing.
+
+Sixteen steps means the ramp lands on multiples of 17 (`0`, `17`, `34`, … `255`), so any tone in the source art snaps to
+the nearest of those. Drawing the artwork with those exact values avoids the rounding entirely.
+
+The fades are unaffected by this spacing: `BT.paletteFadeExposure` converts to linear light itself, per channel, so it
+behaves the same however the static steps are distributed.
 
 ## See also
 

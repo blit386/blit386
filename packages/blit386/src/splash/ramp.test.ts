@@ -49,13 +49,23 @@ describe('createRamp', () => {
         }
     });
 
-    it('steps evenly in linear light, not in encoded values', () => {
+    it('steps evenly in encoded values, so artwork lands on the step it was drawn as', () => {
         const palette = createRamp();
-        // The midpoint of a linear-light black-to-white ramp encodes to roughly
-        // 0.5 ^ (1 / 2.2) * 255, well above the encoded midpoint of 128.
-        const midpoint = palette.get(RAMP_FIRST_SLOT + Math.floor(RAMP_STEPS / 2) - 1);
 
-        expect(midpoint.r).toBeGreaterThan(150);
+        // Even spacing in encoded sRGB: step n sits at n / 15 of the way to 255.
+        // A linear-light ramp would put step 1 at 73 and leave nothing below it,
+        // which is where shadow detail in the logo artwork lives.
+        for (let step = 0; step < RAMP_STEPS; step++) {
+            const expected = Math.round((step / (RAMP_STEPS - 1)) * 255);
+
+            expect(palette.get(RAMP_FIRST_SLOT + step).r).toBe(expected);
+        }
+    });
+
+    it('keeps the first step close to black rather than jumping into the midtones', () => {
+        const palette = createRamp();
+
+        expect(palette.get(RAMP_FIRST_SLOT + 1).r).toBeLessThan(32);
     });
 
     it('makes every entry opaque', () => {

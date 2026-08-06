@@ -229,9 +229,9 @@ export interface HardwareSettings {
     /**
      * Dark endpoint of the splash's 16-step gray ramp.
      *
-     * Defaults to black. The ramp is generated in linear light between this and
-     * {@link HardwareSettings.splashColorLight}, so the steps are physically even
-     * rather than perceptually even.
+     * Defaults to black. The 16 steps are spaced evenly in encoded sRGB between
+     * this and {@link HardwareSettings.splashColorLight}, so the ramp is
+     * perceptually even and artwork lands on the tone it was drawn as.
      *
      * @since 1.5.0
      */
