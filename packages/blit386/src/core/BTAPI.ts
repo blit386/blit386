@@ -320,7 +320,7 @@ export class BTAPI {
      * - attach screen orientation detection (and optional lock via
      *   {@link HardwareSettings.preferredOrientation})
      *
-     * Initialization failures resolve to `false` rather than throwing - a demo
+     * Initialization failures resolve to `false` rather than throwing – a demo
      * `init()` that returns `false` or throws is caught and reported. The one
      * exception is a splash frame that throws: {@link runSplash} rejects and that
      * error propagates out of this method, because nothing else can settle it and
@@ -2180,8 +2180,11 @@ export class BTAPI {
      * @returns Whatever the demo's `init()` resolved to.
      */
     private async runDemoInitBehindSplash(demo: IBTDemo, splash: Splash, displaySize: Vector2i): Promise<boolean> {
+        // Install it as the active palette, not just on the renderer: endPaletteCapture()
+        // reads this.palette to fade the splash down when the game never sets one of its
+        // own, and the two must not disagree while the splash is the thing on screen.
+        this.installPalette(splash.palette);
         this.beginPaletteCapture();
-        this.renderer?.setPalette(splash.palette);
         splash.attachSkipInput(globalThis);
         splash.start();
 

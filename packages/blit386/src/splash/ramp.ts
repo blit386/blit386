@@ -1,8 +1,11 @@
 /**
  * The splash's own palette: a 16-step ramp between two configurable endpoints.
  *
- * Steps are spaced evenly in encoded sRGB, so the ramp is perceptually even and
- * an artist's mid-gray lands on the step they drew it as. An earlier version
+ * Steps are spaced evenly in encoded 8-bit sRGB channel values – the numbers an
+ * image editor reports – so an artist's mid-gray lands on the nearest step to the
+ * value they drew it as. (Even in encoded sRGB is close to, but not the same as,
+ * even in perceived lightness; the point here is predictable quantization of the
+ * values the artwork is authored in.) An earlier version
  * spaced them evenly in linear light instead; that put the first step at encoded
  * 73 and left no slot at all below it, so shadow detail authored in an image
  * editor either jumped several steps brighter or crushed to black.

@@ -3324,6 +3324,24 @@ describe('BTAPI splash lifecycle in init', () => {
         expect((BTAPI.instance as unknown as { isCapturingPalette: boolean }).isCapturingPalette).toBe(false);
     });
 
+    it('keeps the active palette in step with the splash when init() sets none', async () => {
+        const activePalette = (): Palette | null => (BTAPI.instance as unknown as { palette: Palette | null }).palette;
+        let paletteDuringInit: Palette | null = null;
+
+        await BTAPI.instance.init(
+            makeSplashDemo({ isSplashEnabled: true }, () => {
+                paletteDuringInit = activePalette();
+            }),
+            makeMockCanvas(),
+        );
+
+        // Without this the engine palette stays null while the renderer draws the ramp,
+        // and the handoff has nothing to fade down.
+        expect(paletteDuringInit).not.toBeNull();
+        expect(activePalette()).not.toBeNull();
+        expect(activePalette()?.size).toBe(RAMP_PALETTE_SIZE);
+    });
+
     it('drains input edges at handoff so the skip press never reaches the first update', async () => {
         const endUpdate = vi.spyOn(KeyboardInput.prototype, 'endUpdate');
 
