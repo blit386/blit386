@@ -76,8 +76,7 @@ No unit tests here by design – see `/test demos`.
 
 `cd packages/website && pnpm run preflight`, or `pnpm --filter blit386-website run preflight`. Runs:
 
-- `format:check` – Biome + Prettier
-- `lint` – Biome
+- `format:check` – Biome (lint + format) + Prettier
 - `typecheck` – fumadocs-mdx + tsc
 - `test` – `node --test scripts/__tests__/*.test.mjs`
 - `spellcheck` – cspell on `content/` and `src/`
