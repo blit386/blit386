@@ -21,9 +21,12 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together w
 
 One demo per file under `src/`, and that file is the single source of truth – no `demos/` directory exists on disk. The
 `virtual-demos` Vite plugin serves each at `/demos/<slug>.html` in dev; the production build flattens them to
-`https://demos.blit386.dev/<slug>`. `src/shared/` holds the UI kit and cross-demo helpers, `public/` static assets,
-`_partials/` the shared HTML template and shell scripts, `plugins/` the Vite plugin plus the order and vintage-URL
-registries, `scripts/` the check and generate scripts.
+`https://demos.blit386.dev/<slug>`. That difference is a build-time value, not runtime sniffing: `virtual-demos` stamps
+`data-page-suffix` onto `<body>` (`.html` in dev, empty in the build) and `_partials/demo-shell.js` appends it in
+`urlFor()`, so the shell's `history.pushState` URL and its iframe `?embed&source` src are extensionless in production.
+`src/shared/` holds the UI kit and cross-demo helpers, `public/` static assets, `_partials/` the shared HTML template
+and shell scripts, `plugins/` the Vite plugin plus the order and vintage-URL registries, `scripts/` the check and
+generate scripts.
 
 Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`); the first path segment must start with a
 letter, so legacy `001-topic.js` names are rejected. Navigation order is **not** derived from the filename – it comes
@@ -185,7 +188,10 @@ Commit scopes (convention only – prefer one already in this package's history)
 `skills`, `deps`. Husky runs lint-staged on pre-commit, commitlint on commit-msg, and `pnpm run preflight` on pre-push.
 
 The build copies each virtual demo to `dist/<slug>.html` at the site root and generates `dist/_redirects` from
-`VINTAGE_URLS` plus a site-index rule, so vintage numbered paths (`/001-basics`) 301 to the current slug everywhere.
+`VINTAGE_URLS` plus a site-index rule, so vintage numbered paths (`/001-basics` and `/001-basics.html`) 301 to the
+current extensionless slug everywhere. The site-index rule is the one entry that still names `dist/<slug>.html`, because
+a `200` rewrite has to name the asset. Cloudflare Pages serves each `dist/<slug>.html` at `/<slug>` and 308s
+`/<slug>.html` to it, which is why nothing else should emit the extension.
 
 `.github/workflows/deploy.yml` runs two jobs against this package: `deploy-demos` deploys to the `blit386-demos` Pages
 project (`demos.blit386.dev`) on a release tag push (`x.y.z`, no `v` prefix, no prerelease suffix) or a manual

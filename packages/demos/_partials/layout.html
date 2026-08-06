@@ -41,7 +41,7 @@
     </script>
 </head>
 
-<body data-slug="{{slug}}">
+<body data-slug="{{slug}}" data-page-suffix="{{pageSuffix}}">
 {{channelBanner}}
 
 <script id="demo-list" type="application/json">{{demoList}}</script>
@@ -49,8 +49,11 @@
 <!--
   Shell mode (default): persistent banner + content iframe. The banner hosts a
   fuzzy-searchable combobox (plus prev/next). Demo swaps change the iframe src and
-  history.pushState the clean number-free demo URL (e.g. /demos/basics.html); the
-  banner never reloads. Vintage numbered paths 301 to the current slug.
+  history.pushState the number-free demo URL; the banner never reloads. That URL
+  carries data-page-suffix above: `.html` in dev (/demos/basics.html, the only path
+  the Vite middleware routes) and empty in the production build (/basics, which is
+  how Cloudflare Pages serves dist/basics.html). Vintage numbered paths 301 to the
+  current slug.
 
   Embed mode (?embed): #canvas-container only (no banner; source hidden). Used by
   external embeds on blit386.dev. The shell iframe loads ?embed&source so the
