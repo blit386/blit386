@@ -449,9 +449,9 @@ class Demo {
         }
 
         if (this.phase === 'fade-in') {
-            this.startFades(this.plainLit, this.expLit, 'Fade up');
+            this.startFades(this.plainLit, this.expLit);
         } else if (this.phase === 'fade-out') {
-            this.startFades(this.plainDark, this.expDark, 'Fade down');
+            this.startFades(this.plainDark, this.expDark);
         }
     }
 
@@ -460,17 +460,14 @@ class Demo {
      *
      * @param {Palette} plainTarget - Where the left half's colors should end up.
      * @param {Palette} exposureTarget - Where the right half's colors should end up.
-     * @param {string} tag - Label for the engine overlay's timing chart.
      */
-    startFades(plainTarget, exposureTarget, tag) {
+    startFades(plainTarget, exposureTarget) {
         // Left half: the plain fade, limited to the slots the left picture uses.
         BT.paletteFadeRange(PLAIN_FIRST_SLOT, PLAIN_FIRST_SLOT + SCENE_COLORS.length - 1, plainTarget, FADE_MS);
 
         // Right half: the exposure fade. It only reaches slots 1..15 because the
         // target palette we hand it is 16 slots long.
         BT.paletteFadeExposure(exposureTarget, FADE_MS, { highlightLead: this.highlightLead });
-
-        BT.assignTag(tag);
 
         this.effectTriggered = true;
     }
