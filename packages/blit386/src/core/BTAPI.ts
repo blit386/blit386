@@ -320,9 +320,17 @@ export class BTAPI {
      * - attach screen orientation detection (and optional lock via
      *   {@link HardwareSettings.preferredOrientation})
      *
+     * Initialization failures resolve to `false` rather than throwing - a demo
+     * `init()` that returns `false` or throws is caught and reported. The one
+     * exception is a splash frame that throws: {@link runSplash} rejects and that
+     * error propagates out of this method, because nothing else can settle it and
+     * silently reporting `false` would hide a renderer fault. `bootstrap()` catches
+     * it and routes it to `onError`.
+     *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
      * @returns `true` when initialization succeeds; otherwise `false`.
+     * @throws Error when a splash frame throws while the splash is on screen.
      */
     public async init(demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> {
         console.log(`[BT] Initializing engine v${BTAPI.VERSION_MAJOR}.${BTAPI.VERSION_MINOR}.${BTAPI.VERSION_PATCH}`);
@@ -1428,12 +1436,14 @@ export class BTAPI {
      * @param easing - Easing curve. Defaults to `'linear'`.
      */
     public paletteFade(target: Palette, durationMs: number, easing?: EasingFunction): void {
-        if (!this.palette) {
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
         this.assertFiniteDuration('paletteFade', durationMs);
-        this.paletteEffects.add(new FadeEffect(this.palette, target, durationMs, easing));
+        this.paletteEffects.add(new FadeEffect(palette, target, durationMs, easing));
     }
 
     /**
@@ -1448,12 +1458,14 @@ export class BTAPI {
      * @param options - Highlight lead and easing curve.
      */
     public paletteFadeExposure(target: Palette, durationMs: number, options?: ExposureFadeOptions): void {
-        if (!this.palette) {
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
         this.assertFiniteDuration('paletteFadeExposure', durationMs);
-        this.paletteEffects.add(new ExposureFadeEffect(this.palette, target, durationMs, options));
+        this.paletteEffects.add(new ExposureFadeEffect(palette, target, durationMs, options));
     }
 
     /**
@@ -1472,12 +1484,14 @@ export class BTAPI {
         durationMs: number,
         easing?: EasingFunction,
     ): void {
-        if (!this.palette) {
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
         this.assertFiniteDuration('paletteFadeRange', durationMs);
-        this.paletteEffects.add(new FadeRangeEffect(start, end, this.palette, target, durationMs, easing));
+        this.paletteEffects.add(new FadeRangeEffect(start, end, palette, target, durationMs, easing));
     }
 
     /**
@@ -1489,7 +1503,7 @@ export class BTAPI {
      * @param durationMs - How long the flash lasts in milliseconds.
      */
     public paletteFlash(color: Color32, durationMs: number): void {
-        if (!this.palette) {
+        if (!this.getPalette()) {
             throw new Error(noActivePaletteError());
         }
 
@@ -1506,11 +1520,15 @@ export class BTAPI {
      * @param indexB - Second palette index.
      */
     public paletteSwap(indexA: number, indexB: number): void {
-        if (!this.palette) {
+        // getPalette(), so a swap during the splash edits the game's captured palette
+        // instead of corrupting the ramp the splash is still animating on screen.
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
-        paletteSwap(this.palette, indexA, indexB);
+        paletteSwap(palette, indexA, indexB);
     }
 
     /**
@@ -2188,9 +2206,16 @@ export class BTAPI {
         });
 
         try {
-            const [initOk] = await Promise.all([initPromise, this.runSplash(displaySize)]);
+            // allSettled, not all: a splash frame that throws must not tear the capture
+            // down while the game's init() is still running, or a paletteSet() landing
+            // after the teardown would apply straight to the screen mid-handoff.
+            const [initSettled, splashSettled] = await Promise.allSettled([initPromise, this.runSplash(displaySize)]);
 
-            return initOk;
+            if (splashSettled.status === 'rejected') {
+                throw splashSettled.reason;
+            }
+
+            return initSettled.status === 'fulfilled' ? initSettled.value : false;
         } finally {
             // In a finally so a throw from either side still tears the splash down.
             // Leaving capture armed would make every later BT.paletteSet() a no-op.

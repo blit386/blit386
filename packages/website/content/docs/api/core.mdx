@@ -447,6 +447,10 @@ which an `await` makes easy - `'shown'`; its first `update()` after handoff read
 internal: `update()` and `render()` are suspended for the splash's whole duration, so nothing outside the engine runs
 while it is the current state.
 
+One error-handling note: ordinary initialization failures make `BT.init()` resolve to `false`, but a splash frame that
+throws rejects the returned promise instead - nothing else can settle it, and reporting `false` would hide a renderer
+fault. `bootstrap()` catches it and routes it to `onError` like any other init error.
+
 Full behavior – the three gating layers, the loading-screen hold, the palette handoff, and the swallowed skip – is in
 [the splash guide](/docs/guides/splash).
 

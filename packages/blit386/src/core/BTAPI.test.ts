@@ -46,7 +46,7 @@ import {
     PALETTE_SWATCH_GAP_PX,
 } from '../overlay/palette/PaletteView';
 import type { Effect } from '../render/effects/Effect';
-import { HANDOFF_FADE_MS } from '../splash';
+import { HANDOFF_FADE_MS, Splash } from '../splash';
 import { RAMP_PALETTE_SIZE } from '../splash/constants';
 import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
@@ -3270,6 +3270,58 @@ describe('BTAPI splash lifecycle in init', () => {
         expect(ok).toBe(true);
         expect(BTAPI.instance.getActiveBackend()).toBe('software');
         expect(BTAPI.instance.getSplashState()).toBe('done');
+    });
+
+    it('does not tear down the capture until a slow init() settles, even if the splash throws', async () => {
+        let resolveInit: (() => void) | undefined;
+        const gamePalette = new Palette(16);
+        let capturedWhileInitRan: Palette | null | undefined;
+
+        let splashThrew = false;
+
+        // Make the very first splash frame throw, so runSplash rejects long before init().
+        vi.spyOn(Splash.prototype, 'advance').mockImplementation(() => {
+            splashThrew = true;
+
+            throw new Error('splash frame exploded');
+        });
+
+        const demo = makeSplashDemo({ isSplashEnabled: true }, async () => {
+            await new Promise<void>((resolve) => {
+                resolveInit = resolve;
+            });
+
+            // Runs after the splash has already failed. Capture must still be armed,
+            // so this is held for the handoff rather than applied straight to screen.
+            BTAPI.instance.setPalette(gamePalette);
+            capturedWhileInitRan = (BTAPI.instance as unknown as { pendingPalette: Palette | null }).pendingPalette;
+        });
+
+        const initPromise = BTAPI.instance.init(demo, makeMockCanvas());
+
+        const tick = async (): Promise<void> => {
+            await new Promise((resolve) => {
+                setTimeout(resolve, 0);
+            });
+        };
+
+        // Wait until init() reached the demo body AND the splash has already thrown.
+        for (let i = 0; i < 500 && !(resolveInit && splashThrew); i++) {
+            await tick();
+        }
+
+        // Give the rejection time to propagate. This is the window the bug lived in:
+        // Promise.all settled here and ran teardown while init() was still pending.
+        for (let i = 0; i < 5; i++) {
+            await tick();
+        }
+
+        resolveInit?.();
+
+        await expect(initPromise).rejects.toThrow('splash frame exploded');
+
+        expect(capturedWhileInitRan).toBe(gamePalette);
+        expect((BTAPI.instance as unknown as { isCapturingPalette: boolean }).isCapturingPalette).toBe(false);
     });
 
     it('drains input edges at handoff so the skip press never reaches the first update', async () => {
