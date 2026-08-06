@@ -3326,7 +3326,7 @@ describe('BTAPI splash lifecycle in init', () => {
 
     it('keeps the active palette in step with the splash when init() sets none', async () => {
         const activePalette = (): Palette | null => (BTAPI.instance as unknown as { palette: Palette | null }).palette;
-        let paletteDuringInit: Palette | null = null;
+        let paletteDuringInit: Palette | null | undefined;
 
         await BTAPI.instance.init(
             makeSplashDemo({ isSplashEnabled: true }, () => {
@@ -3336,8 +3336,9 @@ describe('BTAPI splash lifecycle in init', () => {
         );
 
         // Without this the engine palette stays null while the renderer draws the ramp,
-        // and the handoff has nothing to fade down.
-        expect(paletteDuringInit).not.toBeNull();
+        // and the handoff has nothing to fade down. Assert the size, not just non-null:
+        // the point is that it is the splash's own ramp, not merely some palette.
+        expect(paletteDuringInit?.size).toBe(RAMP_PALETTE_SIZE);
         expect(activePalette()).not.toBeNull();
         expect(activePalette()?.size).toBe(RAMP_PALETTE_SIZE);
     });
