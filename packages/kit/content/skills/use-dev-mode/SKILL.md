@@ -43,6 +43,9 @@ has it already (see `use-hot-reload`). It reads `true` while `npm run dev` is ru
   configure.
 - It answers exactly one question: is this a dev build. It has nothing to do with your own game state (paused, in a
   menu, level number) – keep those as your own fields.
+- The engine gates one thing on this by itself: the BLIT386 splash plays in a release build and not in a dev build. Add
+  `?splash` to the URL to see it while developing, or turn it off for good with `isSplashEnabled: false` in
+  `configure()`. See `docs/basics.md` (The splash).
 - This is a convenience for you, the developer, not a security boundary. A player who really wants to could still flip
   it on in a shipped build; do not rely on it to hide content you actually need to protect.
 - Needs blit386 `^1.5.0`.

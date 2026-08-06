@@ -1,4 +1,5 @@
 import { DEFAULT_MAX_CANVAS_SIZE } from '../utils/CanvasLayoutStyles';
+import type { Color32 } from '../utils/Color32';
 import { Vector2i } from '../utils/Vector2i';
 
 /**
@@ -71,6 +72,9 @@ export interface HotReloadContext {
  * @changed 1.3.1 Added {@link HardwareSettings.isCapturingKeyboardScroll}.
  * @changed 1.3.1 Added {@link HardwareSettings.isWakeLockEnabled}.
  * @changed 1.3.1 Added {@link HardwareSettings.preferredOrientation}.
+ * @changed 1.5.0 Added {@link HardwareSettings.isSplashEnabled}.
+ * @changed 1.5.0 Added {@link HardwareSettings.splashColorDark}.
+ * @changed 1.5.0 Added {@link HardwareSettings.splashColorLight}.
  */
 export interface HardwareSettings {
     /**
@@ -210,6 +214,37 @@ export interface HardwareSettings {
      * @since 1.3.1
      */
     preferredOrientation?: PreferredOrientation;
+
+    /**
+     * Whether the BLIT386 splash plays before the game starts.
+     *
+     * Leave unset for the default: shown in release builds, hidden in development
+     * builds. Setting it explicitly wins over the `?splash` / `?nosplash` URL flags
+     * and over {@link BT.isDevMode}.
+     *
+     * @since 1.5.0
+     */
+    isSplashEnabled?: boolean;
+
+    /**
+     * Dark endpoint of the splash's 16-step gray ramp.
+     *
+     * Defaults to black. The 16 steps are spaced evenly in encoded sRGB channel
+     * values between this and {@link HardwareSettings.splashColorLight}, so
+     * artwork lands on the nearest step to the value it was drawn as.
+     *
+     * @since 1.5.0
+     */
+    splashColorDark?: Color32;
+
+    /**
+     * Light endpoint of the splash's 16-step gray ramp.
+     *
+     * Defaults to white. See {@link HardwareSettings.splashColorDark}.
+     *
+     * @since 1.5.0
+     */
+    splashColorLight?: Color32;
 
     /**
      * Rendering backend to use. Defaults to `'webgpu'`.
@@ -687,6 +722,17 @@ function pickConfigureVector(value: Vector2i | undefined | null): Vector2i | und
 }
 
 /**
+ * Clones a caller-supplied configure color so merged settings do not share a
+ * mutable reference with the demo's `configure()` return value.
+ *
+ * @param value - Raw color from `configure()`, possibly undefined.
+ * @returns Cloned color, or undefined when none was supplied.
+ */
+function pickConfigureColor(value: Color32 | undefined): Color32 | undefined {
+    return value === undefined ? undefined : value.clone();
+}
+
+/**
  * Resolves required `displaySize` for the explicit-profile merge path.
  *
  * Uses defaults only when the field was omitted (`undefined`). Explicit `null` maps to
@@ -818,6 +864,18 @@ function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partia
     pickIfDefinedPartial(picked, partial, 'preferredOrientation');
     pickIfDefinedPartial(picked, partial, 'backend');
     pickIfDefinedPartial(picked, partial, 'audioVoices');
+    pickIfDefinedPartial(picked, partial, 'isSplashEnabled');
+
+    const pickedSplashColorDark = pickConfigureColor(partial.splashColorDark);
+    if (pickedSplashColorDark !== undefined) {
+        picked.splashColorDark = pickedSplashColorDark;
+    }
+
+    const pickedSplashColorLight = pickConfigureColor(partial.splashColorLight);
+    if (pickedSplashColorLight !== undefined) {
+        picked.splashColorLight = pickedSplashColorLight;
+    }
+
     pickDefinedOverlaySettings(picked, partial);
 
     return picked;
@@ -973,6 +1031,13 @@ function assignFullDefaultMergeScalars(
     assignIfDefined(optionals, 'backend', picked.backend ?? defaults.backend);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices ?? defaults.audioVoices);
 
+    // The splash fields have no defaultConfig() baseline on purpose: isSplashEnabled must stay
+    // unset so the URL flags and dev-mode detection can resolve it, and the ramp endpoints
+    // default inside src/splash/ramp.ts.
+    assignIfDefined(optionals, 'isSplashEnabled', picked.isSplashEnabled);
+    assignIfDefined(optionals, 'splashColorDark', picked.splashColorDark);
+    assignIfDefined(optionals, 'splashColorLight', picked.splashColorLight);
+
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle ?? defaults.overlayStyle));
 
     assignIfDefined(
@@ -1113,6 +1178,9 @@ function buildExplicitDisplayOptionals(
     assignIfDefined(optionals, 'isWakeLockEnabled', picked.isWakeLockEnabled);
     assignIfDefined(optionals, 'preferredOrientation', picked.preferredOrientation);
     assignIfDefined(optionals, 'audioVoices', picked.audioVoices);
+    assignIfDefined(optionals, 'isSplashEnabled', picked.isSplashEnabled);
+    assignIfDefined(optionals, 'splashColorDark', picked.splashColorDark);
+    assignIfDefined(optionals, 'splashColorLight', picked.splashColorLight);
     assignIfDefined(optionals, 'overlayStyle', shallowCloneOptional(picked.overlayStyle));
     assignIfDefined(optionals, 'overlayPaletteColumns', picked.overlayPaletteColumns);
     assignIfDefined(optionals, 'overlayPaletteRowsVisible', picked.overlayPaletteRowsVisible);

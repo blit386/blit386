@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { Color32 } from '../utils/Color32';
 import { validateDimensions } from '../utils/RenderLimits';
 import { Vector2i } from '../utils/Vector2i';
 import {
@@ -418,5 +419,37 @@ describe('mergeHardwareSettings', () => {
 
         expect(settings.maxCanvasSize).toEqual(new Vector2i(0, 0));
         expect(validateDimensions(settings)).not.toBeNull();
+    });
+});
+
+describe('splash hardware settings', () => {
+    it('leaves isSplashEnabled unset when the demo does not configure it', () => {
+        const merged = mergeHardwareSettings({ targetFPS: 60 });
+
+        expect(merged.isSplashEnabled).toBeUndefined();
+    });
+
+    it('carries an explicit isSplashEnabled: false through the merge', () => {
+        const merged = mergeHardwareSettings({ isSplashEnabled: false });
+
+        expect(merged.isSplashEnabled).toBe(false);
+    });
+
+    it('carries an explicit isSplashEnabled: true through the merge', () => {
+        const merged = mergeHardwareSettings({ isSplashEnabled: true });
+
+        expect(merged.isSplashEnabled).toBe(true);
+    });
+
+    it('clones the ramp endpoint colors so callers cannot mutate merged settings', () => {
+        const dark = new Color32(10, 10, 10);
+        const light = new Color32(240, 240, 240);
+        const merged = mergeHardwareSettings({ splashColorDark: dark, splashColorLight: light });
+
+        dark.r = 99;
+        light.r = 99;
+
+        expect(merged.splashColorDark?.r).toBe(10);
+        expect(merged.splashColorLight?.r).toBe(240);
     });
 });

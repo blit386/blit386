@@ -64,6 +64,11 @@
 
                 configure() {
                     return {
+                        // Baselines are pixel comparisons of the game's own first frame.
+                        // These fixtures run without the blit386() Vite plugin, so they read
+                        // as a release build and would otherwise get a splash painted over
+                        // every snapshot.
+                        isSplashEnabled: false,
                         displaySize: new Vector2i(320, 240),
                         targetFPS: 60,
                     };

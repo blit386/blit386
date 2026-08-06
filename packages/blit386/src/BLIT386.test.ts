@@ -1830,3 +1830,31 @@ describe('BT.paletteFadeExposure', () => {
         expect(spy).toHaveBeenCalledWith(target, 500, options);
     });
 });
+
+describe('BT splash getters', () => {
+    it('reports disabled before any init', () => {
+        expect(BT.splashState).toBe('disabled');
+        expect(BT.isSplashVisible).toBe(false);
+    });
+
+    it('are getters, not methods', () => {
+        expect(typeof BT.splashState).toBe('string');
+        expect(typeof BT.isSplashVisible).toBe('boolean');
+    });
+
+    it('delegates splashState to BTAPI', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'getSplashState').mockReturnValue('shown');
+
+        expect(BT.splashState).toBe('shown');
+
+        spy.mockRestore();
+    });
+
+    it('delegates isSplashVisible to BTAPI', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'isSplashVisible').mockReturnValue(true);
+
+        expect(BT.isSplashVisible).toBe(true);
+
+        spy.mockRestore();
+    });
+});

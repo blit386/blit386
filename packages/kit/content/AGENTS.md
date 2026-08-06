@@ -66,6 +66,7 @@ bootstrap(Game);
 | Keep playing while you edit code or assets | `docs/hot-reload.md` |
 | Tell a dev build from a release build (debug HUDs, cheat keys) | `docs/hot-reload.md` (Telling a dev build from a release build) |
 | Show a loading screen while assets load | `docs/basics.md` (Waiting for assets) |
+| Turn off the BLIT386 splash, or see it during development | `docs/basics.md` (The splash) |
 | Fix a blank screen, an error, a broken change | `docs/when-something-breaks.md` |
 
 The full engine reference lives at https://github.com/blit386/blit386 – only go there if these local docs do not answer

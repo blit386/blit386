@@ -29,6 +29,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | How do I smooth motion between fixed `update()` steps? | `BT.renderAlpha`; worked `Vector2i.lerp` pattern in `docs/guide-game-loop.md` |
 | Seeded / deterministic random? | `BT.random` / `BT.randomSeed`; `src/utils/Random.ts`, coordinate hashes in `src/utils/hash.ts`, `docs/api-random.md` |
 | How does hot-reload / HMR work? | `docs/guide-hot-reload.md` is canonical; runtime in `src/hot/`, dev plugin in `src/vite/` |
+| How does the BLIT386 splash work, and how do I turn it off? | `BT.isSplashVisible`, `HardwareSettings.isSplashEnabled`; `src/splash/`, `docs/guide-splash.md` |
 | How does dev vs. release detection work? | `BT.isDevMode`; `src/utils/devMode.ts`, dev marker set by `src/vite/transform.ts`, `docs/api-core.md#dev-vs-release-mode` |
 | How is agent config drift checked? | `scripts/check-agent-config.mjs` (root), wired into `pnpm run agents:check` and the `quality` CI job |
 | Where is the public docs site? | `packages/website` builds it from this package's `docs/`; `docs/_sitemap.json` controls what publishes |

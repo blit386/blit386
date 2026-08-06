@@ -124,6 +124,36 @@ If you `await` every load inside `init()`, the loop has not started yet, so ther
 for small games. Per-sheet hot-reload replacements also expose `sheet.status` (`'loading' | 'ready' | 'failed'`) and a
 coarse `sheet.progress` (`0` or `1.0`). Prefer `BT.loadingAssetsCount` for one engine-wide signal.
 
+## The splash
+
+A short BLIT386 splash plays before your game starts. A real build shows it by default; running `npx blit run` (or
+`npm run dev`) is a development build, which skips it by default. To check it, build and preview:
+
+```bash
+npm run build
+npm run preview
+```
+
+While the splash is up, your `init()` is already running – the splash doubles as a loading screen and holds until
+`init()` finishes, however long that takes. So if the splash is playing, awaiting your loads inside `init()` costs the
+player nothing. Any key, click, or tap skips the fade-in and the waiting, but it still waits for your `init()` to
+finish, and the fade into your game's colors always plays in full. That press is swallowed, so your first `update()`
+does not see it.
+
+One thing to know: the splash owns the screen colors while it plays. Your `BT.paletteSet()` inside `init()` is held and
+applied when the splash finishes, fading up out of black. Palette _effects_ you start inside `init()` are dropped, so
+start those from your first `update()` instead.
+
+Turn it off in `configure()`:
+
+```js
+configure() {
+    return { isSplashEnabled: false };
+}
+```
+
+Or skip it once by adding `?nosplash` to the URL. `?splash` forces it on, which is how you check it in a dev build.
+
 ## Keep playing while you edit
 
 New projects include the `blit386` Vite plugin, so most saves keep the running game alive. Optional

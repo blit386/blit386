@@ -26,8 +26,10 @@ import type { Effect } from '../render/effects/Effect';
 import type { IRenderer } from '../render/IRenderer';
 import { SoftwareRenderer } from '../render/SoftwareRenderer';
 import { WebGPURenderer } from '../render/WebGPURenderer';
+import type { SplashState } from '../splash';
+import { createBlackened, HANDOFF_FADE_MS, isSplashEnabled, Splash } from '../splash';
 import { applyCanvasLayoutStyles, DEFAULT_MAX_CANVAS_SIZE } from '../utils/CanvasLayoutStyles';
-import type { Color32 } from '../utils/Color32';
+import { Color32 } from '../utils/Color32';
 import { isDevMode } from '../utils/devMode';
 import type { EasingFunction } from '../utils/Easing';
 import * as errorMessages from '../utils/errorMessages';
@@ -123,6 +125,21 @@ export class BTAPI {
 
     /** Active engine palette used by palette-first rendering. */
     private palette: Palette | null = null;
+
+    /**
+     * Whether {@link setPalette} defers instead of applying.
+     *
+     * Armed for the splash's duration only. The splash owns the palette while it
+     * is on screen, so a game's `init()` calling `BT.paletteSet()` is captured and
+     * applied at handoff rather than resolving every color through the splash's ramp.
+     */
+    private isCapturingPalette: boolean = false;
+
+    /** Palette captured from the game's `init()`, applied at handoff. */
+    private pendingPalette: Palette | null = null;
+
+    /** Active splash, or null when gating turned it off. One-shot per page load. */
+    private splash: Splash | null = null;
 
     /** Registry of all sprite sheets that have been passed to drawSprite, for spritesRefresh. */
     private readonly spriteSheets: Set<SpriteSheet> = new Set();
@@ -303,9 +320,17 @@ export class BTAPI {
      * - attach screen orientation detection (and optional lock via
      *   {@link HardwareSettings.preferredOrientation})
      *
+     * Initialization failures resolve to `false` rather than throwing – a demo
+     * `init()` that returns `false` or throws is caught and reported. The one
+     * exception is a splash frame that throws: {@link runSplash} rejects and that
+     * error propagates out of this method, because nothing else can settle it and
+     * silently reporting `false` would hide a renderer fault. `bootstrap()` catches
+     * it and routes it to `onError`.
+     *
      * @param demo - Demo implementing the IBTDemo interface.
      * @param canvas - Render target canvas (WebGPU or software backend).
      * @returns `true` when initialization succeeds; otherwise `false`.
+     * @throws Error when a splash frame throws while the splash is on screen.
      */
     public async init(demo: IBTDemo, canvas: HTMLCanvasElement): Promise<boolean> {
         console.log(`[BT] Initializing engine v${BTAPI.VERSION_MAJOR}.${BTAPI.VERSION_MINOR}.${BTAPI.VERSION_PATCH}`);
@@ -345,9 +370,13 @@ export class BTAPI {
         this.attachInputSubsystems(canvas);
         this.attachAudioSubsystem(canvas);
 
+        // Splash gating resolves here, before the game's init() is invoked, so
+        // init() observes 'disabled' or 'fadingIn' and never an undecided state.
+        this.splash = createSplashIfEnabled(hwSettings);
+
         console.log('[BT] Initializing demo');
 
-        if (!(await this.runDemoInit(demo))) {
+        if (!(await this.runDemoInitWithSplash(demo, hwSettings))) {
             return false;
         }
 
@@ -676,6 +705,27 @@ export class BTAPI {
     }
 
     /**
+     * Current splash lifecycle state.
+     *
+     * Reports `'disabled'` when gating turned the splash off, so no caller has to
+     * branch on the animation states to answer "is it on screen".
+     *
+     * @returns The splash's state.
+     */
+    public getSplashState(): SplashState {
+        return this.splash?.state ?? 'disabled';
+    }
+
+    /**
+     * Whether the splash is on screen.
+     *
+     * @returns `true` while the splash is fading in, holding, or fading out.
+     */
+    public isSplashVisible(): boolean {
+        return this.splash?.isVisible ?? false;
+    }
+
+    /**
      * Gets the total number of asset loads currently in flight across all loaders.
      *
      * Computed fresh on each read by summing {@link AssetLoader.loadingCount} and
@@ -993,7 +1043,12 @@ export class BTAPI {
      * @returns Active palette, or null if none has been set.
      */
     public getPalette(): Palette | null {
-        return this.palette;
+        // While the splash owns the palette, the game must see its own palette,
+        // not the splash's ramp - otherwise in-place slot edits and
+        // spritesRefresh() would both target the wrong object. Null until the
+        // game sets one, which matches the pre-paletteSet behavior it already
+        // expects.
+        return this.isCapturingPalette ? this.pendingPalette : this.palette;
     }
 
     /**
@@ -1032,12 +1087,67 @@ export class BTAPI {
             console.warn('[BT] Active palette structure changed. Call BT.spritesRefresh() to update loaded sprites.');
         }
 
-        // In-flight effects hold snapshots of the old palette. Drop them so they
-        // don't apply stale colors to the new palette.
-        this.paletteEffects.clear();
+        if (this.isCapturingPalette) {
+            // The splash is on screen and owns the palette. Hold this until
+            // handoff; the warning above still fires now, when the caller can
+            // act on it.
+            this.pendingPalette = palette;
 
-        this.palette = palette;
-        this.renderer?.setPalette(palette);
+            return;
+        }
+
+        this.installPalette(palette);
+    }
+
+    /**
+     * Arms palette capture for the splash's duration.
+     *
+     * From here until {@link endPaletteCapture}, {@link setPalette} defers instead
+     * of applying, and {@link getPalette} reports the deferred palette.
+     */
+    public beginPaletteCapture(): void {
+        this.isCapturingPalette = true;
+        this.pendingPalette = null;
+    }
+
+    /**
+     * Disarms capture and performs the handoff into the game's palette.
+     *
+     * Installs the captured palette blackened, then brings it up with an exposure
+     * fade so the splash fading down and the game fading up read as one continuous
+     * in-camera move rather than a cut. When the game never called
+     * `BT.paletteSet()` during `init()`, the splash's own palette is faded to black
+     * instead, so the screen is black rather than showing stale splash grays until
+     * the game sets a palette of its own.
+     *
+     * Palette effects started during capture are dropped: they hold snapshots of a
+     * palette that is about to be replaced wholesale.
+     */
+    public endPaletteCapture(): void {
+        const captured = this.pendingPalette;
+
+        this.isCapturingPalette = false;
+        this.pendingPalette = null;
+
+        if (!captured) {
+            const current = this.palette;
+
+            if (current) {
+                this.paletteEffects.clear();
+                this.paletteEffects.add(new ExposureFadeEffect(current, createBlackened(current), HANDOFF_FADE_MS));
+            }
+
+            return;
+        }
+
+        const target = captured.clone();
+
+        for (let slot = 1; slot < captured.size; slot++) {
+            captured.set(slot, Color32.black);
+        }
+
+        this.installPalette(captured);
+        this.paletteEffects.add(new ExposureFadeEffect(captured, target, HANDOFF_FADE_MS));
     }
 
     /**
@@ -1223,7 +1333,12 @@ export class BTAPI {
      * @throws If no active palette has been set.
      */
     public spritesRefresh(): void {
-        if (!this.palette) {
+        // getPalette(), not this.palette: while the splash owns the screen this is the
+        // game's captured palette, and reindexing sheets against the splash's gray ramp
+        // would leave every sprite wrong once the handoff installs the real one.
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
@@ -1236,7 +1351,7 @@ export class BTAPI {
             }
 
             try {
-                sheet.reindexize(this.palette);
+                sheet.reindexize(palette);
                 refreshed++;
             } catch (e) {
                 console.error('[BT] spritesRefresh: failed to reindexize sheet, removing from registry:', e);
@@ -1321,12 +1436,14 @@ export class BTAPI {
      * @param easing - Easing curve. Defaults to `'linear'`.
      */
     public paletteFade(target: Palette, durationMs: number, easing?: EasingFunction): void {
-        if (!this.palette) {
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
         this.assertFiniteDuration('paletteFade', durationMs);
-        this.paletteEffects.add(new FadeEffect(this.palette, target, durationMs, easing));
+        this.paletteEffects.add(new FadeEffect(palette, target, durationMs, easing));
     }
 
     /**
@@ -1341,12 +1458,14 @@ export class BTAPI {
      * @param options - Highlight lead and easing curve.
      */
     public paletteFadeExposure(target: Palette, durationMs: number, options?: ExposureFadeOptions): void {
-        if (!this.palette) {
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
         this.assertFiniteDuration('paletteFadeExposure', durationMs);
-        this.paletteEffects.add(new ExposureFadeEffect(this.palette, target, durationMs, options));
+        this.paletteEffects.add(new ExposureFadeEffect(palette, target, durationMs, options));
     }
 
     /**
@@ -1365,12 +1484,14 @@ export class BTAPI {
         durationMs: number,
         easing?: EasingFunction,
     ): void {
-        if (!this.palette) {
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
         this.assertFiniteDuration('paletteFadeRange', durationMs);
-        this.paletteEffects.add(new FadeRangeEffect(start, end, this.palette, target, durationMs, easing));
+        this.paletteEffects.add(new FadeRangeEffect(start, end, palette, target, durationMs, easing));
     }
 
     /**
@@ -1382,7 +1503,7 @@ export class BTAPI {
      * @param durationMs - How long the flash lasts in milliseconds.
      */
     public paletteFlash(color: Color32, durationMs: number): void {
-        if (!this.palette) {
+        if (!this.getPalette()) {
             throw new Error(noActivePaletteError());
         }
 
@@ -1399,11 +1520,15 @@ export class BTAPI {
      * @param indexB - Second palette index.
      */
     public paletteSwap(indexA: number, indexB: number): void {
-        if (!this.palette) {
+        // getPalette(), so a swap during the splash edits the game's captured palette
+        // instead of corrupting the ramp the splash is still animating on screen.
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
-        paletteSwap(this.palette, indexA, indexB);
+        paletteSwap(palette, indexA, indexB);
     }
 
     /**
@@ -1949,8 +2074,201 @@ export class BTAPI {
             throw new Error(paletteIndexNegativeError(index));
         }
 
-        if (this.palette && index >= this.palette.size) {
-            throw new Error(paletteIndexOutOfRangeError(index, this.palette.size));
+        // getPalette() so the range check follows the game's captured palette during
+        // the splash rather than the splash's own ramp, which has a different size.
+        const palette = this.getPalette();
+
+        if (palette && index >= palette.size) {
+            throw new Error(paletteIndexOutOfRangeError(index, palette.size));
         }
     }
+
+    /**
+     * Drives the splash's own animation frames until it reaches `done`.
+     *
+     * Deliberately not the {@link GameLoop}: running the splash on a separate
+     * driver keeps the loop's fixed-timestep accumulator, its `lastUpdateTime`,
+     * and its rolling dropped-frame baseline from ever seeing splash time.
+     *
+     * The splash frame deliberately skips `beginRenderFrame()` and the overlay –
+     * the overlay would draw over the logo and resolve its HUD slots through the
+     * splash's ramp, and keeping it out is also what keeps the overlay free of
+     * splash-state branching.
+     *
+     * @param displaySize - Logical display size the splash centers its logo in.
+     * @returns Promise resolving once the splash is done.
+     */
+    private async runSplash(displaySize: Vector2i): Promise<void> {
+        const splash = this.splash;
+        const renderer = this.renderer;
+
+        if (!splash || !renderer) {
+            return;
+        }
+
+        await new Promise<void>((resolve, reject) => {
+            const frame = (): void => {
+                try {
+                    splash.advance();
+
+                    if (splash.state === 'done') {
+                        resolve();
+
+                        return;
+                    }
+
+                    renderer.beginFrame();
+                    renderer.setCameraOffset(Vector2i.zero());
+                    splash.draw(renderer, displaySize);
+                    renderer.endFrame();
+                } catch (error) {
+                    // Settle rather than scheduling another frame. Nothing else can
+                    // resolve this promise, so a throw here would leave init() pending
+                    // forever behind a splash that has stopped animating.
+                    reject(error instanceof Error ? error : new Error(String(error)));
+
+                    return;
+                }
+
+                requestAnimationFrame(frame);
+            };
+
+            requestAnimationFrame(frame);
+        });
+    }
+
+    /**
+     * Consumes input state accumulated while the splash was up.
+     *
+     * The skip press must not reach the game's first frame. `endUpdate` clears the
+     * pending press and release sets and snapshots the held keys into `prevHeld`,
+     * so a key still physically down reads as held (`BT.isKeyDown`) but produces no
+     * press edge. Pointer and gamepad previous-state rollover works the same way.
+     */
+    private drainInputEdges(): void {
+        this.keyboard?.endUpdate(0);
+        this.pointer?.endFrame();
+        this.gamepad?.endFrame(0);
+    }
+
+    /**
+     * Runs the game's `init()`, behind the splash when one is playing.
+     *
+     * @param demo - Demo whose `init()` runs.
+     * @param hwSettings - Resolved hardware settings for this run.
+     * @returns Whatever the demo's `init()` resolved to.
+     */
+    private async runDemoInitWithSplash(demo: IBTDemo, hwSettings: HardwareSettings): Promise<boolean> {
+        const splash = this.splash;
+
+        if (!splash) {
+            return this.runDemoInit(demo);
+        }
+
+        return this.runDemoInitBehindSplash(demo, splash, hwSettings.displaySize);
+    }
+
+    /**
+     * Runs the game's `init()` behind the splash, then performs the handoff.
+     *
+     * The two run concurrently, so the splash doubles as a loading screen and
+     * costs close to zero perceived time.
+     *
+     * @param demo - Demo whose `init()` runs behind the splash.
+     * @param splash - The splash covering the screen.
+     * @param displaySize - Logical display size passed through to the splash.
+     * @returns Whatever the demo's `init()` resolved to.
+     */
+    private async runDemoInitBehindSplash(demo: IBTDemo, splash: Splash, displaySize: Vector2i): Promise<boolean> {
+        // Install it as the active palette, not just on the renderer: endPaletteCapture()
+        // reads this.palette to fade the splash down when the game never sets one of its
+        // own, and the two must not disagree while the splash is the thing on screen.
+        this.installPalette(splash.palette);
+        this.beginPaletteCapture();
+        splash.attachSkipInput(globalThis);
+        splash.start();
+
+        // Gate on activeBackend, not requestedBackend: this is a runtime feature
+        // gate, and the software renderer throws on post-process.
+        if (this.activeBackend === 'webgpu') {
+            splash.enableDissolve();
+
+            const dissolve = splash.dissolveEffect;
+
+            if (dissolve) {
+                this.effectAdd(dissolve);
+            }
+        }
+
+        // markInitSettled fires on failure too, so a failed init() cannot leave the
+        // hold running forever.
+        const initPromise = this.runDemoInit(demo).then((ok) => {
+            splash.markInitSettled();
+
+            return ok;
+        });
+
+        try {
+            // allSettled, not all: a splash frame that throws must not tear the capture
+            // down while the game's init() is still running, or a paletteSet() landing
+            // after the teardown would apply straight to the screen mid-handoff.
+            const [initSettled, splashSettled] = await Promise.allSettled([initPromise, this.runSplash(displaySize)]);
+
+            if (splashSettled.status === 'rejected') {
+                throw splashSettled.reason;
+            }
+
+            return initSettled.status === 'fulfilled' ? initSettled.value : false;
+        } finally {
+            // In a finally so a throw from either side still tears the splash down.
+            // Leaving capture armed would make every later BT.paletteSet() a no-op.
+            splash.detachSkipInput();
+
+            const dissolve = splash.dissolveEffect;
+
+            if (dissolve) {
+                // By exact reference, never effectClear(): the game's init() ran
+                // concurrently and may have registered effects of its own.
+                this.effectRemove(dissolve);
+            }
+
+            this.endPaletteCapture();
+            this.drainInputEdges();
+        }
+    }
+
+    /**
+     * Stores a palette as the active engine palette and propagates it to the renderer.
+     *
+     * The warning-free half of {@link setPalette}: the splash handoff installs an
+     * already-warned-about palette, and warning twice for one `BT.paletteSet()`
+     * call would be noise.
+     *
+     * @param palette - Palette to store as the active engine palette.
+     */
+    private installPalette(palette: Palette): void {
+        // In-flight effects hold snapshots of the old palette. Drop them so they
+        // don't apply stale colors to the new palette.
+        this.paletteEffects.clear();
+
+        this.palette = palette;
+        this.renderer?.setPalette(palette);
+    }
+}
+
+/**
+ * Creates the splash when gating says it should play on this page load.
+ *
+ * A module-level helper rather than a method so `init()` stays within its
+ * complexity budget; it needs no instance state.
+ *
+ * @param hwSettings - Resolved hardware settings for this run.
+ * @returns A fresh splash, or `null` when gating turned it off.
+ */
+function createSplashIfEnabled(hwSettings: HardwareSettings): Splash | null {
+    if (!isSplashEnabled(hwSettings.isSplashEnabled)) {
+        return null;
+    }
+
+    return new Splash({ colorDark: hwSettings.splashColorDark, colorLight: hwSettings.splashColorLight });
 }

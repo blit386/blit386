@@ -640,6 +640,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.isSplashVisible": {
+      "kind": "getter",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.keyDown": {
       "kind": "method",
       "since": "0.1.0",
@@ -934,6 +941,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.splashState": {
+      "kind": "getter",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.spritesRefresh": {
       "kind": "method",
       "since": "1.0.3",
@@ -1120,6 +1134,18 @@
         {
           "version": "1.3.1",
           "note": "Added {@link HardwareSettings.preferredOrientation}."
+        },
+        {
+          "version": "1.5.0",
+          "note": "Added {@link HardwareSettings.isSplashEnabled}."
+        },
+        {
+          "version": "1.5.0",
+          "note": "Added {@link HardwareSettings.splashColorDark}."
+        },
+        {
+          "version": "1.5.0",
+          "note": "Added {@link HardwareSettings.splashColorLight}."
         }
       ],
       "deprecated": null,
@@ -1315,6 +1341,13 @@
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "SplashState": {
+      "kind": "type",
+      "since": "1.5.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "SpriteSheet": {
       "kind": "class",
@@ -1587,9 +1620,11 @@
       "BT.drawingBufferSize",
       "BT.init",
       "BT.isDevMode",
+      "BT.isSplashVisible",
       "BT.outputSize",
       "BT.requestedBackend",
       "BT.screenOrientation",
+      "BT.splashState",
       "BT.targetFPS",
       "BootstrapOptions",
       "HardwareSettings",

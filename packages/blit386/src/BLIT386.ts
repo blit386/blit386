@@ -69,6 +69,7 @@ import { FullscreenPixelEffect } from './render/effects/FullscreenPixelEffect';
 import { PixelGlitch } from './render/effects/pixel/PixelGlitch';
 import { PixelMosaic } from './render/effects/pixel/PixelMosaic';
 import { amber, crtPipBoy, green } from './render/effects/presets';
+import type { SplashState } from './splash';
 import type { BootstrapOptions } from './utils/Bootstrap';
 import { bootstrap } from './utils/Bootstrap';
 import { displayError, getCanvas } from './utils/BootstrapHelpers';
@@ -733,6 +734,40 @@ export const BT = {
      */
     get isDevMode(): boolean {
         return BTAPI.instance.isDevMode();
+    },
+
+    /**
+     * Current BLIT386 splash lifecycle state.
+     *
+     * `'disabled'` when the splash was gated off, `'done'` once it has finished.
+     * Both mean "not on screen, never will be again" - prefer
+     * {@link BT.isSplashVisible} in game code, and reach for this only when the
+     * distinction genuinely matters (debugging, the engine overlay).
+     *
+     * With the splash disabled this always reads `'disabled'`. With it enabled, an
+     * `init()` observes `'fadingIn'` and, if it lives long enough, `'shown'`; the
+     * first `update()` after handoff reads `'done'`. `'fadingOut'` is never visible
+     * outside the engine, because `update()` and `render()` are suspended while the
+     * splash is on screen.
+     *
+     * @since 1.5.0
+     * @returns The splash's state.
+     */
+    get splashState(): SplashState {
+        return BTAPI.instance.getSplashState();
+    },
+
+    /**
+     * Whether the BLIT386 splash is on screen right now.
+     *
+     * The useful thing this buys a game: `init()` can ask whether something is
+     * covering for it and preload extra assets while the splash holds.
+     *
+     * @since 1.5.0
+     * @returns `true` while the splash is fading in, holding, or fading out.
+     */
+    get isSplashVisible(): boolean {
+        return BTAPI.instance.isSplashVisible();
     },
 
     /**
@@ -2262,6 +2297,7 @@ export type {
     SoundPlayOptions,
     SoundRef,
     SoundStopOptions,
+    SplashState,
     SynthEnvelope,
     SynthParams,
     SynthPitchSweep,

@@ -10,6 +10,7 @@
     "post-process-effects",
     "bitmap-fonts",
     "audio",
-    "hot-reload"
+    "hot-reload",
+    "splash"
   ]
 }
