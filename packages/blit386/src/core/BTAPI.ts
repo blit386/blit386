@@ -1109,7 +1109,7 @@ export class BTAPI {
      * fade so the splash fading down and the game fading up read as one continuous
      * in-camera move rather than a cut. When the game never called
      * `BT.paletteSet()` during `init()`, the splash's own palette is faded to black
-     * instead, so the screen is black rather than showing stale splash greys until
+     * instead, so the screen is black rather than showing stale splash grays until
      * the game sets a palette of its own.
      *
      * Palette effects started during capture are dropped: they hold snapshots of a
@@ -1325,7 +1325,12 @@ export class BTAPI {
      * @throws If no active palette has been set.
      */
     public spritesRefresh(): void {
-        if (!this.palette) {
+        // getPalette(), not this.palette: while the splash owns the screen this is the
+        // game's captured palette, and reindexing sheets against the splash's gray ramp
+        // would leave every sprite wrong once the handoff installs the real one.
+        const palette = this.getPalette();
+
+        if (!palette) {
             throw new Error(noActivePaletteError());
         }
 
@@ -1338,7 +1343,7 @@ export class BTAPI {
             }
 
             try {
-                sheet.reindexize(this.palette);
+                sheet.reindexize(palette);
                 refreshed++;
             } catch (e) {
                 console.error('[BT] spritesRefresh: failed to reindexize sheet, removing from registry:', e);
@@ -2051,8 +2056,12 @@ export class BTAPI {
             throw new Error(paletteIndexNegativeError(index));
         }
 
-        if (this.palette && index >= this.palette.size) {
-            throw new Error(paletteIndexOutOfRangeError(index, this.palette.size));
+        // getPalette() so the range check follows the game's captured palette during
+        // the splash rather than the splash's own ramp, which has a different size.
+        const palette = this.getPalette();
+
+        if (palette && index >= palette.size) {
+            throw new Error(paletteIndexOutOfRangeError(index, palette.size));
         }
     }
 
@@ -2079,20 +2088,29 @@ export class BTAPI {
             return;
         }
 
-        await new Promise<void>((resolve) => {
+        await new Promise<void>((resolve, reject) => {
             const frame = (): void => {
-                splash.advance();
+                try {
+                    splash.advance();
 
-                if (splash.state === 'done') {
-                    resolve();
+                    if (splash.state === 'done') {
+                        resolve();
+
+                        return;
+                    }
+
+                    renderer.beginFrame();
+                    renderer.setCameraOffset(Vector2i.zero());
+                    splash.draw(renderer, displaySize);
+                    renderer.endFrame();
+                } catch (error) {
+                    // Settle rather than scheduling another frame. Nothing else can
+                    // resolve this promise, so a throw here would leave init() pending
+                    // forever behind a splash that has stopped animating.
+                    reject(error instanceof Error ? error : new Error(String(error)));
 
                     return;
                 }
-
-                renderer.beginFrame();
-                renderer.setCameraOffset(Vector2i.zero());
-                splash.draw(renderer, displaySize);
-                renderer.endFrame();
 
                 requestAnimationFrame(frame);
             };
@@ -2169,22 +2187,26 @@ export class BTAPI {
             return ok;
         });
 
-        const [initOk] = await Promise.all([initPromise, this.runSplash(displaySize)]);
+        try {
+            const [initOk] = await Promise.all([initPromise, this.runSplash(displaySize)]);
 
-        splash.detachSkipInput();
+            return initOk;
+        } finally {
+            // In a finally so a throw from either side still tears the splash down.
+            // Leaving capture armed would make every later BT.paletteSet() a no-op.
+            splash.detachSkipInput();
 
-        const dissolve = splash.dissolveEffect;
+            const dissolve = splash.dissolveEffect;
 
-        if (dissolve) {
-            // By exact reference, never effectClear(): the game's init() ran
-            // concurrently and may have registered effects of its own.
-            this.effectRemove(dissolve);
+            if (dissolve) {
+                // By exact reference, never effectClear(): the game's init() ran
+                // concurrently and may have registered effects of its own.
+                this.effectRemove(dissolve);
+            }
+
+            this.endPaletteCapture();
+            this.drainInputEdges();
         }
-
-        this.endPaletteCapture();
-        this.drainInputEdges();
-
-        return initOk;
     }
 
     /**

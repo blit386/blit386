@@ -1,6 +1,6 @@
 /**
  * The BLIT386 splash: a logo bitmap fading in, holding, and fading out on its
- * own grey ramp before the game's first frame.
+ * own gray ramp before the game's first frame.
  *
  * Owns its palette, its own {@link PaletteEffectManager}, and its own state
  * machine. It does *not* own the frame driver – `BTAPI.init()` calls
@@ -52,7 +52,7 @@ export class Splash {
     /** Whether the viewer asked to skip. Collapses the fade-in and the minimum hold. */
     private isSkipped = false;
 
-    /** The splash's own palette: slot 0 transparent, the grey ramp above it. */
+    /** The splash's own palette: slot 0 transparent, the gray ramp above it. */
     private readonly ramp: Palette;
 
     /** Live palette handed to the renderer; the effects fade this toward {@link ramp}. */
@@ -181,6 +181,13 @@ export class Splash {
      * palette fades alone, which is the accepted lower-fidelity floor.
      */
     public enableDissolve(): void {
+        if (this.glitch) {
+            // Idempotent on purpose: the caller registers the effect by reference and
+            // removes it the same way, so replacing the instance would orphan the
+            // registered one in the renderer's chain.
+            return;
+        }
+
         this.glitch = new PixelGlitch();
         this.glitch.bandHeight = GLITCH_BAND_HEIGHT;
         this.glitch.intensity = 0;

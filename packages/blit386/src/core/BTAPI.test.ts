@@ -3032,6 +3032,23 @@ describe('BTAPI splash palette capture', () => {
         expect(splashPalette.get(16).r).toBe(0);
     });
 
+    it('reindexes sprites against the captured game palette, not the splash ramp', () => {
+        const splashPalette = new Palette(RAMP_PALETTE_SIZE);
+
+        armWithSplashPalette(splashPalette);
+
+        const gamePalette = new Palette(16);
+        const reindexize = vi.fn();
+        const mockSheet = { isIndexed: () => true, reindexize } as unknown as SpriteSheet;
+
+        BTAPI.instance.setPalette(gamePalette);
+        (BTAPI.instance as unknown as { spriteSheets: Set<SpriteSheet> }).spriteSheets.add(mockSheet);
+        BTAPI.instance.spritesRefresh();
+
+        expect(reindexize).toHaveBeenCalledWith(gamePalette);
+        expect(reindexize).not.toHaveBeenCalledWith(splashPalette);
+    });
+
     it('drops palette effects started during capture', () => {
         armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
 

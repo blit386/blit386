@@ -447,6 +447,7 @@ describe('splash hardware settings', () => {
         const merged = mergeHardwareSettings({ splashColorDark: dark, splashColorLight: light });
 
         dark.r = 99;
+        light.r = 99;
 
         expect(merged.splashColorDark?.r).toBe(10);
         expect(merged.splashColorLight?.r).toBe(240);

@@ -744,9 +744,11 @@ export const BT = {
      * {@link BT.isSplashVisible} in game code, and reach for this only when the
      * distinction genuinely matters (debugging, the engine overlay).
      *
-     * Because the game's `update()` and `render()` are suspended for the splash's
-     * whole duration, game code can only ever observe `'fadingIn'` (from `init()`)
-     * and `'done'` (from its first `update()` after handoff).
+     * With the splash disabled this always reads `'disabled'`. With it enabled, an
+     * `init()` observes `'fadingIn'` and, if it lives long enough, `'shown'`; the
+     * first `update()` after handoff reads `'done'`. `'fadingOut'` is never visible
+     * outside the engine, because `update()` and `render()` are suspended while the
+     * splash is on screen.
      *
      * @since 1.5.0
      * @returns The splash's state.

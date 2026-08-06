@@ -225,8 +225,8 @@ Resolved after `configure()`; the hook may return a partial object.
 | `isWakeLockEnabled` | `boolean` | `false` | Request a screen wake lock after init to prevent mobile screen dimming/locking during gameplay (silent no-op if unsupported) |
 | `preferredOrientation` | `PreferredOrientation` | `'any'` | Attempt `screen.orientation.lock()` after init (`'landscape'` / `'portrait'`); `'any'` skips the lock (silent no-op if unsupported) |
 | `isSplashEnabled` | `boolean` | _unset_ | Play the BLIT386 splash before the game starts. Unset means shown in release builds, hidden in development. See [the splash guide](guide-splash.md) |
-| `splashColorDark` | `Color32` | `Color32.black` | Dark endpoint of the splash's 16-step grey ramp |
-| `splashColorLight` | `Color32` | `Color32.white` | Light endpoint of the splash's 16-step grey ramp |
+| `splashColorDark` | `Color32` | `Color32.black` | Dark endpoint of the splash's 16-step gray ramp |
+| `splashColorLight` | `Color32` | `Color32.white` | Light endpoint of the splash's 16-step gray ramp |
 | `isOverlayEnabled` | `boolean` | `true` | Engine overlay HUD after each `render()` |
 | `isOverlayVisibleAtStart` | `boolean` | `false` | Show overlay body (metrics/palette/custom rows) on first frame |
 | `isOverlayToggleHintVisible` | `boolean` | `true` | Draw toggle hint icon while overlay body is hidden |
@@ -447,7 +447,7 @@ declare function preloadOptionalAssets(): Promise<void>;
 // ---cut---
 async function init(): Promise<boolean> {
   if (BT.isSplashVisible) {
-    // Something is covering for us - use the time to preload extras.
+    // Something is covering for us – use the time to preload extras.
     await preloadOptionalAssets();
   }
 
@@ -462,9 +462,11 @@ values mean the same thing to a consumer – not on screen, never will be again 
 `state !== 'disabled' && state !== 'done'` is really asking `isSplashVisible`. Reach for the raw state only when the
 distinction genuinely matters, such as debugging or the engine overlay.
 
-The animation states are effectively engine-internal. Because the game's `update()` and `render()` are suspended for the
-splash's whole duration, game code can only ever observe `'fadingIn'` (from `init()`) and `'done'` (from its first
-`update()` after handoff); `'fadingOut'` is never visible outside the engine.
+Which states game code can actually see depends on whether the splash is playing. With it disabled, `'disabled'` is the
+only value it will ever read. With it enabled, an `init()` observes `'fadingIn'` and - if it stays alive long enough,
+which an `await` makes easy - `'shown'`; its first `update()` after handoff reads `'done'`. `'fadingOut'` is engine
+internal: `update()` and `render()` are suspended for the splash's whole duration, so nothing outside the engine runs
+while it is the current state.
 
 Full behavior – the three gating layers, the loading-screen hold, the palette handoff, and the swallowed skip – is in
 [the splash guide](guide-splash.md).

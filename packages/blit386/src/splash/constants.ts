@@ -5,7 +5,7 @@
  * consumers: these are tuning values, not API.
  */
 
-/** Number of grey steps in the splash ramp. */
+/** Number of gray steps in the splash ramp. */
 export const RAMP_STEPS = 16;
 
 /** First palette slot the ramp occupies. Slot 0 is reserved transparent. */

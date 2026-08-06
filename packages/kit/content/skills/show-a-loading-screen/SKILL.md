@@ -19,13 +19,14 @@ and sounds before gameplay starts.
 
 ## The BLIT386 splash already covers init()
 
-In a real build the BLIT386 splash plays before your game starts, and its hold extends until `init()` settles. So in a
-release build there is already something on screen while you load, and awaiting your loads inside `init()` costs the
+A real build shows the BLIT386 splash before your game starts by default, and its hold extends until `init()` settles.
+When it plays there is already something on screen while you load, so awaiting your loads inside `init()` costs the
 player nothing.
 
-Write your own loading UI when you need it _after_ the splash has gone – a level load mid-game, or assets you
-deliberately start after `init()` returns. Also remember the splash never plays in a development build, so a spinner you
-only see under `npx blit run` is still worth having if loads are slow.
+Do not assume it is there. A game can switch it off with `isSplashEnabled: false` in `configure()`, a player can add
+`?nosplash` to the URL, and a development build skips it unless `?splash` is passed. So write your own loading UI when
+you need it _after_ the splash has gone – a level load mid-game, or assets you deliberately start after `init()` returns
+– and whenever loads are slow enough to matter without it.
 
 ## How to do it
 

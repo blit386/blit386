@@ -155,12 +155,14 @@ class Game {
         BT.systemPrint(new Vector2i(6, 18), COLOR_TEXT, `Lives ${this.lives}`);
     }
 
-    // Optional hardware settings. Uncomment to change the screen, or to turn off the
-    // BLIT386 splash that plays when you build your game for real.
+    // Optional hardware settings. Uncomment to change the screen size or speed, or to
+    // turn off the BLIT386 splash that plays when you build your game for real.
     // Full detail: docs/basics.md
     //
     // configure() {
     //     return {
+    //         displaySize: new Vector2i(320, 240),
+    //         targetFPS: 60,
     //         isSplashEnabled: false,
     //     };
     // }

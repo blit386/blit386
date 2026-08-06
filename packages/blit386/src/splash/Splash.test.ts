@@ -7,7 +7,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { FADE_IN_MS, FADE_OUT_MS, HOLD_MIN_MS, RAMP_PALETTE_SIZE } from './constants';
+import { FADE_IN_MS, FADE_OUT_MS, GLITCH_MAX_INTENSITY, HOLD_MIN_MS, RAMP_PALETTE_SIZE } from './constants';
 import { Splash } from './Splash';
 
 describe('Splash state machine', () => {
@@ -191,7 +191,7 @@ describe('Splash dissolve', () => {
         expect(splash.dissolveEffect).not.toBeNull();
     });
 
-    it('drives intensity up during fadingIn and down to zero in shown', () => {
+    it('decays intensity from its peak during fadingIn and reaches zero in shown', () => {
         let now = 0;
         const splash = new Splash({}, () => now);
 
@@ -201,9 +201,12 @@ describe('Splash dissolve', () => {
         now += Math.floor(FADE_IN_MS / 2);
         splash.advance();
 
+        // The dissolve peaks when the logo is least visible and resolves as it fades up,
+        // so halfway through the fade-in it must sit strictly between zero and the peak.
         const midFade = splash.dissolveEffect?.intensity ?? 0;
 
         expect(midFade).toBeGreaterThan(0);
+        expect(midFade).toBeLessThan(GLITCH_MAX_INTENSITY);
 
         now += FADE_IN_MS;
         splash.advance();

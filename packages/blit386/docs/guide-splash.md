@@ -11,8 +11,8 @@
 <!-- blit386.dev-banner:end -->
 
 Every published BLIT386 game shows a short BLIT386 splash before it starts: a logo bitmap fading in on its own 16-step
-grey ramp, holding, then fading out into the game's palette. It plays in release builds by default and never in
-development.
+gray ramp, holding, then fading out into the game's palette. Release builds play it by default and development builds
+skip it by default - both are defaults you can override.
 
 This guide covers when it plays and how to turn it off, the loading-screen behavior, the palette handoff, and the skip.
 The getters themselves – `BT.splashState` and `BT.isSplashVisible` – are in [API: Core](api-core.md#splash-state), and
@@ -119,7 +119,7 @@ first `update()` instead.
 </Callout>
 
 If your game never calls `BT.paletteSet()` during `init()`, the splash's own palette fades to black instead, so the
-screen is black rather than showing stale splash greys.
+screen is black rather than showing stale splash grays.
 
 ## The skip
 
