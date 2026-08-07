@@ -45,7 +45,7 @@ instance's prototype is swapped onto the new class. Every field on the instance 
 does not re-run, music keeps playing, and the game loop keeps ticking without a hitch.
 
 ```ts twoslash
-import { BT, type IBTDemo, Vector2i } from 'blit386';
+import { BT, type IBTDemo, Rect2i, Vector2i } from 'blit386';
 
 const SPEED = 120; // change this number and save - the running instance picks it up immediately
 
@@ -61,7 +61,7 @@ class Demo implements IBTDemo {
   }
 
   render() {
-    BT.drawRectFill(this.pos, new Vector2i(16, 16), 1);
+    BT.drawRectFill(new Rect2i(this.pos.x, this.pos.y, 16, 16), 1);
   }
 }
 ```
