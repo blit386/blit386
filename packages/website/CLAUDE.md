@@ -33,6 +33,7 @@ prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
 | Generated MDX loader | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`) |
 | Engine API truth | `packages/blit386/docs/` in this monorepo – never this package |
 | How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
+| How mirror drift is checked in CI | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` |
 | Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test`) |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Cloudflare security headers | `public/_headers` |
@@ -73,11 +74,14 @@ yourself after touching engine docs; CI is the backstop, not the workflow. The s
 That job checks out with `fetch-depth: 0`. The generator reads each page's `lastModified` with `git log --follow`, to
 see past the commit that moved the engine into `packages/blit386/`, and `--follow` finds nothing on a shallow clone.
 
-**Commit the engine doc before you sync.** `lastModified` comes from git, so a sync run before the commit records the
-doc's _previous_ date, and CI – which sees the commit – regenerates a different value and fails the check. The order is
-edit `packages/blit386/docs/…`, commit, then `pnpm run sync:docs`, then commit the mirror. Amending works too: the
-lookup reads the author date, which `git commit --amend` preserves. It converges after one extra sync either way, since
-the mirror commit does not touch the engine doc.
+**`lastModified` is always at most one commit behind, and that is by design, not a mistake to chase.** It comes from
+`git log` on the engine source doc, so a sync run before that doc's edit is committed embeds the _previous_ commit's
+date. Editing `packages/blit386/docs/…`, committing, then running `pnpm run sync:docs` narrows the window, but cannot
+close it: root CLAUDE.md's squash-merge policy collapses a PR's commits into one new commit with a new SHA and author
+date on `main`, and that commit does not exist yet when `sync:docs` runs, however carefully source and mirror commits
+are ordered within the PR. `pnpm run sync:docs:check` ([`scripts/check-docs-sync.mjs`](scripts/check-docs-sync.mjs))
+regenerates the mirror and inspects the diff: a change confined to `lastModified` lines passes – it self-corrects the
+next time anything syncs that page – and any other change (title, description, editUrl, body) still fails the build.
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds

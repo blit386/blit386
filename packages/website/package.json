@@ -46,7 +46,7 @@
     "spellcheck": "cspell \"content/**/*.{md,mdx}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx}\" \"CLAUDE.md\" --no-progress",
     "docs:links": "node ../../scripts/check-markdown-links.mjs",
     "sync:docs": "node scripts/sync-docs-from-engine.mjs",
-    "sync:docs:check": "pnpm run sync:docs && git diff --exit-code -- content/docs",
+    "sync:docs:check": "node scripts/check-docs-sync.mjs",
     "sync:docs:watch": "node scripts/watch-engine-docs.mjs",
     "encode:video": "node scripts/encode-video.mjs",
     "knip": "cd ../.. && knip --workspace packages/website",
