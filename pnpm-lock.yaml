@@ -298,8 +298,8 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.17)
       blit386:
-        specifier: ^1.4.0
-        version: 1.4.0
+        specifier: workspace:*
+        version: link:../blit386
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -3016,10 +3016,6 @@ packages:
 
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
-
-  blit386@1.4.0:
-    resolution: {integrity: sha512-GWW9Wqtf5BrExA1cNYFIy02LXSiS2xU/NuKNXOhOPwBZmOqAgI0Y6yPHdOSOusbzVh063Jv9qvKyyhu0pbCcFQ==}
-    engines: {node: '>=22.18.0'}
 
   boolbase@1.0.0:
     resolution: {integrity: sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==}
@@ -8374,8 +8370,6 @@ snapshots:
   binary-extensions@2.3.0: {}
 
   blake3-wasm@2.1.5: {}
-
-  blit386@1.4.0: {}
 
   boolbase@1.0.0: {}
 
