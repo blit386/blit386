@@ -80,7 +80,7 @@ jobs:
               - 'packages/blit386/**'
             website:
               - 'packages/website/**'
-              - 'packages/blit386/docs/**'
+              - 'packages/blit386/**'
             kit:
               - 'packages/kit/**'
             # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
@@ -695,9 +695,14 @@ jobs:
       - name: Set up workspace
         uses: ./.github/actions/setup
 
-      # No engine build needed: website resolves `blit386` from the npm registry, not
-      # from the workspace. `pnpm run build` sets CLOUDFLARE=1, which is what turns
-      # Twoslash on, and postbuild patches the generated wrangler config.
+      # website consumes the engine as workspace:*, and Twoslash resolves blit386's type
+      # declarations from packages/blit386/dist, so the engine must be built first - the
+      # same edge build-demos already handles for demos' workspace dependency.
+      - name: Build engine (workspace dependency)
+        run: pnpm --filter blit386 run build
+
+      # `pnpm run build` sets CLOUDFLARE=1, which is what turns Twoslash on, and
+      # postbuild patches the generated wrangler config.
       - name: Build site
         run: pnpm --filter blit386-website run build
         env:
