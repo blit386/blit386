@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     test: {
-        include: ['src/**/*.test.ts'],
+        include: ['src/**/*.test.ts', 'vite.config.test.ts'],
         exclude: ['node_modules', 'dist'],
 
         // Default environment is node. Tests needing DOM use
