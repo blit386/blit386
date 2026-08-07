@@ -418,7 +418,7 @@ describe('renderPage twoslash fragment blocks (BT-427)', () => {
 
     test('preserves the preamble before // ---cut--- so Twoslash can compile the fragment', () => {
         // Twoslash type-checks the whole fenced block, including everything above
-        // `// ---cut---`, and only hides that part from the rendered output - it
+        // `// ---cut---`, and only hides that part from the rendered output – it
         // never sees the mirror's own markdown, only what this generator writes.
         // Deleting the preamble here removes the imports/declarations the visible
         // code depends on, so the block fails to compile (see BT-427).
