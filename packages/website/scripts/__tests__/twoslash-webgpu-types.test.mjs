@@ -1,11 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { twoslasher } from 'twoslash';
-
-// Mirrors transformerTwoslash's twoslashOptions.compilerOptions in ../../source.config.ts.
-// Keep the two in sync - this locks in the config that lets Twoslash resolve WebGPU globals
-// (BT-431); if someone edits one without the other, this test is what catches the drift.
-const TWOSLASH_COMPILER_OPTIONS = { types: ['@webgpu/types', 'node'] };
+import { TWOSLASH_COMPILER_OPTIONS } from '../twoslash-compiler-options.mjs';
 
 // The `Effect` interface example from packages/blit386/docs/guide-post-process-effects.md.
 const EFFECT_INTERFACE_EXAMPLE = `import type { Effect, EffectTier, Vector2i } from 'blit386';

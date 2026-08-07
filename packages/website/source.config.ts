@@ -2,6 +2,7 @@ import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
 import { blogMetaSchema, blogPageSchema, metaSchema, pageSchema } from 'fumapress/adapters/mdx/schema';
 import { transformerTwoslash } from 'fumadocs-twoslash';
 import { z } from 'zod';
+import { TWOSLASH_COMPILER_OPTIONS } from './scripts/twoslash-compiler-options.mjs';
 
 // Twoslash spins up a TypeScript language service that loads blit386.d.ts plus
 // WebGPU types for every MDX file. Across the 35 MDX files in content/ the
@@ -22,7 +23,7 @@ export default defineConfig({
                 ? [
                       transformerTwoslash({
                           throws: false,
-                          twoslashOptions: { compilerOptions: { types: ['@webgpu/types', 'node'] } },
+                          twoslashOptions: { compilerOptions: TWOSLASH_COMPILER_OPTIONS },
                       }),
                   ]
                 : [],
