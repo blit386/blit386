@@ -28,6 +28,8 @@ So with no configuration at all, a production build shows the splash and a dev s
 ### Turning it off
 
 ```ts twoslash
+import { type HardwareSettings, type IBTDemo } from 'blit386';
+// ---cut---
 class Game implements IBTDemo {
   configure(): Partial<HardwareSettings> {
     return { isSplashEnabled: false };
@@ -73,6 +75,10 @@ That is what `BT.isSplashVisible` is for inside `init()` – if something is alr
 can happen now instead of stuttering the first frames.
 
 ```ts twoslash
+import { BT } from 'blit386';
+
+declare function preloadOptionalAssets(): Promise<void>;
+// ---cut---
 async function init(): Promise<boolean> {
   if (BT.isSplashVisible) {
     await preloadOptionalAssets();
@@ -147,6 +153,8 @@ the value you drew it as, because the logo converter picks a step straight from 
 configurable:
 
 ```ts twoslash
+import { Color32, type HardwareSettings } from 'blit386';
+// ---cut---
 function configure(): Partial<HardwareSettings> {
   return {
     splashColorDark: new Color32(6, 8, 12),

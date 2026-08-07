@@ -55,6 +55,8 @@ Demos may implement optional `overlayRows()` on `IBTDemo`. The engine calls it o
 overlay body is visible. Return a reused array of row objects when possible – avoid allocating new strings every frame.
 
 ```ts twoslash
+import { type IBTDemo } from 'blit386';
+// ---cut---
 /** @implements {IBTDemo} */
 class Demo {
   readonly #overlayRows = [{ leftText: 'Score: 0' }];
@@ -98,6 +100,8 @@ label, header, dim, FPS) and register `hud_*` name aliases. See
 [Palette Presets – HUD](/docs/guides/palette-presets#hud-preset).
 
 ```ts twoslash
+import { BT, Palette, Vector2i } from 'blit386';
+// ---cut---
 const palette = Palette.vga();
 palette.applyHUD(1); // slots 1-6 + hud_* aliases
 BT.paletteSet(palette);

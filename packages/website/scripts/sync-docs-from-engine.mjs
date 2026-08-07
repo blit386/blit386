@@ -369,59 +369,6 @@ const SITE_BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- bl
 const stripSiteBanner = (markdown) => markdown.replace(SITE_BANNER_REGION, '\n').replace(/^\n+/u, '');
 
 /**
- * Strip preamble lines before `// ---cut---` in twoslash fenced code blocks.
- * Twoslash uses preamble lines only for TypeScript compilation context; readers
- * should never see them. When a cut marker is absent the block passes through
- * unchanged. Only blocks tagged `twoslash` are affected (e.g. ```ts twoslash);
- * plain language blocks (e.g. ```ts) are left untouched.
- */
-const stripTwoslashCutPreambles = (markdown) => {
-    const lines = markdown.split('\n');
-    const result = [];
-    let isInFence = false;
-    let isInTwoslashFence = false;
-    let fenceBuffer = [];
-
-    for (const line of lines) {
-        if (/^\s*```/u.test(line)) {
-            if (!isInFence) {
-                isInFence = true;
-                isInTwoslashFence = /```(?:ts|typescript)\s+twoslash/u.test(line);
-
-                if (isInTwoslashFence) {
-                    fenceBuffer = [];
-                }
-
-                result.push(line);
-            } else {
-                if (isInTwoslashFence) {
-                    const cutIndex = fenceBuffer.findIndex((l) => /^\/\/\s*---cut---\s*$/u.test(l));
-                    result.push(...(cutIndex === -1 ? fenceBuffer : fenceBuffer.slice(cutIndex + 1)));
-                    fenceBuffer = [];
-                }
-
-                isInFence = false;
-                isInTwoslashFence = false;
-                result.push(line);
-            }
-
-            continue;
-        }
-
-        if (isInTwoslashFence) {
-            fenceBuffer.push(line);
-        } else {
-            result.push(line);
-        }
-    }
-
-    // Malformed input: still inside a fence at EOF — flush the buffer as-is.
-    result.push(...fenceBuffer);
-
-    return result.join('\n');
-};
-
-/**
  * Look up the last commit date (ISO 8601, author date) that touched a source doc in
  * the engine repo. Returns `undefined` when git is unavailable, the repo has no
  * history for the path (e.g. a shallow clone), or the call otherwise fails, so a CI
@@ -472,7 +419,7 @@ const renderPage = ({ src, description }, { lastModifiedFor = getLastModified } 
     const { title, body } = extractTitleAndBody(raw, src);
     const sourceRepoDir = posix.dirname(`docs/${src}`);
     const trimmedBody = dropDuplicateIntro(stripSiteBanner(body), description);
-    const { body: rewritten, comments } = transformBody(stripTwoslashCutPreambles(trimmedBody), sourceRepoDir);
+    const { body: rewritten, comments } = transformBody(trimmedBody, sourceRepoDir);
     const banner = [
         `# Generated from blit386/docs/${src} by scripts/sync-docs-from-engine.mjs.`,
         '# Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.',
@@ -617,7 +564,6 @@ export {
     extractTitleAndBody,
     dropDuplicateIntro,
     stripSiteBanner,
-    stripTwoslashCutPreambles,
     isToolingDirective,
     summarizeComment,
     getLastModified,
