@@ -480,12 +480,13 @@ Full behavior – the three gating layers, the loading-screen hold, the palette 
 <Since symbol="defaultConfig" />
 <Since symbol="mergeHardwareSettings" />
 
-Import `defaultConfig` and `mergeHardwareSettings` when building custom configure flows outside `bootstrap()`:
+Import `mergeHardwareSettings` when building custom configure flows outside `bootstrap()` – it merges its argument with
+`defaultConfig()` internally, so a partial override is enough to get a full settings object back:
 
 ```ts twoslash
-import { defaultConfig, mergeHardwareSettings } from 'blit386';
+import { mergeHardwareSettings } from 'blit386';
 
-const settings = mergeHardwareSettings(defaultConfig(), { targetFPS: 30 });
+const settings = mergeHardwareSettings({ targetFPS: 30 });
 ```
 
 `defaultConfig()` returns a full `HardwareSettings` object (`320×240` logical, `640×480` drawing buffer, overlay
