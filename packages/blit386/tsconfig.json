@@ -12,6 +12,7 @@
     "src/**/*",
     "tests/visual/**/*.ts",
     "vite.config.ts",
+    "vite.config.test.ts",
     "vite.node.config.ts",
     "vitest.config.ts",
     "playwright.config.ts",
