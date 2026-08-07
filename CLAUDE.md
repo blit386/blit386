@@ -27,7 +27,10 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
 - No emoji anywhere – code, docs, commits, PR titles, errors, logs.
 - Use the en dash (–) for parenthetical breaks and ranges (`word – word`, `10–20`, `2020–2026`). Never the em dash (—)
   and never a double hyphen (`--`) as a dash substitute. Hyphens stay hyphens: compound words (`well-known`), CLI flags
-  (`--verbose`), and ISO dates (`2026-06-14`) are not dashes.
+  (`--verbose`), and ISO dates (`2026-06-14`) are not dashes. Enforced on staged
+  `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.md`/`.mdx` files (lint-staged pre-commit) and on the commit message itself
+  (commitlint, `commit-msg`) by `scripts/check-dash-typography.mjs` – a heuristic, not a parser, so it only catches the
+  common case, not everything.
 - American English spelling in prose, JSDoc, and this project's own identifiers. Exempt: third-party or spec-mandated
   names correctly spelled with a British `s`/`c` in their own spec (Web Audio's `AnalyserNode`, the CSS-mirroring
   `gray`/`grey` alias in `packages/blit386/src/utils/Color32.ts`) – do not "fix" those.
