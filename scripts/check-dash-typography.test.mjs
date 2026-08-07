@@ -21,6 +21,12 @@ describe('findDashTypographyIssues', () => {
             const issues = findDashTypographyIssues('never use the em dash (—) here');
             assert.deepEqual(issues, []);
         });
+
+        it('flags a parenthesized em dash that is not naming the character', () => {
+            const issues = findDashTypographyIssues('some odd punctuation (—) here');
+            assert.equal(issues.length, 1);
+            assert.equal(issues[0].kind, 'em-dash');
+        });
     });
 
     describe('hyphen as a parenthetical break', () => {
@@ -33,6 +39,12 @@ describe('findDashTypographyIssues', () => {
         it('does not flag a markdown list bullet', () => {
             assert.deepEqual(findDashTypographyIssues('- first item'), []);
             assert.deepEqual(findDashTypographyIssues('  - indented item'), []);
+        });
+
+        it('flags a later parenthetical-break hyphen on a list-item line', () => {
+            const issues = findDashTypographyIssues('- First item - second item');
+            assert.equal(issues.length, 1);
+            assert.equal(issues[0].kind, 'hyphen-as-dash');
         });
 
         it('does not flag a JSDoc/comment-prefixed bullet', () => {
@@ -58,8 +70,23 @@ describe('findDashTypographyIssues', () => {
             assert.deepEqual(findDashTypographyIssues(text), []);
         });
 
+        it('does not flag content inside a tilde-fenced code block', () => {
+            const text = ['~~~text', 'input - output', '~~~'].join('\n');
+            assert.deepEqual(findDashTypographyIssues(text), []);
+        });
+
+        it('does not flag content inside a JSDoc-prefixed fenced code block', () => {
+            const code = ['/**', ' * Example:', ' * ```text', ' * input - output', ' * ```', ' */'].join('\n');
+            assert.deepEqual(findDashTypographyIssues(code, { commentsOnly: true }), []);
+        });
+
         it('does not flag content inside an inline code span', () => {
             assert.deepEqual(findDashTypographyIssues('see `word - word` for the anti-pattern'), []);
+        });
+
+        it('does not flag prose inside a wider inline code span containing a literal narrower one', () => {
+            const text = 'see `` `literal backtick` inside - not code `` here';
+            assert.deepEqual(findDashTypographyIssues(text), []);
         });
 
         it('reports 1-based line and column', () => {

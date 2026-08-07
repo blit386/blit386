@@ -11,10 +11,14 @@
  *   - A hyphen surrounded by exactly one space on each side, with an
  *     alphanumeric/quote/paren character on both outer edges – the shape of a
  *     parenthetical break someone typed as `word - word` instead of `word – word`.
- *     Markdown list-item lines (`- item`, optionally prefixed by `*`, `//`, or `#`
- *     for a JSDoc/comment bullet) are exempt, and so is anything inside a fenced
- *     code block (``` ... ```) or an inline `code span`, since example output,
- *     commands, and illustrative snippets are not prose.
+ *     A markdown list bullet never matches on its own – there is no alphanumeric
+ *     character before the bullet's hyphen for the lookbehind to require – but
+ *     prose later on the same list-item line is still checked. Anything inside a
+ *     fenced code block (backtick or tilde, at the left margin or prefixed by a
+ *     comment continuation marker) or an inline code span is exempt, since
+ *     example output, commands, and illustrative snippets are not prose. Inline
+ *     spans respect delimiter length, so a wider span can itself contain a
+ *     narrower one (a double backtick span containing a literal single backtick).
  *
  * `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs` files are checked comment-only (`//` and
  * `/* *\/` text), not full source – arithmetic like `a - b` would otherwise
@@ -26,9 +30,8 @@
  * `.md`/`.mdx` files are checked in full (minus fenced/inline code), since prose
  * is most of the file.
  *
- * CLI/JS -- style ranges, ISO dates, and CLI flags (`--verbose`, `-s`) do not
- * match either pattern, since neither has a space on both sides of a single
- * hyphen.
+ * CLI/JS-style ranges, ISO dates, and CLI flags (`--verbose`, `-s`) do not match
+ * either pattern, since neither has a space on both sides of a single hyphen.
  *
  * Usage:
  *   node scripts/check-dash-typography.mjs [file ...]
@@ -46,9 +49,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const EM_DASH = '\u2014';
 const EN_DASH = '\u2013';
-const FENCE_RE = /^\s*```/;
-const LIST_BULLET_RE = /^\s*(?:[*#]|\/\/)?\s*-\s/;
-const INLINE_CODE_RE = /`[^`]*`/g;
+const FENCE_RE = /^\s*(?:\*|\/\/)?\s*(?:`{3,}|~{3,})/;
+const INLINE_CODE_RE = /(`+)(.*?)\1/g;
+const NAMING_EM_DASH_RE = /\bem[- ]dash\s*$/i;
 const QUOTE_CHARS = new Set(["'", '"', '`']);
 const HYPHEN_BREAK_RE = /(?<=[A-Za-z0-9)"'`.,;:!?])[ \t]-[ \t](?=[A-Za-z0-9"'`(])/g;
 const SCAN_EXTENSIONS = ['*.ts', '*.tsx', '*.js', '*.cjs', '*.mjs', '*.md', '*.mdx'];
@@ -59,9 +62,18 @@ const IGNORED_PATH_PATTERNS = [/^packages\/website\/content\/docs\/[^/]+\//u];
  * @typedef {{ line: number, column: number, kind: 'em-dash' | 'hyphen-as-dash', message: string }} DashIssue
  */
 
-/** Blanks the interior of every inline `code span` so it cannot trip the prose checks below, while keeping column offsets stable. @param {string} line @returns {string} */
+/**
+ * Blanks every inline code span (delimiter and content alike) so it cannot trip
+ * the prose checks below, while keeping column offsets stable. The opening and
+ * closing backtick runs must match in length (INLINE_CODE_RE's `\1` backreference),
+ * so a wider span (`` `` ``) can contain a literal narrower one (`` ` ``) without
+ * ending the span early.
+ *
+ * @param {string} line
+ * @returns {string}
+ */
 function maskInlineCode(line) {
-    return line.replace(INLINE_CODE_RE, (match) => `\`${' '.repeat(match.length - 2)}\``);
+    return line.replace(INLINE_CODE_RE, (match) => ' '.repeat(match.length));
 }
 
 /**
@@ -172,7 +184,10 @@ export function findDashTypographyIssues(text, options = {}) {
         let emIndex = line.indexOf(EM_DASH);
 
         while (emIndex !== -1) {
-            const isNamingTheCharacter = line[emIndex - 1] === '(' && line[emIndex + 1] === ')';
+            const isNamingTheCharacter =
+                line[emIndex - 1] === '(' &&
+                line[emIndex + 1] === ')' &&
+                NAMING_EM_DASH_RE.test(line.slice(0, emIndex - 1));
 
             if (!isNamingTheCharacter) {
                 issues.push({
@@ -185,8 +200,6 @@ export function findDashTypographyIssues(text, options = {}) {
 
             emIndex = line.indexOf(EM_DASH, emIndex + 1);
         }
-
-        if (LIST_BULLET_RE.test(rawLine)) continue;
 
         for (const match of line.matchAll(HYPHEN_BREAK_RE)) {
             issues.push({
