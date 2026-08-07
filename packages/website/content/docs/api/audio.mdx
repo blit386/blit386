@@ -25,6 +25,8 @@ music  ─┼─► main ─► destination
 <Since symbol="AudioBus" />
 
 ```ts twoslash
+import { type AudioBus } from 'blit386';
+// ---cut---
 declare const bus: AudioBus; // 'main' | 'music' | 'sfx'
 ```
 
@@ -36,6 +38,8 @@ declare const bus: AudioBus; // 'main' | 'music' | 'sfx'
 `BT.audioVolumeSet` sets a bus's volume, optionally fading to it. `BT.audioVolumeGet` reads it back.
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 BT.audioVolumeSet('music', 0.5); // immediate change
 BT.audioVolumeSet('sfx', 0, { fadeMs: 300 }); // linear fade to silence over 300 ms
 BT.audioVolumeSet('main', 0.8, { fadeMs: 500, easing: 'ease-out' }); // eased fade
@@ -62,6 +66,8 @@ With no `fadeMs`, the bus gain changes immediately. With `fadeMs`, `'linear'` ea
 mute state.
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 BT.audioVolumeSet('music', 0.75);
 
 BT.audioMuteSet('music', true); // silences the bus immediately (no fade)
@@ -85,6 +91,8 @@ Browsers block audio playback until a user gesture. `BT.isAudioUnlocked` is `fal
 session.
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 if (!BT.isAudioUnlocked) {
   // Show a "click or press a key to enable audio" prompt.
 }
@@ -128,6 +136,8 @@ For a single loading-screen signal that also covers sprite sheet images, see
 Pass `onProgress` to report phased load progress:
 
 ```ts twoslash
+import { AudioClip } from 'blit386';
+// ---cut---
 await AudioClip.load('audio/theme.mp3', {
   onProgress: (progress) => {
     console.log(progress.phase, progress.ratio);
@@ -143,6 +153,9 @@ await AudioClip.load('audio/theme.mp3', {
 Release a clip's decoded buffer with `unload()` once you no longer need it:
 
 ```ts twoslash
+import { AudioClip } from 'blit386';
+declare const theme: AudioClip;
+// ---cut---
 theme.unload(); // releases the decoded buffer; safe to call more than once
 ```
 
@@ -357,6 +370,11 @@ Per-sound controls, all silent no-ops on a stale or invalid `SoundRef` (already 
 throws):
 
 ```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const hit = await AudioClip.load('audio/hit.mp3');
+const ref = BT.soundPlay(hit);
+// ---cut---
 BT.soundVolumeSet(ref, 0.5, { fadeMs: 100 });
 BT.soundVolumeGet(ref); // 0.5
 
@@ -456,6 +474,11 @@ happen from normal play.
 requested target (not a mid-fade instantaneous value):
 
 ```ts twoslash
+import { AudioClip, BT } from 'blit386';
+
+const theme = await AudioClip.load('audio/theme.mp3');
+BT.musicPlay(theme);
+// ---cut---
 BT.musicVolumeSet(0.4, { fadeMs: 300 });
 BT.musicVolumeGet(); // 0.4
 ```

@@ -180,6 +180,8 @@ right screen edges. Custom rows are user content, so a `|` in their text stays a
   allocations.
 
 ```ts twoslash
+import { type IBTDemo } from 'blit386';
+// ---cut---
 /** @implements {IBTDemo} */
 class Demo {
   readonly #overlayRows = [{ leftText: 'Position: 0, 0' }, { leftText: 'Score: 0', rightText: 'ready' }];
@@ -284,6 +286,8 @@ bottomReserve = paletteGridHeight + 1 + 13
   `resolveGridVisibleRows`).
 
 ```ts twoslash
+import { type HardwareSettings, Vector2i } from 'blit386';
+// ---cut---
 // Overlay off (release build or custom full-screen HUD).
 function configure(): Partial<HardwareSettings> {
   return {
@@ -296,6 +300,8 @@ function configure(): Partial<HardwareSettings> {
 <Since symbol="OverlayTimingChartStyle" />
 
 ```ts twoslash
+import { type HardwareSettings, Vector2i } from 'blit386';
+// ---cut---
 // Overlay on with palette grid and timing chart.
 function configure(): Partial<HardwareSettings> {
   return {

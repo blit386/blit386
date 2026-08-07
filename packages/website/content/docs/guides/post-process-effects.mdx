@@ -29,6 +29,8 @@ For how logical, drawing buffer, CSS cap, and effect tier map to `HardwareSettin
 ## Quick start
 
 ```ts twoslash
+import { BT, Vector2i, BarrelDistortion, Scanlines, RGBMask, Bloom, PixelGlitch } from 'blit386';
+// ---cut---
 class Demo {
   glitch: PixelGlitch | null = null;
 
@@ -151,6 +153,8 @@ vs. RGBA paths – see [Writing a custom effect](#writing-a-custom-effect) below
 ### `HardwareSettings`
 
 ```ts twoslash
+import type { Vector2i } from 'blit386';
+// ---cut---
 interface HardwareSettings {
   displaySize: Vector2i;
   drawingBufferSize?: Vector2i; // drives drawing buffer + CSS, enables display tier

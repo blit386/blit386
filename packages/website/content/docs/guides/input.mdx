@@ -50,6 +50,8 @@ The engine tracks four pointer slots (indices `0`–`3`). Overflow contacts beyo
 <Since symbol="BT.isPointerActive" />
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // Current position in display coordinates
 const pos = BT.pointerPos(); // slot 0 (mouse)
 const touch = BT.pointerPos(1); // slot 1 (first touch)
@@ -83,6 +85,8 @@ Use `BT.isDown()`, `BT.isPressed()`, and `BT.isReleased()` with the `BTN_POINTER
 the pointer slot (defaults to `0`):
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // Hold detection
 BT.isDown(BT.BTN_POINTER_A); // left mouse button held
 BT.isDown(BT.BTN_POINTER_B); // right mouse button held
@@ -144,6 +148,8 @@ not `event.key` layout text.
 Use these for direct key checks:
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // Held state
 if (BT.isKeyDown('KeyW')) {
   // W key held
@@ -201,6 +207,8 @@ For player 0 and player 1, face-button reads merge keyboard maps and gamepad sta
 `update()`-only edge timing as `BT.isKeyPressed` above.
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // Player 0 (default: WASD-style + Space / KeyB for A, etc.)
 BT.isDown(BT.BTN_UP, 0);
 BT.isPressed(BT.BTN_A, 0, 6); // edge + repeat every 6 ticks while held
@@ -229,6 +237,8 @@ Override bindings at runtime. The first argument is the zero-based player index 
 ignored). The second is the face button constant. Remaining arguments are `KeyboardEvent.code` strings.
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 BT.inputMap(0, BT.BTN_A, 'Space');
 BT.inputMap(0, BT.BTN_UP, 'ArrowUp', 'KeyW'); // either key triggers UP for player 0
 BT.inputMap(1, BT.BTN_START, 'Enter', 'NumpadEnter');
@@ -240,6 +250,8 @@ BT.inputMapReset();
 Pass no key codes to clear keyboard bindings for that player and button until you map again:
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 BT.inputMap(0, BT.BTN_X); // player 0 X has no keyboard keys until remapped
 ```
 
@@ -262,6 +274,8 @@ BT.inputMap(0, BT.BTN_X); // player 0 X has no keyboard keys until remapped
 <Since symbol="BT.PLAYER_FOUR" />
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 BT.isGamepadConnected(0); // true when player 0 has a connected gamepad
 BT.gamepadCount; // number of connected gamepads (0..4)
 
@@ -307,6 +321,8 @@ details.
 <Since symbol="BT.pointerScrollDelta" />
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // Accumulated vertical scroll for the current frame, in pixels
 const scroll = BT.pointerScrollDelta;
 
@@ -372,6 +388,8 @@ function configure(): Partial<HardwareSettings> {
 <Since symbol="BT.showCursor" />
 
 ```ts twoslash
+import { BT } from 'blit386';
+// ---cut---
 // In init(): hide the OS cursor and draw your own crosshair / sprite
 BT.hideCursor();
 

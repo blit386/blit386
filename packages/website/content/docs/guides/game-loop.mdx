@@ -27,6 +27,10 @@ The fix is to interpolate: keep both the previous and current tick's position, a
 `BT.renderAlpha` as the blend factor. Store the previous position at the start of `update()`, before moving:
 
 ```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+const srcRect = new Rect2i(0, 0, 16, 16);
+// ---cut---
 class Player {
   position = new Vector2i(0, 0);
   previousPosition = new Vector2i(0, 0);
@@ -59,6 +63,10 @@ for prototyping but worth tightening in a shipping demo. Reuse fixed vectors wit
 [Performance Best Practices](/docs/performance/best-practices)):
 
 ```ts twoslash
+import { BT, Rect2i, SpriteSheet, Vector2i } from 'blit386';
+declare const sheet: SpriteSheet;
+const srcRect = new Rect2i(0, 0, 16, 16);
+// ---cut---
 class Player {
   position = new Vector2i(0, 0);
   previousPosition = new Vector2i(0, 0);

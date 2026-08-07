@@ -17,6 +17,12 @@ The camera applies a global pixel offset to all subsequent draw calls. Integer o
 <Since symbol="BT.cameraClamp" />
 
 ```ts twoslash
+import { BT, Vector2i } from 'blit386';
+declare const scrollX: number;
+declare const scrollY: number;
+declare const desired: Vector2i;
+declare const worldSize: Vector2i;
+// ---cut---
 BT.cameraSet(new Vector2i(scrollX, scrollY)); // apply offset
 BT.camera; // Vector2i – current offset
 BT.cameraReset(); // set back to (0, 0)
@@ -42,6 +48,11 @@ Standalone helper (same math as `BT.cameraClamp`):
 <Since symbol="clampCameraToWorld" />
 
 ```ts twoslash
+import { clampCameraToWorld, Vector2i } from 'blit386';
+declare const desired: Vector2i;
+declare const worldSize: Vector2i;
+declare const viewSize: Vector2i;
+// ---cut---
 const clamped = clampCameraToWorld(desired, worldSize, viewSize);
 ```
 
