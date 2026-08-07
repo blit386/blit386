@@ -108,6 +108,13 @@ the generated JSON. Never add a symbol to that JSON here; fix `packages/blit386`
 block that fails compilation degrades to plain highlighting instead of crashing the build. Correctness is
 `packages/blit386`'s job – every twoslash block there must be self-contained or use a `// ---cut---` preamble.
 
+`blit386` is a `workspace:*` devDependency (BT-414), not a pinned npm version – Twoslash resolves its type declarations
+from `packages/blit386/dist`, so a doc can reference and validate unreleased engine API before it ships, and the engine
+must be built (`pnpm --filter blit386 run build`) before this package's `build` in every CI/deploy job that runs one.
+Because `throws: false` swallows a failing block into plain highlighting rather than an error, a regression here is
+silent: `grep -c twoslash-hover dist/public/docs/<page>/index.html` after a build is the fastest way to confirm a given
+block actually typechecked (0 means it silently degraded).
+
 Dev-mode skip (memory constraint): the transformer is gated on `!!process.env.CLOUDFLARE`. `blit386.d.ts` is ~192 KB and
 imports WebGPU types; across the several dozen MDX files the TypeScript language service accumulates over 4 GB during
 `waku dev` and OOMs. `NODE_ENV` is not a usable signal because `source.config.ts` is evaluated by the fumadocs-mdx Vite
