@@ -25,7 +25,13 @@
       "project": ["src/**/*.css", "scripts/**/*.mjs"],
       "ignore": [".source/**", "src/pages.gen.ts", "dist/**", "scripts/prettier-plugin-compact-tables.mjs"],
       "ignoreFiles": ["src/app.css"],
-      "ignoreDependencies": ["@fuma-translate/react", "blit386", "react-server-dom-webpack", "tailwindcss"],
+      "ignoreDependencies": [
+        "@fuma-translate/react",
+        "@webgpu/types",
+        "blit386",
+        "react-server-dom-webpack",
+        "tailwindcss"
+      ],
       "ignoreBinaries": ["ffprobe"]
     },
     "packages/create-blit386": {

@@ -18,7 +18,14 @@ export default defineConfig({
             themes: { light: 'github-light', dark: 'github-dark' },
             defaultColor: false,
             langs: ['js', 'jsx', 'ts', 'tsx'],
-            transformers: isProductionBuild ? [transformerTwoslash({ throws: false })] : [],
+            transformers: isProductionBuild
+                ? [
+                      transformerTwoslash({
+                          throws: false,
+                          twoslashOptions: { compilerOptions: { types: ['@webgpu/types', 'node'] } },
+                      }),
+                  ]
+                : [],
         },
     },
 });
