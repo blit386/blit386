@@ -117,6 +117,12 @@ class MyDemo implements IBTDemo {
   private readonly tempVec = new Vector2i(0, 0);
   private readonly tempRect = new Rect2i(0, 0, 0, 0);
 
+  async init(): Promise<boolean> {
+    return true;
+  }
+
+  update(): void {}
+
   render(): void {
     // Reuse in tight loop
     for (let i = 0; i < 200; i++) {
