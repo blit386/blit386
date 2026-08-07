@@ -5,6 +5,7 @@
   },
   "pages": [
     { "src": "api/renderer.md", "path": "api/renderer", "description": "Renderer API" },
-    { "src": "guide/getting-started.md", "path": "guide/getting-started", "description": "Getting Started" }
+    { "src": "guide/getting-started.md", "path": "guide/getting-started", "description": "Getting Started" },
+    { "src": "api/with-twoslash.md", "path": "api/with-twoslash", "description": "Twoslash fixture." }
   ]
 }
