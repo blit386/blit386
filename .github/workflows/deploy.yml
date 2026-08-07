@@ -10,8 +10,8 @@ name: Deploy
 # No path filter on the next.* jobs, on purpose - matches deploy-demos/deploy-website's
 # existing no-filter design. A wrong filter here means a preview site silently stays stale
 # rather than failing loudly, and the whole point of a preview channel is that it never lags
-# main. The website depends on packages/blit386/docs and demos depends on the engine, so a
-# path filter would also have to track those cross-package edges correctly, which a push-to-
+# main. Both the website and demos depend on the workspace engine (packages/blit386), so a
+# path filter would also have to track that cross-package edge correctly, which a push-to-
 # main preview channel should not have to get right to do its job.
 #
 # Each job builds its own site rather than downloading ci.yml's artifacts, same as before -
@@ -84,9 +84,12 @@ jobs:
       - name: Set up workspace
         uses: ./.github/actions/setup
 
-      # No engine build: website resolves `blit386` from npm, not the workspace.
-      # `build` sets CLOUDFLARE=1 (Twoslash) and its postbuild lifecycle patches
-      # dist/server/wrangler.json, which is the config deployed below.
+      # website consumes the engine as workspace:*, so the engine build is a
+      # prerequisite. `build` sets CLOUDFLARE=1 (Twoslash) and its postbuild lifecycle
+      # patches dist/server/wrangler.json, which is the config deployed below.
+      - name: Build engine (workspace dependency)
+        run: pnpm --filter blit386 run build
+
       - name: Build site
         run: pnpm --filter blit386-website run build
         env:
@@ -154,7 +157,11 @@ jobs:
       - name: Set up workspace
         uses: ./.github/actions/setup
 
-      # No engine build: website resolves `blit386` from npm, not the workspace.
+      # website consumes the engine as workspace:*, so the engine build is a
+      # prerequisite.
+      - name: Build engine (workspace dependency)
+        run: pnpm --filter blit386 run build
+
       - name: Build site (next channel)
         run: pnpm --filter blit386-website run build
         env:
