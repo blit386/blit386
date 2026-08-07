@@ -111,6 +111,10 @@ No combined `preflight` script exists at root; run what does:
 - `pnpm run docs:links` – Markdown link checker
 - `pnpm run agents:check` – skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings
 - `pnpm run test:agent-config` – unit tests for the `agents:check` script itself
+- `pnpm run check-dash-typography` – en-dash-only rule (root CLAUDE.md, "Shared conventions") over every tracked
+  `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.md`/`.mdx` file; already gated per-commit via lint-staged (staged files) and
+  commitlint (the commit message), so this manual run is for auditing pre-existing drift, not a step a clean push needs
+- `pnpm run test:dash-typography` – unit tests for `check-dash-typography.mjs`
 - `pnpm run test:bump-lockstep` – unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
   `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`)
 
