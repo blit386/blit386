@@ -34,7 +34,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:watch": "pnpm --filter blit386 run build && concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit386 run build --watch\" \"pnpm run dev\"",
+    "dev:watch": "pnpm --filter blit386 run build && concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit386 run build:browser --watch\" \"pnpm run dev\"",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
