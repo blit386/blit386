@@ -85,6 +85,13 @@ No unit tests here by design – see `/test demos`.
 
 No MCP security preflight here (unlike `blit386` – see `/security-run`).
 
+Preflight runs under `.husky/pre-push`, which git invokes with `GIT_DIR` exported. It outranks both `cwd` and `-C`, so
+any git subprocess a preflight step spawns for some other directory retargets the repo being pushed from – `git init` in
+a fixture repo then writes `bare = true` into the shared `.git/config` and breaks git in every checkout. The hook clears
+git's `--local-env-vars` before dispatching, and every git call in `packages/website/scripts/` must pass `env: gitEnv()`
+([`packages/website/scripts/git-env.mjs`](../../../packages/website/scripts/git-env.mjs)); the same scrub is inline in
+`packages/blit386/scripts/gen-api-history.test.mjs`. Guarded by `packages/website/scripts/__tests__/git-env.test.mjs`.
+
 ## packages/kit and packages/create-blit386
 
 Neither package has its own combined `preflight` script post-monorepo-merge (the old `create-blit386-workspace` root

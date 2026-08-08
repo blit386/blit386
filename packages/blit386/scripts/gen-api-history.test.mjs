@@ -405,7 +405,7 @@ describe('JSDoc backfill codemod', () => {
             /\/\*\*\n\s+\* Fixture single-line JSDoc member, no version tag yet - matches the real `BT` namespace style\.\n\s+\* @since 1\.2\.0\n\s+\*\/\n\s+flag: 1,/u,
         );
 
-        // Re-parsing the updated text (in memory - never touching the fixture file on disk) must
+        // Re-parsing the updated text (in memory – never touching the fixture file on disk) must
         // still find a well-formed `flag` property with the newly inserted @since, and no parse
         // errors, proving the codemod output is valid, re-consumable TypeScript/JSDoc.
         const reparsedSourceFile = ts.createSourceFile(
@@ -566,7 +566,7 @@ describe('findIntroducingVersion (git pickaxe, real repo fixture with a rename)'
      * edited afterward, mirroring the real regression: `src/BlitTech.ts` renamed to
      * `src/BLIT386.ts` shortly before a release tag, which made every symbol declared in that file
      * falsely resolve to the post-rename release when `git log` ran without `--follow`. A mocked
-     * `execFile` cannot prove this - it only proves the codemod builds the argv it is told to
+     * `execFile` cannot prove this – it only proves the codemod builds the argv it is told to
      * build. Only a real git repo proves the `--follow` flag itself changes pickaxe results.
      *
      * @returns {{ dir: string, oldSha: string, renameSha: string }} Fixture repo directory and the
@@ -577,15 +577,37 @@ describe('findIntroducingVersion (git pickaxe, real repo fixture with a rename)'
         const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
         const { tmpdir } = await import('node:os');
         const dir = mkdtempSync(join(tmpdir(), 'gen-api-history-rename-'));
+        // GIT_DIR and its siblings outrank `cwd`, and git exports them into every hook it runs –
+        // including `.husky/pre-push`, which is what dispatches this test suite. Left in place,
+        // `run(['init', ...])` below re-initializes the *real* repository instead of the fixture:
+        // a push from a linked worktree carries GIT_DIR=.git/worktrees/<name>, which git cannot
+        // pair with a work tree from this cwd, so it writes `bare = true` into the shared
+        // .git/config and every later git command fails with "this operation must be run in a
+        // work tree" until it is reset by hand. `packages/website/scripts/git-env.mjs` scrubs the
+        // same set for the same reason.
+        //
+        // The list comes from git rather than a hand-copied copy of it: --local-env-vars is what
+        // git itself clears before recursing into an unrelated repository, so it stays correct as
+        // git grows new ones. The three appended scope discovery and ref visibility rather than
+        // repo location, and are set on hook subprocesses all the same.
+        const repoLocationVars = new Set([
+            ...execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
+                .split('\n')
+                .map((name) => name.trim())
+                .filter(Boolean),
+            'GIT_CEILING_DIRECTORIES',
+            'GIT_NAMESPACE',
+            'GIT_QUARANTINE_PATH',
+        ]);
         const env = {
-            ...process.env,
+            ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !repoLocationVars.has(name))),
             GIT_AUTHOR_NAME: 'Test',
             GIT_AUTHOR_EMAIL: 'test@example.com',
             GIT_COMMITTER_NAME: 'Test',
             GIT_COMMITTER_EMAIL: 'test@example.com',
         };
         // -c commit.gpgsign=false / tag.gpgsign=false override the caller's global git config for
-        // this throwaway, git-config-isolated fixture repo only - a machine with commit signing
+        // this throwaway, git-config-isolated fixture repo only – a machine with commit signing
         // enabled globally would otherwise fail these commits without a configured signing key.
         const run = (args) =>
             execFileSync('git', ['-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args], {

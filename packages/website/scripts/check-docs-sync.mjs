@@ -22,6 +22,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { gitEnv } from './git-env.mjs';
 
 const DIFF_FILE_HEADER_PATTERN = /^(?:\+\+\+ |--- )/u;
 const HUNK_HEADER_PATTERN = /^@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@/u;
@@ -79,7 +80,10 @@ const classifyDocsDiff = (diffText) => {
 const main = () => {
     execFileSync('pnpm', ['run', 'sync:docs'], { stdio: 'inherit' });
 
-    const diff = execFileSync('git', ['diff', '--no-color', '--', 'content/docs'], { encoding: 'utf8' });
+    const diff = execFileSync('git', ['diff', '--no-color', '--', 'content/docs'], {
+        encoding: 'utf8',
+        env: gitEnv(),
+    });
     const verdict = classifyDocsDiff(diff);
 
     if (verdict === 'clean') {
