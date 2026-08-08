@@ -6,8 +6,10 @@ import {
     DEFAULTS,
     buildEmbedUrl,
     buildIntermediatePaths,
+    buildUpscaleArgs,
     computeUpscaleTarget,
     parseArgs,
+    resolveEncodeVideoScriptPath,
 } from '../capture-demo-clip.mjs';
 
 describe('parseArgs', () => {
@@ -141,5 +143,34 @@ describe('buildIntermediatePaths', () => {
         const paths = buildIntermediatePaths('public/media/social', 'palette-cycling');
         assert.equal(paths.raw, join('public/media/social', 'palette-cycling.raw.webm'));
         assert.equal(paths.upscaled, join('public/media/social', 'palette-cycling.upscaled.mp4'));
+    });
+});
+
+describe('buildUpscaleArgs', () => {
+    test('builds the nearest-neighbor upscale command', () => {
+        const args = buildUpscaleArgs('raw.webm', 'upscaled.mp4', { width: 1280, height: 960 });
+        assert.deepEqual(args, [
+            '-hide_banner',
+            '-y',
+            '-i',
+            'raw.webm',
+            '-vf',
+            'scale=1280:960:flags=neighbor',
+            '-c:v',
+            'libx264',
+            '-qp',
+            '0',
+            '-preset',
+            'ultrafast',
+            '-an',
+            'upscaled.mp4',
+        ]);
+    });
+});
+
+describe('resolveEncodeVideoScriptPath', () => {
+    test('resolves to packages/website/scripts/encode-video.mjs relative to this script', () => {
+        const result = resolveEncodeVideoScriptPath('file:///repo/packages/demos/scripts/capture-demo-clip.mjs');
+        assert.equal(result, join('/repo', 'packages', 'website', 'scripts', 'encode-video.mjs'));
     });
 });

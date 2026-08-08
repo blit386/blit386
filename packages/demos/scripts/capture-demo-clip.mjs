@@ -13,7 +13,8 @@
  *
  * Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
  */
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
@@ -175,6 +176,51 @@ export function buildIntermediatePaths(outDir, name) {
         raw: join(outDir, `${name}.raw.webm`),
         upscaled: join(outDir, `${name}.upscaled.mp4`),
     };
+}
+
+// #endregion
+
+// #region Command construction
+
+/**
+ * ffmpeg args for the nearest-neighbor upscale into a lossless H.264 intermediate.
+ * Nearest-neighbor keeps pixel art's hard edges; any other scale filter would blur them
+ * before they ever reach a social player.
+ *
+ * @param {string} input Source capture path (the raw canvas recording).
+ * @param {string} output Destination intermediate path.
+ * @param {{ width: number, height: number }} target Upscale target, from computeUpscaleTarget.
+ * @returns {string[]} Arguments for `ffmpeg`, output path last.
+ */
+export function buildUpscaleArgs(input, output, target) {
+    return [
+        '-hide_banner',
+        '-y',
+        '-i',
+        input,
+        '-vf',
+        `scale=${target.width}:${target.height}:flags=neighbor`,
+        '-c:v',
+        'libx264',
+        '-qp',
+        '0',
+        '-preset',
+        'ultrafast',
+        '-an',
+        output,
+    ];
+}
+
+/**
+ * Resolve the path to packages/website/scripts/encode-video.mjs relative to this script's
+ * own location, so the capture pipeline works regardless of the caller's cwd.
+ *
+ * @param {string} moduleUrl This module's own `import.meta.url`.
+ * @returns {string} Absolute path to encode-video.mjs.
+ */
+export function resolveEncodeVideoScriptPath(moduleUrl) {
+    const scriptsDir = dirname(fileURLToPath(moduleUrl));
+    return join(scriptsDir, '..', '..', 'website', 'scripts', 'encode-video.mjs');
 }
 
 // #endregion
