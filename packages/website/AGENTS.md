@@ -18,8 +18,10 @@ Package manager is pnpm 11.20.0; Node >= 22.18.0.
 ```bash
 pnpm install                                   # from the repo root
 pnpm --filter blit386-website run dev          # or: cd packages/website && pnpm run dev
-pnpm --filter blit386-website run preflight    # format:check, typecheck, test, spellcheck, knip, build
+pnpm --filter blit386-website run preflight    # format:check, typecheck, test, spellcheck, knip, build, sync:docs:check
 ```
+
+`test` covers both suites: `node --test` over `scripts/**` and Vitest over `src/**`.
 
 Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands. Production builds need
 `CLOUDFLARE=1`, which `pnpm run build` already sets.
