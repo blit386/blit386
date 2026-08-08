@@ -9,7 +9,7 @@
 //
 // Live version: https://demos.blit386.dev/crt-pipboy
 //
-// Live article: https://vancura.dev/articles/blit386-pipboy-crt
+// Guide: https://blit386.dev/docs/guides/post-process-effects
 //
 // WHAT YOU WILL SEE
 // A green-on-black terminal that looks like an old curved CRT screen. Scanlines, a soft

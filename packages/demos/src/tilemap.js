@@ -6,7 +6,7 @@
 // Optional background: Sprites (https://demos.blit386.dev/sprites) also
 // places art on a grid, but this demo uses colored rectangles instead of a PNG sheet.
 //
-// Live walkthrough: https://vancura.dev/articles/blit386-tilemap
+// Guide: https://blit386.dev/docs/api/camera
 //
 // A "tilemap" is like a floor made of same-sized square tiles. Each cell in a 2D array
 // (a list of rows, each row a list of columns) stores a small number that means "which

@@ -7,10 +7,10 @@
 //   Primitives https://demos.blit386.dev/primitives
 //   Colors     https://demos.blit386.dev/colors
 //   Fonts      https://demos.blit386.dev/fonts
-//     (text drawing basics with BT.systemPrint; walkthrough: https://vancura.dev/articles/blit386-fonts)
+//     (text drawing basics with BT.systemPrint; guide: https://blit386.dev/docs/guides/bitmap-fonts)
 //
 // Live version: https://demos.blit386.dev/palette-presets
-// Live article: https://vancura.dev/articles/blit386-palette-presets
+// Guide: https://blit386.dev/docs/guides/palette-presets
 //
 // WHAT IS A PALETTE PRESET?
 //

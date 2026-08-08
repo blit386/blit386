@@ -7,7 +7,7 @@
 // saved PNG as well. That is fine for this demo – see the comment in render().
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics).
-// Live article: https://vancura.dev/articles/blit386-image-output
+// Guide: https://blit386.dev/docs/api/rendering#frame-capture
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 

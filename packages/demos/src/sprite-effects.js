@@ -2,7 +2,7 @@
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Sprites (https://demos.blit386.dev/sprites).
-// Live article: https://vancura.dev/articles/blit386-sprite-effects
+// Guide: https://blit386.dev/docs/guides/palette#per-draw-palette-offsets-zero-cost-color-variants
 //
 // In the palette-based rendering system, each sprite pixel stores a palette index.
 // By drawing the same sprite with a different palette offset (the fourth argument

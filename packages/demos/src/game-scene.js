@@ -17,7 +17,7 @@
 //   Tilemap      https://demos.blit386.dev/tilemap
 //   Image Output https://demos.blit386.dev/image-output
 //
-// Live article: https://vancura.dev/articles/blit386-game-scene
+// Guide: https://blit386.dev/docs
 //
 // WHAT YOU SEE (how the pieces connect):
 //   - Sky gradient and slow-moving clouds = colors + parallax idea from starfield.

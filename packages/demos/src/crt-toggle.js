@@ -9,7 +9,7 @@
 //
 // Live version: https://demos.blit386.dev/crt-toggle
 //
-// Live article: https://vancura.dev/articles/blit386-crt-toggle
+// Guide: https://blit386.dev/docs/guides/post-process-effects
 //
 // WHAT YOU WILL SEE
 // A colorful, simple scene – bouncing squares and a few horizontal bars. Every two seconds

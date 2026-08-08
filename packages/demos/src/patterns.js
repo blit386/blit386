@@ -10,7 +10,7 @@
 // palettes later, in palette-presets demo and beyond.
 //
 // Live version: https://demos.blit386.dev/patterns
-// Walkthrough article: https://vancura.dev/articles/blit386-patterns
+// Guide: https://blit386.dev/docs/api/rendering#primitives
 //
 // All six patterns here are drawn using just pixels, lines, and rectangles
 // no images needed. Each pattern is based on simple math (angles, waves, circles)

@@ -4,7 +4,7 @@
 // (https://demos.blit386.dev/basics) and shapes in Primitives demo
 // (https://demos.blit386.dev/primitives).
 //
-// Live walkthrough: https://vancura.dev/articles/blit386-camera
+// Guide: https://blit386.dev/docs/api/camera
 //
 // How BT.cameraSet() works: a positive camera offset shifts the view to the right, so the
 // world appears to scroll left on the screen. A positive X offset means the camera is

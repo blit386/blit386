@@ -7,12 +7,12 @@
 //   Sprites           https://demos.blit386.dev/sprites
 //   Palette Presets   https://demos.blit386.dev/palette-presets
 //   Palette Animation https://demos.blit386.dev/palette-animation
-//     (walkthroughs: https://vancura.dev/articles/blit386-sprites,
-//      https://vancura.dev/articles/blit386-palette-presets,
-//      https://vancura.dev/articles/blit386-palette-animation)
+//     (guides: https://blit386.dev/docs/api/rendering#sprites,
+//      https://blit386.dev/docs/guides/palette-presets,
+//      https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/palette-swap
-// Live article: https://vancura.dev/articles/blit386-palette-swap
+// Guide: https://blit386.dev/docs/guides/palette#layout-swap-vs-value-swap
 //
 // WHAT IS PALETTE SWAP?
 //

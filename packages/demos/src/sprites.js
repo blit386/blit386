@@ -3,7 +3,7 @@
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Primitives (https://demos.blit386.dev/primitives),
 // Colors (https://demos.blit386.dev/colors).
-// Live article: https://vancura.dev/articles/blit386-sprites
+// Guide: https://blit386.dev/docs/api/rendering#sprites
 //
 // A "sprite" is a 2D image used in a game – like a character, a coin, or an enemy.
 // In BLIT386, sprites are stored in a "sprite sheet": one big image that

@@ -2,7 +2,7 @@
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Sprites (https://demos.blit386.dev/sprites).
-// Live article: https://vancura.dev/articles/blit386-animation
+// Guide: https://blit386.dev/docs/api/game-loop
 //
 // In BLIT386, the tick counter goes up once per update() call at a fixed rate (targetFPS),
 // not once per screen refresh. render() can run more often than update() on a high refresh

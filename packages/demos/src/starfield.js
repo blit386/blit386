@@ -7,7 +7,7 @@
 //   Primitives https://demos.blit386.dev/primitives
 //   Colors     https://demos.blit386.dev/colors
 //
-// Live article: https://vancura.dev/articles/blit386-starfield
+// Guide: https://blit386.dev/docs/api/rendering#primitives
 //
 // WHAT YOU WILL SEE
 // Three layers of stars scroll to the left at different speeds. Stars that are

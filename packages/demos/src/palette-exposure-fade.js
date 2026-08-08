@@ -6,8 +6,8 @@
 //   Basics             https://demos.blit386.dev/basics
 //   Palette Presets    https://demos.blit386.dev/palette-presets
 //   Palette Fade       https://demos.blit386.dev/palette-fade
-//     (walkthroughs: https://vancura.dev/articles/blit386-palette-presets,
-//      https://vancura.dev/articles/blit386-palette-fade)
+//     (guides: https://blit386.dev/docs/guides/palette-presets,
+//      https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/palette-exposure-fade
 //

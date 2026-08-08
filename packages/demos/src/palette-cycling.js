@@ -7,11 +7,11 @@
 //   Primitives        https://demos.blit386.dev/primitives
 //   Palette Presets   https://demos.blit386.dev/palette-presets
 //   Palette Animation https://demos.blit386.dev/palette-animation
-//     (walkthroughs: https://vancura.dev/articles/blit386-palette-presets,
-//      https://vancura.dev/articles/blit386-palette-animation)
+//     (guides: https://blit386.dev/docs/guides/palette-presets,
+//      https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/palette-cycling
-// Live article: https://vancura.dev/articles/blit386-palette-cycling
+// Guide: https://blit386.dev/docs/guides/palette#runtime-palette-effects
 //
 // WHAT IS PALETTE CYCLING?
 //

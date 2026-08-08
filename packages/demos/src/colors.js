@@ -13,7 +13,7 @@
 // https://demos.blit386.dev/basics
 //
 // Live version: https://demos.blit386.dev/colors
-// Walkthrough article: https://vancura.dev/articles/blit386-colors
+// Guide: https://blit386.dev/docs/api/core-types#color32
 //
 // IMPORTANT – palettes and how they changed from older demos:
 //

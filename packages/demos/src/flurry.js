@@ -27,7 +27,7 @@
 // Prerequisites:
 //   Basics            https://demos.blit386.dev/basics
 //   Palette Animation https://demos.blit386.dev/palette-animation
-//     (walkthrough: https://vancura.dev/articles/blit386-palette-animation)
+//     (guide: https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/flurry
 

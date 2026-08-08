@@ -7,10 +7,10 @@
 //   Primitives      https://demos.blit386.dev/primitives
 //   Colors          https://demos.blit386.dev/colors
 //   Palette Presets https://demos.blit386.dev/palette-presets
-//     (walkthrough: https://vancura.dev/articles/blit386-palette-presets)
+//     (guide: https://blit386.dev/docs/guides/palette-presets)
 //
 // Live version: https://demos.blit386.dev/palette-animation
-// Live article: https://vancura.dev/articles/blit386-palette-animation
+// Guide: https://blit386.dev/docs/guides/palette#runtime-palette-effects
 //
 // WHAT IS PALETTE ANIMATION?
 //

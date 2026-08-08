@@ -16,7 +16,7 @@
 //   1. Pixel tier – runs ON the logical index buffer (320x240, palette indices, BEFORE
 //      the palette is resolved into RGB). Effects here distort the indexed image itself.
 //      Only PixelGlitch sits here. See:
-//      https://vancura.dev/articles/blit386-crt-toggle
+//      https://blit386.dev/docs/guides/post-process-effects
 //
 //   2. Display tier – runs AFTER the palette is resolved and the image is upscaled to
 //      the canvas. Effects here work in full-color RGB and can blur, warp, tint, and

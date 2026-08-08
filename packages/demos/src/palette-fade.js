@@ -8,12 +8,11 @@
 //   Palette Presets   https://demos.blit386.dev/palette-presets
 //   Palette Animation https://demos.blit386.dev/palette-animation
 //   Palette Cycling   https://demos.blit386.dev/palette-cycling
-//     (walkthroughs: https://vancura.dev/articles/blit386-palette-presets,
-//      https://vancura.dev/articles/blit386-palette-animation,
-//      https://vancura.dev/articles/blit386-palette-cycling)
+//     (guides: https://blit386.dev/docs/guides/palette-presets,
+//      https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/palette-fade
-// Live article: https://vancura.dev/articles/blit386-palette-fade
+// Guide: https://blit386.dev/docs/guides/palette#runtime-palette-effects
 //
 // WHAT ARE PALETTE FADES?
 //
