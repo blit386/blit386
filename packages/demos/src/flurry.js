@@ -5,29 +5,29 @@
 //
 // WHAT IS FLURRY?
 // Flurry was a free screensaver for macOS that showed a cloud of glowing particles
-// swirling around invisible "sparks" - points in space that pull particles toward them
+// swirling around invisible "sparks" – points in space that pull particles toward them
 // like tiny gravity wells. Twelve sparks trace beautiful figure-eight-like paths
 // (called Lissajous orbits), and hundreds of particles spiral around them.
 //
 // HOW DOES THIS VERSION DIFFER FROM THE ORIGINAL?
-// The original Flurry used "additive blending" - overlapping particles added their light
+// The original Flurry used "additive blending" – overlapping particles added their light
 // together to create soft glowing halos. BLIT386 does not support that technique.
 // Instead, we use palette animation: every frame, we rewrite the palette so that young
 // particles appear bright and large, while old particles appear dim and small.
 // The mesmerizing orbital motion and rainbow color cycling are fully preserved.
 //
 // KEY PHYSICS CONCEPTS:
-//   Inverse-square gravity - each particle is pulled toward every spark.
+//   Inverse-square gravity – each particle is pulled toward every spark.
 //     The closer the particle, the stronger the pull. Same law as real planets.
-//   Drag - a tiny friction force applied each tick, slowing particles gradually.
-//   Lissajous orbit - a path traced by two sine waves with different frequencies.
+//   Drag – a tiny friction force applied each tick, slowing particles gradually.
+//   Lissajous orbit – a path traced by two sine waves with different frequencies.
 //     The spark's x position follows one sine wave; its y position follows another.
 //     When the frequencies are slightly different, the path never exactly repeats.
 //
 // Prerequisites:
 //   Basics            https://demos.blit386.dev/basics
 //   Palette Animation https://demos.blit386.dev/palette-animation
-//     (walkthrough: https://vancura.dev/articles/blit386-palette-animation)
+//     (guide: https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/flurry
 
@@ -66,7 +66,7 @@ const GRAVITY_CONST = 1500000;
 // How much velocity the particle keeps each tick (a fraction between 0 and 1).
 // The ** operator is JavaScript's "exponent" symbol: base ** exponent.
 // 0.9965^(85/60) is the original Flurry formula; the result is about 0.9950.
-// That means each tick a particle keeps 99.5% of its speed - very gentle drag.
+// That means each tick a particle keeps 99.5% of its speed – very gentle drag.
 const DRAG_FACTOR = 0.9965 ** (85 / 60);
 
 // How fast newly spawned particles shoot outward from their spark, in world units per tick.
@@ -89,7 +89,7 @@ const SPEED_CAP = 600;
 // At 60 FPS: 0.4 degrees/tick × 60 ticks/sec = 24 degrees/sec.
 // One full rotation (360 degrees) takes 360 / 24 = 15 seconds.
 // During those 15 seconds every particle cycles through red, orange, yellow, green,
-// cyan, blue, violet, and back to red - a complete rainbow.
+// cyan, blue, violet, and back to red – a complete rainbow.
 const HUE_ADVANCE = 0.4;
 
 // Lightness values (brightness) for the 5 particle age tiers.
@@ -123,12 +123,12 @@ const PALETTE_STRIP_SPARK_H = 3; // 3 px tall.
 const PALETTE_STRIP_PART_Y = DISPLAY_H - 4; // Particle color row top edge (y = 236).
 const PALETTE_STRIP_PART_H = 4; // 4 px tall.
 
-// Palette slot numbers - "addresses" in the 256-slot color table.
+// Palette slot numbers – "addresses" in the 256-slot color table.
 // Slot 0 is always transparent; the engine reserves it. Never write to slot 0.
 //
 // Think of each slot as a numbered paint pot.
 // update() refills the pots every tick with fresh Color32 objects.
-// render() only reads the pot numbers - it never touches Color32 directly.
+// render() only reads the pot numbers – it never touches Color32 directly.
 // This separation is the essence of palette animation.
 const C_WHITE = 1; // Pure white.
 const C_BG = 2; // Near-black deep-space background color.
@@ -181,7 +181,7 @@ const SPARK_TABLE = [
  * Converts one axis of a world position into a screen pixel coordinate.
  *
  * Two steps happen here:
- *   1. Blend: prev + (cur - prev) * alpha slides the position from where it was at
+ *   1. Blend: prev + (cur – prev) * alpha slides the position from where it was at
  *      the start of the last physics tick (prev) toward where it is now (cur), by
  *      the fraction alpha (BT.renderAlpha, 0 = tick just finished, almost 1 = next
  *      tick about to happen). This gives the true position at this exact render
@@ -193,10 +193,10 @@ const SPARK_TABLE = [
  *
  * Call it once with HALF_W for the x axis and once with HALF_H for the y axis.
  *
- * @param {number} prev - World coordinate at the start of the last tick.
- * @param {number} cur - World coordinate now, after the last tick.
- * @param {number} alpha - BT.renderAlpha blend fraction (0..1).
- * @param {number} halfExtent - HALF_W for x, HALF_H for y.
+ * @param {number} prev – World coordinate at the start of the last tick.
+ * @param {number} cur – World coordinate now, after the last tick.
+ * @param {number} alpha – BT.renderAlpha blend fraction (0..1).
+ * @param {number} halfExtent – HALF_W for x, HALF_H for y.
  * @returns {number} Whole-pixel screen coordinate.
  */
 function worldToScreen(prev, cur, alpha, halfExtent) {
@@ -218,7 +218,7 @@ class Demo {
 
     // Total elapsed animation time, measured in seconds.
     // Grows by exactly 1 / TARGET_FPS each tick (e.g. 1/60 when TARGET_FPS is 60).
-    // The spark position formula uses this as its clock - every tick the sparks move forward.
+    // The spark position formula uses this as its clock – every tick the sparks move forward.
     animTime = 0;
 
     // Current hue rotation offset in degrees (0..359).
@@ -233,11 +233,11 @@ class Demo {
     //   prevX, prevY  - world position as of the START of the most recent update() tick,
     //     before this tick's orbit math moved it. render() blends between prevX/prevY and
     //     x/y using BT.renderAlpha so sparks glide smoothly between physics ticks instead
-    //     of jumping - see "Interpolating render state with renderAlpha" in the engine's
+    //     of jumping – see "Interpolating render state with renderAlpha" in the engine's
     //     docs/api-game-loop.md.
     //   vx, vy      - instantaneous velocity (used as a hint when spawning particles)
     //   freqX, freqY  - oscillation frequencies for the Lissajous orbit
-    //   phaseX, phaseY - starting angles on the orbit path
+    //   phaseX, phaseY – starting angles on the orbit path
     //   hueOffset   - this spark's personal color angle on the rainbow (0..330 degrees)
     sparks = [];
 
@@ -365,7 +365,7 @@ class Demo {
     }
 
     /**
-     * Draws the current frame. Only palette slot numbers appear here - no Color32 objects.
+     * Draws the current frame. Only palette slot numbers appear here – no Color32 objects.
      * All color decisions were already made in update() and stored in the palette.
      */
     render() {
@@ -459,12 +459,12 @@ class Demo {
     /**
      * Moves one particle forward one tick: gravity, drag, speed cap, position.
      *
-     * @param {object} p - The particle to update.
+     * @param {object} p – The particle to update.
      */
     updateParticle(p) {
         // Advance the particle's age by its personal ageRate (about 0.002 per tick).
         // age counts from 0.0 (just born) toward 1.0 (end of life).
-        // Think of it like a candle burning down - each tick uses a little more.
+        // Think of it like a candle burning down – each tick uses a little more.
         p.age += p.ageRate;
 
         if (p.age >= 1.0) {
@@ -560,7 +560,7 @@ class Demo {
     /**
      * Resets a dead particle: places it near a random spark and gives it a fresh start.
      *
-     * @param {object} p - The particle object to reinitialize.
+     * @param {object} p – The particle object to reinitialize.
      */
     spawnParticle(p) {
         // Pick a random spark to be born near.
@@ -584,7 +584,7 @@ class Demo {
 
         // Give the particle a random initial velocity in a random direction.
         // angle() picks any direction on the compass, measured in radians. (Radians are another way to measure angles:
-        // 2*PI radians, about 6.28, is a full 360-degree turn - and that is exactly the range angle() draws from.)
+        // 2*PI radians, about 6.28, is a full 360-degree turn – and that is exactly the range angle() draws from.)
         const angle = BT.random.angle();
 
         // Random speed between 50% and 150% of STREAM_SPEED.
@@ -631,7 +631,7 @@ class Demo {
             // Lissajous orbit: x follows a sine wave, y follows a cosine wave.
             // Slightly different frequencies (freqX vs freqY) mean the path slowly
             // drifts and fills in, never quite repeating itself.
-            // FIELD_RANGE * 0.8: sparks orbit within 80% of the field - they stay on screen.
+            // FIELD_RANGE * 0.8: sparks orbit within 80% of the field – they stay on screen.
             spark.x = Math.sin(this.animTime * spark.freqX + spark.phaseX) * FIELD_RANGE * 0.8;
             spark.y = Math.cos(this.animTime * spark.freqY + spark.phaseY) * FIELD_RANGE * 0.8;
 
@@ -704,8 +704,8 @@ class Demo {
      * simply paint over it, which is the correct layering order.
      * This avoids sorting the particle array (which would be much slower).
      *
-     * Pass 1 - old particles (tier 3 and 4): drawn as 1×1 single pixels.
-     * Pass 2 - young particles (tier 0, 1, 2): drawn as 2×2 filled rectangles.
+     * Pass 1 – old particles (tier 3 and 4): drawn as 1×1 single pixels.
+     * Pass 2 – young particles (tier 0, 1, 2): drawn as 2×2 filled rectangles.
      */
     renderParticles() {
         // How far we are, right now, between the last completed physics tick and the
@@ -721,7 +721,7 @@ class Demo {
             // "continue" means: stop processing this particle and jump straight
             // to the next one. It is like saying "skip this one".
             if (!p.alive) {
-                continue; // Skip dead particles - they have no position to draw.
+                continue; // Skip dead particles – they have no position to draw.
             }
 
             // Convert age (0..1) to a tier index (0..4).
@@ -732,7 +732,7 @@ class Demo {
 
             // Pass 1 only draws particles that are in their last two tiers (3 or 4).
             // Tier 3 is "aging" (lightness 36) and tier 4 is "near-dead" (lightness 20).
-            // Tiers 0, 1, 2 are handled in pass 2 - skip them here.
+            // Tiers 0, 1, 2 are handled in pass 2 – skip them here.
             if (tier < 3) {
                 continue;
             }
@@ -767,7 +767,7 @@ class Demo {
 
             // Recompute the tier for this pass. Each particle is only handled in one pass,
             // so checking the tier again here costs very little and keeps both passes
-            // independent - no shared state needed between the two loops.
+            // independent – no shared state needed between the two loops.
             const tier = Math.min(4, Math.floor(p.age * 5));
 
             // This pass only draws young particles (tiers 0, 1, and 2).
@@ -782,7 +782,7 @@ class Demo {
 
             // A 2×2 rect occupies pixels at (sx, sy), (sx+1, sy), (sx, sy+1), (sx+1, sy+1).
             // We therefore need both sx and sx+1 to be inside the screen, so sx <= DISPLAY_W-2.
-            // DISPLAY_W - 1 = 319, so "sx >= 319" means "sx+1 would be 320" which is off-screen.
+            // DISPLAY_W – 1 = 319, so "sx >= 319" means "sx+1 would be 320" which is off-screen.
             if (sx < 0 || sx >= DISPLAY_W - 1 || sy < 0 || sy >= DISPLAY_H - 1) {
                 continue;
             }
@@ -800,7 +800,7 @@ class Demo {
      *
      * Three layers are stacked from largest (drawn first / underneath) to smallest (on top):
      *   Layer 1: 5×5 pixels, dim halo color   - the outer glow ring.
-     *   Layer 2: 3×3 pixels, bright body color - the vivid colored core.
+     *   Layer 2: 3×3 pixels, bright body color – the vivid colored core.
      *   Layer 3: 1×1 pixel,  white             - the white-hot center point.
      *
      * Drawing larger shapes first and smaller shapes on top is how layered "glow" effects
@@ -823,7 +823,7 @@ class Demo {
 
             // The outermost layer is a 5×5 rect extending 2 pixels in each direction.
             // We therefore need sx >= 2 (so sx-2 >= 0) and sx <= DISPLAY_W-3 (so sx+2 <= DISPLAY_W-1).
-            // The check "sx >= DISPLAY_W - 2" catches the right-edge case in one comparison.
+            // The check "sx >= DISPLAY_W – 2" catches the right-edge case in one comparison.
             if (sx < 2 || sx >= DISPLAY_W - 2 || sy < 2 || sy >= DISPLAY_H - 2) {
                 continue; // Skip sparks that are too close to the edge to draw safely.
             }
@@ -844,12 +844,12 @@ class Demo {
     /**
      * Draws two thin rows of colored squares along the very bottom of the screen.
      *
-     * Top row - 12 spark-bright slots:
+     * Top row – 12 spark-bright slots:
      *   Each of the 12 sparks gets one rectangle ~26 px wide.
      *   All 12 span different hues (the sparks are 30 degrees apart on the color wheel),
      *   so this row always looks like a full rainbow no matter where huePhase is.
      *
-     * Bottom row - 40 particle slots (8 hues x 5 brightness tiers):
+     * Bottom row – 40 particle slots (8 hues x 5 brightness tiers):
      *   The 40 particle palette entries are displayed left to right.
      *   Each group of 5 squares (40 px wide) is one hue band, going from bright to dim.
      *   As the global hue rotates, this entire row slides through the rainbow in real time.
@@ -868,9 +868,9 @@ class Demo {
 
             // Width of this rectangle.
             // The ternary operator "condition ? valueIfTrue : valueIfFalse" is a compact if/else.
-            // For the last spark (i === SPARK_COUNT - 1), we stretch to the right edge
-            // of the screen by using DISPLAY_W - x instead of sparkW. This fills the
-            // 8 leftover pixels (320 - 12*26 = 8) so the strip reaches all the way to
+            // For the last spark (i === SPARK_COUNT – 1), we stretch to the right edge
+            // of the screen by using DISPLAY_W – x instead of sparkW. This fills the
+            // 8 leftover pixels (320 – 12*26 = 8) so the strip reaches all the way to
             // the edge with no gap. For every other spark we use the standard sparkW.
             const w = i === SPARK_COUNT - 1 ? DISPLAY_W - x : sparkW;
 
@@ -878,7 +878,7 @@ class Demo {
         }
 
         // Bottom row: 40 particle color slots, each 8 px wide
-        // 8 hues × 5 tiers = 40 slots. 40 × 8 px = 320 px - a perfect fit.
+        // 8 hues × 5 tiers = 40 slots. 40 × 8 px = 320 px – a perfect fit.
         // The slots are arranged in the same order as the palette layout:
         //   index 0..4   = hue 0, tiers 0..4 (brightest to darkest)
         //   index 5..9   = hue 1, tiers 0..4

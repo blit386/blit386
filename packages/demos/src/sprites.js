@@ -3,17 +3,17 @@
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Primitives (https://demos.blit386.dev/primitives),
 // Colors (https://demos.blit386.dev/colors).
-// Live article: https://vancura.dev/articles/blit386-sprites
+// Guide: https://blit386.dev/docs/api/rendering#sprites
 //
-// A "sprite" is a 2D image used in a game - like a character, a coin, or an enemy.
+// A "sprite" is a 2D image used in a game – like a character, a coin, or an enemy.
 // In BLIT386, sprites are stored in a "sprite sheet": one big image that
 // contains many small sprites arranged in a grid. You draw individual sprites by
 // telling the engine which rectangular region (a Rect2i "source rect") to copy.
 //
 // This demo builds a six-shape sheet on an offscreen canvas, then shows:
 //   1. BT.drawSprite() with different source regions (one shape per cell).
-//   2. Palette offsets - shifting every pixel index to a different color block.
-//   3. Opacity pulsing - rewriting palette alpha slots in update().
+//   2. Palette offsets – shifting every pixel index to a different color block.
+//   3. Opacity pulsing – rewriting palette alpha slots in update().
 //
 // Captions and the code panel are drawn with the shared UI kit (src/shared/ui.js), which
 // installs its own twelve UI colors high in the palette (slots 240-251) via applyTheme().
@@ -67,16 +67,16 @@ const SHAPE_NAMES = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
-// the overlay styles below cannot read this.theme yet - these constants spell out where
+// the overlay styles below cannot read this.theme yet – these constants spell out where
 // each theme color will land once init() runs.
-const UI_BG = 240; // 'ui_bg' - deep navy screen background
-const UI_TEXT = 244; // 'ui_text' - off-white primary text
-const UI_DIM = 245; // 'ui_text_dim' - secondary gray text
-const UI_INFO = 249; // 'ui_info' - code blue
+const UI_BG = 240; // 'ui_bg' – deep navy screen background
+const UI_TEXT = 244; // 'ui_text' – off-white primary text
+const UI_DIM = 245; // 'ui_text_dim' – secondary gray text
+const UI_INFO = 249; // 'ui_info' – code blue
 
 // The exact two colors drawShapeInCell() paints with (see fill/stroke below).
 // The canvas smooths shape edges automatically (anti-aliasing), which blends these two
-// colors - and the transparent background - together one pixel at a time. Read back from
+// colors – and the transparent background – together one pixel at a time. Read back from
 // the canvas, that blending produces dozens of barely-different colors along every curve,
 // which would each want their own palette slot. Since our palette can only hold 256 colors
 // total, and this demo needs room for several recolored copies of the same shape, we snap
@@ -89,7 +89,7 @@ const STROKE_COLOR = new Color32(0xff, 0xff, 0xff);
 
 /**
  * Finds whichever of FILL_COLOR/STROKE_COLOR is closer to a given pixel color.
- * "Closer" here means smaller distance in RGB space - treating red, green, and blue like
+ * "Closer" here means smaller distance in RGB space – treating red, green, and blue like
  * three coordinates and measuring the straight-line distance between two colors, the same
  * way you would measure distance between two points on a map.
  *
@@ -105,7 +105,7 @@ function nearestShapeColor(r, g, b) {
     return distanceToFill <= distanceToStroke ? FILL_COLOR : STROKE_COLOR;
 }
 
-// Below this alpha, an anti-aliased edge pixel is mostly background - treat it as fully
+// Below this alpha, an anti-aliased edge pixel is mostly background – treat it as fully
 // transparent instead of a faint smudge of shape color.
 const ALPHA_OPAQUE_THRESHOLD = 128;
 
@@ -113,7 +113,7 @@ const ALPHA_OPAQUE_THRESHOLD = 128;
  * Rewrites every pixel of the canvas so it is either fully transparent or one of the exact
  * design colors (see FILL_COLOR/STROKE_COLOR above). sheet.indexize() later requires each
  * pixel to match a palette entry exactly, so the smooth, blended edges anti-aliasing draws
- * must be snapped to flat colors here - otherwise indexize() would reject every blended
+ * must be snapped to flat colors here – otherwise indexize() would reject every blended
  * edge pixel as "not in the palette".
  *
  * @param {OffscreenCanvasRenderingContext2D} ctx
@@ -147,9 +147,9 @@ function quantizeCanvasToShapeColors(ctx, w, h) {
  * Draws one filled shape centered inside a square cell.
  *
  * @param {OffscreenCanvasRenderingContext2D} ctx
- * @param {number} cellX - Left edge of the cell in sheet pixels.
- * @param {number} cellY - Top edge of the cell in sheet pixels.
- * @param {number} kind - 0 square, 1 circle, 2 triangle, 3 star, 4 heart, 5 diamond.
+ * @param {number} cellX – Left edge of the cell in sheet pixels.
+ * @param {number} cellY – Top edge of the cell in sheet pixels.
+ * @param {number} kind – 0 square, 1 circle, 2 triangle, 3 star, 4 heart, 5 diamond.
  */
 function drawShapeInCell(ctx, cellX, cellY, kind) {
     const cx = cellX + SHAPE_CELL / 2;
@@ -278,7 +278,7 @@ class Demo {
     // One Rect2i per shape cell in the programmatic sheet.
     shapeRects = [];
 
-    // Star cell - reused for the palette-offset row below the shape grid.
+    // Star cell – reused for the palette-offset row below the shape grid.
     /** @type {Rect2i | null} */
     themeRect = null;
 
@@ -326,7 +326,7 @@ class Demo {
         try {
             const { canvas, ctx, rects } = buildShapeSheet();
             this.shapeRects = rects;
-            this.themeRect = rects[3]; // Star - used for palette-offset demos.
+            this.themeRect = rects[3]; // Star – used for palette-offset demos.
 
             this.baseColors = registerCanvasColors(this.palette, ctx, canvas.width, canvas.height, COLOR_BASE);
             this.colorCount = this.baseColors.length;
@@ -389,7 +389,7 @@ class Demo {
         // Clear the whole screen with the shared UI theme's background color.
         BT.clear(this.theme.bg);
 
-        // Row 1: six shapes - each draw call uses a different source Rect2i.
+        // Row 1: six shapes – each draw call uses a different source Rect2i.
         const shapeY = 14;
         const shapeSpacing = 50;
 

@@ -8,19 +8,18 @@
 //   Palette Presets   https://demos.blit386.dev/palette-presets
 //   Palette Animation https://demos.blit386.dev/palette-animation
 //   Palette Cycling   https://demos.blit386.dev/palette-cycling
-//     (walkthroughs: https://vancura.dev/articles/blit386-palette-presets,
-//      https://vancura.dev/articles/blit386-palette-animation,
-//      https://vancura.dev/articles/blit386-palette-cycling)
+//     (guides: https://blit386.dev/docs/guides/palette-presets,
+//      https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/palette-fade
-// Live article: https://vancura.dev/articles/blit386-palette-fade
+// Guide: https://blit386.dev/docs/guides/palette#runtime-palette-effects
 //
 // WHAT ARE PALETTE FADES?
 //
 // Imagine you have two sets of paint buckets: one for a sunny day, one for a
 // dark night. A "palette fade" gradually mixes the day paints with the night
 // paints over several seconds, so the whole picture smoothly transitions from
-// bright to dark - like watching a sunset.
+// bright to dark – like watching a sunset.
 //
 // BLIT386 does this with BT.paletteFade(targetPalette, durationMs, easing).
 // You give it the destination paint set, how long the transition should take,
@@ -36,13 +35,13 @@
 // UPDATE VS RENDER (palette work split):
 //   init() builds separate day and night Palette objects and activates the day set.
 //   update() runs the day/night state machine and calls BT.paletteFade() or
-//   BT.paletteFlash() once per phase - the engine blends active palette slots over time.
+//   BT.paletteFlash() once per phase – the engine blends active palette slots over time.
 //   render() draws the same landscape geometry every frame using palette indices only;
 //   sky, trees, and ground change color because the engine updated the palette, not
 //   because render() passes new Color32 values to draw calls.
 //
 // The phase caption panel is drawn with the shared UI kit (src/shared/ui.js). Its theme
-// colors live in slots 240..251 - and because BT.paletteFade() blends EVERY slot toward
+// colors live in slots 240..251 – and because BT.paletteFade() blends EVERY slot toward
 // the target palette, init() writes the same theme colors into the day and night target
 // palettes too. That makes the UI slots "fade" from a color to the identical color, so
 // the panel stays readable while the whole scene transitions around it.
@@ -52,7 +51,7 @@
 //   1. Day (bright)   - hold 3 seconds
 //   2. Fade to night  - 2 seconds, ease-in-out
 //   3. Night (dark)   - hold 3 seconds
-//   4. Lightning flash - 200 ms white flash
+//   4. Lightning flash – 200 ms white flash
 //   5. Night hold     - 2 seconds
 //   6. Fade to day    - 2 seconds, ease-out (dawn)
 //   Repeat forever.
@@ -108,9 +107,9 @@ const C_MOUNTAIN = 22;
 const C_MOUNTAIN_LIGHT = 23;
 
 /**
- * Builds the "day" palette - bright, saturated outdoor colors.
+ * Builds the "day" palette – bright, saturated outdoor colors.
  *
- * @param {Palette} p - Palette to fill.
+ * @param {Palette} p – Palette to fill.
  */
 function fillDay(p) {
     p.set(C_LABEL, new Color32(255, 210, 80));
@@ -134,9 +133,9 @@ function fillDay(p) {
 }
 
 /**
- * Builds the "night" palette - dark, desaturated blues and purples.
+ * Builds the "night" palette – dark, desaturated blues and purples.
  *
- * @param {Palette} p - Palette to fill.
+ * @param {Palette} p – Palette to fill.
  */
 function fillNight(p) {
     p.set(C_LABEL, new Color32(180, 160, 100));
@@ -234,12 +233,12 @@ class Demo {
 
         // Install the shared UI kit colors (slots 240..251) into ALL THREE palettes.
         // This matters because BT.paletteFade() blends every slot toward the target
-        // palette - if the day and night targets left those slots at their default
+        // palette – if the day and night targets left those slots at their default
         // black, the first fade would fade the UI colors away for good. Writing the
         // identical theme colors into the targets turns the UI slots into fixed
         // points: they "fade" from a color to the very same color, so nothing moves.
         // (BT.paletteFlash() still whites them out for 200 ms, but it snapshots and
-        // restores every slot afterwards, so the flash heals itself - just like it
+        // restores every slot afterwards, so the flash heals itself – just like it
         // always did for the scene colors.)
         applyTheme(this.day);
         applyTheme(this.night);
@@ -317,8 +316,8 @@ class Demo {
     /**
      * Transitions to a new phase of the day/night cycle.
      *
-     * @param {string} newPhase - Name of the phase to enter.
-     * @param {number} tick - Current tick when the phase starts.
+     * @param {string} newPhase – Name of the phase to enter.
+     * @param {number} tick – Current tick when the phase starts.
      */
     startPhase(newPhase, tick) {
         this.phase = newPhase;
@@ -355,8 +354,8 @@ class Demo {
     /**
      * Checks whether the current phase has run long enough and advances to the next.
      *
-     * @param {number} elapsed - Ticks since the current phase started.
-     * @param {number} tick - Current tick count.
+     * @param {number} elapsed – Ticks since the current phase started.
+     * @param {number} tick – Current tick count.
      */
     advancePhaseIfExpired(elapsed, tick) {
         const current = PHASE_TRANSITIONS[this.phase];
@@ -406,8 +405,8 @@ class Demo {
     /**
      * Draws a simple cloud shape at the given position.
      *
-     * @param {number} x - Left position.
-     * @param {number} y - Top position.
+     * @param {number} x – Left position.
+     * @param {number} y – Top position.
      */
     drawCloud(x, y) {
         BT.drawRectFill(new Rect2i(x, y, 30, 8), C_CLOUD);
@@ -417,10 +416,10 @@ class Demo {
     /**
      * Draws a triangular mountain shape using stacked rectangles.
      *
-     * @param {number} x - Center x.
-     * @param {number} baseY - Bottom of the mountain.
-     * @param {number} width - Base width.
-     * @param {number} height - Mountain height.
+     * @param {number} x – Center x.
+     * @param {number} baseY – Bottom of the mountain.
+     * @param {number} width – Base width.
+     * @param {number} height – Mountain height.
      */
     drawMountain(x, baseY, width, height) {
         // Draw the mountain as a series of horizontal slices getting narrower toward the top.
@@ -440,8 +439,8 @@ class Demo {
     /**
      * Draws a simple tree (trunk + leaf canopy).
      *
-     * @param {number} x - Trunk center x.
-     * @param {number} groundY - Y position of the ground line.
+     * @param {number} x – Trunk center x.
+     * @param {number} groundY – Y position of the ground line.
      */
     drawTree(x, groundY) {
         // Trunk.

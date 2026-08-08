@@ -7,10 +7,10 @@
 //   Primitives https://demos.blit386.dev/primitives
 //   Colors     https://demos.blit386.dev/colors
 //   Fonts      https://demos.blit386.dev/fonts
-//     (text drawing basics with BT.systemPrint; walkthrough: https://vancura.dev/articles/blit386-fonts)
+//     (text drawing basics with BT.systemPrint; guide: https://blit386.dev/docs/guides/bitmap-fonts)
 //
 // Live version: https://demos.blit386.dev/palette-presets
-// Live article: https://vancura.dev/articles/blit386-palette-presets
+// Guide: https://blit386.dev/docs/guides/palette-presets
 //
 // WHAT IS A PALETTE PRESET?
 //
@@ -18,19 +18,19 @@
 //   palette.set(1, new Color32(255, 0, 0)); // My red.
 //   palette.set(2, new Color32(0, 255, 0)); // My green.
 //
-// BLIT386 ships with six "preset" palettes - ready-made color sets based on
+// BLIT386 ships with six "preset" palettes – ready-made color sets based on
 // real hardware from the history of video games:
 //
-//   Game Boy    4 colors   (1989 Nintendo handheld - shades of green)
-//   CGA        16 colors   (1981 IBM PC graphics card - loud, iconic)
-//   C64        16 colors   (1982 Commodore 64 - earthy, distinctive)
-//   PICO-8     16 colors   (2015 fantasy console - soft, retro feel)
-//   NES        56 colors   (1983 Nintendo console - wide but limited)
-//   VGA       256 colors   (1987 IBM PC graphics standard - rich range)
+//   Game Boy    4 colors   (1989 Nintendo handheld – shades of green)
+//   CGA        16 colors   (1981 IBM PC graphics card – loud, iconic)
+//   C64        16 colors   (1982 Commodore 64 – earthy, distinctive)
+//   PICO-8     16 colors   (2015 fantasy console – soft, retro feel)
+//   NES        56 colors   (1983 Nintendo console – wide but limited)
+//   VGA       256 colors   (1987 IBM PC graphics standard – rich range)
 //
 // A preset palette gives you instant authentic retro style.
 //
-// You can also NAME slots using setNamed() / getNamed() - like labeling paint cans
+// You can also NAME slots using setNamed() / getNamed() – like labeling paint cans
 // instead of just numbering them. "live-swatch-0" is easier to remember than slot 200.
 //
 // The title strip, row captions, and the live-view panel are drawn with the shared demo
@@ -72,7 +72,7 @@ const LIVE_PANEL_Y = 152;
 // Shared UI theme slots used by configure().
 //
 // applyTheme() (see init()) writes the twelve shared UI colors into palette slots
-// 240..251 - its default start slot, safely above this demo's swatch slots (10..181)
+// 240..251 – its default start slot, safely above this demo's swatch slots (10..181)
 // and live-view slots (200..215). configure() runs BEFORE init(), so the overlay
 // styles below have to name those slots as plain numbers instead of reading this.theme.
 const THEME_BG = 240; // Deep navy screen background.
@@ -208,7 +208,7 @@ class Demo {
         // setNamed() lets you refer to a slot by a descriptive word instead of a number.
         // This is like writing "live-swatch-0" on a label instead of "slot 200".
         // (applyTheme() above did the same trick for its UI colors: try
-        // palette.getNamed('ui_bg') - it answers 240.)
+        // palette.getNamed('ui_bg') – it answers 240.)
         this.palette.setNamed('live-swatch-0', LIVE_SWATCH_SLOT);
 
         // Activate palette
@@ -240,11 +240,11 @@ class Demo {
 
     /**
      * Draws the title strip, the static swatch rows with captions, and the live
-     * cycling preview panel. NO Color32 objects appear in draw calls here - only
+     * cycling preview panel. NO Color32 objects appear in draw calls here – only
      * palette index numbers (and the kit, which uses its own theme slots).
      */
     render() {
-        // Background - the shared theme's deep navy, so every demo looks alike.
+        // Background – the shared theme's deep navy, so every demo looks alike.
         BT.clear(this.theme.bg);
 
         // Full-width title strip across the top, drawn by the shared UI kit.
@@ -337,13 +337,13 @@ class Demo {
     renderLivePreview() {
         // The kit panel: a pinned group with a fixed width so the swatches fit.
         // ui.spacer(28) reserves an empty band inside the panel where the 24px-tall
-        // swatches will be drawn AFTER ui.end() - the kit paints its panel fill on
+        // swatches will be drawn AFTER ui.end() – the kit paints its panel fill on
         // end(), so anything drawn later lands on top of it.
         ui.begin('topLeft', { x: LIVE_PANEL_X, y: LIVE_PANEL_Y, width: 298 });
         ui.panel('Live view (cycles every 2s)');
         ui.spacer(28);
 
-        // Explain named slots - this is real code from init() above.
+        // Explain named slots – this is real code from init() above.
         ui.label("palette.setNamed('live-swatch-0', 200)", { color: 'dim' });
         ui.label("palette.getNamed('live-swatch-0') => 200", { color: 'dim' });
         ui.end();

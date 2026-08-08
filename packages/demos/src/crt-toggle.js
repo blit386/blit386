@@ -1,4 +1,4 @@
-// @pageTitle BLIT386 Demo - CRT Toggle
+// @pageTitle BLIT386 Demo – CRT Toggle
 //
 // CRT Toggle: turn the post-process effects on and off in flight.
 //
@@ -9,10 +9,10 @@
 //
 // Live version: https://demos.blit386.dev/crt-toggle
 //
-// Live article: https://vancura.dev/articles/blit386-crt-toggle
+// Guide: https://blit386.dev/docs/guides/post-process-effects
 //
 // WHAT YOU WILL SEE
-// A colorful, simple scene - bouncing squares and a few horizontal bars. Every two seconds
+// A colorful, simple scene – bouncing squares and a few horizontal bars. Every two seconds
 // the CRT preset flips on and off automatically. Status text sits in a small panel drawn
 // with the shared UI kit. While it is on
 // you see scanlines, the RGB shadow mask, smooth barrel curvature, and a soft phosphor
@@ -20,8 +20,8 @@
 // The bouncing keeps going either way, so you can compare the two looks side by side.
 //
 // Notice that the lines stay STRAIGHT through the toggle: barrel distortion is display-tier,
-// so it runs on RGBA after palette resolve + upscale to the canvas size - not on the
-// 320x240 index buffer - which avoids stair-step artifacts on diagonals.
+// so it runs on RGBA after palette resolve + upscale to the canvas size – not on the
+// 320x240 index buffer – which avoids stair-step artifacts on diagonals.
 //
 // WHAT YOU WILL LEARN
 //   - How to add and remove a STACK of post-process effects at runtime.
@@ -30,7 +30,7 @@
 //     screen texture; the last BT.effectRemove or BT.effectClear frees it again.
 //   - That you keep the SAME effect instances across toggles. Demos that destroy and
 //     recreate them on every toggle would also work, but they would re-create the GPU
-//     pipeline on every toggle - wasteful when the look is the same.
+//     pipeline on every toggle – wasteful when the look is the same.
 //   - The convenience of `BT.preset.crtPipBoy()`: returns a fresh array of pre-configured
 //     display-tier effects so you do not have to wire them up by hand.
 //
@@ -87,7 +87,7 @@ const SQUARE_SIZE = 24;
 const SQUARE_COUNT = 5;
 
 // How fast each square moves (pixels per tick). One value per square so the
-// motion looks irregular - if all five moved at the same speed, they would
+// motion looks irregular – if all five moved at the same speed, they would
 // line up vertically and the demo would look duller.
 const SQUARE_SPEEDS = [
     new Vector2i(2, 1),
@@ -147,7 +147,7 @@ class Demo {
             maxCanvasSize: new Vector2i(OUTPUT_W, OUTPUT_H),
 
             // 'nearest' keeps each source pixel as a crisp 4x4 block. 'linear' would
-            // soften them into bilinear-blended squishes - a different look, also valid.
+            // soften them into bilinear-blended squishes – a different look, also valid.
             outputUpscaleFilter: 'nearest',
 
             targetFPS: TARGET_FPS,
@@ -174,7 +174,7 @@ class Demo {
     async init() {
         // Step 1: build the palette
         // A small, colorful set of scene colors in the low slots. Bright primaries make
-        // the CRT effect visually obvious - soft pastels would look the same with or
+        // the CRT effect visually obvious – soft pastels would look the same with or
         // without. The palette is 256 entries long so the shared UI theme can live in
         // the high slots (240-251), far away from the scene colors.
         const palette = BT.paletteCreate(256);
@@ -203,7 +203,7 @@ class Demo {
             //
             // We hold onto the array so we can re-add the SAME instances on each toggle.
             // Re-creating them every toggle would also work, but it would re-allocate the
-            // GPU pipelines and uniform buffers each time - wasteful when the look is the
+            // GPU pipelines and uniform buffers each time – wasteful when the look is the
             // same.
             this.stack = BT.preset.crtPipBoy();
 
@@ -226,7 +226,7 @@ class Demo {
         // Step 5: place the bouncing squares
         // Place them evenly across the bottom half so they don't all start in the same
         // spot. Each square keeps its own position (pos) and velocity (vel) as Vector2i
-        // instances - the engine convention for all pixel-level coordinates.
+        // instances – the engine convention for all pixel-level coordinates.
         this.squares = [];
         for (let i = 0; i < SQUARE_COUNT; i++) {
             const startPos = new Vector2i(20 + i * 50, 150 + (i % 2) * 30);
@@ -236,7 +236,7 @@ class Demo {
                 // prevPos remembers where the square was at the START of the most recent
                 // update() tick. render() blends between prevPos and pos using
                 // BT.renderAlpha so each square glides smoothly between physics ticks
-                // instead of jumping - see "Interpolating render state with renderAlpha"
+                // instead of jumping – see "Interpolating render state with renderAlpha"
                 // in the engine's docs/api-game-loop.md.
                 prevPos: startPos,
                 vel: new Vector2i(SQUARE_SPEEDS[i].x, SQUARE_SPEEDS[i].y),
@@ -247,7 +247,7 @@ class Demo {
     }
 
     update() {
-        // 1. Time-based toggle (WebGPU only - effectAdd throws in software mode)
+        // 1. Time-based toggle (WebGPU only – effectAdd throws in software mode)
         // Every TOGGLE_PERIOD_TICKS we flip the boolean and either add or remove the
         // entire preset stack. The engine handles the GPU pipeline lifecycle for us.
         if (this.effectsAvailable && BT.ticks - this.lastToggleTick >= TOGGLE_PERIOD_TICKS) {
@@ -274,7 +274,7 @@ class Demo {
 
         if (this.effectsAvailable) {
             // The CRT shaders use `time` for their rolling line and noise. Feed it seconds.
-            // Safe to set even when the effects are not in the chain - the field is just a
+            // Safe to set even when the effects are not in the chain – the field is just a
             // number on the JS instance until the next encode pass reads it.
             const seconds = BT.ticks / TARGET_FPS;
             for (const fx of this.timedEffects) {
@@ -292,7 +292,7 @@ class Demo {
 
             sq.pos = new Vector2i(sq.pos.x + sq.vel.x, sq.pos.y + sq.vel.y);
 
-            // Bounce against the left/right walls. We compare against [0, DISPLAY_W - SQUARE_SIZE]
+            // Bounce against the left/right walls. We compare against [0, DISPLAY_W – SQUARE_SIZE]
             // because the square's anchor is its top-left corner.
             if (sq.pos.x <= 0 || sq.pos.x >= DISPLAY_W - SQUARE_SIZE) {
                 sq.vel = new Vector2i(-sq.vel.x, sq.vel.y);
@@ -320,7 +320,7 @@ class Demo {
 
         // Draw the bouncing squares on top of the bars. Vector2i.lerp() blends prevPos
         // toward pos by BT.renderAlpha, so a square's drawn position matches this exact
-        // render moment instead of only its last-tick position - smoother motion when
+        // render moment instead of only its last-tick position – smoother motion when
         // render() runs at a different rate than update() (see docs/api-game-loop.md
         // in the engine repo for the full explanation).
         for (const sq of this.squares) {
@@ -330,7 +330,7 @@ class Demo {
 
         // Status readout: a small panel from the shared UI kit, drawn last so it sits on
         // top of the moving squares. Like everything the demo draws, it lives on the
-        // logical buffer, so the CRT effects warp and glow the panel too - a nice way to
+        // logical buffer, so the CRT effects warp and glow the panel too – a nice way to
         // read the toggle even when you cannot see the scanlines up close.
         ui.begin('topLeft');
         ui.panel();

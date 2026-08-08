@@ -6,11 +6,11 @@
 // Optional background: Sprites (https://demos.blit386.dev/sprites) also
 // places art on a grid, but this demo uses colored rectangles instead of a PNG sheet.
 //
-// Live walkthrough: https://vancura.dev/articles/blit386-tilemap
+// Guide: https://blit386.dev/docs/api/camera
 //
 // A "tilemap" is like a floor made of same-sized square tiles. Each cell in a 2D array
 // (a list of rows, each row a list of columns) stores a small number that means "which
-// kind of tile goes here" - like a Lego instruction sheet that says which brick color
+// kind of tile goes here" – like a Lego instruction sheet that says which brick color
 // fits each stud. The computer walks the grid with nested loops (one loop for rows,
 // one loop for columns) and draws only the tiles the camera can see, which is faster
 // than drawing thousands of off-screen tiles nobody would see.
@@ -35,7 +35,7 @@ import { applyTheme, ui } from './shared/ui.js';
 
 // These numbers are the "tile IDs" stored inside the 2D array.
 // Using named constants helps you remember what each number means when you read the map.
-const TILE_SKY = 0; // Empty air - we skip drawing and let the sky clear color show through.
+const TILE_SKY = 0; // Empty air – we skip drawing and let the sky clear color show through.
 const TILE_GRASS = 1; // Green ground.
 const TILE_DIRT = 2; // Brown earth below or beside grass.
 const TILE_STONE = 3; // Gray rocks.
@@ -55,7 +55,7 @@ const WORLD_HEIGHT_PX = MAP_HEIGHT_TILES * TILE_SIZE;
 
 // Each color in this demo has a reserved palette slot (a number from 1 upward).
 // Index 0 is always transparent. Giving each slot a name makes the drawing code
-// easier to read - "draw in C_GRASS" is clearer than "draw in index 5."
+// easier to read – "draw in C_GRASS" is clearer than "draw in index 5."
 // The caption panel and the mini-map frame use the shared UI kit theme instead,
 // which applyTheme() installs into high palette slots (240 and up).
 const C_SKY = 2; // Soft sky blue: fills the screen background
@@ -91,7 +91,7 @@ class Demo {
     // Where the camera was at the START of the most recent update() tick, before this
     // tick's sine math moved it. render() blends between cameraPrevPos and cameraPos
     // using BT.renderAlpha so the camera pans smoothly between physics ticks instead
-    // of jumping - see "Interpolating render state with renderAlpha" in the engine's
+    // of jumping – see "Interpolating render state with renderAlpha" in the engine's
     // docs/api-game-loop.md.
     cameraPrevPos = new Vector2i(0, 0);
 
@@ -144,7 +144,7 @@ class Demo {
      */
     async init() {
         // Set up the color palette
-        // A palette is like an artist's paint tray - we choose all our colors BEFORE
+        // A palette is like an artist's paint tray – we choose all our colors BEFORE
         // drawing anything. Each color gets a number (an "index") that we use in draw calls.
         this.palette = BT.paletteCreate(256);
 
@@ -210,12 +210,12 @@ class Demo {
         this.cameraPos = BT.cameraClamp(this.cameraPos, new Vector2i(WORLD_WIDTH_PX, WORLD_HEIGHT_PX), viewSize);
 
         // BT.cameraSet() now happens in render(), using a position blended between
-        // cameraPrevPos and cameraPos - see render() below.
+        // cameraPrevPos and cameraPos – see render() below.
 
         // Update the animated water color in the palette
         // Instead of computing a new Color32 inside render() every frame, we compute it
         // here in update() and store it in the reserved C_WATER palette slot.
-        // render() can then just write C_WATER as a plain number - no Color32 needed there.
+        // render() can then just write C_WATER as a plain number – no Color32 needed there.
         // This "palette animation" technique is how retro hardware made water shimmer!
         const waterPulse = Math.sin(BT.ticks * 0.12); // a slow gentle wave between -1 and +1
         const waterBlue = Math.floor(210 + waterPulse * 28); // shifts the blue channel 28 units up and down
@@ -231,7 +231,7 @@ class Demo {
         // color shows through in "empty" cells.
         BT.clear(C_SKY);
 
-        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha - a fraction from 0
+        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha – a fraction from 0
         // (a tick just finished) to just under 1 (the next tick is about to happen) -
         // so the camera's on-screen position matches this exact render moment instead
         // of only its last-tick position. Both the camera offset and the visible-tile
@@ -379,7 +379,7 @@ class Demo {
                 this.tileRect.set(worldX, worldY, TILE_SIZE, TILE_SIZE);
 
                 // Pick the palette index for this tile ID. if / else if is like a menu: first match wins.
-                // We pass just a number (C_GRASS, C_DIRT, etc.) - the palette knows the actual color.
+                // We pass just a number (C_GRASS, C_DIRT, etc.) – the palette knows the actual color.
                 if (id === TILE_GRASS) {
                     BT.drawRectFill(this.tileRect, C_GRASS);
                 } else if (id === TILE_DIRT) {
@@ -387,7 +387,7 @@ class Demo {
                 } else if (id === TILE_STONE) {
                     BT.drawRectFill(this.tileRect, C_STONE);
                 } else if (id === TILE_WATER) {
-                    // C_WATER is the animated water slot - update() already set its color this frame.
+                    // C_WATER is the animated water slot – update() already set its color this frame.
                     BT.drawRectFill(this.tileRect, C_WATER);
                 } else if (id === TILE_TREE_TOP) {
                     BT.drawRectFill(this.tileRect, C_TREE_TOP);
@@ -404,7 +404,7 @@ class Demo {
         // ui.begin() and ui.end() stack into one anchored group; the kit measures the
         // rows, draws the panel background, and places the group for us.
         // The kit draws in whatever camera space is active, so this must run AFTER
-        // BT.cameraReset() - otherwise the panel would scroll away with the world.
+        // BT.cameraReset() – otherwise the panel would scroll away with the world.
         ui.begin('topLeft');
         ui.panel('Tilemap');
         ui.label('30x20 tiles, 16px each', { color: 'dim' });
@@ -442,7 +442,7 @@ class Demo {
 
                 // Pick a palette index for each tile type.
                 // Using C_SKY for sky tiles shows the background color as the map background.
-                // We use C_MINIMAP_WATER for water on the mini-map - this is a static shade,
+                // We use C_MINIMAP_WATER for water on the mini-map – this is a static shade,
                 // not the animated C_WATER, so the mini-map stays calm even as the tiles shimmer.
                 let c = C_SKY;
                 if (id === TILE_GRASS) {
@@ -464,7 +464,7 @@ class Demo {
 
         // Viewport indicator: where is the 320x240 window inside the 480x320 world?
         // Use this.cameraPos, not BT.camera: render() already called BT.cameraReset(),
-        // which zeroes BT.camera - our own field still remembers the real position.
+        // which zeroes BT.camera – our own field still remembers the real position.
         const cam = this.cameraPos;
         const disp = BT.displaySize;
         const vx = mapX + Math.floor((cam.x / WORLD_WIDTH_PX) * mapPixelW);

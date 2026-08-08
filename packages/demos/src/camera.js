@@ -4,17 +4,17 @@
 // (https://demos.blit386.dev/basics) and shapes in Primitives demo
 // (https://demos.blit386.dev/primitives).
 //
-// Live walkthrough: https://vancura.dev/articles/blit386-camera
+// Guide: https://blit386.dev/docs/api/camera
 //
 // How BT.cameraSet() works: a positive camera offset shifts the view to the right, so the
 // world appears to scroll left on the screen. A positive X offset means the camera is
-// looking that many pixels to the right of the world's left edge - for example, an X
+// looking that many pixels to the right of the world's left edge – for example, an X
 // offset of 200 shows the world starting 200 pixels in from the left (like the camera
 // moved 200 steps east along the map).
 //
 // Imagine looking through a window: the window doesn't move, but you can shift
 // what part of the outside world you see through it. That's exactly what a camera
-// does in a game. The "camera" here is just an offset - how far we've scrolled
+// does in a game. The "camera" here is just an offset – how far we've scrolled
 // the view to the right and down.
 //
 // This demo creates a 800x600 pixel world (bigger than the 320x240 screen),
@@ -79,7 +79,7 @@ class Demo {
     // Where the camera was at the START of the most recent update() tick, before this
     // tick's sine/cosine math moved it. render() blends between cameraPrevPos and
     // cameraPos using BT.renderAlpha so the camera pans smoothly between physics ticks
-    // instead of jumping - see "Interpolating render state with renderAlpha" in the
+    // instead of jumping – see "Interpolating render state with renderAlpha" in the
     // engine's docs/api-game-loop.md.
     cameraPrevPos = new Vector2i(0, 0);
 
@@ -87,7 +87,7 @@ class Demo {
     // so we do not allocate a new Vector2i every frame.
     cameraRenderPos = new Vector2i(0, 0);
 
-    // A stationary red square we call the "player" - it stays in place
+    // A stationary red square we call the "player" – it stays in place
     // while the camera moves around it.
     playerPos = new Vector2i(400, 300);
 
@@ -163,7 +163,7 @@ class Demo {
         // first, then add the 20 random building colors when we generate the buildings.
         this.palette = BT.paletteCreate(256);
 
-        // Static colors - these are the same every time the demo runs.
+        // Static colors – these are the same every time the demo runs.
         this.palette.set(C_SKY, new Color32(135, 206, 235)); // sky blue background
         this.palette.set(C_GRID, new Color32(100, 180, 100)); // medium green for the ground grid
         this.palette.set(C_WORLD_BORDER, new Color32(255, 0, 0)); // red world boundary rectangle
@@ -224,7 +224,7 @@ class Demo {
         this.cameraPos = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize);
 
         // BT.cameraSet() now happens in render(), using a position blended between
-        // cameraPrevPos and cameraPos - see renderWorld() below.
+        // cameraPrevPos and cameraPos – see renderWorld() below.
     }
 
     /**
@@ -237,7 +237,7 @@ class Demo {
         // Clear the screen to sky blue.
         BT.clear(C_SKY);
 
-        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha - a fraction from 0
+        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha – a fraction from 0
         // (a tick just finished) to just under 1 (the next tick is about to happen) -
         // so the camera's on-screen position matches this exact render moment instead
         // of only its last-tick position. Set it here, right before any world drawing,
@@ -293,7 +293,7 @@ class Demo {
             // Give each building a slightly different blue-gray tint by randomizing R, G, B.
             // BT.random is the engine's shared random number generator.
             // Its int() method gives a whole number from the first value up to (but not including) the second, so
-            // int(100, 200) can be 100, 101, ... 199 - but never 200.
+            // int(100, 200) can be 100, 101, ... 199 – but never 200.
             const r = BT.random.int(100, 200);
             const g = BT.random.int(100, 200);
             const b = BT.random.int(150, 250);
@@ -331,7 +331,7 @@ class Demo {
      */
     generateTrees() {
         // renderTree() draws foliage as a 12x12 square centered on pos, sitting 16 px above
-        // the ground point - so keep a 6 px side margin and a 16 px top margin.
+        // the ground point – so keep a 6 px side margin and a 16 px top margin.
         const treeMarginX = 6;
         const treeMarginTop = 16;
 
@@ -346,7 +346,7 @@ class Demo {
 
         for (let i = 0; i < 50; i++) {
             this.trees.push({
-                // insideRect() hands back a Vector2i somewhere inside that rectangle - like closing your eyes and
+                // insideRect() hands back a Vector2i somewhere inside that rectangle – like closing your eyes and
                 // pointing at a spot on a map.
                 pos: BT.random.insideRect(treeArea),
             });
@@ -404,7 +404,7 @@ class Demo {
     /**
      * Draws a single tree: a brown trunk below a green leafy top.
      *
-     * @param {Vector2i} pos - The center-bottom of the tree in world coordinates.
+     * @param {Vector2i} pos – The center-bottom of the tree in world coordinates.
      */
     renderTree(pos) {
         // Brown trunk: 4 pixels wide, 8 pixels tall, centered on pos.x.
@@ -424,7 +424,7 @@ class Demo {
      * The building's color is identified by its colorIndex (a palette slot number),
      * so no Color32 object is created during drawing.
      *
-     * @param {{pos: Vector2i, size: Vector2i, colorIndex: number}} building - The building data.
+     * @param {{pos: Vector2i, size: Vector2i, colorIndex: number}} building – The building data.
      */
     renderBuilding(building) {
         // Draw the filled body of the building using its stored palette index.
@@ -467,7 +467,7 @@ class Demo {
         // between ui.begin() and ui.end() stacks into one anchored group; the kit
         // measures the rows, draws the panel background, and places it for us.
         // The kit draws in whatever camera space is active, so this must run AFTER
-        // BT.cameraReset() - otherwise the panel would scroll away with the world.
+        // BT.cameraReset() – otherwise the panel would scroll away with the world.
         ui.begin('topLeft');
         ui.panel('Camera Demo');
         ui.label('Auto-scrolling camera', { color: 'dim' });
@@ -495,7 +495,7 @@ class Demo {
         const mapH = 70;
 
         // Background and border for the mini-map frame. The kit has no mini-map
-        // widget, so we draw this panel by hand - but we borrow the shared theme's
+        // widget, so we draw this panel by hand – but we borrow the shared theme's
         // panel and border slots so it matches the kit's look exactly.
         this.tempRect.set(mapX, mapY, mapW, mapH);
         BT.drawRectFill(this.tempRect, this.theme.panel);

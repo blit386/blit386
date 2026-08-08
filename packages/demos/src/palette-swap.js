@@ -7,12 +7,12 @@
 //   Sprites           https://demos.blit386.dev/sprites
 //   Palette Presets   https://demos.blit386.dev/palette-presets
 //   Palette Animation https://demos.blit386.dev/palette-animation
-//     (walkthroughs: https://vancura.dev/articles/blit386-sprites,
-//      https://vancura.dev/articles/blit386-palette-presets,
-//      https://vancura.dev/articles/blit386-palette-animation)
+//     (guides: https://blit386.dev/docs/api/rendering#sprites,
+//      https://blit386.dev/docs/guides/palette-presets,
+//      https://blit386.dev/docs/guides/palette#runtime-palette-effects)
 //
 // Live version: https://demos.blit386.dev/palette-swap
-// Live article: https://vancura.dev/articles/blit386-palette-swap
+// Guide: https://blit386.dev/docs/guides/palette#layout-swap-vs-value-swap
 //
 // WHAT IS PALETTE SWAP?
 //
@@ -45,7 +45,7 @@
 //
 // All captions and the code column are drawn with the shared UI kit (src/shared/ui.js).
 // Because this demo swaps the WHOLE palette every 2 seconds, every theme palette must
-// carry the same UI kit colors in the same slots - see buildTheme() for the details.
+// carry the same UI kit colors in the same slots – see buildTheme() for the details.
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
@@ -150,8 +150,8 @@ class Demo {
      *   1. Extract unique colors from the sprite PNG.
      *   2. Build the stone (base) palette with those colors.
      *   3. Build fire, ice, void palettes by tinting the base colors.
-     *   4. BT.paletteSet(stonePalette) - activate the starting palette.
-     *   5. SpriteSheet.load() + indexize() - link pixels to slot numbers.
+     *   4. BT.paletteSet(stonePalette) – activate the starting palette.
+     *   5. SpriteSheet.load() + indexize() – link pixels to slot numbers.
      *
      * @returns {Promise<boolean>} True when everything is ready.
      */
@@ -238,7 +238,7 @@ class Demo {
 
     /**
      * Draws the theme legend, cycling sprite, and code column.
-     * NO Color32 objects appear in draw calls - only palette indices and offsets.
+     * NO Color32 objects appear in draw calls – only palette indices and offsets.
      */
     render() {
         // Clear to the shared UI theme background (same slot in all theme palettes).
@@ -256,7 +256,7 @@ class Demo {
      * A highlight box shows which theme is currently active.
      *
      * The swatch squares use this demo's own scene slots (30..33), which the UI kit
-     * cannot draw, so the legend rows stay hand-rolled - but their text and outline
+     * cannot draw, so the legend rows stay hand-rolled – but their text and outline
      * use the shared theme slots so the colors match the rest of the UI.
      */
     renderThemeLegend() {
@@ -294,7 +294,7 @@ class Demo {
 
     /**
      * Draws the large cycling sprite in the center of the screen.
-     * The sprite uses offset 0 - it draws from COLOR_BASE..COLOR_BASE+N-1,
+     * The sprite uses offset 0 – it draws from COLOR_BASE..COLOR_BASE+N-1,
      * which contains the current theme's colors in whichever palette is active.
      */
     renderCyclingSprite() {
@@ -343,7 +343,7 @@ class Demo {
         ui.spacer();
 
         // spritesRefresh() only matters when the new palette moves colors to
-        // DIFFERENT slot numbers - see the header comment at the top of this file.
+        // DIFFERENT slot numbers – see the header comment at the top of this file.
         ui.label('// Sync sprites', { color: 'dim' });
         ui.label('BT.spritesRefresh()', { color: 'info' });
         ui.spacer();
@@ -365,10 +365,10 @@ class Demo {
      *
      * Because the sprite slot NUMBERS (10..N) are the same in every palette,
      * the sprite sheet does not need re-indexization when we swap themes.
-     * The sprite's stored indices already point to the right slots - just the colors
+     * The sprite's stored indices already point to the right slots – just the colors
      * in those slots differ.
      *
-     * @param {'stone'|'fire'|'ice'|'void'} themeName - Which tint to apply.
+     * @param {'stone'|'fire'|'ice'|'void'} themeName – Which tint to apply.
      * @returns {import('blit386').Palette} Ready-to-use Palette object.
      */
     buildTheme(themeName) {
@@ -415,13 +415,13 @@ class Demo {
      * A "tint" is a simple recipe: nudge the red, green, and blue channels up or
      * down, clamped to the valid 0..255 range so the math never overflows.
      *
-     * @param {Color32} base - The original stone color from the sprite.
-     * @param {'stone'|'fire'|'ice'|'void'} themeName - Which tint recipe to apply.
+     * @param {Color32} base – The original stone color from the sprite.
+     * @param {'stone'|'fire'|'ice'|'void'} themeName – Which tint recipe to apply.
      * @returns {Color32} The tinted color for this theme.
      */
     tintColor(base, themeName) {
         if (themeName === 'stone') {
-            // Original colors - no tint.
+            // Original colors – no tint.
             return base;
         }
 

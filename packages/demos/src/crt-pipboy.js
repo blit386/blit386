@@ -1,4 +1,4 @@
-// @pageTitle BLIT386 Demo - PipBoy CRT
+// @pageTitle BLIT386 Demo – PipBoy CRT
 //
 // PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //
@@ -9,7 +9,7 @@
 //
 // Live version: https://demos.blit386.dev/crt-pipboy
 //
-// Live article: https://vancura.dev/articles/blit386-pipboy-crt
+// Guide: https://blit386.dev/docs/guides/post-process-effects
 //
 // WHAT YOU WILL SEE
 // A green-on-black terminal that looks like an old curved CRT screen. Scanlines, a soft
@@ -36,13 +36,13 @@
 // writes a new one, and the last effect in the display chain writes to the swap chain.
 //
 // Pixel-tier effects (e.g. PixelGlitch) operate on the logical framebuffer, which stores
-// palette slot indices (GPU format r8uint) at 320x240 - not full RGBA yet. They stay
+// palette slot indices (GPU format r8uint) at 320x240 – not full RGBA yet. They stay
 // palette-native: integer texture reads, no averaging into fake in-between colors.
 //
 // Next the engine runs palette LUT resolve plus upscale: each index becomes a real RGBA
 // color and the image grows to the canvas size (here 1280x960). Display-tier effects
 // (e.g. BarrelDistortion, Scanlines) run on that RGBA output. Crucially, BarrelDistortion
-// does NOT bend the curve on the 320x240 index grid - lines stay smooth instead of
+// does NOT bend the curve on the 320x240 index grid – lines stay smooth instead of
 // breaking into stair-steps.
 //
 // HOW THE GLITCH STATE MACHINE WORKS
@@ -132,7 +132,7 @@ const BOOT_LINE_SPACER_TICKS = 6;
 const BOOT_TICKS_PER_CHAR = 2;
 
 // The boot sequence. Each entry is one line that appears letter-by-letter.
-// Keep this short - with too many lines the demo never finishes booting.
+// Keep this short – with too many lines the demo never finishes booting.
 // Tip: read this top-to-bottom to imagine how a real PipBoy might wake up.
 const BOOT_LINES = [
     'ROBCO INDUSTRIES (TM) PIP-BOY 3000',
@@ -186,7 +186,7 @@ const FLICKER_BASE = 1.0;
 const FLICKER_DIP = 0.6;
 
 // Resting values the glitch state machine returns to between bursts.
-// ABERRATION_BASE is 0 so the screen is clean between bursts - chromasplit
+// ABERRATION_BASE is 0 so the screen is clean between bursts – chromasplit
 // glitches then clearly pop the channel split on from nothing rather than
 // boosting an already-visible split. NOISE_BASE is the constant faint grain.
 const ABERRATION_BASE = 0;
@@ -238,7 +238,7 @@ class Demo {
     /** Tick count captured when the boot sequence started. */
     bootStartTick = 0;
 
-    /** Ticks elapsed since bootStartTick - refreshed every update(). */
+    /** Ticks elapsed since bootStartTick – refreshed every update(). */
     ticksSinceBoot = 0;
 
     /** True after the first frame where the boot sequence is fully visible. */
@@ -335,7 +335,7 @@ class Demo {
         BT.paletteSet(palette);
 
         // Step 2: load the bitmap font
-        // PragmataPro is a monospaced programming font - a perfect fit for a fictional
+        // PragmataPro is a monospaced programming font – a perfect fit for a fictional
         // terminal. The .btfont is a BLIT386 bitmap font: a PNG glyph atlas plus a
         // small JSON describing each character's bounds.
         this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
@@ -422,7 +422,7 @@ class Demo {
         this.flicker = new Flicker();
         this.flicker.amount = FLICKER_BASE;
 
-        // Bloom: a soft glow on bright pixels - the warm phosphor halo of an old monitor.
+        // Bloom: a soft glow on bright pixels – the warm phosphor halo of an old monitor.
         // Stacked LAST so the bloom sees the final post-CRT image.
         this.bloom = new Bloom();
         this.bloom.spread = 3.0; // size of the bloom kernel
@@ -471,7 +471,7 @@ class Demo {
         }
 
         // 1. Drive the boot animation timer
-        // We don't draw here - render() reads `this.ticksSinceBoot` and computes how many
+        // We don't draw here – render() reads `this.ticksSinceBoot` and computes how many
         // characters to show. update() just provides time.
         this.ticksSinceBoot = BT.ticks - this.bootStartTick;
 
@@ -506,7 +506,7 @@ class Demo {
             this.renderBlinkingCursor();
         }
 
-        // In software mode the CRT stack is skipped - say so with a kit label. Omitting
+        // In software mode the CRT stack is skipped – say so with a kit label. Omitting
         // ui.panel() keeps the group borderless, so it reads as a single caption line.
         if (!this.effectsAvailable) {
             ui.begin('bottomLeft');
@@ -517,10 +517,10 @@ class Demo {
 
     /**
      * Layers the chosen glitch personality onto the resting effect uniforms.
-     * Different burst types drive different effect uniforms - that is what gives each
+     * Different burst types drive different effect uniforms – that is what gives each
      * burst its own visual feel.
      *
-     * @param {number} envelope - 0 -> 1 -> 0 over the lifetime of the burst.
+     * @param {number} envelope – 0 -> 1 -> 0 over the lifetime of the burst.
      */
     applyGlitchUniforms(envelope) {
         const peak = this.glitchPeak * envelope;
@@ -574,7 +574,7 @@ class Demo {
     stepGlitchMachine() {
         if (this.glitchTicksLeft > 0) {
             // We are inside a glitch burst. Build an "envelope": ramps up to glitchPeak,
-            // holds, then ramps down. Sounds fancy - in practice it just makes a sin curve
+            // holds, then ramps down. Sounds fancy – in practice it just makes a sin curve
             // over the lifetime of the burst (sin from 0 to PI is a nice 0 -> 1 -> 0 hump).
             const t = 1 - this.glitchTicksLeft / this.glitchDuration; // 0 at start, 1 at end
             const envelope = Math.sin(t * Math.PI); // 0 -> 1 -> 0
@@ -588,7 +588,7 @@ class Demo {
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
         } else {
-            // No active glitch - count down to the next one.
+            // No active glitch – count down to the next one.
             this.glitchCooldown--;
             if (this.glitchCooldown <= 0) {
                 // Roll a new burst. pick() draws one item out of a list, like taking a
@@ -612,7 +612,7 @@ class Demo {
      *
      * @param {Vector2i} pos
      * @param {string} text
-     * @param {number} slot - target palette slot index (e.g. C_GREEN)
+     * @param {number} slot – target palette slot index (e.g. C_GREEN)
      */
     print(pos, text, slot) {
         BT.printFont(this.font, pos, text, slot - C_WHITE);
@@ -640,7 +640,7 @@ class Demo {
             // BOOT_TICKS_PER_CHAR ticks. Clamp to [0, length].
             const charsToShow = Math.max(0, Math.min(fullLine.length, Math.floor(ticksLeft / BOOT_TICKS_PER_CHAR)));
             if (charsToShow === 0) {
-                // Future line, not yet started. Stop - everything below is also invisible.
+                // Future line, not yet started. Stop – everything below is also invisible.
                 return;
             }
 
@@ -684,7 +684,7 @@ class Demo {
             const y = y0 + (i + 2) * LINE_HEIGHT;
             this.print(new Vector2i(x, y), label, C_GREEN_DIM);
             // Right-align the value. Label sits at column 0; value sits at column 70px.
-            // Hand-tuned for this font size - fine because both label and value are short.
+            // Hand-tuned for this font size – fine because both label and value are short.
             this.print(new Vector2i(x + 70, y), value, colorSlot(colorName));
         }
     }
