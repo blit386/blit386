@@ -13,17 +13,6 @@
  *
  * Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
  */
-/* eslint-disable no-unused-vars */
-// biome-ignore lint/correctness/noUnusedImports: scaffolding for future tasks
-import { spawnSync } from 'node:child_process';
-// biome-ignore lint/correctness/noUnusedImports: scaffolding for future tasks
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-// biome-ignore lint/correctness/noUnusedImports: scaffolding for future tasks
-import { dirname, join } from 'node:path';
-// biome-ignore lint/correctness/noUnusedImports: scaffolding for future tasks
-import { fileURLToPath, pathToFileURL } from 'node:url';
-/* eslint-enable no-unused-vars */
-
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
 
@@ -60,23 +49,6 @@ const BOOLEAN_OPTIONS = {
     '--keep-intermediate': 'keepIntermediate',
     '--dry-run': 'dryRun',
 };
-
-/* eslint-disable no-unused-vars */
-// biome-ignore lint/correctness/noUnusedVariables: scaffolding for future tasks
-const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
-
-  <slug>                 Demo slug, e.g. palette-cycling (must be in DEMO_ORDER)
-  --duration <seconds>   Clip length (required)
-  --out <dir>            Output directory (required), passed through to encode-video.mjs
-  --name <base>          Output base name (default: the slug)
-  --upscale <n>          Nearest-neighbor upscale factor (default: ${DEFAULTS.upscale})
-  --base-url <url>       Demo site origin (default: ${DEFAULTS.baseUrl})
-  --poster-at <ts>       Passed through to encode-video.mjs (default: ${DEFAULTS.posterAt})
-  --bitrate <bps>        MediaRecorder videoBitsPerSecond (default: ${DEFAULTS.bitrate})
-  --keep-intermediate    Keep raw.webm and the lossless upscaled.mp4 intermediate
-  --dry-run              Print the planned commands and exit
-`;
-/* eslint-enable no-unused-vars */
 
 // #endregion
 
