@@ -13,9 +13,13 @@ const PAGE_TITLE_PREFIX_PATTERN = /^BLIT386 Demo (?:(?:[0-9]{3}|00a) )?-\s*/;
 // Same shape as PAGE_TITLE_PATTERN: the `\s*\*\/` branch handles a one-line `/** @description x */`,
 // `\r?\n` the `//` and multi-line JSDoc forms. Single line only – `.` does not match a newline, so a
 // wrapped description would silently truncate at the first line rather than fail.
-const DESCRIPTION_PATTERN = /@description\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
+//
+// The separator is `[ \t]+`, not `\s+`, and that matters: `\s` matches a newline, so a bare
+// `// @description` with the text on the following comment line would capture that next line
+// verbatim – comment markers and all – and hand `// A description...` to the meta tag.
+const DESCRIPTION_PATTERN = /@description[ \t]+(.+?)(?:\s*\*\/|\r?\n|$)/;
 // Optional per-demo OG card framing, validated against OG_SCALE_MODES by check-demo-registry.
-const OG_SCALE_PATTERN = /@ogScale\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
+const OG_SCALE_PATTERN = /@ogScale[ \t]+(.+?)(?:\s*\*\/|\r?\n|$)/;
 
 // How much of each demo file is scanned for header tags. Exported so `scripts/check-demo-registry.mjs`
 // can name the real number when a tag is buried too deep in a long header to be seen.

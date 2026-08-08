@@ -259,24 +259,42 @@ The description comes from a **required** `@description` tag in each demo's head
 // @description Classic retro color rotation with BT.paletteCycle: rotate palette slots to make a still image flow.
 ```
 
-One line, 60-104 characters, ending in a period, within the first 2000 bytes of the file. `pnpm run check:demo-registry`
+One line, 60–104 characters, ending in a period, within the first 2000 bytes of the file. `pnpm run check:demo-registry`
 enforces every one of those rules, so a new demo cannot ship without one.
 
 Each demo also has a 1200x630 OpenGraph card committed under `public/social/og-<slug>.png`. Cards are captured by hand,
-never in CI:
+never in CI, and need `agent-browser` and `ffmpeg` on `PATH`.
+
+**After changing a demo, re-capture its card.** Build, serve, then capture that one slug:
 
 ```bash
-pnpm run build && pnpm run preview
-pnpm run capture:og -- --all
+pnpm run build
 ```
 
-`--base-url` must serve flattened, extensionless URLs – production, the `next` channel, or `pnpm run preview`. The dev
-server routes demos at `/demos/<slug>.html` and will not work. Pass a single slug instead of `--all` to redo just one,
-and `--force` to overwrite cards that already exist. The capture needs `agent-browser` and `ffmpeg` on `PATH`.
+```bash
+pnpm run preview
+```
 
-A demo whose card is framed badly can override the scaling with `// @ogScale fit` or `// @ogScale integer`; the default
-`auto` scales by a whole number when that already fills the card and fills the frame otherwise. Because PNGs do not
-delta-compress in git, re-capture only the demos that actually changed rather than re-running `--all --force`.
+Then, from a second terminal (check the port `preview` printed – it falls back to 4174 and up when 4173 is taken):
+
+```bash
+pnpm run capture:og -- <slug> --force --base-url http://localhost:4173
+```
+
+Two things to know:
+
+- **`--force` is required.** Without it the script skips every slug that already has a card, so it silently does
+  nothing.
+- **It must be `preview`, not `dev`.** `--base-url` has to serve flattened, extensionless URLs – production, the `next`
+  channel, or `pnpm run preview`. The dev server routes demos at `/demos/<slug>.html` and will not work.
+
+Then look at the PNG before committing it. If the frame is unrepresentative (too dark, caught mid-transition), add a
+settle override to `OG_CAPTURE_OVERRIDES` in `scripts/capture-og-image.mjs`; if the framing is the problem, set
+`// @ogScale fit` or `// @ogScale integer` in the demo header instead.
+
+Swap the slug for `--all` to redo every card. The default `auto` scaling takes a whole-number factor when that already
+fills the card and fills the frame otherwise. Because PNGs do not delta-compress in git, prefer re-capturing only what
+changed over re-running `--all --force`.
 
 ## Community
 

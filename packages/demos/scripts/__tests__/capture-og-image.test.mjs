@@ -90,6 +90,13 @@ describe('parseArgs', () => {
         assert.throws(() => parseArgs(['basics', '--out']), /--out requires a value/);
     });
 
+    it('rejects a following option token as a value', () => {
+        // Otherwise `--out --force` writes every card into a directory named "--force".
+        assert.throws(() => parseArgs(['basics', '--out', '--force']), /--out requires a value/);
+        assert.throws(() => parseArgs(['basics', '--base-url', '--force']), /--base-url requires a value/);
+        assert.throws(() => parseArgs(['basics', '--settle', '--dry-run']), /--settle requires a value/);
+    });
+
     it('rejects a non-numeric or non-positive --settle', () => {
         assert.throws(() => parseArgs(['basics', '--settle', 'soon']), /must be a positive number/);
         assert.throws(() => parseArgs(['basics', '--settle', '0']), /must be a positive number/);

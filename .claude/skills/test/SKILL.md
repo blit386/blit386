@@ -50,10 +50,19 @@ What to do instead: verify a new demo with `pnpm run dev` + manual exercise; con
 `pnpm run build`; check code quality with `/preflight demos` or `/review demos`; full pre-push audit with
 `/deep-review demos`.
 
-Tooling _scripts_ (`scripts/*.mjs`) are different: `node --test scripts/__tests__/*.test.mjs`, run via `pnpm run test`,
-covers pure helper functions in `capture-demo-clip.mjs` (argument parsing, URL/dimension math, ffmpeg/browser-script
-builders) that need no browser or WebGPU. The live capture-to-file pipeline itself (driving `agent-browser`, encoding
-with ffmpeg) is not covered here – verify it by hand, running the script against a real demo.
+Tooling _scripts_ and _plugins_ are different. `pnpm run test` runs `node --test` over two directories –
+`scripts/__tests__/*.test.mjs` and `plugins/__tests__/*.test.mjs` – covering pure helpers that need no browser or
+WebGPU:
+
+| Test file | Covers |
+| --- | --- |
+| `scripts/__tests__/capture-demo-clip.test.mjs` | Argument parsing, URL/dimension math, ffmpeg and browser-script builders |
+| `scripts/__tests__/capture-og-image.test.mjs` | OG card argument parsing, scale-mode resolution, integer/fit/auto scale math, the ffmpeg filter graph, the `!important` canvas-prep script |
+| `plugins/__tests__/demo-registry.test.mjs` | `@description` and `@ogScale` header-tag parsing across both comment styles |
+| `plugins/__tests__/social-meta.test.mjs` | The social head block: tag set, escaping, channel-aware URLs, JSON-LD, OG image fallback |
+
+The live capture-to-file pipelines (driving `agent-browser`, encoding with ffmpeg) are not covered – verify those by
+hand, running the script against a real demo.
 
 Manual hot-reload check (nothing automated covers this – run by hand after touching hot-reload wiring):
 

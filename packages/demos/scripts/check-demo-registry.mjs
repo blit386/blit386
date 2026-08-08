@@ -167,7 +167,7 @@ for (const entry of registry) {
 
     if (description === '') {
         fail(
-            `src/${slug}.js has no "@description <one sentence>" header tag — required for the ` +
+            `src/${slug}.js has no "@description <one sentence>" header tag – required for the ` +
                 `meta description and og:description, and it must appear within the first ` +
                 `${HEADER_SCAN_BYTES} bytes of the file`,
         );
@@ -186,7 +186,7 @@ for (const entry of registry) {
     }
 
     if (/[<>]/.test(description)) {
-        fail(`src/${slug}.js @description contains < or > — keep it plain prose`);
+        fail(`src/${slug}.js @description contains < or > – keep it plain prose`);
     }
 
     if (!/[.!?]$/.test(description)) {

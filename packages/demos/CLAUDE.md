@@ -55,7 +55,7 @@ Three header tags are parsed out of the first `HEADER_SCAN_BYTES` (2000) of each
 | Tag | Required | Purpose |
 | --- | --- | --- |
 | `@pageTitle` | no | Overrides the derived `<title>` and nav label |
-| `@description` | **yes** | One line, 60-104 characters, ending in a period. Feeds the meta description, `og:description`, `twitter:description`, and the JSON-LD `description` |
+| `@description` | **yes** | One line, 60–104 characters, ending in a period. Feeds the meta description, `og:description`, `twitter:description`, and the JSON-LD `description` |
 | `@ogScale` | no | `auto` (default), `integer`, or `fit` – how `scripts/capture-og-image.mjs` frames this demo's social card |
 
 All three are single-line: the patterns stop at the first newline, so a wrapped value truncates rather than failing.

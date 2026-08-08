@@ -161,7 +161,10 @@ export function parseArgs(argv) {
         if (Object.hasOwn(NUMERIC_OPTIONS, arg) || Object.hasOwn(STRING_OPTIONS, arg)) {
             const value = argv[index + 1];
 
-            if (value === undefined) {
+            // A following long option is a forgotten value, not the value itself. Without this,
+            // `--out --force` silently sets the output directory to "--force" and drops the flag,
+            // writing 46 cards into a directory named after an option.
+            if (value === undefined || value.startsWith('--')) {
                 throw new Error(`${arg} requires a value.`);
             }
 

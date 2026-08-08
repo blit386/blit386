@@ -119,6 +119,13 @@ bootstrap(Demo);
   `render()`.
 - The page title defaults to `BLIT386 Demo - Title Cased Topic`. Only add a `// @pageTitle Custom Title` comment (in the
   first ~20 lines) when that default is wrong for the demo.
+- **Required:** a `// @description One sentence about the demo.` tag in the header – one line, 60–104 characters, ending
+  in a period, within the first ~20 lines. It becomes the page's meta description, `og:description`, and
+  `twitter:description`, so write the sentence you would want to read under a shared link, not a restatement of the
+  title. `check:demo-registry` fails without it and enforces every one of those rules.
+- Optional: `// @ogScale fit` or `// @ogScale integer` overrides how this demo's OpenGraph card is framed. The default
+  (`auto`) scales by a whole number when that already fills the card and fills the frame otherwise, which suits nearly
+  every demo – only add the tag after looking at the captured card.
 - If the demo builds on earlier ones, list them as prerequisites in the header comment the way existing demos do (slug
   plus hosted URL).
 

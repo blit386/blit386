@@ -9,7 +9,7 @@ File layout: header comment (`// Demo Topic – …`, **required** `// @descript
 `// @pageTitle` and `// @ogScale`) → imports → `@typedef` JSDoc → configuration constants → module state → helper
 functions → the `Demo` class → `bootstrap(Demo);` last.
 
-`@description` is one line of 60-104 characters ending in a period, and must sit within the first 2000 bytes of the file
+`@description` is one line of 60–104 characters ending in a period, and must sit within the first 2000 bytes of the file
 – it feeds the page's meta description and social card. `check:demo-registry` enforces all of that.
 
 Demo class member order: instance fields → `configure()` (optional) → `init()` → `update()` → `render()` → helper

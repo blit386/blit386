@@ -65,6 +65,15 @@ describe('deriveDescription', () => {
     it('handles CRLF line endings', () => {
         assert.equal(deriveDescription('// @description Windows checkout.\r\n// next line\r\n'), 'Windows checkout.');
     });
+
+    it('does not reach onto the next line for a value', () => {
+        // `\s` would match the newline and capture the following comment line verbatim,
+        // handing "// A description..." to the meta tag. The tag must be treated as absent so
+        // check-demo-registry fails it loudly instead.
+        const header = ['// @description', '// A description that lives on the next line.'].join('\n');
+
+        assert.equal(deriveDescription(header), '');
+    });
 });
 
 describe('deriveOgScale', () => {
@@ -87,5 +96,9 @@ describe('deriveOgScale', () => {
 
     it('does not confuse @description for @ogScale', () => {
         assert.equal(deriveOgScale('// @description A perfectly ordinary description sentence goes here.\n'), '');
+    });
+
+    it('does not reach onto the next line for a value', () => {
+        assert.equal(deriveOgScale('// @ogScale\n// fit\n'), '');
     });
 });
