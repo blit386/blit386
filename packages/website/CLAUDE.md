@@ -207,10 +207,11 @@ screen-content mode, x264 `-tune animation`, and a crop rather than a scale to r
 resampled. Audio is stripped. Both codec levels are pinned so the `codecs=` strings in `src/components/video-embed.tsx`
 stay exact; `scripts/__tests__/encode-video.test.mjs` guards that and the file-suffix contract.
 
-Output goes under `public/media/<section>/<version>/`. The `/media/` prefix is deliberate: `public/_headers` serves
-`/media/*` with a one-year immutable `Cache-Control`, and a `/blog/*` rule would also have matched the post HTML routes.
-The version path segment is the cache key – re-encoding means a new directory, never a new file in the same one. Raw
-`.mov` sources stay local (`captures/` is gitignored) and this package has no Git LFS.
+Output goes under `public/media/<section>/<post-slug>/` (for example `public/media/blog/hot-reload-release-1-4-0/`). The
+`/media/` prefix is deliberate: `public/_headers` serves `/media/*` with a one-year immutable `Cache-Control`, and a
+`/blog/*` rule would also have matched the post HTML routes. The post-slug path segment is the cache key – a new post
+gets a new directory, never a new file added to an existing one. Raw `.mov` sources stay local (`captures/` is
+gitignored) and this package has no Git LFS.
 
 Three `_headers` entries exist for this and must not be tightened back: `media-src 'self'` in the CSP (it was `'none'`,
 which blocks all playback), plus `autoplay=(self)` and `fullscreen=(self)` in `Permissions-Policy`. Clips autoplay muted
