@@ -454,8 +454,26 @@ const main = async () => {
         try {
             runAgentBrowser(['open', embedUrl, '--json']);
 
+            // The canvas starts at the browser's default backing-store size (300x150) until
+            // the engine finishes async WebGPU init and resizes it (WebGPUContext.ts sets
+            // canvas.width/height as part of that init). `open` only waits for page load, not
+            // engine init, so reading dimensions immediately is a race: it can read the
+            // default instead of the demo's real configured size, silently producing a
+            // downscale (not an upscale) once the mismatch reaches the ffmpeg scale filter.
             const dimensions = runAgentBrowser(['eval', '--stdin', '--json'], {
-                stdin: `({ width: document.getElementById('${CANVAS_ID}').width, height: document.getElementById('${CANVAS_ID}').height })`,
+                stdin: `
+(async () => {
+    const canvas = document.getElementById('${CANVAS_ID}');
+    if (!canvas) throw new Error('Canvas #${CANVAS_ID} not found.');
+
+    const deadline = Date.now() + 5000;
+    while (canvas.width === 300 && canvas.height === 150 && Date.now() < deadline) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+
+    return { width: canvas.width, height: canvas.height };
+})();
+`.trim(),
             });
             const target = computeUpscaleTarget(dimensions.width, dimensions.height, options.upscale);
 
