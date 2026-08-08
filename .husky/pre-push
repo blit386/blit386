@@ -58,6 +58,24 @@ if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
     fi
 fi
 
+# Git exports GIT_DIR (and its siblings) into every hook, pointing at the git dir
+# of the worktree being pushed from. Those variables outrank cwd, so any git
+# subprocess a preflight step spawns for some *other* directory - a throwaway
+# fixture repo in node --test, a `git -C <path> log` - silently retargets this
+# repository instead. `git init` under a linked worktree's GIT_DIR is the
+# destructive case: git cannot pair that git dir with a work tree from an
+# unrelated cwd, so it writes `bare = true` into the shared .git/config and every
+# later git command in every checkout fails with "this operation must be run in a
+# work tree" until someone resets it by hand.
+#
+# The hook's own git usage above is finished by this point, and every command
+# below runs with the repo root as cwd, so plain discovery is what we want.
+# Call sites scrub these too (packages/website/scripts/git-env.mjs); this is the
+# containment that also covers steps nobody has written yet.
+unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE GIT_OBJECT_DIRECTORY
+unset GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_CEILING_DIRECTORIES GIT_NAMESPACE
+unset GIT_PREFIX GIT_QUARANTINE_PATH
+
 PREFLIGHT_STATUS=0
 if [ -n "$BASE_REF" ]; then
     echo "Running preflight for packages changed since $BASE_REF..."

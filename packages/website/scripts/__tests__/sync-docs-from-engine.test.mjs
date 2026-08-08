@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gitEnv } from '../git-env.mjs';
 
 // Set ENGINE_DOCS_DIR before the dynamic import so the module-level loadSitemap()
 // reads from the fixture instead of the real engine repo.
@@ -290,14 +291,18 @@ describe('getLastModified', () => {
     const fixedDate = '2026-01-15T10:30:00+01:00';
 
     mkdirSync(join(repoRoot, 'docs'), { recursive: true });
-    execFileSync('git', ['init', '--quiet'], { cwd: repoRoot });
-    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: repoRoot });
-    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: repoRoot });
+
+    // Every git call below passes gitEnv(): under `.husky/pre-push` these tests inherit GIT_DIR
+    // from the hook, which outranks `cwd` and would point `git init` at the real repository. See
+    // git-env.mjs, and git-env.test.mjs for the guard.
+    execFileSync('git', ['init', '--quiet'], { cwd: repoRoot, env: gitEnv() });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: repoRoot, env: gitEnv() });
+    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: repoRoot, env: gitEnv() });
     writeFileSync(join(repoRoot, 'docs', 'placeholder.md'), '# Placeholder\n');
-    execFileSync('git', ['add', '-A'], { cwd: repoRoot });
+    execFileSync('git', ['add', '-A'], { cwd: repoRoot, env: gitEnv() });
     execFileSync('git', ['commit', '--quiet', '-m', 'initial commit'], {
         cwd: repoRoot,
-        env: { ...process.env, GIT_AUTHOR_DATE: fixedDate, GIT_COMMITTER_DATE: fixedDate },
+        env: gitEnv({ GIT_AUTHOR_DATE: fixedDate, GIT_COMMITTER_DATE: fixedDate }),
     });
 
     test('reads the last commit date for a tracked doc path', () => {
@@ -339,28 +344,34 @@ describe('getLastModified', () => {
         const commit = (message, date) => {
             execFileSync('git', ['commit', '--quiet', '-m', message], {
                 cwd: renameRepo,
-                env: { ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date },
+                env: gitEnv({ GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date }),
             });
         };
 
         try {
             mkdirSync(join(renameRepo, 'docs'), { recursive: true });
-            execFileSync('git', ['init', '--quiet'], { cwd: renameRepo });
-            execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: renameRepo });
-            execFileSync('git', ['config', 'user.name', 'Test'], { cwd: renameRepo });
+            execFileSync('git', ['init', '--quiet'], { cwd: renameRepo, env: gitEnv() });
+            execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: renameRepo, env: gitEnv() });
+            execFileSync('git', ['config', 'user.name', 'Test'], { cwd: renameRepo, env: gitEnv() });
 
             writeFileSync(join(renameRepo, 'docs', 'edited.md'), '# Edited\n');
             writeFileSync(join(renameRepo, 'docs', 'untouched.md'), '# Untouched\n');
-            execFileSync('git', ['add', '-A'], { cwd: renameRepo });
+            execFileSync('git', ['add', '-A'], { cwd: renameRepo, env: gitEnv() });
             commit('add docs', createDate);
 
             writeFileSync(join(renameRepo, 'docs', 'edited.md'), '# Edited\n\nMore.\n');
-            execFileSync('git', ['add', '-A'], { cwd: renameRepo });
+            execFileSync('git', ['add', '-A'], { cwd: renameRepo, env: gitEnv() });
             commit('edit one doc', editDate);
 
             mkdirSync(join(renameRepo, 'docs', 'nested'), { recursive: true });
-            execFileSync('git', ['mv', 'docs/edited.md', 'docs/nested/edited.md'], { cwd: renameRepo });
-            execFileSync('git', ['mv', 'docs/untouched.md', 'docs/nested/untouched.md'], { cwd: renameRepo });
+            execFileSync('git', ['mv', 'docs/edited.md', 'docs/nested/edited.md'], {
+                cwd: renameRepo,
+                env: gitEnv(),
+            });
+            execFileSync('git', ['mv', 'docs/untouched.md', 'docs/nested/untouched.md'], {
+                cwd: renameRepo,
+                env: gitEnv(),
+            });
             commit('move docs', renameDate);
 
             assert.equal(getLastModified('nested/edited.md', renameRepo), editDate);
@@ -398,7 +409,7 @@ describe('renderPage frontmatter (lastModified, editUrl)', () => {
 
     test('omits lastModified by default when the fixture path has no history', () => {
         // FIXTURE_DIR (scripts/__fixtures__/sync-docs) *is* inside this repo, so git
-        // runs fine here - it just has no commit matching the "docs/api/with-components.md"
+        // runs fine here – it just has no commit matching the "docs/api/with-components.md"
         // pathspec relative to that directory. The real (non-injected) getLastModified
         // must therefore return undefined on empty output rather than throwing.
         const { contents } = renderPage(FIXTURE_PAGE);

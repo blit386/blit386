@@ -22,6 +22,10 @@ prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
    rewrites it to `{/_ … _/}`, which renders as visible italic text on the page. Delete the note or make it real prose
 4. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `content`, `ci`, `docs`, `deps`, `config`. `main`
    is protected – land changes via PR
+5. Every `git` subprocess spawned from `scripts/` passes `env: gitEnv()` ([`scripts/git-env.mjs`](scripts/git-env.mjs)).
+   These scripts run under `.husky/pre-push`, which exports `GIT_DIR` into every child; it outranks `cwd` and `-C`, so
+   an unguarded `git init` in a fixture repo re-initializes the real one and writes `bare = true` into the shared
+   `.git/config`, breaking git in the main checkout and every worktree. `scripts/__tests__/git-env.test.mjs` guards it
 
 ## Where to Find Information
 
@@ -35,6 +39,7 @@ prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
 | How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
 | How mirror drift is checked in CI | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` |
 | Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test`) |
+| Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Cloudflare security headers | `public/_headers` |
 

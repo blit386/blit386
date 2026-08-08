@@ -28,6 +28,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, posix, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { gitEnv } from './git-env.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ENGINE_DOCS = resolve(ROOT, process.env.ENGINE_DOCS_DIR ?? '../blit386/docs');
@@ -395,6 +396,7 @@ const getLastModified = (src, engineRepoRoot = ENGINE_REPO_ROOT) => {
             ['-C', engineRepoRoot, 'log', '-1', '--follow', '--diff-filter=AM', '--format=%aI', '--', `docs/${src}`],
             {
                 encoding: 'utf8',
+                env: gitEnv(),
                 stdio: ['ignore', 'pipe', 'ignore'],
             },
         ).trim();
