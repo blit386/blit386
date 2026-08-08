@@ -132,6 +132,10 @@ jobs:
         run: pnpm run test:shell-safety
         background: true
 
+      - name: Run spellcheck coverage tests
+        run: pnpm run test:spellcheck-coverage
+        background: true
+
       - wait-all:
 
   security-audit:

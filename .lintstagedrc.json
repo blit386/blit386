@@ -3,7 +3,7 @@
     "biome check --write --no-errors-on-unmatched",
     "biome format --write --no-errors-on-unmatched",
     "packages/blit386/node_modules/.bin/eslint --fix --max-warnings 0 --no-warn-ignored",
-    "cspell --no-progress --no-must-find-files"
+    "sh -c 'cspell --no-progress --no-must-find-files --gitignore-root \"$(git rev-parse --show-toplevel)\" \"$@\"' --"
   ],
   "packages/blit386/**/*.{js,cjs,mjs}": [
     "biome check --write --no-errors-on-unmatched",
@@ -14,7 +14,7 @@
     "biome check --write --no-errors-on-unmatched",
     "biome format --write --no-errors-on-unmatched",
     "packages/demos/node_modules/.bin/eslint --fix --max-warnings 0",
-    "cspell --no-progress --no-must-find-files"
+    "sh -c 'cspell --no-progress --no-must-find-files --gitignore-root \"$(git rev-parse --show-toplevel)\" \"$@\"' --"
   ],
   "packages/demos/{src/*.js,plugins/demo-order.js,plugins/demo-vintage-urls.js,plugins/demo-registry.js}": [
     "node packages/demos/scripts/check-demo-registry.mjs"
@@ -22,11 +22,14 @@
   "packages/{website,kit,create-blit386}/**/*.{ts,tsx,js,cjs,mjs}": [
     "biome check --write --no-errors-on-unmatched",
     "biome format --write --no-errors-on-unmatched",
-    "cspell --no-progress --no-must-find-files"
+    "sh -c 'cspell --no-progress --no-must-find-files --gitignore-root \"$(git rev-parse --show-toplevel)\" \"$@\"' --"
   ],
   "*.{json,jsonc}": ["biome format --write --no-errors-on-unmatched"],
   "*.css": ["biome format --write --no-errors-on-unmatched"],
-  "*.{md,mdx}": ["prettier --write", "cspell --no-progress --no-must-find-files"],
+  "*.{md,mdx}": [
+    "prettier --write",
+    "sh -c 'cspell --no-progress --no-must-find-files --gitignore-root \"$(git rev-parse --show-toplevel)\" \"$@\"' --"
+  ],
   "*.{yaml,yml}": ["prettier --write"],
   "*.{ts,tsx,js,cjs,mjs,md,mdx}": ["node scripts/check-dash-typography.mjs"]
 }
