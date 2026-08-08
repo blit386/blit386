@@ -58,8 +58,13 @@ import {
 // leave page state that a card capture silently inherits.
 export const OG_SESSION = 'blit386-og';
 
-// This script's own directory, so the registry read below works regardless of the caller's cwd.
+// Resolved from this module's own location, so both the registry read and the default output
+// directory land in packages/demos no matter where the caller invoked the script from.
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));
+export const PACKAGE_ROOT = resolve(SCRIPTS_DIR, '..');
+
+// Shown in the usage text and used as the fallback when --out is omitted.
+export const DEFAULT_OUT_DIR = join('public', OG_IMAGE_DIR);
 
 // Comfortably larger than the engine's 960x720 maximum canvas, so the restyled canvas is never
 // clipped by the viewport. deviceScaleFactor must be 1: at 2 the element screenshot comes back
@@ -74,7 +79,9 @@ export const CANVAS_READY_TIMEOUT_MS = 10_000;
 export const CARD_BACKGROUND = 'black';
 
 export const DEFAULTS = {
-    out: join('public', OG_IMAGE_DIR),
+    // Empty means "not passed", so the default can resolve against the package rather than the
+    // caller's cwd. An explicit --out stays cwd-relative, which is what passing a path implies.
+    out: '',
     baseUrl: SITE_URL,
     settle: 2.5,
     // Empty means "no CLI override" – each demo's own `@ogScale` tag decides, falling back to
@@ -214,6 +221,29 @@ export function parseArgs(argv) {
 // #endregion
 
 // #region Path and dimension math
+
+/**
+ * Output path for one demo's card.
+ *
+ * Resolve the output directory.
+ *
+ * The default resolves against the package, not the caller's cwd, so running the script from
+ * the repo root writes cards to packages/demos/public/social rather than creating a stray
+ * public/social at the root. An explicit --out stays cwd-relative, which is what passing a
+ * path implies.
+ *
+ * @param {string} out The `--out` value, or '' when the flag was not passed.
+ * @param {string} cwd The caller's working directory.
+ * @param {string} [packageRoot] The packages/demos root.
+ * @returns {string} Absolute output directory.
+ */
+export function resolveOutDir(out, cwd, packageRoot = PACKAGE_ROOT) {
+    if (out === '') {
+        return join(packageRoot, DEFAULT_OUT_DIR);
+    }
+
+    return resolve(cwd, out);
+}
 
 /**
  * Output path for one demo's card.
@@ -415,7 +445,8 @@ Usage: pnpm run capture:og -- <slug> [options]
 
   --all                  Capture every demo in DEMO_ORDER (skips slugs already captured)
   --force                Re-capture slugs that already have a committed card
-  --out <dir>            Output directory (default: ${DEFAULTS.out})
+  --out <dir>            Output directory, relative to your cwd
+                         (default: ${DEFAULT_OUT_DIR}, resolved against packages/demos)
   --base-url <url>       Site origin (default: ${DEFAULTS.baseUrl})
   --settle <seconds>     Wait after engine init before the shot (default: ${DEFAULTS.settle})
   --scale-mode <mode>    auto | integer | fit. Overrides every demo's own @ogScale tag;
@@ -515,13 +546,13 @@ async function main() {
         process.exit(1);
     }
 
-    const outDir = resolve(process.cwd(), options.out);
+    const outDir = resolveOutDir(options.out, process.cwd());
 
     // Each demo's own `@ogScale` header tag, read once. Silence buildRegistry's soft warns: a
     // missing @description is check:demo-registry's business, not a reason to noise up a capture.
     const originalWarn = console.warn;
     console.warn = () => {};
-    const registry = buildRegistry(resolve(SCRIPTS_DIR, '..'));
+    const registry = buildRegistry(PACKAGE_ROOT);
     console.warn = originalWarn;
 
     const ogScaleBySlug = new Map(registry.map((entry) => [entry.slug, entry.ogScale]));

@@ -71,7 +71,12 @@ export function buildSocialMeta({ entry, isNextChannel = false, hasOgImage = fal
 
     const title = escapeHtml(entry.title);
     const description = entry.description === '' ? '' : escapeHtml(entry.description);
-    const imageAlt = escapeHtml(`The ${entry.navLabel} demo running in BLIT386.`);
+    // Built from `title`, not `navLabel`. The card is a captured frame, so "screenshot of" is
+    // literally accurate, and phrasing it this way keeps the alt text readable whatever shape
+    // the label happens to be – `navLabel` currently keeps its branded prefix on the four demos
+    // that use a `@pageTitle` override (BT-465), which would read "The BLIT386 Demo – PipBoy CRT
+    // demo running in BLIT386."
+    const imageAlt = escapeHtml(`Screenshot of ${entry.title}.`);
 
     const lines = [];
 

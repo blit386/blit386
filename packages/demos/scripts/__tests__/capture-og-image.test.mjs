@@ -20,6 +20,7 @@ import {
     DEFAULTS,
     OG_CAPTURE_OVERRIDES,
     parseArgs,
+    resolveOutDir,
     resolveScaleMode,
 } from '../capture-og-image.mjs';
 
@@ -29,7 +30,8 @@ describe('parseArgs', () => {
 
         assert.deepEqual(options.slugs, ['basics']);
         assert.equal(options.all, false);
-        assert.equal(options.out, DEFAULTS.out);
+        // Empty means "not passed", so resolveOutDir can anchor it to the package.
+        assert.equal(options.out, '');
         assert.equal(options.baseUrl, DEFAULTS.baseUrl);
         assert.equal(options.settle, DEFAULTS.settle);
         // Empty means "no CLI override" – each demo's own @ogScale tag gets to decide.
@@ -218,6 +220,24 @@ describe('output paths', () => {
     it('names the card and its intermediate distinctly', () => {
         assert.equal(buildOgImagePath('public/social', 'basics'), 'public/social/og-basics.png');
         assert.equal(buildNativeImagePath('public/social', 'basics'), 'public/social/og-basics.native.png');
+    });
+});
+
+describe('resolveOutDir', () => {
+    it('anchors the default to the package, not the caller cwd', () => {
+        // Running from the repo root must not create a stray public/social there.
+        assert.equal(
+            resolveOutDir('', '/somewhere/else', '/repo/packages/demos'),
+            '/repo/packages/demos/public/social',
+        );
+    });
+
+    it('resolves an explicit --out against the caller cwd', () => {
+        assert.equal(resolveOutDir('tmp/cards', '/work', '/repo/packages/demos'), '/work/tmp/cards');
+    });
+
+    it('leaves an absolute --out alone', () => {
+        assert.equal(resolveOutDir('/tmp/cards', '/work', '/repo/packages/demos'), '/tmp/cards');
     });
 });
 

@@ -165,6 +165,19 @@ describe('buildSocialMeta', () => {
         assert.ok(!withoutImage.includes(`og-${ENTRY.slug}.png`));
     });
 
+    it('builds the image alt from the title, so a branded navLabel cannot garble it', () => {
+        // navLabel keeps its "BLIT386 Demo – " prefix on the four demos with a @pageTitle
+        // override (BT-465). Deriving alt text from it would read "The BLIT386 Demo – PipBoy
+        // CRT demo running in BLIT386."
+        const html = buildSocialMeta({
+            entry: { ...ENTRY, title: 'BLIT386 Demo – PipBoy CRT', navLabel: 'BLIT386 Demo – PipBoy CRT' },
+            hasOgImage: true,
+        });
+
+        assert.ok(html.includes('content="Screenshot of BLIT386 Demo – PipBoy CRT."'));
+        assert.ok(!html.includes('demo running in BLIT386'));
+    });
+
     it('leaves no unsubstituted template placeholder behind', () => {
         assert.ok(!buildSocialMeta({ entry: ENTRY, hasOgImage: true }).includes('{{'));
     });
