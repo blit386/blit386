@@ -27,8 +27,6 @@ your own, the bundled presets, and the upstream attribution.
 For how logical, drawing buffer, CSS cap, and effect tier map to `HardwareSettings` and `BT` getters, see
 [Resolution model](api-core.md#resolution-model) in the core API docs.
 
-<ApiAvailability page="guides/post-process-effects" />
-
 ## Quick start
 
 ```ts twoslash
@@ -479,6 +477,10 @@ PR to add a verifiable author / URL / license header.
 </Accordion>
 
 </Accordions>
+
+## API history
+
+<ApiAvailability page="guides/post-process-effects" />
 
 <PageChangelog page="guides/post-process-effects" />
 

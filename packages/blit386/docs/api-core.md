@@ -25,8 +25,6 @@ The rest of the core API surface lives in dedicated pages: [Overlay](api-overlay
   API for hand-wired or existing projects.
 </Callout>
 
-<ApiAvailability page="api/core" />
-
 ## Bootstrap
 
 <Since symbol="bootstrap" />
@@ -496,6 +494,10 @@ enabled, WebGPU backend, `16` SFX voices, and other defaults documented in the t
 ## Putting it together
 
 <DemoEmbed demo="014-game-scene" title="BLIT386 game scene capstone demo" />
+
+## API history
+
+<ApiAvailability page="api/core" />
 
 <PageChangelog page="api/core" />
 

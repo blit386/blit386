@@ -12,8 +12,6 @@
 
 Fixed-timestep simulation timing, tick counters, and the `Timer` helper.
 
-<ApiAvailability page="api/game-loop" />
-
 BLIT386 runs two independent cadences:
 
 | Concept | Where | Meaning |
@@ -132,6 +130,10 @@ spawn.intervalTicks; // readonly interval size
 
 `Timer.fireIfElapsed()` advances the internal baseline on each true return. Pass `BT.ticks` explicitly only when you
 need a specific snapshot; the default is the engine tick counter.
+
+## API history
+
+<ApiAvailability page="api/game-loop" />
 
 <PageChangelog page="api/game-loop" />
 

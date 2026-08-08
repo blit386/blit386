@@ -15,8 +15,6 @@ automatically; it also runs on browsers that do not expose WebGPU globals at all
 Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
 init).
 
-<ApiAvailability page="api/browser-support" />
-
 | Browser | Version | Status |
 | --- | --- | --- |
 | Chrome/Edge | 113+ | Enabled by default |
@@ -113,6 +111,10 @@ BLIT386's `render()` runs on `requestAnimationFrame`, so this halves the render 
 correct; only the visible frame rate drops, and the overlay's frame-metrics row shows the resulting `x2` (or higher)
 suffix on `update()`. Turning off Low Power Mode restores a clean `60 fps` ceiling on WebKit (capped by its own "prefer
 page rendering updates near 60 fps" policy, not the display's full refresh rate).
+
+## API history
+
+<ApiAvailability page="api/browser-support" />
 
 <PageChangelog page="api/browser-support" />
 

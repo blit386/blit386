@@ -15,8 +15,6 @@ lives in [API: Random](api-random.md). This guide walks through the ideas behind
 how a seed reproduces a whole run, when to split off an independent stream, and how to build worlds from coordinates
 instead of a sequence.
 
-<ApiAvailability page="guides/random" />
-
 ## Deterministic by default
 
 The engine core makes zero `Math.random()` calls, so a run only varies where you introduce randomness. `BT.random` is
@@ -175,6 +173,10 @@ BT.random.int(150, 420);
 BT.random.pick(['glitch', 'noise', 'static']);
 BT.random.bool(0.25);
 ```
+
+## API history
+
+<ApiAvailability page="guides/random" />
 
 <PageChangelog page="guides/random" />
 

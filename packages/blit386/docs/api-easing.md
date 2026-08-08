@@ -16,8 +16,6 @@ interpolate `number` / `Vector2i` / `Color32` / `Rect2i` values with `interpolat
 Curve math matches [RetroBlit](https://www.badcastle.com/retroblit.html) by Martin Cietwierkowski (`Ease` class, Robert
 Penner's easing equations).
 
-<ApiAvailability page="api/easing" />
-
 <Since symbol="EasingFunction" />
 <Since symbol="applyEasing" />
 <Since symbol="interpolate" />
@@ -76,6 +74,10 @@ const bounds = interpolate('sine-in-out', new Rect2i(0, 0, 16, 16), new Rect2i(4
 ```
 
 <DemoEmbed demo="020-palette-fade" title="BLIT386 palette fade and flash demo" />
+
+## API history
+
+<ApiAvailability page="api/easing" />
 
 <PageChangelog page="api/easing" />
 

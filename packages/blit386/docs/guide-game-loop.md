@@ -13,8 +13,6 @@
 Fixed-step timing, tick counters, and `BT.renderAlpha` are documented in [API: Game Loop](api-game-loop.md). This guide
 walks through the standard pattern for smoothing motion when `render()` doesn't land exactly on an `update()` step.
 
-<ApiAvailability page="guides/game-loop" />
-
 ## Why motion can look stale or jittery
 
 `update()` runs at a fixed rate (`targetFPS`); `render()` runs at whatever rate `requestAnimationFrame` delivers, which
@@ -91,6 +89,10 @@ class Player {
 
 Color transitions (palette flashes, tinted hit-feedback) can be interpolated the same way with `Color32.lerp` /
 `Color32#lerp` - see [API: Core Types](api-core-types.md#color32).
+
+## API history
+
+<ApiAvailability page="guides/game-loop" />
 
 <PageChangelog page="guides/game-loop" />
 

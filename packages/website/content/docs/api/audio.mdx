@@ -3,14 +3,12 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Audio"
 description: "Audio buses, SFX voice pool, crossfading music, and procedural synthesis."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-audio.md"
 ---
 
 Bus volume, mute, and the browser autoplay-unlock state. For the higher-level subsystem walkthrough (bus graph layout,
 locked vs. unlocked, and web autoplay constraints), see the [Audio Guide](/docs/guides/audio).
-
-<ApiAvailability page="api/audio" />
 
 The audio graph has three buses: `'sfx'` and `'music'` feed into `'main'`, which feeds the browser's audio destination.
 All three are independently controllable.
@@ -503,6 +501,10 @@ intro-then-loop recipe.
 
 `audioVoices` (default `16`) caps the number of simultaneous SFX voices – see [Playback (SFX)](#playback-sfx) for the
 allocation and stealing policy. Documented in [Hardware settings](/docs/api/core#hardware-settings).
+
+## API history
+
+<ApiAvailability page="api/audio" />
 
 <PageChangelog page="api/audio" />
 

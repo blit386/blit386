@@ -14,8 +14,6 @@
 [API: Core](api-core.md#hot-reload). This guide covers the dev-loop hot reload enabled by the plugin, the three swap
 tiers with worked examples, the asset hot-replace matrix, and the `blit386/vite` plugin that wires it all up.
 
-<ApiAvailability page="guides/hot-reload" />
-
 ## What hot reload replaces
 
 Without it, every saved change to a demo or game source file triggers a full page reload: the whole module graph
@@ -352,6 +350,10 @@ Not implemented yet – notes for where this could go next:
 - Verifying compatibility with StackBlitz/WebContainers. The plugin is built entirely on Vite's public dev-server plugin
   API with no Node-only assumptions beyond what any Vite plugin already requires, so this is expected to work, but it
   has not been verified hands-on yet.
+
+## API history
+
+<ApiAvailability page="guides/hot-reload" />
 
 <PageChangelog page="guides/hot-reload" />
 

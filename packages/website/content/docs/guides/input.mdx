@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Input"
 description: "Pointer, keyboard, gamepad, and text-accumulation input in BLIT386."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-input.md"
 ---
 
@@ -13,8 +13,6 @@ buttons), gamepad (up to four players via `navigator.getGamepads()`), and text a
 
 All pointer coordinates are returned in logical display space (the `displaySize` from `configure()` or
 `defaultConfig()`), independent of the canvas's CSS or backing-buffer size.
-
-<ApiAvailability page="guides/input" />
 
 ## Pointer slot model
 
@@ -467,6 +465,10 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 </Accordion>
 
 </Accordions>
+
+## API history
+
+<ApiAvailability page="guides/input" />
 
 <PageChangelog page="guides/input" />
 

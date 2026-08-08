@@ -13,8 +13,6 @@
 Bus volume, mute, and the browser autoplay-unlock state. For the higher-level subsystem walkthrough (bus graph layout,
 locked vs. unlocked, and web autoplay constraints), see the [Audio Guide](guide-audio.md).
 
-<ApiAvailability page="api/audio" />
-
 The audio graph has three buses: `'sfx'` and `'music'` feed into `'main'`, which feeds the browser's audio destination.
 All three are independently controllable.
 
@@ -506,6 +504,10 @@ intro-then-loop recipe.
 
 `audioVoices` (default `16`) caps the number of simultaneous SFX voices – see [Playback (SFX)](#playback-sfx) for the
 allocation and stealing policy. Documented in [Hardware settings](api-core.md#hardware-settings).
+
+## API history
+
+<ApiAvailability page="api/audio" />
 
 <PageChangelog page="api/audio" />
 

@@ -14,8 +14,6 @@ Sprite sheets, bitmap fonts, and asset loading.
 
 Looking for audio assets? `AudioClip` loading is documented separately in [API: Audio](api-audio.md#loading).
 
-<ApiAvailability page="api/assets" />
-
 ## Asset size limits
 
 Sprite sheets, font atlases, and raw indexed buffers share the same decoded-size policy as render configuration (`8192`
@@ -296,6 +294,10 @@ BT.systemPrintMeasure('Score: 100'); // → Vector2i (pixel width, height)
 - The engine draws its own overlay (present FPS, target FPS, draw calls, frame/update()/render() timings, backend,
   resolution, demo title) after each `render()` when `isOverlayEnabled` is true; see [Overlay Guide](guide-overlay.md).
 - For styled variable-width text, use a bitmap font instead.
+
+## API history
+
+<ApiAvailability page="api/assets" />
 
 <PageChangelog page="api/assets" />
 

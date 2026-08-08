@@ -12,8 +12,6 @@
 
 The integer-coordinate primitives shared across the engine: `Vector2i`, `Rect2i`, and `Color32`.
 
-<ApiAvailability page="api/core-types" />
-
 ## Vector2i
 
 <Since symbol="Vector2i" />
@@ -184,6 +182,10 @@ about eight levels near black. Convert, do the math, convert back – do not use
 `BT.paletteFadeExposure` is these helpers applied to a whole palette; see [Palette](api-palette.md).
 
 <DemoEmbed demo="032-named-colors" title="BLIT386 named colors demo" />
+
+## API history
+
+<ApiAvailability page="api/core-types" />
 
 <PageChangelog page="api/core-types" />
 
