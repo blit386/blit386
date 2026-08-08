@@ -72,6 +72,31 @@ describe('patchWranglerConfig', () => {
         const result = patchWranglerConfig({ vars: { OTHER: 'value' } }, { isNextChannel: false });
         assert.deepEqual(result.vars, { OTHER: 'value' });
     });
+
+    test('enables observability when the key is absent', () => {
+        const result = patchWranglerConfig({ name: 'worker' });
+        assert.deepEqual(result.observability, { enabled: true });
+    });
+
+    test('enables observability when an observability block exists but enabled is unset', () => {
+        const result = patchWranglerConfig({ observability: {} });
+        assert.equal(result.observability.enabled, true);
+    });
+
+    test('leaves observability.enabled unchanged when already true (idempotent)', () => {
+        const result = patchWranglerConfig({ observability: { enabled: true } });
+        assert.deepEqual(result.observability, { enabled: true });
+    });
+
+    test('overrides observability.enabled when explicitly set to false', () => {
+        const result = patchWranglerConfig({ observability: { enabled: false } });
+        assert.equal(result.observability.enabled, true);
+    });
+
+    test('preserves other observability fields alongside enabled', () => {
+        const result = patchWranglerConfig({ observability: { head_sampling_rate: 0.5 } });
+        assert.deepEqual(result.observability, { head_sampling_rate: 0.5, enabled: true });
+    });
 });
 
 describe('patchRequireMetaUrl', () => {

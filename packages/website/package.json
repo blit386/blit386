@@ -89,6 +89,6 @@
     "tailwindcss": "^4.3.2",
     "twoslash": "^0.3.9",
     "typescript": "^6.0.3",
-    "wrangler": "^4.110.0"
+    "wrangler": "4.114.0"
   }
 }

@@ -57,7 +57,9 @@ jobs:
           NODE_ENV: production
 
       # `command` is the pre-merge command verbatim; workingDirectory is what keeps the
-      # relative `dist/` in it correct from the monorepo root.
+      # relative `dist/` in it correct from the monorepo root. wranglerVersion and
+      # packageManager are pinned the same way on all four wrangler-action steps in this
+      # file (BT-441) - see deploy-website below for why the version is pinned at all.
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
@@ -65,6 +67,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/demos
           command: pages deploy dist/ --project-name=blit386-demos
+          wranglerVersion: '4.114.0'
           packageManager: pnpm
 
   deploy-website:
@@ -95,6 +98,13 @@ jobs:
         env:
           NODE_ENV: production
 
+      # wranglerVersion is pinned rather than left to wrangler-action's default so this
+      # deploy always runs the same wrangler as local `pnpm run deploy` / `pnpm run start`
+      # (packages/website/package.json's wrangler devDependency, not wrangler-action's own
+      # default) - a Renovate bump to that devDependency and this pin must move together,
+      # or the two silently drift. All four wrangler-action steps in this file share the
+      # same pin and packageManager for the same reason, even where (deploy-demos*) neither
+      # setting is strictly required by the job itself.
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
@@ -103,6 +113,7 @@ jobs:
           workingDirectory: packages/website
           command: deploy --config dist/server/wrangler.json --name blit386
           wranglerVersion: '4.114.0'
+          packageManager: pnpm
 
   deploy-demos-next:
     name: Deploy Demos to Cloudflare Pages (next preview)
@@ -138,6 +149,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/demos
           command: pages deploy dist/ --project-name=blit386-demos-next
+          wranglerVersion: '4.114.0'
           packageManager: pnpm
 
   deploy-website-next:
@@ -176,3 +188,4 @@ jobs:
           workingDirectory: packages/website
           command: deploy --config dist/server/wrangler.json --name blit386-next
           wranglerVersion: '4.114.0'
+          packageManager: pnpm

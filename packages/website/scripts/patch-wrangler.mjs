@@ -28,6 +28,11 @@ const REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
  * even though `BLIT386_CHANNEL=next` was set for the build (which is why the SSG'd
  * HTML's noindex meta, banner, and canonical URLs were correct regardless – those are
  * baked in once during the Node build, not re-evaluated in the Worker).
+ *
+ * `observability.enabled` turns on Workers Logs. blit386.dev is a production site with a
+ * live JSON-RPC endpoint (`/mcp`) and a request-time markdown-negotiation path in front of
+ * every doc URL; without this there is no way to see a runtime error in either without
+ * reproducing it locally.
  * @param {{ isNextChannel?: boolean }} [options]
  */
 export const patchWranglerConfig = (config, options = {}) => {
@@ -39,11 +44,13 @@ export const patchWranglerConfig = (config, options = {}) => {
             ? { ...config.assets, run_worker_first: true }
             : config.assets;
     const vars = isNextChannel ? { ...config.vars, BLIT386_CHANNEL: 'next' } : config.vars;
+    const observability = { ...config.observability, enabled: true };
     return {
         ...config,
         compatibility_flags: flags,
         ...(config.assets !== undefined ? { assets } : {}),
         ...(vars !== undefined ? { vars } : {}),
+        observability,
     };
 };
 

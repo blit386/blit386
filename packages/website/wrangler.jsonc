@@ -14,6 +14,12 @@
     // injects this same flag there.
     "run_worker_first": true
   },
+  // Workers Logs: blit386.dev is production with a live JSON-RPC endpoint (/mcp) and a
+  // request-time markdown-negotiation path. Same parity story as run_worker_first above:
+  // scripts/patch-wrangler.mjs injects this into the deployed dist/server/wrangler.json.
+  "observability": {
+    "enabled": true
+  },
   "rules": [
     {
       "type": "ESModule",
