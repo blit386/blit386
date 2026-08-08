@@ -53,7 +53,8 @@ yourself to silence the notice.
 ## Learn more
 
 - Docs: [blit386.dev](https://blit386.dev)
-- Source and issues: [github.com/blit386/create-blit386](https://github.com/blit386/create-blit386)
+- Source: [packages/create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386)
+- Issues: [github.com/blit386/blit386/issues](https://github.com/blit386/blit386/issues)
 
 ## Community
 

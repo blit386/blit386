@@ -90,7 +90,8 @@ npx blit help
 ## Learn more
 
 - Docs: [blit386.dev](https://blit386.dev)
-- Source and issues: [github.com/blit386/create-blit386](https://github.com/blit386/create-blit386)
+- Source: [packages/kit](https://github.com/blit386/blit386/tree/main/packages/kit)
+- Issues: [github.com/blit386/blit386/issues](https://github.com/blit386/blit386/issues)
 
 ## Community
 

@@ -6,8 +6,9 @@ TypeScript.
 Each demo shows a different feature of the engine. Source files in `src/` use plain JavaScript with lots of comments
 explaining how everything works.
 
-Want to build your own game with the engine? Start with the [create-blit386](https://github.com/blit386/create-blit386)
-scaffolder (`npm create blit386@latest my-game`).
+Want to build your own game with the engine? Start with the
+[create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386) scaffolder
+(`npm create blit386@latest my-game`).
 
 There are 45 demo modules today, covering drawing, palettes, post-process CRT effects, input (pointer, keyboard,
 gamepad), audio, and seeded randomness. Each demo lives in a single number-free kebab-case file under `src/` (for
