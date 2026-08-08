@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Random"
 description: "Seeded Random PRNG, coordinate hashes, and Value/Perlin/Simplex pattern noise for procedural worlds."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-random.md"
 ---
 
@@ -11,8 +11,6 @@ Seeded, deterministic pseudo-random numbers for demos and games. The `Random` cl
 seed always produces the same sequence across platforms. Stateless `hash1i` / `hash2i` / `hash3i` (and float forms) give
 per-coordinate randomness for chunked worlds without storing an RNG per cell. `ValueNoise`, `PerlinNoise`, and
 `SimplexNoise` add smooth pattern-based fields for terrain, clouds, and organic motion.
-
-<ApiAvailability page="api/random" />
 
 <Since symbol="Random" />
 
@@ -215,6 +213,10 @@ unsigned 32-bit value, the same representation `getState()` uses, not necessaril
 clears it, since jumping to an arbitrary saved state does not correspond to any known seed. `clone()` copies it verbatim
 (including `undefined`), matching the identical stream a clone produces. `fork()`'s child always reports `undefined` – a
 fork is a new stream and should not claim a seed its caller never chose.
+
+## API history
+
+<ApiAvailability page="api/random" />
 
 <PageChangelog page="api/random" />
 

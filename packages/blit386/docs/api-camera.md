@@ -12,8 +12,6 @@
 
 The camera applies a global pixel offset to all subsequent draw calls. Integer only – pass `Vector2i`, never floats.
 
-<ApiAvailability page="api/camera" />
-
 <Since symbol="BT.cameraSet" />
 <Since symbol="BT.camera" />
 <Since symbol="BT.cameraReset" />
@@ -66,6 +64,10 @@ Two more camera-driven demos: parallax scrolling and a scrolling tile grid.
 <DemoEmbed demo="011-starfield" title="BLIT386 starfield parallax demo" />
 
 <DemoEmbed demo="012-tilemap" title="BLIT386 tilemap demo" />
+
+## API history
+
+<ApiAvailability page="api/camera" />
 
 <PageChangelog page="api/camera" />
 

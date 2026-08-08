@@ -32,8 +32,6 @@ back in with `isOverlayVisibleAtStart: true` in `configure()` until authors choo
 
 </Callout>
 
-<ApiAvailability page="api/overlay" />
-
 ## Anatomy
 
 The overlay body stacks, top to bottom: title and backend rows, an optional timing chart, the frame-metrics rows, any
@@ -337,6 +335,10 @@ function configure(): Partial<HardwareSettings> {
   };
 }
 ```
+
+## API history
+
+<ApiAvailability page="api/overlay" />
 
 <PageChangelog page="api/overlay" />
 

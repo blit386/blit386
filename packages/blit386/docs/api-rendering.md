@@ -18,8 +18,6 @@ All draw calls require a palette to be active (`BT.paletteSet(palette)` before t
 Palette addressing: primitives and `BT.systemPrint` use an absolute `paletteIndex`. Sprites and `BT.printFont` use an
 optional `paletteOffset` added to stored texel indices. See [Palette addressing](api-palette.md#palette-addressing).
 
-<ApiAvailability page="api/rendering" />
-
 ## Primitives
 
 <Since symbol="BT.clear" />
@@ -290,6 +288,10 @@ await BT.downloadFrame('screenshot-001.png'); // custom filename
 `'blit386'`. Demos should use `BT.captureFrame()` and `BT.downloadFrame()` only.
 
 </Callout>
+
+## API history
+
+<ApiAvailability page="api/rendering" />
 
 <PageChangelog page="api/rendering" />
 

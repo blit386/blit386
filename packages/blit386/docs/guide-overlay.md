@@ -17,8 +17,6 @@ title. Demos should not duplicate this text.
 Configure-time flags, style objects, and worked examples live in [API: Overlay](api-overlay.md). This guide maps the
 internal subsystem and common integration patterns.
 
-<ApiAvailability page="guides/overlay" />
-
 ## Subsystem layout
 
 ```text
@@ -126,6 +124,10 @@ character width before drawing. Without this, a value's digit count changing bet
 `16.7`, or the `update()` step suffix like `x3` appearing only when the fixed-update loop runs a catch-up burst) would
 shift every later segment on that row, since segments are drawn left to right based on the previous segment's rendered
 width. Padding keeps the `|` dividers and the segments after them in place regardless of how the values change.
+
+## API history
+
+<ApiAvailability page="guides/overlay" />
 
 <PageChangelog page="guides/overlay" />
 

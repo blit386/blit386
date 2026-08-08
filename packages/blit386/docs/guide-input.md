@@ -17,8 +17,6 @@ buttons), gamepad (up to four players via `navigator.getGamepads()`), and text a
 All pointer coordinates are returned in logical display space (the `displaySize` from `configure()` or
 `defaultConfig()`), independent of the canvas's CSS or backing-buffer size.
 
-<ApiAvailability page="guides/input" />
-
 ## Pointer slot model
 
 The engine tracks up to four simultaneous pointers:
@@ -470,6 +468,10 @@ Coordinates are clamped to `[0, displaySize - 1]` on each axis. The conversion i
 </Accordion>
 
 </Accordions>
+
+## API history
+
+<ApiAvailability page="guides/input" />
 
 <PageChangelog page="guides/input" />
 

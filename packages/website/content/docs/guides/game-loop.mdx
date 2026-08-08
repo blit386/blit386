@@ -3,14 +3,12 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Game Loop"
 description: "Smoothing motion between fixed update() steps using BT.renderAlpha and Vector2i.lerp."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-game-loop.md"
 ---
 
 Fixed-step timing, tick counters, and `BT.renderAlpha` are documented in [API: Game Loop](/docs/api/game-loop). This guide
 walks through the standard pattern for smoothing motion when `render()` doesn't land exactly on an `update()` step.
-
-<ApiAvailability page="guides/game-loop" />
 
 ## Why motion can look stale or jittery
 
@@ -88,6 +86,10 @@ class Player {
 
 Color transitions (palette flashes, tinted hit-feedback) can be interpolated the same way with `Color32.lerp` /
 `Color32#lerp` - see [API: Core Types](/docs/api/core-types#color32).
+
+## API history
+
+<ApiAvailability page="guides/game-loop" />
 
 <PageChangelog page="guides/game-loop" />
 

@@ -3,15 +3,13 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Hot Reload"
 description: "The three hot-reload swap tiers, onHotReload semantics, asset hot-replace, and the blit386/vite plugin."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-hot-reload.md"
 ---
 
 `HotContext`, `registerHotReload`, `HotReloadContext`, and `IBTDemo.onHotReload` live in
 [API: Core](/docs/api/core#hot-reload). This guide covers the dev-loop hot reload enabled by the plugin, the three swap
 tiers with worked examples, the asset hot-replace matrix, and the `blit386/vite` plugin that wires it all up.
-
-<ApiAvailability page="guides/hot-reload" />
 
 ## What hot reload replaces
 
@@ -349,6 +347,10 @@ Not implemented yet – notes for where this could go next:
 - Verifying compatibility with StackBlitz/WebContainers. The plugin is built entirely on Vite's public dev-server plugin
   API with no Node-only assumptions beyond what any Vite plugin already requires, so this is expected to work, but it
   has not been verified hands-on yet.
+
+## API history
+
+<ApiAvailability page="guides/hot-reload" />
 
 <PageChangelog page="guides/hot-reload" />
 

@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Random"
 description: "Seeded determinism in practice: reproducible runs, independent streams, and procedural worlds from coordinates."
-lastModified: "2026-07-30T18:33:40+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-random.md"
 ---
 
@@ -11,8 +11,6 @@ The full surface – every `Random` method, the `BT.random` engine default, coor
 lives in [API: Random](/docs/api/random). This guide walks through the ideas behind it: why the engine stays deterministic,
 how a seed reproduces a whole run, when to split off an independent stream, and how to build worlds from coordinates
 instead of a sequence.
-
-<ApiAvailability page="guides/random" />
 
 ## Deterministic by default
 
@@ -172,6 +170,10 @@ BT.random.int(150, 420);
 BT.random.pick(['glitch', 'noise', 'static']);
 BT.random.bool(0.25);
 ```
+
+## API history
+
+<ApiAvailability page="guides/random" />
 
 <PageChangelog page="guides/random" />
 

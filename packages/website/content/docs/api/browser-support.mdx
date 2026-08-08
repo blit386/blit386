@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Browser Support"
 description: "WebGPU support matrix, automatic software fallback, and build toolchain."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-browser-support.md"
 ---
 
@@ -11,8 +11,6 @@ The WebGPU renderer is the default. When WebGPU is unavailable the engine falls 
 automatically; it also runs on browsers that do not expose WebGPU globals at all (for example Firefox on Linux without
 Nightly). Use `BT.activeBackend` to read which backend actually started (`'webgpu'`, `'software'`, or `null` before
 init).
-
-<ApiAvailability page="api/browser-support" />
 
 | Browser | Version | Status |
 | --- | --- | --- |
@@ -110,6 +108,10 @@ BLIT386's `render()` runs on `requestAnimationFrame`, so this halves the render 
 correct; only the visible frame rate drops, and the overlay's frame-metrics row shows the resulting `x2` (or higher)
 suffix on `update()`. Turning off Low Power Mode restores a clean `60 fps` ceiling on WebKit (capped by its own "prefer
 page rendering updates near 60 fps" policy, not the display's full refresh rate).
+
+## API history
+
+<ApiAvailability page="api/browser-support" />
 
 <PageChangelog page="api/browser-support" />
 

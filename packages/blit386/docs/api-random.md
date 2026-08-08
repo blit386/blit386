@@ -15,8 +15,6 @@ seed always produces the same sequence across platforms. Stateless `hash1i` / `h
 per-coordinate randomness for chunked worlds without storing an RNG per cell. `ValueNoise`, `PerlinNoise`, and
 `SimplexNoise` add smooth pattern-based fields for terrain, clouds, and organic motion.
 
-<ApiAvailability page="api/random" />
-
 <Since symbol="Random" />
 
 ```ts twoslash
@@ -218,6 +216,10 @@ unsigned 32-bit value, the same representation `getState()` uses, not necessaril
 clears it, since jumping to an arbitrary saved state does not correspond to any known seed. `clone()` copies it verbatim
 (including `undefined`), matching the identical stream a clone produces. `fork()`'s child always reports `undefined` – a
 fork is a new stream and should not claim a seed its caller never chose.
+
+## API history
+
+<ApiAvailability page="api/random" />
 
 <PageChangelog page="api/random" />
 

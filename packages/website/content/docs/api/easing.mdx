@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Easing"
 description: "Named easing curves and interpolate() for number, Vector2i, Color32, and Rect2i."
-lastModified: "2026-07-28T16:49:29+02:00"
+lastModified: "2026-08-08T20:51:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-easing.md"
 ---
 
@@ -12,8 +12,6 @@ interpolate `number` / `Vector2i` / `Color32` / `Rect2i` values with `interpolat
 
 Curve math matches [RetroBlit](https://www.badcastle.com/retroblit.html) by Martin Cietwierkowski (`Ease` class, Robert
 Penner's easing equations).
-
-<ApiAvailability page="api/easing" />
 
 <Since symbol="EasingFunction" />
 <Since symbol="applyEasing" />
@@ -73,6 +71,10 @@ const bounds = interpolate('sine-in-out', new Rect2i(0, 0, 16, 16), new Rect2i(4
 ```
 
 <DemoEmbed demo="020-palette-fade" title="BLIT386 palette fade and flash demo" />
+
+## API history
+
+<ApiAvailability page="api/easing" />
 
 <PageChangelog page="api/easing" />
 
