@@ -647,6 +647,15 @@ jobs:
       - name: Set up workspace
         uses: ./.github/actions/setup
 
+      # Must precede the parallel block, not sit inside it: `pnpm run test` includes
+      # scripts/__tests__/twoslash-webgpu-types.test.mjs, which runs the real twoslasher
+      # over a sample importing `blit386`. The engine is a workspace:* dependency whose
+      # types resolve from packages/blit386/dist, so on a fresh checkout that import is
+      # TS2307 until the engine is built. build-website already does this for the same
+      # reason; this job needs it too, and did not have it.
+      - name: Build engine (workspace dependency)
+        run: pnpm --filter blit386 run build
+
       - name: Lint code
         run: pnpm --filter blit386-website run lint
         background: true
