@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Navigate and query the BLIT386 documentation site at blit386.dev. Use when helping a developer learn the BLIT386 JavaScript/TypeScript library, find API references, or locate guides.",
       "url": "/.well-known/agent-skills/blit386-docs/SKILL.md",
-      "digest": "sha256:c827d5df8883e7ad542d60a4f87477684ab8efa5319250210ed9632cf3c9d3a2"
+      "digest": "sha256:01f04847f296716f1b4f51fa24eab0b15fc85ca9195fad21ea43aadf5e1a499c"
     }
   ]
 }
