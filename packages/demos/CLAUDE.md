@@ -205,4 +205,6 @@ every push to main, no path filter. The `-next` job sets `BLIT386_CHANNEL=next` 
 `plugins/virtual-demos.js` and `plugins/channel-headers.js` read directly (Node context, at build time – no client-side
 env var involved) to render the unreleased-work banner and a `noindex` meta tag into every page, append
 `X-Robots-Tag: noindex` to `dist/_headers`, and write a disallow-all `dist/robots.txt`. Production gets none of that –
-no banner, no noindex header, and (same as before this) no `robots.txt` at all.
+no banner, no noindex header, and `_headers` stays exactly what `viteStaticCopy` copied. Production's `robots.txt`
+instead allows everything and points crawlers at `dist/sitemap.xml`, which `plugins/sitemap.js` writes from the live
+demo registry (site root plus every demo's canonical extensionless URL, skipped entirely on the `next` channel).

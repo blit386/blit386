@@ -7,8 +7,9 @@ import { buildRegistry } from './demo-registry.js';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const rootDir = resolve(__dirname, '..');
 
-// Mirrors package.json's "homepage" field – the canonical production origin.
-const SITE_URL = 'https://demos.blit386.dev';
+// Mirrors package.json's "homepage" field – the canonical production origin. Also consumed by
+// channel-headers.js to point production's robots.txt at this file.
+export const SITE_URL = 'https://demos.blit386.dev';
 
 /**
  * Writes `dist/sitemap.xml` from the live demo registry: the site root plus every demo's
