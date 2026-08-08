@@ -9,7 +9,10 @@ export function HomeHero() {
             <div className="sr-only">
                 <h1>BLIT386</h1>
 
-                <p>A palette-first WebGPU retro engine for TypeScript, with automatic Canvas 2D fallback.</p>
+                <p>
+                    A palette-first retro game engine for the web. Change what a color means, and everything drawn in it
+                    changes at once.
+                </p>
 
                 <a href="/docs/getting-started">Get started</a>
                 <a href="/docs">Documentation</a>

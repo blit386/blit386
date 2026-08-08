@@ -1,15 +1,16 @@
 ---
 title: BLIT386
-description: A palette-first WebGPU retro engine for TypeScript, with an automatic Canvas 2D software fallback.
+description:
+  A palette-first retro game engine for the web. Change what a color means, and everything drawn in it changes at once.
 ---
 
 <HomeHero />
 
-BLIT386 is a palette-first WebGPU retro engine for TypeScript, inspired by
+BLIT386 is a palette-first retro game engine for the web. Palette-first means you draw with numbered colors rather than
+RGBA pixels, so changing what color 3 _means_ recolors everything drawn in it at once: a few bytes of palette upload,
+and water flows or the sky goes dark without a single pixel being redrawn. TypeScript throughout, WebGPU where the
+browser has it, an automatic Canvas 2D fallback where it does not. The design takes its cue from
 [RetroBlit](https://www.badcastle.com/retroblit.html) by Martin Cietwierkowski ([@daafu](https://github.com/daafu)).
-Primitives, sprites, and bitmap text all resolve color through a shared 256-entry indexed palette for pixel-perfect 2D
-rendering. WebGPU is the default backend; when it is unavailable the engine automatically falls back to a Canvas 2D
-software renderer.
 
 ## Features
 
