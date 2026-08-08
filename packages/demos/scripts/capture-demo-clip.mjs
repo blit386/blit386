@@ -435,9 +435,9 @@ const main = async () => {
     try {
         mkdirSync(options.out, { recursive: true });
 
-        runAgentBrowser(['open', embedUrl, '--json']);
-
         try {
+            runAgentBrowser(['open', embedUrl, '--json']);
+
             const dimensions = runAgentBrowser(['eval', '--stdin', '--json'], {
                 stdin: `({ width: document.getElementById('${CANVAS_ID}').width, height: document.getElementById('${CANVAS_ID}').height })`,
             });
