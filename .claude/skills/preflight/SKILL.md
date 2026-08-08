@@ -117,18 +117,19 @@ No combined `preflight` script exists at root; run what does:
 - `pnpm run format:check` – Biome + Prettier across the whole tree
 - `pnpm run docs:links` – Markdown link checker
 - `pnpm run agents:check` – skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings
+- `pnpm run check-dash-typography` – en-dash-only rule (root CLAUDE.md, "Shared conventions") over every tracked
+  `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.md`/`.mdx` file
 
 `.husky/pre-push` dispatches each changed package's own `preflight` script
-(`pnpm --filter "...[ref]" --if-present run preflight`), then – only if that succeeds – runs these three root-level
+(`pnpm --filter "...[ref]" --if-present run preflight`), then – only if that succeeds – runs these four root-level
 checks unconditionally on every push, since pnpm's per-package `--filter` dispatch only looks at files under
-`packages/*` and would otherwise miss a root-only change entirely.
+`packages/*` and would otherwise miss a root-only change entirely. `check-dash-typography` also runs in `quality-root`
+in `.github/workflows/ci.yml` (BT-461), so a repo-wide dash-typography regression fails both the push and CI, on top of
+the existing per-commit gates below.
 
 The following are not part of that pre-push gate – run them directly when auditing:
 
 - `pnpm run test:agent-config` – unit tests for the `agents:check` script itself
-- `pnpm run check-dash-typography` – en-dash-only rule (root CLAUDE.md, "Shared conventions") over every tracked
-  `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.md`/`.mdx` file; already gated per-commit via lint-staged (staged files) and
-  commitlint (the commit message), so this manual run is for auditing pre-existing drift, not a step a clean push needs
 - `pnpm run test:dash-typography` – unit tests for `check-dash-typography.mjs`
 - `pnpm run test:bump-lockstep` – unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
   `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`)
