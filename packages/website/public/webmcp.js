@@ -63,8 +63,8 @@
                 required: ['query'],
             },
             execute: async ({ query }) => {
-                const res = await fetch('/api/search?query=' + encodeURIComponent(query));
-                if (!res.ok) return { error: 'Search request failed: ' + res.status };
+                const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+                if (!res.ok) return { error: `Search request failed: ${res.status}` };
                 return await res.json();
             },
             annotations: { readOnlyHint: true },
@@ -81,7 +81,7 @@
             inputSchema: { type: 'object', properties: {} },
             execute: async () => {
                 const res = await fetch('/llms.txt');
-                if (!res.ok) return { error: 'Failed to fetch documentation summary: ' + res.status };
+                if (!res.ok) return { error: `Failed to fetch documentation summary: ${res.status}` };
                 return { content: await res.text() };
             },
             annotations: { readOnlyHint: true },
