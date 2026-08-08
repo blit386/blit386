@@ -1,13 +1,13 @@
 /**
  * Unit tests for the pure header-parsing helpers in plugins/demo-registry.js.
  *
- * `deriveDescription` is string-in/string-out, so it is tested directly rather than through
+ * All three are string-in/string-out, so they are tested directly rather than through
  * `buildRegistry` (which needs a real src/ directory on disk).
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { deriveDescription, deriveOgScale } from '../demo-registry.js';
+import { deriveDescription, deriveOgScale, deriveShortTitle } from '../demo-registry.js';
 
 describe('deriveDescription', () => {
     it('extracts the tag from a line-comment header', () => {
@@ -100,5 +100,24 @@ describe('deriveOgScale', () => {
 
     it('does not reach onto the next line for a value', () => {
         assert.equal(deriveOgScale('// @ogScale\n// fit\n'), '');
+    });
+});
+
+// From #516 (BT-465). Kept verbatim in substance, restyled from `test` to `it` so this file
+// uses one form throughout.
+describe('deriveShortTitle', () => {
+    it('strips a BLIT386 Demo prefix written with an en dash', () => {
+        const header = '// @pageTitle BLIT386 Demo – PipBoy CRT\n';
+        assert.equal(deriveShortTitle('crt-pipboy', header), 'PipBoy CRT');
+    });
+
+    it('strips a BLIT386 Demo prefix written with an ASCII hyphen', () => {
+        const header = '// @pageTitle BLIT386 Demo - PipBoy CRT\n';
+        assert.equal(deriveShortTitle('crt-pipboy', header), 'PipBoy CRT');
+    });
+
+    it('falls back to the title-cased slug when there is no @pageTitle override', () => {
+        const header = '// A demo with no page title override.\n';
+        assert.equal(deriveShortTitle('sprite-effects', header), 'Sprite Effects');
     });
 });

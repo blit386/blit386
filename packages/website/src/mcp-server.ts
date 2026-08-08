@@ -176,6 +176,15 @@ export function mcpServerPlugin<C extends ConfigContext = ConfigContext>(): Serv
                             };
                         }),
                     );
+
+                    // Evict on failure, the same way feed.ts does. Caching the promise is what
+                    // lets concurrent first requests share one extraction, but it also means a
+                    // rejected promise would otherwise stay cached and poison search_docs for
+                    // the rest of the isolate's life.
+                    corpus.catch(() => {
+                        corpusCache.delete(loader);
+                    });
+
                     corpusCache.set(loader, corpus);
                 }
                 return corpus;

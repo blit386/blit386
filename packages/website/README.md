@@ -44,6 +44,10 @@ Open the URL printed by Waku (typically `http://localhost:3000`).
 pnpm run preflight   # format:check, typecheck, test, spellcheck, knip, build, sync:docs:check
 ```
 
+`test` runs two suites: `test:scripts` (`node --test` over `scripts/**`) and `test:unit` (Vitest over `src/**`, the
+Worker plugins), the second with coverage thresholds. Run either alone, or `pnpm run test:unit:watch` while working on
+`src/`.
+
 `sync:docs:check` runs last because it regenerates `content/docs` in the working tree – see [Content](#content). After
 re-syncing, stage or commit the result before re-running: the check diffs the working tree against the index. Markdown
 link checking is not part of this gate: `docs:links` is a root-only script (it enumerates every tracked `*.md` / `*.mdx`
