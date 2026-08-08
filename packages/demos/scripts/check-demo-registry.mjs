@@ -189,8 +189,10 @@ for (const entry of registry) {
         fail(`src/${slug}.js @description contains < or > – keep it plain prose`);
     }
 
-    if (!/[.!?]$/.test(description)) {
-        fail(`src/${slug}.js @description should end in a sentence-final punctuation mark`);
+    // A period specifically, not any sentence-final mark: the documented rule says period, and
+    // 46 cards that punctuate the same way read better than a mix.
+    if (!/\.$/.test(description)) {
+        fail(`src/${slug}.js @description should end in a period`);
     }
 }
 
