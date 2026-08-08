@@ -103,21 +103,20 @@ reviews:
         library: JSDoc is not required, console logging is allowed, and demo classes may freely mutate instance state in
         `update()`/`render()` for performance (the workspace immutability preference does not apply here). Integer
         coordinates only (`Vector2i`/`Rect2i`, never raw floats); match the `blit386` library's public `BT` API names
-        (see `packages/blit386/CLAUDE.md`, Boolean naming / Input conventions); American English spelling (see
-        `packages/demos/.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated name
-        exemptions); no emoji anywhere. Filenames are number-free kebab-case with no numeric prefix; follow the standard
-        section and lifecycle-method order in `packages/demos/.claude/rules/file-structure.md`. Canonical detail:
-        `packages/demos/CLAUDE.md` ("Demo File Conventions", "Documentation Style", "Code Quality (Relaxed for Demos)").
+        (see `packages/blit386/CLAUDE.md`, Boolean naming / Input conventions); American English spelling (per root
+        `CLAUDE.md` Shared conventions); no emoji anywhere. Filenames are number-free kebab-case with no numeric prefix;
+        follow the standard section and lifecycle-method order in `packages/demos/.claude/rules/file-structure.md`.
+        Canonical detail: `packages/demos/CLAUDE.md` ("Critical Rules", "Documentation Style", "File Organization").
     - path: 'packages/demos/docs/**/*.md'
       instructions: >-
         Contributor-facing docs (CI workspace setup, external developer setup, security headers) rather than published
-        demo docs. American English spelling (see `packages/demos/.claude/rules/american-english-spelling.md`); no emoji
-        anywhere. Keep instructions accurate to the current `pnpm run <script>` command set if referenced.
+        demo docs. American English spelling (per root `CLAUDE.md` Shared conventions); no emoji anywhere. Keep
+        instructions accurate to the current `pnpm run <script>` command set if referenced.
     - path: 'packages/demos/CLAUDE.md'
       instructions: >-
         Repo contributor guide: American English spelling; no emoji; keep commands as `pnpm run <script>` (not bare
         `pnpm <script>`). When demo conventions, workflow, or project structure change, keep the matching sections
-        accurate (see `packages/demos/.claude/rules/docs-sync-required.md`).
+        accurate (see root `.claude/rules/docs-sync-required.md`).
     - path: 'packages/demos/README.md'
       instructions: >-
         Public demos README, including the `## Demos` list. American English; no emoji; beginner-friendly. New or
@@ -126,9 +125,8 @@ reviews:
     - path: 'packages/website/src/**/*.{ts,tsx}'
       instructions: >-
         Site TypeScript for the Fumapress/Waku docs site (React components, ServerPlugins, data loaders) – not the
-        blit386 engine. Prefer `import type` for type-only imports; American English spelling (see
-        `packages/website/.claude/rules/american-english-spelling.md`, including literal third-party / spec-mandated
-        name exemptions); no emoji anywhere. Lint/format with Biome (this package has no ESLint). Do not apply
+        blit386 engine. Prefer `import type` for type-only imports; American English spelling (per root `CLAUDE.md`
+        Shared conventions); no emoji anywhere. Lint/format with Biome (this package has no ESLint). Do not apply
         blit386-engine-only rules here (BTAPI access bans, Vector2i rendering coords, internal scoped naming) unless the
         change is documenting those APIs. Version-history UI (`Since`, `ApiAvailability`, `PageChangelog`) reads
         `src/data/api-history.ts` over generated JSON – never invent symbols in the generated file; fix the engine and
@@ -146,7 +144,7 @@ reviews:
         (`source.config.ts`), Waku/Vite plugins (`waku.config.ts`). MDX components used in engine docs must be
         registered in `fumadocsMdx({ getMdxComponents })`. Twoslash is gated on `CLOUDFLARE` (production builds only) –
         do not "fix" that by enabling it in dev. American English; no emoji. When plugins or routing change, check
-        whether `CLAUDE.md` / `README.md` still match (see `packages/website/.claude/rules/docs-sync-required.md`).
+        whether `CLAUDE.md` / `README.md` still match (see root `.claude/rules/docs-sync-required.md`).
     - path: 'packages/website/content/**'
       instructions: >-
         Hand-authored MDX and meta (landing, showcase, community, mcp-server, blog, and docs hub pages such as
@@ -154,13 +152,13 @@ reviews:
         pages under `content/docs/{api,guides,performance,reference}/` are path-filtered out – if they appear anyway, do
         not suggest hand-edits; point at `packages/blit386/docs/` + `pnpm run sync:docs`. Required frontmatter includes
         `title`; American English; no emoji. After link changes, `pnpm run docs:links`. Custom MDX components must be
-        registered in `press.config.tsx`. Canonical detail: `packages/website/CLAUDE.md` Content Conventions and
-        `packages/website/.claude/rules/fumapress-content.md`.
+        registered in `press.config.tsx`. Canonical detail: `packages/website/CLAUDE.md` "What is hand-authored and what
+        is generated".
     - path: 'packages/website/CLAUDE.md'
       instructions: >-
         Repo contributor guide: American English spelling; no emoji; keep commands as `pnpm run <script>` (not bare
-        `pnpm <script>`). When site config, plugins, sync behavior, or deploy flow changes, keep the Architecture /
-        Commands / Documentation mirror sections accurate (see `packages/website/.claude/rules/docs-sync-required.md`).
+        `pnpm <script>`). When site config, plugins, sync behavior, or deploy flow changes, keep the "Where to Find
+        Information" and "Documentation mirror" sections accurate (see root `.claude/rules/docs-sync-required.md`).
     - path: 'packages/website/README.md'
       instructions: >-
         Public website README: American English; no emoji; beginner-friendly. Keep install/run/deploy examples accurate
@@ -174,9 +172,8 @@ reviews:
       instructions: >-
         This is TypeScript for the scaffolder CLI (`packages/create-blit386`) or the `blit` CLI / migrations
         (`packages/kit`), not engine or generated-game code. Follow create-blit386 house rules: named exports only (no
-        default exports); prefer `import type` for type-only imports; American English spelling (see
-        `packages/create-blit386/.claude/rules/american-english-spelling.md`, including literal third-party /
-        spec-mandated name exemptions); no emoji anywhere. Lint/format with Biome (no ESLint here). Do not apply
+        default exports); prefer `import type` for type-only imports; American English spelling (per root `CLAUDE.md`
+        Shared conventions); no emoji anywhere. Lint/format with Biome (no ESLint here). Do not apply
         blit386-engine-only rules here (BTAPI access bans, Vector2i rendering coords, internal scoped naming) unless the
         change is documenting or scaffolding those APIs for games. Canonical detail: that package's own `CLAUDE.md`
         (`packages/create-blit386/CLAUDE.md` or `packages/kit/CLAUDE.md` - each covers only its own package now, not a
