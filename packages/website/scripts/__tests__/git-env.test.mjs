@@ -13,12 +13,20 @@ const REPO_LOCATION_VARS = [
     'GIT_ALTERNATE_OBJECT_DIRECTORIES',
     'GIT_CEILING_DIRECTORIES',
     'GIT_COMMON_DIR',
+    'GIT_CONFIG',
+    'GIT_CONFIG_COUNT',
+    'GIT_CONFIG_PARAMETERS',
     'GIT_DIR',
+    'GIT_GRAFT_FILE',
+    'GIT_IMPLICIT_WORK_TREE',
     'GIT_INDEX_FILE',
     'GIT_NAMESPACE',
+    'GIT_NO_REPLACE_OBJECTS',
     'GIT_OBJECT_DIRECTORY',
     'GIT_PREFIX',
     'GIT_QUARANTINE_PATH',
+    'GIT_REPLACE_REF_BASE',
+    'GIT_SHALLOW_FILE',
     'GIT_WORK_TREE',
 ];
 
@@ -39,6 +47,22 @@ describe('gitEnv', () => {
         } finally {
             process.env = saved;
         }
+    });
+
+    // git clears exactly this list before recursing into an unrelated repository, so it is the
+    // authority on what "points at a repo" means. Asserting against the installed git means a
+    // future version adding a variable fails here instead of quietly widening the hole.
+    test('covers everything the installed git reports as a local env var', () => {
+        const reported = execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+        assert.ok(reported.length > 0, 'git should report at least one local env var');
+
+        const missing = reported.filter((name) => !REPO_LOCATION_VARS.includes(name));
+
+        assert.deepEqual(missing, [], 'git-env.mjs must scrub every variable git itself clears');
     });
 
     test('keeps the rest of the environment and applies overrides last', () => {
@@ -113,7 +137,10 @@ describe('gitEnv against an inherited GIT_DIR', () => {
         const workDir = mkdtempSync(join(tmpdir(), 'git-env-inherited-'));
 
         try {
-            run(['init', '--quiet'], workDir, { ...process.env, GIT_DIR: decoyWorktreeGitDir });
+            // gitEnv() with GIT_DIR put back is the control: the override reinstates exactly the
+            // variable a hook would have leaked, so this reproduces the hazard while keeping the
+            // "every git subprocess goes through gitEnv()" invariant true even here.
+            run(['init', '--quiet'], workDir, gitEnv({ GIT_DIR: decoyWorktreeGitDir }));
 
             assert.match(
                 readFileSync(decoyConfig, 'utf8'),

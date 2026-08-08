@@ -577,7 +577,7 @@ describe('findIntroducingVersion (git pickaxe, real repo fixture with a rename)'
         const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
         const { tmpdir } = await import('node:os');
         const dir = mkdtempSync(join(tmpdir(), 'gen-api-history-rename-'));
-        // GIT_DIR and its siblings outrank `cwd`, and git exports them into every hook it runs -
+        // GIT_DIR and its siblings outrank `cwd`, and git exports them into every hook it runs –
         // including `.husky/pre-push`, which is what dispatches this test suite. Left in place,
         // `run(['init', ...])` below re-initializes the *real* repository instead of the fixture:
         // a push from a linked worktree carries GIT_DIR=.git/worktrees/<name>, which git cannot
@@ -585,17 +585,19 @@ describe('findIntroducingVersion (git pickaxe, real repo fixture with a rename)'
         // .git/config and every later git command fails with "this operation must be run in a
         // work tree" until it is reset by hand. `packages/website/scripts/git-env.mjs` scrubs the
         // same set for the same reason.
+        //
+        // The list comes from git rather than a hand-copied copy of it: --local-env-vars is what
+        // git itself clears before recursing into an unrelated repository, so it stays correct as
+        // git grows new ones. The three appended scope discovery and ref visibility rather than
+        // repo location, and are set on hook subprocesses all the same.
         const repoLocationVars = new Set([
-            'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+            ...execFileSync('git', ['rev-parse', '--local-env-vars'], { encoding: 'utf8' })
+                .split('\n')
+                .map((name) => name.trim())
+                .filter(Boolean),
             'GIT_CEILING_DIRECTORIES',
-            'GIT_COMMON_DIR',
-            'GIT_DIR',
-            'GIT_INDEX_FILE',
             'GIT_NAMESPACE',
-            'GIT_OBJECT_DIRECTORY',
-            'GIT_PREFIX',
             'GIT_QUARANTINE_PATH',
-            'GIT_WORK_TREE',
         ]);
         const env = {
             ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !repoLocationVars.has(name))),
