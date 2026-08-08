@@ -262,7 +262,7 @@ export function buildRecorderScript(bitrate) {
 
 /**
  * Browser-side script that stops the recorder, concatenates the recorded chunks into a
- * Blob, and base64-encodes it into window.__b64 in B64_PUSH_CHUNK_CHARS-sized slices -
+ * Blob, and base64-encodes it into window.__b64 in B64_PUSH_CHUNK_CHARS-sized slices –
  * String.fromCharCode.apply blows the call stack on one giant array, so the encode has to
  * happen in pieces even though the result is one string.
  *
@@ -270,7 +270,7 @@ export function buildRecorderScript(bitrate) {
  * base64 string back out through repeated eval calls (see sliceRanges) is the path that
  * works.
  *
- * @returns {string} JavaScript source. Evaluates to `window.__b64.length`.
+ * @returns {string} JavaScript source. Resolves to `window.__b64.length`.
  */
 export function buildStopScript() {
     return `
