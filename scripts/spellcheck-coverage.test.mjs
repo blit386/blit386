@@ -9,7 +9,7 @@
  * A silent zero is the actual failure mode: exit 1 gets noticed, but a future regression that
  * keeps exit 0 while checking nothing would not. This asserts the file count directly for every
  * package with a spellcheck script, running each package.json's own "spellcheck" command exactly
- * as written (not `pnpm run` - pnpm's own reporter writes straight to the controlling terminal in
+ * as written (not `pnpm run` – pnpm's own reporter writes straight to the controlling terminal in
  * some nested-PTY setups, bypassing stdout capture). It intentionally does not construct a
  * synthetic worktree fixture to force the bug: cspell-gitignore resolves the repo root by
  * shelling out to git rather than pure directory-walking, so a synthetic non-git ".git" directory
