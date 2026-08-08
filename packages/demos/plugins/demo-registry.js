@@ -9,7 +9,7 @@ const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
 const PAGE_TITLE_PATTERN = /@pageTitle\s+(.+?)(?:\s*\*\/|\r?\n|$)/;
 // Strip a branded `@pageTitle` prefix (with or without a legacy NNN / 00a id) so nav labels
 // stay short regardless of how each demo's override is written.
-const PAGE_TITLE_PREFIX_PATTERN = /^BLIT386 Demo (?:(?:[0-9]{3}|00a) )?-\s*/;
+const PAGE_TITLE_PREFIX_PATTERN = /^BLIT386 Demo (?:(?:[0-9]{3}|00a) )?[-–]\s*/;
 const HEADER_SCAN_BYTES = 2000;
 
 // Demos excluded from the banner's fuzzy combobox and prev/next chain. They remain fully
@@ -132,7 +132,7 @@ function deriveTitle(slug, header) {
  * @param {string} header – First chunk of the JS source (to scan for @pageTitle)
  * @returns {string}
  */
-function deriveShortTitle(slug, header) {
+export function deriveShortTitle(slug, header) {
     const override = header.match(PAGE_TITLE_PATTERN);
 
     if (override) {
