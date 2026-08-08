@@ -23,11 +23,12 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
 
-            // The Worker plugins plus the one data module with logic in it. `src/data/authors.ts`,
-            // `community.ts`, `demos.ts`, and `site.ts` are static content constants with no
-            // branches, and `src/components/**` is React – both are deliberately outside the
-            // denominator rather than padding it.
-            include: ['src/*.ts', 'src/data/api-history.ts'],
+            // The Worker plugins plus the one data module with logic in it, plus the WebMCP bridge
+            // script (a browser IIFE, not a Worker plugin, hence living under `public/` rather
+            // than `src/`). `src/data/authors.ts`, `community.ts`, `demos.ts`, and `site.ts` are
+            // static content constants with no branches, and `src/components/**` is React – both
+            // are deliberately outside the denominator rather than padding it.
+            include: ['src/*.ts', 'src/data/api-history.ts', 'public/webmcp.js'],
             exclude: ['src/**/*.test.ts', 'src/__test__/**', 'src/css-modules.d.ts'],
 
             thresholds: {
