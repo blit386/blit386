@@ -31,6 +31,11 @@ export const CANVAS_ID = 'blit386-canvas';
 export const CAPTURE_SESSION = 'blit386-capture';
 export const B64_PULL_CHUNK_CHARS = 300_000;
 export const B64_PUSH_CHUNK_CHARS = 0x8000;
+// Well above the largest expected agent-browser JSON envelope (a B64_PULL_CHUNK_CHARS-sized
+// chunk plus a small lifecycle wrapper) and a generous per-call ceiling so a stalled
+// agent-browser process fails loudly instead of hanging the whole run indefinitely.
+export const AGENT_BROWSER_MAX_BUFFER = 10 * 1024 * 1024;
+export const AGENT_BROWSER_TIMEOUT_MS = 60_000;
 
 export const DEFAULTS = {
     upscale: 2,
@@ -82,19 +87,19 @@ export function parseArgs(argv) {
     for (let index = 0; index < argv.length; index += 1) {
         const arg = argv[index];
 
-        if (BOOLEAN_OPTIONS[arg] !== undefined) {
+        if (Object.hasOwn(BOOLEAN_OPTIONS, arg)) {
             options[BOOLEAN_OPTIONS[arg]] = true;
             continue;
         }
 
-        if (STRING_OPTIONS[arg] !== undefined || NUMERIC_OPTIONS[arg] !== undefined) {
+        if (Object.hasOwn(STRING_OPTIONS, arg) || Object.hasOwn(NUMERIC_OPTIONS, arg)) {
             const value = argv[index + 1];
             if (value === undefined || value.startsWith('--')) {
                 throw new Error(`Missing value for ${arg}`);
             }
             index += 1;
 
-            if (NUMERIC_OPTIONS[arg] !== undefined) {
+            if (Object.hasOwn(NUMERIC_OPTIONS, arg)) {
                 const parsed = Number(value);
                 if (!Number.isFinite(parsed)) {
                     throw new Error(`Expected a number for ${arg}, got "${value}"`);
@@ -363,6 +368,8 @@ function runAgentBrowser(args, options = {}) {
     const result = spawnSync('agent-browser', fullArgs, {
         encoding: 'utf8',
         input: options.stdin,
+        maxBuffer: AGENT_BROWSER_MAX_BUFFER,
+        timeout: AGENT_BROWSER_TIMEOUT_MS,
     });
 
     if (result.error) {
@@ -451,6 +458,14 @@ const main = async () => {
     try {
         mkdirSync(options.out, { recursive: true });
 
+        // Fail fast on a missing ffmpeg before the timed recording, not after – ffmpeg is
+        // only actually invoked post-capture (see runFfmpeg below), so without this check a
+        // missing binary would waste the full --duration wait and discard a good recording.
+        const ffmpegProbe = spawnSync('ffmpeg', ['-hide_banner', '-version'], { stdio: 'ignore' });
+        if (ffmpegProbe.error || ffmpegProbe.status !== 0) {
+            throw new Error('ffmpeg is required for the upscale step but was not found on PATH.');
+        }
+
         try {
             runAgentBrowser(['open', embedUrl, '--json']);
 
@@ -483,6 +498,9 @@ const main = async () => {
             await sleep(options.duration);
 
             const totalLength = runAgentBrowser(['eval', '--stdin', '--json'], { stdin: buildStopScript() });
+            if (!Number.isSafeInteger(totalLength) || totalLength <= 0) {
+                throw new Error(`Expected a positive base64 length from the browser, got ${totalLength}.`);
+            }
 
             const ranges = sliceRanges(totalLength, B64_PULL_CHUNK_CHARS);
             console.log(`Pulling ${ranges.length} chunks from the browser...`);
@@ -490,7 +508,7 @@ const main = async () => {
             let base64 = '';
             for (const range of ranges) {
                 base64 += runAgentBrowser(['eval', '--stdin', '--json'], {
-                    stdin: `window.__b64.substr(${range.start}, ${range.length})`,
+                    stdin: `window.__b64.slice(${range.start}, ${range.start + range.length})`,
                     quiet: true,
                 });
             }
