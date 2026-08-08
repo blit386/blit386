@@ -30,7 +30,7 @@ at build time.
 | `worker-src` | `'self' blob:` | Reserved for worker/blob patterns used by capture and asset helpers. |
 | `child-src` / `frame-src` | `'self'` | Same-origin only: the persistent shell loads each demo in an iframe (`?embed&source`) so demo swaps can discard the engine instance (no teardown API). External nested frames stay blocked. |
 | `form-action` | `'none'` | No form submissions. |
-| `frame-ancestors` | `'self' https://vancura.dev https://*.framer.app https://blit386.dev` | `'self'` is required so the persistent shell can iframe the same demo (`?embed` / `?embed&source`). Also allows embedding in the Framer site, vancura.dev articles, and the Fumapress docs site ([blit386.dev](https://blit386.dev)). |
+| `frame-ancestors` | `'self' https://vancura.dev https://*.framer.app https://blit386.dev https://next.blit386.dev http://localhost:*` | `'self'` is required so the persistent shell can iframe the same demo (`?embed` / `?embed&source`). Also allows embedding in the Framer site, vancura.dev articles, the Fumapress docs site ([blit386.dev](https://blit386.dev)) and its `next.blit386.dev` preview channel, and any local port for testing the docs site's `DemoEmbed` against production demos before a release. |
 | `upgrade-insecure-requests` | (enabled) | Upgrades subresource requests to HTTPS on the production host. |
 
 ### `media-src 'none'` and the audio demos
