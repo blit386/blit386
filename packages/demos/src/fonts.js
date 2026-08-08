@@ -1,5 +1,6 @@
 /**
  * Fonts Demo – built-in system font and palette-animated text.
+ * @description Draw text with the built-in system font, measure it before drawing, and animate its palette colors.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Basics – https://demos.blit386.dev/basics

@@ -1,5 +1,6 @@
 /**
  * Primitives Demo – shows all the basic shapes you can draw with BLIT386.
+ * @description Every basic shape BLIT386 can draw: pixels, lines, rectangles, and the filled and outlined variants.
  *
  * Prerequisites: Basics – https://demos.blit386.dev/basics
  * Live version: https://demos.blit386.dev/primitives

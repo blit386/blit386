@@ -1,5 +1,6 @@
 /**
  * Synth Toy Demo – procedural chip-tune sound effects with no audio files at all.
+ * @description Procedural chip-tune sound effects with no audio files: six presets plus a key that rolls a new one.
  *
  * Prerequisites:
  *   Keyboard Input  https://demos.blit386.dev/keyboard-input

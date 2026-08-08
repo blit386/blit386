@@ -1,4 +1,5 @@
 // @pageTitle BLIT386 Demo – PipBoy CRT
+// @description A faux Fallout terminal built from decomposed CRT effects: barrel warp, scanlines, mask, and glitches.
 //
 // PipBoy CRT: a faux Fallout terminal with scanlines, glitches, and bloom.
 //

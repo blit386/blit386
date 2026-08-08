@@ -1,4 +1,5 @@
 // Coordinate Patterns: an endless world that remembers nothing at all.
+// @description An endless world computed from hash1i, hash2i, and hash3i that stores no tiles, yet never changes.
 //
 // Part of the BLIT386 demo series (written for readers about 12 years old).
 //

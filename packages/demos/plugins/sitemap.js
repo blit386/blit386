@@ -11,6 +11,12 @@ const rootDir = resolve(__dirname, '..');
 // channel-headers.js to point production's robots.txt at this file.
 export const SITE_URL = 'https://demos.blit386.dev';
 
+// The BLIT386_CHANNEL=next preview origin (Cloudflare Pages project `blit386-demos-next`, see
+// .github/workflows/deploy.yml). Kept beside SITE_URL so exactly one module knows the demo
+// origins; `social-meta.js` picks between them so the next channel never advertises production
+// URLs in its canonical, og:url, or og:image tags.
+export const NEXT_SITE_URL = 'https://next.demos.blit386.dev';
+
 /**
  * Writes `dist/sitemap.xml` from the live demo registry: the site root plus every demo's
  * canonical, extensionless URL. Cloudflare Pages serves `/<slug>` and 308s `/<slug>.html` to

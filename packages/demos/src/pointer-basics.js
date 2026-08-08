@@ -1,5 +1,6 @@
 /**
  * Pointer Basics Demo – read mouse position, buttons, delta, and scroll wheel.
+ * @description Read mouse position, movement delta, scroll wheel, and four pointer buttons, with a live crosshair.
  *
  * Prerequisites: Basics – https://demos.blit386.dev/basics
  *

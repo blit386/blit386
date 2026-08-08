@@ -24,18 +24,25 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
+import {
+    AGENT_BROWSER_MAX_BUFFER,
+    AGENT_BROWSER_TIMEOUT_MS,
+    buildCanvasReadyScript,
+    buildEmbedUrl,
+    CANVAS_ID,
+    runAgentBrowser as runAgentBrowserSession,
+    sleep,
+} from './agent-browser-session.mjs';
 
 // #region Configuration
 
-export const CANVAS_ID = 'blit386-canvas';
+// Re-exported so this module stays the single import site for its own tests and callers,
+// even though the definitions now live in agent-browser-session.mjs.
+export { AGENT_BROWSER_MAX_BUFFER, AGENT_BROWSER_TIMEOUT_MS, buildEmbedUrl, CANVAS_ID };
+
 export const CAPTURE_SESSION = 'blit386-capture';
 export const B64_PULL_CHUNK_CHARS = 300_000;
 export const B64_PUSH_CHUNK_CHARS = 0x8000;
-// Well above the largest expected agent-browser JSON envelope (a B64_PULL_CHUNK_CHARS-sized
-// chunk plus a small lifecycle wrapper) and a generous per-call ceiling so a stalled
-// agent-browser process fails loudly instead of hanging the whole run indefinitely.
-export const AGENT_BROWSER_MAX_BUFFER = 10 * 1024 * 1024;
-export const AGENT_BROWSER_TIMEOUT_MS = 60_000;
 
 export const DEFAULTS = {
     upscale: 2,
@@ -151,17 +158,6 @@ export function parseArgs(argv) {
 // #endregion
 
 // #region URL and dimension math
-
-/**
- * Build the canvas-only embed URL for a demo slug.
- *
- * @param {string} baseUrl Site origin, e.g. `https://demos.blit386.dev` (trailing slash optional).
- * @param {string} slug Demo slug.
- * @returns {string} `${baseUrl}/${slug}?embed`.
- */
-export function buildEmbedUrl(baseUrl, slug) {
-    return `${baseUrl.replace(/\/$/u, '')}/${slug}?embed`;
-}
 
 /**
  * The nearest-neighbor upscale target for a captured canvas.
@@ -349,9 +345,10 @@ const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out
 `;
 
 /**
- * Run `agent-browser` in the dedicated capture session and parse its `--json` envelope.
- * Throws on a non-zero exit or `success: false` – a broken browser session should stop
- * the run rather than silently continue with a bad frame count or blob.
+ * Run `agent-browser` in this script's dedicated capture session.
+ *
+ * Thin wrapper that binds CAPTURE_SESSION, so a clip capture and a card capture can never
+ * share a browser session. Everything else lives in agent-browser-session.mjs.
  *
  * @param {string[]} args Arguments after `agent-browser`, e.g. `['open', url, '--json']`.
  * @param {{ stdin?: string, quiet?: boolean }} [options] Optional stdin payload, used for
@@ -360,36 +357,7 @@ const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out
  * @returns {*} `envelope.data.result` when present, otherwise `envelope.data`.
  */
 function runAgentBrowser(args, options = {}) {
-    const fullArgs = ['--session', CAPTURE_SESSION, ...args];
-    if (!options.quiet) {
-        console.log(`\n$ agent-browser ${fullArgs.join(' ')}\n`);
-    }
-
-    const result = spawnSync('agent-browser', fullArgs, {
-        encoding: 'utf8',
-        input: options.stdin,
-        maxBuffer: AGENT_BROWSER_MAX_BUFFER,
-        timeout: AGENT_BROWSER_TIMEOUT_MS,
-    });
-
-    if (result.error) {
-        throw new Error(`Failed to run agent-browser: ${result.error.message}`);
-    }
-    if (result.status !== 0) {
-        throw new Error(`agent-browser exited with status ${result.status}: ${result.stderr}`);
-    }
-
-    let envelope;
-    try {
-        envelope = JSON.parse(result.stdout);
-    } catch {
-        throw new Error(`agent-browser returned non-JSON output: ${result.stdout.slice(0, 200)}`);
-    }
-    if (!envelope.success) {
-        throw new Error(`agent-browser reported failure: ${JSON.stringify(envelope.error)}`);
-    }
-
-    return envelope.data?.result !== undefined ? envelope.data?.result : envelope.data;
+    return runAgentBrowserSession(CAPTURE_SESSION, args, options);
 }
 
 /**
@@ -409,12 +377,6 @@ function runFfmpeg(args) {
         throw new Error(`ffmpeg exited with status ${result.status}`);
     }
 }
-
-/**
- * @param {number} seconds
- * @returns {Promise<void>}
- */
-const sleep = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
 /**
  * Parse argv, capture the demo's canvas, upscale it, and hand off to encode-video.mjs.
@@ -476,19 +438,7 @@ const main = async () => {
             // default instead of the demo's real configured size, silently producing a
             // downscale (not an upscale) once the mismatch reaches the ffmpeg scale filter.
             const dimensions = runAgentBrowser(['eval', '--stdin', '--json'], {
-                stdin: `
-(async () => {
-    const canvas = document.getElementById('${CANVAS_ID}');
-    if (!canvas) throw new Error('Canvas #${CANVAS_ID} not found.');
-
-    const deadline = Date.now() + 5000;
-    while (canvas.width === 300 && canvas.height === 150 && Date.now() < deadline) {
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-    }
-
-    return { width: canvas.width, height: canvas.height };
-})();
-`.trim(),
+                stdin: buildCanvasReadyScript(CANVAS_ID, 5000),
             });
             const target = computeUpscaleTarget(dimensions.width, dimensions.height, options.upscale);
 

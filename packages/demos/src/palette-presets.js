@@ -1,4 +1,5 @@
 // Palette Presets: six built-in color sets you can load instantly.
+// @description Six built-in color sets, including VGA, CGA, and C64, you can load into the active palette instantly.
 //
 // Part of the BLIT386 series (written for readers about 12 years old).
 //

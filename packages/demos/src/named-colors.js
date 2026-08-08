@@ -1,5 +1,6 @@
 /**
  * Named Colors Demo – Color32 named lookup table and custom registration APIs.
+ * @description The Color32 named color registry: resolve a name to a color, register your own, and update it.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Basics (https://demos.blit386.dev/basics),

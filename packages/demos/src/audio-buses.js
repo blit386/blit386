@@ -1,5 +1,6 @@
 /**
  * Audio Buses Demo – mixer volume sliders, mute toggles, and a music-ducking alert.
+ * @description Mixer buses: drag main, music, and sfx sliders, mute without losing the level, and duck for an alert.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:

@@ -1,4 +1,5 @@
 // Noise: turning scrambled numbers into landscapes.
+// @description Value, Perlin, and Simplex noise at matched settings, with an octaves slider and a terrain ramp.
 //
 // Part of the BLIT386 demo series (written for readers about 12 years old).
 //

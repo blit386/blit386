@@ -1,4 +1,5 @@
 // Tilemap: build a grid world from a 2D array and scroll the camera across it.
+// @description Build a grid world from a two-dimensional array and scroll a camera across it, drawing visible tiles.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Primitives (https://demos.blit386.dev/primitives),

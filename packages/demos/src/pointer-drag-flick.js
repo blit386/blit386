@@ -1,5 +1,6 @@
 /**
  * Pointer Drag-and-Flick Demo – grab balls, drag them, release to throw.
+ * @description Grab one of three bouncing balls, drag it, and release to throw it, with synthesized sound effects.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:

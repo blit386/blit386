@@ -1,3 +1,6 @@
+// Filip Test 02: a bare-bones starter with no shared UI kit, kept as a minimal reference.
+// @description A pointer-centered rectangle, palette colors animated by the cursor, and a circle drawn pixel by pixel.
+
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */

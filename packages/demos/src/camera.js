@@ -1,4 +1,5 @@
 // Camera: shows how to scroll a view over a world larger than the screen.
+// @description Scroll a camera over a world larger than the screen, and convert between world and screen space.
 //
 // Prerequisites: We learned about drawing and the game loop in Basics demo
 // (https://demos.blit386.dev/basics) and shapes in Primitives demo

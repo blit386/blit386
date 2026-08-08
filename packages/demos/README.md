@@ -246,6 +246,56 @@ Editing a demo's `src/<slug>.js` file usually avoids a full page reload: a metho
 keeps state in place, while an edit to `init()` or the constructor re-initializes the demo instead. A `configure()`
 hardware-setting change still forces a full reload – see [CLAUDE.md](CLAUDE.md#hot-reload) for the full tier breakdown.
 
+## Social metadata and OG images
+
+Every demo page ships a full social head block: a meta description, `rel=canonical`, favicon links, OpenGraph and
+Twitter card tags, and a `SoftwareApplication` JSON-LD block. It is assembled by `plugins/social-meta.js` and rendered
+into `_partials/layout.html` through the `{{socialMeta}}` placeholder. All URLs in it are absolute and channel-aware, so
+the `next` preview deploy never advertises production URLs.
+
+The description comes from a **required** `@description` tag in each demo's header comment:
+
+```js
+// @description Classic retro color rotation with BT.paletteCycle: rotate palette slots to make a still image flow.
+```
+
+One line, 60–104 characters, ending in a period, within the first 2000 bytes of the file. `pnpm run check:demo-registry`
+enforces every one of those rules, so a new demo cannot ship without one.
+
+Each demo also has a 1200x630 OpenGraph card committed under `public/social/og-<slug>.png`. Cards are captured by hand,
+never in CI, and need `agent-browser` and `ffmpeg` on `PATH`.
+
+**After changing a demo, re-capture its card.** Build, serve, then capture that one slug:
+
+```bash
+pnpm run build
+```
+
+```bash
+pnpm run preview
+```
+
+Then, from a second terminal (check the port `preview` printed – it falls back to 4174 and up when 4173 is taken):
+
+```bash
+pnpm run capture:og -- <slug> --force --base-url http://localhost:4173
+```
+
+Two things to know:
+
+- **`--force` is required.** Without it the script skips every slug that already has a card, so it silently does
+  nothing.
+- **It must be `preview`, not `dev`.** `--base-url` has to serve flattened, extensionless URLs – production, the `next`
+  channel, or `pnpm run preview`. The dev server routes demos at `/demos/<slug>.html` and will not work.
+
+Then look at the PNG before committing it. If the frame is unrepresentative (too dark, caught mid-transition), add a
+settle override to `OG_CAPTURE_OVERRIDES` in `scripts/capture-og-image.mjs`; if the framing is the problem, set
+`// @ogScale fit` or `// @ogScale integer` in the demo header instead.
+
+Swap the slug for `--all` to redo every card. The default `auto` scaling takes a whole-number factor when that already
+fills the card and fills the frame otherwise. Because PNGs do not delta-compress in git, prefer re-capturing only what
+changed over re-running `--all --force`.
+
 ## Community
 
 - [Discord](https://discord.gg/tC2wGt88Uj)

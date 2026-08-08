@@ -1,4 +1,5 @@
 // Basics Enhanced.
+// @description The bouncing sprite from Basics again, with optional visual effects over the same PipBoy palette.
 //
 // Same bouncing-sprite behavior as the Basics demo (https://demos.blit386.dev/basics),
 // with the same PipBoy palette and overlay rows for position and bounces. Every

@@ -1,4 +1,5 @@
 // Sprites: how to draw images (sprites) on screen using BLIT386.
+// @description Draw images from a programmatic sprite sheet, using source rectangles and palette offsets to vary them.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Primitives (https://demos.blit386.dev/primitives),

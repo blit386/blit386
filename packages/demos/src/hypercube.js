@@ -1,5 +1,6 @@
 /**
  * Hypercube – Fez-style rotating tesseract wireframe.
+ * @description A Fez-style rotating tesseract: watch a four-dimensional cube turn on a 256x256 PICO-8 sized canvas.
  *
  * A tesseract is a 4D cube: two 3D cubes linked along a fourth axis (W).
  * We rotate in 4D, then project down to 2D so you can see the links stretch

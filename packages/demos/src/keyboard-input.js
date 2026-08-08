@@ -1,5 +1,6 @@
 /**
  * Keyboard Input Demo – face buttons, raw keys, and typed text.
+ * @description Face buttons for two players, raw key state with optional tick repeat, and text from BT.inputString.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:

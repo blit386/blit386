@@ -1,4 +1,5 @@
 // The smallest possible BLIT386 demo: a single square that moves and jumps.
+// @description The smallest possible BLIT386 program: one square you can move and jump, with nothing else on screen.
 // This is the "blank canvas" starter – every other demo in the series builds on this pattern.
 //
 // What you will see:

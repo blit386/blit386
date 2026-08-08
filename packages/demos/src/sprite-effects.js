@@ -1,4 +1,5 @@
 // Sprite Effects: shows how to use palette offsets to create game effects.
+// @description Palette offsets as game effects: damage flash, silhouette, ghost fade, team colors, and day or night.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Sprites (https://demos.blit386.dev/sprites).

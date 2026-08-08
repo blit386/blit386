@@ -1,4 +1,5 @@
 // Image Output: demonstrates BT.downloadFrame().
+// @description Take a screenshot of whatever is on screen with BT.downloadFrame and save it straight out as a PNG.
 //
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Click or tap the "Save PNG" button from the

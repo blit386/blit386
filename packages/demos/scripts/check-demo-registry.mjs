@@ -11,19 +11,31 @@
  *   elsewhere (would steal that demo's public path).
  * - Every VINTAGE_URLS target is either a live slug or listed in RETIRED_SLUGS.
  * - Every NAV_HIDDEN_SLUGS / RETIRED_SLUGS entry is still meaningful (no stale rows).
+ * - Every demo carries a one-line `@description` header tag of a length that survives every
+ *   social-card consumer intact (see DESCRIPTION_MIN_CHARS / DESCRIPTION_MAX_CHARS).
  */
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
-import { buildRegistry, NAV_HIDDEN_SLUGS } from '../plugins/demo-registry.js';
+import { buildRegistry, HEADER_SCAN_BYTES, NAV_HIDDEN_SLUGS } from '../plugins/demo-registry.js';
 import { RETIRED_SLUGS, VINTAGE_URLS } from '../plugins/demo-vintage-urls.js';
+import { OG_IMAGE_DIR, OG_SCALE_MODES } from '../plugins/social-meta.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // Mirrors plugins/demo-registry.js – kept local so this script can list files without
 // going through buildRegistry's soft-warn merge path.
 const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
+
+// The ceiling is the column budget, not an SEO limit: the tag must be one line, and the
+// longest prefix (" * @description ") is 16 characters, so 104 is the most that fits this
+// repo's 120-column convention. That lands comfortably under every consumer's truncation
+// point anyway – Google cuts a meta description around 155 characters, Facebook's own
+// guidance is under 155, and X cuts twitter:description well before 200. The floor keeps
+// one-word placeholders ("Sprites.") from passing the gate.
+const DESCRIPTION_MIN_CHARS = 60;
+const DESCRIPTION_MAX_CHARS = 104;
 
 /** @type {string[]} */
 const errors = [];
@@ -148,7 +160,72 @@ for (const slug of NAV_HIDDEN_SLUGS) {
     }
 }
 
+// --- @description presence, length, and shape ------------------------------------------
+
+for (const entry of registry) {
+    const { description, slug } = entry;
+
+    if (description === '') {
+        fail(
+            `src/${slug}.js has no "@description <one sentence>" header tag – required for the ` +
+                `meta description and og:description, and it must appear within the first ` +
+                `${HEADER_SCAN_BYTES} bytes of the file`,
+        );
+        continue;
+    }
+
+    // Count code points, not UTF-16 units, so one astral character is not counted as two.
+    const length = [...description].length;
+
+    if (length < DESCRIPTION_MIN_CHARS) {
+        fail(`src/${slug}.js @description is ${length} chars, under the ${DESCRIPTION_MIN_CHARS}-char minimum`);
+    }
+
+    if (length > DESCRIPTION_MAX_CHARS) {
+        fail(`src/${slug}.js @description is ${length} chars, over the ${DESCRIPTION_MAX_CHARS}-char ceiling`);
+    }
+
+    if (/[<>]/.test(description)) {
+        fail(`src/${slug}.js @description contains < or > – keep it plain prose`);
+    }
+
+    // A period specifically, not any sentence-final mark: the documented rule says period, and
+    // 46 cards that punctuate the same way read better than a mix.
+    if (!/\.$/.test(description)) {
+        fail(`src/${slug}.js @description should end in a period`);
+    }
+}
+
+// --- @ogScale, when a demo overrides its card framing -----------------------------------
+
+for (const entry of registry) {
+    if (entry.ogScale !== '' && !OG_SCALE_MODES.has(entry.ogScale)) {
+        fail(
+            `src/${entry.slug}.js has @ogScale "${entry.ogScale}", which is not one of ` +
+                `${[...OG_SCALE_MODES].join(', ')}`,
+        );
+    }
+}
+
+// --- OG cards: reported, never fatal ----------------------------------------------------
+
+// Deliberately a warning rather than a `fail()`. `buildSocialMeta` falls back to og-default.png,
+// so a missing card degrades gracefully – while capturing one needs a built site, a preview
+// server, a browser, and ffmpeg. Blocking every preflight on that would make adding a demo far
+// more expensive than the graceful fallback justifies.
+const missingCards = registry
+    .map((entry) => entry.slug)
+    .filter((slug) => !existsSync(join(ROOT, 'public', OG_IMAGE_DIR, `og-${slug}.png`)));
+
 // --- Report ----------------------------------------------------------------------------
+
+if (missingCards.length > 0) {
+    console.warn(
+        `Note: ${missingCards.length} demo(s) have no OpenGraph card and will use the shared ` +
+            `fallback: ${missingCards.join(', ')}\n` +
+            'Capture them with `pnpm run capture:og -- <slug>` (see README).\n',
+    );
+}
 
 if (errors.length > 0) {
     console.error('Demo registry check failed:\n');
@@ -159,6 +236,7 @@ if (errors.length > 0) {
 
     console.error(`\n${errors.length} error(s). Fix plugins/demo-order.js, plugins/demo-vintage-urls.js,`);
     console.error('plugins/demo-registry.js (NAV_HIDDEN_SLUGS), or the matching src/*.js file(s).');
+    console.error(`@description must be one line, ${DESCRIPTION_MIN_CHARS}-${DESCRIPTION_MAX_CHARS} characters.`);
     process.exit(1);
 }
 

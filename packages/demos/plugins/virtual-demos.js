@@ -1,10 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
 import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
 import { buildRegistry } from './demo-registry.js';
 import { VINTAGE_URLS } from './demo-vintage-urls.js';
 import { clearHighlightCache, highlightDemoSource } from './highlight-demo-source.js';
+import { escapeHtml } from './html-escape.js';
+import { buildSocialMeta, OG_IMAGE_DIR } from './social-meta.js';
 
 const URL_PATTERN = /^\/demos\/([\w-]+)\.html$/;
 
@@ -139,19 +141,31 @@ export function virtualDemos() {
 </script>`
             : '';
 
+        // public/ is copied into dist/ verbatim, so a PNG present here is exactly what
+        // /social/og-<slug>.png resolves to in production. Demos without their own capture fall
+        // back to the shared card rather than advertising an og:image that 404s.
+        const hasOgImage = existsSync(resolve(rootDir, 'public', OG_IMAGE_DIR, `og-${entry.slug}.png`));
+        const socialMeta = buildSocialMeta({ entry, isNextChannel: IS_NEXT_CHANNEL, hasOgImage });
+
         // `pageSuffix` is what the shell appends when it builds navigation targets: dev serves
         // only /demos/<slug>.html (see URL_PATTERN), while the production build flattens pages
         // to dist/<slug>.html, which Cloudflare Pages serves at the extensionless /<slug>.
-        return layoutTemplate
-            .replaceAll('{{title}}', escapeHtml(entry.title))
-            .replaceAll('{{scriptFile}}', entry.scriptFile)
-            .replaceAll('{{slug}}', entry.slug)
-            .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
-            .replace('{{demoList}}', () => demoListJson)
-            .replace('{{sourceHtml}}', () => sourceHtml)
-            .replace('{{sourcePanelScript}}', () => sourcePanelScript)
-            .replace('{{robotsMeta}}', () => (IS_NEXT_CHANNEL ? ROBOTS_NOINDEX_META : ''))
-            .replace('{{channelBanner}}', () => (IS_NEXT_CHANNEL ? CHANNEL_BANNER_HTML : ''));
+        return (
+            layoutTemplate
+                .replaceAll('{{title}}', escapeHtml(entry.title))
+                .replaceAll('{{scriptFile}}', entry.scriptFile)
+                .replaceAll('{{slug}}', entry.slug)
+                .replaceAll('{{pageSuffix}}', isDevMode ? '.html' : '')
+                .replace('{{demoList}}', () => demoListJson)
+                .replace('{{sourceHtml}}', () => sourceHtml)
+                .replace('{{sourcePanelScript}}', () => sourcePanelScript)
+                .replace('{{robotsMeta}}', () => (IS_NEXT_CHANNEL ? ROBOTS_NOINDEX_META : ''))
+                .replace('{{channelBanner}}', () => (IS_NEXT_CHANNEL ? CHANNEL_BANNER_HTML : ''))
+                // Last in the chain on purpose. The function replacer keeps `$&` / `$1` in a demo's
+                // description from being interpreted, and substituting after every other placeholder
+                // means a description containing the literal text of one cannot trigger a second pass.
+                .replace('{{socialMeta}}', () => socialMeta)
+        );
     }
 
     return {
@@ -378,18 +392,4 @@ ${items}
     </body>
 </html>
 `;
-}
-
-/**
- * Escape a string for safe interpolation into HTML text content/attributes.
- * @param {string} str – Raw text.
- * @returns {string}
- */
-function escapeHtml(str) {
-    return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
 }

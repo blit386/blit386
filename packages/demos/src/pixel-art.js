@@ -1,4 +1,5 @@
 // Pixel Art Demo – draw tiny pictures from number grids and from math patterns.
+// @description Draw tiny pictures from number grids and from math patterns, one pixel at a time, the way old games did.
 //
 // Written for young learners (around 12).
 //
