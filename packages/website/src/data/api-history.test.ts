@@ -39,11 +39,29 @@ describe('compareVersions', () => {
         expect(compareVersions('1.5.0-beta.1', '1.5.0-beta.2')).toBeLessThan(0);
     });
 
+    it('compares segments too large for a float without losing precision', () => {
+        // `Number('9'.repeat(400))` is `Infinity`, so subtracting two equal oversized segments
+        // would yield `NaN`. Digit-string comparison has no such ceiling.
+        const huge = '9'.repeat(400);
+
+        expect(compareVersions(`${huge}.0.0`, `${huge}.0.0`)).toBe(0);
+        expect(compareVersions(`${huge}.0.1`, `${huge}.0.0`)).toBeGreaterThan(0);
+        expect(compareVersions(`${huge}0`, huge)).toBeGreaterThan(0);
+        expect(compareVersions(huge, `${huge}0`)).toBeLessThan(0);
+    });
+
+    it('ignores leading zeros in a segment', () => {
+        expect(compareVersions('1.007.0', '1.7.0')).toBe(0);
+        expect(compareVersions('01.0.0', '1.0.0')).toBe(0);
+    });
+
     it.each([
         ['1.5.0-beta.1', '1.5.0'],
         ['not-a-version', '1.0.0'],
         ['', '1.0.0'],
         ['1.0.0', ''],
+        ['9'.repeat(400), '9'.repeat(400)],
+        [`1.${'9'.repeat(400)}`, `1.${'9'.repeat(400)}`],
     ])('never returns NaN for %s vs %s', (a, b) => {
         // An Array.prototype.sort comparator returning NaN has implementation-defined behavior,
         // so this holds for any input, not only well-formed versions.

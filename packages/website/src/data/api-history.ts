@@ -45,29 +45,49 @@ export const getSymbol = (name: string): SymbolHistory | undefined =>
 export const getPageSymbols = (page: string): string[] =>
     Object.hasOwn(apiHistory.pages, page) ? (apiHistory.pages[page] ?? []) : [];
 
-/** One dot-separated version segment: its numeric value, and whether a suffix followed it. */
+/** One dot-separated version segment: its digits, and whether a suffix followed them. */
 interface VersionSegment {
-    value: number;
+    /** Leading zeros stripped, so `""` means zero. Kept as digits rather than a `number`. */
+    digits: string;
     prerelease: boolean;
 }
 
 /**
- * Parses one segment. `"0"` yields `{ value: 0, prerelease: false }`, `"0-beta"` yields
- * `{ value: 0, prerelease: true }`, and anything without a leading integer yields
- * `{ value: 0, prerelease: true }` rather than `NaN`.
+ * Parses one segment. `"0"` yields `{ digits: '', prerelease: false }`, `"7-beta"` yields
+ * `{ digits: '7', prerelease: true }`, and anything without a leading integer yields
+ * `{ digits: '', prerelease: true }`.
  */
 function parseSegment(segment: string | undefined): VersionSegment {
     if (segment === undefined) {
-        return { value: 0, prerelease: false };
+        return { digits: '', prerelease: false };
     }
 
     const match = /^(\d+)(.*)$/.exec(segment);
 
     if (match === null) {
-        return { value: 0, prerelease: true };
+        return { digits: '', prerelease: true };
     }
 
-    return { value: Number(match[1] ?? '0'), prerelease: match[2] !== '' };
+    return { digits: (match[1] ?? '').replace(/^0+/, ''), prerelease: match[2] !== '' };
+}
+
+/**
+ * Orders two zero-stripped digit strings. More digits is always the larger number, and equal
+ * lengths compare lexicographically – which for equal-length digit strings is numeric order.
+ *
+ * Deliberately not `Number(a) - Number(b)`: a segment of more than 308 digits converts to
+ * `Infinity`, and two such segments would then subtract to `NaN`.
+ */
+function compareDigits(a: string, b: string): number {
+    if (a.length !== b.length) {
+        return a.length < b.length ? -1 : 1;
+    }
+
+    if (a === b) {
+        return 0;
+    }
+
+    return a < b ? -1 : 1;
 }
 
 /**
@@ -77,8 +97,9 @@ function parseSegment(segment: string | undefined): VersionSegment {
  * zero, or a positive number in the same sense as an `Array.prototype.sort` comparator.
  *
  * A segment carrying a prerelease suffix sorts below the same segment without one, so
- * `"1.5.0-beta.1"` is below `"1.5.0"`. Every input yields a number: a segment that does not parse
- * cannot produce `NaN`, which an `Array.prototype.sort` comparator must never return.
+ * `"1.5.0-beta.1"` is below `"1.5.0"`. Every input yields `-1`, `0`, or `1` – neither a segment of
+ * any length nor one that fails to parse can produce `NaN`, which an `Array.prototype.sort`
+ * comparator must never return.
  */
 export function compareVersions(a: string, b: string): number {
     const segmentsA = a.split('.');
@@ -88,7 +109,7 @@ export function compareVersions(a: string, b: string): number {
     for (let i = 0; i < length; i += 1) {
         const segmentA = parseSegment(segmentsA[i]);
         const segmentB = parseSegment(segmentsB[i]);
-        const diff = segmentA.value - segmentB.value;
+        const diff = compareDigits(segmentA.digits, segmentB.digits);
 
         if (diff !== 0) {
             return diff;
