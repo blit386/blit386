@@ -142,8 +142,8 @@ Comments that only restate the code (`// add 1 to i` above `i++`) are not enough
 ### 5. Verify it runs
 
 - `pnpm run check:demo-registry` (from `packages/demos`) – confirms disk, order, vintage, and nav-hidden sets agree.
-- `pnpm run dev`, then open `/demos/<slug>.html` and exercise the demo by hand. There are no automated tests here (see
-  `/test demos`).
+- `pnpm run dev`, then open `/demos/<slug>.html` and exercise the demo by hand. Demo content has no automated tests;
+  `scripts/*.mjs` tooling does (see `/test demos`).
 - `pnpm run build` to confirm the production build still succeeds (the Cloudflare Pages deploy gate).
 
 ### 6. Update the docs

@@ -65,12 +65,13 @@ push or CI run only exercises them once the per-package checks are clean.
 
 - `format:check` – Biome (JS/JSON/CSS) + Prettier (MD/YAML)
 - `lint` – ESLint
+- `test` – `node --test scripts/__tests__/*.test.mjs` (pure helper functions in `scripts/*.mjs`, not demo content)
 - `spellcheck` – cspell over `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
 - `knip` – unused exports and dependencies
 - `check:demo-registry` – `DEMO_ORDER` / `VINTAGE_URLS` / `RETIRED_SLUGS` / `NAV_HIDDEN_SLUGS` / `src/*.js` consistency
 - `build` – production build succeeds (CI and Cloudflare Pages depend on this)
 
-No unit tests here by design – see `/test demos`.
+No unit tests for demo _content_ (`src/*.js`) by design – see `/test demos`.
 
 ## packages/website
 
