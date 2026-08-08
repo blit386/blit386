@@ -43,7 +43,7 @@
     "format:check": "biome check . && prettier --ignore-path ../../.prettierignore --check \"**/*.{md,mdx,yml,yaml}\"",
     "format:biome": "biome format --write .",
     "format:prettier": "prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
-    "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
+    "spellcheck": "cspell \"src/**/*.{js,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress --gitignore-root \"$(git rev-parse --show-toplevel)\"",
     "docs:links": "node ../../scripts/check-markdown-links.mjs",
     "check:demo-registry": "node scripts/check-demo-registry.mjs",
     "generate:audio-loops": "node scripts/generate-audio-loops.mjs",

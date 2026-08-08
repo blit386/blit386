@@ -43,7 +43,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write . && prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
     "format:check": "biome check . && prettier --ignore-path ../../.prettierignore --check \"**/*.{md,mdx,yml,yaml}\"",
-    "spellcheck": "cspell \"content/**/*.{md,mdx}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx}\" \"CLAUDE.md\" --no-progress",
+    "spellcheck": "cspell \"content/**/*.{md,mdx}\" \"src/**/*.{ts,tsx}\" \"*.{md,mdx}\" \"CLAUDE.md\" --no-progress --gitignore-root \"$(git rev-parse --show-toplevel)\"",
     "docs:links": "node ../../scripts/check-markdown-links.mjs",
     "sync:docs": "node scripts/sync-docs-from-engine.mjs",
     "sync:docs:check": "node scripts/check-docs-sync.mjs",
