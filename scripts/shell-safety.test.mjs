@@ -13,7 +13,7 @@ import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const hookPath = join(here, '..', '..', '..', '..', '.claude', 'hooks', 'shell-safety.sh');
+const hookPath = join(here, '..', '.claude', 'hooks', 'shell-safety.sh');
 
 /**
  * @param {string} command The raw shell command text to run the hook against.

@@ -18,6 +18,7 @@
     "test:agent-config": "node --test scripts/check-agent-config.test.mjs",
     "check-dash-typography": "node scripts/check-dash-typography.mjs",
     "test:dash-typography": "node --test scripts/check-dash-typography.test.mjs",
+    "test:shell-safety": "node --test scripts/shell-safety.test.mjs",
     "bump": "node scripts/bump-lockstep.mjs",
     "test:bump-lockstep": "node --test scripts/bump-lockstep.test.mjs",
     "security:audit": "pnpm audit --audit-level=moderate",
