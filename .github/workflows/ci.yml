@@ -61,6 +61,7 @@ jobs:
           filters: |
             shared:
               - '.github/**'
+              - '.claude/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -86,8 +87,9 @@ jobs:
             # bump-lockstep.mjs/.test.mjs live under root scripts/, not packages/create-blit386/, but
             # build-test-scaffolder is the only CI job that exercises them (test:bump-lockstep). The rest of
             # scripts/ (check-markdown-links.mjs, check-agent-config.mjs, prettier-plugin-compact-tables.mjs,
-            # ...) only feeds quality-root's format:check/docs:links/agents:check steps, which already run
-            # unconditionally - see quality-root's `if` below - so it deliberately has no filter entry here.
+            # shell-safety.test.mjs, ...) only feeds quality-root's format:check/docs:links/agents:check/
+            # test:shell-safety steps, which already run unconditionally – see quality-root's `if` below – so
+            # it deliberately has no filter entry here.
             scaffolder:
               - 'packages/create-blit386/**'
               - 'packages/kit/**'
@@ -124,6 +126,10 @@ jobs:
 
       - name: Check agent config drift
         run: pnpm run agents:check
+        background: true
+
+      - name: Run shell-safety hook tests
+        run: pnpm run test:shell-safety
         background: true
 
       - wait-all:

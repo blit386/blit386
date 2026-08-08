@@ -125,3 +125,7 @@ The following are not part of that pre-push gate – run them directly when audi
 - `pnpm run test:dash-typography` – unit tests for `check-dash-typography.mjs`
 - `pnpm run test:bump-lockstep` – unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
   `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`)
+- `pnpm run test:shell-safety` – unit tests for `.claude/hooks/shell-safety.sh`. Unlike its neighbors above, this one
+  does run in CI: `quality-root` in `.github/workflows/ci.yml` runs it unconditionally, since `.claude/**` is in the
+  `shared` path filter (BT-439). `test:agent-config` and `test:dash-typography` are not yet wired into any CI job –
+  tracked separately in BT-445
