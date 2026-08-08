@@ -17,7 +17,9 @@ prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
 1. Public engine docs are generated, not authored here. Edit the canonical copy in `packages/blit386/docs/`, then run
    `pnpm run sync:docs`. Never hand-edit anything under `content/docs/{api,guides,performance,reference}/` or
    `src/data/api-history.generated.json`
-2. Documentation ships with the change – update `content/` and run `pnpm run docs:links` when adding links
+2. Documentation ships with the change – update `content/` and run `pnpm run docs:links` from the repo root when adding
+   links. `docs:links` is a root-only script (it enumerates every tracked `*.md` / `*.mdx` file via `git ls-files`
+   regardless of cwd); this package no longer carries its own copy
 3. No MDX comments. Prettier formats `.mdx` with the Markdown parser, so remark reads `{/* … */}` as emphasis and
    rewrites it to `{/_ … _/}`, which renders as visible italic text on the page. Delete the note or make it real prose
 4. Conventional Commits with DCO sign-off (`git commit -s`). Scopes: `content`, `ci`, `docs`, `deps`, `config`. `main`

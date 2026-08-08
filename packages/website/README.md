@@ -41,7 +41,7 @@ Open the URL printed by Waku (typically `http://localhost:3000`).
 ## Quality checks
 
 ```bash
-pnpm run preflight   # format:check, lint, typecheck, test, spellcheck, knip, docs:links, build
+pnpm run preflight   # format:check, lint, typecheck, test, spellcheck, knip, build
 ```
 
 ## Production build and deploy

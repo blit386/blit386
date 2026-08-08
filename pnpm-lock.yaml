@@ -313,9 +313,6 @@ importers:
       fumadocs-twoslash:
         specifier: ^3.3.0
         version: 3.3.0(7c592ad3ef3787b7bcb74144e8d2718a)
-      husky:
-        specifier: ^9.1.7
-        version: 9.1.7
       knip:
         specifier: ^6.29.0
         version: 6.31.0
