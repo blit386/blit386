@@ -462,7 +462,7 @@ const main = async () => {
             runFfmpeg(buildUpscaleArgs(paths.raw, paths.upscaled, target));
         } finally {
             try {
-                runAgentBrowser(['close']);
+                runAgentBrowser(['close', '--json']);
             } catch (closeError) {
                 console.error(`Warning: failed to close agent-browser session: ${closeError.message}`);
             }
