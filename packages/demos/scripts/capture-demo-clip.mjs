@@ -13,6 +13,8 @@
  *
  * Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
  */
+import { join } from 'node:path';
+
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
 
@@ -130,5 +132,49 @@ export function parseArgs(argv) {
 }
 
 /* eslint-enable complexity, security/detect-object-injection */
+
+// #endregion
+
+// #region URL and dimension math
+
+/**
+ * Build the canvas-only embed URL for a demo slug.
+ *
+ * @param {string} baseUrl Site origin, e.g. `https://demos.blit386.dev` (trailing slash optional).
+ * @param {string} slug Demo slug.
+ * @returns {string} `${baseUrl}/${slug}?embed`.
+ */
+export function buildEmbedUrl(baseUrl, slug) {
+    return `${baseUrl.replace(/\/$/u, '')}/${slug}?embed`;
+}
+
+/**
+ * The nearest-neighbor upscale target for a captured canvas.
+ *
+ * @param {number} width Source canvas width in pixels.
+ * @param {number} height Source canvas height in pixels.
+ * @param {number} factor Upscale factor, e.g. 2.
+ * @returns {{ width: number, height: number }} Rounded target dimensions.
+ */
+export function computeUpscaleTarget(width, height, factor) {
+    return {
+        width: Math.round(width * factor),
+        height: Math.round(height * factor),
+    };
+}
+
+/**
+ * The two intermediate file paths this script writes before handing off to encode-video.mjs.
+ *
+ * @param {string} outDir Output directory.
+ * @param {string} name Output base name.
+ * @returns {{ raw: string, upscaled: string }} Raw capture and upscaled-intermediate paths.
+ */
+export function buildIntermediatePaths(outDir, name) {
+    return {
+        raw: join(outDir, `${name}.raw.webm`),
+        upscaled: join(outDir, `${name}.upscaled.mp4`),
+    };
+}
 
 // #endregion
