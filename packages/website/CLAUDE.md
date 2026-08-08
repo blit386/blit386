@@ -80,7 +80,10 @@ in under a second, and rewriting it would be churn with no gain.
   implementation would fail there for the wrong reason. Under Node the test can point `process.env.BLIT386_CHANNEL` at
   the opposite value from `c.env` and assert the binding still wins – which no `process.env` implementation can pass.
 
-Accepted gap: nothing here exercises `workerd`'s immutable response headers (see BT-464). Revisit the choice if `src/`
+Accepted gap: nothing here exercises `workerd`'s response-header mutability. BT-464 asked whether that gap hid a bug –
+`channel-headers.ts` mutates the `ASSETS` response in place, which the fetch spec forbids – and the answer was no:
+workerd does not enforce the `immutable` guard, confirmed against the deployed `blit386-next` Worker. The reasoning is
+recorded in `src/channel-headers.ts` beside the line in question; do not re-derive it. Revisit the choice if `src/`
 grows a Durable Object, KV, or any code that branches on real binding semantics rather than on a single `fetch`.
 
 Shared harness in `src/__test__/` (same convention as the engine package): `hono-context.ts` fakes the Hono context and

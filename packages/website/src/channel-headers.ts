@@ -44,6 +44,21 @@ export function channelHeadersPlugin<C extends ConfigContext = ConfigContext>():
                     }
 
                     await next();
+
+                    // Mutates the downstream response in place, and that is verified rather than
+                    // assumed (BT-464). Hono does NOT clone here: `set res` only reconstructs when
+                    // `c.res` had already been read, and nothing upstream reads it, so after
+                    // `next()` this `c.res` is the very object `markdownNegotiationPlugin`
+                    // returned – which for a static asset is `c.env.ASSETS.fetch()`'s response.
+                    // Fetch-spec headers on such a response are guarded `immutable` and `set()`
+                    // would throw `TypeError: immutable`; workerd does not enforce that guard, so
+                    // the write lands. Confirmed against the deployed `blit386-next` Worker: an
+                    // image, a font, and a doc page all return 200 with `X-Robots-Tag: noindex`,
+                    // and Workers Logs records no exception for any of them.
+                    //
+                    // If a runtime or Hono upgrade ever does surface `TypeError: immutable` here,
+                    // the fix is to own the response rather than reorder the plugin chain:
+                    // `c.res = new Response(c.res.body, c.res)` before setting the header.
                     c.res.headers.set('x-robots-tag', 'noindex');
                 },
             ];
