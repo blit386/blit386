@@ -20,7 +20,8 @@ The rest of the core API surface lives in dedicated pages: [Overlay](api-overlay
 <Callout title="Starting a new project?">
   The quickest path is the scaffolder: `npm create blit386@latest my-game` (works with npm, pnpm, yarn, or bun).
   It generates a ready-to-run Vite project with the engine installed, a starter game, and local docs.
-  See [create-blit386](https://github.com/blit386/create-blit386). The rest of this page documents the `bootstrap()`
+  See [create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386). The rest of this page
+  documents the `bootstrap()`
   API for hand-wired or existing projects.
 </Callout>
 
@@ -85,7 +86,7 @@ displayError('Init Failed', 'WebGPU unavailable.', 'my-container');
 <Since symbol="HotReloadContext" />
 
 Under a Vite dev server with the `blit386/vite` plugin installed, calling `bootstrap()` again after the engine is
-already initialized - exactly what happens on every hot-reloaded save - routes to a hot swap instead of starting a
+already initialized – exactly what happens on every hot-reloaded save – routes to a hot swap instead of starting a
 second, unstoppable game loop. `registerHotReload(hot)` registers the active `import.meta.hot` context so the engine
 knows a swap is possible; the plugin injects the call to it automatically into the demo/game's entry module, so you
 never call it by hand.
@@ -94,7 +95,7 @@ never call it by hand.
 on (`data`, `on`, `invalidate`, `accept`). It is kept structural on purpose so the published engine never imports from
 the `vite` package.
 
-Depending on what changed, the swap is a prototype-only method swap, a full re-init, or a full page reload - see
+Depending on what changed, the swap is a prototype-only method swap, a full re-init, or a full page reload – see
 [Hot Reload](guide-hot-reload.md) for the three tiers with worked examples. `IBTDemo` has an optional
 `onHotReload(context: HotReloadContext)` hook for reacting to a swap:
 
@@ -121,7 +122,7 @@ class Demo implements IBTDemo {
     snapshot: { type: 'Record<string, unknown>', description: "Previous instance's own enumerable fields, captured just before init() ran on the new one. Present only when reason is 'reinit'" },
   }} />
 
-`onHotReload` never fires for a hardware-settings change - that always triggers a full page reload instead. Without a
+`onHotReload` never fires for a hardware-settings change – that always triggers a full page reload instead. Without a
 registered hot-reload context (no `blit386/vite` plugin, or a second `bootstrap()` call outside a Vite HMR session), a
 second call while already initialized logs an error and returns `false`. That guard is new in 1.4.0; before then a
 second call silently started another unstoppable `GameLoop`.
@@ -288,7 +289,7 @@ The overlay-related fields above (`isOverlay*`, `overlay*`) are documented in de
 - Attempts `screen.orientation.lock()` when `HardwareSettings.preferredOrientation` is `'landscape'` or `'portrait'`
   (default `'any'` skips the lock). Lock failures are silent no-ops and never fail `init()`.
 
-Showing a "please rotate your device" prompt is a demo concern - the engine only supplies the getter, the change hook,
+Showing a "please rotate your device" prompt is a demo concern – the engine only supplies the getter, the change hook,
 and the optional lock. Browser support details live in [Screen orientation](api-browser-support.md#screen-orientation).
 
 ```ts twoslash
@@ -463,13 +464,13 @@ values mean the same thing to a consumer – not on screen, never will be again 
 distinction genuinely matters, such as debugging or the engine overlay.
 
 Which states game code can actually see depends on whether the splash is playing. With it disabled, `'disabled'` is the
-only value it will ever read. With it enabled, an `init()` observes `'fadingIn'` and - if it stays alive long enough,
-which an `await` makes easy - `'shown'`; its first `update()` after handoff reads `'done'`. `'fadingOut'` is engine
+only value it will ever read. With it enabled, an `init()` observes `'fadingIn'` and – if it stays alive long enough,
+which an `await` makes easy – `'shown'`; its first `update()` after handoff reads `'done'`. `'fadingOut'` is engine
 internal: `update()` and `render()` are suspended for the splash's whole duration, so nothing outside the engine runs
 while it is the current state.
 
 One error-handling note: ordinary initialization failures make `BT.init()` resolve to `false`, but a splash frame that
-throws rejects the returned promise instead - nothing else can settle it, and reporting `false` would hide a renderer
+throws rejects the returned promise instead – nothing else can settle it, and reporting `false` would hide a renderer
 fault. `bootstrap()` catches it and routes it to `onError` like any other init error.
 
 Full behavior – the three gating layers, the loading-screen hold, the palette handoff, and the swallowed skip – is in

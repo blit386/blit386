@@ -145,9 +145,10 @@ pnpm run dev
 ## Alternative: Start your own game with the scaffolder
 
 The setup above is only needed to hack on the demos in this repo against the local engine source. If you just want to
-build your own game with the published engine, use the [create-blit386](https://github.com/blit386/create-blit386)
-scaffolder instead – it writes a ready-to-run project (starter game, Vite config, `index.html`, docs, and an optional
-AI-assistant config) that already depends on `blit386` from npm:
+build your own game with the published engine, use the
+[create-blit386](https://github.com/blit386/blit386/tree/main/packages/create-blit386) scaffolder instead – it writes a
+ready-to-run project (starter game, Vite config, `index.html`, docs, and an optional AI-assistant config) that already
+depends on `blit386` from npm:
 
 ```bash
 npm create blit386@latest my-game
