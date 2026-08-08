@@ -41,16 +41,58 @@ for exploration.
 | Engine API truth | `packages/blit386/docs/` in this monorepo – never this package |
 | How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
 | How mirror drift is checked | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` (in `preflight` and in CI) |
-| Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test`) |
+| Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test:scripts`) |
+| Worker plugin test coverage | `src/**/*.test.ts` (Vitest, via `pnpm run test:unit`) – see Test runners |
 | Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Cloudflare security headers | `public/_headers` |
 
-Four Fumapress `ServerPlugin`s are local to this package rather than upstream: `markdownNegotiationPlugin`
-(`src/markdown-negotiation.ts`), `mcpServerPlugin` (`src/mcp-server.ts`), `feedPlugin` (`src/feed.ts`), and the
-`blog-post-date` helper (`src/blog-post-date.ts`, which exists because the framework's adapter cannot read a post's
-`date` frontmatter). The rest of the chain in `press.config.tsx` is stock: flexsearch, blog, llms, sitemap, takumi OG
-images, and link validation.
+Four Fumapress `ServerPlugin`s are local to this package rather than upstream: `channelHeadersPlugin`
+(`src/channel-headers.ts`), `markdownNegotiationPlugin` (`src/markdown-negotiation.ts`), `mcpServerPlugin`
+(`src/mcp-server.ts`), and `feedPlugin` (`src/feed.ts`) – plus the `blog-post-date` helper (`src/blog-post-date.ts`,
+which exists because the framework's adapter cannot read a post's `date` frontmatter). The rest of the chain in
+`press.config.tsx` is stock: flexsearch, blog, llms, sitemap, takumi OG images, and link validation.
+
+## Test runners
+
+Two, deliberately, matching the split `packages/blit386` already runs:
+
+| Suite | Runner | Script | Covers |
+| --- | --- | --- | --- |
+| `scripts/__tests__/*.test.mjs` | `node --test` | `test:scripts` | The build and sync scripts |
+| `src/**/*.test.ts` | Vitest | `test:unit` | The `ServerPlugin`s that run in the deployed Worker |
+
+`pnpm run test` runs both, the second with coverage; `preflight` and the `quality-website` CI job call it, so neither
+needs its own wiring. The `scripts/**` suite stays on `node --test` because it is `node:assert` throughout, it finishes
+in under a second, and rewriting it would be churn with no gain.
+
+**Vitest, not `@cloudflare/vitest-pool-workers`.** The pool runs tests inside `workerd`, which would exercise the
+`ASSETS` binding and `c.env` against the real runtime instead of a double, and it is version-compatible (it peers
+`vitest ^4.1.0`, the same major this workspace resolves). It was still the wrong trade here:
+
+- The contract with `ASSETS` is one method and one status check – `assets.fetch(request)`, then `status !== 404`. A
+  double is faithful to that. `run_worker_first` is Wrangler configuration rather than code, and
+  `scripts/__tests__/patch-wrangler.test.mjs` already asserts it.
+- A real binding needs `assets.directory` pointing at `dist/public`, which exists only after a full build – and
+  `preflight` runs `test` before `build`. A fixture directory avoids that at the cost of a second, test-only Wrangler
+  config to keep in step with the real one.
+- It would weaken the `channel-headers` test. `workerd` has no populated `process.env`, so a `process.env`
+  implementation would fail there for the wrong reason. Under Node the test can point `process.env.BLIT386_CHANNEL` at
+  the opposite value from `c.env` and assert the binding still wins – which no `process.env` implementation can pass.
+
+Accepted gap: nothing here exercises `workerd`'s immutable response headers (see BT-464). Revisit the choice if `src/`
+grows a Durable Object, KV, or any code that branches on real binding semantics rather than on a single `fetch`.
+
+Shared harness in `src/__test__/` (same convention as the engine package): `hono-context.ts` fakes the Hono context and
+the `ASSETS` binding, `press-context.ts` fakes the Fumapress `AppContext`, loader, pages, and adapters. `hono` is not a
+dependency here – it arrives only as a transitive type through `fumapress` – so the Hono types are recovered
+structurally from `ServerPlugin['createMiddlewares']` rather than imported. Keep it that way; adding `hono` as a
+devDependency to make a test read better would pin a version this package does not otherwise control.
+
+Two behaviors in that suite are regression guards rather than ordinary coverage, and both were verified by mutation
+(break the implementation, watch the test go red) rather than only by passing: `channel-headers.ts` reading the channel
+at request time, and `markdown-negotiation.ts` forwarding to `ASSETS` and falling through only on a 404. If you refactor
+either, expect those tests to be the ones that stop you.
 
 ## What is hand-authored and what is generated
 
@@ -174,12 +216,23 @@ across that boundary; check geometry (1200x630) instead**. Base UI replaced Radi
 no longer carries an `optimizeDeps.include` workaround for `use-sync-external-store`: the 0.7.0 Vite plugin auto-detects
 those CJS deps, and the twoslash popups are now Base UI triggers.
 
-Revisit trigger: when `fumapress` 1.0.0 goes stable, or when BT-440 lands test coverage over `src/**`, whichever comes
-first. Until then a framework bump has no automated safety net, so verify by diffing a real build against a baseline
-captured on the old pins – per-page `twoslash-hover` counts, `dist/server/wrangler.json` assertions (`run_worker_first`,
-`nodejs_compat`, `vars.BLIT386_CHANNEL`), `/mcp` `tools/list` plus an actual `search_docs` call,
-`Accept: text/markdown`, `/feed.xml` item count, and the `next`-channel headers. A green typecheck proves almost nothing
-here.
+Revisit trigger: when `fumapress` 1.0.0 goes stable.
+
+A framework bump now has a partial safety net. `pnpm run test:unit` (BT-440) covers the plugin logic itself – `/mcp`
+`tools/list` and `search_docs` ranking, `Accept: text/markdown` negotiation and the `ASSETS` fall-through, the
+`/feed.xml` document, and the `next`-channel headers – so a rename or signature change in the `ServerPlugin` contract
+turns those red rather than silently degrading production. That is the largest part of what used to be a manual diff.
+
+It is not the whole of it. The suite calls the plugins directly with doubles, so it cannot see anything that lives in
+the wiring or the build, and these still need a real build diffed against a baseline captured on the old pins:
+
+- per-page `twoslash-hover` counts (the transformer only runs under `CLOUDFLARE=1`, and `throws: false` degrades a
+  failing block silently)
+- `dist/server/wrangler.json` assertions – `run_worker_first`, `nodejs_compat`, `vars.BLIT386_CHANNEL`
+- the plugin chain order in `press.config.tsx`, which the unit tests do not construct
+- OG card geometry (1200x630), and the layout and RSC surface generally
+
+A green typecheck still proves almost nothing here.
 
 ## Markdown for Agents
 

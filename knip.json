@@ -21,7 +21,7 @@
       "ignoreDependencies": ["blit386"]
     },
     "packages/website": {
-      "entry": ["press.config.tsx", "waku.config.ts"],
+      "entry": ["press.config.tsx", "waku.config.ts", "src/**/*.test.ts"],
       "project": ["src/**/*.css", "scripts/**/*.mjs", "content/**/*.mdx"],
       "ignoreFiles": ["src/app.css"],
       "ignoreDependencies": ["@fuma-translate/react", "@webgpu/types", "blit386", "tailwindcss"],
