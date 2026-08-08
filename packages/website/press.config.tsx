@@ -243,6 +243,7 @@ const GLOBAL_HEAD = (
 
         <script defer={true} src="/webmcp.js" />
         <link rel="alternate" type="application/rss+xml" title="BLIT386 Blog" href="/feed.xml" />
+        <link rel="me" href="https://mastodon.gamedev.place/@blit386" />
     </>
 );
 
