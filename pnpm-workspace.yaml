@@ -43,9 +43,10 @@ minimumReleaseAgeExclude:
   - '@types/node'
   - '@commitlint/cli'
   # Security patch for GHSA-2v37-7h3g-55p8, published 2026-08-03 and so still inside the
-  # 7-day window. Excluded so the override above can resolve; drop this entry once the
-  # patch ages past the gate.
-  - nanoid
+  # 7-day window. Pinned to the exact vetted version rather than a bare `nanoid`, which
+  # would exempt every future release from the supply-chain gate permanently. Drop this
+  # entry once the patch ages past the gate.
+  - nanoid@3.3.18
   - '@commitlint/config-conventional'
   - cspell
   - knip
