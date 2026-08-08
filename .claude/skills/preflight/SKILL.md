@@ -82,15 +82,26 @@ No unit tests here by design – see `/test demos`.
 - `spellcheck` – cspell on `content/` and `src/`
 - `knip` – unused exports/deps
 - `build` – `CLOUDFLARE=1 waku build`
+- `sync:docs:check` – regenerates `content/docs` from `packages/blit386/docs/` and fails when the mirror drifted
+
+`sync:docs:check` is deliberately last: it rewrites `content/docs` in the working tree, so any gate after it would be
+reading regenerated rather than committed content. The `quality-website` CI job places it last for the same reason
+(after its `wait-all:` join). If it fails, run `pnpm run sync:docs`, then **stage or commit** the result – the check
+diffs the working tree against the index, so an unstaged regeneration still reads as drift. On a push, where everything
+is committed, this never comes up.
+
+That job does not lint this package – its `lint` is `biome check .`, which the repo-wide `pnpm run format:check` in
+`quality-root` already covers. Local `format:check` here still runs Biome, so preflight loses nothing.
 
 No MCP security preflight here (unlike `blit386` – see `/security-run`).
 
 Preflight runs under `.husky/pre-push`, which git invokes with `GIT_DIR` exported. It outranks both `cwd` and `-C`, so
-any git subprocess a preflight step spawns for some other directory retargets the repo being pushed from – `git init` in
-a fixture repo then writes `bare = true` into the shared `.git/config` and breaks git in every checkout. The hook clears
-git's `--local-env-vars` before dispatching, and every git call in `packages/website/scripts/` must pass `env: gitEnv()`
-([`packages/website/scripts/git-env.mjs`](../../../packages/website/scripts/git-env.mjs)); the same scrub is inline in
-`packages/blit386/scripts/gen-api-history.test.mjs`. Guarded by `packages/website/scripts/__tests__/git-env.test.mjs`.
+any git subprocess a preflight step spawns for some other directory silently acts on the repo being pushed from instead
+– `git init` in a fixture repo then writes `bare = true` into the shared `.git/config` and breaks git in every checkout.
+The hook clears git's `--local-env-vars` before dispatching, and every git call in `packages/website/scripts/` must pass
+`env: gitEnv()` ([`packages/website/scripts/git-env.mjs`](../../../packages/website/scripts/git-env.mjs)); the same
+scrub is inline in `packages/blit386/scripts/gen-api-history.test.mjs`. Guarded by
+`packages/website/scripts/__tests__/git-env.test.mjs`.
 
 ## packages/kit and packages/create-blit386
 

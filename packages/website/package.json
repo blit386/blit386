@@ -49,7 +49,7 @@
     "knip:fix": "cd ../.. && knip --workspace packages/website --fix",
     "test": "node --test scripts/__tests__/*.test.mjs",
     "test:watch": "node --test --watch scripts/__tests__/*.test.mjs",
-    "preflight": "pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run spellcheck && pnpm run knip && pnpm run build",
+    "preflight": "pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run spellcheck && pnpm run knip && pnpm run build && pnpm run sync:docs:check",
     "deploy": "wrangler deploy --config dist/server/wrangler.json --name blit386"
   },
   "dependencies": {

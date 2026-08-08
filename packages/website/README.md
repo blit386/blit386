@@ -41,8 +41,14 @@ Open the URL printed by Waku (typically `http://localhost:3000`).
 ## Quality checks
 
 ```bash
-pnpm run preflight   # format:check, lint, typecheck, test, spellcheck, knip, build
+pnpm run preflight   # format:check, typecheck, test, spellcheck, knip, build, sync:docs:check
 ```
+
+`sync:docs:check` runs last because it regenerates `content/docs` in the working tree – see [Content](#content). After
+re-syncing, stage or commit the result before re-running: the check diffs the working tree against the index. Markdown
+link checking is not part of this gate: `docs:links` is a root-only script (it enumerates every tracked `*.md` / `*.mdx`
+via `git ls-files` regardless of the directory it runs in), so run `pnpm run docs:links` from the repo root. CI runs it
+once in the `quality-root` job.
 
 ## Production build and deploy
 
@@ -78,9 +84,9 @@ pnpm run sync:docs:watch   # watch packages/blit386/docs and re-sync on every ch
 ```
 
 The engine docs directory resolves from `ENGINE_DOCS_DIR` and defaults to the sibling package path `../blit386/docs`.
-`sync:docs:check` is enforced in CI – it runs as the last step of the `quality-website` job in
-`.github/workflows/ci.yml` – but still run it yourself after changing engine docs rather than relying on CI to catch
-drift.
+`sync:docs:check` is enforced in two places, both as the last step: `pnpm run preflight` here, and the `quality-website`
+job in `.github/workflows/ci.yml`. It goes last because it regenerates `content/docs` in the working tree, so any check
+that ran after it would be reading regenerated rather than committed content.
 
 Never hand-edit a generated page – edit the engine source and re-run `sync:docs`. The same applies to
 `src/data/api-history.generated.json`, which the script copies from `packages/blit386`. See `CLAUDE.md` (Documentation
