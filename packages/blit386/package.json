@@ -74,7 +74,7 @@
     "format:biome": "biome format --write .",
     "format:prettier": "prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
     "typecheck": "tsc --noEmit",
-    "spellcheck": "cspell \"src/**/*.{ts,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress",
+    "spellcheck": "cspell \"src/**/*.{ts,md,mdx}\" \"docs/**/*.{md,mdx}\" \"README.md\" --no-progress --gitignore-root \"$(git rev-parse --show-toplevel)\"",
     "docs:links": "node ../../scripts/check-markdown-links.mjs",
     "agents:check": "node ../../scripts/check-agent-config.mjs",
     "test:agent-config": "node --test ../../scripts/check-agent-config.test.mjs",
