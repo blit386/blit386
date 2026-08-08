@@ -166,9 +166,9 @@ describe('buildSocialMeta', () => {
     });
 
     it('builds the image alt from the title, so a branded navLabel cannot garble it', () => {
-        // navLabel keeps its "BLIT386 Demo – " prefix on the four demos with a @pageTitle
-        // override (BT-465). Deriving alt text from it would read "The BLIT386 Demo – PipBoy
-        // CRT demo running in BLIT386."
+        // navLabel is derived and its shape has moved before: it used to keep the "BLIT386
+        // Demo – " prefix on the four demos with a @pageTitle override, until #516 (BT-465).
+        // The alt text should not care either way.
         const html = buildSocialMeta({
             entry: { ...ENTRY, title: 'BLIT386 Demo – PipBoy CRT', navLabel: 'BLIT386 Demo – PipBoy CRT' },
             hasOgImage: true,
