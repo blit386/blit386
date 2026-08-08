@@ -1,6 +1,6 @@
 # blit386-website (docs site)
 
-Documentation site for [blit386.dev](https://blit386.dev): Fumapress 0.6.x on Waku (React 19 RSC), MDX via Fumadocs MDX,
+Documentation site for [blit386.dev](https://blit386.dev): Fumapress 0.7.x on Waku (React 19 RSC), MDX via Fumadocs MDX,
 Tailwind v4, TypeScript strict, deployed to Cloudflare Workers with Wrangler. Biome owns `.ts` / `.tsx` / `.json` /
 `.css`, Prettier owns `.md` / `.mdx` / YAML, and there is no ESLint here.
 
@@ -125,6 +125,49 @@ plugin before Vite writes `NODE_ENV=production`. So Twoslash runs whenever `CLOU
 means `pnpm run build` (which sets `CLOUDFLARE=1`), or any other command launched with `CLOUDFLARE=1` in the
 environment. Popups are absent from a plain `pnpm run dev` – use `pnpm run build && pnpm run start` to preview the real
 thing.
+
+## Dependency pins
+
+`fumapress` and `waku` are the only dependencies here pinned to an exact version instead of a caret range. That is
+deliberate and must stay: **`fumapress` declares `waku` as an exact-version peer dependency, not a range**, so a caret
+on either side lets pnpm resolve a pair the framework does not support.
+
+Every row is an exact pin, not a range – including the prerelease ones, so "beta.8 or newer" is never satisfied by
+beta.9. Verified against the registry on 2026-08-08; `npm view fumapress@0.7.3 peerDependencies.waku` is the check –
+swap the version to re-verify any other row.
+
+| fumapress | required `waku` peer |
+| --- | --- |
+| 0.6.2 | `1.0.0-beta.3` |
+| 0.6.3 – 0.7.3 | `1.0.0-beta.6` |
+| 1.0.0-beta.1 | `1.0.0-beta.8` |
+| 1.0.0-beta.2 | `1.0.0-beta.8` |
+
+`1.0.0-beta.1` and `1.0.0-beta.2` are the only 1.0.0 prereleases published so far (there is no `beta.0`); a later beta
+may pin a different waku, so re-check rather than assuming the pattern holds.
+
+The current pair is `fumapress@0.7.3` + `waku@1.0.0-beta.6` (BT-455) – the newest peer-correct combination on the 0.x
+line. Both packages share one Renovate group for the same reason; do not split them back apart, or Renovate proposes a
+fumapress bump and a waku bump as two PRs, neither installable on its own.
+
+**Do not move `waku` past beta.6 while `fumapress` is on 0.7.x.** waku beta.8 is sanctioned only by `fumapress` 1.0.0
+beta.1 or beta.2, and nothing published sanctions beta.9 at all. That release is a rewrite rather than a bump: it
+renames `ServerPlugin` to `PressPlugin` and `ConfigContext` to `AppShape`, and moves layouts onto the config object. All
+four local plugins in `src/` plus every `createDocsLayoutPage` and `createRootLayout` call in `press.config.tsx` would
+need reworking.
+
+Two behavioral changes came in with 0.7.x and are already absorbed. Takumi went v1 to v2 (0.7.2), which re-tuned the
+WebP encoder – OG cards are roughly 55% smaller with pixel-identical output, so **file size is not a validity signal
+across that boundary; check geometry (1200x630) instead**. Base UI replaced Radix (0.7.0), which is why `waku.config.ts`
+no longer carries an `optimizeDeps.include` workaround for `use-sync-external-store`: the 0.7.0 Vite plugin auto-detects
+those CJS deps, and the twoslash popups are now Base UI triggers.
+
+Revisit trigger: when `fumapress` 1.0.0 goes stable, or when BT-440 lands test coverage over `src/**`, whichever comes
+first. Until then a framework bump has no automated safety net, so verify by diffing a real build against a baseline
+captured on the old pins – per-page `twoslash-hover` counts, `dist/server/wrangler.json` assertions (`run_worker_first`,
+`nodejs_compat`, `vars.BLIT386_CHANNEL`), `/mcp` `tools/list` plus an actual `search_docs` call,
+`Accept: text/markdown`, `/feed.xml` item count, and the `next`-channel headers. A green typecheck proves almost nothing
+here.
 
 ## Markdown for Agents
 

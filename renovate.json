@@ -30,14 +30,18 @@
       "groupName": "vite plugins"
     },
     {
-      "description": "Fumapress and Fumadocs stack",
-      "matchPackageNames": ["fumapress", "fumadocs-core", "fumadocs-mdx", "fumadocs-ui"],
-      "groupName": "fumapress stack"
-    },
-    {
-      "description": "Waku and React",
-      "matchPackageNames": ["waku", "react", "react-dom", "react-server-dom-webpack"],
-      "groupName": "waku react"
+      "description": "Fumapress, Waku, Fumadocs, and React move as one PR: fumapress declares waku as an exact-version peer dependency (0.7.3 requires exactly waku 1.0.0-beta.6), so splitting these into separate groups produces two PRs, neither installable on its own. See packages/website/CLAUDE.md, Dependency pins",
+      "matchPackageNames": [
+        "fumapress",
+        "waku",
+        "fumadocs-core",
+        "fumadocs-mdx",
+        "fumadocs-ui",
+        "react",
+        "react-dom",
+        "react-server-dom-webpack"
+      ],
+      "groupName": "fumapress waku react"
     },
     {
       "description": "Tailwind CSS",
@@ -69,7 +73,7 @@
       "minimumReleaseAge": "7 days"
     },
     {
-      "description": "All patches - automerge",
+      "description": "All patches – automerge",
       "matchUpdateTypes": ["patch"],
       "matchPackageNames": ["*"],
       "automerge": true,
@@ -77,12 +81,12 @@
       "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Minor updates - manual review",
+      "description": "Minor updates – manual review",
       "matchUpdateTypes": ["minor"],
       "automerge": false
     },
     {
-      "description": "Major updates - manual review with high priority",
+      "description": "Major updates – manual review with high priority",
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "major-update"]
@@ -99,7 +103,10 @@
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am on the first day of the month"]
+    "schedule": ["before 6am on the first day of the month"],
+    "commitMessageAction": "lock file maintenance",
+    "commitMessageTopic": "",
+    "commitMessageExtra": ""
   },
   "ignoreDeps": [],
   "postUpdateOptions": ["pnpmDedupe"]
