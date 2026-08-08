@@ -17,9 +17,10 @@
  *
  * The generated files are committed artifacts: never hand-edit them. Edit the
  * canonical source in `packages/blit386/docs/` and re-run `pnpm run sync:docs`.
- * `pnpm run sync:docs:check` fails when the mirror drifts from the source and
- * is enforced in the `quality-website` job of `.github/workflows/ci.yml` – but
- * still run it yourself after changing engine docs rather than relying on CI.
+ * `pnpm run sync:docs:check` fails when the mirror drifts from the source and is
+ * enforced in two places, last in both: `pnpm run preflight` here, and the
+ * `quality-website` job of `.github/workflows/ci.yml`. Last, because it
+ * regenerates `content/docs` in the working tree.
  *
  * Source location resolves from `ENGINE_DOCS_DIR` (used by CI); locally it
  * defaults to the sibling package path `../blit386/docs`.

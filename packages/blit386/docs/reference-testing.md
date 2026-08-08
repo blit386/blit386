@@ -280,7 +280,7 @@ consumes the engine as `workspace:*`, and `website` includes `packages/blit386/d
 | `benchmark` | engine | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold) |
 | `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry` |
 | `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |
-| `quality-website` | website | `lint`, `typecheck`, `spellcheck`, `test`, `knip`, and `sync:docs:check` |
+| `quality-website` | website | `typecheck`, `spellcheck`, `test`, `knip`, and `sync:docs:check` (no `lint`: the package's `lint` is `biome check .`, which `quality-root`'s repo-wide `format:check` already covers) |
 | `build-website` | website | `pnpm run build` (sets `CLOUDFLARE=1`, so Twoslash runs) |
 | `quality-kit` / `build-test-kit` | kit | `typecheck`, `knip`; then build and `node --test` |
 | `quality-scaffolder` / `build-test-scaffolder` | scaffolder | `typecheck`, `knip`; then build kit, build scaffolder, run its tests |
@@ -289,8 +289,11 @@ Jobs needing full git history ask the shared setup action for it: `quality-engin
 `fetch-depth: 0` plus `fetch-tags: true` (release dates come from tags, and the API-history generator walks history with
 `git log --follow`), and `quality-website` takes `fetch-depth: 0` for the same `--follow` reason in the docs mirror.
 
-`sync:docs:check` runs here and nowhere else. It could not run before the monorepo merge, because the docs-site
-repository had no engine checkout to sync against – so a stale published mirror was only ever caught by hand.
+`sync:docs:check` runs here and, since BT-438, as the final gate of `packages/website`'s own `preflight`, so a local run
+is no longer laxer than CI. It runs last in both places for the same reason: it regenerates `content/docs` in the
+working tree, so anything reading that tree afterwards would be reading regenerated rather than committed content. It
+could not run at all before the monorepo merge, because the docs-site repository had no engine checkout to sync against
+– so a stale published mirror was only ever caught by hand.
 
 The four workflow files are `ci.yml`, `pr-checks.yml`, `dco.yml`, and `deploy.yml`; CodeQL runs from GitHub's default
 setup rather than a checked-in workflow. On pull requests, `pr-checks.yml` complements `ci.yml` with Conventional

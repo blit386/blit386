@@ -8,9 +8,10 @@ Shared monorepo conventions (no emoji, dash typography, American English, commit
 tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together with this file.
 
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-website run <script>` from the
-repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it includes the build). Production
-builds require `CLOUDFLARE=1`, which `pnpm run build` already sets. Shell commands are rewritten by `rtk hook claude` –
-prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
+repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it includes the build and, last of
+all, the docs-mirror check – see Documentation mirror). Production builds require `CLOUDFLARE=1`, which `pnpm run build`
+already sets. Shell commands are rewritten by `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep
+for exploration.
 
 ## Critical Rules
 
@@ -39,7 +40,7 @@ prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
 | Generated MDX loader | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`) |
 | Engine API truth | `packages/blit386/docs/` in this monorepo – never this package |
 | How the mirror is built | `scripts/sync-docs-from-engine.mjs` via `pnpm run sync:docs` |
-| How mirror drift is checked in CI | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` |
+| How mirror drift is checked | `scripts/check-docs-sync.mjs` via `pnpm run sync:docs:check` (in `preflight` and in CI) |
 | Script test coverage | `scripts/__tests__/*.test.mjs` (`node --test`, via `pnpm run test`) |
 | Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
@@ -71,12 +72,16 @@ in the engine package's `docs/_sitemap.json` and writes matching MDX into `conte
 script, owns which docs publish, their URL, sidebar order, and subtitle** – the script carries no per-page knowledge, so
 adding a page means editing the manifest in `packages/blit386` and re-running the sync, with no change here.
 
-`pnpm run sync:docs` regenerates and formats. `pnpm run sync:docs:check` fails on drift and **is enforced in CI** – it
-runs in the `quality-website` job of `.github/workflows/ci.yml`, gated on the `website` path filter, which includes
-`packages/blit386/docs/**`. So editing an engine doc without re-syncing turns the pull request red. Still run it
-yourself after touching engine docs; CI is the backstop, not the workflow. The source resolves from `ENGINE_DOCS_DIR`
-(default `../blit386/docs`, which already resolves correctly to the sibling `packages/blit386/docs` in this monorepo).
-`sync:docs:watch` re-syncs on every change alongside `pnpm run dev`.
+`pnpm run sync:docs` regenerates and formats. `pnpm run sync:docs:check` fails on drift and **is enforced both locally
+and in CI**: it is the last gate of `pnpm run preflight`, and the last step of the `quality-website` job in
+`.github/workflows/ci.yml`, gated on the `website` path filter, which includes `packages/blit386/docs/**`. So editing an
+engine doc without re-syncing fails the push and turns the pull request red. It runs last in both places because it
+regenerates `content/docs` in the working tree – any gate after it would be reading regenerated rather than committed
+content, which is also why CI puts it after the parallel join rather than inside it. The check diffs the working tree
+against the index, so after re-syncing you must stage or commit the regenerated mirror before `preflight` goes green –
+an unstaged `sync:docs` result still reads as drift. That costs nothing on a push, where everything is committed
+already. The source resolves from `ENGINE_DOCS_DIR` (default `../blit386/docs`, which already resolves correctly to the
+sibling `packages/blit386/docs` in this monorepo). `sync:docs:watch` re-syncs on every change alongside `pnpm run dev`.
 
 That job checks out with `fetch-depth: 0`. The generator reads each page's `lastModified` with `git log --follow`, to
 see past the commit that moved the engine into `packages/blit386/`, and `--follow` finds nothing on a shallow clone.

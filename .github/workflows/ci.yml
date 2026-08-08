@@ -670,10 +670,12 @@ jobs:
       - name: Build engine (workspace dependency)
         run: pnpm --filter blit386 run build
 
-      - name: Lint code
-        run: pnpm --filter blit386-website run lint
-        background: true
-
+      # No lint step: this package's `lint` is `biome check .`, and quality-root's
+      # repo-wide `format:check` already runs `biome check .` from the root across every
+      # package - confirmed by the root run reporting diagnostics in
+      # packages/website/public/webmcp.js. Unlike quality-engine and quality-demos, whose
+      # `lint` is ESLint and adds coverage nothing else provides, a step here would be a
+      # second pass over the same files with the same tool.
       - name: Type check
         run: pnpm --filter blit386-website run typecheck
         background: true
