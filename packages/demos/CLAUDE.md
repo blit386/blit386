@@ -177,7 +177,8 @@ server startup, so a rebuilt `dist/vite.js` is not picked up by a running server
 Section order: header comment (`// Demo Topic – …`, prerequisites, hosted links, optional `// @pageTitle`) → imports →
 `@typedef` JSDoc → configuration constants → module state → helper functions → the `Demo` class → `bootstrap(Demo);`
 last. Class member order: instance fields → `configure()` → `init()` → `update()` → `render()` → helpers. Region markers
-(`// #region`) are banned. Full detail: `.claude/rules/file-structure.md`.
+(`// #region`) are banned in demo content (`src/*.js`) – `scripts/*.mjs` may use them, matching `encode-video.mjs`'s
+convention. Full detail: `.claude/rules/file-structure.md`.
 
 ## Commands, formatting, git
 

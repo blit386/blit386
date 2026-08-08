@@ -15,8 +15,8 @@
       }
     },
     "packages/demos": {
-      "entry": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "postcss.config.js"],
-      "project": ["src/**/*.js", "plugins/*.js", "_partials/*.js"],
+      "entry": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "scripts/**/*.mjs", "postcss.config.js"],
+      "project": ["src/**/*.js", "plugins/*.js", "_partials/*.js", "scripts/**/*.mjs"],
       "ignoreExportsUsedInFile": true,
       "ignoreDependencies": ["blit386"]
     },

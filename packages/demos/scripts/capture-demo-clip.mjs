@@ -12,6 +12,10 @@
  * AV1/H.264/poster renditions the blog uses.
  *
  * Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
+ *
+ * Note: --base-url must point at a host serving flattened, extensionless demo URLs
+ * (production, the next channel, or `vite preview`) – the `pnpm run dev` server routes
+ * demos at /demos/<slug>.html instead and is not supported by this script.
  */
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -127,6 +131,9 @@ export function parseArgs(argv) {
     if (!(options.upscale > 0)) {
         throw new Error('--upscale must be a positive number.');
     }
+    if (!(options.bitrate > 0)) {
+        throw new Error('--bitrate must be a positive number.');
+    }
     if (options.out === undefined) {
         throw new Error('Missing --out directory.');
     }
@@ -161,8 +168,8 @@ export function buildEmbedUrl(baseUrl, slug) {
  */
 export function computeUpscaleTarget(width, height, factor) {
     return {
-        width: Math.round(width * factor),
-        height: Math.round(height * factor),
+        width: Math.round((width * factor) / 2) * 2,
+        height: Math.round((height * factor) / 2) * 2,
     };
 }
 
@@ -342,12 +349,16 @@ const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out
  * the run rather than silently continue with a bad frame count or blob.
  *
  * @param {string[]} args Arguments after `agent-browser`, e.g. `['open', url, '--json']`.
- * @param {{ stdin?: string }} [options] Optional stdin payload, used for `eval --stdin`.
+ * @param {{ stdin?: string, quiet?: boolean }} [options] Optional stdin payload, used for
+ *   `eval --stdin`, and a `quiet` flag that skips the command banner (used for the
+ *   high-volume base64 pull loop, which would otherwise flood the terminal).
  * @returns {*} `envelope.data.result` when present, otherwise `envelope.data`.
  */
 function runAgentBrowser(args, options = {}) {
     const fullArgs = ['--session', CAPTURE_SESSION, ...args];
-    console.log(`\n$ agent-browser ${fullArgs.join(' ')}\n`);
+    if (!options.quiet) {
+        console.log(`\n$ agent-browser ${fullArgs.join(' ')}\n`);
+    }
 
     const result = spawnSync('agent-browser', fullArgs, {
         encoding: 'utf8',
@@ -361,12 +372,17 @@ function runAgentBrowser(args, options = {}) {
         throw new Error(`agent-browser exited with status ${result.status}: ${result.stderr}`);
     }
 
-    const envelope = JSON.parse(result.stdout);
+    let envelope;
+    try {
+        envelope = JSON.parse(result.stdout);
+    } catch {
+        throw new Error(`agent-browser returned non-JSON output: ${result.stdout.slice(0, 200)}`);
+    }
     if (!envelope.success) {
         throw new Error(`agent-browser reported failure: ${JSON.stringify(envelope.error)}`);
     }
 
-    return envelope.data.result !== undefined ? envelope.data.result : envelope.data;
+    return envelope.data?.result !== undefined ? envelope.data?.result : envelope.data;
 }
 
 /**
@@ -450,10 +466,14 @@ const main = async () => {
 
             const totalLength = runAgentBrowser(['eval', '--stdin', '--json'], { stdin: buildStopScript() });
 
+            const ranges = sliceRanges(totalLength, B64_PULL_CHUNK_CHARS);
+            console.log(`Pulling ${ranges.length} chunks from the browser...`);
+
             let base64 = '';
-            for (const range of sliceRanges(totalLength, B64_PULL_CHUNK_CHARS)) {
+            for (const range of ranges) {
                 base64 += runAgentBrowser(['eval', '--stdin', '--json'], {
                     stdin: `window.__b64.substr(${range.start}, ${range.length})`,
+                    quiet: true,
                 });
             }
 
@@ -469,6 +489,9 @@ const main = async () => {
         }
 
         const encodeResult = spawnSync('node', encodeArgs, { stdio: 'inherit' });
+        if (encodeResult.error) {
+            throw new Error(`Failed to run encode-video.mjs: ${encodeResult.error.message}`);
+        }
         if (encodeResult.status !== 0) {
             throw new Error(`encode-video.mjs exited with status ${encodeResult.status}`);
         }

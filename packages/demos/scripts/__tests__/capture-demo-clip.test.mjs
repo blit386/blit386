@@ -96,6 +96,13 @@ describe('parseArgs', () => {
         );
     });
 
+    test('rejects a non-positive --bitrate', () => {
+        assert.throws(
+            () => parseArgs(['palette-cycling', '--duration', '20', '--out', 'out', '--bitrate', '0']),
+            /--bitrate must be a positive number/u,
+        );
+    });
+
     test('rejects an unknown option', () => {
         assert.throws(
             () => parseArgs(['palette-cycling', '--duration', '20', '--out', 'out', '--bogus']),
@@ -136,8 +143,8 @@ describe('computeUpscaleTarget', () => {
         assert.deepEqual(computeUpscaleTarget(640, 480, 2), { width: 1280, height: 960 });
     });
 
-    test('rounds a non-integer factor', () => {
-        assert.deepEqual(computeUpscaleTarget(640, 480, 1.5), { width: 960, height: 720 });
+    test('rounds a non-integer factor to the nearest even dimension', () => {
+        assert.deepEqual(computeUpscaleTarget(641, 481, 1.5), { width: 962, height: 722 });
     });
 });
 
