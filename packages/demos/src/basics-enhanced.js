@@ -13,18 +13,18 @@
 // The pipeline has two tiers. Both come from the engine's post-process system we
 // explored in crt-pipboy and crt-toggle:
 //
-//   1. Pixel tier - runs ON the logical index buffer (320x240, palette indices, BEFORE
+//   1. Pixel tier – runs ON the logical index buffer (320x240, palette indices, BEFORE
 //      the palette is resolved into RGB). Effects here distort the indexed image itself.
 //      Only PixelGlitch sits here. See:
 //      https://vancura.dev/articles/blit386-crt-toggle
 //
-//   2. Display tier - runs AFTER the palette is resolved and the image is upscaled to
+//   2. Display tier – runs AFTER the palette is resolved and the image is upscaled to
 //      the canvas. Effects here work in full-color RGB and can blur, warp, tint, and
 //      bloom the final image. The other ten effects in this demo live here.
 //
 // Why ten separate display-tier effects instead of one ready-made preset (like
 // BT.preset.crtPipBoy used in crt-toggle)? Because hand-composing the chain makes it possible
-// to drive individual uniforms from a state machine - the glitch state machine below
+// to drive individual uniforms from a state machine – the glitch state machine below
 // picks ONE of five glitch styles, ramps it up for a few frames, and ramps it down again.
 //
 // SOFTWARE FALLBACK: when the engine uses the software renderer, the bouncing sprite
@@ -111,7 +111,7 @@ const GLITCH_LABELS = {
     interference: 'INTERFERENCE',
 };
 
-// The shared fallback note is one long sentence - too wide for this 320-pixel screen in
+// The shared fallback note is one long sentence – too wide for this 320-pixel screen in
 // the 6-pixel-wide system font. split('. ') cuts the string at the sentence break, giving
 // us an array of two shorter lines the UI kit can draw one under the other.
 const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
@@ -132,7 +132,7 @@ class Demo {
 
     // Logo position at the START of the most recent update() tick, before that tick
     // moved it. render() blends between this and pos using BT.renderAlpha so the logo
-    // glides smoothly between ticks instead of jumping - same fix and same reason as
+    // glides smoothly between ticks instead of jumping – same fix and same reason as
     // Basics demo (see the big comment above its render() for the full
     // explanation, including why targetFPS 30 makes the stutter especially visible).
     prevPos = new Vector2i(160, 120);
@@ -203,7 +203,7 @@ class Demo {
     // True when WebGPU post-process is available; false in software fallback.
     effectsAvailable = false;
 
-    // Reused every frame for overlayRows() - position, bounces, CRT status, glitch readout.
+    // Reused every frame for overlayRows() – position, bounces, CRT status, glitch readout.
     overlayRowData = [
         { leftText: 'Position (0, 0)', textPaletteIndex: C_OVERLAY_GREEN },
         { leftText: 'Bounces 0', textPaletteIndex: C_OVERLAY_AMBER },
@@ -267,7 +267,7 @@ class Demo {
 
         // Install the shared UI kit colors. The scene owns slots 1-5 and the logo owns
         // slots 10-12, so the kit's default range (240-251, at the top of the palette)
-        // is provably free. The scene keeps its own PipBoy colors - the kit colors are
+        // is provably free. The scene keeps its own PipBoy colors – the kit colors are
         // only for the on-canvas hint and fallback note drawn in render().
         applyTheme(this.palette);
 
@@ -367,11 +367,11 @@ class Demo {
         // draw a smooth in-between position instead of a pop.
         this.prevPos = this.pos;
 
-        // Move the logo by adding speed to position - one step per tick.
+        // Move the logo by adding speed to position – one step per tick.
         this.pos = this.pos.add(this.speed);
 
         // Left/right wall test. pos is the sprite's top-left corner, so the right
-        // edge is at pos.x + size.x. We compare against displaySize.x - size.x.
+        // edge is at pos.x + size.x. We compare against displaySize.x – size.x.
         if (this.pos.x <= 0 || this.pos.x >= BT.displaySize.x - this.size.x) {
             // Flip horizontal direction (multiply speed.x by -1).
             this.speed.x = -this.speed.x;
@@ -406,7 +406,7 @@ class Demo {
 
             this.glitchTicksLeft--;
             if (this.glitchTicksLeft <= 0) {
-                // Burst finished - return effect uniforms to calm resting values.
+                // Burst finished – return effect uniforms to calm resting values.
                 this.resetGlitchUniforms();
 
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
@@ -431,12 +431,12 @@ class Demo {
 
     render() {
         // Clear the logical framebuffer to the PipBoy background color.
-        // C_BG is palette index 1 set in init() - almost black with a faint green tint.
+        // C_BG is palette index 1 set in init() – almost black with a faint green tint.
         BT.clear(C_BG);
 
         // Blend prevPos toward pos by BT.renderAlpha to get the logo's true position at
         // this exact render moment, instead of only its last-tick position. Same fix,
-        // same reason, as the Basics demo - see the big comment above its render().
+        // same reason, as the Basics demo – see the big comment above its render().
         const drawPos = Vector2i.lerp(this.prevPos, this.pos, BT.renderAlpha);
 
         // Draw the bouncing logo at its smoothed position (updated in update(), not here).

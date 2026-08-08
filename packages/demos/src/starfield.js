@@ -28,7 +28,7 @@
 // Every star has a unique brightness (how bright its gray color is). Instead of
 // making a new Color32 every frame, we register each star's gray color in the
 // palette once at startup and store the palette slot number on the star.
-// render() just reads that slot number - no Color32 objects needed per frame.
+// render() just reads that slot number – no Color32 objects needed per frame.
 //
 // The three explainer lines in the corner are drawn with the shared UI kit
 // (src/shared/ui.js), so their colors and spacing match every other demo.
@@ -90,12 +90,12 @@ class Demo {
     mediumLayer = [];
     nearLayer = [];
 
-    // Shooting star: not an array - only one at a time, or none.
+    // Shooting star: not an array – only one at a time, or none.
     // When active is false, we ignore the numbers until we spawn again.
     // prevHeadX/prevHeadY remember the head position at the START of the most recent
     // update() tick, before this tick's movement. render() blends between them and
     // headX/headY using BT.renderAlpha so the streak glides smoothly between physics
-    // ticks instead of hopping in 14px jumps - see "Interpolating render state with
+    // ticks instead of hopping in 14px jumps – see "Interpolating render state with
     // renderAlpha" in the engine's docs/api-game-loop.md.
     streak = {
         active: false,
@@ -141,7 +141,7 @@ class Demo {
      *   1. Create palette and register static colors.
      *   2. Build the star layers (this decides each star's brightness).
      *   3. Register each star's gray color in the palette, store the slot on the star.
-     *   4. BT.paletteSet() - tell the engine to use this palette.
+     *   4. BT.paletteSet() – tell the engine to use this palette.
      *
      * @returns {Promise<boolean>}
      */
@@ -270,7 +270,7 @@ class Demo {
             const brightness = BT.random.intInclusive(brightMin, brightMax);
 
             // paletteIndex starts at 0; init() will fill it in after palette setup.
-            // prevX/prevY start equal to x/y - see moveLayer() for how they update.
+            // prevX/prevY start equal to x/y – see moveLayer() for how they update.
             layer.push({ x, y, prevX: x, prevY: y, speed, brightness, paletteIndex: 0 });
         }
 
@@ -319,7 +319,7 @@ class Demo {
             this.streak.prevHeadX = this.streak.headX;
             this.streak.prevHeadY = this.streak.headY;
 
-            // Very fast compared to normal stars - several pixels per tick.
+            // Very fast compared to normal stars – several pixels per tick.
             this.streak.headX -= 14;
 
             // A gentle downward drift sells the "falling" look.
@@ -371,9 +371,9 @@ class Demo {
             return;
         }
 
-        // Blend the head's previous and current tick position by BT.renderAlpha - a
+        // Blend the head's previous and current tick position by BT.renderAlpha – a
         // fraction from 0 (a tick just finished) to just under 1 (the next tick is
-        // about to happen) - so the streak's drawn position matches this exact render
+        // about to happen) – so the streak's drawn position matches this exact render
         // moment instead of only its last-tick position.
         const alpha = BT.renderAlpha;
         const hx = Math.floor(this.streak.prevHeadX + (this.streak.headX - this.streak.prevHeadX) * alpha);
@@ -393,13 +393,13 @@ class Demo {
      * Each star's paletteIndex was set in init() to point at its unique gray shade.
      *
      * @param {Array<{x: number, y: number, prevX: number, prevY: number, paletteIndex: number}>} layer
-     * @param {number} size - Star width and height in pixels: 1 draws a single pixel,
+     * @param {number} size – Star width and height in pixels: 1 draws a single pixel,
      *   anything bigger draws a filled square (near stars use NEAR_STAR_SIZE).
      */
     drawLayer(layer, size) {
-        // Blend each star's previous and current tick position by BT.renderAlpha - a
+        // Blend each star's previous and current tick position by BT.renderAlpha – a
         // fraction from 0 (a tick just finished) to just under 1 (the next tick is
-        // about to happen) - so the star's drawn position matches this exact render
+        // about to happen) – so the star's drawn position matches this exact render
         // moment instead of only its last-tick position.
         const alpha = BT.renderAlpha;
 

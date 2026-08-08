@@ -21,17 +21,17 @@
 //   Radial    - lines radiating from a center point like sun rays
 //   Wave      - overlapping wave curves that interfere with each other
 //   Circle    - a circle drawn from many tiny line segments
-//   Lissajous - a smooth looping curve used in physics and electronics
+//   Lissajous – a smooth looping curve used in physics and electronics
 //   Tunnel    - concentric rectangles that spin to look like a tunnel
 //
 // HOW COLORS WORK IN THIS DEMO:
 //
 // Every color must be registered in a "palette" before drawing. Think of it
-// like choosing all your paint colors before starting a painting - you pick
+// like choosing all your paint colors before starting a painting – you pick
 // them out first, then use them by number ("color 5", "color 12", etc.).
 //
-// Some colors never change (white, background, wave colors) - those are set
-// once during setup. Other colors animate (spiral, Lissajous, tunnel) - those
+// Some colors never change (white, background, wave colors) – those are set
+// once during setup. Other colors animate (spiral, Lissajous, tunnel) – those
 // are recalculated every tick in update() and stored back in the palette.
 // The render() function only ever uses color numbers (indices), never Color32 objects.
 //
@@ -49,16 +49,16 @@ import { applyTheme, ui } from './shared/ui.js';
 /** @typedef {import('blit386').Palette} Palette */
 //
 // These numbers are the "addresses" in the palette table.
-// Index 0 is always reserved for transparent - we never use it.
+// Index 0 is always reserved for transparent – we never use it.
 // We give each color a readable name so the code is easier to follow.
 
 // Static colors (set once in init, never change).
-const C_WHITE = 1; // Pure white - overlay bar style color (see configure()).
+const C_WHITE = 1; // Pure white – overlay bar style color (see configure()).
 const C_BG = 2; // Very dark blue-black background.
-const C_TAG = 3; // Dim white - only feeds the overlay timing-chart tag color (see configure()).
-const C_WAVE_1 = 5; // Blue - primary sine wave.
-const C_WAVE_2 = 6; // Orange - secondary cosine wave.
-const C_WAVE_3 = 7; // Green - interference (both waves combined).
+const C_TAG = 3; // Dim white – only feeds the overlay timing-chart tag color (see configure()).
+const C_WAVE_1 = 5; // Blue – primary sine wave.
+const C_WAVE_2 = 6; // Orange – secondary cosine wave.
+const C_WAVE_3 = 7; // Green – interference (both waves combined).
 
 // Circle segments: 32 entries at indices 8..39.
 // Each segment gets a different hue. Hue never changes so this is static.
@@ -273,7 +273,7 @@ class Demo {
         this.drawTunnel(new Vector2i(200, 130));
 
         // Label each grid cell so viewers know which pattern they are looking at.
-        // ui.caption() is the shared UI kit's pinned one-line caption - the same widget
+        // ui.caption() is the shared UI kit's pinned one-line caption – the same widget
         // every demo in the series uses, so all captions look identical everywhere.
         // Text draws left-aligned, so we nudge x until short names sit under each center.
         ui.caption(22, 92, 'Spiral');
@@ -288,10 +288,10 @@ class Demo {
      * Draws an Archimedean spiral: a coil of colored dots that expands outward
      * while rotating. The inner dots are near the center, the outer ones are far.
      *
-     * Colors are animated - they scroll along the spiral over time. The actual
+     * Colors are animated – they scroll along the spiral over time. The actual
      * color values are computed in update() and stored in palette slots C_SPIRAL_BASE+i.
      *
-     * @param {Vector2i} center - The center point to spiral around.
+     * @param {Vector2i} center – The center point to spiral around.
      */
     drawSpiral(center) {
         const maxRadius = 35;
@@ -314,7 +314,7 @@ class Demo {
             const x = center.x + Math.cos(t) * radius;
             const y = center.y + Math.sin(t) * radius;
 
-            // Use the animated color for dot i - already updated in update().
+            // Use the animated color for dot i – already updated in update().
             this.tempVec1.set(Math.floor(x), Math.floor(y));
             BT.drawPixel(this.tempVec1, C_SPIRAL_BASE + i);
         }
@@ -324,7 +324,7 @@ class Demo {
      * Draws lines radiating from a center point like sun rays.
      * Each ray has a different color (set once in init) and its length pulses.
      *
-     * @param {Vector2i} center - The center point to draw rays from.
+     * @param {Vector2i} center – The center point to draw rays from.
      */
     drawRadialLines(center) {
         const radius = 35; // Maximum length of each ray.
@@ -353,9 +353,9 @@ class Demo {
      * Two separate waves plus a combined "interference" pattern that shows
      * what happens when the two waves add together.
      *
-     * All three wave colors are static - they never change.
+     * All three wave colors are static – they never change.
      *
-     * @param {Vector2i} center - The center point to draw the waves around.
+     * @param {Vector2i} center – The center point to draw the waves around.
      */
     drawWavePattern(center) {
         const width = 60; // The wave spans 60 pixels wide.
@@ -391,7 +391,7 @@ class Demo {
      *
      * Segment colors are static (set once in init based on hue position).
      *
-     * @param {Vector2i} center - The center of the circle.
+     * @param {Vector2i} center – The center of the circle.
      */
     drawCircleApproximation(center) {
         // The radius pulses between 2 and 30 pixels (16 ± 14) using Math.sin.
@@ -418,17 +418,17 @@ class Demo {
     }
 
     /**
-     * Draws a Lissajous curve - a parametric figure where the x and y axes
+     * Draws a Lissajous curve – a parametric figure where the x and y axes
      * oscillate at different frequencies. The ratio 3:4 here creates an interlocking
      * looping curve (not a simple figure-eight; a classic figure-eight shape often
      * comes from a 1:2 frequency ratio instead).
      *
      * Lissajous figures are used in physics and electronics to visualize frequency ratios.
      *
-     * Colors are animated - 200 curve points are mapped to 32 color bands,
+     * Colors are animated – 200 curve points are mapped to 32 color bands,
      * and those bands rotate through the rainbow over time.
      *
-     * @param {Vector2i} center - The center of the curve.
+     * @param {Vector2i} center – The center of the curve.
      */
     drawLissajous(center) {
         const points = 200; // More points = smoother curve.
@@ -471,14 +471,14 @@ class Demo {
      * Draws a tunnel effect by stacking concentric rectangles of decreasing size.
      * The rectangles slowly rotate and wobble, creating an illusion of depth.
      *
-     * Colors are animated - each rectangle's hue and brightness are updated in update().
+     * Colors are animated – each rectangle's hue and brightness are updated in update().
      *
-     * @param {Vector2i} center - The vanishing point (center) of the tunnel.
+     * @param {Vector2i} center – The vanishing point (center) of the tunnel.
      */
     drawTunnel(center) {
         for (let i = 0; i < TUNNEL_RECTS; i++) {
             // t = i / TUNNEL_RECTS: i = 0 is the outer/near largest rectangle;
-            // the final i is the inner/far smallest (size uses 1 - t below).
+            // the final i is the inner/far smallest (size uses 1 – t below).
             const t = i / TUNNEL_RECTS;
 
             // Outer rectangles are large, inner ones are small.

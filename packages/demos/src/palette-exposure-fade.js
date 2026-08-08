@@ -53,7 +53,7 @@
 // fade drives them:
 //
 //   Left  - BT.paletteFadeRange(), the plain "mix the numbers" fade
-//   Right - BT.paletteFadeExposure(), the camera-style fade
+//   Right – BT.paletteFadeExposure(), the camera-style fade
 //
 // So anything you see differing between the halves comes from the curve alone.
 //
@@ -65,7 +65,7 @@
 //
 //   Slots 1..12   - the right half's picture (the exposure fade)
 //   Slots 16..27  - the left half's picture (the plain fade)
-//   Slots 240..251 - the shared UI panel colors (neither fade touches these)
+//   Slots 240..251 – the shared UI panel colors (neither fade touches these)
 //
 // BT.paletteFadeRange(start, end, ...) already takes a slot range, so the left
 // half is easy. For the right half we use a trick the engine supports on
@@ -80,16 +80,16 @@
 // small square is one of the 256 slots. The first row holds the exposure fade's
 // slots 1..12 and the second row holds the plain fade's 16..27, so during a fade
 // you can see the first group's bright slots run ahead of the second group while
-// its dark slots lag behind - the whole point of the effect, as raw numbers.
+// its dark slots lag behind – the whole point of the effect, as raw numbers.
 //
 // Press ~ (or tap the symbol in the bottom-left corner) to close the overlay and
 // watch just the pictures.
 //
 // WHAT YOU WILL SEE:
 //   A lamp-lit room, drawn twice. The cycle repeats forever:
-//   1. Fade up from black - 2 seconds
+//   1. Fade up from black – 2 seconds
 //   2. Hold, fully lit    - 1.5 seconds
-//   3. Fade down to black - 2 seconds
+//   3. Fade down to black – 2 seconds
 //   4. Hold, dark         - 1 second
 //   On the way up, the right lamp lights before the left one and the right
 //   shadows stay black longer. On the way down, the right lamp is still glowing
@@ -129,7 +129,7 @@ const PHASE_TRANSITIONS = {
 // The right half's slots. Slot 0 is always transparent, so scene colors start at 1.
 const EXP_FIRST_SLOT = 1;
 
-// The left half's slots. Just above the exposure target's 16 slots - the exposure
+// The left half's slots. Just above the exposure target's 16 slots – the exposure
 // fade's own reach stops at slot 15, so this is out of its way.
 const PLAIN_FIRST_SLOT = 16;
 
@@ -141,7 +141,7 @@ const EXPOSURE_TARGET_SIZE = 16;
 // The twelve colors of the lamp-lit room, brightest first. Both halves use this
 // exact list, so any difference on screen comes from the fade, not the art.
 const SCENE_COLORS = [
-    new Color32(255, 250, 225), // 0 lamp bulb - the brightest thing in the room
+    new Color32(255, 250, 225), // 0 lamp bulb – the brightest thing in the room
     new Color32(255, 226, 150), // 1 lamp glow
     new Color32(214, 178, 116), // 2 lit patch of wall right under the lamp
     new Color32(168, 138, 96), // 3 wall, still well lit
@@ -234,8 +234,8 @@ const STEM_Y = 37;
 /**
  * Writes the room colors into a palette, starting at `firstSlot`.
  *
- * @param {Palette} palette - Palette to fill.
- * @param {number} firstSlot - Slot that receives the first color of SCENE_COLORS.
+ * @param {Palette} palette – Palette to fill.
+ * @param {number} firstSlot – Slot that receives the first color of SCENE_COLORS.
  */
 function fillScene(palette, firstSlot) {
     for (let i = 0; i < SCENE_COLORS.length; i++) {
@@ -246,8 +246,8 @@ function fillScene(palette, firstSlot) {
 /**
  * Writes plain black into the same run of slots, for the "faded out" target.
  *
- * @param {Palette} palette - Palette to fill.
- * @param {number} firstSlot - First slot of the run.
+ * @param {Palette} palette – Palette to fill.
+ * @param {number} firstSlot – First slot of the run.
  */
 function fillBlack(palette, firstSlot) {
     for (let i = 0; i < SCENE_COLORS.length; i++) {
@@ -324,7 +324,7 @@ class Demo {
             overlayPaletteRowsVisible: 2,
             overlayPaletteColumns: 15,
 
-            // The overlay defaults to drawing itself with slots 1 and 2 - which in
+            // The overlay defaults to drawing itself with slots 1 and 2 – which in
             // this demo are the lamp bulb and its glow, and fade to black along with
             // everything else. So point it at the shared UI theme colors instead,
             // which neither fade can reach. configure() runs before init(), so the
@@ -351,7 +351,7 @@ class Demo {
         // the whole way through.
         this.theme = applyTheme(this.palette);
 
-        // The exposure fade's targets are small on purpose - see the header comment.
+        // The exposure fade's targets are small on purpose – see the header comment.
         this.expLit = BT.paletteCreate(EXPOSURE_TARGET_SIZE);
         fillScene(this.expLit, EXP_FIRST_SLOT);
 
@@ -394,7 +394,7 @@ class Demo {
         BT.clear(this.theme.shadow);
 
         // Left half: the plain fade. Right half: the exposure fade. Same drawing
-        // code both times - only the first palette slot differs.
+        // code both times – only the first palette slot differs.
         this.renderRoom(0, PLAIN_FIRST_SLOT);
         this.renderRoom(HALF_WIDTH, EXP_FIRST_SLOT);
 
@@ -407,7 +407,7 @@ class Demo {
         ui.begin('topLeft', { y: PANEL_Y });
         ui.panel('Exposure Fade');
 
-        // Dragging this changes the next fade, not the one already running - a fade
+        // Dragging this changes the next fade, not the one already running – a fade
         // captures its settings the moment it starts.
         this.highlightLead = ui.slider('Highlight lead', this.highlightLead, { min: 0, max: 0.95, width: 456 });
 
@@ -458,8 +458,8 @@ class Demo {
     /**
      * Starts both fades on the same frame with the same duration and easing.
      *
-     * @param {Palette} plainTarget - Where the left half's colors should end up.
-     * @param {Palette} exposureTarget - Where the right half's colors should end up.
+     * @param {Palette} plainTarget – Where the left half's colors should end up.
+     * @param {Palette} exposureTarget – Where the right half's colors should end up.
      */
     startFades(plainTarget, exposureTarget) {
         // Left half: the plain fade, limited to the slots the left picture uses.
@@ -475,8 +475,8 @@ class Demo {
     /**
      * Moves to the next step of the cycle once the current one has run long enough.
      *
-     * @param {number} elapsed - Ticks since this step started.
-     * @param {number} tick - The current tick.
+     * @param {number} elapsed – Ticks since this step started.
+     * @param {number} tick – The current tick.
      */
     advancePhaseIfExpired(elapsed, tick) {
         const current = PHASE_TRANSITIONS[this.phase];
@@ -513,8 +513,8 @@ class Demo {
      * Draws one lamp-lit room. Every draw call names a palette slot, never a
      * color, which is why changing the palette changes the picture.
      *
-     * @param {number} originX - Left edge of this half of the screen.
-     * @param {number} firstSlot - Slot holding the first color of SCENE_COLORS.
+     * @param {number} originX – Left edge of this half of the screen.
+     * @param {number} firstSlot – Slot holding the first color of SCENE_COLORS.
      */
     renderRoom(originX, firstSlot) {
         // Back wall, in three bands that get brighter closer to the lamp.
@@ -567,8 +567,8 @@ class Demo {
     /**
      * Draws the strip of brightness steps under a room.
      *
-     * @param {number} originX - Left edge of this half of the screen.
-     * @param {number} firstSlot - Slot holding the first color of SCENE_COLORS.
+     * @param {number} originX – Left edge of this half of the screen.
+     * @param {number} firstSlot – Slot holding the first color of SCENE_COLORS.
      */
     renderRamp(originX, firstSlot) {
         // Share the width evenly between the steps, darkest on the left.

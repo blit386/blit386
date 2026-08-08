@@ -15,18 +15,18 @@
 // WHAT IS PALETTE ANIMATION?
 //
 // Old game hardware (Super Nintendo, Sega Genesis, Commodore 64) had strict rules:
-// each pixel only stored a small number - a "palette index" pointing to one color slot.
+// each pixel only stored a small number – a "palette index" pointing to one color slot.
 // To animate colors, programmers changed what color was IN the slot, not what was on screen.
 //
 // Imagine 16 buckets of paint, each numbered. A painting only records the bucket number
 // for every spot, not the actual color. To change the sky from blue to red, you just
-// repaint bucket 5. Every sky-colored spot changes instantly - without touching the painting!
+// repaint bucket 5. Every sky-colored spot changes instantly – without touching the painting!
 //
 // That trick is called "palette animation". Modern engines don't need it, but it's a
 // beautiful technique to understand, and BLIT386 lets you do it the same way.
 //
 // THE KEY RULE:
-//   render() writes palette indices (numbers) - never Color32 objects.
+//   render() writes palette indices (numbers) – never Color32 objects.
 //   update() computes new Color32 values and stores them in palette slots.
 //
 // The section headings and panels are drawn with the shared UI kit (src/shared/ui.js);
@@ -84,15 +84,15 @@ const HEALTH_MAX = 100;
 // How many ticks for one full health drain cycle.
 const HEALTH_DRAIN_TICKS = 360; // ~6 seconds to drain completely.
 
-// Palette slot constants - we group our palette like compartments in a paint box.
+// Palette slot constants – we group our palette like compartments in a paint box.
 // Each animated section owns a range of slots that it fills in update() every tick.
 // The shared UI kit adds its own 12 theme colors in slots 240..251 (see init()),
 // safely above everything listed here.
 
-// Slot 0:   always transparent - reserved by the engine.
+// Slot 0:   always transparent – reserved by the engine.
 
 // Engine overlay style slots. configure() runs BEFORE init() installs the shared UI
-// theme, so the overlay style cannot use theme slots - instead it points at these four
+// theme, so the overlay style cannot use theme slots – instead it points at these four
 // low slots, which init() fills by hand with fixed colors.
 const C_OVERLAY_BAR = 2; // Overlay bar background (very dark navy).
 const C_OVERLAY_ERR = 3; // Timing chart error bars (dark blue).
@@ -210,7 +210,7 @@ class Demo {
         }
 
         // Install the shared UI kit colors (panel fills, borders, headings, dim text).
-        // applyTheme() writes 12 colors into slots 240..251 - far above every range this
+        // applyTheme() writes 12 colors into slots 240..251 – far above every range this
         // demo animates (gradient 10..41, fire 50..69, health 80, water 90..92), so the
         // palette animation can never overwrite the UI theme. The returned map remembers
         // where each color landed (this.theme.bg, this.theme.header, ...).
@@ -221,7 +221,7 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // Run one update cycle so all dynamic slots have real colors before the first render.
-        // update() takes no arguments - this priming call still advances animTime by one tick,
+        // update() takes no arguments – this priming call still advances animTime by one tick,
         // same as every regular call from the engine's game loop.
         this.update();
 
@@ -231,7 +231,7 @@ class Demo {
 
     /**
      * Called 60 times per second. Computes new Color32 values for every dynamic slot.
-     * render() will never see Color32 - it only reads slot indices we set here.
+     * render() will never see Color32 – it only reads slot indices we set here.
      */
     update() {
         // Advance the clock. animTime grows by 1/60 each frame.
@@ -263,7 +263,7 @@ class Demo {
     }
 
     /**
-     * Draws all four panels. Only palette indices appear here - no Color32 objects.
+     * Draws all four panels. Only palette indices appear here – no Color32 objects.
      */
     render() {
         // Clear the screen with the UI theme's dark background.
@@ -327,7 +327,7 @@ class Demo {
      *   0.6 = bright orange (active flame)
      *   1.0 = pale yellow  (hottest, near the tip)
      *
-     * @param {number} ft - Position along the flame, 0 at the bottom, 1 at the top.
+     * @param {number} ft – Position along the flame, 0 at the bottom, 1 at the top.
      * @returns {Color32} The blended color for that position.
      */
     fireColor(ft) {
@@ -352,7 +352,7 @@ class Demo {
      * Health bar: toggles one slot between red and near-white every FLASH_PERIOD ticks.
      * Only flashes when health is critically low.
      *
-     * @param {number} tick - Current tick count from BT.ticks.
+     * @param {number} tick – Current tick count from BT.ticks.
      */
     updateHealthBar(tick) {
         if (this.health <= HEALTH_LOW) {
@@ -371,7 +371,7 @@ class Demo {
      * Each slot cycles: bright -> medium -> dim -> bright -> ...
      * The phases are offset by one slot so the bright spot appears to travel.
      *
-     * @param {number} tick - Current tick count from BT.ticks.
+     * @param {number} tick – Current tick count from BT.ticks.
      */
     updateWater(tick) {
         // Advance the ripple every 8 ticks (about 7 ripples per second).
@@ -389,13 +389,13 @@ class Demo {
             let color;
 
             if (dist === 0) {
-                // Bright highlight - the "wave crest".
+                // Bright highlight – the "wave crest".
                 color = new Color32(80, 200, 255);
             } else if (dist === 1) {
-                // Medium shade - just before or after the crest.
+                // Medium shade – just before or after the crest.
                 color = new Color32(30, 100, 200);
             } else {
-                // Dark trough - between ripples.
+                // Dark trough – between ripples.
                 color = new Color32(10, 40, 120);
             }
 
@@ -459,7 +459,7 @@ class Demo {
         // Explanatory notes beside the column, lined up with the parts they describe:
         // the brightest band is at the top of the column, the darkest at the bottom.
         // "Band" here means the position in the fire stack (0..19), not the palette
-        // slot number - the actual slots are C_FIRE_BASE + band, i.e. 50..69.
+        // slot number – the actual slots are C_FIRE_BASE + band, i.e. 50..69.
         const noteX = colX + FIRE_COL_W + 6;
         BT.systemPrint(new Vector2i(noteX, bandY + 44), this.theme.dim, 'band 19 = white');
         BT.systemPrint(new Vector2i(noteX, bandY + 74), this.theme.dim, '...     = red');
@@ -494,7 +494,7 @@ class Demo {
         BT.drawRectFill(new Rect2i(6, bandY + 22, barMaxW, 12), this.theme.bg);
         BT.drawRect(new Rect2i(6, bandY + 22, barMaxW, 12), this.theme.border);
 
-        // Filled bar - uses C_HEALTH_BAR, which flashes in update() when health is low.
+        // Filled bar – uses C_HEALTH_BAR, which flashes in update() when health is low.
         BT.drawRectFill(new Rect2i(6, bandY + 22, barW, 12), C_HEALTH_BAR);
 
         // Health value as text, in the theme's amber heading color.

@@ -39,7 +39,7 @@
 //
 // `Color32.multiply()` is a built-in engine method: it scales each channel of `base` by
 // the matching channel of `ambient` and returns a new Color32. Think of it as shining a
-// colored flashlight on a surface - a blue light on a red wall gives you a darker,
+// colored flashlight on a surface – a blue light on a red wall gives you a darker,
 // purple-ish result.
 //
 // Example: the grass fill has a base color (50, 140, 70) and a reserved slot C_GRASS.
@@ -179,8 +179,8 @@ class Demo {
     heroSprite = null;
 
     // Hero sprite size in world pixels, read from the loaded sheet in init()
-    // (test.png is 44x44). Deriving it from the real image - instead of guessing a
-    // number here - keeps movement bounds, camera centering, and particle spawns
+    // (test.png is 44x44). Deriving it from the real image – instead of guessing a
+    // number here – keeps movement bounds, camera centering, and particle spawns
     // matching what is actually drawn on screen.
     /** @type {Vector2i} */
     heroSize = new Vector2i(0, 0);
@@ -199,7 +199,7 @@ class Demo {
     // Rock position at the START of the most recent update() tick, before this tick's
     // walk step moved it. render() blends between heroPrevPos and heroPos using
     // BT.renderAlpha so the rock glides smoothly between physics ticks instead of
-    // jumping - see "Interpolating render state with renderAlpha" in the engine's
+    // jumping – see "Interpolating render state with renderAlpha" in the engine's
     // docs/api-game-loop.md. init() snaps this to match heroPos so the very first
     // frame does not blend in from a stale position.
     heroPrevPos = new Vector2i(120, 0);
@@ -207,7 +207,7 @@ class Demo {
     // +1 = moving right, -1 = moving left.
     heroFacing = 1;
 
-    // Walk "step" counter (not a frame index - just bobs the rock position slightly).
+    // Walk "step" counter (not a frame index – just bobs the rock position slightly).
     walkStep = 0;
     walkFrameTimer = new Timer(WALK_FRAME_TICKS);
 
@@ -376,8 +376,8 @@ class Demo {
         console.log(`[GameSceneDemo] Loaded sprite: ${this.heroSprite.width}x${this.heroSprite.height}px`);
 
         // Read the hero's real size from the loaded sheet (44x44 for test.png), the
-        // same way basics-enhanced and logo-lowres do. Every bit of math below - movement bounds,
-        // camera centering, particle spawns - uses this size, so the logic always
+        // same way basics-enhanced and logo-lowres do. Every bit of math below – movement bounds,
+        // camera centering, particle spawns – uses this size, so the logic always
         // matches the picture on screen.
         this.heroSize.set(this.heroSheet.size.x, this.heroSheet.size.y);
 
@@ -416,7 +416,7 @@ class Demo {
         // "remembered" and starts for real the instant the player clicks or presses a key.
         //
         // Wrap load + play like snake-game: a missing or undecodable file must not
-        // abort the whole scene - the capstone still renders with SFX only.
+        // abort the whole scene – the capstone still renders with SFX only.
         try {
             this.musicClip = await AudioClip.load('/audio/music-intro-loop.wav');
             BT.musicPlay(this.musicClip, {
@@ -481,10 +481,10 @@ class Demo {
     /**
      * Plays a short chime the instant the day/night phase label changes (Day -> Toward dusk
      * -> Night -> Toward dawn -> Day...). Comparing this tick's label against last tick's
-     * label is the same "edge detection" idea Keyboard Input uses for key presses - we
+     * label is the same "edge detection" idea Keyboard Input uses for key presses – we
      * only care about the moment something changes, not every tick it stays the same.
      *
-     * @param {number} tick - Current engine tick (BT.ticks).
+     * @param {number} tick – Current engine tick (BT.ticks).
      */
     updateDayPhaseSound(tick) {
         const currentPhase = this.getDayPhaseLabel(tick);
@@ -498,12 +498,12 @@ class Demo {
 
     /**
      * Draws world layers back-to-front. HUD text is handled by the engine overlay.
-     * Every draw call uses only palette index numbers - no Color32 objects.
+     * Every draw call uses only palette index numbers – no Color32 objects.
      */
     render() {
         BT.clear(C_BLACK);
 
-        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha - a fraction from 0
+        // Blend cameraPrevPos toward cameraPos by BT.renderAlpha – a fraction from 0
         // (a tick just finished) to just under 1 (the next tick is about to happen) -
         // so the camera's on-screen position matches this exact render moment instead
         // of only its last-tick position. Both the sky parallax below and the full
@@ -801,7 +801,7 @@ class Demo {
      * Advances a step counter every WALK_FRAME_TICKS ticks.
      * Used to add a subtle bob to the rock as it moves.
      *
-     * @param {number} tick - Current tick.
+     * @param {number} tick – Current tick.
      */
     updateWalkStep(tick) {
         if (this.walkFrameTimer.fireIfElapsed(tick)) {
@@ -857,7 +857,7 @@ class Demo {
     }
 
     /**
-     * Keeps cameraPos.x between 0 and WORLD_W - DISPLAY_W.
+     * Keeps cameraPos.x between 0 and WORLD_W – DISPLAY_W.
      */
     clampCamera() {
         const clamped = BT.cameraClamp(this.cameraPos, this.worldSize, BT.displaySize);
@@ -869,7 +869,7 @@ class Demo {
     /**
      * +1 score every SCORE_INTERVAL_TICKS.
      *
-     * @param {number} tick - Current tick.
+     * @param {number} tick – Current tick.
      */
     updateScore(tick) {
         if (this.scoreTimer.fireIfElapsed(tick)) {
@@ -880,7 +880,7 @@ class Demo {
     /**
      * Spawns a handful of sparkles near the rock on a fixed schedule.
      *
-     * @param {number} tick - Current tick.
+     * @param {number} tick – Current tick.
      */
     updateParticlesSpawn(tick) {
         if (this.particleSpawnTimer.fireIfElapsed(tick)) {
@@ -890,7 +890,7 @@ class Demo {
 
                 // Scatter each sparkle around the rock.
                 // BT.random is the engine's shared random number generator, and int() returns a whole number starting
-                // at the first value and stopping just before the second - so int(-10, 10) gives anything from -10 to
+                // at the first value and stopping just before the second – so int(-10, 10) gives anything from -10 to
                 // 9, and 10 itself never comes up.
                 // Left and right come up about equally often. The y range is lopsided on purpose: most of those
                 // offsets are negative, which on screen means upward, so the sparkles gather above the rock.
@@ -915,7 +915,7 @@ class Demo {
     /**
      * Removes particles older than 72 ticks (~1.2 seconds).
      *
-     * @param {number} tick - Current tick.
+     * @param {number} tick – Current tick.
      */
     cleanupParticles(tick) {
         this.particles = this.particles.filter((p) => tick - p.spawnTick < 72);
@@ -926,7 +926,7 @@ class Demo {
      * Hue comes from spawnTick; alpha fades out as the particle ages.
      * The ambient tint is also applied so sparkles dim at night.
      *
-     * @param {number} tick - Current tick.
+     * @param {number} tick – Current tick.
      */
     updateParticleColors(tick) {
         const ambient = this.getAmbientTint();
@@ -946,7 +946,7 @@ class Demo {
 
     /**
      * Draws active particles as 3x3 colored squares.
-     * Colors were already computed in update() - render() just reads the slot.
+     * Colors were already computed in update() – render() just reads the slot.
      */
     renderParticles() {
         for (const p of this.particles) {
@@ -993,8 +993,8 @@ class Demo {
     }
 
     /**
-     * Starts one PNG download (Image Output demo). BT.downloadFrame() is asynchronous - it hands
-     * the browser a file and resolves later - so we flip `capturing` on now and set the
+     * Starts one PNG download (Image Output demo). BT.downloadFrame() is asynchronous – it hands
+     * the browser a file and resolves later – so we flip `capturing` on now and set the
      * result message (shown for ~3 seconds via messageTimer) when the promise settles.
      */
     startCapture() {

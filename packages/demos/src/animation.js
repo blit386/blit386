@@ -27,7 +27,7 @@
 // Each particle gets its own palette slot at the moment it is spawned.
 // In update(), we compute the color (hue from spawn time, alpha from age)
 // and write it into that slot with palette.set(). In render(), we just
-// use the particle's slot number - no Color32 objects needed there.
+// use the particle's slot number – no Color32 objects needed there.
 //
 // Palette Animation demo explores this palette-animation idea in depth:
 // https://demos.blit386.dev/palette-animation
@@ -69,22 +69,22 @@ const SPRITE_BASE = 20;
 const WALK_FRAME_W = 18;
 const WALK_FRAME_COUNT = 4;
 
-// Scene color slots (low palette slots - text and panels use the shared UI theme instead).
+// Scene color slots (low palette slots – text and panels use the shared UI theme instead).
 const C_GROUND = 1; // (40, 60, 40) dark green ground strip.
 const C_SHADOW = 2; // (0, 0, 0, 100) semi-transparent shadow under the rock.
-const C_STATE_IDLE = 3; // (150, 150, 150) calm gray - the Idle state color.
-const C_STATE_WALK = 4; // (100, 255, 100) "go" green - the Walking state color.
-const C_STATE_JUMP = 5; // (255, 100, 100) alert red - the Jumping state color.
+const C_STATE_IDLE = 3; // (150, 150, 150) calm gray – the Idle state color.
+const C_STATE_WALK = 4; // (100, 255, 100) "go" green – the Walking state color.
+const C_STATE_JUMP = 5; // (255, 100, 100) alert red – the Jumping state color.
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
-// the overlay styles below cannot read this.theme yet - these constants spell out where
+// the overlay styles below cannot read this.theme yet – these constants spell out where
 // each theme color will land once init() runs.
-const UI_BG = 240; // 'ui_bg' - deep navy screen background.
-const UI_HEADER = 246; // 'ui_header' - warm amber (render bars, chart tags).
-const UI_ACCENT = 247; // 'ui_accent' - phosphor green (update bars).
-const UI_WARM = 248; // 'ui_accent_warm' - orange (chart warning and error frames).
-const UI_INFO = 249; // 'ui_info' - light blue (overlay row text).
+const UI_BG = 240; // 'ui_bg' – deep navy screen background.
+const UI_HEADER = 246; // 'ui_header' – warm amber (render bars, chart tags).
+const UI_ACCENT = 247; // 'ui_accent' – phosphor green (update bars).
+const UI_WARM = 248; // 'ui_accent_warm' – orange (chart warning and error frames).
+const UI_INFO = 249; // 'ui_info' – light blue (overlay row text).
 
 /**
  * Draws one character pose into a walk-strip cell.
@@ -224,15 +224,15 @@ class Demo {
             // Show the scrolling timing chart in the overlay so each frame's update/render cost is visible.
             isOverlayTimingChartEnabled: true,
             overlayTimingChartStyle: {
-                // Theme green - used for update() bars, matching the "ready" cooldown color.
+                // Theme green – used for update() bars, matching the "ready" cooldown color.
                 updateBarPaletteIndex: UI_ACCENT,
-                // Theme amber - used for render() bars.
+                // Theme amber – used for render() bars.
                 renderBarPaletteIndex: UI_HEADER,
-                // Theme orange - flags frames that are close to the frame budget.
+                // Theme orange – flags frames that are close to the frame budget.
                 warningPaletteIndex: UI_WARM,
-                // Theme orange again - the old palette also shared one red for warning and error.
+                // Theme orange again – the old palette also shared one red for warning and error.
                 errorPaletteIndex: UI_WARM,
-                // Theme amber - used for milestone labels such as "Start" or BT.assignTag() calls.
+                // Theme amber – used for milestone labels such as "Start" or BT.assignTag() calls.
                 tagPaletteIndex: UI_HEADER,
             },
         };
@@ -328,11 +328,11 @@ class Demo {
 
             // applyEasing(t, 'ease-in') starts slow and accelerates toward the end.
             // Subtracting from 1 flips it: alpha stays high for most of the particle's life,
-            // then drops quickly right before it disappears - like a real spark that glows
+            // then drops quickly right before it disappears – like a real spark that glows
             // brightly, then winks out all at once instead of fading evenly.
             const alpha = Math.floor(255 * (1 - applyEasing(t, 'ease-in')));
 
-            // Hue is based on when the particle was spawned - no two batches look the same.
+            // Hue is based on when the particle was spawned – no two batches look the same.
             const hue = (p.spawnTick * 3) % 360;
 
             // Compute the color and write it into this particle's reserved palette slot.
@@ -346,7 +346,7 @@ class Demo {
 
     /**
      * Runs once per screen refresh to draw the rock, particles, and UI.
-     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
+     * Notice: NO Color32 objects appear in draw calls – only palette indices and offsets.
      */
     render() {
         // Clear the whole screen with the shared UI theme's background color.
@@ -385,7 +385,7 @@ class Demo {
      * Automatically cycles through Idle -> Walking -> Jumping every 2 seconds each.
      * The full cycle is 6 seconds (360 ticks at 60 FPS).
      *
-     * @param {number} tick - Current tick count.
+     * @param {number} tick – Current tick count.
      */
     autoCycleStates(tick) {
         // cyclePos goes 0..359, repeating.
@@ -507,10 +507,10 @@ class Demo {
         this.nextParticleSlot++;
 
         // Scatter the particle around the rock. BT.random is the engine's shared random number generator, and int()
-        // returns a whole number starting at the first value and stopping just before the second - so int(-5, 25)
+        // returns a whole number starting at the first value and stopping just before the second – so int(-5, 25)
         // gives anything from -5 to 24, and 25 itself never comes up.
         // Both ranges are deliberately lopsided. Most of the x offsets are positive, so dust trails off to the right,
-        // and most of the y offsets are negative, which on screen means upward - the dust rises off the rock.
+        // and most of the y offsets are negative, which on screen means upward – the dust rises off the rock.
         const x = this.charPos.x + BT.random.int(-5, 25);
         const y = this.charPos.y + BT.random.int(-15, 5);
 
@@ -524,7 +524,7 @@ class Demo {
     /**
      * Draws all active particles as small colored squares.
      * The color for each particle was already updated in update() via palette.set().
-     * Here we just use the slot number - no Color32 needed.
+     * Here we just use the slot number – no Color32 needed.
      */
     renderParticles() {
         for (const p of this.particles) {

@@ -17,13 +17,13 @@
 //
 // On old hardware, colors were stored in numbered "slots" called a palette.
 // Every pixel on screen was just a number pointing to a slot.
-// If you ROTATE the colors - move each color one slot forward, wrap the last
-// one to the beginning - everything on screen that uses those slots appears
+// If you ROTATE the colors – move each color one slot forward, wrap the last
+// one to the beginning – everything on screen that uses those slots appears
 // to ripple or flow. The picture data never changes; only the paint-bucket
 // labels shift around.
 //
 // This trick powered water, lava, plasma, and aurora effects in classic games
-// like Sonic, Secret of Mana, and Chrono Trigger - all without redrawing a
+// like Sonic, Secret of Mana, and Chrono Trigger – all without redrawing a
 // single pixel.
 //
 // BLIT386 gives you BT.paletteCycle(start, end, speed) to do exactly that.
@@ -31,7 +31,7 @@
 // each frame. Positive speed = forward, negative = backward.
 //
 // UPDATE VS RENDER (palette work split):
-//   init() registers gradient colors and starts BT.paletteCycle() - the engine
+//   init() registers gradient colors and starts BT.paletteCycle() – the engine
 //   rotates those slot ranges automatically every frame.
 //   update() only runs the periodic BT.paletteSwap() demo and hides its label.
 //   render() draws fixed rectangles using palette index numbers; the bands
@@ -43,8 +43,8 @@
 //
 // WHAT YOU WILL SEE (three horizontal bands):
 //   1. Sky   (top)    - purple-pink slots cycling very slowly = twilight drift
-//   2. Fire  (middle) - orange-yellow slots cycling backward = rising flames
-//   3. Water (bottom) - blue gradient slots cycling forward = flowing water
+//   2. Fire  (middle) – orange-yellow slots cycling backward = rising flames
+//   3. Water (bottom) – blue gradient slots cycling forward = flowing water
 //
 // Plus a palette swap demonstration every few seconds.
 
@@ -79,7 +79,7 @@ const SWAP_INTERVAL = 180; // ~3 seconds at 60 FPS
 // Slot 0: always transparent (reserved by the engine).
 
 // Engine overlay style slots. configure() runs BEFORE init() installs the shared UI
-// theme, so the overlay style cannot use theme slots - instead it points at these six
+// theme, so the overlay style cannot use theme slots – instead it points at these six
 // low slots, which init() fills by hand with fixed colors.
 const C_OVERLAY_TAG = 1; // Chart milestone tags (white).
 const C_OVERLAY_BAR = 2; // Overlay bar background (very dark navy).
@@ -100,17 +100,17 @@ const C_WATER_BASE = 50;
 /**
  * Fills a run of palette slots with a smooth gradient.
  *
- * For each slot we compute t = i / (count - 1). Think of t as "how far along the
- * gradient are we?" - the first slot gets t = 0 (the start), the last slot gets
+ * For each slot we compute t = i / (count – 1). Think of t as "how far along the
+ * gradient are we?" – the first slot gets t = 0 (the start), the last slot gets
  * t = 1 (the end), and the slots between get evenly spaced fractions like 0.25
  * or 0.5 (exactly halfway). The colorAt callback turns that fraction into the
  * actual Color32 for the slot, so each gradient only has to describe its own
  * start and end colors.
  *
- * @param {Palette} palette - The palette to write into.
- * @param {number} baseSlot - The first slot of the gradient run.
- * @param {number} count - How many slots to fill.
- * @param {(t: number) => Color32} colorAt - Returns the color for progress t (0..1).
+ * @param {Palette} palette – The palette to write into.
+ * @param {number} baseSlot – The first slot of the gradient run.
+ * @param {number} count – How many slots to fill.
+ * @param {(t: number) => Color32} colorAt – Returns the color for progress t (0..1).
  */
 function fillGradient(palette, baseSlot, count, colorAt) {
     for (let i = 0; i < count; i++) {
@@ -212,7 +212,7 @@ class Demo {
         );
 
         // Install the shared UI kit colors (panel fills, borders, headings, dim text).
-        // applyTheme() writes 12 colors into slots 240..251 - far above every range the
+        // applyTheme() writes 12 colors into slots 240..251 – far above every range the
         // engine cycles here (sky 10..19, fire 30..35, water 50..57), so the rotation
         // can never touch the UI theme.
         this.theme = applyTheme(this.palette);
@@ -237,7 +237,7 @@ class Demo {
         const tick = BT.ticks;
 
         // Every SWAP_INTERVAL ticks, swap two fire slots to demonstrate BT.paletteSwap().
-        // The pair is not random - it is computed from the tick counter, so each swap
+        // The pair is not random – it is computed from the tick counter, so each swap
         // picks a predictable pair: tick % FIRE_SLOTS and (tick + 3) % FIRE_SLOTS.
         if (tick - this.lastSwapTick >= SWAP_INTERVAL) {
             // Pick two different slots within the fire range.
@@ -260,7 +260,7 @@ class Demo {
 
     /**
      * Draws the three animated bands and their kit-panel headings.
-     * No Color32 objects here - only palette indices.
+     * No Color32 objects here – only palette indices.
      */
     render() {
         BT.clear(this.theme.bg);

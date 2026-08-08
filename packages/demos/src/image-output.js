@@ -2,9 +2,9 @@
 //
 // BT.downloadFrame() takes a screenshot of whatever is currently on screen and saves
 // it as a PNG image file to your computer. Click or tap the "Save PNG" button from the
-// shared UI kit (or press Space) to download the current frame - so the demo works on
+// shared UI kit (or press Space) to download the current frame – so the demo works on
 // touch screens too. Note: the kit panel is drawn on screen, so it appears in the
-// saved PNG as well. That is fine for this demo - see the comment in render().
+// saved PNG as well. That is fine for this demo – see the comment in render().
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics).
 // Live article: https://vancura.dev/articles/blit386-image-output
@@ -21,7 +21,7 @@ import { applyTheme, ui } from './shared/ui.js';
 // Every color used for drawing is stored in a numbered "palette" slot.
 // Think of each slot like a labeled paint jar on an artist's shelf.
 // Index 0 is always transparent (invisible). Our custom colors start at 1.
-// These are the SCENE colors - the test pattern itself. All the UI text and the
+// These are the SCENE colors – the test pattern itself. All the UI text and the
 // Save button draw with the shared UI theme instead (installed by applyTheme() in init()).
 const C_WHITE = 1; // White: grid dots, border, and crosshairs
 const C_BG = 2; // Very dark blue-gray: the background color
@@ -29,7 +29,7 @@ const C_BG = 2; // Very dark blue-gray: the background color
 // Dynamic slots: these six colors change every frame to create the animated rainbow stripes.
 // We pre-allocate (reserve) index slots 10 through 15, one for each horizontal stripe.
 // In update() we calculate the new color and store it here; render() just uses the index.
-// This is called "palette animation" - the retro trick that made old consoles look alive!
+// This is called "palette animation" – the retro trick that made old consoles look alive!
 const C_STRIPE_0 = 10; // Animated color for the top stripe (stripe 0)
 // Stripes 1-5 follow at C_STRIPE_0 + 1 through C_STRIPE_0 + 5
 
@@ -76,7 +76,7 @@ class Demo {
             // overlay. This demo's whole point is saving a picture with
             // BT.downloadFrame(), and the overlay is drawn on top of everything, so
             // that hint would end up baked into the saved PNG. We hide the hint to keep
-            // captures tidy. (The kit's Save panel DOES appear in the capture - a
+            // captures tidy. (The kit's Save panel DOES appear in the capture – a
             // deliberate trade-off so touch users can save at all; see render().)
             // The overlay still works on demand: press ` to show it and ` again to
             // hide it before you capture. The bottom-left 17x13 corner also stays
@@ -110,7 +110,7 @@ class Demo {
         // Step 2: install the shared UI theme. applyTheme() writes the twelve UI kit
         // colors into high palette slots (240-251 by default), far above our scene
         // slots 1-15. Every kit widget (the panel, button, labels) draws with these
-        // colors automatically - this demo never needs the slot numbers itself, so
+        // colors automatically – this demo never needs the slot numbers itself, so
         // we call applyTheme() only for that side effect and ignore its return value.
         applyTheme(this.palette);
 
@@ -142,7 +142,7 @@ class Demo {
         // Palette animation for the six horizontal stripes
         // Instead of computing colors inside render(), we compute them here in update()
         // and store the results in reserved palette slots. render() then just uses the index numbers.
-        // This is the classic "palette animation" technique - retro hardware did the same thing!
+        // This is the classic "palette animation" technique – retro hardware did the same thing!
         for (let i = 0; i < 6; i++) {
             // phase is an angle-like value 0-359 that moves as tick increases.
             // Each stripe adds i * 20 so neighboring stripes do not look identical.
@@ -163,7 +163,7 @@ class Demo {
             const b = Math.floor(127 + 127 * Math.sin(((phase + 240) * Math.PI) / 180));
 
             // Store the computed color in the palette slot for this stripe.
-            // render() will read C_STRIPE_0 + i to draw each stripe - no Color32 needed there!
+            // render() will read C_STRIPE_0 + i to draw each stripe – no Color32 needed there!
             this.palette.set(C_STRIPE_0 + i, new Color32(r, g, b));
         }
     }
@@ -181,7 +181,7 @@ class Demo {
         BT.clear(C_BG);
 
         // Draw six horizontal stripes using the animated palette slots we updated in update().
-        // Each stripe's color was already computed and stored - we just reference the index.
+        // Each stripe's color was already computed and stored – we just reference the index.
         const stripeHeight = 40;
 
         for (let i = 0; i < 6; i++) {
@@ -215,13 +215,13 @@ class Demo {
         // because the engine keeps the bottom-left 17x13 corner tappable for toggling
         // the stats overlay, and we do not want the two to fight over taps.
         // Note: this panel is drawn onto the frame, so it WILL be part of the saved
-        // PNG. That is acceptable here - it even doubles as a caption telling you
+        // PNG. That is acceptable here – it even doubles as a caption telling you
         // which demo produced the screenshot.
         ui.begin('topRight');
         ui.panel('Image Output');
 
         // The Save button. ui.button() returns true only on the single frame it was
-        // clicked, tapped, or its bound key (Space) was pressed - so holding Space
+        // clicked, tapped, or its bound key (Space) was pressed – so holding Space
         // does not spam downloads. We also ignore it while a save is already running.
         if (ui.button('Save PNG (Space)', { key: 'Space' }) && !this.capturing) {
             this.saveFrame();
@@ -230,13 +230,13 @@ class Demo {
         // One status row below the button. We always draw a row (even when idle) so
         // the panel does not jump in size when a message appears or disappears.
         if (this.capturing) {
-            // A save is in flight - the browser is busy reading the canvas.
+            // A save is in flight – the browser is busy reading the canvas.
             ui.label('Capturing...', { color: 'info' });
         } else if (this.messageTimer > 0) {
-            // A save just finished - show the result in green (success) or orange (error).
+            // A save just finished – show the result in green (success) or orange (error).
             ui.label(this.lastCaptureMessage, { color: this.lastCaptureColor });
         } else {
-            // Nothing happening - a quiet hint in dim gray.
+            // Nothing happening – a quiet hint in dim gray.
             ui.label('Saves the current frame', { color: 'dim' });
         }
 
@@ -257,7 +257,7 @@ class Demo {
         // BT.downloadFrame() reads the canvas and asks the browser to save a file.
         // Most browsers open a "Save as" dialog or drop the file straight into your
         // Downloads folder (depends on your browser settings). The demo cannot pick
-        // the folder for you - that is normal browser security.
+        // the folder for you – that is normal browser security.
         BT.downloadFrame('blit386-capture.png')
             .then(() => {
                 // Success: remember a friendly message and show it in green.

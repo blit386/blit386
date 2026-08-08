@@ -86,25 +86,25 @@ const COLOR_BASE = 12;
 
 // Palette slots of the shared UI theme. applyTheme() in init() writes the twelve UI kit
 // colors into slots 240-251 (its default start slot). configure() runs BEFORE init(), so
-// the overlay styles below cannot read this.theme yet - these constants spell out where
+// the overlay styles below cannot read this.theme yet – these constants spell out where
 // each theme color will land once init() runs.
-const UI_BG = 240; // 'ui_bg' - deep navy screen background.
-const UI_TEXT = 244; // 'ui_text' - off-white primary text.
-const UI_DIM = 245; // 'ui_text_dim' - secondary gray text.
-const UI_HEADER = 246; // 'ui_header' - warm amber (render bars, chart warnings).
-const UI_ACCENT = 247; // 'ui_accent' - phosphor green (update bars).
-const UI_WARM = 248; // 'ui_accent_warm' - orange (chart error frames).
-const UI_INFO = 249; // 'ui_info' - light blue (chart tags).
+const UI_BG = 240; // 'ui_bg' – deep navy screen background.
+const UI_TEXT = 244; // 'ui_text' – off-white primary text.
+const UI_DIM = 245; // 'ui_text_dim' – secondary gray text.
+const UI_HEADER = 246; // 'ui_header' – warm amber (render bars, chart warnings).
+const UI_ACCENT = 247; // 'ui_accent' – phosphor green (update bars).
+const UI_WARM = 248; // 'ui_accent_warm' – orange (chart error frames).
+const UI_INFO = 249; // 'ui_info' – light blue (chart tags).
 
 // Theme block indices (as palette offsets from COLOR_BASE).
-// Each block contains one entry per unique sprite color - that count lives in
+// Each block contains one entry per unique sprite color – that count lives in
 // this.colorCount, extracted in init(). Offset = blockIndex * colorCount.
 // Blocks 0..7 are static; blocks 8..12 are dynamic (updated in update()).
 //
 // Block 0 (offset 0):                 Original stone colors.
-// Block 1 (offset colorCount):        Silhouette - all colors near-black.
-// Block 2 (offset 2 * colorCount):    Damage white - all colors bright white.
-// Block 3 (offset 3 * colorCount):    Damage red - all colors shifted red.
+// Block 1 (offset colorCount):        Silhouette – all colors near-black.
+// Block 2 (offset 2 * colorCount):    Damage white – all colors bright white.
+// Block 3 (offset 3 * colorCount):    Damage red – all colors shifted red.
 // Block 4 (offset 4 * colorCount):    Team red.
 // Block 5 (offset 5 * colorCount):    Team blue.
 // Block 6 (offset 6 * colorCount):    Team green.
@@ -185,7 +185,7 @@ const BAND_WOBBLE_INTENSITY = 0.11;
  * The timing chart maps bar height from real update()/render() time; this demo adds
  * a gentle pulse so the scrolling bars are easy to see while you watch the effects.
  *
- * @param {number} ms - Target delay in milliseconds.
+ * @param {number} ms – Target delay in milliseconds.
  */
 function burnCpuMs(ms) {
     if (ms <= 0) {
@@ -219,7 +219,7 @@ class Demo {
     /** @type {Rect2i | null} */
     charRect = null;
 
-    // How many unique colors the sprite has - every theme block is this many
+    // How many unique colors the sprite has – every theme block is this many
     // palette slots wide. Computed in init() after the colors are extracted.
     colorCount = 0;
 
@@ -362,7 +362,7 @@ class Demo {
             return false;
         }
 
-        // Glitch state is shared by both backends - initialize once before the CRT check.
+        // Glitch state is shared by both backends – initialize once before the CRT check.
         // BT.random is the engine's shared random number generator.
         // Its int() method returns a whole number from the first value up to (but not including) the second,
         // so this waits a random number of ticks before the first burst.
@@ -431,7 +431,7 @@ class Demo {
 
     /**
      * Runs once per screen refresh to draw all the sprite effect demonstrations.
-     * Notice: NO Color32 objects appear in draw calls - only palette indices and offsets.
+     * Notice: NO Color32 objects appear in draw calls – only palette indices and offsets.
      */
     render() {
         // Clear the whole screen with the shared UI theme's background color.
@@ -492,7 +492,7 @@ class Demo {
         this.pixelGlitch.intensity = 0;
         BT.effectAdd(this.pixelGlitch);
 
-        // Display tier: Tesla Orava B/W tube - curved glass, faint grille, soft halation.
+        // Display tier: Tesla Orava B/W tube – curved glass, faint grille, soft halation.
         this.barrel = new BarrelDistortion();
         this.barrel.curvature = 0.07;
 
@@ -635,11 +635,11 @@ class Demo {
 
     /**
      * Builds the 8 static theme blocks by transforming the base colors.
-     * Called once in init() - these never change after setup.
+     * Called once in init() – these never change after setup.
      */
     buildStaticThemeBlocks() {
         // Block 0 (original) is already filled by SpriteSheet.loadColorsIntoPalette above.
-        // n is how many unique colors the sprite has - every block is n slots wide.
+        // n is how many unique colors the sprite has – every block is n slots wide.
         const n = this.colorCount;
 
         for (let i = 0; i < n; i++) {
@@ -648,27 +648,27 @@ class Demo {
             // The average brightness of this pixel (0..255 range).
             const lum = Math.floor(base.luminance);
 
-            // Block 1: Silhouette - near-black with slight variation to preserve depth cues.
+            // Block 1: Silhouette – near-black with slight variation to preserve depth cues.
             // Floor channels like blocks 4-7 so every recipe hands Color32 whole bytes.
             this.palette.set(
                 COLOR_BASE + BLOCK_SILHOUETTE * n + i,
                 new Color32(Math.floor(lum * 0.08), Math.floor(lum * 0.08), Math.floor(lum * 0.1), base.a),
             );
 
-            // Block 2: Damage white - everything shifted toward bright white.
+            // Block 2: Damage white – everything shifted toward bright white.
             const whitened = Math.floor(128 + lum * 0.5);
             this.palette.set(
                 COLOR_BASE + BLOCK_DAMAGE_WHITE * n + i,
                 new Color32(whitened, whitened, whitened, base.a),
             );
 
-            // Block 3: Damage red - everything shifted toward red.
+            // Block 3: Damage red – everything shifted toward red.
             this.palette.set(
                 COLOR_BASE + BLOCK_DAMAGE_RED * n + i,
                 new Color32(Math.min(255, lum + 80), Math.floor(lum * 0.3), Math.floor(lum * 0.3), base.a),
             );
 
-            // Block 4: Team red - multiply base colors with a red tint.
+            // Block 4: Team red – multiply base colors with a red tint.
             this.palette.set(
                 COLOR_BASE + BLOCK_TEAM_RED * n + i,
                 new Color32(
@@ -679,7 +679,7 @@ class Demo {
                 ),
             );
 
-            // Block 5: Team blue - multiply with a blue tint.
+            // Block 5: Team blue – multiply with a blue tint.
             this.palette.set(
                 COLOR_BASE + BLOCK_TEAM_BLUE * n + i,
                 new Color32(
@@ -690,7 +690,7 @@ class Demo {
                 ),
             );
 
-            // Block 6: Team green - multiply with a green tint.
+            // Block 6: Team green – multiply with a green tint.
             this.palette.set(
                 COLOR_BASE + BLOCK_TEAM_GREEN * n + i,
                 new Color32(
@@ -701,7 +701,7 @@ class Demo {
                 ),
             );
 
-            // Block 7: Frozen - push toward cold blue-white.
+            // Block 7: Frozen – push toward cold blue-white.
             this.palette.set(
                 COLOR_BASE + BLOCK_FROZEN * n + i,
                 new Color32(Math.floor(lum * 0.7 + 40), Math.floor(lum * 0.8 + 40), Math.min(255, lum + 80), base.a),
