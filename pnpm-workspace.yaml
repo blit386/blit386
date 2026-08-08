@@ -15,6 +15,10 @@ overrides:
   js-yaml@>=3.0.0 <3.15.1: ^3.15.1
   js-yaml@>=4.0.0 <4.3.1: ^4.3.1
   undici@>=7.0.0 <7.29.0: ^7.29.0
+  # GHSA-2v37-7h3g-55p8 (high): custom generators loop indefinitely when size is zero.
+  # Dev-only, reached through postcss via vite and vitest, so it never enters a runtime
+  # bundle - but `security:audit` covers dev + prod, so it fails CI. 3.3.17 is the patch.
+  nanoid@<3.3.17: ^3.3.17
 
 allowBuilds:
   esbuild: true
@@ -38,6 +42,10 @@ minimumReleaseAgeExclude:
   - undici
   - '@types/node'
   - '@commitlint/cli'
+  # Security patch for GHSA-2v37-7h3g-55p8, published 2026-08-03 and so still inside the
+  # 7-day window. Excluded so the override above can resolve; drop this entry once the
+  # patch ages past the gate.
+  - nanoid
   - '@commitlint/config-conventional'
   - cspell
   - knip
