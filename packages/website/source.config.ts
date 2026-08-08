@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { TWOSLASH_COMPILER_OPTIONS } from './scripts/twoslash-compiler-options.mjs';
 
 // Twoslash spins up a TypeScript language service that loads blit386.d.ts plus
-// WebGPU types for every MDX file. Across the 35 MDX files in content/ the
+// WebGPU types for every MDX file. Across the several dozen MDX files in content/ the
 // cumulative heap exceeds Node's default 4 GB limit and the dev server OOMs.
 // Skip it during `waku dev`;
 // production builds set CLOUDFLARE=1 (single-shot, survives the memory spike).
