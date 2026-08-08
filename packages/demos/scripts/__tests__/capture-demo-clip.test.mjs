@@ -6,10 +6,13 @@ import {
     DEFAULTS,
     buildEmbedUrl,
     buildIntermediatePaths,
+    buildRecorderScript,
+    buildStopScript,
     buildUpscaleArgs,
     computeUpscaleTarget,
     parseArgs,
     resolveEncodeVideoScriptPath,
+    sliceRanges,
 } from '../capture-demo-clip.mjs';
 
 describe('parseArgs', () => {
@@ -172,5 +175,46 @@ describe('resolveEncodeVideoScriptPath', () => {
     test('resolves to packages/website/scripts/encode-video.mjs relative to this script', () => {
         const result = resolveEncodeVideoScriptPath('file:///repo/packages/demos/scripts/capture-demo-clip.mjs');
         assert.equal(result, join('/repo', 'packages', 'website', 'scripts', 'encode-video.mjs'));
+    });
+});
+
+describe('buildRecorderScript', () => {
+    test('references the canvas id, vp9/vp8 fallback, and the requested bitrate', () => {
+        const script = buildRecorderScript(12_000_000);
+        assert.match(script, /getElementById\('blit386-canvas'\)/u);
+        assert.match(script, /MediaRecorder\.isTypeSupported/u);
+        assert.match(script, /'video\/webm;codecs=vp9'/u);
+        assert.match(script, /'video\/webm;codecs=vp8'/u);
+        assert.match(script, /videoBitsPerSecond: 12000000/u);
+        assert.match(script, /captureStream\(60\)/u);
+    });
+});
+
+describe('buildStopScript', () => {
+    test('stops the recorder, builds a Blob, and base64-encodes in push-chunk-sized slices', () => {
+        const script = buildStopScript();
+        assert.match(script, /window\.__btRecorder/u);
+        assert.match(script, /addEventListener\('stop'/u);
+        assert.match(script, /new Blob\(window\.__btChunks/u);
+        assert.match(script, /btoa\(binary\)/u);
+        assert.match(script, /chunkSize = 32768/u);
+    });
+});
+
+describe('sliceRanges', () => {
+    test('returns nothing for a zero length', () => {
+        assert.deepEqual(sliceRanges(0, 300_000), []);
+    });
+
+    test('returns one range when the length fits in one chunk', () => {
+        assert.deepEqual(sliceRanges(300_000, 300_000), [{ start: 0, length: 300_000 }]);
+    });
+
+    test('splits a length spanning multiple chunks, with a short final range', () => {
+        assert.deepEqual(sliceRanges(700_000, 300_000), [
+            { start: 0, length: 300_000 },
+            { start: 300_000, length: 300_000 },
+            { start: 600_000, length: 100_000 },
+        ]);
     });
 });

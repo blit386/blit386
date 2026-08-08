@@ -224,3 +224,96 @@ export function resolveEncodeVideoScriptPath(moduleUrl) {
 }
 
 // #endregion
+
+// #region Browser scripts
+
+/**
+ * Browser-side script (run via `agent-browser eval --stdin`) that starts recording the
+ * canvas element directly. This is what avoids agent-browser record's compositor, which
+ * only manages 1280x578 at 10fps with cropping and letterboxing.
+ *
+ * @param {number} bitrate MediaRecorder `videoBitsPerSecond`.
+ * @returns {string} JavaScript source. Evaluates to the chosen mimeType.
+ */
+export function buildRecorderScript(bitrate) {
+    return `
+(() => {
+    const canvas = document.getElementById('${CANVAS_ID}');
+    if (!canvas) throw new Error('Canvas #${CANVAS_ID} not found.');
+
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm;codecs=vp8';
+
+    const stream = canvas.captureStream(60);
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: ${bitrate} });
+
+    window.__btChunks = [];
+    recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) window.__btChunks.push(event.data);
+    };
+    window.__btRecorder = recorder;
+    recorder.start();
+
+    return mimeType;
+})();
+`.trim();
+}
+
+/**
+ * Browser-side script that stops the recorder, concatenates the recorded chunks into a
+ * Blob, and base64-encodes it into window.__b64 in B64_PUSH_CHUNK_CHARS-sized slices -
+ * String.fromCharCode.apply blows the call stack on one giant array, so the encode has to
+ * happen in pieces even though the result is one string.
+ *
+ * A direct file download does not work here: headless Chrome cancels it. Pulling the
+ * base64 string back out through repeated eval calls (see sliceRanges) is the path that
+ * works.
+ *
+ * @returns {string} JavaScript source. Evaluates to `window.__b64.length`.
+ */
+export function buildStopScript() {
+    return `
+(async () => {
+    const recorder = window.__btRecorder;
+    if (!recorder) throw new Error('No active recorder (window.__btRecorder is unset).');
+
+    await new Promise((resolve) => {
+        recorder.addEventListener('stop', resolve, { once: true });
+        recorder.stop();
+    });
+
+    const blob = new Blob(window.__btChunks, { type: recorder.mimeType });
+    const buffer = await blob.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    let binary = '';
+    const chunkSize = ${B64_PUSH_CHUNK_CHARS};
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+
+    window.__b64 = btoa(binary);
+    return window.__b64.length;
+})();
+`.trim();
+}
+
+/**
+ * Split a total character length into chunk-sized {start, length} ranges, for pulling
+ * window.__b64 back out of the browser a few hundred KB at a time (a single eval call
+ * returning the whole string is what the manual recipe found unreliable).
+ *
+ * @param {number} totalLength Total string length to cover.
+ * @param {number} chunkSize Max length per range.
+ * @returns {{ start: number, length: number }[]} Ranges covering [0, totalLength).
+ */
+export function sliceRanges(totalLength, chunkSize) {
+    const ranges = [];
+    for (let start = 0; start < totalLength; start += chunkSize) {
+        ranges.push({ start, length: Math.min(chunkSize, totalLength - start) });
+    }
+    return ranges;
+}
+
+// #endregion
