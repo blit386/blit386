@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/correctness/noUnknownPseudoClass: :global() is valid CSS Modules syntax Biome's linter doesn't recognize yet, even though its parser accepts it */
+
 @reference '../app.css';
 
 .index {
@@ -9,7 +11,8 @@
 }
 
 .heading {
-    @apply text-[66px] uppercase antialiased leading-16 text-fd-foreground;
+    @apply text-[66px] max-xl:text-[44px] max-sm:text-[22px] uppercase antialiased text-fd-foreground;
+    @apply leading-16 max-xl:leading-11 max-sm:leading-6;
 }
 
 .tagsLink {
@@ -28,17 +31,42 @@
 }
 
 .cardTitle {
-    @apply font-departure text-[22px] uppercase antialiased leading-6 text-balance group-hover:text-fd-background;
+    @apply font-departure text-[22px] uppercase antialiased leading-6 text-balance;
+
+    @media (hover: hover) {
+        :global(.group):hover & {
+            @apply text-fd-background;
+        }
+    }
 }
 
 .cardDescription {
-    @apply text-sm text-balance group-hover:text-fd-background;
+    @apply text-sm text-balance;
+
+    @media (hover: hover) {
+        :global(.group):hover & {
+            @apply text-fd-background;
+        }
+    }
 }
 
 .cardDate {
-    @apply mt-auto text-xs group-hover:text-fd-background;
+    @apply mt-auto text-xs;
+
+    @media (hover: hover) {
+        :global(.group):hover & {
+            @apply text-fd-background;
+        }
+    }
 }
 
 .card {
-    @apply flex flex-col gap-4 overflow-hidden bg-fd-card p-4 hover:bg-fd-accent;
+    @apply flex flex-col gap-4 bg-fd-card p-4 transition-none select-none;
+    @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
+
+    @media (hover: hover) {
+        &:hover {
+            @apply bg-fd-accent shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
+        }
+    }
 }

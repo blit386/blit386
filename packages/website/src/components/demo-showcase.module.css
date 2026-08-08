@@ -44,10 +44,13 @@
 }
 
 .card {
-    @apply flex flex-col overflow-hidden bg-fd-card hover:bg-fd-accent;
+    @apply flex flex-col bg-fd-card p-0.5 transition-none select-none;
+    @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
 
     @media (hover: hover) {
         &:hover {
+            @apply bg-fd-accent shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-primary)];
+
             & .cardTitle,
             & .cardDescription {
                 @apply text-fd-background;

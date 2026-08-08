@@ -23,7 +23,7 @@ export function AuthorByline({ author }: AuthorBylineProps) {
     }
 
     return (
-        <div className={`not-prose ${styles.container}`}>
+        <div className={`not-prose mb-0! pb-0! ${styles.container}`}>
             {entry.avatar && (
                 <img
                     src={entry.avatar}

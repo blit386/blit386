@@ -13,7 +13,6 @@ import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
 import { createDocsLayoutPage } from 'fumapress/layouts/docs';
-import { EditOnGitHub } from 'fumadocs-ui/layouts/docs/page';
 import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
@@ -81,7 +80,7 @@ const rootLayout = createRootLayout({
 
 /**
  * Page-data shape carried by the `docs` collection's schema `.extend()` in `source.config.ts`:
- * `lastModified` and `editUrl` are injected into every synced page's frontmatter by
+ * `lastModified` is injected into every synced page's frontmatter by
  * `scripts/sync-docs-from-engine.mjs`. `createDocsLayoutPage` is generic over `ConfigContext`
  * but defaults to a bare `PageData`, so this narrows `page.data` for the `render()` callback
  * below without threading the full multi-source (`docs` + `blog`) content type through it.
@@ -96,7 +95,6 @@ interface DocsPageData extends PageData {
      * `rawLastModified(page)` below rather than trusting `page.data.lastModified` directly.
      */
     lastModified?: Date;
-    editUrl?: string;
 }
 
 /**
@@ -121,13 +119,12 @@ interface DocsLayoutContext extends ConfigContext {
 const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
     /**
      * Renders the doc body ourselves (instead of leaving it to the default `render-body`
-     * fallback) so an "Edit on GitHub" link can be appended after it.
+     * fallback) so the last-updated date can be appended after it.
      *
-     * `getGitHubFileUrl` (the framework's built-in edit-link resolver) is intentionally not
-     * used: it needs `siteConfig.git`, which is unset here, and even if set it would compute a
-     * URL into this package's generated MDX rather than the true source in `packages/blit386`.
-     * `editUrl` is injected into each page's frontmatter by `sync-docs-from-engine.mjs`
-     * instead (see `CLAUDE.md`, Documentation mirror), so it is read directly from `page.data`.
+     * There is deliberately no "Edit on GitHub" link here: this is a single-maintainer site,
+     * so the link's only ever audience already has the source open locally, and the
+     * framework's built-in resolver (`getGitHubFileUrl`) would have pointed at this package's
+     * generated MDX rather than the true source in `packages/blit386` regardless.
      */
     async render(page) {
         let body: ReactNode;
@@ -144,8 +141,6 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
         if (body === undefined) {
             throw new Error('[press.config] docsPageLayout: no adapter could render this page body');
         }
-
-        const editUrl = page.data.editUrl;
 
         // Deliberately NOT returning `lastModified` here to feed the framework's own
         // `<PageLastUpdate>` (rendered automatically by `createDocsLayoutPage` whenever
@@ -187,7 +182,6 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
             body: (
                 <>
                     {body}
-                    {editUrl && <EditOnGitHub href={editUrl} />}
                     {formattedLastModified && (
                         <p className="text-sm text-fd-muted-foreground">Last updated on {formattedLastModified}</p>
                     )}

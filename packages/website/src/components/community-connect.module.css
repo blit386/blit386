@@ -1,7 +1,7 @@
 @reference '../app.css';
 
 .heading {
-    @apply mb-4 text-xl font-semibold text-fd-foreground;
+    @apply mb-4 text-2xl font-normal text-fd-foreground;
 }
 
 .comingSoon {
