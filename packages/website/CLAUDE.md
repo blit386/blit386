@@ -132,20 +132,28 @@ thing.
 deliberate and must stay: **`fumapress` declares `waku` as an exact-version peer dependency, not a range**, so a caret
 on either side lets pnpm resolve a pair the framework does not support.
 
+Every row is an exact pin, not a range – including the prerelease ones, so "beta.8 or newer" is never satisfied by
+beta.9. Verified against the registry on 2026-08-08; `npm view fumapress@<version> peerDependencies.waku` is the check.
+
 | fumapress | required `waku` peer |
 | --- | --- |
 | 0.6.2 | `1.0.0-beta.3` |
 | 0.6.3 – 0.7.3 | `1.0.0-beta.6` |
-| 1.0.0-beta.x | `1.0.0-beta.8` |
+| 1.0.0-beta.1 | `1.0.0-beta.8` |
+| 1.0.0-beta.2 | `1.0.0-beta.8` |
+
+`1.0.0-beta.1` and `1.0.0-beta.2` are the only 1.0.0 prereleases published so far (there is no `beta.0`); a later beta
+may pin a different waku, so re-check rather than assuming the pattern holds.
 
 The current pair is `fumapress@0.7.3` + `waku@1.0.0-beta.6` (BT-455) – the newest peer-correct combination on the 0.x
 line. Both packages share one Renovate group for the same reason; do not split them back apart, or Renovate proposes a
 fumapress bump and a waku bump as two PRs, neither installable on its own.
 
-**Do not move `waku` past beta.6 while `fumapress` is on 0.7.x.** Only `fumapress@1.0.0-beta.x` sanctions beta.8 and
-later, and that release is a rewrite rather than a bump: it renames `ServerPlugin` to `PressPlugin` and `ConfigContext`
-to `AppShape`, and moves layouts onto the config object. All four local plugins in `src/` plus every
-`createDocsLayoutPage` and `createRootLayout` call in `press.config.tsx` would need reworking.
+**Do not move `waku` past beta.6 while `fumapress` is on 0.7.x.** waku beta.8 is sanctioned only by `fumapress` 1.0.0
+beta.1 or beta.2, and nothing published sanctions beta.9 at all. That release is a rewrite rather than a bump: it
+renames `ServerPlugin` to `PressPlugin` and `ConfigContext` to `AppShape`, and moves layouts onto the config object. All
+four local plugins in `src/` plus every `createDocsLayoutPage` and `createRootLayout` call in `press.config.tsx` would
+need reworking.
 
 Two behavioral changes came in with 0.7.x and are already absorbed. Takumi went v1 to v2 (0.7.2), which re-tuned the
 WebP encoder – OG cards are roughly 55% smaller with pixel-identical output, so **file size is not a validity signal
