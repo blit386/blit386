@@ -13,8 +13,10 @@
  *
  * Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
  */
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { DEMO_ORDER } from '../plugins/demo-order.js';
 import { SITE_URL } from '../plugins/sitemap.js';
@@ -314,6 +316,177 @@ export function sliceRanges(totalLength, chunkSize) {
         ranges.push({ start, length: Math.min(chunkSize, totalLength - start) });
     }
     return ranges;
+}
+
+// #endregion
+
+// #region Runner
+
+const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
+
+  <slug>                 Demo slug, e.g. palette-cycling (must be in DEMO_ORDER)
+  --duration <seconds>   Clip length (required)
+  --out <dir>            Output directory (required), passed through to encode-video.mjs
+  --name <base>          Output base name (default: the slug)
+  --upscale <n>          Nearest-neighbor upscale factor (default: ${DEFAULTS.upscale})
+  --base-url <url>       Demo site origin (default: ${DEFAULTS.baseUrl})
+  --poster-at <ts>       Passed through to encode-video.mjs (default: ${DEFAULTS.posterAt})
+  --bitrate <bps>        MediaRecorder videoBitsPerSecond (default: ${DEFAULTS.bitrate})
+  --keep-intermediate    Keep raw.webm and the lossless upscaled.mp4 intermediate
+  --dry-run              Print the planned commands and exit
+`;
+
+/**
+ * Run `agent-browser` in the dedicated capture session and parse its `--json` envelope.
+ * Throws on a non-zero exit or `success: false` – a broken browser session should stop
+ * the run rather than silently continue with a bad frame count or blob.
+ *
+ * @param {string[]} args Arguments after `agent-browser`, e.g. `['open', url, '--json']`.
+ * @param {{ stdin?: string }} [options] Optional stdin payload, used for `eval --stdin`.
+ * @returns {*} `envelope.data.result` when present, otherwise `envelope.data`.
+ */
+function runAgentBrowser(args, options = {}) {
+    const fullArgs = ['--session', CAPTURE_SESSION, ...args];
+    console.log(`\n$ agent-browser ${fullArgs.join(' ')}\n`);
+
+    const result = spawnSync('agent-browser', fullArgs, {
+        encoding: 'utf8',
+        input: options.stdin,
+    });
+
+    if (result.error) {
+        throw new Error(`Failed to run agent-browser: ${result.error.message}`);
+    }
+    if (result.status !== 0) {
+        throw new Error(`agent-browser exited with status ${result.status}: ${result.stderr}`);
+    }
+
+    const envelope = JSON.parse(result.stdout);
+    if (!envelope.success) {
+        throw new Error(`agent-browser reported failure: ${JSON.stringify(envelope.error)}`);
+    }
+
+    return envelope.data.result !== undefined ? envelope.data.result : envelope.data;
+}
+
+/**
+ * Echo and run ffmpeg, inheriting stdio so progress reaches the terminal.
+ *
+ * @param {string[]} args Arguments for `ffmpeg`, output path last.
+ * @returns {void}
+ */
+function runFfmpeg(args) {
+    console.log(`\n$ ffmpeg ${args.join(' ')}\n`);
+
+    const result = spawnSync('ffmpeg', args, { stdio: 'inherit' });
+    if (result.error) {
+        throw new Error(`Failed to run ffmpeg: ${result.error.message}`);
+    }
+    if (result.status !== 0) {
+        throw new Error(`ffmpeg exited with status ${result.status}`);
+    }
+}
+
+/**
+ * @param {number} seconds
+ * @returns {Promise<void>}
+ */
+const sleep = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+
+/**
+ * Parse argv, capture the demo's canvas, upscale it, and hand off to encode-video.mjs.
+ *
+ * @returns {Promise<void>}
+ */
+const main = async () => {
+    let options;
+    try {
+        options = parseArgs(process.argv.slice(2));
+    } catch (error) {
+        console.error(`${error.message}\n\n${USAGE}`);
+        process.exitCode = 1;
+        return;
+    }
+
+    const embedUrl = buildEmbedUrl(options.baseUrl, options.slug);
+    const paths = buildIntermediatePaths(options.out, options.name);
+    const encodeVideoPath = resolveEncodeVideoScriptPath(import.meta.url);
+    const encodeArgs = [
+        encodeVideoPath,
+        paths.upscaled,
+        '--out',
+        options.out,
+        '--name',
+        options.name,
+        '--poster-at',
+        options.posterAt,
+    ];
+
+    if (options.dryRun) {
+        console.log(`Would open ${embedUrl}`);
+        console.log(
+            `Would record ${options.duration}s at the canvas's native resolution, upscaled ${options.upscale}x`,
+        );
+        console.log(`Would write ${paths.raw} and ${paths.upscaled}`);
+        console.log(`Would run: node ${encodeArgs.join(' ')}`);
+        return;
+    }
+
+    try {
+        mkdirSync(options.out, { recursive: true });
+
+        runAgentBrowser(['open', embedUrl, '--json']);
+
+        try {
+            const dimensions = runAgentBrowser(['eval', '--stdin', '--json'], {
+                stdin: `({ width: document.getElementById('${CANVAS_ID}').width, height: document.getElementById('${CANVAS_ID}').height })`,
+            });
+            const target = computeUpscaleTarget(dimensions.width, dimensions.height, options.upscale);
+
+            runAgentBrowser(['eval', '--stdin', '--json'], { stdin: buildRecorderScript(options.bitrate) });
+
+            console.log(`Recording ${options.slug} for ${options.duration}s...`);
+            await sleep(options.duration);
+
+            const totalLength = runAgentBrowser(['eval', '--stdin', '--json'], { stdin: buildStopScript() });
+
+            let base64 = '';
+            for (const range of sliceRanges(totalLength, B64_PULL_CHUNK_CHARS)) {
+                base64 += runAgentBrowser(['eval', '--stdin', '--json'], {
+                    stdin: `window.__b64.substr(${range.start}, ${range.length})`,
+                });
+            }
+
+            writeFileSync(paths.raw, Buffer.from(base64, 'base64'));
+
+            runFfmpeg(buildUpscaleArgs(paths.raw, paths.upscaled, target));
+        } finally {
+            try {
+                runAgentBrowser(['close']);
+            } catch (closeError) {
+                console.error(`Warning: failed to close agent-browser session: ${closeError.message}`);
+            }
+        }
+
+        const encodeResult = spawnSync('node', encodeArgs, { stdio: 'inherit' });
+        if (encodeResult.status !== 0) {
+            throw new Error(`encode-video.mjs exited with status ${encodeResult.status}`);
+        }
+
+        if (!options.keepIntermediate) {
+            rmSync(paths.raw, { force: true });
+            rmSync(paths.upscaled, { force: true });
+        }
+
+        console.log(`\nDone. Renditions written to ${options.out}/${options.name}.*`);
+    } catch (error) {
+        console.error(`\n${error.message}`);
+        process.exitCode = 1;
+    }
+};
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    main();
 }
 
 // #endregion
