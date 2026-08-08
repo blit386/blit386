@@ -60,7 +60,7 @@ Two, deliberately, matching the split `packages/blit386` already runs:
 | Suite | Runner | Script | Covers |
 | --- | --- | --- | --- |
 | `scripts/__tests__/*.test.mjs` | `node --test` | `test:scripts` | The build and sync scripts |
-| `src/**/*.test.ts` | Vitest | `test:unit` | The `ServerPlugin`s that run in the deployed Worker |
+| `src/**/*.test.ts` | Vitest | `test:unit` | The `ServerPlugin`s that run in the deployed Worker, plus `public/webmcp.js` |
 
 `pnpm run test` runs both, the second with coverage; `preflight` and the `quality-website` CI job call it, so neither
 needs its own wiring. The `scripts/**` suite stays on `node --test` because it is `node:assert` throughout, it finishes
@@ -96,6 +96,18 @@ Two behaviors in that suite are regression guards rather than ordinary coverage,
 (break the implementation, watch the test go red) rather than only by passing: `channel-headers.ts` reading the channel
 at request time, and `markdown-negotiation.ts` forwarding to `ASSETS` and falling through only on a 404. If you refactor
 either, expect those tests to be the ones that stop you.
+
+`src/webmcp.test.ts` covers `public/webmcp.js`, the browser-side WebMCP bridge – a different shape of problem from the
+four `ServerPlugin`s above, since it is a plain `<script defer>` (`press.config.tsx`), not `type="module"`, with no
+`import`/`export` of its own. It is deliberately outside `tsconfig.json`'s `include` (it targets `document.modelContext`
+/ `navigator.modelContext`, an experimental API with no `lib.dom.d.ts` types), so the test reads the file as text and
+runs it with `vm.runInThisContext({ filename })` against stubbed `document` / `navigator` / `window` / `fetch` rather
+than statically or dynamically `import`-ing it – TS refuses to import a non-module script anyway, and doing so would
+pull the file back into the type-checked program. The `filename` option is required, not cosmetic: without it,
+`@vitest/coverage-v8` attributes execution to an anonymous `evalmachine` script and `public/webmcp.js` reports 0%
+despite full coverage. `public/webmcp.js` is included in `vitest.config.ts`'s `coverage.include` for exactly this reason
+– it is the one file under `public/` with real branching logic (the `navigate` tool's path-injection guards), unlike the
+static `.well-known/` JSON.
 
 ## What is hand-authored and what is generated
 
