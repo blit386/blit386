@@ -17,13 +17,6 @@ export const authors: Record<string, AuthorEntry> = {
     vancura: {
         name: 'Vaclav Vancura',
         url: 'https://vancura.dev',
-        socials: [
-            {
-                platform: 'github',
-                url: 'https://github.com/vancura',
-                label: 'vancura',
-            },
-        ],
     },
 };
 

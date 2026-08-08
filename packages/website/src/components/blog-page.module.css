@@ -4,8 +4,13 @@
     @apply mb-4 flex flex-col gap-2;
 }
 
+/* Matches the docs breadcrumb pill (#nd-page > div.text-sm a in app.css): same
+   bg-fd-card chip, py-1.5 px-3 padding, and stepped shadow, so the "back" link reads as
+   the same kind of small nav pill instead of a bare underlined text link. */
 .backLink {
-    @apply w-fit text-sm text-fd-muted-foreground hover:text-fd-accent-foreground;
+    @apply w-fit rounded-none py-1.5 px-3 text-sm font-medium text-fd-foreground transition-opacity;
+    @apply bg-fd-card hover:opacity-80;
+    @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
 }
 
 .meta {
@@ -18,4 +23,11 @@
 
 .tag {
     @apply rounded-lg bg-fd-primary px-1.5 py-0.5 text-fd-primary-foreground;
+}
+
+/* End-of-post mark: a filled box glued to the end of the last block, magazine-style.
+   Scoped to .prose > *:last-child so it lands on whatever the post actually ends with
+   (paragraph, list, code block, ...) without touching individual post MDX. */
+.body :global(.prose) > *:last-child::after {
+    @apply mt-4 mb-15 block content-['■'];
 }

@@ -96,7 +96,7 @@ export function PageChangelog({ page }: PageChangelogProps) {
                 const date = formatVersionDate(apiHistory.versions[version]);
 
                 return (
-                    <section key={version} className={styles.version}>
+                    <section key={version} className={`${styles.version} ${date ? '' : styles.unreleased}`}>
                         <h3 className={styles.versionHeading}>
                             {version}
                             {date && <span className={styles.versionDate}> – {date}</span>}

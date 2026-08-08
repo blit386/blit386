@@ -5,6 +5,7 @@ import { getBlogContext } from 'fumapress/plugins/blog';
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/layouts/docs/page';
 import type { TOCItemType } from 'fumadocs-core/toc';
 import Link from 'fumadocs-core/link';
+import { AuthorByline } from './author-byline';
 import styles from './blog-page.module.css';
 
 type BlogPost = AppContext['$context']['page'];
@@ -62,7 +63,7 @@ async function renderToc(ctx: AppContext, page: BlogPost): Promise<TOCItemType[]
 export async function BlogPage({ page }: BlogPageProps) {
     const ctx = getPressContext();
     const { indexPath } = getBlogContext();
-    const data = page.data as { title: string; description?: string; tags?: string[] };
+    const data = page.data as { title: string; description?: string; tags?: string[]; author?: string };
     const [body, toc] = await Promise.all([renderBody(ctx, page), renderToc(ctx, page)]);
 
     return (
@@ -76,6 +77,8 @@ export async function BlogPage({ page }: BlogPageProps) {
 
                 <DocsTitle>{data.title}</DocsTitle>
                 <DocsDescription>{data.description}</DocsDescription>
+
+                {data.author && <AuthorByline author={data.author} />}
 
                 {/*{(date || (tags && tags.length > 0)) && (
                     <div className={styles.meta}>
@@ -91,7 +94,9 @@ export async function BlogPage({ page }: BlogPageProps) {
                 )}*/}
             </div>
 
-            <DocsBody>{body}</DocsBody>
+            <div className={styles.body}>
+                <DocsBody>{body}</DocsBody>
+            </div>
         </DocsPage>
     );
 }

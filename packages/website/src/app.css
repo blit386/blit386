@@ -103,11 +103,41 @@
     @apply font-heading font-normal;
 }
 
+/* Native text selection: same accent-on/inverted-code treatment as an active row in the
+   command palette ([role='dialog'] & [aria-selected='true'] above) and a hovered
+   [data-card], so highlighting text reads as part of this site rather than the browser
+   default blue. Dark-mode forks use an explicit `.dark` ancestor prefix rather than the
+   `dark:` variant: `@apply dark:...` compiles to `&:where(.dark, .dark *)` appended after
+   the pseudo-element, which is invalid there - there is no self-or-ancestor match to make
+   against `::selection` in that position, so the fork silently never applied.
+
+   `:is()`, not `:where()`, on the code selector list: `:where()` always carries zero
+   specificity, so the code-specific color lost to the plain `.dark ::selection` class
+   selector below it. `:is()` takes on the specificity of its most specific branch instead,
+   so it reliably wins - the code-base rule is placed after `.dark ::selection` so it beats
+   it on source order too, for the (0,1,1)-vs-(0,1,1) tie that `:is()` alone doesn't resolve. */
+::selection {
+    @apply bg-fd-accent text-white;
+}
+
+.dark ::selection {
+    @apply text-black;
+}
+
+:is(code, .shiki, .shiki *)::selection {
+    @apply bg-white text-fd-primary;
+}
+
+.dark :is(code, .shiki, .shiki *)::selection {
+    @apply bg-black;
+}
+
 .shiki code {
     @apply leading-loose rounded-none;
 }
 
 #nd-sidebar,
+#nd-sidebar-mobile,
 #nd-toc {
     @apply select-none;
 }
@@ -154,9 +184,26 @@
     @apply h-24;
 }
 
-#nd-subnav {
-    --fd-header-height: 80px;
+/* fumadocs-ui computes --fd-docs-row-2 (the mobile "Features" TOC-popover's sticky top
+   offset) on #nd-docs-layout itself, from --fd-header-height inherited at THAT scope - not
+   from whatever #nd-subnav (the actual mobile logo bar, sized via the same variable) sets
+   on itself. A local override on #nd-subnav alone resizes the bar but never reaches back up
+   to #nd-docs-layout, so the default 56px baseline stays in the row-2 calc while the real
+   bar is 80px tall: the TOC-popover sticks 24px too high and scrolls in under the bar
+   instead of below it. Setting it here instead, where the calc actually reads it, both fixes
+   the offset and cascades down into #nd-subnav's own height (no local override needed there).
 
+   Scoped to the same `max-md` (< 768px) range #nd-subnav itself uses (`md:hidden` on the bar,
+   `max-md:layout:[...]` on its own height): #nd-subnav is unrendered at md and above, so an
+   unconditional override here reserved 80px of dead space in the row-2 calc on tablet too,
+   pushing the TOC-popover down with nothing above it to justify the gap. */
+@media (width < 48rem) {
+    #nd-docs-layout {
+        --fd-header-height: 80px;
+    }
+}
+
+#nd-subnav {
     & button {
         @apply rounded-none transition-none cursor-pointer hover:text-white dark:hover:text-black;
     }
@@ -185,7 +232,8 @@
     }
 
     & h1 {
-        @apply text-[66px] antialiased uppercase mt-7 leading-16;
+        @apply text-[66px] max-xl:text-[44px] max-sm:text-[22px] antialiased uppercase mt-7;
+        @apply leading-16 max-xl:leading-11 max-sm:leading-6;
     }
 }
 
@@ -314,6 +362,13 @@ code {
         @apply font-sans;
     }
 
+    /* Same divider as the one above the page's first content (.prose.flex-1's own
+       border-t-fd-card border-2 pt-8) - repeated before every h2 so each section break
+       reads the same way, not just the very first one. */
+    & h2 {
+        @apply border-t-2 border-t-fd-card pt-10;
+    }
+
     & table {
         @apply rounded-none border-2 border-fd-card;
 
@@ -335,7 +390,7 @@ code {
     }
 
     & [data-card] {
-        @apply rounded-none pb-9 transition-none;
+        @apply rounded-none pb-9 transition-none select-none;
         @apply shadow-[0_2px_var(--color-fd-background),0_4px_var(--color-fd-card)];
 
         & h3,
@@ -352,6 +407,10 @@ code {
                 & h3,
                 & h4 {
                     @apply text-white dark:text-black;
+                }
+
+                & code {
+                    @apply bg-white text-fd-primary dark:bg-black;
                 }
             }
         }
@@ -510,4 +569,15 @@ code {
     & .shiki {
         @apply bg-fd-popover;
     }
+}
+
+/* fumadocs-twoslash ships z-index:50 on .fd-twoslash-popover itself, but that element
+   is the Base UI Popup, not the fixed-position Positioner that actually controls
+   page-level stacking (see the "Radix positioning wrapper" note above) - a z-index on a
+   statically positioned inner box has no effect on stacking order. Target the wrapper
+   structurally, since Base UI does not expose a stable class/attribute for it here, and
+   go above every other z-index this site sets (search dialog and popover primitive both
+   cap at 50) so the popover always wins. */
+:has(> .fd-twoslash-popover) {
+    z-index: 60 !important;
 }

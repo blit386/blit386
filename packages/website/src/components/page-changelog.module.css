@@ -8,12 +8,44 @@
     @apply flex flex-col gap-2;
 }
 
+/* Matches real prose h3 (e.g. FAQ page: DegularText, 20px, font-normal, 32px leading) -
+   this heading opts out of prose styling via the wrapping not-prose, so it has to be
+   replicated explicitly rather than inherited. */
 .versionHeading {
-    @apply text-lg font-semibold text-fd-foreground;
+    @apply text-[20px] font-normal leading-8 text-fd-foreground;
 }
 
 .versionDate {
     @apply text-sm font-normal text-fd-muted-foreground;
+}
+
+/* A version with no release date hasn't shipped yet - flag it in red instead of the
+   usual fd-primary accent, so an unreleased entry reads as "not out yet" rather than
+   blending in with released ones.
+
+   :global(.dark) prefix, not the `dark:` variant: `@apply dark:...` compiles to
+   `&:where(.dark, .dark *)`, and CSS Modules scoping then locally hashes that literal
+   `.dark` token (it can't tell it's meant to reference the real, unscoped <html> class),
+   so it never matches and the dark-mode color silently never applied. Same failure mode
+   as the `.group` fix in blog-index.module.css, different mechanism. */
+.unreleased {
+    & .versionHeading {
+        @apply text-red-600;
+    }
+
+    & .added {
+        @apply border-red-600 text-red-600;
+    }
+}
+
+:global(.dark) .unreleased {
+    & .versionHeading {
+        @apply text-red-400;
+    }
+
+    & .added {
+        @apply border-red-400 text-red-400;
+    }
 }
 
 .eventList {

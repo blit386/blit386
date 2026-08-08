@@ -1,11 +1,26 @@
 @reference '../app.css';
 
 .badge {
-    @apply inline-flex items-center px-2 pt-0.5 pb-0.75 mb-1 mr-1 border;
+    @apply inline-flex items-center px-2 pt-0.5 pb-0.75 mb-1 mr-1 border select-none;
     @apply whitespace-nowrap uppercase font-departure antialiased text-[11px] leading-5;
 
     & code {
         @apply opacity-100 normal-case pr-1;
+    }
+
+    /* `<Since>` renders a bare span with no wrapping element - a run of consecutive
+       badges (one page symbol per line in the source docs) sits directly in the prose
+       flow with nothing but its own mb-1 between instances, so the whole stack reads as
+       stuck to the content above and below it. Padding a wrapping element would need
+       editing every doc source that stacks Since badges; this reaches the same result by
+       giving just the first and last badge in a run extra margin instead. A standalone
+       badge matches both and gets margin on both sides. */
+    &:not(.badge + .badge) {
+        @apply mt-4;
+    }
+
+    &:not(:has(+ .badge)) {
+        @apply mb-4;
     }
 }
 
@@ -13,8 +28,16 @@
     @apply border-fd-primary text-fd-primary;
 }
 
+/* Matches .stable's bordered, unfilled treatment (no bg utility - the page's own
+   background shows through, which reads as black in dark mode) - just red instead of
+   fd-primary, to flag "not shipped yet". :global(.dark), not the dark: variant - see the
+   note on .unreleased in page-changelog.module.css for why. */
 .unreleased {
-    @apply bg-fd-muted text-fd-muted-foreground;
+    @apply border-red-600 text-red-600;
+}
+
+:global(.dark) .unreleased {
+    @apply border-red-400 text-red-400;
 }
 
 .deprecated {
