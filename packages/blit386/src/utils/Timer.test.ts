@@ -74,7 +74,7 @@ describe('Timer', () => {
             // Advance well past the interval so lastFiredTick is 1000.
             expect(timer.fireIfElapsed(1000)).toBe(true);
 
-            // Hard rewind to 0 - without the guard the timer would lock until tick 1005.
+            // Hard rewind to 0 – without the guard the timer would lock until tick 1005.
             expect(timer.fireIfElapsed(0)).toBe(false); // rewind detected, baseline reset to 0
 
             // Should now fire exactly intervalTicks later.

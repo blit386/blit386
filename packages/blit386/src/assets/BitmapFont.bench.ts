@@ -41,9 +41,9 @@ type BitmapFontCacheView = {
 /**
  * Creates synthetic glyph metadata for benchmark-only font construction.
  *
- * @param advance - Horizontal advance for the glyph.
- * @param x - Glyph x position inside the synthetic atlas.
- * @param y - Glyph y position inside the synthetic atlas.
+ * @param advance – Horizontal advance for the glyph.
+ * @param x – Glyph x position inside the synthetic atlas.
+ * @param y – Glyph y position inside the synthetic atlas.
  * @returns Glyph metadata matching the runtime shape used by `BitmapFont`.
  */
 function createGlyph(advance: number, x: number, y: number): Glyph {
@@ -101,8 +101,8 @@ function createBenchmarkFont(): BitmapFont {
 /**
  * Pre-populates the measurement cache to simulate different occupancy levels.
  *
- * @param font - Font whose cache should be filled.
- * @param count - Number of synthetic entries to insert.
+ * @param font – Font whose cache should be filled.
+ * @param count – Number of synthetic entries to insert.
  */
 function fillMeasureCache(font: BitmapFont, count: number): void {
     const cache = (font as unknown as BitmapFontCacheView).measureCache;
@@ -117,8 +117,8 @@ function fillMeasureCache(font: BitmapFont, count: number): void {
 /**
  * Generates a string of exactly `length` characters by repeating a seed.
  *
- * @param seed - Source substring to repeat.
- * @param length - Final string length.
+ * @param seed – Source substring to repeat.
+ * @param length – Final string length.
  * @returns Repeated string truncated to the requested length.
  */
 function createRepeatedText(seed: string, length: number): string {
@@ -128,8 +128,8 @@ function createRepeatedText(seed: string, length: number): string {
 /**
  * Produces unique ASCII strings used to force `measureText` cache misses.
  *
- * @param length - Length of each generated string.
- * @param count - Number of unique strings to create.
+ * @param length – Length of each generated string.
+ * @param count – Number of unique strings to create.
  * @returns Array of unique strings for cold-path benchmarking.
  */
 function createUniqueTexts(length: number, count: number): string[] {
@@ -147,8 +147,8 @@ function createUniqueTexts(length: number, count: number): string[] {
 /**
  * Registers a benchmark for cache-miss text measurement at a fixed text length.
  *
- * @param name - Benchmark label shown in Vitest output.
- * @param length - Text length to generate for the cold-path workload.
+ * @param name – Benchmark label shown in Vitest output.
+ * @param length – Text length to generate for the cold-path workload.
  */
 function benchColdMeasureText(name: string, length: number): void {
     const font = createBenchmarkFont();
@@ -168,8 +168,8 @@ function benchColdMeasureText(name: string, length: number): void {
 /**
  * Registers a benchmark for repeated cache-hit width measurement of one string.
  *
- * @param name - Benchmark label shown in Vitest output.
- * @param text - Precomputed string that should remain hot in the cache.
+ * @param name – Benchmark label shown in Vitest output.
+ * @param text – Precomputed string that should remain hot in the cache.
  */
 function benchWarmMeasureText(name: string, text: string): void {
     const font = createBenchmarkFont();
@@ -188,8 +188,8 @@ function benchWarmMeasureText(name: string, text: string): void {
 /**
  * Registers a benchmark for cached `measureTextSize` calls over one string.
  *
- * @param name - Benchmark label shown in Vitest output.
- * @param text - Precomputed string to measure.
+ * @param name – Benchmark label shown in Vitest output.
+ * @param text – Precomputed string to measure.
  */
 function benchMeasureTextSize(name: string, text: string): void {
     const font = createBenchmarkFont();

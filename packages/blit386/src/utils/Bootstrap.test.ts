@@ -126,7 +126,7 @@ describe('bootstrap', () => {
 
     describe('canvas validation', () => {
         it('should return false and call onError when canvas is not found', async () => {
-            // No canvas in DOM - only the container.
+            // No canvas in DOM – only the container.
             const container = document.createElement('div');
 
             container.id = DEFAULT_CONTAINER_ID;

@@ -52,10 +52,10 @@ export class SpritePipeline {
     /** Backing buffer for all vertex data. */
     private readonly vertexArrayBuffer: ArrayBuffer;
 
-    /** Float32 view over vertexArrayBuffer - for x, y, u, v (indices i*5+0..+3). */
+    /** Float32 view over vertexArrayBuffer – for x, y, u, v (indices i*5+0..+3). */
     private readonly vertexFloats: Float32Array;
 
-    /** Uint32 view over vertexArrayBuffer - for paletteOffset (index i*5+4). */
+    /** Uint32 view over vertexArrayBuffer – for paletteOffset (index i*5+4). */
     private readonly vertexUints: Uint32Array;
 
     /** Number of vertices in the current (unflushed) batch. */
@@ -101,10 +101,10 @@ export class SpritePipeline {
     /**
      * Initializes the GPU pipeline state and vertex buffer.
      *
-     * @param device - WebGPU device for GPU operations.
-     * @param displaySize - Render target resolution in pixels.
-     * @param paletteBuffer - Shared palette uniform buffer (256 x vec4f).
-     * @param targetFormat - Color attachment format for sprite output.
+     * @param device – WebGPU device for GPU operations.
+     * @param displaySize – Render target resolution in pixels.
+     * @param paletteBuffer – Shared palette uniform buffer (256 x vec4f).
+     * @param targetFormat – Color attachment format for sprite output.
      */
     async init(
         device: GPUDevice,
@@ -121,7 +121,7 @@ export class SpritePipeline {
     /**
      * Sets the camera offset applied to all drawing operations.
      *
-     * @param offset - Camera position in pixels.
+     * @param offset – Camera position in pixels.
      */
     setCameraOffset(offset: Vector2i): void {
         this.cameraOffset = offset;
@@ -130,10 +130,10 @@ export class SpritePipeline {
     /**
      * Draws a sprite region from an indexed sprite sheet.
      *
-     * @param spriteSheet - Source sprite sheet (must have been indexized).
-     * @param srcRect - Region to copy from the sprite sheet.
-     * @param destPos - Screen position to draw at.
-     * @param paletteOffset - Index offset added to every sprite pixel at draw time (default 0).
+     * @param spriteSheet – Source sprite sheet (must have been indexized).
+     * @param srcRect – Region to copy from the sprite sheet.
+     * @param destPos – Screen position to draw at.
+     * @param paletteOffset – Index offset added to every sprite pixel at draw time (default 0).
      */
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
         const texture = spriteSheet.getTexture(this.device as GPUDevice);
@@ -149,10 +149,10 @@ export class SpritePipeline {
      * Draws text using a bitmap font through the indexed sprite pipeline.
      * Renders each character as a textured sprite using glyph metadata from the font.
      *
-     * @param font - Bitmap font with character glyphs (underlying sheet must be indexized).
-     * @param pos - Text position (top-left corner).
-     * @param text - String to render.
-     * @param paletteOffset - Index offset applied to every glyph pixel (default 0).
+     * @param font – Bitmap font with character glyphs (underlying sheet must be indexized).
+     * @param pos – Text position (top-left corner).
+     * @param text – String to render.
+     * @param paletteOffset – Index offset applied to every glyph pixel (default 0).
      */
     drawBitmapText(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
         const spriteSheet = font.getSpriteSheet();
@@ -178,7 +178,7 @@ export class SpritePipeline {
      * Uploads accumulated sprite data and encodes draw calls for each texture batch.
      * No-op when nothing has been queued for the current frame.
      *
-     * @param renderPass - Active render pass encoder.
+     * @param renderPass – Active render pass encoder.
      */
     encodePass(renderPass: GPURenderPassEncoder): void {
         // Flush any remaining vertices into the batch queue.
@@ -242,8 +242,8 @@ export class SpritePipeline {
     /**
      * Creates shader modules, pipeline state, and GPU buffers.
      *
-     * @param displaySize - Render target resolution in pixels.
-     * @param targetFormat - Color attachment format for sprite output.
+     * @param displaySize – Render target resolution in pixels.
+     * @param targetFormat – Color attachment format for sprite output.
      */
     private async createPipeline(displaySize: Vector2i, targetFormat: GPUTextureFormat): Promise<void> {
         const device = this.device as GPUDevice;
@@ -356,7 +356,7 @@ export class SpritePipeline {
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
 
-        // Shared bind group (group 0): uniforms + palette - created once and reused for all textures.
+        // Shared bind group (group 0): uniforms + palette – created once and reused for all textures.
         this.sharedBindGroup = device.createBindGroup({
             label: 'Sprite Shared Bind Group',
             layout: (this.pipeline as GPURenderPipeline).getBindGroupLayout(0),
@@ -372,14 +372,14 @@ export class SpritePipeline {
      * Handles texture switching and keeps quad emission atomic so partial quads
      * are never left in the vertex buffer.
      *
-     * @param texture - GPU r8uint index texture.
-     * @param pos - Screen position (top-left corner).
-     * @param size - Quad dimensions in pixels.
-     * @param u0 - Left UV coordinate (0-1).
-     * @param v0 - Top UV coordinate (0-1).
-     * @param u1 - Right UV coordinate (0-1).
-     * @param v1 - Bottom UV coordinate (0-1).
-     * @param paletteOffset - Palette index offset for this quad.
+     * @param texture – GPU r8uint index texture.
+     * @param pos – Screen position (top-left corner).
+     * @param size – Quad dimensions in pixels.
+     * @param u0 – Left UV coordinate (0-1).
+     * @param v0 – Top UV coordinate (0-1).
+     * @param u1 – Right UV coordinate (0-1).
+     * @param v1 – Bottom UV coordinate (0-1).
+     * @param paletteOffset – Palette index offset for this quad.
      */
     private drawTexturedQuad(
         texture: GPUTexture,
@@ -408,7 +408,7 @@ export class SpritePipeline {
                 this.flushCurrentBatch();
             }
 
-            // Check again after flush - if still no space, the buffer is full for this frame.
+            // Check again after flush – if still no space, the buffer is full for this frame.
             if (!this.hasSpaceForQuad()) {
                 console.warn('[SpritePipeline] Sprite buffer capacity exceeded for this frame, quad dropped');
                 this.overflowCount++;
@@ -471,11 +471,11 @@ export class SpritePipeline {
      * Writes x, y, u, v as floats and paletteOffset as u32 into the shared
      * ArrayBuffer using dual typed-array views.
      *
-     * @param x - X position in pixels.
-     * @param y - Y position in pixels.
-     * @param u - U texture coordinate.
-     * @param v - V texture coordinate.
-     * @param paletteOffset - Palette index offset (u32).
+     * @param x – X position in pixels.
+     * @param y – Y position in pixels.
+     * @param u – U texture coordinate.
+     * @param v – V texture coordinate.
+     * @param paletteOffset – Palette index offset (u32).
      */
     private addVertex(x: number, y: number, u: number, v: number, paletteOffset: number): void {
         const base = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
@@ -494,7 +494,7 @@ export class SpritePipeline {
      * Gets or creates a per-texture bind group (group 1) for the given texture.
      * Bind groups are cached per texture for reuse across frames.
      *
-     * @param texture - r8uint GPU texture to create the bind group for.
+     * @param texture – r8uint GPU texture to create the bind group for.
      * @returns Bind group containing the texture view.
      */
     private getOrCreateTextureBindGroup(texture: GPUTexture): GPUBindGroup {

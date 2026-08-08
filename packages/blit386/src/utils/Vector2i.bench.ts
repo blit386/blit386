@@ -21,9 +21,9 @@ const BENCH_OPTIONS = {
 /**
  * Restores a mutable vector to a known baseline before in-place benchmarks.
  *
- * @param vector - Vector to reset.
- * @param x - X component to assign.
- * @param y - Y component to assign.
+ * @param vector – Vector to reset.
+ * @param x – X component to assign.
+ * @param y – Y component to assign.
  */
 function resetVector(vector: Vector2i, x: number, y: number): void {
     vector.x = x;

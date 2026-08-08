@@ -1,4 +1,4 @@
-// @pageTitle BLIT386 Demo - Logo Low-Res
+// @pageTitle BLIT386 Demo – Logo Low-Res
 //
 // Logo Low-Res: the BLIT386 logo on a very chunky low-res screen, wrapped
 // in the same Orava B/W CRT stack used in Sprite Effects demo.
@@ -6,7 +6,7 @@
 //
 // What you will see:
 //   - The logo sprite from Basics demo centered on a tiny 80x60 pixel canvas.
-//     That is one quarter of the usual 320x240 in each direction - even smaller
+//     That is one quarter of the usual 320x240 in each direction – even smaller
 //     than an old Game Boy screen (160x144).
 //   - The engine upscales that 80x60 picture 3x to 240x180 using nearest-neighbor
 //     filtering, so each logical pixel becomes a big hard-edged 3x3 block.
@@ -21,7 +21,7 @@
 //   The engine renders the 80x60 palette-indexed picture into a 240x180 RGBA buffer
 //   (the drawingBufferSize step). The CRT effects run AFTER that, on the RGBA buffer,
 //   so they see 240x180 pixels and can paint convincing curved-tube scanlines across
-//   the whole frame - even though the game itself only used 80x60 logical pixels.
+//   the whole frame – even though the game itself only used 80x60 logical pixels.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 //                Sprite Effects (https://demos.blit386.dev/sprite-effects).
@@ -67,7 +67,7 @@ import { isAvailable } from './shared/post-process-backend.js';
 // --- Screen dimensions ---
 
 // The logical drawing area where BT.draw* calls happen.
-// 80x60 is our tiny retro resolution - even smaller than a Game Boy screen (160x144).
+// 80x60 is our tiny retro resolution – even smaller than a Game Boy screen (160x144).
 const DISPLAY_W = 80;
 const DISPLAY_H = 60;
 
@@ -122,7 +122,7 @@ const BAND_WOBBLE_COOLDOWN_MIN = 100; // At least ~1.7 seconds between wobbles (
 const BAND_WOBBLE_COOLDOWN_MAX = 280; // Up to ~4.7 seconds between wobbles.
 const BAND_WOBBLE_ACTIVE_MIN = 3; // Wobble lasts at least 3 ticks (~0.05 s).
 const BAND_WOBBLE_ACTIVE_MAX = 10; // Wobble lasts up to 10 ticks (~0.17 s).
-const BAND_WOBBLE_INTENSITY = 0.11; // Peak strength - much milder than a full TV fault.
+const BAND_WOBBLE_INTENSITY = 0.11; // Peak strength – much milder than a full TV fault.
 
 /**
  * The BLIT386 logo centered on an 80x60 pixel canvas, upscaled 3x,
@@ -131,7 +131,7 @@ const BAND_WOBBLE_INTENSITY = 0.11; // Peak strength - much milder than a full T
  * @implements {IBTDemo}
  */
 class Demo {
-    // The color palette - a numbered list of every color this demo will use.
+    // The color palette – a numbered list of every color this demo will use.
     /** @type {Palette | null} */
     palette = null;
 
@@ -231,7 +231,7 @@ class Demo {
      * centers it, and (when WebGPU is available) registers the Orava CRT effects.
      *
      * "async" and "await" pause this function while the PNG downloads from the
-     * server - think of it like pressing Pause on a video and waiting for it to buffer.
+     * server – think of it like pressing Pause on a video and waiting for it to buffer.
      *
      * @returns {Promise<boolean>} true when everything is ready.
      */
@@ -240,7 +240,7 @@ class Demo {
         // BT.paletteCreate(256) makes a fresh numbered list with 256 empty color slots.
         this.palette = BT.paletteCreate(256);
 
-        // Color32(Red, Green, Blue) - each value is 0 (none) to 255 (maximum).
+        // Color32(Red, Green, Blue) – each value is 0 (none) to 255 (maximum).
         this.palette.set(C_BG, new Color32(160, 160, 160)); // Light gray background.
 
         // Read every unique color in the logo PNG and store them starting at SPRITE_BASE.
@@ -279,7 +279,7 @@ class Demo {
 
         // Pixel-tier: horizontal band shift that mimics a TV losing its horizontal hold.
         // This runs BEFORE the palette-to-RGBA resolve step, so it shifts the raw
-        // palette-index rows - each shifted row is then resolved to a different RGBA color.
+        // palette-index rows – each shifted row is then resolved to a different RGBA color.
         // intensity = 0 means no shift right now; it spikes up during H-HOLD faults.
         this.pixelGlitch = new PixelGlitch();
         this.pixelGlitch.bandHeight = 2; // Two logical-pixel-tall bands (our screen is only 60 px tall).
@@ -347,7 +347,7 @@ class Demo {
         this.flicker = new Flicker();
         this.flicker.amount = FLICKER_BASE;
 
-        // Bloom adds a soft glow around bright areas - the phosphor afterglow of a hot CRT.
+        // Bloom adds a soft glow around bright areas – the phosphor afterglow of a hot CRT.
         // spread controls the glow radius; glow controls how much it brightens the surroundings.
         this.bloom = new Bloom();
         this.bloom.spread = 2.2;
@@ -407,8 +407,8 @@ class Demo {
      * Called every tick from update() when WebGPU effects are active.
      *
      * The machine has two layers:
-     *   1. TV fault bursts - dramatic, infrequent, random type (H-HOLD, snow, etc.).
-     *   2. Band wobble - mild pixel-tier jitter, always separate from fault bursts.
+     *   1. TV fault bursts – dramatic, infrequent, random type (H-HOLD, snow, etc.).
+     *   2. Band wobble – mild pixel-tier jitter, always separate from fault bursts.
      */
     updateCrtEffects() {
         // Feed the current engine time into effects that need it for animation.
@@ -432,7 +432,7 @@ class Demo {
             this.glitchTicksLeft--;
 
             if (this.glitchTicksLeft <= 0) {
-                // Burst finished - schedule the next cooldown and reset band-wobble too.
+                // Burst finished – schedule the next cooldown and reset band-wobble too.
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
                 this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
@@ -501,7 +501,7 @@ class Demo {
      * The envelope argument is a 0..1 value (bell-curve shaped) that controls
      * how strong the fault is at this moment in its lifetime.
      *
-     * @param {number} envelope - 0 at the start and end of a burst, peaks at 1 in the middle.
+     * @param {number} envelope – 0 at the start and end of a burst, peaks at 1 in the middle.
      */
     applyGlitchUniforms(envelope) {
         // peak is how strong this specific burst is, scaled by the bell-curve envelope.

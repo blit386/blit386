@@ -28,11 +28,11 @@ export const FixtureBT = {
     /**
      * Fixture method member with no version tag yet.
      *
-     * @param amount - Amount to add.
+     * @param amount – Amount to add.
      * @returns The amount, unchanged.
      */
     add: (amount: number): number => amount,
 
-    /** Fixture single-line JSDoc member, no version tag yet - matches the real `BT` namespace style. */
+    /** Fixture single-line JSDoc member, no version tag yet – matches the real `BT` namespace style. */
     flag: 1,
 };

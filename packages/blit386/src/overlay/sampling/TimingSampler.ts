@@ -75,7 +75,7 @@ export class TimingSampler {
     /**
      * Ingests one frame-timing snapshot.
      *
-     * @param sample - Current-frame timing values from BTAPI.
+     * @param sample – Current-frame timing values from BTAPI.
      */
     sample(sample: OverlayTimingSnapshot): void {
         const frameMs = Math.max(0, sample.frameMs);
@@ -116,8 +116,8 @@ export class TimingSampler {
     /**
      * Pads one pipeline's vertex and overflow counts to their fixed field widths.
      *
-     * @param vertices - Submitted vertex count for the pipeline.
-     * @param overflow - Overflow (dropped-batch) count for the pipeline.
+     * @param vertices – Submitted vertex count for the pipeline.
+     * @param overflow – Overflow (dropped-batch) count for the pipeline.
      * @returns Formatted `Xv ov Y` segment with fixed-width padded fields.
      */
     #formatBatchStats(vertices: number, overflow: number): string {

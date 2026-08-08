@@ -2,7 +2,7 @@
  * Parameter definitions for {@link AudioClip.synth}'s deterministic synthesis engine.
  *
  * Every field is a plain number, string, or nested object of the same, so a `SynthParams`
- * value round-trips through `JSON.stringify`/`JSON.parse` without loss - useful for storing
+ * value round-trips through `JSON.stringify`/`JSON.parse` without loss – useful for storing
  * synth presets as data (level files, preset libraries) rather than code.
  */
 
@@ -79,7 +79,7 @@ export interface SynthVibrato {
     rate?: number;
 
     /**
-     * Vibrato depth in Hz - the peak frequency deviation applied above and below the carrier.
+     * Vibrato depth in Hz – the peak frequency deviation applied above and below the carrier.
      * Defaults to {@link DEFAULT_VIBRATO_DEPTH}.
      */
     depth?: number;
@@ -132,7 +132,7 @@ export interface SynthParams {
      */
     dutyCycle?: number;
 
-    /** Seed for the deterministic PRNG driving noise generation - identical seeds render identical output. */
+    /** Seed for the deterministic PRNG driving noise generation – identical seeds render identical output. */
     seed: number;
 }
 

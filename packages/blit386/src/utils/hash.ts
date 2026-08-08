@@ -15,7 +15,7 @@ const INV_2_32 = 1 / 4294967296;
 /**
  * MurmurHash3 32-bit finalizer (avalanche). Input is treated as unsigned.
  *
- * @param h - Mixed state to finalize.
+ * @param h – Mixed state to finalize.
  * @returns Well-distributed unsigned 32-bit value.
  */
 function finalize(h: number): number {
@@ -33,8 +33,8 @@ function finalize(h: number): number {
 /**
  * Deterministic uint32 hash of a 1D integer coordinate.
  *
- * @param x - Coordinate (truncated toward zero with `| 0`).
- * @param seed - World / stream seed (default `0`; lower 32 bits used).
+ * @param x – Coordinate (truncated toward zero with `| 0`).
+ * @param seed – World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
  */
@@ -50,9 +50,9 @@ export function hash1i(x: number, seed = 0): number {
 /**
  * Deterministic uint32 hash of a 2D integer coordinate.
  *
- * @param x - X coordinate (truncated toward zero with `| 0`).
- * @param y - Y coordinate (truncated toward zero with `| 0`).
- * @param seed - World / stream seed (default `0`; lower 32 bits used).
+ * @param x – X coordinate (truncated toward zero with `| 0`).
+ * @param y – Y coordinate (truncated toward zero with `| 0`).
+ * @param seed – World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
  */
@@ -70,10 +70,10 @@ export function hash2i(x: number, y: number, seed = 0): number {
 /**
  * Deterministic uint32 hash of a 3D integer coordinate.
  *
- * @param x - X coordinate (truncated toward zero with `| 0`).
- * @param y - Y coordinate (truncated toward zero with `| 0`).
- * @param z - Z coordinate (truncated toward zero with `| 0`).
- * @param seed - World / stream seed (default `0`; lower 32 bits used).
+ * @param x – X coordinate (truncated toward zero with `| 0`).
+ * @param y – Y coordinate (truncated toward zero with `| 0`).
+ * @param z – Z coordinate (truncated toward zero with `| 0`).
+ * @param seed – World / stream seed (default `0`; lower 32 bits used).
  * @returns Unsigned 32-bit value in `[0, 2^32)`.
  * @since 1.5.0
  */
@@ -93,8 +93,8 @@ export function hash3i(x: number, y: number, z: number, seed = 0): number {
 /**
  * Deterministic float hash of a 1D integer coordinate in `[0, 1)`.
  *
- * @param x - Coordinate (truncated toward zero with `| 0`).
- * @param seed - World / stream seed (default `0`; lower 32 bits used).
+ * @param x – Coordinate (truncated toward zero with `| 0`).
+ * @param seed – World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash1i}.
  * @since 1.5.0
  */
@@ -105,9 +105,9 @@ export function hash1(x: number, seed = 0): number {
 /**
  * Deterministic float hash of a 2D integer coordinate in `[0, 1)`.
  *
- * @param x - X coordinate (truncated toward zero with `| 0`).
- * @param y - Y coordinate (truncated toward zero with `| 0`).
- * @param seed - World / stream seed (default `0`; lower 32 bits used).
+ * @param x – X coordinate (truncated toward zero with `| 0`).
+ * @param y – Y coordinate (truncated toward zero with `| 0`).
+ * @param seed – World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash2i}.
  * @since 1.5.0
  */
@@ -118,10 +118,10 @@ export function hash2(x: number, y: number, seed = 0): number {
 /**
  * Deterministic float hash of a 3D integer coordinate in `[0, 1)`.
  *
- * @param x - X coordinate (truncated toward zero with `| 0`).
- * @param y - Y coordinate (truncated toward zero with `| 0`).
- * @param z - Z coordinate (truncated toward zero with `| 0`).
- * @param seed - World / stream seed (default `0`; lower 32 bits used).
+ * @param x – X coordinate (truncated toward zero with `| 0`).
+ * @param y – Y coordinate (truncated toward zero with `| 0`).
+ * @param z – Z coordinate (truncated toward zero with `| 0`).
+ * @param seed – World / stream seed (default `0`; lower 32 bits used).
  * @returns Float in `[0, 1)`, derived from {@link hash3i}.
  * @since 1.5.0
  */

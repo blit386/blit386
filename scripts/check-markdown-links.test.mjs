@@ -42,7 +42,7 @@ describe('isIgnoredFile', () => {
         // On Windows, path.relative() returns backslash-separated paths;
         // isIgnoredFile delegates to normalizeRelSep before matching.
         // path.relative() never produces backslashes on POSIX, so we test
-        // normalizeRelSep directly — the helper that isIgnoredFile calls.
+        // normalizeRelSep directly – the helper that isIgnoredFile calls.
         const windowsRel = 'packages\\website\\content\\docs\\api\\renderer\\index.mdx';
         assert.equal(normalizeRelSep(windowsRel), 'packages/website/content/docs/api/renderer/index.mdx');
     });

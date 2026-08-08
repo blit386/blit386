@@ -149,8 +149,8 @@ export function collectDocs(root: string): GeneratedFile[] {
  *   - `.claude/settings.json`          (kit-owned; translated from content/hooks.manifest.json)
  *   - `.claude/hooks/{script}`         (kit-owned; copied verbatim)
  *
- * @param root - The kit root directory.
- * @param vars - Template variables used when rendering generated content.
+ * @param root – The kit root directory.
+ * @param vars – Template variables used when rendering generated content.
  * @returns The generated Claude Code files and their contents.
  */
 export function generateClaudeAdapter(root: string, vars: TemplateVars): GeneratedFile[] {

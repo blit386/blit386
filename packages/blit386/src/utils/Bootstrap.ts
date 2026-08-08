@@ -89,11 +89,11 @@ async function waitForDOM(): Promise<void> {
 /**
  * Handles a bootstrap error by displaying it and invoking the callback.
  *
- * @param title - Error title for display.
- * @param message - Error message for display.
- * @param error - The Error object.
- * @param containerID - Container ID for error display.
- * @param onError - Optional error callback.
+ * @param title – Error title for display.
+ * @param message – Error message for display.
+ * @param error – The Error object.
+ * @param containerID – Container ID for error display.
+ * @param onError – Optional error callback.
  * @returns Result indicating failure.
  */
 function handleError(
@@ -111,9 +111,9 @@ function handleError(
 /**
  * Validates the canvas element and returns it.
  *
- * @param canvasID - Canvas element ID.
- * @param containerID - Container ID for error display.
- * @param onError - Optional error callback.
+ * @param canvasID – Canvas element ID.
+ * @param containerID – Container ID for error display.
+ * @param onError – Optional error callback.
  * @returns Canvas element or null with error handling.
  */
 function validateCanvas(
@@ -142,11 +142,11 @@ function validateCanvas(
 /**
  * Initializes the engine with the provided demo and canvas.
  *
- * @param DemoClass - Demo class constructor.
- * @param canvas - Canvas element.
- * @param containerID - Container ID for error display.
- * @param onSuccess - Optional success callback.
- * @param onError - Optional error callback.
+ * @param DemoClass – Demo class constructor.
+ * @param canvas – Canvas element.
+ * @param containerID – Container ID for error display.
+ * @param onSuccess – Optional success callback.
+ * @param onError – Optional error callback.
  * @returns Result with success status.
  */
 async function initDemo(
@@ -208,7 +208,7 @@ async function initDemo(
  * Routes an already-running engine's `bootstrap()` call to the hot-swap path, or logs a
  * double-bootstrap guard error when no hot-reload context is registered.
  *
- * @param DemoClass - Newly evaluated demo class constructor.
+ * @param DemoClass – Newly evaluated demo class constructor.
  * @returns The bootstrap result when the engine is already initialized (hot-swapped or
  *   guarded); `null` when a cold boot should proceed instead.
  */
@@ -240,14 +240,14 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
  * @since 0.2.0
  * @changed 1.4.0 Calling `bootstrap()` again while already initialized now routes to a hot
  *   swap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a
- *   double-bootstrap guard and returns `false` otherwise - previously it silently started a
+ *   double-bootstrap guard and returns `false` otherwise – previously it silently started a
  *   second, unstoppable `GameLoop`.
- * @param DemoClass - Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
- * @param options - Optional configuration for IDs and callbacks.
+ * @param DemoClass – Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
+ * @param options – Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.
  *
  * @example
- * // Simplest usage - uses default IDs.
+ * // Simplest usage – uses default IDs.
  * bootstrap(MyDemo);
  *
  * @example
@@ -269,8 +269,8 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
 export async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOptions = {}): Promise<boolean> {
     // One microtask yield before anything else runs. Module top-level evaluation is
     // synchronous and this function is async, so the snippet's un-awaited
-    // `__blit386_registerHotReload(import.meta.hot)` call - which runs synchronously right after a
-    // demo's own un-awaited `bootstrap(Game);` call, at the same module top level - always
+    // `__blit386_registerHotReload(import.meta.hot)` call – which runs synchronously right after a
+    // demo's own un-awaited `bootstrap(Game);` call, at the same module top level – always
     // completes before this function proceeds past this line, regardless of
     // `isWaitingForDOMReady`.
     await Promise.resolve();

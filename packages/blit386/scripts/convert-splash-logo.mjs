@@ -51,7 +51,7 @@ const CHANNELS = 4;
 /**
  * Reads the PNG and quantizes every pixel onto the splash ramp.
  *
- * @param {string} inputPath - Path to the source PNG.
+ * @param {string} inputPath – Path to the source PNG.
  * @returns {{ width: number, height: number, indices: number[] }} Dimensions and flat index array.
  */
 function extractIndices(inputPath) {
@@ -81,7 +81,7 @@ function extractIndices(inputPath) {
 /**
  * Renders the generated TypeScript module.
  *
- * @param {{ width: number, height: number, indices: number[] }} data - Extracted logo data.
+ * @param {{ width: number, height: number, indices: number[] }} data – Extracted logo data.
  * @returns {string} File contents.
  */
 function renderModule(data) {

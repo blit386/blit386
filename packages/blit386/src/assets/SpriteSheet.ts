@@ -25,7 +25,7 @@ const TEXTURE_LAYER_COUNT = 1;
  * Lifecycle status of a sprite sheet's backing image data.
  *
  * A sheet only ever reports `'loading'` or `'failed'` while a hot-reload
- * replacement image is in flight - normal construction always resolves an
+ * replacement image is in flight – normal construction always resolves an
  * image beforehand, so a sheet starts (and, once reloaded, settles back to)
  * `'ready'`.
  */
@@ -45,7 +45,7 @@ const hotReloadRegistry = new Map<string, Set<SpriteSheet>>();
  * Internal – used by `HotRuntime.handleAssetChanged` to route an `'image'`
  * asset-changed event to the sheets that need their texture replaced.
  *
- * @param url - Changed asset URL to look up.
+ * @param url – Changed asset URL to look up.
  * @returns Matching sheets, or `undefined` when none are registered.
  */
 export function getHotReloadSheets(url: string): ReadonlySet<SpriteSheet> | undefined {
@@ -55,11 +55,11 @@ export function getHotReloadSheets(url: string): ReadonlySet<SpriteSheet> | unde
 /**
  * Maps retained RGBA bytes to palette indices for one sprite sheet.
  *
- * @param w - Image width in pixels.
- * @param h - Image height in pixels.
- * @param rgba - RGBA byte buffer (`w * h * 4` bytes).
- * @param palette - Active palette used for color lookup.
- * @param imageSrc - Source label for error messages.
+ * @param w – Image width in pixels.
+ * @param h – Image height in pixels.
+ * @param rgba – RGBA byte buffer (`w * h * 4` bytes).
+ * @param palette – Active palette used for color lookup.
+ * @param imageSrc – Source label for error messages.
  * @returns Palette index per pixel (`w * h` bytes).
  */
 function mapRgbaPixelsToIndexed(
@@ -77,7 +77,7 @@ function mapRgbaPixelsToIndexed(
         const a = rgba[base + 3];
 
         if (a === 0) {
-            // Index 0 is the transparent sentinel - the shader discards any pixel with rawIndex == 0.
+            // Index 0 is the transparent sentinel – the shader discards any pixel with rawIndex == 0.
             // eslint-disable-next-line security/detect-object-injection
             indexed[i] = 0;
             continue;
@@ -111,7 +111,7 @@ function mapRgbaPixelsToIndexed(
 /**
  * Collects unique opaque RGB colors from a flat RGBA byte buffer.
  *
- * @param data - RGBA bytes in row-major order.
+ * @param data – RGBA bytes in row-major order.
  * @returns Deduped opaque colors with alpha forced to 255.
  */
 function collectUniqueOpaqueColors(data: Uint8Array): Color32[] {
@@ -147,9 +147,9 @@ function collectUniqueOpaqueColors(data: Uint8Array): Color32[] {
 /**
  * Validates that opaque colors can be written into consecutive palette slots.
  *
- * @param collected - Colors to register.
- * @param palette - Target palette.
- * @param startSlot - First destination slot.
+ * @param collected – Colors to register.
+ * @param palette – Target palette.
+ * @param startSlot – First destination slot.
  * @throws RangeError when `startSlot` is invalid or the colors do not fit.
  */
 function assertOpaqueColorsFitInPalette(collected: Color32[], palette: Palette, startSlot: number): void {
@@ -173,9 +173,9 @@ function assertOpaqueColorsFitInPalette(collected: Color32[], palette: Palette, 
 /**
  * Writes collected colors into consecutive palette slots.
  *
- * @param collected - Colors in write order.
- * @param palette - Target palette.
- * @param startSlot - First destination slot.
+ * @param collected – Colors in write order.
+ * @param palette – Target palette.
+ * @param startSlot – First destination slot.
  */
 function writeCollectedColors(collected: Color32[], palette: Palette, startSlot: number): void {
     collected.forEach((color, index) => {
@@ -186,15 +186,15 @@ function writeCollectedColors(collected: Color32[], palette: Palette, startSlot:
 /**
  * Marks palette indices referenced by non-zero pixels inside a bounded scan rect.
  *
- * @param pixels - Indexed pixel buffer for the full sheet.
- * @param sheetWidth - Sheet width in pixels.
- * @param startX - Inclusive left bound in sheet coordinates.
- * @param startY - Inclusive top bound in sheet coordinates.
- * @param endX - Exclusive right bound in sheet coordinates.
- * @param endY - Exclusive bottom bound in sheet coordinates.
- * @param paletteOffset - Palette offset applied at draw time.
- * @param usedMask - Mutable usage mask indexed by resolved palette slot.
- * @param seenSheetIndices - Per-call scratch mask for deduplicating sheet indices.
+ * @param pixels – Indexed pixel buffer for the full sheet.
+ * @param sheetWidth – Sheet width in pixels.
+ * @param startX – Inclusive left bound in sheet coordinates.
+ * @param startY – Inclusive top bound in sheet coordinates.
+ * @param endX – Exclusive right bound in sheet coordinates.
+ * @param endY – Exclusive bottom bound in sheet coordinates.
+ * @param paletteOffset – Palette offset applied at draw time.
+ * @param usedMask – Mutable usage mask indexed by resolved palette slot.
+ * @param seenSheetIndices – Per-call scratch mask for deduplicating sheet indices.
  */
 function markUniqueIndicesInBounds(
     pixels: Uint8Array,
@@ -294,8 +294,8 @@ export class SpriteSheet {
      * Creates a sprite sheet from a loaded image.
      * Use the static load() method for easier loading from URL.
      *
-     * @param image - Pre-loaded HTMLImageElement, or null for raw indexed data sheets.
-     * @param size - Explicit dimensions (required when image is null).
+     * @param image – Pre-loaded HTMLImageElement, or null for raw indexed data sheets.
+     * @param size – Explicit dimensions (required when image is null).
      */
     constructor(image: HTMLImageElement | null, size?: Vector2i) {
         this.image = image;
@@ -380,7 +380,7 @@ export class SpriteSheet {
      * settings for more predictable GPU uploads. If bitmap creation fails, the
      * instance still works and falls back to uploading the `HTMLImageElement`.
      *
-     * @param url - Path or URL to the image file.
+     * @param url – Path or URL to the image file.
      * @returns Promise resolving to the loaded SpriteSheet.
      */
     static async load(url: string): Promise<SpriteSheet> {
@@ -421,11 +421,11 @@ export class SpriteSheet {
      * colors that were written into the palette. Callers still control when to
      * activate the palette via `BT.paletteSet(palette)`.
      *
-     * @param url - Path or URL to the PNG file.
-     * @param palette - Target palette used for both registration and indexization.
-     * @param startSlot - First palette slot to write discovered colors into.
-     * @param options - Optional color-sort behavior for registration.
-     * @param options.sort - Color ordering for palette registration.
+     * @param url – Path or URL to the PNG file.
+     * @param palette – Target palette used for both registration and indexization.
+     * @param startSlot – First palette slot to write discovered colors into.
+     * @param options – Optional color-sort behavior for registration.
+     * @param options.sort – Color ordering for palette registration.
      * @returns Object with `sheet`, `srcRect`, and registered `colors`.
      */
     static async loadIndexed(
@@ -450,7 +450,7 @@ export class SpriteSheet {
      * Walks a PNG's pixels and registers every unique opaque color into the
      * supplied palette starting at `startSlot`.
      *
-     * Pixels with alpha 0 are skipped - they map to the engine's transparent
+     * Pixels with alpha 0 are skipped – they map to the engine's transparent
      * sentinel slot 0 at draw time. Opaque pixels are deduplicated on RGB and
      * stored with alpha forced to 255, matching the lookup performed by
      * `indexize()` so a subsequent `sheet.indexize(palette)` call resolves
@@ -468,11 +468,11 @@ export class SpriteSheet {
      * (`startSlot < 1` or `startSlot + count > palette.size`), the method
      * throws without touching any slot.
      *
-     * @param url - Path or URL to the PNG file.
-     * @param palette - Target palette to populate.
-     * @param startSlot - First palette slot to write into.
-     * @param options - Optional configuration.
-     * @param options.sort - Color ordering. Defaults to `'luminance'`.
+     * @param url – Path or URL to the PNG file.
+     * @param palette – Target palette to populate.
+     * @param startSlot – First palette slot to write into.
+     * @param options – Optional configuration.
+     * @param options.sort – Color ordering. Defaults to `'luminance'`.
      * @returns Registered colors in palette-write order.
      * @throws Error if the image cannot be loaded.
      * @throws RangeError if the discovered colors do not fit in the palette starting at `startSlot`.
@@ -511,7 +511,7 @@ export class SpriteSheet {
     /**
      * Creates a sprite sheet from pre-computed palette-indexed pixel data.
      *
-     * The resulting sheet is immediately indexized - its `getTexture()` call
+     * The resulting sheet is immediately indexized – its `getTexture()` call
      * will produce an `r8uint` GPU texture without needing `indexize()`. This
      * is used for embedded assets like the built-in system font where the pixel
      * data is already expressed as palette indices.
@@ -519,9 +519,9 @@ export class SpriteSheet {
      * Sheets created this way do not support `indexize()` or `reindexize()`
      * because there is no source RGBA data to re-map.
      *
-     * @param width - Texture width in pixels.
-     * @param height - Texture height in pixels.
-     * @param indexedPixels - Flat array of palette indices, one byte per pixel (row-major).
+     * @param width – Texture width in pixels.
+     * @param height – Texture height in pixels.
+     * @param indexedPixels – Flat array of palette indices, one byte per pixel (row-major).
      * @returns Sprite sheet ready for rendering.
      */
     static fromIndexedPixels(width: number, height: number, indexedPixels: Uint8Array<ArrayBuffer>): SpriteSheet {
@@ -538,9 +538,9 @@ export class SpriteSheet {
      * Decodes an image's pixels via an off-screen canvas and returns a flat
      * RGBA byte buffer. Shared by `indexize` and `loadColorsIntoPalette`.
      *
-     * @param image - Source HTML image element.
-     * @param w - Image width in pixels.
-     * @param h - Image height in pixels.
+     * @param image – Source HTML image element.
+     * @param w – Image width in pixels.
+     * @param h – Image height in pixels.
      * @returns Flat RGBA byte array (`w * h * RGBA_BYTES_PER_PIXEL` bytes).
      */
     private static readRgbaPixels(image: HTMLImageElement, w: number, h: number): Uint8Array<ArrayBuffer> {
@@ -564,7 +564,7 @@ export class SpriteSheet {
      * The original RGBA data is retained so `reindexize()` can re-convert after a
      * palette swap without reloading the image.
      *
-     * @param palette - Active palette used for color-to-index mapping.
+     * @param palette – Active palette used for color-to-index mapping.
      * @throws If any opaque pixel's color is not present in the palette.
      */
     indexize(palette: Palette): void {
@@ -586,14 +586,14 @@ export class SpriteSheet {
     /**
      * Re-converts retained RGBA pixels to palette indices using a new palette.
      *
-     * Use this only when the **slot layout** of the palette has changed - that is,
+     * Use this only when the **slot layout** of the palette has changed – that is,
      * when the same colors now live at different index positions. It works by
      * replaying the original RGBA data through `palette.findColor()` and assigning
      * each opaque pixel the index of its matching color in the new palette.
      *
      * **Do not call this to change what color a slot displays.** If you only want
      * to swap the visible color at a slot (e.g. animate a fire effect), mutate the
-     * palette entry directly - the stored indices remain valid and the fragment
+     * palette entry directly – the stored indices remain valid and the fragment
      * shader picks up the new color automatically on the next frame:
      *
      * ```ts
@@ -620,7 +620,7 @@ export class SpriteSheet {
      * Must be preceded by a call to `indexize()`. The GPU texture is invalidated and
      * re-created on the next `getTexture()` call.
      *
-     * @param palette - New palette used for color-to-index mapping.
+     * @param palette – New palette used for color-to-index mapping.
      * @throws If `indexize()` has not been called yet.
      * @throws If any opaque pixel's color is not found in the new palette.
      */
@@ -683,8 +683,8 @@ export class SpriteSheet {
      * dev-only-path risk, not a production code path. {@link status} is set to
      * `'failed'` and the error is rethrown.
      *
-     * @param image - Newly loaded replacement image.
-     * @param palette - Active palette, used to re-run `indexize` when the sheet was
+     * @param image – Newly loaded replacement image.
+     * @param palette – Active palette, used to re-run `indexize` when the sheet was
      *   already indexized.
      * @throws If the replacement image exceeds engine size limits, or `indexize()` throws.
      */
@@ -771,9 +771,9 @@ export class SpriteSheet {
      * calls. Does not allocate; writes into the supplied usage mask. Each unique
      * sheet index in the rect is resolved once.
      *
-     * @param srcRect - Region to scan in sheet coordinates.
-     * @param paletteOffset - Palette offset applied at draw time.
-     * @param usedMask - Mutable usage mask indexed by resolved palette slot.
+     * @param srcRect – Region to scan in sheet coordinates.
+     * @param paletteOffset – Palette offset applied at draw time.
+     * @param usedMask – Mutable usage mask indexed by resolved palette slot.
      */
     markPaletteIndicesInRect(srcRect: Rect2i, paletteOffset: number, usedMask: Uint8Array): void {
         const pixels = this.indexedPixels;
@@ -831,7 +831,7 @@ export class SpriteSheet {
      * palette index data. Otherwise creates an `rgba8unorm` texture from the
      * original image. The result is cached until `destroy()` is called.
      *
-     * @param device - WebGPU device for texture creation.
+     * @param device – WebGPU device for texture creation.
      * @returns GPU texture ready for rendering.
      */
     getTexture(device: GPUDevice): GPUTexture {
@@ -851,7 +851,7 @@ export class SpriteSheet {
      * Calculates normalized UV coordinates for a sprite region.
      * Converts pixel coordinates to 0.0-1.0 texture coordinate range.
      *
-     * @param rect - Source rectangle in pixel coordinates.
+     * @param rect – Source rectangle in pixel coordinates.
      * @returns Object with u0, v0 (top-left) and u1, v1 (bottom-right) UV coordinates.
      */
     getUVs(rect: Rect2i): { u0: number; v0: number; u1: number; v1: number } {
@@ -890,7 +890,7 @@ export class SpriteSheet {
      * Uses `ImageBitmap` when available, then releases it immediately after the
      * upload to avoid holding duplicate image resources in memory.
      *
-     * @param device - WebGPU device for texture creation.
+     * @param device – WebGPU device for texture creation.
      */
     private createTexture(device: GPUDevice): void {
         if (!this.image) {
@@ -924,7 +924,7 @@ export class SpriteSheet {
      * Called lazily by `getTexture()` after `indexize()` has been invoked.
      * Uses `writeTexture` because `r8uint` does not support `copyExternalImageToTexture`.
      *
-     * @param device - WebGPU device for texture creation.
+     * @param device – WebGPU device for texture creation.
      */
     private createIndexedTexture(device: GPUDevice): void {
         assertDimensions('sprite sheet texture', this.size.x, this.size.y);

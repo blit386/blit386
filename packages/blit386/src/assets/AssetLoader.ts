@@ -26,7 +26,7 @@ const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bm
 /**
  * Returns whether a URL is absolute or uses a special browser scheme.
  *
- * @param url - Path or URL to inspect.
+ * @param url – Path or URL to inspect.
  * @returns True when the URL already has an explicit scheme.
  */
 function isExplicitUrl(url: string): boolean {
@@ -45,7 +45,7 @@ function isExplicitUrl(url: string): boolean {
  * a special browser scheme, or a rooted/relative (`/`, `./`) path. When this is
  * false, the caller suggests an `images/` location.
  *
- * @param url - Path or URL to inspect.
+ * @param url – Path or URL to inspect.
  * @returns True when the URL needs no `images/` prefix hint.
  */
 function hasExplicitLocation(url: string): boolean {
@@ -61,7 +61,7 @@ function hasExplicitLocation(url: string): boolean {
  * Extracts the lowercase file extension (including the dot) from a URL,
  * ignoring any query string or fragment.
  *
- * @param url - Path or URL to inspect.
+ * @param url – Path or URL to inspect.
  * @returns Extension like `.png`, or an empty string when none is present.
  */
 function extractExtension(url: string): string {
@@ -75,7 +75,7 @@ function extractExtension(url: string): string {
 /**
  * Builds the extension-specific hint for a failing image URL.
  *
- * @param extension - Lowercase extension including the dot (or empty string).
+ * @param extension – Lowercase extension including the dot (or empty string).
  * @returns Hint text, or null when the extension warrants no hint.
  */
 function buildExtensionHint(extension: string): string | null {
@@ -93,7 +93,7 @@ function buildExtensionHint(extension: string): string | null {
 /**
  * Appends beginner-friendly path and extension hints for image URLs.
  *
- * @param url - Failing image path.
+ * @param url – Failing image path.
  * @returns Extra hint text (or empty string when no hint applies).
  */
 function buildImageHints(url: string): string {
@@ -106,7 +106,7 @@ function buildImageHints(url: string): string {
 /**
  * Builds the rejection error for a failed browser image load.
  *
- * @param url - Path or URL that failed to load.
+ * @param url – Path or URL that failed to load.
  * @returns Error with path, extension, and location hints.
  */
 function buildImageNotFoundError(url: string): Error {
@@ -120,7 +120,7 @@ function buildImageNotFoundError(url: string): Error {
 /**
  * Removes an in-flight entry so a later request can retry the same URL.
  *
- * @param url - Path or URL whose pending load should be cleared.
+ * @param url – Path or URL whose pending load should be cleared.
  */
 function clearInFlight(url: string): void {
     loadingPromises.delete(url);
@@ -132,7 +132,7 @@ function clearInFlight(url: string): void {
  * Bumped whenever a fresh load starts for a key ({@link startLoading}) or the key is
  * explicitly evicted ({@link AssetLoader.evict}), so a superseded in-flight request's
  * `onload`/`onerror` handler can tell it is no longer the current request for that key and
- * skip mutating the shared caches - otherwise a stale request that finishes after a newer one
+ * skip mutating the shared caches – otherwise a stale request that finishes after a newer one
  * (or after an eviction) could silently overwrite the correct result with old data.
  */
 const loadGenerations = new Map<string, number>();
@@ -140,7 +140,7 @@ const loadGenerations = new Map<string, number>();
 /**
  * Advances and returns the generation for `cacheKey`.
  *
- * @param cacheKey - Cache key whose generation should advance.
+ * @param cacheKey – Cache key whose generation should advance.
  * @returns The new, current generation number for `cacheKey`.
  */
 function bumpGeneration(cacheKey: string): number {
@@ -154,8 +154,8 @@ function bumpGeneration(cacheKey: string): number {
 /**
  * Reports whether `generation` is still the current one for `cacheKey`.
  *
- * @param cacheKey - Cache key to check.
- * @param generation - Generation captured when the request being checked started.
+ * @param cacheKey – Cache key to check.
+ * @param generation – Generation captured when the request being checked started.
  * @returns `true` if no newer load or eviction has superseded `generation`.
  */
 function isCurrentGeneration(cacheKey: string, generation: number): boolean {
@@ -166,12 +166,12 @@ function isCurrentGeneration(cacheKey: string, generation: number): boolean {
  * Starts a browser image load and registers the in-flight promise.
  *
  * The returned promise always settles with this specific request's own outcome, even once
- * superseded - only the shared `loadedImages`/`loadingPromises` caches are skipped for a
+ * superseded – only the shared `loadedImages`/`loadingPromises` caches are skipped for a
  * superseded request, via the {@link loadGenerations} guard, so a stale completion can never
  * clobber a newer load's result.
  *
- * @param fetchUrl - Path or URL to actually request (may carry a hot-reload cache-bust query).
- * @param cacheKey - Key to cache the result and track the in-flight load under. Defaults to
+ * @param fetchUrl – Path or URL to actually request (may carry a hot-reload cache-bust query).
+ * @param cacheKey – Key to cache the result and track the in-flight load under. Defaults to
  *   `fetchUrl` for a normal load; a hot reload passes the original, un-busted URL here so the
  *   result re-caches under the same key callers already hold.
  * @returns Promise that resolves to the loaded image element.
@@ -247,7 +247,7 @@ export class AssetLoader {
      * Reuses an already-cached image immediately and shares a single in-flight
      * promise when multiple callers request the same URL concurrently.
      *
-     * @param url - Path or URL to the image file.
+     * @param url – Path or URL to the image file.
      * @returns Loaded image element for the requested URL.
      * @throws Error if the image cannot be loaded.
      */
@@ -258,7 +258,7 @@ export class AssetLoader {
     /**
      * Loads multiple images concurrently.
      *
-     * @param urls - Array of image paths or URLs.
+     * @param urls – Array of image paths or URLs.
      * @returns Loaded image elements in the same order as `urls`.
      * @throws Error if any requested image fails to load.
      */
@@ -269,7 +269,7 @@ export class AssetLoader {
     /**
      * Checks if an image is already loaded and cached.
      *
-     * @param url - Path or URL to check.
+     * @param url – Path or URL to check.
      * @returns `true` if the image is already cached and ready to use.
      */
     static isLoaded(url: string): boolean {
@@ -279,7 +279,7 @@ export class AssetLoader {
     /**
      * Returns a previously loaded image from the cache without starting a new request.
      *
-     * @param url - Path or URL of the cached image.
+     * @param url – Path or URL of the cached image.
      * @returns The cached image, or null if not loaded.
      */
     static getImage(url: string): HTMLImageElement | null {
@@ -291,10 +291,10 @@ export class AssetLoader {
      * {@link AssetLoader.loadImage} starts fresh.
      *
      * Also bumps the URL's load generation, so an in-flight request that was already under way
-     * before this call can no longer repopulate the cache once it completes - see
+     * before this call can no longer repopulate the cache once it completes – see
      * {@link isCurrentGeneration}.
      *
-     * @param url - Path or URL whose cache entry (and in-flight load, if any) should be evicted.
+     * @param url – Path or URL whose cache entry (and in-flight load, if any) should be evicted.
      * @returns `true` if a cached image was removed; `false` if nothing was cached under `url`.
      * @since 1.4.0
      */
@@ -316,7 +316,7 @@ export class AssetLoader {
      * Internal – routed from `HotRuntime.handleAssetChanged` when the dev asset
      * watcher reports a changed image file.
      *
-     * @param url - Cache key (and fetch URL) of the image to hot-reload.
+     * @param url – Cache key (and fetch URL) of the image to hot-reload.
      * @returns The freshly loaded image element, cached under `url`.
      * @throws Error if the cache-busted image fails to load.
      */

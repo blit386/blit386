@@ -12,9 +12,9 @@ const BYTE_MASK = 0xff;
 /**
  * Formats three RGB bytes into a compact `RRGGBB` hex string.
  *
- * @param r - Red channel.
- * @param g - Green channel.
- * @param b - Blue channel.
+ * @param r – Red channel.
+ * @param g – Green channel.
+ * @param b – Blue channel.
  * @returns RGB color string without a leading `#`.
  */
 function rgbToHex(r: number, g: number, b: number): string {

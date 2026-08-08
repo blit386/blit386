@@ -53,7 +53,7 @@ const EMPTY_PALETTE_USAGE_MASK = new Uint8Array(0);
 /**
  * Resolves overlay bar/text/gap palette indices from optional {@link OverlayStyle}.
  *
- * @param style - Optional configure-time overlay style.
+ * @param style – Optional configure-time overlay style.
  * @returns Resolved palette indices for overlay chrome.
  */
 function resolveStyleIndices(style?: OverlayStyle): { bg: number; gap: number; text: number } {
@@ -66,10 +66,10 @@ function resolveStyleIndices(style?: OverlayStyle): { bg: number; gap: number; t
 /**
  * Creates a timing chart instance and resets its ring buffer when enabled.
  *
- * @param layout - Cached display layout.
- * @param isEnabled - Whether the timing chart band is active.
- * @param targetFps - Configured fixed-update rate.
- * @param diagnosticsMode - Renderer diagnostic visualization mode.
+ * @param layout – Cached display layout.
+ * @param isEnabled – Whether the timing chart band is active.
+ * @param targetFps – Configured fixed-update rate.
+ * @param diagnosticsMode – Renderer diagnostic visualization mode.
  * @returns Configured {@link TimingChart} for the overlay.
  */
 function createTimingChart(
@@ -90,7 +90,7 @@ function createTimingChart(
 /**
  * Creates an audio meter instance with the given feature flag.
  *
- * @param isEnabled - Whether the audio meter band is active.
+ * @param isEnabled – Whether the audio meter band is active.
  * @returns Configured {@link AudioMeter} for the overlay.
  */
 function createAudioMeter(isEnabled: boolean): AudioMeter {
@@ -100,7 +100,7 @@ function createAudioMeter(isEnabled: boolean): AudioMeter {
 /**
  * Formats a millisecond timing value to one decimal place, padded to the fixed overlay field width.
  *
- * @param valueMs - Timing value in milliseconds.
+ * @param valueMs – Timing value in milliseconds.
  * @returns Padded `X.X` text for the `Frame`/`update()`/`render()` metrics row.
  */
 function formatOverlayMsField(valueMs: number): string {
@@ -172,26 +172,26 @@ export class Overlay {
     /**
      * Creates an overlay with fixed layout and text strings.
      *
-     * @param layout - Cached display layout from {@link createOverlayLayout}.
-     * @param topLeftLabel - Short title shown on the top-left.
-     * @param targetFps - Configured fixed-update rate for the target FPS line.
-     * @param activeBackend - Backend started by BTAPI (`webgpu` or `software`).
-     * @param style - Optional palette indices from {@link HardwareSettings.overlayStyle}.
-     * @param isOverlayPaletteEnabled - When true, draws the live palette swatch grid.
-     * @param paletteColumns - Optional max swatches per row from {@link HardwareSettings.overlayPaletteColumns}.
-     * @param paletteRowsVisible - Optional max visible palette grid rows from {@link HardwareSettings.overlayPaletteRowsVisible}.
-     * @param isOverlayTimingChartEnabled - When true, draws the update/render timing chart band.
-     * @param timingChartStyle - Optional timing chart palette overrides.
-     * @param timingChartHeight - Chart band height in pixels (default 22).
-     * @param timingChartDiagnostics - Chart renderer diagnostic mode (`minimal`, `rich`, or `false`).
-     * @param isOverlayRendererDiagnosticsBarEnabled - When true, draws the GPU diagnostics text row.
-     * @param isOverlayVisibleAtStart - Initial overlay body visibility (default false).
-     * @param isOverlayToggleHintVisible - Draw toggle hint while body hidden (default true).
-     * @param isOverlayToggleEnabled - Enable Backquote and corner toggle input (default true).
-     * @param isOverlayToggleHitDebugVisible - Draw a 1 px outline of the toggle hit region (default false).
-     * @param isOverlayAudioMetersEnabled - When true, draws the per-bus level and voice/steal/drop band.
-     * @param audioMeterStyle - Optional audio meter palette overrides.
-     * @param audioMeterHeight - Audio meter band height in pixels (default 13).
+     * @param layout – Cached display layout from {@link createOverlayLayout}.
+     * @param topLeftLabel – Short title shown on the top-left.
+     * @param targetFps – Configured fixed-update rate for the target FPS line.
+     * @param activeBackend – Backend started by BTAPI (`webgpu` or `software`).
+     * @param style – Optional palette indices from {@link HardwareSettings.overlayStyle}.
+     * @param isOverlayPaletteEnabled – When true, draws the live palette swatch grid.
+     * @param paletteColumns – Optional max swatches per row from {@link HardwareSettings.overlayPaletteColumns}.
+     * @param paletteRowsVisible – Optional max visible palette grid rows from {@link HardwareSettings.overlayPaletteRowsVisible}.
+     * @param isOverlayTimingChartEnabled – When true, draws the update/render timing chart band.
+     * @param timingChartStyle – Optional timing chart palette overrides.
+     * @param timingChartHeight – Chart band height in pixels (default 22).
+     * @param timingChartDiagnostics – Chart renderer diagnostic mode (`minimal`, `rich`, or `false`).
+     * @param isOverlayRendererDiagnosticsBarEnabled – When true, draws the GPU diagnostics text row.
+     * @param isOverlayVisibleAtStart – Initial overlay body visibility (default false).
+     * @param isOverlayToggleHintVisible – Draw toggle hint while body hidden (default true).
+     * @param isOverlayToggleEnabled – Enable Backquote and corner toggle input (default true).
+     * @param isOverlayToggleHitDebugVisible – Draw a 1 px outline of the toggle hit region (default false).
+     * @param isOverlayAudioMetersEnabled – When true, draws the per-bus level and voice/steal/drop band.
+     * @param audioMeterStyle – Optional audio meter palette overrides.
+     * @param audioMeterHeight – Audio meter band height in pixels (default 13).
      */
     constructor(
         layout: OverlayLayout,
@@ -268,8 +268,8 @@ export class Overlay {
      *
      * No-op when the timing chart is disabled.
      *
-     * @param label - Tag text; empty becomes `"Untitled"`.
-     * @param currentTick - Current fixed-update tick (`BT.ticks`).
+     * @param label – Tag text; empty becomes `"Untitled"`.
+     * @param currentTick – Current fixed-update tick (`BT.ticks`).
      */
     assignTag(label: string | undefined, currentTick: number): void {
         if (!this.#timingChart.isEnabled) {
@@ -282,12 +282,12 @@ export class Overlay {
     /**
      * Handles overlay frame input: palette swatch copy first, then body toggle.
      *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param isTogglePressed - Whether the Backquote toggle key edge fired this frame. The caller must
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param isTogglePressed – Whether the Backquote toggle key edge fired this frame. The caller must
      * sample this before the keyboard subsystem's end-of-tick edge reset runs; see {@link Toggle.handleInput}.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
-     * @param getCustomRows - Optional supplier for demo rows (layout plan for palette hits).
-     * @param palette - Active demo palette for slot count, if any.
+     * @param currentTick – Current fixed-update tick for keyboard edge detection.
+     * @param getCustomRows – Optional supplier for demo rows (layout plan for palette hits).
+     * @param palette – Active demo palette for slot count, if any.
      */
     handleFrameInput(
         pointer: PointerInput | null,
@@ -338,9 +338,9 @@ export class Overlay {
      * `handleFrameInput`, this reads the keyboard directly at call time, so it remains susceptible to
      * missing a Backquote press that a fixed-update tick already consumed this frame.
      *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param keyboard - Keyboard subsystem, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param keyboard – Keyboard subsystem, or `null` when unavailable.
+     * @param currentTick – Current fixed-update tick for keyboard edge detection.
      */
     handleToggle(pointer: PointerInput | null, keyboard: KeyboardInput | null, currentTick: number): void {
         const isTogglePressed = keyboard?.isKeyPressed(OVERLAY_TOGGLE_KEY_CODE, undefined, currentTick) ?? false;
@@ -352,16 +352,16 @@ export class Overlay {
      * Draws the overlay. Toggle input is handled earlier in the frame by BTAPI
      * ({@link BTAPI.beginRenderFrame}) so palette usage tracking matches visibility.
      *
-     * @param renderer - Active {@link OverlayRenderer} instance.
-     * @param font - System bitmap font.
-     * @param pointer - Pointer subsystem for palette swatch hover tooltips.
-     * @param _keyboard - Reserved; toggle input is handled in BTAPI before render.
-     * @param currentTick - Current fixed-update tick for copy-status expiry.
-     * @param getCustomRows - Optional supplier for demo rows; not invoked while the overlay body is hidden.
-     * @param timing - Optional timing snapshot from the previous rendered frame.
-     * @param palette - Active demo palette for optional palette grid.
-     * @param usedPaletteMask - Per-frame palette usage mask populated during demo render.
-     * @param audioSnapshot - Optional audio snapshot (bus levels and voice counters) from the previous rendered frame.
+     * @param renderer – Active {@link OverlayRenderer} instance.
+     * @param font – System bitmap font.
+     * @param pointer – Pointer subsystem for palette swatch hover tooltips.
+     * @param _keyboard – Reserved; toggle input is handled in BTAPI before render.
+     * @param currentTick – Current fixed-update tick for copy-status expiry.
+     * @param getCustomRows – Optional supplier for demo rows; not invoked while the overlay body is hidden.
+     * @param timing – Optional timing snapshot from the previous rendered frame.
+     * @param palette – Active demo palette for optional palette grid.
+     * @param usedPaletteMask – Per-frame palette usage mask populated during demo render.
+     * @param audioSnapshot – Optional audio snapshot (bus levels and voice counters) from the previous rendered frame.
      */
     updateAndRender(
         renderer: OverlayRenderer,
@@ -415,8 +415,8 @@ export class Overlay {
      * user wheels over the palette grid, even when the demo did not opt into
      * `HardwareSettings.isCapturingPointerScroll`.
      *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param paletteBand - Palette band rect from the layout plan.
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param paletteBand – Palette band rect from the layout plan.
      * @returns `true` when an active pointer is inside the band.
      */
     #isPointerOverPaletteBand(pointer: PointerInput | null, paletteBand: Rect2i): boolean {
@@ -436,7 +436,7 @@ export class Overlay {
     /**
      * Records timing samples when a snapshot is provided.
      *
-     * @param timing - Optional timing snapshot from the previous rendered frame.
+     * @param timing – Optional timing snapshot from the previous rendered frame.
      */
     #sampleTiming(timing?: OverlayTimingSnapshot): void {
         if (!timing) {
@@ -450,7 +450,7 @@ export class Overlay {
     /**
      * Records an audio sample when a snapshot is provided.
      *
-     * @param audioSnapshot - Optional audio snapshot from the previous rendered frame.
+     * @param audioSnapshot – Optional audio snapshot from the previous rendered frame.
      */
     #sampleAudio(audioSnapshot?: OverlayAudioSnapshot): void {
         if (!audioSnapshot) {
@@ -463,8 +463,8 @@ export class Overlay {
     /**
      * Builds per-frame layout config including optional palette grid dimensions.
      *
-     * @param customRowCount - Demo custom row count for this frame.
-     * @param palette - Active demo palette, if any.
+     * @param customRowCount – Demo custom row count for this frame.
+     * @param palette – Active demo palette, if any.
      * @returns Layout config for {@link buildOverlayLayoutPlan}.
      */
     #createLayoutConfig(customRowCount: number, palette: Palette | null | undefined): OverlayLayoutConfig {
@@ -502,8 +502,8 @@ export class Overlay {
     /**
      * Builds the per-frame layout plan shared by body and hint-only draws.
      *
-     * @param customRowCount - Demo custom row count for this frame.
-     * @param palette - Active demo palette, if any.
+     * @param customRowCount – Demo custom row count for this frame.
+     * @param palette – Active demo palette, if any.
      * @returns Layout config and computed plan.
      */
     #buildFramePlan(
@@ -525,8 +525,8 @@ export class Overlay {
     /**
      * Resets camera for screen-space overlay drawing.
      *
-     * @param renderer - Active renderer.
-     * @param draw - Callback that issues overlay draws.
+     * @param renderer – Active renderer.
+     * @param draw – Callback that issues overlay draws.
      */
     #withCamera(renderer: OverlayRenderer, draw: () => void): void {
         const savedCamera = renderer.getCameraOffset();
@@ -548,16 +548,16 @@ export class Overlay {
      * when the body is visible it renders inverted (cutout) against the hint bar,
      * otherwise as a solid glyph.
      *
-     * @param renderer - Active renderer.
-     * @param font - System bitmap font.
-     * @param plan - Computed layout plan for this frame.
-     * @param layoutConfig - Layout config used to build the plan.
-     * @param isBodyVisible - Whether metrics bars and palette grid should draw.
-     * @param customRows - Optional demo rows, if any.
-     * @param palette - Active demo palette.
-     * @param usedPaletteMask - Per-frame palette usage mask from BTAPI.
-     * @param pointer - Pointer subsystem for palette swatch hover, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick for copy-status expiry.
+     * @param renderer – Active renderer.
+     * @param font – System bitmap font.
+     * @param plan – Computed layout plan for this frame.
+     * @param layoutConfig – Layout config used to build the plan.
+     * @param isBodyVisible – Whether metrics bars and palette grid should draw.
+     * @param customRows – Optional demo rows, if any.
+     * @param palette – Active demo palette.
+     * @param usedPaletteMask – Per-frame palette usage mask from BTAPI.
+     * @param pointer – Pointer subsystem for palette swatch hover, or `null` when unavailable.
+     * @param currentTick – Current fixed-update tick for copy-status expiry.
      */
     #drawFrame(
         renderer: OverlayRenderer,
@@ -689,9 +689,9 @@ export class Overlay {
     /**
      * Draws the toggle hint icon and the optional hit-zone debug outline.
      *
-     * @param renderer - Active renderer.
-     * @param plan - Computed layout plan for this frame.
-     * @param isBodyVisible - Whether the overlay body is visible this frame.
+     * @param renderer – Active renderer.
+     * @param plan – Computed layout plan for this frame.
+     * @param isBodyVisible – Whether the overlay body is visible this frame.
      */
     #drawToggleAffordance(renderer: OverlayRenderer, plan: OverlayLayoutPlan, isBodyVisible: boolean): void {
         if (isBodyVisible || this.#isToggleHintVisible) {
@@ -706,7 +706,7 @@ export class Overlay {
     /**
      * Draws a 1 px outline of the bottom-left toggle hit region for hit-zone tuning.
      *
-     * @param target - Overlay draw target.
+     * @param target – Overlay draw target.
      */
     #drawToggleHitDebug(target: OverlayDrawTarget): void {
         const rect = this.#layout.toggleRect;

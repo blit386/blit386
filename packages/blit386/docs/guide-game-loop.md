@@ -53,7 +53,7 @@ class Player {
 ```
 
 `Vector2i.lerp` truncates its result to integer pixels (see [API: Core Types](api-core-types.md#vector2i)), so this only
-smooths motion that covers more than a pixel or two per tick - it doesn't add subpixel precision to a pixel-perfect
+smooths motion that covers more than a pixel or two per tick – it doesn't add subpixel precision to a pixel-perfect
 renderer. For a sprite moving `2` px/tick at `targetFPS: 60` on a `144` Hz display, it turns a visible 1-then-2-then-0
 px stutter into a steadier progression across render frames.
 

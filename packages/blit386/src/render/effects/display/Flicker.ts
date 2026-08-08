@@ -2,7 +2,7 @@ import type { Vector2i } from '../../../utils/Vector2i';
 import { FullscreenEffect } from '../FullscreenEffect';
 
 /**
- * Brightness multiplier - the simplest CRT animation knob.
+ * Brightness multiplier – the simplest CRT animation knob.
  *
  * Demos drive {@link amount} per frame to simulate flicker (e.g. with
  * `0.95 + sin(t) * 0.05`). The effect is intentionally trivial so the demo
@@ -32,8 +32,8 @@ export class Flicker extends FullscreenEffect {
 
     /**
      * Writes resolution and brightness amount into the uniform block.
-     * @param _deltaMs - Unused; effect reads public fields updated by demo code.
-     * @param sourceSize - Chain attachment dimensions in pixels for this pass.
+     * @param _deltaMs – Unused; effect reads public fields updated by demo code.
+     * @param sourceSize – Chain attachment dimensions in pixels for this pass.
      */
     protected writeUniforms(_deltaMs: number, sourceSize: Vector2i): void {
         const u = this.uniformData;

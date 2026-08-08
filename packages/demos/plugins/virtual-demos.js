@@ -16,7 +16,7 @@ const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
 const ROBOTS_NOINDEX_META = '<meta name="robots" content="noindex">';
 
 // id="channel-banner" lets layout.css hide this in embed mode (styles/layout.css,
-// html[data-embed='true']) - the shell iframe loads this same page at ?embed, so without
+// html[data-embed='true']) – the shell iframe loads this same page at ?embed, so without
 // that rule the banner would render a second time inside the canvas iframe.
 const CHANNEL_BANNER_HTML =
     '<div id="channel-banner" style="position:relative;padding:8px 16px;text-align:center;font:14px/1.4 system-ui,sans-serif;' +
@@ -66,7 +66,7 @@ export function virtualDemos() {
 
     /**
      * Find the registry entry whose virtual HTML path matches an absolute module id.
-     * @param {string} absPath - Absolute path, e.g. resolve(demosDir, "basics.html")
+     * @param {string} absPath – Absolute path, e.g. resolve(demosDir, "basics.html")
      * @returns {object | null}
      */
     function findEntryByAbsPath(absPath) {
@@ -80,7 +80,7 @@ export function virtualDemos() {
 
     /**
      * Find the registry entry for a demo slug.
-     * @param {string} slug - Demo slug, e.g. "basics"
+     * @param {string} slug – Demo slug, e.g. "basics"
      * @returns {object | null}
      */
     function findEntryBySlug(slug) {
@@ -95,7 +95,7 @@ export function virtualDemos() {
     /**
      * Find the registry entry whose source file is the given absolute path. Used by the watcher to
      * tell a top-level demo entry (src/<slug>.js) apart from a src/shared/*.js change.
-     * @param {string} absPath - Absolute path, e.g. resolve(srcDir, "basics.js")
+     * @param {string} absPath – Absolute path, e.g. resolve(srcDir, "basics.js")
      * @returns {object | null}
      */
     function findEntryBySourcePath(absPath) {
@@ -111,7 +111,7 @@ export function virtualDemos() {
      * Render a demo entry's dual-mode HTML page from the shared layout template
      * (shell banner + iframe, and embed canvas + Twoslash source). The nav list
      * includes `title` so the shell can update `document.title` on demo swaps.
-     * @param {object} entry - Registry entry (see buildRegistry's return type).
+     * @param {object} entry – Registry entry (see buildRegistry's return type).
      * @returns {Promise<string>}
      */
     async function renderHtml(entry) {
@@ -352,7 +352,7 @@ export function virtualDemos() {
 /**
  * Render the dev-only auto-generated index page listing every demo (served at /demos/).
  * Not part of the production build; see plugins/virtual-demos.js's configureServer middleware.
- * @param {Array<object>} registry - Full demo registry, as returned by buildRegistry.
+ * @param {Array<object>} registry – Full demo registry, as returned by buildRegistry.
  * @returns {string}
  */
 function renderIndexPage(registry) {
@@ -382,7 +382,7 @@ ${items}
 
 /**
  * Escape a string for safe interpolation into HTML text content/attributes.
- * @param {string} str - Raw text.
+ * @param {string} str – Raw text.
  * @returns {string}
  */
 function escapeHtml(str) {

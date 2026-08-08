@@ -5,7 +5,7 @@
  * chain, built fresh on every {@link VoicePool.play} call (source nodes are one-shot and cannot
  * be replayed). The pool is sized from `HardwareSettings.audioVoices` and never grows; when
  * every slot is in use, a new `play()` call steals the lowest-priority active voice at or below
- * the incoming priority (oldest start order breaks ties - see {@link VoiceSlot.startOrder}), or
+ * the incoming priority (oldest start order breaks ties – see {@link VoiceSlot.startOrder}), or
  * drops the request when no slot qualifies. Callers identify a playing voice by an opaque,
  * generational {@link SoundRef} - every accessor validates the ref's generation against the
  * live slot and silently no-ops with inert defaults on a stale ref.
@@ -130,7 +130,7 @@ interface VoiceSlot {
     /** Panner node for the current voice, or `null` when inactive. */
     panner: StereoPannerNode | null;
 
-    /** Buffer the current voice was started with, or `null` when inactive - used by {@link VoicePool.stopVoicesUsingBuffer}. */
+    /** Buffer the current voice was started with, or `null` when inactive – used by {@link VoicePool.stopVoicesUsingBuffer}. */
     buffer: AudioBuffer | null;
 
     /** `true` while this slot holds a live voice. */
@@ -168,7 +168,7 @@ export class VoicePool {
     /**
      * Creates a pool with a fixed number of voice slots.
      *
-     * @param audioManager - Owning audio manager; used to reach the live context and `sfx` bus.
+     * @param audioManager – Owning audio manager; used to reach the live context and `sfx` bus.
      */
     constructor(audioManager: AudioManager) {
         this.audioManager = audioManager;
@@ -184,8 +184,8 @@ export class VoicePool {
      * or `sfx` bus (not attached, or already detached), and increments {@link getDropCount} when
      * every active slot outranks the incoming priority.
      *
-     * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @param buffer – Decoded audio buffer to play.
+     * @param options – Playback options; see {@link VoicePlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
      */
     public play(buffer: AudioBuffer, options: VoicePlayOptions = {}): SoundRef {
@@ -225,14 +225,14 @@ export class VoicePool {
      * Stops a playing voice, immediately freeing its slot for reuse.
      *
      * When `fadeOutMs` is given, ramps gain to `0` over that duration and schedules the
-     * underlying source to stop only once the ramp completes - the fade is still audible even
+     * underlying source to stop only once the ramp completes – the fade is still audible even
      * though the slot itself is already free and may be reused by the very next `play()` call
      * (the reused slot gets fresh nodes; the fading-out nodes keep playing independently until
      * their own scheduled stop fires and their `onended` closure disconnects them). Silently
      * no-ops when `ref` is stale, out of range, or already stopped.
      *
-     * @param ref - Voice to stop.
-     * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
+     * @param ref – Voice to stop.
+     * @param fadeOutMs – Optional linear fade-out duration in milliseconds.
      */
     public stop(ref: SoundRef, fadeOutMs?: number): void {
         const slot = this.getActiveSlot(ref);
@@ -256,7 +256,7 @@ export class VoicePool {
     /**
      * Reports whether `ref` still identifies a live voice.
      *
-     * @param ref - Voice to query.
+     * @param ref – Voice to query.
      * @returns `true` when `ref`'s generation matches its slot's current generation.
      */
     public isPlaying(ref: SoundRef): boolean {
@@ -266,7 +266,7 @@ export class VoicePool {
     /**
      * Returns a voice's current gain.
      *
-     * @param ref - Voice to query.
+     * @param ref – Voice to query.
      * @returns Current gain, or {@link DEFAULT_VOLUME} on a stale/invalid ref.
      */
     public volumeGet(ref: SoundRef): number {
@@ -276,9 +276,9 @@ export class VoicePool {
     /**
      * Sets a voice's gain, optionally ramping to it.
      *
-     * @param ref - Voice to update.
-     * @param value - Target gain.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param ref – Voice to update.
+     * @param value – Target gain.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public volumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
         const slot = this.getActiveSlot(ref);
@@ -293,7 +293,7 @@ export class VoicePool {
     /**
      * Returns a voice's current playback rate.
      *
-     * @param ref - Voice to query.
+     * @param ref – Voice to query.
      * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale/invalid ref.
      */
     public pitchGet(ref: SoundRef): number {
@@ -303,9 +303,9 @@ export class VoicePool {
     /**
      * Sets a voice's playback rate, optionally ramping to it.
      *
-     * @param ref - Voice to update.
-     * @param value - Target playback rate.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param ref – Voice to update.
+     * @param value – Target playback rate.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public pitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
         const slot = this.getActiveSlot(ref);
@@ -320,7 +320,7 @@ export class VoicePool {
     /**
      * Returns a voice's current stereo pan.
      *
-     * @param ref - Voice to query.
+     * @param ref – Voice to query.
      * @returns Current pan, or {@link DEFAULT_PAN} on a stale/invalid ref.
      */
     public panGet(ref: SoundRef): number {
@@ -330,9 +330,9 @@ export class VoicePool {
     /**
      * Sets a voice's stereo pan, optionally ramping to it.
      *
-     * @param ref - Voice to update.
-     * @param value - Target pan.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param ref – Voice to update.
+     * @param value – Target pan.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public panSet(ref: SoundRef, value: number, fadeMs?: number): void {
         const slot = this.getActiveSlot(ref);
@@ -369,7 +369,7 @@ export class VoicePool {
      * using this buffer. That is safe: Web Audio keeps the decoded buffer alive as long as a
      * source node is still using it, independent of {@link AudioClip}'s own JS-side reference.
      *
-     * @param buffer - Buffer being released.
+     * @param buffer – Buffer being released.
      */
     public stopVoicesUsingBuffer(buffer: AudioBuffer): void {
         for (const slot of this.slots) {
@@ -418,7 +418,7 @@ export class VoicePool {
     /**
      * Picks a slot for a new voice: the first free slot, or the best steal candidate.
      *
-     * @param priority - Allocation priority of the incoming voice.
+     * @param priority – Allocation priority of the incoming voice.
      * @returns Slot index to use, or `null` when no free or stealable slot exists.
      */
     private allocateSlot(priority: number): number | null {
@@ -435,7 +435,7 @@ export class VoicePool {
      * Finds the best active slot to steal for an incoming voice: the lowest-priority active
      * slot at or below `incomingPriority`, breaking ties by oldest {@link VoiceSlot.startOrder}.
      *
-     * @param incomingPriority - Allocation priority of the incoming voice.
+     * @param incomingPriority – Allocation priority of the incoming voice.
      * @returns Slot index to steal, or `null` when every active slot outranks `incomingPriority`.
      */
     private findStealCandidate(incomingPriority: number): number | null {
@@ -469,13 +469,13 @@ export class VoicePool {
      * Bumps `slot.generation` so the returned {@link SoundRef} (built by the caller from the
      * post-call `slot.generation`) is unique even when reusing a stolen slot.
      *
-     * @param slot - Slot to populate (already disconnected from any prior voice by the caller).
-     * @param slotIndex - Index of `slot`, captured for the `onended` recycle callback.
-     * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link VoicePlayOptions}.
-     * @param priority - Resolved allocation priority (already defaulted by the caller).
-     * @param context - Live audio context (already validated non-null by the caller).
-     * @param sfxBus - Live `sfx` bus gain node (already validated non-null by the caller).
+     * @param slot – Slot to populate (already disconnected from any prior voice by the caller).
+     * @param slotIndex – Index of `slot`, captured for the `onended` recycle callback.
+     * @param buffer – Decoded audio buffer to play.
+     * @param options – Playback options; see {@link VoicePlayOptions}.
+     * @param priority – Resolved allocation priority (already defaulted by the caller).
+     * @param context – Live audio context (already validated non-null by the caller).
+     * @param sfxBus – Live `sfx` bus gain node (already validated non-null by the caller).
      */
     private startVoice(
         slot: VoiceSlot,
@@ -541,7 +541,7 @@ export class VoicePool {
      * single-threaded execution guarantees no interleaving between this synchronous teardown
      * and the slot's next synchronous mutation).
      *
-     * @param slot - Slot whose current node chain should be torn down.
+     * @param slot – Slot whose current node chain should be torn down.
      */
     private disconnectVoice(slot: VoiceSlot): void {
         if (slot.source !== null) {
@@ -555,10 +555,10 @@ export class VoicePool {
 
     /**
      * Immediately stops, disconnects, and recycles `slot` if it is active. Unlike
-     * {@link stop}, this always tears the node chain down synchronously - used for teardown
+     * {@link stop}, this always tears the node chain down synchronously – used for teardown
      * paths ({@link stopAll}, {@link stopVoicesUsingBuffer}) where lingering audio is not wanted.
      *
-     * @param slot - Slot to force-stop.
+     * @param slot – Slot to force-stop.
      */
     private forceStopSlot(slot: VoiceSlot): void {
         this.disconnectVoice(slot);
@@ -569,7 +569,7 @@ export class VoicePool {
      * Returns `ref`'s slot when `ref` still identifies a live voice, or `null` when the index is
      * out of range or the generation no longer matches (stale ref).
      *
-     * @param ref - Voice reference to validate.
+     * @param ref – Voice reference to validate.
      * @returns The live slot, or `null` on a stale/invalid ref.
      */
     private getActiveSlot(ref: SoundRef): VoiceSlot | null {
@@ -599,7 +599,7 @@ export class VoicePool {
      * Clears a slot's node references and marks it inactive, bumping its generation so any
      * outstanding {@link SoundRef} pointing at it becomes stale.
      *
-     * @param slot - Slot to reset.
+     * @param slot – Slot to reset.
      */
     private resetSlot(slot: VoiceSlot): void {
         slot.source = null;
@@ -612,10 +612,10 @@ export class VoicePool {
 
     /**
      * Recycles `slotIndex` when its generation still matches `expectedGeneration` (a no-op when
-     * the slot has already been reused - see {@link disconnectVoice}).
+     * the slot has already been reused – see {@link disconnectVoice}).
      *
-     * @param slotIndex - Index of the slot whose voice just ended.
-     * @param expectedGeneration - Generation captured when the ended voice was started.
+     * @param slotIndex – Index of the slot whose voice just ended.
+     * @param expectedGeneration – Generation captured when the ended voice was started.
      */
     private handleVoiceEnded(slotIndex: number, expectedGeneration: number): void {
         const slot = this.slots.at(slotIndex);

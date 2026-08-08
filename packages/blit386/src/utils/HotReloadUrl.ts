@@ -12,14 +12,14 @@
  * Appends a cache-busting query parameter carrying the current timestamp, so a
  * re-fetch of an unchanged URL bypasses the browser's HTTP cache.
  *
- * Inserted before any fragment identifier (`#...`) rather than after it - a query string
+ * Inserted before any fragment identifier (`#...`) rather than after it – a query string
  * appended past a fragment is invalid URL syntax and browsers treat it as part of the
  * fragment, so the parameter would never actually reach the server.
  *
  * The busted URL is only ever used for the actual `fetch`/`Image.src` request –
  * callers keep caching the result under the original, un-busted `url`.
  *
- * @param url - Original request URL.
+ * @param url – Original request URL.
  * @returns `url` with a `blit386-hmr=<timestamp>` query parameter inserted before any fragment.
  */
 export function appendCacheBustQuery(url: string): string {
@@ -41,7 +41,7 @@ export function appendCacheBustQuery(url: string): string {
  * own URL, or an explicit `<base href>`), not just its origin, so a page served from a nested
  * path (for example `/games/my-game/`) needs the same resolution here to produce a matching key.
  *
- * @param url - URL to normalize.
+ * @param url – URL to normalize.
  * @returns Normalized pathname, for example `/images/hero.png`.
  */
 export function normalizeAssetUrl(url: string): string {

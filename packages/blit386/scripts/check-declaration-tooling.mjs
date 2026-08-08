@@ -191,8 +191,8 @@ export function findViteDeclarationSizeFailure(fileSizeBytes) {
 
 /**
  * Verifies rolled-up `dist/vite.d.ts` exports required top-level members. Unlike the `BT`
- * facade, `dist/vite.d.ts` has no wrapping namespace/object block - it is flat top-level
- * `export declare` statements - so this checks for a matching function declaration directly.
+ * facade, `dist/vite.d.ts` has no wrapping namespace/object block – it is flat top-level
+ * `export declare` statements – so this checks for a matching function declaration directly.
  *
  * @param {string} dtsText Contents of `dist/vite.d.ts`.
  * @param {readonly string[]} [requiredMembers] Export names that must be present.

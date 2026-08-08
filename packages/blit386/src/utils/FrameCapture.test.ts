@@ -139,7 +139,7 @@ describe('FrameCapture', () => {
     it('should set a pending flag after request', () => {
         const capture = new FrameCapture();
 
-        // Don't await - just queue the request.
+        // Don't await – just queue the request.
         void capture.request();
 
         expect(capture.hasPending()).toBe(true);

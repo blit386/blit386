@@ -16,8 +16,8 @@ export class Toggle {
     /**
      * Creates toggle state from configure-time visibility and input flags.
      *
-     * @param isOverlayVisibleAtStart - Initial overlay body visibility from configure.
-     * @param isOverlayToggleEnabled - When false, toggle input is ignored.
+     * @param isOverlayVisibleAtStart – Initial overlay body visibility from configure.
+     * @param isOverlayToggleEnabled – When false, toggle input is ignored.
      */
     constructor(isOverlayVisibleAtStart = false, isOverlayToggleEnabled = true) {
         this.#isBodyVisible = isOverlayVisibleAtStart;
@@ -36,12 +36,12 @@ export class Toggle {
     /**
      * Handles toggle input (Backquote and bottom-left corner press).
      *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param isTogglePressed - Whether the Backquote toggle key edge fired this frame. Callers must
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param isTogglePressed – Whether the Backquote toggle key edge fired this frame. Callers must
      * sample this before the keyboard subsystem's own end-of-tick edge reset runs, so a press landing
      * inside a fixed-update tick is not lost by the time this render-phase check runs.
-     * @param toggleRect - Bottom-left toggle hit region.
-     * @param isPointerPressConsumed - When true, skip pointer corner toggle (palette swatch handled the press).
+     * @param toggleRect – Bottom-left toggle hit region.
+     * @param isPointerPressConsumed – When true, skip pointer corner toggle (palette swatch handled the press).
      */
     handleInput(
         pointer: PointerInput | null,
@@ -82,11 +82,11 @@ export class Toggle {
      * Backward-compatible alias for {@link handleInput}.
      *
      * @deprecated Deprecated since 1.1.0 (2026-05-31). Use {@link handleInput} instead.
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param keyboard - Keyboard subsystem, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick for keyboard edge detection.
-     * @param toggleRect - Bottom-left toggle hit region.
-     * @param isPointerPressConsumed - When true, skip pointer corner toggle.
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param keyboard – Keyboard subsystem, or `null` when unavailable.
+     * @param currentTick – Current fixed-update tick for keyboard edge detection.
+     * @param toggleRect – Bottom-left toggle hit region.
+     * @param isPointerPressConsumed – When true, skip pointer corner toggle.
      */
     handleToggle(
         pointer: PointerInput | null,

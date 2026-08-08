@@ -8,7 +8,7 @@ const DefaultBlogTagPage = createBlogTagPage();
 /**
  * Thin wrappers around fumapress's default tags pages. `BlogLayout` no longer assigns
  * `[grid-area:main]` itself (the post page needs its content and its table-of-contents sidebar
- * in separate grid areas), so every other page rendered inside it - including these - now claims
+ * in separate grid areas), so every other page rendered inside it – including these – now claims
  * its own placement.
  */
 export function BlogTagsPage(props: ComponentProps<typeof DefaultBlogTagsPage>) {

@@ -47,7 +47,7 @@ const HARD_RELOAD_STYLE_FIELDS = ['overlayStyle', 'overlayTimingChartStyle', 'ov
  * {@link Function.prototype.toString} dump of a class declaration, so {@link initFingerprint}
  * can normalize it away. Vite HMR always re-evaluates the same class declaration under the
  * same name across a hot reload, so the identifier itself carries no signal about whether a
- * reinit is needed - keeping it would only make two structurally identical classes fingerprint
+ * reinit is needed – keeping it would only make two structurally identical classes fingerprint
  * differently because a test double (or a renamed export) happens to use a different name.
  */
 const CLASS_NAME_HEADER_PATTERN = /^class\s+[$A-Za-z_][$\w]*/;
@@ -55,8 +55,8 @@ const CLASS_NAME_HEADER_PATTERN = /^class\s+[$A-Za-z_][$\w]*/;
 /**
  * Compares two optional {@link Vector2i} hardware-settings fields.
  *
- * @param previous - Value from the currently running settings.
- * @param next - Value from the candidate demo's resolved `configure()`.
+ * @param previous – Value from the currently running settings.
+ * @param next – Value from the candidate demo's resolved `configure()`.
  * @returns `true` when both are undefined or equal; `false` otherwise.
  */
 function isVectorFieldEqual(previous: Vector2i | undefined, next: Vector2i | undefined): boolean {
@@ -71,8 +71,8 @@ function isVectorFieldEqual(previous: Vector2i | undefined, next: Vector2i | und
  * Reports whether any init-only hardware-settings field differs between the running
  * settings and a hot-swap candidate's resolved `configure()` output.
  *
- * @param previous - Currently active hardware settings.
- * @param next - Candidate demo's resolved hardware settings.
+ * @param previous – Currently active hardware settings.
+ * @param next – Candidate demo's resolved hardware settings.
  * @returns `true` when a hard reload is required.
  */
 export function hasHardReloadDiff(previous: HardwareSettings, next: HardwareSettings): boolean {
@@ -101,7 +101,7 @@ export function hasHardReloadDiff(previous: HardwareSettings, next: HardwareSett
 
 /**
  * Builds a fingerprint that changes only when a class's constructor, class-field
- * initializers, or `init()` change - not when an unrelated method body is edited or
+ * initializers, or `init()` change – not when an unrelated method body is edited or
  * the class itself is declared under a different name.
  *
  * Concatenates `init()`'s own source with the class's full source (its declared name
@@ -109,7 +109,7 @@ export function hasHardReloadDiff(previous: HardwareSettings, next: HardwareSett
  * method's source (other than `constructor`) stripped out. What remains covers the
  * constructor and class-field initializers.
  *
- * @param cls - Demo class to fingerprint.
+ * @param cls – Demo class to fingerprint.
  * @returns Fingerprint string; equal fingerprints mean a Tier 1 (methods-only) swap is safe.
  */
 export function initFingerprint(cls: DemoConstructor): string {
@@ -136,7 +136,7 @@ export function initFingerprint(cls: DemoConstructor): string {
 /**
  * Constructs a candidate instance from `NewClass` in try/catch.
  *
- * @param NewClass - Newly evaluated demo class.
+ * @param NewClass – Newly evaluated demo class.
  * @returns The constructed instance, or `null` on throw (logged).
  */
 function constructCandidate(NewClass: DemoConstructor): IBTDemo | null {
@@ -162,7 +162,7 @@ const HARD_RELOAD_OUTCOME_RELOAD = 'reload';
  * Outcome of the Tier 3 hardware-settings check. {@link HARD_RELOAD_OUTCOME_RELOAD} and
  * {@link HARD_RELOAD_OUTCOME_NO_DIFF} mean the check itself ran to completion (settings
  * differed, or they didn't); {@link HARD_RELOAD_OUTCOME_ABORTED} means the check could not
- * run at all, so {@link hotSwapDemo} must stop without attempting any swap - a hard-reload
+ * run at all, so {@link hotSwapDemo} must stop without attempting any swap – a hard-reload
  * result and an aborted check are not interchangeable "no swap happened" outcomes.
  */
 type HardReloadOutcome =
@@ -173,7 +173,7 @@ type HardReloadOutcome =
 /**
  * Runs the Tier 3 check: a hardware-settings change forces a full page reload.
  *
- * @param newDemo - Constructed candidate instance.
+ * @param newDemo – Constructed candidate instance.
  * @returns The check's outcome; see {@link HardReloadOutcome}.
  */
 function tryHardReload(newDemo: IBTDemo): HardReloadOutcome {
@@ -190,7 +190,7 @@ function tryHardReload(newDemo: IBTDemo): HardReloadOutcome {
     // The running settings already have any `?backend=software` URL override baked in (applied
     // once at init by BTAPI.applyBackendQueryOverride). The candidate's configure() output never
     // sees that override, so without reapplying it here `backend` would mismatch on every single
-    // check under an override - forcing a hard reload on every edit, not just a real configure()
+    // check under an override – forcing a hard reload on every edit, not just a real configure()
     // change.
     const backendOverride = BTAPI.getBackendQueryOverride();
 
@@ -213,8 +213,8 @@ function tryHardReload(newDemo: IBTDemo): HardReloadOutcome {
  * Runs the Tier 2 check: re-creates the instance and re-runs `init()` while the previous
  * instance keeps driving the loop, swapping in the new instance only on success.
  *
- * @param oldDemo - Currently running instance.
- * @param newDemo - Constructed candidate instance.
+ * @param oldDemo – Currently running instance.
+ * @param newDemo – Constructed candidate instance.
  * @param startedAt - `performance.now()` when this swap attempt began, for the announce timing.
  * @returns `true` once the swap completed; `false` when `hotReplaceDemo` reported failure (already logged there).
  */
@@ -244,8 +244,8 @@ async function tryReinit(oldDemo: IBTDemo, newDemo: IBTDemo, startedAt: number):
  * Runs the Tier 1 (default) swap: rebinds the running instance's prototype to the new
  * class in place, keeping every field untouched.
  *
- * @param oldDemo - Currently running instance, mutated in place.
- * @param NewClass - Newly evaluated demo class.
+ * @param oldDemo – Currently running instance, mutated in place.
+ * @param NewClass – Newly evaluated demo class.
  * @param startedAt - `performance.now()` when this swap attempt began, for the announce timing.
  */
 function applyMethodSwap(oldDemo: IBTDemo, NewClass: DemoConstructor, startedAt: number): void {
@@ -266,7 +266,7 @@ function applyMethodSwap(oldDemo: IBTDemo, NewClass: DemoConstructor, startedAt:
  * Hot-swaps the running demo in place with a newly evaluated demo class, using the
  * cheapest tier that is safe for what changed.
  *
- * @param NewClass - Newly evaluated demo class from the re-run entry module.
+ * @param NewClass – Newly evaluated demo class from the re-run entry module.
  * @returns `true` when a swap tier ran (including a requested hard reload); `false` only
  *   when construction or the Tier 2 re-init failed and the previous demo instance is
  *   still running unmodified.

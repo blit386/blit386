@@ -1,11 +1,11 @@
 /**
- * The shared demo UI kit - the one file demos import.
+ * The shared demo UI kit – the one file demos import.
  *
  *     import { applyTheme, ui } from './shared/ui.js';
  *
  * The kit is a tiny immediate-mode UI (in the spirit of Dear ImGui): demos declare panels
  * and widgets by calling ui.* every frame inside render(), and the kit lays out, draws, and
- * hit-tests them on the spot. There is nothing to create or destroy - a widget exists
+ * hit-tests them on the spot. There is nothing to create or destroy – a widget exists
  * because the demo mentioned it this frame.
  *
  * The three rules:
@@ -27,11 +27,11 @@
  *        ui.end();
  *
  * Widget identity: a widget is recognized across frames by its label. Two widgets with the
- * same label in one frame would answer each other's clicks - give one of them a unique
+ * same label in one frame would answer each other's clicks – give one of them a unique
  * { id: '...' } option in that case.
  *
  * Performance: widgets queue draw commands into preallocated pools and reuse every object,
- * so steady-state frames allocate nothing - safe to call from render() at 60 FPS.
+ * so steady-state frames allocate nothing – safe to call from render() at 60 FPS.
  */
 
 import { UiContext } from './ui-core.js';
@@ -103,12 +103,12 @@ const ui = {
     },
 
     /**
-     * A single line of floating text pinned at an exact screen position - the shared
+     * A single line of floating text pinned at an exact screen position – the shared
      * section caption the drawing demos print next to their artwork. Self-contained:
      * call it on its own, outside ui.begin()/ui.end().
      *
-     * @param {number} x - Left edge in display pixels.
-     * @param {number} y - Top edge in display pixels.
+     * @param {number} x – Left edge in display pixels.
+     * @param {number} y – Top edge in display pixels.
      * @param {string} text
      * @param {{ color?: string }} [opts] - Role; defaults to 'header' (series amber).
      */
@@ -186,7 +186,7 @@ const ui = {
      * A read-only level bar.
      *
      * @param {string | null} text
-     * @param {number} fraction - 0 (empty) to 1 (full).
+     * @param {number} fraction – 0 (empty) to 1 (full).
      * @param {{ color?: string, width?: number }} [opts]
      */
     meter(text, fraction, opts) {
@@ -208,7 +208,7 @@ const ui = {
     },
 
     /**
-     * Draws the virtual D-pad (self-contained - no begin()/end() needed). Call once per
+     * Draws the virtual D-pad (self-contained – no begin()/end() needed). Call once per
      * frame from render(); by default it appears only after the first touch contact.
      *
      * @param {{ corner?: string, size?: number, gap?: number, margin?: number, show?: 'auto' | 'always' }} [opts]
@@ -267,11 +267,11 @@ const ui = {
 
     /**
      * Is this point on top of any kit widget (buttons, sliders, the D-pad, ...)? Demos
-     * that paint or drag with the raw pointer use this to leave the UI alone - for example
+     * that paint or drag with the raw pointer use this to leave the UI alone – for example
      * a paint demo skips brush strokes that would land on its own Clear button.
      *
-     * @param {number} x - Point x in display pixels.
-     * @param {number} y - Point y in display pixels.
+     * @param {number} x – Point x in display pixels.
+     * @param {number} y – Point y in display pixels.
      * @returns {boolean}
      */
     overWidget(x, y) {

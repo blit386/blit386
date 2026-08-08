@@ -65,7 +65,7 @@ export default [
         },
     },
 
-    // Demo source files (src/*.js) - browser environment, relaxed rules
+    // Demo source files (src/*.js) – browser environment, relaxed rules
     {
         files: ['src/**/*.js'],
         languageOptions: {
@@ -144,7 +144,7 @@ export default [
         },
     },
 
-    // Config files - relaxed JSDoc
+    // Config files – relaxed JSDoc
     {
         files: ['*.config.js', '*.config.mjs'],
         rules: {

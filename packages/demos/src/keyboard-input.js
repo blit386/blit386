@@ -1,5 +1,5 @@
 /**
- * Keyboard Input Demo - face buttons, raw keys, and typed text.
+ * Keyboard Input Demo – face buttons, raw keys, and typed text.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:
@@ -23,7 +23,7 @@
  *
  * The panels and readouts are drawn with the shared demo UI kit (src/shared/ui.js),
  * so this page looks like every other demo in the series. The inputs themselves stay
- * deliberately keyboard-only - there is no touch stand-in for a physical keyboard,
+ * deliberately keyboard-only – there is no touch stand-in for a physical keyboard,
  * so on a touch device the page shows a "needs a keyboard" notice instead.
  *
  * Try this:
@@ -32,7 +32,7 @@
  *   BT.isKeyPressed, no repeat rate). Press a different key and the counter resets.
  * - Hold Q to see isKeyDown; tap F and watch the release readout.
  * - Type letters into the buffer line at the bottom.
- * - If keys stop responding, click the canvas - focus may have moved to another
+ * - If keys stop responding, click the canvas – focus may have moved to another
  *   part of the page after you tabbed away.
  */
 
@@ -63,7 +63,7 @@ const PRESS_COUNTER_KEYS = [
 // Palette slots of three shared UI theme colors, for the overlay timing chart below.
 // applyTheme() in init() writes the twelve theme colors into slots 240-251 (its default
 // start slot), but configure() runs BEFORE init(), so the chart style cannot read
-// this.theme yet - we spell out where the colors will land: 244 = text, 245 = dim gray,
+// this.theme yet – we spell out where the colors will land: 244 = text, 245 = dim gray,
 // 247 = accent green.
 const THEME_TEXT_SLOT = 244;
 const THEME_DIM_SLOT = 245;
@@ -82,7 +82,7 @@ const TYPED_PANEL_WIDTH = 308; // The typed-text panel spans almost the full scr
 /**
  * Turns `KeyH` into `H`, `Digit5` into `5`, and leaves other codes readable.
  *
- * @param {string} code - KeyboardEvent.code value.
+ * @param {string} code – KeyboardEvent.code value.
  * @returns {string}
  */
 function formatKeyCode(code) {
@@ -166,7 +166,7 @@ class Demo {
         // applyTheme() installs the twelve shared UI colors (into high palette slots, far
         // above where scene art normally lives) and reports their slots, so render() can
         // clear the screen with the theme's background color. Every panel, pip, and text
-        // row on this page draws with these colors - no hand-picked HUD slots needed.
+        // row on this page draws with these colors – no hand-picked HUD slots needed.
         this.theme = applyTheme(this.palette);
 
         BT.paletteSet(this.palette);
@@ -199,7 +199,7 @@ class Demo {
      */
     update() {
         // The UI kit's once-per-tick housekeeping. This demo has no kit buttons, but
-        // ui.tick() is also where the kit notices touch contacts - ui.hasTouch() in
+        // ui.tick() is also where the kit notices touch contacts – ui.hasTouch() in
         // render() relies on it to know when to show the "needs a keyboard" notice.
         ui.tick();
 
@@ -268,7 +268,7 @@ class Demo {
         ui.end();
 
         // One borderless line right under the title. On a touch device it becomes a
-        // warning - this page has no on-screen substitute for a physical keyboard - and
+        // warning – this page has no on-screen substitute for a physical keyboard – and
         // otherwise it lists the default key maps as a quick reference. pad: 0 removes
         // the group's inner padding so the single line sits snug against its y position.
         ui.begin('topLeft', { y: NOTICE_Y, pad: 0 });
@@ -296,8 +296,8 @@ class Demo {
     /**
      * One player's mapped face buttons as a panel of lit/unlit pip rows.
      *
-     * @param {number} player - 0 or 1 (`BT.isDown` player index).
-     * @param {number} x - Left edge of the panel in display pixels.
+     * @param {number} player – 0 or 1 (`BT.isDown` player index).
+     * @param {number} x – Left edge of the panel in display pixels.
      */
     renderFacePanel(player, x) {
         // Pin the panel to its column; both player panels share the same top edge.
@@ -308,7 +308,7 @@ class Demo {
 
         // One read-only pip per button: filled while the button is held, hollow when it
         // is up. BT.isDown() reports held state (not a press edge), so reading it here
-        // in render() is safe - only press/release EDGES must stay in update().
+        // in render() is safe – only press/release EDGES must stay in update().
         for (let i = 0; i < buttons.length; i++) {
             const { label, code } = buttons[i];
 

@@ -21,8 +21,8 @@ const MAX_DIFF = 0.01;
  * Loads the post-process fixture in the requested mode and waits until the
  * scene render has signalled completion (or initialization has failed).
  *
- * @param page - Playwright page handle.
- * @param mode - Fixture mode hash (matches a `case` in the fixture's switch).
+ * @param page – Playwright page handle.
+ * @param mode – Fixture mode hash (matches a `case` in the fixture's switch).
  * @returns `true` if the page initialized successfully; `false` when WebGPU
  *   was unavailable in the test environment.
  */
@@ -51,9 +51,9 @@ async function loadFixture(page: Page, mode: string): Promise<boolean> {
 /**
  * Common test runner: load fixture, take snapshot.
  *
- * @param page - Playwright page handle.
- * @param mode - Fixture mode hash.
- * @param snapshot - Snapshot file name.
+ * @param page – Playwright page handle.
+ * @param mode – Fixture mode hash.
+ * @param snapshot – Snapshot file name.
  */
 async function runMode(page: Page, mode: string, snapshot: string): Promise<void> {
     const ok = await loadFixture(page, mode);

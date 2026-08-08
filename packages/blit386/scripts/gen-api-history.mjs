@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Builds `docs/_api-history.json` - the versioned public API surface - from JSDoc
+ * Builds `docs/_api-history.json` - the versioned public API surface – from JSDoc
  * `@since` / `@changed` / `@deprecated` tags in `src/`.
  *
  * The engine's public entrypoint (`src/BLIT386.ts`) is the single source of truth: every
@@ -63,7 +63,7 @@ export const DEFAULT_TEST_COMPILER_OPTIONS = {
  * text and `{@link}` nodes) into plain text, preserving `{@link Name}` markup so downstream
  * consumers (docs prose) keep the link.
  *
- * @param {string | ts.NodeArray<ts.JSDocComment> | undefined} comment - Raw tag comment.
+ * @param {string | ts.NodeArray<ts.JSDocComment> | undefined} comment – Raw tag comment.
  * @returns {string} Flattened comment text.
  */
 export function commentToText(comment) {
@@ -91,7 +91,7 @@ export function commentToText(comment) {
 /**
  * Renders a JSDoc link target (`EntityName` or `JSDocMemberName`) back to dotted text.
  *
- * @param {ts.EntityName | ts.JSDocMemberName} node - Link target node.
+ * @param {ts.EntityName | ts.JSDocMemberName} node – Link target node.
  * @returns {string} Dotted/hashed text representation.
  */
 function entityNameToText(node) {
@@ -116,7 +116,7 @@ const DEPRECATED_PATTERN =
  * Parses an `@deprecated` tag's comment text into a structured record. Backward compatible
  * with the 52 pre-existing date-only tags (`version` resolves to `null`).
  *
- * @param {string} text - Flattened `@deprecated` comment text.
+ * @param {string} text – Flattened `@deprecated` comment text.
  * @returns {{ version: string | null, date: string | null, note: string }} Parsed fields.
  */
 export function parseDeprecatedTag(text) {
@@ -137,12 +137,12 @@ export function parseDeprecatedTag(text) {
 
 /**
  * Warns (to stderr) about an `@changed` tag whose text doesn't match `<version> <note>` - a
- * missing version token, or a version with no note - so a malformed tag is visibly dropped
+ * missing version token, or a version with no note – so a malformed tag is visibly dropped
  * during manifest generation rather than silently discarded, matching how `--since-check`
  * surfaces missing `@since` tags instead of guessing at them.
  *
- * @param {ts.Node} declaration - Declaration the malformed tag was found on.
- * @param {string} text - Raw `@changed` comment text that failed to parse.
+ * @param {ts.Node} declaration – Declaration the malformed tag was found on.
+ * @param {string} text – Raw `@changed` comment text that failed to parse.
  */
 function warnMalformedChangedTag(declaration, text) {
     const sourceFile = declaration.getSourceFile();
@@ -157,7 +157,7 @@ function warnMalformedChangedTag(declaration, text) {
 /**
  * Reads `@since` / `@changed` / `@deprecated` off a declaration node via the compiler API.
  *
- * @param {ts.Node} declaration - Declaration node to inspect.
+ * @param {ts.Node} declaration – Declaration node to inspect.
  * @returns {{
  *   since: string | null,
  *   changes: Array<{ version: string, note: string }>,
@@ -195,10 +195,10 @@ export function extractTags(declaration) {
 
 /**
  * Compares two bare `major.minor.patch` version strings numerically (no pre-release/build
- * metadata support - this project's tags are plain semver).
+ * metadata support – this project's tags are plain semver).
  *
- * @param {string} a - First version.
- * @param {string} b - Second version.
+ * @param {string} a – First version.
+ * @param {string} b – Second version.
  * @returns {number} Negative if `a < b`, positive if `a > b`, zero if equal.
  */
 export function compareVersions(a, b) {
@@ -223,7 +223,7 @@ export function compareVersions(a, b) {
  * release state), then `unreleased` for the configured unreleased version or missing/untagged
  * future versions, otherwise `stable`.
  *
- * @param {{ since: string | null, deprecated: unknown }} entry - Symbol's parsed tags.
+ * @param {{ since: string | null, deprecated: unknown }} entry – Symbol's parsed tags.
  * @param {{ packageVersion: string, unreleasedVersion: string, hasTag: (version: string) => boolean }} context
  *   - Release context.
  * @returns {'stable' | 'unreleased' | 'deprecated'} Derived status.
@@ -252,7 +252,7 @@ export function deriveStatus(entry, context) {
  * Builds a `ts.Program` from an explicit file list, for fixture-driven unit tests that do not
  * want the real `tsconfig.json`.
  *
- * @param {string[]} rootNames - Entry file paths.
+ * @param {string[]} rootNames – Entry file paths.
  * @param {ts.CompilerOptions} [options] - Compiler options; defaults to a minimal ES2022/bundler set.
  * @returns {ts.Program} Compiled program.
  */
@@ -262,7 +262,7 @@ export function createProgramFromFiles(rootNames, options = DEFAULT_TEST_COMPILE
 
 /**
  * Resolves the real `tsconfig.json`'s fully-parsed compiler options (correct `lib` mapping,
- * `moduleResolution`, etc.) without pulling in its whole `include` file list - the program only
+ * `moduleResolution`, etc.) without pulling in its whole `include` file list – the program only
  * needs the public entrypoint as a root; the compiler follows imports from there.
  *
  * @returns {ts.CompilerOptions} Parsed compiler options.
@@ -295,8 +295,8 @@ function createRepoProgram() {
  * Resolves an export symbol through its alias (an `export { X }` / `export type { X }` name)
  * to the symbol backing its real declaration.
  *
- * @param {ts.TypeChecker} checker - Type checker for the program.
- * @param {ts.Symbol} symbol - Export symbol, possibly an alias.
+ * @param {ts.TypeChecker} checker – Type checker for the program.
+ * @param {ts.Symbol} symbol – Export symbol, possibly an alias.
  * @returns {ts.Symbol} Resolved (non-alias) symbol.
  */
 function resolveAliasedSymbol(checker, symbol) {
@@ -310,7 +310,7 @@ function resolveAliasedSymbol(checker, symbol) {
 /**
  * Classifies a top-level declaration's kind for the JSON `kind` field.
  *
- * @param {ts.Node} declaration - Resolved declaration node.
+ * @param {ts.Node} declaration – Resolved declaration node.
  * @returns {'class' | 'interface' | 'type' | 'function' | 'const' | 'unknown'} Symbol kind.
  */
 function classifyDeclarationKind(declaration) {
@@ -347,7 +347,7 @@ function classifyDeclarationKind(declaration) {
  * Classifies a `BT` namespace member's kind (getter vs method vs plain constant), matching the
  * getters-vs-methods convention documented in `CLAUDE.md`.
  *
- * @param {ts.Node} declaration - Member declaration node (property of the `BT` object literal).
+ * @param {ts.Node} declaration – Member declaration node (property of the `BT` object literal).
  * @returns {'getter' | 'setter' | 'method' | 'const' | 'unknown'} Member kind.
  */
 function classifyBtMemberKind(declaration) {
@@ -384,9 +384,9 @@ function classifyBtMemberKind(declaration) {
  * Walks the type of the resolved `BT` (or fixture equivalent) export and yields one record per
  * member property, keyed `BT.<member>`.
  *
- * @param {ts.TypeChecker} checker - Type checker for the program.
- * @param {ts.Symbol} btSymbol - Resolved symbol for the namespace object export.
- * @param {string} exportName - Public name of the namespace export (`'BT'` in production).
+ * @param {ts.TypeChecker} checker – Type checker for the program.
+ * @param {ts.Symbol} btSymbol – Resolved symbol for the namespace object export.
+ * @param {string} exportName – Public name of the namespace export (`'BT'` in production).
  * @returns {Array<{ name: string, kind: string, node: ts.Node, sourceFile: ts.SourceFile, tags: object }>}
  *   One record per member.
  */
@@ -424,8 +424,8 @@ function collectNamespaceMemberRecords(checker, btSymbol, exportName) {
  * of the configured namespace object export (`BT` in production), each carrying its parsed
  * version tags and the AST node/file needed for the `--backfill` codemod.
  *
- * @param {ts.Program} program - Compiled program.
- * @param {string} entryFilePath - Absolute path to the public entrypoint module.
+ * @param {ts.Program} program – Compiled program.
+ * @param {string} entryFilePath – Absolute path to the public entrypoint module.
  * @param {{ namespaceExportName?: string }} [options] - `namespaceExportName` defaults to `'BT'`;
  *   override for fixtures that use a different namespace object name.
  * @returns {Array<{ name: string, kind: string, node: ts.Node, sourceFile: ts.SourceFile, tags: object }>}
@@ -479,8 +479,8 @@ export function collectSymbolRecords(program, entryFilePath, options = {}) {
  * Thin wrapper over {@link collectSymbolRecords} returning just the `{ kind, since, changes,
  * deprecated }` data needed for the JSON manifest, keyed by symbol name.
  *
- * @param {ts.Program} program - Compiled program.
- * @param {string} entryFilePath - Absolute path to the public entrypoint module.
+ * @param {ts.Program} program – Compiled program.
+ * @param {string} entryFilePath – Absolute path to the public entrypoint module.
  * @param {{ namespaceExportName?: string }} [options] - See {@link collectSymbolRecords}.
  * @returns {Record<string, { kind: string, since: string | null, changes: Array<object>, deprecated: object | null }>}
  *   Parsed tags keyed by symbol name.
@@ -499,7 +499,7 @@ export function enumerateSymbols(program, entryFilePath, options = {}) {
  * Resolves a tag's commit date via `git log -1 --format=%aI <tag>`. Returns `null` when the tag
  * does not exist locally (shallow clones, or a version that has not shipped yet).
  *
- * @param {string} tag - Tag name (bare semver, no `v` prefix).
+ * @param {string} tag – Tag name (bare semver, no `v` prefix).
  * @param {{ cwd?: string }} [runOptions] - `cwd` to run git in; defaults to the repo root.
  * @returns {string | null} ISO 8601 tag date, or `null` if unresolved.
  */
@@ -525,8 +525,8 @@ export function resolveTagDate(tag, runOptions = {}) {
  *
  * @param {Record<string, { since: string | null, changes: Array<{ version: string }>, deprecated: { version: string | null } | null }>} symbols
  *   Parsed symbol tags.
- * @param {string} packageVersion - Current `package.json` version.
- * @param {string} unreleasedVersion - Configured next-release version.
+ * @param {string} packageVersion – Current `package.json` version.
+ * @param {string} unreleasedVersion – Configured next-release version.
  * @param {(version: string) => string | null} [resolveDate] - Injectable for tests.
  * @returns {Record<string, string | null>} Version -> ISO date (or `null`), sorted by version.
  */
@@ -561,7 +561,7 @@ export function buildVersionsMap(symbols, packageVersion, unreleasedVersion, res
  * Maps a doc filename to its sitemap-style page key (`api-core-types.md` -> `api/core-types`,
  * `guide-audio.md` -> `guides/audio`).
  *
- * @param {string} filename - Doc filename.
+ * @param {string} filename – Doc filename.
  * @returns {string} Page key.
  */
 function pageKeyFromFilename(filename) {

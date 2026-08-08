@@ -1,7 +1,7 @@
 /**
- * Pointer Basics Demo - read mouse position, buttons, delta, and scroll wheel.
+ * Pointer Basics Demo – read mouse position, buttons, delta, and scroll wheel.
  *
- * Prerequisites: Basics - https://demos.blit386.dev/basics
+ * Prerequisites: Basics – https://demos.blit386.dev/basics
  *
  * Live version: https://demos.blit386.dev/pointer-basics
  *
@@ -45,7 +45,7 @@ const TRAIL_LENGTH = 24;
 
 // Multiplier applied to the raw scroll delta (BT.pointerScrollDelta) before it
 // is added to the scroll position. The browser reports scrolling in CSS pixels,
-// which adds up fast - shrinking each report to a quarter keeps one wheel click
+// which adds up fast – shrinking each report to a quarter keeps one wheel click
 // moving the meter a few pixels instead of a big jump. update() then clamps the
 // scroll position to [0, displayHeight] so the meter fill always stays between
 // empty and full.
@@ -61,7 +61,7 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // Palette slot map returned by applyTheme() - theme.bg, theme.dim, and so
+    // Palette slot map returned by applyTheme() – theme.bg, theme.dim, and so
     // on. Filled in init(); used for the screen clear and the fallback hint.
     theme = null;
 
@@ -193,7 +193,7 @@ class Demo {
      * Readouts panel in the top-left: pointer position, delta, wheel delta,
      * whether slot 0 is active, and a meter showing the accumulated scroll
      * position. The raw BT.pointer* reads here are the whole point of the
-     * demo - pointer state (unlike keyboard edges) is safe to read from
+     * demo – pointer state (unlike keyboard edges) is safe to read from
      * render().
      */
     renderReadouts() {
@@ -254,7 +254,7 @@ class Demo {
     /**
      * A dim one-line note shown only after a touchscreen has been used.
      * Fingers can move the crosshair, but there is no touch equivalent of the
-     * scroll wheel or the extra mouse buttons - better to say so than to let
+     * scroll wheel or the extra mouse buttons – better to say so than to let
      * touch users hunt for something that cannot happen.
      */
     renderTouchNote() {

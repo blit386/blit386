@@ -4,7 +4,7 @@
  *
  * Also does a plain-JS entry's only syntax check (see {@link checkPlainJsSyntax}): Vite's own
  * default transform pipeline excludes `.js`/`.mjs` from server-side parsing, so without this a
- * broken entry module surfaces only as a caught client-side `import()` rejection - logged, but
+ * broken entry module surfaces only as a caught client-side `import()` rejection – logged, but
  * never shown in Vite's error overlay (BT-318).
  */
 
@@ -16,11 +16,11 @@ export const INJECTION_MARKER = '/* blit386:hot-reload-snippet */';
 
 /**
  * Snippet appended to a matched entry module, verbatim. The literal `import.meta.hot.accept()` call
- * must appear in the emitted source - Vite marks self-accepting modules by static analysis, so an
+ * must appear in the emitted source – Vite marks self-accepting modules by static analysis, so an
  * indirect call would not register self-acceptance and every edit would fall back to a full reload.
  *
  * `registerHotReload` is imported under a plugin-specific alias: importing it under its own name would
- * be a duplicate lexical declaration - a hard `SyntaxError` - if the entry module already imports or
+ * be a duplicate lexical declaration – a hard `SyntaxError` - if the entry module already imports or
  * declares a `registerHotReload` binding of its own (for example, a game that wired hot reload by hand
  * before adopting this plugin).
  *

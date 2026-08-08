@@ -36,8 +36,8 @@ export interface HandleAssetHotUpdateParams {
 /**
  * Maps an absolute file path to its served URL when it falls under one of `assetDirs`.
  *
- * @param file - Absolute file path.
- * @param assetDirs - Resolved, absolute asset directories.
+ * @param file – Absolute file path.
+ * @param assetDirs – Resolved, absolute asset directories.
  * @returns A leading-slash URL relative to the matching asset dir, or `null` when `file` is outside all of them.
  */
 export function resolveAssetUrl(file: string, assetDirs: readonly string[]): string | null {
@@ -55,8 +55,8 @@ export function resolveAssetUrl(file: string, assetDirs: readonly string[]): str
 /**
  * Looks up a file's asset kind by its lowercased extension.
  *
- * @param file - File path.
- * @param assetTypes - Extension-to-asset-kind lookup.
+ * @param file – File path.
+ * @param assetTypes – Extension-to-asset-kind lookup.
  * @returns The matched asset kind, or `null` when the extension is not registered.
  */
 export function assetTypeForFile(file: string, assetTypes: ReadonlyMap<string, AssetKind>): AssetKind | null {
@@ -68,11 +68,11 @@ export function assetTypeForFile(file: string, assetTypes: ReadonlyMap<string, A
  * `blit386:asset-changed` payload for a recognized asset kind, a `full-reload` for an
  * unrecognized one (when enabled), or defers to Vite's default handling otherwise.
  *
- * Only acts for the `'client'` environment - Vite's environment API fires `hotUpdate` once per
+ * Only acts for the `'client'` environment – Vite's environment API fires `hotUpdate` once per
  * environment (`'client'` and `'ssr'` by default; verified empirically against this repo's
  * installed Vite version), and this plugin has nothing SSR-specific to do.
  *
- * @param params - See {@link HandleAssetHotUpdateParams}.
+ * @param params – See {@link HandleAssetHotUpdateParams}.
  * @returns `[]` (suppressing Vite's default module-graph update) when this handler acted; `undefined` otherwise.
  */
 export function handleAssetHotUpdate(params: HandleAssetHotUpdateParams): [] | undefined {

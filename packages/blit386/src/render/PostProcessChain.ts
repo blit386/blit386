@@ -61,11 +61,11 @@ export class PostProcessChain {
      *
      * No GPU resources are created until the first effect is registered.
      *
-     * @param device - WebGPU device used for resource creation.
-     * @param format - Attachment format for this chain's offscreen textures.
+     * @param device – WebGPU device used for resource creation.
+     * @param format – Attachment format for this chain's offscreen textures.
      *   Pixel tier typically uses `r8uint`; display tier uses an RGBA format.
-     * @param chainSize - Render target resolution in pixels for this tier.
-     * @param tier - Tier this chain serves. Effects added must match.
+     * @param chainSize – Render target resolution in pixels for this tier.
+     * @param tier – Tier this chain serves. Effects added must match.
      */
     constructor(device: GPUDevice, format: GPUTextureFormat, chainSize: Vector2i, tier: EffectTier) {
         this.device = device;
@@ -93,13 +93,13 @@ export class PostProcessChain {
      * the effect appended to the chain. GPU resources for the chain itself
      * are allocated lazily here: {@link texA} on the first add, {@link texB}
      * on the second. Existing offscreen textures are **reused** across
-     * remove/re-add cycles - we never reallocate a texture that is already
+     * remove/re-add cycles – we never reallocate a texture that is already
      * present.
      *
      * Adding the same effect instance twice throws. Construct a new instance
      * if you want a second copy of the same look.
      *
-     * @param effect - Effect to append to the chain.
+     * @param effect – Effect to append to the chain.
      * @throws If the effect's tier does not match this chain's tier.
      * @throws If the effect instance is already registered.
      */
@@ -137,7 +137,7 @@ export class PostProcessChain {
      *
      * Removing an effect that was never added is a no-op.
      *
-     * @param effect - Effect instance to remove.
+     * @param effect – Effect instance to remove.
      * @returns `true` if the effect was found and removed; otherwise `false`.
      */
     remove(effect: Effect): boolean {
@@ -212,9 +212,9 @@ export class PostProcessChain {
      *
      * No-op when no effects are registered.
      *
-     * @param encoder - Active command encoder.
-     * @param deltaMs - Wall-clock milliseconds since the previous frame.
-     * @param destinationView - View the final effect writes to (the next stage's
+     * @param encoder – Active command encoder.
+     * @param deltaMs – Wall-clock milliseconds since the previous frame.
+     * @param destinationView – View the final effect writes to (the next stage's
      *   input texture, or the swap chain).
      */
     encode(encoder: GPUCommandEncoder, deltaMs: number, destinationView: GPUTextureView): void {
@@ -278,7 +278,7 @@ export class PostProcessChain {
      * `texAView` partners with `texBView`; called only on multi-effect chains
      * where `texBView` is guaranteed to be allocated.
      *
-     * @param read - View currently being sampled by the effect.
+     * @param read – View currently being sampled by the effect.
      * @returns The opposite offscreen view to write into next.
      */
     private pickOffscreenView(read: GPUTextureView): GPUTextureView {

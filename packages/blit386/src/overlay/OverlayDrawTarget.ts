@@ -15,8 +15,8 @@ export interface OverlayDrawTarget {
      *
      * On WebGPU, batched in `overlayPrimitives` after the demo sprite pass.
      *
-     * @param rect - Rectangle bounds in display coordinates.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds in display coordinates.
+     * @param paletteIndex – Palette color index.
      */
     drawBarFill(rect: Rect2i, paletteIndex: number): void;
 
@@ -25,8 +25,8 @@ export interface OverlayDrawTarget {
      *
      * On WebGPU, batched in `overlayTopPrimitives` after the overlay label pass.
      *
-     * @param rect - Rectangle bounds in display coordinates.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds in display coordinates.
+     * @param paletteIndex – Palette color index.
      */
     drawBarFillOnTop(rect: Rect2i, paletteIndex: number): void;
 
@@ -35,10 +35,10 @@ export interface OverlayDrawTarget {
      *
      * On WebGPU, batched in `overlaySprites` after overlay bar fills.
      *
-     * @param font - Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet.isIndexed}).
-     * @param pos - Text position (top-left corner).
-     * @param text - String to render.
-     * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
+     * @param font – Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet.isIndexed}).
+     * @param pos – Text position (top-left corner).
+     * @param text – String to render.
+     * @param paletteOffset – Palette index offset applied to all glyphs (default 0).
      */
     drawLabel(font: BitmapFont, pos: Vector2i, text: string, paletteOffset?: number): void;
 
@@ -47,10 +47,10 @@ export interface OverlayDrawTarget {
      *
      * On WebGPU, batched in `overlayTopSprites` after `overlayTopPrimitives`.
      *
-     * @param font - Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet.isIndexed}).
-     * @param pos - Text position (top-left corner).
-     * @param text - String to render.
-     * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
+     * @param font – Bitmap font with character glyphs (underlying sheet must be indexed via {@link SpriteSheet.isIndexed}).
+     * @param pos – Text position (top-left corner).
+     * @param text – String to render.
+     * @param paletteOffset – Palette index offset applied to all glyphs (default 0).
      */
     drawLabelOnTop(font: BitmapFont, pos: Vector2i, text: string, paletteOffset?: number): void;
 }

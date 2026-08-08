@@ -20,7 +20,7 @@ export const DEFAULT_LACUNARITY = 2;
 /**
  * Remaps an unsigned 32-bit hash into `[-1, 1)`.
  *
- * @param u - Unsigned 32-bit value from `hash*i`.
+ * @param u – Unsigned 32-bit value from `hash*i`.
  * @returns Float in `[-1, 1)`.
  */
 export function hashToSigned(u: number): number {
@@ -30,7 +30,7 @@ export function hashToSigned(u: number): number {
 /**
  * Perlin fade curve (smoothstep quintic): `6t^5 - 15t^4 + 10t^3`.
  *
- * @param t - Interpolation parameter in [0, 1].
+ * @param t – Interpolation parameter in [0, 1].
  * @returns Smoothed weight in [0, 1].
  */
 export function fade(t: number): number {
@@ -40,9 +40,9 @@ export function fade(t: number): number {
 /**
  * Linear interpolation.
  *
- * @param a - Start value.
- * @param b - End value.
- * @param t - Blend factor.
+ * @param a – Start value.
+ * @param b – End value.
+ * @param t – Blend factor.
  * @returns `a + t * (b - a)`.
  */
 export function lerp(a: number, b: number, t: number): number {
@@ -55,11 +55,11 @@ export function lerp(a: number, b: number, t: number): number {
  * Amplitude sum is normalized so the result stays in approximately `[-1, 1]` when
  * each octave sample is in `[-1, 1]`.
  *
- * @param sample - Unit-frequency noise sampler returning approximately `[-1, 1]`.
- * @param x - Sample coordinate.
- * @param octaves - Number of octaves (floored; at least 1).
- * @param persistence - Amplitude multiplier per octave.
- * @param lacunarity - Frequency multiplier per octave.
+ * @param sample – Unit-frequency noise sampler returning approximately `[-1, 1]`.
+ * @param x – Sample coordinate.
+ * @param octaves – Number of octaves (floored; at least 1).
+ * @param persistence – Amplitude multiplier per octave.
+ * @param lacunarity – Frequency multiplier per octave.
  * @returns Normalized fBm sample.
  */
 export function fbm1(
@@ -88,12 +88,12 @@ export function fbm1(
 /**
  * Fractal Brownian motion over a 2D noise sample function.
  *
- * @param sample - Unit-frequency noise sampler returning approximately `[-1, 1]`.
- * @param x - X coordinate.
- * @param y - Y coordinate.
- * @param octaves - Number of octaves (floored; at least 1).
- * @param persistence - Amplitude multiplier per octave.
- * @param lacunarity - Frequency multiplier per octave.
+ * @param sample – Unit-frequency noise sampler returning approximately `[-1, 1]`.
+ * @param x – X coordinate.
+ * @param y – Y coordinate.
+ * @param octaves – Number of octaves (floored; at least 1).
+ * @param persistence – Amplitude multiplier per octave.
+ * @param lacunarity – Frequency multiplier per octave.
  * @returns Normalized fBm sample.
  */
 export function fbm2(
@@ -123,13 +123,13 @@ export function fbm2(
 /**
  * Fractal Brownian motion over a 3D noise sample function.
  *
- * @param sample - Unit-frequency noise sampler returning approximately `[-1, 1]`.
- * @param x - X coordinate.
- * @param y - Y coordinate.
- * @param z - Z coordinate.
- * @param octaves - Number of octaves (floored; at least 1).
- * @param persistence - Amplitude multiplier per octave.
- * @param lacunarity - Frequency multiplier per octave.
+ * @param sample – Unit-frequency noise sampler returning approximately `[-1, 1]`.
+ * @param x – X coordinate.
+ * @param y – Y coordinate.
+ * @param z – Z coordinate.
+ * @param octaves – Number of octaves (floored; at least 1).
+ * @param persistence – Amplitude multiplier per octave.
+ * @param lacunarity – Frequency multiplier per octave.
  * @returns Normalized fBm sample.
  */
 export function fbm3(
@@ -192,9 +192,9 @@ export const GRAD3: readonly (readonly [number, number, number])[] = [
 /**
  * Dot product of a 2D gradient selected by hash bits.
  *
- * @param hash - Lattice hash (low bits select the gradient).
- * @param x - Offset from lattice point on X.
- * @param y - Offset from lattice point on Y.
+ * @param hash – Lattice hash (low bits select the gradient).
+ * @param x – Offset from lattice point on X.
+ * @param y – Offset from lattice point on Y.
  * @returns Gradient · (x, y).
  */
 export function grad2(hash: number, x: number, y: number): number {
@@ -206,10 +206,10 @@ export function grad2(hash: number, x: number, y: number): number {
 /**
  * Dot product of a 3D gradient selected by hash bits.
  *
- * @param hash - Lattice hash (low bits select the gradient).
- * @param x - Offset from lattice point on X.
- * @param y - Offset from lattice point on Y.
- * @param z - Offset from lattice point on Z.
+ * @param hash – Lattice hash (low bits select the gradient).
+ * @param x – Offset from lattice point on X.
+ * @param y – Offset from lattice point on Y.
+ * @param z – Offset from lattice point on Z.
  * @returns Gradient · (x, y, z).
  */
 export function grad3(hash: number, x: number, y: number, z: number): number {

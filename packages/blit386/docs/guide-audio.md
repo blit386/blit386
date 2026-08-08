@@ -28,7 +28,7 @@ src/assets/
 ```
 
 `AudioManager` is owned by the internal `BTAPI` singleton (created and torn down alongside pointer, keyboard, and
-gamepad input) and is never exposed to demo code directly - only through the `BT.audio*`/`BT.sound*`/`BT.music*` methods
+gamepad input) and is never exposed to demo code directly – only through the `BT.audio*`/`BT.sound*`/`BT.music*` methods
 and the `BT.isAudioUnlocked`/`BT.isMusicPlaying` getters documented in [API: Audio](api-audio.md). On `attach()`,
 `AudioManager` registers its Web Audio context in `audioDecodeContext.ts`, a small bridge that `AudioClip` reads from to
 decode audio data without needing a direct reference to `AudioManager` itself.
@@ -74,7 +74,7 @@ class Demo implements IBTDemo {
 
 ## Preloading audio clips
 
-`AudioClip.load()` downloads and decodes audio even while the context is locked (suspended, pre-gesture) - decoding only
+`AudioClip.load()` downloads and decodes audio even while the context is locked (suspended, pre-gesture) – decoding only
 needs a registered context, not an unlocked one. That makes a title screen or a loading state a good place to preload
 every clip a level needs, so they're ready the instant the player's first gesture unlocks audio. Poll
 [`BT.loadingAssetsCount`](api-assets.md#loading-assets) to show progress while image and audio loads are still in
@@ -97,26 +97,26 @@ class Demo implements IBTDemo {
 ```
 
 Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode in
-every browser - see [Audio formats](api-browser-support.md#audio-formats) for the current per-browser matrix.
+every browser – see [Audio formats](api-browser-support.md#audio-formats) for the current per-browser matrix.
 
 ## Web audio constraints
 
 Every major browser enforces an autoplay policy: an `AudioContext` starts `'suspended'` and stays that way until a user
-gesture calls `resume()`. This is a platform rule, not something BLIT386 can configure around - there is no flag to
+gesture calls `resume()`. This is a platform rule, not something BLIT386 can configure around – there is no flag to
 start audio unlocked, and none is planned.
 
 - Volume and mute calls made before the gesture are not lost; they update the engine's internal bus state and take
   effect immediately once the context resumes.
 - The gesture requirement is independent of the render backend. Unlocking audio has nothing to do with
-  `BT.activeBackend` or the WebGPU/Canvas 2D fallback described in [Browser Support](api-browser-support.md) - a demo
+  `BT.activeBackend` or the WebGPU/Canvas 2D fallback described in [Browser Support](api-browser-support.md) – a demo
   can be fully unlocked on the software renderer, or fully locked on WebGPU.
 - Loading and decoding clips is implemented via `AudioClip` (see [Loading](api-audio.md#loading)) and works regardless
   of lock state. `BT.soundPlay` (see [Playback (SFX)](api-audio.md#playback-sfx)) behaves differently from a pre-unlock
   bus call: `playSound()` drops the request entirely before unlock (no voice allocated, no throw, counted as a dropped
   SFX request), where `AudioManager.volumeSet()` (`BT.audioVolumeSet`) still updates the engine's internal bus state and
-  applies once the context resumes - it is only inaudible while locked, not dropped.
+  applies once the context resumes – it is only inaudible while locked, not dropped.
 - `BT.musicPlay` (see [Playback (Music)](api-audio.md#playback-music)) sits between those two behaviors: a pre-unlock
-  call isn't dropped like `BT.soundPlay`, but it isn't merely inaudible-and-applied like a bus call either - it is
+  call isn't dropped like `BT.soundPlay`, but it isn't merely inaudible-and-applied like a bus call either – it is
   remembered and starts automatically the instant the context unlocks. Calling `BT.musicPlay` again while still locked
   replaces the remembered request, so only the last call before unlock actually plays.
 
@@ -129,7 +129,7 @@ of each sound's own per-voice volume from `BT.soundVolumeSet`.
 The pool itself (`src/audio/VoicePool.ts`) is a fixed-size array sized by `HardwareSettings.audioVoices` - it never
 grows at runtime. Each `BT.soundPlay` call either claims a free slot or steals the lowest-priority active voice at or
 below the incoming priority; see [Playback (SFX)](api-audio.md#playback-sfx) for the exact policy and a worked example.
-This cap exists because each slot is a real `AudioBufferSourceNode -> GainNode -> StereoPannerNode` chain - letting the
+This cap exists because each slot is a real `AudioBufferSourceNode -> GainNode -> StereoPannerNode` chain – letting the
 pool grow unbounded would let a busy scene (an explosion with dozens of debris impacts, for example) spend unbounded CPU
 on nodes the player can't meaningfully hear over each other anyway.
 
@@ -138,7 +138,7 @@ To see the pool cap and stealing policy in action instead of reasoning about it 
 voices used/total, steal, and drop readout. See [Audio meters](api-overlay.md#audio-meters-optional) in the Overlay API
 reference.
 
-A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch - vary it slightly per
+A sound that plays often (footsteps, hits, bullet casings) reads as repetitive at a fixed pitch – vary it slightly per
 play instead:
 
 ```ts twoslash
@@ -158,7 +158,7 @@ function playFootstep() {
 ## Playing music
 
 `BT.musicPlay` (see [Playback (Music)](api-audio.md#playback-music)) drives a single looping music player through the
-`'music'` bus - there is no per-track handle to manage like `SoundRef`, and a second call crossfades from whatever is
+`'music'` bus – there is no per-track handle to manage like `SoundRef`, and a second call crossfades from whatever is
 currently playing into the new track instead of layering the two. Two patterns cover most games: switching tracks by
 game state, and looping a region after a one-shot intro.
 
@@ -193,7 +193,7 @@ function setGameState(next: GameState) {
 
 Reach for `overlap: 0` instead of the default simultaneous crossfade when the outgoing track should finish cleanly
 before the new one starts (a menu jingle that shouldn't blend into gameplay music), or `overlap: -1` for a deliberate
-beat of silence between tracks (a boss intro sting) - see [Crossfading](api-audio.md#crossfading) for the exact timing
+beat of silence between tracks (a boss intro sting) – see [Crossfading](api-audio.md#crossfading) for the exact timing
 math.
 
 ### Intro then loop
@@ -217,7 +217,7 @@ BT.musicPlay(theme, { loopStart: 8, loopEnd: 32 });
 
 ## Design a sound
 
-Beyond loading audio files, `AudioClip.synth` generates a clip entirely on the CPU from a `SynthParams` descriptor - no
+Beyond loading audio files, `AudioClip.synth` generates a clip entirely on the CPU from a `SynthParams` descriptor – no
 source file, no network fetch, and no `OfflineAudioContext`. Rendering is deterministic and synchronous: the same params
 (including `seed`) always produce the same samples, so a `SynthParams` value behaves like ordinary game data rather than
 a recorded asset. See [Synth](api-audio.md#synth) for the full field reference.
@@ -240,7 +240,7 @@ BT.soundPlay(zap);
 ```
 
 `BT.synthPreset` bundles ready-made starting points for common effects (`jump`, `pickup`, `explosion`, `laser`, `hit`,
-`blip`) - see [Presets](api-audio.md#presets) for the full list. Passing a different `seed` to a preset applies small,
+`blip`) – see [Presets](api-audio.md#presets) for the full list. Passing a different `seed` to a preset applies small,
 bounded jitter to a couple of its fields, so a repeated sound (footsteps, hits, pickups) doesn't sound identical every
 time, while staying reproducible for any given seed:
 
@@ -255,7 +255,7 @@ async function playFootstep(stepIndex: number) {
 }
 ```
 
-Because `SynthParams` is plain data (numbers, strings, and nested objects - no functions or class instances), a tuned
+Because `SynthParams` is plain data (numbers, strings, and nested objects – no functions or class instances), a tuned
 sound can be stored, checked into a level file, or embedded in a save alongside the rest of your game's JSON, then
 handed to `AudioClip.synth` whenever it's needed:
 

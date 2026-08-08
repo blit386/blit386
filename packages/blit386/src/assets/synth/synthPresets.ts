@@ -10,7 +10,7 @@
  * {@link DEFAULT_PRESET_SEED} - still fully deterministic, just a fixed baseline variant.
  *
  * This is a single module rather than one file per preset (unlike
- * `render/effects/presets/`) - each factory is a few lines of parameter tuning, not a
+ * `render/effects/presets/`) – each factory is a few lines of parameter tuning, not a
  * multi-effect pipeline, so splitting further would not add clarity.
  */
 
@@ -32,8 +32,8 @@ const MIX_JITTER = 0.1;
 /**
  * Computes a deterministic multiplicative jitter factor in `[1 - amount, 1 + amount]`.
  *
- * @param rng - Seeded PRNG driving this preset's variation.
- * @param amount - Maximum fractional deviation from `1`.
+ * @param rng – Seeded PRNG driving this preset's variation.
+ * @param amount – Maximum fractional deviation from `1`.
  * @returns Multiplier to apply to a base value.
  */
 function jitterMultiplier(rng: Rng, amount: number): number {
@@ -44,7 +44,7 @@ function jitterMultiplier(rng: Rng, amount: number): number {
  * Clamps a value into `[0, 1]`, used after jittering a `noiseMix`/`dutyCycle` field so a preset
  * can never render an out-of-range value that {@link validateSynthParams} would reject.
  *
- * @param value - Value to clamp.
+ * @param value – Value to clamp.
  * @returns `value` clamped to `[0, 1]`.
  */
 function clampUnit(value: number): number {
@@ -59,7 +59,7 @@ function clampUnit(value: number): number {
  * doesn't sound identical every time. Omit `seed` (or pass {@link DEFAULT_PRESET_SEED}) for a
  * fixed baseline variant.
  *
- * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
+ * @param seed – Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a jump sound effect.
  */
 export function jump(seed: number = DEFAULT_PRESET_SEED): SynthParams {
@@ -83,7 +83,7 @@ export function jump(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * `seed` jitters the base frequency (+/-8%) and duration (+/-12%). Omit `seed` for a fixed
  * baseline variant.
  *
- * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
+ * @param seed – Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a pickup sound effect.
  */
 export function pickup(seed: number = DEFAULT_PRESET_SEED): SynthParams {
@@ -105,10 +105,10 @@ export function pickup(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * a boom that lingers.
  *
  * `seed` jitters the base frequency (+/-8%), duration (+/-12%), and `noiseMix` (+/-10%,
- * clamped to `[0, 1]`) - the mix jitter alone gives every explosion a distinct noisy texture.
+ * clamped to `[0, 1]`) – the mix jitter alone gives every explosion a distinct noisy texture.
  * Omit `seed` for a fixed baseline variant.
  *
- * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
+ * @param seed – Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for an explosion sound effect.
  */
 export function explosion(seed: number = DEFAULT_PRESET_SEED): SynthParams {
@@ -130,7 +130,7 @@ export function explosion(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * `seed` jitters the base frequency (+/-8%) and duration (+/-12%). Omit `seed` for a fixed
  * baseline variant.
  *
- * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
+ * @param seed – Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a laser sound effect.
  */
 export function laser(seed: number = DEFAULT_PRESET_SEED): SynthParams {
@@ -153,7 +153,7 @@ export function laser(seed: number = DEFAULT_PRESET_SEED): SynthParams {
  * `seed` jitters the base frequency (+/-8%) and `noiseMix` (+/-10%, clamped to `[0, 1]`). Omit
  * `seed` for a fixed baseline variant.
  *
- * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
+ * @param seed – Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a hit sound effect.
  */
 export function hit(seed: number = DEFAULT_PRESET_SEED): SynthParams {
@@ -172,11 +172,11 @@ export function hit(seed: number = DEFAULT_PRESET_SEED): SynthParams {
 /**
  * UI blip / menu select: a very short, clean sine tone.
  *
- * `seed` jitters only the base frequency, and only slightly (+/-3%) - UI feedback should stay
+ * `seed` jitters only the base frequency, and only slightly (+/-3%) – UI feedback should stay
  * recognizably consistent rather than vary as much as a gameplay sound effect. Omit `seed` for
  * a fixed baseline variant.
  *
- * @param seed - Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
+ * @param seed – Seed for deterministic jitter. Defaults to {@link DEFAULT_PRESET_SEED}.
  * @returns A fresh `SynthParams` for a UI blip sound effect.
  */
 export function blip(seed: number = DEFAULT_PRESET_SEED): SynthParams {

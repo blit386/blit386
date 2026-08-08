@@ -29,8 +29,8 @@ export class Vector2i {
     /**
      * Creates an integer 2D vector, truncating inputs toward zero.
      *
-     * @param x - Horizontal component (defaults to 0).
-     * @param y - Vertical component (defaults to 0).
+     * @param x – Horizontal component (defaults to 0).
+     * @param y – Vertical component (defaults to 0).
      */
     constructor(
         /** Horizontal component (defaults to 0). */
@@ -56,7 +56,7 @@ export class Vector2i {
     /**
      * Sets width (x component), truncated to integer.
      *
-     * @param value - The new width value.
+     * @param value – The new width value.
      */
     set width(value: number) {
         this.x = value | 0;
@@ -73,7 +73,7 @@ export class Vector2i {
     /**
      * Sets height (y component), truncated to integer.
      *
-     * @param value - The new height value.
+     * @param value – The new height value.
      */
     set height(value: number) {
         this.y = value | 0;
@@ -81,7 +81,7 @@ export class Vector2i {
 
     /**
      * Returns a zero vector (0, 0).
-     * Returns a cached frozen singleton - do not modify.
+     * Returns a cached frozen singleton – do not modify.
      *
      * @returns Vector at origin (cached).
      */
@@ -91,7 +91,7 @@ export class Vector2i {
 
     /**
      * Returns a unit vector (1, 1).
-     * Returns a cached frozen singleton - do not modify.
+     * Returns a cached frozen singleton – do not modify.
      *
      * @returns Vector with both components set to 1 (cached).
      */
@@ -102,7 +102,7 @@ export class Vector2i {
     /**
      * Returns an up direction vector (0, -1).
      * In screen coordinates, Y increases downward, so up is negative.
-     * Returns a cached frozen singleton - do not modify.
+     * Returns a cached frozen singleton – do not modify.
      *
      * @returns Vector pointing up (cached).
      */
@@ -112,7 +112,7 @@ export class Vector2i {
 
     /**
      * Returns a down direction vector (0, 1).
-     * Returns a cached frozen singleton - do not modify.
+     * Returns a cached frozen singleton – do not modify.
      *
      * @returns Vector pointing down (cached).
      */
@@ -122,7 +122,7 @@ export class Vector2i {
 
     /**
      * Returns a left-direction vector (-1, 0).
-     * Returns a cached frozen singleton - do not modify.
+     * Returns a cached frozen singleton – do not modify.
      *
      * @returns Vector pointing left (cached).
      */
@@ -132,7 +132,7 @@ export class Vector2i {
 
     /**
      * Returns a right-direction vector (1, 0).
-     * Returns a cached frozen singleton - do not modify.
+     * Returns a cached frozen singleton – do not modify.
      *
      * @returns Vector pointing right (cached).
      */
@@ -144,8 +144,8 @@ export class Vector2i {
      * Creates a Vector2i from integer values without truncation.
      * Used internally in hot paths where values are guaranteed to be integers.
      *
-     * @param x - Horizontal component (must be integer).
-     * @param y - Vertical component (must be integer).
+     * @param x – Horizontal component (must be integer).
+     * @param y – Vertical component (must be integer).
      * @returns New Vector2i with the specified values.
      */
     public static fromXYUnchecked(x: number, y: number): Vector2i {
@@ -163,8 +163,8 @@ export class Vector2i {
      *
      * Note: |0 truncates toward zero (e.g., -1.7 becomes -1, not -2).
      *
-     * @param x - Floating-point x coordinate.
-     * @param y - Floating-point y coordinate.
+     * @param x – Floating-point x coordinate.
+     * @param y – Floating-point y coordinate.
      * @returns New integer vector.
      */
     static fromFloat(x: number, y: number): Vector2i {
@@ -174,8 +174,8 @@ export class Vector2i {
     /**
      * Calculates distance between two vectors.
      *
-     * @param a - First vector.
-     * @param b - Second vector.
+     * @param a – First vector.
+     * @param b – Second vector.
      * @returns Euclidean distance between a and b.
      */
     static distance(a: Vector2i, b: Vector2i): number {
@@ -189,8 +189,8 @@ export class Vector2i {
      * Calculates squared distance between two vectors.
      * Avoids the sqrt for performance.
      *
-     * @param a - First vector.
-     * @param b - Second vector.
+     * @param a – First vector.
+     * @param b – Second vector.
      * @returns Squared distance between a and b.
      */
     static sqrDistance(a: Vector2i, b: Vector2i): number {
@@ -202,10 +202,10 @@ export class Vector2i {
 
     /**
      * Calculates dot product of two vectors.
-     * The static version - use instance method a.dot(b) when you have vector instances.
+     * The static version – use instance method a.dot(b) when you have vector instances.
      *
-     * @param a - First vector.
-     * @param b - Second vector.
+     * @param a – First vector.
+     * @param b – Second vector.
      * @returns Scalar dot product.
      */
     static dotProduct(a: Vector2i, b: Vector2i): number {
@@ -216,9 +216,9 @@ export class Vector2i {
      * Linearly interpolates between two vectors.
      * Result is truncated to integers. t is clamped to [0, 1].
      *
-     * @param a - Start vector.
-     * @param b - End vector.
-     * @param t - Interpolation factor, clamped to [0, 1] (0 = a, 1 = b).
+     * @param a – Start vector.
+     * @param b – End vector.
+     * @param t – Interpolation factor, clamped to [0, 1] (0 = a, 1 = b).
      * @returns New interpolated vector.
      */
     static lerp(a: Vector2i, b: Vector2i, t: number): Vector2i {
@@ -231,10 +231,10 @@ export class Vector2i {
      * Linearly interpolates between two vectors and writes to the existing vector.
      * Zero allocation alternative to lerp(). t is clamped to [0, 1].
      *
-     * @param a - Start vector.
-     * @param b - End vector.
-     * @param t - Interpolation factor, clamped to [0, 1] (0 = a, 1 = b).
-     * @param out - Vector to write the result to.
+     * @param a – Start vector.
+     * @param b – End vector.
+     * @param t – Interpolation factor, clamped to [0, 1] (0 = a, 1 = b).
+     * @param out – Vector to write the result to.
      * @returns The out vector for chaining.
      */
     static lerpTo(a: Vector2i, b: Vector2i, t: number, out: Vector2i): Vector2i {
@@ -249,7 +249,7 @@ export class Vector2i {
     /**
      * Adds another vector and returns the result as a new vector.
      *
-     * @param other - Vector to add.
+     * @param other – Vector to add.
      * @returns New vector with summed components.
      */
     add(other: Vector2i): Vector2i {
@@ -260,8 +260,8 @@ export class Vector2i {
     /**
      * Adds raw `x` and `y` offsets and returns the result as a new vector.
      *
-     * @param x - X offset to add.
-     * @param y - Y offset to add.
+     * @param x – X offset to add.
+     * @param y – Y offset to add.
      * @returns New vector with summed components.
      */
     addXY(x: number, y: number): Vector2i {
@@ -272,30 +272,30 @@ export class Vector2i {
     /**
      * Subtracts another vector and returns the result as a new vector.
      *
-     * @param other - Vector to subtract.
+     * @param other – Vector to subtract.
      * @returns New vector with difference of components.
      */
     sub(other: Vector2i): Vector2i {
-        // Integer - integer = integer, use unchecked.
+        // Integer – integer = integer, use unchecked.
         return Vector2i.fromXYUnchecked(this.x - other.x, this.y - other.y);
     }
 
     /**
      * Subtracts raw `x` and `y` offsets and returns the result as a new vector.
      *
-     * @param x - X offset to subtract.
-     * @param y - Y offset to subtract.
+     * @param x – X offset to subtract.
+     * @param y – Y offset to subtract.
      * @returns New vector with difference of components.
      */
     subXY(x: number, y: number): Vector2i {
-        // Integer - integer = integer, use unchecked.
+        // Integer – integer = integer, use unchecked.
         return Vector2i.fromXYUnchecked(this.x - (x | 0), this.y - (y | 0));
     }
 
     /**
      * Multiplies both components by a scalar and returns a new vector.
      *
-     * @param scalar - Value to multiply both components by.
+     * @param scalar – Value to multiply both components by.
      * @returns New vector with scaled components.
      */
     mul(scalar: number): Vector2i {
@@ -305,7 +305,7 @@ export class Vector2i {
     /**
      * Performs component-wise multiplication with another vector.
      *
-     * @param other - Vector to multiply with.
+     * @param other – Vector to multiply with.
      * @returns New vector with multiplied components.
      */
     mulVec(other: Vector2i): Vector2i {
@@ -316,7 +316,7 @@ export class Vector2i {
     /**
      * Divides both components by a scalar and truncates toward zero.
      *
-     * @param scalar - Value to divide both components by.
+     * @param scalar – Value to divide both components by.
      * @returns New vector with divided and truncated components.
      * @throws Error if scalar is zero.
      */
@@ -349,7 +349,7 @@ export class Vector2i {
     /**
      * Returns the component-wise minimum of this vector and another.
      *
-     * @param other - Vector to compare with.
+     * @param other – Vector to compare with.
      * @returns New vector with minimum components.
      */
     min(other: Vector2i): Vector2i {
@@ -359,7 +359,7 @@ export class Vector2i {
     /**
      * Returns the component-wise maximum of this vector and another.
      *
-     * @param other - Vector to compare with.
+     * @param other – Vector to compare with.
      * @returns New vector with maximum components.
      */
     max(other: Vector2i): Vector2i {
@@ -369,8 +369,8 @@ export class Vector2i {
     /**
      * Clamps both components into a numeric range.
      *
-     * @param minVal - Minimum value for both components.
-     * @param maxVal - Maximum value for both components.
+     * @param minVal – Minimum value for both components.
+     * @param maxVal – Maximum value for both components.
      * @returns New vector with clamped components.
      */
     clamp(minVal: number, maxVal: number): Vector2i {
@@ -383,8 +383,8 @@ export class Vector2i {
     /**
      * Clamps both components into per-axis vector bounds.
      *
-     * @param minVec - Vector with minimum values.
-     * @param maxVec - Vector with maximum values.
+     * @param minVec – Vector with minimum values.
+     * @param maxVec – Vector with maximum values.
      * @returns New vector with clamped components.
      */
     clampVec(minVec: Vector2i, maxVec: Vector2i): Vector2i {
@@ -397,7 +397,7 @@ export class Vector2i {
     /**
      * Calculates the dot product with another vector.
      *
-     * @param other - Vector to dot with.
+     * @param other – Vector to dot with.
      * @returns Scalar dot product.
      */
     dot(other: Vector2i): number {
@@ -409,7 +409,7 @@ export class Vector2i {
      * Returns the z-component of the 3D cross-product if vectors were in XY plane.
      * Useful for determining which side of a line a point is on.
      *
-     * @param other - Vector to cross with.
+     * @param other – Vector to cross with.
      * @returns Scalar cross-product (positive = other is counter-clockwise from this).
      */
     cross(other: Vector2i): number {
@@ -438,8 +438,8 @@ export class Vector2i {
      * Adds another vector and writes the result to an existing vector.
      * Zero allocation alternative to add().
      *
-     * @param other - Vector to add.
-     * @param out - Vector to write the result to.
+     * @param other – Vector to add.
+     * @param out – Vector to write the result to.
      * @returns The out vector for chaining.
      */
     addTo(other: Vector2i, out: Vector2i): Vector2i {
@@ -453,8 +453,8 @@ export class Vector2i {
      * Subtracts another vector and writes the result to an existing vector.
      * Zero allocation alternative to sub().
      *
-     * @param other - Vector to subtract.
-     * @param out - Vector to write the result to.
+     * @param other – Vector to subtract.
+     * @param out – Vector to write the result to.
      * @returns The out vector for chaining.
      */
     subTo(other: Vector2i, out: Vector2i): Vector2i {
@@ -468,8 +468,8 @@ export class Vector2i {
      * Multiplies by scalar and writes the result to an existing vector.
      * Zero allocation alternative to mul().
      *
-     * @param scalar - Value to multiply by.
-     * @param out - Vector to write the result to.
+     * @param scalar – Value to multiply by.
+     * @param out – Vector to write the result to.
      * @returns The out vector for chaining.
      */
     mulTo(scalar: number, out: Vector2i): Vector2i {
@@ -483,8 +483,8 @@ export class Vector2i {
      * Divides by scalar and writes the result to an existing vector.
      * Zero allocation alternative to div().
      *
-     * @param scalar - Value to divide by.
-     * @param out - Vector to write the result to.
+     * @param scalar – Value to divide by.
+     * @param out – Vector to write the result to.
      * @returns The out vector for chaining.
      * @throws Error if scalar is zero.
      */
@@ -503,7 +503,7 @@ export class Vector2i {
      * Copies this vector's values to an existing vector.
      * Zero allocation alternative to clone().
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     cloneTo(out: Vector2i): Vector2i {
@@ -517,7 +517,7 @@ export class Vector2i {
      * Writes negated values to an existing vector.
      * Zero allocation alternative to negate().
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     negateTo(out: Vector2i): Vector2i {
@@ -531,7 +531,7 @@ export class Vector2i {
      * Writes absolute values to an existing vector.
      * Zero allocation alternative to abs().
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     absTo(out: Vector2i): Vector2i {
@@ -545,8 +545,8 @@ export class Vector2i {
      * Writes component-wise minimum to an existing vector.
      * Zero allocation alternative to min().
      *
-     * @param other - Vector to compare with.
-     * @param out - Vector to write to.
+     * @param other – Vector to compare with.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     minTo(other: Vector2i, out: Vector2i): Vector2i {
@@ -560,8 +560,8 @@ export class Vector2i {
      * Writes component-wise maximum to an existing vector.
      * Zero allocation alternative to max().
      *
-     * @param other - Vector to compare with.
-     * @param out - Vector to write to.
+     * @param other – Vector to compare with.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     maxTo(other: Vector2i, out: Vector2i): Vector2i {
@@ -575,9 +575,9 @@ export class Vector2i {
      * Writes clamped values to an existing vector.
      * Zero allocation alternative to clamp().
      *
-     * @param minVal - Minimum value for both components.
-     * @param maxVal - Maximum value for both components.
-     * @param out - Vector to write to.
+     * @param minVal – Minimum value for both components.
+     * @param maxVal – Maximum value for both components.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     clampTo(minVal: number, maxVal: number, out: Vector2i): Vector2i {
@@ -596,7 +596,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param other - Vector to add.
+     * @param other – Vector to add.
      * @returns This vector for chaining.
      */
     addInPlace(other: Vector2i): this {
@@ -612,8 +612,8 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param x - X offset to add.
-     * @param y - Y offset to add.
+     * @param x – X offset to add.
+     * @param y – Y offset to add.
      * @returns This vector for chaining.
      */
     addXYInPlace(x: number, y: number): this {
@@ -629,7 +629,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param other - Vector to subtract.
+     * @param other – Vector to subtract.
      * @returns This vector for chaining.
      */
     subInPlace(other: Vector2i): this {
@@ -645,8 +645,8 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param x - X offset to subtract.
-     * @param y - Y offset to subtract.
+     * @param x – X offset to subtract.
+     * @param y – Y offset to subtract.
      * @returns This vector for chaining.
      */
     subXYInPlace(x: number, y: number): this {
@@ -662,7 +662,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param scalar - Value to multiply both components by.
+     * @param scalar – Value to multiply both components by.
      * @returns This vector for chaining.
      */
     mulInPlace(scalar: number): this {
@@ -678,7 +678,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param other - Vector to multiply with.
+     * @param other – Vector to multiply with.
      * @returns This vector for chaining.
      */
     mulVecInPlace(other: Vector2i): this {
@@ -694,7 +694,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param scalar - Value to divide both components by.
+     * @param scalar – Value to divide both components by.
      * @returns This vector for chaining.
      * @throws Error if scalar is zero.
      */
@@ -745,7 +745,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param other - Vector to compare with.
+     * @param other – Vector to compare with.
      * @returns This vector for chaining.
      */
     minInPlace(other: Vector2i): this {
@@ -761,7 +761,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param other - Vector to compare with.
+     * @param other – Vector to compare with.
      * @returns This vector for chaining.
      */
     maxInPlace(other: Vector2i): this {
@@ -777,8 +777,8 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param minVal - Minimum value for both components.
-     * @param maxVal - Maximum value for both components.
+     * @param minVal – Minimum value for both components.
+     * @param maxVal – Maximum value for both components.
      * @returns This vector for chaining.
      */
     clampInPlace(minVal: number, maxVal: number): this {
@@ -797,8 +797,8 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param minVec - Vector with minimum values.
-     * @param maxVec - Vector with maximum values.
+     * @param minVec – Vector with minimum values.
+     * @param maxVec – Vector with maximum values.
      * @returns This vector for chaining.
      */
     clampVecInPlace(minVec: Vector2i, maxVec: Vector2i): this {
@@ -814,8 +814,8 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param x - New x component.
-     * @param y - New y component.
+     * @param x – New x component.
+     * @param y – New y component.
      * @returns This vector for chaining.
      */
     set(x: number, y: number): this {
@@ -831,7 +831,7 @@ export class Vector2i {
      *
      * WARNING: Mutates this vector. Don't use on frozen/cached singletons.
      *
-     * @param other - Vector to copy from.
+     * @param other – Vector to copy from.
      * @returns This vector for chaining.
      */
     copyFrom(other: Vector2i): this {
@@ -863,7 +863,7 @@ export class Vector2i {
     /**
      * Calculates the Euclidean distance to another vector.
      *
-     * @param other - Target vector.
+     * @param other – Target vector.
      * @returns Distance between this and other.
      */
     distanceTo(other: Vector2i): number {
@@ -877,8 +877,8 @@ export class Vector2i {
      * Calculates the Euclidean distance to raw coordinates.
      * Avoids creating a temporary Vector2i.
      *
-     * @param x - Target X coordinate.
-     * @param y - Target Y coordinate.
+     * @param x – Target X coordinate.
+     * @param y – Target Y coordinate.
      * @returns Distance between this and the point.
      */
     distanceToXY(x: number, y: number): number {
@@ -892,7 +892,7 @@ export class Vector2i {
      * Calculates the squared distance to another vector.
      * Avoids the sqrt for performance. Useful for distance comparisons.
      *
-     * @param other - Target vector.
+     * @param other – Target vector.
      * @returns Squared distance between this and other.
      */
     sqrDistanceTo(other: Vector2i): number {
@@ -906,8 +906,8 @@ export class Vector2i {
      * Calculates the squared distance to raw coordinates.
      * Avoids the sqrt and temporary Vector2i allocation.
      *
-     * @param x - Target X coordinate.
-     * @param y - Target Y coordinate.
+     * @param x – Target X coordinate.
+     * @param y – Target Y coordinate.
      * @returns Squared distance between this and the point.
      */
     sqrDistanceToXY(x: number, y: number): number {
@@ -921,7 +921,7 @@ export class Vector2i {
      * Calculates the Manhattan (taxicab) distance to another vector.
      * Useful for tile-based movement costs.
      *
-     * @param other - Target vector.
+     * @param other – Target vector.
      * @returns Manhattan distance (|dx| + |dy|).
      */
     manhattanDistanceTo(other: Vector2i): number {
@@ -932,8 +932,8 @@ export class Vector2i {
      * Calculates the Manhattan distance to raw coordinates.
      * Avoids creating a temporary Vector2i.
      *
-     * @param x - Target X coordinate.
-     * @param y - Target Y coordinate.
+     * @param x – Target X coordinate.
+     * @param y – Target Y coordinate.
      * @returns Manhattan distance (|dx| + |dy|).
      */
     manhattanDistanceToXY(x: number, y: number): number {
@@ -944,7 +944,7 @@ export class Vector2i {
      * Calculates the Chebyshev distance to another vector.
      * Useful for 8-directional movement (king's move in chess).
      *
-     * @param other - Target vector.
+     * @param other – Target vector.
      * @returns Chebyshev distance max(|dx|, |dy|).
      */
     chebyshevDistanceTo(other: Vector2i): number {
@@ -955,8 +955,8 @@ export class Vector2i {
      * Calculates the Chebyshev distance to raw coordinates.
      * Avoids creating a temporary Vector2i.
      *
-     * @param x - Target X coordinate.
-     * @param y - Target Y coordinate.
+     * @param x – Target X coordinate.
+     * @param y – Target Y coordinate.
      * @returns Chebyshev distance max(|dx|, |dy|).
      */
     chebyshevDistanceToXY(x: number, y: number): number {
@@ -990,7 +990,7 @@ export class Vector2i {
     /**
      * Checks if this vector equals another vector component-wise.
      *
-     * @param other - Vector to compare with.
+     * @param other – Vector to compare with.
      * @returns True if both x and y components are equal.
      */
     isEqual(other: Vector2i): boolean {
@@ -1001,7 +1001,7 @@ export class Vector2i {
      * Backward-compatible alias for {@link isEqual}.
      *
      * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isEqual} instead.
-     * @param other - Vector to compare with.
+     * @param other – Vector to compare with.
      * @returns True if both x and y components are equal.
      */
     equals(other: Vector2i): boolean {
@@ -1012,8 +1012,8 @@ export class Vector2i {
      * Checks if this vector equals raw coordinates.
      * Avoids creating a temporary Vector2i for comparison.
      *
-     * @param x - X coordinate to compare.
-     * @param y - Y coordinate to compare.
+     * @param x – X coordinate to compare.
+     * @param y – Y coordinate to compare.
      * @returns True if components match the given coordinates.
      */
     isEqualXY(x: number, y: number): boolean {

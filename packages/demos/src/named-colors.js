@@ -1,5 +1,5 @@
 /**
- * Named Colors Demo - Color32 named lookup table and custom registration APIs.
+ * Named Colors Demo – Color32 named lookup table and custom registration APIs.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Basics (https://demos.blit386.dev/basics),
@@ -18,7 +18,7 @@
  *
  * The title strip, captions, and tips panel draw with the shared demo UI kit
  * (src/shared/ui.js), so this demo's chrome matches every other demo. The color
- * swatches themselves stay hand-drawn - their palette slots ARE the lesson.
+ * swatches themselves stay hand-drawn – their palette slots ARE the lesson.
  *
  * Live version: https://demos.blit386.dev/named-colors
  */
@@ -41,7 +41,7 @@ import { applyTheme, ui } from './shared/ui.js';
 // chart's bar colors, and the lesson's swatch slots.
 //
 // The chart slots exist because configure() runs BEFORE init() installs the theme, so the
-// chart style cannot point at theme slots - init() copies the matching theme colors here.
+// chart style cannot point at theme slots – init() copies the matching theme colors here.
 const C_CHART_UPDATE = 1; // Timing chart: update() bar (matches the theme's blue-gray border).
 const C_CHART_RENDER = 2; // Timing chart: render() bar (matches the theme's off-white text).
 const C_CHART_TAG = 3; // Timing chart: milestone tag labels (matches the theme's green accent).
@@ -120,7 +120,7 @@ class Demo {
         this.removeIfExists(CUSTOM_OPTIONAL_NAME);
 
         // registerColor adds a NEW entry to the global name table.
-        // It throws if the name is already taken - that is why we cleared above.
+        // It throws if the name is already taken – that is why we cleared above.
         // 'demo-dynamic' will be rewritten every tick with updateColor in update().
         Color32.registerColor(CUSTOM_DYNAMIC_NAME, new Color32(90, 170, 255));
 
@@ -193,7 +193,7 @@ class Demo {
 
         // Upper panel: hand-drawn background for the four color swatches. Kit panels size
         // themselves around kit rows only, so a frame around hand-drawn artwork keeps using
-        // BT.drawRectFill / BT.drawRect - but with the shared theme's panel colors.
+        // BT.drawRectFill / BT.drawRect – but with the shared theme's panel colors.
         BT.drawRectFill(new Rect2i(6, 32, 308, 126), this.theme.panel);
         BT.drawRect(new Rect2i(6, 32, 308, 126), this.theme.border);
 
@@ -267,7 +267,7 @@ class Demo {
      * @param {string} label
      */
     drawSwatch(x, y, colorIndex, label) {
-        // Fill the swatch with the palette slot we are demonstrating - the lesson itself.
+        // Fill the swatch with the palette slot we are demonstrating – the lesson itself.
         BT.drawRectFill(new Rect2i(x, y, SWATCH_W, SWATCH_H), colorIndex);
 
         // The outline and the label are chrome, so they use the shared UI theme colors.

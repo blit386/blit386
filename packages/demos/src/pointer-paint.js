@@ -1,7 +1,7 @@
 /**
- * Pointer Paint Demo - multi-touch finger painting with mouse + up to 3 touches.
+ * Pointer Paint Demo – multi-touch finger painting with mouse + up to 3 touches.
  *
- * Prerequisites: Pointer Basics - https://demos.blit386.dev/pointer-basics
+ * Prerequisites: Pointer Basics – https://demos.blit386.dev/pointer-basics
  *
  * Live version: https://demos.blit386.dev/pointer-paint
  *
@@ -20,7 +20,7 @@
  * are tracked at once; a fourth simultaneous touch is dropped silently. Because
  * touch devices have no right or middle button, the shared UI kit
  * (src/shared/ui.js) draws a small panel with a Clear button and a Brush button
- * that do exactly the same thing as the mouse shortcuts - so the whole demo
+ * that do exactly the same thing as the mouse shortcuts – so the whole demo
  * works with fingers alone.
  *
  * What this demonstrates:
@@ -228,7 +228,7 @@ class Demo {
             }
 
             if (!this.painting[slot]) {
-                // Just started painting - seed last position so the first
+                // Just started painting – seed last position so the first
                 // stamp doesn't draw a line all the way from (0, 0).
                 this.lastPosX[slot] = pos.x;
                 this.lastPosY[slot] = pos.y;
@@ -385,7 +385,7 @@ class Demo {
         const name = BRUSH_NAMES[this.brushIndex];
         ui.kv('Brush', name);
 
-        // The Brush button cycles the size - the touch equivalent of the
+        // The Brush button cycles the size – the touch equivalent of the
         // middle-click shortcut in update(). Its label changes with the brush,
         // and the kit normally recognizes a widget by its label, so we give it
         // a stable id to keep it the "same" button across frames.
@@ -393,7 +393,7 @@ class Demo {
             this.cycleBrush();
         }
 
-        // The Clear button wipes the canvas - the touch equivalent of the
+        // The Clear button wipes the canvas – the touch equivalent of the
         // right-click shortcut in update(). Both paths call clearCanvas().
         if (ui.button('Clear')) {
             this.clearCanvas();

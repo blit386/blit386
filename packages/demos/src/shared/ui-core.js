@@ -1,18 +1,18 @@
 /**
- * Core of the shared demo UI kit - the frame lifecycle, layout math, and input plumbing.
+ * Core of the shared demo UI kit – the frame lifecycle, layout math, and input plumbing.
  *
  * The kit works like a tiny "immediate-mode" UI (the style made famous by Dear ImGui):
- * a demo does not build widget objects up front - it simply calls ui.panel(), ui.button(),
+ * a demo does not build widget objects up front – it simply calls ui.panel(), ui.button(),
  * ui.kv(), and so on every frame inside render(), and the kit draws and hit-tests them on
  * the spot. That keeps demo code short, but it needs two tricks to stay fast and correct:
  *
  * 1. Deferred drawing. A panel's final width and position are not known until its last row
  *    is declared (auto width comes from the widest row; a bottom-anchored panel is placed
- *    once its total height is known). So widgets never draw directly - they append small
+ *    once its total height is known). So widgets never draw directly – they append small
  *    "command" records with panel-relative coordinates to a preallocated pool, and ui.end()
  *    resolves the panel's origin and replays the commands through the real BT draw calls.
  *    All the pool objects are allocated once and reused, so steady-state rendering allocates
- *    nothing - the one performance rule that actually matters in render().
+ *    nothing – the one performance rule that actually matters in render().
  *
  * 2. One-frame-old hit rectangles. A widget cannot know its absolute position while it is
  *    being declared (see above), so interaction tests use the rectangle the widget ended up
@@ -21,7 +21,7 @@
  *
  * Input timing (why some things happen in update() and others in render()):
  * - Pointer press/release edges are snapshotted by the engine AFTER render() each display
- *   frame, so reading them from render() is safe - buttons hit-test right where they draw.
+ *   frame, so reading them from render() is safe – buttons hit-test right where they draw.
  * - Keyboard edges (BT.isKeyPressed) clear once per fixed-update tick, which runs BEFORE
  *   render(). Reading them from render() would randomly miss presses. The kit solves this
  *   with a small "mailbox": ui.tick() (called from update()) checks the keys widgets asked
@@ -32,7 +32,7 @@ import { BT, Rect2i, Vector2i } from 'blit386';
 
 import { T } from './ui-theme.js';
 
-// System font metric. The built-in font is a fixed 6x14 grid - every character advances
+// System font metric. The built-in font is a fixed 6x14 grid – every character advances
 // exactly FONT_W pixels, so a string's pixel width is simply text.length * FONT_W.
 const FONT_W = 6;
 
@@ -87,10 +87,10 @@ function createPendingHit() {
 /**
  * Is the point (px, py) inside the cached rectangle `rec`, grown by `inflate` pixels?
  *
- * @param {{ x: number, y: number, w: number, h: number }} rec - Cached absolute rectangle.
- * @param {number} px - Point x in display pixels.
- * @param {number} py - Point y in display pixels.
- * @param {number} inflate - Extra pixels of tolerance on every side.
+ * @param {{ x: number, y: number, w: number, h: number }} rec – Cached absolute rectangle.
+ * @param {number} px – Point x in display pixels.
+ * @param {number} py – Point y in display pixels.
+ * @param {number} inflate – Extra pixels of tolerance on every side.
  * @returns {boolean}
  */
 function hitContains(rec, px, py, inflate) {
@@ -104,7 +104,7 @@ function hitContains(rec, px, py, inflate) {
 
 /**
  * All mutable state for the immediate-mode UI. The facade in ui.js creates exactly one
- * instance - demos run one at a time, so a single shared context is all we need.
+ * instance – demos run one at a time, so a single shared context is all we need.
  */
 class UiContext {
     // Deferred draw commands for the group currently between begin() and end().
@@ -120,7 +120,7 @@ class UiContext {
     /**
      * Absolute widget rectangles from the previous frame, keyed by widget id (the label,
      * unless opts.id overrides it). Records are allocated on first sighting and then
-     * mutated in place forever - no per-frame allocation.
+     * mutated in place forever – no per-frame allocation.
      *
      * @type {Map<string, { x: number, y: number, w: number, h: number }>}
      */
@@ -154,7 +154,7 @@ class UiContext {
     /**
      * Update-side pointer tracking, refreshed at every tick(). The kit derives its own
      * press/release edges from the held state here, because the engine's pointer edges are
-     * per display frame - two fixed ticks in one frame would both see the same edge.
+     * per display frame – two fixed ticks in one frame would both see the same edge.
      *
      * @type {{
      *     wasDown: boolean, down: boolean, pressed: boolean, released: boolean,
@@ -259,7 +259,7 @@ class UiContext {
         }
 
         // Check every key a widget has asked about. BT.isKeyPressed() is trustworthy here
-        // (and only here - it clears once per tick, before render() runs). A press lands in
+        // (and only here – it clears once per tick, before render() runs). A press lands in
         // the mailbox and waits for the widget to pick it up during the next render.
         for (const code of this.watchedKeys) {
             if (BT.isKeyPressed(code)) {
@@ -343,7 +343,7 @@ class UiContext {
      *
      * @param {'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'topBar'} anchor -
      *   Where the finished group attaches on screen. Bottom anchors place the group so its
-     *   bottom edge sits at the margin - rows are still declared top to bottom, the whole
+     *   bottom edge sits at the margin – rows are still declared top to bottom, the whole
      *   block just "grows upward". 'topBar' is the classic full-width title strip.
      * @param {{ x?: number, y?: number, width?: number, margin?: number, pad?: number, kvCols?: number }} opts -
      *   x/y pin the group to a fixed position (overriding the anchor on that axis); width
@@ -400,7 +400,7 @@ class UiContext {
         const display = BT.displaySize;
 
         // Final width: fixed if the demo asked for one, the full screen for a top bar,
-        // otherwise the widest declared row - never wider than the screen allows.
+        // otherwise the widest declared row – never wider than the screen allows.
         let groupW;
 
         if (this.isTopBar) {
@@ -433,8 +433,8 @@ class UiContext {
     /**
      * Where does the group's left edge land? From the anchor, unless opts.x pinned it.
      *
-     * @param {import('blit386').Vector2i} display - The logical display size.
-     * @param {number} groupW - The group's final width.
+     * @param {import('blit386').Vector2i} display – The logical display size.
+     * @param {number} groupW – The group's final width.
      * @returns {number}
      */
     resolveOriginX(display, groupW) {
@@ -453,11 +453,11 @@ class UiContext {
 
     /**
      * Where does the group's top edge land? From the anchor, unless opts.y pinned it.
-     * Bottom anchors place the group so its BOTTOM edge sits at the margin - this is the
+     * Bottom anchors place the group so its BOTTOM edge sits at the margin – this is the
      * "grows upward" behavior: more rows push the top edge up, not the bottom edge down.
      *
-     * @param {import('blit386').Vector2i} display - The logical display size.
-     * @param {number} groupH - The group's final height.
+     * @param {import('blit386').Vector2i} display – The logical display size.
+     * @param {number} groupH – The group's final height.
      * @returns {number}
      */
     resolveOriginY(display, groupH) {
@@ -478,10 +478,10 @@ class UiContext {
      * Draws the closed group for real: panel background first, then every queued command
      * shifted by the group origin, and finally caches the absolute widget rectangles.
      *
-     * @param {number} originX - Group left edge in display pixels.
-     * @param {number} originY - Group top edge in display pixels.
-     * @param {number} groupW - Final group width.
-     * @param {number} groupH - Final group height.
+     * @param {number} originX – Group left edge in display pixels.
+     * @param {number} originY – Group top edge in display pixels.
+     * @param {number} groupW – Final group width.
+     * @param {number} groupH – Final group height.
      */
     flushGroup(originX, originY, groupW, groupH) {
         // Panel background and border draw first so every queued command lands on top.
@@ -533,8 +533,8 @@ class UiContext {
 
     /**
      * Drops any cached hit rectangle whose id was not flushed during the frame that just
-     * finished (see the call site in begin()). Widgets that disappeared - a panel that
-     * closed, a conditional row that stopped rendering - stop blocking taps and swipes at
+     * finished (see the call site in begin()). Widgets that disappeared – a panel that
+     * closed, a conditional row that stopped rendering – stop blocking taps and swipes at
      * their old location instead of leaving a permanent dead zone.
      */
     pruneHitRects() {
@@ -551,8 +551,8 @@ class UiContext {
      * Reserves a horizontal band inside the current group, advances the layout cursor, and
      * feeds the auto-width calculation.
      *
-     * @param {number} contentW - Width of the row's content, excluding the inner padding.
-     * @param {number} advance - How far the cursor moves down for the next row.
+     * @param {number} contentW – Width of the row's content, excluding the inner padding.
+     * @param {number} advance – How far the cursor moves down for the next row.
      * @returns {number} The row's top y, relative to the group origin.
      */
     addRow(contentW, advance) {
@@ -571,13 +571,13 @@ class UiContext {
     /**
      * Appends one draw command to the pool (growing it permanently on overflow).
      *
-     * @param {number} kind - CMD_RECT_FILL, CMD_RECT_STROKE, or CMD_TEXT.
-     * @param {number} x - X relative to the group origin.
-     * @param {number} y - Y relative to the group origin.
-     * @param {number} w - Width in pixels (rects), or 0 for text.
-     * @param {number} h - Height in pixels (rects), or 0 for text.
-     * @param {number} color - Palette index to draw with.
-     * @param {string} text - Text content (CMD_TEXT only).
+     * @param {number} kind – CMD_RECT_FILL, CMD_RECT_STROKE, or CMD_TEXT.
+     * @param {number} x – X relative to the group origin.
+     * @param {number} y – Y relative to the group origin.
+     * @param {number} w – Width in pixels (rects), or 0 for text.
+     * @param {number} h – Height in pixels (rects), or 0 for text.
+     * @param {number} color – Palette index to draw with.
+     * @param {string} text – Text content (CMD_TEXT only).
      */
     addCommand(kind, x, y, w, h, color, text = '') {
         if (this.commandCount === this.commands.length) {
@@ -604,11 +604,11 @@ class UiContext {
      * Registers the rectangle a widget occupies this frame (group-relative; end() converts
      * it to absolute screen coordinates and caches it for next frame's hit tests).
      *
-     * @param {string} id - Widget identity (its label unless opts.id overrides it).
-     * @param {number} x - X relative to the group origin.
-     * @param {number} y - Y relative to the group origin.
-     * @param {number} w - Width in pixels.
-     * @param {number} h - Height in pixels.
+     * @param {string} id – Widget identity (its label unless opts.id overrides it).
+     * @param {number} x – X relative to the group origin.
+     * @param {number} y – Y relative to the group origin.
+     * @param {number} w – Width in pixels.
+     * @param {number} h – Height in pixels.
      */
     addHit(id, x, y, w, h) {
         if (this.pendingHitCount === this.pendingHits.length) {
@@ -626,11 +626,11 @@ class UiContext {
 
     /**
      * Answers "is the pointer over / holding / just-pressing this widget?" using the cached
-     * one-frame-old rectangle. Safe to call from render() - see the file header.
+     * one-frame-old rectangle. Safe to call from render() – see the file header.
      *
      * The same reused result object is returned every time; read it before the next call.
      *
-     * @param {string} id - Widget identity.
+     * @param {string} id – Widget identity.
      * @returns {{ hover: boolean, held: boolean, activated: boolean }}
      */
     resolveInteraction(id) {
@@ -642,7 +642,7 @@ class UiContext {
 
         const rec = this.hitRects.get(id);
 
-        // No cached rectangle yet - the widget appeared this very frame. It becomes
+        // No cached rectangle yet – the widget appeared this very frame. It becomes
         // interactive next frame, one 60th of a second later.
         if (!rec) {
             return res;
@@ -683,7 +683,7 @@ class UiContext {
      * Drag handling for sliders: on a press inside the widget the slot is captured; while
      * captured, returns the pointer's x so the slider can map it to a value.
      *
-     * @param {string} id - Widget identity.
+     * @param {string} id – Widget identity.
      * @returns {number | null} Pointer x in display pixels while dragging, otherwise null.
      */
     resolveDrag(id) {
@@ -722,7 +722,7 @@ class UiContext {
      * render. Reading a press removes it from the mailbox, so it fires exactly once even
      * on displays that render more often than the fixed update runs.
      *
-     * @param {string | undefined} code - A KeyboardEvent.code value like 'Space' or 'KeyR'.
+     * @param {string | undefined} code – A KeyboardEvent.code value like 'Space' or 'KeyR'.
      * @returns {boolean} True when that key was pressed since the previous render.
      */
     consumeKey(code) {
@@ -739,8 +739,8 @@ class UiContext {
      * Is the point inside any cached widget rectangle? Gestures use this so a swipe or a
      * tap that starts on a button is left for the button to handle.
      *
-     * @param {number} px - Point x in display pixels.
-     * @param {number} py - Point y in display pixels.
+     * @param {number} px – Point x in display pixels.
+     * @param {number} py – Point y in display pixels.
      * @returns {boolean}
      */
     isInsideAnyWidget(px, py) {

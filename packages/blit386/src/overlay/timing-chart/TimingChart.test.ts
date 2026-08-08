@@ -26,10 +26,10 @@ const defaultStyle = {
 /**
  * Draws a chart band in tests with the required font and tick arguments.
  *
- * @param chart - Timing chart under test.
- * @param renderer - Mock overlay renderer.
- * @param chartRect - Chart band rectangle.
- * @param currentTick - Simulated fixed-update tick.
+ * @param chart – Timing chart under test.
+ * @param renderer – Mock overlay renderer.
+ * @param chartRect – Chart band rectangle.
+ * @param currentTick – Simulated fixed-update tick.
  */
 function drawChart(
     chart: TimingChart,

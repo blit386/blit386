@@ -15,9 +15,9 @@ import type { OverlayLayout } from './types';
 /**
  * Builds cached layout from logical display size and system font line height.
  *
- * @param displayWidth - Logical display width in pixels.
- * @param displayHeight - Logical display height in pixels.
- * @param lineHeight - System font line height in pixels.
+ * @param displayWidth – Logical display width in pixels.
+ * @param displayHeight – Logical display height in pixels.
+ * @param lineHeight – System font line height in pixels.
  * @returns Frozen layout used for the lifetime of the overlay instance.
  */
 export function createOverlayLayout(displayWidth: number, displayHeight: number, lineHeight: number): OverlayLayout {
@@ -40,8 +40,8 @@ export function createOverlayLayout(displayWidth: number, displayHeight: number,
 /**
  * Returns whether a pointer position lies inside the toggle corner rect.
  *
- * @param pos - Pointer position in display coordinates.
- * @param toggleRect - Bottom-left toggle region.
+ * @param pos – Pointer position in display coordinates.
+ * @param toggleRect – Bottom-left toggle region.
  * @returns `true` when the point is inside the rect (`Rect2i.isContaining` half-open bounds).
  */
 export function isPointerInOverlayToggleCorner(pos: Vector2i, toggleRect: Rect2i): boolean {
@@ -51,8 +51,8 @@ export function isPointerInOverlayToggleCorner(pos: Vector2i, toggleRect: Rect2i
 /**
  * X position for right-aligned overlay text inside a bar.
  *
- * @param text - Text to place flush right with {@link OVERLAY_EDGE_MARGIN_PX} inset.
- * @param displayWidth - Logical display width in pixels.
+ * @param text – Text to place flush right with {@link OVERLAY_EDGE_MARGIN_PX} inset.
+ * @param displayWidth – Logical display width in pixels.
  * @returns Left edge X for {@link OverlayDrawTarget.drawLabel} (never less than the margin).
  */
 export function overlayRightAlignedTextX(text: string, displayWidth: number): number {
@@ -68,8 +68,8 @@ export function overlayRightAlignedTextX(text: string, displayWidth: number): nu
  * Same flush-right convention as {@link overlayRightAlignedTextX}, but measured with
  * {@link overlayDividerLabelWidth} so the divider spacing is accounted for.
  *
- * @param text - Engine-composed label with `|` separator markers.
- * @param displayWidth - Logical display width in pixels.
+ * @param text – Engine-composed label with `|` separator markers.
+ * @param displayWidth – Logical display width in pixels.
  * @returns Left edge X for {@link drawOverlayLabelWithDividers} (never less than the margin).
  */
 export function overlayRightAlignedDividerLabelX(text: string, displayWidth: number): number {
@@ -92,7 +92,7 @@ export function overlayToggleHintIconX(): number {
 /**
  * Palette offset for system-font overlay text (foreground glyphs stored as index 1).
  *
- * @param paletteIndex - Palette color index for overlay text.
+ * @param paletteIndex – Palette color index for overlay text.
  * @returns Offset passed to {@link OverlayDrawTarget.drawLabel}, or `0` when index 0 (transparent).
  */
 export function overlayBitmapTextPaletteOffset(paletteIndex: number): number {
@@ -102,7 +102,7 @@ export function overlayBitmapTextPaletteOffset(paletteIndex: number): number {
 /**
  * Y coordinate of the top edge of a custom row bar stacked above the footer.
  *
- * @param footerStackTopY - Top Y of the footer stack (palette band or hint bar).
+ * @param footerStackTopY – Top Y of the footer stack (palette band or hint bar).
  * @param rowIndex - `0` is directly above the footer stack.
  * @returns Bar top Y in display pixels.
  */

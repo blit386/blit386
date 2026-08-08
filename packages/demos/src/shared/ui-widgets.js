@@ -3,11 +3,11 @@
  *
  * Every function here follows the same immediate-mode recipe (see ui-core.js for the big
  * picture): reserve a row with ctx.addRow(), queue draw commands with group-relative
- * coordinates, optionally register a hit rectangle, and - for interactive widgets - answer
+ * coordinates, optionally register a hit rectangle, and – for interactive widgets – answer
  * the caller right away using last frame's cached rectangle. Nothing here allocates in the
  * steady state; every object involved is pooled and reused.
  *
- * Demos never import this file directly - the ui.js facade wires these functions to the
+ * Demos never import this file directly – the ui.js facade wires these functions to the
  * one shared UiContext and exposes them as ui.panel(), ui.button(), and so on.
  */
 
@@ -43,7 +43,7 @@ function clamp(value, min, max) {
 /**
  * Translates a color role name ('dim', 'header', ...) into its theme palette slot.
  *
- * @param {string | undefined} role - One of 'text', 'dim', 'header', 'accent', 'warm', 'info'.
+ * @param {string | undefined} role – One of 'text', 'dim', 'header', 'accent', 'warm', 'info'.
  * @returns {number} A palette index from the shared theme.
  */
 function roleSlot(role) {
@@ -67,7 +67,7 @@ function roleSlot(role) {
  * Turns the current group into a bordered panel (background + border + optional amber
  * title). Call it right after ui.begin(), before any other widget.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
  * @param {string} [title] - Panel title, drawn in the header color. Omit for a plain box.
  */
 function panel(ctx, title) {
@@ -98,8 +98,8 @@ function panel(ctx, title) {
 /**
  * One line of text.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {string} text - The line to print.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {string} text – The line to print.
  * @param {{ color?: string }} [opts] - color picks a role: 'text' (default), 'dim',
  *   'header', 'accent', 'warm', or 'info'.
  */
@@ -111,17 +111,17 @@ function label(ctx, text, opts = {}) {
 }
 
 /**
- * A single line of floating text pinned at an exact screen position - the shared
+ * A single line of floating text pinned at an exact screen position – the shared
  * "section caption" the drawing demos print next to their artwork. Unlike label(),
  * which stacks rows inside the current begin()/end() group, caption() opens and
  * closes its own tiny one-row group, so demos call it on its own:
  *
  *     ui.caption(24, 40, 'Pixels');
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {number} x - Left edge of the caption in display pixels.
- * @param {number} y - Top edge of the caption in display pixels.
- * @param {string} text - The caption text.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {number} x – Left edge of the caption in display pixels.
+ * @param {number} y – Top edge of the caption in display pixels.
+ * @param {string} text – The caption text.
  * @param {{ color?: string }} [opts] - color picks a role; captions default to
  *   'header' (the amber title color shared by the whole demo series).
  */
@@ -129,19 +129,19 @@ function caption(ctx, x, y, text, opts = {}) {
     // Passing x and y pins the group to an exact spot next to the artwork (instead
     // of snapping it to a screen corner), and pad: 0 removes the group's built-in
     // inner padding so the text lands right at the requested position. With no
-    // panel() call the group has no box around it - just floating text.
+    // panel() call the group has no box around it – just floating text.
     ctx.begin('topLeft', { x, y, pad: 0 });
     label(ctx, text, { color: opts.color ?? 'header' });
     ctx.end();
 }
 
 /**
- * A "KEY: value" row - the key in dim gray, the value in bright text, aligned to a shared
+ * A "KEY: value" row – the key in dim gray, the value in bright text, aligned to a shared
  * value column so stacked kv rows line up.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {string} key - Left-hand name.
- * @param {string | number} value - Right-hand value (numbers are printed as-is).
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {string} key – Left-hand name.
+ * @param {string | number} value – Right-hand value (numbers are printed as-is).
  */
 function kv(ctx, key, value) {
     const valueText = String(value);
@@ -161,9 +161,9 @@ function kv(ctx, key, value) {
  *
  *     this.loop = ui.checkbox('Loop', this.loop);
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {string} text - The label next to the pip (also the widget's identity).
- * @param {boolean} value - The current on/off state.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {string} text – The label next to the pip (also the widget's identity).
+ * @param {boolean} value – The current on/off state.
  * @param {{ key?: string, id?: string }} [opts] - key binds a keyboard shortcut (a
  *   KeyboardEvent.code like 'KeyM'); id overrides the identity when two checkboxes share
  *   one label.
@@ -191,11 +191,11 @@ function checkbox(ctx, text, value, opts = {}) {
  * square (filled with the accent color when on, hollow otherwise, always
  * outlined) followed by its label.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {number} rowY - The row's top edge, from ctx.addRow().
- * @param {boolean} on - Whether the pip is lit (filled).
- * @param {string} text - The label next to the pip.
- * @param {number} textColor - Palette slot for the label text.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {number} rowY – The row's top edge, from ctx.addRow().
+ * @param {boolean} on – Whether the pip is lit (filled).
+ * @param {string} text – The label next to the pip.
+ * @param {number} textColor – Palette slot for the label text.
  */
 function drawPipRow(ctx, rowY, on, text, textColor) {
     if (on) {
@@ -208,12 +208,12 @@ function drawPipRow(ctx, rowY, on, text, textColor) {
 
 /**
  * A read-only indicator row: the same pip-plus-label look as ui.checkbox(), but purely
- * visual - nothing happens when it is tapped. Use it to display live state the user does
+ * visual – nothing happens when it is tapped. Use it to display live state the user does
  * not set directly, like "is this key held down right now?".
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {string} text - The label next to the pip.
- * @param {boolean} on - Whether the pip is lit.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {string} text – The label next to the pip.
+ * @param {boolean} on – Whether the pip is lit.
  */
 function pip(ctx, text, on) {
     const contentW = PIP_LABEL_OFFSET + text.length * FONT_W;
@@ -227,8 +227,8 @@ function pip(ctx, text, on) {
  * A push button. Returns true on the frame it is clicked, tapped, or (when opts.key is
  * given) its keyboard shortcut was pressed.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {string} text - The button label (also the widget's identity).
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {string} text – The button label (also the widget's identity).
  * @param {{ key?: string, width?: number, id?: string }} [opts] - key binds a keyboard
  *   shortcut; width fixes the button width in pixels; id overrides the identity when two
  *   buttons share one label.
@@ -271,9 +271,9 @@ function button(ctx, text, opts = {}) {
  *
  *     volume = ui.slider('Music', volume);
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {string} text - The label above the bar (also the widget's identity).
- * @param {number} value - The current value.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {string} text – The label above the bar (also the widget's identity).
+ * @param {number} value – The current value.
  * @param {{ min?: number, max?: number, width?: number, id?: string }} [opts] - min/max
  *   bound the value (default 0..1); width sets the bar width in pixels; id overrides the
  *   identity.
@@ -308,7 +308,7 @@ function slider(ctx, text, value, opts = {}) {
     ctx.addCommand(CMD_TEXT, ctx.pad + barW - valueText.length * FONT_W, labelY + 1, 0, 0, T.text, valueText);
 
     // Bar row: an outline that fills up left-to-right in proportion to the value. An equal
-    // min/max (a zero-width range) has no meaningful fraction - draw the bar empty rather
+    // min/max (a zero-width range) has no meaningful fraction – draw the bar empty rather
     // than dividing by zero into NaN.
     const barY = ctx.addRow(barW, SLIDER_BAR_H + 4);
     const fillW = range === 0 ? 0 : Math.round(barW * ((nextValue - min) / range));
@@ -325,12 +325,12 @@ function slider(ctx, text, value, opts = {}) {
 }
 
 /**
- * A read-only progress/level bar (label row + bar row). Purely visual - for a draggable
+ * A read-only progress/level bar (label row + bar row). Purely visual – for a draggable
  * bar use ui.slider().
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {string | null} text - Label above the bar, or null for the bar alone.
- * @param {number} fraction - Fill amount from 0 (empty) to 1 (full).
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {string | null} text – Label above the bar, or null for the bar alone.
+ * @param {number} fraction – Fill amount from 0 (empty) to 1 (full).
  * @param {{ color?: string, width?: number }} [opts] - color picks the fill role
  *   (default 'info'); width sets the bar width in pixels.
  */
@@ -357,14 +357,14 @@ function meter(ctx, text, fraction, opts = {}) {
  * The standard "enable sound" prompt every audio demo shows, kept in one place so
  * the wording and color can never drift between demos. Browsers refuse to play any
  * sound until the user interacts with the page, so this row reminds the user to
- * click or press a key. It draws only while audio is still locked - once
+ * click or press a key. It draws only while audio is still locked – once
  * BT.isAudioUnlocked flips true, the row disappears on its own. Call it inside a
  * ui.begin()/ui.end() group like any other row.
  *
  * Pass `opts.text` when the default sentence is too long for a tiny playfield
  * (for example Snake at 160x120).
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
  * @param {{ text?: string }} [opts] - Optional overrides. `text` replaces the default
  *   "Click or press a key to enable sound" wording.
  */
@@ -382,7 +382,7 @@ function audioUnlockHint(ctx, opts = {}) {
 /**
  * A thin horizontal rule across the group, for separating sections inside one panel.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
  */
 function separator(ctx) {
     const rowY = ctx.addRow(0, 5);
@@ -395,7 +395,7 @@ function separator(ctx) {
 /**
  * Vertical breathing room between rows.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
  * @param {number} [px] - How many pixels to skip (default 6).
  */
 function spacer(ctx, px = 6) {

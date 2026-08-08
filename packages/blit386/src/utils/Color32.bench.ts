@@ -20,11 +20,11 @@ const BENCH_OPTIONS = {
 /**
  * Restores a mutable color to a known baseline before in-place benchmarks.
  *
- * @param color - Color to reset.
- * @param r - Red channel.
- * @param g - Green channel.
- * @param b - Blue channel.
- * @param a - Alpha channel.
+ * @param color – Color to reset.
+ * @param r – Red channel.
+ * @param g – Green channel.
+ * @param b – Blue channel.
+ * @param a – Alpha channel.
  */
 function resetColor(color: Color32, r: number, g: number, b: number, a: number): void {
     color.r = r;

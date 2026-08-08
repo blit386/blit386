@@ -1,7 +1,7 @@
-// @pageTitle BLIT386 Demo - Music Playback
+// @pageTitle BLIT386 Demo – Music Playback
 
 /**
- * Music Demo - crossfading between two tracks and playing one with a seamless loop point.
+ * Music Demo – crossfading between two tracks and playing one with a seamless loop point.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:
@@ -10,23 +10,23 @@
  * Live version: https://demos.blit386.dev/music
  *
  * Sound effects (audio-basics, synth-toy) are short one-shot clips: press a key, hear a blip, done. Music
- * is different - it is meant to loop forever in the background, and switching from one
+ * is different – it is meant to loop forever in the background, and switching from one
  * track to another should not just cut off with a click. BT.musicPlay() handles both of
  * those jobs for you.
  *
  * This page has three buttons, each backed by a different AudioClip:
  * - Track A and Track B swap between two looping tunes. Each swap uses a different
- *   "crossfade" - a fade-out of the old track happening alongside (or after) a fade-in of
+ *   "crossfade" – a fade-out of the old track happening alongside (or after) a fade-in of
  *   the new one, so the music blends instead of jumping. Switching to Track A lets the old
  *   track fade all the way out first, waits a moment, then fades Track A in. Switching to
  *   Track B overlaps the two fades so they happen at the same time. Listen for the
- *   difference - one has a small silent gap in the middle, the other does not.
+ *   difference – one has a small silent gap in the middle, the other does not.
  * - Loop Demo plays a track that starts with a short intro passage, then loops forever from
- *   a chosen point onward - the intro only ever plays once, exactly like the opening jingle
+ *   a chosen point onward – the intro only ever plays once, exactly like the opening jingle
  *   of a real game level that then settles into its main tune.
  *
  * The title strip, track buttons, and status readout all come from the shared UI kit in
- * src/shared/ui.js - the same look every demo in this series uses, and it is fully
+ * src/shared/ui.js – the same look every demo in this series uses, and it is fully
  * touch-friendly: tap a button with a finger, click it with a mouse, or press its number
  * key, and the kit reports all three the same way.
  *
@@ -52,8 +52,8 @@ const DISPLAY_H = 240;
 const INTRO_LOOP_START_SECONDS = 1.5;
 const INTRO_LOOP_END_SECONDS = 7.9;
 
-// Fading to Track A: the old track fades all the way out first, then - after a short silent
-// gap - Track A fades in. `overlap: -1` is what creates that gap.
+// Fading to Track A: the old track fades all the way out first, then – after a short silent
+// gap – Track A fades in. `overlap: -1` is what creates that gap.
 const PROFILE_TO_A = { fadeMs: 800, overlap: -1, easeIn: 'linear', easeOut: 'linear' };
 
 // Fading to Track B: the new track fades in at the same time as the old one fades out
@@ -120,7 +120,7 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
-        // Load all three tracks at once - Promise.all waits for the slowest fetch, not
+        // Load all three tracks at once – Promise.all waits for the slowest fetch, not
         // the sum of three sequential downloads.
         [this.calmClip, this.upbeatClip, this.introLoopClip] = await Promise.all([
             AudioClip.load('/audio/music-calm.wav'),
@@ -139,7 +139,7 @@ class Demo {
 
         // Start with Track A playing so there is always music, even before you press
         // anything. BT.musicPlay() called before the page is unlocked is "remembered" and
-        // starts for real the instant you click or press a key - unlike BT.soundPlay(),
+        // starts for real the instant you click or press a key – unlike BT.soundPlay(),
         // which drops sounds played too early.
         this.playTrack('A');
 
@@ -151,7 +151,7 @@ class Demo {
      *
      * ui.tick() is what safely catches the number-key shortcuts bound to the buttons in
      * render(). Keyboard presses can only be read reliably here in update(), never in
-     * render() - the engine clears "was this just pressed?" flags once per tick, and that
+     * render() – the engine clears "was this just pressed?" flags once per tick, and that
      * tick always finishes before this frame's render() runs (keyboard-input explains
      * this in more detail). The kit latches the presses now so the buttons can answer
      * later, during render().
@@ -177,7 +177,7 @@ class Demo {
         ui.end();
 
         // The track panel, pinned just below the title strip. Width and height size
-        // themselves to the widest row and the number of rows - no layout math here.
+        // themselves to the widest row and the number of rows – no layout math here.
         ui.begin('topLeft', { y: 30 });
         ui.panel('Tracks');
 
@@ -196,11 +196,11 @@ class Demo {
 
     /**
      * Status rows inside the track panel: the unlock prompt (until sound is unlocked),
-     * then the currently playing track, its crossfade profile, and - only for the loop
-     * track - the loop boundaries in seconds.
+     * then the currently playing track, its crossfade profile, and – only for the loop
+     * track – the loop boundaries in seconds.
      */
     renderStatus() {
-        // The shared "click to enable sound" row - it draws itself only while sound is
+        // The shared "click to enable sound" row – it draws itself only while sound is
         // still locked, and disappears on its own after the first click or key press.
         ui.audioUnlockHint();
 
@@ -212,7 +212,7 @@ class Demo {
 
         // Look up the friendly name of whichever track is active. Array.find() walks the
         // list and returns the first entry the test function says yes to (or undefined if
-        // none matches - which here only happens before the first play).
+        // none matches – which here only happens before the first play).
         const active = TRACKS.find((track) => track.trackId === this.activeTrackId);
 
         ui.kv('Playing', active ? active.label : '-');
@@ -227,7 +227,7 @@ class Demo {
      * Starts the given track with its matching crossfade profile, unless it is already
      * playing (pressing the same button twice does nothing new).
      *
-     * @param {string} trackId - 'A', 'B', or 'loop'.
+     * @param {string} trackId – 'A', 'B', or 'loop'.
      */
     playTrack(trackId) {
         if (trackId === this.activeTrackId) {

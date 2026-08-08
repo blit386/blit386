@@ -61,7 +61,7 @@ type Curve = (t: number) => number;
 /**
  * Bounce-out curve shared by bounce-in / bounce-out / bounce-in-out.
  *
- * @param t - Normalized time in [0, 1].
+ * @param t – Normalized time in [0, 1].
  * @returns Eased value.
  */
 function bounceOut(t: number): number {
@@ -197,8 +197,8 @@ const CURVES: Record<EasingFunction, Curve> = {
  *
  * @since 1.0.3
  * @changed 1.5.0 Added sine, cubic, quartic, quintic, expo, circ, back, elastic, and bounce families.
- * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
- * @param easing - Easing curve to apply.
+ * @param t – Normalized time in [0, 1]. Values outside this range are not clamped.
+ * @param easing – Easing curve to apply.
  * @returns Eased value. Guaranteed to return 0 for `t = 0` and 1 for `t = 1`.
  */
 export function applyEasing(t: number, easing: EasingFunction): number {
@@ -220,10 +220,10 @@ export function applyEasing(t: number, easing: EasingFunction): number {
  * `Color32` channels are rounded and clamped to [0, 255].
  *
  * @since 1.5.0
- * @param easing - Easing curve to apply to `t` before interpolation.
- * @param start - Value at `t = 0`.
- * @param end - Value at `t = 1`.
- * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
+ * @param easing – Easing curve to apply to `t` before interpolation.
+ * @param start – Value at `t = 0`.
+ * @param end – Value at `t = 1`.
+ * @param t – Normalized time in [0, 1]. Values outside this range are not clamped.
  * @returns Interpolated value of the same type as `start` / `end`.
  */
 export function interpolate(easing: EasingFunction, start: number, end: number, t: number): number;
@@ -231,10 +231,10 @@ export function interpolate(easing: EasingFunction, start: number, end: number, 
  * Interpolates two `Vector2i` values with an easing curve (components rounded).
  *
  * @since 1.5.0
- * @param easing - Easing curve to apply to `t` before interpolation.
- * @param start - Value at `t = 0`.
- * @param end - Value at `t = 1`.
- * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
+ * @param easing – Easing curve to apply to `t` before interpolation.
+ * @param start – Value at `t = 0`.
+ * @param end – Value at `t = 1`.
+ * @param t – Normalized time in [0, 1]. Values outside this range are not clamped.
  * @returns Interpolated `Vector2i`.
  */
 // eslint-disable-next-line no-redeclare -- TypeScript call-signature overloads
@@ -243,10 +243,10 @@ export function interpolate(easing: EasingFunction, start: Vector2i, end: Vector
  * Interpolates two `Color32` values with an easing curve (channels rounded and clamped).
  *
  * @since 1.5.0
- * @param easing - Easing curve to apply to `t` before interpolation.
- * @param start - Value at `t = 0`.
- * @param end - Value at `t = 1`.
- * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
+ * @param easing – Easing curve to apply to `t` before interpolation.
+ * @param start – Value at `t = 0`.
+ * @param end – Value at `t = 1`.
+ * @param t – Normalized time in [0, 1]. Values outside this range are not clamped.
  * @returns Interpolated `Color32`.
  */
 // eslint-disable-next-line no-redeclare -- TypeScript call-signature overloads
@@ -255,10 +255,10 @@ export function interpolate(easing: EasingFunction, start: Color32, end: Color32
  * Interpolates two `Rect2i` values with an easing curve (components rounded).
  *
  * @since 1.5.0
- * @param easing - Easing curve to apply to `t` before interpolation.
- * @param start - Value at `t = 0`.
- * @param end - Value at `t = 1`.
- * @param t - Normalized time in [0, 1]. Values outside this range are not clamped.
+ * @param easing – Easing curve to apply to `t` before interpolation.
+ * @param start – Value at `t = 0`.
+ * @param end – Value at `t = 1`.
+ * @param t – Normalized time in [0, 1]. Values outside this range are not clamped.
  * @returns Interpolated `Rect2i`.
  */
 // eslint-disable-next-line no-redeclare -- TypeScript call-signature overloads

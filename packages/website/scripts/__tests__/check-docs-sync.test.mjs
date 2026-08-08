@@ -110,7 +110,7 @@ describe('classifyDocsDiff', () => {
     test('returns drift for a body addition that happens to start with "lastModified:"', () => {
         // A code example demonstrating frontmatter, deep in the body, must not be
         // trusted just because the added line is lexically shaped like the real
-        // field - only a hunk starting near the file's top counts as frontmatter.
+        // field – only a hunk starting near the file's top counts as frontmatter.
         const diff = [
             FILE_HEADER,
             '@@ -42,3 +42,4 @@',

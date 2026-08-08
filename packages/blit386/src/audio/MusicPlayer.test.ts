@@ -216,7 +216,7 @@ describe('MusicPlayer', () => {
             expect(() => player.play(invalidBuffer, { loopStart: 5, loopEnd: 1 })).toThrow();
 
             // Validation runs before any promotion/teardown, so the already-playing track from
-            // the first play() call is still the current voice - never demoted to previous, never
+            // the first play() call is still the current voice – never demoted to previous, never
             // stopped.
             expect(player.isPlaying()).toBe(true);
 
@@ -410,7 +410,7 @@ describe('MusicPlayer', () => {
             const secondGain = asMockGain(context2.createGainCalls.at(-1) as GainNode);
             const secondSource = context2.createBufferSourceCalls.at(-1) as AudioBufferSourceNode;
 
-            // fadeSeconds*(1 - overlap) = 1 * 0.5 = 0.5s offset, halfway between simultaneous and sequential.
+            // fadeSeconds*(1 – overlap) = 1 * 0.5 = 0.5s offset, halfway between simultaneous and sequential.
             expect(firstGain.gain.setValueAtTimeCalls).toEqual([{ value: 1, startTime: 0 }]);
             expect(firstGain.gain.linearRampToValueAtTimeCalls).toEqual([{ value: 0, endTime: 1 }]);
             expect(asMockSource(firstSource).stopCalls).toEqual([1]);
@@ -832,7 +832,7 @@ describe('MusicPlayer', () => {
         it('restarts successfully when the old loop region no longer fits the new, shorter buffer', () => {
             const { player } = createPlayer();
             const oldBuffer = createMockAudioBuffer(1, 10, 10); // duration 1s at sampleRate 10
-            const newBuffer = createMockAudioBuffer(1, 5, 10); // duration 0.5s - shorter than the old loopEnd
+            const newBuffer = createMockAudioBuffer(1, 5, 10); // duration 0.5s – shorter than the old loopEnd
             player.play(oldBuffer, { loopStart: 0.2, loopEnd: 0.8 });
 
             const restarted = player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);
@@ -862,7 +862,7 @@ describe('MusicPlayer', () => {
             const { player, context } = createPlayer();
             const context2 = context as unknown as { createBufferSourceCalls: AudioBufferSourceNode[] };
             const oldBuffer = createMockAudioBuffer(1, 10, 10);
-            const newBuffer = createMockAudioBuffer(1, 10, 10); // same duration - loop region still valid
+            const newBuffer = createMockAudioBuffer(1, 10, 10); // same duration – loop region still valid
             player.play(oldBuffer, { loopStart: 0.2, loopEnd: 0.8 });
 
             player.hotReplaceCurrentBuffer(oldBuffer, newBuffer);

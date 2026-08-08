@@ -8,10 +8,10 @@ import dts from 'vite-plugin-dts';
  * Whether the dts plugin should run api-extractor's declaration rollup.
  *
  * Api-extractor's rollup crashes intermittently when a watch rebuild's per-file `.d.ts`
- * tree is still being rewritten as it starts reading it - see BT-426. It only ever needs
+ * tree is still being rewritten as it starts reading it – see BT-426. It only ever needs
  * to run for the final, non-watch production build.
  *
- * @param argv - The process argv to check for a `--watch` flag.
+ * @param argv – The process argv to check for a `--watch` flag.
  * @returns `false` under `--watch`, `true` otherwise.
  */
 export const resolveDtsRollupTypes = (argv: readonly string[]): boolean => !argv.includes('--watch');

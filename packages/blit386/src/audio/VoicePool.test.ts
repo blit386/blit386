@@ -55,7 +55,7 @@ const getLiveContext = (installed: ReturnType<typeof installMockAudioContext>): 
 };
 
 /**
- * Returns the most recently created gain node - the current voice's gain. Bus gains
+ * Returns the most recently created gain node – the current voice's gain. Bus gains
  * (main/music/sfx) are all created once during `attach()`, before any voice plays, so the last
  * entry is always the voice gain regardless of how many bus gains exist.
  */
@@ -533,7 +533,7 @@ describe('VoicePool', () => {
 
             const pool = new VoicePool(audio);
 
-            // A fresh pool's last slot has generation 0 - the same value `Array.at(-1)` would
+            // A fresh pool's last slot has generation 0 – the same value `Array.at(-1)` would
             // wrap to if the explicit bounds check in getActiveSlot were ever removed. This ref
             // must still be rejected because voiceIndex -1 is out of range.
             const wouldWrapToLastSlot = { voiceIndex: -1, generation: 0 };

@@ -2,11 +2,11 @@
 
 How to keep public API changes documented to the same standard as the rest of the engine: every public symbol carries an
 accurate `@since`/`@changed`/`@deprecated` history, and every published doc page that discusses a symbol shows its
-version badge, availability table, and per-page changelog. This is not optional polish - it is part of shipping the
+version badge, availability table, and per-page changelog. This is not optional polish – it is part of shipping the
 feature, the same way updating `docs/api-*.md` prose already is (see
 [Docs sync required](../../../.claude/rules/docs-sync-required.md) and the root `CLAUDE.md`, "Working with Claude").
 
-Contributor-only - not published to blit386.dev. See the
+Contributor-only – not published to blit386.dev. See the
 [Documentation index](developer-experience-guide.md#documentation-index) for the published guides this one is about
 maintaining.
 
@@ -70,7 +70,7 @@ Tag syntax:
 
 - `@since <version>` - bare semver, no `v` prefix. The release the symbol first shipped in. If you are adding the symbol
   on `main` ahead of the next tagged release, use the actual target version (check `package.json`'s current `version`
-  field and the project's release cadence - ask if unsure, do not guess).
+  field and the project's release cadence – ask if unsure, do not guess).
 - `@changed <version> <note>` - repeatable, one per behavioral or signature change. The note is a short human-readable
   summary in the same voice as a Keep a Changelog "Changed" entry.
   ```
@@ -78,13 +78,13 @@ Tag syntax:
   @changed 1.2.0 Added the optional paletteOffset parameter.
   @changed 1.3.0 Now throws when the sheet is not indexized.
   ```
-  A malformed `@changed` tag (missing the note, or empty) is not silently dropped - the generator warns to stderr with
+  A malformed `@changed` tag (missing the note, or empty) is not silently dropped – the generator warns to stderr with
   the file and line so it is visible during manifest generation. Fix the tag rather than ignoring the warning.
 - `@deprecated` - extend the tag to carry a version while keeping the removal-checklist date:
   ```
   @deprecated Deprecated since 1.3.0 (2026-08-01). Use {@link newMethodName} instead.
   ```
-  `docs/reference-deprecations.md` greps for the literal `Deprecated since` string for its removal checklist - keep that
+  `docs/reference-deprecations.md` greps for the literal `Deprecated since` string for its removal checklist – keep that
   phrasing.
 
 ## Step 2: regenerate and verify locally
@@ -96,11 +96,11 @@ pnpm run api:history:check    # fails if the committed JSON has drifted from sou
 ```
 
 All three are already wired into `pnpm run preflight`, so a normal preflight run catches a missing or malformed tag
-before you get to docs work. Commit the regenerated `docs/_api-history.json` alongside your source change - it is a
+before you get to docs work. Commit the regenerated `docs/_api-history.json` alongside your source change – it is a
 deterministic, sorted-key, timestamp-free file, so an unrelated regeneration should produce a byte-identical diff
 (empty) if nothing you changed affects the manifest.
 
-## Step 3: decide the symbol's documentation home - one home per symbol
+## Step 3: decide the symbol's documentation home – one home per symbol
 
 Before adding any `<Since>` tag to a doc page, check whether the symbol already has one:
 
@@ -117,13 +117,13 @@ badge in two places that could drift.
 
 Two consequences worth knowing before you guess:
 
-- A symbol can lack a dedicated `api-*.md` page entirely - the input subsystem (`BTN_*`, `AXIS_*`, `BT.isPressed`, and
+- A symbol can lack a dedicated `api-*.md` page entirely – the input subsystem (`BTN_*`, `AXIS_*`, `BT.isPressed`, and
   so on) has no `api-input.md`; its only home is `guide-input.md`. Check `docs/_sitemap.json` for the full page list
   before assuming an `api-*` page exists.
 - A symbol can be genuinely under-documented on the page that first seems obvious (for example an effect class only
   table-listed on `api-rendering.md`) while a **guide** page gives it real per-symbol prose (
   `guide-post-process-effects.md`'s dedicated `### ClassName` sections). When that happens, the guide page is the home,
-  not the api page - substance decides, not the page's category.
+  not the api page – substance decides, not the page's category.
 
 If you cannot confidently identify a page that substantively documents the symbol, it is correct to leave it untagged
 for now rather than force a badge onto a page that only mentions it in passing. `<ApiAvailability>` still surfaces every
@@ -131,7 +131,7 @@ symbol that page does claim; an occasional untagged symbol is a smaller problem 
 
 ## Step 4: add the components
 
-Three MDX components, registered on the `packages/website` side and passed through verbatim by the sync script - write
+Three MDX components, registered on the `packages/website` side and passed through verbatim by the sync script – write
 them directly into the engine `.md` source:
 
 ```
@@ -146,22 +146,22 @@ page: name, since, last changed, status. The `page` prop is the page's `path` fr
 <Since symbol="Vector2i" />
 ```
 
-One per symbol, placed near the content that documents it - directly after the heading when the heading is the symbol's
+One per symbol, placed near the content that documents it – directly after the heading when the heading is the symbol's
 name (`## Vector2i`), or immediately before the code block that demonstrates it when there is no natural per-symbol
 heading. When several symbols are introduced together as a cohesive unit under one heading (for example a family of
 related constants, or several getters described in the same paragraph), stack their `<Since>` tags together rather than
-spreading them across the section - matches the precedent set across every page in this rollout.
+spreading them across the section – matches the precedent set across every page in this rollout.
 
 ```
 <PageChangelog page="api/core-types" />
 ```
 
-One per page (optional - skip it if the page has zero homed symbols), placed near the bottom, before `## See also`.
+One per page (optional – skip it if the page has zero homed symbols), placed near the bottom, before `## See also`.
 Renders a Keep-a-Changelog-style grouped view of every `@since`/`@changed`/`@deprecated` event across the page's
 symbols.
 
 All three are block form: a blank line before and after the tag, never inline in a sentence. Props are always bare
-string literals (`symbol="Vector2i"`, `page="api/core-types"`) - never a `{` expression or a lowercase-initial tag
+string literals (`symbol="Vector2i"`, `page="api/core-types"`) – never a `{` expression or a lowercase-initial tag
 inside a prop, or the sync script's MDX-aware prose escaper will corrupt the output.
 
 ## Step 5: verify end-to-end
@@ -196,7 +196,7 @@ A build success is not sufficient proof by itself. Actually inspect the built ou
 grep -o "Since [0-9.]*\|Unreleased\|Deprecated [0-9.]*" dist/public/docs/<section>/<page>/index.html
 ```
 
-If nothing matches, the tag did not render - most likely a symbol name that does not exactly match a key in
+If nothing matches, the tag did not render – most likely a symbol name that does not exactly match a key in
 `docs/_api-history.json`'s `symbols` object (a typo silently renders nothing; the `<Since>` component design prefers a
 missing badge over a build failure). Cross-check every symbol name against the JSON before trusting a green build.
 
@@ -206,21 +206,21 @@ This is the checklist a second pair of eyes (human or agent) should actually run
 
 1. For every `<Since symbol="X">` added, confirm `X` is an exact key in `docs/_api-history.json`'s `symbols` object -
    grep it, do not eyeball it.
-2. For every symbol tagged, read the actual surrounding prose and confirm it substantively documents that symbol - a
+2. For every symbol tagged, read the actual surrounding prose and confirm it substantively documents that symbol – a
    badge next to a heading that does not really explain the symbol is a misattribution, not a win.
 3. For every symbol _not_ tagged that you would have expected to see, check whether it is legitimately homed on a
    different page (search `docs/_api-history.json`'s `pages` object) before treating the omission as a gap.
-4. Confirm no symbol is double-homed - the same symbol name should not appear in two different pages' entries in the
+4. Confirm no symbol is double-homed – the same symbol name should not appear in two different pages' entries in the
    `pages` object.
-5. Run the actual build and grep the rendered HTML for the expected badge text (see Step 5) - do not accept "the
+5. Run the actual build and grep the rendered HTML for the expected badge text (see Step 5) – do not accept "the
    generator ran without errors" as proof of correct rendering.
-6. Run the full verification suite in both packages (Step 5) - a change that only touches `packages/blit386`'s docs is
+6. Run the full verification suite in both packages (Step 5) – a change that only touches `packages/blit386`'s docs is
    incomplete until `packages/website`'s sync and build are re-verified too.
 
 ## See also
 
-- [Docs sync required](../../../.claude/rules/docs-sync-required.md) - the broader rule this workflow is one instance
+- [Docs sync required](../../../.claude/rules/docs-sync-required.md) – the broader rule this workflow is one instance
   of.
-- [Deprecation Timeline](reference-deprecations.md) - the removal checklist `@deprecated` tags feed into.
-- [Developer Experience](developer-experience-guide.md) - general contributing workflow, code style, commit conventions.
-- `packages/website/CLAUDE.md`, Documentation mirror section - how the sync script consumes what this guide produces.
+- [Deprecation Timeline](reference-deprecations.md) – the removal checklist `@deprecated` tags feed into.
+- [Developer Experience](developer-experience-guide.md) – general contributing workflow, code style, commit conventions.
+- `packages/website/CLAUDE.md`, Documentation mirror section – how the sync script consumes what this guide produces.

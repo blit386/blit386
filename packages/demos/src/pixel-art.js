@@ -1,4 +1,4 @@
-// Pixel Art Demo - draw tiny pictures from number grids and from math patterns.
+// Pixel Art Demo – draw tiny pictures from number grids and from math patterns.
 //
 // Written for young learners (around 12).
 //
@@ -99,8 +99,8 @@ const TREE_PALETTE_MAP = [null, C_TREE_DARK, C_TREE_LIGHT, C_TRUNK];
  * This is the one place that validates grid codes: 0 (empty) and anything
  * outside the map both come back as null, so callers only need one check.
  *
- * @param {(number | null)[]} paletteMap - Array of palette indices (null = transparent).
- * @param {number} code - The paint code from the grid.
+ * @param {(number | null)[]} paletteMap – Array of palette indices (null = transparent).
+ * @param {number} code – The paint code from the grid.
  * @returns {number | null} A palette index, or null if the code means "empty."
  */
 function indexFromPaletteMap(paletteMap, code) {
@@ -154,7 +154,7 @@ class Demo {
                 updateBarPaletteIndex: C_BG,
                 renderBarPaletteIndex: C_TAG,
                 warningPaletteIndex: C_TAG,
-                errorPaletteIndex: 4, // Slot 4 has no named constant - this demo leaves it unassigned.
+                errorPaletteIndex: 4, // Slot 4 has no named constant – this demo leaves it unassigned.
                 tagPaletteIndex: C_BG,
             },
         };
@@ -196,7 +196,7 @@ class Demo {
         // The overlay styles in configure() reuse C_TAG and C_BG, both set above.
 
         // Install the shared UI theme the kit draws the section captions with.
-        // It writes 12 colors starting at the slot we pass - slots 20..31 here, which
+        // It writes 12 colors starting at the slot we pass – slots 20..31 here, which
         // stay clear of the artwork colors (1-11) and fill the top of our 32-slot
         // palette exactly. Must happen before BT.paletteSet() below.
         this.theme = applyTheme(this.palette, 20);
@@ -216,7 +216,7 @@ class Demo {
         this.animTime += BT.deltaSeconds;
 
         // Update the checker pattern colors
-        // The checker squares use "lerp" (short for linear interpolation - smoothly blending
+        // The checker squares use "lerp" (short for linear interpolation – smoothly blending
         // between two colors). wave goes from 0 to 1 and back using Math.sin.
         // At wave=0 colorA is red; at wave=1 it is yellow. At wave=0 colorB is blue; at 1 it is cyan.
         // Both colors shift at the same time but in opposite directions, so they always contrast.
@@ -250,13 +250,13 @@ class Demo {
      *
      * BT.drawPixel() paints exactly one screen cell. To make each design cell bigger, we use two
      * more small loops (dx and dy) that stamp a scale-by-scale block of pixels. Another valid way
-     * is BT.drawRectFill() with width and height equal to scale - same math, one call per cell.
+     * is BT.drawRectFill() with width and height equal to scale – same math, one call per cell.
      *
-     * @param {number[][]} grid - Rows of paint codes; grid[row][col] matches graph-paper rows/columns.
-     * @param {(number | null)[]} paletteMap - paletteMap[code] is the palette index, or null to skip.
-     * @param {number} originX - Left edge where column 0 should appear on screen.
-     * @param {number} originY - Top edge where row 0 should appear on screen.
-     * @param {number} scale - How many screen pixels wide/tall each grid cell becomes.
+     * @param {number[][]} grid – Rows of paint codes; grid[row][col] matches graph-paper rows/columns.
+     * @param {(number | null)[]} paletteMap – paletteMap[code] is the palette index, or null to skip.
+     * @param {number} originX – Left edge where column 0 should appear on screen.
+     * @param {number} originY – Top edge where row 0 should appear on screen.
+     * @param {number} scale – How many screen pixels wide/tall each grid cell becomes.
      */
     drawGridWithScaledPixels(grid, paletteMap, originX, originY, scale) {
         // Outer loop: which row of the design (top row is row 0).
@@ -271,7 +271,7 @@ class Demo {
 
                 // Ask the helper which palette index this code means. It answers null for
                 // code 0 ("no ink here") and for any code outside the map, so this single
-                // check is all the guarding we need - skip and the background stays visible.
+                // check is all the guarding we need – skip and the background stays visible.
                 const paletteIndex = indexFromPaletteMap(paletteMap, code);
                 if (paletteIndex === null) {
                     continue;
@@ -296,7 +296,7 @@ class Demo {
      * Labels and draws the 8x8 heart on the left.
      */
     renderHeartSection() {
-        // Print the section caption with ui.caption() from the shared UI kit - the same
+        // Print the section caption with ui.caption() from the shared UI kit – the same
         // widget every demo in the series uses, so all captions look identical everywhere.
         ui.caption(10, 28, 'Heart 8x8 (number grid)');
 
@@ -323,7 +323,7 @@ class Demo {
     }
 
     /**
-     * Draws a checkerboard using only math inside nested loops - no picture array.
+     * Draws a checkerboard using only math inside nested loops – no picture array.
      * Colors slide around based on animTime (updated in update()) so you can see the clock moving.
      */
     renderCheckerPatternSection() {
@@ -337,7 +337,7 @@ class Demo {
         const startX = 12;
         const startY = 118;
 
-        // Outer loop picks the row of squares; inner loop picks the column - same nested idea as the art.
+        // Outer loop picks the row of squares; inner loop picks the column – same nested idea as the art.
         for (let row = 0; row < cells; row++) {
             for (let col = 0; col < cells; col++) {
                 // Checker rule: neighbors must look different, like a chessboard.

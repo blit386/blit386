@@ -28,8 +28,8 @@ import { SpriteSheet } from './SpriteSheet';
 
 // registerFontForHotReload() normalizes the source url against `document.baseURI`
 // whenever hot reload is active (see BitmapFont.ts). Real browsers always have
-// `document`; this file's default Node test environment does not, so - like the
-// GPU/AudioContext stubs in src/__test__/setup.ts - install it once, only if
+// `document`; this file's default Node test environment does not, so – like the
+// GPU/AudioContext stubs in src/__test__/setup.ts – install it once, only if
 // missing, so it survives every describe block's `vi.unstubAllGlobals()` call.
 if (typeof globalThis.document === 'undefined') {
     (globalThis as unknown as { document?: { baseURI: string } }).document = { baseURI: 'http://localhost/' };
@@ -49,7 +49,7 @@ type FontData = {
  * Creates a stub Image class for use with `vi.stubGlobal('Image', ...)`.
  *
  * @param opts           - Configuration options.
- * @param opts.fireError - When true, fires `onerror` instead of `onload` on src assignment.
+ * @param opts.fireError – When true, fires `onerror` instead of `onload` on src assignment.
  * @param opts.onSrcSet  - Optional callback invoked with the assigned src value before the load/error event.
  * @param opts.width     - Reported image width (default 64).
  * @param opts.height    - Reported image height (default 16).
@@ -99,7 +99,7 @@ function createStubImage({
 /**
  * Builds a mocked fetch response that returns JSON text like {@link BitmapFont.load} expects.
  *
- * @param data - Font descriptor object to serialize.
+ * @param data – Font descriptor object to serialize.
  * @returns Resolved fetch response stub.
  */
 function mockFontFetchResponse(data: unknown) {

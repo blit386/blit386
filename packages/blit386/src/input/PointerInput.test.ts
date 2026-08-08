@@ -687,11 +687,11 @@ describe('PointerInput', () => {
                 pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 186, clientY: 156 }),
             );
 
-            // Tick 2 update: delta = current pos - prev pos snapshotted at
+            // Tick 2 update: delta = current pos – prev pos snapshotted at
             // the end of tick 1.
             // rect = { left:10, top:20, width:640, height:480 }, display 320x240.
             // (170, 140) -> (80, 60).  (186, 156) -> (88, 68).
-            // Expected delta = (88 - 80, 68 - 60) = (8, 8).
+            // Expected delta = (88 – 80, 68 – 60) = (8, 8).
             const delta = input.getDelta(0);
             expect(delta.x).toBe(8);
             expect(delta.y).toBe(8);
@@ -772,7 +772,7 @@ describe('PointerInput', () => {
 
         it('preserves pos and delta on the touch-release frame', () => {
             // Simulates a tick lifecycle with a touch landing, dragging, then
-            // releasing - the demo's drag-and-flick pattern. The release-frame
+            // releasing – the demo's drag-and-flick pattern. The release-frame
             // delta must reflect the final movement so the demo can use it as
             // throw velocity.
 
@@ -876,7 +876,7 @@ describe('PointerInput', () => {
 
         it('reports zero delta on the first frame after touch activation', () => {
             // Without prevPos sync on activation, the very first frame's
-            // delta would be (touchPos - 0) which feeds a phantom velocity
+            // delta would be (touchPos – 0) which feeds a phantom velocity
             // into demos that read pointerDelta on the press frame.
             canvas.dispatchEvent(
                 pointerEvent('pointerdown', {

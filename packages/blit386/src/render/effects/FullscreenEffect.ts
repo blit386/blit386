@@ -36,7 +36,7 @@ export abstract class FullscreenEffect implements Effect {
     abstract readonly tier: EffectTier;
 
     /**
-     * Sampler filter mode. Defaults to `'linear'` (smooth - appropriate for
+     * Sampler filter mode. Defaults to `'linear'` (smooth – appropriate for
      * display-tier effects). Pixel-tier effects can override to `'nearest'` to
      * preserve palette colors during sampling.
      */
@@ -72,10 +72,10 @@ export abstract class FullscreenEffect implements Effect {
     /**
      * Creates the GPU pipeline, uniform buffer, sampler, and bind-group layout.
      *
-     * @param device - WebGPU device used for resource creation.
-     * @param format - Color attachment format. Pixel chain: `r8uint`; display
+     * @param device – WebGPU device used for resource creation.
+     * @param format – Color attachment format. Pixel chain: `r8uint`; display
      *   chain: swap-chain RGBA format.
-     * @param _displaySize - Source render target resolution. Most effects ignore
+     * @param _displaySize – Source render target resolution. Most effects ignore
      *   this and use the per-frame `sourceSize` from {@link updateUniforms}.
      */
     init(device: GPUDevice, format: GPUTextureFormat, _displaySize: Vector2i): void {
@@ -121,8 +121,8 @@ export abstract class FullscreenEffect implements Effect {
     /**
      * Calls {@link writeUniforms} then uploads the uniform block to the GPU.
      *
-     * @param deltaMs - Wall-clock milliseconds since the previous frame.
-     * @param sourceSize - Pixel dimensions of the source texture for this pass.
+     * @param deltaMs – Wall-clock milliseconds since the previous frame.
+     * @param sourceSize – Pixel dimensions of the source texture for this pass.
      */
     updateUniforms(deltaMs: number, sourceSize: Vector2i): void {
         if (!this.device || !this.uniformBuffer || !this.uniformData) {
@@ -137,9 +137,9 @@ export abstract class FullscreenEffect implements Effect {
      * Encodes the fullscreen pass that samples the source texture and writes
      * the result into the destination view.
      *
-     * @param encoder - Active command encoder owned by the renderer.
-     * @param sourceView - View of the texture to sample from.
-     * @param destView - View of the texture to render into.
+     * @param encoder – Active command encoder owned by the renderer.
+     * @param sourceView – View of the texture to sample from.
+     * @param destView – View of the texture to render into.
      */
     encodePass(encoder: GPUCommandEncoder, sourceView: GPUTextureView, destView: GPUTextureView): void {
         if (!this.pipeline) {
@@ -186,7 +186,7 @@ export abstract class FullscreenEffect implements Effect {
      * Returns the bind group for the supplied source view, creating one on
      * first use and caching by view identity.
      *
-     * @param sourceView - View of the source texture to sample.
+     * @param sourceView – View of the source texture to sample.
      * @returns Cached or newly created bind group.
      */
     private getOrCreateBindGroup(sourceView: GPUTextureView): GPUBindGroup {

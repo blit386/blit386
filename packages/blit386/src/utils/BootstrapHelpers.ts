@@ -25,8 +25,8 @@ export type ErrorContent =
  * Appends text to an element, converting newline characters to `<br>` elements.
  * Safe against XSS: all text is inserted via createTextNode, never innerHTML.
  *
- * @param element - Target element to append into.
- * @param text - Plain text, optionally containing newline characters.
+ * @param element – Target element to append into.
+ * @param text – Plain text, optionally containing newline characters.
  */
 function appendTextWithLineBreaks(element: HTMLElement, text: string): void {
     const lines = text.split('\n');
@@ -48,9 +48,9 @@ function appendTextWithLineBreaks(element: HTMLElement, text: string): void {
  * All text (including code) is treated as plain text, not interpreted as markup.
  *
  * @since 1.0.3
- * @param title - Error heading text displayed prominently.
- * @param content - Error message content (string or object with optional code formatting).
- * @param containerID - ID of the container element. Default: 'canvas-container'
+ * @param title – Error heading text displayed prominently.
+ * @param content – Error message content (string or object with optional code formatting).
+ * @param containerID – ID of the container element. Default: 'canvas-container'
  *
  * @example
  * displayError(
@@ -90,7 +90,7 @@ export function displayError(title: string, content: ErrorContent, containerID: 
 
         heading.textContent = title;
 
-        // Handle content - either plain string or object with code formatting.
+        // Handle content – either plain string or object with code formatting.
         // appendTextWithLineBreaks is used instead of textContent so that \n produces
         // visible line breaks, making numbered step lists readable in the error panel.
         if (typeof content === 'string') {
@@ -108,7 +108,7 @@ export function displayError(title: string, content: ErrorContent, containerID: 
                     'font-family: monospace; font-size: 12px; ' +
                     'text-align: left; overflow-x: auto; white-space: pre-wrap; word-break: break-all;';
 
-                codeBlock.textContent = content.code; // Safe - uses textContent
+                codeBlock.textContent = content.code; // Safe – uses textContent
 
                 msg.appendChild(codeBlock);
             }
@@ -136,7 +136,7 @@ export function displayError(title: string, content: ErrorContent, containerID: 
  * Validates that the element exists and is a canvas element.
  *
  * @since 1.0.3
- * @param canvasID - ID of the canvas element. Default: 'blit386-canvas'
+ * @param canvasID – ID of the canvas element. Default: 'blit386-canvas'
  * @returns The canvas element if found and valid, null otherwise.
  *
  * @example

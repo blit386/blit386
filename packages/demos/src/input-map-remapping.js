@@ -1,5 +1,5 @@
 /**
- * Input Map Remapping Demo - runtime `BT.inputMap` and `BT.inputMapReset`.
+ * Input Map Remapping Demo – runtime `BT.inputMap` and `BT.inputMapReset`.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Basics (https://demos.blit386.dev/basics),
@@ -14,7 +14,7 @@
  * defaults, a custom map, and a cleared binding.
  *
  * Important: `BT.isKeyDown('KeyW')` only watches the real W key. Changing the map
- * does not rename keys - it changes which keys feed face buttons through
+ * does not rename keys – it changes which keys feed face buttons through
  * `BT.isDown(BT.BTN_*, player)`.
  *
  * The preset switches are shared-UI-kit buttons (src/shared/ui.js), so on a phone
@@ -86,11 +86,11 @@ class Demo {
     /** @type {Palette | null} */
     palette = null;
 
-    // Palette slot map returned by applyTheme() - theme.bg, theme.text, and friends.
+    // Palette slot map returned by applyTheme() – theme.bg, theme.text, and friends.
     /** @type {ReturnType<typeof applyTheme> | null} */
     theme = null;
 
-    // Human-readable name for the active preset (we track it ourselves - the
+    // Human-readable name for the active preset (we track it ourselves – the
     // engine does not expose a "get current map" API).
     presetLabel = '1 Defaults (engine tables)';
 
@@ -160,7 +160,7 @@ class Demo {
 
         // The reset button below is bound to Digit0, but the original demo also accepted
         // R as a second reset key. A kit button can only carry one key binding, so this
-        // alias stays here in update() (keyboard edges are safe to read here - never in
+        // alias stays here in update() (keyboard edges are safe to read here – never in
         // render()). `isKeyPressed` without a repeat rate only fires once per press.
         if (BT.isKeyPressed('KeyR')) {
             this.applyPresetDefaults();
@@ -192,7 +192,7 @@ class Demo {
 
         // The preset switcher lives in its own panel in the bottom-left corner. Each
         // ui.button() returns true on the one frame it is clicked, tapped, or its bound
-        // key goes down - all three inputs behave exactly the same.
+        // key goes down – all three inputs behave exactly the same.
         ui.begin('bottomLeft');
         ui.panel('Presets');
 
@@ -229,7 +229,7 @@ class Demo {
 
     /**
      * Custom layout: remap a few buttons, and give **two** keys for one direction
-     * so either key counts (OR) - hold Q **or** E and player 0 left should light.
+     * so either key counts (OR) – hold Q **or** E and player 0 left should light.
      */
     applyPresetCustom() {
         // Start from known defaults, then layer edits (order matters only for clarity).
@@ -242,7 +242,7 @@ class Demo {
         // until we reset (we replace the whole key list for that button).
         BT.inputMap(1, BT.BTN_UP, 'KeyI');
 
-        // Player 0: LEFT listens to **two** keys at once - first **or** second held counts.
+        // Player 0: LEFT listens to **two** keys at once – first **or** second held counts.
         BT.inputMap(0, BT.BTN_LEFT, 'KeyQ', 'KeyE');
 
         this.presetLabel = '2 Custom (P0: Z=A, Q|E=Lft | P1: I=Up)';
@@ -264,9 +264,9 @@ class Demo {
     /**
      * One player's panel: title, default-key hints, and a column of live face-button pips.
      *
-     * @param {number} player - 0 or 1.
-     * @param {number} originX - Left edge (pixels).
-     * @param {number} originY - Top edge (pixels).
+     * @param {number} player – 0 or 1.
+     * @param {number} originX – Left edge (pixels).
+     * @param {number} originY – Top edge (pixels).
      */
     renderPlayerPanel(player, originX, originY) {
         // Pin the group at an exact position and force both panels to the same width so
@@ -275,7 +275,7 @@ class Demo {
         ui.panel(player === 0 ? 'Player 0' : 'Player 1');
 
         // Which physical keys feed this player's face buttons out of the box. The custom
-        // preset changes some of these - that is the whole point of the demo.
+        // preset changes some of these – that is the whole point of the demo.
         if (player === 0) {
             ui.label('Default keys: W, A, S, D move', { color: 'dim' });
             ui.label('Space or B=A, N=B, 5=Start, Esc=Select', { color: 'dim' });
@@ -289,7 +289,7 @@ class Demo {
 
         // One read-only pip per logical face button. The pip lights up while the button
         // is held. `code` is a BT.BTN_* constant (Up, A, Start, ...), not a raw key
-        // string - the runtime map (changed by BT.inputMap) decides which physical keys
+        // string – the runtime map (changed by BT.inputMap) decides which physical keys
         // feed it. BT.isDown reads held state (not a press edge), so it is safe here in
         // render().
         for (let i = 0; i < FACE_BUTTONS.length; i++) {

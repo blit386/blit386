@@ -20,7 +20,7 @@ type Reject = (reason: Error) => void;
 /**
  * Calculates the WebGPU-aligned byte size per row for a given image width.
  *
- * @param width - Image width in pixels.
+ * @param width – Image width in pixels.
  * @returns Byte count per row, padded to the GPU alignment boundary.
  */
 export function alignedBytesPerRow(width: number): number {
@@ -32,7 +32,7 @@ export function alignedBytesPerRow(width: number): number {
 /**
  * Swaps blue and red channels in a BGRA pixel array to produce RGBA (in place).
  *
- * @param data - Pixel array in BGRA order (4 bytes per pixel).
+ * @param data – Pixel array in BGRA order (4 bytes per pixel).
  */
 export function swizzleBGRAtoRGBA(data: Uint8ClampedArray): void {
     for (let i = 0; i < data.length; i += BYTES_PER_PIXEL) {
@@ -48,11 +48,11 @@ export function swizzleBGRAtoRGBA(data: Uint8ClampedArray): void {
 /**
  * Converts a raw pixel buffer into a PNG image Blob.
  *
- * @param buffer - Raw pixel data (potentially padded and in BGRA order).
- * @param width - Image width in pixels.
- * @param height - Image height in pixels.
- * @param paddedBytesPerRow - Bytes per row including GPU alignment padding.
- * @param isBGRA - Whether the pixel data needs BGRA-to-RGBA swizzling.
+ * @param buffer – Raw pixel data (potentially padded and in BGRA order).
+ * @param width – Image width in pixels.
+ * @param height – Image height in pixels.
+ * @param paddedBytesPerRow – Bytes per row including GPU alignment padding.
+ * @param isBGRA – Whether the pixel data needs BGRA-to-RGBA swizzling.
  * @returns PNG-encoded Blob.
  */
 export async function pixelBufferToPNG(
@@ -153,9 +153,9 @@ export class FrameCapture {
      * Call only when {@link hasPending} is true, after the render pass ends but
      * before submitting the command buffer.
      *
-     * @param device - WebGPU device for buffer creation.
-     * @param texture - The rendered canvas texture to capture.
-     * @param commandEncoder - Active command encoder to add the copy command to.
+     * @param device – WebGPU device for buffer creation.
+     * @param texture – The rendered canvas texture to capture.
+     * @param commandEncoder – Active command encoder to add the copy command to.
      */
     executeInEncoder(device: GPUDevice, texture: GPUTexture, commandEncoder: GPUCommandEncoder): void {
         this.width = texture.width;
@@ -181,7 +181,7 @@ export class FrameCapture {
     /**
      * Waits for GPU completion, reads back the staging buffer, and resolves the pending capture.
      *
-     * @param device - WebGPU device (used for onSubmittedWorkDone).
+     * @param device – WebGPU device (used for onSubmittedWorkDone).
      */
     async resolve(device: GPUDevice): Promise<void> {
         const resolve = this.pendingResolve;

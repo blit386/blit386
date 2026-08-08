@@ -63,7 +63,7 @@ describe('envelopeValueAt', () => {
     });
 
     it('should fall from sustain to 0 across the release phase', () => {
-        // releaseStart = duration - release = 0.7
+        // releaseStart = duration – release = 0.7
         expect(envelopeValueAt(0.7, duration, envelope)).toBeCloseTo(0.5, 5);
         expect(envelopeValueAt(0.85, duration, envelope)).toBeCloseTo(0.25, 5);
     });
@@ -86,7 +86,7 @@ describe('envelopeValueAt', () => {
 
     it('should reach exactly 0 at t=duration even when release alone is longer than duration', () => {
         // release (2s) is longer than duration (1s) and the clip has no attack/decay, so
-        // releaseStart clamps to 0 and startGain is the (non-zero) sustain level - the release
+        // releaseStart clamps to 0 and startGain is the (non-zero) sustain level – the release
         // ramp must still finish exactly at duration rather than only covering `release` seconds.
         const longRelease = { attack: 0, decay: 0, sustain: 0.8, release: 2 };
 
@@ -98,8 +98,8 @@ describe('envelopeValueAt', () => {
         const shortEnvelope = { attack: 0.5, decay: 0.5, sustain: 0.5, release: 0.5 };
         const shortDuration = 0.2;
 
-        // releaseStart = max(0.2 - 0.5, 0) = 0, so the entire clip is release, starting from
-        // whatever gain the attack phase had reached at t=0 (which is 0) - exact, both endpoints.
+        // releaseStart = max(0.2 – 0.5, 0) = 0, so the entire clip is release, starting from
+        // whatever gain the attack phase had reached at t=0 (which is 0) – exact, both endpoints.
         expect(envelopeValueAt(0, shortDuration, shortEnvelope)).toBe(0);
         expect(envelopeValueAt(shortDuration, shortDuration, shortEnvelope)).toBe(0);
     });

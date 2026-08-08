@@ -32,7 +32,7 @@ export interface FrameDropEvent {
  * Called from inside the rAF handler on the same frame the drop is detected.
  * Keep the callback cheap; coalescing/rate-limiting is the caller's responsibility.
  *
- * @param event - Details of the detected drop.
+ * @param event – Details of the detected drop.
  */
 export type FrameDropCallback = (event: FrameDropEvent) => void;
 
@@ -84,7 +84,7 @@ export class GameLoop {
      * clean 16.667 ms. Left uncorrected, that rounding noise walks the accumulator's
      * phase back and forth across a step boundary, producing a deterministic
      * "extra step, then a stalled frame" beat (for example 2, 0, 1, 2, 0, 1, ...)
-     * instead of a steady one-step-per-frame cadence - visible as camera/scroll
+     * instead of a steady one-step-per-frame cadence – visible as camera/scroll
      * jitter even though the true average frame rate matches the target exactly.
      * 2 ms comfortably covers that rounding noise while staying far below
      * {@link DROP_THRESHOLD_MULTIPLIER}'s much larger gap, so a genuine dropped frame
@@ -143,10 +143,10 @@ export class GameLoop {
     /**
      * Creates a new GameLoop.
      *
-     * @param updateInterval - Milliseconds between fixed update steps (1000 / targetFPS).
-     * @param onUpdate - Called once per fixed update step at the target rate.
-     * @param onRender - Called once per rendered frame at the browser's refresh rate.
-     * @param onFrameDrop - Optional callback invoked when a dropped frame is detected.
+     * @param updateInterval – Milliseconds between fixed update steps (1000 / targetFPS).
+     * @param onUpdate – Called once per fixed update step at the target rate.
+     * @param onRender – Called once per rendered frame at the browser's refresh rate.
+     * @param onFrameDrop – Optional callback invoked when a dropped frame is detected.
      * @throws {Error} If updateInterval is not a finite positive number.
      */
     constructor(updateInterval: number, onUpdate: () => void, onRender: () => void, onFrameDrop?: FrameDropCallback) {
@@ -223,7 +223,7 @@ export class GameLoop {
      * Advances the accumulator, runs zero or more fixed updates, renders once,
      * and schedules the next frame while the loop remains active.
      *
-     * @param currentTime - High-resolution timestamp provided by rAF, in milliseconds.
+     * @param currentTime – High-resolution timestamp provided by rAF, in milliseconds.
      */
     private tick(currentTime: number): void {
         if (!this.isRunning) {
@@ -267,7 +267,7 @@ export class GameLoop {
      * Corrects rAF timer coarsening by snapping a delta that already lands close to an
      * exact multiple of {@link updateInterval} onto that multiple.
      *
-     * @param deltaTime - Raw milliseconds between the current and previous rAF callback.
+     * @param deltaTime – Raw milliseconds between the current and previous rAF callback.
      * @returns `deltaTime`, or the nearest update-interval multiple when within {@link SNAP_EPSILON_MS} of it.
      */
     private snapDeltaTime(deltaTime: number): number {
@@ -293,7 +293,7 @@ export class GameLoop {
      * Background-pause gaps are also excluded from the rolling sample set so
      * they cannot pollute the baseline.
      *
-     * @param deltaTime - Milliseconds elapsed since the previous tick.
+     * @param deltaTime – Milliseconds elapsed since the previous tick.
      */
     private detectFrameDrop(deltaTime: number): void {
         if (!this.onFrameDrop) {

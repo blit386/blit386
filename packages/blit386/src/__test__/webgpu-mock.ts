@@ -78,9 +78,9 @@ function resolveMockTextureSize(size: GPUTextureDescriptor['size']): { width: nu
 /**
  * Creates a mock GPUTexture.
  *
- * @param width - Texture width in pixels.
- * @param height - Texture height in pixels.
- * @param label - Texture label.
+ * @param width – Texture width in pixels.
+ * @param height – Texture height in pixels.
+ * @param label – Texture label.
  * @returns Mock GPUTexture stub.
  */
 export function createMockGPUTexture(
@@ -237,7 +237,7 @@ export function createMockGPUCanvasContext(): GPUCanvasContext {
 
 /**
  * Creates a mock GPUBuffer matching the real 4096-byte palette uniform layout.
- * Returns a plain object - does not call device.createBuffer.
+ * Returns a plain object – does not call device.createBuffer.
  *
  * @returns Mock GPUBuffer stub.
  */

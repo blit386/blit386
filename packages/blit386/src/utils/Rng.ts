@@ -2,7 +2,7 @@
  * Minimal deterministic pseudo-random number generator (mulberry32), used by the audio
  * synthesis engine so identical seeds always produce identical noise output.
  *
- * Internal utility only - not exposed on the public `BT` namespace.
+ * Internal utility only – not exposed on the public `BT` namespace.
  */
 export class Rng {
     /** Internal 32-bit generator state, mutated on every {@link next} call. */
@@ -11,7 +11,7 @@ export class Rng {
     /**
      * Creates a PRNG seeded deterministically from `seed`.
      *
-     * @param seed - Any finite number; only its lower 32 bits affect the sequence.
+     * @param seed – Any finite number; only its lower 32 bits affect the sequence.
      */
     constructor(seed: number) {
         this.state = seed >>> 0;
@@ -36,8 +36,8 @@ export class Rng {
     /**
      * Returns the next pseudo-random float within a range.
      *
-     * @param min - Inclusive lower bound.
-     * @param max - Exclusive upper bound.
+     * @param min – Inclusive lower bound.
+     * @param max – Exclusive upper bound.
      * @returns Next value in the deterministic sequence, in [min, max).
      */
     nextRange(min: number, max: number): number {
@@ -47,8 +47,8 @@ export class Rng {
     /**
      * Returns the next pseudo-random whole number within an inclusive range.
      *
-     * @param min - Inclusive lower bound.
-     * @param max - Inclusive upper bound.
+     * @param min – Inclusive lower bound.
+     * @param max – Inclusive upper bound.
      * @returns Next whole number in the deterministic sequence, in [min, max].
      */
     nextInt(min: number, max: number): number {

@@ -87,7 +87,7 @@ const PAGE_SUFFIX = document.body.dataset.pageSuffix ?? '.html';
  * Build a same-directory link to another demo page. The directory is derived from
  * the current page's own pathname, so this resolves correctly under both dev
  * (/demos/<slug>.html) and the flattened production build (/<slug>).
- * @param {string} slug - Demo slug, e.g. "basics"
+ * @param {string} slug – Demo slug, e.g. "basics"
  * @returns {string}
  */
 function urlFor(slug) {
@@ -558,7 +558,7 @@ function buildCombobox(demos, currentIndex) {
     let isOpen = false;
 
     // When true, the input still shows the current demo label and has not been
-    // edited this open session — filter with an empty query so the full list
+    // edited this open session – filter with an empty query so the full list
     // appears (filtering by "Basics" would hide almost everything).
     let isPristine = true;
 

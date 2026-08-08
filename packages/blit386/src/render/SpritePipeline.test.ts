@@ -460,7 +460,7 @@ describe('drawBitmapText', () => {
             sheet,
         );
 
-        // 'Z' has no glyph - should be silently skipped
+        // 'Z' has no glyph – should be silently skipped
         pipeline.drawBitmapText(font, new Vector2i(0, 0), 'AZA');
 
         let totalVertices = 0;

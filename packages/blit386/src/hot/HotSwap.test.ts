@@ -97,7 +97,7 @@ describe('initFingerprint', () => {
     // exercised here, though: Vitest's esbuild-based TS transform re-serializes the parsed AST
     // rather than preserving literal source text, and this repo's Biome formatter would also
     // collapse any such whitespace-only edit on the next `pnpm run format` pass regardless.
-    // Verified empirically (blank lines, extra inter-token spacing) - both are normalized away
+    // Verified empirically (blank lines, extra inter-token spacing) – both are normalized away
     // before Function.prototype.toString() ever sees them in this environment. This test
     // documents that behavior directly instead of asserting the untestable production claim.
     it('is unaffected by a whitespace-only edit inside init() under this test transform', () => {
@@ -284,7 +284,7 @@ describe('hotSwapDemo', () => {
         // no palette is set, and a real tick would throw after this test already returned.
         vi.stubGlobal('requestAnimationFrame', vi.fn());
 
-        // configure() never mentions backend - mergeHardwareSettings() alone would default it to
+        // configure() never mentions backend – mergeHardwareSettings() alone would default it to
         // 'webgpu'; only the URL override (applied during init, see applyBackendQueryOverride())
         // makes the running settings 'software'.
         class OriginalClass {
@@ -309,7 +309,7 @@ describe('hotSwapDemo', () => {
             }
             update() {}
             render() {
-                // A pure render()-body edit - the exact BT-318 repro (changing a BT.clear
+                // A pure render()-body edit – the exact BT-318 repro (changing a BT.clear
                 // argument). Must swap in place, not force a full reload.
                 return 'edited';
             }
@@ -435,7 +435,7 @@ describe('hotSwapDemo', () => {
 
         // score stays 7, matching Original: initFingerprint treats a class-field initializer
         // change as a Tier 2 signal (see the initFingerprint describe block above), so this
-        // test - which isolates a methods-only change - must not vary it. Its value would be
+        // test – which isolates a methods-only change – must not vary it. Its value would be
         // moot at runtime either way, since Tier 1 never re-runs a constructor.
         class NewClass {
             score = 7;

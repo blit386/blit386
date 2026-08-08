@@ -28,9 +28,9 @@ export interface Result {
  * When `configuredDrawingBufferSize` is omitted, the drawing buffer matches
  * `displaySize` (no upscaling, no display-tier effects).
  *
- * @param canvas - HTML canvas element to configure for WebGPU rendering.
- * @param displaySize - Internal render resolution in pixels (`HardwareSettings.displaySize`).
- * @param configuredDrawingBufferSize - Optional drawing-buffer size from `configure()`
+ * @param canvas – HTML canvas element to configure for WebGPU rendering.
+ * @param displaySize – Internal render resolution in pixels (`HardwareSettings.displaySize`).
+ * @param configuredDrawingBufferSize – Optional drawing-buffer size from `configure()`
  *        (`HardwareSettings.drawingBufferSize`); when set, may exceed `displaySize` for
  *        display-tier post-processing (CRT scanlines, barrel distortion, etc.).
  * @returns Initialized device, context, and drawing-buffer size, or null when WebGPU

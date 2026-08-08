@@ -88,8 +88,8 @@ export class Splash {
     /**
      * Creates a splash.
      *
-     * @param options - Ramp endpoints. Both default to black and white.
-     * @param timeProvider - Clock function returning milliseconds. Defaults to
+     * @param options – Ramp endpoints. Both default to black and white.
+     * @param timeProvider – Clock function returning milliseconds. Defaults to
      *   `performance.now()`. Pass a custom function for deterministic unit tests.
      */
     constructor(options: SplashOptions = {}, timeProvider: () => number = () => performance.now()) {
@@ -226,8 +226,8 @@ export class Splash {
      * `IRenderer` exposes no display size, so the caller passes it – `BTAPI` is
      * the one that knows it.
      *
-     * @param renderer - Active renderer; the caller has already begun the frame.
-     * @param displaySize - Logical display size in pixels.
+     * @param renderer – Active renderer; the caller has already begun the frame.
+     * @param displaySize – Logical display size in pixels.
      */
     public draw(renderer: IRenderer, displaySize: Vector2i): void {
         this.background.set(0, 0, displaySize.x, displaySize.y);
@@ -272,7 +272,7 @@ export class Splash {
      * Any key, click, or tap skips. The game loop is suspended for the splash's
      * whole duration, so the input is free to take.
      *
-     * @param target - Event target to listen on, normally `window`.
+     * @param target – Event target to listen on, normally `window`.
      */
     public attachSkipInput(target: EventTarget): void {
         this.detachSkipInput();
@@ -353,8 +353,8 @@ export class Splash {
      * The hold has a minimum but no maximum, so this refuses to move until the
      * game's `init()` has settled however long a skip has been waiting.
      *
-     * @param now - Current clock reading in milliseconds.
-     * @param elapsed - Milliseconds spent in `shown`.
+     * @param now – Current clock reading in milliseconds.
+     * @param elapsed – Milliseconds spent in `shown`.
      * @returns `true` when the state changed.
      */
     private leaveShown(now: number, elapsed: number): boolean {
@@ -384,7 +384,7 @@ export class Splash {
      * Peaks at the start of the fade-in and the end of the fade-out, and sits at
      * zero through the hold, so the logo is clean while it is being read.
      *
-     * @param elapsed - Milliseconds since the current state was entered.
+     * @param elapsed – Milliseconds since the current state was entered.
      */
     private updateDissolve(elapsed: number): void {
         const glitch = this.glitch;
@@ -418,8 +418,8 @@ export class Splash {
     /**
      * Transitions to a new state and stamps when it was entered.
      *
-     * @param next - State to enter.
-     * @param at - Effective entry time in milliseconds.
+     * @param next – State to enter.
+     * @param at – Effective entry time in milliseconds.
      */
     private enter(next: SplashState, at: number): void {
         this.currentState = next;

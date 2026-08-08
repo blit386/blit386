@@ -6,7 +6,7 @@
  *                        prettier.config.js + .prettierignore + scripts/prettier-plugin-compact-tables.mjs)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
  *   - ../templates/optional/* (wizard opt-in: CI, Cursor rules, Claude guide)
- *   - @blit386/kit content (AGENTS.md + docs/) - the single source for the AI/human guidance
+ *   - @blit386/kit content (AGENTS.md + docs/) – the single source for the AI/human guidance
  *
  * After emitting all files, scaffold writes `.blit/manifest.json` (the ownership manifest) and
  * `.blit/base/` (pristine copies of kit-owned and shared files) so future `blit agents sync` runs

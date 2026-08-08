@@ -1,5 +1,5 @@
 /**
- * Per-sample pitch modulation - linear frequency sweep and sine vibrato - for the
+ * Per-sample pitch modulation – linear frequency sweep and sine vibrato – for the
  * deterministic synthesis engine.
  */
 
@@ -10,10 +10,10 @@ import { DEFAULT_VIBRATO_DEPTH, DEFAULT_VIBRATO_RATE } from './SynthParams';
  * Linearly interpolates from `baseFrequency` to `pitchSweep.toFrequency` across `duration`
  * seconds.
  *
- * @param t - Time in seconds since the start of the clip.
- * @param duration - Total clip duration in seconds.
- * @param baseFrequency - Frequency at `t = 0`.
- * @param pitchSweep - Sweep target, or `undefined` for no sweep.
+ * @param t – Time in seconds since the start of the clip.
+ * @param duration – Total clip duration in seconds.
+ * @param baseFrequency – Frequency at `t = 0`.
+ * @param pitchSweep – Sweep target, or `undefined` for no sweep.
  * @returns Swept frequency in Hz at time `t`. Returns `baseFrequency` unchanged when
  *   `pitchSweep` is `undefined` or `duration` is 0.
  */
@@ -35,8 +35,8 @@ export function sweepFrequencyAt(
 /**
  * Computes the sine-wave vibrato frequency offset at time `t`.
  *
- * @param t - Time in seconds since the start of the clip.
- * @param vibrato - Vibrato descriptor, or `undefined` for no vibrato.
+ * @param t – Time in seconds since the start of the clip.
+ * @param vibrato – Vibrato descriptor, or `undefined` for no vibrato.
  * @returns Frequency deviation in Hz to add to the carrier frequency. Returns `0` when
  *   `vibrato` is `undefined`.
  */
@@ -55,11 +55,11 @@ export function vibratoOffsetAt(t: number, vibrato: SynthVibrato | undefined): n
  * Computes the instantaneous carrier frequency at time `t`, combining the base frequency,
  * linear pitch sweep, and sine vibrato.
  *
- * @param t - Time in seconds since the start of the clip.
- * @param duration - Total clip duration in seconds.
- * @param baseFrequency - Frequency at `t = 0` with no sweep or vibrato applied.
- * @param pitchSweep - Optional linear sweep target.
- * @param vibrato - Optional vibrato descriptor.
+ * @param t – Time in seconds since the start of the clip.
+ * @param duration – Total clip duration in seconds.
+ * @param baseFrequency – Frequency at `t = 0` with no sweep or vibrato applied.
+ * @param pitchSweep – Optional linear sweep target.
+ * @param vibrato – Optional vibrato descriptor.
  * @returns Instantaneous frequency in Hz, floored at 0 to avoid a negative frequency reversing
  *   the oscillator's direction.
  */

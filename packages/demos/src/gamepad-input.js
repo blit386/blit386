@@ -1,5 +1,5 @@
 /**
- * Gamepad Input Demo - analog sticks, triggers, and face-button masks.
+ * Gamepad Input Demo – analog sticks, triggers, and face-button masks.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Basics (https://demos.blit386.dev/basics),
@@ -17,7 +17,7 @@
  * The status panel on the right comes from the shared UI kit in src/shared/ui.js:
  * pip rows light up while buttons are physically held, key-value rows show the raw
  * stick axis numbers, and a meter bar fills with trigger pressure. The demo itself
- * still needs a real gamepad - the kit only draws the readouts (and shows a friendly
+ * still needs a real gamepad – the kit only draws the readouts (and shows a friendly
  * note on touch screens, where a gamepad is usually not available).
  *
  * Try this:
@@ -107,7 +107,7 @@ class Demo {
     // Pod/aim position at the START of the most recent update() tick, before this
     // tick's stick input moved them. render() blends between these and podPos/aimPos
     // using BT.renderAlpha so the pod and aim cursor glide smoothly between physics
-    // ticks instead of jumping - see "Interpolating render state with renderAlpha" in
+    // ticks instead of jumping – see "Interpolating render state with renderAlpha" in
     // the engine's docs/api-game-loop.md. Start equal to podPos/aimPos so the very
     // first frame does not blend in from a stale position.
     prevPodPos = this.podPos;
@@ -181,7 +181,7 @@ class Demo {
     update() {
         // Let the UI kit do its once-per-tick housekeeping first. This demo has no kit
         // buttons or key bindings, but ui.tick() also tracks whether the screen has ever
-        // been touched - that is what feeds the ui.hasTouch() hint drawn in render().
+        // been touched – that is what feeds the ui.hasTouch() hint drawn in render().
         ui.tick();
 
         // Ask the engine whether a gamepad is currently plugged in for this player slot.
@@ -190,7 +190,7 @@ class Demo {
         // "Edge detection": we only want to react the moment the gamepad is first connected,
         // not every single frame it stays connected. So we compare the current state
         // to what it was last frame (stored in wasConnected).
-        // If it just became true (false -> true), that is the "rising edge" - the instant of connection.
+        // If it just became true (false -> true), that is the "rising edge" – the instant of connection.
         if (connected && !this.wasConnected) {
             // Label this moment on the overlay timing chart so you can see exactly
             // which frame the gamepad was detected.
@@ -410,18 +410,18 @@ class Demo {
      * numbers, and a trigger pressure meter.
      *
      * Everything read here is HELD state or an axis value, both safe to read in render().
-     * Button EDGES (BT.isPressed - "did it go down this exact frame?") must stay in
+     * Button EDGES (BT.isPressed – "did it go down this exact frame?") must stay in
      * update(), where this demo already handles them (keyboard-input explains why).
      */
     renderStatusPanel() {
         // Bitmask OR: BT.BTN_A | BT.BTN_B builds one mask. isDown returns true when
-        // **either** button is held - handy for "press any of these" checks in games.
+        // **either** button is held – handy for "press any of these" checks in games.
         // The two single-button pips above it let you watch the OR happen live.
         const aHeld = BT.isDown(BT.BTN_A, PLAYER);
         const bHeld = BT.isDown(BT.BTN_B, PLAYER);
         const maskHeld = BT.isDown(BT.BTN_A | BT.BTN_B, PLAYER);
 
-        // Raw axis values for the readout rows - the same calls the movement code uses.
+        // Raw axis values for the readout rows – the same calls the movement code uses.
         const moveX = BT.getAxis(BT.AXIS_LEFT_X, PLAYER);
         const moveY = BT.getAxis(BT.AXIS_LEFT_Y, PLAYER);
         const aimX = BT.getAxis(BT.AXIS_RIGHT_X, PLAYER);
@@ -448,7 +448,7 @@ class Demo {
         ui.kv('RY', formatAxis(aimY));
 
         // The meter fills left-to-right with trigger pressure (0 = released, 1 = fully
-        // squeezed) - the same value that grows the pod.
+        // squeezed) – the same value that grows the pod.
         ui.meter('Throttle', throttle, { width: THROTTLE_METER_W });
         ui.end();
     }

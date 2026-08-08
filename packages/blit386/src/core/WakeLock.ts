@@ -2,7 +2,7 @@
  * Screen Wake Lock subsystem.
  *
  * Requests a `navigator.wakeLock` screen lock after {@link WakeLock.attach} and keeps
- * it alive across page visibility changes - the platform releases the sentinel
+ * it alive across page visibility changes – the platform releases the sentinel
  * automatically while the page is hidden, so a `visibilitychange` listener
  * re-requests it once the page is visible again. Silently no-ops on browsers that
  * do not expose the Wake Lock API.
@@ -46,7 +46,7 @@ export class WakeLock {
      * Installs the `visibilitychange` listener and requests the initial lock.
      *
      * No-ops when the Wake Lock API is unavailable. The request itself is
-     * fire-and-forget - a failed acquire logs a warning but never throws, so
+     * fire-and-forget – a failed acquire logs a warning but never throws, so
      * callers never need to await or catch this.
      */
     public attach(): void {
@@ -108,7 +108,7 @@ export class WakeLock {
      * Guarded by {@link isRequesting} so overlapping calls (for example a rapid
      * hide/show toggle while a previous request is still pending) never race.
      * Logs a warning and leaves {@link sentinel} null on failure (for example a
-     * low-battery OS override) - never throws, so a failed acquire never fails
+     * low-battery OS override) – never throws, so a failed acquire never fails
      * `BTAPI.init()`. If {@link detach} runs before this request resolves, the
      * newly-acquired sentinel is released immediately instead of being stored,
      * so no lock is left orphaned with no owner able to release it.

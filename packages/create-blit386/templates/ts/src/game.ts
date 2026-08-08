@@ -1,14 +1,14 @@
 // {{projectName}} - a tiny BLIT386 game called "Catcher".
 //
 // Move the paddle to catch the blocks falling from the top.
-// On a phone or tablet: drag or tap - the paddle centers under your finger.
+// On a phone or tablet: drag or tap – the paddle centers under your finger.
 // On a computer: move the mouse, or use the left and right arrow keys as a fallback.
 // Catch one: +1 point. Miss one: lose a life. Run out of lives and the game starts over.
 //
 // Every BLIT386 game is one class with up to four methods. We use three of them here:
 //   init()   - runs once at the start (we set up our colors here).
-//   update() - runs about 60 times a second (we move things and check for catches here).
-//   render() - runs about 60 times a second (we draw everything here).
+//   update() – runs about 60 times a second (we move things and check for catches here).
+//   render() – runs about 60 times a second (we draw everything here).
 //
 // Optional hooks you can add later: configure() for screen settings or to turn off the BLIT386
 // splash, onHotReload() to keep score across init() edits while the Vite plugin hot-reloads
@@ -54,7 +54,7 @@ class Game {
         this.screen = BT.displaySize;
 
         // Make a palette (a numbered set of colors) and choose four colors.
-        // Color32(red, green, blue) - each value goes from 0 (none) to 255 (full).
+        // Color32(red, green, blue) – each value goes from 0 (none) to 255 (full).
         const palette = BT.paletteCreate(16);
 
         palette.set(COLOR_BACKGROUND, new Color32(18, 22, 40)); // dark blue
@@ -82,7 +82,7 @@ class Game {
             // Subtracting half the paddle width shifts it left so it is balanced around the cursor or finger.
             this.paddlePos.x = BT.pointerPos(0).x - Math.floor(PADDLE_WIDTH / 2);
         } else {
-            // No pointer is active - fall back to the arrow keys (or a connected gamepad).
+            // No pointer is active – fall back to the arrow keys (or a connected gamepad).
             // BT.isDown() is true for every frame the button is held down, not just the frame it was pressed.
             if (BT.isDown(BT.BTN_LEFT, 0)) {
                 this.paddlePos.x -= PADDLE_SPEED;

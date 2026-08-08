@@ -1,5 +1,5 @@
 /**
- * Virtual D-pad - four on-screen arrow keys for demos that need directional input on
+ * Virtual D-pad – four on-screen arrow keys for demos that need directional input on
  * phones and tablets, where there is no keyboard.
  *
  * The engine's face buttons (BT.BTN_UP and friends) are fed by keyboards and gamepads but
@@ -11,7 +11,7 @@
  *
  * By default ('show: auto') the D-pad stays invisible until the session sees its first
  * touch contact, so mouse-and-keyboard visitors never know it exists. It sits in the
- * bottom-right corner - the bottom-LEFT 17x13 corner belongs to the engine overlay's
+ * bottom-right corner – the bottom-LEFT 17x13 corner belongs to the engine overlay's
  * toggle, and most thumbs rest on the right half of a phone anyway.
  */
 
@@ -46,7 +46,7 @@ const pressedState = { up: false, down: false, left: false, right: false };
  * Update-side step, run inside ui.tick(): reads the live touch/mouse contacts against the
  * key rectangles cached by the last render and derives held + just-pressed per direction.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
  */
 function stepDpad(ctx) {
     for (const dir of DIRECTIONS) {
@@ -66,7 +66,7 @@ function stepDpad(ctx) {
             }
         }
 
-        // "Pressed" means: held now, but not on the previous tick - a fresh touch.
+        // "Pressed" means: held now, but not on the previous tick – a fresh touch.
         pressedState[dir] = isHeld && !downState[dir];
         downState[dir] = isHeld;
     }
@@ -75,7 +75,7 @@ function stepDpad(ctx) {
 /**
  * Is a D-pad key currently held down? Read from update(), like BT.isDown.
  *
- * @param {'up' | 'down' | 'left' | 'right'} dir - Which key.
+ * @param {'up' | 'down' | 'left' | 'right'} dir – Which key.
  * @returns {boolean}
  */
 function dpadIsDown(dir) {
@@ -85,7 +85,7 @@ function dpadIsDown(dir) {
 /**
  * Was a D-pad key just pressed this tick? Read from update(), like BT.isPressed.
  *
- * @param {'up' | 'down' | 'left' | 'right'} dir - Which key.
+ * @param {'up' | 'down' | 'left' | 'right'} dir – Which key.
  * @returns {boolean}
  */
 function dpadIsPressed(dir) {
@@ -96,12 +96,12 @@ function dpadIsPressed(dir) {
  * Draws one arrow glyph as a stack of thin filled rectangles (the system font has no arrow
  * characters). A triangle is just rows that get wider away from the tip.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context (for its scratch rect).
- * @param {'up' | 'down' | 'left' | 'right'} dir - Which way the triangle points.
- * @param {number} keyX - Key top-left x.
- * @param {number} keyY - Key top-left y.
- * @param {number} size - Key size in pixels.
- * @param {number} color - Palette index for the glyph.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context (for its scratch rect).
+ * @param {'up' | 'down' | 'left' | 'right'} dir – Which way the triangle points.
+ * @param {number} keyX – Key top-left x.
+ * @param {number} keyY – Key top-left y.
+ * @param {number} size – Key size in pixels.
+ * @param {number} color – Palette index for the glyph.
  */
 function drawArrow(ctx, dir, keyX, keyY, size, color) {
     // The triangle spans about a third of the key and is centered inside it.
@@ -133,7 +133,7 @@ function drawArrow(ctx, dir, keyX, keyY, size, color) {
  * the widget itself decides whether it is visible. Self-contained: no ui.begin()/end()
  * needed around it.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
  * @param {{ corner?: 'bottomRight' | 'bottomLeft' | 'topRight' | 'topLeft', size?: number,
  *   gap?: number, margin?: number, show?: 'auto' | 'always' }} [opts] - size is one key's
  *   width/height in pixels (default 34); gap is the space between keys; margin is the gap
@@ -172,12 +172,12 @@ function dpadWidget(ctx, opts = {}) {
 /**
  * Draws one D-pad key (face, border, arrow) and caches its hit rectangle.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {'up' | 'down' | 'left' | 'right'} dir - Which key.
- * @param {number} baseX - Left edge of the whole cross.
- * @param {number} baseY - Top edge of the whole cross.
- * @param {number} step - Key size plus gap (one grid cell of the cross).
- * @param {number} size - Key size in pixels.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {'up' | 'down' | 'left' | 'right'} dir – Which key.
+ * @param {number} baseX – Left edge of the whole cross.
+ * @param {number} baseY – Top edge of the whole cross.
+ * @param {number} step – Key size plus gap (one grid cell of the cross).
+ * @param {number} size – Key size in pixels.
  */
 function drawKey(ctx, dir, baseX, baseY, step, size) {
     // Cross layout: up/down share the middle column, left/right the middle row.

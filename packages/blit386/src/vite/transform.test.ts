@@ -66,7 +66,7 @@ describe('checkPlainJsSyntax', () => {
     });
 
     it('is null (skipped) for a .ts module even with invalid plain-JS/TypeScript-only syntax', () => {
-        // Valid TypeScript, invalid as plain ES - acorn (an ES-only parser) would reject this if it
+        // Valid TypeScript, invalid as plain ES – acorn (an ES-only parser) would reject this if it
         // ran, which is exactly why .ts/.mts must be skipped rather than checked.
         const code = 'const x: number = 1;\n';
 
@@ -99,7 +99,7 @@ describe('injectSnippet', () => {
         const result = injectSnippet(codeWithExistingImport);
         const injectedPortion = result.code.slice(result.code.indexOf(INJECTION_MARKER));
 
-        // Two import declarations binding the same local name - even from the same source - is a
+        // Two import declarations binding the same local name – even from the same source – is a
         // SyntaxError in ES modules, so the injected import must use a different local name than the
         // entry module's own pre-existing `registerHotReload` import.
         expect(injectedPortion).toContain(

@@ -1,9 +1,9 @@
 /**
- * Pointer Drag-and-Flick Demo - grab balls, drag them, release to throw.
+ * Pointer Drag-and-Flick Demo – grab balls, drag them, release to throw.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:
- *   Pointer Basics - https://demos.blit386.dev/pointer-basics
+ *   Pointer Basics – https://demos.blit386.dev/pointer-basics
  *   Pointer Paint  - https://demos.blit386.dev/pointer-paint
  *
  * Live version: https://demos.blit386.dev/pointer-drag-flick
@@ -14,7 +14,7 @@
  *
  *   - Three balls bounce around inside a closed box under gravity.
  *   - Click and HOLD on a ball to grab it (the ball follows the pointer).
- *   - RELEASE to throw it - the release-frame BT.pointerDelta becomes the
+ *   - RELEASE to throw it – the release-frame BT.pointerDelta becomes the
  *     ball's launch velocity.
  *
  * On a touchscreen each finger can grab its own ball; up to three balls can
@@ -36,7 +36,7 @@
  * The HUD (the title strip along the top and the per-slot pointer indicators in the
  * top-right corner) is drawn with the shared UI kit (src/shared/ui.js), so it uses the
  * same colors and layout as every other demo. The balls themselves keep their own scene
- * colors and are grabbed with raw pointer reads - the kit only handles the readouts.
+ * colors and are grabbed with raw pointer reads – the kit only handles the readouts.
  *
  * Coordinate convention: balls store position with sub-pixel precision
  * (floats) so physics integrates smoothly, but every render call rounds to
@@ -61,7 +61,7 @@ const DISPLAY_H = 240;
 const HUD_HEIGHT = 22;
 
 // Scene palette slots. Index 0 is always transparent. UI colors (panel, text, borders)
-// are no longer listed here - the shared UI kit installs them into high slots (240+)
+// are no longer listed here – the shared UI kit installs them into high slots (240+)
 // via applyTheme() in init(), so only the demo's own scene colors remain.
 const C_BALL_OUTLINE = 1; // outline drawn around any grabbed ball
 const C_BALL_HIGHLIGHT = 2; // tint for the ball under the mouse cursor when no slot is grabbing it
@@ -131,7 +131,7 @@ class Demo {
     palette = null;
 
     /**
-     * Palette slot map returned by applyTheme() - where the shared UI colors landed.
+     * Palette slot map returned by applyTheme() – where the shared UI colors landed.
      * Used for BT.clear(this.theme.bg) and the crosshair cursor color.
      *
      * @type {ReturnType<typeof applyTheme> | null}
@@ -150,7 +150,7 @@ class Demo {
      * prevX/prevY remember where each ball was at the START of the most recent
      * update() tick, before physics moved it. render() blends between prevX/prevY
      * and x/y using BT.renderAlpha so the ball glides smoothly across render
-     * frames instead of only moving once per physics tick - see "Interpolating
+     * frames instead of only moving once per physics tick – see "Interpolating
      * render state with renderAlpha" in the engine's docs/api-game-loop.md.
      *
      * @type {Array<{x: number, y: number, prevX: number, prevY: number, vx: number, vy: number, color: number, grabbedBy: number}>}
@@ -308,7 +308,7 @@ class Demo {
 
         const pos = BT.pointerPos(slot);
 
-        // Don't try to grab through the HUD - the press at HUD level is a
+        // Don't try to grab through the HUD – the press at HUD level is a
         // miss-click rather than a deliberate grab.
         if (pos.y < HUD_HEIGHT) {
             return;
@@ -386,7 +386,7 @@ class Demo {
      * more urgent pitch) and volume (faster flick = louder). BT.soundPlay's `pitch` option
      * is a playback-rate multiplier, the same trick Audio Basics uses for its blip sound.
      *
-     * @param {number} speed - Pre-clamp launch speed in px/tick, from Math.hypot(vx, vy).
+     * @param {number} speed – Pre-clamp launch speed in px/tick, from Math.hypot(vx, vy).
      */
     playWhoosh(speed) {
         const speedFraction = clamp(speed / MAX_THROW_SPEED, 0, 1);
@@ -405,7 +405,7 @@ class Demo {
         const slot = ball.grabbedBy;
 
         if (!BT.isPointerActive(slot)) {
-            // Pointer disappeared - drop the ball where it is.
+            // Pointer disappeared – drop the ball where it is.
             ball.grabbedBy = -1;
             ball.vx = 0;
             ball.vy = 0;
@@ -472,7 +472,7 @@ class Demo {
      * Plays the wall/floor bounce thud, skipping bounces too gentle to notice and scaling
      * volume with impact speed.
      *
-     * @param {number} impactSpeed - Absolute velocity component (px/tick) at the moment of impact.
+     * @param {number} impactSpeed – Absolute velocity component (px/tick) at the moment of impact.
      */
     playThud(impactSpeed) {
         if (impactSpeed < THUD_MIN_SPEED) {
@@ -485,7 +485,7 @@ class Demo {
 
     /**
      * The HUD, built from shared UI kit groups: the full-width title strip at the top
-     * (it doubles as the ceiling of the physics box - see HUD_HEIGHT), plus a compact
+     * (it doubles as the ceiling of the physics box – see HUD_HEIGHT), plus a compact
      * corner panel with one pip per pointer slot. A pip lights up while that slot
      * (M = mouse, T1-T3 = touch fingers) is grabbing a ball.
      */
@@ -496,14 +496,14 @@ class Demo {
 
         // Browsers refuse to play any sound until the page is clicked or a key
         // is pressed. This shared row shows the standard warm "enable sound"
-        // prompt and disappears on its own the moment audio unlocks - which
+        // prompt and disappears on its own the moment audio unlocks – which
         // here happens on the very first grab.
         ui.audioUnlockHint();
 
         ui.end();
 
         // Per-slot grab indicators, tucked into the top-right corner just below the
-        // strip. Balls may fly behind this panel - that is fine, it is a readout, not
+        // strip. Balls may fly behind this panel – that is fine, it is a readout, not
         // a wall. ui.pip() draws a small square that fills in while its state is true.
         const labels = ['M', 'T1', 'T2', 'T3'];
 
@@ -550,7 +550,7 @@ class Demo {
             // x/y by that fraction gives us the ball's position AT THIS EXACT RENDER
             // MOMENT, not just its position as of the last physics tick. Picture a movie:
             // physics ticks are the individual film frames, and render() is the projector
-            // running faster than the film advances - renderAlpha tells the projector how
+            // running faster than the film advances – renderAlpha tells the projector how
             // far to "tween" between the current frame and the next one so playback looks
             // smooth instead of jerky.
             const drawX = Math.round(ball.prevX + (ball.x - ball.prevX) * BT.renderAlpha);

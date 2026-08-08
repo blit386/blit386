@@ -43,9 +43,9 @@ export const DEFAULT_PALETTE_GRID: PaletteGridLayout = {
 /**
  * Computes the horizontal span of one grid row.
  *
- * @param cols - Column count.
- * @param swatchSize - Side length of each swatch.
- * @param gap - Gap between swatches.
+ * @param cols – Column count.
+ * @param swatchSize – Side length of each swatch.
+ * @param gap – Gap between swatches.
  * @returns Row width in pixels.
  */
 export function gridRowWidth(cols: number, swatchSize: number, gap: number): number {
@@ -59,9 +59,9 @@ export function gridRowWidth(cols: number, swatchSize: number, gap: number): num
 /**
  * Computes the vertical span of the full grid.
  *
- * @param rows - Row count.
- * @param swatchSize - Side length of each swatch.
- * @param gap - Gap between swatches.
+ * @param rows – Row count.
+ * @param swatchSize – Side length of each swatch.
+ * @param gap – Gap between swatches.
  * @returns Grid height in pixels.
  */
 export function gridRowStackHeight(rows: number, swatchSize: number, gap: number): number {
@@ -75,11 +75,11 @@ export function gridRowStackHeight(rows: number, swatchSize: number, gap: number
 /**
  * Picks the widest column count that fits the display while halving from the palette size.
  *
- * @param displayWidth - Logical display width in pixels.
- * @param swatchSize - Side length of each swatch.
- * @param gap - Gap between swatches.
- * @param colorCount - Active palette slot count.
- * @param maxColumns - Optional cap from {@link HardwareSettings.overlayPaletteColumns}.
+ * @param displayWidth – Logical display width in pixels.
+ * @param swatchSize – Side length of each swatch.
+ * @param gap – Gap between swatches.
+ * @param colorCount – Active palette slot count.
+ * @param maxColumns – Optional cap from {@link HardwareSettings.overlayPaletteColumns}.
  * @returns Column count (at least 1).
  */
 export function pickGridColumnCount(
@@ -110,8 +110,8 @@ export function pickGridColumnCount(
 /**
  * Resolves the visible row count for a palette grid viewport.
  *
- * @param totalRows - Full palette row count.
- * @param maxVisibleRows - Optional cap from {@link HardwareSettings.overlayPaletteRowsVisible}.
+ * @param totalRows – Full palette row count.
+ * @param maxVisibleRows – Optional cap from {@link HardwareSettings.overlayPaletteRowsVisible}.
  * @returns Visible rows (0 when `totalRows` is 0; otherwise clamped to `[1, totalRows]`).
  */
 export function resolveGridVisibleRows(totalRows: number, maxVisibleRows?: number): number {
@@ -131,12 +131,12 @@ export function resolveGridVisibleRows(totalRows: number, maxVisibleRows?: numbe
 /**
  * Computes palette grid layout for the bottom band.
  *
- * @param displayWidth - Logical display width in pixels.
- * @param swatchSize - Side length of each swatch (default {@link DEFAULT_PALETTE_SWATCH_SIZE}).
- * @param colorCount - Number of palette slots to show (default 256).
- * @param gap - Gap between swatches (default 1).
- * @param maxColumns - Optional cap from {@link HardwareSettings.overlayPaletteColumns}.
- * @param maxVisibleRows - Optional cap from {@link HardwareSettings.overlayPaletteRowsVisible}.
+ * @param displayWidth – Logical display width in pixels.
+ * @param swatchSize – Side length of each swatch (default {@link DEFAULT_PALETTE_SWATCH_SIZE}).
+ * @param colorCount – Number of palette slots to show (default 256).
+ * @param gap – Gap between swatches (default 1).
+ * @param maxColumns – Optional cap from {@link HardwareSettings.overlayPaletteColumns}.
+ * @param maxVisibleRows – Optional cap from {@link HardwareSettings.overlayPaletteRowsVisible}.
  * @returns Grid dimensions and viewport band height.
  */
 export function computeGrid(
@@ -162,14 +162,14 @@ export function computeGrid(
 /**
  * Returns whether two axis-aligned rects overlap (zero allocation).
  *
- * @param ax - Left edge of rect A.
- * @param ay - Top edge of rect A.
- * @param aw - Width of rect A.
- * @param ah - Height of rect A.
- * @param bx - Left edge of rect B.
- * @param by - Top edge of rect B.
- * @param bw - Width of rect B.
- * @param bh - Height of rect B.
+ * @param ax – Left edge of rect A.
+ * @param ay – Top edge of rect A.
+ * @param aw – Width of rect A.
+ * @param ah – Height of rect A.
+ * @param bx – Left edge of rect B.
+ * @param by – Top edge of rect B.
+ * @param bw – Width of rect B.
+ * @param bh – Height of rect B.
  * @returns `true` when the rects overlap.
  */
 function doRectsOverlap(
@@ -188,10 +188,10 @@ function doRectsOverlap(
 /**
  * Returns whether a swatch rect intersects an exclusion region.
  *
- * @param x - Swatch left edge in display pixels.
- * @param y - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
- * @param exclusion - Region to avoid (for example the toggle hint icon).
+ * @param x – Swatch left edge in display pixels.
+ * @param y – Swatch top edge in display pixels.
+ * @param swatchSize – Side length of the swatch.
+ * @param exclusion – Region to avoid (for example the toggle hint icon).
  * @returns `true` when any part of the swatch overlaps the exclusion rect.
  */
 function doesSwatchIntersectExclusion(x: number, y: number, swatchSize: number, exclusion: Rect2i): boolean {
@@ -210,8 +210,8 @@ const hintExclusionCache = {
  *
  * Reuses {@link hintExclusionCache.rect} when `hintBarTopY` and `displayWidth` match the previous call.
  *
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @param displayWidth - Logical display width (cache key only; icon X is margin-based).
+ * @param hintBarTopY – Top Y of the bottom hint bar from the layout plan.
+ * @param displayWidth – Logical display width (cache key only; icon X is margin-based).
  * @returns Exclusion rect for swatch placement and hit testing.
  */
 export function resolveHintExclusionRect(hintBarTopY: number, displayWidth: number): Rect2i {
@@ -239,10 +239,10 @@ const gridDrawScratch = {
 /**
  * Writes the filled marker rect for an unused swatch into {@link target}.
  *
- * @param target - Reusable rect mutated in place.
- * @param x - Swatch left edge in display pixels.
- * @param y - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
+ * @param target – Reusable rect mutated in place.
+ * @param x – Swatch left edge in display pixels.
+ * @param y – Swatch top edge in display pixels.
+ * @param swatchSize – Side length of the swatch.
  */
 function writeUnusedSwatchMarkerRect(target: Rect2i, x: number, y: number, swatchSize: number): void {
     if (swatchSize <= 0) {
@@ -259,9 +259,9 @@ function writeUnusedSwatchMarkerRect(target: Rect2i, x: number, y: number, swatc
 /**
  * Computes the filled marker rect drawn inside an unused swatch.
  *
- * @param x - Swatch left edge in display pixels.
- * @param y - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
+ * @param x – Swatch left edge in display pixels.
+ * @param y – Swatch top edge in display pixels.
+ * @param swatchSize – Side length of the swatch.
  * @returns Marker rect clamped and centered within the swatch bounds, or a
  * zero-area rect at `(x, y)` when `swatchSize` is not positive.
  */
@@ -276,12 +276,12 @@ export function computeUnusedSwatchMarkerRect(x: number, y: number, swatchSize: 
 /**
  * Draws a centered filled marker inside an unused swatch.
  *
- * @param target - Overlay draw target.
- * @param markerScratch - Reusable marker rect mutated in place.
- * @param x - Swatch left edge in display pixels.
- * @param y - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
- * @param markIndex - Palette index for the marker fill.
+ * @param target – Overlay draw target.
+ * @param markerScratch – Reusable marker rect mutated in place.
+ * @param x – Swatch left edge in display pixels.
+ * @param y – Swatch top edge in display pixels.
+ * @param swatchSize – Side length of the swatch.
+ * @param markIndex – Palette index for the marker fill.
  */
 function drawUnusedSwatch(
     target: OverlayDrawTarget,
@@ -307,8 +307,8 @@ function drawUnusedSwatch(
 /**
  * Returns whether a palette slot was referenced by demo draw calls this frame.
  *
- * @param usedMask - Per-frame usage mask from BTAPI.
- * @param index - Palette slot to query.
+ * @param usedMask – Per-frame usage mask from BTAPI.
+ * @param index – Palette slot to query.
  * @returns `true` when the slot is marked used.
  */
 function isSlotUsed(usedMask: Uint8Array, index: number): boolean {
@@ -319,15 +319,15 @@ function isSlotUsed(usedMask: Uint8Array, index: number): boolean {
 /**
  * Draws one palette swatch or its unused marker.
  *
- * @param target - Overlay draw target.
- * @param swatchScratch - Reusable swatch rect mutated in place.
- * @param markerScratch - Reusable marker rect mutated in place.
- * @param x - Swatch left edge in display pixels.
- * @param y - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
- * @param index - Palette slot index for this swatch.
- * @param usedMask - Per-frame usage mask from BTAPI.
- * @param unusedMarkIndex - Palette index for unused swatch marker fills.
+ * @param target – Overlay draw target.
+ * @param swatchScratch – Reusable swatch rect mutated in place.
+ * @param markerScratch – Reusable marker rect mutated in place.
+ * @param x – Swatch left edge in display pixels.
+ * @param y – Swatch top edge in display pixels.
+ * @param swatchSize – Side length of the swatch.
+ * @param index – Palette slot index for this swatch.
+ * @param usedMask – Per-frame usage mask from BTAPI.
+ * @param unusedMarkIndex – Palette index for unused swatch marker fills.
  */
 function drawSwatch(
     target: OverlayDrawTarget,
@@ -351,11 +351,11 @@ function drawSwatch(
 /**
  * Writes the top-left corner of a palette swatch into {@link target}.
  *
- * @param target - Reusable rect mutated in place.
- * @param index - Palette slot index.
- * @param paletteBand - Palette band rect from layout plan.
- * @param grid - Precomputed grid layout.
- * @param scrollRowOffset - First visible grid row (default `0`).
+ * @param target – Reusable rect mutated in place.
+ * @param index – Palette slot index.
+ * @param paletteBand – Palette band rect from layout plan.
+ * @param grid – Precomputed grid layout.
+ * @param scrollRowOffset – First visible grid row (default `0`).
  */
 export function writeSwatchTopLeft(
     target: Rect2i,
@@ -384,14 +384,14 @@ export function writeSwatchTopLeft(
 /**
  * Draws the visible palette swatch window inside the bottom band.
  *
- * @param target - Overlay draw target.
- * @param paletteBand - Palette band rect from layout plan.
- * @param colorCount - Active palette slot count.
- * @param grid - Precomputed grid layout.
- * @param hintExclusion - Region to skip for the toggle hint icon.
- * @param usedMask - Per-frame usage mask from BTAPI.
- * @param unusedMarkIndex - Palette index for unused swatch marker fills.
- * @param scrollRowOffset - First visible grid row (default `0`).
+ * @param target – Overlay draw target.
+ * @param paletteBand – Palette band rect from layout plan.
+ * @param colorCount – Active palette slot count.
+ * @param grid – Precomputed grid layout.
+ * @param hintExclusion – Region to skip for the toggle hint icon.
+ * @param usedMask – Per-frame usage mask from BTAPI.
+ * @param unusedMarkIndex – Palette index for unused swatch marker fills.
+ * @param scrollRowOffset – First visible grid row (default `0`).
  */
 function drawSwatchGrid(
     target: OverlayDrawTarget,
@@ -427,8 +427,8 @@ function drawSwatchGrid(
 /**
  * Computes macOS-style thumb height: visible fraction of total rows, clamped to the track.
  *
- * @param trackHeight - Full palette band height in pixels.
- * @param grid - Precomputed grid layout.
+ * @param trackHeight – Full palette band height in pixels.
+ * @param grid – Precomputed grid layout.
  * @returns Thumb height in pixels, or `0` when inputs are invalid.
  */
 export function computeScrollbarThumbHeight(trackHeight: number, grid: PaletteGridLayout): number {
@@ -449,12 +449,12 @@ export function computeScrollbarThumbHeight(trackHeight: number, grid: PaletteGr
  * The track is inset 1 px from the palette band top, right, and bottom edges. Only the
  * thumb is drawn; the track rect is used for hit testing and thumb placement.
  *
- * @param trackTarget - Reusable track rect mutated in place.
- * @param thumbTarget - Reusable thumb rect mutated in place.
- * @param paletteBand - Palette band rect from layout plan.
- * @param grid - Precomputed grid layout.
- * @param scrollRowOffset - First visible grid row.
- * @param trackWidth - Scrollbar track width in pixels.
+ * @param trackTarget – Reusable track rect mutated in place.
+ * @param thumbTarget – Reusable thumb rect mutated in place.
+ * @param paletteBand – Palette band rect from layout plan.
+ * @param grid – Precomputed grid layout.
+ * @param scrollRowOffset – First visible grid row.
+ * @param trackWidth – Scrollbar track width in pixels.
  * @returns `true` when scrolling is possible and rects were written.
  */
 export function writeScrollbarRects(
@@ -500,12 +500,12 @@ export function writeScrollbarRects(
 /**
  * Draws the palette scrollbar thumb inside the bottom band (no track fill).
  *
- * @param target - Overlay draw target.
- * @param paletteBand - Palette band rect from layout plan.
- * @param grid - Precomputed grid layout.
- * @param scrollRowOffset - First visible grid row.
- * @param trackWidth - Scrollbar track width in pixels.
- * @param thumbIndex - Palette index for the thumb fill.
+ * @param target – Overlay draw target.
+ * @param paletteBand – Palette band rect from layout plan.
+ * @param grid – Precomputed grid layout.
+ * @param scrollRowOffset – First visible grid row.
+ * @param trackWidth – Scrollbar track width in pixels.
+ * @param thumbIndex – Palette index for the thumb fill.
  */
 function drawScrollbar(
     target: OverlayDrawTarget,
@@ -534,7 +534,7 @@ export class PaletteView {
     /**
      * Creates a palette view with the given feature flag.
      *
-     * @param isEnabled - When false, draw is a no-op (default matches public opt-in API).
+     * @param isEnabled – When false, draw is a no-op (default matches public opt-in API).
      */
     constructor(isEnabled = false) {
         this.#isEnabled = isEnabled;
@@ -552,17 +552,17 @@ export class PaletteView {
     /**
      * Draws palette swatches in the bottom band.
      *
-     * @param target - Overlay draw target.
-     * @param paletteBand - Palette band rect from layout plan.
-     * @param palette - Active demo palette.
-     * @param grid - Precomputed grid layout.
-     * @param hintBarTopY - Top Y of the bottom hint bar for icon exclusion.
-     * @param displayWidth - Logical display width for hint exclusion cache key.
-     * @param usedMask - Per-frame usage mask populated during demo render.
-     * @param unusedMarkIndex - Palette index for unused swatch marker fills.
-     * @param scrollRowOffset - First visible grid row (default `0`).
-     * @param scrollbarTrackWidth - Right-edge scrollbar track width (default `0`).
-     * @param scrollbarThumbIndex - Palette index for scrollbar thumb fill.
+     * @param target – Overlay draw target.
+     * @param paletteBand – Palette band rect from layout plan.
+     * @param palette – Active demo palette.
+     * @param grid – Precomputed grid layout.
+     * @param hintBarTopY – Top Y of the bottom hint bar for icon exclusion.
+     * @param displayWidth – Logical display width for hint exclusion cache key.
+     * @param usedMask – Per-frame usage mask populated during demo render.
+     * @param unusedMarkIndex – Palette index for unused swatch marker fills.
+     * @param scrollRowOffset – First visible grid row (default `0`).
+     * @param scrollbarTrackWidth – Right-edge scrollbar track width (default `0`).
+     * @param scrollbarThumbIndex – Palette index for scrollbar thumb fill.
      */
     draw(
         target: OverlayDrawTarget,

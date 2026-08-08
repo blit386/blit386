@@ -1,5 +1,5 @@
 /**
- * Audio Basics Demo - loading sounds, playing them, and the "click to allow sound" rule.
+ * Audio Basics Demo – loading sounds, playing them, and the "click to allow sound" rule.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:
@@ -9,7 +9,7 @@
  * Live version: https://demos.blit386.dev/audio-basics
  *
  * Every web browser refuses to make any sound at all until you click or press a key on
- * the page - this is called the "autoplay policy," and it exists so a page you just
+ * the page – this is called the "autoplay policy," and it exists so a page you just
  * opened cannot suddenly blast noise at you without asking first. BT.isAudioUnlocked
  * tells you whether that first click or key press has happened yet.
  *
@@ -27,11 +27,11 @@
  * The engine's built-in overlay can also show live audio meters: little bars that move
  * up and down with how loud each audio bus (main, music, sfx) is right now, plus a
  * count of how many sounds are playing at once. This demo turns that feature on with
- * `isOverlayAudioMetersEnabled: true` in configure() - open the overlay (see below) and
+ * `isOverlayAudioMetersEnabled: true` in configure() – open the overlay (see below) and
  * watch the meters jump every time a blip or pop plays.
  *
  * Try this:
- * - Click anywhere, or press any key, to unlock sound - watch the message at the top
+ * - Click anywhere, or press any key, to unlock sound – watch the message at the top
  *   change once you do.
  * - Press 1, 2, or 3 (or tap the matching button) to play a short "blip" at a low,
  *   normal, or high pitch.
@@ -85,9 +85,9 @@ const CLICK_MARKER_HALF_SIZE = 6;
 /**
  * Keeps a number from going below `min` or above `max`.
  *
- * @param {number} value - Number to restrict.
- * @param {number} min - Smallest allowed result.
- * @param {number} max - Largest allowed result.
+ * @param {number} value – Number to restrict.
+ * @param {number} min – Smallest allowed result.
+ * @param {number} max – Largest allowed result.
  * @returns {number}
  */
 function clamp(value, min, max) {
@@ -147,7 +147,7 @@ class Demo {
     async init() {
         // AudioClip.load() downloads a sound file and decodes it into a ready-to-play
         // buffer. That part works right away, even before the page is "unlocked" for
-        // sound - only actually hearing a sound (BT.soundPlay, below) waits for that.
+        // sound – only actually hearing a sound (BT.soundPlay, below) waits for that.
         this.blipClip = await AudioClip.load('/audio/blip.wav');
         this.popClip = await AudioClip.load('/audio/pop.wav');
 
@@ -166,7 +166,7 @@ class Demo {
      * Runs the UI kit's once-per-tick housekeeping, then reads pointer clicks.
      *
      * The pitch keys (1/2/3) are bound to the buttons declared in render() via their
-     * { key } option. ui.tick() is where the kit safely catches those presses - keyboard
+     * { key } option. ui.tick() is where the kit safely catches those presses – keyboard
      * "was it just pressed?" flags can only be read reliably here in update(), never in
      * render() (keyboard-input explains why in detail).
      */
@@ -174,12 +174,12 @@ class Demo {
         ui.tick();
 
         // BT.BTN_POINTER_A is the primary click (left mouse button, or a touchscreen
-        // tap). BT.isPressed fires only once, on the frame the click happens - the same
+        // tap). BT.isPressed fires only once, on the frame the click happens – the same
         // way pointer-basics and pointer-paint read their clicks.
         if (BT.isPressed(BT.BTN_POINTER_A, 0)) {
             const pos = BT.pointerPos(0);
 
-            // Skip clicks that land on a UI kit widget - tapping a pitch button should
+            // Skip clicks that land on a UI kit widget – tapping a pitch button should
             // only play its blip, not also fire a pop underneath the button.
             if (!ui.overWidget(pos.x, pos.y)) {
                 this.playPopAt(pos);
@@ -199,7 +199,7 @@ class Demo {
     render() {
         BT.clear(this.theme.bg);
 
-        // The click marker is scene drawing, not a widget - draw it first so the panels
+        // The click marker is scene drawing, not a widget – draw it first so the panels
         // always sit on top of it.
         this.renderClickMarker();
 
@@ -210,13 +210,13 @@ class Demo {
 
     /**
      * The status line in the top-left corner: the shared unlock reminder until audio is
-     * unlocked, then a plain reminder of the controls. A borderless group - just one
+     * unlocked, then a plain reminder of the controls. A borderless group – just one
      * line of text, no panel around it.
      */
     renderStatusLine() {
         ui.begin('topLeft');
 
-        // The shared "click to enable sound" row - it draws itself only while sound is
+        // The shared "click to enable sound" row – it draws itself only while sound is
         // still locked, and disappears on its own after the first click or key press.
         ui.audioUnlockHint();
 
@@ -248,7 +248,7 @@ class Demo {
 
     /**
      * Left-hand panel: one button per pitch preset, plus the pitch last played. Each
-     * button fires on click, tap, or its number key - ui.button() treats all three the
+     * button fires on click, tap, or its number key – ui.button() treats all three the
      * same, which is what makes this demo playable on a touchscreen.
      */
     renderKeyboardPanel() {
@@ -299,7 +299,7 @@ class Demo {
      * Plays the pop sound with a volume and pan taken from where the click landed, and
      * remembers everything the pointer panel and click marker show.
      *
-     * @param {Vector2i} pos - Where the click landed, in display pixels.
+     * @param {Vector2i} pos – Where the click landed, in display pixels.
      */
     playPopAt(pos) {
         const screen = BT.displaySize;

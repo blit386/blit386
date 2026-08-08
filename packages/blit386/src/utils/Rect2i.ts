@@ -17,10 +17,10 @@ export class Rect2i {
     /**
      * Creates an integer rectangle, truncating all inputs toward zero.
      *
-     * @param x - Left-edge X coordinate (defaults to 0).
-     * @param y - Top-edge Y coordinate (defaults to 0).
-     * @param width - Width in pixels (defaults to 0).
-     * @param height - Height in pixels (defaults to 0).
+     * @param x – Left-edge X coordinate (defaults to 0).
+     * @param y – Top-edge Y coordinate (defaults to 0).
+     * @param width – Width in pixels (defaults to 0).
+     * @param height – Height in pixels (defaults to 0).
      */
     constructor(
         /** Left edge X coordinate (defaults to 0). */
@@ -109,7 +109,7 @@ export class Rect2i {
     /**
      * Sets the position (top-left corner) from a vector.
      *
-     * @param value - New position vector.
+     * @param value – New position vector.
      */
     set position(value: Vector2i) {
         this.x = value.x | 0;
@@ -127,7 +127,7 @@ export class Rect2i {
     /**
      * Sets the size from a vector.
      *
-     * @param value - New size vector (x=width, y=height).
+     * @param value – New size vector (x=width, y=height).
      */
     set size(value: Vector2i) {
         this.width = value.x | 0;
@@ -136,7 +136,7 @@ export class Rect2i {
 
     /**
      * Returns a zero-sized rectangle at origin.
-     * Returns a cached frozen singleton - do not modify.
+     * Returns a cached frozen singleton – do not modify.
      *
      * @returns Rectangle at (0, 0) with size (0, 0) (cached).
      */
@@ -151,8 +151,8 @@ export class Rect2i {
      * If min > max on any axis, the resulting width/height will be negative,
      * which may cause unexpected behavior in intersection/containment tests.
      *
-     * @param min - Top-left corner.
-     * @param max - Bottom-right corner (exclusive; same half-open interval as {@link isContaining}).
+     * @param min – Top-left corner.
+     * @param max – Bottom-right corner (exclusive; same half-open interval as {@link isContaining}).
      * @returns New rectangle spanning from min to max.
      */
     static fromMinMax(min: Vector2i, max: Vector2i): Rect2i {
@@ -167,10 +167,10 @@ export class Rect2i {
      * Note: min coordinates must be less than or equal to max coordinates.
      * If min > max on any axis, the resulting width/height will be negative.
      *
-     * @param minX - Left-edge X coordinate.
-     * @param minY - Top-edge Y coordinate.
-     * @param maxX - Right-edge X coordinate.
-     * @param maxY - Bottom-edge Y coordinate.
+     * @param minX – Left-edge X coordinate.
+     * @param minY – Top-edge Y coordinate.
+     * @param maxX – Right-edge X coordinate.
+     * @param maxY – Bottom-edge Y coordinate.
      * @returns New rectangle spanning from (minX, minY) to (maxX, maxY).
      */
     static fromMinMaxXY(minX: number, minY: number, maxX: number, maxY: number): Rect2i {
@@ -183,8 +183,8 @@ export class Rect2i {
     /**
      * Creates a rectangle centered on a point with a given size.
      *
-     * @param center - Center point of the rectangle.
-     * @param size - Width and height as a vector.
+     * @param center – Center point of the rectangle.
+     * @param size – Width and height as a vector.
      * @returns New rectangle centered on the given point.
      */
     static fromCenterSize(center: Vector2i, size: Vector2i): Rect2i {
@@ -200,10 +200,10 @@ export class Rect2i {
      * Creates a rectangle centered on raw coordinates with a given size.
      * Zero allocation alternative to fromCenterSize() when you have raw coordinates.
      *
-     * @param centerX - Center X coordinate.
-     * @param centerY - Center Y coordinate.
-     * @param width - Width of the rectangle.
-     * @param height - Height of the rectangle.
+     * @param centerX – Center X coordinate.
+     * @param centerY – Center Y coordinate.
+     * @param width – Width of the rectangle.
+     * @param height – Height of the rectangle.
      * @returns New rectangle centered on the given point.
      */
     static fromCenterSizeXY(centerX: number, centerY: number, width: number, height: number): Rect2i {
@@ -222,10 +222,10 @@ export class Rect2i {
      * WARNING: Passing non-integer values will result in non-integer rect components.
      * Only use when you’re certain the values are already integers.
      *
-     * @param x - Left-edge X coordinate (must be integer).
-     * @param y - Top-edge Y coordinate (must be integer).
-     * @param width - Width in pixels (must be integer).
-     * @param height - Height in pixels (must be integer).
+     * @param x – Left-edge X coordinate (must be integer).
+     * @param y – Top-edge Y coordinate (must be integer).
+     * @param width – Width in pixels (must be integer).
+     * @param height – Height in pixels (must be integer).
      * @returns New Rect2i with the specified values.
      */
     static fromValuesUnchecked(x: number, y: number, width: number, height: number): Rect2i {
@@ -243,7 +243,7 @@ export class Rect2i {
      * Writes the top-left corner (min) to an existing vector.
      * Zero allocation alternative to the min getter.
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     minTo(out: Vector2i): Vector2i {
@@ -257,7 +257,7 @@ export class Rect2i {
      * Writes the bottom-right corner (exclusive max) to an existing vector.
      * Zero allocation alternative to the max getter.
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     maxTo(out: Vector2i): Vector2i {
@@ -271,7 +271,7 @@ export class Rect2i {
      * Writes the center point to an existing vector.
      * Zero allocation alternative to the center getter.
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     centerTo(out: Vector2i): Vector2i {
@@ -285,7 +285,7 @@ export class Rect2i {
      * Writes the position (top-left corner) to an existing vector.
      * Zero allocation alternative to the position getter.
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     positionTo(out: Vector2i): Vector2i {
@@ -299,7 +299,7 @@ export class Rect2i {
      * Writes the size (width, height) to an existing vector.
      * Zero allocation alternative to the size getter.
      *
-     * @param out - Vector to write to.
+     * @param out – Vector to write to.
      * @returns The out vector for chaining.
      */
     sizeTo(out: Vector2i): Vector2i {
@@ -313,7 +313,7 @@ export class Rect2i {
      * Tests if a point lies within this rectangle.
      * Uses half-open interval: includes min, excludes max.
      *
-     * @param point - Point to test.
+     * @param point – Point to test.
      * @returns True if point is inside the rectangle.
      */
     isContaining(point: Vector2i): boolean {
@@ -326,7 +326,7 @@ export class Rect2i {
      * Backward-compatible alias for {@link isContaining}.
      *
      * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isContaining} instead.
-     * @param point - Point to test.
+     * @param point – Point to test.
      * @returns True if point is inside the rectangle.
      */
     contains(point: Vector2i): boolean {
@@ -336,8 +336,8 @@ export class Rect2i {
     /**
      * Tests raw coordinates against this rectangle without allocating a vector.
      *
-     * @param px - X coordinate to test.
-     * @param py - Y coordinate to test.
+     * @param px – X coordinate to test.
+     * @param py – Y coordinate to test.
      * @returns True if point is inside the rectangle.
      */
     isContainingXY(px: number, py: number): boolean {
@@ -348,8 +348,8 @@ export class Rect2i {
      * Backward-compatible alias for {@link isContainingXY}.
      *
      * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isContainingXY} instead.
-     * @param px - X coordinate to test.
-     * @param py - Y coordinate to test.
+     * @param px – X coordinate to test.
+     * @param py – Y coordinate to test.
      * @returns True if point is inside the rectangle.
      */
     containsXY(px: number, py: number): boolean {
@@ -359,7 +359,7 @@ export class Rect2i {
     /**
      * Tests if this rectangle overlaps with another.
      *
-     * @param other - Rectangle to test against.
+     * @param other – Rectangle to test against.
      * @returns True if rectangles overlap.
      */
     isIntersecting(other: Rect2i): boolean {
@@ -375,7 +375,7 @@ export class Rect2i {
      * Backward-compatible alias for {@link isIntersecting}.
      *
      * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isIntersecting} instead.
-     * @param other - Rectangle to test against.
+     * @param other – Rectangle to test against.
      * @returns True if rectangles overlap.
      */
     intersects(other: Rect2i): boolean {
@@ -385,7 +385,7 @@ export class Rect2i {
     /**
      * Calculates the overlapping region of two rectangles.
      *
-     * @param other - Rectangle to intersect with.
+     * @param other – Rectangle to intersect with.
      * @returns New rectangle representing the overlap, or null if no overlap.
      */
     intersection(other: Rect2i): Rect2i | null {
@@ -405,8 +405,8 @@ export class Rect2i {
     /**
      * Calculates the overlapping region and writes it into an existing rectangle.
      *
-     * @param other - Rectangle to intersect with.
-     * @param out - Rectangle to write the result to.
+     * @param other – Rectangle to intersect with.
+     * @param out – Rectangle to write the result to.
      * @returns True if intersection exists (out is valid), false otherwise (out unchanged).
      */
     intersectTo(other: Rect2i, out: Rect2i): boolean {
@@ -429,8 +429,8 @@ export class Rect2i {
      * Backward-compatible alias for {@link intersectTo}.
      *
      * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link intersectTo} instead.
-     * @param other - Rectangle to intersect with.
-     * @param out - Rectangle to write the result to.
+     * @param other – Rectangle to intersect with.
+     * @param out – Rectangle to write the result to.
      * @returns True if intersection exists (out is valid), false otherwise (out unchanged).
      */
     intersectionTo(other: Rect2i, out: Rect2i): boolean {
@@ -448,7 +448,7 @@ export class Rect2i {
      * {@link isIntersecting} first; if they don't overlap, the returned depths
      * may be zero or negative and aren't meaningful for resolution.
      *
-     * @param other - Rectangle to measure overlap with.
+     * @param other – Rectangle to measure overlap with.
      * @returns Vector with overlap depth in X and Y axes.
      */
     intersectionDepth(other: Rect2i): Vector2i {
@@ -473,8 +473,8 @@ export class Rect2i {
      * {@link isIntersecting} first; if they don't overlap, the returned depths
      * may be zero or negative and aren't meaningful for resolution.
      *
-     * @param other - Rectangle to measure overlap with.
-     * @param out - Vector to write the result to.
+     * @param other – Rectangle to measure overlap with.
+     * @param out – Vector to write the result to.
      * @returns The out vector for chaining.
      */
     intersectionDepthTo(other: Rect2i, out: Vector2i): Vector2i {
@@ -493,7 +493,7 @@ export class Rect2i {
     /**
      * Checks if this rectangle equals another (all components match).
      *
-     * @param other - Rectangle to compare with.
+     * @param other – Rectangle to compare with.
      * @returns True if position and size are identical.
      */
     isEqual(other: Rect2i): boolean {
@@ -504,7 +504,7 @@ export class Rect2i {
      * Backward-compatible alias for {@link isEqual}.
      *
      * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isEqual} instead.
-     * @param other - Rectangle to compare with.
+     * @param other – Rectangle to compare with.
      * @returns True if position and size are identical.
      */
     equals(other: Rect2i): boolean {
@@ -525,7 +525,7 @@ export class Rect2i {
      * Copies this rectangle's values to an existing rectangle.
      * Zero allocation alternative to clone().
      *
-     * @param out - Rectangle to write to.
+     * @param out – Rectangle to write to.
      * @returns The out rectangle for chaining.
      */
     cloneTo(out: Rect2i): Rect2i {
@@ -552,10 +552,10 @@ export class Rect2i {
      *
      * WARNING: Mutates this rectangle. Don't use on frozen/cached singletons.
      *
-     * @param x - New x position.
-     * @param y - New y position.
-     * @param width - New width.
-     * @param height - New height.
+     * @param x – New x position.
+     * @param y – New y position.
+     * @param width – New width.
+     * @param height – New height.
      * @returns This rectangle for chaining.
      */
     set(x: number, y: number, width: number, height: number): this {
@@ -573,8 +573,8 @@ export class Rect2i {
      *
      * WARNING: Mutates this rectangle. Don't use on frozen/cached singletons.
      *
-     * @param x - New x position.
-     * @param y - New y position.
+     * @param x – New x position.
+     * @param y – New y position.
      * @returns This rectangle for chaining.
      */
     setPosition(x: number, y: number): this {
@@ -590,8 +590,8 @@ export class Rect2i {
      *
      * WARNING: Mutates this rectangle. Don't use on frozen/cached singletons.
      *
-     * @param width - New width.
-     * @param height - New height.
+     * @param width – New width.
+     * @param height – New height.
      * @returns This rectangle for chaining.
      */
     setSize(width: number, height: number): this {
@@ -607,7 +607,7 @@ export class Rect2i {
      *
      * WARNING: Mutates this rectangle. Don't use on frozen/cached singletons.
      *
-     * @param other - Rectangle to copy from.
+     * @param other – Rectangle to copy from.
      * @returns This rectangle for chaining.
      */
     copyFrom(other: Rect2i): this {
@@ -625,8 +625,8 @@ export class Rect2i {
      *
      * WARNING: Mutates this rectangle. Don't use on frozen/cached singletons.
      *
-     * @param dx - X offset to add.
-     * @param dy - Y offset to add.
+     * @param dx – X offset to add.
+     * @param dy – Y offset to add.
      * @returns This rectangle for chaining.
      */
     translate(dx: number, dy: number): this {
@@ -642,7 +642,7 @@ export class Rect2i {
      *
      * WARNING: Mutates this rectangle. Don't use on frozen/cached singletons.
      *
-     * @param amount - Amount to expand (positive) or shrink (negative).
+     * @param amount – Amount to expand (positive) or shrink (negative).
      * @returns This rectangle for chaining.
      */
     expand(amount: number): this {
@@ -662,8 +662,8 @@ export class Rect2i {
      *
      * WARNING: Mutates this rectangle. Don't use on frozen/cached singletons.
      *
-     * @param horizontal - Amount to expand horizontally.
-     * @param vertical - Amount to expand vertically.
+     * @param horizontal – Amount to expand horizontally.
+     * @param vertical – Amount to expand vertically.
      * @returns This rectangle for chaining.
      */
     expandXY(horizontal: number, vertical: number): this {

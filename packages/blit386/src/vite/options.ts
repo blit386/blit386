@@ -82,7 +82,7 @@ const DEFAULT_ASSET_TYPES: Record<string, AssetKind> = {
 /**
  * Default {@link Blit386PluginOptions.include} predicate: a module id under `/src/` ending a JS/TS extension.
  *
- * @param id - Module id, possibly with a `?query` suffix.
+ * @param id – Module id, possibly with a `?query` suffix.
  * @returns `true` when `id` (with any query suffix stripped) matches the default pattern.
  */
 export function defaultInclude(id: string): boolean {
@@ -94,8 +94,8 @@ export function defaultInclude(id: string): boolean {
 /**
  * Resolves user-provided {@link Blit386PluginOptions} against defaults, applying `root` to `assetDirs`.
  *
- * @param options - User-provided options, or `undefined` for all defaults.
- * @param root - Vite's resolved project root (absolute path).
+ * @param options – User-provided options, or `undefined` for all defaults.
+ * @param root – Vite's resolved project root (absolute path).
  * @returns Fully resolved options.
  */
 export function resolveOptions(options: Blit386PluginOptions | undefined, root: string): ResolvedBlit386PluginOptions {

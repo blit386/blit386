@@ -60,7 +60,7 @@ export class Random {
     /**
      * Creates a PRNG. Omit `seed` to time-seed from `Date.now()` (lower 32 bits).
      *
-     * @param seed - Any finite number; only its lower 32 bits affect the sequence.
+     * @param seed – Any finite number; only its lower 32 bits affect the sequence.
      * @since 1.5.0
      */
     public constructor(seed: number = Date.now()) {
@@ -86,7 +86,7 @@ export class Random {
      * Reseeds the generator. Same seed restarts the same sequence. Updates {@link seedValue} to the
      * normalized `seed`.
      *
-     * @param seed - Any finite number; only its lower 32 bits are used.
+     * @param seed – Any finite number; only its lower 32 bits are used.
      * @since 1.5.0
      */
     public seed(seed: number): void {
@@ -108,7 +108,7 @@ export class Random {
      * Restores a previously saved 32-bit generator state. Clears {@link seedValue} to `undefined`, since an
      * arbitrary saved state does not correspond to a known seed.
      *
-     * @param state - Value from {@link getState} (lower 32 bits used).
+     * @param state – Value from {@link getState} (lower 32 bits used).
      * @since 1.5.0
      */
     public setState(state: number): void {
@@ -160,8 +160,8 @@ export class Random {
     /**
      * Returns the next pseudo-random float in [min, max).
      *
-     * @param min - Inclusive lower bound.
-     * @param max - Exclusive upper bound.
+     * @param min – Inclusive lower bound.
+     * @param max – Exclusive upper bound.
      * @returns Float in [min, max).
      * @since 1.5.0
      */
@@ -172,8 +172,8 @@ export class Random {
     /**
      * Returns a pseudo-random integer in [0, maxExclusive) or [min, maxExclusive).
      *
-     * @param minOrMaxExclusive - When alone, exclusive upper bound from 0; otherwise inclusive min.
-     * @param maxExclusive - Exclusive upper bound when two arguments are passed.
+     * @param minOrMaxExclusive – When alone, exclusive upper bound from 0; otherwise inclusive min.
+     * @param maxExclusive – Exclusive upper bound when two arguments are passed.
      * @returns Whole number in the half-open range.
      * @since 1.5.0
      */
@@ -199,8 +199,8 @@ export class Random {
     /**
      * Returns a pseudo-random integer in [min, max] (inclusive on both ends).
      *
-     * @param min - Inclusive lower bound.
-     * @param max - Inclusive upper bound.
+     * @param min – Inclusive lower bound.
+     * @param max – Inclusive upper bound.
      * @returns Whole number in the closed range.
      * @since 1.5.0
      */
@@ -218,7 +218,7 @@ export class Random {
     /**
      * Returns true with the given probability.
      *
-     * @param probability - Chance in [0, 1]; defaults to 0.5.
+     * @param probability – Chance in [0, 1]; defaults to 0.5.
      * @returns True when the next unit float is less than `probability`.
      * @since 1.5.0
      */
@@ -239,7 +239,7 @@ export class Random {
     /**
      * Returns one element chosen uniformly from a non-empty array.
      *
-     * @param arr - Array to pick from; must contain at least one element.
+     * @param arr – Array to pick from; must contain at least one element.
      * @returns Chosen element.
      * @since 1.5.0
      */
@@ -254,7 +254,7 @@ export class Random {
     /**
      * Returns a new array with the same elements in shuffled order (Fisher-Yates).
      *
-     * @param arr - Source array (not mutated).
+     * @param arr – Source array (not mutated).
      * @returns Shuffled copy.
      * @since 1.5.0
      */
@@ -269,7 +269,7 @@ export class Random {
     /**
      * Shuffles an array in place (Fisher-Yates) and returns it.
      *
-     * @param arr - Array to mutate.
+     * @param arr – Array to mutate.
      * @returns The same array reference.
      * @since 1.5.0
      */
@@ -290,8 +290,8 @@ export class Random {
     /**
      * Returns one item chosen by relative weights.
      *
-     * @param items - Items to choose from.
-     * @param weights - Non-negative weights parallel to `items`; total must be greater than 0.
+     * @param items – Items to choose from.
+     * @param weights – Non-negative weights parallel to `items`; total must be greater than 0.
      * @returns Chosen item.
      * @since 1.5.0
      */
@@ -349,8 +349,8 @@ export class Random {
     /**
      * Returns a sample from an approximate normal distribution (Box-Muller, no spare).
      *
-     * @param mean - Distribution mean; defaults to 0.
-     * @param stddev - Standard deviation; defaults to 1.
+     * @param mean – Distribution mean; defaults to 0.
+     * @param stddev – Standard deviation; defaults to 1.
      * @returns Gaussian sample.
      * @since 1.5.0
      */
@@ -372,7 +372,7 @@ export class Random {
     /**
      * Returns a random integer point inside a rectangle (half-open, like {@link Rect2i.isContaining}).
      *
-     * @param rect - Rectangle to sample; must have positive width and height.
+     * @param rect – Rectangle to sample; must have positive width and height.
      * @returns New point with `x` in `[rect.x, rect.right)` and `y` in `[rect.y, rect.bottom)`.
      * @since 1.5.0
      */
@@ -386,8 +386,8 @@ export class Random {
      * Half-open bounds match {@link Rect2i.isContaining}: `x` in `[rect.x, rect.right)`,
      * `y` in `[rect.y, rect.bottom)`.
      *
-     * @param rect - Rectangle to sample; must have positive width and height.
-     * @param out - Vector to write into.
+     * @param rect – Rectangle to sample; must have positive width and height.
+     * @param out – Vector to write into.
      * @returns The same `out` reference.
      * @since 1.5.0
      */
@@ -403,8 +403,8 @@ export class Random {
      *
      * Per axis uses {@link int}: `x` in `[min.x, max.x)`, `y` in `[min.y, max.y)`.
      *
-     * @param min - Inclusive lower bound per axis.
-     * @param max - Exclusive upper bound per axis.
+     * @param min – Inclusive lower bound per axis.
+     * @param max – Exclusive upper bound per axis.
      * @returns New point in the half-open range.
      * @since 1.5.0
      */
@@ -417,9 +417,9 @@ export class Random {
      *
      * Per axis uses {@link int}: `x` in `[min.x, max.x)`, `y` in `[min.y, max.y)`.
      *
-     * @param min - Inclusive lower bound per axis.
-     * @param max - Exclusive upper bound per axis.
-     * @param out - Vector to write into.
+     * @param min – Inclusive lower bound per axis.
+     * @param max – Exclusive upper bound per axis.
+     * @param out – Vector to write into.
      * @returns The same `out` reference.
      * @since 1.5.0
      */

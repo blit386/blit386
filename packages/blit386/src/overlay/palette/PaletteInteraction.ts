@@ -52,10 +52,10 @@ const tooltipScratch = {
 /**
  * Returns whether a palette slot at the given swatch origin overlaps the hint exclusion rect.
  *
- * @param swatchX - Swatch left edge in display pixels.
- * @param swatchY - Swatch top edge in display pixels.
- * @param swatchSize - Side length of the swatch.
- * @param hintExclusion - Region reserved for the toggle hint icon.
+ * @param swatchX – Swatch left edge in display pixels.
+ * @param swatchY – Swatch top edge in display pixels.
+ * @param swatchSize – Side length of the swatch.
+ * @param hintExclusion – Region reserved for the toggle hint icon.
  * @returns `true` when the swatch should not receive hits or draws.
  */
 function isSwatchOverlappingWithHintExclusion(
@@ -77,10 +77,10 @@ function isSwatchOverlappingWithHintExclusion(
 /**
  * Tests whether a pointer lies outside the palette band, including the scrollbar track.
  *
- * @param pointerX - Pointer X in display coordinates.
- * @param pointerY - Pointer Y in display coordinates.
- * @param paletteBand - Palette band rect from the layout plan.
- * @param bandRight - Right edge of the hittable band (excludes scrollbar track).
+ * @param pointerX – Pointer X in display coordinates.
+ * @param pointerY – Pointer Y in display coordinates.
+ * @param paletteBand – Palette band rect from the layout plan.
+ * @param bandRight – Right edge of the hittable band (excludes scrollbar track).
  * @returns `true` when the pointer is outside the swatch hit region (including over the scrollbar track).
  */
 function isPointerOutsideBand(pointerX: number, pointerY: number, paletteBand: Rect2i, bandRight: number): boolean {
@@ -95,13 +95,13 @@ function isPointerOutsideBand(pointerX: number, pointerY: number, paletteBand: R
 /**
  * Maps band-local coordinates to a palette index, or `null` when not over a swatch cell.
  *
- * @param localX - X relative to the grid origin inside the palette band.
- * @param localY - Y relative to the grid origin inside the palette band.
- * @param cols - Grid column count.
- * @param swatchSize - Swatch side length in pixels.
- * @param gap - Gap between swatches.
- * @param scrollRowOffset - First visible grid row.
- * @param colorCount - Active palette slot count.
+ * @param localX – X relative to the grid origin inside the palette band.
+ * @param localY – Y relative to the grid origin inside the palette band.
+ * @param cols – Grid column count.
+ * @param swatchSize – Swatch side length in pixels.
+ * @param gap – Gap between swatches.
+ * @param scrollRowOffset – First visible grid row.
+ * @param colorCount – Active palette slot count.
  * @returns Palette index, or `null` when the point is in padding or out of range.
  */
 function resolveIndexAtBandLocal(
@@ -149,15 +149,15 @@ function resolveIndexAtBandLocal(
 /**
  * Maps a pointer position to a palette swatch index, or `null` when no swatch is under the point.
  *
- * @param pointerX - Pointer X in display coordinates.
- * @param pointerY - Pointer Y in display coordinates.
- * @param paletteBand - Palette band rect from the layout plan.
- * @param grid - Precomputed grid layout.
- * @param colorCount - Active palette slot count.
- * @param hintExclusion - Region to skip for the toggle hint icon.
- * @param displayWidth - Logical display width for scrollbar track exclusion.
- * @param scrollRowOffset - First visible grid row (default `0`).
- * @param scrollbarTrackWidth - Right-edge track width excluded from hits (default {@link PALETTE_SCROLLBAR_TRACK_WIDTH_PX}).
+ * @param pointerX – Pointer X in display coordinates.
+ * @param pointerY – Pointer Y in display coordinates.
+ * @param paletteBand – Palette band rect from the layout plan.
+ * @param grid – Precomputed grid layout.
+ * @param colorCount – Active palette slot count.
+ * @param hintExclusion – Region to skip for the toggle hint icon.
+ * @param displayWidth – Logical display width for scrollbar track exclusion.
+ * @param scrollRowOffset – First visible grid row (default `0`).
+ * @param scrollbarTrackWidth – Right-edge track width excluded from hits (default {@link PALETTE_SCROLLBAR_TRACK_WIDTH_PX}).
  * @returns Palette index, or `null` when the pointer is not over a hittable swatch.
  */
 export function hitTestSwatch(
@@ -208,7 +208,7 @@ export function hitTestSwatch(
 /**
  * Returns the maximum scroll row offset for a palette grid viewport.
  *
- * @param grid - Precomputed grid layout.
+ * @param grid – Precomputed grid layout.
  * @returns Last valid `scrollRowOffset` (0 when all rows are visible).
  */
 export function maxScrollRowOffset(grid: PaletteGridLayout): number {
@@ -218,8 +218,8 @@ export function maxScrollRowOffset(grid: PaletteGridLayout): number {
 /**
  * Clamps a scroll row offset into the valid range for a palette grid viewport.
  *
- * @param offset - Requested first visible row.
- * @param grid - Precomputed grid layout.
+ * @param offset – Requested first visible row.
+ * @param grid – Precomputed grid layout.
  * @returns Clamped offset in `[0, maxScrollRowOffset]`.
  */
 export function clampScrollRowOffset(offset: number, grid: PaletteGridLayout): number {
@@ -239,9 +239,9 @@ export function clampScrollRowOffset(offset: number, grid: PaletteGridLayout): n
 /**
  * Returns whether a pointer lies inside the palette footer scroll region.
  *
- * @param pointerX - Pointer X in display coordinates.
- * @param pointerY - Pointer Y in display coordinates.
- * @param paletteBand - Palette band rect from the layout plan.
+ * @param pointerX – Pointer X in display coordinates.
+ * @param pointerY – Pointer Y in display coordinates.
+ * @param paletteBand – Palette band rect from the layout plan.
  * @returns `true` when wheel or drag scrolling may apply.
  */
 function isPointerInScrollRegion(pointerX: number, pointerY: number, paletteBand: Rect2i): boolean {
@@ -256,12 +256,12 @@ function isPointerInScrollRegion(pointerX: number, pointerY: number, paletteBand
 /**
  * Returns whether a pointer lies inside the palette scrollbar track.
  *
- * @param pointerX - Pointer X in display coordinates.
- * @param pointerY - Pointer Y in display coordinates.
- * @param paletteBand - Palette band rect from the layout plan.
- * @param grid - Precomputed grid layout.
- * @param scrollRowOffset - First visible grid row.
- * @param trackWidth - Scrollbar track width in pixels.
+ * @param pointerX – Pointer X in display coordinates.
+ * @param pointerY – Pointer Y in display coordinates.
+ * @param paletteBand – Palette band rect from the layout plan.
+ * @param grid – Precomputed grid layout.
+ * @param scrollRowOffset – First visible grid row.
+ * @param trackWidth – Scrollbar track width in pixels.
  * @returns `true` when the pointer is over the track rect.
  */
 export function isPointerInScrollbarTrack(
@@ -290,10 +290,10 @@ export function isPointerInScrollbarTrack(
 /**
  * Maps a pointer Y position within the scrollbar track to a scroll row offset.
  *
- * @param pointerY - Pointer Y in display coordinates.
- * @param paletteBand - Palette band rect from the layout plan.
- * @param grid - Precomputed grid layout.
- * @param trackWidth - Scrollbar track width in pixels.
+ * @param pointerY – Pointer Y in display coordinates.
+ * @param paletteBand – Palette band rect from the layout plan.
+ * @param grid – Precomputed grid layout.
+ * @param trackWidth – Scrollbar track width in pixels.
  * @returns Clamped scroll row offset.
  */
 export function resolveScrollRowOffsetFromTrackPointerY(
@@ -336,11 +336,11 @@ export interface PaletteTooltipLayout {
 /**
  * Lays out a docked tooltip above a swatch with clamping inside the display.
  *
- * @param target - Reusable layout object written in place.
- * @param swatchRect - Swatch bounds in display coordinates.
- * @param label - Tooltip label text.
- * @param displayWidth - Logical display width.
- * @param displayHeight - Logical display height.
+ * @param target – Reusable layout object written in place.
+ * @param swatchRect – Swatch bounds in display coordinates.
+ * @param label – Tooltip label text.
+ * @param displayWidth – Logical display width.
+ * @param displayHeight – Logical display height.
  * @returns `target` for chaining.
  */
 export function layoutTooltip(
@@ -383,10 +383,10 @@ export function layoutTooltip(
 /**
  * Draws a docked palette swatch tooltip body and 1px border.
  *
- * @param target - Overlay draw target.
- * @param layout - Tooltip layout from {@link layoutTooltip}.
- * @param barIndex - Palette index for tooltip body fill (overlay background).
- * @param textIndex - Palette index for the border stroke.
+ * @param target – Overlay draw target.
+ * @param layout – Tooltip layout from {@link layoutTooltip}.
+ * @param barIndex – Palette index for tooltip body fill (overlay background).
+ * @param textIndex – Palette index for the border stroke.
  */
 export function drawTooltipChrome(
     target: OverlayDrawTarget,
@@ -414,11 +414,11 @@ export function drawTooltipChrome(
 /**
  * Draws a docked palette swatch tooltip label.
  *
- * @param target - Overlay draw target.
- * @param font - System bitmap font.
- * @param layout - Tooltip layout from {@link layoutTooltip}.
- * @param label - Tooltip label text.
- * @param textIndex - Palette index for label text.
+ * @param target – Overlay draw target.
+ * @param font – System bitmap font.
+ * @param layout – Tooltip layout from {@link layoutTooltip}.
+ * @param label – Tooltip label text.
+ * @param textIndex – Palette index for label text.
  */
 export function drawTooltipLabel(
     target: OverlayDrawTarget,
@@ -439,7 +439,7 @@ export function drawTooltipLabel(
 /**
  * Writes palette index text to the clipboard when the API is available.
  *
- * @param index - Palette slot to copy.
+ * @param index – Palette slot to copy.
  * @returns Resolves on success; rejects when clipboard is unavailable or denied.
  */
 export async function writeIndexToClipboard(index: number): Promise<void> {
@@ -486,7 +486,7 @@ export class PaletteInteraction {
     /**
      * Creates palette interaction state.
      *
-     * @param targetFps - Configured fixed-update rate for copy-status timing.
+     * @param targetFps – Configured fixed-update rate for copy-status timing.
      */
     constructor(targetFps: number) {
         this.#targetFps = targetFps;
@@ -513,7 +513,7 @@ export class PaletteInteraction {
     /**
      * Clamps scroll offset when grid dimensions change between frames.
      *
-     * @param grid - Precomputed grid layout for this frame.
+     * @param grid – Precomputed grid layout for this frame.
      */
     syncScrollBounds(grid: PaletteGridLayout): void {
         this.#scrollRowOffset = clampScrollRowOffset(this.#scrollRowOffset, grid);
@@ -525,10 +525,10 @@ export class PaletteInteraction {
      * Wheel delta is consumed only while the pointer is over the palette band so
      * demo code reading {@link BT.pointerScrollDelta} elsewhere is unaffected.
      *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
-     * @param isSwatchPressConsumed - When true, drag scrolling is skipped this frame.
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
+     * @param isSwatchPressConsumed – When true, drag scrolling is skipped this frame.
      * @returns `true` when a scrollbar-track press should block the toggle corner.
      */
     handleScroll(
@@ -591,7 +591,7 @@ export class PaletteInteraction {
     /**
      * Clears transient copy status when the expiry tick is reached.
      *
-     * @param currentTick - Current fixed-update tick.
+     * @param currentTick – Current fixed-update tick.
      */
     tickCopyStatus(currentTick: number): void {
         this.#lastKnownTick = currentTick;
@@ -607,12 +607,12 @@ export class PaletteInteraction {
     /**
      * Updates hovered swatch index from the current pointer position.
      *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
-     * @param colorCount - Active palette slot count.
-     * @param hintBarTopY - Top Y of the bottom hint bar for icon exclusion.
-     * @param displayWidth - Logical display width.
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
+     * @param colorCount – Active palette slot count.
+     * @param hintBarTopY – Top Y of the bottom hint bar for icon exclusion.
+     * @param displayWidth – Logical display width.
      */
     updateHover(
         pointer: PointerInput | null,
@@ -668,13 +668,13 @@ export class PaletteInteraction {
     /**
      * Handles primary press over a swatch and attempts clipboard copy.
      *
-     * @param pointer - Pointer subsystem, or `null` when unavailable.
-     * @param currentTick - Current fixed-update tick.
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
-     * @param colorCount - Active palette slot count.
-     * @param hintBarTopY - Top Y of the bottom hint bar for icon exclusion.
-     * @param displayWidth - Logical display width.
+     * @param pointer – Pointer subsystem, or `null` when unavailable.
+     * @param currentTick – Current fixed-update tick.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
+     * @param colorCount – Active palette slot count.
+     * @param hintBarTopY – Top Y of the bottom hint bar for icon exclusion.
+     * @param displayWidth – Logical display width.
      * @returns `true` when a swatch press was handled (toggle should be skipped).
      */
     handlePress(
@@ -734,13 +734,13 @@ export class PaletteInteraction {
     /**
      * Draws tooltip body and border during the overlay fill phase.
      *
-     * @param target - Overlay draw target.
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
-     * @param displayWidth - Logical display width.
-     * @param displayHeight - Logical display height.
-     * @param barIndex - Tooltip body fill palette index.
-     * @param textIndex - Tooltip border palette index.
+     * @param target – Overlay draw target.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
+     * @param displayWidth – Logical display width.
+     * @param displayHeight – Logical display height.
+     * @param barIndex – Tooltip body fill palette index.
+     * @param textIndex – Tooltip border palette index.
      */
     drawTooltipChrome(
         target: OverlayDrawTarget,
@@ -763,13 +763,13 @@ export class PaletteInteraction {
     /**
      * Draws tooltip label text during the overlay label phase.
      *
-     * @param target - Overlay draw target.
-     * @param font - System bitmap font.
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
-     * @param displayWidth - Logical display width.
-     * @param displayHeight - Logical display height.
-     * @param textIndex - Tooltip label palette index.
+     * @param target – Overlay draw target.
+     * @param font – System bitmap font.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
+     * @param displayWidth – Logical display width.
+     * @param displayHeight – Logical display height.
+     * @param textIndex – Tooltip label palette index.
      */
     drawTooltipLabel(
         target: OverlayDrawTarget,
@@ -792,9 +792,9 @@ export class PaletteInteraction {
     /**
      * Applies wheel scrolling when the pointer is over the palette footer region.
      *
-     * @param pointer - Pointer subsystem.
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
+     * @param pointer – Pointer subsystem.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
      * @returns `true` when wheel delta was consumed.
      */
     #applyScrollWheel(pointer: PointerInput, plan: OverlayLayoutPlan, grid: PaletteGridLayout): boolean {
@@ -830,9 +830,9 @@ export class PaletteInteraction {
     /**
      * Applies primary-button drag scrolling over the palette grid or scrollbar track.
      *
-     * @param pointer - Pointer subsystem.
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
+     * @param pointer – Pointer subsystem.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
      * @returns `true` when drag scrolling consumed a toggle-corner press.
      */
     #applyScrollDrag(pointer: PointerInput, plan: OverlayLayoutPlan, grid: PaletteGridLayout): boolean {
@@ -916,10 +916,10 @@ export class PaletteInteraction {
     /**
      * Lays out the active hover or copy-status tooltip, or returns `null` when none applies.
      *
-     * @param plan - Layout plan for this frame.
-     * @param grid - Palette grid layout.
-     * @param displayWidth - Logical display width.
-     * @param displayHeight - Logical display height.
+     * @param plan – Layout plan for this frame.
+     * @param grid – Palette grid layout.
+     * @param displayWidth – Logical display width.
+     * @param displayHeight – Logical display height.
      * @returns Tooltip layout and label, or `null`.
      */
     #layoutActiveTooltip(
@@ -950,9 +950,9 @@ export class PaletteInteraction {
     /**
      * Updates transient copy feedback after a clipboard write attempt.
      *
-     * @param status - New copy status.
-     * @param index - Palette index that was copied.
-     * @param completionTick - Fixed-update tick when the clipboard write finished.
+     * @param status – New copy status.
+     * @param index – Palette index that was copied.
+     * @param completionTick – Fixed-update tick when the clipboard write finished.
      */
     #setCopyStatus(status: Exclude<CopyStatus, 'idle'>, index: number, completionTick: number): void {
         this.#copyStatus = status;

@@ -42,8 +42,8 @@ export class PixelGlitch extends FullscreenPixelEffect {
     /**
      * Writes resolution, intensity, bandHeight, and seed into the uniform block.
      *
-     * @param _deltaMs - Unused.
-     * @param sourceSize - Logical texture dimensions for this pass.
+     * @param _deltaMs – Unused.
+     * @param sourceSize – Logical texture dimensions for this pass.
      */
     protected writeUniforms(_deltaMs: number, sourceSize: Vector2i): void {
         const u = this.uniformData;

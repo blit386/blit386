@@ -11,7 +11,7 @@ import { validateSynthParams } from './synthValidation';
 /**
  * Builds a valid baseline `SynthParams`, overridden per test.
  *
- * @param overrides - Fields to override on top of the baseline.
+ * @param overrides – Fields to override on top of the baseline.
  * @returns A valid `SynthParams` value merged with `overrides`.
  */
 function buildParams(overrides: Partial<SynthParams> = {}): SynthParams {

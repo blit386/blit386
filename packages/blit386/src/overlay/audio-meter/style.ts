@@ -27,8 +27,8 @@ const pickOverlayBarTextGap = (
 /**
  * Resolves audio meter palette indices from overlay and meter-specific settings.
  *
- * @param overlayStyle - Global overlay bar/text/gap indices from hardware settings.
- * @param meterStyle - Optional audio meter palette overrides.
+ * @param overlayStyle – Global overlay bar/text/gap indices from hardware settings.
+ * @param meterStyle – Optional audio meter palette overrides.
  * @returns Resolved indices for meter draw and semantic level tints.
  */
 export function resolveAudioMeterStyle(
@@ -53,9 +53,9 @@ export function resolveAudioMeterStyle(
  * Scales linearly so `fullScale` fills the meter band height. Any non-zero level draws at
  * least one pixel so quiet buses stay visible.
  *
- * @param level - Normalized bus level (0..1 for a full-scale signal).
- * @param meterHeight - Meter band height in pixels.
- * @param fullScale - Level value that maps to full band height.
+ * @param level – Normalized bus level (0..1 for a full-scale signal).
+ * @param meterHeight – Meter band height in pixels.
+ * @param fullScale – Level value that maps to full band height.
  * @returns Clamped fill height in pixels (0 when the level is zero).
  */
 export function computeAudioMeterBarHeight(level: number, meterHeight: number, fullScale: number): number {

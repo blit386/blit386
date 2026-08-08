@@ -11,7 +11,7 @@
  * editor either jumped several steps brighter or crushed to black.
  *
  * This costs the fades nothing. `ExposureFadeEffect` converts to linear light
- * itself, per channel, on whatever colors the palette holds - so the in-camera
+ * itself, per channel, on whatever colors the palette holds – so the in-camera
  * behavior of the fade is independent of how the static steps are distributed.
  * The two concerns only looked coupled.
  */
@@ -28,8 +28,8 @@ import { RAMP_FIRST_SLOT, RAMP_PALETTE_SIZE, RAMP_STEPS } from './constants';
  * splash palette and the game's palette never coexist, the slot count costs the
  * game nothing.
  *
- * @param dark - Dark endpoint. Defaults to black.
- * @param light - Light endpoint. Defaults to white.
+ * @param dark – Dark endpoint. Defaults to black.
+ * @param light – Light endpoint. Defaults to white.
  * @returns A fresh palette holding the ramp.
  */
 export function createRamp(dark: Color32 = Color32.black, light: Color32 = Color32.white): Palette {
@@ -56,7 +56,7 @@ export function createRamp(dark: Color32 = Color32.black, light: Color32 = Color
  * the game's captured palette is installed in before its handoff fade brings it
  * up.
  *
- * @param source - Palette whose size is mirrored.
+ * @param source – Palette whose size is mirrored.
  * @returns A fresh same-sized palette, slot 0 transparent and every other slot opaque black.
  */
 export function createBlackened(source: Palette): Palette {
@@ -72,9 +72,9 @@ export function createBlackened(source: Palette): Palette {
 /**
  * Interpolates one encoded 8-bit channel between the two ramp endpoints.
  *
- * @param from - Dark endpoint channel in [0, 255].
- * @param to - Light endpoint channel in [0, 255].
- * @param t - Position along the ramp in [0, 1].
+ * @param from – Dark endpoint channel in [0, 255].
+ * @param to – Light endpoint channel in [0, 255].
+ * @param t – Position along the ramp in [0, 1].
  * @returns Encoded channel in [0, 255].
  */
 function mixChannel(from: number, to: number, t: number): number {

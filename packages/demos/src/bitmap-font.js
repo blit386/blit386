@@ -1,5 +1,5 @@
 /**
- * Bitmap Font Demo - load a proportional .btfont and compare it to the built-in system font.
+ * Bitmap Font Demo – load a proportional .btfont and compare it to the built-in system font.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:
@@ -8,7 +8,7 @@
  *
  * Live version: https://demos.blit386.dev/bitmap-font
  *
- * Earlier demos use BT.systemPrint() - the built-in 6x14 pixel system font that needs no file.
+ * Earlier demos use BT.systemPrint() – the built-in 6x14 pixel system font that needs no file.
  * This demo shows the ALTERNATIVE: loading a proportional bitmap font from a .btfont file.
  *
  * A "bitmap font" is a font where every letter is pre-drawn as a small picture
@@ -32,7 +32,7 @@
  *
  * The font-metadata caption in the bottom-right corner is drawn with the shared demo UI kit
  * (src/shared/ui.js), so it looks the same as the info panels in every other demo. The
- * showcase lines themselves are hand-drawn on purpose - they ARE the lesson.
+ * showcase lines themselves are hand-drawn on purpose – they ARE the lesson.
  */
 
 import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit386';
@@ -70,7 +70,7 @@ const RAINBOW_TEXT = 'Rainbow Animation!';
 // Dynamic slots: each character in RAINBOW_TEXT gets its own animated color slot.
 // We start at C_RAINBOW_BASE and reserve one slot per character.
 // update() computes each character's current hue and stores it here.
-// render() then reads the slot index - no Color32 math happens during drawing!
+// render() then reads the slot index – no Color32 math happens during drawing!
 const C_RAINBOW_BASE = 20; // first slot for the rainbow characters
 
 // Dynamic slot: placed immediately after the rainbow slots so it can never overlap them
@@ -106,7 +106,7 @@ class Demo {
     // We use it to control the speed of color animations.
     animTime = 0;
 
-    // Measured in init() from BT.systemPrintMeasure('M') - built-in system font is 6x14.
+    // Measured in init() from BT.systemPrintMeasure('M') – built-in system font is 6x14.
     systemCharWidth = 6;
     systemLineHeight = 14;
 
@@ -116,7 +116,7 @@ class Demo {
     /**
      * Sets up the color palette and downloads the bitmap font.
      * Screen size and FPS use engine defaultConfig() (no configure() in this demo).
-     * Notice the "await" keyword - we wait here until the font file is fully downloaded.
+     * Notice the "await" keyword – we wait here until the font file is fully downloaded.
      * The built-in system font (BT.systemPrint) skips this step entirely.
      * Returns true when the font has loaded successfully, or false if loading fails.
      *
@@ -161,7 +161,7 @@ class Demo {
 
         // Load the font file from the server.
         // .btfont is BLIT386's custom font format that includes glyph images.
-        // This is the step that BT.systemPrint() skips - the system font is built in.
+        // This is the step that BT.systemPrint() skips – the system font is built in.
         try {
             this.font = await BitmapFont.load('/fonts/PragmataPro14.btfont');
 
@@ -200,7 +200,7 @@ class Demo {
 
         // The alpha channel controls how opaque (visible) the text is.
         // At pulse=0 the text is nearly invisible; at pulse=1 it is fully opaque.
-        // RGB stays fixed at (100, 100, 255) - a medium blue - so only opacity changes.
+        // RGB stays fixed at (100, 100, 255) – a medium blue – so only opacity changes.
         this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
         // Update the rainbow text character colors
@@ -209,7 +209,7 @@ class Demo {
         // init() finished successfully, and init() returns false when the font fails.
         // We learned about HSL (Hue, Saturation, Lightness) colors in the Colors demo:
         // https://demos.blit386.dev/colors
-        let charX = RAINBOW_ORIGIN_X; // Starting x position - same as where render() draws the rainbow text.
+        let charX = RAINBOW_ORIGIN_X; // Starting x position – same as where render() draws the rainbow text.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
             // Using charX (actual x position) matches the visual rhythm of the rainbow.
@@ -220,7 +220,7 @@ class Demo {
             this.palette.set(C_RAINBOW_BASE + i, Color32.fromHSL(hue, 100, 60));
 
             // Advance charX by this character's actual pixel width in the font.
-            // This is specific to BitmapFont - the system font advances a fixed systemCharWidth per character.
+            // This is specific to BitmapFont – the system font advances a fixed systemCharWidth per character.
             const glyph = this.font.getGlyph(RAINBOW_TEXT[i]);
             charX += glyph ? glyph.advance : 7;
         }
@@ -288,7 +288,7 @@ class Demo {
         let currentY = y;
 
         // Each color is looked up by offset: palette[1 + offset] = the desired color.
-        // C_RED_TEXT = 3, so offset = 3 - 1 = 2. That means palette[1 + 2] = palette[3] = red.
+        // C_RED_TEXT = 3, so offset = 3 – 1 = 2. That means palette[1 + 2] = palette[3] = red.
         // With BT.systemPrint() you would just write: BT.systemPrint(pos, C_RED_TEXT, text).
         BT.printFont(this.font, new Vector2i(10, currentY), 'Red Text', C_RED_TEXT - 1);
         currentY += lineHeight;
@@ -322,14 +322,14 @@ class Demo {
 
         // Loop through each character in the string one at a time.
         for (const char of RAINBOW_TEXT) {
-            // The palette offset for character i = C_RAINBOW_BASE + i - 1.
+            // The palette offset for character i = C_RAINBOW_BASE + i – 1.
             // This is because printFont offset N means palette[1 + N].
-            // We want palette[C_RAINBOW_BASE + i], so offset = C_RAINBOW_BASE + i - 1.
+            // We want palette[C_RAINBOW_BASE + i], so offset = C_RAINBOW_BASE + i – 1.
             BT.printFont(this.font, new Vector2i(x, y), char, C_RAINBOW_BASE - 1 + slotIndex);
 
             // Look up how wide this character is in the font's glyph table.
             // "advance" is the number of pixels to move right before drawing the next character.
-            // This is unique to BitmapFont - each letter has its own width in a proportional font.
+            // This is unique to BitmapFont – each letter has its own width in a proportional font.
             // The built-in system font always advances systemCharWidth pixels per character (6 by default).
             const glyph = this.font.getGlyph(char);
 
@@ -341,14 +341,14 @@ class Demo {
         return y + lineHeight + 4;
     }
 
-    // Draws text that pulses in opacity - it fades in and out in a smooth rhythm (alpha pulsing).
+    // Draws text that pulses in opacity – it fades in and out in a smooth rhythm (alpha pulsing).
     // The alpha value is pre-computed in update() using Math.sin and stored in palette slot C_PULSE.
     // This palette animation technique works exactly the same with BT.systemPrint().
     // y: the Y position to start drawing at.
     // lineHeight: how many pixels to move down between lines.
     // Returns the Y position after the text.
     renderPulsingText(y, lineHeight) {
-        // C_PULSE - 1 = 37. That means palette[1 + 37] = palette[38] = C_PULSE (the animated color).
+        // C_PULSE – 1 = 37. That means palette[1 + 37] = palette[38] = C_PULSE (the animated color).
         BT.printFont(this.font, new Vector2i(10, y), 'Pulsing Text', C_PULSE - 1);
 
         return y + lineHeight + 4;
@@ -367,7 +367,7 @@ class Demo {
         return y + lineHeight;
     }
 
-    // Demonstrates font.measureText() - which tells you exactly how wide a string will
+    // Demonstrates font.measureText() – which tells you exactly how wide a string will
     // be before you draw it. We draw an underline that is exactly the right length.
     // BT.systemPrint() does not have a measureText() equivalent; this is a BitmapFont-only feature.
     // y: the Y position to start drawing at.
@@ -377,11 +377,11 @@ class Demo {
         const measureText = 'Measured Width';
 
         // Ask the font how many pixels wide this string will be when drawn.
-        // The system font doesn't support this - it's a BitmapFont-specific feature.
+        // The system font doesn't support this – it's a BitmapFont-specific feature.
         const textWidth = this.font.measureText(measureText);
 
         // Draw the text in light gray.
-        // C_GRAY_TEXT - 1 = 6. That means palette[1 + 6] = palette[7] = C_GRAY_TEXT.
+        // C_GRAY_TEXT – 1 = 6. That means palette[1 + 6] = palette[7] = C_GRAY_TEXT.
         BT.printFont(this.font, new Vector2i(10, y), measureText, C_GRAY_TEXT - 1);
 
         // Draw an orange underline that is exactly as wide as the text we measured.
@@ -409,7 +409,7 @@ class Demo {
         // Give the group a background, border, and an amber title.
         ui.panel('Font Info');
 
-        // ui.kv() draws an aligned "KEY: value" row - the key dim, the value bright.
+        // ui.kv() draws an aligned "KEY: value" row – the key dim, the value bright.
         ui.kv('FONT', this.font.name);
         ui.kv('SIZE', `${this.font.size}pt`);
         ui.kv('GLYPHS', this.font.glyphCount);

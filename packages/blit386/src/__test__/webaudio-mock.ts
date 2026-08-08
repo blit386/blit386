@@ -102,7 +102,7 @@ export interface MockAudioContext {
  * Creates a mock `AudioParam` that applies every scheduling call immediately
  * (no real audio clock in tests) while recording call arguments.
  *
- * @param initialValue - Starting parameter value. Defaults to {@link DEFAULT_GAIN_VALUE}.
+ * @param initialValue – Starting parameter value. Defaults to {@link DEFAULT_GAIN_VALUE}.
  * @returns Mock `AudioParam` stub, cast from a plain tracking object.
  */
 export function createMockAudioParam(initialValue: number = DEFAULT_GAIN_VALUE): AudioParam {
@@ -283,9 +283,9 @@ export function createMockAnalyserNode(): AnalyserNode {
  * used both for {@link createMockAudioContext}'s default `decodeAudioData` resolution and its
  * `createBuffer()` implementation.
  *
- * @param numberOfChannels - Channel count. Defaults to `1`.
- * @param length - Per-channel sample count. Defaults to `0`.
- * @param sampleRate - Sample rate in Hz. Defaults to {@link MOCK_SAMPLE_RATE}.
+ * @param numberOfChannels – Channel count. Defaults to `1`.
+ * @param length – Per-channel sample count. Defaults to `0`.
+ * @param sampleRate – Sample rate in Hz. Defaults to {@link MOCK_SAMPLE_RATE}.
  * @returns Stub `AudioBuffer`, cast from a plain tracking object with live channel data.
  */
 export function createMockAudioBuffer(
@@ -418,9 +418,9 @@ export function createMockAudioContext(): AudioContext {
  * progression for tests exercising `atTime` scheduling or fade-timing assertions anchored to a
  * non-zero clock.
  *
- * @param context - Mock context created by {@link createMockAudioContext} (or the instance
+ * @param context – Mock context created by {@link createMockAudioContext} (or the instance
  *   returned by {@link installMockAudioContext}'s `getLastInstance()`).
- * @param currentTime - New `currentTime` value in seconds.
+ * @param currentTime – New `currentTime` value in seconds.
  */
 export function setMockCurrentTime(context: AudioContext, currentTime: number): void {
     (context as unknown as { currentTime: number }).currentTime = currentTime;

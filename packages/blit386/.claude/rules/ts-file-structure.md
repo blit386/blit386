@@ -14,24 +14,24 @@ When adding or moving code in library TypeScript (`src/`). **Class member order 
 
 ## File layout (top to bottom)
 
-1. **Module JSDoc** — `/** … */` describing the file's purpose.
-2. **Imports** — `import type` for type-only imports; inline `type` in mixed imports. Order is auto-fixed by
+1. **Module JSDoc** – `/** … */` describing the file's purpose.
+2. **Imports** – `import type` for type-only imports; inline `type` in mixed imports. Order is auto-fixed by
    `pnpm run lint:fix` (`simple-import-sort`).
-3. **Leading module members** — config/input constants (`MAX_VERTICES`, `INV_255`), validators/lookup tables, and type
+3. **Leading module members** – config/input constants (`MAX_VERTICES`, `INV_255`), validators/lookup tables, and type
    aliases (`type EffectTier`, `type Resolve`). Module-level init loops live here too.
-4. **Primary export** — the class / interface / function the file is named for.
-5. **Trailing module members** — large WGSL/template-literal constants (`const FRAGMENT_WGSL`) and pure helper functions
+4. **Primary export** – the class / interface / function the file is named for.
+5. **Trailing module members** – large WGSL/template-literal constants (`const FRAGMENT_WGSL`) and pure helper functions
    **after** the class. Exported helpers before private ones.
 
 ## Class member order
 
-1. **Static fields** — cached singletons (`_zero`, `_white`), registries (`namedColors`).
-2. **Instance fields** — public → protected → private (`#field` / `private`). Group `readonly` together. One JSDoc and a
+1. **Static fields** – cached singletons (`_zero`, `_white`), registries (`namedColors`).
+2. **Instance fields** – public → protected → private (`#field` / `private`). Group `readonly` together. One JSDoc and a
    blank line per field (no packed field blocks).
-3. **Constructor** — parameter-properties carry inline `/** … */` JSDoc.
-4. **Accessors** — static getters first, then instance getters/setters.
-5. **Static methods** — public before private.
-6. **Instance methods** — public → protected → private. Private helpers (`cleanup`, `getOrCreateBindGroup`) last.
+3. **Constructor** – parameter-properties carry inline `/** … */` JSDoc.
+4. **Accessors** – static getters first, then instance getters/setters.
+5. **Static methods** – public before private.
+6. **Instance methods** – public → protected → private. Private helpers (`cleanup`, `getOrCreateBindGroup`) last.
 
 ## Cross-cutting
 

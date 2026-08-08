@@ -52,7 +52,7 @@ export class AssetLimitError extends Error {
     /**
      * Creates an asset limit error.
      *
-     * @param message - User-facing validation message.
+     * @param message – User-facing validation message.
      */
     constructor(message: string) {
         super(message);
@@ -81,8 +81,8 @@ export interface BtfontGlyphData {
 /**
  * Formats width and height for error messages.
  *
- * @param width - Width in pixels.
- * @param height - Height in pixels.
+ * @param width – Width in pixels.
+ * @param height – Height in pixels.
  * @returns Size formatted as `WIDTHxHEIGHT`.
  */
 export function formatSize(width: number, height: number): string {
@@ -92,8 +92,8 @@ export function formatSize(width: number, height: number): string {
 /**
  * Computes a safe pixel count when width and height are valid asset dimensions.
  *
- * @param width - Width in pixels.
- * @param height - Height in pixels.
+ * @param width – Width in pixels.
+ * @param height – Height in pixels.
  * @returns Total pixels when valid, otherwise `null`.
  */
 export function computeSafePixelArea(width: number, height: number): number | null {
@@ -117,7 +117,7 @@ export function computeSafePixelArea(width: number, height: number): number | nu
 /**
  * Returns whether a value is a positive finite integer suitable for pixel sizing.
  *
- * @param value - Candidate dimension.
+ * @param value – Candidate dimension.
  * @returns True when the value is a positive whole number.
  */
 function isPositiveIntegerDimension(value: number): boolean {
@@ -127,7 +127,7 @@ function isPositiveIntegerDimension(value: number): boolean {
 /**
  * Returns whether a value is a finite integer suitable for glyph metrics.
  *
- * @param value - Candidate metric.
+ * @param value – Candidate metric.
  * @returns True when the value is a finite whole number.
  */
 function isIntegerMetric(value: number): boolean {
@@ -137,9 +137,9 @@ function isIntegerMetric(value: number): boolean {
 /**
  * Validates decoded image or indexed-buffer dimensions before allocation.
  *
- * @param context - Asset label used in error text (for example `'sprite sheet'`).
- * @param width - Width in pixels.
- * @param height - Height in pixels.
+ * @param context – Asset label used in error text (for example `'sprite sheet'`).
+ * @param width – Width in pixels.
+ * @param height – Height in pixels.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateDimensions(context: string, width: number, height: number): string | null {
@@ -168,9 +168,9 @@ export function validateDimensions(context: string, width: number, height: numbe
 /**
  * Validates decoded image dimensions and throws when they exceed engine limits.
  *
- * @param context - Asset label used in error text.
- * @param width - Width in pixels.
- * @param height - Height in pixels.
+ * @param context – Asset label used in error text.
+ * @param width – Width in pixels.
+ * @param height – Height in pixels.
  * @throws {@link AssetLimitError} when the dimensions are invalid.
  */
 export function assertDimensions(context: string, width: number, height: number): void {
@@ -184,8 +184,8 @@ export function assertDimensions(context: string, width: number, height: number)
 /**
  * Validates an `HTMLImageElement` after decode and before canvas readback or texture upload.
  *
- * @param context - Asset label used in error text.
- * @param image - Loaded image element.
+ * @param context – Asset label used in error text.
+ * @param image – Loaded image element.
  * @throws {@link AssetLimitError} when the image dimensions are invalid.
  */
 export function assertImageElementWithinLimits(context: string, image: HTMLImageElement): void {
@@ -195,9 +195,9 @@ export function assertImageElementWithinLimits(context: string, image: HTMLImage
 /**
  * Validates raw indexed pixel dimensions and optional buffer length before retention.
  *
- * @param width - Texture width in pixels.
- * @param height - Texture height in pixels.
- * @param pixelLength - Optional indexed pixel array length to compare against `width * height`.
+ * @param width – Texture width in pixels.
+ * @param height – Texture height in pixels.
+ * @param pixelLength – Optional indexed pixel array length to compare against `width * height`.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateIndexedPixelInput(width: number, height: number, pixelLength?: number): string | null {
@@ -223,9 +223,9 @@ export function validateIndexedPixelInput(width: number, height: number, pixelLe
 /**
  * Validates raw indexed pixel dimensions and throws before buffer allocation.
  *
- * @param width - Texture width in pixels.
- * @param height - Texture height in pixels.
- * @param pixelLength - Optional indexed pixel array length to compare against `width * height`.
+ * @param width – Texture width in pixels.
+ * @param height – Texture height in pixels.
+ * @param pixelLength – Optional indexed pixel array length to compare against `width * height`.
  * @throws {@link AssetLimitError} when the dimensions or length are invalid.
  */
 export function assertIndexedPixelInput(width: number, height: number, pixelLength?: number): void {
@@ -239,7 +239,7 @@ export function assertIndexedPixelInput(width: number, height: number, pixelLeng
 /**
  * Validates a `.btfont` JSON payload size before parsing.
  *
- * @param byteLength - UTF-8 byte length of the JSON text.
+ * @param byteLength – UTF-8 byte length of the JSON text.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateBtfontJsonByteSize(byteLength: number): string | null {
@@ -257,7 +257,7 @@ export function validateBtfontJsonByteSize(byteLength: number): string | null {
 /**
  * Validates glyph map size before building lookup tables.
  *
- * @param count - Number of glyph entries.
+ * @param count – Number of glyph entries.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateGlyphCount(count: number): string | null {
@@ -279,7 +279,7 @@ export function validateGlyphCount(count: number): string | null {
  * use {@link BTFONT_EMBEDDED_TEXTURE_PREFIX} and stay within
  * {@link MAX_BTFONT_EMBEDDED_TEXTURE_BYTES} base64 character count (after the prefix).
  *
- * @param texture - Texture field from a `.btfont` file.
+ * @param texture – Texture field from a `.btfont` file.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateBtfontEmbeddedTextureUri(texture: string): string | null {
@@ -305,8 +305,8 @@ export function validateBtfontEmbeddedTextureUri(texture: string): string | null
 /**
  * Validates numeric glyph metrics before atlas bounds are checked.
  *
- * @param glyph - Glyph metrics from the `.btfont` file.
- * @param charLabel - Character label used in error text.
+ * @param glyph – Glyph metrics from the `.btfont` file.
+ * @param charLabel – Character label used in error text.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 function validateBtfontGlyphMetrics(glyph: BtfontGlyphData, charLabel: string): string | null {
@@ -344,8 +344,8 @@ function validateBtfontGlyphMetrics(glyph: BtfontGlyphData, charLabel: string): 
 /**
  * Validates glyph metrics and per-glyph size limits before the font atlas image is decoded.
  *
- * @param glyph - Glyph metrics from the `.btfont` file.
- * @param charLabel - Character label used in error text.
+ * @param glyph – Glyph metrics from the `.btfont` file.
+ * @param charLabel – Character label used in error text.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateBtfontGlyphDataPreAtlas(glyph: BtfontGlyphData, charLabel: string): string | null {
@@ -377,10 +377,10 @@ export function validateBtfontGlyphDataPreAtlas(glyph: BtfontGlyphData, charLabe
 /**
  * Validates that a glyph rectangle fits inside the decoded font atlas.
  *
- * @param glyph - Glyph metrics from the `.btfont` file.
- * @param atlasWidth - Font texture atlas width in pixels.
- * @param atlasHeight - Font texture atlas height in pixels.
- * @param charLabel - Character label used in error text.
+ * @param glyph – Glyph metrics from the `.btfont` file.
+ * @param atlasWidth – Font texture atlas width in pixels.
+ * @param atlasHeight – Font texture atlas height in pixels.
+ * @param charLabel – Character label used in error text.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateBtfontGlyphAtlasBounds(
@@ -399,10 +399,10 @@ export function validateBtfontGlyphAtlasBounds(
 /**
  * Validates one serialized glyph entry against atlas bounds and metric rules.
  *
- * @param glyph - Glyph metrics from the `.btfont` file.
- * @param atlasWidth - Font texture atlas width in pixels.
- * @param atlasHeight - Font texture atlas height in pixels.
- * @param charLabel - Character label used in error text.
+ * @param glyph – Glyph metrics from the `.btfont` file.
+ * @param atlasWidth – Font texture atlas width in pixels.
+ * @param atlasHeight – Font texture atlas height in pixels.
+ * @param charLabel – Character label used in error text.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateBtfontGlyphData(
@@ -426,9 +426,9 @@ export function validateBtfontGlyphData(
  * Returns `null` when the rectangle is empty, fully outside the sheet, or still
  * too large to iterate safely after clipping.
  *
- * @param srcRect - Requested source rectangle in sheet space.
- * @param sheetWidth - Sprite sheet width in pixels.
- * @param sheetHeight - Sprite sheet height in pixels.
+ * @param srcRect – Requested source rectangle in sheet space.
+ * @param sheetWidth – Sprite sheet width in pixels.
+ * @param sheetHeight – Sprite sheet height in pixels.
  * @returns Clipped source bounds, or `null` when the blit should be skipped.
  */
 export function clipSpriteSourceRect(
