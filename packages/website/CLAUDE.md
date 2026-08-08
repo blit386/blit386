@@ -133,7 +133,8 @@ deliberate and must stay: **`fumapress` declares `waku` as an exact-version peer
 on either side lets pnpm resolve a pair the framework does not support.
 
 Every row is an exact pin, not a range – including the prerelease ones, so "beta.8 or newer" is never satisfied by
-beta.9. Verified against the registry on 2026-08-08; `npm view fumapress@<version> peerDependencies.waku` is the check.
+beta.9. Verified against the registry on 2026-08-08; `npm view fumapress@0.7.3 peerDependencies.waku` is the check –
+swap the version to re-verify any other row.
 
 | fumapress | required `waku` peer |
 | --- | --- |
