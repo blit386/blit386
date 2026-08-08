@@ -8,12 +8,8 @@
       "*.{ts,tsx}",
       "content/**/meta.json",
       "scripts/**/*.mjs",
-      ".claude/**/*.json",
-      ".github/**/*.json",
       "*.json",
       "*.jsonc",
-      "commitlint.config.js",
-      "prettier.config.js",
       "!content/docs/*"
     ]
   },
@@ -34,15 +30,5 @@
         }
       }
     }
-  ],
-  "linter": {
-    "rules": {
-      "style": {
-        "noNonNullAssertion": "warn"
-      },
-      "suspicious": {
-        "noExplicitAny": "warn"
-      }
-    }
-  }
+  ]
 }
