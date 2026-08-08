@@ -60,7 +60,8 @@ Cloudflare Worker named `blit386` (custom domain `blit386.dev`); a plain push to
 - GitHub repository secrets `CLOUDFLARE_API_TOKEN` (Workers deploy permission) and `CLOUDFLARE_ACCOUNT_ID`, consumed by
   the `deploy-website` and `deploy-website-next` jobs in `.github/workflows/deploy.yml`.
 - `dist/server/wrangler.json`: the config actually deployed. Waku regenerates it on every build and
-  `scripts/patch-wrangler.mjs` (run by `postbuild`) injects `run_worker_first` into it.
+  `scripts/patch-wrangler.mjs` (run by `postbuild`) injects `run_worker_first` and `observability.enabled: true` into
+  it.
 - The root `wrangler.jsonc` is kept for parity and local reference only. Its `"name": "blit386"` value never reaches
   Cloudflare either: both `pnpm run deploy` and CI pass `--name blit386` explicitly, which overrides it.
 

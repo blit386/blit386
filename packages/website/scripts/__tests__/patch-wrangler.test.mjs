@@ -88,6 +88,11 @@ describe('patchWranglerConfig', () => {
         assert.deepEqual(result.observability, { enabled: true });
     });
 
+    test('overrides observability.enabled when explicitly set to false', () => {
+        const result = patchWranglerConfig({ observability: { enabled: false } });
+        assert.equal(result.observability.enabled, true);
+    });
+
     test('preserves other observability fields alongside enabled', () => {
         const result = patchWranglerConfig({ observability: { head_sampling_rate: 0.5 } });
         assert.deepEqual(result.observability, { head_sampling_rate: 0.5, enabled: true });

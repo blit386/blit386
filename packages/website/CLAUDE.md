@@ -256,7 +256,9 @@ Both Workers run with `observability.enabled: true` (BT-441), so Workers Logs ca
 to see a runtime error on `blit386.dev`'s `/mcp` JSON-RPC endpoint or the markdown-negotiation path without reproducing
 it locally. Same injection story as `run_worker_first`: `scripts/patch-wrangler.mjs` sets it on the generated
 `dist/server/wrangler.json`, and the root `wrangler.jsonc` carries it only for parity. Query logs via the Cloudflare
-dashboard (Workers & Pages -> `blit386` or `blit386-next` -> Logs) or `wrangler tail <worker-name>`.
+dashboard (Workers & Pages -> `blit386` or `blit386-next` -> Logs) or
+`pnpm --filter blit386-website exec wrangler tail <worker-name>` – running through the workspace `exec` invokes the
+pinned local `wrangler` devDependency rather than whatever a bare `wrangler` on `PATH` resolves to.
 
 All four `cloudflare/wrangler-action` steps in `.github/workflows/deploy.yml` (`deploy-demos`, `deploy-website`,
 `deploy-demos-next`, `deploy-website-next`) pin the same `wranglerVersion` and set the same `packageManager: pnpm`, even
