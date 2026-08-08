@@ -579,5 +579,5 @@ code {
    go above every other z-index this site sets (search dialog and popover primitive both
    cap at 50) so the popover always wins. */
 :has(> .fd-twoslash-popover) {
-    z-index: 60 !important;
+    z-index: 60;
 }

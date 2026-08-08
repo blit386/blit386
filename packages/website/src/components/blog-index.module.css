@@ -1,3 +1,5 @@
+/** biome-ignore-all lint/correctness/noUnknownPseudoClass: :global() is valid CSS Modules syntax Biome's linter doesn't recognize yet, even though its parser accepts it */
+
 @reference '../app.css';
 
 .index {
