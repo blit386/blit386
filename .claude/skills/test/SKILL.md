@@ -38,20 +38,22 @@ regression is an intentional change.
 
 ## packages/demos
 
-There are no automated tests in `blit386-demos`. Do not look for `pnpm run test`, `vitest`, or a `tests/` directory –
-none of these exist here. Demos are interactive, visual, and authored for a single developer; correctness is verified
-by:
+Demo _content_ (`src/*.js`, the interactive WebGPU pieces) has no automated tests. Do not look for Vitest, Playwright,
+or a `tests/` directory for those – automated unit or E2E coverage would require a headless WebGPU runtime (not broadly
+available) and would largely duplicate what `packages/blit386`'s own suite already covers. Correctness is verified by:
 
 1. Running the dev server (`pnpm run dev`) and opening the demo in a browser
 2. The production build (`pnpm run build`) – a build failure surfaces broken imports or plugin errors
-3. Preflight checks (`/preflight demos`) – lint, format, spellcheck, knip, docs:links, check:demo-registry
-
-Automated unit or E2E tests would require a headless WebGPU runtime (not broadly available) and would largely duplicate
-what `packages/blit386`'s own suite already covers.
+3. Preflight checks (`/preflight demos`) – lint, format, test, spellcheck, knip, docs:links, check:demo-registry
 
 What to do instead: verify a new demo with `pnpm run dev` + manual exercise; confirm no build regression with
 `pnpm run build`; check code quality with `/preflight demos` or `/review demos`; full pre-push audit with
 `/deep-review demos`.
+
+Tooling _scripts_ (`scripts/*.mjs`) are different: `node --test scripts/__tests__/*.test.mjs`, run via `pnpm run test`,
+covers pure helper functions in `capture-demo-clip.mjs` (argument parsing, URL/dimension math, ffmpeg/browser-script
+builders) that need no browser or WebGPU. The live capture-to-file pipeline itself (driving `agent-browser`, encoding
+with ffmpeg) is not covered here – verify it by hand, running the script against a real demo.
 
 Manual hot-reload check (nothing automated covers this – run by hand after touching hot-reload wiring):
 

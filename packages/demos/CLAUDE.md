@@ -25,8 +25,8 @@ One demo per file under `src/`, and that file is the single source of truth – 
 `data-page-suffix` onto `<body>` (`.html` in dev, empty in the build) and `_partials/demo-shell.js` appends it in
 `urlFor()`, so the shell's `history.pushState` URL and its iframe `?embed&source` src are extensionless in production.
 `src/shared/` holds the UI kit and cross-demo helpers, `public/` static assets, `_partials/` the shared HTML template
-and shell scripts, `plugins/` the Vite plugin plus the order and vintage-URL registries, `scripts/` the check and
-generate scripts.
+and shell scripts, `plugins/` the Vite plugin plus the order and vintage-URL registries, `scripts/` the check, generate,
+and capture scripts.
 
 Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`); the first path segment must start with a
 letter, so legacy `001-topic.js` names are rejected. Navigation order is **not** derived from the filename – it comes
