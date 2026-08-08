@@ -37,9 +37,12 @@ function flattenDemosPlugin() {
                     if (file.endsWith('.html')) {
                         let content = readFileSync(srcPath, 'utf-8');
 
-                        // Fix asset paths: ../assets/ -> ./assets/, ../fonts/ -> ./fonts/
-                        content = content.replace(/\.\.\/assets\//g, './assets/');
-                        content = content.replace(/\.\.\/fonts\//g, './fonts/');
+                        // Every page moves from demos/<slug>.html up to the dist/ root, so any
+                        // `../` reference Vite emitted for the old location (hashed assets,
+                        // copied fonts, public-dir links like the favicon) must become `./`.
+                        // No legitimate `../` survives flattening, so this is safe to apply
+                        // wholesale rather than naming each directory.
+                        content = content.replace(/(\ssrc|\shref)="\.\.\//g, '$1="./');
 
                         writeFileSync(destPath, content);
                     } else {

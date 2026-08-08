@@ -1,4 +1,5 @@
 // Palette Swap: change the active palette at runtime to switch color themes.
+// @description Switch the active palette at runtime to recolor an entire scene without touching the drawing code.
 //
 // Part of the BLIT386 series (written for readers about 12 years old).
 //

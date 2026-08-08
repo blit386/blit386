@@ -1,5 +1,6 @@
 /**
  * Keyboard Diagnostic – visual keyboard with press / hold / release feedback.
+ * @description A full on-screen keyboard with press, hold, and release feedback, to verify fast taps on any display.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Keyboard Input (https://demos.blit386.dev/keyboard-input)

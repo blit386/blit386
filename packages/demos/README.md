@@ -246,6 +246,38 @@ Editing a demo's `src/<slug>.js` file usually avoids a full page reload: a metho
 keeps state in place, while an edit to `init()` or the constructor re-initializes the demo instead. A `configure()`
 hardware-setting change still forces a full reload – see [CLAUDE.md](CLAUDE.md#hot-reload) for the full tier breakdown.
 
+## Social metadata and OG images
+
+Every demo page ships a full social head block: a meta description, `rel=canonical`, favicon links, OpenGraph and
+Twitter card tags, and a `SoftwareApplication` JSON-LD block. It is assembled by `plugins/social-meta.js` and rendered
+into `_partials/layout.html` through the `{{socialMeta}}` placeholder. All URLs in it are absolute and channel-aware, so
+the `next` preview deploy never advertises production URLs.
+
+The description comes from a **required** `@description` tag in each demo's header comment:
+
+```js
+// @description Classic retro color rotation with BT.paletteCycle: rotate palette slots to make a still image flow.
+```
+
+One line, 60-104 characters, ending in a period, within the first 2000 bytes of the file. `pnpm run check:demo-registry`
+enforces every one of those rules, so a new demo cannot ship without one.
+
+Each demo also has a 1200x630 OpenGraph card committed under `public/social/og-<slug>.png`. Cards are captured by hand,
+never in CI:
+
+```bash
+pnpm run build && pnpm run preview
+pnpm run capture:og -- --all
+```
+
+`--base-url` must serve flattened, extensionless URLs – production, the `next` channel, or `pnpm run preview`. The dev
+server routes demos at `/demos/<slug>.html` and will not work. Pass a single slug instead of `--all` to redo just one,
+and `--force` to overwrite cards that already exist. The capture needs `agent-browser` and `ffmpeg` on `PATH`.
+
+A demo whose card is framed badly can override the scaling with `// @ogScale fit` or `// @ogScale integer`; the default
+`auto` scales by a whole number when that already fills the card and fills the frame otherwise. Because PNGs do not
+delta-compress in git, re-capture only the demos that actually changed rather than re-running `--all --force`.
+
 ## Community
 
 - [Discord](https://discord.gg/tC2wGt88Uj)

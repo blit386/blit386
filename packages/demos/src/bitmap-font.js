@@ -1,5 +1,6 @@
 /**
  * Bitmap Font Demo – load a proportional .btfont and compare it to the built-in system font.
+ * @description Load a proportional .btfont file and draw rainbow, alpha-pulsing, and measured text with it.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:

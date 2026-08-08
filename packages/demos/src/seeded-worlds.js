@@ -1,4 +1,5 @@
 // Seeded Worlds: the same number always builds the same world.
+// @description Two worlds side by side, each labeled with its seed. Copy one seed over and the halves match exactly.
 //
 // Part of the BLIT386 demo series (written for readers about 12 years old).
 //

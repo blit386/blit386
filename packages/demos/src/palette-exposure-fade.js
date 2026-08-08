@@ -1,4 +1,5 @@
 // Palette Exposure Fade: two ways to fade the same picture, side by side.
+// @description The plain palette fade and the camera-style exposure fade side by side, running on one shared palette.
 //
 // Part of the BLIT386 series (written for readers about 12 years old).
 //

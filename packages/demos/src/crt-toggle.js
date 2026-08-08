@@ -1,4 +1,5 @@
 // @pageTitle BLIT386 Demo – CRT Toggle
+// @description Turn a whole CRT post-process stack on and off at runtime, switching every two seconds as it runs.
 //
 // CRT Toggle: turn the post-process effects on and off in flight.
 //

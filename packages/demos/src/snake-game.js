@@ -1,5 +1,6 @@
 /**
  * Snake – grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
+ * @description Grid snake with walls, food, keyboard, D-pad, and swipe steering, plus PipBoy CRT post-processing.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:

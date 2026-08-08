@@ -1,4 +1,5 @@
 // Colors Demo – a deep dive into Color32 and palettes in BLIT386.
+// @description A deep dive into Color32: named colors, HSL, alpha blending, and interpolating between two colors.
 //
 // Part of the BLIT386 demo series, written for young learners (around 12)
 // who are getting comfortable with code. You will see:

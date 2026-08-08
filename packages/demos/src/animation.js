@@ -1,4 +1,5 @@
 // Animation and timing: how to animate sprites using tick-based timing.
+// @description Tick-based animation: cycle walk frames, drive a small state machine, and spawn particles that fade out.
 //
 // Prerequisites: Basics (https://demos.blit386.dev/basics),
 // Sprites (https://demos.blit386.dev/sprites).

@@ -1,4 +1,5 @@
 // Patterns: animated mathematical art using only primitive drawing.
+// @description Animated mathematical art from primitives alone: spirals, Lissajous curves, waves, and a tunnel.
 //
 // Prerequisites: We learned about drawing and the game loop in Basics demo
 // (https://demos.blit386.dev/basics), shapes in Primitives demo

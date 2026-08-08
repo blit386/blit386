@@ -1,5 +1,6 @@
 /**
  * Basics Demo – Your very first BLIT386 program!
+ * @description Your first BLIT386 program: the engine lifecycle, a bouncing sprite, a palette, and text on the canvas.
  *
  * Welcome! This demo teaches you the absolute basics of making things appear
  * on screen with the BLIT386 engine. You will learn:

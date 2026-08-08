@@ -1,4 +1,5 @@
 // Flurry: a retro screensaver built on particle physics and palette animation.
+// @description A retro screensaver port of the classic macOS Flurry: particle physics driving palette animation.
 //
 // Ported from the classic macOS Flurry screensaver by Calum Robinson (2002).
 // Original source: https://github.com/calumr/flurry

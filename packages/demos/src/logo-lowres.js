@@ -1,4 +1,5 @@
 // @pageTitle BLIT386 Demo – Logo Low-Res
+// @description The BLIT386 logo on a tiny 80x60 screen, upscaled nearest-neighbor inside a monochrome CRT stack.
 //
 // Logo Low-Res: the BLIT386 logo on a very chunky low-res screen, wrapped
 // in the same Orava B/W CRT stack used in Sprite Effects demo.

@@ -1,5 +1,6 @@
 /**
  * Gamepad Input Demo – analog sticks, triggers, and face-button masks.
+ * @description A tiny hover-pod playground for gamepads: connect status, analog sticks, triggers, and button masks.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Basics (https://demos.blit386.dev/basics),

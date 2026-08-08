@@ -1,5 +1,6 @@
 /**
  * Audio Basics Demo – loading sounds, playing them, and the "click to allow sound" rule.
+ * @description Load a clip, play it with volume, pitch, and pan variation, and handle the first-gesture audio unlock.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:

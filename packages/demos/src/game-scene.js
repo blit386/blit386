@@ -1,4 +1,5 @@
 // Game Scene (CAPSTONE): one small world that uses almost everything from the series.
+// @description The capstone: tilemap ground, patterns, sprites, camera, animation, and looping music in one scene.
 //
 // This demo brings together everything you have learned!
 //

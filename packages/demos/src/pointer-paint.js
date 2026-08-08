@@ -1,5 +1,6 @@
 /**
  * Pointer Paint Demo – multi-touch finger painting with mouse + up to 3 touches.
+ * @description Multi-touch finger painting across all four pointer slots: a mouse plus up to three fingers at once.
  *
  * Prerequisites: Pointer Basics – https://demos.blit386.dev/pointer-basics
  *

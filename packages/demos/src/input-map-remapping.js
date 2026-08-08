@@ -1,5 +1,6 @@
 /**
  * Input Map Remapping Demo – runtime `BT.inputMap` and `BT.inputMapReset`.
+ * @description Remap face buttons at runtime with BT.inputMap: defaults, custom OR keys, and clearing a binding.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Basics (https://demos.blit386.dev/basics),

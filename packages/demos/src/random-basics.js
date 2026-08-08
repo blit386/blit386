@@ -1,4 +1,5 @@
 // Random Basics: the shuffling, weighting, and scattering tools built into the engine.
+// @description Five scenes for the BT.random generators: shuffling, weighted drops, scatter, flips, and walkers.
 //
 // Part of the BLIT386 demo series (written for readers about 12 years old).
 //
