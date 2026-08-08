@@ -92,8 +92,8 @@ describe('readUrlFlags', () => {
 /**
  * Runs `body` with `globalThis.location.search` stubbed to `search`.
  *
- * @param search - Query string including the leading '?'.
- * @param body - Assertions to run while the stub is installed.
+ * @param search – Query string including the leading '?'.
+ * @param body – Assertions to run while the stub is installed.
  */
 function withSearch(search: string, body: () => void): void {
     const original = Reflect.getOwnPropertyDescriptor(globalThis, 'location');

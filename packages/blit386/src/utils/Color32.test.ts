@@ -1118,7 +1118,7 @@ describe('srgbToLinear', () => {
     });
 
     it('uses the linear toe below the 0.04045 breakpoint', () => {
-        // 0.02 / 12.92 - a bare 2.2 power would give 0.000178 here, an order of magnitude darker.
+        // 0.02 / 12.92 – a bare 2.2 power would give 0.000178 here, an order of magnitude darker.
         expect(srgbToLinear(0.02)).toBeCloseTo(0.001548, 6);
     });
 
@@ -1141,7 +1141,7 @@ describe('linearToSrgb', () => {
     });
 
     it('lifts near-black linear values the way the sRGB toe does', () => {
-        // 1/255 in linear light encodes to ~0.0498 - a bare 2.2 power would give ~0.0806.
+        // 1/255 in linear light encodes to ~0.0498 – a bare 2.2 power would give ~0.0806.
         expect(linearToSrgb(1 / 255)).toBeCloseTo(0.0498, 3);
     });
 
@@ -1184,7 +1184,7 @@ describe('toLinear / toSrgb', () => {
         for (let v = 0; v <= 255; v++) {
             const back = new Color32(v, v, v, 255).toLinear().toSrgb().r;
 
-            // 8-bit linear storage crushes the darks - the toe is where the loss lands.
+            // 8-bit linear storage crushes the darks – the toe is where the loss lands.
             expect(Math.abs(back - v)).toBeLessThanOrEqual(10);
         }
     });

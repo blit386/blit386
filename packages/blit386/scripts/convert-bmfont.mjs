@@ -12,8 +12,8 @@ import { dirname, join, relative, resolve, sep } from 'node:path';
 /**
  * Extracts the value of a specified attribute from an XML tag.
  *
- * @param {string} tag - The XML tag string from which to extract the attribute value.
- * @param {string} attr - The name of the attribute to extract.
+ * @param {string} tag – The XML tag string from which to extract the attribute value.
+ * @param {string} attr – The name of the attribute to extract.
  * @returns {string|null} The value of the specified attribute, or null if the attribute is not found.
  */
 function parseXmlAttribute(tag, attr) {
@@ -26,7 +26,7 @@ function parseXmlAttribute(tag, attr) {
 /**
  * Parses the `<info>` XML tag from the provided font file data and extracts the font name and size.
  *
- * @param {string} xmlData - The XML data containing the font information, including the `<info>` tag.
+ * @param {string} xmlData – The XML data containing the font information, including the `<info>` tag.
  * @returns {{fontName: string, fontSize: number}} An object containing the `fontName` and `fontSize` extracted from the `<info>` tag. Defaults to 'Unknown' for font name and 12 for font size if attributes are missing.
  */
 function parseInfoTag(xmlData) {
@@ -54,8 +54,8 @@ function parseInfoTag(xmlData) {
 /**
  * Parses the `<common>` tag from the provided XML data and extracts font-related attributes.
  *
- * @param {string} xmlData - The XML data containing the `<common>` tag.
- * @param {number} fontSize - The font size to be used as a fallback value if attributes are missing.
+ * @param {string} xmlData – The XML data containing the `<common>` tag.
+ * @param {number} fontSize – The font size to be used as a fallback value if attributes are missing.
  * @returns {{lineHeight: number, baseline: number}} An object containing the parsed `lineHeight` and `baseline` values from the `<common>` tag.
  */
 function parseCommonTag(xmlData, fontSize) {
@@ -128,10 +128,10 @@ function parsePageTag(xmlData) {
  * Generates and returns the appropriate texture value based on the specified options.
  * This can either be an embedded base64 representation of the texture or a path to the texture file.
  *
- * @param {boolean} embedTexture - Indicates whether the texture should be embedded in base64 format.
- * @param {string} textureFilename - The filename of the texture file to be used.
- * @param {string} fntDir - The directory where the texture file is located.
- * @param {string} outputPath - The output path used for computing relative paths if embedding is off.
+ * @param {boolean} embedTexture – Indicates whether the texture should be embedded in base64 format.
+ * @param {string} textureFilename – The filename of the texture file to be used.
+ * @param {string} fntDir – The directory where the texture file is located.
+ * @param {string} outputPath – The output path used for computing relative paths if embedding is off.
  * @returns {string} The texture value, either as a base64-encoded string or a relative path.
  */
 function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
@@ -198,10 +198,10 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
 /**
  * Parses glyph data from a given XML tag and updates the glyph object with the corresponding character's properties.
  *
- * @param {Object} glyphs - The object representing all glyph data, which will be updated with the parsed character information.
- * @param {string} char - The character corresponding to the glyph data being parsed.
- * @param {string} tag - The XML tag containing the attributes for the glyph's properties.
- * @param {number} charCode - The character code for error reporting.
+ * @param {Object} glyphs – The object representing all glyph data, which will be updated with the parsed character information.
+ * @param {string} char – The character corresponding to the glyph data being parsed.
+ * @param {string} tag – The XML tag containing the attributes for the glyph's properties.
+ * @param {number} charCode – The character code for error reporting.
  * @returns {void} Does not return a value; updates the glyph object directly with parsed data.
  */
 function parseGlyphData(glyphs, char, tag, charCode) {
@@ -256,7 +256,7 @@ function parseGlyphData(glyphs, char, tag, charCode) {
 /**
  * Parses glyph data from an XML string containing font information and extracts individual character properties.
  *
- * @param {string} xmlData - The XML string containing font glyph definitions.
+ * @param {string} xmlData – The XML string containing font glyph definitions.
  * @returns {{glyphs: Object, glyphCount: number}} An object containing the parsed glyphs as key-value pairs and the total count of glyphs found.
  */
 function parseGlyphs(xmlData) {
@@ -301,13 +301,13 @@ function parseGlyphs(xmlData) {
 /**
  * Writes the given font data to a file and logs the conversion details.
  *
- * @param {string} outputPath - The path where the font data will be written.
- * @param {object} btfont - The font data to be serialized and written to the file.
- * @param {string} fontName - The name of the font being processed.
- * @param {number} fontSize - The size of the font, in points.
- * @param {number} lineHeight - The line height of the font, in pixels.
- * @param {number} baseline - The baseline offset of the font, in pixels.
- * @param {number} glyphCount - The total number of glyphs in the font.
+ * @param {string} outputPath – The path where the font data will be written.
+ * @param {object} btfont – The font data to be serialized and written to the file.
+ * @param {string} fontName – The name of the font being processed.
+ * @param {number} fontSize – The size of the font, in points.
+ * @param {number} lineHeight – The line height of the font, in pixels.
+ * @param {number} baseline – The baseline offset of the font, in pixels.
+ * @param {number} glyphCount – The total number of glyphs in the font.
  * @returns {void} This function doesn't return a value.
  */
 function writeOutput(outputPath, btfont, fontName, fontSize, lineHeight, baseline, glyphCount) {
@@ -324,8 +324,8 @@ function writeOutput(outputPath, btfont, fontName, fontSize, lineHeight, baselin
 /**
  * Converts a BMFont `.fnt` file to a `.btfont` format file.
  *
- * @param {string} fntPath - The path to the input `.fnt` file. This should be a valid BMFont XML file.
- * @param {string} outputPath - The path where the converted `.btfont` file will be saved.
+ * @param {string} fntPath – The path to the input `.fnt` file. This should be a valid BMFont XML file.
+ * @param {string} outputPath – The path where the converted `.btfont` file will be saved.
  * @param {boolean} [embedTexture=false] - Whether to embed the texture file as a base64-encoded string within the output `.btfont` file. Defaults to `false`.
  * @returns {void} Does not return a value. The converted file is saved to the specified output path.
  */

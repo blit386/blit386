@@ -129,7 +129,7 @@ export class AudioManager {
      * `BTAPI.init()`. Registers the new context with `audioDecodeContext` on
      * success, so `AudioClip.load()` can later decode against the live context.
      *
-     * @param target - Canvas that receives the one-shot unlock gesture listeners.
+     * @param target – Canvas that receives the one-shot unlock gesture listeners.
      */
     public attach(target: HTMLCanvasElement): void {
         this.detach();
@@ -249,7 +249,7 @@ export class AudioManager {
      *
      * Unaffected by {@link muteSet} - muting never overwrites the configured level.
      *
-     * @param bus - Audio bus to query.
+     * @param bus – Audio bus to query.
      * @returns Volume in `[0, 1]`.
      */
     public volumeGet(bus: AudioBus): number {
@@ -262,10 +262,10 @@ export class AudioManager {
      * unless the bus is currently muted (in which case only the logical value
      * updates; the audible gain stays at 0 until {@link muteSet} unmutes it).
      *
-     * @param bus - Audio bus to update.
-     * @param volume - Target volume, clamped to `[0, 1]`.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
-     * @param easing - Easing curve for the fade. Defaults to `'linear'`; ignored when `fadeMs` is omitted.
+     * @param bus – Audio bus to update.
+     * @param volume – Target volume, clamped to `[0, 1]`.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
+     * @param easing – Easing curve for the fade. Defaults to `'linear'`; ignored when `fadeMs` is omitted.
      */
     public volumeSet(bus: AudioBus, volume: number, fadeMs?: number, easing: EasingFunction = 'linear'): void {
         const clamped = clampVolume(volume);
@@ -291,7 +291,7 @@ export class AudioManager {
     /**
      * Reports whether `bus` is currently muted.
      *
-     * @param bus - Audio bus to query.
+     * @param bus – Audio bus to query.
      * @returns `true` when the bus gain is held at 0 by {@link muteSet}.
      */
     public isMuted(bus: AudioBus): boolean {
@@ -308,7 +308,7 @@ export class AudioManager {
      * immediately (no fade). Unmuting restores the exact snapshotted value, so
      * a mute/unmute pair never destroys the level configured by {@link volumeSet}.
      *
-     * @param bus - Audio bus to mute or unmute.
+     * @param bus – Audio bus to mute or unmute.
      * @param muted - `true` to mute, `false` to unmute.
      */
     public muteSet(bus: AudioBus, muted: boolean): void {
@@ -358,7 +358,7 @@ export class AudioManager {
      * Remembers that a music play request arrived while the audio context was
      * locked, so {@link resumeAndUnlock} can resume it once unlocked.
      *
-     * Called by {@link musicPlay}; carries no payload itself - see {@link pendingMusicRequest}
+     * Called by {@link musicPlay}; carries no payload itself – see {@link pendingMusicRequest}
      * for the actual buffer and options.
      */
     public rememberMusicRequest(): void {
@@ -394,8 +394,8 @@ export class AudioManager {
      * free or stealable slot) are tracked separately by the pool's own `getDropCount()`, surfaced
      * through {@link getVoiceDropCount}.
      *
-     * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link VoicePlayOptions}.
+     * @param buffer – Decoded audio buffer to play.
+     * @param options – Playback options; see {@link VoicePlayOptions}.
      * @returns A {@link SoundRef} identifying the new voice, or {@link INVALID_SOUND_REF}.
      */
     public playSound(buffer: AudioBuffer, options?: VoicePlayOptions): SoundRef {
@@ -411,8 +411,8 @@ export class AudioManager {
     /**
      * Stops a playing sound, optionally fading it out.
      *
-     * @param ref - Sound to stop.
-     * @param fadeOutMs - Optional linear fade-out duration in milliseconds.
+     * @param ref – Sound to stop.
+     * @param fadeOutMs – Optional linear fade-out duration in milliseconds.
      */
     public soundStop(ref: SoundRef, fadeOutMs?: number): void {
         this.voicePool?.stop(ref, fadeOutMs);
@@ -421,7 +421,7 @@ export class AudioManager {
     /**
      * Reports whether a sound is still playing.
      *
-     * @param ref - Sound to query.
+     * @param ref – Sound to query.
      * @returns `true` when `ref` still identifies a live voice; `false` on a stale ref or before {@link attach}.
      */
     public isSoundPlaying(ref: SoundRef): boolean {
@@ -431,9 +431,9 @@ export class AudioManager {
     /**
      * Sets a sound's gain, optionally fading to it.
      *
-     * @param ref - Sound to update.
-     * @param value - Target gain.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param ref – Sound to update.
+     * @param value – Target gain.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public soundVolumeSet(ref: SoundRef, value: number, fadeMs?: number): void {
         this.voicePool?.volumeSet(ref, value, fadeMs);
@@ -442,7 +442,7 @@ export class AudioManager {
     /**
      * Gets a sound's current gain.
      *
-     * @param ref - Sound to query.
+     * @param ref – Sound to query.
      * @returns Current gain, or {@link DEFAULT_VOLUME} on a stale ref or before {@link attach}.
      */
     public soundVolumeGet(ref: SoundRef): number {
@@ -452,9 +452,9 @@ export class AudioManager {
     /**
      * Sets a sound's playback rate, optionally fading to it.
      *
-     * @param ref - Sound to update.
-     * @param value - Target playback rate.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param ref – Sound to update.
+     * @param value – Target playback rate.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public soundPitchSet(ref: SoundRef, value: number, fadeMs?: number): void {
         this.voicePool?.pitchSet(ref, value, fadeMs);
@@ -463,7 +463,7 @@ export class AudioManager {
     /**
      * Gets a sound's current playback rate.
      *
-     * @param ref - Sound to query.
+     * @param ref – Sound to query.
      * @returns Current playback rate, or {@link DEFAULT_PITCH} on a stale ref or before {@link attach}.
      */
     public soundPitchGet(ref: SoundRef): number {
@@ -473,9 +473,9 @@ export class AudioManager {
     /**
      * Sets a sound's stereo pan, optionally fading to it.
      *
-     * @param ref - Sound to update.
-     * @param value - Target pan.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param ref – Sound to update.
+     * @param value – Target pan.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public soundPanSet(ref: SoundRef, value: number, fadeMs?: number): void {
         this.voicePool?.panSet(ref, value, fadeMs);
@@ -484,7 +484,7 @@ export class AudioManager {
     /**
      * Gets a sound's current stereo pan.
      *
-     * @param ref - Sound to query.
+     * @param ref – Sound to query.
      * @returns Current pan, or {@link DEFAULT_PAN} on a stale ref or before {@link attach}.
      */
     public soundPanGet(ref: SoundRef): number {
@@ -499,8 +499,8 @@ export class AudioManager {
      * so {@link resumeAndUnlock} can start it the moment the context unlocks. A newer call while
      * still locked overwrites the previously stored request; only the latest survives to unlock.
      *
-     * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link MusicPlayOptions}.
+     * @param buffer – Decoded audio buffer to play.
+     * @param options – Playback options; see {@link MusicPlayOptions}.
      */
     public musicPlay(buffer: AudioBuffer, options?: MusicPlayOptions): void {
         if (!this.unlocked) {
@@ -516,7 +516,7 @@ export class AudioManager {
     /**
      * Stops the music player, optionally fading out first.
      *
-     * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
+     * @param fadeMs – Optional linear fade-out duration in milliseconds; omit to stop immediately.
      */
     public musicStop(fadeMs?: number): void {
         this.musicPlayer?.stop(fadeMs);
@@ -525,8 +525,8 @@ export class AudioManager {
     /**
      * Sets the music player's volume, optionally fading to it.
      *
-     * @param value - Target gain.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param value – Target gain.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public musicVolumeSet(value: number, fadeMs?: number): void {
         this.musicPlayer?.volumeSet(value, fadeMs);
@@ -642,7 +642,7 @@ export class AudioManager {
      * Creates the `sfx` / `music` / `main` gain nodes and wires `sfx` and
      * `music` into `main`, which connects to `destination`.
      *
-     * @param context - Audio context to build the graph on.
+     * @param context – Audio context to build the graph on.
      * @returns The newly created bus gain nodes.
      */
     private buildBusGraph(context: AudioContext): PerBus<GainNode> {
@@ -683,7 +683,7 @@ export class AudioManager {
      * On success, starts any music request remembered from before unlock (see
      * {@link musicPlay}) via {@link startRememberedMusicRequest}.
      *
-     * @param context - Audio context to resume.
+     * @param context – Audio context to resume.
      */
     private async resumeAndUnlock(context: AudioContext): Promise<void> {
         try {
@@ -705,7 +705,7 @@ export class AudioManager {
      * Starts the music request remembered from before unlock (see {@link musicPlay}), if any.
      *
      * Clears {@link isMusicRequestRemembered} and {@link pendingMusicRequest} before calling
-     * {@link MusicPlayer.play} (rather than after), so a `play()` failure - for example invalid
+     * {@link MusicPlayer.play} (rather than after), so a `play()` failure – for example invalid
      * `loopStart`/`loopEnd` - can never leave a stale request dangling forever. `unlock()` never
      * calls {@link resumeAndUnlock} again once {@link unlocked} is `true`, so a request left
      * uncleared here would never get another chance to be replayed or discarded. A `play()`
@@ -747,7 +747,7 @@ export class AudioManager {
 /**
  * Clamps a bus volume to `[0, 1]`.
  *
- * @param volume - Raw volume value.
+ * @param volume – Raw volume value.
  * @returns Volume clamped to `[MIN_BUS_VOLUME, MAX_BUS_VOLUME]`.
  */
 function clampVolume(volume: number): number {
@@ -757,8 +757,8 @@ function clampVolume(volume: number): number {
 /**
  * Computes a normalized RMS level from `analyzer`'s current time-domain samples.
  *
- * @param analyzer - Bus analyzer to sample.
- * @param samples - Reusable scratch buffer sized to `analyzer.fftSize`; overwritten in place.
+ * @param analyzer – Bus analyzer to sample.
+ * @param samples – Reusable scratch buffer sized to `analyzer.fftSize`; overwritten in place.
  * @returns RMS level in `[0, 1]` for a full-scale signal.
  */
 function computeBusLevel(analyzer: AnalyserNode, samples: Float32Array<ArrayBuffer>): number {

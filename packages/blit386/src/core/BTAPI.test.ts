@@ -57,7 +57,7 @@ import type { HardwareSettings, IBTDemo, OverlayRow } from './IBTDemo';
 import { collectUsedIndices } from './RenderPaletteUsage';
 
 function resetSingleton(): void {
-    // BTAPI._instance is private; the cast is intentional - there is no public
+    // BTAPI._instance is private; the cast is intentional – there is no public
     // reset API, and this is the least-invasive way to isolate singleton state
     // between tests without modifying production code.
     (BTAPI as unknown as { _instance: BTAPI | null })._instance = null;
@@ -279,7 +279,7 @@ describe('music playback passthroughs', () => {
     });
 
     function setAudio(audio: AudioManager | null): void {
-        // Same test-isolation technique as the "sound playback passthroughs" block above - see
+        // Same test-isolation technique as the "sound playback passthroughs" block above – see
         // its comment for why this cast is safe here.
         (BTAPI.instance as unknown as { audio: AudioManager | null }).audio = audio;
     }
@@ -1336,7 +1336,7 @@ describe('BTAPI', () => {
                     isSplashEnabled: false,
                     displaySize: new Vector2i(320, 240),
                     targetFPS: 60,
-                    // No backend field - defaults to 'webgpu', should auto-fallback
+                    // No backend field – defaults to 'webgpu', should auto-fallback
                 }),
                 init: vi.fn().mockResolvedValue(true),
                 update: vi.fn(),
@@ -1718,8 +1718,8 @@ describe('BTAPI', () => {
         /**
          * Runs game-loop ticks using a stubbed rAF queue seeded before init.
          *
-         * @param demo - Demo passed to {@link BTAPI.init}.
-         * @param stopWhen - Stop draining once this returns true.
+         * @param demo – Demo passed to {@link BTAPI.init}.
+         * @param stopWhen – Stop draining once this returns true.
          * @returns Overlay spy from the initialized instance.
          */
         async function initAndDrainUntil(
@@ -1924,8 +1924,8 @@ describe('BTAPI', () => {
         /**
          * Runs game-loop ticks using a stubbed rAF queue seeded before init.
          *
-         * @param demo - Demo passed to {@link BTAPI.init}.
-         * @param stopWhen - Stop draining once this returns true.
+         * @param demo – Demo passed to {@link BTAPI.init}.
+         * @param stopWhen – Stop draining once this returns true.
          * @returns Overlay spy from the initialized instance.
          */
         async function initAndDrainUntil(
@@ -2042,7 +2042,7 @@ describe('BTAPI', () => {
         /**
          * Drains the stubbed rAF queue until `stopWhen` returns true, spying on real renderer bar fills.
          *
-         * @param demo - Demo passed to {@link BTAPI.init}.
+         * @param demo – Demo passed to {@link BTAPI.init}.
          * @returns Collected bar fills in draw order.
          */
         async function drainAndCollectBarFills(demo: IBTDemo): Promise<{ index: number; rect: Rect2i }[]> {
@@ -2109,10 +2109,10 @@ describe('BTAPI', () => {
 
         /**
          * Matches a bar fill against the audio meter's known bar geometry (width and left-edge X),
-         * not width alone - width-only matching risks false positives from unrelated same-width bars.
+         * not width alone – width-only matching risks false positives from unrelated same-width bars.
          *
-         * @param fill - Collected bar fill from {@link drainAndCollectBarFills}.
-         * @param fill.rect - Filled rectangle in display coordinates.
+         * @param fill – Collected bar fill from {@link drainAndCollectBarFills}.
+         * @param fill.rect – Filled rectangle in display coordinates.
          * @returns `true` when the fill's rect matches one of the three bus bar positions.
          */
         function isAudioMeterBar(fill: { rect: Rect2i }): boolean {
@@ -2891,7 +2891,7 @@ describe('BTAPI splash palette capture', () => {
      * Replaces the private effect manager with one on a fake clock, and installs
      * a palette as if the splash owned it.
      *
-     * @param splashPalette - Palette standing in for the splash's own ramp.
+     * @param splashPalette – Palette standing in for the splash's own ramp.
      */
     function armWithSplashPalette(splashPalette: Palette): void {
         now = 0;
@@ -2927,7 +2927,7 @@ describe('BTAPI splash palette capture', () => {
      * The manager reports a zero delta on its first update after an idle gap, so
      * this primes it before stepping.
      *
-     * @param ms - Milliseconds to advance.
+     * @param ms – Milliseconds to advance.
      */
     function advanceEffects(ms: number): void {
         const manager = (BTAPI.instance as unknown as { paletteEffects: PaletteEffectManager }).paletteEffects;
@@ -3072,9 +3072,9 @@ describe('BTAPI splash lifecycle in init', () => {
      * Builds a demo whose `configure()` returns `settings` and whose `init()` runs
      * `initBody` before resolving.
      *
-     * @param settings - Extra hardware settings merged over the display defaults.
-     * @param initBody - Optional body run inside `init()`.
-     * @param initResult - Value `init()` resolves to.
+     * @param settings – Extra hardware settings merged over the display defaults.
+     * @param initBody – Optional body run inside `init()`.
+     * @param initResult – Value `init()` resolves to.
      * @returns A demo suitable for `BTAPI.init`.
      */
     function makeSplashDemo(
@@ -3103,7 +3103,7 @@ describe('BTAPI splash lifecycle in init', () => {
      * Stubs `requestAnimationFrame` and `performance.now` with a fake frame clock,
      * so the splash's own driver runs to completion without sleeping in real time.
      *
-     * @param stepMs - Milliseconds each frame advances the clock.
+     * @param stepMs – Milliseconds each frame advances the clock.
      */
     function driveAnimationFrames(stepMs = 16): void {
         let clock = 0;
@@ -3347,7 +3347,7 @@ describe('BTAPI splash lifecycle in init', () => {
         const endUpdate = vi.spyOn(KeyboardInput.prototype, 'endUpdate');
 
         // The skip listeners themselves are covered in Splash.dom.test.ts; this asserts
-        // the other half of the swallow - that BTAPI consumes the pending edges before
+        // the other half of the swallow – that BTAPI consumes the pending edges before
         // the game's first update() can observe them.
         await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
 

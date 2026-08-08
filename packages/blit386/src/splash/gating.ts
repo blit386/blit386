@@ -50,7 +50,7 @@ export interface SplashUrlFlags {
  * An off switch should be unambiguous, so `?nosplash` beats `?splash` when both
  * are present.
  *
- * @param signals - See {@link SplashGatingSignals}.
+ * @param signals – See {@link SplashGatingSignals}.
  * @returns `true` when the splash should play.
  */
 export function resolveSplashEnabled(signals: SplashGatingSignals): boolean {
@@ -98,7 +98,7 @@ export function readUrlFlags(): SplashUrlFlags {
 /**
  * Gathers every gating signal and resolves them.
  *
- * @param configureFlag - Explicit `HardwareSettings.isSplashEnabled`, if the demo set one.
+ * @param configureFlag – Explicit `HardwareSettings.isSplashEnabled`, if the demo set one.
  * @returns `true` when the splash should play on this page load.
  */
 export function isSplashEnabled(configureFlag?: boolean): boolean {

@@ -55,7 +55,7 @@ export class PerlinNoise {
     /**
      * Creates a Perlin-noise sampler. Omit `seed` to use `0` (same default as coordinate hashes).
      *
-     * @param seed - Any finite number; only its lower 32 bits affect the field.
+     * @param seed – Any finite number; only its lower 32 bits affect the field.
      * @since 1.5.0
      */
     public constructor(seed = 0) {
@@ -65,7 +65,7 @@ export class PerlinNoise {
     /**
      * Reseeds the noise field. Same seed restarts the same spatial pattern.
      *
-     * @param seed - Any finite number; only its lower 32 bits are used.
+     * @param seed – Any finite number; only its lower 32 bits are used.
      * @since 1.5.0
      */
     public seed(seed: number): void {
@@ -75,7 +75,7 @@ export class PerlinNoise {
     /**
      * Samples 1D Perlin noise at `x`.
      *
-     * @param x - Continuous world coordinate.
+     * @param x – Continuous world coordinate.
      * @returns Smooth value in approximately `[-1, 1]`.
      * @since 1.5.0
      */
@@ -96,8 +96,8 @@ export class PerlinNoise {
     /**
      * Samples 2D Perlin noise at `(x, y)`.
      *
-     * @param x - Continuous world X.
-     * @param y - Continuous world Y.
+     * @param x – Continuous world X.
+     * @param y – Continuous world Y.
      * @returns Smooth value in approximately `[-1, 1]`.
      * @since 1.5.0
      */
@@ -123,9 +123,9 @@ export class PerlinNoise {
     /**
      * Samples 3D Perlin noise at `(x, y, z)`.
      *
-     * @param x - Continuous world X.
-     * @param y - Continuous world Y.
-     * @param z - Continuous world Z.
+     * @param x – Continuous world X.
+     * @param y – Continuous world Y.
+     * @param z – Continuous world Z.
      * @returns Smooth value in approximately `[-1, 1]`.
      * @since 1.5.0
      */
@@ -164,10 +164,10 @@ export class PerlinNoise {
     /**
      * Fractal Brownian motion over {@link noise1D}.
      *
-     * @param x - Continuous world coordinate.
-     * @param octaves - Octave count (default `4`; floored, at least 1).
-     * @param persistence - Amplitude falloff per octave (default `0.5`).
-     * @param lacunarity - Frequency scale per octave (default `2`).
+     * @param x – Continuous world coordinate.
+     * @param octaves – Octave count (default `4`; floored, at least 1).
+     * @param persistence – Amplitude falloff per octave (default `0.5`).
+     * @param lacunarity – Frequency scale per octave (default `2`).
      * @returns Normalized fBm in approximately `[-1, 1]`.
      * @since 1.5.0
      */
@@ -183,11 +183,11 @@ export class PerlinNoise {
     /**
      * Fractal Brownian motion over {@link noise2D}.
      *
-     * @param x - Continuous world X.
-     * @param y - Continuous world Y.
-     * @param octaves - Octave count (default `4`; floored, at least 1).
-     * @param persistence - Amplitude falloff per octave (default `0.5`).
-     * @param lacunarity - Frequency scale per octave (default `2`).
+     * @param x – Continuous world X.
+     * @param y – Continuous world Y.
+     * @param octaves – Octave count (default `4`; floored, at least 1).
+     * @param persistence – Amplitude falloff per octave (default `0.5`).
+     * @param lacunarity – Frequency scale per octave (default `2`).
      * @returns Normalized fBm in approximately `[-1, 1]`.
      * @since 1.5.0
      */
@@ -204,12 +204,12 @@ export class PerlinNoise {
     /**
      * Fractal Brownian motion over {@link noise3D}.
      *
-     * @param x - Continuous world X.
-     * @param y - Continuous world Y.
-     * @param z - Continuous world Z.
-     * @param octaves - Octave count (default `4`; floored, at least 1).
-     * @param persistence - Amplitude falloff per octave (default `0.5`).
-     * @param lacunarity - Frequency scale per octave (default `2`).
+     * @param x – Continuous world X.
+     * @param y – Continuous world Y.
+     * @param z – Continuous world Z.
+     * @param octaves – Octave count (default `4`; floored, at least 1).
+     * @param persistence – Amplitude falloff per octave (default `0.5`).
+     * @param lacunarity – Frequency scale per octave (default `2`).
      * @returns Normalized fBm in approximately `[-1, 1]`.
      * @since 1.5.0
      */

@@ -3,7 +3,7 @@
  *
  * Both build on the per-tick pointer records ui.tick() maintains in the shared context
  * (ui-core.js). They deliberately ignore presses that start on a widget or on the virtual
- * D-pad - a finger that lands on a button belongs to that button, not to a gesture.
+ * D-pad – a finger that lands on a button belongs to that button, not to a gesture.
  *
  * Usage, in a demo's update() after ui.tick():
  *
@@ -28,7 +28,7 @@ let swipeDir = null;
  * Update-side step, run inside ui.tick(): watches every pointer slot for a
  * press-move-release that qualifies as a swipe.
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
  */
 function stepGestures(ctx) {
     swipeDir = null;
@@ -46,7 +46,7 @@ function stepGestures(ctx) {
             continue;
         }
 
-        // Contact just ended - measure the total travel from where it started.
+        // Contact just ended – measure the total travel from where it started.
         const dx = tp.x - tp.downX;
         const dy = tp.y - tp.downY;
         const absX = Math.abs(dx);
@@ -79,8 +79,8 @@ function swipeResult() {
  * Did a press land inside `rect` on this update tick, away from every widget? Use this for
  * large invisible touch zones (for example "tap the left half of the screen to move left").
  *
- * @param {import('./ui-core.js').UiContext} ctx - The shared UI context.
- * @param {import('blit386').Rect2i} rect - The zone to test, in display pixels.
+ * @param {import('./ui-core.js').UiContext} ctx – The shared UI context.
+ * @param {import('blit386').Rect2i} rect – The zone to test, in display pixels.
  * @returns {boolean}
  */
 function tapIn(ctx, rect) {

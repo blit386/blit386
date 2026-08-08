@@ -1,4 +1,4 @@
-/** Default timing chart band height in pixels (RetroBlit uses bottom - 22). */
+/** Default timing chart band height in pixels (RetroBlit uses bottom – 22). */
 export const DEFAULT_TIMING_CHART_HEIGHT = 22;
 
 /** Milliseconds mapped to full chart band height (~one 60 FPS frame budget). */

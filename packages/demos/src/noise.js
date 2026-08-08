@@ -21,7 +21,7 @@
 //
 // WHAT YOU WILL LEARN
 //   - noise2D(x, y) gives a smooth value from -1 to 1 for any spot you ask about
-//   - Three flavors - Value, Perlin, and Simplex - each with a different character
+//   - Three flavors – Value, Perlin, and Simplex – each with a different character
 //   - "Octaves" means stacking the same noise again, smaller and fainter each time, which
 //     is what adds crags to smooth hills. That stack is called fbm
 //   - noise3D(x, y, z) uses the third number as time, which makes clouds drift
@@ -55,7 +55,7 @@ const KIND_NAMES = ['Value', 'Perlin', 'Simplex'];
 // 4 pixels is as fine as this demo goes, and that limit is measured rather than guessed.
 // Each block is one drawing instruction, so 4px blocks mean 4,800 of them per frame, which
 // the engine handles comfortably at a full 60 frames a second. Halving to 2px quadruples
-// that to 19,200 and the frame rate collapses to about one - the cost of a block is small,
+// that to 19,200 and the frame rate collapses to about one – the cost of a block is small,
 // but it is not free, and enough small costs add up to a stall.
 const BLOCK_SIZES = [8, 4];
 const DEFAULT_BLOCK_INDEX = 1;
@@ -164,7 +164,7 @@ class Demo {
             this.palette.set(C_TERRAIN_BASE + i, new Color32(r, g, b));
         }
 
-        // The gray ramp, evenly spaced from near-black to white. Dividing by (steps - 1)
+        // The gray ramp, evenly spaced from near-black to white. Dividing by (steps – 1)
         // makes the last step land exactly on 255.
         for (let i = 0; i < GRAY_STEPS; i++) {
             const level = Math.round((i / (GRAY_STEPS - 1)) * 235) + 20;
@@ -256,8 +256,8 @@ class Demo {
      * Asks one generator for a single value, in whichever way the controls call for.
      *
      * @param {ValueNoise | PerlinNoise | SimplexNoise} generator
-     * @param {number} nx - Position in the landscape, left to right.
-     * @param {number} ny - Position in the landscape, top to bottom.
+     * @param {number} nx – Position in the landscape, left to right.
+     * @param {number} ny – Position in the landscape, top to bottom.
      * @returns {number} A value from about -1 to 1.
      */
     sample(generator, nx, ny) {
@@ -272,7 +272,7 @@ class Demo {
         }
 
         // One octave means the plain noise, with no stacking at all. This is the honest
-        // starting point - everything above it is the same shape with detail piled on.
+        // starting point – everything above it is the same shape with detail piled on.
         if (this.octaves <= 1) {
             return generator.noise2D(nx, ny);
         }
@@ -285,7 +285,7 @@ class Demo {
     /**
      * Turns a 0-to-1 height into the palette slot that should be drawn.
      *
-     * @param {number} t - Height, where 0 is the lowest and 1 the highest.
+     * @param {number} t – Height, where 0 is the lowest and 1 the highest.
      * @returns {number} A palette slot number.
      */
     rampSlot(t) {

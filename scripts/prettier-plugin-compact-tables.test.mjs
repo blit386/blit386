@@ -12,7 +12,7 @@ import prettier from 'prettier';
  *
  * Most cases pass `parser` and `plugins` explicitly so a behavior failure points straight at the
  * plugin. That deliberately bypasses config resolution, so the `repository configuration` suite at
- * the bottom formats through `prettier.config.js` instead - without it, deleting the plugin from the
+ * the bottom formats through `prettier.config.js` instead – without it, deleting the plugin from the
  * config would leave every other case in this file green while the repo formatted padded tables.
  */
 const SCRIPTS_DIR = dirname(fileURLToPath(import.meta.url));

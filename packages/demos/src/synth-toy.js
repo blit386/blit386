@@ -1,5 +1,5 @@
 /**
- * Synth Toy Demo - procedural chip-tune sound effects with no audio files at all.
+ * Synth Toy Demo – procedural chip-tune sound effects with no audio files at all.
  *
  * Prerequisites:
  *   Keyboard Input  https://demos.blit386.dev/keyboard-input
@@ -8,20 +8,20 @@
  * Live version: https://demos.blit386.dev/synth-toy
  *
  * Every sound on this page is built from scratch by the computer, the instant you press a
- * key or tap a button - there are no sound files to download. AudioClip.synth() takes a
+ * key or tap a button – there are no sound files to download. AudioClip.synth() takes a
  * small recipe called SynthParams (a waveform shape, a pitch, a length, and a few optional
  * knobs like an attack/decay/sustain/release envelope, a pitch sweep, and a noise mix) and
  * calculates every single sample of the resulting sound on the spot. BT.synthPreset bundles
- * six of these recipes for common game sounds - jump, pickup, explosion, laser, hit, and a
- * UI blip - tuned by hand so they sound right without you needing to pick every number
+ * six of these recipes for common game sounds – jump, pickup, explosion, laser, hit, and a
+ * UI blip – tuned by hand so they sound right without you needing to pick every number
  * yourself.
  *
  * The Randomize button goes the other way: instead of a hand-tuned recipe, it rolls a brand
  * new SynthParams object with every field chosen at random, inside safe ranges, and shows
  * you exactly what was rolled in the right-hand panel. Play it a few times and you will
- * hear (and see) how much variety a handful of numbers can produce - from a clean sine
+ * hear (and see) how much variety a handful of numbers can produce – from a clean sine
  * "boop" to a noisy sawtooth growl. (The synth engine also supports a vibrato wobble on top
- * of all this - this demo leaves it out to keep the panel small, but it is worth trying
+ * of all this – this demo leaves it out to keep the panel small, but it is worth trying
  * yourself.)
  *
  * The panels and buttons come from the shared UI kit in src/shared/ui.js, so every preset
@@ -33,18 +33,18 @@
  * The engine's built-in overlay also shows live audio meters: little bars that move
  * up and down with how loud each audio bus (main, music, sfx) is right now, plus a
  * count of how many sounds are playing at once. This demo turns that feature on with
- * `isOverlayAudioMetersEnabled: true` in configure() - watch the meters jump every time a
+ * `isOverlayAudioMetersEnabled: true` in configure() – watch the meters jump every time a
  * preset or a randomized sound plays.
  *
  * Try this:
- * - Click anywhere, or press any key, to unlock sound - watch the message at the top change
+ * - Click anywhere, or press any key, to unlock sound – watch the message at the top change
  *   once you do.
  * - Tap the preset buttons (or press J, P, E, L, H, or B) to hear the jump, pickup,
  *   explosion, laser, hit, and blip presets.
- * - Tap Randomize (or press R) to hear a randomized sound - watch the right-hand panel
+ * - Tap Randomize (or press R) to hear a randomized sound – watch the right-hand panel
  *   update with the waveform, frequency, duration, noise mix, and pitch sweep target that
  *   were rolled.
- * - Randomize again and again - notice how differently the exact same few lines of "roll a
+ * - Randomize again and again – notice how differently the exact same few lines of "roll a
  *   random number" code can make the engine sound each time.
  */
 
@@ -58,7 +58,7 @@ import { applyTheme, THEME_DEFAULT_START_SLOT, ui } from './shared/ui.js';
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 
 // The waveform shapes AudioClip.synth() accepts. The engine does not export this list as a
-// runtime value (only as a TypeScript type), so we spell it out here ourselves - the
+// runtime value (only as a TypeScript type), so we spell it out here ourselves – the
 // randomizer picks one of these five names at random for every roll.
 const SYNTH_WAVEFORMS = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
 
@@ -99,7 +99,7 @@ const RANDOM_PITCH_SWEEP_MIN_MULTIPLIER = 0.3;
 const RANDOM_PITCH_SWEEP_MAX_MULTIPLIER = 3.0;
 
 // Upper bound for the random seed handed to AudioClip.synth(). This seed only feeds the
-// engine's internal noise generator - it is not something we need to remember or reproduce
+// engine's internal noise generator – it is not something we need to remember or reproduce
 // here, so any number in this range works.
 const RANDOM_SEED_MAX = 1_000_000;
 
@@ -114,7 +114,7 @@ const RANDOM_SEED_MAX = 1_000_000;
 function buildRandomSynthParams() {
     // BT.random is the engine's shared random number generator. pick() draws one item out of a list, float()
     // returns a decimal between two values, bool() flips a weighted coin, and next() gives a plain decimal from
-    // 0 up to (but not including) 1 - which is exactly the range these normalized knobs want.
+    // 0 up to (but not including) 1 – which is exactly the range these normalized knobs want.
     const waveform = BT.random.pick(SYNTH_WAVEFORMS);
     const frequency = BT.random.float(RANDOM_FREQUENCY_MIN_HZ, RANDOM_FREQUENCY_MAX_HZ);
     const duration = BT.random.float(RANDOM_DURATION_MIN_S, RANDOM_DURATION_MAX_S);
@@ -135,7 +135,7 @@ function buildRandomSynthParams() {
         dutyCycle: BT.random.next(),
         seed: BT.random.int(RANDOM_SEED_MAX),
         // Only glide the pitch about half the time, and only when we do, add the field at
-        // all - AudioClip.synth() treats a missing pitchSweep as "stay at one pitch."
+        // all – AudioClip.synth() treats a missing pitchSweep as "stay at one pitch."
         ...(hasPitchSweep
             ? {
                   pitchSweep: {
@@ -190,7 +190,7 @@ class Demo {
             // (unfilled) track behind each audio meter bar, so it must match the screen
             // background or those seams would show up as a mismatched color. The shared UI
             // theme puts its background color at THEME_DEFAULT_START_SLOT (applyTheme()'s
-            // default start slot - see init() below); configure() runs before init(), so we
+            // default start slot – see init() below); configure() runs before init(), so we
             // reference the constant directly instead of calling applyTheme() early.
             overlayStyle: {
                 gapPaletteIndex: THEME_DEFAULT_START_SLOT,
@@ -205,7 +205,7 @@ class Demo {
      * @returns {Promise<boolean>}
      */
     async init() {
-        // AudioClip.synth() is async - it has to calculate every sample before it can hand
+        // AudioClip.synth() is async – it has to calculate every sample before it can hand
         // back a clip. Promise.all() starts all six calculations at once and waits for them
         // all to finish, the same way audio-basics preloads its sound files up front.
         this.presetClips = await Promise.all(PRESET_DEFINITIONS.map((def) => AudioClip.synth(def.factory())));
@@ -252,13 +252,13 @@ class Demo {
 
     /**
      * Shows the shared unlock reminder until audio is unlocked, then switches to a plain
-     * reminder of the controls. A borderless group - just one line of text pinned under
+     * reminder of the controls. A borderless group – just one line of text pinned under
      * the title strip.
      */
     renderUnlockPrompt() {
         ui.begin('topLeft', { y: 28 });
 
-        // The shared "click to enable sound" row - it draws itself only while sound is
+        // The shared "click to enable sound" row – it draws itself only while sound is
         // still locked, and disappears on its own after the first click or key press.
         ui.audioUnlockHint();
 
@@ -272,7 +272,7 @@ class Demo {
 
     /**
      * Left-hand panel: one button per preset, plus the last one played. Each button fires
-     * on click, tap, or its keyboard shortcut - ui.button() treats all three the same.
+     * on click, tap, or its keyboard shortcut – ui.button() treats all three the same.
      */
     renderPresetPanel() {
         ui.begin('bottomLeft');
@@ -345,14 +345,14 @@ class Demo {
         // The kit calls render() synchronously, and this handler cannot be async, so we
         // start the render-and-play and let it run in the background instead of waiting for
         // it. The .catch() just logs a problem instead of crashing the page, as a safety
-        // net - it should never actually trigger with the ranges above.
+        // net – it should never actually trigger with the ranges above.
         this.playRandomParams(params).catch((error) => console.error(error));
     }
 
     /**
      * Renders a SynthParams recipe into a clip and plays it.
      *
-     * @param {SynthParams} params - Recipe to render and play.
+     * @param {SynthParams} params – Recipe to render and play.
      * @returns {Promise<void>}
      */
     async playRandomParams(params) {

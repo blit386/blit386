@@ -160,7 +160,7 @@ describe('GameLoop', () => {
 
             p.isRunning = true;
             p.lastUpdateTime = 0;
-            p.tick(10000); // huge pause - MAX_STEPS clamp leaves 0 leftover
+            p.tick(10000); // huge pause – MAX_STEPS clamp leaves 0 leftover
 
             const alpha = loop.getRenderAlpha();
 
@@ -244,7 +244,7 @@ describe('GameLoop', () => {
             // Execute outer RAF callback.
             rafCallbacks[0]?.();
 
-            // Execute inner RAF callback - sets lastUpdateTime and schedules first tick.
+            // Execute inner RAF callback – sets lastUpdateTime and schedules first tick.
             rafCallbacks[1]?.();
 
             expect(p.lastUpdateTime).toBeGreaterThan(0);
@@ -300,7 +300,7 @@ describe('GameLoop', () => {
 
             p.isRunning = true;
             p.lastUpdateTime = 0;
-            p.tick(10000); // huge pause - MAX_STEPS = 8 caps at 8 updates
+            p.tick(10000); // huge pause – MAX_STEPS = 8 caps at 8 updates
 
             expect(onUpdate).toHaveBeenCalledTimes(8);
         });
@@ -420,7 +420,7 @@ describe('GameLoop', () => {
 
             const event = onFrameDrop.mock.calls[0]?.[0] as FrameDropEvent;
 
-            expect(event.droppedFrames).toBe(2); // round(50 / 16.67) - 1 = 2
+            expect(event.droppedFrames).toBe(2); // round(50 / 16.67) – 1 = 2
             expect(event.deltaTime).toBe(50);
             expect(event.expectedInterval).toBeCloseTo(16.67);
         });
@@ -434,7 +434,7 @@ describe('GameLoop', () => {
 
             p.isRunning = true;
             p.lastUpdateTime = 0;
-            p.tick(16); // 1.6x baseline - between 1 and 2 in raw frame terms
+            p.tick(16); // 1.6x baseline – between 1 and 2 in raw frame terms
 
             expect(onFrameDrop).toHaveBeenCalledOnce();
 

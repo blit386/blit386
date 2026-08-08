@@ -14,7 +14,7 @@ export class FpsSampler {
     /**
      * Creates a sampler seeded with the configured target rate.
      *
-     * @param targetFps - Configured target FPS used until the first sample arrives.
+     * @param targetFps – Configured target FPS used until the first sample arrives.
      */
     constructor(targetFps: number) {
         this.#targetFps = targetFps;

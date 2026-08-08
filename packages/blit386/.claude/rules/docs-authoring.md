@@ -75,5 +75,5 @@ Renaming or splitting a published doc:
    table padding).
 
 After any doc change: add new proper nouns / coined words to the root `cspell.json`; re-sync the mirror
-(`pnpm run sync:docs` in `packages/website`) - required after every edit to a published doc's content, not just when a
+(`pnpm run sync:docs` in `packages/website`) – required after every edit to a published doc's content, not just when a
 sitemap entry changes.

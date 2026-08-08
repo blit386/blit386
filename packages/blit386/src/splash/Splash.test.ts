@@ -22,7 +22,7 @@ describe('Splash state machine', () => {
     /**
      * Advances the fake clock and steps the splash once.
      *
-     * @param ms - Milliseconds to advance.
+     * @param ms – Milliseconds to advance.
      */
     function step(ms: number): void {
         now += ms;

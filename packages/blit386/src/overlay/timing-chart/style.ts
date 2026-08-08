@@ -35,8 +35,8 @@ const pickOverlayBarTextGap = (
 /**
  * Resolves timing chart palette indices from overlay and chart-specific settings.
  *
- * @param overlayStyle - Global overlay bar/text indices from hardware settings.
- * @param chartStyle - Optional timing-chart palette overrides.
+ * @param overlayStyle – Global overlay bar/text indices from hardware settings.
+ * @param chartStyle – Optional timing-chart palette overrides.
  * @returns Resolved indices for chart draw and semantic severity tints.
  */
 export function resolveTimingChartStyle(
@@ -65,9 +65,9 @@ export function resolveTimingChartStyle(
  * Scales linearly so `fullScaleMs` fills the chart band. Any non-zero sample draws at
  * least one pixel so lightweight demos (sub-millisecond `update()` / `render()`) stay visible.
  *
- * @param ms - Sample value in milliseconds.
- * @param chartHeight - Chart band height in pixels.
- * @param fullScaleMs - Milliseconds that map to full band height.
+ * @param ms – Sample value in milliseconds.
+ * @param chartHeight – Chart band height in pixels.
+ * @param fullScaleMs – Milliseconds that map to full band height.
  * @returns Clamped offset in pixels (0 when sample is zero).
  */
 export function computeTimingChartBarHeight(ms: number, chartHeight: number, fullScaleMs: number): number {
@@ -83,9 +83,9 @@ export function computeTimingChartBarHeight(ms: number, chartHeight: number, ful
 /**
  * Maps submitted vertex count to a vertical offset within a pressure sub-band (rich diagnostics mode).
  *
- * @param vertices - Submitted vertices for one pipeline this frame.
- * @param regionHeight - Height of the pressure sub-band in pixels.
- * @param maxVertices - Pipeline capacity (typically 50k).
+ * @param vertices – Submitted vertices for one pipeline this frame.
+ * @param regionHeight – Height of the pressure sub-band in pixels.
+ * @param maxVertices – Pipeline capacity (typically 50k).
  * @returns Clamped offset in pixels (0 when vertices is zero).
  */
 export function computeTimingChartPressureHeight(vertices: number, regionHeight: number, maxVertices: number): number {
@@ -103,9 +103,9 @@ export function computeTimingChartPressureHeight(vertices: number, regionHeight:
  *
  * Uses the same baseline and bar-height scale as timing chart dots.
  *
- * @param ms - Threshold in milliseconds.
- * @param chartRect - Chart band bounds.
- * @param fullScaleMs - Milliseconds mapped to full band height.
+ * @param ms – Threshold in milliseconds.
+ * @param chartRect – Chart band bounds.
+ * @param fullScaleMs – Milliseconds mapped to full band height.
  * @returns Screen Y for a 1 px row, or `null` when the line would not be visible.
  */
 export function computeTimingChartGridLineY(
@@ -132,9 +132,9 @@ export function computeTimingChartGridLineY(
  *
  * Dots anchor to the bottom band row for light samples (see {@link timingChartBaselineY}).
  *
- * @param ms - Sample value in milliseconds.
- * @param chartRect - Chart band bounds.
- * @param fullScaleMs - Milliseconds mapped to full band height.
+ * @param ms – Sample value in milliseconds.
+ * @param chartRect – Chart band bounds.
+ * @param fullScaleMs – Milliseconds mapped to full band height.
  * @returns Screen Y for the dot, or `null` when the sample is zero.
  */
 export function computeTimingChartDotY(
@@ -165,7 +165,7 @@ export function computeTimingChartDotY(
 /**
  * Bottom row of the timing chart band (zero / sub-ms samples sit here).
  *
- * @param chartRect - Chart band bounds from layout plan.
+ * @param chartRect – Chart band bounds from layout plan.
  * @returns Screen Y of the last inclusive row in the band.
  */
 export function timingChartBaselineY(chartRect: Rect2i): number {
@@ -175,8 +175,8 @@ export function timingChartBaselineY(chartRect: Rect2i): number {
 /**
  * Whether a mapped grid line should be drawn (skips top and bottom band edges).
  *
- * @param y - Screen Y from {@link computeTimingChartGridLineY}.
- * @param chartRect - Chart band bounds.
+ * @param y – Screen Y from {@link computeTimingChartGridLineY}.
+ * @param chartRect – Chart band bounds.
  * @returns `true` when the row is strictly inside the band and not the baseline.
  */
 export function isTimingChartGridLineAtY(y: number, chartRect: Rect2i): boolean {
@@ -187,8 +187,8 @@ export function isTimingChartGridLineAtY(y: number, chartRect: Rect2i): boolean 
  * Backward-compatible alias for {@link isTimingChartGridLineAtY}.
  *
  * @deprecated Deprecated since 1.1.0 (2026-05-31). Use {@link isTimingChartGridLineAtY} instead.
- * @param y - Screen Y from {@link computeTimingChartGridLineY}.
- * @param chartRect - Chart band bounds.
+ * @param y – Screen Y from {@link computeTimingChartGridLineY}.
+ * @param chartRect – Chart band bounds.
  * @returns `true` when the row is strictly inside the band and not the baseline.
  */
 export const shouldDrawTimingChartGridLineY = isTimingChartGridLineAtY;
@@ -196,7 +196,7 @@ export const shouldDrawTimingChartGridLineY = isTimingChartGridLineAtY;
 /**
  * Frame-budget grid marker in milliseconds from configured fixed-step rate.
  *
- * @param targetFps - Configured `targetFPS` (clamped to at least 1).
+ * @param targetFps – Configured `targetFPS` (clamped to at least 1).
  * @returns `1000 / targetFps`.
  */
 export function timingChartFrameBudgetMs(targetFps: number): number {
@@ -206,8 +206,8 @@ export function timingChartFrameBudgetMs(targetFps: number): number {
 /**
  * Writes timing-chart grid marker values (fixed thresholds plus frame budget) into `out`.
  *
- * @param targetFps - Configured fixed-step rate for the dynamic budget line.
- * @param out - Reusable buffer; must hold at least `TIMING_CHART_GRID_MARKER_MS.length + 1` elements.
+ * @param targetFps – Configured fixed-step rate for the dynamic budget line.
+ * @param out – Reusable buffer; must hold at least `TIMING_CHART_GRID_MARKER_MS.length + 1` elements.
  * @returns Number of marker values written.
  */
 export function writeTimingChartGridMarkers(targetFps: number, out: Float32Array): number {

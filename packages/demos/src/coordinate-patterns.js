@@ -10,7 +10,7 @@
 // WHAT YOU WILL SEE
 // A world you can scroll around forever with the arrow keys, the on-screen D-pad, or a
 // swipe. Press "Jump far" to fling yourself thousands of tiles away, then "Home" to come
-// straight back - and find every tile exactly where you left it.
+// straight back – and find every tile exactly where you left it.
 //
 // Nothing was saved. The demo stores zero tiles. Each square works out what it is from
 // nothing but its own position.
@@ -34,8 +34,8 @@
 // Noise demo is for: https://demos.blit386.dev/noise
 //
 // WATCH THE LAYER SLIDER CLOSELY
-// The ground comes from hash2i, which only knows x and y - so sliding the layer leaves the
-// landscape untouched. The little rocks come from hash3i, which also knows the layer - so
+// The ground comes from hash2i, which only knows x and y – so sliding the layer leaves the
+// landscape untouched. The little rocks come from hash3i, which also knows the layer – so
 // they change completely. Same place, different detail: that is the third number at work.
 //
 // The engine splits work the usual way: update() moves things; render() only draws.
@@ -95,8 +95,8 @@ const TERRAIN_GRASS = 3;
  * There is no list of tiles anywhere in this demo. This function is the world: hand it a
  * position and it hands back the ground, the same answer every time, forever.
  *
- * @param {number} tx - Tile column. Can be any whole number, including huge and negative ones.
- * @param {number} ty - Tile row.
+ * @param {number} tx – Tile column. Can be any whole number, including huge and negative ones.
+ * @param {number} ty – Tile row.
  * @returns {number} One of the TERRAIN_* values.
  */
 function terrainAt(tx, ty) {
@@ -137,7 +137,7 @@ class Demo {
     theme = null;
 
     // Where we are looking, measured in world pixels. These two numbers are the only thing
-    // the demo remembers about the world - and they are a position, not a map.
+    // the demo remembers about the world – and they are a position, not a map.
     camX = 0;
     camY = 0;
 
@@ -145,7 +145,7 @@ class Demo {
     layer = 0;
 
     /**
-     * Builds the palette. There is no world to build - that is the whole idea.
+     * Builds the palette. There is no world to build – that is the whole idea.
      *
      * @returns {Promise<boolean>}
      */
@@ -179,7 +179,7 @@ class Demo {
         ui.tick();
 
         // Held keys and the on-screen D-pad both scroll. isKeyDown is "held right now", which
-        // is safe to read from either update() or render() - unlike a key press, which is a
+        // is safe to read from either update() or render() – unlike a key press, which is a
         // one-off event and must be read here.
         if (BT.isKeyDown('ArrowLeft') || ui.dpad.isDown('left')) {
             this.camX -= SCROLL_SPEED;
@@ -296,7 +296,7 @@ class Demo {
 
                 // The decoration is the only thing that knows about the layer. hash3i takes a
                 // third coordinate, so changing the layer gives a completely different answer
-                // for the very same tile - while the ground underneath, which came from
+                // for the very same tile – while the ground underneath, which came from
                 // hash2i, does not budge.
                 //
                 // A dot is too small to be worth trimming, so one that would poke outside the
@@ -321,7 +321,7 @@ class Demo {
         ui.panel('Travel');
 
         if (ui.button('Jump far', { key: 'KeyJ' })) {
-            // Thousands of tiles in one step. A world held in memory could not do this - there
+            // Thousands of tiles in one step. A world held in memory could not do this – there
             // would be nothing out there yet. Here there is nothing to prepare.
             this.camX += JUMP_DISTANCE;
             this.camY += JUMP_DISTANCE;

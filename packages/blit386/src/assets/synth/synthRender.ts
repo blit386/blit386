@@ -29,9 +29,9 @@ const CLIP_MAX = 1;
  * continuous instead of producing phase discontinuities. Output is clamped to `[-1, 1]`
  * regardless of envelope, volume, or noise mix.
  *
- * @param params - Synthesis parameters. Assumed already validated by
+ * @param params – Synthesis parameters. Assumed already validated by
  *   {@link validateSynthParams}.
- * @param sampleRate - Output sample rate in Hz.
+ * @param sampleRate – Output sample rate in Hz.
  * @returns Rendered mono samples, `Math.round(params.duration * sampleRate)` long.
  */
 export function renderSynthSamples(params: SynthParams, sampleRate: number): Float32Array<ArrayBuffer> {
@@ -70,11 +70,11 @@ export function renderSynthSamples(params: SynthParams, sampleRate: number): Flo
 /**
  * Computes one waveform sample, blending in white noise when `noiseMix` is positive.
  *
- * @param waveform - Oscillator shape for this clip.
- * @param phase - Carrier phase in [0, 1) at this sample.
- * @param dutyCycle - Resolved duty cycle, used only by `'square'`.
- * @param noiseMix - Resolved noise mix in [0, 1]; ignored when `waveform` is already `'noise'`.
- * @param rng - Seeded PRNG shared across the whole render, advanced by this call whenever noise
+ * @param waveform – Oscillator shape for this clip.
+ * @param phase – Carrier phase in [0, 1) at this sample.
+ * @param dutyCycle – Resolved duty cycle, used only by `'square'`.
+ * @param noiseMix – Resolved noise mix in [0, 1]; ignored when `waveform` is already `'noise'`.
+ * @param rng – Seeded PRNG shared across the whole render, advanced by this call whenever noise
  *   is drawn.
  * @returns Sample in [-1, 1] before envelope/volume are applied.
  */
@@ -97,9 +97,9 @@ function renderTone(
 /**
  * Clamps `value` to `[min, max]`.
  *
- * @param value - Value to clamp.
- * @param min - Lower bound.
- * @param max - Upper bound.
+ * @param value – Value to clamp.
+ * @param min – Lower bound.
+ * @param max – Upper bound.
  * @returns Clamped value.
  */
 function clamp(value: number, min: number, max: number): number {

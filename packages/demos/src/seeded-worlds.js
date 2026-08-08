@@ -7,7 +7,7 @@
 //   Random Basics https://demos.blit386.dev/random-basics
 //
 // WHAT YOU WILL SEE
-// Two little worlds side by side. Each one was built out of random numbers - the hills, the
+// Two little worlds side by side. Each one was built out of random numbers – the hills, the
 // buildings, the trees, the stars. Above each world is the number it grew from, called its
 // "seed". Press the buttons to give either side a new seed and watch it rebuild.
 //
@@ -81,15 +81,15 @@ const BUILDING_TINTS = 4;
  *
  * This is the heart of the demo. Every random number it needs comes from BT.random, and
  * BT.random was just told where to start, so running this twice with the same seed walks
- * through the exact same numbers in the exact same order - and therefore builds the exact
+ * through the exact same numbers in the exact same order – and therefore builds the exact
  * same world.
  *
- * @param {number} seed - The number this world grows from.
+ * @param {number} seed – The number this world grows from.
  * @returns {{ seed: number, hills: Array<number>, buildings: Array<object>, trees: Array<object>, stars: Array<Vector2i> }}
  */
 function generateWorld(seed) {
     // This is the line that makes everything below repeatable. From here on the engine's
-    // random numbers are no longer a surprise - they are decided by `seed`.
+    // random numbers are no longer a surprise – they are decided by `seed`.
     BT.randomSeed(seed);
 
     // Stars first, scattered across the top two thirds of the box.
@@ -176,7 +176,7 @@ class Demo {
     // Slot map for the shared UI kit theme, filled in by applyTheme() during init().
     theme = null;
 
-    // The two worlds. Each remembers everything it was built from - that is the difference
+    // The two worlds. Each remembers everything it was built from – that is the difference
     // between this demo and the Coordinate Patterns one, which remembers nothing at all:
     // https://demos.blit386.dev/coordinate-patterns
     left = null;
@@ -193,7 +193,7 @@ class Demo {
     //
     // It cannot be the shared BT.random, because generateWorld() reseeds that one. Drawing the
     // next seed from a stream we just reseeded makes the answer a fixed consequence of the
-    // seed we reseeded it with - so "Copy left seed" followed by "New right" would hand back
+    // seed we reseeded it with – so "Copy left seed" followed by "New right" would hand back
     // the very same number every time, and the button would look broken.
     /** @type {Random | null} */
     seedPicker = null;
@@ -231,7 +231,7 @@ class Demo {
         this.seedPicker = new Random();
 
         // Nobody has chosen a seed yet. The engine seeded itself from the clock when it
-        // started up, and seedValue hands that number back - so we can build a world from
+        // started up, and seedValue hands that number back – so we can build a world from
         // it and still show which number it was.
         //
         // That is the part worth noticing: even the run you did not plan has a seed you can
@@ -265,7 +265,7 @@ class Demo {
         ui.caption(WORLD_LEFT_X, 8, `seed ${this.left.seed}`);
         ui.caption(WORLD_RIGHT_X, 8, `seed ${this.right.seed}`);
 
-        // When both seeds match, say so plainly - this is the moment the demo exists for.
+        // When both seeds match, say so plainly – this is the moment the demo exists for.
         if (this.left.seed === this.right.seed) {
             ui.caption(96, WORLD_Y + WORLD_H + 4, 'Same seed, same world', { color: 'accent' });
         } else if (this.seedsWereAutomatic) {
@@ -282,7 +282,7 @@ class Demo {
      * Draws one world inside its frame.
      *
      * @param {{ hills: Array<number>, buildings: Array<object>, trees: Array<object>, stars: Array<Vector2i> }} world
-     * @param {number} originX - Left edge of this world's box on screen.
+     * @param {number} originX – Left edge of this world's box on screen.
      */
     renderWorld(world, originX) {
         // Everything inside a world is stored in "world coordinates" starting at 0, so each
@@ -340,7 +340,7 @@ class Demo {
         }
 
         if (ui.button('Copy left seed', { key: 'KeyE' })) {
-            // Nothing about the right world is copied here - only the number. The world is
+            // Nothing about the right world is copied here – only the number. The world is
             // rebuilt from scratch, and it comes back identical because the number is the same.
             this.right = generateWorld(this.left.seed);
             this.seedsWereAutomatic = false;
@@ -374,7 +374,7 @@ class Demo {
         // intInclusive(a, b) can return b itself, unlike int(a, b) which stops just short of
         // it. For a seed range meant to read as "1000 to 9999", inclusive is what we want.
         //
-        // This comes from seedPicker rather than BT.random - see the field for why.
+        // This comes from seedPicker rather than BT.random – see the field for why.
         return this.seedPicker.intInclusive(SEED_MIN, SEED_MAX);
     }
 

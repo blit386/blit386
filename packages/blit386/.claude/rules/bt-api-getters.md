@@ -19,7 +19,7 @@ Zero-argument read-only values on `BT`:
   `?backend=software`); `null` before `BT.init()`
 - Loop: `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`
 - Runtime: `activeBackend`, `camera`, `palette`, `random`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation`,
-  `loadingAssetsCount` — `activeBackend` is `null` before init or on failure; `isAudioUnlocked` is `false` until the
+  `loadingAssetsCount` – `activeBackend` is `null` before init or on failure; `isAudioUnlocked` is `false` until the
   first user gesture resumes the audio context; `isMusicPlaying` is `true` while the music player has a live current
   track; `screenOrientation` is the current `screen.orientation.type` string, or `null` when the API is unavailable;
   `loadingAssetsCount` is the combined count of in-flight `AssetLoader` + `AudioClip` loads (poll for a loading screen);
@@ -51,7 +51,7 @@ frame; calling methods on `BT.random` advances the shared stream.
 - Any parameter: `pointerPos(0)`, `isDown(BT.BTN_A)`, `cameraClamp(...)`
 - Boolean queries with parameters (Tier A; always methods on `BT`): `isPointerActive(0)`, `isDown(...)`,
   `isPressed(...)`, `isReleased(...)`, `isKeyDown(...)`, `isKeyPressed(...)`, `isKeyReleased(...)`
-- Side-effect booleans (Tier C): `Timer.fireIfElapsed()` — not `is*` because the call advances state
+- Side-effect booleans (Tier C): `Timer.fireIfElapsed()` – not `is*` because the call advances state
 - Async: `captureFrame`, `downloadFrame`
 
 Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-deprecations.md` (`pointerPosValid`,
@@ -68,7 +68,7 @@ Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-d
 - Use `-ing` for configure flags that enable ongoing behavior (`isDetectingDroppedFrames`).
 - Hold vs edge on `BT`: `isDown` / `isKeyDown`; `isPressed` / `isReleased`; `isKeyPressed` / `isKeyReleased`. Public
   `BT` uses `isDown`; internal input classes use `isButtonDown` / `isKeyDown` and related names. No embedded second `Is`
-  — audit with `\bis[A-Za-z]+Is[A-Z]`.
+  – audit with `\bis[A-Za-z]+Is[A-Z]`.
 - Identifier acronyms: `canvasID`, `containerID` (not `canvasId`).
 
 ## Naming when adding getters

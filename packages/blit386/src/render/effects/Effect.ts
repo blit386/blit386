@@ -55,11 +55,11 @@ export interface Effect {
      * Idempotent: calling twice on the same instance is undefined behavior; the
      * chain guarantees it is only invoked once per effect instance.
      *
-     * @param device - WebGPU device used for resource creation.
-     * @param format - Color attachment format for this chain (`r8uint` for the pixel
+     * @param device – WebGPU device used for resource creation.
+     * @param format – Color attachment format for this chain (`r8uint` for the pixel
      *   tier, swap-chain format for the display tier) so ping-pong textures match the
      *   effect pipelines.
-     * @param displaySize - Chain attachment dimensions in pixels for this pass
+     * @param displaySize – Chain attachment dimensions in pixels for this pass
      *   (logical size for the pixel tier, output size for the display tier).
      */
     init(device: GPUDevice, format: GPUTextureFormat, displaySize: Vector2i): void;
@@ -69,8 +69,8 @@ export interface Effect {
      *
      * Called by {@link PostProcessChain} immediately before {@link encodePass}.
      *
-     * @param deltaMs - Wall-clock milliseconds since the previous frame.
-     * @param sourceSize - Pixel dimensions of the source texture for this pass.
+     * @param deltaMs – Wall-clock milliseconds since the previous frame.
+     * @param sourceSize – Pixel dimensions of the source texture for this pass.
      */
     updateUniforms(deltaMs: number, sourceSize: Vector2i): void;
 
@@ -81,9 +81,9 @@ export interface Effect {
      * with `clear` (any clearColor; the shader overwrites the entire surface).
      * The pass binds the source texture view as its sampled input.
      *
-     * @param encoder - Active command encoder owned by the renderer.
-     * @param sourceView - View of the texture to sample from.
-     * @param destView - View of the texture to render into.
+     * @param encoder – Active command encoder owned by the renderer.
+     * @param sourceView – View of the texture to sample from.
+     * @param destView – View of the texture to render into.
      */
     encodePass(encoder: GPUCommandEncoder, sourceView: GPUTextureView, destView: GPUTextureView): void;
 

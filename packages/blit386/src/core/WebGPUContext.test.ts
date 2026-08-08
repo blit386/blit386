@@ -41,7 +41,7 @@ describe('initWebGPU', () => {
     });
 
     it('should return null when navigator.gpu is absent', async () => {
-        // Use Object.defineProperty to install a navigator without .gpu - direct
+        // Use Object.defineProperty to install a navigator without .gpu – direct
         // property deletion throws in Node.js when navigator is null/non-writable.
         Object.defineProperty(globalThis, 'navigator', {
             value: { userAgent: 'test' },

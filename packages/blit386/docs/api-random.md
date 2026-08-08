@@ -113,7 +113,7 @@ rng.direction8(); // cardinals plus diagonals
 
 ## Coordinate hashing
 
-Stateless spatial lookups for chunked and procedural worlds. Same coordinates and seed always return the same value - no
+Stateless spatial lookups for chunked and procedural worlds. Same coordinates and seed always return the same value – no
 stored RNG state, so you do not need an instance per chunk. Complements `Random` (a sequence generator).
 
 <Since symbol="hash1i" />
@@ -166,7 +166,7 @@ classes are distinct from the post-process `Noise` display effect (GPU grain).
 | `PerlinNoise` | Same surface as `ValueNoise` (gradient Perlin) |
 | `SimplexNoise` | `noise2D` / `noise3D`, `fbm2D` / `fbm3D` (no 1D) |
 
-Omit the constructor seed (or pass `0`) for a fixed default world seed - same convention as `hash2i`. Call `seed(n)` to
+Omit the constructor seed (or pass `0`) for a fixed default world seed – same convention as `hash2i`. Call `seed(n)` to
 switch fields. fBm defaults: `octaves = 4`, `persistence = 0.5`, `lacunarity = 2`. Octave amplitudes are normalized so
 fBm stays in approximately `[-1, 1]`.
 

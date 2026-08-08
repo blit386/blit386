@@ -1,5 +1,5 @@
 /**
- * Audio Buses Demo - mixer volume sliders, mute toggles, and a music-ducking alert.
+ * Audio Buses Demo – mixer volume sliders, mute toggles, and a music-ducking alert.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:
@@ -10,22 +10,22 @@
  *
  * Every sound in the engine flows through one of three "buses" before it reaches your
  * speakers: `main`, `music`, and `sfx`. Think of a bus like a volume knob that affects a
- * whole category of sound at once - turning down `music` fades every music track without
+ * whole category of sound at once – turning down `music` fades every music track without
  * touching sound effects, and turning down `main` fades everything together.
  *
- * Drag any of the three sliders below (mouse or finger - the whole UI is touch-friendly) to
+ * Drag any of the three sliders below (mouse or finger – the whole UI is touch-friendly) to
  * change that bus's volume with BT.audioVolumeSet(). Tap a Mute checkbox to silence a bus
- * with BT.audioMuteSet() - notice the slider value does not change when you mute; muting
+ * with BT.audioMuteSet() – notice the slider value does not change when you mute; muting
  * hides the volume, it does not erase it. BT.audioVolumeGet() and BT.isAudioMuted() read
  * those two things back separately.
  *
  * The Alert button plays a short sound effect while "ducking" (temporarily lowering) the
  * music bus's volume so the alert is easy to hear over the background music, then fades the
- * music back up afterward - the same trick movies and games use so an important sound is
+ * music back up afterward – the same trick movies and games use so an important sound is
  * never buried under the soundtrack.
  *
  * The panels, sliders, checkboxes, and the button all come from the shared UI kit in
- * src/shared/ui.js - the same look every demo in this series uses. The kit works
+ * src/shared/ui.js – the same look every demo in this series uses. The kit works
  * "immediate-mode" style: render() simply declares the widgets it wants each frame, and the
  * kit draws them and answers clicks and taps on the spot.
  *
@@ -98,7 +98,7 @@ class Demo {
             displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
             // Live per-bus level meters and a voice-count readout in the overlay (off by default).
             isOverlayAudioMetersEnabled: true,
-            // Space is the Alert shortcut - keep the page from scrolling when it is pressed.
+            // Space is the Alert shortcut – keep the page from scrolling when it is pressed.
             isCapturingKeyboardScroll: true,
         };
     }
@@ -113,7 +113,7 @@ class Demo {
         this.musicClip = await AudioClip.load('/audio/music-calm.wav');
 
         // BT.synthPreset.hit() is one of the six built-in sound recipes Synth Toy
-        // explores - a short, punchy stinger, a good fit for an alert.
+        // explores – a short, punchy stinger, a good fit for an alert.
         this.alertClip = await AudioClip.synth(BT.synthPreset.hit());
 
         this.palette = BT.paletteCreate(256);
@@ -126,7 +126,7 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // Music started before the page is unlocked is "remembered" and begins the
-        // instant you click or press a key - unlike BT.soundPlay(), which drops sounds
+        // instant you click or press a key – unlike BT.soundPlay(), which drops sounds
         // played too early.
         BT.musicPlay(this.musicClip, { loop: true });
 
@@ -171,7 +171,7 @@ class Demo {
         ui.end();
 
         // The mixer panel, pinned just below the title strip. Width and height size
-        // themselves to the widest row and the number of rows - no layout math here.
+        // themselves to the widest row and the number of rows – no layout math here.
         ui.begin('topLeft', { y: 30 });
         ui.panel('Mixer');
 
@@ -181,12 +181,12 @@ class Demo {
 
         ui.separator();
 
-        // The button reports a click, a tap, or its Space shortcut - all three the same way.
+        // The button reports a click, a tap, or its Space shortcut – all three the same way.
         if (ui.button('Alert (Space)', { key: 'Space' })) {
             this.triggerAlert();
         }
 
-        // The shared "click to enable sound" row - it draws itself only while sound is
+        // The shared "click to enable sound" row – it draws itself only while sound is
         // still locked, and disappears on its own after the first click or key press.
         ui.audioUnlockHint();
 
@@ -203,7 +203,7 @@ class Demo {
     /**
      * One bus's controls: a volume slider and a mute checkbox.
      *
-     * The engine itself is the single source of truth here - every frame we read the
+     * The engine itself is the single source of truth here – every frame we read the
      * current volume and mute state back from the audio system, show them, and only write
      * a new value when the widget reports a change. That way the UI can never drift out of
      * sync with what the engine is actually doing (for example during the alert duck).

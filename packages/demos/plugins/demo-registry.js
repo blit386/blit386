@@ -20,9 +20,9 @@ export const NAV_HIDDEN_SLUGS = new Set(['barebones']);
 /**
  * Build the list of demos by scanning src/*.js for number-free kebab-case files.
  * Order comes from `DEMO_ORDER` (not filenames). Each entry's title defaults to
- * "BLIT386 Demo - Title Cased Topic" and may be overridden by a `@pageTitle ...` tag
+ * "BLIT386 Demo – Title Cased Topic" and may be overridden by a `@pageTitle ...` tag
  * in the JS file header. `navLabel` is always the short title (searchable, no number).
- * @param {string} rootDir - Absolute path to the project root (Vite's config.root).
+ * @param {string} rootDir – Absolute path to the project root (Vite's config.root).
  * @returns {Array<{
  *   slug: string,
  *   scriptFile: string,
@@ -98,7 +98,7 @@ export function buildRegistry(rootDir) {
 
 /**
  * Read the first HEADER_SCAN_BYTES of a file as UTF-8 text.
- * @param {string} path - Absolute file path
+ * @param {string} path – Absolute file path
  * @returns {string}
  */
 function readHeader(path) {
@@ -109,8 +109,8 @@ function readHeader(path) {
 
 /**
  * Derive the page title for a demo.
- * @param {string} slug - Kebab-case slug, e.g. "sprite-effects"
- * @param {string} header - First chunk of the JS source (to scan for @pageTitle)
+ * @param {string} slug – Kebab-case slug, e.g. "sprite-effects"
+ * @param {string} header – First chunk of the JS source (to scan for @pageTitle)
  * @returns {string}
  */
 function deriveTitle(slug, header) {
@@ -128,8 +128,8 @@ function deriveTitle(slug, header) {
  * "Flurry" or "PipBoy CRT". Strips a leading "BLIT386 Demo … - " prefix from `@pageTitle`
  * overrides that include it, so nav labels stay uniform regardless of how each demo's
  * `@pageTitle` is written.
- * @param {string} slug - Kebab-case slug, e.g. "sprite-effects"
- * @param {string} header - First chunk of the JS source (to scan for @pageTitle)
+ * @param {string} slug – Kebab-case slug, e.g. "sprite-effects"
+ * @param {string} header – First chunk of the JS source (to scan for @pageTitle)
  * @returns {string}
  */
 function deriveShortTitle(slug, header) {
@@ -144,7 +144,7 @@ function deriveShortTitle(slug, header) {
 
 /**
  * Title-case a kebab-case topic, e.g. "sprite-effects" -> "Sprite Effects".
- * @param {string} topic - Kebab-case topic
+ * @param {string} topic – Kebab-case topic
  * @returns {string}
  */
 function titleCaseTopic(topic) {

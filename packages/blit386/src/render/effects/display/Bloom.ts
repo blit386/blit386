@@ -38,8 +38,8 @@ export class Bloom extends FullscreenEffect {
 
     /**
      * Writes resolution, spread, and glow into the uniform block.
-     * @param _deltaMs - Unused; effect reads public fields updated by demo code.
-     * @param sourceSize - Chain attachment dimensions in pixels for this pass.
+     * @param _deltaMs – Unused; effect reads public fields updated by demo code.
+     * @param sourceSize – Chain attachment dimensions in pixels for this pass.
      */
     protected writeUniforms(_deltaMs: number, sourceSize: Vector2i): void {
         const u = this.uniformData;

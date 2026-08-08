@@ -18,7 +18,7 @@ const iconDrawScratch = {
 /**
  * Computes the icon top-left Y inside the hint bar without allocating.
  *
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
+ * @param hintBarTopY – Top Y of the bottom hint bar from the layout plan.
  * @returns Icon top Y in display pixels.
  */
 export function hintIconY(hintBarTopY: number): number {
@@ -28,7 +28,7 @@ export function hintIconY(hintBarTopY: number): number {
 /**
  * Returns the top-left screen position for the toggle hint icon inside the hint bar.
  *
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
+ * @param hintBarTopY – Top Y of the bottom hint bar from the layout plan.
  * @returns Icon anchor in display pixels.
  */
 export function hintIconPos(hintBarTopY: number): Vector2i {
@@ -38,7 +38,7 @@ export function hintIconPos(hintBarTopY: number): Vector2i {
 /**
  * Returns the screen-space rect reserved for the toggle hint icon (palette swatch exclusion).
  *
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
+ * @param hintBarTopY – Top Y of the bottom hint bar from the layout plan.
  * @returns Icon bounding rect in display pixels.
  */
 export function hintIconExclusionRect(hintBarTopY: number): Rect2i {
@@ -51,10 +51,10 @@ export function hintIconExclusionRect(hintBarTopY: number): Rect2i {
  * Collapses each mask row into horizontal runs to minimize draw calls. Reuses scratch rects
  * so the path stays allocation-free after warmup.
  *
- * @param target - Overlay draw target.
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
- * @param textPaletteIndex - Overlay text palette index (`OverlayStyle.textPaletteIndex`, default `2`).
- * @param isInverted - When `true`, draw the complement mask so the symbol reads against the hint bar fill.
+ * @param target – Overlay draw target.
+ * @param hintBarTopY – Top Y of the bottom hint bar from the layout plan.
+ * @param textPaletteIndex – Overlay text palette index (`OverlayStyle.textPaletteIndex`, default `2`).
+ * @param isInverted – When `true`, draw the complement mask so the symbol reads against the hint bar fill.
  */
 export function toggleIcon(
     target: OverlayDrawTarget,
@@ -96,8 +96,8 @@ export function toggleIcon(
 /**
  * Writes the toggle hint icon top-left origin into {@link target} without allocating.
  *
- * @param target - Reusable vector mutated in place.
- * @param hintBarTopY - Top Y of the bottom hint bar from the layout plan.
+ * @param target – Reusable vector mutated in place.
+ * @param hintBarTopY – Top Y of the bottom hint bar from the layout plan.
  */
 function writeHintIconOrigin(target: Vector2i, hintBarTopY: number): void {
     target.x = overlayToggleHintIconX();

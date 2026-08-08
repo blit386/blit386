@@ -37,7 +37,7 @@ function getHighlighter() {
 /**
  * Twoslash transformer configured for plain demo JS: allowJs/checkJs, resolve
  * `./shared/*` via vfsRoot = src/, and blit386 types from the workspace package.
- * @param {string} srcDir - Absolute path to the demos `src/` directory.
+ * @param {string} srcDir – Absolute path to the demos `src/` directory.
  * @returns {import('shiki').ShikiTransformer}
  */
 function createDemoTwoslash(srcDir) {
@@ -68,8 +68,8 @@ function createDemoTwoslash(srcDir) {
 /**
  * Highlight a demo source file to HTML (Shiki dual-theme + Twoslash hovers).
  * Results are cached by absolute path + mtime.
- * @param {string} sourcePath - Absolute path to the demo `.js` file.
- * @param {string} rootDir - Demos package root (parent of `src/`).
+ * @param {string} sourcePath – Absolute path to the demo `.js` file.
+ * @param {string} rootDir – Demos package root (parent of `src/`).
  * @returns {Promise<string>} Highlighted HTML (a `.shiki.twoslash` pre/code tree).
  */
 export async function highlightDemoSource(sourcePath, rootDir) {

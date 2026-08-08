@@ -402,7 +402,7 @@ describe('JSDoc backfill codemod', () => {
         // outside any comment (the exact regression this fix addresses).
         assert.match(
             updatedSource,
-            /\/\*\*\n\s+\* Fixture single-line JSDoc member, no version tag yet - matches the real `BT` namespace style\.\n\s+\* @since 1\.2\.0\n\s+\*\/\n\s+flag: 1,/u,
+            /\/\*\*\n\s+\* Fixture single-line JSDoc member, no version tag yet – matches the real `BT` namespace style\.\n\s+\* @since 1\.2\.0\n\s+\*\/\n\s+flag: 1,/u,
         );
 
         // Re-parsing the updated text (in memory – never touching the fixture file on disk) must

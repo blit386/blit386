@@ -3,7 +3,7 @@
  *
  * The `core:get-creation-date` adapter (fumapress's own mechanism for this) only sees the
  * eagerly-loaded frontmatter preview, where `date` survives the Vite dev/RSC boundary as a
- * plain ISO string rather than the `Date` instance the adapter checks for - so it always
+ * plain ISO string rather than the `Date` instance the adapter checks for – so it always
  * returns undefined for async doc collections. Parsing the frontmatter value directly here
  * sidesteps that. `page.data` is typed `unknown` because the generic `PageData` type
  * (fumadocs-core) does not declare `date` - it is validated by the blog-specific schema

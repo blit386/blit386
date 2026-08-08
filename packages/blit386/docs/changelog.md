@@ -59,18 +59,18 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - The BLIT386 splash: a logo bitmap fading in on its own 16-step gray ramp, holding, and fading out before the game's
   first frame. Shown in release builds by default and disabled in development by default, with
   `HardwareSettings.isSplashEnabled` and the `?splash` / `?nosplash` URL flags to override either default. It doubles as
-  a loading screen - the game's `init()` runs concurrently and the hold extends until it settles - and hands off into
+  a loading screen – the game's `init()` runs concurrently and the hold extends until it settles – and hands off into
   the game's palette with a single continuous `BT.paletteFadeExposure`, so there is no cut. Any key, click, or tap
   skips, and that press is swallowed. New getters `BT.splashState` and `BT.isSplashVisible`, plus `splashColorDark` /
   `splashColorLight` for the ramp endpoints. The pixelated dissolve is WebGPU-only; the software backend gets the plain
   fade. See [the splash guide](guide-splash.md) and [Core](api-core.md#splash-state).
 
-## 1.4.0 - 2026-07-23
+## 1.4.0 – 2026-07-23
 
 ### Added
 
 - Engine-side hot-reload runtime: `registerHotReload` (wired automatically by the `blit386/vite` plugin), an optional
-  `IBTDemo.onHotReload(context)` hook, and a tiered hot-swap - a method-only prototype swap when only method bodies
+  `IBTDemo.onHotReload(context)` hook, and a tiered hot-swap – a method-only prototype swap when only method bodies
   changed, a full re-init when `init()` or the constructor changed, and a full page reload when hardware settings
   changed. Demo/game state persists across method and re-init swaps: ticks, camera, palette, and palette effects are
   never reset. This lands the engine half of BLIT386's HMR support; adoption in `blit386-demos`/`create-blit386` ships
@@ -82,9 +82,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   runtime dependency on `vite` itself.
 - Engine-side asset hot-replace: `AssetLoader.evict`, plus internal routing in `HotRuntime.handleAssetChanged` for
   `blit386:asset-changed` events. A changed image, audio, or `.btfont` file under `public/` updates the running demo in
-  place - sprite sheets swap their texture (calling `indexize()` against the active palette when needed), audio clips
+  place – sprite sheets swap their texture (calling `indexize()` against the active palette when needed), audio clips
   swap their decoded buffer (stopping SFX voices on the old buffer and restarting the music player if the replaced clip
-  is the current track), and bitmap fonts rebuild their glyph tables and texture - all without a page reload. Adoption
+  is the current track), and bitmap fonts rebuild their glyph tables and texture – all without a page reload. Adoption
   in `blit386-demos`/`create-blit386` ships in a follow-up release.
 - Asset loading progress: `BT.loadingAssetsCount` is polled once per frame as a combined image+audio signal (the sum of
   `AssetLoader.loadingCount` and `AudioClip.loadingCount`) to drive a loading spinner or progress bar until it returns
@@ -101,14 +101,14 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `configure()` change triggers a reload, matching the behavior already seen under the default `webgpu` backend.
 - The `blit386/vite` plugin now syntax-checks a plain `.js`/`.mjs` entry module before injecting the hot-reload snippet.
   Vite's own default transform pipeline excludes those extensions from server-side parsing, so a broken entry module
-  previously surfaced only as a silently caught client-side error - Vite's error overlay never appeared. `.ts`/`.mts`
+  previously surfaced only as a silently caught client-side error – Vite's error overlay never appeared. `.ts`/`.mts`
   entries are unaffected; they already get real syntax validation from Vite's own transform.
 - `canvas.style.touch-action` was hardcoded to `none` on attach, blocking touch tap-hold-scroll past the canvas even
   when `HardwareSettings.isCapturingPointerScroll` was left at its default `false`. It is now gated by the same flag:
   `none` while pointer scroll capture is active (configure-time opt-in or the overlay's palette-band force), `pan-y`
   otherwise, updated live as either source of capture changes.
 
-## 1.3.1 - 2026-07-19
+## 1.3.1 – 2026-07-19
 
 ### Added
 
@@ -135,7 +135,7 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - The overlay's bottom-left toggle hit region shrinks from `48×48` to `17×13` pixels, matching the visible toggle icon
   more closely.
 
-## 1.3.0 - 2026-07-13
+## 1.3.0 – 2026-07-13
 
 The audio release: the engine gains a full sound subsystem, from bus mixing to procedural synthesis, plus render-time
 interpolation for smoother motion between fixed update steps.
@@ -152,12 +152,12 @@ interpolation for smoother motion between fixed update steps.
   getters), and generational `SoundRef` handles. `HardwareSettings.audioVoices` (default `16`, range `1`-`64`) sizes the
   pool.
 - Deterministic procedural synthesis via `AudioClip.synth(params)` - waveforms, an ADSR envelope, a linear pitch sweep,
-  vibrato, and noise mixing, rendered on the CPU with no source file - plus a preset library `BT.synthPreset` (`jump`,
+  vibrato, and noise mixing, rendered on the CPU with no source file – plus a preset library `BT.synthPreset` (`jump`,
   `pickup`, `explosion`, `laser`, `hit`, `blip`).
 - Crossfading music playback with configurable fade, overlap, and loop points: `BT.musicPlay`, `BT.musicStop`,
   `BT.musicVolumeSet` / `BT.musicVolumeGet`, and the `BT.isMusicPlaying` getter.
 - Overlay audio meters: a per-bus level band with a voices used/total, steal, and drop readout, gated by
-  `HardwareSettings.isOverlayAudioMetersEnabled` with lazy opt-in metering - no metering cost is paid unless the flag is
+  `HardwareSettings.isOverlayAudioMetersEnabled` with lazy opt-in metering – no metering cost is paid unless the flag is
   set.
 - `BT.renderAlpha` getter: the fractional interpolation factor in `[0, 1)` between fixed `update()` steps, for smoothing
   render state on high-refresh displays. See the new game-loop smoothing guide.
@@ -179,7 +179,7 @@ interpolation for smoother motion between fixed update steps.
 - The engine overlay's toggle key press is now sampled during the fixed-update tick instead of the render phase, fixing
   intermittently dropped toggle presses under rapid input on high-refresh displays.
 
-## 1.2.1 - 2026-06-20
+## 1.2.1 – 2026-06-20
 
 ### Fixed
 
@@ -193,7 +193,7 @@ interpolation for smoother motion between fixed update steps.
 - "See also" cross-reference sections added or expanded across 16 documentation files; `README.md` rewritten with a
   beginner-first voice.
 
-## 1.2.0 - 2026-06-19
+## 1.2.0 – 2026-06-19
 
 Package and API rename – the engine is now published as `blit386` (previously `blit-tech`).
 
@@ -210,7 +210,7 @@ Package and API rename – the engine is now published as `blit386` (previously 
   browsers (including Firefox on Linux) before the Canvas 2D fallback could activate. Access is now inlined at call
   sites.
 
-## 1.1.1 - 2026-06-07
+## 1.1.1 – 2026-06-07
 
 ### Fixed
 
@@ -221,13 +221,13 @@ Package and API rename – the engine is now published as `blit386` (previously 
 
 - Boolean queries and predicate methods normalized to `is*`/`has*` conventions: `isDown`, `isPressed`,
   `isPointerActive`, `isEqual`, `isContaining`, `isIntersecting`. `HardwareSettings` config flags renamed to
-  `isOverlayEnabled`, `isDetectingDroppedFrames`, and so on. Deprecated aliases keep the previous names working - see
+  `isOverlayEnabled`, `isDetectingDroppedFrames`, and so on. Deprecated aliases keep the previous names working – see
   the [Deprecation Timeline](reference-deprecations.md).
 - Asset system structural refactor across `BitmapFont`, `SpriteSheet`, `Palette`, `PaletteEffect`, and `SystemFont` -
   internal only, no public API change.
 - Documentation corrected and expanded across 45+ files; a new overlay guide added.
 
-## 1.1.0 - 2026-05-30
+## 1.1.0 – 2026-05-30
 
 The overlay release: the old software-mode ticker is replaced by a full engine HUD subsystem.
 
@@ -246,7 +246,7 @@ The overlay release: the old software-mode ticker is replaced by a full engine H
 - Breaking: every `statsOverlay*` setting, the `statsOverlayRows()` hook, and the `StatsOverlay*` exported types drop
   the `stats`/`StatsOverlay` prefix (for example `overlayEnabled`, `overlayRows()`, `OverlayRow`).
 
-## 1.0.5 - 2026-05-21
+## 1.0.5 – 2026-05-21
 
 ### Added
 
@@ -254,7 +254,7 @@ The overlay release: the old software-mode ticker is replaced by a full engine H
 
 ### Changed
 
-- `configure()` now accepts a partial `HardwareSettings` object - demos can override just `targetFPS` without spelling
+- `configure()` now accepts a partial `HardwareSettings` object – demos can override just `targetFPS` without spelling
   out every field. The engine merges the result with `defaultConfig()` via the new exported `mergeHardwareSettings()`.
 
 ### Security
@@ -262,7 +262,7 @@ The overlay release: the old software-mode ticker is replaced by a full engine H
 - `.btfont` embedded textures must now use `data:image/png;base64` with a 512 KiB payload cap; glyph metrics are
   validated before atlas decode begins. A new `AssetLimits` module centralizes these constants.
 
-## 1.0.4 - 2026-05-17
+## 1.0.4 – 2026-05-17
 
 `BT` namespace read-only properties changed from methods to ES getters.
 
@@ -284,7 +284,7 @@ The overlay release: the old software-mode ticker is replaced by a full engine H
   supply-chain hardening enabled (`minimum-release-age`, `block-exotic-subdeps`, `strict-dep-builds`). CI action tags
   pinned to commit SHAs.
 
-## 1.0.3 - 2026-05-16
+## 1.0.3 – 2026-05-16
 
 First stable release, closing out the 0.2.x prototype arc. The rendering stack is palette-first end to end, the input
 system is complete across pointer, keyboard, and gamepad, and the `BT` namespace reaches its stable shape.
@@ -315,7 +315,7 @@ system is complete across pointer, keyboard, and gamepad, and the `BT` namespace
 - Breaking: `IBlitTechDemo.queryHardware()` renamed to `configure()` and made optional; omitting it falls back to
   `defaultConfig()` (320×240 display, 640×480 canvas, 60 FPS, nearest-neighbor upscale).
 - Breaking: `Color32.white()`, `black()`, `transparent()`, and the other color-primary statics converted from
-  zero-argument methods to static getters returning frozen singletons - drop the call parentheses.
+  zero-argument methods to static getters returning frozen singletons – drop the call parentheses.
 - `BTAPI` split into three focused modules: `GameLoop` (fixed-timestep accumulator), `WebGPUContext`
   (adapter/device/context setup), delegated to by `BTAPI` itself.
 
@@ -325,7 +325,7 @@ system is complete across pointer, keyboard, and gamepad, and the `BT` namespace
   `buildErrorPreviewEntries`, `previewWebGPUErrors` - superseded by the `SoftwareRenderer` auto-fallback and a shared
   `errorMessages.ts` module.
 
-## 0.2.0 - 2025-12-22
+## 0.2.0 – 2025-12-22
 
 Pre-release published under the original `blit-tech` package name.
 
@@ -334,7 +334,7 @@ Pre-release published under the original `blit-tech` package name.
 - Bootstrap utilities for streamlined game initialization.
 - CI checks: commit message linting, bundle size monitoring, documentation link validation, spell checking with cspell.
 
-## 0.1.0 - 2025-12-13
+## 0.1.0 – 2025-12-13
 
 Initial pre-release published under the original `blit-tech` package name.
 

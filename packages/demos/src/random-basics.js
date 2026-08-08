@@ -14,7 +14,7 @@
 //   2. Weighted   - a treasure chest where rare prizes really are rare
 //   3. Gaussian   - arrows landing near a target instead of anywhere at all
 //   4. Sign       - a coin flip that answers "left" or "right"
-//   5. Directions - two bugs walking a grid, one allowed 4 ways, the other allowed 8
+//   5. Directions – two bugs walking a grid, one allowed 4 ways, the other allowed 8
 //
 // WHAT YOU WILL LEARN
 //   - BT.random.shuffle() hands back a NEW mixed-up copy and leaves your list alone
@@ -25,7 +25,7 @@
 //   - BT.random.direction4() and direction8() hand back a ready-made step as a Vector2i
 //
 // A NOTE ON WHAT IS NOT HERE
-// The everyday tools - int(), float(), and pick() - already appear all over the other demos,
+// The everyday tools – int(), float(), and pick() – already appear all over the other demos,
 // so this one covers the ones you have not met yet. The Camera demo uses int() and
 // pointInRange() to scatter buildings: https://demos.blit386.dev/camera
 //
@@ -67,7 +67,7 @@ const C_CARD_BASE = 10;
 const CARD_COUNT = 8;
 
 // Card size, and how far apart their left edges sit. Eight cards at 34 pixels apart, starting
-// 22 pixels in, reach x = 294 - just inside the 320-pixel screen.
+// 22 pixels in, reach x = 294 – just inside the 320-pixel screen.
 const CARD_W = 26;
 const CARD_H = 34;
 const CARD_STRIDE = 34;
@@ -268,8 +268,8 @@ class Demo {
 
         this.ticks++;
 
-        // Number keys jump straight to a scene. Reading key presses here in update() - never
-        // in render() - is what keeps a quick tap from being missed.
+        // Number keys jump straight to a scene. Reading key presses here in update() – never
+        // in render() – is what keeps a quick tap from being missed.
         if (BT.isKeyPressed('Digit1')) {
             this.mode = MODE_SHUFFLE;
         }
@@ -409,7 +409,7 @@ class Demo {
 
         if (this.useGaussian) {
             // gaussian(middle, spread) clumps its answers around the middle value. Most land
-            // close to it, a few land further out, and the really wild ones are rare - the
+            // close to it, a few land further out, and the really wild ones are rare – the
             // same way most people are close to average height and giants are unusual.
             shot.x = TARGET_CENTER.x + Math.round(BT.random.gaussian(0, this.shotSpread));
             shot.y = TARGET_CENTER.y + Math.round(BT.random.gaussian(0, this.shotSpread));
@@ -458,11 +458,11 @@ class Demo {
             return;
         }
 
-        // direction4() hands back a Vector2i that is one step up, down, left, or right - the
+        // direction4() hands back a Vector2i that is one step up, down, left, or right – the
         // four ways a rook moves in chess. No diagonals.
         this.stepBug(this.bugA, BT.random.direction4(), BUG_AREA_A);
 
-        // direction8() adds the four diagonals, so this bug has eight choices - the way a king
+        // direction8() adds the four diagonals, so this bug has eight choices – the way a king
         // moves in chess. Its trail ends up looking rounder and less blocky.
         this.stepBug(this.bugB, BT.random.direction8(), BUG_AREA_B);
     }
@@ -471,8 +471,8 @@ class Demo {
      * Moves one bug by one step and remembers the position it left behind.
      *
      * @param {{ pos: Vector2i, trail: Array<Vector2i> }} bug
-     * @param {Vector2i} step - One step, from direction4() or direction8().
-     * @param {Rect2i} area - The square this bug is allowed to wander inside.
+     * @param {Vector2i} step – One step, from direction4() or direction8().
+     * @param {Rect2i} area – The square this bug is allowed to wander inside.
      */
     stepBug(bug, step, area) {
         // Remember where the bug was standing before it moved, so the trail grows behind it.
@@ -490,7 +490,7 @@ class Demo {
         // The limits are pulled in twice over. The last pixel inside a square is one short of
         // its width, so a square 120 wide starting at x = 24 ends at x = 143. Then BUG_REACH
         // comes off each end as well, because the position is the middle of the marker rather
-        // than its corner - without that the square would straddle the frame.
+        // than its corner – without that the square would straddle the frame.
         bug.pos = new Vector2i(
             clampInt(bug.pos.x + step.x * 3, area.x + BUG_REACH, area.x + area.width - 1 - BUG_REACH),
             clampInt(bug.pos.y + step.y * 3, area.y + BUG_REACH, area.y + area.height - 1 - BUG_REACH),
@@ -511,8 +511,8 @@ class Demo {
     /**
      * Draws one row of colored cards.
      *
-     * @param {Array<number>} cards - Card numbers, in the order they should appear.
-     * @param {number} y - Top edge of the row.
+     * @param {Array<number>} cards – Card numbers, in the order they should appear.
+     * @param {number} y – Top edge of the row.
      */
     renderCardRow(cards, y) {
         for (let i = 0; i < cards.length; i++) {
@@ -531,7 +531,7 @@ class Demo {
     renderWeighted() {
         ui.caption(112, 8, 'Treasure chest');
 
-        // The chest itself is just a box - the interesting part is what comes out of it.
+        // The chest itself is just a box – the interesting part is what comes out of it.
         BT.drawRectFill(new Rect2i(140, 22, 40, 16), C_DIM);
         BT.drawRect(new Rect2i(140, 22, 40, 16), C_INK);
 
@@ -546,7 +546,7 @@ class Demo {
     renderGaussian() {
         ui.caption(96, 8, 'Aim for the middle');
 
-        // Concentric squares stand in for a round target - the engine draws rectangles, lines,
+        // Concentric squares stand in for a round target – the engine draws rectangles, lines,
         // and pixels, so a "ring" here is a square outline.
         for (const radius of TARGET_RINGS) {
             BT.drawRect(
@@ -619,7 +619,7 @@ class Demo {
 
         if (ui.button('shuffleInPlace()', { key: 'KeyP' })) {
             // shuffleInPlace() mixes up the list you handed it. The top row jumps, and the old
-            // order is gone for good - there is no copy to go back to.
+            // order is gone for good – there is no copy to go back to.
             BT.random.shuffleInPlace(this.deck);
         }
 

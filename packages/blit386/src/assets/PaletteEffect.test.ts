@@ -541,10 +541,10 @@ const BRIGHT_SLOT = 1;
 /** Palette index used for the dark entry in exposure-ordering tests. */
 const DARK_SLOT = 2;
 
-/** Bright test color - near the top of the range, so it has the most headroom to emulate. */
+/** Bright test color – near the top of the range, so it has the most headroom to emulate. */
 const BRIGHT_COLOR = new Color32(240, 240, 240);
 
-/** Dark test color - low enough to sit deep in the sRGB toe. */
+/** Dark test color – low enough to sit deep in the sRGB toe. */
 const DARK_COLOR = new Color32(40, 40, 40);
 
 /**
@@ -576,8 +576,8 @@ function makeBlackPalette(): Palette {
  * Linear light is the space the exposure curve actually works in, so this is the
  * quantity the per-entry timing offset is supposed to reorder.
  *
- * @param current - Current palette entry.
- * @param reference - Fully lit color the entry is measured against.
+ * @param current – Current palette entry.
+ * @param reference – Fully lit color the entry is measured against.
  * @returns Fraction in range 0-1.
  */
 function linearFraction(current: Color32, reference: Color32): number {
@@ -668,7 +668,7 @@ describe('ExposureFadeEffect', () => {
 
         effect.update(palette, 700);
 
-        // Every entry still lands on black together at t = 1 - the shoulder is about
+        // Every entry still lands on black together at t = 1 – the shoulder is about
         // how much light each one is still carrying on the way there.
         expect(palette.getRef(BRIGHT_SLOT).r).toBeGreaterThan(BRIGHT_COLOR.r * 0.8);
         expect(palette.getRef(DARK_SLOT).r).toBeLessThan(DARK_COLOR.r * 0.6);

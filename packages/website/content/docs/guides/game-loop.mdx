@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Game Loop"
 description: "Smoothing motion between fixed update() steps using BT.renderAlpha and Vector2i.lerp."
-lastModified: "2026-07-13T18:09:45+02:00"
+lastModified: "2026-08-08T13:36:09+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/guide-game-loop.md"
 ---
 
@@ -50,7 +50,7 @@ class Player {
 ```
 
 `Vector2i.lerp` truncates its result to integer pixels (see [API: Core Types](/docs/api/core-types#vector2i)), so this only
-smooths motion that covers more than a pixel or two per tick - it doesn't add subpixel precision to a pixel-perfect
+smooths motion that covers more than a pixel or two per tick – it doesn't add subpixel precision to a pixel-perfect
 renderer. For a sprite moving `2` px/tick at `targetFPS: 60` on a `144` Hz display, it turns a visible 1-then-2-then-0
 px stutter into a steadier progression across render frames.
 

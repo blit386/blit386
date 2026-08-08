@@ -1,8 +1,8 @@
 /**
- * Fonts Demo - built-in system font and palette-animated text.
+ * Fonts Demo – built-in system font and palette-animated text.
  *
  * Part of the BLIT386 demo series.
- * Prerequisites: Basics - https://demos.blit386.dev/basics
+ * Prerequisites: Basics – https://demos.blit386.dev/basics
  * Live version: https://demos.blit386.dev/fonts
  *
  * BT.systemPrint() draws text with the engine's built-in system font (6 pixels wide,
@@ -15,7 +15,7 @@
  *   - Pulsing text: animating alpha in update() on a single palette slot
  *
  * The title strip and the small pointer to Bitmap Font demo are chrome drawn by the shared UI kit
- * (src/shared/ui.js). The showcase lines themselves stay hand-rolled on purpose - drawing
+ * (src/shared/ui.js). The showcase lines themselves stay hand-rolled on purpose – drawing
  * text with BT.systemPrint() is the whole lesson of this demo.
  *
  * For custom bitmap fonts loaded from disk, variable glyph widths, and BT.printFont(),
@@ -47,14 +47,14 @@ const RAINBOW_TEXT = 'Rainbow Animation!';
 
 // Dynamic slots: one animated color per character in RAINBOW_TEXT.
 // update() computes each character's current hue and stores it here.
-// render() then reads the slot index - no Color32 math happens during drawing!
+// render() then reads the slot index – no Color32 math happens during drawing!
 const C_RAINBOW_BASE = 20; // first rainbow character; next slots follow contiguously
 
 // Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
 // Always sits immediately after the last rainbow character slot.
 const C_PULSE = C_RAINBOW_BASE + RAINBOW_TEXT.length;
 
-// Filled in init() from BT.systemPrintMeasure - width of one monospace system glyph.
+// Filled in init() from BT.systemPrintMeasure – width of one monospace system glyph.
 let systemCharWidth = 6;
 
 /**
@@ -99,7 +99,7 @@ class Demo {
 
     /**
      * Sets up the color palette.
-     * Unlike Bitmap Font demo, there is no font to load - BT.systemPrint() needs nothing.
+     * Unlike Bitmap Font demo, there is no font to load – BT.systemPrint() needs nothing.
      *
      * @returns {Promise<boolean>} Returns true when ready.
      */
@@ -155,13 +155,13 @@ class Demo {
         // Adding 0.5 and multiplying by 0.5 shifts the range from [-1,1] to [0,1].
         const pulse = Math.sin(2 * Math.PI * 3 * this.animTime) * 0.5 + 0.5;
         // We drive the alpha (opacity) channel so the text fades in and out in a smooth wave.
-        // RGB stays fixed at (100, 100, 255) - a soft blue - while alpha goes from 0 to 255.
+        // RGB stays fixed at (100, 100, 255) – a soft blue – while alpha goes from 0 to 255.
         this.palette.set(C_PULSE, new Color32(100, 100, 255, Math.floor(pulse * 255)));
 
         // Update the rainbow text character colors
         // Each character gets a hue based on its horizontal position and the current time.
         // systemCharWidth comes from systemPrintMeasure in init() (6 pixels for this font).
-        let charX = 10; // Starting x position - same as where render() draws the rainbow text.
+        let charX = 10; // Starting x position – same as where render() draws the rainbow text.
         for (let i = 0; i < RAINBOW_TEXT.length; i++) {
             // hue is a position on the color wheel (0=red, 120=green, 240=blue, 360=back to red).
             // Using charX (actual x position) matches the visual rhythm of the rainbow.
@@ -181,7 +181,7 @@ class Demo {
 
         // Title strip across the top, drawn by the shared UI kit. begin('topBar') opens a
         // full-width 22-pixel band, panel() fills it and prints the amber title, and end()
-        // closes the group. This is chrome only - the lesson lives in the lines below.
+        // closes the group. This is chrome only – the lesson lives in the lines below.
         ui.begin('topBar');
         ui.panel('Fonts - BT.systemPrint() showcase');
         ui.end();
@@ -196,7 +196,7 @@ class Demo {
         this.renderSpecialCharacters(y);
 
         // A small dim caption in the bottom-left corner pointing to the next font lesson.
-        // No ui.panel() call inside the group means it is just floating text - no box.
+        // No ui.panel() call inside the group means it is just floating text – no box.
         ui.begin('bottomLeft');
         ui.label('To see how to load bitmap fonts from disk,', { color: 'dim' });
         ui.label('go to Bitmap Font demo', { color: 'dim' });
@@ -207,7 +207,7 @@ class Demo {
      * Draws the same four words, each in a different color.
      * Pass the palette slot number directly to BT.systemPrint() to change the text color.
      *
-     * @param {number} y - The Y position to start drawing at.
+     * @param {number} y – The Y position to start drawing at.
      * @returns {number} The Y position after the last line drawn.
      */
     renderColoredText(y) {
@@ -216,7 +216,7 @@ class Demo {
         // because they expect the original value to stay the same throughout the function.
         let currentY = y;
 
-        // BT.systemPrint(position, paletteSlot, text) - the slot number IS the color directly.
+        // BT.systemPrint(position, paletteSlot, text) – the slot number IS the color directly.
         // Compare to BT.printFont() in Bitmap Font demo which uses a 0-based palette offset per glyph.
         BT.systemPrint(new Vector2i(10, currentY), C_RED_TEXT, 'Red Text');
         const lineAdvance = BT.systemPrintMeasure('Red Text').y + 4;
@@ -241,7 +241,7 @@ class Demo {
      * The system font is monospace, so we step systemCharWidth pixels per character.
      * Colors were pre-computed in update().
      *
-     * @param {number} y - The Y position to start drawing at.
+     * @param {number} y – The Y position to start drawing at.
      * @returns {number} The Y position after the text.
      */
     renderRainbowText(y) {
@@ -269,12 +269,12 @@ class Demo {
      * Draws the pulsing-text line. The text fades in and out in a smooth rhythm (alpha pulsing).
      * The alpha value is pre-computed in update() using Math.sin and stored in palette slot C_PULSE.
      *
-     * @param {number} y - The Y position to start drawing at.
+     * @param {number} y – The Y position to start drawing at.
      * @returns {number} The Y position after the text.
      */
     renderPulsingText(y) {
         // C_PULSE holds an alpha (transparency) pulse precomputed in update():
-        // RGB stays fixed at (100, 100, 255) - a soft blue - and the alpha channel is
+        // RGB stays fixed at (100, 100, 255) – a soft blue – and the alpha channel is
         // animated from 0 to 255 with Math.sin(), so the text fades in and out smoothly
         // rather than shifting hue. The engine blends the palette color against the
         // background at draw time, which is what gives the pulse its smooth look.
@@ -287,7 +287,7 @@ class Demo {
      * Shows that the system font can draw special characters.
      * Last section before the overlay bars, so this helper does not return an updated y.
      *
-     * @param {number} y - The Y position to start drawing at.
+     * @param {number} y – The Y position to start drawing at.
      */
     renderSpecialCharacters(y) {
         BT.systemPrint(new Vector2i(10, y), C_GRAY_TEXT, 'Special: 3 x 4 = 12');

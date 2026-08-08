@@ -1,5 +1,5 @@
 /**
- * Shared UI theme - the one set of colors every demo's UI draws with.
+ * Shared UI theme – the one set of colors every demo's UI draws with.
  *
  * Demos used to pick their own HUD colors by hand, and over time those colors drifted apart:
  * one demo's panel was a slightly different blue than the next one's, headers were three
@@ -7,7 +7,7 @@
  *
  * applyTheme() writes the twelve colors into a demo's palette (by default into slots
  * 240-251, high above the low slots scene art normally grows up from) and registers a named
- * alias for each one - the same mechanism as the engine's own palette.applyHUD(). It also
+ * alias for each one – the same mechanism as the engine's own palette.applyHUD(). It also
  * fills the module-level `T` object with the resolved palette indices. Every other ui-*.js
  * module reads its colors from `T`, so no widget ever hardcodes a palette slot number.
  *
@@ -18,7 +18,7 @@
  *     BT.paletteSet(this.palette);
  *
  * The returned object maps each color to its palette slot ({ bg, panel, text, ... }), so a
- * demo can also use theme colors for its own drawing - most commonly BT.clear(theme.bg).
+ * demo can also use theme colors for its own drawing – most commonly BT.clear(theme.bg).
  */
 
 import { Color32 } from 'blit386';
@@ -49,7 +49,7 @@ const THEME_COLORS = [
 // `T` is a single module-level object, not per-palette state: calling applyTheme() again
 // (a second demo instance, a test harness, hot-reload) overwrites it in place for whatever
 // is currently reading it. That is safe today because ui-core.js and ui-dpad.js assume the
-// same "one demo runs at a time" model this whole kit is built on (see ui.js) - there is
+// same "one demo runs at a time" model this whole kit is built on (see ui.js) – there is
 // exactly one UiContext and it always draws with the most recently applied theme. It would
 // stop being safe the moment two palettes/themes need to be live at once (multiple demos in
 // one page, parallel unit tests); that scenario needs a themes-per-context redesign, not a
@@ -85,8 +85,8 @@ const T = {
 /**
  * Writes the twelve theme colors into `palette` and remembers where they landed.
  *
- * @param {import('blit386').Palette} palette - The palette the demo is about to activate.
- * @param {number} startSlot - First slot to write (the twelve colors fill startSlot..startSlot+11).
+ * @param {import('blit386').Palette} palette – The palette the demo is about to activate.
+ * @param {number} startSlot – First slot to write (the twelve colors fill startSlot..startSlot+11).
  *   The default (THEME_DEFAULT_START_SLOT, 240) sits at the top of a 256-slot palette, far
  *   away from scene colors, which conventionally grow up from slot 1. Demos whose effects
  *   animate high palette slots pass a different startSlot that stays clear of their animated
@@ -96,7 +96,7 @@ const T = {
  *   buttonHover: number }} The palette slot of each theme color, for the demo's own drawing.
  */
 function applyTheme(palette, startSlot = THEME_DEFAULT_START_SLOT) {
-    // Fail fast with clear messages - a wrong startSlot would otherwise show up later as
+    // Fail fast with clear messages – a wrong startSlot would otherwise show up later as
     // mysteriously wrong UI colors, which is much harder to track down.
     if (!Number.isInteger(startSlot) || startSlot < 1) {
         throw new Error(`applyTheme: startSlot must be an integer of at least 1, got ${startSlot}.`);

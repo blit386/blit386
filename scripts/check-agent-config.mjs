@@ -7,7 +7,7 @@
  * package-scoped rules, and every package carries its own AGENTS.md / CLAUDE.md.
  *
  * Repo root only:
- *   - `.agents/skills/*` symlink integrity - every entry must be a working
+ *   - `.agents/skills/*` symlink integrity – every entry must be a working
  *     symlink into `.claude/skills/<same-name>`, and every `.claude/skills/*`
  *     directory must have a matching symlink.
  *   - `.zed/settings.json` is present, parseable as JSON, and consistent with
@@ -19,7 +19,7 @@
  * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
  *   - AGENTS.md still points at an existing CLAUDE.md.
  *
- * This is read-only - unlike `sync-doc-banners.mjs` it never writes fixes,
+ * This is read-only – unlike `sync-doc-banners.mjs` it never writes fixes,
  * it only reports drift for a human (or `pnpm run rules:sync`-style script)
  * to resolve.
  *
@@ -252,7 +252,7 @@ function readClaudeSkillDirNames(claudeSkillsDir) {
 }
 
 /**
- * Runs the symlink and Zed-settings checks against the repo root - the only place
+ * Runs the symlink and Zed-settings checks against the repo root – the only place
  * `.claude/skills`, `.agents/skills`, and `.zed/settings.json` live in this monorepo.
  *
  * @param {string} root Absolute path to the repo root.
@@ -296,10 +296,10 @@ function checkAgentsPointer(root) {
 }
 
 /**
- * A package counts as its own agent-config root if it carries either marker - not just
+ * A package counts as its own agent-config root if it carries either marker – not just
  * CLAUDE.md, so a package with AGENTS.md but a missing CLAUDE.md still gets checked (that
  * missing-pointer-target case is exactly what findAgentsPointerFailures exists to catch).
- * `.claude/rules` alone (no CLAUDE.md/AGENTS.md) does not make a package its own root - only
+ * `.claude/rules` alone (no CLAUDE.md/AGENTS.md) does not make a package its own root – only
  * the AGENTS.md <-> CLAUDE.md pointer is package-level in this monorepo.
  */
 const AGENT_CONFIG_MARKERS = ['CLAUDE.md', 'AGENTS.md'];

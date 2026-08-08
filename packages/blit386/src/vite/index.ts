@@ -23,7 +23,7 @@ export type { AssetKind, Blit386PluginOptions, ResolvedBlit386PluginOptions } fr
  * Creates the `blit386/vite` dev-server plugin.
  *
  * @since 1.4.0
- * @param options - See {@link Blit386PluginOptions}; every field is optional.
+ * @param options – See {@link Blit386PluginOptions}; every field is optional.
  * @returns A Vite `Plugin`, active only in `serve` (dev-server) mode.
  *
  * @example
@@ -62,7 +62,7 @@ export function blit386(options?: Blit386PluginOptions): Plugin {
             return injectSnippet(code);
         },
 
-        // Method shorthand, not an arrow function - Vite needs its own `this` bound here for `this.environment`.
+        // Method shorthand, not an arrow function – Vite needs its own `this` bound here for `this.environment`.
         hotUpdate(update) {
             return handleAssetHotUpdate({
                 file: update.file,

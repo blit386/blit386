@@ -17,7 +17,7 @@ export interface CanvasLayoutStyleOptions {
 /**
  * Resolves the layout root element for CSS custom property injection.
  *
- * @param canvas - The canvas element to check.
+ * @param canvas – The canvas element to check.
  * @returns The parent container when it carries the expected ID, otherwise the canvas itself.
  */
 function resolveLayoutRoot(canvas: HTMLCanvasElement): HTMLElement {
@@ -36,8 +36,8 @@ function resolveLayoutRoot(canvas: HTMLCanvasElement): HTMLElement {
  * The demos `layout.html` reads `--canvas-aspect-w/h` for aspect ratio and
  * `--canvas-max-w/h` for the largest allowed display size.
  *
- * @param canvas - Target canvas element.
- * @param options - Layout fields mirroring relevant {@link HardwareSettings} members.
+ * @param canvas – Target canvas element.
+ * @param options – Layout fields mirroring relevant {@link HardwareSettings} members.
  */
 export function applyCanvasLayoutStyles(canvas: HTMLCanvasElement, options: CanvasLayoutStyleOptions): void {
     const aspectSource = options.drawingBufferSize ?? options.displaySize;

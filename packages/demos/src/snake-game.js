@@ -1,5 +1,5 @@
 /**
- * Snake - grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
+ * Snake – grid snake with walls, food, keyboard steering, and PipBoy CRT post-processing.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites:
@@ -11,7 +11,7 @@
  *
  * Move with WASD or the arrow keys (both are mapped to player 0 face buttons). On a phone
  * or tablet, steer with the on-screen D-pad in the bottom-right corner (it appears at the
- * first touch) or simply swipe anywhere in the direction you want to go - both come from
+ * first touch) or simply swipe anywhere in the direction you want to go – both come from
  * the shared UI kit in src/shared/ui.js. Each food dot grows the snake and makes it
  * one step faster. Hitting the boundary wall or your own body ends the run; the game
  * restarts after two seconds.
@@ -156,7 +156,7 @@ class Demo {
     /**
      * Live handle for the looping music voice, or null before unlock / if music failed to
      * load. We use BT.soundPlay (not BT.musicPlay) so we can change pitch each time the
-     * snake speeds up - the music player has volume and crossfade controls, but no pitch.
+     * snake speeds up – the music player has volume and crossfade controls, but no pitch.
      *
      * @type {import('blit386').SoundRef | null}
      */
@@ -273,7 +273,7 @@ class Demo {
 
             // Hide the small "~" toggle hint in the bottom-left corner so the game
             // board stays clean. Players who want the stats overlay can still press
-            // the Backquote key (`) to show it and press ` again to hide it - hiding
+            // the Backquote key (`) to show it and press ` again to hide it – hiding
             // the hint does not turn the overlay off.
             isOverlayToggleHintVisible: false,
 
@@ -324,7 +324,7 @@ class Demo {
         // playable with sound effects but no music, instead of getting stuck on a blank
         // screen.
         //
-        // We only load here - we do not call BT.soundPlay yet. Browsers keep audio locked
+        // We only load here – we do not call BT.soundPlay yet. Browsers keep audio locked
         // until the first click or key press, and unlike BT.musicPlay (which remembers a
         // request while locked), BT.soundPlay would be dropped. update() starts the loop
         // the moment BT.isAudioUnlocked flips true.
@@ -351,7 +351,7 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // CRT post-processing needs WebGPU. In software fallback mode we skip the whole
-        // effect chain - the snake game itself still runs fine without it.
+        // effect chain – the snake game itself still runs fine without it.
         this.effectsAvailable = isAvailable();
 
         if (this.effectsAvailable) {
@@ -430,7 +430,7 @@ class Demo {
 
         // Browsers keep all sound muted until the player clicks or presses a key. This
         // shared row shows a warm "enable sound" hint only while audio is still locked,
-        // then disappears on its own the moment a first move unlocks it - which is also
+        // then disappears on its own the moment a first move unlocks it – which is also
         // the same gesture that starts the snake moving, so the hint is usually only
         // visible for a single frame. The default sentence is too long for this 160-wide
         // playfield, so we pass a short override.
@@ -544,7 +544,7 @@ class Demo {
      * interval feels like a classic D-pad. The `this.dy !== 1` checks block a 180-degree
      * turn: you cannot go straight back into your body on the next step.
      *
-     * @param {'up' | 'down' | 'left' | 'right' | null} swipe - The swipe finished this
+     * @param {'up' | 'down' | 'left' | 'right' | null} swipe – The swipe finished this
      *   tick, if any (from ui.swipe() in update()).
      */
     pollDirectionInput(swipe) {
@@ -577,9 +577,9 @@ class Demo {
      * Combines the three ways to steer in one direction: the engine face button (keyboard
      * or gamepad), the on-screen touch D-pad key, and a swipe that way.
      *
-     * @param {number} button - The engine face button mask (BT.BTN_UP and friends).
-     * @param {'up' | 'down' | 'left' | 'right'} dir - The D-pad/swipe direction name.
-     * @param {'up' | 'down' | 'left' | 'right' | null} swipe - The swipe finished this tick.
+     * @param {number} button – The engine face button mask (BT.BTN_UP and friends).
+     * @param {'up' | 'down' | 'left' | 'right'} dir – The D-pad/swipe direction name.
+     * @param {'up' | 'down' | 'left' | 'right' | null} swipe – The swipe finished this tick.
      * @returns {boolean} True when any of the three pressed that direction this tick.
      */
     isSteerPressed(button, dir, swipe) {
@@ -634,7 +634,7 @@ class Demo {
     }
 
     /**
-     * @param {number} envelope - 0 -> 1 -> 0 over the glitch burst.
+     * @param {number} envelope – 0 -> 1 -> 0 over the glitch burst.
      */
     applyGlitchUniforms(envelope) {
         const peak = this.glitchPeak * envelope;
@@ -705,7 +705,7 @@ class Demo {
 
     /**
      * Starts the looping music voice once audio is unlocked, or restarts it if the voice
-     * was somehow lost. Safe to call every tick - it no-ops while already playing.
+     * was somehow lost. Safe to call every tick – it no-ops while already playing.
      *
      * Why BT.soundPlay instead of BT.musicPlay: only the SFX path exposes pitch (playback
      * rate), which is how we keep the beat tied to snake growth. The tradeoff is that
@@ -716,7 +716,7 @@ class Demo {
             return;
         }
 
-        // Already have a live looping voice - nothing to do.
+        // Already have a live looping voice – nothing to do.
         if (this.musicRef !== null && BT.isSoundPlaying(this.musicRef)) {
             return;
         }
@@ -756,7 +756,7 @@ class Demo {
         this.moveInterval = MOVE_INTERVAL_START;
         this.moveCooldown = this.moveInterval;
 
-        // Zero foods eaten - music returns to MUSIC_PITCH_AT_START for the new round.
+        // Zero foods eaten – music returns to MUSIC_PITCH_AT_START for the new round.
         this.growthCount = 0;
         this.syncMusicTempo();
 
@@ -790,7 +790,7 @@ class Demo {
         }
 
         for (let attempt = 0; attempt < 4000; attempt++) {
-            // int() with a single argument counts from 0, so int(CELLS_X) lands on any column from 0 to CELLS_X - 1
+            // int() with a single argument counts from 0, so int(CELLS_X) lands on any column from 0 to CELLS_X – 1
             // - exactly the valid grid positions.
             const x = BT.random.int(CELLS_X);
             const y = BT.random.int(CELLS_Y);
@@ -803,7 +803,7 @@ class Demo {
             }
         }
 
-        // Board full - no free cell found; (-1, -1) is a sentinel that render() sees and skips drawing the food dot.
+        // Board full – no free cell found; (-1, -1) is a sentinel that render() sees and skips drawing the food dot.
         this.food = { x: -1, y: -1 };
     }
 

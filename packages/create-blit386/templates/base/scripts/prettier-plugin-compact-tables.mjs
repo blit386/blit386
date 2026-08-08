@@ -1,7 +1,7 @@
 /**
  * Prettier plugin: compact Markdown tables.
  *
- * You do not need to read or edit this file - it is tooling, not part of your game.
+ * You do not need to read or edit this file – it is tooling, not part of your game.
  *
  * Prettier normally pads every table cell out to the width of the widest cell in its column, so changing one word
  * rewrites every row of the table. This plugin keeps Prettier's whole Markdown printer and replaces only the `table`
@@ -63,7 +63,7 @@ const DELIMITERS = {
  *
  * Wrapping is disabled (`printWidth: Infinity`) because a table row is always one line: the row, not the print width,
  * decides where output breaks. Printing through `print` rather than slicing the source is what keeps Prettier's usual
- * inline normalization - emphasis style, escaping, link shortening - identical to stock output.
+ * inline normalization – emphasis style, escaping, link shortening – identical to stock output.
  *
  * @param {import('prettier').AstPath} cellPath Path positioned at a `tableCell` node.
  * @param {import('prettier').ParserOptions} options Resolved Prettier options for the file being formatted.
@@ -110,7 +110,7 @@ const printTable = (path, options, print) => {
 /**
  * Prettier's Markdown printer with the `table` case swapped out.
  *
- * Everything else - paragraphs, lists, code fences, prose wrapping - delegates to {@link basePrinter}, so this plugin
+ * Everything else – paragraphs, lists, code fences, prose wrapping – delegates to {@link basePrinter}, so this plugin
  * can only ever change table layout.
  *
  * @type {import('prettier').Printer}

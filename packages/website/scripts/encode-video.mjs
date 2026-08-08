@@ -7,8 +7,8 @@ import { pathToFileURL } from 'node:url';
 /**
  * Encode a screen capture into the two renditions `VideoEmbed` expects, plus a poster.
  *
- * Everything here is tuned for flat pixel-art screen capture - large areas of a single
- * color, hard edges, hard cuts - which compresses very differently from camera footage.
+ * Everything here is tuned for flat pixel-art screen capture – large areas of a single
+ * color, hard edges, hard cuts – which compresses very differently from camera footage.
  * See the comments on AV1_PARAMS and buildH264Args for what each tuning flag buys.
  *
  * Usage: pnpm run encode:video -- <input> --out <dir> [options]
@@ -110,7 +110,7 @@ const USAGE = `Usage: pnpm run encode:video -- <input> --out <dir> [options]
 /**
  * The encoder knobs. Declared once here so the test suite, which runs under `checkJs`, sees
  * the full shape rather than inferring it from DEFAULTS alone. The arg builders take only
- * this - they receive their input and output paths as separate arguments.
+ * this – they receive their input and output paths as separate arguments.
  *
  * @typedef {object} EncodeSettings
  * @property {string} posterAt Timestamp of the frame to lift as the poster, in any syntax
@@ -217,7 +217,7 @@ export function parseArgs(argv) {
  * @param {string | undefined} rateString The raw `stream=r_frame_rate` field, a `num/den`
  *   fraction such as `'30/1'` or `'60000/1001'`. A bare numerator is also accepted.
  * @returns {number | undefined} The frame rate, or undefined when the field is missing,
- *   malformed, or works out to a non-positive rate - ffprobe reports `0/0` for streams it
+ *   malformed, or works out to a non-positive rate – ffprobe reports `0/0` for streams it
  *   cannot determine. Callers substitute their own fallback.
  */
 export function parseFrameRate(rateString) {
@@ -312,7 +312,7 @@ export function buildAv1Args(input, output, options) {
 
 /**
  * H.264 High@4.0 fallback. `-tune animation` is the whole trick: x264's animation tune
- * exists for cel animation - flat color fields with hard edges - which is structurally
+ * exists for cel animation – flat color fields with hard edges – which is structurally
  * identical to pixel art. It relaxes deblocking, lowers psy-rd, and raises bframes/ref.
  * Do not stack `-x264-params` on top; that would override the tune with worse numbers.
  *
@@ -363,7 +363,7 @@ export function buildH264Args(input, output, options) {
 /**
  * Extract the poster frame. `-ss` goes before `-i`, which in ffmpeg 5+ is both fast and
  * frame-accurate. The same crop filter runs so the poster's dimensions match the video's
- * exactly - otherwise the browser stretches it.
+ * exactly – otherwise the browser stretches it.
  *
  * @param {string} input Source capture path.
  * @param {string} output Destination PNG path, converted to WebP in the next stage.
@@ -398,7 +398,7 @@ export function buildPosterFrameArgs(input, output, options) {
 
 /**
  * The dimensions VIDEO_FILTER will produce. The printed `<VideoEmbed>` snippet has to carry
- * these rather than the source dimensions - an odd-sized capture is cropped, and passing the
+ * these rather than the source dimensions – an odd-sized capture is cropped, and passing the
  * uncropped numbers as width/height would stretch the video in the browser.
  *
  * @param {number} width Source width in pixels, as probed. May be NaN if the probe failed.

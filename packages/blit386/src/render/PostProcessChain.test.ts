@@ -188,7 +188,7 @@ describe('add()', () => {
         // texB stays allocated until the chain is fully cleared.
         chain.add(c);
 
-        // No new texture allocations - existing texA + texB are reused.
+        // No new texture allocations – existing texA + texB are reused.
         expect(createTexture).toHaveBeenCalledTimes(2);
     });
 

@@ -30,7 +30,7 @@ export interface IRenderer {
     /**
      * Sets the active palette used for all color lookups this frame and beyond.
      *
-     * @param palette - Palette to activate.
+     * @param palette – Palette to activate.
      */
     setPalette(palette: Palette): void;
 
@@ -51,7 +51,7 @@ export interface IRenderer {
     /**
      * Sets the background clear color for the current frame using a palette index.
      *
-     * @param paletteIndex - Palette index for the clear color.
+     * @param paletteIndex – Palette index for the clear color.
      */
     setClearColor(paletteIndex: number): void;
 
@@ -73,61 +73,61 @@ export interface IRenderer {
     /**
      * Draws a filled rectangle.
      *
-     * @param rect - Rectangle bounds.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds.
+     * @param paletteIndex – Palette color index.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void;
 
     /**
      * Draws a single pixel.
      *
-     * @param pos - Pixel position.
-     * @param paletteIndex - Palette color index.
+     * @param pos – Pixel position.
+     * @param paletteIndex – Palette color index.
      */
     drawPixel(pos: Vector2i, paletteIndex: number): void;
 
     /**
      * Draws a line between two points.
      *
-     * @param p0 - Start point.
-     * @param p1 - End point.
-     * @param paletteIndex - Palette color index.
+     * @param p0 – Start point.
+     * @param p1 – End point.
+     * @param paletteIndex – Palette color index.
      */
     drawLine(p0: Vector2i, p1: Vector2i, paletteIndex: number): void;
 
     /**
      * Draws a rectangle outline.
      *
-     * @param rect - Rectangle bounds.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds.
+     * @param paletteIndex – Palette color index.
      */
     drawRect(rect: Rect2i, paletteIndex: number): void;
 
     /**
      * Fills a rectangular region with a palette-indexed color.
      *
-     * @param rect - Region to fill.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Region to fill.
+     * @param paletteIndex – Palette color index.
      */
     clearRect(rect: Rect2i, paletteIndex: number): void;
 
     /**
      * Draws a sprite region from an indexed sprite sheet.
      *
-     * @param spriteSheet - Source sprite sheet (must be indexized).
-     * @param srcRect - Region to copy from the sprite sheet.
-     * @param destPos - Screen position to draw at.
-     * @param paletteOffset - Palette index offset applied at draw time (default 0).
+     * @param spriteSheet – Source sprite sheet (must be indexized).
+     * @param srcRect – Region to copy from the sprite sheet.
+     * @param destPos – Screen position to draw at.
+     * @param paletteOffset – Palette index offset applied at draw time (default 0).
      */
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void;
 
     /**
      * Draws text using a bitmap font.
      *
-     * @param font - Bitmap font with character glyphs (underlying sheet must be indexized).
-     * @param pos - Text position (top-left corner).
-     * @param text - String to render.
-     * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
+     * @param font – Bitmap font with character glyphs (underlying sheet must be indexized).
+     * @param pos – Text position (top-left corner).
+     * @param text – String to render.
+     * @param paletteOffset – Palette index offset applied to all glyphs (default 0).
      */
     drawBitmapText(font: BitmapFont, pos: Vector2i, text: string, paletteOffset?: number): void;
 
@@ -142,7 +142,7 @@ export interface IRenderer {
     /**
      * Sets the camera offset for scrolling.
      *
-     * @param offset - Camera position in pixels.
+     * @param offset – Camera position in pixels.
      */
     setCameraOffset(offset: Vector2i): void;
 
@@ -163,14 +163,14 @@ export interface IRenderer {
      *
      * Backends that do not support shader effects must throw with a clear message.
      *
-     * @param effect - Effect instance to append.
+     * @param effect – Effect instance to append.
      */
     addEffect(effect: Effect): void;
 
     /**
      * Removes a previously registered post-processing effect.
      *
-     * @param effect - Effect instance to remove.
+     * @param effect – Effect instance to remove.
      */
     removeEffect(effect: Effect): void;
 

@@ -19,14 +19,14 @@ tiers with worked examples, the asset hot-replace matrix, and the `blit386/vite`
 ## What hot reload replaces
 
 Without it, every saved change to a demo or game source file triggers a full page reload: the whole module graph
-re-evaluates, `bootstrap()` runs cold again, and every piece of runtime state is lost - the player's position, score,
+re-evaluates, `bootstrap()` runs cold again, and every piece of runtime state is lost – the player's position, score,
 current level, whatever was on screen. Editing an asset under `public/` (a sprite, a sound, a font) does nothing at all;
 the running instance keeps using whatever it already loaded.
 
 With the `blit386/vite` plugin installed, both of those become live updates instead. A code change injects new behavior
 into the already-running demo, preserving as much state as the change allows. An asset change replaces the
 already-loaded resource in place. A page reload still happens, but only for the handful of changes that are genuinely
-incompatible with swapping in place - see [What always forces a full reload](#what-always-forces-a-full-reload) below.
+incompatible with swapping in place – see [What always forces a full reload](#what-always-forces-a-full-reload) below.
 
 This is engine-side infrastructure. Nothing about it requires demo code to change - `onHotReload` is optional, and a
 demo that never implements it still gets prototype swaps and re-inits for free. It only affects local development;
@@ -35,7 +35,7 @@ demo that never implements it still gets prototype swaps and re-inits for free. 
 ## The three tiers
 
 `bootstrap()` decides which tier applies by comparing the newly re-evaluated demo class against the one currently
-running, every time Vite's HMR boundary re-evaluates the entry module. The decision is entirely mechanical - it is not
+running, every time Vite's HMR boundary re-evaluates the entry module. The decision is entirely mechanical – it is not
 configurable, and there is no way to force a different tier from demo code.
 
 ### Tier 1: method-only change
@@ -72,23 +72,23 @@ jump back to the origin.
 
 The `SPEED` case is the detail worth understanding: a Tier 1 swap does not touch `this.pos`, but it does replace
 `update` with a brand new function, freshly defined in the newly re-evaluated module. That new function closes over the
-new module's top-level scope - so the new value of `SPEED` takes effect on the very next tick, even though no field on
+new module's top-level scope – so the new value of `SPEED` takes effect on the very next tick, even though no field on
 the instance changed. Module-level constants referenced from methods are effectively live-editable.
 
 <Callout type="warn" title="A constant baked into an instance field by init() is not live-editable">
   The live-editable behavior above only holds while every reader of the constant is a method that runs fresh each
-  tick. If `init()` also reads the same constant to build data cached in an instance field - filling a scene buffer,
-  precomputing a lookup table, seeding a starting position - editing the constant is still a methods-only change as
+  tick. If `init()` also reads the same constant to build data cached in an instance field – filling a scene buffer,
+  precomputing a lookup table, seeding a starting position – editing the constant is still a methods-only change as
   far as the fingerprint in [Tier 2](#tier-2-initconstructor-change) is concerned: `init()`'s own source text did not
   change, only the value an unrelated top-level `const` resolves to. So the swap stays Tier 1, `init()` does not
-  re-run, and the instance field keeps whatever it was built from before the edit - while methods swapped in by the
+  re-run, and the instance field keeps whatever it was built from before the edit – while methods swapped in by the
   same save read the new value immediately. The two go out of sync until you force a Tier 2 path yourself (touch
   `init()`, the constructor, or a class field initializer) or fall back to a full page reload / dev server restart.
 </Callout>
 
 ### Tier 2: init/constructor change
 
-If `init()`, the constructor, or a class field initializer changed, a Tier 1 swap is not safe - the running instance was
+If `init()`, the constructor, or a class field initializer changed, a Tier 1 swap is not safe – the running instance was
 built by code that no longer exists. Instead, a fresh instance is constructed and its `init()` runs while the previous
 instance keeps driving the loop. Only once that succeeds does the engine swap the new instance in; a failed `init()`
 (returns `false`, or throws) leaves the previous instance running untouched, so a broken save never crashes your game.
@@ -134,13 +134,13 @@ class Demo implements IBTDemo {
 }
 ```
 
-Without the `onHotReload` hook, a Tier 2 swap still works - it just means every field resets to whatever `init()` sets
+Without the `onHotReload` hook, a Tier 2 swap still works – it just means every field resets to whatever `init()` sets
 it to, same as a cold boot. Implementing `onHotReload` is how you opt into carrying state across a re-init.
 
 ### Tier 3: hardware settings change
 
-If `configure()`'s return value differs from what is currently running - a different `displaySize`, backend, target
-frame rate, or any other field listed in [Hardware settings](api-core.md#hardware-settings) - neither swap is safe. Some
+If `configure()`'s return value differs from what is currently running – a different `displaySize`, backend, target
+frame rate, or any other field listed in [Hardware settings](api-core.md#hardware-settings) – neither swap is safe. Some
 of those changes mean recreating the canvas, the WebGPU device, or the audio graph, and there is no in-place path for
 that. The engine requests a full page reload instead, through Vite's `import.meta.hot.invalidate()`.
 
@@ -164,10 +164,10 @@ class Demo implements IBTDemo {
 }
 ```
 
-`onHotReload` never fires for a Tier 3 reload - the page is gone before there is anything left to notify.
+`onHotReload` never fires for a Tier 3 reload – the page is gone before there is anything left to notify.
 
 Running under `?backend=software` does not itself force a Tier 3 reload on every edit. The comparison accounts for the
-URL override on both sides, so only a genuine `configure()` change - not the override alone - triggers a full page
+URL override on both sides, so only a genuine `configure()` change – not the override alone – triggers a full page
 reload.
 
 ## The `blit386:hot-reload` DOM event
@@ -187,7 +187,7 @@ canvas.addEventListener('blit386:hot-reload', (event) => {
 ```
 
 This is a DOM event rather than a second `BT` callback API on purpose: `onHotReload` is for the demo class itself to
-react to its own state; the DOM event is for anything outside the demo class that wants to know a reload happened - a
+react to its own state; the DOM event is for anything outside the demo class that wants to know a reload happened – a
 browser extension, an in-page dev overlay, a Playwright test waiting for the swap to settle, or any other tooling that
 has no reason to import `blit386` at all. It fires whether or not the demo implements `onHotReload`.
 
@@ -199,14 +199,14 @@ event for anything it recognizes. The engine routes that event by file type:
 | Asset type | What happens |
 | --- | --- |
 | Image (`.png`, `.gif`, `.webp`, `.jpg`, `.jpeg`) | Every registered `SpriteSheet` built from that URL swaps its texture in place, re-running `indexize()` against the active palette when the sheet was already indexized. See the dimension-change caveat below. |
-| Audio (`.wav`, `.mp3`, `.ogg`, `.flac`) | The same `AudioClip` instance swaps its decoded buffer in place - demo-held references stay valid. Any SFX voice still playing the old buffer is stopped; if the replaced clip is the currently playing music track, playback restarts immediately (`fadeMs: 0`, no crossfade). `duration`/`sampleRate` reflect the buffer decoded at initial load and are not updated. |
-| Bitmap font (`.btfont`) | The same `BitmapFont` instance rebuilds its glyph tables and texture in place. `name`/`size`/`lineHeight`/`baseline` are frozen at their original values - only glyph data and the texture update. |
+| Audio (`.wav`, `.mp3`, `.ogg`, `.flac`) | The same `AudioClip` instance swaps its decoded buffer in place – demo-held references stay valid. Any SFX voice still playing the old buffer is stopped; if the replaced clip is the currently playing music track, playback restarts immediately (`fadeMs: 0`, no crossfade). `duration`/`sampleRate` reflect the buffer decoded at initial load and are not updated. |
+| Bitmap font (`.btfont`) | The same `BitmapFont` instance rebuilds its glyph tables and texture in place. `name`/`size`/`lineHeight`/`baseline` are frozen at their original values – only glyph data and the texture update. |
 | Palette | Nothing hot-reload-specific needed - `BT.palette` is already a live reference, so mutating a slot with `palette.set()` takes effect on the very next frame regardless of how the change was triggered. |
 | Anything else | Falls back to a full page reload (`fullReloadOnUnknownAssets`, default `true` - see [Plugin options](#plugin-options)). |
 
 <Callout title="Demo-held srcRects and dimension changes">
   If a hot-replaced image has different dimensions than the one it replaced, the sprite sheet's `size` updates to
-  match and its internal buffers rebuild accordingly - but any `Rect2i` a demo is holding onto as a `srcRect` into
+  match and its internal buffers rebuild accordingly – but any `Rect2i` a demo is holding onto as a `srcRect` into
   that sheet does not update itself. Reconciling a stale `srcRect` after a dimension change is the demo's own
   responsibility; keep sprite sheet dimensions stable during a hot-reload session, or recompute `srcRect`s from the
   sheet's current `width`/`height` in `onHotReload`.
@@ -223,7 +223,7 @@ Beyond the Tier 3 hardware-settings case above, three other situations always me
 swap:
 
 - Editing the engine's own source (a `blit386` dist rebuild). The hot-reload boundary lives in the demo/game's entry
-  module, not inside the engine bundle itself - a changed `blit386` dist is a different module identity as far as Vite's
+  module, not inside the engine bundle itself – a changed `blit386` dist is a different module identity as far as Vite's
   module graph is concerned, so there is nothing to swap into.
 - An asset change with an unrecognized extension, when `fullReloadOnUnknownAssets` is left at its default `true`.
 - Calling `bootstrap()` a second time with no Vite HMR context registered at all (for example, calling it twice by
@@ -231,7 +231,7 @@ swap:
   unstoppable game loop. Before 1.4.0, the same mistake silently started a second GameLoop.
 
 This is a deliberate design choice, not a current limitation: a hard reload is always a full page reload, so there is
-never a point in the engine's lifetime where a renderer needs to tear itself down and rebuild in place - the whole page,
+never a point in the engine's lifetime where a renderer needs to tear itself down and rebuild in place – the whole page,
 canvas, and WebGPU device go away and come back fresh instead. That is why `IRenderer` has no `dispose` method. Adding
 one would mean maintaining a teardown path that a real page reload already gives you for free.
 
@@ -268,14 +268,14 @@ runtime cost or behavior change to ship):
   `registerHotReload` is imported under a plugin-specific alias so the snippet cannot collide with an entry module that
   already binds `registerHotReload` itself (which would be a duplicate-declaration `SyntaxError`).
 
-  The literal `import.meta.hot.accept()` call has to appear in the emitted source - Vite marks a module self-accepting
+  The literal `import.meta.hot.accept()` call has to appear in the emitted source – Vite marks a module self-accepting
   by static analysis, so an indirect call would not register self-acceptance and every edit would fall back to a full
   reload regardless of which tier should have applied. You never write or call `registerHotReload` yourself; the plugin
   injects it, and the engine handles everything from there.
 
   For a plain `.js`/`.mjs` entry, the plugin also syntax-checks the module before injecting. Vite's own default
   transform pipeline excludes those extensions from server-side parsing, so without this a broken entry module would
-  surface only as a silently caught client-side error - Vite's error overlay would never appear. A `.ts`/`.mts` entry is
+  surface only as a silently caught client-side error – Vite's error overlay would never appear. A `.ts`/`.mts` entry is
   unaffected; it already gets real syntax validation from Vite's own transform.
 
 - Marks the build as dev for [`BT.isDevMode`](api-core.md#dev-vs-release-mode) via the snippet's
@@ -337,13 +337,13 @@ export default defineConfig({
 
 ## Future ideas
 
-Not implemented yet - notes for where this could go next:
+Not implemented yet – notes for where this could go next:
 
 - An overlay badge showing the current reload count and the last file that triggered it.
 - A `?hardreload` query parameter or a keyboard chord that forces a clean Tier 2 re-init on demand, without waiting for
   a source edit.
 - Live `.btfont` glyph-metric editing (today only the texture and glyph tables hot-reload; metrics come from the
-  descriptor JSON, which does already reload - this is about interactively nudging metrics from a tool, not a gap in
+  descriptor JSON, which does already reload – this is about interactively nudging metrics from a tool, not a gap in
   what already reloads).
 - Hot-editing a palette file directly, rather than only palette slot mutations already being live.
 - Resuming music at its previous playback position across a hot-reload restart, instead of restarting from the top.

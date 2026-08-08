@@ -42,7 +42,7 @@ const ON_THRESHOLD = 128; // Red channel >= this means "on".
 /**
  * Reads the PNG and extracts bit patterns for all 95 glyphs.
  *
- * @param {string} inputPath - Path to the 96x84 PNG atlas.
+ * @param {string} inputPath – Path to the 96x84 PNG atlas.
  * @returns {number[]} Flat array of 1330 bytes (95 glyphs x 14 rows).
  */
 function extractBitmaps(inputPath) {
@@ -88,7 +88,7 @@ function extractBitmaps(inputPath) {
 /**
  * Returns the printable label for a character code.
  *
- * @param {number} charCode - ASCII character code.
+ * @param {number} charCode – ASCII character code.
  * @returns {string} Human-readable label (e.g., "A (65)" or "Space (32)").
  */
 function charLabel(charCode) {
@@ -102,7 +102,7 @@ function charLabel(charCode) {
 /**
  * Formats a byte as a two-digit hex string with 0x prefix.
  *
- * @param {number} value - Byte value (0-255).
+ * @param {number} value – Byte value (0-255).
  * @returns {string} Formatted hex string.
  */
 function hex(value) {
@@ -112,7 +112,7 @@ function hex(value) {
 /**
  * Generates the TypeScript source for systemFontData.ts.
  *
- * @param {number[]} bitmaps - Flat array of 1330 bytes.
+ * @param {number[]} bitmaps – Flat array of 1330 bytes.
  * @returns {string} Complete TypeScript source file content.
  */
 function generateTypeScript(bitmaps) {

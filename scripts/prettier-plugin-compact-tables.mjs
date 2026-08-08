@@ -2,8 +2,8 @@
  * Prettier plugin: compact Markdown tables.
  *
  * Canonical copy: this file, at the repo root. Every package in this monorepo (`blit386`, `demos`, `website`, `kit`,
- * `create-blit386`) shares it via the root Prettier config - no per-package mirror needed. It is still hand-mirrored
- * into `_GAMES_/blit-ball`, which stays a separate repo outside this workspace - keep that copy identical. The
+ * `create-blit386`) shares it via the root Prettier config – no per-package mirror needed. It is still hand-mirrored
+ * into `_GAMES_/blit-ball`, which stays a separate repo outside this workspace – keep that copy identical. The
  * scaffolder template (`packages/create-blit386/templates/base/scripts/`) carries the same code under a
  * beginner-facing opening comment.
  *
@@ -67,7 +67,7 @@ const DELIMITERS = {
  *
  * Wrapping is disabled (`printWidth: Infinity`) because a table row is always one line: the row, not the print width,
  * decides where output breaks. Printing through `print` rather than slicing the source is what keeps Prettier's usual
- * inline normalization - emphasis style, escaping, link shortening - identical to stock output.
+ * inline normalization – emphasis style, escaping, link shortening – identical to stock output.
  *
  * @param {import('prettier').AstPath} cellPath Path positioned at a `tableCell` node.
  * @param {import('prettier').ParserOptions} options Resolved Prettier options for the file being formatted.
@@ -114,7 +114,7 @@ const printTable = (path, options, print) => {
 /**
  * Prettier's Markdown printer with the `table` case swapped out.
  *
- * Everything else - paragraphs, lists, code fences, prose wrapping - delegates to {@link basePrinter}, so this plugin
+ * Everything else – paragraphs, lists, code fences, prose wrapping – delegates to {@link basePrinter}, so this plugin
  * can only ever change table layout.
  *
  * @type {import('prettier').Printer} The custom printer implementation.

@@ -355,7 +355,7 @@ long as a pointer is over the band, independent of the configure flag.
 <Callout type="warn" title="Upgrading from 1.3.0 or earlier">
 
 Pointer wheel capture is opt-in as of 1.4.0. If your game relied on `BT.pointerScrollDelta` without setting
-`isCapturingPointerScroll: true` in `configure()`, add the flag - otherwise the delta stays zero and the host page
+`isCapturingPointerScroll: true` in `configure()`, add the flag – otherwise the delta stays zero and the host page
 scrolls normally.
 
 </Callout>

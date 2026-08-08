@@ -3,7 +3,7 @@
  * (music, audio-buses) and their retrofit reuse (snake-game, game-scene).
  * Run with: node scripts/generate-audio-loops.mjs
  *
- * No audio libraries or engine code are used here - this is a small standalone
+ * No audio libraries or engine code are used here – this is a small standalone
  * PCM synthesizer that writes 16-bit mono WAV files directly, matching the
  * "no new dependency" spirit of the rest of the demos toolchain.
  */
@@ -49,7 +49,7 @@ function triangleValue(phaseCycles) {
  * Square wave value in [-1, 1] at a given phase (in cycles), with a configurable duty cycle.
  *
  * @param {number} phaseCycles
- * @param {number} dutyCycle - Fraction of each cycle spent at +1, in [0, 1].
+ * @param {number} dutyCycle – Fraction of each cycle spent at +1, in [0, 1].
  * @returns {number}
  */
 function squareValue(phaseCycles, dutyCycle) {

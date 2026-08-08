@@ -107,7 +107,7 @@ export class Orientation {
     /**
      * Calls `orientation.unlock()` and ignores failures.
      *
-     * @param orientation - Platform orientation object to unlock.
+     * @param orientation – Platform orientation object to unlock.
      */
     private static unlockQuietly(orientation: ScreenOrientation): void {
         try {
@@ -121,11 +121,11 @@ export class Orientation {
      * Installs the orientation `change` listener and optionally requests a lock.
      *
      * No-ops when the Screen Orientation API is unavailable. The lock request is
-     * fire-and-forget - a rejection is swallowed and never throws, so callers
+     * fire-and-forget – a rejection is swallowed and never throws, so callers
      * never need to await or catch this.
      *
-     * @param preferred - Preferred lock target; `'any'` skips the lock attempt.
-     * @param onChange - Optional demo callback for subsequent orientation changes.
+     * @param preferred – Preferred lock target; `'any'` skips the lock attempt.
+     * @param onChange – Optional demo callback for subsequent orientation changes.
      */
     public attach(preferred: PreferredOrientation, onChange: ChangeHandler | null): void {
         if (!Orientation.isSupported()) {
@@ -155,7 +155,7 @@ export class Orientation {
      * without this, orientation events would keep reaching the *previous* demo's bound
      * handler after the swap.
      *
-     * @param onChange - Replacement demo callback, or `null` to stop forwarding events.
+     * @param onChange – Replacement demo callback, or `null` to stop forwarding events.
      */
     public setOnChange(onChange: ChangeHandler | null): void {
         this.onChange = onChange;
@@ -197,7 +197,7 @@ export class Orientation {
      * lock, and never recorded as {@link held} for the new attachment.
      *
      * @param preferred - `'landscape'` or `'portrait'` lock target.
-     * @param generation - Attach generation captured when this request started.
+     * @param generation – Attach generation captured when this request started.
      */
     private async lock(preferred: Exclude<PreferredOrientation, 'any'>, generation: number): Promise<void> {
         const orientation = globalThis.screen.orientation as LockableOrientation;
@@ -212,7 +212,7 @@ export class Orientation {
 
             if (generation !== this.generation || !this.attached) {
                 // Stale relative to the current attach/detach cycle. Unlock only when
-                // a newer attach has not already recorded a held lock - unlocking
+                // a newer attach has not already recorded a held lock – unlocking
                 // while held would release that newer lock (unlock is process-wide).
                 if (!this.held) {
                     Orientation.unlockQuietly(orientation);

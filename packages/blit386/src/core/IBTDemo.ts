@@ -146,8 +146,8 @@ export interface HardwareSettings {
      * stutters during development. Defaults to `false`.
      *
      * Detection runs in `GameLoop.detectFrameDrop()` and uses an
-     * auto-calibrated baseline - the shortest `requestAnimationFrame` delta
-     * observed in a rolling window of recent frames - rather than a fixed
+     * auto-calibrated baseline – the shortest `requestAnimationFrame` delta
+     * observed in a rolling window of recent frames – rather than a fixed
      * `1.5 / targetFPS` threshold. A frame is reported as dropped when its
      * rAF delta exceeds 1.5x that baseline, which makes detection work on
      * any display refresh rate (60 / 120 / 144 Hz, etc.) and on browsers
@@ -409,7 +409,7 @@ export interface HardwareSettings {
      * When `true`, the engine draws a per-bus level meter band (main/music/sfx bars plus a
      * voices used/total, steal, and drop text readout) in the overlay. Defaults to `false` in
      * {@link defaultConfig}. Enabling this also lazily creates the `AnalyserNode`s backing the
-     * bus level readings ({@link AudioManager.enableBusMetering}) - no metering cost is paid
+     * bus level readings ({@link AudioManager.enableBusMetering}) – no metering cost is paid
      * unless this flag is `true`.
      *
      * @since 1.3.0
@@ -540,11 +540,11 @@ export interface OverlayRow {
  * Demo contract implemented by BLIT386 applications.
  *
  * Engine lifecycle order:
- * 1. configure() - Optional; called first to set display size, output buffer, FPS, overlay
- * 2. init() - Called after renderer setup, load assets here
- * 3. update() - Fixed timestep via accumulator (may run 0..N times per frame)
- * 4. render() - Called once per requestAnimationFrame (browser refresh rate)
- * 5. (engine) overlay - When {@link HardwareSettings.isOverlayEnabled} is true, drawn after `render()` on top
+ * 1. configure() – Optional; called first to set display size, output buffer, FPS, overlay
+ * 2. init() – Called after renderer setup, load assets here
+ * 3. update() – Fixed timestep via accumulator (may run 0..N times per frame)
+ * 4. render() – Called once per requestAnimationFrame (browser refresh rate)
+ * 5. (engine) overlay – When {@link HardwareSettings.isOverlayEnabled} is true, drawn after `render()` on top
  *
  * @since 0.1.0
  * @changed 1.3.1 Added optional {@link IBTDemo.onOrientationChange} hook.
@@ -634,7 +634,7 @@ export interface IBTDemo {
      * {@link BT.screenOrientation}.
      *
      * @since 1.3.1
-     * @param type - Current `screen.orientation.type` (for example
+     * @param type – Current `screen.orientation.type` (for example
      *   `'landscape-primary'` or `'portrait-secondary'`).
      */
     onOrientationChange?(type: string): void;
@@ -652,7 +652,7 @@ export interface IBTDemo {
      * this hook is only ever called during local development.
      *
      * @since 1.4.0
-     * @param context - Which tier ran, the new generation number, and (for
+     * @param context – Which tier ran, the new generation number, and (for
      *   `'reinit'`) a field snapshot of the previous instance.
      */
     onHotReload?(context: HotReloadContext): void;
@@ -695,7 +695,7 @@ export function defaultConfig(): HardwareSettings {
 /**
  * Clones a {@link Vector2i} so merged settings do not share mutable references.
  *
- * @param size - Source vector.
+ * @param size – Source vector.
  * @returns Fresh vector with the same components.
  */
 function cloneVector2i(size: Vector2i): Vector2i {
@@ -710,7 +710,7 @@ const INVALID_CONFIGURE_VECTOR_SIZE = new Vector2i(0, 0);
  *
  * Explicit `null` is detected from the original `partial` field during merge, not from `picked`.
  *
- * @param value - Field from demo `configure()`.
+ * @param value – Field from demo `configure()`.
  * @returns Cloned vector when valid, otherwise `undefined`.
  */
 function pickConfigureVector(value: Vector2i | undefined | null): Vector2i | undefined {
@@ -725,7 +725,7 @@ function pickConfigureVector(value: Vector2i | undefined | null): Vector2i | und
  * Clones a caller-supplied configure color so merged settings do not share a
  * mutable reference with the demo's `configure()` return value.
  *
- * @param value - Raw color from `configure()`, possibly undefined.
+ * @param value – Raw color from `configure()`, possibly undefined.
  * @returns Cloned color, or undefined when none was supplied.
  */
 function pickConfigureColor(value: Color32 | undefined): Color32 | undefined {
@@ -738,9 +738,9 @@ function pickConfigureColor(value: Color32 | undefined): Color32 | undefined {
  * Uses defaults only when the field was omitted (`undefined`). Explicit `null` maps to
  * {@link INVALID_CONFIGURE_VECTOR_SIZE} so {@link validateDimensions} can reject it.
  *
- * @param partialDisplaySize - Raw `configure()` value.
- * @param pickedDisplaySize - Cloned value from {@link pickDefinedHardwareSettings}, if any.
- * @param fallback - Baseline display size from {@link defaultConfig}.
+ * @param partialDisplaySize – Raw `configure()` value.
+ * @param pickedDisplaySize – Cloned value from {@link pickDefinedHardwareSettings}, if any.
+ * @param fallback – Baseline display size from {@link defaultConfig}.
  * @returns Resolved display size (never `null`).
  */
 function resolveExplicitDisplaySize(
@@ -762,8 +762,8 @@ function resolveExplicitDisplaySize(
 /**
  * Resolves an optional vector for the explicit display profile.
  *
- * @param partialValue - Raw `configure()` value.
- * @param picked - Cloned value from {@link pickDefinedHardwareSettings}, if any.
+ * @param partialValue – Raw `configure()` value.
+ * @param picked – Cloned value from {@link pickDefinedHardwareSettings}, if any.
  * @returns Cloned vector, {@link INVALID_CONFIGURE_VECTOR_SIZE} when `partialValue` is `null`, or `undefined` when omitted.
  */
 function resolveExplicitOptionalVector(
@@ -780,9 +780,9 @@ function resolveExplicitOptionalVector(
 /**
  * Copies a defined scalar or object field from `partial` into `picked`.
  *
- * @param picked - Output partial settings.
- * @param partial - Values returned by the demo's `configure()` hook.
- * @param key - Hardware settings field to copy when defined.
+ * @param picked – Output partial settings.
+ * @param partial – Values returned by the demo's `configure()` hook.
+ * @param key – Hardware settings field to copy when defined.
  */
 function pickIfDefinedPartial<K extends keyof HardwareSettings>(
     picked: Partial<HardwareSettings>,
@@ -799,8 +799,8 @@ function pickIfDefinedPartial<K extends keyof HardwareSettings>(
 /**
  * Copies defined overlay fields from `partial` into `picked`.
  *
- * @param picked - Output partial settings.
- * @param partial - Values returned by the demo's `configure()` hook.
+ * @param picked – Output partial settings.
+ * @param partial – Values returned by the demo's `configure()` hook.
  */
 function pickDefinedOverlaySettings(picked: Partial<HardwareSettings>, partial: Partial<HardwareSettings>): void {
     pickIfDefinedPartial(picked, partial, 'isOverlayEnabled');
@@ -834,7 +834,7 @@ function pickDefinedOverlaySettings(picked: Partial<HardwareSettings>, partial: 
 /**
  * Copies only defined fields from a partial configure() return value.
  *
- * @param partial - Values returned by the demo's `configure()` hook.
+ * @param partial – Values returned by the demo's `configure()` hook.
  * @returns Partial settings containing only defined entries, with vectors cloned.
  */
 function pickDefinedHardwareSettings(partial: Partial<HardwareSettings>): Partial<HardwareSettings> {
@@ -898,7 +898,7 @@ const DEPRECATED_BOOLEAN_ALIASES = [
  *
  * New names always win when both are provided in the same object.
  *
- * @param partial - Raw values returned by configure().
+ * @param partial – Raw values returned by configure().
  * @returns Partial settings with legacy keys mapped to current keys.
  */
 function normalizeDeprecatedHardwareSettings(partial: Partial<HardwareSettings>): Partial<HardwareSettings> {
@@ -920,9 +920,9 @@ function normalizeDeprecatedHardwareSettings(partial: Partial<HardwareSettings>)
 /**
  * Resolves an optional vector from picked configure values or defaults.
  *
- * @param partialValue - Raw value from `configure()` for this optional vector field.
- * @param picked - Value from `configure()`, if any.
- * @param fallback - Default vector when picked is omitted.
+ * @param partialValue – Raw value from `configure()` for this optional vector field.
+ * @param picked – Value from `configure()`, if any.
+ * @param fallback – Default vector when picked is omitted.
  * @returns Cloned vector or `undefined` when neither side provides a size.
  */
 function resolveMergedOptionalVector(
@@ -944,9 +944,9 @@ function resolveMergedOptionalVector(
 /**
  * Sets `target[key]` when `value` is defined.
  *
- * @param target - Partial settings object being built.
- * @param key - Hardware settings field to assign.
- * @param value - Resolved value, or `undefined` to skip.
+ * @param target – Partial settings object being built.
+ * @param key – Hardware settings field to assign.
+ * @param value – Resolved value, or `undefined` to skip.
  */
 function assignIfDefined<K extends keyof HardwareSettings>(
     target: Partial<HardwareSettings>,
@@ -962,7 +962,7 @@ function assignIfDefined<K extends keyof HardwareSettings>(
 /**
  * Shallow-clones an object-shaped optional before assignment.
  *
- * @param value - Optional record from configure or defaults.
+ * @param value – Optional record from configure or defaults.
  * @returns Cloned record, or `undefined` when input is omitted.
  */
 function shallowCloneOptional<T extends object>(value: T | undefined): T | undefined {
@@ -972,11 +972,11 @@ function shallowCloneOptional<T extends object>(value: T | undefined): T | undef
 /**
  * Merged optional vectors for the full-default configure path.
  *
- * @param optionals - Partial {@link HardwareSettings} object being built; optional
+ * @param optionals – Partial {@link HardwareSettings} object being built; optional
  *   vector fields are written here via {@link assignIfDefined} when resolved.
- * @param partial - Raw `configure()` return value being merged.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
+ * @param partial – Raw `configure()` return value being merged.
+ * @param picked – Defined fields from `configure()`.
+ * @param defaults – Baseline hardware settings.
  */
 function assignFullDefaultMergeVectors(
     optionals: Partial<HardwareSettings>,
@@ -1000,9 +1000,9 @@ function assignFullDefaultMergeVectors(
 /**
  * Merged optional scalars and overlay records for the full-default configure path.
  *
- * @param optionals - Partial settings object being built.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
+ * @param optionals – Partial settings object being built.
+ * @param picked – Defined fields from `configure()`.
+ * @param defaults – Baseline hardware settings.
  */
 // eslint-disable-next-line complexity -- flat fan-out of one assignIfDefined per field, not branching
 function assignFullDefaultMergeScalars(
@@ -1102,9 +1102,9 @@ function assignFullDefaultMergeScalars(
 /**
  * Merged optional audio meter fields for the full-default configure path.
  *
- * @param optionals - Partial settings object being built.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
+ * @param optionals – Partial settings object being built.
+ * @param picked – Defined fields from `configure()`.
+ * @param defaults – Baseline hardware settings.
  */
 function assignFullDefaultMergeAudioMeterScalars(
     optionals: Partial<HardwareSettings>,
@@ -1133,9 +1133,9 @@ function assignFullDefaultMergeAudioMeterScalars(
 /**
  * Collects optional hardware fields for the full-default merge path.
  *
- * @param partial - Raw `configure()` return value being merged.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
+ * @param partial – Raw `configure()` return value being merged.
+ * @param picked – Defined fields from `configure()`.
+ * @param defaults – Baseline hardware settings.
  * @returns Partial settings to spread into the resolved profile.
  */
 function buildFullDefaultMergeOptionals(
@@ -1152,8 +1152,8 @@ function buildFullDefaultMergeOptionals(
 /**
  * Optional fields explicitly set in `configure()` when the demo provided `displaySize`.
  *
- * @param partial - Raw `configure()` return value with explicit `displaySize`.
- * @param picked - Defined fields with vectors cloned.
+ * @param partial – Raw `configure()` return value with explicit `displaySize`.
+ * @param picked – Defined fields with vectors cloned.
  * @returns Partial settings to spread into the resolved profile.
  */
 function buildExplicitDisplayOptionals(
@@ -1200,9 +1200,9 @@ function buildExplicitDisplayOptionals(
  * Merges partial settings with {@link defaultConfig} when the demo did not set
  * `displaySize` (for example only `{ targetFPS: 30 }`).
  *
- * @param partial - Raw `configure()` return value being merged.
- * @param picked - Defined fields from `configure()`.
- * @param defaults - Baseline hardware settings.
+ * @param partial – Raw `configure()` return value being merged.
+ * @param picked – Defined fields from `configure()`.
+ * @param defaults – Baseline hardware settings.
  * @returns Resolved settings with full default resolution and output buffer.
  */
 function mergePartialWithFullDefaults(
@@ -1225,9 +1225,9 @@ function mergePartialWithFullDefaults(
 /**
  * Applies only fields present in `configure()` when the demo set `displaySize`.
  *
- * @param partial - Raw `configure()` return value with explicit `displaySize`.
- * @param picked - Defined fields with vectors cloned.
- * @param defaults - Baseline hardware settings for required fallbacks.
+ * @param partial – Raw `configure()` return value with explicit `displaySize`.
+ * @param picked – Defined fields with vectors cloned.
+ * @param defaults – Baseline hardware settings for required fallbacks.
  * @returns Resolved settings; omitted optionals such as `drawingBufferSize` stay unset.
  * `backend` always inherits from {@link defaultConfig} when omitted from `configure()`.
  */
@@ -1259,7 +1259,7 @@ function mergeExplicitDisplayProfile(
  * can match logical resolution. `isOverlayEnabled` defaults to `true` when omitted.
  *
  * @since 1.0.5
- * @param partial - Optional partial settings from `configure()`.
+ * @param partial – Optional partial settings from `configure()`.
  * @returns Resolved hardware settings for initialization.
  */
 export function mergeHardwareSettings(partial?: Partial<HardwareSettings>): HardwareSettings {
@@ -1287,7 +1287,7 @@ export type OverlayTimingChartDiagnosticsMode = false | 'minimal' | 'rich';
  *
  * Defaults to `'minimal'` when the timing chart is enabled and the field is omitted; `false` otherwise.
  *
- * @param settings - Resolved hardware settings.
+ * @param settings – Resolved hardware settings.
  * @returns Chart diagnostic visualization mode.
  */
 export function resolveOverlayTimingChartDiagnostics(settings: HardwareSettings): OverlayTimingChartDiagnosticsMode {
@@ -1301,7 +1301,7 @@ export function resolveOverlayTimingChartDiagnostics(settings: HardwareSettings)
 /**
  * Whether BTAPI should collect WebGPU renderer diagnostic counters this frame.
  *
- * @param settings - Resolved hardware settings.
+ * @param settings – Resolved hardware settings.
  * @returns `true` when chart diagnostics or the renderer diagnostics bar needs data.
  */
 export function needsOverlayRendererDiagnostics(settings: HardwareSettings): boolean {

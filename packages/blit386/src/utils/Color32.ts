@@ -88,10 +88,10 @@ export class Color32 {
     /**
      * Creates a clamped 8-bit RGBA color.
      *
-     * @param r - Red channel (0-255, defaults to 255).
-     * @param g - Green channel (0-255, defaults to 255).
-     * @param b - Blue channel (0-255, defaults to 255).
-     * @param a - Alpha channel (0-255, defaults to 255 = opaque).
+     * @param r – Red channel (0-255, defaults to 255).
+     * @param g – Green channel (0-255, defaults to 255).
+     * @param b – Blue channel (0-255, defaults to 255).
+     * @param a – Alpha channel (0-255, defaults to 255 = opaque).
      */
     constructor(r: number = 255, g: number = 255, b: number = 255, a: number = 255) {
         // Clamp and truncate to integer using optimized clampByte helper.
@@ -103,7 +103,7 @@ export class Color32 {
 
     /**
      * Pure white color (255, 255, 255, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared white Color32 instance.
      */
     static get white(): Color32 {
@@ -112,7 +112,7 @@ export class Color32 {
 
     /**
      * Pure black color (0, 0, 0, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared black Color32 instance.
      */
     static get black(): Color32 {
@@ -121,7 +121,7 @@ export class Color32 {
 
     /**
      * Fully transparent color (0, 0, 0, 0).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared transparent Color32 instance.
      */
     static get transparent(): Color32 {
@@ -130,7 +130,7 @@ export class Color32 {
 
     /**
      * Pure red color (255, 0, 0, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared red Color32 instance.
      */
     static get red(): Color32 {
@@ -139,7 +139,7 @@ export class Color32 {
 
     /**
      * Pure green color (0, 255, 0, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared green Color32 instance.
      */
     static get green(): Color32 {
@@ -148,7 +148,7 @@ export class Color32 {
 
     /**
      * Pure blue color (0, 0, 255, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared blue Color32 instance.
      */
     static get blue(): Color32 {
@@ -157,7 +157,7 @@ export class Color32 {
 
     /**
      * Yellow color (255, 255, 0, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared yellow Color32 instance.
      */
     static get yellow(): Color32 {
@@ -166,7 +166,7 @@ export class Color32 {
 
     /**
      * Cyan color (0, 255, 255, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared cyan Color32 instance.
      */
     static get cyan(): Color32 {
@@ -175,7 +175,7 @@ export class Color32 {
 
     /**
      * Magenta color (255, 0, 255, 255).
-     * Cached frozen singleton - do not modify.
+     * Cached frozen singleton – do not modify.
      * @returns The shared magenta Color32 instance.
      */
     static get magenta(): Color32 {
@@ -194,7 +194,7 @@ export class Color32 {
     /**
      * Creates a grayscale color with equal RGB values.
      *
-     * @param value - Brightness level (0-255).
+     * @param value – Brightness level (0-255).
      * @returns Opaque gray color.
      */
     static gray(value: number): Color32 {
@@ -205,9 +205,9 @@ export class Color32 {
      * Linearly interpolates between two colors.
      * Each RGBA channel is interpolated independently. `t` is clamped to [0, 1].
      *
-     * @param a - Color at t = 0.
-     * @param b - Color at t = 1.
-     * @param t - Interpolation factor (0.0 = `a`, 1.0 = `b`).
+     * @param a – Color at t = 0.
+     * @param b – Color at t = 1.
+     * @param t – Interpolation factor (0.0 = `a`, 1.0 = `b`).
      * @returns New color blended between `a` and `b`.
      */
     static lerp(a: Color32, b: Color32, t: number): Color32 {
@@ -218,8 +218,8 @@ export class Color32 {
      * Registers a named color in the global color registry.
      * Name matching is case-insensitive and trims surrounding whitespace.
      *
-     * @param name - Named color key (for example `cornflowerblue`).
-     * @param color - Color value to store for that name.
+     * @param name – Named color key (for example `cornflowerblue`).
+     * @param color – Color value to store for that name.
      * @throws Error when name is empty after normalization or already exists.
      */
     static registerColor(name: string, color: Color32): void {
@@ -237,8 +237,8 @@ export class Color32 {
      * Name matching is case-insensitive and trims surrounding whitespace.
      * All alias keys that share the same object reference are updated in sync.
      *
-     * @param name - Existing named color key (or any alias).
-     * @param color - Replacement color value.
+     * @param name – Existing named color key (or any alias).
+     * @param color – Replacement color value.
      * @throws Error when name is empty after normalization or not registered.
      */
     static updateColor(name: string, color: Color32): void {
@@ -263,7 +263,7 @@ export class Color32 {
      * Name matching is case-insensitive and trims surrounding whitespace.
      * All alias keys that share the same object reference are removed in sync.
      *
-     * @param name - Existing named color key (or any alias).
+     * @param name – Existing named color key (or any alias).
      * @throws Error when name is empty after normalization or not registered.
      */
     static unregisterColor(name: string): void {
@@ -291,7 +291,7 @@ export class Color32 {
      * Looks up a named color from the global registry.
      * Name matching is case-insensitive and trims surrounding whitespace.
      *
-     * @param name - Named color key to resolve.
+     * @param name – Named color key to resolve.
      * @returns Frozen singleton color, or `undefined` when the name is unknown.
      */
     static resolveNamedColor(name: string): Color32 | undefined {
@@ -305,10 +305,10 @@ export class Color32 {
      * Intended for trusted hot paths where channel values are already known to
      * be valid byte-range numbers.
      *
-     * @param r - Red channel (must be integer 0-255).
-     * @param g - Green channel (must be integer 0-255).
-     * @param b - Blue channel (must be integer 0-255).
-     * @param a - Alpha channel (must be integer 0-255).
+     * @param r – Red channel (must be integer 0-255).
+     * @param g – Green channel (must be integer 0-255).
+     * @param b – Blue channel (must be integer 0-255).
+     * @param a – Alpha channel (must be integer 0-255).
      * @returns New Color32 with the specified values.
      */
     static fromRGBAUnchecked(r: number, g: number, b: number, a: number): Color32 {
@@ -326,7 +326,7 @@ export class Color32 {
      * Creates a color from a packed 32-bit unsigned integer (ABGR format).
      * Inverse of toUint32().
      *
-     * @param uint32 - Packed color value (A << 24 | B << 16 | G << 8 | R).
+     * @param uint32 – Packed color value (A << 24 | B << 16 | G << 8 | R).
      * @returns New color unpacked from the integer.
      */
     static fromUint32(uint32: number): Color32 {
@@ -342,7 +342,7 @@ export class Color32 {
      * Parses a CSS-style hex color string.
      * Supports `#RGB`, `#RGBA`, `#RRGGBB`, and `#RRGGBBAA`.
      *
-     * @param hex - Hex color string with or without leading #.
+     * @param hex – Hex color string with or without leading #.
      * @returns Parsed color.
      * @throws Error if the hex string format is invalid.
      */
@@ -392,10 +392,10 @@ export class Color32 {
     /**
      * Creates a color from normalized float components in the `0.0-1.0` range.
      *
-     * @param r - Red channel (0.0-1.0).
-     * @param g - Green channel (0.0-1.0).
-     * @param b - Blue channel (0.0-1.0).
-     * @param a - Alpha channel (0.0-1.0, defaults to 1.0).
+     * @param r – Red channel (0.0-1.0).
+     * @param g – Green channel (0.0-1.0).
+     * @param b – Blue channel (0.0-1.0).
+     * @param a – Alpha channel (0.0-1.0, defaults to 1.0).
      * @returns New color converted from float values.
      */
     static fromFloat(r: number, g: number, b: number, a: number = 1): Color32 {
@@ -405,10 +405,10 @@ export class Color32 {
     /**
      * Creates a color from HSL values.
      *
-     * @param h - Hue in degrees (0-360).
-     * @param s - Saturation as percentage (0-100).
-     * @param l - Lightness as percentage (0-100).
-     * @param a - Alpha channel (0-255, defaults to 255).
+     * @param h – Hue in degrees (0-360).
+     * @param s – Saturation as percentage (0-100).
+     * @param l – Lightness as percentage (0-100).
+     * @param a – Alpha channel (0-255, defaults to 255).
      * @returns New color converted from HSL values.
      */
     static fromHSL(h: number, s: number, l: number, a: number = 255): Color32 {
@@ -514,7 +514,7 @@ export class Color32 {
     /**
      * Normalizes a named-color key for case-insensitive lookups.
      *
-     * @param name - Input color name.
+     * @param name – Input color name.
      * @returns Trimmed lowercase name.
      * @throws Error when the normalized name is empty.
      */
@@ -530,7 +530,7 @@ export class Color32 {
     /**
      * Clones and freezes a color so registry entries are immutable singletons.
      *
-     * @param color - Source color to freeze.
+     * @param color – Source color to freeze.
      * @returns Frozen singleton copy.
      */
     private static freezeSingleton(color: Color32): Color32 {
@@ -557,8 +557,8 @@ export class Color32 {
      * Note: For maximum performance in tight loops, consider accessing
      * r/g/b/a directly and dividing by 255 inline to avoid method call overhead.
      *
-     * @param target - The Float32Array to write to.
-     * @param offset - Starting index in the array (default: 0).
+     * @param target – The Float32Array to write to.
+     * @param offset – Starting index in the array (default: 0).
      */
     writeToFloat32Array(target: Float32Array, offset: number = 0): void {
         // Using direct index assignment for the best performance.
@@ -630,7 +630,7 @@ export class Color32 {
     /**
      * Checks if this color equals another (all channels match).
      *
-     * @param other - Color to compare with.
+     * @param other – Color to compare with.
      * @returns True if all RGBA channels are identical.
      */
     isEqual(other: Color32): boolean {
@@ -650,7 +650,7 @@ export class Color32 {
      * Backward-compatible alias for {@link isEqual}.
      *
      * @deprecated Deprecated since 0.1.0 (2026-05-31). Use {@link isEqual} instead.
-     * @param other - Color to compare with.
+     * @param other – Color to compare with.
      * @returns True if all RGBA channels are identical.
      */
     equals(other: Color32): boolean {
@@ -670,7 +670,7 @@ export class Color32 {
     /**
      * Creates a new color with modified alpha, keeping RGB unchanged.
      *
-     * @param alpha - New alpha value (0-255).
+     * @param alpha – New alpha value (0-255).
      * @returns New color with updated alpha.
      */
     withAlpha(alpha: number): Color32 {
@@ -680,9 +680,9 @@ export class Color32 {
     /**
      * Creates a new color with modified RGB, keeping alpha unchanged.
      *
-     * @param r - New red value (0-255).
-     * @param g - New green value (0-255).
-     * @param b - New blue value (0-255).
+     * @param r – New red value (0-255).
+     * @param g – New green value (0-255).
+     * @param b – New blue value (0-255).
      * @returns New color with updated RGB.
      */
     withRGB(r: number, g: number, b: number): Color32 {
@@ -703,8 +703,8 @@ export class Color32 {
      * Linearly interpolates between this color and another.
      * Useful for color transitions and gradients.
      *
-     * @param other - Target color to blend toward.
-     * @param t - Interpolation factor (0.0 = this color, 1.0 = other color).
+     * @param other – Target color to blend toward.
+     * @param t – Interpolation factor (0.0 = this color, 1.0 = other color).
      * @returns New color blended between this and other.
      */
     lerp(other: Color32, t: number): Color32 {
@@ -725,8 +725,8 @@ export class Color32 {
      * Linearly interpolates this color toward another, modifying in place.
      * Use this in hot loops to avoid object allocation.
      *
-     * @param other - Target color to blend toward.
-     * @param t - Interpolation factor (0.0 = this color, 1.0 = other color).
+     * @param other – Target color to blend toward.
+     * @param t – Interpolation factor (0.0 = this color, 1.0 = other color).
      * @returns This color instance for chaining.
      */
     lerpInPlace(other: Color32, t: number): this {
@@ -746,7 +746,7 @@ export class Color32 {
      * Multiplies this color by another color component-wise.
      * Useful for tinting and color modulation.
      *
-     * @param other - Color to multiply with.
+     * @param other – Color to multiply with.
      * @returns New color with each channel multiplied and normalized.
      */
     multiply(other: Color32): Color32 {
@@ -762,7 +762,7 @@ export class Color32 {
      * Multiplies this color by another color component-wise, modifying in place.
      * Use this in hot loops to avoid object allocation.
      *
-     * @param other - Color to multiply with.
+     * @param other – Color to multiply with.
      * @returns This color instance for chaining.
      */
     multiplyInPlace(other: Color32): this {
@@ -778,7 +778,7 @@ export class Color32 {
      * Adds another color to this one, clamping to valid range.
      * Useful for additive blending effects.
      *
-     * @param other - Color to add.
+     * @param other – Color to add.
      * @returns New color with summed channels (clamped to 0-255).
      */
     add(other: Color32): Color32 {
@@ -789,7 +789,7 @@ export class Color32 {
      * Adds another color to this one in place, clamping to valid range.
      * Use this in hot loops to avoid object allocation.
      *
-     * @param other - Color to add.
+     * @param other – Color to add.
      * @returns This color instance for chaining.
      */
     addInPlace(other: Color32): this {
@@ -883,10 +883,10 @@ export class Color32 {
      * Sets all RGBA channels at once, with validation.
      * Use this to reuse a Color32 instance instead of creating a new one.
      *
-     * @param r - Red channel (0-255).
-     * @param g - Green channel (0-255).
-     * @param b - Blue channel (0-255).
-     * @param a - Alpha channel (0-255).
+     * @param r – Red channel (0-255).
+     * @param g – Green channel (0-255).
+     * @param b – Blue channel (0-255).
+     * @param a – Alpha channel (0-255).
      * @returns This color instance for chaining.
      */
     setRGBA(r: number, g: number, b: number, a: number): this {
@@ -904,10 +904,10 @@ export class Color32 {
      *
      * WARNING: Passing invalid values will result in undefined behavior.
      *
-     * @param r - Red channel (must be integer 0-255).
-     * @param g - Green channel (must be integer 0-255).
-     * @param b - Blue channel (must be integer 0-255).
-     * @param a - Alpha channel (must be integer 0-255).
+     * @param r – Red channel (must be integer 0-255).
+     * @param g – Green channel (must be integer 0-255).
+     * @param b – Blue channel (must be integer 0-255).
+     * @param a – Alpha channel (must be integer 0-255).
      * @returns This color instance for chaining.
      */
     setRGBAUnchecked(r: number, g: number, b: number, a: number): this {
@@ -923,7 +923,7 @@ export class Color32 {
      * Copies values from another Color32 instance.
      * Use this to reuse a Color32 instance instead of creating a new one.
      *
-     * @param other - Color to copy from.
+     * @param other – Color to copy from.
      * @returns This color instance for chaining.
      */
     copyFrom(other: Color32): this {
@@ -941,7 +941,7 @@ export class Color32 {
  * Optimized for the common case of color channel clamping.
  * Exported for use in other utilities that work with byte values.
  *
- * @param n - Value to clamp.
+ * @param n – Value to clamp.
  * @returns Integer in range 0-255.
  */
 export function clampByte(n: number): number {
@@ -953,7 +953,7 @@ export function clampByte(n: number): number {
 /**
  * Clamps a unit interpolation factor to the closed interval [0, 1].
  *
- * @param t - Raw interpolation factor.
+ * @param t – Raw interpolation factor.
  * @returns Clamped factor in range 0-1.
  */
 export function clampUnit(t: number): number {
@@ -971,7 +971,7 @@ export function clampUnit(t: number): number {
  * Exported for other utilities that need linear-light math; not part of the
  * public `blit386` surface.
  *
- * @param channel - Encoded channel value in range 0-1.
+ * @param channel – Encoded channel value in range 0-1.
  * @returns Linear-light value in range 0-1.
  */
 export function srgbToLinear(channel: number): number {
@@ -988,7 +988,7 @@ export function srgbToLinear(channel: number): number {
  * Exported for other utilities that need linear-light math; not part of the
  * public `blit386` surface.
  *
- * @param linear - Linear-light value in range 0-1.
+ * @param linear – Linear-light value in range 0-1.
  * @returns Encoded channel value in range 0-1.
  */
 export function linearToSrgb(linear: number): number {
@@ -1003,7 +1003,7 @@ export function linearToSrgb(linear: number): number {
  * Rounds to nearest so a {@link linearizeByte} / {@link encodeByte} round trip
  * does not drift downward one level at a time.
  *
- * @param value - Encoded channel byte in range 0-255.
+ * @param value – Encoded channel byte in range 0-255.
  * @returns Linear-light channel byte in range 0-255.
  */
 function linearizeByte(value: number): number {
@@ -1013,7 +1013,7 @@ function linearizeByte(value: number): number {
 /**
  * Converts one linear-light byte to an encoded sRGB byte.
  *
- * @param value - Linear-light channel byte in range 0-255.
+ * @param value – Linear-light channel byte in range 0-255.
  * @returns Encoded channel byte in range 0-255.
  */
 function encodeByte(value: number): number {
@@ -1023,7 +1023,7 @@ function encodeByte(value: number): number {
 /**
  * Throws a standardized beginner-friendly error for invalid hex colors.
  *
- * @param hex - Original input string.
+ * @param hex – Original input string.
  */
 function throwInvalidHex(hex: string): never {
     throw new Error(
@@ -1034,9 +1034,9 @@ function throwInvalidHex(hex: string): never {
 /**
  * Parses an exact-length hex substring and rejects partial/invalid tokens.
  *
- * @param hex - Original full hex string.
- * @param start - Token start index in the full string.
- * @param length - Expected token length.
+ * @param hex – Original full hex string.
+ * @param start – Token start index in the full string.
+ * @param length – Expected token length.
  * @returns Parsed base-16 number.
  */
 function parseHexToken(hex: string, start: number, length: number): number {

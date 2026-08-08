@@ -1451,7 +1451,7 @@
       "changes": [
         {
           "version": "1.4.0",
-          "note": "Calling `bootstrap()` again while already initialized now routes to a hot\nswap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a\ndouble-bootstrap guard and returns `false` otherwise - previously it silently started a\nsecond, unstoppable `GameLoop`."
+          "note": "Calling `bootstrap()` again while already initialized now routes to a hot\nswap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a\ndouble-bootstrap guard and returns `false` otherwise – previously it silently started a\nsecond, unstoppable `GameLoop`."
         }
       ],
       "deprecated": null,

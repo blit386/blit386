@@ -48,8 +48,8 @@ codec support follows the browser, not BLIT386.
 <Callout title="Point-in-time snapshot">
 
 Codec support shifts with browser updates. Treat this matrix as a snapshot and re-check the vendor release notes
-periodically. This is why `AudioClip.load()` accepts an ordered fallback list (for example
-`['theme.ogg', 'theme.mp3']`) - the engine tries each candidate in order until one decodes.
+periodically. This is why `AudioClip.load()` accepts an ordered fallback list (for example `['theme.ogg', 'theme.mp3']`)
+– the engine tries each candidate in order until one decodes.
 
 </Callout>
 
@@ -90,7 +90,7 @@ attempt `screen.orientation.lock()` after init; the default `'any'` skips the lo
 
 <Callout title="Silent no-op fallback">
 
-Lock support is uneven - Chrome on Android and Samsung Internet typically allow it; iOS Safari does not. When locking is
+Lock support is uneven – Chrome on Android and Samsung Internet typically allow it; iOS Safari does not. When locking is
 unsupported or rejected, the engine continues without unlocking or failing `init()`. Detection and `onOrientationChange`
 still work wherever `screen.orientation` exists.
 

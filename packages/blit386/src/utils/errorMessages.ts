@@ -11,7 +11,7 @@ import { buildPathHint, extractExtension } from './urlHints';
 /**
  * Returns the canvas-not-found error message for the given canvas element ID.
  *
- * @param canvasID - The canvas element ID that was searched for.
+ * @param canvasID – The canvas element ID that was searched for.
  * @returns User-facing error string.
  */
 export function CANVAS_NOT_FOUND_MESSAGE(canvasID: string): string {
@@ -56,8 +56,8 @@ export const OVERLAY_NO_BACKEND =
 /**
  * Returns the error message for a render dimension that is not a positive whole-number pixel size.
  *
- * @param field - Hardware settings field that contains the invalid size.
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param field – Hardware settings field that contains the invalid size.
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
  * @returns User-facing error string.
  */
 export function renderDimensionInvalidError(field: string, size: string): string {
@@ -70,10 +70,10 @@ export function renderDimensionInvalidError(field: string, size: string): string
 /**
  * Returns the error message for a render dimension whose width or height exceeds engine limits.
  *
- * @param field - Hardware settings field that contains the invalid size.
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
- * @param maxWidth - Maximum accepted width in pixels.
- * @param maxHeight - Maximum accepted height in pixels.
+ * @param field – Hardware settings field that contains the invalid size.
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param maxWidth – Maximum accepted width in pixels.
+ * @param maxHeight – Maximum accepted height in pixels.
  * @returns User-facing error string.
  */
 export function renderDimensionTooLargeError(field: string, size: string, maxWidth: number, maxHeight: number): string {
@@ -85,9 +85,9 @@ export function renderDimensionTooLargeError(field: string, size: string, maxWid
 /**
  * Returns the error message for a render dimension whose total pixel area exceeds engine limits.
  *
- * @param field - Hardware settings field that contains the invalid size.
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
- * @param maxPixels - Maximum accepted total pixels.
+ * @param field – Hardware settings field that contains the invalid size.
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param maxPixels – Maximum accepted total pixels.
  * @returns User-facing error string.
  */
 export function renderDimensionAreaTooLargeError(field: string, size: string, maxPixels: number): string {
@@ -97,9 +97,9 @@ export function renderDimensionAreaTooLargeError(field: string, size: string, ma
 /**
  * Returns the error message for a render dimension that exceeds the active WebGPU texture limit.
  *
- * @param field - Hardware settings field that contains the invalid size.
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
- * @param maxTextureDimension2D - WebGPU adapter/device texture dimension limit.
+ * @param field – Hardware settings field that contains the invalid size.
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param maxTextureDimension2D – WebGPU adapter/device texture dimension limit.
  * @returns User-facing error string.
  */
 export function renderDimensionGPULimitError(field: string, size: string, maxTextureDimension2D: number): string {
@@ -112,7 +112,7 @@ export function renderDimensionGPULimitError(field: string, size: string, maxTex
 /**
  * Returns the error message for an `audioVoices` hardware setting outside the supported range.
  *
- * @param value - Invalid `audioVoices` value.
+ * @param value – Invalid `audioVoices` value.
  * @returns User-facing error string.
  */
 export function audioVoicesRangeError(value: number): string {
@@ -125,8 +125,8 @@ export function audioVoicesRangeError(value: number): string {
 /**
  * Returns the error message for an asset whose width or height is not a positive whole number.
  *
- * @param context - Asset label (for example `'sprite sheet'`).
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param context – Asset label (for example `'sprite sheet'`).
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
  * @returns User-facing error string.
  */
 export function assetDimensionInvalidError(context: string, size: string): string {
@@ -139,10 +139,10 @@ export function assetDimensionInvalidError(context: string, size: string): strin
 /**
  * Returns the error message for an asset whose width or height exceeds engine limits.
  *
- * @param context - Asset label (for example `'sprite sheet'`).
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
- * @param maxWidth - Maximum accepted width in pixels.
- * @param maxHeight - Maximum accepted height in pixels.
+ * @param context – Asset label (for example `'sprite sheet'`).
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param maxWidth – Maximum accepted width in pixels.
+ * @param maxHeight – Maximum accepted height in pixels.
  * @returns User-facing error string.
  */
 export function assetDimensionTooLargeError(
@@ -160,9 +160,9 @@ export function assetDimensionTooLargeError(
 /**
  * Returns the error message for an asset whose total pixel area exceeds engine limits.
  *
- * @param context - Asset label (for example `'sprite sheet'`).
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
- * @param maxPixels - Maximum accepted total pixels.
+ * @param context – Asset label (for example `'sprite sheet'`).
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param maxPixels – Maximum accepted total pixels.
  * @returns User-facing error string.
  */
 export function assetDimensionAreaTooLargeError(context: string, size: string, maxPixels: number): string {
@@ -175,7 +175,7 @@ export function assetDimensionAreaTooLargeError(context: string, size: string, m
 /**
  * Returns the error message when indexed pixel dimensions overflow safe allocation limits.
  *
- * @param size - Invalid size formatted as `WIDTHxHEIGHT`.
+ * @param size – Invalid size formatted as `WIDTHxHEIGHT`.
  * @returns User-facing error string.
  */
 export function assetIndexedPixelOverflowError(size: string): string {
@@ -185,10 +185,10 @@ export function assetIndexedPixelOverflowError(size: string): string {
 /**
  * Returns the error message when an indexed pixel buffer length does not match its dimensions.
  *
- * @param actualLength - Number of values supplied in the buffer.
- * @param width - Declared width in pixels.
- * @param height - Declared height in pixels.
- * @param expectedLength - Required number of values (`width * height`).
+ * @param actualLength – Number of values supplied in the buffer.
+ * @param width – Declared width in pixels.
+ * @param height – Declared height in pixels.
+ * @param expectedLength – Required number of values (`width * height`).
  * @returns User-facing error string.
  */
 export function assetIndexedPixelLengthError(
@@ -206,8 +206,8 @@ export function assetIndexedPixelLengthError(
 /**
  * Returns the error message when a `.btfont` JSON payload is too large to parse safely.
  *
- * @param byteLength - UTF-8 byte length of the JSON text.
- * @param maxBytes - Maximum accepted JSON size in bytes.
+ * @param byteLength – UTF-8 byte length of the JSON text.
+ * @param maxBytes – Maximum accepted JSON size in bytes.
  * @returns User-facing error string.
  */
 export function btfontJsonTooLargeError(byteLength: number, maxBytes: number): string {
@@ -233,8 +233,8 @@ export function btfontEmbeddedTextureFormatError(): string {
 /**
  * Returns the error message when an embedded `.btfont` texture payload exceeds the size cap.
  *
- * @param payloadLength - Base64 payload length in characters (after the data-URI prefix).
- * @param maxPayloadBytes - Maximum accepted embedded texture payload size.
+ * @param payloadLength – Base64 payload length in characters (after the data-URI prefix).
+ * @param maxPayloadBytes – Maximum accepted embedded texture payload size.
  * @returns User-facing error string.
  */
 export function btfontEmbeddedTextureTooLargeError(payloadLength: number, maxPayloadBytes: number): string {
@@ -248,8 +248,8 @@ export function btfontEmbeddedTextureTooLargeError(payloadLength: number, maxPay
 /**
  * Returns the error message when a `.btfont` file defines too many glyphs.
  *
- * @param count - Number of glyph entries found.
- * @param maxGlyphs - Maximum accepted glyph count.
+ * @param count – Number of glyph entries found.
+ * @param maxGlyphs – Maximum accepted glyph count.
  * @returns User-facing error string.
  */
 export function btfontGlyphCountTooLargeError(count: number, maxGlyphs: number): string {
@@ -289,7 +289,7 @@ function getBtfontMetricLabel(metricKey: string): string {
 /**
  * Returns the error message when a glyph entry is not a metric object.
  *
- * @param charLabel - Character label used in the message.
+ * @param charLabel – Character label used in the message.
  * @returns User-facing error string.
  */
 export function btfontGlyphEntryNotObjectError(charLabel: string): string {
@@ -302,9 +302,9 @@ export function btfontGlyphEntryNotObjectError(charLabel: string): string {
 /**
  * Returns the error message when a glyph metric is not a whole number.
  *
- * @param charLabel - Character label used in the message.
+ * @param charLabel – Character label used in the message.
  * @param metricKey - `.btfont` metric key (for example `w` or `adv`).
- * @param value - Invalid metric value.
+ * @param value – Invalid metric value.
  * @returns User-facing error string.
  */
 export function btfontGlyphMetricNotIntegerError(charLabel: string, metricKey: string, value: number): string {
@@ -319,7 +319,7 @@ export function btfontGlyphMetricNotIntegerError(charLabel: string, metricKey: s
 /**
  * Returns the error message when a glyph position is negative.
  *
- * @param charLabel - Character label used in the message.
+ * @param charLabel – Character label used in the message.
  * @returns User-facing error string.
  */
 export function btfontGlyphNegativePositionError(charLabel: string): string {
@@ -332,7 +332,7 @@ export function btfontGlyphNegativePositionError(charLabel: string): string {
 /**
  * Returns the error message when a glyph width or height is negative.
  *
- * @param charLabel - Character label used in the message.
+ * @param charLabel – Character label used in the message.
  * @returns User-facing error string.
  */
 export function btfontGlyphNegativeSizeError(charLabel: string): string {
@@ -342,7 +342,7 @@ export function btfontGlyphNegativeSizeError(charLabel: string): string {
 /**
  * Returns the error message when a glyph advance width is negative.
  *
- * @param charLabel - Character label used in the message.
+ * @param charLabel – Character label used in the message.
  * @returns User-facing error string.
  */
 export function btfontGlyphNegativeAdvanceError(charLabel: string): string {
@@ -352,11 +352,11 @@ export function btfontGlyphNegativeAdvanceError(charLabel: string): string {
 /**
  * Returns the error message when a glyph is larger than the engine allows.
  *
- * @param charLabel - Character label used in the message.
- * @param width - Glyph width in pixels.
- * @param height - Glyph height in pixels.
- * @param maxWidth - Maximum accepted width in pixels.
- * @param maxHeight - Maximum accepted height in pixels.
+ * @param charLabel – Character label used in the message.
+ * @param width – Glyph width in pixels.
+ * @param height – Glyph height in pixels.
+ * @param maxWidth – Maximum accepted width in pixels.
+ * @param maxHeight – Maximum accepted height in pixels.
  * @returns User-facing error string.
  */
 export function btfontGlyphSizeTooLargeError(
@@ -375,13 +375,13 @@ export function btfontGlyphSizeTooLargeError(
 /**
  * Returns the error message when a glyph rectangle falls outside the font texture.
  *
- * @param charLabel - Character label used in the message.
- * @param x - Glyph X position in the atlas.
- * @param y - Glyph Y position in the atlas.
- * @param width - Glyph width in pixels.
- * @param height - Glyph height in pixels.
- * @param atlasWidth - Texture atlas width in pixels.
- * @param atlasHeight - Texture atlas height in pixels.
+ * @param charLabel – Character label used in the message.
+ * @param x – Glyph X position in the atlas.
+ * @param y – Glyph Y position in the atlas.
+ * @param width – Glyph width in pixels.
+ * @param height – Glyph height in pixels.
+ * @param atlasWidth – Texture atlas width in pixels.
+ * @param atlasHeight – Texture atlas height in pixels.
  * @returns User-facing error string.
  */
 export function btfontGlyphOutsideAtlasError(
@@ -402,7 +402,7 @@ export function btfontGlyphOutsideAtlasError(
 /**
  * Returns the error message when a glyph area is too large to render safely.
  *
- * @param charLabel - Character label used in the message.
+ * @param charLabel – Character label used in the message.
  * @returns User-facing error string.
  */
 export function btfontGlyphAreaTooLargeError(charLabel: string): string {
@@ -423,7 +423,7 @@ export function noActivePaletteError(): string {
  * Returns the error message for a palette index that is negative or not a
  * whole number.
  *
- * @param index - The invalid index value that was supplied.
+ * @param index – The invalid index value that was supplied.
  * @returns User-facing error string.
  */
 export function paletteIndexNegativeError(index: number): string {
@@ -433,8 +433,8 @@ export function paletteIndexNegativeError(index: number): string {
 /**
  * Returns the error message for a palette index that exceeds the palette size.
  *
- * @param index - The out-of-range index that was supplied.
- * @param size - The number of colors in the active palette.
+ * @param index – The out-of-range index that was supplied.
+ * @param size – The number of colors in the active palette.
  * @returns User-facing error string.
  */
 export function paletteIndexOutOfRangeError(index: number, size: number): string {
@@ -444,7 +444,7 @@ export function paletteIndexOutOfRangeError(index: number, size: number): string
 /**
  * Returns the error message when `applyHUD` is called with `startSlot` less than 1.
  *
- * @param startSlot - The invalid start slot value that was supplied.
+ * @param startSlot – The invalid start slot value that was supplied.
  * @returns User-facing error string.
  */
 export function hudStartSlotError(startSlot: number): string {
@@ -454,9 +454,9 @@ export function hudStartSlotError(startSlot: number): string {
 /**
  * Returns the error message when the HUD preset slots would exceed the palette size.
  *
- * @param startSlot - The requested start slot.
- * @param count - Number of HUD slots needed.
- * @param size - The palette size.
+ * @param startSlot – The requested start slot.
+ * @param count – Number of HUD slots needed.
+ * @param size – The palette size.
  * @returns User-facing error string.
  */
 export function hudRangeError(startSlot: number, count: number, size: number): string {
@@ -470,10 +470,10 @@ export function hudRangeError(startSlot: number, count: number, size: number): s
  * Returns the error message for a sprite pixel whose color is absent from the
  * active palette.
  *
- * @param x - Pixel x coordinate within the source image.
- * @param y - Pixel y coordinate within the source image.
- * @param src - Source image label (e.g. `'sheet.png'` or `(unnamed)`).
- * @param hex - The color that was not found, as a lowercase hex string.
+ * @param x – Pixel x coordinate within the source image.
+ * @param y – Pixel y coordinate within the source image.
+ * @param src – Source image label (e.g. `'sheet.png'` or `(unnamed)`).
+ * @param hex – The color that was not found, as a lowercase hex string.
  * @returns User-facing error string.
  */
 export function spriteColorNotInPaletteError(x: number, y: number, src: string, hex: string): string {
@@ -503,7 +503,7 @@ const AUDIO_EXTENSIONS = new Set(['.mp3', '.ogg', '.wav', '.m4a', '.webm', '.aac
  * Suggests a common audio extension when a URL's extension does not look like
  * an audio file.
  *
- * @param url - Original URL string.
+ * @param url – Original URL string.
  * @returns Hint text, or an empty string when no hint applies.
  */
 function buildAudioClipExtensionHint(url: string): string {
@@ -520,7 +520,7 @@ function buildAudioClipExtensionHint(url: string): string {
 /**
  * Combines the path and extension hints for a failing audio clip URL.
  *
- * @param url - Failing audio clip path.
+ * @param url – Failing audio clip path.
  * @returns Combined hint text (or an empty string when no hint applies).
  */
 function buildAudioClipHints(url: string): string {
@@ -543,7 +543,7 @@ function buildAudioClipHints(url: string): string {
  * Returns the error message for a network- or CORS-level audio fetch failure,
  * where the request itself never completed.
  *
- * @param url - Audio file path or URL that failed to load.
+ * @param url – Audio file path or URL that failed to load.
  * @returns User-facing error string.
  */
 export function audioClipNetworkError(url: string): string {
@@ -558,8 +558,8 @@ export function audioClipNetworkError(url: string): string {
  * Returns the error message for an audio fetch that completed with a
  * non-successful HTTP status.
  *
- * @param url - Audio file path or URL that failed to load.
- * @param status - HTTP status code from the fetch response.
+ * @param url – Audio file path or URL that failed to load.
+ * @param status – HTTP status code from the fetch response.
  * @returns User-facing error string.
  */
 export function audioClipHttpError(url: string, status: number): string {
@@ -575,7 +575,7 @@ export function audioClipHttpError(url: string, status: number): string {
  * Returns the error message for an audio file that downloaded successfully
  * but could not be decoded.
  *
- * @param url - Audio file path or URL that failed to decode.
+ * @param url – Audio file path or URL that failed to decode.
  * @returns User-facing error string.
  */
 export function audioClipDecodeError(url: string): string {
@@ -605,7 +605,7 @@ const SYNTH_WAVEFORM_NAMES = SYNTH_WAVEFORMS.join(', ');
 /**
  * Returns the error message for a `SynthParams.waveform` that is not a supported waveform name.
  *
- * @param waveform - Invalid waveform value that was supplied.
+ * @param waveform – Invalid waveform value that was supplied.
  * @returns User-facing error string.
  */
 export function audioClipSynthInvalidWaveformError(waveform: string): string {
@@ -615,7 +615,7 @@ export function audioClipSynthInvalidWaveformError(waveform: string): string {
 /**
  * Returns the error message for a `SynthParams.duration` that is not a positive number.
  *
- * @param duration - Invalid duration value that was supplied.
+ * @param duration – Invalid duration value that was supplied.
  * @returns User-facing error string.
  */
 export function audioClipSynthNonPositiveDurationError(duration: number): string {
@@ -625,8 +625,8 @@ export function audioClipSynthNonPositiveDurationError(duration: number): string
 /**
  * Returns the error message for a `SynthParams.duration` that exceeds the supported maximum.
  *
- * @param duration - Invalid duration value that was supplied, in seconds.
- * @param maxDuration - Maximum accepted duration, in seconds.
+ * @param duration – Invalid duration value that was supplied, in seconds.
+ * @param maxDuration – Maximum accepted duration, in seconds.
  * @returns User-facing error string.
  */
 export function audioClipSynthDurationTooLongError(duration: number, maxDuration: number): string {
@@ -639,11 +639,11 @@ export function audioClipSynthDurationTooLongError(duration: number, maxDuration
 /**
  * Returns the error message for a target sample rate that is not a positive number.
  *
- * Surfaces only if the registered decode context reports an invalid sample rate - this should
+ * Surfaces only if the registered decode context reports an invalid sample rate – this should
  * never happen with a real `AudioContext`, but is validated the same way any other boundary
  * value is.
  *
- * @param sampleRate - Invalid sample rate value that was read from the decode context.
+ * @param sampleRate – Invalid sample rate value that was read from the decode context.
  * @returns User-facing error string.
  */
 export function audioClipSynthNonPositiveSampleRateError(sampleRate: number): string {
@@ -656,7 +656,7 @@ export function audioClipSynthNonPositiveSampleRateError(sampleRate: number): st
 /**
  * Returns the error message for a `SynthParams.frequency` that is not a positive number.
  *
- * @param frequency - Invalid frequency value that was supplied.
+ * @param frequency – Invalid frequency value that was supplied.
  * @returns User-facing error string.
  */
 export function audioClipSynthNonPositiveFrequencyError(frequency: number): string {
@@ -669,8 +669,8 @@ export function audioClipSynthNonPositiveFrequencyError(frequency: number): stri
  * Shared by envelope timings (`envelope.attack`, `envelope.decay`, `envelope.release`) and
  * vibrato parameters (`vibrato.rate`, `vibrato.depth`).
  *
- * @param field - Dotted field path that failed validation (for example `'envelope.attack'`).
- * @param value - Invalid negative value that was supplied.
+ * @param field – Dotted field path that failed validation (for example `'envelope.attack'`).
+ * @param value – Invalid negative value that was supplied.
  * @returns User-facing error string.
  */
 export function audioClipSynthNonNegativeFieldError(field: string, value: number): string {
@@ -680,7 +680,7 @@ export function audioClipSynthNonNegativeFieldError(field: string, value: number
 /**
  * Returns the error message for a `SynthEnvelope.sustain` outside the [0, 1] range.
  *
- * @param sustain - Invalid sustain value that was supplied.
+ * @param sustain – Invalid sustain value that was supplied.
  * @returns User-facing error string.
  */
 export function audioClipSynthSustainRangeError(sustain: number): string {
@@ -692,8 +692,8 @@ export function audioClipSynthSustainRangeError(sustain: number): string {
  *
  * Shared by `noiseMix` and `dutyCycle`.
  *
- * @param field - Field name that failed validation (for example `'noiseMix'`).
- * @param value - Invalid value that was supplied.
+ * @param field – Field name that failed validation (for example `'noiseMix'`).
+ * @param value – Invalid value that was supplied.
  * @returns User-facing error string.
  */
 export function audioClipSynthUnitRangeFieldError(field: string, value: number): string {
@@ -703,7 +703,7 @@ export function audioClipSynthUnitRangeFieldError(field: string, value: number):
 /**
  * Returns the error message for a `SynthPitchSweep.toFrequency` that is not a positive number.
  *
- * @param toFrequency - Invalid target frequency value that was supplied.
+ * @param toFrequency – Invalid target frequency value that was supplied.
  * @returns User-facing error string.
  */
 export function audioClipSynthPitchSweepFrequencyError(toFrequency: number): string {
@@ -721,9 +721,9 @@ export function audioClipSynthPitchSweepFrequencyError(toFrequency: number): str
  * `0 <= loopStart < loopEnd <= duration`. `loopStart`/`loopEnd` are `undefined` when missing
  * entirely, so the message still shows the caller exactly what was supplied.
  *
- * @param loopStart - Supplied loop region start in seconds, or `undefined` if omitted.
- * @param loopEnd - Supplied loop region end in seconds, or `undefined` if omitted.
- * @param duration - Duration in seconds of the buffer being played.
+ * @param loopStart – Supplied loop region start in seconds, or `undefined` if omitted.
+ * @param loopEnd – Supplied loop region end in seconds, or `undefined` if omitted.
+ * @param duration – Duration in seconds of the buffer being played.
  * @returns User-facing error string.
  */
 export function musicLoopRangeError(
@@ -750,8 +750,8 @@ export function randomPickEmptyError(): string {
 /**
  * Returns the error message for {@link Random.weighted} when items and weights lengths differ.
  *
- * @param itemCount - Number of items supplied.
- * @param weightCount - Number of weights supplied.
+ * @param itemCount – Number of items supplied.
+ * @param weightCount – Number of weights supplied.
  * @returns User-facing error string.
  */
 export function randomWeightedLengthError(itemCount: number, weightCount: number): string {
@@ -773,7 +773,7 @@ export function randomWeightedEmptyError(): string {
 /**
  * Returns the error message for {@link Random.weighted} when total weight is not positive.
  *
- * @param total - Sum of the supplied weights.
+ * @param total – Sum of the supplied weights.
  * @returns User-facing error string.
  */
 export function randomWeightedTotalError(total: number): string {
@@ -786,8 +786,8 @@ export function randomWeightedTotalError(total: number): string {
 /**
  * Returns the error message for an invalid half-open integer range on {@link Random.int}.
  *
- * @param min - Inclusive lower bound that was supplied.
- * @param maxExclusive - Exclusive upper bound that was supplied.
+ * @param min – Inclusive lower bound that was supplied.
+ * @param maxExclusive – Exclusive upper bound that was supplied.
  * @returns User-facing error string.
  */
 export function randomIntRangeError(min: number, maxExclusive: number): string {
@@ -800,8 +800,8 @@ export function randomIntRangeError(min: number, maxExclusive: number): string {
 /**
  * Returns the error message for an invalid inclusive integer range on {@link Random.intInclusive}.
  *
- * @param min - Inclusive lower bound that was supplied.
- * @param max - Inclusive upper bound that was supplied.
+ * @param min – Inclusive lower bound that was supplied.
+ * @param max – Inclusive upper bound that was supplied.
  * @returns User-facing error string.
  */
 export function randomIntInclusiveRangeError(min: number, max: number): string {

@@ -20,7 +20,7 @@ export const TIMING_CHART_BUDGET_ERROR_RATIO = 1.5;
 /**
  * Maps dropped-frame count from {@link GameLoop} to chart severity.
  *
- * @param droppedFrames - Estimated skipped refresh intervals (0 = none).
+ * @param droppedFrames – Estimated skipped refresh intervals (0 = none).
  * @returns Warning, error, or none.
  */
 export function severityFromDroppedFrames(droppedFrames: number): number {
@@ -38,8 +38,8 @@ export function severityFromDroppedFrames(droppedFrames: number): number {
 /**
  * Maps frame wall time against the configured fixed-step budget.
  *
- * @param frameMs - Total frame CPU time in milliseconds.
- * @param targetFps - Configured simulation rate from {@link HardwareSettings.targetFPS}.
+ * @param frameMs – Total frame CPU time in milliseconds.
+ * @param targetFps – Configured simulation rate from {@link HardwareSettings.targetFPS}.
  * @returns Warning, error, or none.
  */
 export function severityFromFrameBudget(frameMs: number, targetFps: number): number {
@@ -69,9 +69,9 @@ export function severityFromFrameBudget(frameMs: number, targetFps: number): num
 /**
  * Combines budget and dropped-frame signals; error wins over warning.
  *
- * @param frameMs - Total frame CPU time in milliseconds.
- * @param targetFps - Configured simulation rate.
- * @param droppedFrames - Dropped frames detected this present interval (0 when none).
+ * @param frameMs – Total frame CPU time in milliseconds.
+ * @param targetFps – Configured simulation rate.
+ * @param droppedFrames – Dropped frames detected this present interval (0 when none).
  * @returns Highest severity for the chart column.
  */
 export function classifyTimingChartSeverity(frameMs: number, targetFps: number, droppedFrames: number): number {

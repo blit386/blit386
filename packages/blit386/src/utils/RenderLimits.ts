@@ -27,7 +27,7 @@ export class RenderDimensionLimitError extends Error {
     /**
      * Creates a render-dimension limit error.
      *
-     * @param message - User-facing validation message.
+     * @param message – User-facing validation message.
      */
     constructor(message: string) {
         super(message);
@@ -48,7 +48,7 @@ export interface RenderDimensionSettings {
 /**
  * Formats a render dimension for error messages.
  *
- * @param size - Size value to format.
+ * @param size – Size value to format.
  * @returns Size formatted as `WIDTHxHEIGHT`.
  */
 function formatSize(size: Vector2i | undefined | null): string {
@@ -66,8 +66,8 @@ function formatSize(size: Vector2i | undefined | null): string {
 /**
  * Validates a single render dimension against integer and engine allocation limits.
  *
- * @param field - Hardware settings field being checked.
- * @param size - Size value to validate.
+ * @param field – Hardware settings field being checked.
+ * @param size – Size value to validate.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateDimension(field: RenderDimensionField, size: Vector2i | undefined | null): string | null {
@@ -106,7 +106,7 @@ export function validateDimension(field: RenderDimensionField, size: Vector2i | 
 /**
  * Validates all render dimensions in hardware settings before renderer allocation.
  *
- * @param settings - Hardware settings returned by `configure()` or defaults.
+ * @param settings – Hardware settings returned by `configure()` or defaults.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateDimensions(settings: RenderDimensionSettings): string | null {
@@ -135,9 +135,9 @@ export function validateDimensions(settings: RenderDimensionSettings): string | 
 /**
  * Validates a render texture size against the current WebGPU adapter/device limit.
  *
- * @param field - Hardware settings field being checked.
- * @param size - Requested texture or drawing-buffer size.
- * @param maxTextureDimension2D - WebGPU `maxTextureDimension2D`, when exposed.
+ * @param field – Hardware settings field being checked.
+ * @param size – Requested texture or drawing-buffer size.
+ * @param maxTextureDimension2D – WebGPU `maxTextureDimension2D`, when exposed.
  * @returns A user-facing error message when invalid, otherwise `null`.
  */
 export function validateWebGPUTextureDimension(

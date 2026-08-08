@@ -1,5 +1,5 @@
 /**
- * Basics Demo - Your very first BLIT386 program!
+ * Basics Demo – Your very first BLIT386 program!
  *
  * Welcome! This demo teaches you the absolute basics of making things appear
  * on screen with the BLIT386 engine. You will learn:
@@ -19,7 +19,7 @@
  * This demo sets targetFPS to 30 in configure() (slower than the engine default of 60)
  * so motion is easy to follow. update() therefore runs about 30 times per second.
  *
- * IMPORTANT - update() vs. render():
+ * IMPORTANT – update() vs. render():
  *
  * update() runs at a FIXED rate (targetFPS from configure()). It is where you do
  * all game logic: move things, check wall collisions, count bounces. It may run
@@ -28,7 +28,7 @@
  *
  * render() runs ONCE per screen refresh (often 60 times per second on a laptop
  * screen, but it can be faster on 120 or 144 times-per-second monitors). It is
- * where you draw everything. NEVER put game logic here - only drawing code.
+ * where you draw everything. NEVER put game logic here – only drawing code.
  *
  * When you switch to a different browser tab, BOTH update() and render() pause
  * completely. The browser stops calling them to save battery. When you come
@@ -42,14 +42,14 @@
  * "import" loads tools from the BLIT386 engine library.
  * Think of it like opening a toolbox before you start building.
  *   - bootstrap: a helper that starts the engine and connects your demo to it
- *   - BT: the main engine object - you call BT.clear(), BT.drawSprite(), etc.
+ *   - BT: the main engine object – you call BT.clear(), BT.drawSprite(), etc.
  *   - Color32: represents a color with Red, Green, Blue (and optional Alpha)
  *   - SpriteSheet: a loaded image you can draw pieces of on screen (a "sprite")
  *   - Vector2i: a 2D point or direction using whole numbers (x, y)
  */
 import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
 
-// The shared demo UI kit - every demo in this series uses it for on-screen text and panels
+// The shared demo UI kit – every demo in this series uses it for on-screen text and panels
 // so they all look the same. applyTheme() installs the kit's colors into our palette, and
 // ui.* draws things like the hint label you see in the top-left corner.
 import { applyTheme, ui } from './shared/ui.js';
@@ -69,13 +69,13 @@ import { applyTheme, ui } from './shared/ui.js';
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 /** @typedef {import('blit386').Rect2i} Rect2i */
 
-// BLIT386 uses a "palette" - a numbered list of colors you choose BEFORE drawing.
+// BLIT386 uses a "palette" – a numbered list of colors you choose BEFORE drawing.
 // Think of it like an artist picking paint colors and laying them on a palette tray
 // before starting a painting. Each color gets a number (an "index").
 // When we draw, we say "use color number 1" instead of spelling out the color each time.
 //
 // Index 0 is always transparent (completely invisible). Our custom colors start at 1.
-const C_BG = 1; // Almost-black with a faint green tint - our screen background.
+const C_BG = 1; // Almost-black with a faint green tint – our screen background.
 const C_OVERLAY_BAR = 2; // Slightly lighter bar behind overlay text (easy to read on dark green).
 const C_OVERLAY_GREEN = 3; // Bright green for the position line in the overlay.
 const C_OVERLAY_AMBER = 4; // Amber (warm yellow) for the bounce count in the overlay.
@@ -92,30 +92,30 @@ const SPRITE_BASE = 10;
 const SPRITE_URL = '/sprites/logo-1.png';
 
 /**
- * Bouncing-sprite demo - a friendly first BLIT386 demo.
+ * Bouncing-sprite demo – a friendly first BLIT386 demo.
  *
  * Every BLIT386 demo is a class the engine drives. Three methods are required;
  * configure() and overlayRows() are optional extras this file also uses:
  *
- *   1. configure() - optional. If you define it, the engine calls it once at
+ *   1. configure() – optional. If you define it, the engine calls it once at
  *      the very start so you can change settings (FPS, overlay options, and more).
  *      If you skip it, you get sensible defaults (320x240, 640x480 output, 60 FPS).
  *
- *   2. init() - called once after hardware settings are ready. This is where you
+ *   2. init() – called once after hardware settings are ready. This is where you
  *      load images, set up colors, and pick starting positions. It uses "async"
  *      because loading files takes time, and we need to wait for them to finish
  *      (like waiting for a web page to load).
  *
- *   3. update() - called at the targetFPS rate (30 per second in this demo).
+ *   3. update() – called at the targetFPS rate (30 per second in this demo).
  *      This is where you move the sprite, flip speed when it hits a wall, and
  *      count bounces. It runs at a FIXED pace so motion matches on fast and slow
  *      computers. See the file header for the full explanation.
  *
- *   4. overlayRows() - optional. Feeds extra text lines into the engine overlay
+ *   4. overlayRows() – optional. Feeds extra text lines into the engine overlay
  *      (the HUD you toggle with the ~ key). Not required, but handy for live stats.
  *
- *   5. render() - called once per screen refresh to draw everything. Clear the
- *      screen, draw shapes, print text - all drawing goes here.
+ *   5. render() – called once per screen refresh to draw everything. Clear the
+ *      screen, draw shapes, print text – all drawing goes here.
  *
  * @implements {IBTDemo}
  */
@@ -142,7 +142,7 @@ class Demo {
 
     // "prevPos" remembers where the sprite was at the START of the most recent
     // update() tick, before that tick moved it. render() uses this together with
-    // BT.renderAlpha to draw the sprite smoothly between ticks - see the big comment
+    // BT.renderAlpha to draw the sprite smoothly between ticks – see the big comment
     // above render() below for the full explanation. It starts equal to pos (both
     // point at the same placeholder above) so the very first render() has nothing
     // to blend between; init() updates both again once the real starting position
@@ -209,7 +209,7 @@ class Demo {
 
             // Scrolling timing chart under the title row.
             // Green marks show update() time; amber marks show render() time.
-            // One mark per screen refresh - handy for seeing when work spikes.
+            // One mark per screen refresh – handy for seeing when work spikes.
             isOverlayTimingChartEnabled: true,
             overlayTimingChartHeight: 32,
 
@@ -251,12 +251,12 @@ class Demo {
         // A palette is like an artist's tray of paint colors laid out before painting.
         // We pick every color we need here so the engine knows about them in advance.
         // BT.paletteCreate(256) makes a new empty palette with room for 256 colors.
-        // 256 is a common size in retro-style games - plenty of slots for this demo.
+        // 256 is a common size in retro-style games – plenty of slots for this demo.
         this.palette = BT.paletteCreate(256);
 
         // Fill in the colors we need for background and overlay text.
         // palette.set(number, color) stores one color in a numbered slot.
-        // Color32(Red, Green, Blue) - each value is 0 to 255.
+        // Color32(Red, Green, Blue) – each value is 0 to 255.
         // 0 = none of that color, 255 = maximum of that color.
         this.palette.set(C_BG, new Color32(16, 28, 16)); // Almost-black, faint green tint.
 
@@ -280,7 +280,7 @@ class Demo {
         //
         // { sort: 'none' } keeps colors in the order they appear in the file
         // (left to right, top to bottom). The default would sort them darkest-first
-        // instead - fine for many games, but we keep file order here so the slots
+        // instead – fine for many games, but we keep file order here so the slots
         // match the PNG layout if you peek at the overlay palette grid.
         //
         // We "await" because reading the PNG takes a moment.
@@ -312,7 +312,7 @@ class Demo {
         // BT.displaySize is how big the screen is (320x240 with the defaults).
         // We subtract the sprite's size so the CENTER of the sprite is centered,
         // not its top-left corner.
-        // Math.floor() rounds down to a whole number - we need whole pixels
+        // Math.floor() rounds down to a whole number – we need whole pixels
         // because you cannot draw at position 160.5 on a pixel screen.
         const screen = BT.displaySize;
         const x = Math.floor(screen.x / 2 - this.size.x / 2);
@@ -331,7 +331,7 @@ class Demo {
      * Called at a fixed rate (30 times per second in this demo).
      *
      * This is where ALL game logic goes: moving things, checking collisions,
-     * counting scores, etc. Never draw anything here - that belongs in render().
+     * counting scores, etc. Never draw anything here – that belongs in render().
      *
      * update() may be called 0 to 8 times between screen refreshes:
      *   - Usually it runs about 30 times per second (our targetFPS).
@@ -348,7 +348,7 @@ class Demo {
         // --- Bounce logic (game rules live only in update(), never in render()) ---
         // Remember where the sprite was BEFORE this tick moves it. render() will use
         // this a moment from now to draw a smooth in-between position instead of a
-        // pop - see the big comment above render() below.
+        // pop – see the big comment above render() below.
         this.prevPos = this.pos;
 
         // Move the sprite by adding its speed to its position.
@@ -359,10 +359,10 @@ class Demo {
 
         // Wall test for left/right: pos is the sprite's TOP-LEFT corner.
         // The right edge of the sprite is at pos.x + size.x, so we compare against
-        // displaySize.x - size.x (the farthest right the top-left corner may go
+        // displaySize.x – size.x (the farthest right the top-left corner may go
         // while the whole sprite still fits on screen).
         //
-        // We only flip the speed here - we do not push the sprite back onto the
+        // We only flip the speed here – we do not push the sprite back onto the
         // edge. So for one tick it can sit one pixel past the wall, then travel
         // inward again. That is normal for this simple bounce.
         if (this.pos.x <= 0 || this.pos.x >= BT.displaySize.x - this.size.x) {
@@ -398,7 +398,7 @@ class Demo {
      * those values and draws the picture.
      *
      * IMPORTANT: render() runs once per screen refresh (your monitor's refresh
-     * rate - often 60, but 120 or 144 on gaming displays). Do NOT put game logic
+     * rate – often 60, but 120 or 144 on gaming displays). Do NOT put game logic
      * here because it would run at different speeds on different monitors.
      *
      * Every frame you must clear the screen and redraw everything from
@@ -407,10 +407,10 @@ class Demo {
      *
      * WHY THE SPRITE MIGHT LOOK LIKE IT STUTTERS WITHOUT THE FIX BELOW:
      * This demo sets targetFPS to 30 (see configure() above), but render() still
-     * runs at your monitor's full refresh rate - 60, 120, whatever your screen
+     * runs at your monitor's full refresh rate – 60, 120, whatever your screen
      * supports. That means update() (which moves the sprite) and render()
      * (which draws it) run at DIFFERENT speeds. On a 60-times-per-second monitor,
-     * render() runs roughly twice for every one update() - so if render() just
+     * render() runs roughly twice for every one update() – so if render() just
      * drew this.pos every time, the sprite would sit frozen for one refresh, then
      * hop forward, then sit frozen again. That hop-hop-hop motion is "stutter."
      *
@@ -418,7 +418,7 @@ class Demo {
      * individual film frames (say, one every two screen refreshes), and render()
      * is a projector that can run faster than the film advances. BT.renderAlpha
      * tells the projector how far along we are between "the last film frame" and
-     * "the next one" - a fraction from 0 (the last update() tick just finished) up
+     * "the next one" – a fraction from 0 (the last update() tick just finished) up
      * to just under 1 (the next update() tick is about to happen). We use it below
      * to blend prevPos (where the sprite WAS) toward pos (where it IS) so every
      * single render() draws the sprite at its true in-between position instead of
@@ -426,14 +426,14 @@ class Demo {
      */
     render() {
         // Clear the entire screen to the background color. This erases the previous frame.
-        // C_BG is palette index 1, which we set to (16, 28, 16) in init() - almost
+        // C_BG is palette index 1, which we set to (16, 28, 16) in init() – almost
         // black with a faint green tint.
         BT.clear(C_BG);
 
         // Blend prevPos toward pos by BT.renderAlpha to get the sprite's true position
         // at this exact render moment. Vector2i.lerp(a, b, t) walks a fraction t of the
         // way from a to b: t=0 gives a (prevPos), t=1 gives b (pos), and anything in
-        // between gives a smooth blend - exactly what BT.renderAlpha provides each frame.
+        // between gives a smooth blend – exactly what BT.renderAlpha provides each frame.
         const drawPos = Vector2i.lerp(this.prevPos, this.pos, BT.renderAlpha);
 
         // Draw the bouncing sprite at its smoothed position.
@@ -444,7 +444,7 @@ class Demo {
         //   - destinationPosition: WHERE on screen to draw it (the top-left corner).
         //   - paletteOffset: a number added to every pixel's palette index. We
         //     pass 0 here to use the original colors. Bigger numbers can swap to
-        //     alternate "team colors" - you will see this trick in a future demo.
+        //     alternate "team colors" – you will see this trick in a future demo.
         BT.drawSprite(this.spriteSheet, this.spriteRect, drawPos, 0);
 
         // On-canvas hint drawn with the shared UI kit. ui.begin()/ui.end() open and close
@@ -459,7 +459,7 @@ class Demo {
         ui.end();
 
         // Live stats (position, bounce count) come from overlayRows() in the engine HUD.
-        // The overlay also shows FPS, backend, and this demo's page title - we do not
+        // The overlay also shows FPS, backend, and this demo's page title – we do not
         // duplicate those strings here.
     }
 
@@ -470,7 +470,7 @@ class Demo {
      * palette grid, and these custom rows. Toggle it with the ~ key (Backquote on the
      * keyboard) or by clicking/tapping the symbol in the bottom-left corner.
      * Each row here is plain text plus a palette index for its color.
-     * We reuse overlayRowData every frame and only rewrite the strings - no new arrays.
+     * We reuse overlayRowData every frame and only rewrite the strings – no new arrays.
      *
      * @returns {readonly { leftText: string, textPaletteIndex: number }[]}
      */

@@ -22,8 +22,8 @@ const VALID_WAVEFORMS = new Set<string>(SYNTH_WAVEFORMS);
 /**
  * Validates `params` and the target `sampleRate` before {@link renderSynthSamples} runs.
  *
- * @param params - Synthesis parameters supplied to {@link AudioClip.synth}.
- * @param sampleRate - Target sample rate, read from the live decode context.
+ * @param params – Synthesis parameters supplied to {@link AudioClip.synth}.
+ * @param sampleRate – Target sample rate, read from the live decode context.
  * @throws Error describing the first invalid field found.
  */
 export function validateSynthParams(params: SynthParams, sampleRate: number): void {
@@ -69,7 +69,7 @@ export function validateSynthParams(params: SynthParams, sampleRate: number): vo
 /**
  * Validates the optional envelope timing and sustain fields.
  *
- * @param envelope - Envelope descriptor to validate, or `undefined` to skip.
+ * @param envelope – Envelope descriptor to validate, or `undefined` to skip.
  * @throws Error describing the first invalid field found.
  */
 function validateEnvelope(envelope: SynthEnvelope | undefined): void {
@@ -97,7 +97,7 @@ function validateEnvelope(envelope: SynthEnvelope | undefined): void {
 /**
  * Validates the optional vibrato rate and depth fields.
  *
- * @param vibrato - Vibrato descriptor to validate.
+ * @param vibrato – Vibrato descriptor to validate.
  * @throws Error describing the first invalid field found.
  */
 function validateVibrato(vibrato: SynthVibrato): void {

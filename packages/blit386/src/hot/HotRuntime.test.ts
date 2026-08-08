@@ -35,11 +35,11 @@ function registerAndCaptureAssetHandler(
 }
 
 describe('HotRuntime', () => {
-    // Fresh module state per test - hot/generation/wired are module-scoped singletons
+    // Fresh module state per test – hot/generation/wired are module-scoped singletons
     // that mirror real page-load semantics (a fresh page load is a fresh module instance).
     // BTAPI is re-imported through the SAME vi.resetModules() epoch as HotRuntime so
     // `BTAPI.instance` in the test is the identical singleton HotRuntime's internal
-    // `import { BTAPI } from '../core/BTAPI'` resolves to - spying on the test's copy
+    // `import { BTAPI } from '../core/BTAPI'` resolves to – spying on the test's copy
     // then actually intercepts the call HotRuntime.announce() makes.
     // eslint-disable-next-line @typescript-eslint/consistent-type-imports
     let HotRuntime: typeof import('./HotRuntime');
@@ -252,7 +252,7 @@ describe('HotRuntime', () => {
             const handler = registerAndCaptureAssetHandler(HotRuntime);
             handler({ url: 'hero.png', type: 'image', timestamp: 1 });
 
-            // The fetch is still pending here - beginHotReplace already ran, hotReplaceImage/failHotReplace have not.
+            // The fetch is still pending here – beginHotReplace already ran, hotReplaceImage/failHotReplace have not.
             expect(fakeSheet.beginHotReplace).toHaveBeenCalledOnce();
             expect(fakeSheet.hotReplaceImage).not.toHaveBeenCalled();
             expect(fakeSheet.failHotReplace).not.toHaveBeenCalled();
@@ -284,7 +284,7 @@ describe('HotRuntime', () => {
             const handler = registerAndCaptureAssetHandler(HotRuntime);
             handler({ url: 'hero.png', type: 'image', timestamp: 1 });
 
-            // The fetch is still pending here - beginHotReplace already ran, failHotReplace has not (yet).
+            // The fetch is still pending here – beginHotReplace already ran, failHotReplace has not (yet).
             expect(fakeSheet.beginHotReplace).toHaveBeenCalledOnce();
             expect(fakeSheet.failHotReplace).not.toHaveBeenCalled();
             expect(fakeSheet.hotReplaceImage).not.toHaveBeenCalled();
@@ -328,7 +328,7 @@ describe('HotRuntime', () => {
         });
 
         it('requests a hard reload for an unrecognized asset type', () => {
-            // Capture the handler first, before anything has wired the listener - registerHotContext
+            // Capture the handler first, before anything has wired the listener – registerHotContext
             // only calls context.on(...) once per module instance (guarded by the internal `wired`
             // flag), so a second registerHotContext call updates which context requestHardReload
             // targets without re-registering the listener.

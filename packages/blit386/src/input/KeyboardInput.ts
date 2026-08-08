@@ -92,8 +92,8 @@ export class KeyboardInput {
      * Attaches listeners to the canvas and window. Also listens for `window`
      * `blur` to clear held keys and the text buffer when focus leaves the page.
      *
-     * @param canvas - Canvas that receives keyboard events when focused.
-     * @param options - Supplies {@link KeyboardAttachOptions.getTicks} for repeat timing.
+     * @param canvas – Canvas that receives keyboard events when focused.
+     * @param options – Supplies {@link KeyboardAttachOptions.getTicks} for repeat timing.
      */
     public attach(canvas: HTMLCanvasElement, options: KeyboardAttachOptions): void {
         this.detach();
@@ -139,7 +139,7 @@ export class KeyboardInput {
      * calls `preventDefault` so the host page does not scroll while the canvas is
      * focused. When disabled (the default), those keys keep their browser defaults.
      *
-     * @param enabled - Whether the demo opted into keyboard scroll capture.
+     * @param enabled – Whether the demo opted into keyboard scroll capture.
      */
     public setIsCapturingScroll(enabled: boolean): void {
         this.isCapturingScroll = enabled;
@@ -149,7 +149,7 @@ export class KeyboardInput {
      * Ends a fixed update step: snapshots `prevHeld`, clears pending edges and
      * {@link getInputString}. Call once per `demo.update()` (not once per render frame).
      *
-     * @param _currentTick - Reserved for future use; fixed-update tick when the demo read input.
+     * @param _currentTick – Reserved for future use; fixed-update tick when the demo read input.
      */
     public endUpdate(_currentTick: number): void {
         this.pendingPress.clear();
@@ -168,7 +168,7 @@ export class KeyboardInput {
      * Alias for {@link endUpdate}; kept for tests and callers that still use the old name.
      *
      * @deprecated Deprecated since 1.0.3 (2026-05-31). Call {@link endUpdate} once per fixed update instead.
-     * @param currentTick - Passed through to {@link endUpdate}.
+     * @param currentTick – Passed through to {@link endUpdate}.
      */
     public endFrame(currentTick: number): void {
         this.endUpdate(currentTick);
@@ -177,7 +177,7 @@ export class KeyboardInput {
     /**
      * Whether `code` is held this frame (`KeyboardEvent.code`).
      *
-     * @param code - DOM key code string (for example `"Space"`).
+     * @param code – DOM key code string (for example `"Space"`).
      * @returns `true` while the key is held.
      */
     public isKeyDown(code: string): boolean {
@@ -187,9 +187,9 @@ export class KeyboardInput {
     /**
      * Edge or optional repeat (fixed ticks). `repeatRate <= 0` means edge only.
      *
-     * @param code - DOM key code string.
-     * @param repeatRate - Ticks between repeats; omit or non-positive for edge only.
-     * @param currentTick - Current fixed-update tick (`BT.ticks`).
+     * @param code – DOM key code string.
+     * @param repeatRate – Ticks between repeats; omit or non-positive for edge only.
+     * @param currentTick – Current fixed-update tick (`BT.ticks`).
      * @returns `true` on the initial press edge or on repeat ticks when configured.
      */
     public isKeyPressed(code: string, repeatRate: number | undefined, currentTick: number): boolean {
@@ -221,7 +221,7 @@ export class KeyboardInput {
     /**
      * Released edge for `code`.
      *
-     * @param code - DOM key code string.
+     * @param code – DOM key code string.
      * @returns `true` on the frame the key transitions from down to up.
      */
     public isKeyReleased(code: string): boolean {
@@ -267,8 +267,8 @@ export class KeyboardInput {
      * held to at least one held, or on repeat ticks when configured.
      *
      * @param codes - `KeyboardEvent.code` values for one logical button.
-     * @param repeatRate - Optional tick repeat interval for held buttons.
-     * @param currentTick - Current fixed-update tick (`BT.ticks`).
+     * @param repeatRate – Optional tick repeat interval for held buttons.
+     * @param currentTick – Current fixed-update tick (`BT.ticks`).
      * @returns `true` on the initial edge or on repeat ticks when configured.
      */
     public isButtonPressed(codes: readonly string[], repeatRate: number | undefined, currentTick: number): boolean {
@@ -331,7 +331,7 @@ export class KeyboardInput {
     /**
      * Minimum `firstPressTick` among codes that are still held (OR-button repeat).
      *
-     * @param codes - Key codes that belong to one logical button.
+     * @param codes – Key codes that belong to one logical button.
      * @returns Smallest tick anchor among held keys, or `undefined`.
      */
     private getOrMinFirstPressTick(codes: readonly string[]): number | undefined {
@@ -365,7 +365,7 @@ export class KeyboardInput {
     /**
      * Applies first keydown for a code and queues Tab / Escape for {@link getInputString}.
      *
-     * @param event - DOM keydown event.
+     * @param event – DOM keydown event.
      */
     private handleKeyDown(event: KeyboardEvent): void {
         const code = event.code;
@@ -398,7 +398,7 @@ export class KeyboardInput {
     /**
      * Removes a code on keyup.
      *
-     * @param event - DOM keyup event.
+     * @param event – DOM keyup event.
      */
     private handleKeyUp(event: KeyboardEvent): void {
         const code = event.code;
@@ -414,7 +414,7 @@ export class KeyboardInput {
     /**
      * Filters `beforeinput` into {@link getInputString}.
      *
-     * @param event - DOM beforeinput event.
+     * @param event – DOM beforeinput event.
      */
     private handleBeforeInput(event: InputEvent): void {
         const inputType = event.inputType;

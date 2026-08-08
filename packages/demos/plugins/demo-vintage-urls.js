@@ -2,7 +2,7 @@
  * Persistent mapping from every historical demo slug to its current slug.
  *
  * Keys are never removed. On a future rename, update the target (and add a new entry for
- * the slug being vacated). Structurally separate from `DEMO_ORDER` in `demo-order.js` —
+ * the slug being vacated). Structurally separate from `DEMO_ORDER` in `demo-order.js` –
  * order is navigation; this file is permanent URL compatibility.
  *
  * Targets that no longer exist on disk (retired demos) stay listed for history and must
@@ -38,7 +38,7 @@ export const VINTAGE_URLS = {
     '018-flurry': 'flurry',
     '019-palette-cycling': 'palette-cycling',
     '020-palette-fade': 'palette-fade',
-    // Retired — number stays unused; no `src/error-preview.js` on disk.
+    // Retired – number stays unused; no `src/error-preview.js` on disk.
     '021-error-preview': 'error-preview',
     '022-bitmap-font': 'bitmap-font',
     '023-crt-pipboy': 'crt-pipboy',

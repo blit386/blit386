@@ -1,5 +1,5 @@
 /**
- * Data model for engine migrations - the structured, machine-applicable form of `blit386`'s `docs/deprecations.md`.
+ * Data model for engine migrations – the structured, machine-applicable form of `blit386`'s `docs/deprecations.md`.
  *
  * A migration bundles a set of one-to-one identifier renames (a codemod) plus a human-readable summary of intent.
  * `blit migrate` and `blit upgrade` consume this to rewrite a game's source from old API names to current ones.

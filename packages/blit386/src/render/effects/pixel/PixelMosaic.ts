@@ -29,8 +29,8 @@ export class PixelMosaic extends FullscreenPixelEffect {
     /**
      * Writes resolution and blockSize into the uniform block.
      *
-     * @param _deltaMs - Unused.
-     * @param sourceSize - Logical texture dimensions for this pass.
+     * @param _deltaMs – Unused.
+     * @param sourceSize – Logical texture dimensions for this pass.
      */
     protected writeUniforms(_deltaMs: number, sourceSize: Vector2i): void {
         const u = this.uniformData;

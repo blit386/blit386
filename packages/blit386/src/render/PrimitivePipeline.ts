@@ -90,10 +90,10 @@ export class PrimitivePipeline {
     /**
      * Initializes the GPU pipeline state and backing buffers.
      *
-     * @param device - WebGPU device for GPU operations.
-     * @param displaySize - Render target resolution in pixels.
-     * @param paletteBuffer - Shared palette uniform buffer (256 x vec4f = 4096 bytes).
-     * @param targetFormat - Color attachment format for primitive output.
+     * @param device – WebGPU device for GPU operations.
+     * @param displaySize – Render target resolution in pixels.
+     * @param paletteBuffer – Shared palette uniform buffer (256 x vec4f = 4096 bytes).
+     * @param targetFormat – Color attachment format for primitive output.
      */
     async init(
         device: GPUDevice,
@@ -108,7 +108,7 @@ export class PrimitivePipeline {
     /**
      * Sets the camera offset applied to all drawing operations.
      *
-     * @param offset - Camera position in pixels.
+     * @param offset – Camera position in pixels.
      */
     setCameraOffset(offset: Vector2i): void {
         this.cameraOffset = offset;
@@ -117,8 +117,8 @@ export class PrimitivePipeline {
     /**
      * Draws a filled rectangle using two triangles.
      *
-     * @param rect - Rectangle bounds in pixel coordinates.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds in pixel coordinates.
+     * @param paletteIndex – Palette color index.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void {
         const x0 = rect.x;
@@ -138,8 +138,8 @@ export class PrimitivePipeline {
     /**
      * Draws a single pixel as a 1x1 filled rectangle.
      *
-     * @param pos - Pixel position.
-     * @param paletteIndex - Palette color index.
+     * @param pos – Pixel position.
+     * @param paletteIndex – Palette color index.
      */
     drawPixel(pos: Vector2i, paletteIndex: number): void {
         // Use pre-allocated rect to avoid allocation per pixel.
@@ -151,9 +151,9 @@ export class PrimitivePipeline {
      * Draws a single pixel at raw coordinates.
      * More efficient than `drawPixel()` when coordinates are already unpacked.
      *
-     * @param x - X position.
-     * @param y - Y position.
-     * @param paletteIndex - Palette color index.
+     * @param x – X position.
+     * @param y – Y position.
+     * @param paletteIndex – Palette color index.
      */
     drawPixelXY(x: number, y: number, paletteIndex: number): void {
         // Draw 1x1 rectangle (2 triangles = 6 vertices).
@@ -176,9 +176,9 @@ export class PrimitivePipeline {
      * Horizontal and vertical lines are emitted as a single quad. Diagonal
      * lines fall back to Bresenham-style pixel steps for pixel-art fidelity.
      *
-     * @param p0 - Start point.
-     * @param p1 - End point.
-     * @param paletteIndex - Palette color index.
+     * @param p0 – Start point.
+     * @param p1 – End point.
+     * @param paletteIndex – Palette color index.
      */
     drawLine(p0: Vector2i, p1: Vector2i, paletteIndex: number): void {
         // Vector2i already guarantees integers, but |0 ensures the 32-bit int for bitwise ops.
@@ -219,8 +219,8 @@ export class PrimitivePipeline {
      * Draws a rectangle outline using four 1-pixel quads.
      * Emits quads directly rather than delegating to `drawLine()`.
      *
-     * @param rect - Rectangle bounds.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds.
+     * @param paletteIndex – Palette color index.
      */
     drawRect(rect: Rect2i, paletteIndex: number): void {
         const x0 = rect.x;
@@ -258,8 +258,8 @@ export class PrimitivePipeline {
      * Fills a rectangular region with a palette-indexed color.
      * Alias for `drawRectFill()` kept for renderer API consistency.
      *
-     * @param rect - Region to fill.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Region to fill.
+     * @param paletteIndex – Palette color index.
      */
     clearRect(rect: Rect2i, paletteIndex: number): void {
         this.drawRectFill(rect, paletteIndex);
@@ -269,7 +269,7 @@ export class PrimitivePipeline {
      * Uploads accumulated primitive vertices and encodes draw calls.
      * No-op when nothing has been queued for the current frame.
      *
-     * @param renderPass - Active render pass encoder.
+     * @param renderPass – Active render pass encoder.
      */
     encodePass(renderPass: GPURenderPassEncoder): void {
         // Flush any remaining vertices into the batch queue.
@@ -329,9 +329,9 @@ export class PrimitivePipeline {
     /**
      * Creates shader modules, pipeline state, and GPU buffers for primitive draws.
      *
-     * @param displaySize - Render target resolution in pixels.
-     * @param paletteBuffer - Shared palette uniform buffer.
-     * @param targetFormat - Color attachment format for primitive output.
+     * @param displaySize – Render target resolution in pixels.
+     * @param paletteBuffer – Shared palette uniform buffer.
+     * @param targetFormat – Color attachment format for primitive output.
      */
     private async createPipeline(
         displaySize: Vector2i,
@@ -453,11 +453,11 @@ export class PrimitivePipeline {
      * Produces pixel-perfect lines without antialiasing by emitting 1x1 quads
      * for each stepped pixel.
      *
-     * @param x0 - Start X coordinate.
-     * @param y0 - Start Y coordinate.
-     * @param x1 - End X coordinate.
-     * @param y1 - End Y coordinate.
-     * @param paletteIndex - Palette color index.
+     * @param x0 – Start X coordinate.
+     * @param y0 – Start Y coordinate.
+     * @param x1 – End X coordinate.
+     * @param y1 – End Y coordinate.
+     * @param paletteIndex – Palette color index.
      */
     private drawLineBresenham(x0: number, y0: number, x1: number, y1: number, paletteIndex: number): void {
         const dx = Math.abs(x1 - x0);
@@ -492,9 +492,9 @@ export class PrimitivePipeline {
      * Adds vertices for a single pixel (6 vertices for 2 triangles).
      * Internal helper used by the Bresenham path.
      *
-     * @param x - X position.
-     * @param y - Y position.
-     * @param paletteIndex - Palette color index.
+     * @param x – X position.
+     * @param y – Y position.
+     * @param paletteIndex – Palette color index.
      */
     private addPixelVertices(x: number, y: number, paletteIndex: number): void {
         // Ensure space for complete pixel (6 vertices) to prevent partial geometry.
@@ -506,7 +506,7 @@ export class PrimitivePipeline {
                 this.earlyFlush();
             }
 
-            // Check again after flush - if still no space, buffer is exhausted.
+            // Check again after flush – if still no space, buffer is exhausted.
             if ((this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX + pixelValues > this.vertexFloats.length) {
                 console.warn('[PrimitivePipeline] Buffer exhausted, pixel dropped');
                 this.overflowCount++;
@@ -531,9 +531,9 @@ export class PrimitivePipeline {
      * Adds a single vertex to the primitive batch.
      * Flushes batching state first if the frame buffer has been filled.
      *
-     * @param x - X position in pixels.
-     * @param y - Y position in pixels.
-     * @param paletteIndex - Palette color index (written as uint32).
+     * @param x – X position in pixels.
+     * @param y – Y position in pixels.
+     * @param paletteIndex – Palette color index (written as uint32).
      */
     private addVertex(x: number, y: number, paletteIndex: number): void {
         const index = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
@@ -541,7 +541,7 @@ export class PrimitivePipeline {
         if (index + VALUES_PER_VERTEX > this.vertexFloats.length) {
             this.earlyFlush();
 
-            // Re-check after flush - if still no space, buffer is exhausted for this frame.
+            // Re-check after flush – if still no space, buffer is exhausted for this frame.
             const newIndex = (this.totalVertices + this.vertexCount) * VALUES_PER_VERTEX;
 
             if (newIndex + VALUES_PER_VERTEX > this.vertexFloats.length) {
@@ -567,7 +567,7 @@ export class PrimitivePipeline {
     /**
      * Records the current vertex batch and resets the vertex count.
      * Used for early flush when the buffer is full mid-frame.
-     * Does not write to GPU - encodePass() uploads all batches at once.
+     * Does not write to GPU – encodePass() uploads all batches at once.
      */
     private earlyFlush(): void {
         if (this.vertexCount === 0) {

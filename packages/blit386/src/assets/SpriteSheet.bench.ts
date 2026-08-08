@@ -20,8 +20,8 @@ const SPRITE_RECT = new Rect2i(0, 0, 64, 64);
 /**
  * Builds an indexized sheet filled with cycling non-zero palette indices.
  *
- * @param width - Sheet width in pixels.
- * @param height - Sheet height in pixels.
+ * @param width – Sheet width in pixels.
+ * @param height – Sheet height in pixels.
  * @returns Sprite sheet for benchmark fixtures.
  */
 function makeBenchSheet(width: number, height: number): SpriteSheet {

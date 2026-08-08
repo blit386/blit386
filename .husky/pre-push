@@ -97,8 +97,8 @@ fi
 # changes nothing there (root CLAUDE.md, .claude/, .husky/, root scripts/, root
 # configs) would otherwise run zero checks. Always run the root-level gate too.
 if [ "$PREFLIGHT_STATUS" -eq 0 ]; then
-    echo "Running root-level checks (format:check, docs:links, agents:check)..."
-    pnpm run format:check && pnpm run docs:links && pnpm run agents:check || PREFLIGHT_STATUS=$?
+    echo "Running root-level checks (format:check, docs:links, agents:check, check-dash-typography)..."
+    pnpm run format:check && pnpm run docs:links && pnpm run agents:check && pnpm run check-dash-typography || PREFLIGHT_STATUS=$?
 fi
 
 if [ "$PREFLIGHT_STATUS" -ne 0 ]; then

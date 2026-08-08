@@ -39,7 +39,7 @@ export interface DevModeSignals {
  * Resolves dev vs. release from already-gathered signals, in priority order: explicit
  * override, then the runtime dev global, then hot-reload activity, otherwise release.
  *
- * @param signals - See {@link DevModeSignals}.
+ * @param signals – See {@link DevModeSignals}.
  * @returns `true` for a dev build, `false` for release.
  */
 export function resolveDevMode(signals: DevModeSignals): boolean {
@@ -58,7 +58,7 @@ export function resolveDevMode(signals: DevModeSignals): boolean {
  * Reports whether this is a development build, gathering signals from `globalThis` (never a
  * bare `window` reference).
  *
- * @param override - Explicit override, if a caller offers one; always wins when defined.
+ * @param override – Explicit override, if a caller offers one; always wins when defined.
  * @returns `true` for a dev build, `false` for release.
  */
 export function isDevMode(override?: boolean): boolean {

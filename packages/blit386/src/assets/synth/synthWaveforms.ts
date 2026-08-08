@@ -8,10 +8,10 @@ import type { SynthWaveform } from './SynthParams';
 /**
  * Computes an oscillator sample for a tonal waveform at a normalized phase.
  *
- * @param waveform - Oscillator shape. `'noise'` is generated separately by {@link noiseSample}
+ * @param waveform – Oscillator shape. `'noise'` is generated separately by {@link noiseSample}
  *   and must never reach this function.
- * @param phase - Phase in [0, 1), already wrapped by the caller.
- * @param dutyCycle - Fraction of the cycle spent high. Only affects `'square'`.
+ * @param phase – Phase in [0, 1), already wrapped by the caller.
+ * @param dutyCycle – Fraction of the cycle spent high. Only affects `'square'`.
  * @returns Sample in [-1, 1].
  * @throws If `waveform` is not one of the supported tonal shapes (defensive guard; `'noise'`
  *   and unknown values must never reach this function).
@@ -34,7 +34,7 @@ export function oscillatorSample(waveform: Exclude<SynthWaveform, 'noise'>, phas
 /**
  * Draws a single white-noise sample from a seeded PRNG.
  *
- * @param rng - Deterministic PRNG to draw from; advances its state by one call.
+ * @param rng – Deterministic PRNG to draw from; advances its state by one call.
  * @returns Sample in [-1, 1).
  */
 export function noiseSample(rng: Rng): number {

@@ -17,10 +17,10 @@ const FADE_CURVE_SAMPLE_COUNT = 32;
  * easings sample {@link applyEasing} into a curve fed to `setValueCurveAtTime`.
  *
  * @param param - `AudioParam` to update (gain, `playbackRate`, or pan).
- * @param currentTime - Audio-clock time to anchor the ramp to (`AudioContext.currentTime`).
- * @param targetValue - Target parameter value.
- * @param fadeMs - Optional fade duration in milliseconds.
- * @param easing - Easing curve applied when `fadeMs` is a positive duration.
+ * @param currentTime – Audio-clock time to anchor the ramp to (`AudioContext.currentTime`).
+ * @param targetValue – Target parameter value.
+ * @param fadeMs – Optional fade duration in milliseconds.
+ * @param easing – Easing curve applied when `fadeMs` is a positive duration.
  */
 export function applyAudioParamRamp(
     param: AudioParam,
@@ -30,7 +30,7 @@ export function applyAudioParamRamp(
     easing: EasingFunction,
 ): void {
     if (fadeMs === undefined || fadeMs <= 0) {
-        // Cancel any pending ramp first - setting `.value` directly does not cancel scheduled
+        // Cancel any pending ramp first – setting `.value` directly does not cancel scheduled
         // automation events, so a fade started earlier could otherwise keep running and override
         // this "immediate" value once its scheduled end time arrives.
         param.cancelScheduledValues(currentTime);
@@ -57,9 +57,9 @@ export function applyAudioParamRamp(
 /**
  * Samples an eased curve from `startValue` to `targetValue` for `AudioParam.setValueCurveAtTime`.
  *
- * @param startValue - Parameter value at the start of the fade.
- * @param targetValue - Parameter value at the end of the fade.
- * @param easing - Easing curve to sample.
+ * @param startValue – Parameter value at the start of the fade.
+ * @param targetValue – Parameter value at the end of the fade.
+ * @param easing – Easing curve to sample.
  * @returns Sampled curve of {@link FADE_CURVE_SAMPLE_COUNT} values.
  */
 function sampleEasingCurve(startValue: number, targetValue: number, easing: EasingFunction): Float32Array {

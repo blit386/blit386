@@ -43,7 +43,7 @@ import type { SynthParams } from './synth/SynthParams';
  * @param opts.status        - HTTP status code. Defaults to `200`.
  * @param opts.contentLength - `Content-Length` header value; omit to simulate a missing header.
  * @param opts.chunks        - Body chunks streamed via a fake `ReadableStream` reader.
- * @param opts.arrayBufferBytes - Byte length returned by the `arrayBuffer()` fallback path.
+ * @param opts.arrayBufferBytes – Byte length returned by the `arrayBuffer()` fallback path.
  * @returns Response stub accepted by the `fetch` mock.
  */
 function mockAudioFetchResponse({
@@ -449,7 +449,7 @@ describe('AudioClip', () => {
         /**
          * Builds a valid baseline `SynthParams`, overridden per test.
          *
-         * @param overrides - Fields to override on top of the baseline.
+         * @param overrides – Fields to override on top of the baseline.
          * @returns A valid `SynthParams` value merged with `overrides`.
          */
         function buildSynthParams(overrides: Partial<SynthParams> = {}): SynthParams {

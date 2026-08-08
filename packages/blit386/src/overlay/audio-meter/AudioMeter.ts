@@ -64,7 +64,7 @@ export class AudioMeter {
     /**
      * Creates an audio meter with the given feature flag.
      *
-     * @param isEnabled - When false, sample/draw are no-ops.
+     * @param isEnabled – When false, sample/draw are no-ops.
      */
     constructor(isEnabled = false) {
         this.#isEnabled = isEnabled;
@@ -82,7 +82,7 @@ export class AudioMeter {
     /**
      * Records the latest per-bus levels and voice counters.
      *
-     * @param snapshot - Per-frame audio snapshot from BTAPI.
+     * @param snapshot – Per-frame audio snapshot from BTAPI.
      */
     sample(snapshot: OverlayAudioSnapshot): void {
         if (!this.#isEnabled) {
@@ -104,10 +104,10 @@ export class AudioMeter {
      * {@link OverlayDrawTarget.drawLabel} for the text readout, mirroring
      * {@link TimingChart.draw}.
      *
-     * @param target - Overlay draw target.
-     * @param rect - Screen-space meter band from layout plan.
-     * @param style - Resolved meter palette indices.
-     * @param font - System bitmap font for the text readout.
+     * @param target – Overlay draw target.
+     * @param rect – Screen-space meter band from layout plan.
+     * @param style – Resolved meter palette indices.
+     * @param font – System bitmap font for the text readout.
      */
     draw(target: OverlayDrawTarget, rect: Rect2i, style: AudioMeterDrawStyle, font: BitmapFont): void {
         if (!this.#isEnabled || rect.width <= 0 || rect.height <= 0) {
@@ -122,9 +122,9 @@ export class AudioMeter {
      * Draws one track (full band height) and, when the bus level is non-zero, one
      * bottom-anchored fill rect per bus.
      *
-     * @param target - Overlay draw target.
-     * @param rect - Screen-space meter band.
-     * @param style - Resolved meter palette indices.
+     * @param target – Overlay draw target.
+     * @param rect – Screen-space meter band.
+     * @param style – Resolved meter palette indices.
      */
     #drawBars(target: OverlayDrawTarget, rect: Rect2i, style: AudioMeterDrawStyle): void {
         for (let busIndex = 0; busIndex < AUDIO_METER_BUSES.length; busIndex++) {
@@ -161,10 +161,10 @@ export class AudioMeter {
      * The `|` separators between the readout segments render as 1 px full-band-height
      * dividers in the gap palette index, matching the other engine-composed labels.
      *
-     * @param target - Overlay draw target.
-     * @param rect - Screen-space meter band.
-     * @param style - Resolved meter palette indices.
-     * @param font - System bitmap font.
+     * @param target – Overlay draw target.
+     * @param rect – Screen-space meter band.
+     * @param style – Resolved meter palette indices.
+     * @param font – System bitmap font.
      */
     #drawText(target: OverlayDrawTarget, rect: Rect2i, style: AudioMeterDrawStyle, font: BitmapFont): void {
         const barsBlockWidth = gridRowWidth(AUDIO_METER_BUS_COUNT, AUDIO_METER_BAR_WIDTH_PX, AUDIO_METER_BAR_GAP_PX);
@@ -189,8 +189,8 @@ export class AudioMeter {
     /**
      * Resolves a bus fill's palette index from its level against the warning/clip thresholds.
      *
-     * @param level - Normalized bus level.
-     * @param style - Resolved meter palette indices.
+     * @param level – Normalized bus level.
+     * @param style – Resolved meter palette indices.
      * @returns Clip, warning, or normal level bar palette index.
      */
     #levelPaletteIndex(level: number, style: AudioMeterDrawStyle): number {
@@ -210,8 +210,8 @@ export class AudioMeter {
  * Computes the left edge X of the `busIndex`-th bus bar, reusing {@link gridRowWidth}'s
  * fixed-count column arithmetic instead of an adaptive grid.
  *
- * @param rect - Screen-space meter band.
- * @param busIndex - Index into {@link AUDIO_METER_BUSES}.
+ * @param rect – Screen-space meter band.
+ * @param busIndex – Index into {@link AUDIO_METER_BUSES}.
  * @returns Bar left edge X in display pixels.
  */
 function busBarX(rect: Rect2i, busIndex: number): number {

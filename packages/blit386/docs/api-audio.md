@@ -109,7 +109,7 @@ gesture, and why no configure flag can skip this requirement.
 <Since symbol="AudioClip" />
 
 `AudioClip` decodes an audio file into a reusable `AudioBuffer`, exposing the winning source URL, duration, and sample
-rate. Loading and decoding work even while the audio context is locked (suspended, pre-gesture) - only real-time
+rate. Loading and decoding work even while the audio context is locked (suspended, pre-gesture) – only real-time
 playback needs an unlocked context. See [Preloading audio clips](guide-audio.md#preloading-audio-clips).
 
 ```ts twoslash
@@ -165,12 +165,12 @@ theme.unload(); // releases the decoded buffer; safe to call more than once
 - `AudioClip.load()` and `loadAll()` throw a beginner-friendly error covering network/CORS failures, HTTP status errors,
   unsupported container/codec decode failures, and loading before the engine has started.
 - Prefer a fallback list (for example `['theme.ogg', 'theme.mp3']`) for any clip whose primary format might not decode
-  in every browser - see [Audio formats](api-browser-support.md#audio-formats).
+  in every browser – see [Audio formats](api-browser-support.md#audio-formats).
 - Playing a loaded clip back as SFX is covered in [Playback (SFX)](#playback-sfx) below; as looping, crossfading music
   in [Playback (Music)](#playback-music).
 
 Under a Vite dev server with the `blit386/vite` plugin installed, editing an audio file under a watched asset directory
-(`public/` by default) swaps the decoded buffer inside the same `AudioClip` instance - demo-held references stay valid.
+(`public/` by default) swaps the decoded buffer inside the same `AudioClip` instance – demo-held references stay valid.
 Any SFX voice still playing the old buffer is stopped; if the replaced clip is the currently playing music track,
 playback restarts immediately (`fadeMs: 0`, no crossfade). `duration`/`sampleRate` reflect the buffer decoded at initial
 load and are not updated by a hot reload. See [Hot Reload](guide-hot-reload.md#asset-hot-replace-matrix) for the full
@@ -180,10 +180,10 @@ asset type matrix.
 
 <Since symbol="SynthParams" />
 
-`AudioClip.synth` renders a clip procedurally from a `SynthParams` descriptor - no source file, no network request, and
+`AudioClip.synth` renders a clip procedurally from a `SynthParams` descriptor – no source file, no network request, and
 no `OfflineAudioContext`. Rendering runs entirely on the CPU and is deterministic: identical params (including `seed`)
 always produce identical sample data, so a `SynthParams` object can be stored and replayed as a preset. Unlike
-[Loading](#loading), there is nothing to fetch or decode from the network - a synthesized clip is ready the instant
+[Loading](#loading), there is nothing to fetch or decode from the network – a synthesized clip is ready the instant
 `synth()` resolves, even before `BT.isAudioUnlocked` is `true` (see [Unlock state](#unlock-state) above).
 
 ```ts twoslash
@@ -225,7 +225,7 @@ const laser = await AudioClip.synth({
   }} />
 
 The release phase always finishes exactly at `duration`, even on a very short clip where the attack, decay, and release
-phases overlap - a percussive hit is never cut off mid-fade.
+phases overlap – a percussive hit is never cut off mid-fade.
 
 <Since symbol="SynthPitchSweep" />
 
@@ -263,7 +263,7 @@ BT.soundPlay(boom, { volume: 0.7 });
 <Callout title="Not cached, not deduplicated">
 
 Unlike `AudioClip.load()`, `AudioClip.synth()` never populates the URL-keyed resolved cache and never deduplicates
-concurrent calls - every call renders a fresh, independent `AudioBuffer`, even for byte-identical `params`. `unload()`
+concurrent calls – every call renders a fresh, independent `AudioBuffer`, even for byte-identical `params`. `unload()`
 still works the same way (releases the buffer, stops any voice playing it), it just has no cache entry to clear.
 
 </Callout>
@@ -274,7 +274,7 @@ still works the same way (releases the buffer, stops any voice playing it), it j
 
 `BT.synthPreset` bundles six ready-made `SynthParams` factories for common sound effects: `jump`, `pickup`, `explosion`,
 `laser`, `hit`, `blip`. Each takes an optional `seed` and applies small, bounded, deterministic jitter to a couple of
-hand-picked fields (frequency, duration, or noise mix) - the same seed always renders the exact same variant, so a
+hand-picked fields (frequency, duration, or noise mix) – the same seed always renders the exact same variant, so a
 preset stays reproducible even though it varies from call to call.
 
 ```ts twoslash
@@ -293,7 +293,7 @@ BT.soundPlay(menuBlip);
 BT.soundPlay(coin, { volume: 0.8 });
 ```
 
-Omitting `seed` (or passing `0`) always renders the same baseline variant - useful when you want a preset's default
+Omitting `seed` (or passing `0`) always renders the same baseline variant – useful when you want a preset's default
 character rather than per-play variation. See [Playback (SFX)](#playback-sfx) below for playing the resulting clip
 through the SFX voice pool, and [Design a sound](guide-audio.md#design-a-sound) in the Audio Guide for a walkthrough of
 tuning `SynthParams` by hand and storing presets as data.
@@ -308,7 +308,7 @@ tuning `SynthParams` by hand and storing presets as data.
 <Since symbol="BT.isSoundPlaying" />
 
 `BT.soundPlay` plays a loaded `AudioClip` through a fixed-size pool of SFX voices. Each call returns an opaque
-`SoundRef` handle - pass it to `BT.soundStop` and the per-sound volume, pitch, and pan controls.
+`SoundRef` handle – pass it to `BT.soundStop` and the per-sound volume, pitch, and pan controls.
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
@@ -338,17 +338,17 @@ BT.soundStop(ref, { fadeOutMs: 200 }); // fades out over 200 ms
 
 <Callout title="Voice cap and stealing">
 
-`HardwareSettings.audioVoices` (default `16`) sizes a fixed pool of voices - it never grows. When every voice is in use,
+`HardwareSettings.audioVoices` (default `16`) sizes a fixed pool of voices – it never grows. When every voice is in use,
 a new `BT.soundPlay` call steals the lowest-priority active voice at or below the incoming priority (ties broken by
 whichever voice started first). If every active voice outranks the incoming priority, the new sound is dropped silently:
 no throw, and the returned `SoundRef` is inert (`BT.isSoundPlaying` reports `false` for it immediately).
 
 Set `isOverlayAudioMetersEnabled: true` to see active/total voices, steal count, and drop count live in the overlay
-instead of reasoning about the pool from code - see [Audio meters](api-overlay.md#audio-meters-optional).
+instead of reasoning about the pool from code – see [Audio meters](api-overlay.md#audio-meters-optional).
 
 </Callout>
 
-A common pattern - vary pitch slightly per play so a repeated sound (footsteps, hits) doesn't sound robotic:
+A common pattern – vary pitch slightly per play so a repeated sound (footsteps, hits) doesn't sound robotic:
 
 ```ts twoslash
 import { AudioClip, BT } from 'blit386';
@@ -369,7 +369,7 @@ function playFootstep() {
 <Since symbol="BT.soundPanSet" />
 <Since symbol="BT.soundPanGet" />
 
-Per-sound controls, all silent no-ops on a stale or invalid `SoundRef` (already stopped, stolen, or completed - never
+Per-sound controls, all silent no-ops on a stale or invalid `SoundRef` (already stopped, stolen, or completed – never
 throws):
 
 ```ts twoslash
@@ -448,7 +448,7 @@ BT.musicPlay(battle, { fadeMs: 800, overlap: 0 }); // battle starts fading in ex
 BT.musicPlay(battle, { fadeMs: 800, overlap: -1 }); // an 800 ms silence gap between the two
 ```
 
-Calling `BT.musicPlay` again before a crossfade finishes immediately cuts the track that was already fading out - only
+Calling `BT.musicPlay` again before a crossfade finishes immediately cuts the track that was already fading out – only
 one crossfade is ever in flight, so rapid calls (menu navigation, quick scene changes) never pile up.
 
 ### Loop points
@@ -488,7 +488,7 @@ BT.musicVolumeGet(); // 0.4
 
 <Callout title="Remembered while locked, not dropped">
 
-Unlike `BT.soundPlay`, a `BT.musicPlay` call made before `BT.isAudioUnlocked` is `true` is not dropped - the engine
+Unlike `BT.soundPlay`, a `BT.musicPlay` call made before `BT.isAudioUnlocked` is `true` is not dropped – the engine
 remembers the most recent pending request and starts it automatically the instant the context unlocks. Calling
 `BT.musicPlay` again while still locked replaces the remembered request; only the latest survives to unlock.
 
@@ -504,7 +504,7 @@ intro-then-loop recipe.
 
 ## Hardware settings
 
-`audioVoices` (default `16`) caps the number of simultaneous SFX voices - see [Playback (SFX)](#playback-sfx) for the
+`audioVoices` (default `16`) caps the number of simultaneous SFX voices – see [Playback (SFX)](#playback-sfx) for the
 allocation and stealing policy. Documented in [Hardware settings](api-core.md#hardware-settings).
 
 <PageChangelog page="api/audio" />

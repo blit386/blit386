@@ -363,7 +363,7 @@ test('blit agents sync --check exits 0 when no files have drifted', () => {
             pmRunLint: 'npm run lint',
         });
 
-        // Nothing has been modified — check should pass with exit code 0.
+        // Nothing has been modified – check should pass with exit code 0.
         const result = execFileSync(process.execPath, [blitCli, 'agents', 'sync', '--check'], {
             cwd: project,
             encoding: 'utf8',

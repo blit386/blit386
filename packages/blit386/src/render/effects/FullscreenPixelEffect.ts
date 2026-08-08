@@ -37,9 +37,9 @@ export abstract class FullscreenPixelEffect implements Effect {
     /**
      * Builds WGSL module and GPU pipeline for the supplied chain format.
      *
-     * @param device - WebGPU device.
-     * @param format - Pixel chain attachment format (`r8uint` or float swap format).
-     * @param _chainSize - Chain resolution (unused by base; subclasses may read via uniforms).
+     * @param device – WebGPU device.
+     * @param format – Pixel chain attachment format (`r8uint` or float swap format).
+     * @param _chainSize – Chain resolution (unused by base; subclasses may read via uniforms).
      */
     init(device: GPUDevice, format: GPUTextureFormat, _chainSize: Vector2i): void {
         if (this.uniformBytes <= 0 || this.uniformBytes % 16 !== 0) {
@@ -88,8 +88,8 @@ export abstract class FullscreenPixelEffect implements Effect {
     /**
      * Uploads uniform block after {@link writeUniforms}.
      *
-     * @param deltaMs - Milliseconds since previous frame.
-     * @param sourceSize - Source texture dimensions for this pass.
+     * @param deltaMs – Milliseconds since previous frame.
+     * @param sourceSize – Source texture dimensions for this pass.
      */
     updateUniforms(deltaMs: number, sourceSize: Vector2i): void {
         if (!this.device || !this.uniformBuffer || !this.uniformData) {
@@ -103,9 +103,9 @@ export abstract class FullscreenPixelEffect implements Effect {
     /**
      * Draws a fullscreen triangle sampling {@link sourceView} into {@link destView}.
      *
-     * @param encoder - Frame command encoder.
-     * @param sourceView - Input texture view.
-     * @param destView - Render target view.
+     * @param encoder – Frame command encoder.
+     * @param sourceView – Input texture view.
+     * @param destView – Render target view.
      */
     encodePass(encoder: GPUCommandEncoder, sourceView: GPUTextureView, destView: GPUTextureView): void {
         if (!this.pipeline) {
@@ -161,7 +161,7 @@ export abstract class FullscreenPixelEffect implements Effect {
     /**
      * Creates or returns a cached bind group for the active RGBA vs uint sampling layout.
      *
-     * @param sourceView - Texture view feeding this fullscreen pass.
+     * @param sourceView – Texture view feeding this fullscreen pass.
      * @returns Bind group bound to {@link sourceView}.
      */
     private getOrCreateBindGroup(sourceView: GPUTextureView): GPUBindGroup {

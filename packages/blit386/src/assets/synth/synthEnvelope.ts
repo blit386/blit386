@@ -24,7 +24,7 @@ export interface ResolvedEnvelope {
 /**
  * Fills in every omitted {@link SynthEnvelope} field with its default.
  *
- * @param envelope - Envelope descriptor, or `undefined` for an envelope built entirely from
+ * @param envelope – Envelope descriptor, or `undefined` for an envelope built entirely from
  *   defaults.
  * @returns Envelope with every field resolved to a concrete number.
  */
@@ -40,8 +40,8 @@ export function resolveEnvelope(envelope: SynthEnvelope | undefined): ResolvedEn
 /**
  * Computes the ADSR gain multiplier for the attack and decay phases only, ignoring release.
  *
- * @param t - Time in seconds since the start of the clip.
- * @param envelope - Resolved envelope.
+ * @param t – Time in seconds since the start of the clip.
+ * @param envelope – Resolved envelope.
  * @returns Gain in [0, 1] following the attack ramp, then the decay ramp, then holding at
  *   `sustain`.
  */
@@ -71,9 +71,9 @@ function attackDecayGain(t: number, envelope: ResolvedEnvelope): number {
  * attack/decay curve had reached at that point, rather than from `sustain` - this keeps very
  * short percussive clips free of a discontinuous jump.
  *
- * @param t - Time in seconds since the start of the clip.
- * @param duration - Total clip duration in seconds.
- * @param envelope - Resolved envelope.
+ * @param t – Time in seconds since the start of the clip.
+ * @param duration – Total clip duration in seconds.
+ * @param envelope – Resolved envelope.
  * @returns Gain multiplier in [0, 1].
  */
 export function envelopeValueAt(t: number, duration: number, envelope: ResolvedEnvelope): number {
@@ -90,7 +90,7 @@ export function envelopeValueAt(t: number, duration: number, envelope: ResolvedE
 
     // Ramp across whatever span is actually available before `duration` (`release` itself when
     // `release <= duration`, but only `duration` when a longer release got clamped to
-    // `releaseStart = 0`) - otherwise the ramp would still be mid-fade at the last sample.
+    // `releaseStart = 0`) – otherwise the ramp would still be mid-fade at the last sample.
     const releaseSpan = duration - releaseStart;
     const startGain = attackDecayGain(releaseStart, envelope);
     const releaseT = releaseSpan > 0 ? Math.min((t - releaseStart) / releaseSpan, 1) : 1;

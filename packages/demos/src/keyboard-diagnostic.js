@@ -1,5 +1,5 @@
 /**
- * Keyboard Diagnostic - visual keyboard with press / hold / release feedback.
+ * Keyboard Diagnostic – visual keyboard with press / hold / release feedback.
  *
  * Part of the BLIT386 demo series.
  * Prerequisites: Keyboard Input (https://demos.blit386.dev/keyboard-input)
@@ -76,7 +76,7 @@ const KEY_GAP = 2; // Empty space between adjacent key caps, in pixels.
 
 /**
  * The whole keyboard picture as data: six rows of key descriptors, top to bottom.
- * addKeyRow() walks each row like laying tiles on a shelf - it keeps a running x
+ * addKeyRow() walks each row like laying tiles on a shelf – it keeps a running x
  * position, places a key, then moves right by the key's width plus KEY_GAP. A key
  * only needs extra fields when it breaks the pattern: `w` for wide caps (Backspace,
  * Enter, Space), `gapBefore` for the small gaps between F-key clusters, and `x`
@@ -277,7 +277,7 @@ class Demo {
     }
 
     update() {
-        // Let the UI kit track touch contacts first - ui.hasTouch() in render()
+        // Let the UI kit track touch contacts first – ui.hasTouch() in render()
         // relies on this housekeeping running every update tick.
         ui.tick();
 
@@ -348,7 +348,7 @@ class Demo {
         ui.kv('Tick', this.lastTick === null ? '-' : this.lastTick);
         ui.end();
 
-        // Edge counters: after a burst of fast taps both numbers must match - a
+        // Edge counters: after a burst of fast taps both numbers must match – a
         // mismatch means an edge was dropped somewhere.
         ui.begin('bottomRight');
         ui.panel();
@@ -410,8 +410,8 @@ class Demo {
      * Lays out one row of key caps from its descriptor, left to right.
      *
      * The running x position starts at the row's startX. For each key we first honor
-     * its quirks - jump to an absolute column (`x`) or skip a few extra pixels
-     * (`gapBefore`) - then place the cap and step right by its width plus the
+     * its quirks – jump to an absolute column (`x`) or skip a few extra pixels
+     * (`gapBefore`) – then place the cap and step right by its width plus the
      * standard KEY_GAP, ready for the next key.
      *
      * @param {KeyRow} row One entry of KEYBOARD_ROWS.

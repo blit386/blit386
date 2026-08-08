@@ -105,7 +105,7 @@ export class MusicPlayer {
     /**
      * Creates a player with no live voices.
      *
-     * @param context - Live audio context to schedule against.
+     * @param context – Live audio context to schedule against.
      * @param musicBus - `music` bus gain node every voice connects to.
      */
     constructor(
@@ -129,8 +129,8 @@ export class MusicPlayer {
      * `overlap = 0` starts the fade-in exactly as the fade-out ends, and `overlap = -1` leaves a
      * silence gap of `fadeMs` between them.
      *
-     * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link MusicPlayOptions}.
+     * @param buffer – Decoded audio buffer to play.
+     * @param options – Playback options; see {@link MusicPlayOptions}.
      * @throws Error if `loopStart`/`loopEnd` are given without each other, or describe an invalid
      *   region for `buffer`'s duration.
      */
@@ -143,7 +143,7 @@ export class MusicPlayer {
         const fadeSeconds = Math.max(0, options.fadeMs ?? DEFAULT_FADE_MS) / 1000;
         const overlap = clampOverlap(options.overlap ?? DEFAULT_OVERLAP);
 
-        // overlap only describes the offset between an outgoing and incoming fade - with no
+        // overlap only describes the offset between an outgoing and incoming fade – with no
         // current voice to crossfade against, there is nothing to offset from, so the new track
         // always starts at now regardless of overlap.
         const fadeInStart = this.current !== null ? now + fadeSeconds * (1 - overlap) : now;
@@ -175,13 +175,13 @@ export class MusicPlayer {
      *
      * Immediately stops and releases any voice still crossfading out from a prior {@link play}
      * call, then demotes the current voice to "previous" and schedules its fade-out and stop the
-     * same way {@link play} does for a replaced track - it stays tracked (not discarded) until
+     * same way {@link play} does for a replaced track – it stays tracked (not discarded) until
      * the fade actually completes, so a subsequent {@link play} or {@link stop} call can still
      * find and immediately silence it instead of leaving it to fade out on its own unmanaged.
      * {@link current} is cleared synchronously, so {@link isPlaying} reports `false` right away
      * even while the fade-out is still audible. No-op when nothing is playing.
      *
-     * @param fadeMs - Optional linear fade-out duration in milliseconds; omit to stop immediately.
+     * @param fadeMs – Optional linear fade-out duration in milliseconds; omit to stop immediately.
      */
     public stop(fadeMs?: number): void {
         const now = this.context.currentTime;
@@ -203,8 +203,8 @@ export class MusicPlayer {
      * Sets the current track's gain, optionally ramping to it, and remembers the value for
      * future {@link volumeGet} calls even before the next {@link play}.
      *
-     * @param value - Target gain.
-     * @param fadeMs - Optional fade duration in milliseconds; omit for an immediate change.
+     * @param value – Target gain.
+     * @param fadeMs – Optional fade duration in milliseconds; omit for an immediate change.
      */
     public volumeSet(value: number, fadeMs?: number): void {
         this.volume = value;
@@ -239,10 +239,10 @@ export class MusicPlayer {
      * Hot-reload seam: if `oldBuffer` is the buffer of the currently playing track,
      * restarts playback with `newBuffer` using the last {@link play} options but no
      * crossfade (`fadeMs: 0`) so a hot-reloaded track picks up immediately. Same-
-     * position resume is out of scope - playback restarts from the beginning.
+     * position resume is out of scope – playback restarts from the beginning.
      *
-     * @param oldBuffer - Buffer identity to match against the current track.
-     * @param newBuffer - Replacement buffer to play when `oldBuffer` matches.
+     * @param oldBuffer – Buffer identity to match against the current track.
+     * @param newBuffer – Replacement buffer to play when `oldBuffer` matches.
      * @returns `true` if the current track was restarted; `false` if it didn't
      *   match, or nothing is currently playing.
      */
@@ -262,12 +262,12 @@ export class MusicPlayer {
      * Builds a fresh `source -> gain -> music bus` chain and starts playback with a scheduled
      * fade-in.
      *
-     * @param buffer - Decoded audio buffer to play.
-     * @param options - Playback options; see {@link MusicPlayOptions}.
-     * @param targetVolume - Resolved target gain (already defaulted by the caller).
-     * @param fadeInStart - Audio-clock time the fade-in (and playback) starts at.
-     * @param fadeSeconds - Fade-in duration in seconds; `0` starts at `targetVolume` immediately.
-     * @param easeIn - Easing curve for the fade-in ramp.
+     * @param buffer – Decoded audio buffer to play.
+     * @param options – Playback options; see {@link MusicPlayOptions}.
+     * @param targetVolume – Resolved target gain (already defaulted by the caller).
+     * @param fadeInStart – Audio-clock time the fade-in (and playback) starts at.
+     * @param fadeSeconds – Fade-in duration in seconds; `0` starts at `targetVolume` immediately.
+     * @param easeIn – Easing curve for the fade-in ramp.
      * @returns The newly started voice.
      */
     private startVoice(
@@ -312,14 +312,14 @@ export class MusicPlayer {
     /**
      * Schedules `voice`'s gain to fade to `0` and its source(s) to stop once the fade completes.
      *
-     * Does not disconnect anything synchronously - the node chain keeps playing until the
+     * Does not disconnect anything synchronously – the node chain keeps playing until the
      * scheduled stop time, and each source's `onended` handler (installed in {@link startVoice})
      * disconnects it when that actually fires.
      *
-     * @param voice - Voice to fade out and stop.
-     * @param startTime - Audio-clock time the fade-out starts at.
-     * @param fadeSeconds - Fade-out duration in seconds; `0` stops immediately.
-     * @param easeOut - Easing curve for the fade-out ramp.
+     * @param voice – Voice to fade out and stop.
+     * @param startTime – Audio-clock time the fade-out starts at.
+     * @param fadeSeconds – Fade-out duration in seconds; `0` stops immediately.
+     * @param easeOut – Easing curve for the fade-out ramp.
      */
     private scheduleFadeOutAndStop(
         voice: Voice,
@@ -344,7 +344,7 @@ export class MusicPlayer {
      * Used to release a stale previous voice when {@link play} or {@link stop} is called again
      * before its crossfade finished, so only one crossfade pair is ever live.
      *
-     * @param voice - Voice to force-stop.
+     * @param voice – Voice to force-stop.
      */
     private forceStopVoice(voice: Voice): void {
         for (const source of voice.sources) {
@@ -364,7 +364,7 @@ export class MusicPlayer {
      * {@link startVoice} call allocates a fresh one), so identity alone disambiguates without
      * needing a generation counter.
      *
-     * @param voice - Voice one of whose sources just ended.
+     * @param voice – Voice one of whose sources just ended.
      */
     private handleVoiceSourceEnded(voice: Voice): void {
         voice.pendingSources -= 1;
@@ -397,7 +397,7 @@ export class MusicPlayer {
 /**
  * Clamps a crossfade overlap value to `[-1, 1]`.
  *
- * @param overlap - Raw overlap value.
+ * @param overlap – Raw overlap value.
  * @returns Overlap clamped to `[MIN_OVERLAP, MAX_OVERLAP]`.
  */
 function clampOverlap(overlap: number): number {
@@ -408,8 +408,8 @@ function clampOverlap(overlap: number): number {
  * Applies `options.loop` / `options.loopStart` / `options.loopEnd` to a freshly created source
  * node. Assumes {@link validateLoopRegion} already passed.
  *
- * @param source - Source node to configure.
- * @param options - Playback options; see {@link MusicPlayOptions}.
+ * @param source – Source node to configure.
+ * @param options – Playback options; see {@link MusicPlayOptions}.
  */
 function applyLoopOptions(source: AudioBufferSourceNode, options: MusicPlayOptions): void {
     const { loopStart, loopEnd } = options;
@@ -434,8 +434,8 @@ function applyLoopOptions(source: AudioBufferSourceNode, options: MusicPlayOptio
  * points may no longer fit. Falls back to whole-buffer looping via `options.loop` in that case,
  * so a valid buffer replacement always restarts successfully instead of throwing.
  *
- * @param options - Options to sanitize.
- * @param duration - Duration in seconds of the buffer these options are about to be replayed against.
+ * @param options – Options to sanitize.
+ * @param duration – Duration in seconds of the buffer these options are about to be replayed against.
  * @returns `options` unchanged when its loop region already fits `duration`; otherwise `options`
  *   with `loopStart`/`loopEnd` removed.
  */
@@ -457,12 +457,12 @@ function sanitizeLoopRegion(options: MusicPlayOptions, duration: number): MusicP
  * playback state changes, so an invalid call to {@link MusicPlayer.play} never leaves the
  * player mid-mutated.
  *
- * This is the one deliberate throw in the music playback path - clearly-invalid programmer
+ * This is the one deliberate throw in the music playback path – clearly-invalid programmer
  * input, the same way {@link AudioClip.synth} and {@link VoicePool} validate their own
  * boundary values.
  *
- * @param options - Playback options; see {@link MusicPlayOptions}.
- * @param duration - Duration in seconds of the buffer about to be played.
+ * @param options – Playback options; see {@link MusicPlayOptions}.
+ * @param duration – Duration in seconds of the buffer about to be played.
  * @throws Error if only one of `loopStart`/`loopEnd` is given, or the pair does not satisfy
  *   `0 <= loopStart < loopEnd <= duration`.
  */

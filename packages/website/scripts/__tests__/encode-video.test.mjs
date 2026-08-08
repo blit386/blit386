@@ -14,7 +14,7 @@ import {
 } from '../encode-video.mjs';
 
 // Every assertion here is on argument arrays and the parser, so the suite runs without
-// ffmpeg or cwebp installed - which matters, because CI has neither.
+// ffmpeg or cwebp installed – which matters, because CI has neither.
 const options = { ...DEFAULTS, gop: 300, fps: undefined };
 
 /**

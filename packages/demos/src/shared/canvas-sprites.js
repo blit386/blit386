@@ -5,9 +5,9 @@
  * The recipe (used by the Sprites and Animation demos) goes:
  *
  *   1. Draw shapes onto an OffscreenCanvas with normal browser drawing calls.
- *   2. registerCanvasColors() - read the pixels back and give every unique
+ *   2. registerCanvasColors() – read the pixels back and give every unique
  *      color its own palette slot, so the engine can look each pixel up.
- *   3. canvasToImage() - turn the canvas into an Image the engine can upload
+ *   3. canvasToImage() – turn the canvas into an Image the engine can upload
  *      to the GPU as a SpriteSheet.
  *
  * Both demos used to carry identical private copies of these two functions;
@@ -26,7 +26,7 @@ import { Color32 } from 'blit386';
 async function canvasToImage(canvas) {
     // convertToBlob() packs the canvas pixels into a PNG file held in memory,
     // and createObjectURL() gives that in-memory file a temporary URL an
-    // Image element can load from - no server round trip involved.
+    // Image element can load from – no server round trip involved.
     const blob = await canvas.convertToBlob({ type: 'image/png' });
     const url = URL.createObjectURL(blob);
 
@@ -40,7 +40,7 @@ async function canvasToImage(canvas) {
             img.src = url;
         });
     } finally {
-        // The temporary URL holds the PNG bytes alive - release it now that
+        // The temporary URL holds the PNG bytes alive – release it now that
         // the image has its own copy of the pixels.
         URL.revokeObjectURL(url);
     }
@@ -48,15 +48,15 @@ async function canvasToImage(canvas) {
 
 /**
  * Scans canvas pixels and registers every unique opaque color into the palette.
- * Transparent pixels (alpha 0) are skipped - they map to slot 0 at draw time.
+ * Transparent pixels (alpha 0) are skipped – they map to slot 0 at draw time.
  * Call this only after the canvas holds exact, flat colors (no anti-aliased
  * blends), so the number of unique colors stays small and predictable.
  *
- * @param {import('blit386').Palette} palette - The palette to write into.
- * @param {OffscreenCanvasRenderingContext2D} ctx - The canvas to scan.
- * @param {number} w - Canvas width in pixels.
- * @param {number} h - Canvas height in pixels.
- * @param {number} startSlot - First palette slot to fill.
+ * @param {import('blit386').Palette} palette – The palette to write into.
+ * @param {OffscreenCanvasRenderingContext2D} ctx – The canvas to scan.
+ * @param {number} w – Canvas width in pixels.
+ * @param {number} h – Canvas height in pixels.
+ * @param {number} startSlot – First palette slot to fill.
  * @returns {Color32[]} The registered colors, in the order their slots were filled.
  */
 function registerCanvasColors(palette, ctx, w, h, startSlot) {

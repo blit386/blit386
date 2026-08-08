@@ -54,7 +54,7 @@ const KNOWN_ASSET_TYPES = new Set(['image', 'audio', 'font', 'other']);
 /**
  * Narrows an unknown HMR event payload to {@link AssetChangedPayload}.
  *
- * @param payload - Raw payload received from the Vite plugin's custom HMR event.
+ * @param payload – Raw payload received from the Vite plugin's custom HMR event.
  * @returns `true` when the payload has the expected shape.
  */
 function isAssetChangedPayload(payload: unknown): payload is AssetChangedPayload {
@@ -81,7 +81,7 @@ function isAssetChangedPayload(payload: unknown): payload is AssetChangedPayload
  * failed (the fetch itself threw) or handed to `hotReplaceImage` (the fetch
  * resolved), so `SpriteSheet.status`/`progress` track the replacement in flight.
  *
- * @param url - Changed image URL, matching whatever the engine cached it under.
+ * @param url – Changed image URL, matching whatever the engine cached it under.
  */
 async function hotReloadImageAsset(url: string): Promise<void> {
     const sheets = getHotReloadSheets(url);
@@ -123,7 +123,7 @@ async function hotReloadImageAsset(url: string): Promise<void> {
  *
  * No-ops when no font is registered under `url` - a benign miss, not an error.
  *
- * @param url - Changed `.btfont` URL, matching whatever the font was loaded from.
+ * @param url – Changed `.btfont` URL, matching whatever the font was loaded from.
  */
 async function hotReloadFontAsset(url: string): Promise<void> {
     const fonts = getHotReloadFonts(url);
@@ -143,10 +143,10 @@ async function hotReloadFontAsset(url: string): Promise<void> {
  *
  * Routes by `payload.type`: `AssetLoader`/`SpriteSheet` for `'image'`, `AudioClip`
  * for `'audio'`, the `BitmapFont` registry for `'font'`, and {@link requestHardReload}
- * for anything else (belt-and-suspenders - the plugin already full-reloads
+ * for anything else (belt-and-suspenders – the plugin already full-reloads
  * unrecognized asset extensions itself).
  *
- * @param payload - Asset-changed event payload from the Vite plugin.
+ * @param payload – Asset-changed event payload from the Vite plugin.
  */
 async function routeAssetChanged(payload: unknown): Promise<void> {
     if (!isAssetChangedPayload(payload)) {
@@ -181,10 +181,10 @@ async function routeAssetChanged(payload: unknown): Promise<void> {
 /**
  * Routes a `blit386:asset-changed` payload to the right hot-replace handler by
  * asset kind. Wrapped entirely in try/catch (inside {@link routeAssetChanged}) so a
- * broken or unexpected asset event can never crash the game loop - on failure this
+ * broken or unexpected asset event can never crash the game loop – on failure this
  * logs and leaves the currently running state intact.
  *
- * @param payload - Asset-changed event payload from the Vite plugin.
+ * @param payload – Asset-changed event payload from the Vite plugin.
  */
 function handleAssetChanged(payload: unknown): void {
     void routeAssetChanged(payload);
@@ -199,7 +199,7 @@ function handleAssetChanged(payload: unknown): void {
  * injects), so a throw here (for example from an incompatible or broken `hot`
  * object) must not abort loading the game.
  *
- * @param context - Vite's `import.meta.hot` context.
+ * @param context – Vite's `import.meta.hot` context.
  */
 export function registerHotContext(context: HotContext): void {
     try {
@@ -230,11 +230,11 @@ export function registerHotContext(context: HotContext): void {
  * }
  * ```
  *
- * Never called by hand - it does nothing useful without the plugin's matching
+ * Never called by hand – it does nothing useful without the plugin's matching
  * asset watcher and snippet injection.
  *
  * @since 1.4.0
- * @param hot - Vite's `import.meta.hot` context (or a structurally compatible object).
+ * @param hot – Vite's `import.meta.hot` context (or a structurally compatible object).
  */
 export function registerHotReload(hot: HotContext): void {
     registerHotContext(hot);
@@ -268,7 +268,7 @@ export function nextGeneration(): number {
  * Requests a full page reload through Vite's invalidation API, falling back to
  * a direct reload when no HMR context is registered.
  *
- * @param reason - Human-readable reason surfaced in Vite's overlay/log.
+ * @param reason – Human-readable reason surfaced in Vite's overlay/log.
  */
 export function requestHardReload(reason: string): void {
     if (hot) {
@@ -286,9 +286,9 @@ export function requestHardReload(reason: string): void {
  * Dispatches on the engine canvas so games can add a listener scoped to their
  * own canvas element; falls back to `window` before the canvas exists.
  *
- * @param reason - Which swap tier ran (`'methods'` mutated the prototype in place; `'reinit'` re-ran `init()`).
- * @param generationValue - Generation number after this swap.
- * @param elapsedMs - Wall-clock duration of the swap, for the console line.
+ * @param reason – Which swap tier ran (`'methods'` mutated the prototype in place; `'reinit'` re-ran `init()`).
+ * @param generationValue – Generation number after this swap.
+ * @param elapsedMs – Wall-clock duration of the swap, for the console line.
  */
 export function announce(reason: 'methods' | 'reinit', generationValue: number, elapsedMs: number): void {
     console.log(`[BT] Hot reload #${generationValue} (${reason}) in ${elapsedMs.toFixed(1)}ms`);

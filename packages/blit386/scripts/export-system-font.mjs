@@ -62,7 +62,7 @@ function parseBitmapData() {
 
     const arrayContent = source.slice(startIndex + 1, endIndex);
 
-    // Extract all hex values (0x00 - 0xff).
+    // Extract all hex values (0x00 – 0xff).
     const hexPattern = /0x[\da-fA-F]{2}/g;
     const matches = arrayContent.match(hexPattern);
 
@@ -80,7 +80,7 @@ function parseBitmapData() {
  * Builds a 96x84 RGBA PNG from the bit-pattern data.
  * Set bits become white (255,255,255,255), clear bits become black (0,0,0,255).
  *
- * @param {number[]} bitmaps - The flat array of glyph bytes.
+ * @param {number[]} bitmaps – The flat array of glyph bytes.
  * @returns {Buffer} The PNG file data.
  */
 function buildPNG(bitmaps) {

@@ -28,10 +28,10 @@ export class PaletteResolveUpscalePass {
     /**
      * Initializes pipeline and uniform buffer. Call once per renderer init.
      *
-     * @param device - WebGPU device.
-     * @param destFormat - RGBA output format (swap chain format).
+     * @param device – WebGPU device.
+     * @param destFormat – RGBA output format (swap chain format).
      * @param filter - `'nearest'` or `'linear'` magnification (linear blends resolved RGBA neighbors).
-     * @param paletteBuffer - Shared 256-entry palette uniform buffer (same as scene pipelines).
+     * @param paletteBuffer – Shared 256-entry palette uniform buffer (same as scene pipelines).
      */
     init(device: GPUDevice, destFormat: GPUTextureFormat, filter: UpscaleFilter, paletteBuffer: GPUBuffer): void {
         this.uniformBuffer?.destroy();
@@ -68,10 +68,10 @@ export class PaletteResolveUpscalePass {
     /**
      * Encodes resolve + upscale into {@link destView}.
      *
-     * @param encoder - Command encoder.
-     * @param sourceUintView - Logical-resolution `r8uint` texture view.
-     * @param destView - Destination RGBA view (any size).
-     * @param logicalSize - Pixel dimensions of {@link sourceUintView}.
+     * @param encoder – Command encoder.
+     * @param sourceUintView – Logical-resolution `r8uint` texture view.
+     * @param destView – Destination RGBA view (any size).
+     * @param logicalSize – Pixel dimensions of {@link sourceUintView}.
      */
     encode(
         encoder: GPUCommandEncoder,
@@ -137,7 +137,7 @@ export class PaletteResolveUpscalePass {
     /**
      * Creates or returns a cached bind group wired to the supplied index texture view.
      *
-     * @param sourceView - Logical-resolution `r8uint` texture view.
+     * @param sourceView – Logical-resolution `r8uint` texture view.
      * @returns Bind group for resolve pass sampling the index texture view.
      */
     private getOrCreateBindGroup(sourceView: GPUTextureView): GPUBindGroup {

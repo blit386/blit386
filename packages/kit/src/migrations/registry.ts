@@ -14,8 +14,8 @@ import type { Migration } from './types';
  * Migrations shipped with this kit, oldest first.
  *
  * Safety: `BT.*` calls and the engine's distinctive object keys (`overlay*`, `detectDroppedFrames`) auto-apply. Renames
- * whose old name is generic enough to appear in unrelated code - common method words (`equals`, `contains`,
- * `intersects`, `tick`) and generic bootstrap keys (`canvasId`, `containerId`, `waitForDOMReady`) - are marked `review`:
+ * whose old name is generic enough to appear in unrelated code – common method words (`equals`, `contains`,
+ * `intersects`, `tick`) and generic bootstrap keys (`canvasId`, `containerId`, `waitForDOMReady`) – are marked `review`:
  * located and reported with a suggestion, but never rewritten automatically.
  */
 export const MIGRATIONS: readonly Migration[] = [

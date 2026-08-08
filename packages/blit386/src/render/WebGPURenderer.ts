@@ -144,13 +144,13 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Creates a renderer bound to an initialized device and canvas context.
      *
-     * @param device - WebGPU device for GPU operations.
-     * @param context - WebGPU canvas context for presenting frames.
-     * @param displaySize - Logical render resolution in pixels.
-     * @param outputSize - Output drawing-buffer resolution in pixels (matches the
+     * @param device – WebGPU device for GPU operations.
+     * @param context – WebGPU canvas context for presenting frames.
+     * @param displaySize – Logical render resolution in pixels.
+     * @param outputSize – Output drawing-buffer resolution in pixels (matches the
      *   swap chain). When omitted, display-tier effects are disabled and the
      *   renderer operates at logical `displaySize` only.
-     * @param upscaleFilter - Magnification filter for the upscale pass. Defaults to
+     * @param upscaleFilter – Magnification filter for the upscale pass. Defaults to
      *   `'nearest'`.
      */
     constructor(
@@ -249,13 +249,13 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Sets the active palette used for rendering.
      *
-     * Stores a reference to the supplied palette - no clone is made. Subsequent
+     * Stores a reference to the supplied palette – no clone is made. Subsequent
      * calls to {@link Palette.set} or {@link Palette.copyFrom} on the same object
      * will be detected via {@link Palette.isDirty} and uploaded automatically at the
      * start of the next frame. The internal dirty flag guarantees the initial
      * upload even when the palette has never been mutated through {@link Palette.set}.
      *
-     * @param palette - Palette to use for color lookups and GPU upload.
+     * @param palette – Palette to use for color lookups and GPU upload.
      */
     setPalette(palette: Palette): void {
         this.palette = palette;
@@ -304,7 +304,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Sets the background clear color for this frame using a palette index.
      *
-     * @param paletteIndex - Palette index for the clear color.
+     * @param paletteIndex – Palette index for the clear color.
      */
     setClearColor(paletteIndex: number): void {
         this.clearPaletteIndex = paletteIndex;
@@ -382,8 +382,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws a filled rectangle using two triangles.
      *
-     * @param rect - Rectangle bounds in pixel coordinates.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds in pixel coordinates.
+     * @param paletteIndex – Palette color index.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void {
         this.primitives.drawRectFill(rect, paletteIndex);
@@ -392,8 +392,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws a filled rectangle in the overlay primitive batch (above demo sprites).
      *
-     * @param rect - Rectangle bounds in pixel coordinates.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds in pixel coordinates.
+     * @param paletteIndex – Palette color index.
      */
     drawBarFill(rect: Rect2i, paletteIndex: number): void {
         this.overlayPrimitives.drawRectFill(rect, paletteIndex);
@@ -402,8 +402,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws a filled rectangle above overlay labels (tooltip chrome, etc.).
      *
-     * @param rect - Rectangle bounds in pixel coordinates.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds in pixel coordinates.
+     * @param paletteIndex – Palette color index.
      */
     drawBarFillOnTop(rect: Rect2i, paletteIndex: number): void {
         this.overlayTopPrimitives.drawRectFill(rect, paletteIndex);
@@ -412,8 +412,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws a single pixel as a 1x1 filled rectangle.
      *
-     * @param pos - Pixel position.
-     * @param paletteIndex - Palette color index.
+     * @param pos – Pixel position.
+     * @param paletteIndex – Palette color index.
      */
     drawPixel(pos: Vector2i, paletteIndex: number): void {
         this.drawPixelXYInternal(pos.x, pos.y, paletteIndex);
@@ -423,9 +423,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * Draws a line using optimized quad rendering for axis-aligned lines,
      * falling back to Bresenham's algorithm for diagonal lines.
      *
-     * @param p0 - Start point.
-     * @param p1 - End point.
-     * @param paletteIndex - Palette color index.
+     * @param p0 – Start point.
+     * @param p1 – End point.
+     * @param paletteIndex – Palette color index.
      */
     drawLine(p0: Vector2i, p1: Vector2i, paletteIndex: number): void {
         this.primitives.drawLine(p0, p1, paletteIndex);
@@ -434,8 +434,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws a rectangle outline using four 1-pixel quads.
      *
-     * @param rect - Rectangle bounds.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Rectangle bounds.
+     * @param paletteIndex – Palette color index.
      */
     drawRect(rect: Rect2i, paletteIndex: number): void {
         this.primitives.drawRect(rect, paletteIndex);
@@ -444,8 +444,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Fills a rectangular region with a palette-indexed color.
      *
-     * @param rect - Region to fill in pixel coordinates.
-     * @param paletteIndex - Palette color index.
+     * @param rect – Region to fill in pixel coordinates.
+     * @param paletteIndex – Palette color index.
      */
     clearRect(rect: Rect2i, paletteIndex: number): void {
         this.primitives.clearRect(rect, paletteIndex);
@@ -454,10 +454,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws a sprite region from an indexed sprite sheet.
      *
-     * @param spriteSheet - Source sprite sheet (must have been indexized).
-     * @param srcRect - Region to copy from the sprite sheet.
-     * @param destPos - Screen position to draw at.
-     * @param paletteOffset - Palette index offset applied at draw time (default 0).
+     * @param spriteSheet – Source sprite sheet (must have been indexized).
+     * @param srcRect – Region to copy from the sprite sheet.
+     * @param destPos – Screen position to draw at.
+     * @param paletteOffset – Palette index offset applied at draw time (default 0).
      */
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
         this.sprites.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
@@ -467,10 +467,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * Draws text using a bitmap font through the indexed sprite pipeline.
      * Renders each character as a textured sprite.
      *
-     * @param font - Bitmap font with character glyphs (underlying sheet must be indexized).
-     * @param pos - Text position (top-left corner).
-     * @param text - String to render.
-     * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
+     * @param font – Bitmap font with character glyphs (underlying sheet must be indexized).
+     * @param pos – Text position (top-left corner).
+     * @param text – String to render.
+     * @param paletteOffset – Palette index offset applied to all glyphs (default 0).
      */
     drawBitmapText(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
         this.sprites.drawBitmapText(font, pos, text, paletteOffset);
@@ -479,10 +479,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws bitmap text in the overlay sprite batch (above overlay bar fills).
      *
-     * @param font - Bitmap font with character glyphs.
-     * @param pos - Text position (top-left corner).
-     * @param text - String to render.
-     * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
+     * @param font – Bitmap font with character glyphs.
+     * @param pos – Text position (top-left corner).
+     * @param text – String to render.
+     * @param paletteOffset – Palette index offset applied to all glyphs (default 0).
      */
     drawLabel(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
         this.overlaySprites.drawBitmapText(font, pos, text, paletteOffset);
@@ -491,10 +491,10 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Draws bitmap text above overlay top bar fills (tooltip labels, etc.).
      *
-     * @param font - Bitmap font with character glyphs.
-     * @param pos - Text position (top-left corner).
-     * @param text - String to render.
-     * @param paletteOffset - Palette index offset applied to all glyphs (default 0).
+     * @param font – Bitmap font with character glyphs.
+     * @param pos – Text position (top-left corner).
+     * @param text – String to render.
+     * @param paletteOffset – Palette index offset applied to all glyphs (default 0).
      */
     drawLabelOnTop(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
         this.overlayTopSprites.drawBitmapText(font, pos, text, paletteOffset);
@@ -518,7 +518,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * `overlayPrimitives`, `overlayTopPrimitives`, `sprites`, `overlaySprites`,
      * and `overlayTopSprites`.
      *
-     * @param offset - Camera position in pixels.
+     * @param offset – Camera position in pixels.
      */
     setCameraOffset(offset: Vector2i): void {
         this.cameraOffset = offset.clone();
@@ -560,7 +560,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * - `tier='display'` -> display chain (output resolution); requires
      *   `drawingBufferSize` to be set in `configure()`.
      *
-     * @param effect - Effect instance to append.
+     * @param effect – Effect instance to append.
      * @throws If the renderer has not been initialized.
      * @throws If a `'display'` effect is added without `drawingBufferSize`
      *   set in `configure()`.
@@ -589,7 +589,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * fallback tries the other chain. Removing an effect that was never added
      * is a no-op.
      *
-     * @param effect - Effect instance to remove.
+     * @param effect – Effect instance to remove.
      * @throws If the renderer has not been initialized.
      */
     removeEffect(effect: Effect): void {
@@ -680,8 +680,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * `overlayTopPrimitives` ({@link drawBarFillOnTop}), then `overlayTopSprites`
      * ({@link drawLabelOnTop}).
      *
-     * @param encoder - Active command encoder.
-     * @param sceneView - Logical scene attachment view to render into.
+     * @param encoder – Active command encoder.
+     * @param sceneView – Logical scene attachment view to render into.
      */
     private encodeScenePass(encoder: GPUCommandEncoder, sceneView: GPUTextureView): void {
         const clearPaletteIndex = this.resolveClearPaletteIndex();
@@ -716,11 +716,11 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * Encodes the optional pixel chain, upscale pass, and display chain in the
      * correct order based on which chains are active.
      *
-     * @param encoder - Active command encoder.
-     * @param swapChainView - Current swap-chain view (final destination).
-     * @param isPixelChainActive - Whether the pixel chain has any registered effects.
-     * @param isDisplayChainActive - Whether the display chain has any registered effects.
-     * @param deltaMs - Wall-clock milliseconds since the previous frame.
+     * @param encoder – Active command encoder.
+     * @param swapChainView – Current swap-chain view (final destination).
+     * @param isPixelChainActive – Whether the pixel chain has any registered effects.
+     * @param isDisplayChainActive – Whether the display chain has any registered effects.
+     * @param deltaMs – Wall-clock milliseconds since the previous frame.
      */
     private encodePostProcess(
         encoder: GPUCommandEncoder,
@@ -751,8 +751,8 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * Adds the optional frame-capture readback, submits the command buffer,
      * and resets per-frame pipeline state.
      *
-     * @param encoder - Active command encoder.
-     * @param swapTexture - Current swap-chain texture (capture source).
+     * @param encoder – Active command encoder.
+     * @param swapTexture – Current swap-chain texture (capture source).
      */
     private submitFrame(encoder: GPUCommandEncoder, swapTexture: GPUTexture): void {
         const isCapturing = this.frameCapture.hasPending();
@@ -781,7 +781,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Picks the texture view the scene render pass should target this frame.
      *
-     * @param isPixelChainActive - Whether the pixel chain has any registered effects.
+     * @param isPixelChainActive – Whether the pixel chain has any registered effects.
      * @returns Stable view to render the scene into.
      */
     private resolveSceneView(isPixelChainActive: boolean): GPUTextureView {
@@ -844,9 +844,9 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * Fast-path pixel draw using raw integer coordinates.
      * Avoids Vector2i unpacking overhead when coordinates are already available as numbers.
      *
-     * @param x - X position.
-     * @param y - Y position.
-     * @param paletteIndex - Palette color index.
+     * @param x – X position.
+     * @param y – Y position.
+     * @param paletteIndex – Palette color index.
      */
     private drawPixelXYInternal(x: number, y: number, paletteIndex: number): void {
         this.primitives.drawPixelXY(x, y, paletteIndex);

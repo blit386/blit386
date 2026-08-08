@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Enforce mutual consistency between demo files on disk, DEMO_ORDER, VINTAGE_URLS,
- * and NAV_HIDDEN_SLUGS. Failures exit 1 with clear messages — soft console.warns from
+ * and NAV_HIDDEN_SLUGS. Failures exit 1 with clear messages – soft console.warns from
  * buildRegistry are not enough for CI / preflight.
  *
  * Rules:
@@ -21,7 +21,7 @@ import { buildRegistry, NAV_HIDDEN_SLUGS } from '../plugins/demo-registry.js';
 import { RETIRED_SLUGS, VINTAGE_URLS } from '../plugins/demo-vintage-urls.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-// Mirrors plugins/demo-registry.js — kept local so this script can list files without
+// Mirrors plugins/demo-registry.js – kept local so this script can list files without
 // going through buildRegistry's soft-warn merge path.
 const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
 
@@ -58,7 +58,7 @@ function listDiskSlugs() {
 const diskSlugs = listDiskSlugs();
 const diskSlugSet = new Set(diskSlugs);
 
-// Mute buildRegistry's soft warns — this script reports the same issues as hard errors.
+// Mute buildRegistry's soft warns – this script reports the same issues as hard errors.
 const originalWarn = console.warn;
 console.warn = () => {};
 const registry = buildRegistry(ROOT);

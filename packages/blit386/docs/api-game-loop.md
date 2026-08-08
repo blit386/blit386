@@ -85,9 +85,9 @@ sizeable fraction of render frames have zero preceding `update()` calls that fra
 
 `render()` frequently runs at a different cadence than `update()` (see the two sections above), so game state read
 during `render()` can be up to one fixed step stale. The accumulator introduced above always holds less than one
-`updateInterval` of leftover time once its whole-step chunks are removed for the frame - that remainder is exactly what
+`updateInterval` of leftover time once its whole-step chunks are removed for the frame – that remainder is exactly what
 the whole-step loop couldn't consume. Dividing that leftover by `updateInterval` gives, from first principles, how far
-the simulation has already progressed toward its next step - a fraction in `[0, 1)`. `BT.renderAlpha` exposes that
+the simulation has already progressed toward its next step – a fraction in `[0, 1)`. `BT.renderAlpha` exposes that
 fraction: `0` means a fixed update just completed, values approaching `1` mean the next update is imminent.
 
 ```ts twoslash

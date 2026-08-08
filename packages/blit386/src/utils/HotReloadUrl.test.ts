@@ -71,7 +71,7 @@ describe('HotReloadUrl', () => {
 
             try {
                 // A browser resolves <img src="images/hero.png"> against the document's own
-                // directory, not the domain root - the normalized key must match that, or a
+                // directory, not the domain root – the normalized key must match that, or a
                 // sheet loaded on a nested page would never be found by the hot-reload registry.
                 expect(normalizeAssetUrl('images/hero.png')).toBe('/games/my-game/images/hero.png');
             } finally {

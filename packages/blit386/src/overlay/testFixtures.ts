@@ -24,7 +24,7 @@ export type BitmapTextCall = {
  * Draw helpers reuse scratch `Rect2i`/`Vector2i` instances, so recording the raw call
  * arguments would capture their final mutated state instead of the value at call time.
  *
- * @param snapshot - Derives a defensive-copy snapshot from a call's arguments.
+ * @param snapshot – Derives a defensive-copy snapshot from a call's arguments.
  * @returns The mock function and the array its snapshots are pushed onto, in call order.
  */
 function createSnapshotMock<TArgs extends unknown[], TSnapshot>(
@@ -94,7 +94,7 @@ export function createMockRenderer(): OverlayRenderer & {
 /**
  * Collects {@link OverlayDrawTarget.drawLabel} calls from a mock renderer.
  *
- * @param renderer - Mock from {@link createMockRenderer}.
+ * @param renderer – Mock from {@link createMockRenderer}.
  * @returns Parsed draw calls in invocation order.
  */
 export function getBitmapTextCalls(renderer: ReturnType<typeof createMockRenderer>): BitmapTextCall[] {
@@ -108,7 +108,7 @@ export function getBitmapTextCalls(renderer: ReturnType<typeof createMockRendere
 /**
  * Collects {@link OverlayDrawTarget.drawLabelOnTop} calls from a mock renderer.
  *
- * @param renderer - Mock from {@link createMockRenderer}.
+ * @param renderer – Mock from {@link createMockRenderer}.
  * @returns Parsed draw calls in invocation order.
  */
 export function getLabelOnTopCalls(renderer: ReturnType<typeof createMockRenderer>): BitmapTextCall[] {
@@ -122,7 +122,7 @@ export function getLabelOnTopCalls(renderer: ReturnType<typeof createMockRendere
 /**
  * Collects {@link OverlayDrawTarget.drawBarFill} rects from a mock renderer.
  *
- * @param renderer - Mock from {@link createMockRenderer}.
+ * @param renderer – Mock from {@link createMockRenderer}.
  * @returns Filled rectangles in invocation order.
  */
 export function getRectFillCalls(renderer: ReturnType<typeof createMockRenderer>): Rect2i[] {
@@ -132,9 +132,9 @@ export function getRectFillCalls(renderer: ReturnType<typeof createMockRenderer>
 /**
  * Y of custom row bar top stacked above the footer.
  *
- * @param displayHeight - Logical display height.
- * @param rowIndex - Custom row index.
- * @param footerHeight - Reserved footer height from {@link resolveOverlayFooterHeight}.
+ * @param displayHeight – Logical display height.
+ * @param rowIndex – Custom row index.
+ * @param footerHeight – Reserved footer height from {@link resolveOverlayFooterHeight}.
  * @returns Bar top Y.
  */
 export function customRowBarY(displayHeight: number, rowIndex: number, footerHeight = OVERLAY_BAR_HEIGHT): number {

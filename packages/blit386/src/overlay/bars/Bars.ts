@@ -24,9 +24,9 @@ export class OverlayBars {
     /**
      * Draws 1 px row gaps between stacked overlay bands.
      *
-     * @param target - Overlay draw target.
-     * @param plan - Computed layout plan.
-     * @param gapIndex - Palette index for gap fills.
+     * @param target – Overlay draw target.
+     * @param plan – Computed layout plan.
+     * @param gapIndex – Palette index for gap fills.
      */
     drawRowGaps(target: OverlayDrawTarget, plan: OverlayLayoutPlan, gapIndex: number): void {
         for (const gapRect of plan.rowGapRects) {
@@ -37,11 +37,11 @@ export class OverlayBars {
     /**
      * Draws boundary separators between overlay clusters and demo content.
      *
-     * @param target - Overlay draw target.
-     * @param plan - Computed layout plan.
-     * @param gapIndex - Palette index for separator fills.
-     * @param isDrawTop - When true, draws the separator below the top overlay cluster.
-     * @param isDrawBottom - When true, draws the separator above the bottom overlay cluster.
+     * @param target – Overlay draw target.
+     * @param plan – Computed layout plan.
+     * @param gapIndex – Palette index for separator fills.
+     * @param isDrawTop – When true, draws the separator below the top overlay cluster.
+     * @param isDrawBottom – When true, draws the separator above the bottom overlay cluster.
      */
     drawClusterSeparators(
         target: OverlayDrawTarget,
@@ -62,9 +62,9 @@ export class OverlayBars {
     /**
      * Draws title, timing chart, metrics, timing text, renderer diagnostics, and audio meter bar fills.
      *
-     * @param target - Overlay draw target.
-     * @param plan - Computed layout plan.
-     * @param barIndex - Palette index for bar fills.
+     * @param target – Overlay draw target.
+     * @param plan – Computed layout plan.
+     * @param barIndex – Palette index for bar fills.
      */
     drawTopBars(target: OverlayDrawTarget, plan: OverlayLayoutPlan, barIndex: number): void {
         target.drawBarFill(plan.titleBar, barIndex);
@@ -88,9 +88,9 @@ export class OverlayBars {
     /**
      * Draws the palette band background fill when the overlay body is visible.
      *
-     * @param target - Overlay draw target.
-     * @param plan - Computed layout plan.
-     * @param barIndex - Palette index for bar fills.
+     * @param target – Overlay draw target.
+     * @param plan – Computed layout plan.
+     * @param barIndex – Palette index for bar fills.
      */
     drawPaletteBandFill(target: OverlayDrawTarget, plan: OverlayLayoutPlan, barIndex: number): void {
         if (plan.paletteBand.height > 0) {
@@ -101,9 +101,9 @@ export class OverlayBars {
     /**
      * Draws the bottom hint bar background fill.
      *
-     * @param target - Overlay draw target.
-     * @param plan - Computed layout plan.
-     * @param barIndex - Palette index for bar fills.
+     * @param target – Overlay draw target.
+     * @param plan – Computed layout plan.
+     * @param barIndex – Palette index for bar fills.
      */
     drawHintBarFill(target: OverlayDrawTarget, plan: OverlayLayoutPlan, barIndex: number): void {
         target.drawBarFill(plan.hintBar, barIndex);
@@ -116,16 +116,16 @@ export class OverlayBars {
      * dividers in the gap palette index; the demo title is user content and keeps
      * literal pipes.
      *
-     * @param target - Overlay draw target.
-     * @param font - System bitmap font.
-     * @param plan - Computed layout plan.
-     * @param style - Default overlay palette indices.
-     * @param gapIndex - Palette index for in-row separator dividers (same as row gaps).
-     * @param topLeftLabel - Demo title (left).
-     * @param topRightLabel - Backend and resolution (right).
-     * @param topMetricsLabel - Present FPS / target / draw calls line.
-     * @param topTimingLabel - Frame / update / render ms line.
-     * @param rendererDiagnosticsLabel - Optional GPU diagnostics line; omitted when empty.
+     * @param target – Overlay draw target.
+     * @param font – System bitmap font.
+     * @param plan – Computed layout plan.
+     * @param style – Default overlay palette indices.
+     * @param gapIndex – Palette index for in-row separator dividers (same as row gaps).
+     * @param topLeftLabel – Demo title (left).
+     * @param topRightLabel – Backend and resolution (right).
+     * @param topMetricsLabel – Present FPS / target / draw calls line.
+     * @param topTimingLabel – Frame / update / render ms line.
+     * @param rendererDiagnosticsLabel – Optional GPU diagnostics line; omitted when empty.
      */
     drawTopLabels(
         target: OverlayDrawTarget,
@@ -189,10 +189,10 @@ export class OverlayBars {
     /**
      * Draws demo-supplied custom row bar fills from the layout plan.
      *
-     * @param target - Overlay draw target.
-     * @param plan - Computed layout plan with custom bar rects.
-     * @param rows - Custom overlay rows.
-     * @param style - Default overlay palette indices.
+     * @param target – Overlay draw target.
+     * @param plan – Computed layout plan with custom bar rects.
+     * @param rows – Custom overlay rows.
+     * @param style – Default overlay palette indices.
      */
     drawCustomRowFills(
         target: OverlayDrawTarget,
@@ -221,11 +221,11 @@ export class OverlayBars {
     /**
      * Draws demo-supplied custom row labels from the layout plan.
      *
-     * @param target - Overlay draw target.
-     * @param font - System bitmap font.
-     * @param plan - Computed layout plan with custom bar rects.
-     * @param rows - Custom overlay rows.
-     * @param style - Default overlay palette indices.
+     * @param target – Overlay draw target.
+     * @param font – System bitmap font.
+     * @param plan – Computed layout plan with custom bar rects.
+     * @param rows – Custom overlay rows.
+     * @param style – Default overlay palette indices.
      */
     drawCustomRowLabels(
         target: OverlayDrawTarget,
@@ -278,7 +278,7 @@ export class OverlayBars {
     /**
      * Ensures the custom-row scratch pool has at least `count` entries.
      *
-     * @param count - Number of demo rows to draw this frame.
+     * @param count – Number of demo rows to draw this frame.
      */
     #ensureCustomRowPool(count: number): void {
         while (this.#customLeftPos.length < count) {

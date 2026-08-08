@@ -17,7 +17,7 @@ let decodeContext: AudioContext | null = null;
  * Called by {@link AudioManager.attach} / {@link AudioManager.detach} so this
  * registry stays in sync with the live context lifecycle.
  *
- * @param context - Context to register, or `null` to clear it.
+ * @param context – Context to register, or `null` to clear it.
  */
 export function setAudioDecodeContext(context: AudioContext | null): void {
     decodeContext = context;
@@ -44,7 +44,7 @@ let audioClipUnloadHandler: (buffer: AudioBuffer) => void = () => {};
 /**
  * Registers the handler invoked by `AudioClip.unload()` with the released buffer.
  *
- * @param handler - Handler to invoke on unload.
+ * @param handler – Handler to invoke on unload.
  */
 export function setAudioClipUnloadHandler(handler: (buffer: AudioBuffer) => void): void {
     audioClipUnloadHandler = handler;
@@ -56,7 +56,7 @@ export function setAudioClipUnloadHandler(handler: (buffer: AudioBuffer) => void
  * Called by `AudioClip.unload()`; a no-op until a voice pool registers a
  * handler via {@link setAudioClipUnloadHandler}.
  *
- * @param buffer - Buffer being released.
+ * @param buffer – Buffer being released.
  */
 export function notifyAudioClipUnload(buffer: AudioBuffer): void {
     audioClipUnloadHandler(buffer);
@@ -79,7 +79,7 @@ let musicHotReplaceHandler: (oldBuffer: AudioBuffer, newBuffer: AudioBuffer) => 
  * Registers the handler invoked by `AudioClip.hotReload()` to restart the current
  * music track when its buffer was just hot-replaced.
  *
- * @param handler - Handler to invoke; returns whether it restarted playback.
+ * @param handler – Handler to invoke; returns whether it restarted playback.
  */
 export function setMusicHotReplaceHandler(handler: (oldBuffer: AudioBuffer, newBuffer: AudioBuffer) => boolean): void {
     musicHotReplaceHandler = handler;
@@ -91,8 +91,8 @@ export function setMusicHotReplaceHandler(handler: (oldBuffer: AudioBuffer, newB
  * Called by `AudioClip.hotReload()`; a no-op (returns `false`) until a music player
  * registers a handler via {@link setMusicHotReplaceHandler}.
  *
- * @param oldBuffer - Buffer being replaced.
- * @param newBuffer - Replacement buffer.
+ * @param oldBuffer – Buffer being replaced.
+ * @param newBuffer – Replacement buffer.
  * @returns Whether the music player restarted playback with `newBuffer`.
  */
 export function notifyMusicHotReplace(oldBuffer: AudioBuffer, newBuffer: AudioBuffer): boolean {

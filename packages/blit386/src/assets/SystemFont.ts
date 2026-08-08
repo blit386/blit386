@@ -3,7 +3,7 @@
  *
  * Expands the embedded glyph bitmaps from system font data into a
  * palette-indexed texture atlas and wraps the result in a {@link BitmapFont}.
- * The font is fully synchronous to create - no `fetch()`, no image decode.
+ * The font is fully synchronous to create – no `fetch()`, no image decode.
  *
  * The glyph data lives in `src/assets/fonts/systemFontData.ts`. To edit it
  * visually, export the current bitmaps to a PNG, redraw in a pixel editor,
@@ -46,10 +46,10 @@ const ATLAS_HEIGHT = ATLAS_ROWS * SYSTEM_FONT_GLYPH_HEIGHT;
  * Bit 7 of each bitmap byte is the leftmost pixel.
  * A set bit maps to palette index 1 (foreground); a clear bit maps to 0 (transparent).
  *
- * @param bitmapOffset - Offset into the glyph bitmap data.
- * @param baseX - X-coordinate of the glyph's top-left corner in the atlas.
- * @param baseY - Y-coordinate of the glyph's top-left corner in the atlas.
- * @param pixels - Output pixel buffer to write into.
+ * @param bitmapOffset – Offset into the glyph bitmap data.
+ * @param baseX – X-coordinate of the glyph's top-left corner in the atlas.
+ * @param baseY – Y-coordinate of the glyph's top-left corner in the atlas.
+ * @param pixels – Output pixel buffer to write into.
  */
 function writeGlyphPixels(bitmapOffset: number, baseX: number, baseY: number, pixels: Uint8Array<ArrayBuffer>): void {
     const pixelCount = SYSTEM_FONT_GLYPH_HEIGHT * SYSTEM_FONT_GLYPH_WIDTH;

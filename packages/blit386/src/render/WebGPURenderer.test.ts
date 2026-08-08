@@ -46,7 +46,7 @@ type PipelineAccess = {
 /**
  * Returns the six scene-pass pipeline batches for encode-order and routing tests.
  *
- * @param renderer - Initialized {@link WebGPURenderer}.
+ * @param renderer – Initialized {@link WebGPURenderer}.
  * @returns Primitive, sprite, overlay, and overlay-top pipeline instances.
  */
 function getRendererPipelines(renderer: WebGPURenderer): PipelineAccess {
@@ -407,7 +407,7 @@ describe('with initialized renderer', () => {
     it('drawBitmapText delegates without throwing', () => {
         renderer.beginFrame();
 
-        // Empty text - loop does not execute so glyph methods are never called.
+        // Empty text – loop does not execute so glyph methods are never called.
         const mockFont = {
             getSpriteSheet: () => ({}),
             getGlyphByCode: () => null,
@@ -570,7 +570,7 @@ describe('resolveClearColor fallbacks', () => {
 
         await r.init();
 
-        // No setPalette() call - endFrame() resolves clear color to black via fallback.
+        // No setPalette() call – endFrame() resolves clear color to black via fallback.
         expect(() => r.endFrame()).not.toThrow();
 
         uninstallMockNavigatorGPU();
@@ -867,7 +867,7 @@ describe('palette dirty-flag auto-propagation', () => {
 
         renderer.setPalette(palette);
 
-        // Mutate the original after setPalette - the renderer must see the change.
+        // Mutate the original after setPalette – the renderer must see the change.
         palette.set(1, new Color32(99, 99, 99, 255));
 
         // getPalette() returns a clone, so compare by value rather than reference.
@@ -930,7 +930,7 @@ describe('palette dirty-flag auto-propagation', () => {
 
         renderer.setPalette(palette);
 
-        // First frame - initial upload due to isPaletteDirty.
+        // First frame – initial upload due to isPaletteDirty.
         renderer.beginFrame();
         renderer.endFrame();
 
@@ -939,7 +939,7 @@ describe('palette dirty-flag auto-propagation', () => {
         // Mutate palette without calling BT.paletteSet() again.
         palette.set(1, new Color32(255, 0, 128, 255));
 
-        // Second frame - must re-upload because palette.isDirty is true.
+        // Second frame – must re-upload because palette.isDirty is true.
         renderer.beginFrame();
         renderer.endFrame();
 
@@ -964,13 +964,13 @@ describe('palette dirty-flag auto-propagation', () => {
 
         renderer.setPalette(palette);
 
-        // First frame - initial upload.
+        // First frame – initial upload.
         renderer.beginFrame();
         renderer.endFrame();
 
         const callsAfterFirstFrame = writeBufferSpy.mock.calls.length;
 
-        // No mutation - second frame should NOT upload.
+        // No mutation – second frame should NOT upload.
         renderer.beginFrame();
         renderer.endFrame();
 

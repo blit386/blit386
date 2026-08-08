@@ -69,7 +69,7 @@ export function createOverlayLayoutPlanScratch(): OverlayLayoutPlanScratch {
 /**
  * Top Y of the bottom hint bar (13 px strip at the display bottom edge).
  *
- * @param displayHeight - Logical display height in pixels.
+ * @param displayHeight – Logical display height in pixels.
  * @returns Hint bar top Y.
  */
 export function hintBarY(displayHeight: number): number {
@@ -79,8 +79,8 @@ export function hintBarY(displayHeight: number): number {
 /**
  * Top Y of the palette swatch grid band stacked above the hint bar row gap.
  *
- * @param displayHeight - Logical display height in pixels.
- * @param paletteGridHeight - Total palette grid height from {@link computeGrid}.
+ * @param displayHeight – Logical display height in pixels.
+ * @param paletteGridHeight – Total palette grid height from {@link computeGrid}.
  * @returns Palette band top Y.
  */
 export function paletteBandY(displayHeight: number, paletteGridHeight: number): number {
@@ -90,8 +90,8 @@ export function paletteBandY(displayHeight: number, paletteGridHeight: number): 
 /**
  * Resolves footer rects: optional palette band above a row gap, then the hint bar at the display bottom.
  *
- * @param config - Layout configuration.
- * @param displayHeight - Logical display height in pixels.
+ * @param config – Layout configuration.
+ * @param displayHeight – Logical display height in pixels.
  * @returns Palette band height, footer stack anchor Y, and hint bar top Y.
  */
 function resolveFooterLayout(
@@ -121,7 +121,7 @@ function resolveFooterLayout(
 /**
  * Total reserved footer height (palette grid + row gap + hint bar, or hint bar alone).
  *
- * @param config - Layout configuration.
+ * @param config – Layout configuration.
  * @returns Footer band height in pixels.
  */
 export function resolveOverlayFooterHeight(config: OverlayLayoutConfig): number {
@@ -135,9 +135,9 @@ export function resolveOverlayFooterHeight(config: OverlayLayoutConfig): number 
 /**
  * Ensures the custom bar scratch pool has at least `count` entries.
  *
- * @param scratch - Layout scratch object.
- * @param count - Number of custom rows.
- * @param displayWidth - Logical display width.
+ * @param scratch – Layout scratch object.
+ * @param count – Number of custom rows.
+ * @param displayWidth – Logical display width.
  */
 function ensureCustomBarPool(scratch: OverlayLayoutPlanScratch, count: number, displayWidth: number): void {
     while (scratch.customBars.length < count) {
@@ -148,10 +148,10 @@ function ensureCustomBarPool(scratch: OverlayLayoutPlanScratch, count: number, d
 /**
  * Writes a 1 px row gap rect immediately below a bar band.
  *
- * @param scratch - Layout scratch object.
- * @param bar - Bar whose bottom edge precedes the gap.
- * @param displayWidth - Logical display width.
- * @param gapIndex - Index into {@link OverlayLayoutPlanScratch.rowGapRects}.
+ * @param scratch – Layout scratch object.
+ * @param bar – Bar whose bottom edge precedes the gap.
+ * @param displayWidth – Logical display width.
+ * @param gapIndex – Index into {@link OverlayLayoutPlanScratch.rowGapRects}.
  * @returns Next gap index.
  */
 function writeRowGapBelow(
@@ -181,8 +181,8 @@ function writeRowGapBelow(
 /**
  * Resolves the top Y of the footer overlay cluster (custom rows, palette band, or hint bar).
  *
- * @param scratch - Layout scratch with footer rects populated.
- * @param customRowCount - Demo custom row count for this frame.
+ * @param scratch – Layout scratch with footer rects populated.
+ * @param customRowCount – Demo custom row count for this frame.
  * @returns Top Y of the uppermost footer band.
  */
 function resolveFooterClusterTopY(scratch: OverlayLayoutPlanScratch, customRowCount: number): number {
@@ -204,9 +204,9 @@ function resolveFooterClusterTopY(scratch: OverlayLayoutPlanScratch, customRowCo
 /**
  * Populates row gap rects and cluster boundary separators from bar geometry.
  *
- * @param scratch - Layout scratch with bar rects already assigned.
- * @param config - Layout configuration.
- * @param displayWidth - Logical display width.
+ * @param scratch – Layout scratch with bar rects already assigned.
+ * @param config – Layout configuration.
+ * @param displayWidth – Logical display width.
  */
 function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLayoutConfig, displayWidth: number): void {
     let gapIndex = 0;
@@ -268,10 +268,10 @@ function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLay
 /**
  * Builds or updates a layout plan from configuration (top-down stack).
  *
- * @param config - Feature flags and display dimensions.
- * @param scratch - Reusable scratch object mutated in place.
- * @param topRightLabel - Text for top-right backend/resolution label.
- * @param toggleRect - Bottom-left toggle hit region from init layout.
+ * @param config – Feature flags and display dimensions.
+ * @param scratch – Reusable scratch object mutated in place.
+ * @param topRightLabel – Text for top-right backend/resolution label.
+ * @param toggleRect – Bottom-left toggle hit region from init layout.
  * @returns The same scratch object as {@link OverlayLayoutPlan}.
  */
 export function buildOverlayLayoutPlan(
@@ -415,10 +415,10 @@ export function buildOverlayLayoutPlan(
 /**
  * Default layout config with chart and palette features disabled.
  *
- * @param displayWidth - Logical display width.
- * @param displayHeight - Logical display height.
- * @param lineHeight - System font line height.
- * @param customRowCount - Demo custom row count for this frame.
+ * @param displayWidth – Logical display width.
+ * @param displayHeight – Logical display height.
+ * @param lineHeight – System font line height.
+ * @param customRowCount – Demo custom row count for this frame.
  * @returns Config suitable for {@link buildOverlayLayoutPlan}.
  */
 export function createDefaultLayoutConfig(

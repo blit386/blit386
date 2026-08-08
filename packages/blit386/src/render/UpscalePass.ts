@@ -19,7 +19,7 @@ export type UpscaleFilter = 'nearest' | 'linear';
  * for unit tests and standalone upscale scenarios.
  *
  * The pass owns its render pipeline, sampler, and a per-source-view bind-group
- * cache. It does **not** own the source or destination textures - the caller
+ * cache. It does **not** own the source or destination textures – the caller
  * supplies views every frame.
  */
 export class UpscalePass {
@@ -54,10 +54,10 @@ export class UpscalePass {
      * canvas resizes; the pass itself only encodes the draw and is unaware of
      * lifecycle.
      *
-     * @param device - WebGPU device used for resource creation.
-     * @param size - Target texture dimensions in pixels.
-     * @param format - Color format (match the swap chain).
-     * @param label - Optional debug label.
+     * @param device – WebGPU device used for resource creation.
+     * @param size – Target texture dimensions in pixels.
+     * @param format – Color format (match the swap chain).
+     * @param label – Optional debug label.
      * @returns Newly created texture with usage flags suitable for upscale output.
      */
     static createOutputTexture(
@@ -80,9 +80,9 @@ export class UpscalePass {
      * Idempotent only on a freshly disposed instance: calling `init` twice
      * without `dispose` will leak the previous sampler and pipeline.
      *
-     * @param device - WebGPU device used for resource creation.
-     * @param format - Color attachment format (matches the swap chain).
-     * @param filter - Magnification filter mode.
+     * @param device – WebGPU device used for resource creation.
+     * @param format – Color attachment format (matches the swap chain).
+     * @param filter – Magnification filter mode.
      */
     init(device: GPUDevice, format: GPUTextureFormat, filter: UpscaleFilter): void {
         this.device = device;
@@ -116,9 +116,9 @@ export class UpscalePass {
      * Encodes a single full-screen pass that samples {@link sourceView} and
      * writes into {@link destView}.
      *
-     * @param encoder - Active command encoder.
-     * @param sourceView - View of the logical-resolution framebuffer.
-     * @param destView - View of the display-resolution destination texture
+     * @param encoder – Active command encoder.
+     * @param sourceView – View of the logical-resolution framebuffer.
+     * @param destView – View of the display-resolution destination texture
      *   (or the swap chain when no display effects are active).
      */
     encode(encoder: GPUCommandEncoder, sourceView: GPUTextureView, destView: GPUTextureView): void {
@@ -151,7 +151,7 @@ export class UpscalePass {
      * Safe to call multiple times.
      */
     dispose(): void {
-        // Bind groups don't have a destroy method - dropping the WeakMap entries is enough.
+        // Bind groups don't have a destroy method – dropping the WeakMap entries is enough.
         // Sampler / pipeline / layout are reference-counted by WebGPU; clearing the refs is enough.
         this.pipeline = null;
         this.bindGroupLayout = null;
@@ -163,7 +163,7 @@ export class UpscalePass {
      * Returns the bind group for the supplied source view, creating one on
      * first use and caching by view identity for subsequent frames.
      *
-     * @param sourceView - View of the source texture to sample.
+     * @param sourceView – View of the source texture to sample.
      * @returns Cached or newly created bind group.
      */
     private getOrCreateBindGroup(sourceView: GPUTextureView): GPUBindGroup {

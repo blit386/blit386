@@ -209,7 +209,7 @@ export default [
         },
     },
 
-    // Config files - relaxed rules
+    // Config files – relaxed rules
     {
         files: ['*.config.js', '*.config.ts', '*.config.mjs', '**/*.config.js', '**/*.config.ts', '**/*.config.mjs'],
         languageOptions: {
@@ -223,7 +223,7 @@ export default [
         },
     },
 
-    // Test files - relaxed rules
+    // Test files – relaxed rules
     {
         files: ['**/*.test.ts', 'src/__test__/**/*.ts', 'tests/visual/**/*.ts'],
         languageOptions: {
