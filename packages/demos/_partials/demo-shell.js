@@ -150,7 +150,7 @@ function titleFor(demos, slug) {
         }
     }
 
-    return `BLIT386 Demo - ${titleCaseSlug(slug)}`;
+    return `BLIT386 Demo – ${titleCaseSlug(slug)}`;
 }
 
 /**
