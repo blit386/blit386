@@ -1,7 +1,7 @@
 // Palette Fade & Flash: smooth color transitions and flash effects.
 // @description Smooth color transitions and flash effects: fade a palette toward a target color and snap it back.
 //
-// Part of the BLIT386 series (written for readers about 12 years old).
+// Part of the BLIT386 series.
 //
 // Prerequisites:
 //   Basics            https://demos.blit386.dev/basics

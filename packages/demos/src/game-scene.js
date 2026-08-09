@@ -3,7 +3,7 @@
 //
 // This demo brings together everything you have learned!
 //
-// Written for readers about 12 years old. Prerequisites (do these first):
+// Prerequisites (do these first):
 //   Basics       https://demos.blit386.dev/basics
 //   Primitives   https://demos.blit386.dev/primitives
 //   Colors       https://demos.blit386.dev/colors

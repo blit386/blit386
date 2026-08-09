@@ -35,7 +35,6 @@ demo to be usable on touch. Start from this shape:
 
 ```js
 // Demo Topic – one-sentence summary of what this shows.
-// Written for readers about 12 years old.
 //
 // What you will see:
 //   - ...

@@ -3,7 +3,6 @@
 //
 // Logo Low-Res: the BLIT386 logo on a very chunky low-res screen, wrapped
 // in the same Orava B/W CRT stack used in Sprite Effects demo.
-// Written for readers about 12 years old.
 //
 // What you will see:
 //   - The logo sprite from Basics demo centered on a tiny 80x60 pixel canvas.
