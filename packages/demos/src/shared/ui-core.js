@@ -43,8 +43,8 @@ const BUTTON_H = 18;
 
 // Default inner padding between a panel's border and its content, and default margin
 // between a panel and the screen edge.
-const PAD = 6;
-const MARGIN = 6;
+const PAD = 5;
+const MARGIN = 4;
 
 // Interactive rectangles grow by this many pixels on every side for hit-testing only.
 // Fingers are far less precise than a mouse cursor; the visuals stay compact.
@@ -380,7 +380,7 @@ class UiContext {
         this.margin = typeof opts.margin === 'number' ? opts.margin : MARGIN;
         this.pad = typeof opts.pad === 'number' ? opts.pad : PAD;
         this.kvCols = typeof opts.kvCols === 'number' ? opts.kvCols : 8;
-        this.cursorY = this.isTopBar ? 0 : this.pad;
+        this.cursorY = this.isTopBar ? 0 : this.pad - 5;
         this.maxGroupW = 0;
         this.hasPanel = false;
         this.commandCount = 0;
@@ -418,7 +418,7 @@ class UiContext {
         if (this.isTopBar) {
             bottomPad = this.cursorY > 22 ? 4 : 0;
         } else if (this.hasPanel) {
-            bottomPad = 12;
+            bottomPad = 6;
         }
 
         const groupH = this.cursorY + bottomPad;
@@ -487,6 +487,7 @@ class UiContext {
         // Panel background and border draw first so every queued command lands on top.
         if (this.hasPanel) {
             this.flushRect.set(originX, originY, groupW, groupH);
+
             BT.drawRectFill(this.flushRect, T.panel);
             BT.drawRect(this.flushRect, T.border);
         }
@@ -497,6 +498,7 @@ class UiContext {
 
             if (cmd.kind === CMD_TEXT) {
                 this.flushVec.set(originX + cmd.x, originY + cmd.y);
+
                 BT.systemPrint(this.flushVec, cmd.color, cmd.text);
             } else {
                 const w = cmd.w === FULL_WIDTH ? groupW - 2 * this.pad : cmd.w;

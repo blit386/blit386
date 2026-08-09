@@ -92,6 +92,7 @@ const COLOR_BASE = 12;
 const UI_BG = 240; // 'ui_bg' – deep navy screen background.
 const UI_TEXT = 244; // 'ui_text' – off-white primary text.
 const UI_DIM = 245; // 'ui_text_dim' – secondary gray text.
+const UI_GAP = 15; // 'ui_gap' – gray gap between UI elements.
 const UI_HEADER = 246; // 'ui_header' – warm amber (render bars, chart warnings).
 const UI_ACCENT = 247; // 'ui_accent' – phosphor green (update bars).
 const UI_WARM = 248; // 'ui_accent_warm' – orange (chart error frames).
@@ -150,7 +151,7 @@ const GLITCH_ACTIVE_MAX = 24;
 const GLITCH_INTENSITY_MIN = 0.3;
 const GLITCH_INTENSITY_MAX = 0.95;
 
-// Orava B/W: horizontal tear, snow, brightness waver, ghosting, vertical roll (no chroma split).
+// Tesla Orava B/W: horizontal tear, snow, brightness waver, ghosting, vertical roll (no chroma split).
 const GLITCH_TYPES = ['hshift', 'noise', 'flicker', 'interference', 'vroll'];
 const GLITCH_LABELS = {
     none: 'NONE',
@@ -169,6 +170,7 @@ const FALLBACK_LINES = SOFTWARE_FALLBACK_NOTE.split('. ');
 const FLICKER_BASE = 1.0;
 const FLICKER_DIP = 0.78;
 const NOISE_BASE = 0.038;
+
 // Always-on bright band scrolling top to bottom (RollLine).
 const ROLL_BASE = 0.26;
 const ROLL_SPEED = 0.92;
@@ -239,27 +241,37 @@ class Demo {
 
     /** @type {PixelGlitch | null} */
     pixelGlitch = null;
+
     /** @type {BarrelDistortion | null} */
     barrel = null;
+
     /** @type {Interference | null} */
     interference = null;
+
     /** @type {RollLine | null} */
     rollLine = null;
+
     /** @type {Scanlines | null} */
     scanlines = null;
+
     /** @type {RGBMask | null} */
     mask = null;
+
     /** @type {Vignette | null} */
     vignette = null;
+
     /** @type {Noise | null} */
     noise = null;
+
     /** @type {Flicker | null} */
     flicker = null;
+
     /** @type {Bloom | null} */
     bloom = null;
 
     effectsAvailable = false;
     glitchCooldown = 0;
+
     // How many ticks the current TV fault burst still has to run (0 = no burst active).
     glitchTicksLeft = 0;
     glitchDuration = 0;
@@ -267,18 +279,19 @@ class Demo {
     glitchPeak = 0;
 
     bandWobbleCooldown = 0;
+
     // How many ticks the current band wobble still has to run (0 = no wobble active).
     bandWobbleTicksLeft = 0;
     bandWobbleDuration = 0;
     bandWobbleSeed = 0;
 
     overlayRowData = [
-        { leftText: 'Orava CRT OFF', textPaletteIndex: UI_TEXT },
-        { leftText: 'TV fault NONE', textPaletteIndex: UI_HEADER },
+        { leftText: 'Tesla Orava CRT: OFF', textPaletteIndex: UI_TEXT },
+        { leftText: 'TV fault: NONE', textPaletteIndex: UI_HEADER },
     ];
 
     /**
-     * Wider logical screen for the sprite grid; display-tier Orava CRT runs at 3x upscale.
+     * Wider logical screen for the sprite grid; display-tier Tesla Orava runs at 3x upscale.
      *
      * @returns {Partial<HardwareSettings>}
      */
@@ -289,6 +302,7 @@ class Demo {
             maxCanvasSize: new Vector2i(MAX_CANVAS_W, MAX_CANVAS_H),
             outputUpscaleFilter: 'nearest',
             isOverlayPaletteEnabled: true,
+            isOverlayVisibleAtStart: true,
 
             // Opt in to the engine timing chart band under the title row.
             // overlayTimingChartHeight sets band height in pixels (default 22).
@@ -296,11 +310,13 @@ class Demo {
             overlayTimingChartHeight: 64,
             overlayTimingChartDiagnostics: 'rich',
             isOverlayRendererDiagnosticsBarEnabled: true,
+
             overlayStyle: {
                 barPaletteIndex: UI_BG,
                 textPaletteIndex: UI_DIM,
-                gapPaletteIndex: UI_BG,
+                gapPaletteIndex: UI_GAP,
             },
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: UI_ACCENT,
                 renderBarPaletteIndex: UI_HEADER,
@@ -380,7 +396,7 @@ class Demo {
             return true;
         }
 
-        // Build the full Orava CRT effect chain (see setupCrtStack() below render()).
+        // Build the full Tesla Orava effect chain (see setupCrtStack() below render()).
         this.setupCrtStack();
 
         this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
@@ -449,41 +465,45 @@ class Demo {
         // Day/night cycle at the bottom.
         this.renderDayNightCycle();
 
-        // Software renderer: warn on-canvas that the Orava CRT look is missing. A small
+        // Software renderer: warn on-canvas that the Tesla Orava look is missing. A small
         // borderless kit group in the top-left corner; the shared note was split into
         // two lines up top (FALLBACK_LINES) so it stays short and easy to read.
         if (!this.effectsAvailable) {
             ui.begin('topLeft', { margin: 2, pad: 2 });
+
             for (const line of FALLBACK_LINES) {
                 ui.label(line, { color: 'warm' });
             }
+
             ui.end();
         }
     }
 
     /**
-     * Orava CRT stack and current analog-TV fault (overlay custom rows).
+     * Tesla Orava stack and current analog-TV fault (overlay custom rows).
      *
      * @returns {readonly { leftText: string }[]}
      */
     overlayRows() {
         if (this.effectsAvailable) {
-            this.overlayRowData[0].leftText = 'Orava CRT ON';
+            this.overlayRowData[0].leftText = 'Tesla Orava: ON';
+
             const faultLabel = GLITCH_LABELS[this.glitchType] ?? 'NONE';
             const faultValue = this.glitchTicksLeft > 0 ? Math.round(this.glitchPeak * 100) : 0;
-            this.overlayRowData[1].leftText = `TV fault ${faultLabel} ${String(faultValue).padStart(2, '0')}%`;
+
+            this.overlayRowData[1].leftText = `TV fault: ${faultLabel} ${String(faultValue).padStart(2, '0')}%`;
         } else {
             // Software renderer: no CRT stack, so the fault machine never fires. The full
             // explanation lives on the canvas itself (see render()), not in the overlay.
-            this.overlayRowData[0].leftText = 'Orava CRT OFF (software)';
-            this.overlayRowData[1].leftText = 'TV fault NONE';
+            this.overlayRowData[0].leftText = 'Tesla Orava: CRT OFF (software)';
+            this.overlayRowData[1].leftText = 'TV fault: NONE';
         }
 
         return this.overlayRowData;
     }
 
     /**
-     * Builds the Orava CRT effect chain once in init(): the pixel-tier band tear plus
+     * Builds the Tesla Orava effect chain once in init(): the pixel-tier band tear plus
      * the display-tier tube look, in back-to-front order.
      */
     setupCrtStack() {
@@ -604,7 +624,7 @@ class Demo {
         }
     }
 
-    /** Resting Orava CRT look: scrolling roll band plus calm noise/flicker. */
+    /** Resting Tesla Orava look: scrolling roll band plus calm noise/flicker. */
     applyRestingCrtUniforms() {
         this.pixelGlitch.intensity = 0;
         this.noise.amount = NOISE_BASE;
@@ -835,35 +855,35 @@ class Demo {
      * Normal, Silhouette, Team Red/Blue/Green, Frozen.
      */
     renderStaticEffects() {
-        const row1Y = 30;
+        const row1Y = 130;
         const spacing = 100;
         const n = this.colorCount;
 
         // Each cell is the same sprite drawn with a different palette offset, with a
         // named caption and a one-line "when you would use this" note under it.
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row1Y), BLOCK_ORIGINAL * n);
-        ui.caption(6, row1Y + 36, 'Normal', { color: 'text' });
-        ui.caption(6, row1Y + 48, 'Default look', { color: 'dim' });
+        ui.caption(6, row1Y + 40, 'Normal', { color: 'text' });
+        ui.caption(6, row1Y + 50, 'Default look', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row1Y), BLOCK_SILHOUETTE * n);
-        ui.caption(6 + spacing, row1Y + 36, 'Silhouette', { color: 'text' });
-        ui.caption(6 + spacing, row1Y + 48, 'Stealth / cutscene', { color: 'dim' });
+        ui.caption(6 + spacing, row1Y + 40, 'Silhouette', { color: 'text' });
+        ui.caption(6 + spacing, row1Y + 50, 'Stealth', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row1Y), BLOCK_TEAM_RED * n);
-        ui.caption(6 + spacing * 2, row1Y + 36, 'Team Red', { color: 'warm' });
-        ui.caption(6 + spacing * 2, row1Y + 48, 'Friendly fire team', { color: 'dim' });
+        ui.caption(6 + spacing * 2, row1Y + 40, 'Team Red', { color: 'warm' });
+        ui.caption(6 + spacing * 2, row1Y + 50, 'Friendly team', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row1Y), BLOCK_TEAM_BLUE * n);
-        ui.caption(6 + spacing * 3, row1Y + 36, 'Team Blue', { color: 'info' });
-        ui.caption(6 + spacing * 3, row1Y + 48, 'Enemy squad color', { color: 'dim' });
+        ui.caption(6 + spacing * 3, row1Y + 40, 'Team Blue', { color: 'info' });
+        ui.caption(6 + spacing * 3, row1Y + 50, 'Enemy team', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 4, row1Y), BLOCK_TEAM_GREEN * n);
-        ui.caption(6 + spacing * 4, row1Y + 36, 'Team Green', { color: 'accent' });
-        ui.caption(6 + spacing * 4, row1Y + 48, 'Ally / coop team', { color: 'dim' });
+        ui.caption(6 + spacing * 4, row1Y + 40, 'Team Green', { color: 'accent' });
+        ui.caption(6 + spacing * 4, row1Y + 50, 'Ally team', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 5, row1Y), BLOCK_FROZEN * n);
-        ui.caption(6 + spacing * 5, row1Y + 36, 'Frozen', { color: 'info' });
-        ui.caption(6 + spacing * 5, row1Y + 48, 'Slow freeze status', { color: 'dim' });
+        ui.caption(6 + spacing * 5, row1Y + 40, 'Frozen', { color: 'info' });
+        ui.caption(6 + spacing * 5, row1Y + 50, 'Slow freeze status', { color: 'dim' });
     }
 
     /**
@@ -871,25 +891,25 @@ class Demo {
      * Damage Flash, Ghost, Invincibility, Poison.
      */
     renderDynamicEffects() {
-        const row2Y = 100;
+        const row2Y = 190;
         const spacing = 100;
         const n = this.colorCount;
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, row2Y), BLOCK_DAMAGE_FLASH * n);
-        ui.caption(6, row2Y + 36, 'Damage', { color: 'warm' });
-        ui.caption(6, row2Y + 48, 'Hit flash (white/red)', { color: 'dim' });
+        ui.caption(6, row2Y + 40, 'Damage', { color: 'warm' });
+        ui.caption(6, row2Y + 50, 'Hit flash', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing, row2Y), BLOCK_GHOST * n);
-        ui.caption(6 + spacing, row2Y + 36, 'Ghost', { color: 'info' });
-        ui.caption(6 + spacing, row2Y + 48, 'Spirit / low alpha', { color: 'dim' });
+        ui.caption(6 + spacing, row2Y + 40, 'Ghost', { color: 'info' });
+        ui.caption(6 + spacing, row2Y + 50, 'Spirit', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 2, row2Y), BLOCK_INVINCIBLE * n);
-        ui.caption(6 + spacing * 2, row2Y + 36, 'Invincible', { color: 'text' });
-        ui.caption(6 + spacing * 2, row2Y + 48, 'Power-up star mode', { color: 'dim' });
+        ui.caption(6 + spacing * 2, row2Y + 40, 'Invincible', { color: 'text' });
+        ui.caption(6 + spacing * 2, row2Y + 50, 'Power-up mode', { color: 'dim' });
 
         BT.drawSprite(this.sheet, this.charRect, new Vector2i(10 + spacing * 3, row2Y), BLOCK_POISON * n);
-        ui.caption(6 + spacing * 3, row2Y + 36, 'Poisoned', { color: 'accent' });
-        ui.caption(6 + spacing * 3, row2Y + 48, 'Poison over time', { color: 'dim' });
+        ui.caption(6 + spacing * 3, row2Y + 40, 'Poisoned', { color: 'accent' });
+        ui.caption(6 + spacing * 3, row2Y + 50, 'Poison time', { color: 'dim' });
     }
 
     /**
@@ -897,19 +917,19 @@ class Demo {
      * A progress bar shows the current phase.
      */
     renderDayNightCycle() {
-        const baseY = 178;
+        const baseY = 260;
         const n = this.colorCount;
 
         ui.caption(10, baseY, 'Day/Night Cycle:', { color: 'header' });
-        ui.caption(10, baseY + 12, 'Ambient light palette offset', { color: 'dim' });
+        ui.caption(10, baseY + 10, 'Ambient light palette offset', { color: 'dim' });
 
         // Draw the sprite with the day/night block.
-        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 28), BLOCK_DAYNIGHT * n);
+        BT.drawSprite(this.sheet, this.charRect, new Vector2i(10, baseY + 18), BLOCK_DAYNIGHT * n);
 
         // Progress bar showing time of day. The bar stays hand-drawn (a kit meter shows a
         // 0..1 fill, not a moving marker) but its track and outline use theme colors.
         const barX = 60;
-        const barY = baseY + 36;
+        const barY = baseY + 30;
         const barWidth = 240;
         const barHeight = 10;
 

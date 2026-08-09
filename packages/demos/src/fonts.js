@@ -15,7 +15,7 @@
  *   - Rainbow text: one systemPrint call per character with its own palette slot
  *   - Pulsing text: animating alpha in update() on a single palette slot
  *
- * The title strip and the small pointer to Bitmap Font demo are chrome drawn by the shared UI kit
+ * The small pointer to Bitmap Font demo at the bottom is chrome drawn by the shared UI kit
  * (src/shared/ui.js). The showcase lines themselves stay hand-rolled on purpose – drawing
  * text with BT.systemPrint() is the whole lesson of this demo.
  *
@@ -42,14 +42,14 @@ const C_BLUE_TEXT = 5; // Soft blue: "Blue Text" sample line
 const C_YELLOW_TEXT = 6; // Yellow: "Yellow Text" sample line
 const C_GRAY_TEXT = 7; // Light gray: secondary info lines
 
-// We define the rainbow text string here so both update() and render() use the exact same letters.
-// If you change this string, the rainbow slots and the pulse slot below stay contiguous.
-const RAINBOW_TEXT = 'Rainbow Animation!';
-
 // Dynamic slots: one animated color per character in RAINBOW_TEXT.
 // update() computes each character's current hue and stores it here.
 // render() then reads the slot index – no Color32 math happens during drawing!
 const C_RAINBOW_BASE = 20; // first rainbow character; next slots follow contiguously
+
+// We define the rainbow text string here so both update() and render() use the exact same letters.
+// If you change this string, the rainbow slots and the pulse slot below stay contiguous.
+const RAINBOW_TEXT = `Rainbow Animation (#${C_RAINBOW_BASE} to #${C_RAINBOW_BASE + 28})`;
 
 // Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
 // Always sits immediately after the last rainbow character slot.
@@ -71,7 +71,7 @@ class Demo {
     palette = null;
 
     // Where the shared UI theme colors landed in the palette, filled by applyTheme() in
-    // init(). The UI kit draws the title strip and captions with these slots.
+    // init(). The UI kit draws captions with these slots.
     theme = null;
 
     // animTime is a timer that counts up in seconds.
@@ -89,6 +89,7 @@ class Demo {
             isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 2,
+            isOverlayVisibleAtStart: true,
 
             overlayStyle: {
                 barPaletteIndex: C_WHITE,
@@ -130,7 +131,7 @@ class Demo {
         // Pre-fill pulse slot.
         this.palette.set(C_PULSE, new Color32(100, 100, 255));
 
-        // Install the shared UI theme the kit's title strip and caption draw with.
+        // Install the shared UI theme the kit's captions draw with.
         // It writes 12 colors into slots 240-251, far above everything this demo uses
         // (static colors in 1-7, animated rainbow and pulse in 20-38), so the palette
         // animation never collides with the UI colors. Must happen before BT.paletteSet().
@@ -180,25 +181,19 @@ class Demo {
         // Fill the screen with the dark blue-navy background.
         BT.clear(C_BG);
 
-        // Title strip across the top, drawn by the shared UI kit. begin('topBar') opens a
-        // full-width 22-pixel band, panel() fills it and prints the amber title, and end()
-        // closes the group. This is chrome only – the lesson lives in the lines below.
-        ui.begin('topBar');
-        ui.panel('Fonts - BT.systemPrint() showcase');
-        ui.end();
-
-        // Start drawing below the 22-pixel title strip.
-        let y = 32;
+        // Start drawing a bit down from the top edge.
+        let y = 50;
 
         // Draw each section in order, updating y as we go so nothing overlaps.
         y = this.renderColoredText(y);
         y = this.renderRainbowText(y);
         y = this.renderPulsingText(y);
+
         this.renderSpecialCharacters(y);
 
         // A small dim caption in the bottom-left corner pointing to the next font lesson.
         // No ui.panel() call inside the group means it is just floating text – no box.
-        ui.begin('bottomLeft');
+        ui.begin('bottomLeft', { y: 160 });
         ui.label('To see how to load bitmap fonts from disk,', { color: 'dim' });
         ui.label('go to Bitmap Font demo', { color: 'dim' });
         ui.end();
@@ -219,17 +214,18 @@ class Demo {
 
         // BT.systemPrint(position, paletteSlot, text) – the slot number IS the color directly.
         // Compare to BT.printFont() in Bitmap Font demo which uses a 0-based palette offset per glyph.
-        BT.systemPrint(new Vector2i(10, currentY), C_RED_TEXT, 'Red Text');
-        const lineAdvance = BT.systemPrintMeasure('Red Text').y + 4;
+        BT.systemPrint(new Vector2i(10, currentY), C_RED_TEXT, `Red Text (#${C_RED_TEXT})`);
+
+        const lineAdvance = BT.systemPrintMeasure('Red Text').y + 2;
         currentY += lineAdvance;
 
-        BT.systemPrint(new Vector2i(10, currentY), C_GREEN_TEXT, 'Green Text');
+        BT.systemPrint(new Vector2i(12, currentY), C_GREEN_TEXT, `Green Text (#${C_GREEN_TEXT})`);
         currentY += lineAdvance;
 
-        BT.systemPrint(new Vector2i(10, currentY), C_BLUE_TEXT, 'Blue Text');
+        BT.systemPrint(new Vector2i(12, currentY), C_BLUE_TEXT, `Blue Text (#${C_BLUE_TEXT})`);
         currentY += lineAdvance;
 
-        BT.systemPrint(new Vector2i(10, currentY), C_YELLOW_TEXT, 'Yellow Text');
+        BT.systemPrint(new Vector2i(12, currentY), C_YELLOW_TEXT, `Yellow Text (#${C_YELLOW_TEXT})`);
 
         // Move down one line height after the last word, just like the rows above.
         currentY += lineAdvance;
@@ -247,7 +243,7 @@ class Demo {
      */
     renderRainbowText(y) {
         // Start drawing from the left margin.
-        let x = 10;
+        let x = 12;
         let slotIndex = 0;
 
         // Loop through each character in the string one at a time.
@@ -279,7 +275,7 @@ class Demo {
         // animated from 0 to 255 with Math.sin(), so the text fades in and out smoothly
         // rather than shifting hue. The engine blends the palette color against the
         // background at draw time, which is what gives the pulse its smooth look.
-        BT.systemPrint(new Vector2i(10, y), C_PULSE, 'Pulsing Text');
+        BT.systemPrint(new Vector2i(12, y), C_PULSE, `Pulsing Text (#${C_PULSE})`);
 
         return y + BT.systemPrintMeasure('M').y + 4;
     }
@@ -291,7 +287,7 @@ class Demo {
      * @param {number} y – The Y position to start drawing at.
      */
     renderSpecialCharacters(y) {
-        BT.systemPrint(new Vector2i(10, y), C_GRAY_TEXT, 'Special: 3 x 4 = 12');
+        BT.systemPrint(new Vector2i(12, y), C_GRAY_TEXT, `Special (#${C_GRAY_TEXT}): 3 x 4 = 12`);
     }
 }
 

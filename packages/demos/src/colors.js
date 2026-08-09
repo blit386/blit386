@@ -1,13 +1,11 @@
 // Colors Demo – a deep dive into Color32 and palettes in BLIT386.
-// @description A deep dive into Color32: named colors, HSL, alpha blending, and interpolating between two colors.
+// @description A deep dive into Color32: named colors, HSL, and interpolating between two colors.
 //
 // Part of the BLIT386 demo series, written for young learners (around 12)
 // who are getting comfortable with code. You will see:
 //
 //   - Named shortcut colors (Color32.red and friends – static properties, not function calls)
-//   - How red, green, and blue light mix to make new colors
 //   - HSL: another way to pick colors (hue, saturation, lightness) and a scrolling rainbow
-//   - Alpha: the fourth number that makes colors see-through
 //   - Lerp: smoothly sliding between two colors (like a dimmer between two lights)
 //
 // We learned about the demo lifecycle, Vector2i, Rect2i, and clearing the screen in the Basics demo:
@@ -23,7 +21,7 @@
 //   from the palette. Think of it like numbered paint cans: you choose which can to use,
 //   not the exact mix of paint every time you pick up the brush.
 //
-//   Static colors (named swatches, alpha layers) go into the palette once during init().
+//   Static colors (named swatches, overlay text) go into the palette once during init().
 //   Animated colors (HSL rainbow, lerp gradient, pulse) are recalculated every tick
 //   inside update() and written back into their reserved palette slots.
 //   render() only ever uses palette index numbers – no Color32 objects there.
@@ -68,17 +66,8 @@ const C_YELLOW_N = 7; // Color32.yellow – (255, 255, 0).
 const C_CYAN_N = 8; // Color32.cyan – (0, 255, 255).
 const C_MAGENTA_N = 9; // Color32.magenta – (255, 0, 255).
 
-// Semi-transparent versions for the RGB mix section.
-const C_MIX_RED_A = 10; // (255, 0, 0, 140) – translucent red.
-const C_MIX_GREEN_A = 11; // (0, 255, 0, 140) – translucent green.
-const C_MIX_BLUE_A = 12; // (0, 0, 255, 140) – translucent blue.
-
-// Alpha-layered colors for the alpha demo section.
-const C_ALPHA_BASE = 13; // (255, 140, 40, 255) – opaque orange base.
-const C_ALPHA_1 = 14; // (80, 120, 255, 180) – semi-transparent blue.
-const C_ALPHA_2 = 15; // (200, 80, 200, 140) – semi-transparent purple.
-const C_ALPHA_3 = 16; // (120, 255, 120, 100) – semi-transparent green.
-const C_ALPHA_4 = 17; // (255, 255, 255, 70)  - almost-invisible white.
+// Overlay text color: a muted purple, set once in init() like the basic colors above.
+const C_OVERLAY_TEXT = 15; // (200, 80, 200, 140) – semi-transparent purple.
 
 // Lerp endpoints (the two colors being blended).
 const C_LERP_A = 18; // (180, 40, 220) – purple.
@@ -102,7 +91,7 @@ const LERP_SLOTS = 32;
 const C_PULSE = 126;
 
 /**
- * Shows how Color32 works: RGB names, mixing, HSL rainbow, alpha, and lerp.
+ * Shows how Color32 works: named colors, HSL rainbow, and lerp.
  * All animated colors are computed in update() and stored in palette slots.
  * render() uses only palette index numbers – no Color32 objects there.
  *
@@ -143,7 +132,7 @@ class Demo {
             overlayStyle: {
                 // Dedicated static slot – not C_LERP_BASE, which update() rewrites every tick.
                 barPaletteIndex: C_OVERLAY_BAR,
-                textPaletteIndex: C_ALPHA_2,
+                textPaletteIndex: C_OVERLAY_TEXT,
                 gapPaletteIndex: C_BLACK,
             },
         };
@@ -175,18 +164,9 @@ class Demo {
         this.palette.set(C_CYAN_N, Color32.cyan);
         this.palette.set(C_MAGENTA_N, Color32.magenta);
 
-        // Semi-transparent versions for the RGB mix section.
-        // The fourth argument to Color32 is alpha: 255 = fully solid, 0 = fully invisible.
-        this.palette.set(C_MIX_RED_A, new Color32(255, 0, 0, 140));
-        this.palette.set(C_MIX_GREEN_A, new Color32(0, 255, 0, 140));
-        this.palette.set(C_MIX_BLUE_A, new Color32(0, 0, 255, 140));
-
-        // Alpha section layers (stacked from opaque base to nearly invisible).
-        this.palette.set(C_ALPHA_BASE, new Color32(255, 140, 40, 255));
-        this.palette.set(C_ALPHA_1, new Color32(80, 120, 255, 180));
-        this.palette.set(C_ALPHA_2, new Color32(200, 80, 200, 140));
-        this.palette.set(C_ALPHA_3, new Color32(120, 255, 120, 100));
-        this.palette.set(C_ALPHA_4, new Color32(255, 255, 255, 70));
+        // Overlay text color. The fourth argument to Color32 is alpha: 255 = fully
+        // solid, 0 = fully invisible.
+        this.palette.set(C_OVERLAY_TEXT, new Color32(200, 80, 200, 140));
 
         // Lerp endpoints – the two colors the gradient blends between.
         this.lerpColorA = new Color32(180, 40, 220); // Purple.
@@ -275,16 +255,10 @@ class Demo {
         // Section 1: ready-made named colors in a row with short labels.
         this.drawNamedColorsSection();
 
-        // Section 2: overlapping squares with transparency so mixes are visible.
-        this.drawRgbMixSection();
-
-        // Section 3: HSL rainbow strip with hue that scrolls over time.
+        // Section 2: HSL rainbow strip with hue that scrolls over time.
         this.drawHslRainbowSection();
 
-        // Section 4: solid base with softer layers on top to show alpha.
-        this.drawAlphaSection();
-
-        // Section 5: sliding blend between two colors using colorA.lerp(colorB, t).
+        // Section 3: sliding blend between two colors using colorA.lerp(colorB, t).
         this.drawLerpSection();
     }
 
@@ -295,24 +269,25 @@ class Demo {
     drawNamedColorsSection() {
         // Section header, drawn with ui.caption() from the shared UI kit. Every demo in
         // the series uses this same widget, so all headers look identical everywhere.
-        ui.caption(6, 4, '1 NAMED COLORS (shortcuts)');
+        ui.caption(6, 3, '1: NAMED COLORS (shortcuts)');
 
-        const rowY = 20;
-        const swatchH = 16;
+        const rowY = 16;
+        const swatchH = 11;
 
         // Each entry: a short label and the palette index for that named color.
         const entries = [
             { label: 'RED', index: C_RED },
-            { label: 'GRN', index: C_GREEN_N },
-            { label: 'BLU', index: C_BLUE_N },
-            { label: 'YEL', index: C_YELLOW_N },
-            { label: 'CYN', index: C_CYAN_N },
-            { label: 'WHT', index: C_WHITE },
-            { label: 'BLK', index: C_BLACK },
+            { label: 'GREEN', index: C_GREEN_N },
+            { label: 'BLUE', index: C_BLUE_N },
+            { label: 'YELLOW', index: C_YELLOW_N },
+            { label: 'CYAN', index: C_CYAN_N },
+            { label: 'WHITE', index: C_WHITE },
+            { label: 'BLACK', index: C_BLACK },
         ];
 
         // Shared horizontal padding so the row does not touch the screen edge.
         const margin = 6;
+
         // How many pixels wide each swatch can be if we split the row evenly.
         const slotW = Math.floor((320 - margin * 2) / entries.length);
 
@@ -321,45 +296,21 @@ class Demo {
             const x = margin + slotIndex * slotW;
             const swatchW = slotW - 4;
 
-            // Light swatches (white, yellow) need black labels so you can read them.
+            // Light swatches (white, yellow, green, cyan) need black labels so you can read them.
             // Dark swatches get white labels.
-            const isLight = entry.index === C_WHITE || entry.index === C_YELLOW_N;
+            const isLight =
+                entry.index === C_WHITE ||
+                entry.index === C_YELLOW_N ||
+                entry.index === C_GREEN_N ||
+                entry.index === C_CYAN_N;
             const labelColor = isLight ? C_BLACK : C_WHITE;
-
-            // Print the label above the swatch.
-            BT.systemPrint(new Vector2i(x, rowY - 10), labelColor, entry.label);
 
             // Fill a rectangle with that named color.
             BT.drawRectFill(new Rect2i(x, rowY, swatchW, swatchH), entry.index);
+
+            // Print the label into the swatch.
+            BT.systemPrint(new Vector2i(x + 2, rowY - 1), labelColor, entry.label);
         }
-    }
-
-    /**
-     * Shows additive-style mixing using semi-transparent squares.
-     * When two colors overlap with alpha blending, your eye mixes them like colored lights.
-     */
-    drawRgbMixSection() {
-        // Section header, drawn with the shared UI kit.
-        ui.caption(6, 40, '2 RGB MIX (overlap, see-through)');
-
-        // Base y for the three little experiments side by side.
-        const y0 = 52;
-        const size = 34;
-
-        // Left pair: red and green make yellow where they cross. Label in yellow.
-        BT.systemPrint(new Vector2i(8, y0 - 10), C_YELLOW_N, 'R+G');
-        BT.drawRectFill(new Rect2i(12, y0, size, size), C_MIX_RED_A);
-        BT.drawRectFill(new Rect2i(28, y0 + 14, size, size), C_MIX_GREEN_A);
-
-        // Middle pair: red and blue make magenta in the overlap. Label in magenta.
-        BT.systemPrint(new Vector2i(118, y0 - 10), C_MAGENTA_N, 'R+B');
-        BT.drawRectFill(new Rect2i(122, y0, size, size), C_MIX_RED_A);
-        BT.drawRectFill(new Rect2i(138, y0 + 14, size, size), C_MIX_BLUE_A);
-
-        // Right pair: green and blue make cyan in the overlap. Label in cyan.
-        BT.systemPrint(new Vector2i(228, y0 - 10), C_CYAN_N, 'G+B');
-        BT.drawRectFill(new Rect2i(232, y0, size, size), C_MIX_GREEN_A);
-        BT.drawRectFill(new Rect2i(248, y0 + 14, size, size), C_MIX_BLUE_A);
     }
 
     /**
@@ -371,10 +322,10 @@ class Demo {
      * Hue is an angle 0..360 on a color wheel. 64 slots cover the whole wheel in steps.
      */
     drawHslRainbowSection() {
-        ui.caption(6, 102, '3 HSL RAINBOW (fromHSL, scrolling hue)');
+        ui.caption(6, 30, '2: HSL RAINBOW (fromHSL, scrolling hue)');
 
-        const stripY = 114;
-        const stripH = 8;
+        const stripY = 43;
+        const stripH = 11;
 
         // Walk every x column on the screen from left to right.
         // Each column maps to one of the 64 HSL palette slots.
@@ -388,30 +339,7 @@ class Demo {
     }
 
     /**
-     * Draws a bright base rectangle, then stacks softer rectangles on top.
-     * The fourth number in new Color32(r, g, b, a) is alpha: 255 = solid, 0 = invisible.
-     *
-     * Each layer was pre-registered as a palette slot in init() so we only
-     * need to pass index numbers here.
-     */
-    drawAlphaSection() {
-        ui.caption(6, 126, '4 ALPHA (fourth number = see-through)');
-
-        const box = new Rect2i(20, 138, 200, 40);
-
-        // Bottom layer: fully opaque orange – you always see this one.
-        BT.drawRectFill(box, C_ALPHA_BASE);
-
-        // Each new layer is more transparent so you still see the orange through them.
-        // Think of stacking colored plastic sheets on a flashlight.
-        BT.drawRectFill(new Rect2i(36, 144, 168, 14), C_ALPHA_1);
-        BT.drawRectFill(new Rect2i(50, 150, 140, 14), C_ALPHA_2);
-        BT.drawRectFill(new Rect2i(64, 156, 112, 12), C_ALPHA_3);
-        BT.drawRectFill(new Rect2i(78, 162, 84, 10), C_ALPHA_4);
-    }
-
-    /**
-     * Section 5: lerp (linear interpolation) between two colors.
+     * Section 3: lerp (linear interpolation) between two colors.
      *
      * Think of t like a dimmer switch between two lamps: t = 0 is only lamp A (purple),
      * t = 1 is only lamp B (teal), and t = 0.5 is an even mix halfway between them.
@@ -421,21 +349,21 @@ class Demo {
      * The thin strip below uses one slot that breathes A <-> B with a sine wave.
      */
     drawLerpSection() {
-        ui.caption(6, 184, '5 LERP: slide + pulse (see comments)');
+        ui.caption(6, 57, '3: LERP: slide + pulse (see comments)');
 
-        const barY = 198;
+        const barY = 70;
 
         // Dimmer analogy: these end squares are the two "lamps" at full brightness (pure A and B).
-        BT.drawRectFill(new Rect2i(8, barY, 12, 12), C_LERP_A);
-        BT.systemPrint(new Vector2i(8, barY + 13), C_WHITE, 'A');
-        BT.drawRectFill(new Rect2i(300, barY, 12, 12), C_LERP_B);
-        BT.systemPrint(new Vector2i(300, barY + 13), C_WHITE, 'B');
+        BT.drawRectFill(new Rect2i(6, barY, 11, 11), C_LERP_A);
+        BT.systemPrint(new Vector2i(8, barY - 1), C_BLACK, 'A');
+        BT.drawRectFill(new Rect2i(300, barY, 11, 11), C_LERP_B);
+        BT.systemPrint(new Vector2i(302, barY - 1), C_BLACK, 'B');
 
         // Middle gradient bar: each column is another step on the dimmer between A and B.
         // update() already wrote 32 blended colors into palette slots C_LERP_BASE.. .
-        const barX = 26;
+        const barX = 24;
         const barW = 268;
-        const barH = 8;
+        const barH = 11;
 
         for (let i = 0; i < barW; i++) {
             // Pick which of the 32 pre-blended "dimmer steps" this pixel column uses.
@@ -445,7 +373,7 @@ class Demo {
 
         // Thin strip: one color slot whose t value waves back and forth (whole bar pulses).
         // In update(), pulseT follows a sine wave so the dimmer slides A -> B -> A smoothly.
-        BT.drawRectFill(new Rect2i(26, 212, 268, 5), C_PULSE);
+        BT.drawRectFill(new Rect2i(24, 82, 268, 11), C_PULSE);
     }
 }
 

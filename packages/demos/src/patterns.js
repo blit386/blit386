@@ -126,14 +126,18 @@ class Demo {
     configure() {
         return {
             isOverlayPaletteEnabled: true,
+            isOverlayVisibleAtStart: true,
+
             overlayStyle: {
                 barPaletteIndex: C_WHITE,
                 textPaletteIndex: C_BG,
                 gapPaletteIndex: C_BG,
             },
+
             isOverlayTimingChartEnabled: true,
             overlayTimingChartDiagnostics: 'rich',
             isOverlayRendererDiagnosticsBarEnabled: true,
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_WAVE_3,
                 renderBarPaletteIndex: C_WAVE_1,
@@ -264,25 +268,25 @@ class Demo {
         BT.clear(C_BG);
 
         // Top row: three patterns centered at y=50.
-        this.drawSpiral(new Vector2i(40, 50));
-        this.drawRadialLines(new Vector2i(120, 50));
-        this.drawWavePattern(new Vector2i(200, 50));
+        this.drawSpiral(new Vector2i(60, 80));
+        this.drawRadialLines(new Vector2i(160, 80));
+        this.drawWavePattern(new Vector2i(260, 80));
 
         // Bottom row: three more patterns centered at y=130.
-        this.drawCircleApproximation(new Vector2i(40, 130));
-        this.drawLissajous(new Vector2i(120, 130));
-        this.drawTunnel(new Vector2i(200, 130));
+        this.drawCircleApproximation(new Vector2i(60, 150));
+        this.drawLissajous(new Vector2i(160, 150));
+        this.drawTunnel(new Vector2i(260, 150));
 
         // Label each grid cell so viewers know which pattern they are looking at.
         // ui.caption() is the shared UI kit's pinned one-line caption – the same widget
         // every demo in the series uses, so all captions look identical everywhere.
         // Text draws left-aligned, so we nudge x until short names sit under each center.
-        ui.caption(22, 92, 'Spiral');
-        ui.caption(100, 92, 'Radial');
-        ui.caption(184, 92, 'Wave');
-        ui.caption(16, 172, 'Circle');
-        ui.caption(88, 172, 'Lissajous');
-        ui.caption(178, 172, 'Tunnel');
+        ui.caption(42, 100, 'Spiral');
+        ui.caption(120, 100, 'Radial');
+        ui.caption(250, 100, 'Wave');
+        ui.caption(42, 180, 'Circle');
+        ui.caption(133, 180, 'Lissajous');
+        ui.caption(243, 180, 'Tunnel');
     }
 
     /**
