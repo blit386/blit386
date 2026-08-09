@@ -9,6 +9,7 @@
  */
 export const DEMO_ORDER = [
     'barebones',
+    'hello-world',
     'basics',
     'primitives',
     'colors',
