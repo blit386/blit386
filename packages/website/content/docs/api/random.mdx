@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Random"
 description: "Seeded Random PRNG, coordinate hashes, and Value/Perlin/Simplex pattern noise for procedural worlds."
-lastModified: "2026-08-08T20:51:38+02:00"
+lastModified: "2026-08-09T16:20:34+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/api-random.md"
 ---
 
@@ -178,8 +178,9 @@ simplex.noise3D(1, 2, 3);
 ```
 
 Value noise interpolates hashed corner values (smooth but can look blocky at low frequency). Perlin uses lattice
-gradients ([Ken Perlin, SIGGRAPH 2002](https://mrl.cs.nyu.edu/~perlin/paper445.pdf)). Simplex reduces directional
-artifacts on square grids
+gradients
+([Ken Perlin, SIGGRAPH 2002](https://web.archive.org/web/20201223081217/https://mrl.cs.nyu.edu/~perlin/paper445.pdf)).
+Simplex reduces directional artifacts on square grids
 ([Stefan Gustavson](https://web.archive.org/web/20200929015611/http://weber.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)).
 
 ## State and streams

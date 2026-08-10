@@ -39,7 +39,7 @@
 }
 
 .changed {
-    @apply bg-fd-card text-fd-card-foreground;
+    @apply border-fd-primary text-fd-primary;
 }
 
 .deprecated {
@@ -52,6 +52,10 @@
 
 .note {
     @apply text-fd-muted-foreground;
+
+    & a {
+        @apply underline underline-offset-2 hover:text-fd-primary;
+    }
 }
 
 /* A version with no release date hasn't shipped yet - flag it in red instead of the
@@ -72,8 +76,13 @@
         @apply text-red-600;
     }
 
-    & .added {
+    & .added,
+    & .changed {
         @apply border-red-600 text-red-600;
+
+        &:after {
+            @apply pl-2 content-['–_Unreleased'];
+        }
     }
 }
 
@@ -82,7 +91,8 @@
         @apply text-red-400;
     }
 
-    & .added {
+    & .added,
+    & .changed {
         @apply border-red-400 text-red-400;
     }
 }

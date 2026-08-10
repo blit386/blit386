@@ -45,6 +45,54 @@ export const getSymbol = (name: string): SymbolHistory | undefined =>
 export const getPageSymbols = (page: string): string[] =>
     Object.hasOwn(apiHistory.pages, page) ? (apiHistory.pages[page] ?? []) : [];
 
+/** Reverse of `apiHistory.pages`: symbol name -> the page it is documented on. Built once, lazily. */
+let symbolPageIndex: Map<string, string> | undefined;
+
+function getSymbolPageIndex(): Map<string, string> {
+    if (!symbolPageIndex) {
+        symbolPageIndex = new Map();
+
+        for (const [page, symbols] of Object.entries(apiHistory.pages)) {
+            for (const name of symbols) {
+                symbolPageIndex.set(name, page);
+            }
+        }
+    }
+
+    return symbolPageIndex;
+}
+
+/**
+ * Turns a documented symbol name into the `id` its `<Since>` badge renders (see
+ * `since-badge.tsx`), and the fragment a link should target to jump straight to it. `.` is not
+ * a valid bare token in a URL fragment some tooling round-trips through query-string parsing, so
+ * it is replaced with `-`; case is left untouched since fragments are matched case-sensitively
+ * against the rendered `id`.
+ */
+export const symbolAnchorId = (name: string): string => name.replaceAll('.', '-');
+
+/** Where a `{@link Name}` / `{@link Name.member}` target is documented. */
+export interface SymbolLink {
+    page: string;
+    /** The resolved symbol's own name – e.g. `HardwareSettings` for a `HardwareSettings.foo` link – for use with {@link symbolAnchorId}. */
+    symbol: string;
+}
+
+/**
+ * Resolves a `{@link Name}` or `{@link Name.member}` target to the page and symbol it is
+ * documented under, or `undefined` when neither the full name nor its base symbol (before the
+ * first `.`) is tracked in `apiHistory.pages` – e.g. a deprecated helper that never received a
+ * `<Since>` tag of its own.
+ */
+export function resolveSymbolLink(name: string): SymbolLink | undefined {
+    const index = getSymbolPageIndex();
+    const base = name.split('.', 1)[0] ?? name;
+    const symbol = index.has(name) ? name : base;
+    const page = index.get(symbol);
+
+    return page ? { page, symbol } : undefined;
+}
+
 /** One dot-separated version segment: its digits, and whether a suffix followed them. */
 interface VersionSegment {
     /** Leading zeros stripped, so `""` means zero. Kept as digits rather than a `number`. */
