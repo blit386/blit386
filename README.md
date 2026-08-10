@@ -33,7 +33,7 @@ Already have a project and just want the engine in it? That path starts at
 
 | Package | npm | What it is |
 | --- | --- | --- |
-| [`packages/blit386`](packages/blit386) | [`blit386`](https://www.npmjs.com/package/blit386) | The engine: palette, sprites, text, input, audio, post-process effects |
+| [`packages/blit386`](packages/blit386) | [`blit386`](https://www.npmjs.com/package/blit386) | The engine: palette, sprites, text, input, audio, seeded random, easing, post-process effects |
 | [`packages/create-blit386`](packages/create-blit386) | [`create-blit386`](https://www.npmjs.com/package/create-blit386) | The scaffolder behind `npm create blit386@latest` |
 | [`packages/kit`](packages/kit) | [`@blit386/kit`](https://www.npmjs.com/package/@blit386/kit) | What a generated game gets: starter docs, game-author skills, the `blit` CLI |
 | [`packages/demos`](packages/demos) | not published | The examples running at demos.blit386.dev |
