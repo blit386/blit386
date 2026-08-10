@@ -1,4 +1,4 @@
-import { getSymbol } from '../data/api-history';
+import { getSymbol, symbolAnchorId } from '../data/api-history';
 import styles from './since-badge.module.css';
 
 interface SinceProps {
@@ -10,9 +10,13 @@ interface SinceProps {
  * if it is unreleased or deprecated. Renders nothing if `symbol` is not found in the
  * generated API history – a missing or misspelled symbol name silently omits the badge
  * rather than failing the docs build.
+ *
+ * Carries `id={symbolAnchorId(symbol)}` so a `{@link Name}` tag elsewhere on the site (see
+ * `page-changelog.tsx`'s `renderNote`) can link straight to it instead of just the page.
  */
 export function Since({ symbol }: SinceProps) {
     const entry = getSymbol(symbol);
+    const id = symbolAnchorId(symbol);
 
     if (!entry) {
         return null;
@@ -20,7 +24,7 @@ export function Since({ symbol }: SinceProps) {
 
     if (entry.status === 'unreleased') {
         return (
-            <span className={`not-prose ${styles.badge} ${styles.unreleased}`} title={symbol}>
+            <span id={id} className={`not-prose ${styles.badge} ${styles.unreleased}`} title={symbol}>
                 <code className={styles.symbol}>{symbol}</code> Unreleased
             </span>
         );
@@ -30,7 +34,7 @@ export function Since({ symbol }: SinceProps) {
         const deprecatedVersion = entry.deprecated?.version;
 
         return (
-            <span className={`not-prose ${styles.badge} ${styles.deprecated}`} title={symbol}>
+            <span id={id} className={`not-prose ${styles.badge} ${styles.deprecated}`} title={symbol}>
                 <code className={styles.symbol}>{symbol}</code> Deprecated
                 {deprecatedVersion ? ` ${deprecatedVersion}` : ''}
             </span>
@@ -38,7 +42,7 @@ export function Since({ symbol }: SinceProps) {
     }
 
     return (
-        <span className={`not-prose ${styles.badge} ${styles.stable}`} title={symbol}>
+        <span id={id} className={`not-prose ${styles.badge} ${styles.stable}`} title={symbol}>
             <code className={styles.symbol}>{symbol}</code> Since {entry.since}
         </span>
     );

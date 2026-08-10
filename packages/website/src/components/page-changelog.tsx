@@ -1,4 +1,14 @@
-import { apiHistory, compareVersions, getPageSymbols, getSymbol } from '../data/api-history';
+import Link from 'fumadocs-core/link';
+import { Fragment } from 'react';
+import type { ReactNode } from 'react';
+import {
+    apiHistory,
+    compareVersions,
+    getPageSymbols,
+    getSymbol,
+    resolveSymbolLink,
+    symbolAnchorId,
+} from '../data/api-history';
 import styles from './page-changelog.module.css';
 
 interface PageChangelogProps {
@@ -67,6 +77,47 @@ function groupByVersion(events: ChangeEvent[]): [string, ChangeEvent[]][] {
     return [...byVersion.entries()].sort(([a], [b]) => compareVersions(b, a));
 }
 
+const LINK_TAG_PATTERN = /\{@link\s+([^}]+)\}/gu;
+
+/**
+ * Renders a change note, turning any `{@link Name}` / `{@link Name.member}` JSDoc tag into a real
+ * link straight to the `<Since>` badge for `Name` (or its base symbol) – see
+ * {@link resolveSymbolLink} and `since-badge.tsx`'s `id={symbolAnchorId(symbol)}`. An
+ * unresolvable target (e.g. a deprecated helper with no `<Since>` tag of its own) falls back to
+ * plain text rather than a dead link.
+ */
+function renderNote(note: string): ReactNode {
+    const parts: ReactNode[] = [];
+    let lastIndex = 0;
+
+    for (const match of note.matchAll(LINK_TAG_PATTERN)) {
+        const [tag, name] = match;
+        const index = match.index;
+
+        if (index > lastIndex) {
+            parts.push(note.slice(lastIndex, index));
+        }
+
+        const target = name === undefined ? undefined : resolveSymbolLink(name.trim());
+
+        parts.push(
+            target ? (
+                <Link key={index} href={`/docs/${target.page}#${symbolAnchorId(target.symbol)}`}>
+                    {name?.trim()}
+                </Link>
+            ) : (
+                (name?.trim() ?? tag)
+            ),
+        );
+
+        lastIndex = index + tag.length;
+    }
+
+    parts.push(note.slice(lastIndex));
+
+    return <Fragment>{parts}</Fragment>;
+}
+
 /** Formats a version's release date for display, or `null` if it is missing or invalid. */
 function formatVersionDate(iso: string | null | undefined): string | null {
     if (!iso) {
@@ -109,7 +160,7 @@ export function PageChangelog({ page }: PageChangelogProps) {
                                         {event.category}
                                     </span>
                                     <code className={styles.symbol}>{event.symbol}</code>
-                                    {event.note && <span className={styles.note}>{event.note}</span>}
+                                    {event.note && <span className={styles.note}>{renderNote(event.note)}</span>}
                                 </li>
                             ))}
                         </ul>

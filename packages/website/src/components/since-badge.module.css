@@ -5,6 +5,10 @@
 .badge {
     @apply inline-flex items-center px-2 pt-0.5 pb-0.75 mb-1 mr-1 border select-none;
     @apply whitespace-nowrap uppercase font-departure antialiased text-[11px] leading-5;
+    /* Matches fumadocs-ui's own heading offset (`heading.js`'s `scroll-m-28`), so a
+       `{@link}` jump to a badge's id lands below the sticky header the same way a jump to a
+       heading anchor does. */
+    @apply scroll-m-28;
 
     & code {
         @apply opacity-100 normal-case pr-1;
