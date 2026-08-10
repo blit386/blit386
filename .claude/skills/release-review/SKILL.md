@@ -22,8 +22,13 @@ so – there is no useful repo-only subset of this skill.
 /release-review BT-418
 ```
 
-With no argument, find the release ticket yourself: `list_issues` on the BLIT386 team for the current milestone and pick
-the one titled `Release engine <version>`. Confirm the choice with the user before editing anything.
+With no argument, resolve the milestone before the ticket. Call `list_milestones` on the BLIT386 project and pick the
+one whose version matches the release being prepared – do not assume the highest number and do not assume the most
+recently created. Then call `list_issues` for the BLIT386 team requesting the `projectMilestone` field and keep only the
+issues on that milestone; `list_issues` has no milestone parameter, so that filtering is yours to do. From those, pick
+the issue titled `Release engine <version>`.
+
+Show the user both the milestone you selected and the ticket you matched, and get confirmation before editing anything.
 
 ## What this skill does not do
 
@@ -41,8 +46,14 @@ This skill covers what `/release` never looks at: Linear, and the agent-facing f
 
 ## 1. Get the inventory from `/release`, do not re-derive it
 
-Read `.claude/skills/release/SKILL.md` and run its steps 2 through 7 – last tag, commits since, merged PRs with their
+Read `.claude/skills/release/SKILL.md` and follow its steps 2 through 7 – last tag, commits since, merged PRs with their
 changed files, direct pushes, per-package grouping. Answer its step 1 version question with the milestone's version.
+
+Those steps are read-only inventory, and running them from here must stay that way. The allowed set is `git describe`,
+`git log`, `git rev-list`, `gh pr list`, `gh repo view`, and `gh api repos/<repo>/commits/<sha>/pulls`, plus local
+parsing of what they return. Run nothing outside it. If a step in that range has grown a command that writes a file,
+creates a branch, or publishes anything, stop and report it instead of running it – a review must not mutate what it is
+reviewing.
 
 **Stop before step 8.** Writing `RELEASE.md` belongs to the release, not to the review. What you want is the grouped PR
 list and the direct-push list as data.
@@ -114,6 +125,10 @@ with the `linear-issue` skill rather than burying it in a checkbox.
 - A bare identifier outside a fenced block becomes a live mention, which is what you want. Inside a fenced block it
   stays literal, so starting prompts survive intact. Verify after saving rather than assuming.
 - `save_issue` echoes the whole issue back, which for a punch list can exceed the tool-result limit. That is a display
-  failure, not a save failure – confirm the result by grepping the saved tool-result file for a phrase you just wrote.
-- `git show --name-only --format=` prints no file names. Use
-  `git diff-tree --no-commit-id --name-only -r -m --first-parent <sha>`, which also handles merge commits.
+  failure, not a save failure. Verify with `get_issue` – it is the authoritative read, and it is what confirms the
+  persisted body, the checkbox state, and that the decision records survived. On a ticket large enough that the echo was
+  truncated, check the sections you touched rather than the whole body.
+- `git show --name-only --format=` prints no file names, and `git diff-tree -m --first-parent <sha>` over-reports on a
+  merge commit – on one of this repo's merges it returned three files, a lockfile and two `package.json`s, that the
+  first-parent diff does not contain. Use `git diff-tree --no-commit-id --name-only -r <sha>^1 <sha>`, which compares
+  the commit against its first parent and is correct for both squash commits and merges.
