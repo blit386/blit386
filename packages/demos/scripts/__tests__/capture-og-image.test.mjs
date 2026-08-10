@@ -42,7 +42,10 @@ describe('parseArgs', () => {
         const options = parseArgs(['--all']);
 
         assert.deepEqual(options.slugs, DEMO_ORDER);
-        assert.equal(options.slugs.length, 47);
+        // Guards against DEMO_ORDER being empty, which deepEqual alone would accept.
+        // Deliberately not a hardcoded count: that has to be hand-bumped on every
+        // demo added or retired, and gets missed.
+        assert.ok(options.slugs.length > 0);
     });
 
     it('parses string, numeric, and boolean overrides', () => {
