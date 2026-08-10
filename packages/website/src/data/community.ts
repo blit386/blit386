@@ -22,15 +22,9 @@ export const communityDestinations: CommunityDestination[] = [
         external: true,
     },
     {
-        label: 'GitHub Issues',
-        platform: 'github',
-        url: 'https://github.com/blit386/blit386/issues',
-        external: true,
-    },
-    {
-        label: 'X',
-        platform: 'x',
-        url: 'https://x.com/blit386',
+        label: 'Mastodon',
+        platform: 'mastodon',
+        url: 'https://mastodon.gamedev.place/@blit386',
         external: true,
     },
     {
@@ -40,15 +34,21 @@ export const communityDestinations: CommunityDestination[] = [
         external: true,
     },
     {
-        label: 'Mastodon',
-        platform: 'mastodon',
-        url: 'https://mastodon.gamedev.place/@blit386',
+        label: 'X',
+        platform: 'x',
+        url: 'https://x.com/blit386',
         external: true,
     },
     {
         label: 'GitHub Releases',
         platform: 'github',
         url: 'https://github.com/blit386/blit386/releases',
+        external: true,
+    },
+    {
+        label: 'GitHub Issues',
+        platform: 'github',
+        url: 'https://github.com/blit386/blit386/issues',
         external: true,
     },
 ];

@@ -3,7 +3,7 @@ import styles from './demo-showcase.module.css';
 
 // The footer link is paused pending a layout revisit; flip this to re-enable.
 const SHOW_THUMBNAILS = true;
-const SHOW_FOOTER_LINK = false;
+const SHOW_FOOTER_LINK = true;
 
 export function DemoShowcase() {
     return (
