@@ -104,7 +104,7 @@ importers:
         specifier: ^17.7.0
         version: 17.8.0
       happy-dom:
-        specifier: ^20.10.6
+        specifier: ^20.11.1
         version: 20.11.1
       husky:
         specifier: ^9.1.7
