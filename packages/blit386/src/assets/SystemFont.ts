@@ -5,12 +5,17 @@
  * palette-indexed texture atlas and wraps the result in a {@link BitmapFont}.
  * The font is fully synchronous to create – no `fetch()`, no image decode.
  *
+ * Covers the printable ASCII block (32–126) plus a set of extra glyphs listed in
+ * `scripts/system-font-extra-chars.mjs` (a `U+FFFD` fallback glyph, dashes, media/UI icons,
+ * uppercase Greek, arrows, and a few others) – see that file for the full list and each glyph's
+ * atlas position.
+ *
  * The glyph data lives in `src/assets/fonts/systemFontData.ts`. To edit it
  * visually, export the current bitmaps to a PNG, redraw in a pixel editor,
  * then convert back:
  *
  * ```bash
- * pnpm system-font:export   # writes assets/system-font.png
+ * pnpm system-font:export   # writes assets/system-font.png (prints each extra glyph's cell)
  * # edit assets/system-font.png in a pixel editor
  * pnpm system-font:convert  # regenerates systemFontData.ts from the PNG
  * ```
@@ -20,8 +25,10 @@ import { Rect2i } from '../utils/Rect2i';
 import type { Glyph } from './BitmapFont';
 import { BitmapFont } from './BitmapFont';
 import {
+    SYSTEM_FONT_ASCII_GLYPH_COUNT,
     SYSTEM_FONT_BITMAPS,
     SYSTEM_FONT_BYTES_PER_GLYPH,
+    SYSTEM_FONT_EXTRA_CHARS,
     SYSTEM_FONT_FIRST_CHAR,
     SYSTEM_FONT_GLYPH_COUNT,
     SYSTEM_FONT_GLYPH_HEIGHT,
@@ -101,7 +108,21 @@ function buildAtlasPixels(): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Builds the glyph map for all printable ASCII characters.
+ * Returns the Unicode code point rendered by the glyph at atlas index `i`: the contiguous ASCII
+ * block (32–126) first, then {@link SYSTEM_FONT_EXTRA_CHARS} in atlas order.
+ *
+ * @param i – Glyph index into {@link SYSTEM_FONT_BITMAPS} / the atlas.
+ * @returns Unicode code point for that glyph.
+ */
+function codePointForGlyphIndex(i: number): number {
+    return i < SYSTEM_FONT_ASCII_GLYPH_COUNT
+        ? SYSTEM_FONT_FIRST_CHAR + i
+        : (SYSTEM_FONT_EXTRA_CHARS[i - SYSTEM_FONT_ASCII_GLYPH_COUNT] as number);
+}
+
+/**
+ * Builds the glyph map for every character in the font: the printable ASCII block plus
+ * {@link SYSTEM_FONT_EXTRA_CHARS} (dashes, arrows, the `U+FFFD` fallback glyph, etc.).
  *
  * @returns Map of single-character strings to their {@link Glyph} metadata.
  */
@@ -123,7 +144,7 @@ function buildGlyphMap(): Map<string, Glyph> {
                 advance: SYSTEM_FONT_GLYPH_WIDTH,
             };
 
-            return [String.fromCharCode(SYSTEM_FONT_FIRST_CHAR + i), glyph] as [string, Glyph];
+            return [String.fromCharCode(codePointForGlyphIndex(i)), glyph] as [string, Glyph];
         }),
     );
 }
