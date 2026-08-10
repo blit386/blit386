@@ -110,7 +110,7 @@ importers:
         specifier: ^9.1.7
         version: 9.1.7
       knip:
-        specifier: ^6.29.0
+        specifier: ^6.31.0
         version: 6.31.0
       magic-string:
         specifier: ^0.30.21
@@ -317,7 +317,7 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0(7c592ad3ef3787b7bcb74144e8d2718a)
       knip:
-        specifier: ^6.29.0
+        specifier: ^6.31.0
         version: 6.31.0
       prettier:
         specifier: ^3.9.6
