@@ -59,7 +59,7 @@ function readDemoList() {
 
 /**
  * Index of the current page's demo within `demos`, or -1 if this demo is nav-hidden
- * (e.g. barebones, excluded from the combobox/prev-next chain).
+ * (see `NAV_HIDDEN_SLUGS` in `plugins/demo-registry.js` -- excluded from the combobox/prev-next chain).
  * @param {Array<{slug: string}>} demos
  * @returns {number}
  */

@@ -147,8 +147,8 @@ keep working.
 
 A hard rule for `src/*.js`: every logical block gets a plain-English comment explaining what it does and why, as if the
 reader has never written code before. Use analogies; never assume familiarity with math functions or language features.
-Comments that only restate the code (`// add 1 to i` above `i++`) are not enough. Match the bar set by
-`src/barebones.js`; see `packages/demos/CLAUDE.md` (Documentation Style) for the full rules.
+Comments that only restate the code (`// add 1 to i` above `i++`) are not enough. Match the bar set by `src/basics.js`;
+see `packages/demos/CLAUDE.md` (Documentation Style) for the full rules.
 
 ### 5. Verify it runs
 

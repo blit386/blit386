@@ -8,7 +8,7 @@
  * forever (see `demo-vintage-urls.js`).
  */
 export const DEMO_ORDER = [
-    'barebones',
+    'hello-world',
     'basics',
     'primitives',
     'colors',
@@ -54,5 +54,4 @@ export const DEMO_ORDER = [
     'coordinate-patterns',
     'noise',
     'palette-exposure-fade',
-    'hello-world',
 ];
