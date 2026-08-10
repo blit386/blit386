@@ -17,7 +17,9 @@
 export const RETIRED_SLUGS = new Set(['error-preview']);
 
 export const VINTAGE_URLS = {
-    '00a-barebones': 'barebones',
+    '00a-barebones': 'hello-world',
+    // Retired – src/barebones.js was removed; hello-world now occupies its nav slot.
+    barebones: 'hello-world',
     '001-basics': 'basics',
     '002-primitives': 'primitives',
     '003-colors': 'colors',

@@ -48,8 +48,8 @@ to these URLs via `VINTAGE_URLS`.
 
 ### Drawing Basics
 
-- [hello-world](https://demos.blit386.dev/hello-world) – The classic first program: "Hello, World!" on screen with a
-  button that cycles its color
+- [hello-world](https://demos.blit386.dev/hello-world) – The classic first program: "Hello, World!" on screen, nothing
+  else
 - [basics](https://demos.blit386.dev/basics) – Engine basics, lifecycle, bouncing sprite, canvas text
 - [basics-enhanced](https://demos.blit386.dev/basics-enhanced) – Enhanced version of the basics demo with optional
   visual effects
