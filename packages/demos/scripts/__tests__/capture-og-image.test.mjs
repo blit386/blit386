@@ -264,7 +264,7 @@ describe('buildCanvasPrepScript', () => {
         // box, and layout.css once accidentally shipped a `body { zoom: 0.943 }` rule that turned
         // a 320x320 canvas into a resampled ~301x301 PNG. This defensive reset protects the capture
         // even though that rule is gone, against a browser zoom setting or a future regression.
-        assert.match(script, /body\.style\.setProperty\('zoom', '1'/);
+        assert.match(script, /body\.style\.setProperty\('zoom', '1', 'important'\)/);
     });
 });
 
