@@ -19,11 +19,16 @@ Zero-argument read-only values on `BT`:
   `?backend=software`); `null` before `BT.init()`
 - Loop: `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`
 - Runtime: `activeBackend`, `camera`, `palette`, `random`, `isAudioUnlocked`, `isMusicPlaying`, `screenOrientation`,
-  `loadingAssetsCount` – `activeBackend` is `null` before init or on failure; `isAudioUnlocked` is `false` until the
-  first user gesture resumes the audio context; `isMusicPlaying` is `true` while the music player has a live current
-  track; `screenOrientation` is the current `screen.orientation.type` string, or `null` when the API is unavailable;
-  `loadingAssetsCount` is the combined count of in-flight `AssetLoader` + `AudioClip` loads (poll for a loading screen);
-  `random` is a live, time-seeded `Random` (always present; reseed with `randomSeed`)
+  `loadingAssetsCount`, `isDevMode`, `splashState`, `isSplashVisible` – `activeBackend` is `null` before init or on
+  failure; `isAudioUnlocked` is `false` until the first user gesture resumes the audio context; `isMusicPlaying` is
+  `true` while the music player has a live current track; `screenOrientation` is the current `screen.orientation.type`
+  string, or `null` when the API is unavailable; `loadingAssetsCount` is the combined count of in-flight `AssetLoader` +
+  `AudioClip` loads (poll for a loading screen); `random` is a live, time-seeded `Random` (always present; reseed with
+  `randomSeed`); `isDevMode` resolves an explicit override, then the `blit386/vite` plugin's build-time flag, then live
+  hot-reload activity – it is Tier A below, not Tier B, because no `HardwareSettings` field mirrors it, so it reads as a
+  runtime environment query rather than a configure flag; `splashState` is the five-state splash machine's current state
+  (`'disabled'` when gated off); `isSplashVisible` is the one-term derived query game code should prefer over
+  `splashState`
 - Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount`
 
 Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`
@@ -38,8 +43,8 @@ frame; calling methods on `BT.random` advances the shared stream.
 
 - Lifecycle / mutations: `init`, `ticksReset`, `cameraSet`, `cameraReset`, `paletteSet`, `paletteCreate`, `randomSeed`,
   `showCursor`, `hideCursor`, `spritesRefresh`, `assignTag`, `inputMap`, `inputMapReset`
-- Palette effects: `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFlash`, `paletteSwap`,
-  `paletteClearEffects`
+- Palette effects: `paletteCycle`, `paletteFade`, `paletteFadeRange`, `paletteFadeExposure`, `paletteFlash`,
+  `paletteSwap`, `paletteClearEffects`
 - Post-process: `effectAdd`, `effectRemove`, `effectClear`; preset namespace `BT.preset` (`crtPipBoy`, `amber`, `green`)
 - Audio: `audioVolumeSet(bus, value, options?)`, `audioVolumeGet(bus)`, `audioMuteSet(bus, muted)`, `isAudioMuted(bus)`,
   `soundPlay(clip, options?)`, `soundStop(ref, options?)`, `isSoundPlaying(ref)`,
@@ -61,8 +66,8 @@ Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-d
 
 | Tier | Use | Examples |
 | --- | --- | --- |
-| **A** Runtime queries | `is*` / `has*` | `isPointerActive`, `isIndexed`, `hasGlyph`, `Palette.isDirty` |
-| **B** Configure flags | grammatical `is*` | `isOverlayEnabled`, `isDetectingDroppedFrames`, `isOverlayPaletteEnabled`, `isOverlayVisibleAtStart`, `isWaitingForDOMReady`, `isCapturingPointerScroll`, `isWakeLockEnabled` |
+| **A** Runtime queries | `is*` / `has*` | `isPointerActive`, `isIndexed`, `hasGlyph`, `Palette.isDirty`, `isDevMode` |
+| **B** Configure flags | grammatical `is*` | `isOverlayEnabled`, `isSplashEnabled`, `isDetectingDroppedFrames`, `isOverlayPaletteEnabled`, `isOverlayVisibleAtStart`, `isWaitingForDOMReady`, `isCapturingPointerScroll`, `isWakeLockEnabled` |
 | **C** Side effects / results | imperative verbs | `fireIfElapsed()`, `remove(): boolean`, `init(): Promise<boolean>` |
 
 - Use `-ing` for configure flags that enable ongoing behavior (`isDetectingDroppedFrames`).
