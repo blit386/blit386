@@ -148,7 +148,8 @@ bootstrap(Game);
 
 - Draw with numbers, not pixels: A 256-color paint box; every primitive and sprite is just a slot index.
 - Animate colors, not geometry: Cycle, fade, flash, and swap give you water, lava, and lightning for the cost of one
-  tiny palette upload.
+  tiny palette upload. `BT.paletteFadeExposure` goes further and fades in linear light like an iris pull, so highlights
+  hold and shadows crush instead of everything dimming at one flat rate.
 - Retro palettes in the box: VGA, CGA, C64, Game Boy, PICO-8, and NES presets.
 - Recolor without redrawing: Palette offsets turn one sprite sheet into team colors, day and night, or power-up states –
   no duplicate textures.
@@ -159,9 +160,18 @@ bootstrap(Game);
   main) with volume, mute, and fades, synthesize blips and booms from scratch or reach for a built-in preset, and read
   live levels off the overlay's audio meters – all while tracking the browser's autoplay-gesture unlock honestly instead
   of pretending it doesn't exist.
+- Worlds that come back the same: a seeded PRNG (`BT.random`, `BT.randomSeed`) with the draws games actually reach for –
+  picks, shuffles, weighted drops, points in a rect – plus Value, Perlin, and Simplex noise and stateless coordinate
+  hashes for chunked terrain that needs no stored generator.
+- Motion with a shape: the full easing family set – sine, cubic, quartic, quintic, expo, circ, back, elastic, bounce –
+  and `interpolate()` across numbers, `Vector2i`, `Color32`, and `Rect2i`.
 - Loading progress: `BT.loadingAssetsCount` tracks in-flight image and audio loads so you can drive a loading screen.
+- A splash that is also a loading screen: the BLIT386 logo fades in on its own gray ramp while your `init()` runs, holds
+  until assets settle, then hands off into your palette with no cut. On in release builds, off in development, and any
+  key skips it.
 - Mobile polish: wake lock, screen orientation lock and detection, and opt-in pointer and keyboard scroll capture.
-- Hot reload: the `blit386/vite` plugin swaps code and assets in place during development without a full page reload.
+- Hot reload: the `blit386/vite` plugin swaps code and assets in place during development without a full page reload,
+  and marks the build so `BT.isDevMode` can gate debug-only code out of what you ship.
 
 ## Get started
 
@@ -215,6 +225,7 @@ important pages:
 | [API: Core](docs/api-core.md) | bootstrap, init, default configuration |
 | [API: Game Loop](docs/api-game-loop.md) | tick timing, present FPS, Timer |
 | [Game Loop Guide](docs/guide-game-loop.md) | render-time interpolation, smoothing motion |
+| [API: Easing](docs/api-easing.md) | easing curve families, interpolate for numbers, points, colors, rects |
 | [API: Random](docs/api-random.md) | seeded PRNG, coordinate hashes, Value/Perlin/Simplex noise |
 | [Random Guide](docs/guide-random.md) | reproducible runs, independent streams, procedural worlds |
 | [API: Camera](docs/api-camera.md) | global pixel offset, world-clamp helpers |
@@ -228,6 +239,7 @@ important pages:
 | [API: Browser Support](docs/api-browser-support.md) | WebGPU matrix, wake lock, orientation, build toolchain |
 | [Input Guide](docs/guide-input.md) | pointer, keyboard, gamepad, scroll capture |
 | [Hot Reload Guide](docs/guide-hot-reload.md) | blit386/vite plugin, hot-swap, asset hot-replace |
+| [Splash Guide](docs/guide-splash.md) | the BLIT386 splash, gating, loading-screen hold, palette handoff |
 | [Palette Guide](docs/guide-palette.md) | the palette-first workflow, offsets, and effects |
 | [Audio Guide](docs/guide-audio.md) | loading, playing, and designing sound |
 | [Bitmap Fonts](docs/guide-bitmap-fonts.md) | .btfont format, BMFont conversion |

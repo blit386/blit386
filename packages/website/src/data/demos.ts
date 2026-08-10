@@ -29,13 +29,6 @@ export const flagshipDemos: readonly DemoEntry[] = [
         href: 'https://demos.blit386.dev/basics',
     },
     {
-        title: 'Pixel Art',
-        description:
-            'Draw sprites and shapes through a shared 256-entry indexed palette for pixel-perfect 2D rendering.',
-        thumbnail: '/demos/thumb-pixel-art.webp',
-        href: 'https://demos.blit386.dev/pixel-art',
-    },
-    {
         title: 'Patterns',
         description: 'Animated mathematical art from primitives alone: spirals, Lissajous curves, waves, and a tunnel.',
         thumbnail: '/demos/thumb-patterns.webp',
@@ -68,22 +61,10 @@ export const flagshipDemos: readonly DemoEntry[] = [
         href: 'https://demos.blit386.dev/palette-cycling',
     },
     {
-        title: 'CRT Pip-Boy',
-        description: 'Full-screen CRT scanline and phosphor post-process pass running on the WebGPU backend.',
-        thumbnail: '/demos/thumb-crt-pipboy.webp',
-        href: 'https://demos.blit386.dev/crt-pipboy',
-    },
-    {
         title: 'Snake Game',
         description: 'A complete playable game: input handling, game-state loop, collision, and score rendering.',
         thumbnail: '/demos/thumb-snake-game.webp',
         href: 'https://demos.blit386.dev/snake-game',
-    },
-    {
-        title: 'Basics Enhanced',
-        description: 'Primitives, text, and sprites side-by-side – a quick tour of the core drawing API.',
-        thumbnail: '/demos/thumb-basics-enhanced.webp',
-        href: 'https://demos.blit386.dev/basics-enhanced',
     },
     {
         title: 'Hypercube',

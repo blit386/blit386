@@ -10,12 +10,6 @@ export type CommunityDestination = {
 
 export const communityDestinations: CommunityDestination[] = [
     {
-        label: 'GitHub Discussions',
-        platform: 'github',
-        url: 'https://github.com/blit386/blit386/discussions',
-        external: true,
-    },
-    {
         label: 'Discord',
         platform: 'discord',
         url: 'https://discord.gg/tC2wGt88Uj',
@@ -43,6 +37,12 @@ export const communityDestinations: CommunityDestination[] = [
         label: 'GitHub Releases',
         platform: 'github',
         url: 'https://github.com/blit386/blit386/releases',
+        external: true,
+    },
+    {
+        label: 'GitHub Discussions',
+        platform: 'github',
+        url: 'https://github.com/blit386/blit386/discussions',
         external: true,
     },
     {

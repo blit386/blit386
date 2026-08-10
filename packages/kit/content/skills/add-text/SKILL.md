@@ -45,6 +45,24 @@ render() {
 }
 ```
 
+## Missing characters (engine 1.5.0+)
+
+The built-in font covers plain ASCII plus dashes, arrows, media icons, uppercase Greek, and a few symbols. Any character
+it does not have draws as a fallback glyph, so you see a marker instead of the character quietly disappearing.
+
+A custom `.btfont` only gets that safety net if it defines its own glyph keyed by `U+FFFD` (the Unicode replacement
+character). Without one, a missing character is skipped and the pen does not move – so the next character draws on top
+of the one before it, and the whole line looks scrambled rather than merely incomplete.
+
+```js
+if (!this.font.hasGlyph('é')) {
+  // This character has no glyph of its own in the font.
+}
+```
+
+`hasGlyph()` answers whether a character has its _own_ glyph, not whether the fallback would cover it. That is
+deliberate – use it to check what a font really contains.
+
 ## Key calls
 
 - `BT.systemPrint(pos, slot, text)` (method) – built-in 6x14 font.
@@ -52,6 +70,7 @@ render() {
 - `BitmapFont.load(url)` (static, async) – load a `.btfont` file.
 - `BT.printFont(font, pos, text, paletteOffset?)` (method) – draw with a loaded font; `paletteOffset` shifts the glyph
   colors.
+- `font.hasGlyph(char)` (method) – true when the font has its own glyph for that character.
 
 ## Notes
 
