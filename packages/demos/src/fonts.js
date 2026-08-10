@@ -48,8 +48,9 @@ const C_GRAY_TEXT = 7; // Light gray: secondary info lines
 const C_RAINBOW_BASE = 20; // first rainbow character; next slots follow contiguously
 
 // We define the rainbow text string here so both update() and render() use the exact same letters.
-// If you change this string, the rainbow slots and the pulse slot below stay contiguous.
-const RAINBOW_TEXT = `Rainbow Animation (#${C_RAINBOW_BASE} to #${C_RAINBOW_BASE + 28})`;
+// If you change this string, keep the printed end slot equal to C_RAINBOW_BASE + RAINBOW_TEXT.length
+// - 1 (the last rainbow slot) so the label stays honest about the range it names.
+const RAINBOW_TEXT = `Rainbow Animation (#${C_RAINBOW_BASE} to #${C_RAINBOW_BASE + 29})`;
 
 // Dynamic slot: pulsing text changes alpha every frame (fades in and out in a smooth wave).
 // Always sits immediately after the last rainbow character slot.

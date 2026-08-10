@@ -11,7 +11,7 @@
  * players that bilinear-scale everything, then hand off to encode-video.mjs for the same
  * AV1/H.264/poster renditions the blog uses.
  *
- * Usage: pnpm run capture:demo – <slug> --duration <seconds> --out <dir> [options]
+ * Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
  *
  * Note: --base-url must point at a host serving flattened, extensionless demo URLs
  * (production, the next channel, or `vite preview`) – the `pnpm run dev` server routes
@@ -330,7 +330,7 @@ export function sliceRanges(totalLength, chunkSize) {
 
 // #region Runner
 
-const USAGE = `Usage: pnpm run capture:demo –- <slug> --duration <seconds> --out <dir> [options]
+const USAGE = `Usage: pnpm run capture:demo -- <slug> --duration <seconds> --out <dir> [options]
 
   <slug>                 Demo slug, e.g. palette-cycling (must be in DEMO_ORDER)
   --duration <seconds>   Clip length (required)

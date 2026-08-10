@@ -92,7 +92,8 @@ const COLOR_BASE = 12;
 const UI_BG = 240; // 'ui_bg' – deep navy screen background.
 const UI_TEXT = 244; // 'ui_text' – off-white primary text.
 const UI_DIM = 245; // 'ui_text_dim' – secondary gray text.
-const UI_GAP = 15; // 'ui_gap' – gray gap between UI elements.
+const UI_GAP = 252; // gray gap between UI elements; a static slot outside both the sprite
+// theme range (12-89) and the applyTheme() range (240-251), set directly in init().
 const UI_HEADER = 246; // 'ui_header' – warm amber (render bars, chart warnings).
 const UI_ACCENT = 247; // 'ui_accent' – phosphor green (update bars).
 const UI_WARM = 248; // 'ui_accent_warm' – orange (chart error frames).
@@ -342,6 +343,9 @@ class Demo {
         // with the 6-color test sprite), and returns a map of friendly names to those
         // slots (this.theme.bg, .panel, ...). All captions and legends draw with these.
         this.theme = applyTheme(this.palette);
+
+        // The overlay gap color lives outside the theme's own range, so we set it directly.
+        this.palette.set(UI_GAP, new Color32(60, 60, 70));
 
         // Extract sprite colors
         // Ask the engine to scan the PNG and add every unique color it finds into our palette,

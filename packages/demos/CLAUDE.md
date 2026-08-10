@@ -46,8 +46,8 @@ from `DEMO_ORDER` in `plugins/demo-order.js`.
 4. Run `pnpm run check:demo-registry` so disk, order, vintage, and nav-hidden sets stay consistent.
 5. Add the demo to the `## Demos` list in `README.md` under the right category, using the hosted URL.
 
-The page title defaults to `BLIT386 Demo – Title Cased Topic` (plain hyphen; only the sidebar `navLabel` uses an en
-dash). Override with a `// @pageTitle Custom Title` comment in the file header.
+The page title defaults to `BLIT386 Demo – Title Cased Topic` (en dash; the sidebar `navLabel` also uses an en dash).
+Override with a `// @pageTitle Custom Title` comment in the file header.
 
 Three header tags are parsed out of the first `HEADER_SCAN_BYTES` (2000) of each demo file by
 `plugins/demo-registry.js`:

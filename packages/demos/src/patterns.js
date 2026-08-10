@@ -267,12 +267,12 @@ class Demo {
         // Fill the whole screen with the background color (very dark blue-black).
         BT.clear(C_BG);
 
-        // Top row: three patterns centered at y=50.
+        // Top row: three patterns centered at y=80.
         this.drawSpiral(new Vector2i(60, 80));
         this.drawRadialLines(new Vector2i(160, 80));
         this.drawWavePattern(new Vector2i(260, 80));
 
-        // Bottom row: three more patterns centered at y=130.
+        // Bottom row: three more patterns centered at y=150.
         this.drawCircleApproximation(new Vector2i(60, 150));
         this.drawLissajous(new Vector2i(160, 150));
         this.drawTunnel(new Vector2i(260, 150));

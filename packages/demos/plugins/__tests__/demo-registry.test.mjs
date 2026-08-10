@@ -112,7 +112,7 @@ describe('deriveShortTitle', () => {
     });
 
     it('strips a BLIT386 Demo prefix written with an ASCII hyphen', () => {
-        const header = '// @pageTitle BLIT386 Demo – PipBoy CRT\n';
+        const header = '// @pageTitle BLIT386 Demo - PipBoy CRT\n';
         assert.equal(deriveShortTitle('crt-pipboy', header), 'PipBoy CRT');
     });
 

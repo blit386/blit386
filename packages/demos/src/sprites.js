@@ -337,7 +337,7 @@ class Demo {
 
             const colorCount = this.colorCount;
 
-            // Build theme blocks: Fire, Ice, and Void updated in update().
+            // Build theme blocks: Fire, Ice, and Void are static once written here.
             for (let i = 0; i < colorCount; i++) {
                 const base = this.baseColors[i];
 
@@ -419,7 +419,7 @@ class Demo {
 
     /**
      * The "how you would load a real PNG" cheat sheet, as a bordered kit panel anchored
-     * to the bottom-right corner of the screen.
+     * to the bottom-left corner of the screen.
      */
     renderCodeSnippet() {
         ui.begin('bottomLeft', { y: 178 });
