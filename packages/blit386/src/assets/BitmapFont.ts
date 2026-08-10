@@ -778,7 +778,7 @@ export class BitmapFont {
         } else if (Number.isInteger(charCode) && charCode <= MAX_UNICODE_CODE_POINT) {
             glyph = this.glyphs.get(String.fromCodePoint(charCode)) ?? this.fallbackGlyph;
         } else {
-            // Not a valid code point (non-integer, NaN, or beyond U+10FFFF) -- String.fromCodePoint
+            // Not a valid code point (non-integer, NaN, or beyond U+10FFFF) – String.fromCodePoint
             // would throw; there is no glyph to look up, so go straight to the fallback.
             glyph = this.fallbackGlyph;
         }
@@ -877,12 +877,14 @@ export class BitmapFont {
     }
 
     /**
-     * Checks whether the font contains a glyph for a character.
+     * Checks whether the character has an explicitly defined glyph of its own.
      *
-     * Uses the same ASCII fast path as `getGlyph()` for single-byte characters.
+     * Does not account for the font's fallback glyph (see {@link FALLBACK_GLYPH_CHAR}): a
+     * character can still render, as the fallback, even when this returns `false`. Uses the same
+     * ASCII fast path as `getGlyph()` for single-byte characters.
      *
      * @param char – Character to check.
-     * @returns `true` if the font can render the character.
+     * @returns `true` if the character has its own glyph entry, independent of fallback coverage.
      */
     hasGlyph(char: string): boolean {
         let found: boolean;
