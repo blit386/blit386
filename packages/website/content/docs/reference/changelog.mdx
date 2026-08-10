@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Changelog"
 description: "Release history in Keep a Changelog style: what shipped, what broke, and when."
-lastModified: "2026-08-08T13:36:09+02:00"
+lastModified: "2026-08-10T19:32:05+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/changelog.md"
 ---
 
@@ -61,6 +61,29 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   skips, and that press is swallowed. New getters `BT.splashState` and `BT.isSplashVisible`, plus `splashColorDark` /
   `splashColorLight` for the ramp endpoints. The pixelated dissolve is WebGPU-only; the software backend gets the plain
   fade. See [the splash guide](/docs/guides/splash) and [Core](/docs/api/core#splash-state).
+- `BitmapFont` fallback-glyph support: a `.btfont` file (or the built-in system font) can include a glyph keyed by
+  `U+FFFD` (the Unicode replacement character), and it is substituted for any character missing its own glyph instead of
+  the character silently vanishing. See [Bitmap Fonts guide](/docs/guides/bitmap-fonts#fallback-glyph).
+- The built-in system font (`BT.systemPrint`) gained 79 extra glyphs beyond plain ASCII: the `U+FFFD` fallback glyph
+  above, an en dash and em dash, inverted Spanish punctuation (`¿`, `¡`), media/UI icons (play, stop, pause, record,
+  enter, checkmark, bullets and circles, a heart), the four cardinal and four diagonal arrows, uppercase Greek letters,
+  three music notes, a few symbols (`×`, `…`, `°`), and 14 reserved Private Use Area placeholders held open for future
+  glyphs. See `scripts/system-font-extra-chars.mjs` in the engine source for the full list and each glyph's atlas
+  position.
+
+### Changed
+
+- `BitmapFont.getGlyph()` / `getGlyphByCode()` (and `measureText()`, which now shares their lookup) substitute the
+  font's fallback glyph for a missing character instead of returning `null` and silently skipping it, when the font
+  defines one. `hasGlyph()` is unchanged – it still reports true glyph presence, not fallback coverage.
+
+### Fixed
+
+- The engine overlay's top-left title label (`BT.systemPrint`-rendered, top bar) no longer corrupts demo titles built
+  with an en dash (`"BLIT386 Demo – Hypercube"`, this project's current title format). The label-shortening regex only
+  matched the legacy ASCII-hyphen numbered format, so every current title fell through without shortening into the
+  system font, which lacked a glyph for the en dash – the character vanished and the following characters overdrew the
+  ones before them.
 
 ## 1.4.0 – 2026-07-23
 
