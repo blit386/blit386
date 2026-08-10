@@ -403,6 +403,12 @@ export function buildOgFfmpegArgs(input, output, target) {
  * screenshot comes back at the CSS-fit size instead, and the result is a silently resampled,
  * wrong-sized card.
  *
+ * `body` also gets a defensive reset: an element screenshot captures the page at its current zoom,
+ * not at zoom 1, so a stray page-level `zoom` – a browser setting, an extension, or a future
+ * layout.css regression (BT-468 traced one such accidental rule) – would otherwise turn a 320x320
+ * canvas into a resampled, wrong-sized PNG, and that resampling is what corrupts glyphs and gaps
+ * wireframe lines on the finished card.
+ *
  * @param {string} canvasId Canvas element id.
  * @returns {string} JavaScript source. Evaluates to `{ width, height }`.
  */
@@ -411,6 +417,8 @@ export function buildCanvasPrepScript(canvasId) {
 (async () => {
     const canvas = document.getElementById('${canvasId}');
     if (!canvas) throw new Error('Canvas #${canvasId} not found.');
+
+    document.body.style.setProperty('zoom', '1', 'important');
 
     const overrides = [
         ['max-width', 'none'],

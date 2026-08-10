@@ -259,6 +259,12 @@ describe('buildCanvasPrepScript', () => {
         assert.match(script, /max-width/);
         assert.match(script, /max-height/);
         assert.ok(script.includes(CANVAS_ID));
+
+        // Regression guard for BT-468: an element screenshot captures the page's zoomed (rendered)
+        // box, and layout.css once accidentally shipped a `body { zoom: 0.943 }` rule that turned
+        // a 320x320 canvas into a resampled ~301x301 PNG. This defensive reset protects the capture
+        // even though that rule is gone, against a browser zoom setting or a future regression.
+        assert.match(script, /body\.style\.setProperty\('zoom', '1'/);
     });
 });
 
