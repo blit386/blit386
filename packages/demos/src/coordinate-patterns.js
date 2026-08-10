@@ -47,30 +47,33 @@ import { bootstrap, BT, Color32, hash1i, hash2i, hash3i, Rect2i, Vector2i } from
 import { applyTheme, ui } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
+/** @typedef {import('blit386').HardwareSettings} HardwareSettings */
 /** @typedef {import('blit386').Palette} Palette */
 
-// This demo runs at the engine's default screen size of 320x240 "game pixels".
-const DISPLAY_W = 320;
+// This demo runs at a doubled screen size of 640x480 "game pixels" (the engine default is
+// 320x240), so every layout constant below is twice the size it would be at the default.
+const DISPLAY_W = 640;
+const DISPLAY_H = 480;
 
 // The seed for this whole world. Change this one number and every tile everywhere becomes
 // something else.
 const WORLD_SEED = 20260730;
 
 // The 1D strip along the top: one bar per screen column.
-const STRIP_Y = 14;
-const STRIP_H = 22;
+const STRIP_Y = 28;
+const STRIP_H = 44;
 
 // The tile grid below it.
-const TILE = 16;
-const GRID_Y = 44;
-const GRID_H = 94;
+const TILE = 32;
+const GRID_Y = 90;
+const GRID_H = 400;
 
 // How fast holding a direction scrolls, in pixels per update tick.
-const SCROLL_SPEED = 3;
+const SCROLL_SPEED = 6;
 
 // A swipe throws you this many pixels, and "Jump far" this many.
-const SWIPE_DISTANCE = 160;
-const JUMP_DISTANCE = 64000;
+const SWIPE_DISTANCE = 320;
+const JUMP_DISTANCE = 128000;
 
 // How many layers the slider can reach.
 const LAYER_MAX = 8;
@@ -144,6 +147,20 @@ class Demo {
 
     // Which layer the third hash coordinate is reading.
     layer = 0;
+
+    /**
+     * Runs the demo at 640x480. Arrow keys normally scroll the page, but this demo maps
+     * them to scroll the world instead, so opt in so the browser does not scroll the demo
+     * page while you play.
+     *
+     * @returns {Partial<HardwareSettings>}
+     */
+    configure() {
+        return {
+            displaySize: new Vector2i(DISPLAY_W, DISPLAY_H),
+            isCapturingKeyboardScroll: true,
+        };
+    }
 
     /**
      * Builds the palette. There is no world to build – that is the whole idea.
@@ -222,8 +239,8 @@ class Demo {
         this.renderStrip();
         this.renderGrid();
 
-        ui.caption(4, 4, 'hash1i: one number in', { color: 'dim' });
-        ui.caption(4, 34, 'hash2i and hash3i: a whole world', { color: 'dim' });
+        ui.caption(8, 8, 'hash1i: one number in', { color: 'dim' });
+        ui.caption(8, STRIP_Y + STRIP_H + 8, 'hash2i and hash3i: a whole world', { color: 'dim' });
 
         this.renderControlPanel();
         this.renderReadoutPanel();
@@ -302,10 +319,10 @@ class Demo {
                 //
                 // A dot is too small to be worth trimming, so one that would poke outside the
                 // window is simply left out.
-                const dotY = tileTop + 6;
+                const dotY = tileTop + 12;
 
-                if (dotY >= GRID_Y && dotY + 3 <= gridBottom && hash3i(tx, ty, this.layer, WORLD_SEED) % 100 < 20) {
-                    BT.drawRectFill(new Rect2i(screenX + 6, dotY, 3, 3), C_ROCK_DOT);
+                if (dotY >= GRID_Y && dotY + 6 <= gridBottom && hash3i(tx, ty, this.layer, WORLD_SEED) % 100 < 20) {
+                    BT.drawRectFill(new Rect2i(screenX + 12, dotY, 6, 6), C_ROCK_DOT);
                 }
             }
         }
