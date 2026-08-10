@@ -6,7 +6,7 @@
  * Reads the bit-pattern data from systemFontData.ts and writes a PNG atlas to
  * assets/system-font.png. Each set bit becomes a white pixel; each clear bit
  * becomes a black pixel. The layout is 16 columns of 6x14 glyphs: the ASCII
- * block (32-126) followed by SYSTEM_FONT_EXTRA_CHARS (see
+ * block (32–126) followed by SYSTEM_FONT_EXTRA_CHARS (see
  * system-font-extra-chars.mjs), row count sized to fit both.
  *
  * Usage:
@@ -34,7 +34,7 @@ const ATLAS_COLS = 16;
 const FIRST_CHAR = 32;
 const LAST_CHAR = 126;
 const ASCII_GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1; // 95
-// Contiguous ASCII block (32-126) followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order.
+// Contiguous ASCII block (32–126) followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order.
 const GLYPH_COUNT = ASCII_GLYPH_COUNT + SYSTEM_FONT_EXTRA_CHARS.length;
 const ATLAS_ROWS = Math.ceil(GLYPH_COUNT / ATLAS_COLS);
 const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH;
@@ -141,7 +141,7 @@ function main() {
 System Font PNG Exporter
 
 Exports the embedded system font bit patterns to a PNG atlas.
-Layout: 16 columns of 6x14 glyphs – ASCII 32-126, then the extra glyphs
+Layout: 16 columns of 6x14 glyphs – ASCII 32–126, then the extra glyphs
 listed in system-font-extra-chars.mjs (fallback, dashes, arrows, etc.).
 White pixels = foreground, black pixels = background.
 
@@ -165,7 +165,7 @@ Options:
     console.log(`Exported system font to: ${outputPath}`);
     console.log(`  Atlas size: ${ATLAS_WIDTH}x${ATLAS_HEIGHT} pixels`);
     console.log(
-        `  Glyphs: ${GLYPH_COUNT} (ASCII ${FIRST_CHAR}-${LAST_CHAR}, plus ${SYSTEM_FONT_EXTRA_CHARS.length} extra)`,
+        `  Glyphs: ${GLYPH_COUNT} (ASCII ${FIRST_CHAR}–${LAST_CHAR}, plus ${SYSTEM_FONT_EXTRA_CHARS.length} extra)`,
     );
     console.log(`  Layout: ${ATLAS_COLS} columns x ${ATLAS_ROWS} rows`);
     console.log(`  File size: ${pngData.length} bytes`);

@@ -441,7 +441,7 @@ for (let i = 0; i < text.length; i++) {
 - Check if the character is in the font's glyph map.
 - Use `font.hasGlyph('×')` to test.
 - A character missing its own glyph renders as the font's fallback glyph when one is defined (see
-  [Fallback glyph](#fallback-glyph) below); otherwise it is silently skipped and the pen position does not advance for
+  [Fallback glyph](#fallback-glyph) above); otherwise it is silently skipped and the pen position does not advance for
   it.
 
 </Accordion>

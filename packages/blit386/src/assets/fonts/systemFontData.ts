@@ -1,10 +1,10 @@
 /**
  * Built-in system font bitmap data.
  *
- * Covers printable ASCII characters 32-126 (95 glyphs), followed by
+ * Covers printable ASCII characters 32–126 (95 glyphs), followed by
  * 79 extra, non-contiguous glyphs (see SYSTEM_FONT_EXTRA_CHARS
  * below). Each glyph is 14 bytes, one byte per row (top to bottom). Bit 7 is
- * the leftmost pixel; only the top 6 bits (bits 7-2) are used for the 6-pixel
+ * the leftmost pixel; only the top 6 bits (bits 7–2) are used for the 6-pixel
  * glyph width. A set bit means palette index 1 (opaque foreground); a clear
  * bit means index 0 (transparent).
  *

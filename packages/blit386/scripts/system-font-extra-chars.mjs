@@ -1,5 +1,5 @@
 /**
- * Non-contiguous extra glyphs appended after the system font's ASCII block (32-126).
+ * Non-contiguous extra glyphs appended after the system font's ASCII block (32–126).
  *
  * Shared between `export-system-font.mjs` and `convert-system-font.mjs` so both scripts agree
  * on atlas layout. The generated `src/assets/fonts/systemFontData.ts` carries its own copy of

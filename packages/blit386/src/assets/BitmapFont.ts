@@ -102,6 +102,9 @@ export interface TextSize {
 /** Size of the direct lookup table used for ASCII glyphs (`0-127`). */
 const ASCII_CACHE_SIZE = 128;
 
+/** Highest valid Unicode code point (inclusive), the ceiling `String.fromCodePoint` accepts. */
+const MAX_UNICODE_CODE_POINT = 0x10ffff;
+
 /**
  * Glyph map key that, when present, is used as the fallback rendered in place of any character
  * missing its own glyph – the standard Unicode replacement character. Any `.btfont` file (or the
@@ -754,15 +757,17 @@ export class BitmapFont {
     }
 
     /**
-     * Returns glyph data by numeric character code.
+     * Returns glyph data by numeric Unicode code point.
      *
      * Uses the ASCII lookup table for codes below `128` and falls back to the Unicode glyph map
-     * for all other values, then to the font's fallback glyph (see {@link FALLBACK_GLYPH_CHAR})
-     * when neither has an entry for the code.
+     * for all other values, resolved via {@link String.fromCodePoint} so code points above
+     * `U+FFFF` (astral characters, outside the Basic Multilingual Plane) resolve correctly instead
+     * of being truncated. Falls back to the font's fallback glyph (see {@link FALLBACK_GLYPH_CHAR})
+     * when the code has no glyph of its own, or is not a valid Unicode code point at all.
      *
-     * @param charCode – Character code to look up.
-     * @returns Glyph metadata; the font's fallback glyph when no glyph exists for the code and a
-     *   fallback is defined; otherwise `null`.
+     * @param charCode – Unicode code point to look up.
+     * @returns Glyph metadata; the font's fallback glyph when no glyph exists for the code, or the
+     *   code point is invalid, and a fallback is defined; otherwise `null`.
      */
     getGlyphByCode(charCode: number): Glyph | null {
         let glyph: Glyph | null;
@@ -770,8 +775,12 @@ export class BitmapFont {
         if (charCode < ASCII_CACHE_SIZE) {
             // eslint-disable-next-line security/detect-object-injection -- Index is bounds-checked above
             glyph = this.asciiGlyphs[charCode] ?? this.fallbackGlyph;
+        } else if (Number.isInteger(charCode) && charCode <= MAX_UNICODE_CODE_POINT) {
+            glyph = this.glyphs.get(String.fromCodePoint(charCode)) ?? this.fallbackGlyph;
         } else {
-            glyph = this.glyphs.get(String.fromCharCode(charCode)) ?? this.fallbackGlyph;
+            // Not a valid code point (non-integer, NaN, or beyond U+10FFFF) -- String.fromCodePoint
+            // would throw; there is no glyph to look up, so go straight to the fallback.
+            glyph = this.fallbackGlyph;
         }
 
         return glyph;
@@ -789,8 +798,10 @@ export class BitmapFont {
     /**
      * Measures the horizontal pixel width of a text string.
      *
-     * Results are cached for repeated measurements. Glyph resolution (including the ASCII fast
-     * path and fallback-glyph substitution) goes through {@link getGlyphByCode}, so a measured
+     * Results are cached for repeated measurements. Iterates by Unicode code point (`for...of`),
+     * not by UTF-16 code unit, so an astral character (a surrogate pair) is measured as the single
+     * glyph it is instead of two lone-surrogate lookups. Glyph resolution (including the ASCII
+     * fast path and fallback-glyph substitution) goes through {@link getGlyph}, so a measured
      * width always matches what actually renders.
      *
      * @param text – String to measure.
@@ -801,10 +812,8 @@ export class BitmapFont {
         let width = cached ?? 0;
 
         if (cached === undefined) {
-            const len = text.length;
-
-            for (let i = 0; i < len; i++) {
-                const glyph = this.getGlyphByCode(text.charCodeAt(i));
+            for (const char of text) {
+                const glyph = this.getGlyph(char);
 
                 if (glyph) {
                     width += glyph.advance;

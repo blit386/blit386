@@ -5,7 +5,7 @@
  * palette-indexed texture atlas and wraps the result in a {@link BitmapFont}.
  * The font is fully synchronous to create – no `fetch()`, no image decode.
  *
- * Covers the printable ASCII block (32-126) plus a set of extra glyphs listed in
+ * Covers the printable ASCII block (32–126) plus a set of extra glyphs listed in
  * `scripts/system-font-extra-chars.mjs` (a `U+FFFD` fallback glyph, dashes, media/UI icons,
  * uppercase Greek, arrows, and a few others) – see that file for the full list and each glyph's
  * atlas position.
@@ -109,7 +109,7 @@ function buildAtlasPixels(): Uint8Array<ArrayBuffer> {
 
 /**
  * Returns the Unicode code point rendered by the glyph at atlas index `i`: the contiguous ASCII
- * block (32-126) first, then {@link SYSTEM_FONT_EXTRA_CHARS} in atlas order.
+ * block (32–126) first, then {@link SYSTEM_FONT_EXTRA_CHARS} in atlas order.
  *
  * @param i – Glyph index into {@link SYSTEM_FONT_BITMAPS} / the atlas.
  * @returns Unicode code point for that glyph.

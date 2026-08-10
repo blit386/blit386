@@ -722,7 +722,7 @@ describe('BitmapFont', () => {
             ]);
             const font = buildFont(glyphs);
 
-            // A(8) + fallback(6) + A(8) = 22 -- the cursor advances for the missing glyph too,
+            // A(8) + fallback(6) + A(8) = 22 – the cursor advances for the missing glyph too,
             // instead of collapsing to 0 and letting the next glyph overdraw the previous one.
             expect(font.measureText('A–A')).toBe(22);
         });
@@ -736,6 +736,58 @@ describe('BitmapFont', () => {
 
             expect(font.hasGlyph('A')).toBe(true);
             expect(font.hasGlyph('–')).toBe(false);
+        });
+
+        describe('astral code points (beyond U+FFFF)', () => {
+            // U+1F600 GRINNING FACE – a real astral character, encoded as a UTF-16 surrogate
+            // pair, to exercise the boundary String.fromCharCode gets wrong.
+            const ASTRAL_CHAR = '😀';
+            const ASTRAL_CODE_POINT = 0x1f600;
+
+            it('resolves an explicit astral glyph by code point, not a truncated/wrong character', () => {
+                const glyphs = new Map([[ASTRAL_CHAR, buildGlyph(0, 8)]]);
+                const font = buildFont(glyphs);
+
+                expect(font.getGlyphByCode(ASTRAL_CODE_POINT)).toBe(glyphs.get(ASTRAL_CHAR));
+                expect(font.getGlyph(ASTRAL_CHAR)).toBe(glyphs.get(ASTRAL_CHAR));
+            });
+
+            it('falls back to the U+FFFD glyph for an unmapped astral code point, via both lookups', () => {
+                const glyphs = new Map([
+                    ['A', buildGlyph(0, 8)],
+                    ['�', buildGlyph(8, 6)],
+                ]);
+                const font = buildFont(glyphs);
+
+                expect(font.getGlyphByCode(ASTRAL_CODE_POINT)).toBe(glyphs.get('�'));
+                expect(font.getGlyph(ASTRAL_CHAR)).toBe(glyphs.get('�'));
+            });
+
+            it('measures an astral character as one glyph, not two lone-surrogate lookups', () => {
+                const glyphs = new Map([[ASTRAL_CHAR, buildGlyph(0, 8)]]);
+                const font = buildFont(glyphs);
+
+                // If the surrogate pair were measured as two code units, this would double-count
+                // (or, with no fallback defined, silently drop both halves instead).
+                expect(font.measureText(ASTRAL_CHAR)).toBe(8);
+            });
+
+            it('returns the fallback glyph, not a thrown error, for a code point past U+10FFFF', () => {
+                const glyphs = new Map([['�', buildGlyph(8, 6)]]);
+                const font = buildFont(glyphs);
+
+                expect(() => font.getGlyphByCode(0x110000)).not.toThrow();
+                expect(font.getGlyphByCode(0x110000)).toBe(glyphs.get('�'));
+            });
+
+            it('returns the fallback glyph, not a thrown error, for a non-integer code', () => {
+                const glyphs = new Map([['�', buildGlyph(8, 6)]]);
+                const font = buildFont(glyphs);
+
+                expect(() => font.getGlyphByCode(NaN)).not.toThrow();
+                expect(font.getGlyphByCode(NaN)).toBe(glyphs.get('�'));
+                expect(font.getGlyphByCode(1000.5)).toBe(glyphs.get('�'));
+            });
         });
     });
 

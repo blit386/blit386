@@ -70,7 +70,7 @@ describe('createSystemFont', () => {
 
     it('has glyphs for the en dash and the four cardinal arrows – the characters this pass exists for', () => {
         // U+2013 en dash: was rendering as a corrupting zero-width gap through the overlay's
-        // top-left label before this font gained a glyph for it. U+2190-2193: 4-way arrows.
+        // top-left label before this font gained a glyph for it. U+2190–2193: 4-way arrows.
         const font = createSystemFont();
 
         expect(font.hasGlyph('–')).toBe(true);
@@ -132,7 +132,7 @@ describe('system font glyph access', () => {
     });
 
     it('reports hasGlyph as false for a character with no glyph of its own, even with a fallback defined', () => {
-        // hasGlyph checks true presence, not fallback coverage -- see BitmapFont's fallback-glyph
+        // hasGlyph checks true presence, not fallback coverage – see BitmapFont's fallback-glyph
         // mechanism. Hiragana "a" is nowhere near this font's coverage.
         const font = createSystemFont();
 
