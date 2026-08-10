@@ -1021,7 +1021,12 @@
     "BitmapFont": {
       "kind": "class",
       "since": "0.1.0",
-      "changes": [],
+      "changes": [
+        {
+          "version": "1.5.0",
+          "note": "`getGlyph` / `getGlyphByCode` (and `measureText`, which now shares their\nlookup) substitute a font-defined fallback glyph for a missing character instead of\nreturning `null`, when the font's glyph map has an entry keyed by `U+FFFD`."
+        }
+      ],
       "deprecated": null,
       "status": "stable"
     },
@@ -1714,6 +1719,7 @@
       "green"
     ],
     "guides/bitmap-fonts": [
+      "BitmapFont",
       "TextSize"
     ],
     "guides/input": [

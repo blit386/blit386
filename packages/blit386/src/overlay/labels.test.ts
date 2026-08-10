@@ -33,6 +33,11 @@ describe('resolveOverlayTopLeftLabel', () => {
         expect(resolveOverlayTopLeftLabel('BLIT386 Demo 002 - Primitives')).toBe('Primitives Demo');
     });
 
+    it('formats current number-free, en dash titles (the actual demo-registry.js output)', () => {
+        expect(resolveOverlayTopLeftLabel('BLIT386 Demo – Hypercube')).toBe('Hypercube Demo');
+        expect(resolveOverlayTopLeftLabel('BLIT386 Demo – PipBoy CRT')).toBe('PipBoy CRT Demo');
+    });
+
     it('falls back when title is empty', () => {
         expect(resolveOverlayTopLeftLabel('')).toBe('Demo');
         expect(resolveOverlayTopLeftLabel(undefined)).toBe('Demo');

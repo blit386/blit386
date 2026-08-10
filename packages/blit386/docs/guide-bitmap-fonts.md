@@ -310,6 +310,8 @@ Point it at the PNG filename, or embed it as base64.
 
 ### BitmapFont
 
+<Since symbol="BitmapFont" />
+
 <Since symbol="TextSize" />
 
 ```ts twoslash
@@ -338,6 +340,19 @@ declare class BitmapFont {
 ```
 
 Exported type `TextSize` is `{ width: number; height: number }`.
+
+### Fallback glyph
+
+Include a glyph keyed by `U+FFFD` (the Unicode replacement character) in a `.btfont` file's `glyphs` map, and
+`getGlyph()` / `getGlyphByCode()` (and `measureText()`, which shares their lookup) substitute it for any character
+missing its own entry, instead of silently skipping the character. A skipped character does not advance the pen position
+either, so a missing glyph without a fallback can make the character after it overdraw the one before it – a defined
+fallback keeps both the glyph and the spacing correct. `hasGlyph()` is unaffected: it still reports whether a character
+has its own glyph, not whether the fallback would cover it.
+
+A font with no `U+FFFD` entry keeps the previous behavior exactly. The built-in system font (`BT.systemPrint`) defines
+one, alongside a set of extra glyphs beyond plain ASCII – see `scripts/system-font-extra-chars.mjs` in the engine source
+for the full list (dashes, arrows, media icons, and more).
 
 ### BT.printFont()
 
@@ -425,7 +440,9 @@ for (let i = 0; i < text.length; i++) {
 
 - Check if the character is in the font's glyph map.
 - Use `font.hasGlyph('×')` to test.
-- Characters not in the font are silently skipped.
+- A character missing its own glyph renders as the font's fallback glyph when one is defined (see
+  [Fallback glyph](#fallback-glyph) below); otherwise it is silently skipped and the pen position does not advance for
+  it.
 
 </Accordion>
 

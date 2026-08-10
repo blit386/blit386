@@ -4,8 +4,18 @@ import { Vector2i } from '../utils/Vector2i';
 import { OVERLAY_DIVIDER_GAP_PX, SYSTEM_CHAR_ADVANCE } from './constants';
 import type { OverlayDrawTarget } from './OverlayDrawTarget';
 
-/** Matches demo registry titles: "BLIT386 Demo 006 – Patterns". */
-const REGISTRY_TITLE_PATTERN = /^BLIT386 Demo\s+.+?\s+-\s+(.+)$/;
+/**
+ * Matches demo registry titles, both the legacy numbered form (`BLIT386 Demo 006 - Patterns`)
+ * and the current number-free form (`BLIT386 Demo – Hypercube`). Accepts an ASCII hyphen or an
+ * en dash as the separator, and a fixed-shape optional numbering segment (three digits, or the
+ * legacy `00a` marker) rather than arbitrary text – this mirrors the already-bounded
+ * `PAGE_TITLE_PREFIX_PATTERN` in demos' `plugins/demo-registry.js`.
+ */
+// The nested (?:...)? group is fixed-width ([0-9]{3} or the literal 00a), so there is no
+// unbounded/ambiguous repetition to backtrack over; the static analyzer flags the group shape
+// itself, not an actual exponential-blowup pattern.
+// eslint-disable-next-line security/detect-unsafe-regex -- see comment above
+const REGISTRY_TITLE_PATTERN = /^BLIT386 Demo (?:(?:[0-9]{3}|00a) )?[-–]\s*(.+)$/;
 
 /** Trailing tracking column inside each 6 px glyph cell (glyphs ink 5 of the 6 px advance). */
 const GLYPH_TRACKING_PX = 1;

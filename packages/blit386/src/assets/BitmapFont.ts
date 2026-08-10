@@ -103,6 +103,24 @@ export interface TextSize {
 const ASCII_CACHE_SIZE = 128;
 
 /**
+ * Glyph map key that, when present, is used as the fallback rendered in place of any character
+ * missing its own glyph – the standard Unicode replacement character. Any `.btfont` file (or the
+ * embedded system font) can opt in by including an entry keyed by this character; fonts without
+ * one keep the previous behavior of silently skipping the character.
+ */
+const FALLBACK_GLYPH_CHAR = '\uFFFD';
+
+/**
+ * Resolves a font's fallback glyph from its glyph map.
+ *
+ * @param glyphs – Font's Unicode glyph map.
+ * @returns The {@link FALLBACK_GLYPH_CHAR} glyph, or `null` when the font defines none.
+ */
+function resolveFallbackGlyph(glyphs: ReadonlyMap<string, Glyph>): Glyph | null {
+    return glyphs.get(FALLBACK_GLYPH_CHAR) ?? null;
+}
+
+/**
  * Returns whether a value is a non-null plain object (not an array).
  * Used to validate `FileData.glyphs` and individual glyph entries before reading their fields.
  *
@@ -192,6 +210,9 @@ export function getHotReloadFonts(url: string): ReadonlySet<BitmapFont> | undefi
  * - providing the underlying {@link SpriteSheet} used for rendering glyph quads
  *
  * @since 0.1.0
+ * @changed 1.5.0 `getGlyph` / `getGlyphByCode` (and `measureText`, which now shares their
+ *   lookup) substitute a font-defined fallback glyph for a missing character instead of
+ *   returning `null`, when the font's glyph map has an entry keyed by `U+FFFD`.
  */
 export class BitmapFont {
     /** Font display name. */
@@ -211,6 +232,13 @@ export class BitmapFont {
 
     /** Map of character strings to glyph metadata (for Unicode characters). */
     private glyphs: Map<string, Glyph> = new Map();
+
+    /**
+     * Glyph substituted for any character missing its own entry, or `null` when this font
+     * defines no {@link FALLBACK_GLYPH_CHAR} entry. Derived from {@link glyphs}; recomputed
+     * whenever it is rebuilt (construction, {@link hotReload}).
+     */
+    private fallbackGlyph: Glyph | null = null;
 
     /** Direct array lookup for ASCII characters (codes 0-127) for fast access. */
     private readonly asciiGlyphs: (Glyph | null)[] = new Array<Glyph | null>(ASCII_CACHE_SIZE).fill(null);
@@ -241,6 +269,7 @@ export class BitmapFont {
     ) {
         this.spriteSheet = spriteSheet;
         this.glyphs = glyphs;
+        this.fallbackGlyph = resolveFallbackGlyph(glyphs);
         this.asciiGlyphs = asciiGlyphs;
         this.name = name;
         this.size = size;
@@ -696,11 +725,13 @@ export class BitmapFont {
     /**
      * Returns glyph data for a character.
      *
-     * Uses the ASCII lookup table for single-byte characters and falls back to
-     * the Unicode glyph map for everything else.
+     * Uses the ASCII lookup table for single-byte characters and falls back to the Unicode glyph
+     * map for everything else, then to the font's fallback glyph (see {@link FALLBACK_GLYPH_CHAR})
+     * when neither has an entry for the character.
      *
      * @param char – Single character to look up (supports Unicode).
-     * @returns Glyph metadata, or `null` when the font does not contain the character.
+     * @returns Glyph metadata; the font's fallback glyph when the character is missing and a
+     *   fallback is defined; otherwise `null`.
      */
     getGlyph(char: string): Glyph | null {
         let glyph: Glyph | null = null;
@@ -716,7 +747,7 @@ export class BitmapFont {
         }
 
         if (glyph === null) {
-            glyph = this.glyphs.get(char) ?? null;
+            glyph = this.glyphs.get(char) ?? this.fallbackGlyph;
         }
 
         return glyph;
@@ -725,20 +756,22 @@ export class BitmapFont {
     /**
      * Returns glyph data by numeric character code.
      *
-     * Uses the ASCII lookup table for codes below `128` and falls back to the
-     * Unicode glyph map for all other values.
+     * Uses the ASCII lookup table for codes below `128` and falls back to the Unicode glyph map
+     * for all other values, then to the font's fallback glyph (see {@link FALLBACK_GLYPH_CHAR})
+     * when neither has an entry for the code.
      *
      * @param charCode – Character code to look up.
-     * @returns Glyph metadata, or `null` when no glyph exists for the code.
+     * @returns Glyph metadata; the font's fallback glyph when no glyph exists for the code and a
+     *   fallback is defined; otherwise `null`.
      */
     getGlyphByCode(charCode: number): Glyph | null {
         let glyph: Glyph | null;
 
         if (charCode < ASCII_CACHE_SIZE) {
             // eslint-disable-next-line security/detect-object-injection -- Index is bounds-checked above
-            glyph = this.asciiGlyphs[charCode] ?? null;
+            glyph = this.asciiGlyphs[charCode] ?? this.fallbackGlyph;
         } else {
-            glyph = this.glyphs.get(String.fromCharCode(charCode)) ?? null;
+            glyph = this.glyphs.get(String.fromCharCode(charCode)) ?? this.fallbackGlyph;
         }
 
         return glyph;
@@ -756,8 +789,9 @@ export class BitmapFont {
     /**
      * Measures the horizontal pixel width of a text string.
      *
-     * Results are cached for repeated measurements and use an optimized ASCII
-     * fast path during width calculation.
+     * Results are cached for repeated measurements. Glyph resolution (including the ASCII fast
+     * path and fallback-glyph substitution) goes through {@link getGlyphByCode}, so a measured
+     * width always matches what actually renders.
      *
      * @param text – String to measure.
      * @returns Total width in pixels.
@@ -770,22 +804,7 @@ export class BitmapFont {
             const len = text.length;
 
             for (let i = 0; i < len; i++) {
-                const code = text.charCodeAt(i);
-                let glyph: Glyph | null = null;
-
-                // Fast path for ASCII characters.
-                if (code < ASCII_CACHE_SIZE) {
-                    // eslint-disable-next-line security/detect-object-injection -- Index is bounds-checked above
-                    glyph = this.asciiGlyphs[code] ?? null;
-                } else {
-                    // Unicode fallback – index is guaranteed valid within loop bounds.
-                    // eslint-disable-next-line security/detect-object-injection -- Index is within loop bounds
-                    const char = text[i];
-
-                    if (char !== undefined) {
-                        glyph = this.glyphs.get(char) ?? null;
-                    }
-                }
+                const glyph = this.getGlyphByCode(text.charCodeAt(i));
 
                 if (glyph) {
                     width += glyph.advance;
@@ -923,6 +942,7 @@ export class BitmapFont {
         );
 
         this.glyphs = glyphs;
+        this.fallbackGlyph = resolveFallbackGlyph(glyphs);
 
         for (let code = 0; code < this.asciiGlyphs.length; code++) {
             // eslint-disable-next-line security/detect-object-injection -- code is a bounded loop index

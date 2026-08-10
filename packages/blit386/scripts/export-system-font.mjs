@@ -3,10 +3,11 @@
 /**
  * System Font PNG Exporter
  *
- * Reads the bit-pattern data from systemFontData.ts and writes a 96x84 PNG
- * to assets/system-font.png. Each set bit becomes a white pixel; each clear
- * bit becomes a black pixel. The layout is 16 columns x 6 rows of 6x14 glyphs
- * covering ASCII 32-126.
+ * Reads the bit-pattern data from systemFontData.ts and writes a PNG atlas to
+ * assets/system-font.png. Each set bit becomes a white pixel; each clear bit
+ * becomes a black pixel. The layout is 16 columns of 6x14 glyphs: the ASCII
+ * block (32-126) followed by SYSTEM_FONT_EXTRA_CHARS (see
+ * system-font-extra-chars.mjs), row count sized to fit both.
  *
  * Usage:
  *   node scripts/export-system-font.mjs [output-path]
@@ -20,6 +21,8 @@ import { fileURLToPath } from 'node:url';
 
 import { PNG } from 'pngjs';
 
+import { SYSTEM_FONT_EXTRA_CHARS } from './system-font-extra-chars.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '..');
 const FONT_DATA_PATH = join(PROJECT_ROOT, 'src/assets/fonts/systemFontData.ts');
@@ -28,12 +31,14 @@ const DEFAULT_OUTPUT = join(PROJECT_ROOT, 'assets/system-font.png');
 const GLYPH_WIDTH = 6;
 const GLYPH_HEIGHT = 14;
 const ATLAS_COLS = 16;
-const ATLAS_ROWS = 6;
-const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH; // 96
-const ATLAS_HEIGHT = ATLAS_ROWS * GLYPH_HEIGHT; // 84
 const FIRST_CHAR = 32;
 const LAST_CHAR = 126;
-const GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1; // 95
+const ASCII_GLYPH_COUNT = LAST_CHAR - FIRST_CHAR + 1; // 95
+// Contiguous ASCII block (32-126) followed by SYSTEM_FONT_EXTRA_CHARS, in atlas order.
+const GLYPH_COUNT = ASCII_GLYPH_COUNT + SYSTEM_FONT_EXTRA_CHARS.length;
+const ATLAS_ROWS = Math.ceil(GLYPH_COUNT / ATLAS_COLS);
+const ATLAS_WIDTH = ATLAS_COLS * GLYPH_WIDTH;
+const ATLAS_HEIGHT = ATLAS_ROWS * GLYPH_HEIGHT;
 
 /**
  * Parses the SYSTEM_FONT_BITMAPS array from the TypeScript source file.
@@ -77,7 +82,7 @@ function parseBitmapData() {
 }
 
 /**
- * Builds a 96x84 RGBA PNG from the bit-pattern data.
+ * Builds an RGBA PNG atlas from the bit-pattern data.
  * Set bits become white (255,255,255,255), clear bits become black (0,0,0,255).
  *
  * @param {number[]} bitmaps – The flat array of glyph bytes.
@@ -135,8 +140,9 @@ function main() {
         console.log(`
 System Font PNG Exporter
 
-Exports the embedded system font bit patterns to a 96x84 PNG atlas.
-Layout: 16 columns x 6 rows of 6x14 glyphs (ASCII 32-126).
+Exports the embedded system font bit patterns to a PNG atlas.
+Layout: 16 columns of 6x14 glyphs – ASCII 32-126, then the extra glyphs
+listed in system-font-extra-chars.mjs (fallback, dashes, arrows, etc.).
 White pixels = foreground, black pixels = background.
 
 Usage:
@@ -158,9 +164,21 @@ Options:
 
     console.log(`Exported system font to: ${outputPath}`);
     console.log(`  Atlas size: ${ATLAS_WIDTH}x${ATLAS_HEIGHT} pixels`);
-    console.log(`  Glyphs: ${GLYPH_COUNT} (ASCII ${FIRST_CHAR}-${LAST_CHAR})`);
+    console.log(
+        `  Glyphs: ${GLYPH_COUNT} (ASCII ${FIRST_CHAR}-${LAST_CHAR}, plus ${SYSTEM_FONT_EXTRA_CHARS.length} extra)`,
+    );
     console.log(`  Layout: ${ATLAS_COLS} columns x ${ATLAS_ROWS} rows`);
     console.log(`  File size: ${pngData.length} bytes`);
+    console.log('\nExtra glyph cells (index counted from the top-left, row-major, after the ASCII block):');
+
+    for (const [index, { codePoint, label }] of SYSTEM_FONT_EXTRA_CHARS.entries()) {
+        const cellIndex = ASCII_GLYPH_COUNT + index;
+        const col = cellIndex % ATLAS_COLS;
+        const row = Math.floor(cellIndex / ATLAS_COLS);
+        const codePointLabel = `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
+
+        console.log(`  [row ${row}, col ${col}] ${codePointLabel} ${label}`);
+    }
 }
 
 main();

@@ -673,6 +673,72 @@ describe('BitmapFont', () => {
         });
     });
 
+    describe('fallback glyph', () => {
+        function buildFont(glyphs: Map<string, ReturnType<typeof buildGlyph>>) {
+            const pixels = new Uint8Array(16 * 16) as Uint8Array<ArrayBuffer>;
+            const sheet = SpriteSheet.fromIndexedPixels(16, 16, pixels);
+
+            return BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
+        }
+
+        function buildGlyph(x: number, advance: number) {
+            return { rect: new Rect2i(x, 0, 8, 8), offsetX: 0, offsetY: 0, advance };
+        }
+
+        it('returns null for an unmapped character when the font defines no fallback', () => {
+            const font = buildFont(new Map([['A', buildGlyph(0, 8)]]));
+
+            expect(font.getGlyph('Z')).toBeNull();
+            expect(font.getGlyphByCode('Z'.charCodeAt(0))).toBeNull();
+        });
+
+        it('substitutes the U+FFFD glyph for an unmapped ASCII character when defined', () => {
+            const glyphs = new Map([
+                ['A', buildGlyph(0, 8)],
+                ['\uFFFD', buildGlyph(8, 6)],
+            ]);
+            const font = buildFont(glyphs);
+
+            expect(font.getGlyph('Z')).toBe(glyphs.get('\uFFFD'));
+            expect(font.getGlyphByCode('Z'.charCodeAt(0))).toBe(glyphs.get('\uFFFD'));
+        });
+
+        it('substitutes the U+FFFD glyph for an unmapped Unicode character when defined', () => {
+            const glyphs = new Map([
+                ['A', buildGlyph(0, 8)],
+                ['\uFFFD', buildGlyph(8, 6)],
+            ]);
+            const font = buildFont(glyphs);
+            const unmapped = '–'; // en dash, not in this font's glyph map.
+
+            expect(font.getGlyph(unmapped)).toBe(glyphs.get('\uFFFD'));
+            expect(font.getGlyphByCode(unmapped.charCodeAt(0))).toBe(glyphs.get('\uFFFD'));
+        });
+
+        it('measures an unmapped character using the fallback glyph advance, not zero', () => {
+            const glyphs = new Map([
+                ['A', buildGlyph(0, 8)],
+                ['\uFFFD', buildGlyph(8, 6)],
+            ]);
+            const font = buildFont(glyphs);
+
+            // A(8) + fallback(6) + A(8) = 22 -- the cursor advances for the missing glyph too,
+            // instead of collapsing to 0 and letting the next glyph overdraw the previous one.
+            expect(font.measureText('A–A')).toBe(22);
+        });
+
+        it('does not change hasGlyph -- it still reports true presence, not fallback coverage', () => {
+            const glyphs = new Map([
+                ['A', buildGlyph(0, 8)],
+                ['\uFFFD', buildGlyph(8, 6)],
+            ]);
+            const font = buildFont(glyphs);
+
+            expect(font.hasGlyph('A')).toBe(true);
+            expect(font.hasGlyph('–')).toBe(false);
+        });
+    });
+
     describe('hot reload', () => {
         function activateHotReload() {
             registerHotContext({
