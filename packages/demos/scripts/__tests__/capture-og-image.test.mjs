@@ -42,7 +42,7 @@ describe('parseArgs', () => {
         const options = parseArgs(['--all']);
 
         assert.deepEqual(options.slugs, DEMO_ORDER);
-        assert.equal(options.slugs.length, 46);
+        assert.equal(options.slugs.length, 47);
     });
 
     it('parses string, numeric, and boolean overrides', () => {

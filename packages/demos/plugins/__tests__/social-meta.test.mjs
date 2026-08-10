@@ -12,7 +12,7 @@ import { buildSocialMeta, OG_IMAGE_FALLBACK, OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } f
 
 const ENTRY = {
     slug: 'palette-cycling',
-    title: 'BLIT386 Demo - Palette Cycling',
+    title: 'BLIT386 Demo – Palette Cycling',
     navLabel: 'Palette Cycling',
     description: 'Classic retro color rotation with BT.paletteCycle: rotate palette slots to make a still image flow.',
 };

@@ -1,7 +1,7 @@
 // Palette Animation: change palette entries every tick for instant visual effects.
 // @description Change palette entries every tick to animate a whole scene at once, without redrawing any pixels.
 //
-// Part of the BLIT386 series (written for readers about 12 years old).
+// Part of the BLIT386 series.
 //
 // Prerequisites:
 //   Basics          https://demos.blit386.dev/basics

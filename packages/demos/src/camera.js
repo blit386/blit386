@@ -56,6 +56,7 @@ const C_VIEWPORT = 17; // Yellow: viewport rectangle on the mini-map
 const C_OVERLAY_BAR = 40; // Semi-transparent bar behind overlay custom rows
 const C_OVERLAY_TEXT = 41; // Light gray text for camera position in the overlay
 const C_OVERLAY_AMBER = 42; // Amber accent for world size in the overlay
+const C_OVERLAY_GAP = 43; // Gray: gap between overlay rows
 
 // Each of the 20 buildings gets its own randomly chosen color stored at index 20..39.
 // We define the base index here so the code stays easy to read.
@@ -135,12 +136,15 @@ class Demo {
             isOverlayPaletteEnabled: true,
             overlayPaletteColumns: 32,
             overlayPaletteRowsVisible: 2,
+
             overlayStyle: {
                 barPaletteIndex: C_OVERLAY_BAR,
                 textPaletteIndex: C_OVERLAY_TEXT,
-                gapPaletteIndex: C_OVERLAY_BAR,
+                gapPaletteIndex: C_OVERLAY_GAP,
             },
+
             isOverlayTimingChartEnabled: true,
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_OVERLAY_TEXT,
                 renderBarPaletteIndex: C_OVERLAY_AMBER,
@@ -182,6 +186,7 @@ class Demo {
         this.palette.set(C_OVERLAY_BAR, new Color32(0, 0, 0, 200)); // dark bar behind custom overlay rows
         this.palette.set(C_OVERLAY_TEXT, new Color32(200, 200, 200)); // camera position line
         this.palette.set(C_OVERLAY_AMBER, new Color32(220, 180, 60)); // world size line
+        this.palette.set(C_OVERLAY_GAP, new Color32(48, 48, 48)); // gray gap between overlay rows
 
         // Install the shared UI kit theme. applyTheme() writes twelve UI colors into
         // high palette slots (240 and up), far above this demo's scene slots (1..42),
@@ -247,6 +252,7 @@ class Demo {
             Math.floor(this.cameraPrevPos.x + (this.cameraPos.x - this.cameraPrevPos.x) * BT.renderAlpha),
             Math.floor(this.cameraPrevPos.y + (this.cameraPos.y - this.cameraPrevPos.y) * BT.renderAlpha),
         );
+
         BT.cameraSet(this.cameraRenderPos);
 
         // Draw all the world content (trees, buildings, player).
@@ -275,8 +281,8 @@ class Demo {
     overlayRows() {
         // Use this.cameraPos, not BT.camera: the engine calls this hook after render(),
         // and we call BT.cameraReset() at the end of render() so screen UI stays fixed.
-        this.overlayRowData[0].leftText = `Camera (${this.cameraPos.x}, ${this.cameraPos.y})`;
-        this.overlayRowData[1].leftText = `World ${this.worldWidth}x${this.worldHeight}`;
+        this.overlayRowData[1].leftText = `World size: ${this.worldWidth}x${this.worldHeight}`;
+        this.overlayRowData[0].leftText = `Camera position: (${this.cameraPos.x}, ${this.cameraPos.y})`;
 
         return this.overlayRowData;
     }
@@ -470,13 +476,13 @@ class Demo {
         // The kit draws in whatever camera space is active, so this must run AFTER
         // BT.cameraReset() – otherwise the panel would scroll away with the world.
         ui.begin('topLeft');
-        ui.panel('Camera Demo');
+        ui.panel();
         ui.label('Auto-scrolling camera', { color: 'dim' });
 
         // KEY: value rows showing where the camera is looking right now and how big
         // the world is, so you can watch the numbers change as the view drifts around.
-        ui.kv('CAMERA', `${this.cameraPos.x}, ${this.cameraPos.y}`);
-        ui.kv('WORLD', `${this.worldWidth}x${this.worldHeight}`);
+        ui.kv('Camera position:', `${this.cameraPos.x}, ${this.cameraPos.y}`);
+        ui.kv('World size:     ', `${this.worldWidth}x${this.worldHeight}`);
         ui.end();
 
         // Draw the mini-map in the bottom-right corner.
@@ -490,8 +496,8 @@ class Demo {
      */
     renderMiniMap() {
         // Position and size of the mini-map on screen.
-        const mapX = 220;
-        const mapY = 160;
+        const mapX = 226;
+        const mapY = 166;
         const mapW = 90;
         const mapH = 70;
 
@@ -499,6 +505,7 @@ class Demo {
         // widget, so we draw this panel by hand – but we borrow the shared theme's
         // panel and border slots so it matches the kit's look exactly.
         this.tempRect.set(mapX, mapY, mapW, mapH);
+
         BT.drawRectFill(this.tempRect, this.theme.panel);
         BT.drawRect(this.tempRect, this.theme.border);
 
@@ -508,7 +515,9 @@ class Demo {
         for (const building of this.buildings) {
             const miniX = mapX + Math.floor((building.pos.x / this.worldWidth) * mapW);
             const miniY = mapY + Math.floor((building.pos.y / this.worldHeight) * mapH);
+
             this.tempVec1.set(miniX, miniY);
+
             BT.drawPixel(this.tempVec1, C_BUILDING_DOT);
         }
 

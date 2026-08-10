@@ -73,7 +73,8 @@ const SHAPE_NAMES = ['Square', 'Circle', 'Tri', 'Star', 'Heart', 'Gem'];
 const UI_BG = 240; // 'ui_bg' – deep navy screen background
 const UI_TEXT = 244; // 'ui_text' – off-white primary text
 const UI_DIM = 245; // 'ui_text_dim' – secondary gray text
-const UI_INFO = 249; // 'ui_info' – code blue
+const UI_BAR = 246; // 'ui_bar' – bar chart color
+const UI_INFO = 248; // 'ui_info' – code blue
 
 // The exact two colors drawShapeInCell() paints with (see fill/stroke below).
 // The canvas smooths shape edges automatically (anti-aliasing), which blends these two
@@ -293,11 +294,13 @@ class Demo {
     configure() {
         return {
             isOverlayTimingChartEnabled: true,
+
             overlayStyle: {
                 barPaletteIndex: UI_BG,
                 textPaletteIndex: UI_DIM,
-                gapPaletteIndex: UI_BG,
+                gapPaletteIndex: UI_BAR,
             },
+
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: UI_DIM,
                 renderBarPaletteIndex: UI_INFO,
@@ -334,7 +337,7 @@ class Demo {
 
             const colorCount = this.colorCount;
 
-            // Build theme blocks: Fire, Ice, Void, and a Pulse block updated in update().
+            // Build theme blocks: Fire, Ice, and Void are static once written here.
             for (let i = 0; i < colorCount; i++) {
                 const base = this.baseColors[i];
 
@@ -376,14 +379,6 @@ class Demo {
         if (!this.colorCount) {
             return;
         }
-
-        const pulse = Math.sin(this.animTime * 3) * 0.5 + 0.5;
-        const alpha = Math.floor(60 + pulse * 195);
-
-        for (let i = 0; i < this.colorCount; i++) {
-            const base = this.baseColors[i];
-            this.palette.set(COLOR_BASE + this.colorCount * 4 + i, new Color32(base.r, base.g, base.b, alpha));
-        }
     }
 
     render() {
@@ -419,33 +414,18 @@ class Demo {
         BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8 + themeSpacing * 3, themeY), n * 3);
         ui.caption(6 + themeSpacing * 3, themeY + 22, 'Void', { color: 'dim' });
 
-        // Row 3: opacity pulsing via palette alpha slots rewritten in update().
-        BT.drawSprite(this.sheet, this.themeRect, new Vector2i(8, 148), n * 4);
-        ui.caption(6, 170, 'Alpha pulse', { color: 'dim' });
-
-        // A two-line footnote about the pulsing star. A borderless group anchored to the
-        // bottom-left corner: the kit stacks its labels vertically and places the whole
-        // block just above the bottom screen edge.
-        ui.begin('bottomLeft');
-        ui.label('Opacity via palette,', { color: 'dim' });
-        ui.label('not a drawSprite flag.', { color: 'dim' });
-        ui.end();
-
         this.renderCodeSnippet();
     }
 
     /**
      * The "how you would load a real PNG" cheat sheet, as a bordered kit panel anchored
-     * to the bottom-right corner of the screen.
+     * to the bottom-left corner of the screen.
      */
     renderCodeSnippet() {
-        ui.begin('bottomRight');
-        ui.panel('Production PNG load');
-        ui.label('const indexed =', { color: 'info' });
-        ui.label('  await SpriteSheet', { color: 'info' });
-        ui.label('  .loadIndexed(', { color: 'info' });
-        ui.label("   '/sprites/test.png',", { color: 'info' });
-        ui.label('   palette, 10);', { color: 'info' });
+        ui.begin('bottomLeft', { y: 178 });
+        ui.panel('Production PNG load:');
+        ui.label('const indexed = await SpriteSheet', { color: 'info' });
+        ui.label("  .loadIndexed('/sprites/test.png', palette, 10);", { color: 'info' });
         ui.end();
     }
 }

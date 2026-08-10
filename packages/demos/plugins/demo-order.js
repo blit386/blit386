@@ -54,4 +54,5 @@ export const DEMO_ORDER = [
     'coordinate-patterns',
     'noise',
     'palette-exposure-fade',
+    'hello-world',
 ];

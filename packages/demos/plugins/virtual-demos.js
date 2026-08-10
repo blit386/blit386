@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 
 import { SOURCE_UPDATED_EVENT } from '../_partials/source-panel-protocol.js';
 import { buildRegistry } from './demo-registry.js';
@@ -229,9 +229,16 @@ export function virtualDemos() {
         configureServer(server) {
             // Watch the partials directory (not a glob): layout.html + chrome scripts
             // (demo-shell.js, source-panel*.js). Any edit invalidates page chrome.
+            //
+            // Deliberately NOT adding `join(srcDir, '*.js')` / `join(srcDir, 'shared', '*.js')`
+            // here: Vite's watcher runs with chokidar's `disableGlobbing: true`, so a `*.js`
+            // suffix is a literal (non-existent) filename, not a glob. Calling `.add()` on that
+            // bogus path races chokidar's still-in-progress recursive scan of the target
+            // directory and can corrupt its internal file tracking, silently dropping all future
+            // `change` events for real files inside it (verified against `src/shared/`, which
+            // stopped reporting edits entirely once this was added). The root recursive watch
+            // already covers `src/**` on its own, so these calls were both redundant and unsafe.
             server.watcher.add(partialsDir);
-            server.watcher.add(join(srcDir, '*.js'));
-            server.watcher.add(join(srcDir, 'shared', '*.js'));
 
             server.watcher.on('change', async (changedPath) => {
                 // `relative` is separator-safe: partialsDir itself and files under it match;

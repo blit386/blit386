@@ -1,7 +1,7 @@
 // Starfield: parallax scrolling stars that feel like 3D depth.
 // @description Parallax scrolling stars at several speeds, so a flat two-dimensional field reads as real depth.
 //
-// Part of the BLIT386 demo series (written for readers about 12 years old).
+// Part of the BLIT386 demo series.
 //
 // Prerequisites:
 //   Basics     https://demos.blit386.dev/basics

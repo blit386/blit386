@@ -151,7 +151,7 @@ function deriveTitle(slug, header) {
         return override[1].trim();
     }
 
-    return `BLIT386 Demo - ${titleCaseTopic(slug)}`;
+    return `BLIT386 Demo – ${titleCaseTopic(slug)}`;
 }
 
 /**

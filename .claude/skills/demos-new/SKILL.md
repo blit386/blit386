@@ -35,7 +35,6 @@ demo to be usable on touch. Start from this shape:
 
 ```js
 // Demo Topic – one-sentence summary of what this shows.
-// Written for readers about 12 years old.
 //
 // What you will see:
 //   - ...
@@ -117,7 +116,7 @@ bootstrap(Demo);
 - Widget identity is the label; pass `{ id }` when two widgets in one frame share a label.
 - Keyboard `{ key }` bindings are edge-safe because `ui.tick()` runs in `update()` – never read `BT.isKeyPressed` from
   `render()`.
-- The page title defaults to `BLIT386 Demo - Title Cased Topic`. Only add a `// @pageTitle Custom Title` comment (in the
+- The page title defaults to `BLIT386 Demo – Title Cased Topic`. Only add a `// @pageTitle Custom Title` comment (in the
   first ~20 lines) when that default is wrong for the demo.
 - **Required:** a `@description` tag in the header – one line, 60–104 characters, ending in a period, within the first
   ~20 lines. It becomes the page's meta description, `og:description`, and `twitter:description`, so write the sentence

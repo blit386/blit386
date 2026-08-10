@@ -1,7 +1,7 @@
 // Palette Cycling: classic retro color rotation using BT.paletteCycle().
 // @description Classic retro color rotation with BT.paletteCycle: rotate palette slots to make a still image flow.
 //
-// Part of the BLIT386 series (written for readers about 12 years old).
+// Part of the BLIT386 series.
 //
 // Prerequisites:
 //   Basics            https://demos.blit386.dev/basics

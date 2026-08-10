@@ -41,11 +41,6 @@ const C_TAG = 3; // Pale blue-white: only colors the overlay bar and timing-char
 const C_HEART_OUTLINE = 5; // Dark red: the heart's outline pixels
 const C_HEART_FILL = 6; // Bright red: the heart's interior pixels
 
-// Tree sprite colors.
-const C_TREE_DARK = 7; // Very dark green: outer leaf pixels
-const C_TREE_LIGHT = 8; // Lighter green: inner leaf pixels
-const C_TRUNK = 9; // Brown: tree trunk pixels
-
 // Checker pattern colors: these are updated every frame in update() so the colors move.
 const C_CHECKER_A = 10; // Dynamic: lerp between red and yellow
 const C_CHECKER_B = 11; // Dynamic: lerp between blue and cyan
@@ -56,34 +51,13 @@ const C_CHECKER_B = 11; // Dynamic: lerp between blue and cyan
 // 1 and 2 pick palette entries from HEART_PALETTE_MAP below (outline and fill).
 const HEART_GRID = [
     [0, 1, 1, 0, 0, 1, 1, 0],
-    [1, 2, 2, 1, 1, 2, 2, 1],
-    [1, 2, 2, 2, 2, 2, 2, 1],
-    [0, 1, 2, 2, 2, 2, 1, 0],
-    [0, 0, 1, 2, 2, 1, 0, 0],
+    [1, 2, 1, 1, 1, 2, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1, 1, 1, 0],
+    [0, 1, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 1, 1, 0, 0],
     [0, 0, 0, 1, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-];
-
-// TREE_GRID is a bit taller and wider: 12 columns and 16 rows.
-// Same idea: 0 is empty, 1 and 2 are two greens for leaves, 3 is brown for the trunk.
-const TREE_GRID = [
-    [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 1, 2, 1, 1, 1, 0, 0, 0],
-    [0, 0, 1, 1, 2, 2, 2, 2, 1, 1, 0, 0],
-    [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-    [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-    [0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0],
-    [0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 0, 0],
-    [0, 0, 0, 1, 1, 2, 2, 1, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 3, 3, 3, 3, 0, 0, 0, 0],
-    [0, 0, 0, 0, 3, 3, 3, 3, 0, 0, 0, 0],
-    [0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0],
-    [0, 0, 0, 3, 3, 3, 3, 3, 3, 0, 0, 0],
 ];
 
 // HEART_PALETTE_MAP lines up with the numbers in the grid.
@@ -91,8 +65,6 @@ const TREE_GRID = [
 // Index 0 is null because 0 means "no paint" in the grid (we skip those cells).
 // These are PALETTE INDEX NUMBERS, not Color32 objects. The palette already knows the actual colors.
 const HEART_PALETTE_MAP = [null, C_HEART_OUTLINE, C_HEART_FILL];
-
-const TREE_PALETTE_MAP = [null, C_TREE_DARK, C_TREE_LIGHT, C_TRUNK];
 
 /**
  * Looks up the palette index for a paint code.
@@ -141,15 +113,13 @@ class Demo {
             isOverlayPaletteEnabled: true,
 
             overlayPaletteColumns: 16,
-            overlayTimingChartHeight: 64,
+            isOverlayVisibleAtStart: true,
 
             overlayStyle: {
                 barPaletteIndex: C_TAG,
                 textPaletteIndex: C_BG,
                 gapPaletteIndex: C_BG,
             },
-
-            isOverlayTimingChartEnabled: true,
 
             overlayTimingChartStyle: {
                 updateBarPaletteIndex: C_BG,
@@ -184,11 +154,6 @@ class Demo {
         this.palette.set(C_HEART_OUTLINE, new Color32(110, 10, 30)); // dark red outline
         this.palette.set(C_HEART_FILL, new Color32(230, 55, 75)); // bright red fill
 
-        // Tree sprite colors.
-        this.palette.set(C_TREE_DARK, new Color32(18, 85, 32)); // very dark green outer leaf
-        this.palette.set(C_TREE_LIGHT, new Color32(70, 175, 72)); // lighter green inner leaf
-        this.palette.set(C_TRUNK, new Color32(105, 62, 28)); // brown tree trunk
-
         // Pre-fill dynamic checker colors with a starting value.
         // update() will overwrite these on the very first tick.
         this.palette.set(C_CHECKER_A, new Color32(255, 0, 0)); // start as red
@@ -222,21 +187,20 @@ class Demo {
         // At wave=0 colorA is red; at wave=1 it is yellow. At wave=0 colorB is blue; at 1 it is cyan.
         // Both colors shift at the same time but in opposite directions, so they always contrast.
         const wave = (Math.sin(this.animTime * 2) + 1) * 0.5;
+
         this.palette.set(C_CHECKER_A, Color32.red.lerp(Color32.yellow, wave));
         this.palette.set(C_CHECKER_B, Color32.blue.lerp(Color32.cyan, 1 - wave));
     }
 
     /**
-     * Draws the whole frame: section labels, two number-grid sprites, and the checker pattern.
+     * Draws the whole frame: section labels, the number-grid sprite, and the checker pattern.
      * FPS and tick stats live in the engine overlay (toggle with Backquote), not on the canvas.
      */
     render() {
         // Clear to the deep gray-blue background so light pixel art pops.
         BT.clear(C_BG);
 
-        // Left and right art pieces share the same vertical starting line so they look side by side.
         this.renderHeartSection();
-        this.renderTreeSection();
 
         // Checkerboard below, with colors that shift using animTime.
         this.renderCheckerPatternSection();
@@ -299,28 +263,14 @@ class Demo {
     renderHeartSection() {
         // Print the section caption with ui.caption() from the shared UI kit – the same
         // widget every demo in the series uses, so all captions look identical everywhere.
-        ui.caption(10, 28, 'Heart 8x8 (number grid)');
+        ui.caption(12, 48, 'Heart 8x8 (number grid, no external bitmap used)');
 
         // scale = 4 makes the 8-cell-wide picture use 32 virtual pixels of width.
         const scale = 4;
-        const originX = 16;
-        const originY = 46;
+        const originX = 12;
+        const originY = 63;
 
         this.drawGridWithScaledPixels(HEART_GRID, HEART_PALETTE_MAP, originX, originY, scale);
-    }
-
-    /**
-     * Labels and draws the 12x16 tree on the right.
-     */
-    renderTreeSection() {
-        ui.caption(168, 28, 'Tree 12x16 (number grid)');
-
-        // Slightly smaller scale so the taller tree still fits comfortably.
-        const scale = 3;
-        const originX = 188;
-        const originY = 46;
-
-        this.drawGridWithScaledPixels(TREE_GRID, TREE_PALETTE_MAP, originX, originY, scale);
     }
 
     /**
@@ -328,15 +278,17 @@ class Demo {
      * Colors slide around based on animTime (updated in update()) so you can see the clock moving.
      */
     renderCheckerPatternSection() {
-        ui.caption(10, 100, 'Checkerboard (loops + math, no grid array)');
+        ui.caption(12, 97, 'Checkerboard (loops + math, no grid array)');
 
         // How many squares along each side.
         const cells = 8;
+
         // Pixel size of one checker square on the virtual 320x240 surface.
         const cellSize = 10;
+
         // Top-left corner of the whole checker region.
         const startX = 12;
-        const startY = 118;
+        const startY = 112;
 
         // Outer loop picks the row of squares; inner loop picks the column – same nested idea as the art.
         for (let row = 0; row < cells; row++) {
@@ -350,6 +302,7 @@ class Demo {
                 // Rect2i(x, y, width, height) describes a solid rectangle in pixel space.
                 const x = startX + col * cellSize;
                 const y = startY + row * cellSize;
+
                 BT.drawRectFill(new Rect2i(x, y, cellSize, cellSize), fill);
             }
         }

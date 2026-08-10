@@ -71,7 +71,7 @@ const PROFILE_TO_LOOP = { fadeMs: 600, overlap: 1, easeIn: 'linear', easeOut: 'l
 const TRACKS = [
     { trackId: 'A', label: 'Track A - calm', keyCode: 'Digit1', keyHint: '1' },
     { trackId: 'B', label: 'Track B - upbeat', keyCode: 'Digit2', keyHint: '2' },
-    { trackId: 'loop', label: 'Loop Demo - intro + loop', keyCode: 'Digit3', keyHint: '3' },
+    { trackId: 'loop', label: 'Loop Demo – intro + loop', keyCode: 'Digit3', keyHint: '3' },
 ];
 
 /**
