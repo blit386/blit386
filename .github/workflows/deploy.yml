@@ -56,17 +56,29 @@ jobs:
         env:
           NODE_ENV: production
 
-      # `command` is the pre-merge command verbatim; workingDirectory is what keeps the
-      # relative `dist/` in it correct from the monorepo root. wranglerVersion and
-      # packageManager are pinned the same way on all four wrangler-action steps in this
-      # file (BT-441) - see deploy-website below for why the version is pinned at all.
+      # workingDirectory is what keeps the relative `dist/` in `command` correct from the
+      # monorepo root. wranglerVersion and packageManager are pinned the same way on all
+      # four wrangler-action steps in this file (BT-441) - see deploy-website below for why
+      # the version is pinned at all.
+      #
+      # `--branch=main` is load-bearing, not cosmetic. Without it wrangler infers the branch
+      # from git, and this job's only real trigger is a release tag push, which checks out a
+      # detached HEAD. The inferred branch is then `head`, which is not the project's
+      # production branch, so Pages files the upload as a *preview* deployment and
+      # demos.blit386.dev keeps serving the previous build. The job still reports success,
+      # because uploading is what succeeded. That is exactly what happened on the 1.5.0 tag
+      # (deployment alias `head.blit-tech-demos.pages.dev`); production stayed stale until a
+      # workflow_dispatch on main, where the inferred branch happened to be right.
+      #
+      # deploy-demos-next below does not need this: it only runs on push to main, so the
+      # inferred branch is already that project's production branch.
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/demos
-          command: pages deploy dist/ --project-name=blit386-demos
+          command: pages deploy dist/ --project-name=blit386-demos --branch=main
           wranglerVersion: '4.114.0'
           packageManager: pnpm
 
