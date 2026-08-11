@@ -33,7 +33,7 @@ import { HomeHero } from './src/components/home-hero';
 import { ApiAvailability } from './src/components/api-availability';
 import { PageChangelog } from './src/components/page-changelog';
 import { Since } from './src/components/since-badge';
-import { SITE_NAME } from './src/data/site';
+import { FEDIVERSE_HANDLE, SITE_NAME, TWITTER_HANDLE } from './src/data/site';
 import defaultMdxComponents, { createRelativeLink } from 'fumadocs-ui/mdx';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { File, Files, Folder } from 'fumadocs-ui/components/files';
@@ -51,11 +51,6 @@ const IS_NEXT_CHANNEL = process.env.BLIT386_CHANNEL === 'next';
 
 const SITE_BASE_URL = IS_NEXT_CHANNEL ? 'https://next.blit386.dev' : 'https://blit386.dev';
 const PRODUCTION_SITE_URL = 'https://blit386.dev';
-
-// Same accounts linked from src/data/community.ts – kept as separate literals here because
-// that file's shape (CommunityDestination[]) has no field for a bare handle, only a profile URL.
-const TWITTER_HANDLE = '@blit386';
-const FEDIVERSE_HANDLE = '@blit386@mastodon.gamedev.place';
 
 // Reads and caches the Departure Mono font file used for Open Graph image generation
 // (`takumiPlugin` below), so disk access happens once per Worker isolate rather than per request.

@@ -6,6 +6,7 @@ import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/layo
 import type { TOCItemType } from 'fumadocs-core/toc';
 import Link from 'fumadocs-core/link';
 import { AuthorByline } from './author-byline';
+import { renderBlogPostMeta } from './blog-page-meta';
 import styles from './blog-page.module.css';
 
 type BlogPost = AppContext['$context']['page'];
@@ -67,36 +68,40 @@ export async function BlogPage({ page }: BlogPageProps) {
     const [body, toc] = await Promise.all([renderBody(ctx, page), renderToc(ctx, page)]);
 
     return (
-        <DocsPage toc={toc} breadcrumb={{ enabled: false }} footer={{ enabled: false }}>
-            <div className={styles.header}>
-                {indexPath !== false && (
-                    <Link href={indexPath} className={styles.backLink}>
-                        Back to Blog
-                    </Link>
-                )}
+        <>
+            {renderBlogPostMeta(page, ctx)}
 
-                <DocsTitle>{data.title}</DocsTitle>
-                <DocsDescription>{data.description}</DocsDescription>
+            <DocsPage toc={toc} breadcrumb={{ enabled: false }} footer={{ enabled: false }}>
+                <div className={styles.header}>
+                    {indexPath !== false && (
+                        <Link href={indexPath} className={styles.backLink}>
+                            Back to Blog
+                        </Link>
+                    )}
 
-                {data.author && <AuthorByline author={data.author} />}
+                    <DocsTitle>{data.title}</DocsTitle>
+                    <DocsDescription>{data.description}</DocsDescription>
 
-                {/*{(date || (tags && tags.length > 0)) && (
-                    <div className={styles.meta}>
-                        {date && <span className={styles.date}>{date.toDateString()}</span>}
+                    {data.author && <AuthorByline author={data.author} />}
 
-                        {tagsPath !== false &&
-                            tags?.map((tag) => (
-                                <Link key={tag} href={`${tagsPath}/${tag}`} className={styles.tag}>
-                                    {tag}
-                                </Link>
-                            ))}
-                    </div>
-                )}*/}
-            </div>
+                    {/*{(date || (tags && tags.length > 0)) && (
+                        <div className={styles.meta}>
+                            {date && <span className={styles.date}>{date.toDateString()}</span>}
 
-            <div className={styles.body}>
-                <DocsBody>{body}</DocsBody>
-            </div>
-        </DocsPage>
+                            {tagsPath !== false &&
+                                tags?.map((tag) => (
+                                    <Link key={tag} href={`${tagsPath}/${tag}`} className={styles.tag}>
+                                        {tag}
+                                    </Link>
+                                ))}
+                        </div>
+                    )}*/}
+                </div>
+
+                <div className={styles.body}>
+                    <DocsBody>{body}</DocsBody>
+                </div>
+            </DocsPage>
+        </>
     );
 }

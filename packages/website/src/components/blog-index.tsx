@@ -2,8 +2,12 @@ import { getPressContext } from 'fumapress';
 import { getBlogContext } from 'fumapress/plugins/blog';
 import Link from 'fumadocs-core/link';
 import { getPostDate } from '../blog-post-date';
+import { CHANNEL_DESCRIPTION } from '../feed';
+import { renderBlogIndexMeta } from './blog-page-meta';
 import styles from './blog-index.module.css';
 import layoutStyles from './blog-layout.module.css';
+
+const BLOG_TITLE = 'Blog';
 
 interface BlogIndexPageProps {
     lang?: string;
@@ -22,7 +26,7 @@ interface BlogPostSummary {
  */
 export async function BlogIndexPage({ lang }: BlogIndexPageProps) {
     const ctx = getPressContext();
-    const { isBlog } = getBlogContext();
+    const { isBlog, indexPath } = getBlogContext();
     const source = await ctx.getLoader();
     const pages = source.getPages(lang).filter((page) => isBlog.call(ctx, page));
 
@@ -36,29 +40,38 @@ export async function BlogIndexPage({ lang }: BlogIndexPageProps) {
     posts.sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
 
     return (
-        <div className={`not-prose ${layoutStyles.main} ${styles.index}`}>
-            <div className={styles.header}>
-                <h1 className={styles.heading}>Blog</h1>
+        <>
+            {renderBlogIndexMeta(
+                ctx,
+                typeof indexPath === 'string' ? indexPath : '/blog',
+                BLOG_TITLE,
+                CHANNEL_DESCRIPTION,
+            )}
 
-                {/*{tagsPath !== false && (
-                    <Link href={tagsPath} className={styles.tagsLink}>
-                        All Tags
-                    </Link>
-                )}*/}
+            <div className={`not-prose ${layoutStyles.main} ${styles.index}`}>
+                <div className={styles.header}>
+                    <h1 className={styles.heading}>{BLOG_TITLE}</h1>
+
+                    {/*{tagsPath !== false && (
+                        <Link href={tagsPath} className={styles.tagsLink}>
+                            All Tags
+                        </Link>
+                    )}*/}
+                </div>
+
+                <div className={styles.grid}>
+                    {posts.map((post) => (
+                        <Link key={post.url} href={post.url} className={`group ${styles.card}`}>
+                            <div className={styles.info}>
+                                <span className={styles.cardTitle}>{post.title}</span>
+                                {post.description && <span className={styles.cardDescription}>{post.description}</span>}
+                            </div>
+
+                            {post.date && <span className={styles.cardDate}>{post.date.toDateString()}</span>}
+                        </Link>
+                    ))}
+                </div>
             </div>
-
-            <div className={styles.grid}>
-                {posts.map((post) => (
-                    <Link key={post.url} href={post.url} className={`group ${styles.card}`}>
-                        <div className={styles.info}>
-                            <span className={styles.cardTitle}>{post.title}</span>
-                            {post.description && <span className={styles.cardDescription}>{post.description}</span>}
-                        </div>
-
-                        {post.date && <span className={styles.cardDate}>{post.date.toDateString()}</span>}
-                    </Link>
-                ))}
-            </div>
-        </div>
+        </>
     );
 }
