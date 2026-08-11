@@ -1,0 +1,160 @@
+---
+title: BLIT386 1.5.0 – the same world, every time
+description:
+  The random release – a seeded PRNG, stateless coordinate hashes, three kinds of noise – plus the full easing curve
+  library, a splash that doubles as a loading screen, and an exposure-curve palette fade.
+date: 2026-08-11
+tags: [release, random]
+author: vancura
+---
+
+`Math.random()` is perfectly fine right up until a player sends you a screenshot of something broken in a world you
+cannot get back. Then you are staring at a cave that will never exist again, trying to reason about a bug from a JPEG. I
+have done this more times than I would like to admit, and every time I told myself I would add a seed later.
+
+1.5.0 is later. The engine has a real random system now: a PRNG you can hand a number to, coordinate hashes that
+remember nothing and still never change their mind, and three kinds of noise. A world either comes back exactly or does
+not come back at all, and you get to pick which.
+
+## One seed, one world
+
+`BT.random` is a live shared generator, time-seeded when the engine starts, so out of the box it behaves like the
+`Math.random()` you replaced. The difference is that you can stop it drifting:
+
+```ts twoslash
+import { BT } from 'blit386';
+
+BT.randomSeed(1234);
+
+const roll = BT.random.intInclusive(1, 6);
+const loot = BT.random.weighted(['common', 'rare', 'legendary'], [80, 18, 2]);
+const order = BT.random.shuffle([1, 2, 3, 4, 5]);
+```
+
+Beyond the obvious draws there are the ones you actually reach for at 1am – `bool`, `sign`, `pick`, `angle`, `gaussian`
+– and spatial helpers like `insideRect` and `direction8`, each with an allocation-free `*To(out)` variant for the render
+loop. `getState` / `setState` / `clone` / `fork` are there for when one generator is not enough and you want the loot
+table to stop stealing numbers from the terrain.
+
+The [random-basics demo](https://demos.blit386.dev/random-basics) runs five scenes through it: shuffling, weighted
+drops, scatter, flips, and walkers. [Seeded worlds](https://demos.blit386.dev/seeded-worlds) is the one that makes the
+point better than any paragraph can – two worlds side by side, each labeled with its seed, and copying one seed over
+makes the halves identical.
+
+## Hashes, which store nothing
+
+A seeded generator is a sequence, and a sequence has to be walked from the start. That is the wrong shape for a world
+the player wanders through in no particular order. So there are coordinate hashes: `hash1i`, `hash2i`, `hash3i` for an
+unsigned 32-bit value, and `hash1`, `hash2`, `hash3` for the same thing scaled into `[0, 1)`.
+
+```ts twoslash
+import { hash2i } from 'blit386';
+
+const isTree = hash2i(140, 32, 1234) % 100 < 12;
+```
+
+Same coordinates, same seed, same answer, forever, with nothing stored anywhere. Walk east for ten minutes and walk
+back, and the tree is still the tree. [Coordinate patterns](https://demos.blit386.dev/coordinate-patterns) is an endless
+world built entirely this way, and it keeps not a single tile in memory.
+
+For the smooth version there is `ValueNoise`, `PerlinNoise`, and `SimplexNoise`, each seedable, each with the matching
+`fbm*` for fractal Brownian motion:
+
+```ts twoslash
+import { PerlinNoise } from 'blit386';
+
+const terrain = new PerlinNoise(1234);
+const height = terrain.fbm2D(12.5, 4.25);
+```
+
+fBm defaults to four octaves, persistence `0.5`, lacunarity `2`, with amplitudes normalized so the sum stays in range.
+The [noise demo](https://demos.blit386.dev/noise) puts all three side by side at matched settings with an octaves slider
+and a terrain ramp, which is the fastest way to learn why anyone bothers having three.
+
+Details in [API: Random](/docs/api/random), and the reasoning about streams and procedural worlds in the
+[Random Guide](/docs/guides/random).
+
+## Curves, finally all of them
+
+Easing had linear and quadratic, which covers roughly the first afternoon of caring about motion. `EasingFunction` now
+carries the full set – sine, cubic, quartic, quintic, expo, circ, back, elastic, bounce, each in / out / in-out – and
+`interpolate()` applies any of them across `number`, `Vector2i`, `Color32`, and `Rect2i`:
+
+```ts twoslash
+import { interpolate, Vector2i } from 'blit386';
+
+const from = new Vector2i(0, 0);
+const to = new Vector2i(320, 240);
+const pos = interpolate('bounce-out', from, to, 0.5);
+```
+
+One warning, because it caught me: `interpolate(easing, start, end, t)` and `applyEasing(t, easing)` take their
+arguments in opposite orders. That is history, not design, and it is now written down in the kit skill so your assistant
+stops guessing.
+
+## A fade that behaves like a camera
+
+`BT.paletteFade` crossfades every palette entry on the same schedule, which is correct and also nothing like what
+happens when a real iris closes. `BT.paletteFadeExposure` does the other thing: it interpolates each channel in linear
+light, and offsets every entry's schedule by its luminance, so bright entries rise first and hold longest while dark
+entries arrive late and crush early. Toe and shoulder out of one knob, `highlightLead`.
+
+```ts twoslash
+import { BT, type Palette } from 'blit386';
+
+declare const gamePalette: Palette;
+
+BT.paletteFadeExposure(gamePalette, 1500, { highlightLead: 0.2 });
+```
+
+Every entry still lands exactly on the target, so nothing drifts. The honest limitation is that a palette fade acts per
+color index and not per pixel, so a dark object in a bright scene fades on the dark schedule regardless of where it is
+standing. [The exposure fade demo](https://demos.blit386.dev/palette-exposure-fade) runs both fades on one shared
+palette so you can watch the difference rather than take my word for it.
+
+Underneath it there are `Color32#toLinear` and `#toSrgb`, with in-place variants, using the real sRGB piecewise transfer
+function instead of a bare 2.2 power. Channels stay 8-bit, so treat linear light as a working space and not somewhere to
+keep things.
+
+## The splash, and knowing you are in dev
+
+The engine has a splash now – the logo fading in on its own 16-step gray ramp, holding, fading out before your first
+frame. It is not decoration: your `init()` runs concurrently and the hold extends until assets settle, so it is the
+loading screen you were going to have to build anyway. It hands off into your palette with a single continuous
+`BT.paletteFadeExposure`, which is why that fade exists at all. Any key, click, or tap skips it, and the press is
+swallowed so it does not also fire in your game.
+
+**If you are upgrading, this is the one thing to know:** the splash shows by default in release builds. Development is
+unaffected. `isSplashEnabled: false` in `configure()`, or `?nosplash`, turns it off.
+
+That development-versus-release distinction needed a real answer rather than a guess, so `BT.isDevMode` is there now. It
+resolves from the marker the `blit386/vite` plugin sets, falls back to a live Vite HMR context, and otherwise reports
+release. Worth saying plainly: a build that skips the plugin silently gets release behavior. See
+[the splash guide](/docs/guides/splash) and [Core](/docs/api/core).
+
+## Other changes
+
+### Text stopped losing characters
+
+`BitmapFont` learned fallback glyphs. A font can define a glyph keyed by `U+FFFD`, and any character without its own
+glyph now draws that instead of vanishing. The vanishing was the actual bug – a skipped character did not advance the
+pen either, so the next character drew on top of the one before it and a whole line turned to soup. The built-in system
+font gained 79 glyphs while I was in there: dashes, arrows, uppercase Greek, media icons, a heart. `hasGlyph()` still
+reports true glyph presence rather than fallback coverage, deliberately.
+
+### One repository, one version
+
+`blit386-demos`, `create-blit386`, and the docs site merged into this repo, and the three published packages moved to a
+single lockstep version. A release tag is now what deploys blit386.dev and demos.blit386.dev. The practical effect is
+that a scaffolded game gets a kit matching the engine it pins, without anyone having to remember the pairing.
+
+There is also a [Fez-style hypercube](https://demos.blit386.dev/hypercube) rotating on a 256x256 canvas, which has
+nothing to do with any of the above. I just wanted to see a tesseract in 256 colors.
+
+The full list, in the usual Keep a Changelog shape, is at [the changelog](/docs/reference/changelog).
+
+```bash
+npm create blit386@latest my-game
+```
+
+Pick a seed you like. You can always get that world back.
