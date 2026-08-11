@@ -3,7 +3,9 @@ import { getPostDate } from './blog-post-date';
 
 const FEED_URL = '/feed.xml';
 const CHANNEL_TITLE = 'BLIT386 Blog';
-const CHANNEL_DESCRIPTION = 'Updates and articles from the BLIT386 blog.';
+
+/** Single source of truth for the blog's description – also used as its og:description/twitter:description (blog-index.tsx). */
+export const CHANNEL_DESCRIPTION = 'Updates and articles from the BLIT386 blog.';
 
 function escapeXml(text: string): string {
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
