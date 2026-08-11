@@ -55,7 +55,7 @@ function runDoctor(cwd) {
 }
 
 test('blit doctor reports a compatible engine range', () => {
-    const root = makeGame('1.4.0');
+    const root = makeGame('1.5.0');
     try {
         const { exitCode, output } = runDoctor(root);
         assert.equal(exitCode, 0);
