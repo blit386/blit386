@@ -12,6 +12,11 @@ node_modules/
 # Build outputs
 dist/
 
+# Test runner output (generated locally by `test:visual`, gitignored). Formatting
+# these makes the next format:check fail on files nobody authored.
+playwright-report/
+test-results/
+
 # Agent scratch space (not ours to format)
 .git/
 .remember/
