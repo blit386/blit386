@@ -23,7 +23,7 @@ import { type GeneratedFile, generateClaudeAdapter, generateCursorAdapter } from
 const require = createRequire(import.meta.url);
 
 /** blit386 version range written into the generated package.json. */
-const BLIT386_RANGE = '^1.4.0';
+const BLIT386_RANGE = '^1.5.0';
 
 /** Output directory names for optional wizard templates. */
 const GITHUB_DIR = '.github';

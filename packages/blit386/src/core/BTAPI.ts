@@ -75,7 +75,7 @@ export class BTAPI {
     public static readonly VERSION_MAJOR = 1;
 
     /** Minor version number. */
-    public static readonly VERSION_MINOR = 4;
+    public static readonly VERSION_MINOR = 5;
 
     /** Patch version number. */
     public static readonly VERSION_PATCH = 0;

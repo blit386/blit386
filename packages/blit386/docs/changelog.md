@@ -19,7 +19,7 @@ This page is editorial – release highlights and migration notes, not an exhaus
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## Unreleased
+## 1.5.0 – 2026-08-11
 
 ### Added
 
@@ -46,9 +46,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   a post-production crossfade. It interpolates each RGB channel in linear light instead of in encoded values (which is a
   straight scaling of light when one end of the fade is black), and offsets each entry's schedule by its luminance, so
   bright entries rise first and hold longest while dark entries arrive late and crush early – toe and shoulder behavior
-  from one knob, `highlightLead` (`0` is a plain linear-light fade, default `0.5`). Every entry still lands exactly on
-  the target, so nothing drifts. Note the effect is per palette index, not per pixel. See
-  [Palette](api-palette.md#exposure-fade) and [Palette guide](guide-palette.md).
+  from one knob, `highlightLead` (`0` is a plain linear-light fade, default `0.5`) on the exported `ExposureFadeOptions`
+  bag. Every entry still lands exactly on the target, so nothing drifts. Note the effect is per palette index, not per
+  pixel. See [Palette](api-palette.md#exposure-fade) and [Palette guide](guide-palette.md).
 - `Color32#toLinear` / `#toSrgb`, plus `#toLinearInPlace` / `#toSrgbInPlace`, converting between encoded sRGB and linear
   light with the real sRGB piecewise transfer function (straight toe below the 0.04045 breakpoint), not a bare 2.2
   power. Channels stay 8-bit, so treat linear light as a working space, not a storage format.
@@ -61,9 +61,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   `HardwareSettings.isSplashEnabled` and the `?splash` / `?nosplash` URL flags to override either default. It doubles as
   a loading screen – the game's `init()` runs concurrently and the hold extends until it settles – and hands off into
   the game's palette with a single continuous `BT.paletteFadeExposure`, so there is no cut. Any key, click, or tap
-  skips, and that press is swallowed. New getters `BT.splashState` and `BT.isSplashVisible`, plus `splashColorDark` /
-  `splashColorLight` for the ramp endpoints. The pixelated dissolve is WebGPU-only; the software backend gets the plain
-  fade. See [the splash guide](guide-splash.md) and [Core](api-core.md#splash-state).
+  skips, and that press is swallowed. New getters `BT.splashState` (a `SplashState`) and `BT.isSplashVisible`, plus
+  `splashColorDark` / `splashColorLight` for the ramp endpoints. The pixelated dissolve is WebGPU-only; the software
+  backend gets the plain fade. See [the splash guide](guide-splash.md) and [Core](api-core.md#splash-state).
 - `BitmapFont` fallback-glyph support: a `.btfont` file (or the built-in system font) can include a glyph keyed by
   `U+FFFD` (the Unicode replacement character), and it is substituted for any character missing its own glyph instead of
   the character silently vanishing. See [Bitmap Fonts guide](guide-bitmap-fonts.md#fallback-glyph).
