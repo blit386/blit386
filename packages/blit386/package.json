@@ -125,7 +125,7 @@
     "@webgpu/types": "^0.1.71",
     "acorn": "^8.17.0",
     "cspell": "^10.0.1",
-    "esbuild": "^0.28.1",
+    "esbuild": "^0.28.2",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^62.9.0",
