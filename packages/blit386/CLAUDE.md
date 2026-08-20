@@ -97,6 +97,10 @@ Class member order is enforced by `perfectionist/sort-classes` with `type: 'unso
 preserves the hand-tuned order inside each group; `pnpm run lint:fix` applies it. Region markers (`// #region`) are
 banned. Full layout: `.claude/rules/ts-file-structure.md`.
 
+Widen an existing literal-union type (`Backend`, `AudioBus`, `EffectTier`, `EasingFunction`) rather than adding a second
+literal beside it, and interpolate any numeric sentinel shared with a WGSL source into the shader template instead of
+typing it in both places. Shared policy: root `.claude/rules/named-constants.md`.
+
 ## Writing docs
 
 Everything about authoring `docs/` – prose house style, which Fumadocs components may appear, the twoslash requirement

@@ -79,6 +79,10 @@ list of what ships, and it has no automated guard.
 2. Integer coordinates – generated games use `Vector2i` / `Rect2i` via blit386
 3. Use the `BT` namespace in generated game code, never `BTAPI`
 4. Named exports only in this package's own TypeScript; no default exports
+5. `blit386.engineRange` in `package.json` is derived, not hand-edited – `scripts/bump-lockstep.mjs` (repo root) writes
+   it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`. Any other literal this package uses to
+   describe the engine or the scaffolder follows the same derive-or-document discipline: root
+   `.claude/rules/named-constants.md`
 
 ## Where to find information
 
