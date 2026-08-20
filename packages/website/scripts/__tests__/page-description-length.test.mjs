@@ -32,9 +32,36 @@ const listBlogPosts = async () => {
 };
 
 /**
- * Extracts frontmatter fields from an MDX file's leading `---` block. A value can sit on the `key:` line
- * itself, or – as this repo's authors write longer descriptions – as indented continuation lines below a
- * bare `key:`, which YAML folds into one space-joined string; this mirrors that folding.
+ * Decodes a quoted YAML inline scalar (`"..."` or `'...'`), unescaping the handful of escapes this repo's
+ * frontmatter could plausibly use. Returns `null` when `raw` isn't quoted, so callers can fall back to
+ * treating it as a plain scalar.
+ *
+ * @param {string} raw
+ * @returns {string | null}
+ */
+const decodeQuotedScalar = (raw) => {
+    if (raw.length >= 2 && raw.startsWith('"') && raw.endsWith('"')) {
+        /** @type {Record<string, string>} */
+        const escapes = { '"': '"', '\\': '\\', n: '\n', t: '\t' };
+        return raw.slice(1, -1).replace(/\\(["\\nt])/g, (_match, escaped) => escapes[escaped] ?? escaped);
+    }
+
+    if (raw.length >= 2 && raw.startsWith("'") && raw.endsWith("'")) {
+        return raw.slice(1, -1).replace(/''/g, "'");
+    }
+
+    return null;
+};
+
+// `|` (literal) keeps line breaks; `>` (folded) joins with spaces, same as a bare multi-line plain scalar.
+// Chomping indicators (`-`/`+`) and explicit indent digits are accepted but do not change the join – this
+// guard only measures rendered length, so trailing-newline handling is not load-bearing here.
+const BLOCK_SCALAR_PATTERN = /^([|>])[+-]?\d*$/;
+
+/**
+ * Extracts frontmatter fields from an MDX file's leading `---` block. A value can be a quoted scalar, a
+ * block scalar (`|` literal or `>` folded), or – as this repo's authors write longer plain descriptions –
+ * a bare `key:` followed by indented continuation lines, which YAML folds into one space-joined string.
  *
  * @param {string} contents
  * @returns {Record<string, string>}
@@ -49,10 +76,13 @@ const parseFrontmatter = (contents) => {
     let currentKey = null;
     /** @type {string[]} */
     let currentLines = [];
+    /** @type {' ' | '\n'} */
+    let joiner = ' ';
 
     const flush = () => {
-        if (currentKey) fields[currentKey] = currentLines.join(' ').trim();
+        if (currentKey) fields[currentKey] = currentLines.join(joiner).trim();
         currentLines = [];
+        joiner = ' ';
     };
 
     for (const line of (match[1] ?? '').split(/\r?\n/)) {
@@ -62,7 +92,17 @@ const parseFrontmatter = (contents) => {
             flush();
             currentKey = keyMatch[1] ?? null;
             const inlineValue = (keyMatch[2] ?? '').trim();
-            currentLines = inlineValue ? [inlineValue] : [];
+            const blockScalar = BLOCK_SCALAR_PATTERN.exec(inlineValue);
+            const quoted = decodeQuotedScalar(inlineValue);
+
+            if (blockScalar) {
+                joiner = blockScalar[1] === '|' ? '\n' : ' ';
+                currentLines = [];
+            } else if (quoted !== null) {
+                currentLines = [quoted];
+            } else {
+                currentLines = inlineValue ? [inlineValue] : [];
+            }
         } else if (currentKey) {
             currentLines.push(line.trim());
         }
@@ -72,6 +112,42 @@ const parseFrontmatter = (contents) => {
 
     return fields;
 };
+
+describe('parseFrontmatter', () => {
+    test('reads a single-line plain scalar', () => {
+        const fields = parseFrontmatter('---\ntitle: X\ndescription: One line\n---\n');
+        assert.equal(fields.description, 'One line');
+    });
+
+    test('folds a bare multi-line plain scalar into a space-joined string', () => {
+        const fields = parseFrontmatter('---\ntitle: X\ndescription:\n  Line one\n  Line two\n---\n');
+        assert.equal(fields.description, 'Line one Line two');
+    });
+
+    test('decodes a double-quoted inline scalar, including an escaped colon', () => {
+        const fields = parseFrontmatter('---\ntitle: X\ndescription: "A: colon example"\n---\n');
+        assert.equal(fields.description, 'A: colon example');
+    });
+
+    test('decodes a single-quoted inline scalar with an escaped quote', () => {
+        const fields = parseFrontmatter("---\ntitle: X\ndescription: 'It''s here'\n---\n");
+        assert.equal(fields.description, "It's here");
+    });
+
+    test('preserves line breaks in a literal block scalar (|)', () => {
+        const fields = parseFrontmatter('---\ntitle: X\ndescription: |\n  Line one\n  Line two\n---\n');
+        assert.equal(fields.description, 'Line one\nLine two');
+    });
+
+    test('space-joins a folded block scalar (>) like a plain multi-line scalar', () => {
+        const fields = parseFrontmatter('---\ntitle: X\ndescription: >\n  Line one\n  Line two\n---\n');
+        assert.equal(fields.description, 'Line one Line two');
+    });
+
+    test('returns an empty object when there is no frontmatter block', () => {
+        assert.deepEqual(parseFrontmatter('No frontmatter here.'), {});
+    });
+});
 
 const pages = [...HAND_AUTHORED_PAGES, ...(await listBlogPosts())];
 
