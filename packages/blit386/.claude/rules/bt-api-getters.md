@@ -52,10 +52,11 @@ frame; calling methods on `BT.random` advances the shared stream.
   `soundPitchGet(ref)`, `soundPanSet(ref, value, options?)`, `soundPanGet(ref)`, `musicPlay(clip, options?)`,
   `musicStop(options?)`, `musicVolumeSet(value, options?)`, `musicVolumeGet()`
 - Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
-  `systemPrint`, `printFont` (4th arg is optional `paletteOffset`, not `Color32`)
-- Any parameter: `pointerPos(0)`, `isDown(BT.BTN_A)`, `cameraClamp(...)`
+  `systemPrint`, `systemPrintMeasure`, `printFont` (4th arg is optional `paletteOffset`, not `Color32`)
+- Any parameter: `pointerPos(0)`, `pointerDelta(0)`, `isDown(BT.BTN_A)`, `getAxis(...)`, `cameraClamp(...)`
 - Boolean queries with parameters (Tier A; always methods on `BT`): `isPointerActive(0)`, `isDown(...)`,
-  `isPressed(...)`, `isReleased(...)`, `isKeyDown(...)`, `isKeyPressed(...)`, `isKeyReleased(...)`
+  `isPressed(...)`, `isReleased(...)`, `isGamepadConnected(...)`, `isKeyDown(...)`, `isKeyPressed(...)`,
+  `isKeyReleased(...)`
 - Side-effect booleans (Tier C): `Timer.fireIfElapsed()` – not `is*` because the call advances state
 - Async: `captureFrame`, `downloadFrame`
 

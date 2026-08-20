@@ -33,9 +33,9 @@ import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const TSCONFIG_PATH = join(ROOT, 'tsconfig.json');
-const ENTRY_FILE = join(ROOT, 'src', 'BLIT386.ts');
+export const ENTRY_FILE = join(ROOT, 'src', 'BLIT386.ts');
 const DOCS_DIR = join(ROOT, 'docs');
 const OUTPUT_FILE = join(DOCS_DIR, '_api-history.json');
 const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
@@ -284,7 +284,7 @@ function loadRepoCompilerOptions() {
  *
  * @returns {ts.Program} Compiled program for `src/BLIT386.ts`.
  */
-function createRepoProgram() {
+export function createRepoProgram() {
     return ts.createProgram({
         rootNames: [ENTRY_FILE],
         options: loadRepoCompilerOptions(),

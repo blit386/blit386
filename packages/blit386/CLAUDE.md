@@ -24,6 +24,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | What error message style should I use? | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
 | What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio) |
 | How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md`, `.claude/rules/bt-api-getters.md` |
+| How is `bt-api-getters.md` checked against the real `BT.*` surface? | `scripts/check-api-getters-drift.mjs`, wired into `pnpm run api:getters:check` (this package's own `preflight`) |
 | Which preset has which exact color values? | `docs/guide-palette-presets.md` |
 | How do I fade a palette cinematically, or do color math in linear light? | `BT.paletteFadeExposure`, `Color32#toLinear` / `#toSrgb`; `docs/api-palette.md#exposure-fade`, `docs/guide-palette.md` |
 | How do I smooth motion between fixed `update()` steps? | `BT.renderAlpha`; worked `Vector2i.lerp` pattern in `docs/guide-game-loop.md` |

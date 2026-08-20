@@ -56,8 +56,9 @@ push or CI run only exercises them once the per-package checks are clean.
 - `sync:doc-banners:check` – blit386.dev banner freshness on every published doc
 - `api:since:check` – every public export carries an `@since` tag
 - `api:history:check` – `docs/_api-history.json` matches the source version tags
-- `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:compact-tables`, `test:shell-safety`,
-  `test:security-preflight`
+- `api:getters:check` – every public `BT.*` member has a mention in `.claude/rules/bt-api-getters.md`
+- `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:compact-tables`,
+  `test:shell-safety`, `test:security-preflight`
 
 ## packages/demos
 
