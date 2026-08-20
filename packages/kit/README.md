@@ -30,7 +30,10 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   agent `hooks/` plus `hooks.manifest.json`, and `agents.config.json`, which declares what each assistant's adapter
   emits. Claude/Cursor file generation lives in `src/adapters.ts` and is exported as `@blit386/kit/adapters` so the
   scaffolder and `blit agents sync` / `blit agents add` share one implementation. The same manifest drives Cursor's
-  `.cursor/hooks.json` and Claude Code's `.claude/settings.json` (format-on-edit + block-dangerous-shell).
+  `.cursor/hooks.json` and Claude Code's `.claude/settings.json` (format-on-edit + block-dangerous-shell). Claude Code
+  also gets a SessionStart hook that installs dependencies and runs `blit doctor` when a fresh remote/web session
+  starts, so a scaffolded game works without manual setup; Cursor has no SessionStart-equivalent event, so it does not
+  get this hook.
 
 ## The game-author skills
 

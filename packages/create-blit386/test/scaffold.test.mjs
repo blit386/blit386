@@ -161,13 +161,14 @@ test('scaffold copies optional CI and agent files when requested', () => {
 
     try {
         const project = join(work, 'optional-game');
+        const pmInstall = 'pnpm install';
         const pmRunBuild = 'pnpm run build';
         const pmRunFormat = 'pnpm run format';
         const pmRunLint = 'pnpm run lint';
         scaffold({
             targetDir: project,
             projectName: 'optional-game',
-            pmInstall: 'pnpm install',
+            pmInstall,
             pmRunDev: 'pnpm run dev',
             pmRunBuild,
             pmRunFormat,
@@ -240,6 +241,10 @@ test('scaffold copies optional CI and agent files when requested', () => {
             existsSync(join(project, '.claude', 'hooks', 'shell-safety.sh')),
             '.claude/hooks/shell-safety.sh should be generated',
         );
+        assert.ok(
+            existsSync(join(project, '.claude', 'hooks', 'session-start.sh')),
+            '.claude/hooks/session-start.sh should be generated',
+        );
 
         const claudeSettings = JSON.parse(readFileSync(join(project, '.claude', 'settings.json'), 'utf8'));
         assert.ok(Array.isArray(claudeSettings.hooks?.PostToolUse), 'settings.json should have PostToolUse entries');
@@ -270,6 +275,41 @@ test('scaffold copies optional CI and agent files when requested', () => {
             !('continueOnError' in safetyGroup.hooks[0]),
             'Claude command hooks should not emit continueOnError (exit codes drive behavior)',
         );
+
+        // A fresh remote/web session should install deps and run a checkup without manual setup.
+        assert.ok(Array.isArray(claudeSettings.hooks?.SessionStart), 'settings.json should have SessionStart entries');
+        assert.ok(
+            claudeSettings.hooks.SessionStart.length > 0,
+            'SessionStart should contain at least one matcher group',
+        );
+
+        const sessionStartGroup = claudeSettings.hooks.SessionStart[0];
+        assert.equal(
+            sessionStartGroup.matcher,
+            'startup|resume|clear|compact|fork',
+            'SessionStart hook should match every session-start source',
+        );
+        assert.ok(
+            Array.isArray(sessionStartGroup.hooks) && sessionStartGroup.hooks.length > 0,
+            'SessionStart group should contain command hooks',
+        );
+        assert.equal(sessionStartGroup.hooks[0].type, 'command', 'session-start hook should be type command');
+        assert.ok(
+            sessionStartGroup.hooks[0].command.includes('session-start.sh'),
+            'session-start hook should reference session-start.sh',
+        );
+        assert.ok(
+            sessionStartGroup.hooks[0].command.includes(pmInstall),
+            "session-start hook should pass this project's install command to the script",
+        );
+        assert.ok(
+            !sessionStartGroup.hooks[0].command.includes('{{'),
+            'session-start hook should not have unrendered placeholders',
+        );
+
+        const sessionStartScript = readFileSync(join(project, '.claude', 'hooks', 'session-start.sh'), 'utf8');
+        assert.ok(sessionStartScript.includes('doctor'), 'session-start.sh should run a checkup');
+        assert.ok(!sessionStartScript.includes('{{'), 'session-start.sh should not have unrendered placeholders');
 
         const cursorProject = join(work, 'cursor-game');
         scaffold({
@@ -341,6 +381,17 @@ test('scaffold copies optional CI and agent files when requested', () => {
         // Commands should have template vars rendered.
         const runCmd = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
         assert.ok(!runCmd.includes('{{'), 'run command should not have unrendered placeholders');
+
+        // Cursor has no SessionStart-equivalent hook event, so the manifest's session-start
+        // entry (Claude-only) should not appear here.
+        assert.ok(
+            !existsSync(join(cursorProject, '.cursor', 'hooks', 'session-start.sh')),
+            '.cursor/hooks/session-start.sh should not be generated (Claude-only hook)',
+        );
+        assert.ok(
+            !Object.keys(hooksJson.hooks).some((event) => event.toLowerCase().includes('session')),
+            'hooks.json should not have a session-start event',
+        );
     } finally {
         rmSync(work, { recursive: true, force: true });
     }

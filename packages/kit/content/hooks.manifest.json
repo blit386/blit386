@@ -33,6 +33,16 @@
         "matcher": "Bash",
         "timeout": 10
       }
+    },
+    {
+      "id": "session-start-bootstrap",
+      "intent": "Install dependencies and run a checkup when a fresh remote/web session starts, so the game works without manual setup",
+      "claude": {
+        "event": "SessionStart",
+        "command": "BLIT_PM_INSTALL='{{pmInstall}}' sh .claude/hooks/session-start.sh",
+        "matcher": "startup|resume|clear|compact|fork",
+        "timeout": 300
+      }
     }
   ]
 }

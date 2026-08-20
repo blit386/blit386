@@ -226,16 +226,25 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
     }
 
     const hookManifestPath = join(contentRoot, 'hooks.manifest.json');
+    let claudeHookScripts: Set<string> | null = null;
     if (existsSync(hookManifestPath)) {
         const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
         const claudeSettings = buildClaudeSettings(manifest, vars);
         files.push({ path: '.claude/settings.json', content: `${JSON.stringify(claudeSettings, null, 2)}\n` });
+        claudeHookScripts = referencedHookScripts(manifest, 'claude');
     }
 
     const hooksScriptsDir = join(contentRoot, 'hooks');
     if (existsSync(hooksScriptsDir)) {
         for (const entry of readdirSync(hooksScriptsDir, { withFileTypes: true })) {
             if (!entry.isFile()) {
+                continue;
+            }
+
+            // Only ship a hook script this adapter actually wires up in settings.json/hooks.json –
+            // a script referenced by only one adapter's manifest entries (e.g. a Claude-only
+            // SessionStart bootstrap) must not land as dead weight in the other adapter's project.
+            if (claudeHookScripts && !claudeHookScripts.has(entry.name)) {
                 continue;
             }
 
@@ -247,6 +256,25 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
     }
 
     return files;
+}
+
+/**
+ * Basenames of hook scripts (e.g. `session-start.sh`) that one adapter's manifest entries
+ * actually invoke, extracted from each entry's `command` string. A script absent from this set
+ * is not wired into that adapter's settings/hooks file, so the adapter must not emit it.
+ */
+function referencedHookScripts(manifest: HooksManifest, adapter: 'claude' | 'cursor'): Set<string> {
+    const names = new Set<string>();
+
+    for (const hook of manifest.hooks) {
+        const command = adapter === 'claude' ? hook.claude?.command : hook.cursor?.command;
+        const scriptName = command?.match(/([\w.-]+\.sh)\b/)?.[1];
+        if (scriptName) {
+            names.add(scriptName);
+        }
+    }
+
+    return names;
 }
 
 interface CursorHookEntry {
@@ -401,16 +429,25 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
     }
 
     const hookManifestPath = join(contentRoot, 'hooks.manifest.json');
+    let cursorHookScripts: Set<string> | null = null;
     if (existsSync(hookManifestPath)) {
         const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
         const cursorHooks = buildCursorHooks(manifest, vars);
         files.push({ path: '.cursor/hooks.json', content: `${JSON.stringify(cursorHooks, null, 2)}\n` });
+        cursorHookScripts = referencedHookScripts(manifest, 'cursor');
     }
 
     const hooksScriptsDir = join(contentRoot, 'hooks');
     if (existsSync(hooksScriptsDir)) {
         for (const entry of readdirSync(hooksScriptsDir, { withFileTypes: true })) {
             if (!entry.isFile()) {
+                continue;
+            }
+
+            // Only ship a hook script this adapter actually wires up – see the matching guard in
+            // generateClaudeAdapter for why (a script referenced by only one adapter must not land
+            // as dead weight in the other adapter's project).
+            if (cursorHookScripts && !cursorHookScripts.has(entry.name)) {
                 continue;
             }
 
