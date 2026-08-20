@@ -39,7 +39,7 @@
       "intent": "Install dependencies and run a checkup when a fresh remote/web session starts, so the game works without manual setup",
       "claude": {
         "event": "SessionStart",
-        "command": "BLIT_PM_INSTALL='{{pmInstall}}' sh .claude/hooks/session-start.sh",
+        "command": "cd \"$CLAUDE_PROJECT_DIR\" && BLIT_PM_INSTALL='{{pmInstall}}' sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
         "matcher": "startup|resume|clear|compact|fork",
         "timeout": 300
       }

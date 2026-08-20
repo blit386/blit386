@@ -303,6 +303,10 @@ test('scaffold copies optional CI and agent files when requested', () => {
             "session-start hook should pass this project's install command to the script",
         );
         assert.ok(
+            sessionStartGroup.hooks[0].command.includes('$CLAUDE_PROJECT_DIR'),
+            'session-start hook should resolve the script and project root via $CLAUDE_PROJECT_DIR, not the shell cwd',
+        );
+        assert.ok(
             !sessionStartGroup.hooks[0].command.includes('{{'),
             'session-start hook should not have unrendered placeholders',
         );
