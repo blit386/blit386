@@ -14,8 +14,8 @@ paths:
 # Named constants over repeated literals
 
 A string or numeric literal that is **compared** – `===`, `switch`, a discriminant check, an `includes()` membership
-test – at more than one call site gets one named constant, or in TypeScript one literal-union type, that every site
-reads. Never re-type the literal.
+test – at more than one comparison site gets one named constant, or in TypeScript one literal-union type constraining
+every use. Never re-type the literal.
 
 Scope the constant to its consumers. Repeats inside a single file stay a module-local `const`; the moment a second file
 or a second package needs the value, export it once and import it everywhere. Do not export a constant nothing outside
