@@ -69,6 +69,8 @@ push or CI run only exercises them once the per-package checks are clean.
 - `spellcheck` – cspell over `src/**/*.{js,md,mdx}`, `docs/**/*.{md,mdx}`, `README.md`
 - `knip` – unused exports and dependencies
 - `check:demo-registry` – `DEMO_ORDER` / `VINTAGE_URLS` / `RETIRED_SLUGS` / `NAV_HIDDEN_SLUGS` / `src/*.js` consistency
+- `check:demo-comment-links` – no `vancura.dev` links in `src/*.js` header comments, and every `blit386.dev/docs/...` /
+  `demos.blit386.dev/<slug>` link there resolves against `_sitemap.json` / `DEMO_ORDER`
 - `build` – production build succeeds (CI and Cloudflare Pages depend on this)
 
 No unit tests for demo _content_ (`src/*.js`) by design – see `/test demos`.
