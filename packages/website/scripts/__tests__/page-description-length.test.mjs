@@ -65,6 +65,11 @@ const BLOCK_SCALAR_PATTERN = /^([|>])(?:[1-9][+-]?|[+-][1-9]?|[+-]?)$/;
  * block scalar (`|` literal or `>` folded), or – as this repo's authors write longer plain descriptions –
  * a bare `key:` followed by indented continuation lines, which YAML folds into one space-joined string.
  *
+ * Deliberately not general-purpose YAML: no trailing `# comment` stripping, anchors, tags, or flow
+ * collections. None of that appears in this repo's frontmatter (verified against every hand-authored page
+ * this guard reads) and adding support for syntax nothing here uses would just be more surface for this
+ * parser to get wrong. Reach for a real YAML parser instead of extending this one if that ever changes.
+ *
  * @param {string} contents
  * @returns {Record<string, string>}
  */
