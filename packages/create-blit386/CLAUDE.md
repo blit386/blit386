@@ -21,10 +21,14 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    `generateCursorAdapter` in `@blit386/kit/adapters`), rendering `{{placeholders}}` as it goes, and the scaffolder
    writes those `{ path, content }` pairs to disk. Claude gets `CLAUDE.md`, `.claude/rules/` (from `content/rules/`),
    `.claude/skills/<name>/SKILL.md` (from `content/skills/`), `.claude/settings.json` (hooks from
-   `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`). Cursor gets `.cursor/rules/*.mdc`,
-   `.cursor/commands/<name>.md` (the same skills with frontmatter stripped), `.cursor/hooks.json`, and
-   `.cursor/hooks/shell-safety.sh`. Which files each adapter emits is declared in `content/agents.config.json` (all
-   under `packages/kit/`).
+   `content/hooks.manifest.json`), and `.claude/hooks/` (from `content/hooks/`) – including a SessionStart hook
+   (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor` when a fresh remote/web session
+   starts. Cursor gets `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same skills with frontmatter stripped),
+   `.cursor/hooks.json`, and `.cursor/hooks/shell-safety.sh` – Cursor has no SessionStart-equivalent event, so it does
+   not get the bootstrap hook. `content/agents.config.json` declares which file _categories_ each adapter emits (rules,
+   skills, settings, hooks, ...); within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given
+   project is decided by `content/hooks.manifest.json` – only a script one of that adapter's own hook entries actually
+   references gets copied (all under `packages/kit/`).
 5. Kit content (`AGENTS.md` + `docs/`) is copied **verbatim** – `copyFileSync` / `cpSync`, so `{{placeholder}}` tokens
    are NOT substituted there. Only templates, rules, and skills pass through `render()`. Prose in `AGENTS.md` and
    `docs/` must therefore spell out both language cases ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
