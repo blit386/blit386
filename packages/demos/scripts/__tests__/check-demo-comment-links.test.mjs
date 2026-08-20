@@ -7,6 +7,7 @@ import {
     findDemoLinkFailures,
     findDocsLinkFailures,
     findLinksInHeader,
+    findMalformedLinkFailures,
     findPlaceholderLinkFailures,
 } from '../check-demo-comment-links.mjs';
 
@@ -95,6 +96,22 @@ describe('check-demo-comment-links', () => {
             assert.equal(failures.length, 1);
             assert.match(failures[0], /blit386-demos\.vancura\.dev.*known-placeholder domain/);
         });
+
+        it('does not throw on a malformed URL, and reports it as not a placeholder', () => {
+            assert.deepEqual(findPlaceholderLinkFailures(['https://[']), []);
+        });
+    });
+
+    describe('findMalformedLinkFailures', () => {
+        it('passes when every URL is valid', () => {
+            assert.deepEqual(findMalformedLinkFailures(['https://demos.blit386.dev/basics']), []);
+        });
+
+        it('fails on a URL that findLinksInHeader matched but does not actually parse', () => {
+            const failures = findMalformedLinkFailures(['https://[']);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /https:\/\/\[ is not a valid URL/);
+        });
     });
 
     describe('findDocsLinkFailures', () => {
@@ -108,6 +125,10 @@ describe('check-demo-comment-links', () => {
         it('ignores non-docs and non-blit386.dev URLs', () => {
             const urls = ['https://demos.blit386.dev/basics', 'https://github.com/calumr/flurry'];
             assert.deepEqual(findDocsLinkFailures(urls, sitemapPaths), []);
+        });
+
+        it('does not throw on a malformed URL', () => {
+            assert.deepEqual(findDocsLinkFailures(['https://['], sitemapPaths), []);
         });
 
         it('fails when the docs path has no matching sitemap page', () => {
@@ -133,6 +154,10 @@ describe('check-demo-comment-links', () => {
             const failures = findDemoLinkFailures(['https://demos.blit386.dev/retired-demo'], demoSlugs);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /"retired-demo".*not in DEMO_ORDER/);
+        });
+
+        it('does not throw on a malformed URL', () => {
+            assert.deepEqual(findDemoLinkFailures(['https://['], demoSlugs), []);
         });
     });
 
@@ -175,6 +200,16 @@ describe('check-demo-comment-links', () => {
 
             const failures = findCommentLinkFailures(source, registries);
             assert.equal(failures.length, 3);
+        });
+
+        it('does not throw on a malformed URL, reporting it instead of crashing', () => {
+            const source = ['// Demo with a malformed placeholder link.', '// See https://[ for an example.'].join(
+                '\n',
+            );
+
+            const failures = findCommentLinkFailures(source, registries);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /https:\/\/\[ is not a valid URL/);
         });
 
         it('ignores links outside the header comment', () => {

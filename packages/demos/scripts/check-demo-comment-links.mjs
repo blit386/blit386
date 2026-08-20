@@ -76,11 +76,44 @@ export function findLinksInHeader(headerText) {
 }
 
 /**
+ * The regex in `findLinksInHeader` is permissive by design (it has to catch a placeholder
+ * domain regardless of what path or syntax follows it), so it can capture text that isn't a
+ * valid URL – e.g. an illustrative `https://[id]` in prose. Parsing that with `new URL()`
+ * throws, which would otherwise crash the whole script on one bad match instead of reporting a
+ * clean per-file failure.
+ *
+ * @param {string} url
+ * @returns {URL | null} The parsed URL, or `null` when `url` is not a valid absolute URL.
+ */
+function tryParseUrl(url) {
+    try {
+        return new URL(url);
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * @param {string[]} urls
+ * @returns {string[]} Human-readable failure messages, one per URL that `findLinksInHeader`
+ *   matched but that does not parse as a valid URL.
+ */
+export function findMalformedLinkFailures(urls) {
+    return urls.filter((url) => tryParseUrl(url) === null).map((url) => `${url} is not a valid URL`);
+}
+
+/**
  * @param {string} url
  * @returns {boolean} Whether `url`'s host is a known-dead placeholder domain.
  */
 function isPlaceholderUrl(url) {
-    const host = new URL(url).hostname;
+    const parsed = tryParseUrl(url);
+
+    if (parsed === null) {
+        return false;
+    }
+
+    const host = parsed.hostname;
     return PLACEHOLDER_DOMAIN_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
 }
 
@@ -102,9 +135,9 @@ export function findDocsLinkFailures(urls, sitemapPaths) {
     const failures = [];
 
     for (const url of urls) {
-        const parsed = new URL(url);
+        const parsed = tryParseUrl(url);
 
-        if (parsed.hostname !== 'blit386.dev' || !parsed.pathname.startsWith('/docs/')) {
+        if (parsed === null || parsed.hostname !== 'blit386.dev' || !parsed.pathname.startsWith('/docs/')) {
             continue;
         }
 
@@ -128,9 +161,9 @@ export function findDemoLinkFailures(urls, demoSlugs) {
     const failures = [];
 
     for (const url of urls) {
-        const parsed = new URL(url);
+        const parsed = tryParseUrl(url);
 
-        if (parsed.hostname !== 'demos.blit386.dev') {
+        if (parsed === null || parsed.hostname !== 'demos.blit386.dev') {
             continue;
         }
 
@@ -159,6 +192,7 @@ export function findCommentLinkFailures(source, { sitemapPaths, demoSlugs }) {
     const urls = findLinksInHeader(extractHeaderComment(source));
 
     return [
+        ...findMalformedLinkFailures(urls),
         ...findPlaceholderLinkFailures(urls),
         ...findDocsLinkFailures(urls, sitemapPaths),
         ...findDemoLinkFailures(urls, demoSlugs),
