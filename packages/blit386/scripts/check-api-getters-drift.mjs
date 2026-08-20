@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Fails when a public `BT.*` member has no inline-code mention in `.claude/rules/bt-api-getters.md`,
- * catching the class of drift where a new getter/method ships without the hand-maintained rule
- * being updated to teach it. Reuses `gen-api-history.mjs`'s TypeScript-compiled symbol extraction
- * instead of parsing `src/BLIT386.ts` a second way.
+ * Fails when a public `BT.*` getter or method has no inline-code mention in
+ * `.claude/rules/bt-api-getters.md`, catching the class of drift where a new getter/method ships
+ * without the hand-maintained rule being updated to teach it. Reuses `gen-api-history.mjs`'s
+ * TypeScript-compiled symbol extraction instead of parsing `src/BLIT386.ts` a second way.
  *
  * Usage:
  *   node scripts/check-api-getters-drift.mjs
@@ -110,13 +110,13 @@ function main() {
 
     if (failures.length === 0) {
         console.log(
-            `All ${memberNames.length} public BT.* members are mentioned in ${relativeToRoot(RULE_FILE_PATH)}.`,
+            `All ${memberNames.length} public BT.* getters and methods are mentioned in ${relativeToRoot(RULE_FILE_PATH)}.`,
         );
 
         return;
     }
 
-    console.error(`${failures.length} public BT.* member(s) missing from ${relativeToRoot(RULE_FILE_PATH)}:`);
+    console.error(`${failures.length} public BT.* getter(s)/method(s) missing from ${relativeToRoot(RULE_FILE_PATH)}:`);
 
     for (const failure of failures) {
         console.error(`  - ${failure}`);
