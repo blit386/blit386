@@ -143,14 +143,17 @@ sibling `packages/blit386/docs` in this monorepo). `sync:docs:watch` re-syncs on
 That job checks out with `fetch-depth: 0`. The generator reads each page's `lastModified` with `git log --follow`, to
 see past the commit that moved the engine into `packages/blit386/`, and `--follow` finds nothing on a shallow clone.
 
-**`lastModified` is always at most one commit behind, and that is by design, not a mistake to chase.** It comes from
-`git log` on the engine source doc, so a sync run before that doc's edit is committed embeds the _previous_ commit's
-date. Editing `packages/blit386/docs/…`, committing, then running `pnpm run sync:docs` narrows the window, but cannot
-close it: root CLAUDE.md's squash-merge policy collapses a PR's commits into one new commit with a new SHA and author
-date on `main`, and that commit does not exist yet when `sync:docs` runs, however carefully source and mirror commits
-are ordered within the PR. `pnpm run sync:docs:check` ([`scripts/check-docs-sync.mjs`](scripts/check-docs-sync.mjs))
-regenerates the mirror and inspects the diff: a change confined to `lastModified` lines passes – it self-corrects the
-next time anything syncs that page – and any other change (title, description, editUrl, body) still fails the build.
+**`lastModified` comes from `git log` on the engine source doc, so commit order within a PR matters.** A sync run before
+that doc's edit is committed embeds the _previous_ commit's date. Root CLAUDE.md's merge policy is what makes getting
+this right actually pay off: squash merging is disabled on the repository, so a PR lands as a merge commit, and the
+branch's own commits keep their original SHA and author date on `main` – they are not rewritten the way a squash would
+rewrite them. So: edit `packages/blit386/docs/…`, commit that edit, _then_ run `pnpm run sync:docs` and commit the
+regenerated mirror. Done in that order, the embedded `lastModified` already matches what `git log` reports once the PR
+merges – no lag to chase, nothing to self-correct later. `pnpm run sync:docs:check`
+([`scripts/check-docs-sync.mjs`](scripts/check-docs-sync.mjs)) regenerates the mirror and inspects the diff: a clean
+diff passes; any diff at all – including one confined to `lastModified` lines – fails the build, since that shape now
+means the commit order above wasn't followed rather than an unavoidable artifact of the merge strategy. The fix is to
+re-run `pnpm run sync:docs` after the doc edit is committed and commit the result, not to ignore the failure.
 
 What the generator does: drops the source H1 (the title comes from it), drops a lead paragraph duplicating the
 description, rewrites intra-doc links to site paths (`/docs/...`) and everything else to absolute GitHub URLs, adds

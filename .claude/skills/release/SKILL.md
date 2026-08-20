@@ -255,7 +255,8 @@ is order-sensitive and silently produces wrong data if done too early).
 1. Bump: `pnpm run bump -- X.Y.Z --dry-run` then `pnpm run bump -- X.Y.Z` from the repo root. Confirm the dry-run output
    lists all three `package.json` files, the engine's version constants, `engineRange`, and `BLIT386_RANGE`.
 2. Mark the changelog as released (below) and verify docs coverage (below).
-3. Land the bump through a PR: `main` is protected – branch, PR, wait for checks, squash-merge.
+3. Land the bump through a PR: `main` is protected – branch, PR, wait for checks, merge (`gh pr merge --merge`; squash
+   merging is disabled on the repository).
 4. From the merged `main` commit: publish the engine (`cd packages/blit386 && pnpm run release`, which builds then
    `pnpm publish`), confirm `npm view blit386 version`, then follow `packages/create-blit386/PUBLISHING.md` steps 4-8
    exactly (kit dry-run -> kit publish -> scaffolder dry-run, confirming `@blit386/kit` resolves to a real version, not
@@ -303,8 +304,8 @@ from "How to run the release" step 4 exists:
 2. Run `pnpm --filter blit386 run api:history`.
 3. Verify: `pnpm --filter blit386 run api:history:check`, `pnpm --filter blit386 run api:since:check`,
    `pnpm --filter blit386 run test:api-history`.
-4. `main` is protected – branch, PR, squash-merge. Make sure the regenerated `docs/_api-history.json` is part of that
-   PR.
+4. `main` is protected – branch, PR, merge (`gh pr merge --merge`). Make sure the regenerated `docs/_api-history.json`
+   is part of that PR.
 
 Both possible mistakes here produce a subtly wrong `docs/_api-history.json` and neither fails loudly, so get the order
 right rather than debugging it after the fact:

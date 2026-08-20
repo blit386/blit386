@@ -38,8 +38,9 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
   – see each package's own `CLAUDE.md` for the scopes its history actually uses.
 - DCO sign-off on every commit: `git commit -s`. AI-assisted commits carry
   `Co-Authored-By: Claude <noreply@anthropic.com>`.
-- `main` is protected – never push to it. Land through a PR (`gh pr create`, wait for checks, `gh pr merge`); PRs
-  squash-merge, so the merged commit gets a new SHA.
+- `main` is protected – never push to it. Land through a PR (`gh pr create`, wait for checks, `gh pr merge --merge`);
+  squash merging is disabled on the repository, so PRs land as merge commits – the branch's own commits keep their
+  original SHA and author date on `main`, reachable through the merge commit's non-first parent.
 - Release tags carry no `v` prefix (`1.2.0`, not `v1.2.0`), created after the PR merges, pointing at the resulting
   `main` commit. Tag pushes are allowed; branch pushes to `main` are not.
 - pnpm only, and `pnpm run <script>` (not bare `pnpm <script>`) so the RTK shell hook rewrites it. Package manager

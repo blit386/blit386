@@ -1,24 +1,25 @@
 #!/usr/bin/env node
 // @ts-nocheck
 /**
- * Verify the generated docs mirror matches its source, tolerating the
- * one-commit lag inherent to `lastModified`.
+ * Verify the generated docs mirror matches its source.
  *
  * `lastModified` (see `getLastModified` in sync-docs-from-engine.mjs) comes from
- * `git log` on the engine source doc. This repo squash-merges every PR
- * (root CLAUDE.md), which collapses a PR's commits into one new commit with a
- * new SHA and author date on `main`. A PR that both edits an engine doc and
- * regenerates its mirror can never embed that final, squashed commit's date –
- * that commit does not exist yet when `sync:docs` runs, however carefully the
- * source and mirror commits are ordered within the PR. So the mirror's
- * `lastModified` is always exactly one commit behind until the *next* sync
- * touches the same page, regardless of author discipline.
+ * `git log` on the engine source doc. Squash merging is disabled on this repo
+ * (root CLAUDE.md); a PR lands as a merge commit, so the branch's own commits
+ * keep their original SHA and author date on `main` rather than being
+ * rewritten into one new commit the way a squash would. So a PR that commits
+ * an engine-doc edit *before* running `sync:docs`, and regenerates the mirror
+ * from that history, embeds a `lastModified` that already matches what
+ * `git log` reports once the PR merges – no lag to chase.
  *
- * A byte-exact `git diff --exit-code` therefore fails on every such PR without
- * any real content drift to fix. This script regenerates the mirror and then
- * inspects the diff: a change confined to the `lastModified` frontmatter field
- * passes (it will self-correct on the next sync); any other change – title,
- * description, editUrl, body, or a rename – still fails the build.
+ * This script regenerates the mirror and then inspects the diff: a clean diff
+ * passes. Any diff at all fails the build, including one confined to the
+ * `lastModified` frontmatter field – that shape means the commit order above
+ * wasn't followed (the doc edit wasn't committed before `sync:docs` ran), not
+ * an unavoidable byproduct of the merge strategy. `classifyDocsDiff` still
+ * distinguishes a `lastModified`-only diff from real content drift (title,
+ * description, editUrl, body, or a rename) so the failure message can tell the
+ * two apart.
  */
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -93,11 +94,14 @@ const main = () => {
     }
 
     if (verdict === 'lastModifiedOnly') {
-        console.log(
-            'Docs mirror lastModified timestamp(s) are one commit behind the engine source (expected: this repo ' +
-                'squash-merges PRs, so a PR that edits an engine doc and regenerates its mirror cannot embed the ' +
-                "final squashed commit's date). Not failing the build – the next sync will pick it up.",
+        console.error(
+            'Docs mirror lastModified timestamp(s) are stale. This repo lands PRs as merge commits (squash merging ' +
+                'is disabled), so a doc edit committed before `pnpm run sync:docs` runs should already embed the ' +
+                'right date – this diff means the engine doc edit was not committed before sync:docs ran. Commit the ' +
+                'engine doc edit first, then run `pnpm run sync:docs` again and commit the regenerated mirror.\n',
         );
+        console.error(diff);
+        process.exitCode = 1;
 
         return;
     }
