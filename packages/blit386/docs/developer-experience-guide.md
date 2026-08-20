@@ -265,6 +265,12 @@ Public `.d.ts` output is produced by `vite-plugin-dts` with `rollupTypes: true`,
 `pnpm run build`. API Extractor currently ships against TypeScript 5.9.3, so the workspace pins the same version in
 `package.json` (not TypeScript 6.x) to avoid compiler drift warnings and keep declaration analysis deterministic.
 
+Watch builds skip declaration emit entirely. Under `vite build --watch` (or its `-w` shorthand) the dts plugin is left
+out of the config: API Extractor's rollup crashes on every rebuild after the first, and nothing consumes declarations
+mid-watch anyway. A watch build also leaves `dist` un-emptied, so the rolled-up `dist/blit386.d.ts` from the preceding
+full `pnpm run build` stays in place – stale against in-flight source edits, but still the real published shape. Run a
+one-shot `pnpm run build` to refresh it.
+
 When bumping `typescript` or `vite-plugin-dts`, confirm `pnpm run build` logs no TS/API Extractor version mismatch and
 that `dist/blit386.d.ts` still rolls up cleanly. Re-run `pnpm run typecheck` after any TypeScript line change; TS 5.9
 stricter WebGPU typings may require small test/production fixes (for example `ArrayBuffer`-backed uniform buffers).
