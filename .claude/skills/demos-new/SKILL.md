@@ -153,6 +153,8 @@ see `packages/demos/CLAUDE.md` (Documentation Style) for the full rules.
 ### 5. Verify it runs
 
 - `pnpm run check:demo-registry` (from `packages/demos`) – confirms disk, order, vintage, and nav-hidden sets agree.
+- `pnpm run check:demo-comment-links` (from `packages/demos`) – catches a dead `vancura.dev` link, or a
+  `Prerequisites:`/`Guide:` link to a docs page or demo slug that does not actually exist.
 - `pnpm run dev`, then open `/demos/<slug>.html` and exercise the demo by hand. Demo content has no automated tests;
   `scripts/*.mjs` tooling does (see `/test demos`).
 - `pnpm run build` to confirm the production build still succeeds (the Cloudflare Pages deploy gate).

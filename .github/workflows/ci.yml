@@ -616,6 +616,10 @@ jobs:
         run: pnpm --filter blit386-demos run check:demo-registry
         background: true
 
+      - name: Check demo comment links
+        run: pnpm --filter blit386-demos run check:demo-comment-links
+        background: true
+
       - wait-all:
 
   build-demos:
