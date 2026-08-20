@@ -35,10 +35,11 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
   names correctly spelled with a British `s`/`c` in their own spec (Web Audio's `AnalyserNode`, the CSS-mirroring
   `gray`/`grey` alias in `packages/blit386/src/utils/Color32.ts`) – do not "fix" those.
 - Named constants over repeated literals – a string or numeric literal compared (`===`, `switch`, a discriminant check)
-  at more than one call site, or crossing a file or package boundary, gets one exported constant or literal-union type
-  that every site imports. A copy that has to live outside TypeScript (a shader source string, a sibling package's JSON,
-  a generated project file) is threaded through from that constant or documented as a manual-sync hazard at both sites –
-  never left as two silent copies. Full policy: `.claude/rules/named-constants.md`.
+  at more than one call site gets one named constant or literal-union type that every site reads: module-local while the
+  repeats stay inside one file, exported once a second file or package needs it. A copy that has to live outside
+  TypeScript (a shader source string, a sibling package's JSON, a generated project file) is threaded through from that
+  constant or documented as a manual-sync hazard at both sites – never left as two silent copies. Full policy:
+  `.claude/rules/named-constants.md`.
 - Conventional Commits: `<type>(<scope>): <description>`. The type enum is commitlint-enforced; scope is convention only
   – see each package's own `CLAUDE.md` for the scopes its history actually uses.
 - DCO sign-off on every commit: `git commit -s`. AI-assisted commits carry

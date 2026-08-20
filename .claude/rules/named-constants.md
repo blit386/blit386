@@ -1,12 +1,25 @@
 ---
-paths: [packages/*/src/**, packages/*/templates/**, packages/*/scripts/**, packages/*/test/**, scripts/**]
+paths:
+  [
+    packages/*/src/**,
+    packages/*/templates/**,
+    packages/*/content/**,
+    packages/*/scripts/**,
+    packages/*/test/**,
+    packages/*/package.json,
+    scripts/**,
+  ]
 ---
 
 # Named constants over repeated literals
 
 A string or numeric literal that is **compared** – `===`, `switch`, a discriminant check, an `includes()` membership
-test – at more than one call site, or that crosses a file or package boundary, gets one exported named constant, or in
-TypeScript one literal-union type, that every site imports. Never re-type the literal.
+test – at more than one call site gets one named constant, or in TypeScript one literal-union type, that every site
+reads. Never re-type the literal.
+
+Scope the constant to its consumers. Repeats inside a single file stay a module-local `const`; the moment a second file
+or a second package needs the value, export it once and import it everywhere. Do not export a constant nothing outside
+its own file reads.
 
 Typo drift in a re-typed literal is silent: nothing throws, nothing fails to build, a branch just quietly stops being
 taken. Where a literal-union type already exists the compiler catches that, which is why most of this repo's domain tags
@@ -27,7 +40,7 @@ Name the constant by what it means, not by where it lives; in `packages/blit386/
 | Situation | Applies |
 | --- | --- |
 | The same literal compared in two or more files | yes |
-| The same literal compared twice in one file | yes |
+| The same literal compared twice in one file | yes – as a module-local `const`, not an export |
 | A literal that names something in another package (a version range, a marker string, a file class) | yes |
 | A literal that also has to appear in a shader source, a JSON config, or a generated project file | yes – see below |
 | A literal used exactly once | no |
