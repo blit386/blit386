@@ -113,7 +113,9 @@ root); `package.json` is the list, and `pnpm run preflight` is the gating set. S
 
 ## Testing
 
-Test files sit next to their source (`src/utils/Vector2i.test.ts`). Four tiers:
+Test files sit next to their source (`src/utils/Vector2i.test.ts`). The one exception is `vite.config.test.ts`, which
+sits at the package root next to the build config it covers and is pulled in by an explicit `vitest.config.ts` include.
+Four tiers:
 
 1. Unit (Vitest, node) – pure logic: Vector2i, Rect2i, Color32, Palette, PaletteEffect, Easing, GameLoop
 2. Integration (Vitest, Node + GPU mocks; happy-dom for DOM) – DOM and GPU code

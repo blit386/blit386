@@ -9,6 +9,10 @@ The workspace pins TypeScript 5.9.3 in `package.json` to match the compiler bund
 `vite-plugin-dts` when `rollupTypes: true`). This avoids TS/API Extractor drift warnings during `pnpm run build` and
 keeps rolled-up `dist/blit386.d.ts` deterministic.
 
+Only non-watch builds emit declarations at all: `vite build --watch` (or `-w`) drops the dts plugin, because API
+Extractor's rollup crashes on every rebuild after the first. Run the checker against a `dist` from a full
+`pnpm run build`, never one a watch session left behind.
+
 When bumping `typescript` or `vite-plugin-dts`, confirm the build log reports the same bundled version and that
 `node scripts/check-declaration-tooling.mjs build.log` passes (log alignment plus required `BT` getters in
 `dist/blit386.d.ts`, including `requestedBackend` and `activeBackend`). See

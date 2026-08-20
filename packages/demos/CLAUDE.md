@@ -203,7 +203,9 @@ not in this package's wiring – tracked against the engine. There is no automat
 `/test demos` skill carries the manual check script to run after touching the wiring.
 
 Editing engine source under `packages/blit386/src/` (anything feeding the browser bundle, `dist/blit386.js`) rebuilds
-automatically under `dev:watch` and full-reloads this page – no restart needed.
+automatically under `dev:watch` and full-reloads this page – no restart needed. Only the JS bundle rebuilds:
+`dist/blit386.d.ts` stays at whatever the one-shot build that `dev:watch` starts with produced, since watch builds skip
+declaration emit (BT-426).
 
 If you change the engine's `blit386/vite` plugin itself (`packages/blit386/src/vite/**`, the Node-targeted
 `dist/vite.js` bundle), `dev:watch` does not watch it: `packages/demos/vite.config.js` loads that plugin once at its own
