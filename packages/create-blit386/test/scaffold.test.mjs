@@ -302,9 +302,16 @@ test('scaffold copies optional CI and agent files when requested', () => {
             sessionStartGroup.hooks[0].command.includes(pmInstall),
             "session-start hook should pass this project's install command to the script",
         );
-        assert.ok(
-            sessionStartGroup.hooks[0].command.includes('$CLAUDE_PROJECT_DIR'),
-            'session-start hook should resolve the script and project root via $CLAUDE_PROJECT_DIR, not the shell cwd',
+        const sessionStartCommand = sessionStartGroup.hooks[0].command;
+        assert.match(
+            sessionStartCommand,
+            /^cd "\$CLAUDE_PROJECT_DIR" && /,
+            'session-start hook should cd into $CLAUDE_PROJECT_DIR before running anything',
+        );
+        assert.match(
+            sessionStartCommand,
+            / sh "\$CLAUDE_PROJECT_DIR\/\.claude\/hooks\/session-start\.sh"$/,
+            'session-start hook should invoke the script by its absolute $CLAUDE_PROJECT_DIR path, not a cwd-relative one',
         );
         assert.ok(
             !sessionStartGroup.hooks[0].command.includes('{{'),
