@@ -54,9 +54,11 @@ const decodeQuotedScalar = (raw) => {
 };
 
 // `|` (literal) keeps line breaks; `>` (folded) joins with spaces, same as a bare multi-line plain scalar.
-// Chomping indicators (`-`/`+`) and explicit indent digits are accepted but do not change the join – this
-// guard only measures rendered length, so trailing-newline handling is not load-bearing here.
-const BLOCK_SCALAR_PATTERN = /^([|>])[+-]?\d*$/;
+// The chomping indicator (`-`/`+`) and indentation indicator (`1`-`9`) are each optional and, per the YAML
+// spec, may appear in either order (`|2-` and `|-2` are both valid) – accepted but not otherwise acted on,
+// since this guard only measures rendered length and continuation lines are already stripped of leading
+// indentation by trimming.
+const BLOCK_SCALAR_PATTERN = /^([|>])(?:[1-9][+-]?|[+-][1-9]?|[+-]?)$/;
 
 /**
  * Extracts frontmatter fields from an MDX file's leading `---` block. A value can be a quoted scalar, a
@@ -141,6 +143,16 @@ describe('parseFrontmatter', () => {
 
     test('space-joins a folded block scalar (>) like a plain multi-line scalar', () => {
         const fields = parseFrontmatter('---\ntitle: X\ndescription: >\n  Line one\n  Line two\n---\n');
+        assert.equal(fields.description, 'Line one Line two');
+    });
+
+    test('accepts a literal block scalar header with indent-then-chomp order (|2-)', () => {
+        const fields = parseFrontmatter('---\ntitle: X\ndescription: |2-\n  Line one\n  Line two\n---\n');
+        assert.equal(fields.description, 'Line one\nLine two');
+    });
+
+    test('accepts a folded block scalar header with chomp-then-indent order (>+2)', () => {
+        const fields = parseFrontmatter('---\ntitle: X\ndescription: >+2\n  Line one\n  Line two\n---\n');
         assert.equal(fields.description, 'Line one Line two');
     });
 
