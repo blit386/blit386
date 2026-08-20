@@ -142,8 +142,9 @@ pnpm --filter create-blit386 run typecheck && pnpm --filter create-blit386 run t
 Neither `packages/kit` nor `packages/create-blit386` has its own combined `preflight` script – see `/preflight kit` (or
 `create-blit386`) for the full per-package check breakdown.
 
-`main` is protected: push a branch, open a PR, wait for checks, and squash-merge it. The version bump has to be on
-`main` before you publish, because you publish (and later tag) from the merged commit.
+`main` is protected: push a branch, open a PR, wait for checks, and merge it (`gh pr merge --merge`; squash merging is
+disabled on the repository). The version bump has to be on `main` before you publish, because you publish (and later
+tag) from the merged commit.
 
 ### 4. Publish
 
