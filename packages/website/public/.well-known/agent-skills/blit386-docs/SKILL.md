@@ -19,7 +19,7 @@ automatic Canvas 2D software fallback. All engine functionality is accessed thro
 | Documentation home | https://blit386.dev/docs | HTML |
 | Site summary for LLMs | https://blit386.dev/llms.txt | plain text |
 | Full site content | https://blit386.dev/llms-full.txt | plain text |
-| Search API | https://blit386.dev/api/search?query=<term> | JSON array |
+| MCP server (search, docs summary) | https://blit386.dev/mcp | JSON-RPC 2.0 |
 | Sitemap | https://blit386.dev/sitemap.xml | XML |
 
 ## Navigating the docs
@@ -30,13 +30,17 @@ Main documentation sections:
 - `/docs/getting-started` – Installation and first steps
 - `/docs/api/` – Full API reference for the `BT` namespace
 
-Use the search API to locate specific content:
+Use the MCP server's `search_docs` tool to locate specific content:
 
 ```text
-GET https://blit386.dev/api/search?query=palette+animation
+POST https://blit386.dev/mcp
+Content-Type: application/json
+
+{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "search_docs", "arguments": {"query": "palette animation"}}}
 ```
 
-Returns a JSON array of matching pages with titles, URLs, and content excerpts.
+Returns matching pages with titles, URLs, and content excerpts. The server also exposes `get_docs_summary`, which
+returns the `llms.txt` summary. Call `tools/list` for the full tool schema.
 
 ## Core API concepts
 

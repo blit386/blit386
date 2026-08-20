@@ -63,9 +63,22 @@
                 required: ['query'],
             },
             execute: async ({ query }) => {
-                const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+                const res = await fetch('/mcp', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 1,
+                        method: 'tools/call',
+                        params: { name: 'search_docs', arguments: { query } },
+                    }),
+                });
                 if (!res.ok) return { error: `Search request failed: ${res.status}` };
-                return await res.json();
+
+                const body = await res.json();
+                if (body.error) return { error: body.error.message };
+
+                return JSON.parse(body.result.content[0].text);
             },
             annotations: { readOnlyHint: true },
         },

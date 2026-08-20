@@ -67,7 +67,7 @@ function createAssignMock() {
 }
 
 function createFetchMock() {
-    return vi.fn(async (_input: string): Promise<FetchResponse> => ({ ok: true, status: 200 }));
+    return vi.fn(async (_input: string, _init?: RequestInit): Promise<FetchResponse> => ({ ok: true, status: 200 }));
 }
 
 function stubBrowserGlobals(
@@ -240,13 +240,31 @@ describe('webmcp.js', () => {
             expect(findTool(tools, 'search_documentation').annotations?.readOnlyHint).toBe(true);
         });
 
-        it('fetches the encoded query and returns the parsed results', async () => {
-            fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ results: ['a'] }) });
+        it('calls the /mcp search_docs tool and returns the parsed results', async () => {
+            const results = [{ title: 'Palette', url: '/docs/api/palette', excerpt: '...' }];
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    result: { content: [{ type: 'text', text: JSON.stringify(results) }] },
+                }),
+            });
 
             const result = await findTool(tools, 'search_documentation').execute({ query: 'palette & animation' });
 
-            expect(fetchMock).toHaveBeenCalledWith('/api/search?query=palette%20%26%20animation');
-            expect(result).toEqual({ results: ['a'] });
+            expect(fetchMock).toHaveBeenCalledWith('/mcp', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'tools/call',
+                    params: { name: 'search_docs', arguments: { query: 'palette & animation' } },
+                }),
+            });
+            expect(result).toEqual(results);
         });
 
         it('reports the status without parsing the body when the request fails', async () => {
@@ -257,6 +275,22 @@ describe('webmcp.js', () => {
 
             expect(result).toEqual({ error: 'Search request failed: 500' });
             expect(json).not.toHaveBeenCalled();
+        });
+
+        it('reports the JSON-RPC error message when the tool call fails', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    error: { code: -32602, message: 'Invalid params' },
+                }),
+            });
+
+            const result = await findTool(tools, 'search_documentation').execute({ query: 'anything' });
+
+            expect(result).toEqual({ error: 'Invalid params' });
         });
     });
 
