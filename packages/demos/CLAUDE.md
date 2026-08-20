@@ -16,6 +16,9 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together w
   prefer-immutability default does not apply to per-frame demo state
 - Relaxed linting versus the engine: JSDoc is not required (though class-level `@implements {IBTDemo}` is encouraged)
   and console logging is allowed. Clarity beats ceremony
+- Shared literals live in `src/shared/` – plain JS has no compiler backstop, so a label, state name, or type string
+  compared in more than one demo gets one exported constant beside `ui-theme.js` and `post-process-backend.js`, never a
+  re-typed copy per demo. Shared policy: root `.claude/rules/named-constants.md`
 
 ## Layout
 

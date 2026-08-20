@@ -48,6 +48,9 @@ are in [`.claude/rules/template-structure.md`](.claude/rules/template-structure.
 3. Integer coordinates – generated games use `Vector2i` / `Rect2i` via blit386
 4. Use the `BT` namespace in generated game code, never `BTAPI`
 5. Named exports only in this package's own TypeScript; no default exports
+6. Literals that describe another package are derived or documented, never copied – `BLIT386_RANGE` in `src/scaffold.ts`
+   is written by `scripts/bump-lockstep.mjs` (repo root) alongside `packages/kit`'s `blit386.engineRange`, and
+   `PUBLISHING.md` records the coupling. Shared policy: root `.claude/rules/named-constants.md`
 
 ## Where to find information
 

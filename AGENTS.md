@@ -21,6 +21,8 @@ are touching together with this file.
 - No emoji anywhere – code, docs, commits, PR titles, errors, logs.
 - Use the en dash (–) for parenthetical breaks and ranges; never the em dash or a double hyphen as a dash substitute.
 - American English spelling, with documented spec-mandated exceptions (see `CLAUDE.md`).
+- Named constants over repeated literals – a literal compared at two or more call sites, or crossing a file or package
+  boundary, gets one shared constant or literal-union type (see `.claude/rules/named-constants.md`).
 - Package manager is pnpm, not npm or yarn; use `pnpm run <script>` so shell-rewrite hooks apply.
 - All commits require DCO sign-off (`git commit -s`); Conventional Commits format (`<type>(<scope>): <description>`).
 - `main` is protected – land changes through a PR; release tags carry no `v` prefix.
