@@ -24,6 +24,7 @@
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { gitEnv } from './git-env.mjs';
+import { PAGES } from './sync-docs-from-engine.mjs';
 
 const DIFF_FILE_HEADER_PATTERN = /^(?:\+\+\+ |--- )/u;
 const HUNK_HEADER_PATTERN = /^@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@/u;
@@ -78,8 +79,50 @@ const classifyDocsDiff = (diffText) => {
     return isSafe ? 'lastModifiedOnly' : 'drift';
 };
 
+/**
+ * List untracked, non-ignored files under `content/docs`. `git diff` (used above) never reports
+ * an untracked path at all, so a brand-new mirror page that `sync:docs` wrote but nobody staged
+ * is invisible to `classifyDocsDiff` – this is the other half of what a clean verdict must check.
+ */
+const listUntrackedDocsFiles = (cwd = process.cwd()) =>
+    execFileSync('git', ['ls-files', '--others', '--exclude-standard', '--', 'content/docs'], {
+        cwd,
+        encoding: 'utf8',
+        env: gitEnv(),
+    })
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+/**
+ * Narrow a list of untracked files to the ones that are actually generated pages, by
+ * cross-referencing the sitemap manifest's published-page entries (a page's `path` is already
+ * `<section>/<topic>`, and `sync-docs-from-engine.mjs` writes it to `content/docs/<path>.mdx`).
+ * An untracked file that matches no sitemap page – a hand-authored draft, for instance – is out
+ * of scope for this check and is left out.
+ */
+const findUntrackedGeneratedPages = (untrackedFiles, pages = PAGES) => {
+    const expected = new Set(pages.map((page) => `content/docs/${page.path}.mdx`));
+
+    return untrackedFiles.filter((file) => expected.has(file));
+};
+
 const main = () => {
     execFileSync('pnpm', ['run', 'sync:docs'], { stdio: 'inherit' });
+
+    const untrackedGeneratedPages = findUntrackedGeneratedPages(listUntrackedDocsFiles());
+
+    if (untrackedGeneratedPages.length > 0) {
+        console.error(
+            'Docs mirror has newly generated page(s) missing from the commit (untracked):\n\n' +
+                untrackedGeneratedPages.map((file) => `  ${file}`).join('\n') +
+                '\n\nThese were just written by `pnpm run sync:docs` from a page added to ' +
+                '`packages/blit386/docs/_sitemap.json`. Run `git add` on the file(s) above and commit them.\n',
+        );
+        process.exitCode = 1;
+
+        return;
+    }
 
     const diff = execFileSync('git', ['diff', '--no-color', '--', 'content/docs'], {
         encoding: 'utf8',
@@ -113,7 +156,7 @@ const main = () => {
     process.exitCode = 1;
 };
 
-export { classifyDocsDiff };
+export { classifyDocsDiff, listUntrackedDocsFiles, findUntrackedGeneratedPages };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
     main();

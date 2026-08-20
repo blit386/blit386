@@ -1,7 +1,14 @@
-import { describe, test } from 'node:test';
+import { after, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { gitEnv } from '../git-env.mjs';
 
-const { classifyDocsDiff } = await import('../check-docs-sync.mjs');
+const { classifyDocsDiff, findUntrackedGeneratedPages, listUntrackedDocsFiles } = await import(
+    '../check-docs-sync.mjs'
+);
 
 const FILE_HEADER = [
     'diff --git a/packages/website/content/docs/guides/splash.mdx b/packages/website/content/docs/guides/splash.mdx',
@@ -121,5 +128,66 @@ describe('classifyDocsDiff', () => {
         ].join('\n');
 
         assert.equal(classifyDocsDiff(diff), 'drift');
+    });
+});
+
+describe('findUntrackedGeneratedPages', () => {
+    const PAGES = [
+        { src: 'guide-splash.md', path: 'guides/splash', description: 'The splash screen.' },
+        { src: 'guide-new-page.md', path: 'guides/new-page', description: 'A brand-new guide.' },
+    ];
+
+    test('flags an untracked file whose path matches a newly published sitemap page', () => {
+        const untrackedFiles = ['content/docs/guides/new-page.mdx'];
+
+        assert.deepEqual(findUntrackedGeneratedPages(untrackedFiles, PAGES), ['content/docs/guides/new-page.mdx']);
+    });
+
+    test('ignores an untracked file under content/docs that matches no sitemap page', () => {
+        // A hand-authored draft (e.g. a new content/docs/faq.mdx in progress) is not a
+        // generated page, so it must not be reported by this check.
+        const untrackedFiles = ['content/docs/faq.mdx'];
+
+        assert.deepEqual(findUntrackedGeneratedPages(untrackedFiles, PAGES), []);
+    });
+
+    test('returns an empty list when there are no untracked files', () => {
+        assert.deepEqual(findUntrackedGeneratedPages([], PAGES), []);
+    });
+
+    test('flags only the untracked files that match, leaving unrelated ones out', () => {
+        const untrackedFiles = ['content/docs/guides/new-page.mdx', 'content/docs/faq.mdx'];
+
+        assert.deepEqual(findUntrackedGeneratedPages(untrackedFiles, PAGES), ['content/docs/guides/new-page.mdx']);
+    });
+});
+
+describe('listUntrackedDocsFiles', () => {
+    /** @type {string} */
+    let repoDir;
+
+    after(() => {
+        rmSync(repoDir, { recursive: true, force: true });
+    });
+
+    test('lists an untracked generated page under content/docs, excluding tracked files', () => {
+        repoDir = mkdtempSync(join(tmpdir(), 'check-docs-sync-untracked-'));
+        const env = gitEnv({ GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@example.com' });
+        /** @type {(args: string[]) => string} */
+        const run = (args) => execFileSync('git', args, { cwd: repoDir, env, encoding: 'utf8', stdio: 'pipe' });
+
+        run(['init', '--quiet']);
+        run(['config', 'user.email', 'test@example.com']);
+        run(['config', 'user.name', 'Test']);
+
+        const guidesDir = join(repoDir, 'content', 'docs', 'guides');
+        mkdirSync(guidesDir, { recursive: true });
+        writeFileSync(join(guidesDir, 'splash.mdx'), '---\ntitle: "The BLIT386 Splash"\n---\n\nBody.\n');
+        run(['add', 'content/docs/guides/splash.mdx']);
+        run(['commit', '--quiet', '-m', 'initial commit']);
+
+        writeFileSync(join(guidesDir, 'new-page.mdx'), '---\ntitle: "New Page"\n---\n\nBody.\n');
+
+        assert.deepEqual(listUntrackedDocsFiles(repoDir), ['content/docs/guides/new-page.mdx']);
     });
 });
