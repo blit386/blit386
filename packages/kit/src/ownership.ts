@@ -33,12 +33,22 @@ export const CLAUDE_SKILLS_DIR = `${CLAUDE_DIR}skills/`;
 export const CLAUDE_HOOKS_DIR = `${CLAUDE_DIR}hooks/`;
 export const CLAUDE_SETTINGS_JSON = `${CLAUDE_DIR}settings.json`;
 
+/**
+ * Claude Code's MCP server configuration. Project root, not under `.claude/` – that is Claude Code's
+ * own convention, so this is the one Claude path the `CLAUDE_DIR` prefix does not cover and
+ * `AGENT_PATHS` has to name outright.
+ */
+export const CLAUDE_MCP_JSON = '.mcp.json';
+
 /** Root of Cursor's generated configuration. */
 export const CURSOR_DIR = '.cursor/';
 export const CURSOR_RULES_DIR = `${CURSOR_DIR}rules/`;
 export const CURSOR_HOOKS_DIR = `${CURSOR_DIR}hooks/`;
 export const CURSOR_COMMANDS_DIR = `${CURSOR_DIR}commands/`;
 export const CURSOR_HOOKS_JSON = `${CURSOR_DIR}hooks.json`;
+
+/** Cursor's MCP server configuration. */
+export const CURSOR_MCP_JSON = `${CURSOR_DIR}mcp.json`;
 
 /** Beginner docs, copied from the kit's own `content/docs/`. */
 export const DOCS_DIR = 'docs/';
@@ -56,7 +66,7 @@ export type FileClass = 'kit-owned' | 'shared' | 'user-owned';
 const SHARED_FILES: readonly string[] = [AGENTS_MD, CLAUDE_MD];
 
 /** Exact paths the kit owns outright. */
-const KIT_OWNED_FILES: readonly string[] = [CLAUDE_SETTINGS_JSON, CURSOR_HOOKS_JSON];
+const KIT_OWNED_FILES: readonly string[] = [CLAUDE_SETTINGS_JSON, CLAUDE_MCP_JSON, CURSOR_HOOKS_JSON, CURSOR_MCP_JSON];
 
 /** Directories whose entire contents the kit owns, trailing slash included. */
 const KIT_OWNED_DIRS: readonly string[] = [
@@ -113,9 +123,20 @@ export function isKitManaged(fileClass: FileClass): boolean {
  */
 export type AgentKind = 'claude' | 'cursor';
 
-/** Exact paths and directory prefixes each assistant's generated files occupy. */
+/**
+ * Exact paths and directory prefixes each assistant's generated files occupy.
+ *
+ * Every path an adapter emits must match here, or `hasAgentFiles` under-reports and a sync skips that
+ * assistant's files – `test/ownership.test.mjs` pins that invariant. Claude needs `CLAUDE_MCP_JSON`
+ * spelled out because it sits at the project root rather than under `.claude/`; Cursor's `mcp.json`
+ * is already covered by the `CURSOR_DIR` prefix.
+ *
+ * These are manifest paths, not disk paths: every caller passes `.blit/manifest.json` entries, so a
+ * hand-written `.mcp.json` the kit never tracked cannot make an assistant look already set up. The
+ * untracked case is handled separately, by `runAddAgent`'s collision check.
+ */
 const AGENT_PATHS: Record<AgentKind, { readonly files: readonly string[]; readonly dirs: readonly string[] }> = {
-    claude: { files: [CLAUDE_MD], dirs: [CLAUDE_DIR] },
+    claude: { files: [CLAUDE_MD, CLAUDE_MCP_JSON], dirs: [CLAUDE_DIR] },
     cursor: { files: [], dirs: [CURSOR_DIR] },
 };
 

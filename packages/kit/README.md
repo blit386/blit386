@@ -33,7 +33,10 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
   ownership classes are defined once in `src/ownership.ts`. The same manifest drives Cursor's `.cursor/hooks.json` and
   Claude Code's `.claude/settings.json` (format-on-edit + block-dangerous-shell). Claude Code also gets a SessionStart
   hook that installs dependencies and runs `blit doctor` when a fresh remote/web session starts, so a scaffolded game
-  works without manual setup; Cursor has no SessionStart-equivalent event, so it does not get this hook.
+  works without manual setup; Cursor has no SessionStart-equivalent event, so it does not get this hook. Both adapters
+  also emit a documentation-MCP config – `.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor – registering the
+  `blit386-docs` server at `https://blit386.dev/mcp` so an assistant can search the live docs. Claude Code asks once
+  whether to allow it.
 
 ## The game-author skills
 
@@ -46,6 +49,7 @@ there you can also invoke one by name (`/add-sprite`).
 | `structure-a-game` | The shape of a game: `configure`, `init`, `update`, `render` – and what the engine does not do for you |
 | `run` | Start the dev server and see the game |
 | `fix` | The game crashes, shows a black screen, or behaves oddly |
+| `ask-the-docs` | Look something up that the local `docs/` folder does not cover, using the live docs at blit386.dev |
 | `use-hot-reload` | Keep playing while you edit code or assets (`blit386/vite`, `onHotReload`) |
 | `use-dev-mode` | Gate debug HUDs, cheat keys, and verbose logging on `BT.isDevMode` |
 | `draw-shapes` | Rectangles, lines, pixels, and clearing the screen |

@@ -69,8 +69,18 @@ bootstrap(Game);
 | Turn off the BLIT386 splash, or see it during development | `docs/basics.md` (The splash) |
 | Fix a blank screen, an error, a broken change | `docs/when-something-breaks.md` |
 
-The full engine reference lives at https://github.com/blit386/blit386 – only go there if these local docs do not answer
-the question.
+When these local docs come up short, the live documentation at https://blit386.dev has the full engine reference, and
+this game already knows how to query it:
+
+- Ask the `blit386-docs` MCP server. If you set up Claude Code or Cursor, it is already configured (`.mcp.json` for
+  Claude Code, `.cursor/mcp.json` for Cursor) and gives your assistant two tools: `search_docs` (full-text search – page
+  titles, URLs, and excerpts) and `get_docs_summary` (the whole site's contents in one compact block).
+- No MCP server? Fetch https://blit386.dev/llms.txt for the same summary as one plain text file.
+- Reading a page? Request its URL with the header `Accept: text/markdown` and the site returns markdown instead of HTML
+  – far less to wade through.
+
+The `ask-the-docs` skill walks an assistant through all three. The source code lives at
+https://github.com/blit386/blit386 – go there only when the documentation itself does not answer the question.
 
 ## Running the game
 
@@ -103,9 +113,12 @@ commented example in `src/game.js` / `src/game.ts`); edits to `configure()` scre
 ## Working with an AI assistant
 
 If you use Claude Code, open `CLAUDE.md` for the full project guide. Rules loaded automatically from `.claude/rules/`
-tell Claude the engine's naming conventions. Skills in `.claude/skills/` are loaded on demand.
+tell Claude the engine's naming conventions. Skills in `.claude/skills/` are loaded on demand. `.mcp.json` points Claude
+Code at the BLIT386 documentation server; Claude Code asks once whether to allow it, and saying yes lets your assistant
+search the live docs.
 
-If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project.
+If you use Cursor, `.cursor/rules/` loads rules automatically when you open the project, and `.cursor/mcp.json` points
+it at the same documentation server.
 
 For other assistants (Zed, Copilot, Windsurf, and others), this file is your assistant's home base.
 

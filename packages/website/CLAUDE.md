@@ -274,6 +274,11 @@ A JSON-RPC 2.0 endpoint at `/mcp` (streamable-HTTP, no auth), with two tools: `s
 body matches. It deliberately does **not** build a FlexSearch index in-process – that exceeds the Worker CPU limit
 (error 1102), the same reason site search runs in static mode.
 
+`public/.well-known/mcp/server-card.json` has a downstream copy. `@blit386/kit` generates the same server name and URL
+into every scaffolded game (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) and cannot import across the
+package boundary, so the values are duplicated in `packages/kit/src/adapters.ts`. Renaming the server or moving the
+endpoint means editing both; `packages/kit/test/mcp-config.test.mjs` compares them and fails when they disagree.
+
 ## Blog media
 
 Short screen captures are self-hosted, not embedded from a video platform.

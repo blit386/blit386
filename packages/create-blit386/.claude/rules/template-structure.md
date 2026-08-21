@@ -8,7 +8,8 @@
   typed.
 - `templates/optional/` – wizard opt-in extras (currently only the GitHub Actions CI workflow). Cursor and Claude
   configs are generated from the kit IR (`packages/kit/src/adapters.ts`) at scaffold time, not copied from static
-  templates.
+  templates. That includes the documentation-MCP configs (`.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor) –
+  do not add a static template for them.
 - Placeholders use `{{name}}` tokens; unknown tokens must stay visible if mis-typed.
 - Rename `gitignore` → `.gitignore`, `editorconfig` → `.editorconfig`, and `prettierignore` → `.prettierignore`, and
   strip `.tmpl` extensions, during the scaffold copy (`mapOutputName`).

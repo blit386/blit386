@@ -8,7 +8,8 @@
         ".claude/rules/{name}.md",
         ".claude/skills/{name}/SKILL.md",
         ".claude/settings.json",
-        ".claude/hooks/{script}"
+        ".claude/hooks/{script}",
+        ".mcp.json"
       ]
     },
     "cursor": {
@@ -17,7 +18,8 @@
         ".cursor/rules/{name}.mdc",
         ".cursor/hooks.json",
         ".cursor/hooks/{script}",
-        ".cursor/commands/{name}.md"
+        ".cursor/commands/{name}.md",
+        ".cursor/mcp.json"
       ]
     }
   }
