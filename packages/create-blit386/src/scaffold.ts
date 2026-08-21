@@ -14,12 +14,14 @@
  */
 
 import { createHash } from 'node:crypto';
-import { copyFileSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+    agentsFile,
     classifyFile,
+    collectDocs,
     type FileClass,
     type GeneratedFile,
     generateClaudeAdapter,
@@ -287,30 +289,11 @@ export function scaffold(options: ScaffoldOptions): void {
         writeGeneratedFiles(options.targetDir, generateClaudeAdapter(kit, vars), writtenPaths);
     }
 
-    // Copy the kit's canonical guidance (single source of truth for AGENTS.md + docs).
-    const agentsPath = join(options.targetDir, 'AGENTS.md');
-    copyFileSync(join(kit, 'content', 'AGENTS.md'), agentsPath);
-    writtenPaths.add(agentsPath);
-
-    const docsDestDir = join(options.targetDir, 'docs');
-    cpSync(join(kit, 'content', 'docs'), docsDestDir, { recursive: true });
-
-    // cpSync does not tell us what it copied, so scan the written docs tree.
-    collectTree(docsDestDir, writtenPaths);
+    // The kit's canonical guidance, emitted by the same generators `blit agents sync` uses, so these
+    // destinations cannot drift from the paths `classifyFile` assigns ownership to. Both emitters copy
+    // the content verbatim – no `{{placeholder}}` rendering – exactly as the previous direct copy did.
+    writeGeneratedFiles(options.targetDir, [agentsFile(kit), ...collectDocs(kit)], writtenPaths);
 
     // Seal the ownership manifest and write pristine base copies.
     writeBlitManifest(options.targetDir, writtenPaths, kitVer, vars);
-}
-
-/** Recursively add all files under `dir` to `collected` (used after cpSync which returns void). */
-function collectTree(dir: string, collected: Set<string>): void {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const fullPath = join(dir, entry.name);
-
-        if (entry.isDirectory()) {
-            collectTree(fullPath, collected);
-        } else {
-            collected.add(fullPath);
-        }
-    }
 }

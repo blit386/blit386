@@ -84,7 +84,8 @@ list of what ships, and it has no automated guard.
    it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`, and `pnpm run bump:check` fails the
    build when either drifts. Any other literal this package uses to describe the engine or the scaffolder follows the
    same derive-or-document discipline: file classes and generated-project paths live once in `src/ownership.ts`, which
-   `create-blit386` imports through `@blit386/kit/adapters`. Root `.claude/rules/named-constants.md`
+   `create-blit386` imports through `@blit386/kit/adapters`. See root `.claude/rules/named-constants.md` for the shared
+   policy
 
 ## Where to find information
 

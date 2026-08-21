@@ -33,8 +33,9 @@ one push – most of the "why does push take so long" feeling. They were removed
 `preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`) or via
 `/preflight root` when checking a package in isolation. The root-level pass only runs when `PREFLIGHT_STATUS` is zero –
 a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`, `agents:check`,
-`check-dash-typography`, and `bump:check` entirely, so a push or CI run only exercises them once the per-package checks
-are clean.
+`check-dash-typography`, and `bump:check` entirely, so a push only exercises them once the per-package checks are clean.
+That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless of whether
+the per-package quality jobs pass.
 
 ## Steps
 
@@ -117,7 +118,8 @@ tracked as follow-up tooling work, not part of this skill). Until that lands, ru
 package, plus the root-wide ones that already cover both:
 
 - Root-wide, covers both packages: `pnpm run format:check`, `pnpm run docs:links`, `pnpm run agents:check`,
-  `pnpm run bump:check` (lockstep versions and the derived `engineRange` / `BLIT386_RANGE` pair)
+  `pnpm run check-dash-typography`, `pnpm run bump:check` (lockstep versions and the derived `engineRange` /
+  `BLIT386_RANGE` pair)
 - Per package: `pnpm --filter @blit386/kit run typecheck` / `pnpm --filter @blit386/kit run test`, and
   `pnpm --filter create-blit386 run typecheck` / `pnpm --filter create-blit386 run test`
 - `pnpm run build` inside each package directory when `dist/` is missing or stale (the test suites shell out to built
