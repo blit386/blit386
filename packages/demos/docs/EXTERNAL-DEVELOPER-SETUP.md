@@ -81,6 +81,10 @@ Prerequisite: Node.js >= 22.18.0 (`engines` in the root `package.json`).
 
 ## Running the Demos
 
+The first `pnpm run dev`, `build`, `preview`, or `knip` in a fresh checkout or worktree builds the BLIT386 engine
+automatically if `packages/blit386/dist` is missing, so that first run may take a little longer than usual. There is no
+need to run `pnpm --filter blit386 run build` by hand first – the commands below already handle it.
+
 ### Standard Development
 
 ```bash
@@ -130,15 +134,16 @@ Cause: dependencies were not installed from the workspace root.
 Fix: run `pnpm install` from the repo root (`blit386/`), not from inside `packages/demos` alone – pnpm resolves
 `workspace:*` dependencies only when installed at the workspace root.
 
-### Demos won't start – "TypeError: Cannot read properties..."
+### `vite` / `knip` fails with "Cannot find module '.../blit386/dist/vite.js'"
 
-Cause: BLIT386 library not built
+Cause: the BLIT386 engine has never been built in this checkout – common right after `git clone` or `git worktree add`.
 
-Fix:
+Fix: `pnpm run dev`, `build`, `preview`, and `knip` in `packages/demos` detect this automatically and build the engine
+first, so simply re-running the command that failed is usually enough. To force a fresh rebuild yourself (for example
+after switching branches):
 
 ```bash
 cd packages/blit386
-pnpm install
 pnpm run build
 cd ../demos
 pnpm run dev
