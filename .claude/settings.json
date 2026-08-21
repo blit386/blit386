@@ -1,4 +1,5 @@
 {
+  "enabledMcpjsonServers": ["blit386-docs"],
   "hooks": {
     "SessionStart": [
       {

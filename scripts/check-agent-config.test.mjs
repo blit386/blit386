@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,8 +10,10 @@ import {
     discoverPackageAgentRoots,
     findAgentsPointerFailures,
     findCopilotPointerFailures,
+    findProjectMcpFailures,
     findSkillsSymlinkFailures,
     findZedSettingsFailures,
+    isRootMcpIgnoredByGit,
     resolveSkillSymlinkTarget,
 } from './check-agent-config.mjs';
 
@@ -180,6 +183,165 @@ describe('check-agent-config', () => {
             const failures = findZedSettingsFailures(content, false);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /\.agents\/skills layout is missing while \.zed\/settings\.json exists/);
+        });
+    });
+
+    describe('findProjectMcpFailures', () => {
+        const MCP_CONFIG = JSON.stringify({
+            mcpServers: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp' } },
+        });
+        const SERVER_CARD = JSON.stringify({
+            serverInfo: { name: 'blit386-docs', version: '1.0.0' },
+            url: 'https://blit386.dev/mcp',
+        });
+        const NOT_IGNORED = false;
+
+        it('passes when the config and the discovery card agree and git does not ignore the file', () => {
+            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, NOT_IGNORED), []);
+        });
+
+        it('fails when .mcp.json is missing', () => {
+            const failures = findProjectMcpFailures(null, SERVER_CARD, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.mcp\.json is missing/);
+        });
+
+        it('fails when .mcp.json is not parseable as JSON', () => {
+            const failures = findProjectMcpFailures('{not json', SERVER_CARD, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.mcp\.json is not parseable as JSON/);
+        });
+
+        it('fails when the mcpServers object is absent', () => {
+            const failures = findProjectMcpFailures('{}', SERVER_CARD, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /no mcpServers object/);
+        });
+
+        it('fails when the blit386-docs server is not declared', () => {
+            const config = JSON.stringify({ mcpServers: { other: { type: 'http', url: 'https://example.com/mcp' } } });
+            const failures = findProjectMcpFailures(config, SERVER_CARD, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /does not declare the `blit386-docs` server/);
+        });
+
+        it('fails when the transport type is not http', () => {
+            const config = JSON.stringify({
+                mcpServers: { 'blit386-docs': { type: 'sse', url: 'https://blit386.dev/mcp' } },
+            });
+            const failures = findProjectMcpFailures(config, SERVER_CARD, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /has type "sse", expected "http"/);
+        });
+
+        it('fails when .mcp.json drifts off the pinned URL', () => {
+            const config = JSON.stringify({
+                mcpServers: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp/v2' } },
+            });
+            const failures = findProjectMcpFailures(config, SERVER_CARD, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.mcp\.json declares URL .*expected the pinned/);
+        });
+
+        it('fails when the discovery card drifts off the pinned URL', () => {
+            const card = JSON.stringify({
+                serverInfo: { name: 'blit386-docs', version: '1.0.0' },
+                url: 'https://blit386.dev/mcp/v2',
+            });
+            const failures = findProjectMcpFailures(MCP_CONFIG, card, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /discovery card declares URL .*expected the pinned/);
+        });
+
+        it('fails a coordinated change of both files to another host', () => {
+            const url = 'https://evil.example.com/mcp';
+            const config = JSON.stringify({ mcpServers: { 'blit386-docs': { type: 'http', url } } });
+            const card = JSON.stringify({ serverInfo: { name: 'blit386-docs', version: '1.0.0' }, url });
+
+            // Parity alone would have passed this: the two copies agree with each other.
+            const failures = findProjectMcpFailures(config, card, NOT_IGNORED);
+            assert.equal(failures.length, 2);
+            assert.ok(failures.every((failure) => /expected the pinned/.test(failure)));
+        });
+
+        it('fails when the discovery card is missing', () => {
+            const failures = findProjectMcpFailures(MCP_CONFIG, null, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /server-card\.json is missing/);
+        });
+
+        it('fails when git reports the root .mcp.json as ignored', () => {
+            const failures = findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, true);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.mcp\.json is ignored by git/);
+        });
+
+        it('does not fail when git could not answer whether the file is ignored', () => {
+            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, null), []);
+        });
+    });
+
+    describe('isRootMcpIgnoredByGit', () => {
+        /**
+         * Builds a throwaway repository whose `.gitignore` is exactly `rules`, with `.mcp.json`
+         * committed – so the tracked-file case the real repo is in gets exercised too.
+         *
+         * @param {string} rules Contents of the throwaway repo's `.gitignore`.
+         * @returns {string} Absolute path to the repository root.
+         */
+        function makeRepo(rules) {
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-mcp-'));
+            const run = (...args) => spawnSync('git', args, { cwd: root });
+
+            run('init', '--quiet');
+            run('config', 'user.email', 'test@example.com');
+            run('config', 'user.name', 'Test');
+            writeFileSync(join(root, '.gitignore'), rules);
+            writeFileSync(join(root, '.mcp.json'), '{}\n');
+            run('add', '--force', '.gitignore', '.mcp.json');
+            run('commit', '--quiet', '--no-gpg-sign', '-m', 'init');
+
+            return root;
+        }
+
+        it('reports not-ignored when a root-anchored negation follows the blanket rule', () => {
+            const root = makeRepo('.mcp.json\nmcp.json\n!/.mcp.json\n');
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), false);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        it('reports ignored when a later broad rule re-ignores the file', () => {
+            const root = makeRepo('.mcp.json\nmcp.json\n!/.mcp.json\n*.json\n');
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), true);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        it('reports ignored when a later bare rule re-ignores the file', () => {
+            const root = makeRepo('.mcp.json\nmcp.json\n!/.mcp.json\n.mcp.json\n');
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), true);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        it('returns null when the directory is not a git repository', () => {
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-nogit-'));
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), null);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
         });
     });
 

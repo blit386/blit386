@@ -1,9 +1,10 @@
 # BLIT386 monorepo
 
 A pnpm workspace holding the BLIT386 engine, its demos, its published docs site, and the game scaffolder + kit. One
-`.claude/` (hooks, skills, rules) and one root `CLAUDE.md` govern every package; each package's own `CLAUDE.md` (read
-together with this one, nearest-file-wins for anything package-specific) carries what is genuinely local to it. Open
-Claude Code at this repo root, not a parent directory – that is what activates hooks, skills, and rules at all.
+`.claude/` (hooks, skills, rules), one root `.mcp.json`, and one root `CLAUDE.md` govern every package; each package's
+own `CLAUDE.md` (read together with this one, nearest-file-wins for anything package-specific) carries what is genuinely
+local to it. Open Claude Code at this repo root, not a parent directory – that is what activates hooks, skills, and
+rules at all.
 
 ## Packages
 
@@ -70,6 +71,9 @@ These apply to every package; a package's own `CLAUDE.md` adds to them, never co
 - Security runs, MCP preflight, governance checks, outage fallbacks:
   [`packages/blit386/docs/security/security-runbook.md`](packages/blit386/docs/security/security-runbook.md). Use
   `/security-run <package>`
+- Project MCP servers: the tracked root [`.mcp.json`](.mcp.json) declares `blit386-docs`, the blit386.dev docs server
+  (`search_docs`, `get_docs_summary`) – query the published engine docs without leaving the repo. Setup for other
+  clients: `packages/website/content/mcp-server.mdx`
 - RTK policy: `~/.claude/RTK.md`
 - Session notes written by the `/remember` skill live in `.remember/` and are not a repo artifact
 

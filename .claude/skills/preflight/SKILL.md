@@ -135,7 +135,8 @@ No combined `preflight` script exists at root; run what does:
 
 - `pnpm run format:check` – Biome + Prettier across the whole tree
 - `pnpm run docs:links` – Markdown link checker
-- `pnpm run agents:check` – skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings
+- `pnpm run agents:check` – skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, root
+  `.mcp.json` (declared server, URL parity with the website discovery card, `.gitignore` negation)
 - `pnpm run check-dash-typography` – en-dash-only rule (root CLAUDE.md, "Shared conventions") over every tracked
   `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.md`/`.mdx` file
 - `pnpm run bump:check` – lockstep drift: re-derives every version and caret range from `packages/blit386/package.json`

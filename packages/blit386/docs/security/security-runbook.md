@@ -156,9 +156,41 @@ node ../blit386/scripts/security/mcp-preflight.mjs \
 ## Periodic governance (monthly)
 
 1. Run governance-only preflight for both packages (use each package directory as `--repo-root`).
-2. Review shadow MCP flags; migrate or remove unmanaged servers per organizational policy.
-3. Re-authenticate critical MCPs (Opsera) if status is `auth_required`.
-4. Store reports under `security-reports/` (gitignored).
+2. Run it once more with the monorepo root as `--repo-root` – `discoverMcpConfigPaths` only walks one level up, so a
+   package-rooted run reaches `packages/`, never the repo root. Without this pass the tracked root `.mcp.json` is never
+   scanned:
+
+   ```bash
+   pnpm run security:mcp-preflight -- \
+     --mcps-dir "<mcps-path>" \
+     --repo-root ../.. \
+     --governance-only \
+     --include-user-config \
+     --output-json security-reports/mcp-governance-root-$(date +%Y-%m).json
+   ```
+
+3. Review shadow MCP flags against the accepted entries below; migrate or remove every unmanaged server that is not
+   listed there, per organizational policy.
+4. Re-authenticate critical MCPs (Opsera) if status is `auth_required`.
+5. Store reports under `security-reports/` (gitignored).
+
+### Accepted MCP entries
+
+The entry below is expected in the repo-root pass from step 2 and must not be migrated or removed under step 3.
+Acceptance is bound to the whole row, not the name: a flagged server qualifies only when the name, URL, config path, and
+classification all match. The same name pointing at a different URL, or appearing in a different config file, is a
+finding.
+
+| Server | URL | Declared in | Expected classification |
+| --- | --- | --- | --- |
+| `blit386-docs` | `https://blit386.dev/mcp` | tracked root `.mcp.json` | `shadow-remote` |
+
+`shadow-remote` is the correct classification, not a finding: `isRunlayerManagedEntry` only exempts Runlayer URLs, and
+this is our own first-party docs server (`packages/website/src/mcp-server.ts`, discovery card at
+`packages/website/public/.well-known/mcp/server-card.json`). It is public, unauthenticated, and read-only – it exposes
+`search_docs` and `get_docs_summary` over the published documentation and carries no credentials. A clean run is a
+shadow count of one whose single entry matches the whole row above – name, URL, config path, and classification
+together. Count and name alone are not enough to call it clean.
 
 ## Report template
 
@@ -190,8 +222,16 @@ Use this structure in agent output or issue/PR comments:
 ### Governance
 
 - Shadow MCPs: <count / none>
+- Accepted entries seen: <name, classification, config path per entry – must match the runbook's accepted row>
+- Unaccepted shadow entries: <none, or name + classification + config path per entry>
 - Config paths scanned: <list>
 ```
+
+Report the three fields above and nothing else – no secrets, credentials, auth headers, or full MCP config bodies. Give
+config paths repo-relative: the preflight prints them absolute, so a pasted report would otherwise carry the local
+username. The accepted entry's URL is deliberately absent here; `pnpm run agents:check` is what verifies it, against a
+pinned literal rather than a copy, so aiming the server at a new URL takes a deliberate edit to
+`scripts/check-agent-config.mjs`.
 
 ## Related docs
 
