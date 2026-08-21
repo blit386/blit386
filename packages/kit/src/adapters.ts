@@ -28,7 +28,17 @@ import {
 // Ownership classification lives in its own leaf module (the generators below build every path they
 // emit from its constants), re-exported here because `./adapters` is the kit's only published
 // subpath – create-blit386 imports these from '@blit386/kit/adapters'.
-export { type AgentKind, type FileClass, classifyFile, hasAgentFiles, isAgentPath, isKitManaged } from './ownership';
+export {
+    AGENT_KINDS,
+    AGENT_LABEL,
+    AGENT_SETUP_HINT,
+    type AgentKind,
+    type FileClass,
+    classifyFile,
+    hasAgentFiles,
+    isAgentPath,
+    isKitManaged,
+} from './ownership';
 
 // Kit-root resolution lives in its own leaf module so `./env` and the CLI commands can import it
 // without pulling in the generators, re-exported here because `./adapters` is the kit's only published

@@ -26,17 +26,16 @@ The kit behind [BLIT386](https://www.npmjs.com/package/blit386) game projects: t
     you already have; if one is in the way it saves the kit version next to it as `<file>.new`.
   - `blit help` – list the commands.
 - `content/` – everything a scaffolded project ships so a person or an AI assistant can learn the engine from inside the
-  project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), the
-  agent `hooks/` plus `hooks.manifest.json`, and `agents.config.json`, a descriptive summary of what each assistant's
-  adapter emits. Claude/Cursor file generation lives in `src/adapters.ts` and is exported as `@blit386/kit/adapters` so
-  the scaffolder and `blit agents sync` / `blit agents add` share one implementation; the paths it emits and their sync
-  ownership classes are defined once in `src/ownership.ts`. The same manifest drives Cursor's `.cursor/hooks.json` and
-  Claude Code's `.claude/settings.json` (format-on-edit + block-dangerous-shell). Claude Code also gets a SessionStart
-  hook that installs dependencies and runs `blit doctor` when a fresh remote/web session starts, so a scaffolded game
-  works without manual setup; Cursor has no SessionStart-equivalent event, so it does not get this hook. Both adapters
-  also emit a documentation-MCP config – `.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor – registering the
-  `blit386-docs` server at `https://blit386.dev/mcp` so an assistant can search the live docs. Claude Code asks once
-  whether to allow it.
+  project: the canonical `AGENTS.md` and `docs/`, the engine API `rules/`, the game-author `skills/` (listed below), and
+  the agent `hooks/` plus `hooks.manifest.json`. Claude/Cursor file generation lives in `src/adapters.ts` and is
+  exported as `@blit386/kit/adapters` so the scaffolder and `blit agents sync` / `blit agents add` share one
+  implementation; the paths it emits and their sync ownership classes are defined once in `src/ownership.ts`. The same
+  manifest drives Cursor's `.cursor/hooks.json` and Claude Code's `.claude/settings.json` (format-on-edit +
+  block-dangerous-shell). Claude Code also gets a SessionStart hook that installs dependencies and runs `blit doctor`
+  when a fresh remote/web session starts, so a scaffolded game works without manual setup; Cursor has no
+  SessionStart-equivalent event, so it does not get this hook. Both adapters also emit a documentation-MCP config –
+  `.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor – registering the `blit386-docs` server at
+  `https://blit386.dev/mcp` so an assistant can search the live docs. Claude Code asks once whether to allow it.
 
 ## The game-author skills
 

@@ -247,7 +247,7 @@ step 0 and match the style of prior releases at <https://github.com/blit386/blit
 ## What gets published
 
 - `@blit386/kit`: `dist/` (the built CLI) + `content/` (`AGENTS.md`, `docs/`, `skills/`, `rules/`, `hooks/`,
-  `agents.config.json`, `hooks.manifest.json`) + `README.md` + `LICENSE`.
+  `hooks.manifest.json`) + `README.md` + `LICENSE`.
 - `create-blit386`: `dist/` (the built scaffolder) + `templates/` (`base/`, `js/`, `ts/`, `optional/`) + `README.md` +
   `LICENSE`.
 
