@@ -30,6 +30,35 @@ BT.paletteFade(nightPalette, 2000, 'ease-in-out');
 
 Everything above `// ---cut---` is compiled by TypeScript but hidden from the reader. Everything below is shown.
 
+**Multi-file block** (the visible code imports a relative module that does not exist – a test file importing its
+subject, a benchmark importing the type it measures – use hidden `// @filename:` stubs before the cut):
+
+```ts twoslash
+// @filename: MyType.ts
+export declare class MyType {
+  newMethod(): void;
+}
+// @filename: MyType.bench.ts
+// ---cut---
+import { bench, describe } from 'vitest';
+
+import { MyType } from './MyType';
+
+describe('MyType hot paths', () => {
+  const instance = new MyType();
+
+  bench('newMethod()', () => {
+    instance.newMethod();
+  });
+});
+```
+
+Each `// @filename:` opens a virtual file; the last one holds the visible code, and its path has to sit at the depth the
+relative import expects (`../__test__/webgpu-mock` needs the visible file one directory down, e.g.
+`render/SpritePipeline.test.ts`). Stub the imported module with `export declare class` / `export declare function` –
+signatures only, no bodies. Real packages (`vitest`) resolve from `packages/website/node_modules` and need no stub;
+`declare module 'vitest'` in a block that has imports is a module _augmentation_ and fails instead.
+
 Preamble rules:
 
 - Import all blit386 names used in the block from `'blit386'` in one line.
