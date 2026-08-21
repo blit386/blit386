@@ -15,7 +15,7 @@ import { AssetLoader } from './assets/AssetLoader';
 import { AudioClip } from './assets/AudioClip';
 import type { TextSize } from './assets/BitmapFont';
 import { BitmapFont } from './assets/BitmapFont';
-import { Palette } from './assets/Palette';
+import { MAX_PALETTE_SIZE, Palette } from './assets/Palette';
 import type { ExposureFadeOptions } from './assets/PaletteEffect';
 import type { IndexedSpriteLoadResult } from './assets/SpriteSheet';
 import { SpriteSheet } from './assets/SpriteSheet';
@@ -1062,7 +1062,7 @@ export const BT = {
      * @param size – Palette size. Defaults to 256 colors.
      * @returns New mutable palette.
      */
-    paletteCreate: (size: number = 256): Palette => {
+    paletteCreate: (size: number = MAX_PALETTE_SIZE): Palette => {
         return new Palette(size);
     },
 

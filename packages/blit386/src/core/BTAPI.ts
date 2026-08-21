@@ -2,6 +2,7 @@ import { AssetLoader } from '../assets/AssetLoader';
 import { AudioClip } from '../assets/AudioClip';
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
+import { TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import {
     CycleEffect,
     ExposureFadeEffect,
@@ -1254,7 +1255,7 @@ export class BTAPI {
         this.assertPaletteIndex(paletteIndex);
 
         // Palette index 0 is transparent – nothing to draw.
-        if (paletteIndex === 0) {
+        if (paletteIndex === TRANSPARENT_PALETTE_INDEX) {
             return;
         }
 

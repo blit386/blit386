@@ -8,12 +8,10 @@ import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import { AssetLoader } from './AssetLoader';
 import type { Palette } from './Palette';
-
-/** Number of slots in a palette; matches the 8-bit palette index range. */
-const PALETTE_SLOT_COUNT = 256;
+import { MAX_PALETTE_SIZE, TRANSPARENT_PALETTE_INDEX } from './Palette';
 
 /** Reused per-call bitmask of sheet indices seen while scanning a source rect. */
-const MARK_INDICES_IN_RECT_SCRATCH = new Uint8Array(PALETTE_SLOT_COUNT);
+const MARK_INDICES_IN_RECT_SCRATCH = new Uint8Array(MAX_PALETTE_SIZE);
 
 /** RGBA byte stride per pixel when reading decoded image data. */
 const RGBA_BYTES_PER_PIXEL = 4;
@@ -154,9 +152,9 @@ function collectUniqueOpaqueColors(data: Uint8Array): Color32[] {
  */
 function assertOpaqueColorsFitInPalette(collected: Color32[], palette: Palette, startSlot: number): void {
     if (collected.length > 0) {
-        if (startSlot < 1) {
+        if (startSlot < TRANSPARENT_PALETTE_INDEX + 1) {
             throw new RangeError(
-                `loadColorsIntoPalette: startSlot ${startSlot} is invalid (slot 0 is reserved for transparency).`,
+                `loadColorsIntoPalette: startSlot ${startSlot} is invalid (slot ${TRANSPARENT_PALETTE_INDEX} is reserved for transparency).`,
             );
         }
 
@@ -215,7 +213,7 @@ function markUniqueIndicesInBounds(
         const x = startX + (flat % rectWidth);
         const sheetIndex = pixels[y * sheetWidth + x] ?? 0;
 
-        if (sheetIndex === 0) {
+        if (sheetIndex === TRANSPARENT_PALETTE_INDEX) {
             continue;
         }
 

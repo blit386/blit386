@@ -7,6 +7,7 @@
 
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
+import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type {
     Backend,
     OverlayAudioMeterStyle,
@@ -303,7 +304,7 @@ export class Overlay {
             const customRows = getCustomRows?.();
             const { layoutConfig, plan } = this.#buildFramePlan(customRows?.length ?? 0, palette);
             const grid = layoutConfig.paletteGrid;
-            const colorCount = palette?.size ?? 256;
+            const colorCount = palette?.size ?? MAX_PALETTE_SIZE;
 
             if (grid !== undefined && plan.paletteBand.height > 0) {
                 this.#paletteInteraction.syncScrollBounds(grid);
@@ -469,7 +470,7 @@ export class Overlay {
      */
     #createLayoutConfig(customRowCount: number, palette: Palette | null | undefined): OverlayLayoutConfig {
         const isOverlayPaletteEnabled = this.#paletteView.isEnabled;
-        const colorCount = palette?.size ?? 256;
+        const colorCount = palette?.size ?? MAX_PALETTE_SIZE;
 
         const paletteGrid = isOverlayPaletteEnabled
             ? computeGrid(
@@ -621,7 +622,7 @@ export class Overlay {
                 this.#idxText,
             );
 
-            const colorCount = palette?.size ?? 256;
+            const colorCount = palette?.size ?? MAX_PALETTE_SIZE;
 
             this.#paletteInteraction.tickCopyStatus(currentTick);
 

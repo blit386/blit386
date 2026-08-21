@@ -1,3 +1,4 @@
+import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type { Vector2i } from '../utils/Vector2i';
 import { VS_WGSL } from './effects/fullscreenVS';
 import type { UpscaleFilter } from './UpscalePass';
@@ -31,7 +32,7 @@ export class PaletteResolveUpscalePass {
      * @param device – WebGPU device.
      * @param destFormat – RGBA output format (swap chain format).
      * @param filter - `'nearest'` or `'linear'` magnification (linear blends resolved RGBA neighbors).
-     * @param paletteBuffer – Shared 256-entry palette uniform buffer (same as scene pipelines).
+     * @param paletteBuffer – Shared {@link MAX_PALETTE_SIZE}-entry palette uniform buffer (same as scene pipelines).
      */
     init(device: GPUDevice, destFormat: GPUTextureFormat, filter: UpscaleFilter, paletteBuffer: GPUBuffer): void {
         this.uniformBuffer?.destroy();
@@ -174,7 +175,7 @@ struct Params {
 }
 
 struct Palette {
-    colors: array<vec4<f32>, 256>,
+    colors: array<vec4<f32>, ${MAX_PALETTE_SIZE}>,
 }
 
 @group(0) @binding(0) var<uniform> params: Params;

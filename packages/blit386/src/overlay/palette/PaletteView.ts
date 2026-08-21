@@ -7,6 +7,7 @@
  */
 
 import type { Palette } from '../../assets/Palette';
+import { MAX_PALETTE_SIZE } from '../../assets/Palette';
 import { Rect2i } from '../../utils/Rect2i';
 import { OVERLAY_EDGE_MARGIN_PX } from '../layout/constants';
 import { overlayToggleHintIconX } from '../layout/layoutHelpers';
@@ -142,7 +143,7 @@ export function resolveGridVisibleRows(totalRows: number, maxVisibleRows?: numbe
 export function computeGrid(
     displayWidth: number,
     swatchSize = DEFAULT_PALETTE_SWATCH_SIZE,
-    colorCount = 256,
+    colorCount = MAX_PALETTE_SIZE,
     gap = PALETTE_SWATCH_GAP_PX,
     maxColumns?: number,
     maxVisibleRows?: number,

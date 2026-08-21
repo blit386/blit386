@@ -1,5 +1,6 @@
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
+import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
 import { noActivePaletteError } from '../utils/errorMessages';
@@ -15,9 +16,9 @@ import { SpritePipeline } from './SpritePipeline';
 import type { UpscaleFilter } from './UpscalePass';
 
 /**
- * GPU palette uniform buffer size: 256 entries x 4 floats x 4 bytes = 4096 bytes.
+ * GPU palette uniform buffer size: {@link MAX_PALETTE_SIZE} entries x 4 floats x 4 bytes.
  */
-const PALETTE_BUFFER_SIZE = 256 * 4 * 4;
+const PALETTE_BUFFER_SIZE = MAX_PALETTE_SIZE * 4 * 4;
 
 /** Logical scene + pixel chain format (palette index in the red channel). */
 const LOGICAL_TARGET_FORMAT: GPUTextureFormat = 'r8uint';
@@ -77,11 +78,11 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /** Active palette for color lookups and GPU upload. */
     private palette: Palette | null = null;
 
-    /** GPU uniform buffer for the 256-entry palette. */
+    /** GPU uniform buffer for the {@link MAX_PALETTE_SIZE}-entry palette. */
     private paletteBuffer: GPUBuffer | null = null;
 
     /** Reusable staging buffer for GPU palette uploads. Avoids per-frame allocation. */
-    private readonly paletteStaging = new Float32Array(256 * 4);
+    private readonly paletteStaging = new Float32Array(MAX_PALETTE_SIZE * 4);
 
     /**
      * True after {@link setPalette} is called, guaranteeing at least one upload
@@ -196,7 +197,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             this.sceneTexView = null;
             this.lastFrameMs = 0;
 
-            // Create shared palette uniform buffer (256 entries x vec4f).
+            // Create shared palette uniform buffer (MAX_PALETTE_SIZE entries x vec4f).
             this.paletteBuffer = this.device.createBuffer({
                 label: 'Palette Uniform Buffer',
                 size: PALETTE_BUFFER_SIZE,
