@@ -198,8 +198,8 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 `docs:links` and `agents:check` are **not** part of any package's `preflight`. Each package's copy of those scripts
 walks the whole repo from the root regardless of which `package.json` invoked it, so they were pulled out of the
 per-package chains to stop a single push running the same full-repo check two to four times. Run them once from the repo
-root (`pnpm run docs:links`, `pnpm run agents:check`) – `.husky/pre-push` does exactly that after every changed
-package's `preflight` passes.
+root (`pnpm run docs:links`, `pnpm run agents:check`); `.husky/pre-push` runs them there, alongside the rest of the root
+gate, after every changed package's `preflight` passes.
 
 ### Available Commands
 

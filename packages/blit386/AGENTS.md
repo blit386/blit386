@@ -23,9 +23,9 @@ pnpm run preflight           # Package quality gates (format, lint, typecheck, s
 ```
 
 `pnpm run preflight` is the one command to run before committing here: it covers every CI check for this package except
-visual regression tests (`/test blit386 visual`, run separately when renderer output can change). It does not cover the
-repo-wide checks in CI's `Code Quality (root)` job – run `pnpm run docs:links` and `pnpm run agents:check` from the
-repository root, which is also what `.husky/pre-push` does once the per-package gates pass.
+visual regression tests (`/test blit386 visual`, run separately when renderer output can change). Repo-wide checks such
+as `docs:links` and `agents:check` are not in it – `.husky/pre-push` and CI's `Code Quality (root)` job run those from
+the repository root once the per-package gates pass.
 
 ## Rules that matter most
 

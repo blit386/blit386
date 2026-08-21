@@ -76,7 +76,7 @@ package).
 `docs:links` and `agents:check` are repo-wide: each package's copy walks the whole tree from the repo root no matter
 which `package.json` invoked it. They are deliberately absent from every package's `preflight` chain so that one push
 does not run the same full-repo check two to four times – run them once from the repo root instead
-(`pnpm run docs:links`, `pnpm run agents:check`), which is what `.husky/pre-push` does after the per-package gates pass.
+(`pnpm run docs:links`, `pnpm run agents:check`), as `.husky/pre-push` does after the per-package gates pass.
 
 Dependency audit severity policy and CI gate: [dependency-policy.md](security/dependency-policy.md). Temporary
 exceptions: [audit-exceptions.md](security/audit-exceptions.md).
