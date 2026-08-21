@@ -26,6 +26,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
     agentsFile,
@@ -67,11 +68,17 @@ interface McpConfigLike {
     [key: string]: unknown;
 }
 
+/** True for a plain JSON object – the only shape `mcpServers` is allowed to have. */
+function isMcpServerMap(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /**
  * Merge the kit's generated MCP config into a pre-existing hand-written one. Adds the kit's server(s)
  * under `mcpServers` next to whatever the user already registered. Returns null – not a crash – when
- * the existing file isn't a mergeable JSON object, or when a server key the kit wants to add already
- * exists with different content: both cases fall back to the existing collision (`.new` + abort) path.
+ * the existing file isn't a mergeable JSON object, its `mcpServers` isn't a plain object, or a server
+ * key the kit wants to add already exists with different content: all three cases fall back to the
+ * existing collision (`.new` + abort) path.
  */
 function tryMergeMcpConfig(existingContent: string, generatedContent: string): string | null {
     let existing: McpConfigLike;
@@ -82,7 +89,11 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
         return null;
     }
 
-    if (typeof existing !== 'object' || existing === null || Array.isArray(existing)) {
+    if (!isMcpServerMap(existing)) {
+        return null;
+    }
+
+    if (existing.mcpServers !== undefined && !isMcpServerMap(existing.mcpServers)) {
         return null;
     }
 
@@ -92,7 +103,7 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
 
     for (const [name, entry] of Object.entries(generatedServers)) {
         const existingEntry = existingServers[name];
-        if (existingEntry !== undefined && JSON.stringify(existingEntry) !== JSON.stringify(entry)) {
+        if (existingEntry !== undefined && !isDeepStrictEqual(existingEntry, entry)) {
             return null;
         }
     }
