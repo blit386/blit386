@@ -142,13 +142,15 @@ checks unconditionally on every push, since pnpm's per-package `--filter` dispat
 in `.github/workflows/ci.yml` (BT-461), so a repo-wide dash-typography regression fails both the push and CI, on top of
 the existing per-commit gates below.
 
-The following are not part of that pre-push gate – run them directly when auditing:
+The following are not part of that pre-push gate – run them directly when auditing. All four do run in CI, so a
+regression they would catch surfaces on the PR rather than at push time:
 
-- `pnpm run test:agent-config` – unit tests for the `agents:check` script itself
-- `pnpm run test:dash-typography` – unit tests for `check-dash-typography.mjs`
+- `pnpm run test:agent-config` – unit tests for the `agents:check` script itself. Runs in `quality-root` in
+  `.github/workflows/ci.yml`, which is gated only on the run not being a label event
+- `pnpm run test:dash-typography` – unit tests for `check-dash-typography.mjs`. Also runs in `quality-root`, alongside
+  the repo-wide `check-dash-typography` run described above
 - `pnpm run test:bump-lockstep` – unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
-  `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`)
-- `pnpm run test:shell-safety` – unit tests for `.claude/hooks/shell-safety.sh`. Unlike its neighbors above, this one
-  does run in CI: `quality-root` in `.github/workflows/ci.yml` runs it unconditionally, since `.claude/**` is in the
-  `shared` path filter (BT-439). `test:agent-config` and `test:dash-typography` are not yet wired into any CI job –
-  tracked separately in BT-445
+  `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`). Runs in `build-test-scaffolder`, the one CI job that
+  exercises it – and that job is path-filtered, so it only fires when the `scaffolder` or `shared` filter matches
+- `pnpm run test:shell-safety` – unit tests for `.claude/hooks/shell-safety.sh`. Runs in `quality-root`, and
+  `.claude/**` is in the `shared` path filter (BT-439)
