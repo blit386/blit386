@@ -34,57 +34,11 @@ import {
     generateCursorAdapter,
     kitRoot,
     replaceManagedRegion,
-    type TemplateVars,
 } from '../adapters';
 import { detectPackageManager, findProjectRoot, type PackageManager } from '../env';
+import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type TemplateVars } from '../manifest';
 import { ui } from '../messages';
-import {
-    AGENT_KINDS,
-    AGENT_LABEL,
-    type AgentKind,
-    classifyFile,
-    type FileClass,
-    hasAgentFiles,
-    isKitManaged,
-} from '../ownership';
-
-/**
- * One entry as read back from `.blit/manifest.json`.
- *
- * The reader half of a deliberate pair: `ManifestEntry` / `BlitManifest` in
- * `packages/create-blit386/src/scaffold.ts` are the writer half, and require the fields optional
- * here. This side reads manifests written by any released scaffolder, so it must tolerate older
- * ones that predate `kitVersion`, `createdAt`, and `vars`; the writer must never stop emitting
- * them. Only `class` is shared – it is `FileClass` from `../ownership` on both sides, so a typo is
- * a compile error. Merging the two shapes needs a manifest schema version first.
- */
-interface ManifestEntry {
-    /** File path relative to the project root. */
-    path: string;
-    /** Ownership class: kit-owned or shared files are checked; user-owned are skipped. */
-    class: FileClass;
-    /** Kit version that last wrote this file. */
-    kitVersion?: string;
-    /**
-     * SHA-256 hex digest of the reconciled on-disk content from the last sync (at scaffold time this is
-     * simply the generated content). `--check`/doctor compare the current file against this to detect
-     * drift, so a clean-merged file is in-sync, not flagged forever. The pristine kit version used as the
-     * merge ancestor lives separately in `.blit/base/<path>`.
-     */
-    sha256: string;
-}
-
-/** The `.blit/manifest.json` root structure. */
-interface BlitManifest {
-    /** Kit version that created the project. */
-    kitVersion: string;
-    /** ISO-8601 creation timestamp. */
-    createdAt?: string;
-    /** Template variables captured at scaffold time, used to regenerate kit files deterministically. */
-    vars?: TemplateVars;
-    /** One entry per generated file. */
-    files: ManifestEntry[];
-}
+import { AGENT_KINDS, AGENT_LABEL, type AgentKind, classifyFile, hasAgentFiles, isKitManaged } from '../ownership';
 
 /** SHA-256 hex digest of a string. */
 function sha256Text(text: string): string {
@@ -106,7 +60,7 @@ function sha256(filePath: string): string {
  * caller controls where it goes.
  */
 export function checkSyncDrift(root: string, out: (line: string) => void): number {
-    const manifestPath = join(root, '.blit', 'manifest.json');
+    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
@@ -114,10 +68,10 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
         return 0;
     }
 
-    let manifest: BlitManifest;
+    let manifest: ReadBlitManifest;
 
     try {
-        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as BlitManifest;
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
     } catch {
         out(ui.error('Could not read .blit/manifest.json. The file may be damaged.'));
         return 1;
@@ -193,7 +147,12 @@ function isSafeRelPath(relPath: string, root: string): boolean {
     return abs === root || abs.startsWith(root + sep);
 }
 
-/** Default template vars when an older manifest did not record them (npm commands, project name). */
+/**
+ * Default template vars when an older manifest did not record them.
+ *
+ * Only the package-manager commands, which is exactly the set `content/` substitutes – so a manifest
+ * predating `vars` still regenerates byte-identical kit files once the package manager is detected.
+ */
 function fallbackVars(root: string): TemplateVars {
     const pm: PackageManager = detectPackageManager(root);
     const runPrefix = pm === 'yarn' ? `${pm} ` : `${pm} run `;
@@ -223,7 +182,7 @@ function currentKitVersion(): string {
  * Always includes AGENTS.md and docs/. Includes the Claude or Cursor adapter outputs only when the
  * manifest shows the project already uses that assistant.
  */
-function regenerate(manifest: BlitManifest, root: string): Map<string, string> {
+function regenerate(manifest: ReadBlitManifest, root: string): Map<string, string> {
     const kr = kitRoot();
     const vars = manifest.vars ?? fallbackVars(root);
 
@@ -269,7 +228,7 @@ function writeRel(root: string, relPath: string, content: string): void {
 
 /** Update (or create) the pristine base copy used as the merge ancestor. */
 function writeBase(root: string, relPath: string, content: string): void {
-    writeRel(root, join('.blit', 'base', relPath), content);
+    writeRel(root, join(BLIT_DIR, BASE_DIR, relPath), content);
 }
 
 /**
@@ -327,7 +286,7 @@ export function runFullSync(
     out: (line: string) => void,
     options: { force: boolean; forcePaths: string[] } = { force: false, forcePaths: [] },
 ): number {
-    const manifestPath = join(root, '.blit', 'manifest.json');
+    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
@@ -335,10 +294,10 @@ export function runFullSync(
         return 0;
     }
 
-    let manifest: BlitManifest;
+    let manifest: ReadBlitManifest;
 
     try {
-        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as BlitManifest;
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
     } catch {
         out(ui.error('Could not read .blit/manifest.json. The file may be damaged.'));
         return 1;
@@ -376,7 +335,7 @@ export function runFullSync(
 
         const entry = entryByPath.get(relPath);
         const abs = resolve(root, relPath);
-        const basePath = resolve(root, '.blit', 'base', relPath);
+        const basePath = resolve(root, BLIT_DIR, BASE_DIR, relPath);
 
         // New file the kit added since this project was scaffolded.
         if (!entry) {
@@ -507,7 +466,7 @@ export function runFullSync(
     }
 
     // Write the refreshed manifest, preserving createdAt and vars when present.
-    const refreshed: BlitManifest = {
+    const refreshed: ReadBlitManifest = {
         kitVersion: newKitVersion,
         files: [...entryByPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
     };
@@ -567,14 +526,14 @@ function isAddableAgent(name: string): name is AgentKind {
 }
 
 /** Result of reading the manifest: either the parsed manifest, or a friendly failure with an exit code. */
-type ManifestResult = { ok: true; manifest: BlitManifest } | { ok: false; exitCode: number };
+type ManifestResult = { ok: true; manifest: ReadBlitManifest } | { ok: false; exitCode: number };
 
 /**
  * Read and validate `.blit/manifest.json`. Prints a Tier-1 line on failure.
  * A missing manifest is informational (exit 0); a damaged one is an error (exit 1).
  */
 function readManifest(root: string, out: (line: string) => void): ManifestResult {
-    const manifestPath = join(root, '.blit', 'manifest.json');
+    const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
@@ -582,10 +541,10 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
         return { ok: false, exitCode: 0 };
     }
 
-    let manifest: BlitManifest;
+    let manifest: ReadBlitManifest;
 
     try {
-        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as BlitManifest;
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as ReadBlitManifest;
     } catch {
         out(ui.error('Could not read .blit/manifest.json. The file may be damaged.'));
         return { ok: false, exitCode: 1 };
@@ -679,7 +638,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         added.push(relPath);
     }
 
-    const refreshed: BlitManifest = {
+    const refreshed: ReadBlitManifest = {
         kitVersion: manifest.kitVersion,
         files: [...entryByPath.values()].sort((a, b) => a.path.localeCompare(b.path)),
     };
@@ -689,7 +648,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     if (manifest.vars !== undefined) {
         refreshed.vars = manifest.vars;
     }
-    writeFileSync(join(root, '.blit', 'manifest.json'), `${JSON.stringify(refreshed, null, 2)}\n`);
+    writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(refreshed, null, 2)}\n`);
 
     for (const path of added) {
         out(ui.success(`Added ${path}.`));

@@ -25,6 +25,7 @@ import {
     CURSOR_RULES_DIR,
     DOCS_DIR,
 } from './ownership';
+import type { TemplateVars } from './manifest';
 
 // Ownership classification lives in its own leaf module (the generators below build every path they
 // emit from its constants), re-exported here because `./adapters` is the kit's only published
@@ -40,6 +41,20 @@ export {
     isAgentPath,
     isKitManaged,
 } from './ownership';
+
+// The `.blit/manifest.json` location and shape live in their own leaf module, re-exported for the
+// same reason: create-blit386 stamps the manifest that `blit agents sync` later reads back, so both
+// sides must see one declaration.
+export {
+    BASE_DIR,
+    BLIT_DIR,
+    type BlitManifest,
+    MANIFEST_FILE,
+    type ManifestEntry,
+    type ReadBlitManifest,
+    type ReadManifestEntry,
+    type TemplateVars,
+} from './manifest';
 
 /** Managed-region markers shared by AGENTS.md and CLAUDE.md. */
 const MANAGED_START = '<!-- blit-kit:managed:start -->';
@@ -65,9 +80,6 @@ export interface GeneratedFile {
     /** Full file content as the kit would write it. */
     content: string;
 }
-
-/** Template variables substituted into kit content (package-manager commands, project name, ...). */
-export type TemplateVars = Record<string, string>;
 
 /** The kit package root (the folder containing this kit's package.json and content/). */
 export function kitRoot(): string {

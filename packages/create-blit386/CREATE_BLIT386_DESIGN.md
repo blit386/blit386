@@ -480,6 +480,23 @@ path. After a clean three-way merge the on-disk file holds the user's edits, so 
 hash while the base copy stays the pristine kit version (shared files already worked this way; Round 19 made kit-owned
 files consistent).
 
+One declaration, two halves (Round 28). The manifest is written by two packages – `scaffold()` stamps it, and
+`blit agents sync` / `add` rewrite it after reconciling – but declared in exactly one place:
+`packages/kit/src/manifest.ts`, reached from both sides through `@blit386/kit/adapters`. `BlitManifest` is the written
+shape, every field required, so a writer that stops emitting one fails to compile. `ReadBlitManifest` is _derived_ from
+it, widening only the fields that postdate the format (`createdAt`, `vars`, and per-entry `kitVersion`) so the reader
+still accepts manifests written by any released scaffolder. Deriving rather than re-declaring is the point: a field
+added to `BlitManifest` becomes required of every writer and visible to the reader in one edit. The widened shape is
+also what sync _writes_, not merely what it reads: both write paths copy `createdAt`/`vars` across only when the
+manifest they read had them, so an old manifest stays old instead of gaining a fabricated creation timestamp.
+
+No schema version, deliberately (Round 28). A `schemaVersion` field was specified and rejected on inspection. It is
+absent from every manifest already in the wild, so the reader would carry the widened branch indefinitely and gain a
+second one beside it – additive, deleting nothing. The v0-to-v1 upgrade that would eventually retire the old branch
+cannot be written honestly, since it would have to invent a `createdAt` that no one knows. (`vars` is the easy half:
+`fallbackVars` covers the package-manager commands, which is the whole set `content/` substitutes.) Revisit only if a
+genuinely _incompatible_ manifest change arrives – a renamed or re-meaning field, not another additive one.
+
 Sync algorithm (deterministic, no AI involved):
 
 1. For each file the new kit wants to emit:
