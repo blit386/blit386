@@ -40,6 +40,7 @@ const FETCH_CALL_PATTERN = /fetch\(\s*['"]([^'"]+)['"]/gu;
 const SERVER_READY_TIMEOUT_MS = 30_000;
 const SERVER_POLL_INTERVAL_MS = 300;
 const SERVER_SHUTDOWN_GRACE_MS = 3_000;
+const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
  * Normalizes an absolute `https://blit386.dev/...` URL, or an already-relative path,
@@ -228,6 +229,11 @@ async function stopWranglerDev(child) {
     if (!exited) child.kill('SIGKILL');
 }
 
+/** @param {unknown} error @returns {string} */
+function describeError(error) {
+    return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Sends the two JSON-RPC calls `webmcp.js` itself makes to `/mcp` and asserts each
  * response carries real content, not just a 200.
@@ -241,11 +247,25 @@ async function checkMcpEndpoint(baseUrl) {
 
     /** @param {string} name @param {Record<string, unknown>} args */
     const call = async (name, args) => {
-        const res = await fetch(`${baseUrl}/mcp`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }),
-        });
+        let res;
+
+        try {
+            res = await fetch(`${baseUrl}/mcp`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'tools/call',
+                    params: { name, arguments: args },
+                }),
+                signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+            });
+        } catch (error) {
+            failures.push(`/mcp tools/call ${name}: request failed (${describeError(error)})`);
+            return;
+        }
+
         if (!res.ok) {
             failures.push(`/mcp tools/call ${name}: HTTP ${res.status}`);
             return;
@@ -275,7 +295,14 @@ async function checkMcpEndpoint(baseUrl) {
  * @returns {Promise<string[]>}
  */
 async function checkStaticPath(baseUrl, path) {
-    const res = await fetch(`${baseUrl}${path}`);
+    let res;
+
+    try {
+        res = await fetch(`${baseUrl}${path}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    } catch (error) {
+        return [`${path}: request failed (${describeError(error)})`];
+    }
+
     if (!res.ok) {
         return [`${path}: HTTP ${res.status}`];
     }
@@ -326,5 +353,8 @@ async function main() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-    main();
+    main().catch((error) => {
+        console.error(`check:well-known-urls failed: ${describeError(error)}`);
+        process.exit(1);
+    });
 }
