@@ -274,8 +274,11 @@ kit/
   skills/<name>/SKILL.md     # game-author skills (name, description, when-to-use, steps)
   hooks/                    # hook scripts + hooks.manifest.json declaring intent in a neutral schema
   docs/*.md                 # progressive-disclosure deep dives (trimmed from engine docs/api-*.md)
-  agents.config.json        # capability matrix: which adapter renders what, and how
 ```
+
+The matrix below was originally also mirrored into a `kit/agents.config.json`. That file was descriptive only, drifted
+twice, and was deleted in BT-478 – `src/ownership.ts` plus `src/adapters.ts` are the executable answer to "which adapter
+renders what".
 
 Capability matrix (what each adapter emits from the same source):
 
@@ -554,7 +557,8 @@ Resolved:
 - Q-FILIPEK-AGENT (resolved): Filipek uses no AI agent (and no Node.js yet; editor is Zed). v0.1 ships the no-agent
   path; no agent dirs emitted; README teaches Node.js install and running from Zed's terminal.
 - Q-GROUND-TRUTH-FORMAT (resolved): canonical kit IR = `AGENTS.md` prose + `rules/*.md` + `skills/*/SKILL.md` +
-  `hooks.manifest.json` + `agents.config.json` (see 4.3).
+  `hooks.manifest.json` + `agents.config.json` (see 4.3). (`agents.config.json` was dropped in BT-478, 2026-08-21: no
+  code ever read it.)
 - Q-PKGMGR (resolved -> D10): auto-detect the package manager that invoked `create-blit386` (via
   `npm_config_user_agent`, like create-vite); default docs/examples to npm (ships with Node). pnpm-only stays Václav's
   own-repo rule.
@@ -1149,3 +1153,15 @@ ships both at `^1.4.0`.
   it outright; a hand-written one is still safe, because those predicates read manifest entries and an untracked file is
   caught by `runAddAgent`'s collision check instead. `packages/kit/test/mcp-config.test.mjs` guards the server name and
   URL against `packages/website/public/.well-known/mcp/server-card.json`.
+- 2026-08-21: Round 28 (BT-478). Deleted `packages/kit/content/agents.config.json`. It declared which paths each adapter
+  emits, but no `.ts` or `.mjs` ever read it – and it shipped to npm regardless, via `files: ["dist", "content"]`, as
+  inert bytes in every generated game's dependency tree. It had drifted twice: the Round 16 entry above caught the
+  Cursor `emits` list missing the generated `.cursor/hooks/{script}`, and by deletion time both adapters' lists were
+  also missing `AGENTS.md` and the whole of `docs/`, which `packages/kit/src/adapters.ts` emits. Generating it at build
+  time from `src/ownership.ts` with a `--check` gate was considered and rejected: `ownership.ts` holds directory
+  prefixes and exact paths, while the `{name}` / `{script}` filename patterns are inline literals in the emitters
+  (`` `${CLAUDE_SKILLS_DIR}${entry.name}/SKILL.md` ``, `entry.name.replace(/\.md$/, '.mdc')`), so a faithful generator
+  would have to re-derive the emitters' naming conventions – a second, drift-capable model of `adapters.ts` guarding a
+  file with zero consumers. The executable descriptions already exist and are tested: `src/ownership.ts` (paths +
+  classes, pinned by `test/ownership.test.mjs`) and `src/adapters.ts`. `content/hooks.manifest.json` is untouched – that
+  one is live, parsed by `adapters.ts`.

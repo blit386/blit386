@@ -29,10 +29,9 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    at `https://blit386.dev/mcp`: Claude gets `.mcp.json` and Cursor gets `.cursor/mcp.json`. The two entries differ by
    one key on purpose – Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type` marks
    a local stdio server. Every path an adapter emits is built from `packages/kit/src/ownership.ts`, the single source
-   both packages classify against; `content/agents.config.json` is a descriptive summary of the same set, read by no
-   code. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given project is decided by
-   `content/hooks.manifest.json` – only a script one of that adapter's own hook entries actually references gets copied
-   (all under `packages/kit/`).
+   both packages classify against. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given
+   project is decided by `content/hooks.manifest.json` – only a script one of that adapter's own hook entries actually
+   references gets copied (all under `packages/kit/`).
 5. Kit content (`AGENTS.md` + `docs/`) is copied **verbatim** – `copyFileSync` / `cpSync`, so `{{placeholder}}` tokens
    are NOT substituted there. Only templates, rules, and skills pass through `render()`. Prose in `AGENTS.md` and
    `docs/` must therefore spell out both language cases ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
