@@ -260,6 +260,18 @@ Built out (19 skills, see Phase 3). Two of the original sketch names were delibe
 `add-scene` – the engine has no physics, collision, entity, or scene system, so those skills would have to invent one.
 `add-sound` shipped as `play-a-sound` (the engine's audio subsystem landed in blit386 1.3.0).
 
+Three later skills closed discoverability gaps the kit itself had caused, not new engine surface: `smooth-the-motion` –
+`BT.renderAlpha` appeared exactly once in the whole kit (a bare name in a getter list) and was explained nowhere, so
+every scaffolded game judders against the fixed tick on a high-refresh display; the skill teaches the
+snapshot-before-move + `Vector2i.lerp` recipe. `design-a-sound` – `play-a-sound` stopped at the six `BT.synthPreset`
+factories, leaving the whole `SynthParams` knob surface undocumented; a `_3RD_` game hand-rolled a raw Web Audio
+`beep()` rather than finding `BT.synthPreset.blip()`, which is exactly the discoverability failure the skill fixes.
+`keep-it-fast` – the kit had no performance guidance at all, and blowing the per-frame budget (about 8,300 sprites, or
+separately about 8,300 shapes) silently drops the extra draws with only a console warning, which reads to a beginner as
+"sprites randomly vanish." The same pass fixed `add-crt-effect` to stop gating on `BT.requestedBackend` (which stays
+`'webgpu'` after a software fallback, so it passes on exactly the machines the guard exists to protect) in favor of
+`BT.activeBackend`.
+
 ### 4.3 Canonical source -> capability-aware per-agent generation
 
 The kit holds one canonical, human-readable source. A generator renders per-agent files from it. Because agents differ
@@ -288,6 +300,17 @@ Capability matrix (what each adapter emits from the same source):
 | Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | n/a |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
+
+The "Live docs lookup" row (the `blit386-docs` MCP server at `https://blit386.dev/mcp`, teaching an assistant the
+`search_docs` / `get_docs_summary` tools plus the `llms.txt` and `Accept: text/markdown` fallbacks) carries three
+decisions worth keeping: (1) no `content/mcp.manifest.json` – one server with no per-adapter divergence beyond a single
+key does not earn a manifest plus parser plus schema; revisit when a second server appears. (2) the generated
+`.claude/settings.json` deliberately does not pre-approve the server in its MCP enable list – the approval prompt is
+Claude Code's own consent boundary for a network server, the scaffolder is not the party entitled to answer it, and a
+checked-in settings file's approvals are ignored in an untrusted folder anyway. (3) the two generated configs differ by
+one key on purpose: Claude Code skips a remote entry that has a `url` but no `type`, while for Cursor a `type` marks a
+local stdio server. Both are kit-owned, so `blit agents sync` refreshes them and three-way merges a user's own added
+servers.
 
 The ground truth expresses INTENT; each adapter expresses its agent's CAPABILITY. Content differs per agent, not just
 file location. Worked example – one guardrail ("never let the agent edit lockfiles or secrets"), four renderings:
@@ -813,339 +836,7 @@ ships both at `^1.4.0`.
 
 ## Changelog
 
-- 2026-07-24: `1.3.0` shipped. Hot-reload kit content and starter Vite plugin for engine `blit386@1.4.0` (section 12);
-  `engineRange` / `BLIT386_RANGE` at `^1.4.0`; existing games opt in via `blit upgrade` / `blit migrate`. Also: shared
-  `@blit386/kit/adapters`, Claude `settings.json` hooks, lockstep bump hardening. Top banner, section 0 pin note,
-  section 11 publish status updated; removed a stale claim that a root `RELEASE.md` exists (release notes live only in
-  GitHub Releases). Manual publish after merge, kit first.
-- 2026-07-23: Status accuracy pass (BT-341). Top banner then stated published npm was still `1.2.1` while local
-  `engineRange` / `BLIT386_RANGE` on `main` were already `^1.4.0` (unpublished next cut), hot-reload content/section 12
-  was on `main`, skill count is 24, and tests are 47 (25 scaffolder + 22 kit). Deleted GitHub issue links #23–#33
-  (HTTP 410) replaced with Linear trackers (BT-300/301/302 for section 7 verifies; BT-299/293 for remaining Phase 3
-  roadmap; BT-292/295–298/294 for Phase 4). Catcher starter catch/miss sounds stay deferred product work. The 2026-07-13
-  changelog entry below is historical and superseded by later entries / this pass. Superseded for publish status by the
-  2026-07-24 `1.3.0` entry above.
-- 2026-07-23: Section 12 added – hot reload for scaffolded games (engine 1.4.0+): snippet ↔ engine contract, tiered swap
-  model, and the explicit "new games only" delivery decision (existing games opt in via a one-line `vite.config.js` edit
-  or `blit migrate`). Kit docs/skills (`hot-reload.md`, `use-hot-reload`) and the Catcher commented `onHotReload`
-  example teach the same model.
-- 2026-07-14: `1.2.1` shipped (PR #56 audio content, PR #60 release). The tag-driven `publish.yml` workflow failed on
-  the `1.2.1` tag push with `ENEEDAUTH` – the `NPM_TOKEN` repository secret was missing. Rather than re-provision it,
-  the decision is publishing is manual-only from now on: `.github/workflows/publish.yml` is deleted, `PUBLISHING.md` and
-  the `cbt-release` skill are rewritten so manual `pnpm publish` is the only documented path (not a fallback), and
-  `1.2.1` itself was published that way. Tags are still cut and pushed after a manual publish as a release marker; they
-  no longer trigger anything. See the top status block and section 11 for details.
-- 2026-07-14: Correction to the 2026-07-13 entry below and to section 0. That entry's "no version-pin bump needed –
-  `BLIT386_RANGE` / `engineRange` stay `^1.2.0`" call was wrong for `engineRange`: it conflated the scaffold-pin
-  mechanism (`BLIT386_RANGE`, harmless to leave since `npm install` always resolves to the latest satisfying version)
-  with the kit's own `blit386.engineRange` field, which `blit doctor`'s D14 compatibility check
-  (`packages/kit/src/commands/doctor.ts`, `env.ts`) compares against an already-installed engine. Leaving it at `^1.2.0`
-  meant `blit doctor` would report a false "compatible" for a project on `blit386@1.2.0` after syncing in the new
-  1.3.0-only audio docs. Fixed for the `1.2.1` release: `packages/kit/package.json`'s `blit386.engineRange` and
-  `scaffold.ts`'s `BLIT386_RANGE` both bumped to `^1.3.0`. See the corrected "why this is safe" paragraph in section 0.
-- 2026-07-13: Status audit (no code changes). Verified current state against npm and GitHub rather than trusting the doc
-  at face value. Findings: (1) `blit386@1.3.0` (the audio-bearing release) is live on npm as `latest` – confirmed via
-  `npm view blit386 dist-tags`. This satisfies the section 0 release-order gate for the first time. (2) `@blit386/kit`
-  and `create-blit386` are still published at `1.2.0`; the audio content described in section 0
-  (`content/docs/audio.md`, `content/skills/play-a-sound/`, and edits to `content/AGENTS.md`,
-  `content/rules/blit-api-names.md`, `content/skills/show-debug-overlay/SKILL.md`,
-  `content/skills/share-the-game/SKILL.md`, `content/skills/structure-a-game/SKILL.md`,
-  `content/docs/getting-started.md`, `content/docs/when-something-breaks.md`) is committed on the open, unmerged
-  `chore/kit-update` branch (PR #56) – none of it is on `main` yet. (3) Tracking issue
-  [#50](https://github.com/blit386/create-blit386/issues/50) is open with its four checklist items unchecked. (4) Phase
-  3 items #26 (generate `deprecations.md` from migration data) and #27 (auto-stamp `engineRange` + drift CI) remain
-  open, as does all of Phase 4 (#23–25, #28–33 – StackBlitz, iPad, Windows, and the Zed/Gemini CLI/Windsurf adapters).
-  (5) #37 (non-interactive scaffolding support) is already implemented and tested in code – the `isInteractive` TTY
-  check plus `--yes`/`--ts`/`--no-install`/`--no-git` flags in `src/index.ts`, covered by the "scaffolds without --yes
-  when no interactive terminal is attached" test in `scaffold.test.mjs` – the GitHub issue just hasn't been closed yet.
-  Updated section 0's status line and the top status header to record this; otherwise this doc was already current with
-  the `/kit` → `@blit386/kit` naming fixes from a prior session. Next actions for whoever picks this up: merge PR #56,
-  then publish the kit before the scaffolder (section 11); no version-pin bump needed – `BLIT386_RANGE` / `engineRange`
-  stay `^1.2.0` (the existing caret range already admits `1.3.0`).
-- 2026-06-07: Created. Round 1 decisions D1-D4 locked. Findings F1-F4 recorded. Architecture drafted. Open questions
-  Q-NAME, Q-GAME, Q-KIT, Q-MVP, Q-REPO queued.
-- 2026-06-07: Round 2. Decisions D5 (Catcher), D6 (kit as own package), D7 (thinnest MVP on adapter pipeline). Finding
-  F5 (npm scope without a team). Added the intent-vs-capability worked example to 4.3. Resolved Q-NAME, Q-GAME, Q-KIT,
-  Q-MVP. New open questions: Q-KIT-NAME, Q-GROUND-TRUTH-FORMAT, Q-FILIPEK-AGENT (Q-REPO still open).
-- 2026-06-07: Round 3. D6 name resolved (`@blit386/kit` via free org), D7 refined (Filipek = no agent), D8 (JS in v0.1,
-  TS phase 2), D9 (hybrid repo). Added section 9 phase roadmap. Resolved Q-KIT-NAME, Q-REPO, Q-FILIPEK-AGENT. Only
-  Q-GROUND-TRUTH-FORMAT remains open.
-- 2026-06-07: Round 4. Q-GROUND-TRUTH-FORMAT resolved (kit IR confirmed). Recorded Filipek's environment (no Node.js,
-  Zed editor). Added section 10 (npm org setup steps). New open question Q-PKGMGR (auto-detect package manager,
-  npm-default for end users). Engine requires Node >= 22.18.0.
-- 2026-06-07: Round 5. Q-PKGMGR resolved -> D10 (auto-detect, npm default for end users). npm org `blit386` created
-  (npmjs.com/org/blit386). All design questions resolved; moving to build planning for v0.1.
-- 2026-06-07: Round 6. v0.1 BUILT and verified end-to-end at `create-blit386/` (two strict-TS packages, the Catcher
-  game, the `blit` CLI, the kit's AGENTS.md + docs). The generated game was confirmed rendering on WebGPU via Vite
-  against published `blit386` 1.1.1, with working score/lives logic and a clean console. Not published; not committed by
-  Claude. Catcher uses `BT.systemPrint` (no font asset). Remaining: the manual npm publish step.
-- 2026-06-09: Round 7. Pre-publish polish: added ISC `LICENSE` (root + both packages), a `README.md` per package,
-  `prepack` build scripts, and a hardened `.gitignore` (re-verified no build/dep artifacts are staged). Documented the
-  npm publish procedure (section 11). Began publishing: `@blit386/kit@0.1.0` is up (read-API propagating);
-  `create-blit386` to follow. Repo at `create-blit386/` is git-init'd; initial commit message drafted via `/commit-msg`
-  (not yet committed by Claude).
-- 2026-06-09: Round 8. Repo committed and pushed to GitHub: <https://github.com/blit386/create-blit386> (public).
-- 2026-06-12: Round 9. Design review (all-audiences pass: beginners, experts, no-AI, AI, agents). New decisions D11
-  (pre-Node onboarding lives outside the project; StackBlitz leads once verified), D12 (`npx blit ...` everywhere;
-  README leads with `npm run dev`), D13 (sync ownership model – full spec in new section 4.10), D14 (kit declares a
-  supported engine range; doctor checks). Section 4.8 rewritten to match the built wizard + non-TTY and Node-gate rules;
-  4.9 fixed (AGENTS.md is always emitted) and updated. Section 7 gained Windows, `npx blit`, and touch-input
-  verification TODOs. Section 9 gained the Phase 1.x backlog. Docs shipped same day: `when-something-breaks.md` (new kit
-  doc), `npx blit` sweep across template README / AGENTS.md / getting-started / CLAUDE.md template / package README,
-  overlay-key explanation (position-based Backquote, Quake heritage, tap-the-corner fallback), "Share your game" README
-  section, repo-README Node onboarding + send-to-a-friend snippet, and the AGENTS.md managed markers + "Your notes"
-  section. Code items (non-TTY guard, Node gate, Catcher touch input, manifest seeding, engine-range check) recorded as
-  Phase 1.x TODOs, not yet implemented.
-- 2026-06-13: Round 10. Verified actual state against npm + the repo: both packages are published at `0.1.0` (the Phase
-  1 "REMAINING: publish" and section 11 "confirm/pending" lines were stale – corrected). Implemented the first two Phase
-  1.x code items in `create-blit386`: the Node-version gate (friendly Tier-1 message + exit before any prompt when below
-  `22.18.0`) and the non-TTY guard (no TTY -> act as `--yes` and print one info line). Both back pure helpers in a new
-  `packages/create-blit386/src/env.ts` (`meetsNodeFloor`, `isInteractive`, `NODE_FLOOR`), emitted as its own dist entry
-  via `tsup.config.ts` so tests import it without running the CLI. Added unit tests for `meetsNodeFloor` and an
-  end-to-end non-TTY test (timed, fails if the wizard hangs); added `EBADENGINE` to `cspell.json`. Full preflight green
-  (format, lint, typecheck, spellcheck, knip, docs:links, build, 7/7 tests). Merged to `main` as PR #7
-  (CodeRabbit-approved) and unpublished. `package.json` bumped to a provisional `0.1.1`, but the release number is
-  deferred until the Phase 1.x batch is done (could be `0.1.1` / `0.2.0` / `1.0.0`). Remaining Phase 1.x code: Catcher
-  touch input, `.blit/` manifest seeding, engine-range check (D14).
-- 2026-06-13: Round 11. Implemented the remaining three Phase 1.x code items (see Round 10 for the first two). Catcher
-  touch/pointer input (PR #8): `update()` in `templates/js/src/game.js` now checks `BT.isPointerActive(0)` first; when
-  true, centers the paddle on `BT.pointerPos(0).x`; arrows are the fallback. File-level header and template `README.md`
-  "Run it" section updated to document pointer-first behavior. `biome.json` extended to cover `templates/**/*.js`;
-  `cspell` lint-staged invocation gained `--no-must-find-files` (templates are in cspell's `ignorePaths`; without the
-  flag, pre-commit hooks failed with "0 files checked"). `.blit/` manifest seeding (PR #10): `scaffold()` collects every
-  written file path, classifies as `kit-owned` / `shared` / `user-owned`, computes SHA-256, writes
-  `.blit/manifest.json` + `.blit/base/` pristine copies. Test strengthened to compute a fresh sha256 from the actual
-  file and `deepStrictEqual` the base copy bytes. D14 engine-range check (PR #9):
-  `"blit386": { "engineRange": "^1.1.1" }` in `packages/kit/package.json`; new helpers `satisfiesCaretRange`,
-  `exceedsCaretRange`, `kitEngineRange`; `blit doctor` reports compatibility in Tier-1 voice. `kitEngineRange` URL path
-  bug fixed (was `../../package.json` resolving to non-existent `packages/package.json`; corrected to `../package.json`
-  → `packages/kit/package.json`). All four PRs merged to `main`. Release version not bumped yet.
-- 2026-06-13: Round 12. Phase 2 Items 1–3 implemented. Item 1 (TypeScript language layer, PR #11): added `templates/ts/`
-  (thin layer with `package.json.tmpl`, `tsconfig.json`, `src/game.ts`); wired `language: 'js' | 'ts'` through
-  `ScaffoldOptions`, wizard, and `--ts` CLI flag; `index.html` and `README.md` in `base/` use
-  `{{entryFile}}`/`{{gameFile}}` placeholders. Item 2 (Claude adapter, generated, branch `agents-claude`): replaced
-  static `templates/optional/claude/CLAUDE.md.tmpl` with `generateClaudeAdapter()` that reads kit IR
-  (`content/AGENTS.md`, `content/rules/*.md`, `content/skills/*/SKILL.md`) and emits `CLAUDE.md` (managed region),
-  `.claude/rules/`, `.claude/skills/`. Added kit IR source files: `content/rules/blit-api-names.md`,
-  `content/rules/blit-integer-coords.md`, `content/skills/run/SKILL.md`, `content/skills/fix/SKILL.md`,
-  `content/agents.config.json`. Item 3 (Cursor adapter, generated, branch `agents-cursor`): deleted
-  `templates/optional/cursor/` and added `generateCursorAdapter()` that emits `.cursor/rules/*.mdc` (frontmatter
-  preserved), `.cursor/hooks.json` (translated from `content/hooks.manifest.json`), `.cursor/hooks/shell-safety.sh`, and
-  `.cursor/commands/*.md` (one per skill). Added `content/hooks.manifest.json` and `content/hooks/shell-safety.sh`. Both
-  branches merged together; preflight green (9/9 tests). Item 4 (`blit agents sync --check`) is next.
-- 2026-06-13: Round 13. Phase 2 Item 4: `blit agents sync --check` implemented. Replaced the stub in
-  `packages/kit/src/commands/agents.ts` with a real drift-detection algorithm: reads `.blit/manifest.json`, computes
-  SHA-256 of each kit-owned and shared file on disk, compares against the manifest-recorded hash, and reports any that
-  have drifted (user-modified or deleted). Exits non-zero on drift (CI-safe). Full sync (rewriting kit-owned files and
-  managed regions) remains a stub pointing to `--check`. Integrated drift check into `blit doctor` (appended at end of
-  checkup, no exit-code change for doctor). Updated `cli.ts` help text. Added two end-to-end tests (exit 0 on clean
-  project; exit 1 with drifted `.claude/rules/blit-api-names.md`). Fixed a `SyntaxError` caused by `await import()` in a
-  sync test callback – moved `writeFileSync` to the top-level import. Preflight green (11/11 tests). Phase 2 complete.
-- 2026-06-13: Round 14. CodeRabbit review fixes; all Phase 2 PRs merged to `main`. PR #13 (Cursor adapter,
-  `agents-cursor`): added python3 availability pre-check to `shell-safety.sh` (exits non-zero with a deny response if
-  python3 is absent – true fail-closed); added `length > 0` guards before `[0]` array accesses in the hooks.json test.
-  PR #14 (`blit agents sync --check`, `agents-sync`): added `Array.isArray(manifest.files)` shape validation after
-  JSON.parse; added path-traversal guard to the entry loop (reject absolute paths and `..` escapes, use `path.resolve` +
-  root-containment check). All PRs reviewed by CodeRabbit and merged. `main` is now at `afea44c`. Release version still
-  not bumped – next step is `1.0.0`.
-- 2026-06-13: Round 15. Release prep + Phase 2 finish. (1) 1.0.0 version bump: both `packages/kit/package.json` and
-  `packages/create-blit386/package.json` set to `1.0.0`; `pnpm install` synced the lockfile; full preflight green.
-  Commit, `v1.0.0` tag, and npm publish are intentionally not done – held for an explicit go (kit first, per
-  PUBLISHING.md). (2) Dogfood (finding, no file changes): ran the scaffolder's `generateClaudeAdapter` /
-  `generateCursorAdapter` against scratch projects and compared to the engine repos' real `.cursor/`/`.claude/`.
-  Conclusion: do not replace. The kit IR targets game authors (2 rules, `run`/`fix` skills, 5 beginner docs, one
-  shell-safety hook); `blit386` / `blit386-demos` carry maintainer config (6+ repo-specific rules, 12 `bt-*` / 9
-  `demos-*` skills, RTK/format hooks) and are the kit's _upstream_, not consumers. Overwriting would delete maintenance
-  tooling; a future "maintainer profile" IR is the prerequisite (Phase 3+). The sibling repos were left untouched. (3)
-  Full `blit agents sync` write path: ported the adapter generation into a new generate-to-memory module
-  `packages/kit/src/adapters.ts` (byte-identical to the scaffolder's adapters), then implemented `runFullSync` in
-  `packages/kit/src/commands/agents.ts`: regenerate the installed kit's output in memory, then per the 4.10 ownership
-  model – overwrite unmodified kit-owned files, managed-region merge for shared files, `git merge-file` three-way merge
-  for user-edited kit-owned files with a `<file>.new` fallback when git is unavailable or conflicts, refresh
-  `.blit/manifest.json` + `.blit/base/`, and support `--force [path...]`. Tier-1 summary output. The scaffolder now
-  records the scaffold-time template vars in the manifest (`BlitManifest.vars`) so sync regenerates deterministically
-  regardless of the environment. Four new tests (clean Claude + clean Cursor parity → zero changes, `--force` restore,
-  CLAUDE.md managed-region merge preserving a user note); 15/15 pass, preflight green. (4) Docs sweep: updated all docs
-  for the new sync capability and to clear leftover Phase 2 staleness – `packages/kit/README.md` (`blit agents sync` is
-  now real, with `--check`/`--force`; `add` still pending), `packages/create-blit386/README.md` (added
-  `npx blit agents sync` + `--ts` + agent-config note), repo `README.md` (Status now reflects Phase 2 complete; CLI list
-  gains `agents sync`), repo `CLAUDE.md` (scaffold flow incl. adapter generation + manifest step, template layout `ts/`
-  and removed `optional/cursor|claude`, JS-by-default rule, kit-content table points at `content/rules/*.md`, new
-  where-to-find rows for sync/adapters/manifest), and the workspace `CLAUDE.md` create-blit386 status. docs:links +
-  spellcheck green. Nothing committed.
-- 2026-06-13: Round 16. Documentation accuracy audit (full sweep of all 27 markdown/mdc docs + JSON config against the
-  real code). Fixes: (a) `content/docs/basics.md` `configure()` example imported `bootstrap, BT` but used `Vector2i` –
-  added the missing import. (b) `content/agents.config.json` cursor `emits` omitted the generated
-  `.cursor/hooks/{script}` (shell-safety hook) – added it. (c) repo `CLAUDE.md` said "five beginner docs" (there are
-  six: getting-started, basics, drawing, input, palette, when-something-breaks) – corrected the count and added the two
-  missing rows to the kit-content audit table. (d) Repo agent rules were stale: `.cursor/rules/template-structure.mdc`
-  - `.claude` mirror still listed `optional/{cursor,claude}` (deleted – those configs are now generated from the kit
-    IR), and the `.claude` mirror lacked the `ts/` layer – synced both to reality. (e)
-    `.cursor/rules/docs-sync-required.mdc`
-  - mirror pointed at the deleted `templates/optional/cursor/.../blit386-api-names.mdc` – repointed at
-    `packages/kit/content/rules/*.md` and added a row for CLI/adapter/`agents sync` changes. (f) `claude-canonical.mdc`
-    "plain JavaScript" line updated to note the opt-in TypeScript layer (and fixed a wrong `blit init --ts` reference –
-    TS is a scaffolder flag, `npm create blit386 ... --ts`). (g) `create-blit386/src/index.ts` header flag list and
-    `packages/create-blit386/README.md` "What you get" now mention `--ts` / `src/game.ts`. Full preflight green (15/15
-    tests). Nothing committed.
-- 2026-06-14: Round 23. Game-author skills (Phase 3 "more game-author skills"). Added 14 capability recipes under
-  `packages/kit/content/skills/` (the set has since grown to 19 – see Phase 3), grounded in an authoritative audit of
-  `BTAPI.ts` + `BLIT386.ts` and the demo suite (33 demos then; 39 today): `structure-a-game`, `draw-shapes`,
-  `add-sprite`, `add-text`, `use-palette`, `animate-the-palette`, `move-and-time`, `scroll-with-camera`,
-  `read-keyboard`, `read-pointer`, `read-gamepad`, `add-crt-effect`, `save-a-screenshot`, `show-debug-overlay`. Together
-  they cover every capability area the engine exposes today and deliberately fold in APIs no demo exercises
-  (`paletteFadeRange`, `paletteClearEffects`, `BT.preset.amber`/`green`, `PixelMosaic`, `captureFrame`, `showCursor`,
-  `effectClear`, `ticksReset`). Each is a short recipe (when to use + minimal code + key calls + gotchas) that points
-  only at the kit's own local docs, never an outside repo. They emit into both `.claude/skills/<name>/SKILL.md` and
-  `.cursor/commands/<name>.md` via the existing skill auto-discovery – no generator change. Hard boundaries respected:
-  renderer-only (no physics/collision/entity systems taught), post-process gated on `BT.activeBackend === 'webgpu'`,
-  display-tier effects need `drawingBufferSize`, sprite flip/rotate constants documented as not-yet-wired. Also fixed a
-  doc bug in `content/docs/palette.md`: `Color32.white` and friends are static getters, not calls (the doc showed
-  `Color32.white()`). Decisions: no `add-enemy`/physics skill (out of engine scope); no `publish`/deploy skill (the
-  scaffolder ships no deploy config); kit content is self-contained – skills and docs reference only `blit386` (the
-  engine) and the local kit docs, never the `blit386-demos` repo (which may be archived in favor of kit-based demos), so
-  no demo slugs or demo URLs appear in shipped content.
-- 2026-06-14: Round 22. AI migration skill (closes the Round 21 follow-up). Added
-  `packages/kit/content/skills/migrate/SKILL.md`, which the existing skill auto-discovery in `scaffold.ts` and
-  `adapters.ts` emits into generated games as a Claude skill (`.claude/skills/migrate/SKILL.md`) and a Cursor command
-  (`.cursor/commands/migrate.md`) – no generator code change needed. The skill tells the assistant to preview with
-  `blit migrate`, apply the safe renames with `--write`, then resolve each `review` hit by checking the receiver type
-  (`.equals` -> `.isEqual`, `.contains` -> `.isContaining`, `.intersects` -> `.isIntersecting`, `.tick` ->
-  `.fireIfElapsed`, and the bootstrap keys `canvasId`/`containerId`/`waitForDOMReady`), leaving non-engine values alone.
-  It points at the engine `deprecations.md` as the authoritative table and routes verification to `blit run` /
-  `blit doctor` and the `fix` skill. Docs: design doc 4.6 status + Phase 3 line updated. Still open in Phase 3: generate
-  `deprecations.md` from this data (cross-repo).
-- 2026-06-14: Round 21. Started Phase 3 migrations/codemods (section 4.6), the first post-1.0 feature. Built kit-side
-  and self-contained: a typed migration registry (`packages/kit/src/migrations/registry.ts`, seeded by hand from the
-  engine's `docs/deprecations.md`) plus a dependency-free, anchored codemod engine (`codemod.ts`). Renames are
-  classified `auto` (receiver-anchored `BT.*` calls, distinctive `configure()` keys, distinctive method names like
-  `isIndexized`/`containsXY`/`intersectionTo`) or `review` (generic names that could match unrelated code: common method
-  words `equals`/`contains`/`intersects`/`tick` and generic bootstrap keys `canvasId`/`containerId`/`waitForDOMReady` –
-  located and reported with a suggested rewrite, never auto-changed). New `blit migrate` command
-  (`commands/migrate.ts`): previews by default, writes only with `--write`, and runs the no-git nag + confirm before
-  touching files. `blit upgrade` now runs the applicable codemods after a real version change and offers to apply them
-  (replacing the bare deprecations link). Wiring: registered `migrate` in `cli.ts` + help; factored the shared
-  `confirm()` into `prompt.ts`; exported `compareVersions` from `env.ts`; added a second tsup entry so the
-  engine/registry are importable by tests. Tests: 13 codemod unit tests (`packages/kit/test/codemod.test.mjs`) + two
-  scaffold integration tests (`blit migrate` preview-no-write, and `--write` on a git project that rewrites safe names
-  and reports ambiguous ones). Decisions: (1) migration data lives in the kit, not the engine, so this ships without an
-  engine release – the long-term "flip `deprecations.md` to be generated from this data" is cross-repo and deferred
-  (mirrored by hand for now); (2) no `ts-morph`/`jscodeshift` dependency – anchored strings cover the current one-to-one
-  table; (3) the AI migration skill for non-mechanical changes is not built yet (`review` hits are surfaced for a
-  human/assistant). Docs updated: kit `README.md`, kit `content/AGENTS.md`, repo `CLAUDE.md` (info table). Preflight not
-  yet run this round (shell environment was unavailable); nothing committed.
-- 2026-06-14: Round 20. Cut and shipped `1.0.0` (the first stable release). Bumped `@blit386/kit` and `create-blit386`
-  to `1.0.0` (major) and did a packaging-metadata pass on both: added `repository` (with monorepo `directory`), `bugs`,
-  `homepage`; switched `author` to object form with a profile URL; broadened npm keywords; aligned the JS template
-  `vite` floor with the TS template (`^8.0.16`). Also refreshed GitHub repo topics for all three repos
-  (`create-blit386`, `blit386`, `blit386-demos`) and pointed `blit386-demos`'s `homepage`/website at the live demos
-  site. Process: `main` is protected, so the release landed via PR #19 (squash, `0eac7aa`); the annotated tag `1.0.0`
-  (no `v` prefix) was created on the merged commit, not the pre-merge branch (squash rewrites the SHA). Verified:
-  preflight green (22 tests), both publish dry-runs, packed tarball pins `@blit386/kit: 1.0.0`. After the owner
-  published (kit first, then scaffolder), confirmed `npm view` shows both at `1.0.0` (`latest`) and an end-to-end
-  `npm create blit386@latest` smoke test passed (`blit doctor` green, engine `1.1.1` compatible with kit `^1.1.1`).
-  Release notes live in the GitHub Release (<https://github.com/blit386/create-blit386/releases/tag/1.0.0>). Saved a
-  workspace memory that `main` is always protected. The earlier "1.0.0 deferred / reverted bump / `v1.0.0` tag" notes
-  are now superseded.
-- 2026-06-14: Round 19. Resolved the kit-owned clean-merge drift wrinkle (flagged since Round 17). Decision: a clean
-  three-way-merged kit file is reconciled state, not drift – it should read as in-sync, exactly like a shared file with
-  a preserved note. Reporting it as drift was a false positive that made `doctor` nag forever and re-running `sync`
-  change nothing (the "nobody trusts sync" failure the ownership model fights). Root cause: `entry.sha256` was
-  overloaded. After a kit-owned clean merge it was set to the _pristine kit_ hash (so the full-sync fast path
-  `diskHash === entry.sha256` would not mistake a merged file for an untouched one and clobber it), but `checkSyncDrift`
-  reads the same field as the on-disk reference, so it saw the merged file (pristine ≠ merged) and flagged drift. Shared
-  files avoided this because Round 17 routes them through the managed-region merge before any fast path, letting
-  `entry.sha256` hold the reconciled (merged) hash. Fix (`packages/kit/src/commands/agents.ts`, `runFullSync`): give the
-  fast path its own correct reference – the pristine ancestor already saved in `.blit/base/<path>`. The kit-owned
-  "unmodified" check now compares `diskHash` against the base-copy hash
-  (`existsSync(basePath) ? sha256(basePath) : entry.sha256` for older projects without a base copy), and the clean-merge
-  branch now records `entry.sha256 = sha256Text(merged)` (reconciled on-disk content) instead of the pristine hash. The
-  base copy stays the pristine merge ancestor, so the next sync still detects the user's edits and re-merges them – user
-  edits remain protected. Updated the `ManifestEntry.sha256` doc and section 4.10 manifest description. New test
-  (`blit agents sync does not flag a clean-merged kit file as drift`, git-guarded): a user edit to a kit rule merges
-  cleanly, `--check` reports in-sync (the fix), and the edit survives a second sync. 22/22 pass, full preflight green.
-  Nothing committed.
-- 2026-06-14: Round 18. Implemented `blit agents add <claude|cursor>` (section 4.5), the post-scaffold command to set up
-  one AI assistant in a project that started without one – replacing the friendly "coming soon" stub. New `runAddAgent`
-  in `packages/kit/src/commands/agents.ts` reuses the existing ownership-model building blocks: it reads
-  `.blit/manifest.json` (via a new shared `readManifest` helper), regenerates the chosen assistant's adapter output in
-  memory from the installed kit (`generateClaudeAdapter` / `generateCursorAdapter` in `adapters.ts`, using the
-  manifest's recorded `vars` or `fallbackVars`), writes the new files, copies pristine `.blit/base/` ancestors, and adds
-  the entries to the manifest so `sync --check` stays clean. Safety: an assistant that is already set up is a friendly
-  no-op pointing at `sync`; an unknown name exits non-zero listing the supported assistants (`claude`, `cursor`).
-  Collision handling is all-or-nothing (review fix, same round): the first draft wrote the non-colliding files and added
-  them to the manifest while saving only the colliding file as `<file>.new`. That left the assistant half-present, so a
-  later `sync` would regenerate the colliding path (now that `hasClaude`/`hasCursor` was true), find no manifest entry,
-  and overwrite the very user file `add` had protected. Fixed by detecting all collisions up front: if any exist, write
-  only the `<file>.new` copies, touch neither the project nor the manifest, and exit non-zero (the user resolves the
-  originals, then re-runs `add`). Wired into `runAgents` (`add <name>` dispatch + updated usage block) and the module
-  JSDoc. Five end-to-end tests (add claude, add cursor + clean follow-up sync, already-present no-op, unknown-name
-  rejection, and the collision test – strengthened to assert no half-add and that a later `sync` leaves the user file
-  intact); 21/21 pass, full preflight green. Docs updated: kit `README.md` (real `agents add` description + usage
-  example), `packages/create-blit386/README.md` and repo `README.md` (CLI lists + "add later" pointer), repo `CLAUDE.md`
-  (new where-to-find row), and the kit's canonical `content/AGENTS.md` (managed region now points projects that started
-  without an assistant at `agents add`). Also corrected the stale status-header note: the `9c37894` docs-sync-path
-  commit is already in `main` (PR #16 merge), so there is no pending `agent-docs` branch. Release still deferred;
-  nothing committed.
-- 2026-06-14: Round 17. Review-driven hardening of `blit agents sync`, everything landed on `main`, and `1.0.0`
-  deferred. (1) Sync bug fixes (3 review rounds, all merged): (a) the kit-owned clean three-way-merge path recorded the
-  _merged_ result as the baseline/hash, so the next sync misread an untouched merged file as "unmodified" and overwrote
-  the user's edits – now records the kit-generated `incoming` as the base + `entry.sha256`; (b) orphaned manifest
-  entries (files the new kit no longer ships) were tallied but never removed from `entryByPath`, so stale entries got
-  rewritten – now `entryByPath.delete(path)` for each orphan; (c) `regenerate` fell back to `fallbackVars(root)` but
-  never persisted it, re-detecting the package manager every sync – now writes the resolved vars back onto
-  `manifest.vars` the first time. (2) Shared-file note loss (the subtle one): shared files (`AGENTS.md`, `CLAUDE.md`)
-  recorded `entry.sha256 = sha256Text(merged)`; on a _second_ sync the untouched file matched that hash, hit the
-  "unmodified" fast path, and was overwritten wholesale, dropping the user's notes outside the managed region. Fix:
-  handle shared files before the kit-owned fast path so they always route through `replaceManagedRegion` (preserving
-  surrounding content), while keeping `entry.sha256 = sha256Text(merged)` so `sync --check` still treats a preserved
-  note as in-sync. Note `entry.sha256` has two consumers – `checkSyncDrift` (wants reconciled on-disk hash) and the
-  full-sync fast path (wants the pristine kit baseline) – which is why the fix is "route by class first," not "change
-  the hash." Added a two-sync regression test; the single-sync test could not catch it. 16/16 tests pass. (3) Docs path
-  consistency: `.cursor/rules/docs-sync-required.mdc` + `.claude` mirror now use fully qualified
-  `packages/kit/content/...` paths (committed on `agent-docs` as `9c37894`, not yet merged – open a PR or fast-forward
-  `main` next session). (4) Merges: the write path + fixes + docs sweep are on `main` (PR #15, then PR #16 for docs;
-  `main` HEAD `b7435fa`). (5) Release deferred: reverted the uncommitted `1.0.0` bump back to `0.1.0`/`0.1.1`; no tag
-  cut. The owner is adding a couple more features before `1.0.0`. Nothing about the release is committed or tagged.
-- 2026-07-13: Round 24. Three engine-surface skills added to `content/skills/`, closing gaps opened by the 1.3.0 engine
-  release rather than by a new product decision. (1) `smooth-the-motion` – `BT.renderAlpha` appeared exactly once in the
-  entire kit (a bare name in a getter list in `rules/blit-api-names.md`) and was explained nowhere, so no scaffolded
-  game interpolated and all three `_3RD_` games judder against the fixed tick on a high-refresh display; the skill
-  teaches the snapshot-before-move + `Vector2i.lerp` recipe, and `docs/basics.md` gains the matching section. (2)
-  `design-a-sound` – `play-a-sound` stopped at the six `BT.synthPreset` factories, leaving the whole `SynthParams` knob
-  surface undocumented; `_3RD_/killer-math` hand-rolled a raw Web Audio `beep()` rather than finding
-  `BT.synthPreset.blip()`, which is a discoverability failure the kit caused. (3) `keep-it-fast` – the kit had no
-  performance guidance at all; notably, blowing the per-frame budget (about 8,300 sprites, and separately about 8,300
-  shapes, everything being drawn as quads) _silently drops_ the extra draws with only a console warning, which reads to
-  a beginner as "sprites randomly vanish." Also fixed `add-crt-effect` to warn against gating on `BT.requestedBackend`,
-  which stays `'webgpu'` after a software fallback and so passes on exactly the machines the guard exists to protect.
-  The renderer-only boundary from Round 23 was reaffirmed, not relaxed: collision, game states, juice, and save/load
-  were considered and deliberately left out, since the engine has no game systems to document. Hygiene: `cbt-kit-audit`
-  hardcoded a 12-skill list that had already gone stale (missing four skills and `audio.md`), so its doc and skill steps
-  now glob the directories instead of naming files; `packages/kit/README.md` gains the first human-facing table of the
-  shipped skills, and `cbt-kit-audit` is responsible for keeping it complete.
-- 2026-07-23: Round 25 (BT-350). Shared agent adapters: deleted the duplicated Claude/Cursor generators from
-  `packages/create-blit386/src/scaffold.ts`. `packages/kit/src/adapters.ts` is now the single source of truth, exported
-  as `@blit386/kit/adapters` (tsup entry + package `exports`). Scaffold imports `generateClaudeAdapter` /
-  `generateCursorAdapter` and writes the `{ path, content }` pairs to disk; `blit agents sync` / `add` keep using the
-  same module in memory. Added a scaffold-vs-memory parity test; ownership model / manifest / `.blit/base/` unchanged.
-- 2026-07-24: Round 26 (BT-254). Claude adapter hook parity with Cursor: `hooks.manifest.json` gains `claude:` blocks;
-  `generateClaudeAdapter` emits `.claude/settings.json` (PreToolUse / PostToolUse) and copies `content/hooks/` into
-  `.claude/hooks/`. `shell-safety.sh` speaks both Cursor permission JSON and Claude exit-2 / permissionDecision
-  protocols. Ownership classifiers treat `.claude/hooks/` as kit-owned; scaffold twin tests cover settings.json.
-- 2026-08-21: Round 27 (BT-253). Docs MCP into generated games – see the "Live docs lookup" row of the §4 capability
-  matrix for what each adapter emits. A new `ask-the-docs` kit skill and an `AGENTS.md` managed-region rewrite teach an
-  assistant the three live-docs routes (MCP `search_docs` / `get_docs_summary`, `llms.txt`, `Accept: text/markdown`),
-  and the old "go read GitHub" pointer is demoted to last resort. Three decisions worth keeping: (1) no
-  `content/mcp.manifest.json` – one server with no per-adapter divergence beyond a single key does not earn a manifest
-  plus parser plus schema; revisit when a second server appears. (2) The generated `.claude/settings.json` does not
-  pre-approve the server in its MCP enable list – the approval prompt is Claude Code's consent boundary for a network
-  server, the scaffolder is not the party entitled to answer it, and a checked-in settings file's approvals are ignored
-  in an untrusted folder anyway. (3) The two configs differ by one key deliberately: Claude Code skips a remote entry
-  with a `url` and no `type`, while for Cursor a `type` marks a local stdio server. Both are kit-owned, so
-  `blit agents sync` refreshes them and three-way merges a user's own added servers. Both paths are declared in
-  `packages/kit/src/ownership.ts` alongside the other generated-project paths, so the emitters and the classifier cannot
-  disagree about them. `.mcp.json` is the one Claude path the `.claude/` prefix does not cover, so `AGENT_PATHS` names
-  it outright; a hand-written one is still safe, because those predicates read manifest entries and an untracked file is
-  caught by `runAddAgent`'s collision check instead. `packages/kit/test/mcp-config.test.mjs` guards the server name and
-  URL against `packages/website/public/.well-known/mcp/server-card.json`.
+This doc records durable decisions, not a dated release log – chronological history (what shipped when, which PR, which
+commit) lives in `git log` and the GitHub Releases linked from section 11. When a change is genuinely a new durable
+decision, fold it into the relevant numbered section above (per-file rule in `.coderabbit.yaml`) instead of appending a
+dated entry here.
