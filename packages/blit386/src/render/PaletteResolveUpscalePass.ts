@@ -1,3 +1,4 @@
+import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import type { Vector2i } from '../utils/Vector2i';
 import { VS_WGSL } from './effects/fullscreenVS';
 import type { UpscaleFilter } from './UpscalePass';
@@ -174,7 +175,7 @@ struct Params {
 }
 
 struct Palette {
-    colors: array<vec4<f32>, 256>,
+    colors: array<vec4<f32>, ${MAX_PALETTE_SIZE}>,
 }
 
 @group(0) @binding(0) var<uniform> params: Params;

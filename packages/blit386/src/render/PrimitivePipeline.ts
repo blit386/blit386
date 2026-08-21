@@ -1,3 +1,4 @@
+import { MAX_PALETTE_SIZE } from '../assets/Palette';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 
@@ -355,7 +356,7 @@ export class PrimitivePipeline {
                 }
 
                 struct Palette {
-                    colors: array<vec4<f32>, 256>,
+                    colors: array<vec4<f32>, ${MAX_PALETTE_SIZE}>,
                 }
 
                 @group(0) @binding(0) var<uniform> uniforms: Uniforms;

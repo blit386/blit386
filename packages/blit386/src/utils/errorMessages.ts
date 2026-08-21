@@ -448,6 +448,8 @@ export function paletteIndexOutOfRangeError(index: number, size: number): string
  * @returns User-facing error string.
  */
 export function hudStartSlotError(startSlot: number): string {
+    // The "0" below is Palette.ts's TRANSPARENT_PALETTE_INDEX, re-typed rather than imported:
+    // Palette.ts already imports from this file, so importing back would create a cycle.
     return `HUD preset slots start from 1 (slot 0 is always transparent). Got ${startSlot}.`;
 }
 

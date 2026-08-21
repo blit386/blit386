@@ -5,8 +5,10 @@
  * and passes the usage mask directly to the overlay palette grid.
  */
 
-/** Maximum palette slots tracked by the usage mask. */
-export const USAGE_CAPACITY = 256;
+import { MAX_PALETTE_SIZE } from '../assets/Palette';
+
+/** Maximum palette slots tracked by the usage mask. Equal to {@link MAX_PALETTE_SIZE}. */
+export const USAGE_CAPACITY = MAX_PALETTE_SIZE;
 
 /**
  * Clears a palette usage bitmask.

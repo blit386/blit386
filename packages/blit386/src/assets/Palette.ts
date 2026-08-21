@@ -17,8 +17,19 @@ import {
 import { HUD_SLOTS } from './palettes/hudData';
 import { C64_HEX, CGA_HEX, GAMEBOY_HEX, NES_HEX, PICO8_HEX, VGA_HEX } from './palettes/presetData';
 
-/** Uniform-buffer slot count used by the renderer regardless of active palette size. */
-const GPU_SIZE = 256;
+/**
+ * Palette slot that is always transparent, regardless of palette size.
+ *
+ * `errorMessages.ts#hudStartSlotError` re-types this value in its message text instead of importing it, to avoid a
+ * circular import (this file already imports from `errorMessages.ts`) – keep the two in sync by hand.
+ */
+export const TRANSPARENT_PALETTE_INDEX = 0;
+
+/**
+ * Maximum number of colors a palette can hold – the fixed size of the GPU palette buffer, the WGSL palette array,
+ * and the usage-tracking mask.
+ */
+export const MAX_PALETTE_SIZE = 256;
 
 /** Number of normalized floats stored per palette color in GPU upload buffers. */
 const GPU_FLOATS_PER_COLOR = 4;
@@ -51,7 +62,7 @@ type Serialized = {
  */
 function isValidSize(size: number): boolean {
     // Supported palette sizes exposed by the public API.
-    const validSizes = [2, 4, 16, 32, 64, 128, 256] as const;
+    const validSizes = [2, 4, 16, 32, 64, 128, MAX_PALETTE_SIZE] as const;
 
     return validSizes.includes(size as (typeof validSizes)[number]);
 }
@@ -170,7 +181,7 @@ export class Palette {
      *
      * @param size – Palette size. Must be one of `2, 4, 16, 32, 64, 128, 256`.
      */
-    constructor(size: number = GPU_SIZE) {
+    constructor(size: number = MAX_PALETTE_SIZE) {
         validateSize(size);
 
         this.size = size;
@@ -356,7 +367,7 @@ export class Palette {
      * @throws Error if the six entries would exceed the palette size.
      */
     public applyHUD(startSlot: number = 1): void {
-        if (!Number.isInteger(startSlot) || startSlot < 1) {
+        if (!Number.isInteger(startSlot) || startSlot < TRANSPARENT_PALETTE_INDEX + 1) {
             throw new Error(hudStartSlotError(startSlot));
         }
 
@@ -382,9 +393,11 @@ export class Palette {
     public set(index: number, color: Color32): void {
         this.assertIndexInRange(index);
 
-        if (index === 0) {
+        if (index === TRANSPARENT_PALETTE_INDEX) {
             if (color.a !== 0) {
-                throw new Error('Slot 0 is always see-through (transparent). Put solid colors in slot 1 or higher.');
+                throw new Error(
+                    `Slot ${TRANSPARENT_PALETTE_INDEX} is always see-through (transparent). Put solid colors in slot 1 or higher.`,
+                );
             }
 
             this.colors[0] = Color32.transparent;
@@ -574,7 +587,7 @@ export class Palette {
      * @returns Float buffer containing normalized RGBA values.
      */
     public toFloat32Array(): Float32Array {
-        const floats = new Float32Array(GPU_SIZE * GPU_FLOATS_PER_COLOR);
+        const floats = new Float32Array(MAX_PALETTE_SIZE * GPU_FLOATS_PER_COLOR);
 
         this.toFloat32ArrayInto(floats);
 

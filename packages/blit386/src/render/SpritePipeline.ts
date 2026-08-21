@@ -1,4 +1,5 @@
 import type { BitmapFont } from '../assets/BitmapFont';
+import { MAX_PALETTE_SIZE, TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
@@ -256,7 +257,7 @@ export class SpritePipeline {
                 }
 
                 struct Palette {
-                    colors: array<vec4<f32>, 256>,
+                    colors: array<vec4<f32>, ${MAX_PALETTE_SIZE}>,
                 }
 
                 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -300,7 +301,7 @@ export class SpritePipeline {
                     // r8uint: single-channel unsigned integer index.
                     let rawIndex = textureLoad(spriteTexture, coords, 0).r;
 
-                    if (rawIndex == 0u) { discard; }
+                    if (rawIndex == ${TRANSPARENT_PALETTE_INDEX}u) { discard; }
 
                     let combined = rawIndex + input.paletteOffset;
                     let index = min(combined, 255u);

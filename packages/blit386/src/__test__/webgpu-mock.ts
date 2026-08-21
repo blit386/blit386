@@ -8,7 +8,8 @@ const DEFAULT_SIZE_PX = 256;
 
 /**
  * Palette uniform byte size: 256 palette indices x vec4(f32) x 4 bytes.
- * Matches {@link WebGPURenderer} palette buffer layout.
+ * Matches {@link WebGPURenderer} palette buffer layout (`Palette.ts`'s `MAX_PALETTE_SIZE`, not imported here – a
+ * test mock deliberately pins the expected wire value rather than importing the production constant).
  */
 const INDEX_COUNT = 256;
 const RGBA_COMPONENT_COUNT = 4;

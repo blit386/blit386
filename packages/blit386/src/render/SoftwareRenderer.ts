@@ -1,5 +1,6 @@
 import type { BitmapFont } from '../assets/BitmapFont';
 import type { Palette } from '../assets/Palette';
+import { TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
 import { clipSpriteSourceRect } from '../utils/AssetLimits';
@@ -818,7 +819,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
                 const srcY = clipped.y + y;
                 const rawIndex = indexedPixels[srcY * sheetWidth + srcX] ?? 0;
 
-                if (rawIndex === 0) {
+                if (rawIndex === TRANSPARENT_PALETTE_INDEX) {
                     continue;
                 }
 
