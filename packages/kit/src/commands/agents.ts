@@ -330,11 +330,23 @@ function regenerate(manifest: ReadBlitManifest, root: string): Map<string, strin
     return map;
 }
 
-/** Write `content` to a project-relative path, creating parent directories as needed. */
-function writeRel(root: string, relPath: string, content: string): void {
+/**
+ * Write `content` to a project-relative path, creating parent directories as needed. Returns false
+ * without writing anything if `relPath` is reached through a symlinked segment – the final path (not
+ * just the `relPath` a caller may have validated earlier) is what matters, since a `.new` sidecar path
+ * is never checked anywhere else before reaching here.
+ */
+function writeRel(root: string, relPath: string, content: string): boolean {
     const abs = resolve(root, relPath);
+
+    if (hasSymlinkedSegment(abs, root)) {
+        return false;
+    }
+
     mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, content);
+
+    return true;
 }
 
 /**
@@ -345,12 +357,9 @@ function writeRel(root: string, relPath: string, content: string): void {
 function writeBase(root: string, relPath: string, content: string, out: (line: string) => void): void {
     const baseRelPath = join(BLIT_DIR, BASE_DIR, relPath);
 
-    if (hasSymlinkedSegment(resolve(root, baseRelPath), root)) {
+    if (!writeRel(root, baseRelPath, content)) {
         out(ui.warn(`Skipping unsafe base path: ${baseRelPath}`));
-        return;
     }
-
-    writeRel(root, baseRelPath, content);
 }
 
 /**
@@ -534,8 +543,11 @@ export function runFullSync(
             }
 
             // Managed markers were removed: save the kit version alongside for the user to reconcile.
-            writeRel(root, `${relPath}.new`, incoming);
-            tally.review.push(relPath);
+            if (writeRel(root, `${relPath}.new`, incoming)) {
+                tally.review.push(relPath);
+            } else {
+                out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
+            }
             continue;
         }
 
@@ -582,8 +594,11 @@ export function runFullSync(
         }
 
         // No clean merge: save the kit version alongside and keep the user's file.
-        writeRel(root, `${relPath}.new`, incoming);
-        tally.review.push(relPath);
+        if (writeRel(root, `${relPath}.new`, incoming)) {
+            tally.review.push(relPath);
+        } else {
+            out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
+        }
     }
 
     // Pass 2: files the manifest tracks that the new kit no longer ships.
@@ -768,8 +783,11 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
 
     if (collisions.length > 0) {
         for (const file of collisions) {
-            writeRel(root, `${file.path}.new`, file.content);
-            out(ui.warn(`${file.path} already exists, so I saved the kit version as ${file.path}.new.`));
+            if (writeRel(root, `${file.path}.new`, file.content)) {
+                out(ui.warn(`${file.path} already exists, so I saved the kit version as ${file.path}.new.`));
+            } else {
+                out(ui.warn(`Skipping unsafe path: ${file.path}.new`));
+            }
         }
 
         out('');

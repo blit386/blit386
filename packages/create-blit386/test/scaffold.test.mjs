@@ -1469,6 +1469,52 @@ test('blit agents add claude does not read or write through a symlinked .mcp.jso
     }
 });
 
+test('blit agents add claude does not write through a pre-planted symlinked .new sidecar', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-symlink-new-'));
+
+    try {
+        const project = join(work, 'symlink-new-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'symlink-new-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // The user hand-wrote their own CLAUDE.md (an ordinary collision), but also has CLAUDE.md.new
+        // pre-planted as a symlink pointing outside the project – the sidecar `writeRel` writes when a
+        // collision (or an unmerged conflict) needs saving alongside the original. Nothing before that
+        // write ever validated the `.new` path itself.
+        const claudePath = join(project, 'CLAUDE.md');
+        const userContent = '# my own CLAUDE notes\n';
+        writeFileSync(claudePath, userContent);
+
+        const externalPath = join(work, 'outside-the-project.new');
+        const externalContent = 'nothing kit-generated should ever land here\n';
+        writeFileSync(externalPath, externalContent);
+        symlinkSync(externalPath, `${claudePath}.new`);
+
+        const { output } = runBlit(project, ['agents', 'add', 'claude']);
+
+        assert.equal(
+            readFileSync(externalPath, 'utf8'),
+            externalContent,
+            'the file outside the project must not be written through the symlinked .new sidecar',
+        );
+        assert.ok(
+            lstatSync(`${claudePath}.new`).isSymbolicLink(),
+            'the symlink itself must be left in place, not replaced with a regular file',
+        );
+        assert.ok(output.includes('CLAUDE.md.new'), 'output should mention the skipped unsafe .new path');
+        assert.equal(readFileSync(claudePath, 'utf8'), userContent, 'the user CLAUDE.md must not be overwritten');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
 test('blit agents sync does not write through a symlinked kit-owned directory', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-symlink-sync-'));
 
