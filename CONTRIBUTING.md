@@ -178,19 +178,28 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 
 - Code formatting checks (`format:check`)
 - Linting (`lint`, with `--max-warnings 0`)
-- TypeScript type checks
-- Spell checking
-- Unused export and dependency checks (knip)
-- Markdown link check (`docs:links`)
-- Agent config drift check (`agents:check`)
+- TypeScript type checks (`typecheck`)
+- Spell checking (`spellcheck`)
+- Unused export and dependency checks (`knip`)
 - Doc site banner check (`sync:doc-banners:check`)
 - API `@since` tag check (`api:since:check`)
 - API history manifest check (`api:history:check`)
+- `BT.*` getter documentation drift check (`api:getters:check`)
 - Unit tests (`test:unit`)
 - Declaration tooling tests (`test:declarations`)
 - Agent config drift checker tests (`test:agent-config`)
 - API history generator tests (`test:api-history`)
+- API getter drift checker tests (`test:api-getters`)
+- Compact-table Prettier plugin tests (`test:compact-tables`)
+- Shell safety hook tests (`test:shell-safety`)
+- Spellcheck coverage tests (`test:spellcheck-coverage`)
 - Security preflight tests (`test:security-preflight`)
+
+`docs:links` and `agents:check` are **not** part of any package's `preflight`. Each package's copy of those scripts
+walks the whole repo from the root regardless of which `package.json` invoked it, so they were pulled out of the
+per-package chains to stop a single push running the same full-repo check two to four times. Run them once from the repo
+root (`pnpm run docs:links`, `pnpm run agents:check`) – `.husky/pre-push` does exactly that after every changed
+package's `preflight` passes.
 
 ### Available Commands
 

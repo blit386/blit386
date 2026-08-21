@@ -58,7 +58,7 @@ push or CI run only exercises them once the per-package checks are clean.
 - `api:history:check` – `docs/_api-history.json` matches the source version tags
 - `api:getters:check` – every public `BT.*` getter and method has a mention in `.claude/rules/bt-api-getters.md`
 - `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:compact-tables`,
-  `test:shell-safety`, `test:security-preflight`
+  `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`
 
 ## packages/demos
 
