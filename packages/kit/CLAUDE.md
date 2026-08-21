@@ -43,6 +43,12 @@ beginner prose, so they go stale silently when the engine changes. Shipping an e
 here – review in the same pass, not later. Run `/kit-audit` to walk the checklist. Also check `BLIT386_RANGE` in
 `packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine version.
 
+`scripts/check-kit-docs-drift.mjs` (repo root) automates a coarse, page-level version of this table's triggers for
+`content/docs/*.md` only, comparing `packages/blit386/docs/_api-history.json` against `blit386.docsReviewedAt`
+(`package.json`) and, on `push` to `main` or weekly, filing/updating a Linear tracking issue
+(`.github/workflows/kit-docs-drift.yml`). It does not replace this table or `/kit-audit`, and does not cover
+`content/skills/*` or the other kit files below.
+
 | Kit file | Review when |
 | --- | --- |
 | `content/docs/getting-started.md` | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload |
@@ -80,8 +86,11 @@ list of what ships, and it has no automated guard.
 3. Use the `BT` namespace in generated game code, never `BTAPI`
 4. Named exports only in this package's own TypeScript; no default exports
 5. `blit386.engineRange` in `package.json` is derived, not hand-edited – `scripts/bump-lockstep.mjs` (repo root) writes
-   it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`. Any other literal this package uses to
-   describe the engine or the scaffolder follows the same derive-or-document discipline: root
+   it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`; `scripts/check-engine-range-drift.mjs`
+   (repo root) is the CI safety net that fails loudly if either copy drifts by hand-edit. `blit386.docsReviewedAt` is
+   the opposite case – hand-set only, bumped by whoever actually reviewed `content/docs/*.md` against a new engine
+   release; no script writes it, `scripts/check-kit-docs-drift.mjs` (repo root) only reads it. Any other literal this
+   package uses to describe the engine or the scaffolder follows the same derive-or-document discipline: root
    `.claude/rules/named-constants.md`
 
 ## Where to find information
@@ -97,4 +106,6 @@ list of what ships, and it has no automated guard.
 | What does the scaffolder generate? | `packages/create-blit386/CLAUDE.md` |
 | Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release`, `pnpm run bump -- 1.5.0` from the repo root (replace `1.5.0` with the target version) |
 | Maintainer agent-config drift check | `scripts/check-agent-config.mjs` (root) |
+| `engineRange` / `BLIT386_RANGE` drift check | `scripts/check-engine-range-drift.mjs` (root) |
+| Kit docs drift check + Linear filing | `scripts/check-kit-docs-drift.mjs`, `scripts/report-kit-docs-drift.mjs` (root), `.github/workflows/kit-docs-drift.yml` |
 | Contributing / DCO | root `CONTRIBUTING.md` |

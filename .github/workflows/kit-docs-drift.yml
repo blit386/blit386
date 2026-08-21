@@ -1,0 +1,51 @@
+name: Kit Docs Drift
+
+# BT-293: advisory, non-blocking drift detection between the engine's public API
+# (packages/blit386/docs/_api-history.json) and the kit's hand-written docs
+# (packages/kit/content/docs/*.md). Never gates a PR - see the header comment in
+# scripts/report-kit-docs-drift.mjs for why. Files/updates a tracking issue in Linear
+# (team BT) instead of failing a status check.
+#
+# Requires the LINEAR_API_KEY repo secret (a Linear Personal API key with issue read/write
+# access on the workspace containing team BT) - add it under Settings > Secrets and
+# variables > Actions. Not set up by this workflow; until it exists, the report script
+# detects the missing key and skips the Linear call cleanly (exit 0).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/blit386/docs/_api-history.json'
+      - 'packages/kit/package.json'
+  schedule:
+    - cron: '0 9 * * 1' # weekly Monday backstop, catches drift a push trigger missed
+  workflow_dispatch:
+
+concurrency:
+  group: kit-docs-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  report-drift:
+    name: Report kit docs drift
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.23.1'
+
+      # No pnpm install: check-kit-docs-drift.mjs, lib/linear-client.mjs, and
+      # report-kit-docs-drift.mjs use only Node builtins (fs, fetch).
+      - name: Check and report kit docs drift
+        run: node scripts/report-kit-docs-drift.mjs
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}

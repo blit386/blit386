@@ -226,3 +226,23 @@ export function kitEngineRange(): string | null {
         return null;
     }
 }
+
+/**
+ * Read the `blit386.docsReviewedAt` field from the kit's own package.json, or null if absent.
+ *
+ * Unlike `engineRange`, this marker is hand-set only – it records the last engine version a human
+ * reviewed `content/docs/*.md` against, bumped after an actual review, never written by a script.
+ * See `packages/kit/CLAUDE.md` critical rule 5.
+ */
+export function kitDocsReviewedAt(): string | null {
+    try {
+        const kitPkgPath = fileURLToPath(new URL('../package.json', import.meta.url));
+        const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
+            blit386?: { docsReviewedAt?: unknown };
+        };
+        const version = pkg.blit386?.docsReviewedAt;
+        return typeof version === 'string' ? version : null;
+    } catch {
+        return null;
+    }
+}

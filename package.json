@@ -24,6 +24,13 @@
     "test:spellcheck-coverage": "node --test scripts/spellcheck-coverage.test.mjs",
     "bump": "node scripts/bump-lockstep.mjs",
     "test:bump-lockstep": "node --test scripts/bump-lockstep.test.mjs",
+    "check-engine-range-drift": "node scripts/check-engine-range-drift.mjs",
+    "test:check-engine-range-drift": "node --test scripts/check-engine-range-drift.test.mjs",
+    "check-kit-docs-drift": "node scripts/check-kit-docs-drift.mjs",
+    "test:check-kit-docs-drift": "node --test scripts/check-kit-docs-drift.test.mjs",
+    "test:linear-client": "node --test scripts/lib/linear-client.test.mjs",
+    "report-kit-docs-drift": "node scripts/report-kit-docs-drift.mjs",
+    "test:report-kit-docs-drift": "node --test scripts/report-kit-docs-drift.test.mjs",
     "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate"
   },
