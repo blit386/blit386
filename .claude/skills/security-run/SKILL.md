@@ -84,9 +84,10 @@ pnpm run security:mcp-preflight -- \
   --output-json security-reports/mcp-governance-$(date +%Y-%m).json
 ```
 
-Then run it once more with the monorepo root as `--repo-root` (`--repo-root ../..` from a package directory).
-`discoverMcpConfigPaths` only walks one level up, so a package-rooted run never reaches the repo root and never scans
-the tracked root `.mcp.json`.
+Then run it once more with the monorepo root as `--repo-root` (`--repo-root ../..` from a package directory), keeping
+`--include-user-config` and writing to a distinct `--output-json` path so the repo-root report does not overwrite the
+per-package one. `discoverMcpConfigPaths` only walks one level up, so a package-rooted run never reaches the repo root
+and never scans the tracked root `.mcp.json`.
 
 Review shadow MCP flags. Exactly one entry is accepted, and only when all four fields match: name `blit386-docs`,
 classification `shadow-remote`, config path the repo-root `.mcp.json`, and URL `https://blit386.dev/mcp`. A shadow count

@@ -163,7 +163,9 @@ node ../blit386/scripts/security/mcp-preflight.mjs \
    pnpm run security:mcp-preflight -- \
      --mcps-dir "<mcps-path>" \
      --repo-root ../.. \
-     --governance-only
+     --governance-only \
+     --include-user-config \
+     --output-json security-reports/mcp-governance-root-$(date +%Y-%m).json
    ```
 
 3. Review shadow MCP flags against the accepted entries below; migrate or remove every unmanaged server that is not
@@ -185,8 +187,9 @@ finding.
 `shadow-remote` is the correct classification, not a finding: `isRunlayerManagedEntry` only exempts Runlayer URLs, and
 this is our own first-party docs server (`packages/website/src/mcp-server.ts`, discovery card at
 `packages/website/public/.well-known/mcp/server-card.json`). It is public, unauthenticated, and read-only – it exposes
-`search_docs` and `get_docs_summary` over the published documentation and carries no credentials. A shadow count of one,
-naming only `blit386-docs`, is a clean run.
+`search_docs` and `get_docs_summary` over the published documentation and carries no credentials. A clean run is a
+shadow count of one whose single entry matches the whole row above – name, URL, config path, and classification
+together. Count and name alone are not enough to call it clean.
 
 ## Report template
 
@@ -217,7 +220,9 @@ Use this structure in agent output or issue/PR comments:
 
 ### Governance
 
-- Shadow MCPs: <count / none – `blit386-docs` is an expected accepted entry>
+- Shadow MCPs: <count / none>
+- Accepted entries seen: <name, classification, config path per entry – must match the runbook's accepted row>
+- Unaccepted shadow entries: <none, or name + classification + config path per entry>
 - Config paths scanned: <list>
 ```
 
