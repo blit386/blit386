@@ -20,6 +20,7 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
     agentsFile,
+    type AgentKind,
     classifyFile,
     collectDocs,
     type FileClass,
@@ -80,7 +81,7 @@ interface BlitManifest {
     files: ManifestEntry[];
 }
 
-export type AgentChoice = 'none' | 'claude' | 'cursor';
+export type AgentChoice = 'none' | AgentKind;
 
 /** Which language layer to scaffold. */
 export type LanguageChoice = 'js' | 'ts';

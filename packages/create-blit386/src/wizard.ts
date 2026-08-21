@@ -6,6 +6,8 @@
 
 import { cancel, confirm, isCancel, select } from '@clack/prompts';
 
+import { AGENT_LABEL, AGENT_SETUP_HINT } from '@blit386/kit/adapters';
+
 import type { AgentChoice, LanguageChoice } from './scaffold';
 
 export interface WizardOptions {
@@ -37,8 +39,8 @@ export async function runWizard(): Promise<WizardOptions> {
         initialValue: 'none',
         options: [
             { value: 'none', label: 'No, just the game and docs', hint: 'recommended to start' },
-            { value: 'claude', label: 'Claude Code', hint: 'adds CLAUDE.md' },
-            { value: 'cursor', label: 'Cursor', hint: 'adds .cursor/rules' },
+            { value: 'claude', label: AGENT_LABEL.claude, hint: AGENT_SETUP_HINT.claude },
+            { value: 'cursor', label: AGENT_LABEL.cursor, hint: AGENT_SETUP_HINT.cursor },
         ],
     });
     if (isCancel(agent)) {
