@@ -38,7 +38,9 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
 6. `scaffold()` writes the ownership manifest `.blit/manifest.json` (path, class, kit version, sha256, plus the
    scaffold-time template `vars`) and pristine `.blit/base/` copies, so `blit agents sync` can update kit files later
    without clobbering user edits. The `class` values come from `classifyFile()` in `@blit386/kit/adapters` – the same
-   function `blit agents sync` / `add` use, not a local table.
+   function `blit agents sync` / `add` use, not a local table. The manifest's own shape is `BlitManifest` from
+   `@blit386/kit/adapters` as well – this package declares no local copy, so a field it stops emitting is a compile
+   error rather than a manifest the kit silently reads as legacy.
 7. Optional git init, dependency install, next-steps output.
 
 `blit agents sync` / `blit agents add` (the `blit` CLI, shipped by `packages/kit`) reuse the same generators in memory
