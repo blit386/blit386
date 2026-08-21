@@ -2,16 +2,20 @@ import { defineConfig, defineDocs } from 'fumadocs-mdx/config';
 import { blogMetaSchema, blogPageSchema, metaSchema, pageSchema } from 'fumapress/adapters/mdx/schema';
 import { transformerTwoslash } from 'fumadocs-twoslash';
 import { z } from 'zod';
-import { TWOSLASH_COMPILER_OPTIONS } from './scripts/twoslash-compiler-options.mjs';
+import { isTwoslashEnabled, TWOSLASH_COMPILER_OPTIONS } from './scripts/twoslash-config.mjs';
 
-// Twoslash spins up a TypeScript language service that loads blit386.d.ts plus
-// WebGPU types for every MDX file. Across the several dozen MDX files in content/ the
-// cumulative heap exceeds Node's default 4 GB limit and the dev server OOMs.
-// Skip it during `waku dev`;
-// production builds set CLOUDFLARE=1 (single-shot, survives the memory spike).
-// NODE_ENV is not a reliable signal here: source.config.ts is evaluated by the
-// fumadocs-mdx Vite plugin before Vite writes NODE_ENV=production into the env.
-const isProductionBuild = !!process.env.CLOUDFLARE;
+// Gated in scripts/twoslash-config.mjs: on for CLOUDFLARE or WORKERS_CI (Waku's own
+// adapter-selection vars, so this tracks "is this a Cloudflare build"), with
+// BLIT386_TWOSLASH overriding either way. Keep the check there rather than inlining an
+// env read here: covering only CLOUDFLARE is what let a WORKERS_CI build ship every
+// popup missing and silent (BT-188).
+//
+// Dev is opt-in (`pnpm run dev:twoslash`) because the annotated page payload is huge,
+// not because the language service is: one shared service handles all 155 blocks in
+// ~320 MB, but a twoslashed page renders ~6.8 MB of HTML against ~0.6 MB plain, and the
+// dev server retains roughly 2 GB per distinct page visited. Measurements and the
+// resulting usage limits: CLAUDE.md, Twoslash.
+const twoslashEnabled = isTwoslashEnabled();
 
 export default defineConfig({
     mdxOptions: {
@@ -19,7 +23,7 @@ export default defineConfig({
             themes: { light: 'github-light', dark: 'github-dark' },
             defaultColor: false,
             langs: ['js', 'jsx', 'ts', 'tsx'],
-            transformers: isProductionBuild
+            transformers: twoslashEnabled
                 ? [
                       transformerTwoslash({
                           throws: false,
