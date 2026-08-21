@@ -36,9 +36,10 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    this package – and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
    CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated
    `package.json` and the exact version stamped into `.blit/manifest.json`. Full reasoning: `packages/kit/CLAUDE.md`.
-   Kit content (`AGENTS.md` + `docs/`) is then copied **verbatim** – `copyFileSync` / `cpSync`, so `{{placeholder}}`
-   tokens are NOT substituted there. Only templates, rules, and skills pass through `render()`. Prose in `AGENTS.md` and
-   `docs/` must therefore spell out both language cases ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
+   `AGENTS.md` and `docs/` are then emitted **verbatim**: `scaffold()` writes the `GeneratedFile` values that
+   `agentsFile()` and `collectDocs()` return, with no `{{placeholder}}` substitution. Only templates, rules, and skills
+   pass through `render()`. Prose in `AGENTS.md` and `docs/` must therefore spell out both language cases
+   ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
 6. `scaffold()` writes the ownership manifest `.blit/manifest.json` (path, class, kit version, sha256, plus the
    scaffold-time template `vars`) and pristine `.blit/base/` copies, so `blit agents sync` can update kit files later
    without clobbering user edits. The `class` values come from `classifyFile()` in `@blit386/kit/adapters` – the same
