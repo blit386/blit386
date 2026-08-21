@@ -235,11 +235,14 @@ block that fails compilation degrades to plain highlighting instead of crashing 
 `blit386` is a `workspace:*` devDependency (BT-414), not a pinned npm version – Twoslash resolves its type declarations
 from `packages/blit386/dist`, so a doc can reference and validate unreleased engine API before it ships, and the engine
 must be built (`pnpm --filter blit386 run build`) before this package's `build` in every CI/deploy job that runs one –
-and now before `pnpm run dev:twoslash` too, since dev can run the transformer as well. Because `throws: false` swallows
-a failing block into plain highlighting rather than an error, a regression here is silent.
-`grep -c twoslash-hover "dist/public/docs/<page>/index.html"` after a build (`<page>` is a placeholder, e.g.
-`api/random`; keep it quoted or the shell reads `<`/`>` as redirection) is only a page-wide smoke check, not proof a
-specific block typechecked – a page with several blocks can show a nonzero count while one block still silently failed
+and now before `pnpm run dev:twoslash` too, since dev can run the transformer as well. `pnpm run test` and
+`pnpm run build` self-heal a missing `packages/blit386/dist` automatically – both are prefixed with the shared
+`scripts/ensure-engine-built.mjs` at the repo root (BT-480), the same guard `packages/demos` already runs (BT-399), so a
+freshly created checkout or git worktree builds the engine once instead of failing `test` with a TS2307 inside Twoslash
+compilation. Because `throws: false` swallows a failing block into plain highlighting rather than an error, a regression
+here is silent. `grep -c twoslash-hover "dist/public/docs/<page>/index.html"` after a build (`<page>` is a placeholder,
+e.g. `api/random`; keep it quoted or the shell reads `<`/`>` as redirection) is only a page-wide smoke check, not proof
+a specific block typechecked – a page with several blocks can show a nonzero count while one block still silently failed
 (see BT-427). To confirm one block specifically, grep the built HTML for a distinctive identifier from that block's
 source and check whether it renders as a hoverable `twoslash-hover` token instead of plain syntax-highlighted text.
 

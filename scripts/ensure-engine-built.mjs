@@ -2,16 +2,19 @@
 /**
  * Build the BLIT386 engine automatically when `packages/blit386/dist` is missing – the case for
  * every freshly created checkout or git worktree, since `dist/` is gitignored and only a build
- * produces it. `vite.config.js` imports `blit386/vite` at the top of the file, unconditionally,
- * so `dev`, `build`, `preview`, and `knip` (which loads `vite.config.js` via its own Vite plugin)
- * all crash before that import is even reached if the engine has never been built. Run before
- * each of those so the failure self-heals instead of surfacing as a confusing "Cannot find
- * module" error partway through `git push`.
+ * produces it. Shared by `packages/demos` and `packages/website`, which hit this in different
+ * ways: `packages/demos/vite.config.js` imports `blit386/vite` at the top of the file,
+ * unconditionally, so `dev`, `build`, `preview`, and `knip` (which loads `vite.config.js` via its
+ * own Vite plugin) all crash before that import is even reached; `packages/website`'s Twoslash
+ * pipeline compiles docs samples against the workspace engine (BT-414), so its `test` and `build`
+ * fail inside that compilation with TS2307 instead. Run before any of those so the failure
+ * self-heals instead of surfacing as a confusing "Cannot find module" error partway through
+ * `git push`.
  *
  * A no-op once the engine is built – existsSync is the only cost on every normal run.
  *
- * Usage:
- *   node scripts/ensure-engine-built.mjs
+ * Usage (from a package directory):
+ *   node ../../scripts/ensure-engine-built.mjs
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -20,7 +23,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const scriptDir = fileURLToPath(new URL('.', import.meta.url));
 
-const resolveEngineViteEntry = () => resolve(scriptDir, '..', '..', 'blit386', 'dist', 'vite.js');
+const resolveEngineViteEntry = () => resolve(scriptDir, '..', 'packages', 'blit386', 'dist', 'vite.js');
 
 const isEngineBuilt = (engineViteEntry = resolveEngineViteEntry(), exists = existsSync) => exists(engineViteEntry);
 

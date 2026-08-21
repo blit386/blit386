@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { buildEngineBuildCommand, isEngineBuilt, resolveEngineViteEntry } from '../ensure-engine-built.mjs';
+import { buildEngineBuildCommand, isEngineBuilt, resolveEngineViteEntry } from './ensure-engine-built.mjs';
 
 describe('ensure-engine-built', () => {
     describe('resolveEngineViteEntry', () => {
@@ -36,7 +36,7 @@ describe('ensure-engine-built', () => {
 
             assert.equal(command, 'pnpm');
             assert.deepEqual(args, ['--filter', 'blit386', 'run', 'build']);
-            assert.ok(cwd.endsWith(join('packages', 'demos')));
+            assert.ok(!cwd.includes('packages'));
         });
     });
 });
