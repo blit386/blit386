@@ -23,9 +23,9 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
 import {
@@ -125,6 +125,11 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
 export function checkSyncDrift(root: string, out: (line: string) => void): number {
     const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
 
+    if (hasSymlinkedSegment(manifestPath, root)) {
+        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read.'));
+        return 1;
+    }
+
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
         out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
@@ -199,7 +204,46 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
     return driftCount;
 }
 
-/** Reject manifest paths that are absolute or escape the project root via `..` segments. */
+/**
+ * True if `absPath` (assumed to resolve under `root`) is reached through a symlink at any existing
+ * path segment – the file itself or any of its parent directories. Checked with `lstatSync`, which
+ * does not follow symlinks, so a symlink pointing outside `root` (or to a file outside it) is caught
+ * even when it resolves to something that exists. A segment that does not exist yet is not a symlink
+ * and is treated as safe – the caller is about to create it, not read or write through it.
+ */
+function hasSymlinkedSegment(absPath: string, root: string): boolean {
+    const rel = relative(root, absPath);
+
+    if (rel === '' || rel.startsWith(`..${sep}`)) {
+        return false;
+    }
+
+    let current = root;
+
+    for (const segment of rel.split(sep)) {
+        current = join(current, segment);
+
+        let stat;
+
+        try {
+            stat = lstatSync(current);
+        } catch {
+            return false;
+        }
+
+        if (stat.isSymbolicLink()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Reject manifest paths that are absolute, escape the project root via `..` segments, or are reached
+ * through a symlink (the file itself or a parent directory) – lexical safety alone would still let a
+ * symlink swapped in after scaffolding redirect a read or write outside the project.
+ */
 function isSafeRelPath(relPath: string, root: string): boolean {
     if (isAbsolute(relPath) || normalize(relPath).startsWith(`..${sep}`)) {
         return false;
@@ -207,7 +251,11 @@ function isSafeRelPath(relPath: string, root: string): boolean {
 
     const abs = resolve(root, relPath);
 
-    return abs === root || abs.startsWith(root + sep);
+    if (abs !== root && !abs.startsWith(root + sep)) {
+        return false;
+    }
+
+    return !hasSymlinkedSegment(abs, root);
 }
 
 /**
@@ -282,16 +330,36 @@ function regenerate(manifest: ReadBlitManifest, root: string): Map<string, strin
     return map;
 }
 
-/** Write `content` to a project-relative path, creating parent directories as needed. */
-function writeRel(root: string, relPath: string, content: string): void {
+/**
+ * Write `content` to a project-relative path, creating parent directories as needed. Returns false
+ * without writing anything if `relPath` is reached through a symlinked segment – the final path (not
+ * just the `relPath` a caller may have validated earlier) is what matters, since a `.new` sidecar path
+ * is never checked anywhere else before reaching here.
+ */
+function writeRel(root: string, relPath: string, content: string): boolean {
     const abs = resolve(root, relPath);
+
+    if (hasSymlinkedSegment(abs, root)) {
+        return false;
+    }
+
     mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, content);
+
+    return true;
 }
 
-/** Update (or create) the pristine base copy used as the merge ancestor. */
-function writeBase(root: string, relPath: string, content: string): void {
-    writeRel(root, join(BLIT_DIR, BASE_DIR, relPath), content);
+/**
+ * Update (or create) the pristine base copy used as the merge ancestor. Skips the write (and warns)
+ * if `.blit/base/<relPath>` is reached through a symlink – `relPath` itself was already validated by
+ * the caller, but the base copy lives at a different path and needs its own check.
+ */
+function writeBase(root: string, relPath: string, content: string, out: (line: string) => void): void {
+    const baseRelPath = join(BLIT_DIR, BASE_DIR, relPath);
+
+    if (!writeRel(root, baseRelPath, content)) {
+        out(ui.warn(`Skipping unsafe base path: ${baseRelPath}`));
+    }
 }
 
 /**
@@ -351,6 +419,11 @@ export function runFullSync(
 ): number {
     const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
 
+    if (hasSymlinkedSegment(manifestPath, root)) {
+        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read or written.'));
+        return 1;
+    }
+
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
         out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
@@ -399,11 +472,15 @@ export function runFullSync(
         const entry = entryByPath.get(relPath);
         const abs = resolve(root, relPath);
         const basePath = resolve(root, BLIT_DIR, BASE_DIR, relPath);
+        // Checked once per file: the base copy lives at a different path than `relPath` itself (an
+        // extra `.blit/base/` prefix), so it needs its own symlink check rather than inheriting the
+        // `isSafeRelPath` check above.
+        const baseSafe = !hasSymlinkedSegment(basePath, root);
 
         // New file the kit added since this project was scaffolded.
         if (!entry) {
             writeRel(root, relPath, incoming);
-            writeBase(root, relPath, incoming);
+            writeBase(root, relPath, incoming, out);
             entryByPath.set(relPath, {
                 path: relPath,
                 class: classifyFile(relPath),
@@ -419,7 +496,7 @@ export function runFullSync(
         // Missing on disk: restore the kit version.
         if (!existsSync(abs)) {
             writeRel(root, relPath, incoming);
-            writeBase(root, relPath, incoming);
+            writeBase(root, relPath, incoming, out);
             entry.sha256 = incomingHash;
             entry.kitVersion = newKitVersion;
             tally.restored.push(relPath);
@@ -437,7 +514,7 @@ export function runFullSync(
             } else {
                 tally.unchanged++;
             }
-            writeBase(root, relPath, incoming);
+            writeBase(root, relPath, incoming, out);
             entry.sha256 = incomingHash;
             entry.kitVersion = newKitVersion;
             continue;
@@ -459,15 +536,18 @@ export function runFullSync(
                 }
                 // entry.sha256 tracks the reconciled on-disk content so `--check` treats a preserved
                 // note as in-sync; the base copy keeps the kit version as the merge ancestor.
-                writeBase(root, relPath, incoming);
+                writeBase(root, relPath, incoming, out);
                 entry.sha256 = sha256Text(merged);
                 entry.kitVersion = newKitVersion;
                 continue;
             }
 
             // Managed markers were removed: save the kit version alongside for the user to reconcile.
-            writeRel(root, `${relPath}.new`, incoming);
-            tally.review.push(relPath);
+            if (writeRel(root, `${relPath}.new`, incoming)) {
+                tally.review.push(relPath);
+            } else {
+                out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
+            }
             continue;
         }
 
@@ -475,13 +555,13 @@ export function runFullSync(
         // sync (the merge ancestor in .blit/base/), NOT entry.sha256. entry.sha256 records the reconciled
         // on-disk content so `--check`/doctor do not flag a clean-merged file as drift. Older projects may
         // lack a base copy; fall back to entry.sha256 there.
-        const baseHash = existsSync(basePath) ? sha256(basePath) : entry.sha256;
+        const baseHash = baseSafe && existsSync(basePath) ? sha256(basePath) : entry.sha256;
 
         // Kit-owned, unchanged from the pristine kit version: adopt the new kit version freely.
         if (diskHash === baseHash) {
             if (diskHash !== incomingHash) {
                 writeRel(root, relPath, incoming);
-                writeBase(root, relPath, incoming);
+                writeBase(root, relPath, incoming, out);
                 entry.sha256 = incomingHash;
                 entry.kitVersion = newKitVersion;
                 tally.updated.push(relPath);
@@ -493,7 +573,7 @@ export function runFullSync(
 
         // Kit-owned, user-modified: try a real three-way merge; clean merges apply.
         {
-            const merged = gitThreeWayMerge(onDisk, basePath, incoming);
+            const merged = baseSafe ? gitThreeWayMerge(onDisk, basePath, incoming) : null;
 
             if (merged !== null) {
                 if (merged !== onDisk) {
@@ -506,7 +586,7 @@ export function runFullSync(
                 // still detects the user's edits and re-merges them). entry.sha256 records the reconciled
                 // on-disk content instead, so `--check` treats this clean-merged file as in-sync rather
                 // than flagging it as drift forever.
-                writeBase(root, relPath, incoming);
+                writeBase(root, relPath, incoming, out);
                 entry.sha256 = sha256Text(merged);
                 entry.kitVersion = newKitVersion;
                 continue;
@@ -514,8 +594,11 @@ export function runFullSync(
         }
 
         // No clean merge: save the kit version alongside and keep the user's file.
-        writeRel(root, `${relPath}.new`, incoming);
-        tally.review.push(relPath);
+        if (writeRel(root, `${relPath}.new`, incoming)) {
+            tally.review.push(relPath);
+        } else {
+            out(ui.warn(`Skipping unsafe path: ${relPath}.new`));
+        }
     }
 
     // Pass 2: files the manifest tracks that the new kit no longer ships.
@@ -597,6 +680,11 @@ type ManifestResult = { ok: true; manifest: ReadBlitManifest } | { ok: false; ex
  */
 function readManifest(root: string, out: (line: string) => void): ManifestResult {
     const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
+
+    if (hasSymlinkedSegment(manifestPath, root)) {
+        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read or written.'));
+        return { ok: false, exitCode: 1 };
+    }
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
@@ -695,8 +783,11 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
 
     if (collisions.length > 0) {
         for (const file of collisions) {
-            writeRel(root, `${file.path}.new`, file.content);
-            out(ui.warn(`${file.path} already exists, so I saved the kit version as ${file.path}.new.`));
+            if (writeRel(root, `${file.path}.new`, file.content)) {
+                out(ui.warn(`${file.path} already exists, so I saved the kit version as ${file.path}.new.`));
+            } else {
+                out(ui.warn(`Skipping unsafe path: ${file.path}.new`));
+            }
         }
 
         out('');
@@ -725,7 +816,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         }
 
         writeRel(root, relPath, file.content);
-        writeBase(root, relPath, file.content);
+        writeBase(root, relPath, file.content, out);
         entryByPath.set(relPath, {
             path: relPath,
             class: classifyFile(relPath),
