@@ -125,6 +125,11 @@ function tryMergeMcpConfig(existingContent: string, generatedContent: string): s
 export function checkSyncDrift(root: string, out: (line: string) => void): number {
     const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
 
+    if (hasSymlinkedSegment(manifestPath, root)) {
+        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read.'));
+        return 1;
+    }
+
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
         out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
@@ -405,6 +410,11 @@ export function runFullSync(
 ): number {
     const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
 
+    if (hasSymlinkedSegment(manifestPath, root)) {
+        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read or written.'));
+        return 1;
+    }
+
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));
         out(ui.info('Scaffold with `npm create blit386` to enable sync support.'));
@@ -655,6 +665,11 @@ type ManifestResult = { ok: true; manifest: ReadBlitManifest } | { ok: false; ex
  */
 function readManifest(root: string, out: (line: string) => void): ManifestResult {
     const manifestPath = join(root, BLIT_DIR, MANIFEST_FILE);
+
+    if (hasSymlinkedSegment(manifestPath, root)) {
+        out(ui.error('.blit/manifest.json is reached through a symlink and will not be read or written.'));
+        return { ok: false, exitCode: 1 };
+    }
 
     if (!existsSync(manifestPath)) {
         out(ui.info('This project has no .blit/manifest.json.'));

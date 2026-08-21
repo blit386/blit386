@@ -1441,8 +1441,9 @@ test('blit agents add claude does not read or write through a symlinked .mcp.jso
         writeFileSync(externalPath, externalContent);
         symlinkSync(externalPath, join(project, '.mcp.json'));
 
-        const { output } = runBlit(project, ['agents', 'add', 'claude']);
+        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
 
+        assert.equal(exitCode, 0, `blit agents add claude should still succeed overall: ${output}`);
         assert.equal(
             readFileSync(externalPath, 'utf8'),
             externalContent,
@@ -1493,8 +1494,9 @@ test('blit agents sync does not write through a symlinked kit-owned directory', 
         mkdirSync(externalDir, { recursive: true });
         symlinkSync(externalDir, rulesDir);
 
-        runBlit(project, ['agents', 'sync']);
+        const { exitCode, output } = runBlit(project, ['agents', 'sync']);
 
+        assert.equal(exitCode, 0, `blit agents sync should still succeed overall: ${output}`);
         assert.deepEqual(
             readdirSync(externalDir),
             [],
