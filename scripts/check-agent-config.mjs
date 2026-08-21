@@ -15,6 +15,8 @@
  *   - `.github/copilot-instructions.md` points at both AGENTS.md and CLAUDE.md.
  *     GitHub only reads the top-level `.github/`, so this does not apply to
  *     package roots.
+ *   - `.mcp.json` declares the blit386.dev docs server, its URL still matches
+ *     the website's discovery card, and `.gitignore` still un-ignores it.
  *
  * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
  *   - AGENTS.md still points at an existing CLAUDE.md.
@@ -194,6 +196,108 @@ export function findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutEx
 }
 
 /**
+ * The one MCP server the repo declares for contributors. `packages/website` both serves
+ * this endpoint and publishes the discovery card the URL is checked against, so the two
+ * JSON copies of the URL are kept honest by this assertion rather than by a shared constant
+ * (neither file can import one).
+ */
+const PROJECT_MCP_SERVER_NAME = 'blit386-docs';
+
+/** Claude Code's transport discriminant for a remote streamable-HTTP MCP server. */
+const PROJECT_MCP_SERVER_TYPE = 'http';
+
+/** The `.gitignore` negation that keeps the root `.mcp.json` tracked while nested ones stay ignored. */
+const ROOT_MCP_NEGATION_PATTERN = '!/.mcp.json';
+
+/**
+ * Verifies the tracked root `.mcp.json` still declares the blit386.dev docs server, that its
+ * URL has not drifted from the website's `.well-known` discovery card, and that `.gitignore`
+ * still carries the root-anchored negation keeping the file out of the blanket MCP ignore.
+ * The last check is the important one: without it the file can silently fall back out of git
+ * and every contributor quietly loses the server.
+ *
+ * All three inputs are passed in as strings so the function stays unit-testable without
+ * touching disk; parse errors become failure messages rather than throws.
+ *
+ * @param {string | null} mcpConfigContent Contents of the root `.mcp.json`, or `null` when missing.
+ * @param {string | null} serverCardContent Contents of the website's MCP discovery card, or `null` when missing.
+ * @param {string | null} gitignoreContent Contents of the root `.gitignore`, or `null` when missing.
+ * @returns {string[]} Human-readable failure messages (empty when the config is consistent).
+ */
+export function findProjectMcpFailures(mcpConfigContent, serverCardContent, gitignoreContent) {
+    if (mcpConfigContent === null) {
+        return ['.mcp.json is missing'];
+    }
+
+    const failures = [];
+
+    if (gitignoreContent === null) {
+        failures.push('.gitignore is missing');
+    } else if (
+        /^\s*\.mcp\.json\s*$/mu.test(gitignoreContent) &&
+        !gitignoreContent.includes(ROOT_MCP_NEGATION_PATTERN)
+    ) {
+        failures.push(`.gitignore ignores .mcp.json without the \`${ROOT_MCP_NEGATION_PATTERN}\` negation`);
+    }
+
+    /** @type {Record<string, unknown>} */
+    let server;
+
+    try {
+        const parsed = JSON.parse(mcpConfigContent);
+        const servers = parsed?.mcpServers;
+
+        if (servers === null || typeof servers !== 'object') {
+            failures.push('.mcp.json has no mcpServers object');
+            return failures;
+        }
+
+        if (!Object.hasOwn(servers, PROJECT_MCP_SERVER_NAME)) {
+            failures.push(`.mcp.json does not declare the \`${PROJECT_MCP_SERVER_NAME}\` server`);
+            return failures;
+        }
+
+        server = servers[PROJECT_MCP_SERVER_NAME] ?? {};
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        failures.push(`.mcp.json is not parseable as JSON: ${detail}`);
+        return failures;
+    }
+
+    if (server.type !== PROJECT_MCP_SERVER_TYPE) {
+        failures.push(
+            `.mcp.json entry \`${PROJECT_MCP_SERVER_NAME}\` has type ${JSON.stringify(server.type)}, expected "${PROJECT_MCP_SERVER_TYPE}"`,
+        );
+    }
+
+    if (serverCardContent === null) {
+        failures.push('packages/website/public/.well-known/mcp/server-card.json is missing');
+        return failures;
+    }
+
+    try {
+        const card = JSON.parse(serverCardContent);
+
+        if (server.url !== card.url) {
+            failures.push(
+                `.mcp.json URL ${JSON.stringify(server.url)} does not match the discovery card URL ${JSON.stringify(card.url)}`,
+            );
+        }
+
+        if (card.serverInfo?.name !== PROJECT_MCP_SERVER_NAME) {
+            failures.push(
+                `discovery card names ${JSON.stringify(card.serverInfo?.name)}, but .mcp.json declares \`${PROJECT_MCP_SERVER_NAME}\``,
+            );
+        }
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        failures.push(`server-card.json is not parseable as JSON: ${detail}`);
+    }
+
+    return failures;
+}
+
+/**
  * Computes the skill name a resolved symlink target represents. The target must be a directory that is a
  * *direct* child of `.claude/skills/` - a nested path or a file that merely shares a basename with a skill
  * directory does not count as a valid link, even though its basename would otherwise match.
@@ -335,6 +439,18 @@ function runAllChecks() {
 
     collect(failures, '.', findCopilotPointerFailures(copilotContent, agentsMdExists, claudeMdExists));
 
+    collect(
+        failures,
+        '.',
+        findProjectMcpFailures(
+            readFileIfExists(join(REPO_ROOT, '.mcp.json')),
+            readFileIfExists(
+                join(REPO_ROOT, 'packages', 'website', 'public', '.well-known', 'mcp', 'server-card.json'),
+            ),
+            readFileIfExists(join(REPO_ROOT, '.gitignore')),
+        ),
+    );
+
     for (const packageName of discoverPackageAgentRoots(join(REPO_ROOT, 'packages'))) {
         const root = join(REPO_ROOT, 'packages', packageName);
         collect(failures, `packages/${packageName}`, checkAgentsPointer(root));
@@ -357,7 +473,7 @@ function main() {
     }
 
     console.log(
-        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings).',
+        'Agent config OK (skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings, project .mcp.json).',
     );
 }
 

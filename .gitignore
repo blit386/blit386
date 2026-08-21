@@ -40,9 +40,10 @@ benchmark-results.json
 .claude/scheduled_tasks.*
 .claude/launch.json
 
-# MCP configs (local secrets)
+# MCP configs - nested/local ones may carry secrets; the root file is tracked and secret-free
 .mcp.json
 mcp.json
+!/.mcp.json
 
 # IDE and editor files
 .vscode/

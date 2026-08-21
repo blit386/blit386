@@ -48,7 +48,7 @@ package).
 | `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
 | `pnpm run preflight` | All checks: format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config, test:api-history, test:security-preflight |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
-| `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer) |
+| `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, root `.mcp.json`) |
 | `pnpm run sync:doc-banners` | Insert/refresh blit386.dev banners in published docs |
 | `pnpm run sync:doc-banners:check` | Check doc site banner drift |
 | `pnpm run api:history` | Regenerate API version-history manifest (`docs/_api-history.json`) |
@@ -226,13 +226,15 @@ Markdown/YAML on save, and `agent.tool_permissions` blocks the built-in agent fr
 
 ### Claude Code
 
-Claude Code reads agent policy from this repo's `.claude/` directory.
+Claude Code reads agent policy from this repo's `.claude/` directory, plus the project MCP servers declared in the root
+`.mcp.json`.
 
 | Path | Purpose |
 | --- | --- |
 | `.claude/rules/*.md` | Agent rules – always-applied global policy plus glob-scoped rules (for example `ts-file-structure.md` on `src/**/*.ts`) |
 | `.claude/settings.json` | Hooks: `SessionStart` → toolchain bootstrap; `PreToolUse` → RTK shell rewrite + sensitive-file block; `PostToolUse` → format + spellcheck |
 | `.claude/skills/*/SKILL.md` | Reusable command workflows (`preflight`, `format`, …); Zed symlinks under `.agents/skills/` |
+| `.mcp.json` | Project MCP servers – `blit386-docs`, the blit386.dev docs server (`search_docs`, `get_docs_summary`). Listed as a pre-approved project server in `.claude/settings.json`, so it connects without a per-machine trust prompt |
 
 When changing `package.json` scripts or preflight steps, update matching `.claude/skills/*/SKILL.md` files and any
 `.claude/rules/*.md` that reference those commands.

@@ -33,4 +33,4 @@ are touching together with this file.
 
 [`CLAUDE.md`](CLAUDE.md) has the full shared-conventions list and the "Where the detail lives" pointer table. Condensed,
 always-applicable agent rules also live in `.claude/rules/*.md`; reusable command workflows in
-`.claude/skills/*/SKILL.md`.
+`.claude/skills/*/SKILL.md`; project MCP servers in the tracked root `.mcp.json`.

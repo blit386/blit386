@@ -26,7 +26,13 @@ Transport: streamable-HTTP (JSON-RPC 2.0 over POST). No authentication required.
 
 ### Claude Code
 
-Add the server to `~/.claude/settings.json` (global) or `.claude/settings.json` (per project):
+Add the server with the CLI:
+
+```bash
+claude mcp add --transport http blit386-docs https://blit386.dev/mcp
+```
+
+Or check a project-scoped config into your repository as `.mcp.json`, so every contributor's agent picks it up:
 
 ```json
 {

@@ -9,6 +9,7 @@ import {
     discoverPackageAgentRoots,
     findAgentsPointerFailures,
     findCopilotPointerFailures,
+    findProjectMcpFailures,
     findSkillsSymlinkFailures,
     findZedSettingsFailures,
     resolveSkillSymlinkTarget,
@@ -180,6 +181,80 @@ describe('check-agent-config', () => {
             const failures = findZedSettingsFailures(content, false);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /\.agents\/skills layout is missing while \.zed\/settings\.json exists/);
+        });
+    });
+
+    describe('findProjectMcpFailures', () => {
+        const MCP_CONFIG = JSON.stringify({
+            mcpServers: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp' } },
+        });
+        const SERVER_CARD = JSON.stringify({
+            serverInfo: { name: 'blit386-docs', version: '1.0.0' },
+            url: 'https://blit386.dev/mcp',
+        });
+        const GITIGNORE = '# MCP configs\n.mcp.json\nmcp.json\n!/.mcp.json\n';
+
+        it('passes when the config, the discovery card, and the .gitignore negation all agree', () => {
+            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, GITIGNORE), []);
+        });
+
+        it('fails when .mcp.json is missing', () => {
+            const failures = findProjectMcpFailures(null, SERVER_CARD, GITIGNORE);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.mcp\.json is missing/);
+        });
+
+        it('fails when .mcp.json is not parseable as JSON', () => {
+            const failures = findProjectMcpFailures('{not json', SERVER_CARD, GITIGNORE);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /\.mcp\.json is not parseable as JSON/);
+        });
+
+        it('fails when the mcpServers object is absent', () => {
+            const failures = findProjectMcpFailures('{}', SERVER_CARD, GITIGNORE);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /no mcpServers object/);
+        });
+
+        it('fails when the blit386-docs server is not declared', () => {
+            const config = JSON.stringify({ mcpServers: { other: { type: 'http', url: 'https://example.com/mcp' } } });
+            const failures = findProjectMcpFailures(config, SERVER_CARD, GITIGNORE);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /does not declare the `blit386-docs` server/);
+        });
+
+        it('fails when the transport type is not http', () => {
+            const config = JSON.stringify({
+                mcpServers: { 'blit386-docs': { type: 'sse', url: 'https://blit386.dev/mcp' } },
+            });
+            const failures = findProjectMcpFailures(config, SERVER_CARD, GITIGNORE);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /has type "sse", expected "http"/);
+        });
+
+        it('fails when the URL has drifted from the discovery card', () => {
+            const config = JSON.stringify({
+                mcpServers: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp/v2' } },
+            });
+            const failures = findProjectMcpFailures(config, SERVER_CARD, GITIGNORE);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /does not match the discovery card URL/);
+        });
+
+        it('fails when the discovery card is missing', () => {
+            const failures = findProjectMcpFailures(MCP_CONFIG, null, GITIGNORE);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /server-card\.json is missing/);
+        });
+
+        it('fails when .gitignore ignores .mcp.json without the root negation', () => {
+            const failures = findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, '# MCP configs\n.mcp.json\nmcp.json\n');
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /without the `!\/\.mcp\.json` negation/);
+        });
+
+        it('passes when .gitignore does not ignore .mcp.json at all', () => {
+            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, '# nothing MCP-related\n'), []);
         });
     });
 

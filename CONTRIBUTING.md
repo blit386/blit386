@@ -210,7 +210,7 @@ pnpm run typecheck                  # Run TypeScript checks
 pnpm run spellcheck                 # Check spelling
 pnpm run knip                       # Find unused exports and dependencies
 pnpm run docs:links                 # Check Markdown links
-pnpm run agents:check               # Check agent config drift (skills symlinks, AGENTS.md pointer)
+pnpm run agents:check               # Check agent config drift (skills symlinks, AGENTS.md pointer, root .mcp.json)
 pnpm run sync:doc-banners           # Insert/refresh blit386.dev banners in published docs
 pnpm run sync:doc-banners:check     # Check doc site banner drift
 pnpm run api:history                # Regenerate API version-history manifest
@@ -249,6 +249,12 @@ All pull requests will be reviewed by maintainers. The DCO check and other CI ch
 merged.
 
 ## AI-Assisted Contributions
+
+The repository ships a project MCP config at `.mcp.json` declaring `blit386-docs`, the documentation server at
+`https://blit386.dev/mcp`. An MCP-capable assistant opened at the repo root picks it up automatically and can search the
+engine docs (`search_docs`) or pull the `llms.txt` summary (`get_docs_summary`) without leaving your editor. The server
+is public, read-only, and needs no credentials; setup for other clients is documented at
+[blit386.dev/mcp-server](https://blit386.dev/mcp-server).
 
 If you use AI tools (like GitHub Copilot or Claude) to help write code, please include the AI trailer in your commit
 message:
