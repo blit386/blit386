@@ -136,14 +136,6 @@ jobs:
         run: pnpm run test:agent-config
         background: true
 
-      - name: Check engine range drift
-        run: pnpm run check-engine-range-drift
-        background: true
-
-      - name: Run engine-range-drift tests
-        run: pnpm run test:check-engine-range-drift
-        background: true
-
       - name: Run kit-docs-drift tests
         run: pnpm run test:check-kit-docs-drift
         background: true
@@ -158,6 +150,12 @@ jobs:
 
       - name: Check dash typography
         run: pnpm run check-dash-typography
+        background: true
+
+      # Lockstep drift is cross-package: the `scaffolder` paths filter does not cover the engine's
+      # own package.json, so this belongs in the job that always runs.
+      - name: Check lockstep versions
+        run: pnpm run bump:check
         background: true
 
       - name: Run dash-typography tests

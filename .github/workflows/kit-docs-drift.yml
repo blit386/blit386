@@ -2,12 +2,12 @@ name: Kit Docs Drift
 
 # BT-293: advisory, non-blocking drift detection between the engine's public API
 # (packages/blit386/docs/_api-history.json) and the kit's hand-written docs
-# (packages/kit/content/docs/*.md). Never gates a PR - see the header comment in
+# (packages/kit/content/docs/*.md). Never gates a PR – see the header comment in
 # scripts/report-kit-docs-drift.mjs for why. Files/updates a tracking issue in Linear
 # (team BT) instead of failing a status check.
 #
 # Requires the LINEAR_API_KEY repo secret (a Linear Personal API key with issue read/write
-# access on the workspace containing team BT) - add it under Settings > Secrets and
+# access on the workspace containing team BT) – add it under Settings > Secrets and
 # variables > Actions. Not set up by this workflow; until it exists, the report script
 # detects the missing key and skips the Linear call cleanly (exit 0).
 
@@ -22,7 +22,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: kit-docs-drift-${{ github.ref }}
+  # One fixed, workflow-wide group (not keyed by github.ref): a schedule run and a
+  # workflow_dispatch run from a different branch must never execute concurrently, or
+  # they could both detect the same drift and file duplicate Linear issues.
+  group: kit-docs-drift
   cancel-in-progress: true
 
 jobs:

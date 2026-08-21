@@ -41,14 +41,14 @@ export function formatDriftBody(report) {
         `blit386 is at **${report.engineVersion}**; \`packages/kit/package.json\`'s \`blit386.docsReviewedAt\` is still` +
             ` **${report.docsReviewedAt}**.`,
         '',
-        'These kit docs describe engine API areas that changed since the last review — check them against',
+        'These kit docs describe engine API areas that changed since the last review – check them against',
         `\`packages/blit386/docs/changelog.md\` and the affected \`docs/api-*.md\` pages, then bump` +
             ' `docsReviewedAt` once confirmed current:',
         '',
     ];
 
     for (const { docFile, pages } of report.dueDocs) {
-        lines.push(`- \`packages/kit/${docFile}\` — changed: ${pages.join(', ')}`);
+        lines.push(`- \`packages/kit/${docFile}\` – changed: ${pages.join(', ')}`);
     }
 
     return lines.join('\n');
@@ -82,7 +82,15 @@ export async function reportDrift({ apiKey, report, log = console.log }) {
 
 /** CLI entry point. Always resolves to exit code 0 – see file header. */
 async function main() {
-    const report = checkKitDocsDrift();
+    let report;
+
+    try {
+        report = checkKitDocsDrift();
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to check kit docs drift: ${message}`);
+        return 0;
+    }
 
     if (!report.drift) {
         console.log(`Kit docs OK (no engine API changes since docsReviewedAt ${report.docsReviewedAt}).`);
@@ -92,7 +100,7 @@ async function main() {
     const apiKey = process.env.LINEAR_API_KEY;
 
     if (!apiKey) {
-        console.log('Kit docs drift detected, but LINEAR_API_KEY is not set - skipping Linear filing.');
+        console.log('Kit docs drift detected, but LINEAR_API_KEY is not set – skipping Linear filing.');
         console.log(formatDriftBody(report));
         return 0;
     }

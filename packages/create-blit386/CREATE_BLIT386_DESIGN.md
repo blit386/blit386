@@ -198,7 +198,7 @@ sitting on an older engine, but it is a safety net, not a substitute for the pub
 | D11 | Pre-Node onboarding (chicken-and-egg) | Install instructions live OUTSIDE the project | A scaffolded README cannot teach installing Node, because running the scaffolder already requires Node. The Node install steps live on pages a brand-new user sees first: the `create-blit386` GitHub README (done 2026-06-12, including a copy-pasteable "send this to a friend" message) and later a docs site. Once StackBlitz is verified (section 7), the browser path becomes the lead option for users without Node: all onboarding docs must be written with two paths in mind – "in your browser (nothing to install)" first, "on your computer" second. |
 | D12 | `blit` CLI invocation | Document `npx blit ...` everywhere; lead with `npm run dev` | `blit` is a bin inside `@blit386/kit`, a project dependency. Local bins are only on PATH inside package scripts, so plain `blit run` typed in a terminal fails with "command not found." All shipped docs (template README, AGENTS.md, kit docs, CLAUDE.md template) say `npx blit ...` and explain why in one beginner-friendly line. The scaffolded README leads with `npm run dev`; `blit` is presented as the helper, not the primary interface. Docs updated 2026-06-12; verify `npx blit` under npm/pnpm/yarn/bun (section 7). |
 | D13 | User edits vs `blit agents sync` | Ownership model: manifest + three file classes; never clobber | Without a plan, sync destroys user edits and people stop running it. Full spec in section 4.10. Summary: `.blit/manifest.json` records what the kit generated (with hashes and pristine bases); every emitted file is kit-owned (regenerate freely), shared (managed region between markers; user content preserved), or user-owned (scaffolded once, never touched again). On conflict: three-way merge when git is available, `<file>.new` + a friendly report otherwise. AGENTS.md managed markers + a "Your notes" section ship from v0.1.x so projects scaffolded today survive future syncs (markers added to kit content 2026-06-12). |
-| D14 | Kit-engine compatibility | Kit declares a supported engine range; `blit doctor` checks the pair | D1 (independent versioning) is about cadence, not content: the kit's docs describe the engine API, so a stale kit actively misleads an agent after an engine major. The kit's `package.json` gains a `blit386.engineRange` semver range; `blit doctor` and `blit upgrade` compare it against the installed `blit386` and report drift in Tier-1 voice ("Your local guides describe an older BLIT386 than the one installed. Update @blit386/kit, then run npx blit agents sync."). `scripts/bump-lockstep.mjs` (repo root) stamps the range automatically at release time, not via doc generation; `scripts/check-engine-range-drift.mjs` (repo root) is the CI safety net that fails loudly if it drifts (BT-293). |
+| D14 | Kit-engine compatibility | Kit declares a supported engine range; `blit doctor` checks the pair | D1 (independent versioning) is about cadence, not content: the kit's docs describe the engine API, so a stale kit actively misleads an agent after an engine major. The kit's `package.json` gains a `blit386.engineRange` semver range; `blit doctor` and `blit upgrade` compare it against the installed `blit386` and report drift in Tier-1 voice ("Your local guides describe an older BLIT386 than the one installed. Update @blit386/kit, then run npx blit agents sync."). `scripts/bump-lockstep.mjs` (repo root) stamps the range automatically at release time, not via doc generation; `pnpm run bump:check` (BT-317) is the CI/pre-push safety net that fails loudly if it drifts. |
 
 ---
 
@@ -671,14 +671,14 @@ Phase 3 – "Stays fresh":
   [BT-299](https://linear.app/vancura/issue/BT-299/cross-repo-ci-to-generate-deprecationsmd-from-kit-migration-registry)
 - [x] Auto-stamp `blit386.engineRange` during release + kit docs drift detection CI (replaces the original "generate kit
       docs FROM engine `docs/api-*.md`" plan; full prose generation is not feasible). The engine's own `bump-lockstep`
-      already derived and wrote `engineRange` at release time (BT-410); this closed the remaining gaps:
-      `scripts/check-engine-range-drift.mjs` (repo root) is a read-only CI safety net that fails loudly if `engineRange`
-      or `BLIT386_RANGE` drifts from what `bump-lockstep.mjs` would derive; `packages/kit/package.json`'s new
-      `blit386.docsReviewedAt` marker (hand-set only) records the engine version `content/docs/*.md` was last reviewed
-      against; `scripts/check-kit-docs-drift.mjs` compares it to `packages/blit386/docs/_api-history.json`'s per-symbol
-      `since`/`changes` history and `.github/workflows/kit-docs-drift.yml` files/updates a Linear tracking issue (team
-      BT) when they diverge, advisory-only and never blocking a merge; `blit doctor` surfaces the same comparison
-      locally as a Tier-1 nudge. →
+      already derived and wrote `engineRange` at release time (BT-410); `pnpm run bump:check` (BT-317) is the
+      CI/pre-push safety net that fails loudly if `engineRange` or `BLIT386_RANGE` drifts from what `bump-lockstep.mjs`
+      would derive. This closed the remaining gap: `packages/kit/package.json`'s new `blit386.docsReviewedAt` marker
+      (hand-set only) records the engine version `content/docs/*.md` was last reviewed against;
+      `scripts/check-kit-docs-drift.mjs` compares it to `packages/blit386/docs/_api-history.json`'s per-symbol
+      `since`/`changes` history, and `.github/workflows/kit-docs-drift.yml` runs `scripts/report-kit-docs-drift.mjs`,
+      which files or updates a Linear tracking issue (team BT) when they diverge – advisory-only and never blocking a
+      merge; `blit doctor` surfaces the same comparison locally as a Tier-1 nudge. →
       [BT-293](https://linear.app/vancura/issue/BT-293/auto-stamp-enginerange-and-kit-docs-drift-detection-ci)
 - [x] More game-author skills. Round 23 shipped 14 capability skills in `content/skills/` (`structure-a-game`,
       `draw-shapes`, `add-sprite`, `add-text`, `use-palette`, `animate-the-palette`, `move-and-time`,

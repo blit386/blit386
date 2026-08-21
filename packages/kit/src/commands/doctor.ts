@@ -74,7 +74,7 @@ export function runDoctor(): void {
                         `This kit's guides were last checked against blit386 ${docsReviewedAt}; you have ${version}.`,
                     ),
                 );
-                out(ui.info('Your guides are probably still fine - check the changelog if something looks off.'));
+                out(ui.info('Your guides are probably still fine – check the changelog if something looks off.'));
             }
         } else if (exceedsCaretRange(version, engineRange)) {
             out('');

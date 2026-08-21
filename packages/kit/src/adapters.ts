@@ -10,6 +10,25 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+    AGENTS_MD,
+    CLAUDE_HOOKS_DIR,
+    CLAUDE_MD,
+    CLAUDE_RULES_DIR,
+    CLAUDE_SETTINGS_JSON,
+    CLAUDE_SKILLS_DIR,
+    CURSOR_COMMANDS_DIR,
+    CURSOR_HOOKS_DIR,
+    CURSOR_HOOKS_JSON,
+    CURSOR_RULES_DIR,
+    DOCS_DIR,
+} from './ownership';
+
+// Ownership classification lives in its own leaf module (the generators below build every path they
+// emit from its constants), re-exported here because `./adapters` is the kit's only published
+// subpath – create-blit386 imports these from '@blit386/kit/adapters'.
+export { type AgentKind, type FileClass, classifyFile, hasAgentFiles, isAgentPath, isKitManaged } from './ownership';
+
 /** Managed-region markers shared by AGENTS.md and CLAUDE.md. */
 const MANAGED_START = '<!-- blit-kit:managed:start -->';
 const MANAGED_END = '<!-- blit-kit:managed:end -->';
@@ -31,8 +50,18 @@ export function kitRoot(): string {
     return dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 }
 
-/** Replace {{placeholder}} tokens; unknown tokens are left untouched so mistakes stay visible. */
-function render(content: string, vars: TemplateVars): string {
+/**
+ * Replace {{placeholder}} tokens; unknown tokens are left untouched so mistakes stay visible.
+ *
+ * Exported so `create-blit386` renders its templates with the same grammar the kit renders its own
+ * content with – both write into the same generated project, so two copies of this regex would let
+ * the placeholder syntax drift between them.
+ *
+ * @param content – Template text containing `{{name}}` tokens.
+ * @param vars – Values to substitute, keyed by token name.
+ * @returns The rendered text.
+ */
+export function render(content: string, vars: TemplateVars): string {
     return content.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => vars[key] ?? `{{${key}}}`);
 }
 
@@ -112,8 +141,8 @@ export function replaceManagedRegion(existing: string, regenerated: string): str
 
 /** The AGENTS.md file, copied verbatim from the kit (a shared file with managed markers). */
 export function agentsFile(root: string): GeneratedFile {
-    const content = readFileSync(join(root, 'content', 'AGENTS.md'), 'utf8');
-    return { path: 'AGENTS.md', content };
+    const content = readFileSync(join(root, 'content', AGENTS_MD), 'utf8');
+    return { path: AGENTS_MD, content };
 }
 
 /** Every doc under content/docs, as kit-owned `docs/<name>` files. */
@@ -131,7 +160,7 @@ export function collectDocs(root: string): GeneratedFile[] {
             if (entry.isDirectory()) {
                 walk(join(dir, entry.name), childPrefix);
             } else {
-                files.push({ path: `docs/${childPrefix}`, content: readFileSync(join(dir, entry.name), 'utf8') });
+                files.push({ path: `${DOCS_DIR}${childPrefix}`, content: readFileSync(join(dir, entry.name), 'utf8') });
             }
         }
     };
@@ -157,7 +186,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
     const contentRoot = join(root, 'content');
     const files: GeneratedFile[] = [];
 
-    const agentsMd = readFileSync(join(contentRoot, 'AGENTS.md'), 'utf8');
+    const agentsMd = readFileSync(join(contentRoot, AGENTS_MD), 'utf8');
     const managedBody = extractManagedRegion(agentsMd);
 
     const commandsBlock = [
@@ -187,7 +216,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
         '',
     ].join('\n');
 
-    files.push({ path: 'CLAUDE.md', content: claudeMd });
+    files.push({ path: CLAUDE_MD, content: claudeMd });
 
     const rulesDir = join(contentRoot, 'rules');
     if (existsSync(rulesDir)) {
@@ -198,7 +227,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
 
             const src = join(rulesDir, entry.name);
             files.push({
-                path: `.claude/rules/${entry.name}`,
+                path: `${CLAUDE_RULES_DIR}${entry.name}`,
                 content: render(stripFrontmatter(readFileSync(src, 'utf8')), vars),
             });
         }
@@ -219,7 +248,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
             // Keep the frontmatter: Claude Code reads name/description from it to
             // discover and trigger the skill, so stripping it would make it inert.
             files.push({
-                path: `.claude/skills/${entry.name}/SKILL.md`,
+                path: `${CLAUDE_SKILLS_DIR}${entry.name}/SKILL.md`,
                 content: render(readFileSync(skillSrc, 'utf8'), vars),
             });
         }
@@ -230,7 +259,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
     if (existsSync(hookManifestPath)) {
         const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
         const claudeSettings = buildClaudeSettings(manifest, vars);
-        files.push({ path: '.claude/settings.json', content: `${JSON.stringify(claudeSettings, null, 2)}\n` });
+        files.push({ path: CLAUDE_SETTINGS_JSON, content: `${JSON.stringify(claudeSettings, null, 2)}\n` });
         claudeHookScripts = referencedHookScripts(manifest, 'claude');
     }
 
@@ -249,7 +278,7 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
             }
 
             files.push({
-                path: `.claude/hooks/${entry.name}`,
+                path: `${CLAUDE_HOOKS_DIR}${entry.name}`,
                 content: readFileSync(join(hooksScriptsDir, entry.name), 'utf8'),
             });
         }
@@ -424,7 +453,7 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
 
             const src = join(rulesDir, entry.name);
             const destName = entry.name.replace(/\.md$/, '.mdc');
-            files.push({ path: `.cursor/rules/${destName}`, content: render(readFileSync(src, 'utf8'), vars) });
+            files.push({ path: `${CURSOR_RULES_DIR}${destName}`, content: render(readFileSync(src, 'utf8'), vars) });
         }
     }
 
@@ -433,7 +462,7 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
     if (existsSync(hookManifestPath)) {
         const manifest = JSON.parse(readFileSync(hookManifestPath, 'utf8')) as HooksManifest;
         const cursorHooks = buildCursorHooks(manifest, vars);
-        files.push({ path: '.cursor/hooks.json', content: `${JSON.stringify(cursorHooks, null, 2)}\n` });
+        files.push({ path: CURSOR_HOOKS_JSON, content: `${JSON.stringify(cursorHooks, null, 2)}\n` });
         cursorHookScripts = referencedHookScripts(manifest, 'cursor');
     }
 
@@ -452,7 +481,7 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
             }
 
             files.push({
-                path: `.cursor/hooks/${entry.name}`,
+                path: `${CURSOR_HOOKS_DIR}${entry.name}`,
                 content: readFileSync(join(hooksScriptsDir, entry.name), 'utf8'),
             });
         }
@@ -474,7 +503,7 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
             // frontmatter adds no value and would render as literal text. Strip it.
             // The Claude adapter keeps the frontmatter (a skill needs it to trigger).
             files.push({
-                path: `.cursor/commands/${entry.name}.md`,
+                path: `${CURSOR_COMMANDS_DIR}${entry.name}.md`,
                 content: render(stripFrontmatter(readFileSync(skillSrc, 'utf8')), vars),
             });
         }

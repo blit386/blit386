@@ -253,7 +253,8 @@ is order-sensitive and silently produces wrong data if done too early).
 ### How to run the release
 
 1. Bump: `pnpm run bump -- X.Y.Z --dry-run` then `pnpm run bump -- X.Y.Z` from the repo root. Confirm the dry-run output
-   lists all three `package.json` files, the engine's version constants, `engineRange`, and `BLIT386_RANGE`.
+   lists all three `package.json` files, the engine's version constants, `engineRange`, and `BLIT386_RANGE`, then run
+   `pnpm run bump:check` – it must report `Lockstep is in step at X.Y.Z.`
 2. Mark the changelog as released (below) and verify docs coverage (below).
 3. Land the bump through a PR: `main` is protected – branch, PR, wait for checks, merge (`gh pr merge --merge`; squash
    merging is disabled on the repository).
@@ -330,7 +331,7 @@ After a successful release:
 
 - Published versions for `blit386`, `@blit386/kit`, and `create-blit386` (should be identical)
 - Confirmation of the engine-first order: engine published and verified live before the kit
-- Whether `engineRange` / `BLIT386_RANGE` derivation matched what `pnpm run bump` produced
+- Confirmation `pnpm run bump:check` passed after the bump (it verifies the `engineRange` / `BLIT386_RANGE` derivation)
 - Confirmation the release tag (no `v` prefix) is pushed and points at the merged `main` commit, and that the GitHub
   Release is published with `--latest`
 - Whether the tag also triggered the docs/demos production deploy (`deploy.yml`) and whether it succeeded
