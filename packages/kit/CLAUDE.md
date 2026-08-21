@@ -94,8 +94,11 @@ list of what ships, and it has no automated guard.
    build when either drifts. `blit386.docsReviewedAt` is the opposite case – hand-set only, bumped by whoever actually
    reviewed `content/docs/*.md` against a new engine release; no script writes it, `scripts/check-kit-docs-drift.mjs`
    (repo root) only reads it. Any other literal this package uses to describe the engine or the scaffolder follows the
-   same derive-or-document discipline: file classes and generated-project paths live once in `src/ownership.ts`, which
-   `create-blit386` imports through `@blit386/kit/adapters`. Same discipline, one boundary further out:
+   same derive-or-document discipline: file classes and generated-project paths live once in `src/ownership.ts`, and the
+   `.blit/manifest.json` path and shape live once in `src/manifest.ts` – both of which `create-blit386` imports through
+   `@blit386/kit/adapters`. The manifest is written by two packages and read by one, so its declaration is authored once
+   (`BlitManifest`) and the reader's leniency toward manifests from older scaffolders is _derived_ from it
+   (`ReadBlitManifest`), never hand-maintained as a second interface. Same discipline, one boundary further out:
    `MCP_SERVER_NAME` and `MCP_SERVER_URL` in `src/adapters.ts` are a documented copy of
    `packages/website/public/.well-known/mcp/server-card.json`, which this package cannot import;
    `test/mcp-config.test.mjs` compares the two, so the copy fails loudly instead of drifting. See root
@@ -133,7 +136,7 @@ implementation detail. The walk also turns "bundled into another package" from a
 | Docs-MCP config shipped into games | `buildMcpConfig` in `src/adapters.ts`; canonical server definition lives in `packages/website` |
 | What do `blit agents sync` / `add` do? | `src/commands/agents.ts` (drift `--check` + write path, `runAddAgent`) |
 | How do API migrations / codemods work? | `src/migrations/` (registry + codemod engine), `src/commands/migrate.ts` |
-| Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `src/commands/agents.ts` |
+| Sync ownership model / manifest | `src/manifest.ts` (where the manifest lives and what shape it has), `src/commands/agents.ts` (the read/reconcile/write algorithm) |
 | Which files the kit owns, and the paths it writes into a game | `src/ownership.ts` – shared with `create-blit386` via `@blit386/kit/adapters` |
 | How the kit finds its own root, and how the scaffolder finds the installed kit | `src/kit-root.ts` – `kitRoot()` vs `resolveKitRoot()`, both re-exported from `src/adapters.ts` |
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |

@@ -20,13 +20,17 @@ import { fileURLToPath } from 'node:url';
 import {
     agentsFile,
     type AgentKind,
+    BASE_DIR,
+    BLIT_DIR,
+    type BlitManifest,
     classifyFile,
     collectDocs,
-    type FileClass,
     type GeneratedFile,
     generateClaudeAdapter,
     generateCursorAdapter,
     isKitManaged,
+    MANIFEST_FILE,
+    type ManifestEntry,
     render,
     resolveKitRoot,
     type TemplateVars,
@@ -38,46 +42,6 @@ const BLIT386_RANGE = '^1.5.0';
 /** Output directory names for optional wizard templates. */
 const GITHUB_DIR = '.github';
 const CURSOR_DIR = '.cursor';
-
-/** The `.blit` directory name inside every generated project. */
-const BLIT_DIR = '.blit';
-
-/**
- * One entry in `.blit/manifest.json`, as written at scaffold time.
- *
- * The writer half of a deliberate pair: `ManifestEntry` / `BlitManifest` in
- * `packages/kit/src/commands/agents.ts` are the reader half, and make these fields optional because
- * they read manifests written by any released scaffolder. This side must always emit them, so its
- * fields stay required. Only `class` is shared – it is `FileClass` from `@blit386/kit/adapters` on
- * both sides, so a typo is a compile error. Merging the two shapes needs a manifest schema version
- * first.
- */
-interface ManifestEntry {
-    /** File path relative to the project root. */
-    path: string;
-    /** Ownership class determining how `blit agents sync` handles this file. */
-    class: FileClass;
-    /** Kit version that last wrote this file. */
-    kitVersion: string;
-    /** SHA-256 hex digest of the file content as generated (before any user edits). */
-    sha256: string;
-}
-
-/** The full `.blit/manifest.json` structure. */
-interface BlitManifest {
-    /** Kit version that created this project. */
-    kitVersion: string;
-    /** ISO-8601 creation timestamp. */
-    createdAt: string;
-    /**
-     * Template variables used at scaffold time (package-manager commands, project name, ...).
-     * `blit agents sync` reads these back so it regenerates kit files with the exact same values,
-     * independent of the environment it runs in.
-     */
-    vars: Record<string, string>;
-    /** One entry per generated file, sorted by path for stable diffs. */
-    files: ManifestEntry[];
-}
 
 export type AgentChoice = 'none' | AgentKind;
 
@@ -167,7 +131,7 @@ function sha256(filePath: string): string {
  */
 function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer: string, vars: TemplateVars): void {
     const blitDir = join(targetDir, BLIT_DIR);
-    const baseDir = join(blitDir, 'base');
+    const baseDir = join(blitDir, BASE_DIR);
     mkdirSync(baseDir, { recursive: true });
 
     const entries: ManifestEntry[] = [];
@@ -176,7 +140,7 @@ function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer:
         const relPath = relative(targetDir, absPath).replace(/\\/g, '/');
 
         // Skip files that are inside .blit/ itself (manifest and base copies).
-        if (relPath.startsWith('.blit/')) {
+        if (relPath.startsWith(`${BLIT_DIR}/`)) {
             continue;
         }
 
@@ -203,7 +167,7 @@ function writeBlitManifest(targetDir: string, writtenPaths: Set<string>, kitVer:
         files: entries,
     };
 
-    writeFileSync(join(blitDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+    writeFileSync(join(blitDir, MANIFEST_FILE), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 /**

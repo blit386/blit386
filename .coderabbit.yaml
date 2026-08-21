@@ -195,12 +195,12 @@ reviews:
     - path: 'packages/kit/content/**'
       instructions: >-
         Canonical kit IR shipped into every scaffolded game (`AGENTS.md`, `docs/`, `rules/`, `skills/`, hooks,
-        `agents.config.json`). American English; no emoji; beginner-friendly prose. Self-contained: reference only
+        `hooks.manifest.json`). American English; no emoji; beginner-friendly prose. Self-contained: reference only
         `blit386` and other local kit files – never `blit386-demos` slugs or URLs. `AGENTS.md` and `docs/` are copied
         byte-for-byte (no `{{placeholder}}` substitution), so spell out both `src/game.js` and `src/game.ts`. Skills and
-        rules are discovered by directory scan – adding a skill folder is enough (`agents.config.json` does not list
-        skills by name). Keep public `BT` / `configure()` names aligned with the sibling blit386 engine. Canonical
-        detail: `packages/kit/CLAUDE.md` "Kit content vs engine docs" and root `.claude/rules/docs-sync-required.md`.
+        rules are discovered by directory scan – adding a skill folder is enough; nothing registers a skill by name.
+        Keep public `BT` / `configure()` names aligned with the sibling blit386 engine. Canonical detail:
+        `packages/kit/CLAUDE.md` "Kit content vs engine docs" and root `.claude/rules/docs-sync-required.md`.
     - path: 'packages/{create-blit386,kit}/CLAUDE.md'
       instructions: >-
         Repo contributor guide - each package has its own file (not a mirror); `create-blit386/CLAUDE.md` covers

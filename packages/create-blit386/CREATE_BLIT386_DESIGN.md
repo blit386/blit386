@@ -288,9 +288,18 @@ kit/
   docs/*.md                 # progressive-disclosure deep dives (trimmed from engine docs/api-*.md)
 ```
 
-The matrix below was originally also mirrored into a `kit/agents.config.json`. That file was descriptive only, drifted
-twice, and was deleted in BT-478 – `src/ownership.ts` plus `src/adapters.ts` are the executable answer to "which adapter
-renders what".
+The matrix below was originally also mirrored into a machine-readable `kit/agents.config.json`, which BT-478 deleted. No
+code ever read it, yet `files: ["dist", "content"]` shipped it to npm as inert bytes in every generated game's
+dependency tree, and it was wrong twice over – once in the Cursor `emits` list (the generated `.cursor/hooks/{script}`),
+and again by omitting `AGENTS.md` and the whole of `docs/` from both adapters. Regenerating it at build time behind a
+`--check` gate was considered and rejected, because `src/ownership.ts` cannot produce it: that module holds directory
+prefixes and exact paths, while the `{name}` / `{script}` filename patterns live as inline literals in the emitters
+(`` `${CLAUDE_SKILLS_DIR}${entry.name}/SKILL.md` ``, `entry.name.replace(/\.md$/, '.mdc')`). A faithful generator would
+have to re-derive the emitters' naming conventions – a second, drift-capable model of `adapters.ts`, guarding a file
+with zero consumers. The durable rule: `src/ownership.ts` (paths + ownership classes, pinned by
+`test/ownership.test.mjs`) plus `src/adapters.ts` are the executable answer to "which adapter renders what", and a
+descriptive mirror of them is a liability, not documentation. `content/hooks.manifest.json` is the counter-case and
+stays – `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
@@ -482,6 +491,27 @@ copy is the pristine merge ancestor and the reference for "did the user change t
 path. After a clean three-way merge the on-disk file holds the user's edits, so the recorded SHA-256 becomes the merged
 hash while the base copy stays the pristine kit version (shared files already worked this way; Round 19 made kit-owned
 files consistent).
+
+One declaration, two halves (Round 28). The manifest is written by two packages – `scaffold()` stamps it, and
+`blit agents sync` / `add` rewrite it after reconciling – but declared in exactly one place:
+`packages/kit/src/manifest.ts`, reached from both sides through `@blit386/kit/adapters`. `BlitManifest` is the written
+shape, every field required, so a writer that stops emitting one fails to compile. `ReadBlitManifest` is _derived_ from
+it, widening only the fields that postdate the format (`createdAt`, `vars`, and per-entry `kitVersion`) so the reader
+still accepts manifests written by any released scaffolder. Deriving rather than re-declaring is the point: a field
+added to `BlitManifest` becomes required of every writer and visible to the reader in one edit. The widened shape is
+also what sync _writes_, not merely what it reads, and the two widened root fields differ on the way out. `createdAt` is
+copied across only when the manifest already had it, so an old manifest never gains a fabricated creation timestamp.
+`vars` is copied when present and _backfilled_ when absent: sync resolves it from `fallbackVars` and persists it, so an
+old manifest gains `vars` on its first sync, by design – the package manager is then detected once instead of on every
+run. `add` backfills identically, but only where it completes; a generated file colliding with an untracked user file
+aborts it before the manifest is written at all.
+
+No schema version, deliberately (Round 28). A `schemaVersion` field was specified and rejected on inspection. It is
+absent from every manifest already in the wild, so the reader would carry the widened branch indefinitely and gain a
+second one beside it – additive, deleting nothing. The v0-to-v1 upgrade that would eventually retire the old branch
+cannot be written honestly, since it would have to invent a `createdAt` that no one knows. (`vars` is the easy half:
+`fallbackVars` covers the package-manager commands, which is the whole set `content/` substitutes.) Revisit only if a
+genuinely _incompatible_ manifest change arrives – a renamed or re-meaning field, not another additive one.
 
 Sync algorithm (deterministic, no AI involved):
 
