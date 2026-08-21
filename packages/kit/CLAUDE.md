@@ -101,6 +101,29 @@ list of what ships, and it has no automated guard.
    `packages/website/public/.well-known/mcp/server-card.json`, which this package cannot import;
    `test/mcp-config.test.mjs` compares the two, so the copy fails loudly instead of drifting. See root
    `.claude/rules/named-constants.md` for the shared policy
+6. Never re-derive the kit's package root at a call site – `src/kit-root.ts` holds the only implementation of each of
+   the two answers, and they are not interchangeable. See below
+
+## Two ways to find the kit root, and which one you want
+
+`src/kit-root.ts` is the single home for both. Picking the wrong one is silently wrong rather than broken, so the choice
+is worth a moment:
+
+| Question | Function | Who asks it |
+| --- | --- | --- |
+| Which kit contains this running code? | `kitRoot()` | The `blit` CLI, which ships inside a game's `node_modules` and must read its own `content/`; `src/env.ts`'s `package.json` readers |
+| Which kit does the caller's package depend on? | `resolveKitRoot(import.meta.url)` | `create-blit386`, which copies that kit's `content/` into a new game and pins its version in the generated `package.json` |
+
+Both are re-exported from `src/adapters.ts`, this package's only published subpath. They point at the same directory in
+a normal install and diverge under bundling, `pnpm link`, and hoisting – which is why there is one implementation of
+each rather than one of either.
+
+`kitRoot()` walks up to the nearest `package.json` named `@blit386/kit` **on purpose**. Do not "simplify" it back to
+`new URL('../package.json', import.meta.url)`: that is only correct for a module emitted at `dist/` root, and tsup also
+emits `dist/migrations/*.js` a level down and splits shared code into `chunk-*.js` whose placement is an esbuild
+implementation detail. The walk also turns "bundled into another package" from a wrong answer into a thrown error.
+`test/kit-root.test.mjs` covers both, including a guard that fails if the hardcoded-depth idiom reappears anywhere in
+`dist/`.
 
 ## Where to find information
 
@@ -113,6 +136,7 @@ list of what ships, and it has no automated guard.
 | How do API migrations / codemods work? | `src/migrations/` (registry + codemod engine), `src/commands/migrate.ts` |
 | Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `src/commands/agents.ts` |
 | Which files the kit owns, and the paths it writes into a game | `src/ownership.ts` – shared with `create-blit386` via `@blit386/kit/adapters` |
+| How the kit finds its own root, and how the scaffolder finds the installed kit | `src/kit-root.ts` – `kitRoot()` vs `resolveKitRoot()`, both re-exported from `src/adapters.ts` |
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |
 | What does the scaffolder generate? | `packages/create-blit386/CLAUDE.md` |
 | Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release`, `pnpm run bump -- 1.5.0` from the repo root (replace `1.5.0` with the target version) |

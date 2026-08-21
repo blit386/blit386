@@ -32,11 +32,11 @@ import {
     collectDocs,
     generateClaudeAdapter,
     generateCursorAdapter,
-    kitRoot,
     replaceManagedRegion,
     type TemplateVars,
 } from '../adapters';
 import { detectPackageManager, findProjectRoot, type PackageManager } from '../env';
+import { kitRoot } from '../kit-root';
 import { ui } from '../messages';
 import { classifyFile, type FileClass, hasAgentFiles, isKitManaged } from '../ownership';
 

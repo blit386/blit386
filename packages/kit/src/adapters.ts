@@ -7,8 +7,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 import {
     AGENTS_MD,
@@ -30,6 +29,12 @@ import {
 // emit from its constants), re-exported here because `./adapters` is the kit's only published
 // subpath – create-blit386 imports these from '@blit386/kit/adapters'.
 export { type AgentKind, type FileClass, classifyFile, hasAgentFiles, isAgentPath, isKitManaged } from './ownership';
+
+// Kit-root resolution lives in its own leaf module so `./env` and the CLI commands can import it
+// without pulling in the generators, re-exported here because `./adapters` is the kit's only published
+// subpath – create-blit386 imports `resolveKitRoot` from '@blit386/kit/adapters'. The two answers are
+// not interchangeable; `./kit-root` documents which question each one asks.
+export { KIT_PACKAGE_NAME, kitRoot, resolveKitRoot } from './kit-root';
 
 /** Managed-region markers shared by AGENTS.md and CLAUDE.md. */
 const MANAGED_START = '<!-- blit-kit:managed:start -->';
@@ -58,12 +63,6 @@ export interface GeneratedFile {
 
 /** Template variables substituted into kit content (package-manager commands, project name, ...). */
 export type TemplateVars = Record<string, string>;
-
-/** The kit package root (the folder containing this kit's package.json and content/). */
-export function kitRoot(): string {
-    // Emitted as dist/adapters.js (and also inlined into dist/cli.js); `../package.json` is the kit root.
-    return dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
-}
 
 /**
  * Replace {{placeholder}} tokens; unknown tokens are left untouched so mistakes stay visible.

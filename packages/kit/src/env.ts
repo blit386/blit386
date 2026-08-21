@@ -6,7 +6,8 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+
+import { kitRoot } from './kit-root';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
@@ -211,12 +212,12 @@ export function exceedsCaretRange(version: string, caretRange: string): boolean 
 /**
  * Read the `blit386.engineRange` field from the kit's own package.json, or null if absent.
  *
- * The kit's package.json ships alongside this file in the npm package, so we locate it relative
- * to this module's URL rather than looking in `node_modules`.
+ * The kit's package.json ships alongside this file in the npm package, so we locate it with
+ * `kitRoot()` – the kit containing this code – rather than looking in `node_modules`.
  */
 export function kitEngineRange(): string | null {
     try {
-        const kitPkgPath = fileURLToPath(new URL('../package.json', import.meta.url));
+        const kitPkgPath = join(kitRoot(), 'package.json');
         const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
             blit386?: { engineRange?: unknown };
         };
@@ -236,7 +237,7 @@ export function kitEngineRange(): string | null {
  */
 export function kitDocsReviewedAt(): string | null {
     try {
-        const kitPkgPath = fileURLToPath(new URL('../package.json', import.meta.url));
+        const kitPkgPath = join(kitRoot(), 'package.json');
         const pkg = JSON.parse(readFileSync(kitPkgPath, 'utf8')) as {
             blit386?: { docsReviewedAt?: unknown };
         };

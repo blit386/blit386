@@ -15,7 +15,6 @@
 
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -28,10 +27,9 @@ import {
     generateCursorAdapter,
     isKitManaged,
     render,
+    resolveKitRoot,
     type TemplateVars,
 } from '@blit386/kit/adapters';
-
-const require = createRequire(import.meta.url);
 
 /** blit386 version range written into the generated package.json. */
 const BLIT386_RANGE = '^1.5.0';
@@ -102,22 +100,6 @@ export interface ScaffoldOptions {
 function templatesDir(): string {
     // dist/index.js -> ../templates (templates ships alongside dist in the published package).
     return fileURLToPath(new URL('../templates', import.meta.url));
-}
-
-/**
- * The installed kit's package root.
- *
- * Deliberately not `kitRoot()` from `@blit386/kit/adapters`: that one resolves relative to its own
- * module URL ("the kit containing me"), while the scaffolder needs Node resolution ("the kit this
- * package depends on"). Same directory today, different behavior under bundling and linking.
- */
-function kitRoot(): string {
-    return dirname(require.resolve('@blit386/kit/package.json'));
-}
-
-function kitVersionRange(): string {
-    const pkg = JSON.parse(readFileSync(join(kitRoot(), 'package.json'), 'utf8')) as { version?: string };
-    return pkg.version ? `^${pkg.version}` : '^0.1.0';
 }
 
 function stripTmpl(name: string): string {
@@ -238,8 +220,17 @@ function writeGeneratedFiles(targetDir: string, files: GeneratedFile[], writtenP
 
 /** Generate the project at `targetDir`. The caller guarantees the folder is empty. */
 export function scaffold(options: ScaffoldOptions): void {
-    // Resolve the actual kit version string (not the range) for the manifest.
-    const kitPkg = JSON.parse(readFileSync(join(kitRoot(), 'package.json'), 'utf8')) as { version?: string };
+    // The kit npm installed beside this scaffolder – `resolveKitRoot`, not the kit's own `kitRoot()`.
+    // `kitRoot()` answers "the kit containing me", which is the `blit` CLI's question: it ships inside a
+    // generated game and must read its own content. The scaffolder's question is "the kit this package
+    // depends on", so it resolves from this module's URL – the same path the `@blit386/kit/adapters`
+    // import above already took, which is what keeps the content root and the loaded generators in
+    // agreement. `packages/kit/src/kit-root.ts` holds both answers and documents the difference.
+    const kit = resolveKitRoot(import.meta.url);
+
+    // One read serves both consumers: the raw version stamps the manifest, the caret range is pinned
+    // into the generated package.json.
+    const kitPkg = JSON.parse(readFileSync(join(kit, 'package.json'), 'utf8')) as { version?: string };
     const kitVer = kitPkg.version ?? '0.1.0';
 
     const language: LanguageChoice = options.language ?? 'js';
@@ -252,7 +243,7 @@ export function scaffold(options: ScaffoldOptions): void {
         projectName: options.projectName,
         packageName: toPackageName(options.projectName),
         blit386Version: BLIT386_RANGE,
-        kitVersion: kitVersionRange(),
+        kitVersion: `^${kitVer}`,
         pmInstall: options.pmInstall,
         pmRunDev: options.pmRunDev,
         pmRunBuild: options.pmRunBuild,
@@ -278,8 +269,6 @@ export function scaffold(options: ScaffoldOptions): void {
             writtenPaths,
         );
     }
-
-    const kit = kitRoot();
 
     if (options.agent === 'cursor') {
         writeGeneratedFiles(options.targetDir, generateCursorAdapter(kit, vars), writtenPaths);
