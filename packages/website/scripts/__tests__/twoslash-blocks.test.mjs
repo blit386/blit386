@@ -36,7 +36,7 @@ function extractTwoslashBlocks(source) {
 
         const openMatch = line.match(TWOSLASH_FENCE_OPEN);
 
-        if (!openMatch || !openMatch[1]) continue;
+        if (!openMatch?.[1]) continue;
 
         const lang = openMatch[1];
         const bodyLines = [];
