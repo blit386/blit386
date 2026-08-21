@@ -22,6 +22,7 @@ import {
     generateCursorAdapter,
     isKitManaged,
     kitRoot,
+    MCP_SERVER_NAME,
     resolveKitRoot,
 } from '@blit386/kit/adapters';
 
@@ -1240,7 +1241,7 @@ test('blit agents sync keeps a user-added MCP server in .mcp.json', { skip: !has
     }
 });
 
-test('blit agents add claude aborts safely on a hand-written .mcp.json', () => {
+test('blit agents add claude aborts safely on a conflicting .mcp.json server entry', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-collision-'));
 
     try {
@@ -1255,10 +1256,11 @@ test('blit agents add claude aborts safely on a hand-written .mcp.json', () => {
             pmRunLint: 'npm run lint',
         });
 
-        // The user already registered an unrelated MCP server before asking for Claude. That file is
-        // theirs, so the add is all-or-nothing: nothing is written except the .new copy.
+        // The user already registered a server under the same key the kit wants to add, but pointing
+        // somewhere else. That is a real conflict, not a mergeable addition, so the add is
+        // all-or-nothing: nothing is written except the .new copy.
         const mcpPath = join(project, '.mcp.json');
-        const userContent = `${JSON.stringify({ mcpServers: { mine: { type: 'http', url: 'https://example.test/mcp' } } }, null, 2)}\n`;
+        const userContent = `${JSON.stringify({ mcpServers: { [MCP_SERVER_NAME]: { type: 'http', url: 'https://example.test/mcp' } } }, null, 2)}\n`;
         writeFileSync(mcpPath, userContent);
 
         const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
@@ -1276,6 +1278,78 @@ test('blit agents add claude aborts safely on a hand-written .mcp.json', () => {
             userContent,
             'a later sync must not overwrite the user .mcp.json after an aborted add',
         );
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add claude merges a pre-existing .mcp.json', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-merge-add-'));
+
+    try {
+        const project = join(work, 'mcp-merge-add-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'mcp-merge-add-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // The user already registered an unrelated MCP server before asking for Claude. .mcp.json is
+        // an allowlisted structural-merge target, so the kit's server is added next to it instead of
+        // aborting the whole add.
+        const mcpPath = join(project, '.mcp.json');
+        const userContent = `${JSON.stringify({ mcpServers: { mine: { type: 'http', url: 'https://example.test/mcp' } } }, null, 2)}\n`;
+        writeFileSync(mcpPath, userContent);
+
+        const { exitCode } = runBlit(project, ['agents', 'add', 'claude']);
+
+        assert.equal(exitCode, 0, 'a clean merge should exit 0');
+        assert.ok(!existsSync(`${mcpPath}.new`), 'a clean merge should not leave a .new conflict copy');
+        assert.ok(existsSync(join(project, 'CLAUDE.md')), 'a clean merge should still set up the rest of Claude');
+
+        const merged = JSON.parse(readFileSync(mcpPath, 'utf8'));
+        assert.ok(merged.mcpServers.mine, 'the user server must survive the add');
+        assert.ok(merged.mcpServers[MCP_SERVER_NAME], 'the kit server must be present');
+
+        const check = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(check.exitCode, 0, 'a clean-merged .mcp.json must not be reported as drift');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add claude aborts safely on malformed .mcp.json', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-malformed-'));
+
+    try {
+        const project = join(work, 'mcp-malformed-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'mcp-malformed-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // A pre-existing .mcp.json that isn't even valid JSON cannot be merged. It must fall back to
+        // the same collision behavior as a file that fails to parse, not crash.
+        const mcpPath = join(project, '.mcp.json');
+        const userContent = '{ not valid json';
+        writeFileSync(mcpPath, userContent);
+
+        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
+
+        assert.equal(readFileSync(mcpPath, 'utf8'), userContent, 'the malformed .mcp.json must not be overwritten');
+        assert.ok(existsSync(`${mcpPath}.new`), 'the kit version should be saved as .mcp.json.new');
+        assert.ok(output.includes('.mcp.json.new'), 'output should mention the .new copy');
+        assert.notEqual(exitCode, 0, 'a needs-review collision should exit non-zero');
+        assert.ok(!existsSync(join(project, 'CLAUDE.md')), 'an aborted add must not write the other Claude files');
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
