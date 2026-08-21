@@ -137,6 +137,13 @@ tests/visual/
 ## Writing a new test
 
 ```ts twoslash
+// @filename: MyClass.ts
+export declare class MyClass {
+  myMethod(): number;
+}
+// @filename: MyClass.test.ts
+declare const expected: number;
+// ---cut---
 import { describe, expect, it } from 'vitest';
 
 import { MyClass } from './MyClass';
@@ -179,6 +186,11 @@ Use these patterns when adding or reviewing palette-related features:
 For tests that need GPU objects, import from the mock factory:
 
 ```ts twoslash
+// @filename: __test__/webgpu-mock.ts
+export declare function createMockGPUDevice(): GPUDevice;
+export declare function createMockGPUTexture(width: number, height: number): GPUTexture;
+// @filename: render/SpritePipeline.test.ts
+// ---cut---
 import { createMockGPUDevice, createMockGPUTexture } from '../__test__/webgpu-mock';
 
 const device = createMockGPUDevice();

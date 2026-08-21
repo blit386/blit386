@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Performance Testing"
 description: "CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate."
-lastModified: "2026-07-28T16:49:29+02:00"
+lastModified: "2026-08-21T08:18:38+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/performance-testing.md"
 ---
 
@@ -101,6 +101,13 @@ src/render/SpritePipeline.bench.ts
 ### Basic structure
 
 ```ts twoslash
+// @filename: MyType.ts
+export declare class MyType {
+  newMethod(): void;
+  oldMethod(): void;
+}
+// @filename: MyType.bench.ts
+// ---cut---
 import { bench, describe } from 'vitest';
 
 import { MyType } from './MyType';

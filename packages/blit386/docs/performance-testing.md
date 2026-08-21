@@ -104,6 +104,13 @@ src/render/SpritePipeline.bench.ts
 ### Basic structure
 
 ```ts twoslash
+// @filename: MyType.ts
+export declare class MyType {
+  newMethod(): void;
+  oldMethod(): void;
+}
+// @filename: MyType.bench.ts
+// ---cut---
 import { bench, describe } from 'vitest';
 
 import { MyType } from './MyType';
