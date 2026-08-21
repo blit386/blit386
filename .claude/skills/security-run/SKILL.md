@@ -88,9 +88,15 @@ Then run it once more with the monorepo root as `--repo-root` (`--repo-root ../.
 `discoverMcpConfigPaths` only walks one level up, so a package-rooted run never reaches the repo root and never scans
 the tracked root `.mcp.json`.
 
-Review shadow MCP flags. `blit386-docs` (`shadow-remote`, from the tracked root `.mcp.json`) is an accepted entry – see
-"Accepted MCP entries" in the runbook – so a shadow count of one naming only that server is a clean run. Do not output
-secrets or full MCP config values (server names only).
+Review shadow MCP flags. Exactly one entry is accepted, and only when all four fields match: name `blit386-docs`,
+classification `shadow-remote`, config path the repo-root `.mcp.json`, and URL `https://blit386.dev/mcp`. A shadow count
+of one matching all four is a clean run; anything else – a different name, a different config path, or the same name
+pointing elsewhere – is a finding, not an accepted entry. See "Accepted MCP entries" in the runbook.
+
+The preflight report prints name, classification, and config path but not the URL, so the URL half is enforced
+separately by `pnpm run agents:check` (`findProjectMcpFailures` in `scripts/check-agent-config.mjs`), which fails CI
+when `.mcp.json` drifts from the website's discovery card. Do not output secrets or full MCP config values (server names
+only).
 
 ## References
 

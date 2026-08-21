@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -12,6 +13,7 @@ import {
     findProjectMcpFailures,
     findSkillsSymlinkFailures,
     findZedSettingsFailures,
+    isRootMcpIgnoredByGit,
     resolveSkillSymlinkTarget,
 } from './check-agent-config.mjs';
 
@@ -192,33 +194,33 @@ describe('check-agent-config', () => {
             serverInfo: { name: 'blit386-docs', version: '1.0.0' },
             url: 'https://blit386.dev/mcp',
         });
-        const GITIGNORE = '# MCP configs\n.mcp.json\nmcp.json\n!/.mcp.json\n';
+        const NOT_IGNORED = false;
 
-        it('passes when the config, the discovery card, and the .gitignore negation all agree', () => {
-            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, GITIGNORE), []);
+        it('passes when the config and the discovery card agree and git does not ignore the file', () => {
+            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, NOT_IGNORED), []);
         });
 
         it('fails when .mcp.json is missing', () => {
-            const failures = findProjectMcpFailures(null, SERVER_CARD, GITIGNORE);
+            const failures = findProjectMcpFailures(null, SERVER_CARD, NOT_IGNORED);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /\.mcp\.json is missing/);
         });
 
         it('fails when .mcp.json is not parseable as JSON', () => {
-            const failures = findProjectMcpFailures('{not json', SERVER_CARD, GITIGNORE);
+            const failures = findProjectMcpFailures('{not json', SERVER_CARD, NOT_IGNORED);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /\.mcp\.json is not parseable as JSON/);
         });
 
         it('fails when the mcpServers object is absent', () => {
-            const failures = findProjectMcpFailures('{}', SERVER_CARD, GITIGNORE);
+            const failures = findProjectMcpFailures('{}', SERVER_CARD, NOT_IGNORED);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /no mcpServers object/);
         });
 
         it('fails when the blit386-docs server is not declared', () => {
             const config = JSON.stringify({ mcpServers: { other: { type: 'http', url: 'https://example.com/mcp' } } });
-            const failures = findProjectMcpFailures(config, SERVER_CARD, GITIGNORE);
+            const failures = findProjectMcpFailures(config, SERVER_CARD, NOT_IGNORED);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /does not declare the `blit386-docs` server/);
         });
@@ -227,7 +229,7 @@ describe('check-agent-config', () => {
             const config = JSON.stringify({
                 mcpServers: { 'blit386-docs': { type: 'sse', url: 'https://blit386.dev/mcp' } },
             });
-            const failures = findProjectMcpFailures(config, SERVER_CARD, GITIGNORE);
+            const failures = findProjectMcpFailures(config, SERVER_CARD, NOT_IGNORED);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /has type "sse", expected "http"/);
         });
@@ -236,25 +238,89 @@ describe('check-agent-config', () => {
             const config = JSON.stringify({
                 mcpServers: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp/v2' } },
             });
-            const failures = findProjectMcpFailures(config, SERVER_CARD, GITIGNORE);
+            const failures = findProjectMcpFailures(config, SERVER_CARD, NOT_IGNORED);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /does not match the discovery card URL/);
         });
 
         it('fails when the discovery card is missing', () => {
-            const failures = findProjectMcpFailures(MCP_CONFIG, null, GITIGNORE);
+            const failures = findProjectMcpFailures(MCP_CONFIG, null, NOT_IGNORED);
             assert.equal(failures.length, 1);
             assert.match(failures[0], /server-card\.json is missing/);
         });
 
-        it('fails when .gitignore ignores .mcp.json without the root negation', () => {
-            const failures = findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, '# MCP configs\n.mcp.json\nmcp.json\n');
+        it('fails when git reports the root .mcp.json as ignored', () => {
+            const failures = findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, true);
             assert.equal(failures.length, 1);
-            assert.match(failures[0], /without the `!\/\.mcp\.json` negation/);
+            assert.match(failures[0], /\.mcp\.json is ignored by git/);
         });
 
-        it('passes when .gitignore does not ignore .mcp.json at all', () => {
-            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, '# nothing MCP-related\n'), []);
+        it('does not fail when git could not answer whether the file is ignored', () => {
+            assert.deepEqual(findProjectMcpFailures(MCP_CONFIG, SERVER_CARD, null), []);
+        });
+    });
+
+    describe('isRootMcpIgnoredByGit', () => {
+        /**
+         * Builds a throwaway repository whose `.gitignore` is exactly `rules`, with `.mcp.json`
+         * committed – so the tracked-file case the real repo is in gets exercised too.
+         *
+         * @param {string} rules Contents of the throwaway repo's `.gitignore`.
+         * @returns {string} Absolute path to the repository root.
+         */
+        function makeRepo(rules) {
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-mcp-'));
+            const run = (...args) => spawnSync('git', args, { cwd: root });
+
+            run('init', '--quiet');
+            run('config', 'user.email', 'test@example.com');
+            run('config', 'user.name', 'Test');
+            writeFileSync(join(root, '.gitignore'), rules);
+            writeFileSync(join(root, '.mcp.json'), '{}\n');
+            run('add', '--force', '.gitignore', '.mcp.json');
+            run('commit', '--quiet', '--no-gpg-sign', '-m', 'init');
+
+            return root;
+        }
+
+        it('reports not-ignored when a root-anchored negation follows the blanket rule', () => {
+            const root = makeRepo('.mcp.json\nmcp.json\n!/.mcp.json\n');
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), false);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        it('reports ignored when a later broad rule re-ignores the file', () => {
+            const root = makeRepo('.mcp.json\nmcp.json\n!/.mcp.json\n*.json\n');
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), true);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        it('reports ignored when a later bare rule re-ignores the file', () => {
+            const root = makeRepo('.mcp.json\nmcp.json\n!/.mcp.json\n.mcp.json\n');
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), true);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
+        });
+
+        it('returns null when the directory is not a git repository', () => {
+            const root = mkdtempSync(join(tmpdir(), 'agent-config-nogit-'));
+
+            try {
+                assert.equal(isRootMcpIgnoredByGit(root), null);
+            } finally {
+                rmSync(root, { recursive: true, force: true });
+            }
         });
     });
 

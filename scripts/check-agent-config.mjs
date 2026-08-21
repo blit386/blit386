@@ -16,7 +16,7 @@
  *     GitHub only reads the top-level `.github/`, so this does not apply to
  *     package roots.
  *   - `.mcp.json` declares the blit386.dev docs server, its URL still matches
- *     the website's discovery card, and `.gitignore` still un-ignores it.
+ *     the website's discovery card, and git does not ignore the file.
  *
  * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
  *   - AGENTS.md still points at an existing CLAUDE.md.
@@ -28,6 +28,7 @@
  * Usage:
  *   node scripts/check-agent-config.mjs
  */
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -206,38 +207,59 @@ const PROJECT_MCP_SERVER_NAME = 'blit386-docs';
 /** Claude Code's transport discriminant for a remote streamable-HTTP MCP server. */
 const PROJECT_MCP_SERVER_TYPE = 'http';
 
-/** The `.gitignore` negation that keeps the root `.mcp.json` tracked while nested ones stay ignored. */
-const ROOT_MCP_NEGATION_PATTERN = '!/.mcp.json';
+/**
+ * Whether git would ignore the root `.mcp.json` if it were removed and re-added.
+ *
+ * Asking git is the only honest way to answer this. Matching `.gitignore` text for the
+ * `!/.mcp.json` negation looks equivalent but is not: gitignore resolves last-match-wins, so a
+ * later `*.json` or a second bare `.mcp.json` line re-ignores the file while the negation is
+ * still sitting there in the text. Both cases were verified to slip past a text-based check.
+ *
+ * `--no-index` is what makes the question meaningful for a file that is already tracked –
+ * without it git short-circuits on the index and always answers "not ignored".
+ *
+ * @param {string} repoRoot Absolute path to the repository root.
+ * @returns {boolean | null} `true`/`false` per git, or `null` when git could not answer.
+ */
+export function isRootMcpIgnoredByGit(repoRoot) {
+    const result = spawnSync('git', ['check-ignore', '--no-index', '--quiet', '--', '.mcp.json'], {
+        cwd: repoRoot,
+    });
+
+    // 0 = ignored, 1 = not ignored, anything else (or a spawn failure) = git could not answer.
+    if (result.error || (result.status !== 0 && result.status !== 1)) {
+        return null;
+    }
+
+    return result.status === 0;
+}
 
 /**
  * Verifies the tracked root `.mcp.json` still declares the blit386.dev docs server, that its
- * URL has not drifted from the website's `.well-known` discovery card, and that `.gitignore`
- * still carries the root-anchored negation keeping the file out of the blanket MCP ignore.
- * The last check is the important one: without it the file can silently fall back out of git
- * and every contributor quietly loses the server.
+ * URL has not drifted from the website's `.well-known` discovery card, and that git does not
+ * ignore the file. The ignore check is the important one: without it the file can silently
+ * fall back out of git and every contributor quietly loses the server.
  *
- * All three inputs are passed in as strings so the function stays unit-testable without
- * touching disk; parse errors become failure messages rather than throws.
+ * The file contents are passed in as strings, and the ignore state as an already-resolved
+ * boolean, so the function stays pure and unit-testable without touching disk or shelling
+ * out; parse errors become failure messages rather than throws.
  *
  * @param {string | null} mcpConfigContent Contents of the root `.mcp.json`, or `null` when missing.
  * @param {string | null} serverCardContent Contents of the website's MCP discovery card, or `null` when missing.
- * @param {string | null} gitignoreContent Contents of the root `.gitignore`, or `null` when missing.
+ * @param {boolean | null} rootMcpIsIgnored Git's verdict from {@link isRootMcpIgnoredByGit}; `null` when unknown.
  * @returns {string[]} Human-readable failure messages (empty when the config is consistent).
  */
-export function findProjectMcpFailures(mcpConfigContent, serverCardContent, gitignoreContent) {
+export function findProjectMcpFailures(mcpConfigContent, serverCardContent, rootMcpIsIgnored) {
     if (mcpConfigContent === null) {
         return ['.mcp.json is missing'];
     }
 
     const failures = [];
 
-    if (gitignoreContent === null) {
-        failures.push('.gitignore is missing');
-    } else if (
-        /^\s*\.mcp\.json\s*$/mu.test(gitignoreContent) &&
-        !gitignoreContent.includes(ROOT_MCP_NEGATION_PATTERN)
-    ) {
-        failures.push(`.gitignore ignores .mcp.json without the \`${ROOT_MCP_NEGATION_PATTERN}\` negation`);
+    if (rootMcpIsIgnored === true) {
+        failures.push(
+            '.mcp.json is ignored by git – check .gitignore for a rule matching it after the `!/.mcp.json` negation',
+        );
     }
 
     /** @type {Record<string, unknown>} */
@@ -447,7 +469,7 @@ function runAllChecks() {
             readFileIfExists(
                 join(REPO_ROOT, 'packages', 'website', 'public', '.well-known', 'mcp', 'server-card.json'),
             ),
-            readFileIfExists(join(REPO_ROOT, '.gitignore')),
+            isRootMcpIgnoredByGit(REPO_ROOT),
         ),
     );
 

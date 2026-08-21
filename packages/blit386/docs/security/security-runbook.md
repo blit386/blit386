@@ -174,6 +174,9 @@ node ../blit386/scripts/security/mcp-preflight.mjs \
 ### Accepted MCP entries
 
 The entry below is expected in the repo-root pass from step 2 and must not be migrated or removed under step 3.
+Acceptance is bound to the whole row, not the name: a flagged server qualifies only when the name, URL, config path, and
+classification all match. The same name pointing at a different URL, or appearing in a different config file, is a
+finding.
 
 | Server | URL | Declared in | Expected classification |
 | --- | --- | --- | --- |
