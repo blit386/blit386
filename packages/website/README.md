@@ -13,7 +13,7 @@ Beyond rendering MDX, the site ships a few things worth knowing about:
 
 - Full engine API reference and guides, generated from `packages/blit386` (see [Content](#content) below).
 - Twoslash type-on-hover popups in TypeScript code blocks (on in production builds; `pnpm run dev:twoslash` enables them
-  locally, one page at a time – see `CLAUDE.md`, Twoslash).
+  locally, one page at a time – see [Development](#development) and `CLAUDE.md`, Twoslash).
 - An MCP server at `/mcp` so AI assistants can search the docs; setup instructions live on the site at `/mcp-server`.
 - `Accept: text/markdown` content negotiation: any canonical doc URL returns clean markdown to agents that ask for it,
   and `/llms.txt` summarizes the whole site.
@@ -38,6 +38,19 @@ pnpm run dev
 ```
 
 Open the URL printed by Waku (typically `http://localhost:3000`).
+
+`pnpm run dev` leaves Twoslash off. To get type-on-hover popups locally, build the engine first and use the opt-in
+script – Twoslash resolves its declarations from `packages/blit386/dist`, and because the transformer runs with
+`throws: false`, skipping that build degrades every block to plain highlighting **silently**:
+
+```bash
+pnpm --filter blit386 run build
+pnpm run dev:twoslash
+```
+
+It is deliberately not the default: it carries an 8 GB heap and holds for one page at a time, so browsing the whole docs
+section under it will run out of memory. `pnpm run build && pnpm run start` is the faithful full-site preview. See
+`CLAUDE.md`, Twoslash for the measurements.
 
 ## Quality checks
 

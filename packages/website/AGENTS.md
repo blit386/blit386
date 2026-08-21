@@ -36,7 +36,9 @@ Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shel
 - Twoslash type-on-hover popups are gated by `isTwoslashEnabled()` in `scripts/twoslash-config.mjs`, which is true for
   `CLOUDFLARE` or `WORKERS_CI` and can be forced either way with `BLIT386_TWOSLASH`. Popups are absent from a plain
   `pnpm run dev`; `pnpm run dev:twoslash` turns them on for one page at a time (browsing many pages OOMs – see
-  `CLAUDE.md`, Twoslash), and `pnpm run build && pnpm run start` is the faithful full-site preview.
+  `CLAUDE.md`, Twoslash), and `pnpm run build && pnpm run start` is the faithful full-site preview. Build the engine
+  first (`pnpm --filter blit386 run build`) for any of those – Twoslash reads `packages/blit386/dist`, and
+  `throws: false` turns a missing build into silently plain code blocks rather than an error.
 - Documentation ships with the change – update `content/` and run `pnpm run docs:links` from the repo root when adding
   links.
 
