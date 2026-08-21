@@ -226,6 +226,10 @@ Use this structure in agent output or issue/PR comments:
 - Config paths scanned: <list>
 ```
 
+Report the three fields above and nothing else – no secrets, credentials, auth headers, or full MCP config bodies. Give
+config paths repo-relative: the preflight prints them absolute, so a pasted report would otherwise carry the local
+username. The accepted entry's URL is deliberately absent here; `pnpm run agents:check` is what verifies it.
+
 ## Related docs
 
 - [dependency-policy.md](./dependency-policy.md) – CI audit gate, severity threshold, refresh cadence

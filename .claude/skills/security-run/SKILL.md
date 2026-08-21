@@ -96,8 +96,12 @@ pointing elsewhere – is a finding, not an accepted entry. See "Accepted MCP en
 
 The preflight report prints name, classification, and config path but not the URL, so the URL half is enforced
 separately by `pnpm run agents:check` (`findProjectMcpFailures` in `scripts/check-agent-config.mjs`), which fails CI
-when `.mcp.json` drifts from the website's discovery card. Do not output secrets or full MCP config values (server names
-only).
+when `.mcp.json` drifts from the website's discovery card.
+
+Report exactly the three fields the runbook's report template asks for – server name, classification, and config path –
+and nothing else. Never output secrets, credentials, auth headers, or a full MCP config body. Rewrite config paths
+repo-relative before pasting them anywhere: the preflight prints absolute paths, so a copied report otherwise leaks the
+local username.
 
 ## References
 
