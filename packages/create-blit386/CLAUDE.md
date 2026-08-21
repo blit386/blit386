@@ -32,9 +32,14 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    both packages classify against. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given
    project is decided by `content/hooks.manifest.json` – only a script one of that adapter's own hook entries actually
    references gets copied (all under `packages/kit/`).
-5. Kit content (`AGENTS.md` + `docs/`) is copied **verbatim** – `copyFileSync` / `cpSync`, so `{{placeholder}}` tokens
-   are NOT substituted there. Only templates, rules, and skills pass through `render()`. Prose in `AGENTS.md` and
-   `docs/` must therefore spell out both language cases ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
+5. Kit content comes from `resolveKitRoot(import.meta.url)` (`@blit386/kit/adapters`) – the kit npm installed beside
+   this package – and never from the kit's own `kitRoot()`, which answers "the kit containing me" and is the `blit`
+   CLI's question, not the scaffolder's. That same resolved root supplies the `^x.y.z` pinned into every generated
+   `package.json` and the exact version stamped into `.blit/manifest.json`. Full reasoning: `packages/kit/CLAUDE.md`.
+   `AGENTS.md` and `docs/` are then emitted **verbatim**: `scaffold()` writes the `GeneratedFile` values that
+   `agentsFile()` and `collectDocs()` return, with no `{{placeholder}}` substitution. Only templates, rules, and skills
+   pass through `render()`. Prose in `AGENTS.md` and `docs/` must therefore spell out both language cases
+   ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
 6. `scaffold()` writes the ownership manifest `.blit/manifest.json` (path, class, kit version, sha256, plus the
    scaffold-time template `vars`) and pristine `.blit/base/` copies, so `blit agents sync` can update kit files later
    without clobbering user edits. The `class` values come from `classifyFile()` in `@blit386/kit/adapters` – the same
@@ -58,7 +63,8 @@ are in [`.claude/rules/template-structure.md`](.claude/rules/template-structure.
    is written by `scripts/bump-lockstep.mjs` (repo root) alongside `packages/kit`'s `blit386.engineRange`, verified by
    `pnpm run bump:check`, and `PUBLISHING.md` records the coupling. File classes and the generated-project paths
    (`CLAUDE.md`, `.claude/`, `.cursor/`, `docs/`) are not re-typed here at all – they are imported from
-   `@blit386/kit/adapters`. Shared policy: root `.claude/rules/named-constants.md`
+   `@blit386/kit/adapters`, as is the kit-root resolution itself (`resolveKitRoot`, not a local `createRequire` copy).
+   Shared policy: root `.claude/rules/named-constants.md`
 
 ## Where to find information
 
@@ -69,6 +75,7 @@ are in [`.claude/rules/template-structure.md`](.claude/rules/template-structure.
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |
 | What does the `blit` CLI do, and how are agent files generated? | `packages/kit/CLAUDE.md` |
 | Which generated files the kit owns (sync classes) | `packages/kit/src/ownership.ts`, imported via `@blit386/kit/adapters` |
+| How the scaffolder finds the installed kit, and the pin it writes | `resolveKitRoot` from `@blit386/kit/adapters`; the two resolution semantics are documented in `packages/kit/src/kit-root.ts` |
 | Publishing / release | `PUBLISHING.md`, `/release`, `pnpm run bump -- 1.5.0` from the repo root (replace `1.5.0` with the target version) |
 | Hot-reload delivery decision | `CREATE_BLIT386_DESIGN.md` (Hot reload section) |
 | Maintainer agent-config drift check | `scripts/check-agent-config.mjs` (root) |

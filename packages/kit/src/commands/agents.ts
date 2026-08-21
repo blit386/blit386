@@ -32,10 +32,10 @@ import {
     collectDocs,
     generateClaudeAdapter,
     generateCursorAdapter,
-    kitRoot,
     replaceManagedRegion,
 } from '../adapters';
 import { detectPackageManager, findProjectRoot, type PackageManager } from '../env';
+import { kitRoot } from '../kit-root';
 import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type TemplateVars } from '../manifest';
 import { ui } from '../messages';
 import { AGENT_KINDS, AGENT_LABEL, type AgentKind, classifyFile, hasAgentFiles, isKitManaged } from '../ownership';

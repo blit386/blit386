@@ -7,8 +7,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 import {
     AGENTS_MD,
@@ -41,6 +40,12 @@ export {
     isAgentPath,
     isKitManaged,
 } from './ownership';
+
+// Kit-root resolution lives in its own leaf module so `./env` and the CLI commands can import it
+// without pulling in the generators, re-exported here because `./adapters` is the kit's only published
+// subpath – create-blit386 imports `resolveKitRoot` from '@blit386/kit/adapters'. The two answers are
+// not interchangeable; `./kit-root` documents which question each one asks.
+export { KIT_PACKAGE_NAME, kitRoot, resolveKitRoot } from './kit-root';
 
 // The `.blit/manifest.json` location and shape live in their own leaf module, re-exported for the
 // same reason: create-blit386 stamps the manifest that `blit agents sync` later reads back, so both
@@ -79,12 +84,6 @@ export interface GeneratedFile {
     path: string;
     /** Full file content as the kit would write it. */
     content: string;
-}
-
-/** The kit package root (the folder containing this kit's package.json and content/). */
-export function kitRoot(): string {
-    // Emitted as dist/adapters.js (and also inlined into dist/cli.js); `../package.json` is the kit root.
-    return dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 }
 
 /**

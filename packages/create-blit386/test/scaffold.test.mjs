@@ -22,12 +22,18 @@ import {
     generateCursorAdapter,
     isKitManaged,
     kitRoot,
+    resolveKitRoot,
 } from '@blit386/kit/adapters';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, '..');
 const cli = join(packageRoot, 'dist', 'index.js');
 const blitCli = join(here, '..', '..', 'kit', 'dist', 'cli.js');
+
+// The kit the scaffolder resolves at runtime – the source of the `^x.y.z` every generated game pins
+// and of the exact version stamped into `.blit/manifest.json`. Read it the same way scaffold.ts does
+// rather than hardcoding a literal, so a lockstep bump never needs this file edited.
+const installedKit = JSON.parse(readFileSync(join(resolveKitRoot(import.meta.url), 'package.json'), 'utf8'));
 
 function assertNoPlaceholders(projectDir, relativePath) {
     const content = readFileSync(join(projectDir, relativePath), 'utf8');
@@ -72,6 +78,11 @@ test('scaffolds a runnable game project', () => {
         const blitManifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
         assert.ok(Array.isArray(blitManifest.files), 'manifest.files should be an array');
         assert.ok(blitManifest.files.length > 0, 'manifest should have at least one entry');
+        assert.equal(
+            blitManifest.kitVersion,
+            installedKit.version,
+            'the manifest records the exact resolved kit version with no caret – blit agents sync reads it back',
+        );
         const agentsEntry = blitManifest.files.find((f) => f.path === 'AGENTS.md');
         assert.ok(agentsEntry, 'manifest should have an AGENTS.md entry');
         assert.equal(agentsEntry.class, 'shared', 'AGENTS.md should be classified as shared');
@@ -94,7 +105,11 @@ test('scaffolds a runnable game project', () => {
         assert.equal(manifest.name, 'my-game', 'package name should match the folder');
         assert.ok(manifest.dependencies?.blit386, 'blit386 dependency is missing');
         assert.equal(manifest.dependencies.blit386, '^1.5.0', 'generated games should pin blit386 ^1.5.0');
-        assert.ok(manifest.devDependencies?.['@blit386/kit'], '@blit386/kit devDependency is missing');
+        assert.equal(
+            manifest.devDependencies?.['@blit386/kit'],
+            `^${installedKit.version}`,
+            'generated games must pin the kit the scaffolder actually resolved',
+        );
         assert.ok(manifest.devDependencies?.['@biomejs/biome'], '@biomejs/biome devDependency is missing');
         assert.equal(
             manifest.devDependencies['@biomejs/biome'],
@@ -533,6 +548,17 @@ function runBlit(project, args) {
 }
 
 /**
+ * The scaffolder asks "which kit does this package depend on" (`resolveKitRoot`); the kit CLI asks
+ * "which kit contains me" (`kitRoot`). They are different questions with different answers under
+ * bundling and linking – see `packages/kit/src/kit-root.ts`. In a normal install they coincide, and
+ * every drift guard below silently assumes so. Assert it once, here, so a packaging change fails with
+ * this message instead of as an inscrutable byte mismatch further down.
+ */
+test('the kit the scaffolder resolves is the kit the loaded adapters module lives in', () => {
+    assert.equal(resolveKitRoot(import.meta.url), kitRoot());
+});
+
+/**
  * Drift guard: scaffold writes must match `@blit386/kit/adapters` generate-to-memory for the same
  * vars. After the shared-adapter refactor this is the same code path; the test still fails if
  * scaffold reintroduces a local copy or skips writing a generated file.
@@ -541,7 +567,7 @@ test('scaffold agent files match @blit386/kit/adapters memory output', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-adapter-parity-'));
 
     try {
-        const root = kitRoot();
+        const root = resolveKitRoot(import.meta.url);
 
         for (const agent of ['claude', 'cursor']) {
             const project = join(work, `${agent}-parity`);
