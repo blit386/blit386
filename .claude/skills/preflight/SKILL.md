@@ -32,8 +32,10 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 one push – most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
 `preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`) or via
 `/preflight root` when checking a package in isolation. The root-level pass only runs when `PREFLIGHT_STATUS` is zero –
-a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`, and `agents:check` entirely, so a
-push or CI run only exercises them once the per-package checks are clean.
+a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`, `agents:check`,
+`check-dash-typography`, and `bump:check` entirely, so a push only exercises them once the per-package checks are clean.
+That gating is local to pre-push: in CI, `quality-root` declares only `needs: changes`, so it runs regardless of whether
+the per-package quality jobs pass.
 
 ## Steps
 
@@ -115,7 +117,9 @@ that provided it – `format`, `lint`, `spellcheck`, `knip`, `docs:links`, `agen
 tracked as follow-up tooling work, not part of this skill). Until that lands, run the checks that do exist for each
 package, plus the root-wide ones that already cover both:
 
-- Root-wide, covers both packages: `pnpm run format:check`, `pnpm run docs:links`, `pnpm run agents:check`
+- Root-wide, covers both packages: `pnpm run format:check`, `pnpm run docs:links`, `pnpm run agents:check`,
+  `pnpm run check-dash-typography`, `pnpm run bump:check` (lockstep versions and the derived `engineRange` /
+  `BLIT386_RANGE` pair)
 - Per package: `pnpm --filter @blit386/kit run typecheck` / `pnpm --filter @blit386/kit run test`, and
   `pnpm --filter create-blit386 run typecheck` / `pnpm --filter create-blit386 run test`
 - `pnpm run build` inside each package directory when `dist/` is missing or stale (the test suites shell out to built
@@ -135,21 +139,25 @@ No combined `preflight` script exists at root; run what does:
   `.mcp.json` (declared server, URL parity with the website discovery card, `.gitignore` negation)
 - `pnpm run check-dash-typography` – en-dash-only rule (root CLAUDE.md, "Shared conventions") over every tracked
   `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.md`/`.mdx` file
+- `pnpm run bump:check` – lockstep drift: re-derives every version and caret range from `packages/blit386/package.json`
+  and fails when a checked-in value differs
 
 `.husky/pre-push` dispatches each changed package's own `preflight` script
-(`pnpm --filter "...[ref]" --if-present run preflight`), then – only if that succeeds – runs these four root-level
+(`pnpm --filter "...[ref]" --if-present run preflight`), then – only if that succeeds – runs these five root-level
 checks unconditionally on every push, since pnpm's per-package `--filter` dispatch only looks at files under
-`packages/*` and would otherwise miss a root-only change entirely. `check-dash-typography` also runs in `quality-root`
-in `.github/workflows/ci.yml` (BT-461), so a repo-wide dash-typography regression fails both the push and CI, on top of
-the existing per-commit gates below.
+`packages/*` and would otherwise miss a root-only change entirely. `check-dash-typography` (BT-461) and `bump:check`
+(BT-317) also run in `quality-root` in `.github/workflows/ci.yml`, so a repo-wide dash-typography regression or a
+lockstep drift fails both the push and CI, on top of the existing per-commit gates below.
 
-The following are not part of that pre-push gate – run them directly when auditing:
+The following are not part of that pre-push gate – run them directly when auditing. All four do run in CI, so a
+regression they would catch surfaces on the PR rather than at push time:
 
-- `pnpm run test:agent-config` – unit tests for the `agents:check` script itself
-- `pnpm run test:dash-typography` – unit tests for `check-dash-typography.mjs`
+- `pnpm run test:agent-config` – unit tests for the `agents:check` script itself. Runs in `quality-root` in
+  `.github/workflows/ci.yml`, which is gated only on the run not being a label event
+- `pnpm run test:dash-typography` – unit tests for `check-dash-typography.mjs`. Also runs in `quality-root`, alongside
+  the repo-wide `check-dash-typography` run described above
 - `pnpm run test:bump-lockstep` – unit tests for `scripts/bump-lockstep.mjs`, the lockstep version-bump script covering
-  `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`)
-- `pnpm run test:shell-safety` – unit tests for `.claude/hooks/shell-safety.sh`. Unlike its neighbors above, this one
-  does run in CI: `quality-root` in `.github/workflows/ci.yml` runs it unconditionally, since `.claude/**` is in the
-  `shared` path filter (BT-439). `test:agent-config` and `test:dash-typography` are not yet wired into any CI job –
-  tracked separately in BT-445
+  `blit386`, `@blit386/kit`, and `create-blit386` (see `/release`). Runs in `build-test-scaffolder`, the one CI job that
+  exercises it – and that job is path-filtered, so it only fires when the `scaffolder` or `shared` filter matches
+- `pnpm run test:shell-safety` – unit tests for `.claude/hooks/shell-safety.sh`. Runs in `quality-root`, and
+  `.claude/**` is in the `shared` path filter (BT-439)

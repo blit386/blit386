@@ -25,16 +25,18 @@ TypeScript strict, built with tsup, Biome for lint and format (no ESLint here), 
    (`.claude/hooks/session-start.sh`) that installs dependencies and runs `blit doctor` when a fresh remote/web session
    starts. Cursor gets `.cursor/rules/*.mdc`, `.cursor/commands/<name>.md` (the same skills with frontmatter stripped),
    `.cursor/hooks.json`, and `.cursor/hooks/shell-safety.sh` – Cursor has no SessionStart-equivalent event, so it does
-   not get the bootstrap hook. `content/agents.config.json` declares which file _categories_ each adapter emits (rules,
-   skills, settings, hooks, ...); within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given
-   project is decided by `content/hooks.manifest.json` – only a script one of that adapter's own hook entries actually
-   references gets copied (all under `packages/kit/`).
+   not get the bootstrap hook. Every path an adapter emits is built from `packages/kit/src/ownership.ts`, the single
+   source both packages classify against; `content/agents.config.json` is a descriptive summary of the same set, read by
+   no code. Within `.claude/hooks/` / `.cursor/hooks/`, which specific scripts land in a given project is decided by
+   `content/hooks.manifest.json` – only a script one of that adapter's own hook entries actually references gets copied
+   (all under `packages/kit/`).
 5. Kit content (`AGENTS.md` + `docs/`) is copied **verbatim** – `copyFileSync` / `cpSync`, so `{{placeholder}}` tokens
    are NOT substituted there. Only templates, rules, and skills pass through `render()`. Prose in `AGENTS.md` and
    `docs/` must therefore spell out both language cases ("`src/game.js` (or `src/game.ts`)"), never `{{gameFile}}`.
 6. `scaffold()` writes the ownership manifest `.blit/manifest.json` (path, class, kit version, sha256, plus the
    scaffold-time template `vars`) and pristine `.blit/base/` copies, so `blit agents sync` can update kit files later
-   without clobbering user edits.
+   without clobbering user edits. The `class` values come from `classifyFile()` in `@blit386/kit/adapters` – the same
+   function `blit agents sync` / `add` use, not a local table.
 7. Optional git init, dependency install, next-steps output.
 
 `blit agents sync` / `blit agents add` (the `blit` CLI, shipped by `packages/kit`) reuse the same generators in memory
@@ -49,8 +51,10 @@ are in [`.claude/rules/template-structure.md`](.claude/rules/template-structure.
 4. Use the `BT` namespace in generated game code, never `BTAPI`
 5. Named exports only in this package's own TypeScript; no default exports
 6. Literals that describe another package are derived or documented, never copied – `BLIT386_RANGE` in `src/scaffold.ts`
-   is written by `scripts/bump-lockstep.mjs` (repo root) alongside `packages/kit`'s `blit386.engineRange`, and
-   `PUBLISHING.md` records the coupling. Shared policy: root `.claude/rules/named-constants.md`
+   is written by `scripts/bump-lockstep.mjs` (repo root) alongside `packages/kit`'s `blit386.engineRange`, verified by
+   `pnpm run bump:check`, and `PUBLISHING.md` records the coupling. File classes and the generated-project paths
+   (`CLAUDE.md`, `.claude/`, `.cursor/`, `docs/`) are not re-typed here at all – they are imported from
+   `@blit386/kit/adapters`. Shared policy: root `.claude/rules/named-constants.md`
 
 ## Where to find information
 
@@ -60,7 +64,9 @@ are in [`.claude/rules/template-structure.md`](.claude/rules/template-structure.
 | Template layout and rename rules | `.claude/rules/template-structure.md` |
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |
 | What does the `blit` CLI do, and how are agent files generated? | `packages/kit/CLAUDE.md` |
+| Which generated files the kit owns (sync classes) | `packages/kit/src/ownership.ts`, imported via `@blit386/kit/adapters` |
 | Publishing / release | `PUBLISHING.md`, `/release`, `pnpm run bump -- 1.5.0` from the repo root (replace `1.5.0` with the target version) |
 | Hot-reload delivery decision | `CREATE_BLIT386_DESIGN.md` (Hot reload section) |
 | Maintainer agent-config drift check | `scripts/check-agent-config.mjs` (root) |
+| Lockstep version / range drift check | `pnpm run bump:check` (root `scripts/bump-lockstep.mjs --check`) |
 | Contributing / DCO | root `CONTRIBUTING.md` |

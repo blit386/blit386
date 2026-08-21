@@ -23,6 +23,7 @@
     "test:shell-safety": "node --test scripts/shell-safety.test.mjs",
     "test:spellcheck-coverage": "node --test scripts/spellcheck-coverage.test.mjs",
     "bump": "node scripts/bump-lockstep.mjs",
+    "bump:check": "node scripts/bump-lockstep.mjs --check",
     "test:bump-lockstep": "node --test scripts/bump-lockstep.test.mjs",
     "security:audit": "pnpm audit --audit-level=moderate",
     "security:audit:prod": "pnpm audit --prod --audit-level=moderate"

@@ -16,7 +16,13 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { scaffold } from '../dist/scaffold.js';
-import { generateClaudeAdapter, generateCursorAdapter, kitRoot } from '@blit386/kit/adapters';
+import {
+    classifyFile,
+    generateClaudeAdapter,
+    generateCursorAdapter,
+    isKitManaged,
+    kitRoot,
+} from '@blit386/kit/adapters';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(here, '..');
@@ -537,6 +543,93 @@ test('scaffold agent files match @blit386/kit/adapters memory output', () => {
                     `scaffold ${file.path} must match kit adapter memory output`,
                 );
             }
+        }
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+/** Scaffold one project offline with the given agent and return its path plus parsed manifest. */
+function scaffoldWithManifest(work, name, agent) {
+    const project = join(work, name);
+
+    scaffold({
+        targetDir: project,
+        projectName: name,
+        pmInstall: 'pnpm install',
+        pmRunDev: 'pnpm run dev',
+        pmRunBuild: 'pnpm run build',
+        pmRunFormat: 'pnpm run format',
+        pmRunLint: 'pnpm run lint',
+        agent,
+    });
+
+    return { project, manifest: JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8')) };
+}
+
+/**
+ * Single-source guard: the classes the scaffolder stamps into `.blit/manifest.json` must be exactly
+ * what `@blit386/kit`'s shared `classifyFile` returns. These are the same code path now; the test
+ * fails if the scaffolder reintroduces a local copy and the two drift.
+ */
+test('manifest classes match @blit386/kit classifyFile for every generated file', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-classify-'));
+
+    try {
+        for (const agent of ['claude', 'cursor']) {
+            const { manifest } = scaffoldWithManifest(work, `${agent}-classify`, agent);
+
+            for (const entry of manifest.files) {
+                assert.equal(entry.class, classifyFile(entry.path), `${entry.path} class drifted from classifyFile`);
+            }
+
+            // A classifier that returned one constant for everything would pass the check above.
+            const classes = new Set(manifest.files.map((entry) => entry.class));
+            for (const expected of ['kit-owned', 'shared', 'user-owned']) {
+                assert.ok(classes.has(expected), `expected at least one ${expected} file in the ${agent} manifest`);
+            }
+        }
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+/** The pristine `.blit/base/` copy rule is driven by isKitManaged; pin it end-to-end. */
+test('every kit-managed file has a pristine .blit/base copy and no user-owned file does', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-base-copies-'));
+
+    try {
+        const { project, manifest } = scaffoldWithManifest(work, 'base-copies', 'claude');
+
+        for (const entry of manifest.files) {
+            assert.equal(
+                existsSync(join(project, '.blit', 'base', entry.path)),
+                isKitManaged(entry.class),
+                `${entry.path} (${entry.class}) has the wrong .blit/base presence`,
+            );
+        }
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+/** Covers the kit's second classifyFile call site (`blit agents add`) through the real CLI. */
+test('blit agents add cursor records classes from the shared classifyFile', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-add-classify-'));
+
+    try {
+        const { project } = scaffoldWithManifest(work, 'add-classify', 'claude');
+
+        const added = runBlit(project, ['agents', 'add', 'cursor']);
+        assert.equal(added.exitCode, 0, `blit agents add cursor failed: ${added.output}`);
+
+        const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+        const cursorEntries = manifest.files.filter((entry) => entry.path.startsWith('.cursor/'));
+
+        assert.ok(cursorEntries.length > 0, 'blit agents add cursor should have tracked .cursor/ files');
+
+        for (const entry of cursorEntries) {
+            assert.equal(entry.class, classifyFile(entry.path), `${entry.path} class drifted from classifyFile`);
         }
     } finally {
         rmSync(work, { recursive: true, force: true });
