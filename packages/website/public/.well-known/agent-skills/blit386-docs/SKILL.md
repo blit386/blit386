@@ -28,7 +28,7 @@ Main documentation sections:
 
 - `/docs` – Documentation hub (start here)
 - `/docs/getting-started` – Installation and first steps
-- `/docs/api/` – Full API reference for the `BT` namespace
+- `/docs/api/core` – Full API reference for the `BT` namespace
 
 Use the MCP server's `search_docs` tool to locate specific content:
 
