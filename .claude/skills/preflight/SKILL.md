@@ -32,8 +32,9 @@ Where `<package>` is one of `blit386`, `demos`, `website`, `kit`, `create-blit38
 one push – most of the "why does push take so long" feeling. They were removed from `packages/{blit386,demos,website}`'s
 `preflight` scripts for that reason; run them explicitly (`pnpm run docs:links`, `pnpm run agents:check`) or via
 `/preflight root` when checking a package in isolation. The root-level pass only runs when `PREFLIGHT_STATUS` is zero –
-a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`, and `agents:check` entirely, so a
-push or CI run only exercises them once the per-package checks are clean.
+a failed package preflight makes `.husky/pre-push` skip `format:check`, `docs:links`, `agents:check`,
+`check-dash-typography`, and `bump:check` entirely, so a push or CI run only exercises them once the per-package checks
+are clean.
 
 ## Steps
 
@@ -115,7 +116,8 @@ that provided it – `format`, `lint`, `spellcheck`, `knip`, `docs:links`, `agen
 tracked as follow-up tooling work, not part of this skill). Until that lands, run the checks that do exist for each
 package, plus the root-wide ones that already cover both:
 
-- Root-wide, covers both packages: `pnpm run format:check`, `pnpm run docs:links`, `pnpm run agents:check`
+- Root-wide, covers both packages: `pnpm run format:check`, `pnpm run docs:links`, `pnpm run agents:check`,
+  `pnpm run bump:check` (lockstep versions and the derived `engineRange` / `BLIT386_RANGE` pair)
 - Per package: `pnpm --filter @blit386/kit run typecheck` / `pnpm --filter @blit386/kit run test`, and
   `pnpm --filter create-blit386 run typecheck` / `pnpm --filter create-blit386 run test`
 - `pnpm run build` inside each package directory when `dist/` is missing or stale (the test suites shell out to built
@@ -134,13 +136,15 @@ No combined `preflight` script exists at root; run what does:
 - `pnpm run agents:check` – skills symlinks, AGENTS.md <-> CLAUDE.md pointers, Copilot instructions, Zed settings
 - `pnpm run check-dash-typography` – en-dash-only rule (root CLAUDE.md, "Shared conventions") over every tracked
   `.ts`/`.tsx`/`.js`/`.cjs`/`.mjs`/`.md`/`.mdx` file
+- `pnpm run bump:check` – lockstep drift: re-derives every version and caret range from `packages/blit386/package.json`
+  and fails when a checked-in value differs
 
 `.husky/pre-push` dispatches each changed package's own `preflight` script
-(`pnpm --filter "...[ref]" --if-present run preflight`), then – only if that succeeds – runs these four root-level
+(`pnpm --filter "...[ref]" --if-present run preflight`), then – only if that succeeds – runs these five root-level
 checks unconditionally on every push, since pnpm's per-package `--filter` dispatch only looks at files under
-`packages/*` and would otherwise miss a root-only change entirely. `check-dash-typography` also runs in `quality-root`
-in `.github/workflows/ci.yml` (BT-461), so a repo-wide dash-typography regression fails both the push and CI, on top of
-the existing per-commit gates below.
+`packages/*` and would otherwise miss a root-only change entirely. `check-dash-typography` (BT-461) and `bump:check`
+(BT-317) also run in `quality-root` in `.github/workflows/ci.yml`, so a repo-wide dash-typography regression or a
+lockstep drift fails both the push and CI, on top of the existing per-commit gates below.
 
 The following are not part of that pre-push gate – run them directly when auditing:
 

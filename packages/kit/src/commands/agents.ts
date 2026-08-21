@@ -38,10 +38,18 @@ import {
 } from '../adapters';
 import { detectPackageManager, findProjectRoot, type PackageManager } from '../env';
 import { ui } from '../messages';
+import { classifyFile, type FileClass, hasAgentFiles, isKitManaged } from '../ownership';
 
-type FileClass = 'kit-owned' | 'shared' | 'user-owned';
-
-/** One entry as written by the scaffolder into `.blit/manifest.json`. */
+/**
+ * One entry as read back from `.blit/manifest.json`.
+ *
+ * The reader half of a deliberate pair: `ManifestEntry` / `BlitManifest` in
+ * `packages/create-blit386/src/scaffold.ts` are the writer half, and require the fields optional
+ * here. This side reads manifests written by any released scaffolder, so it must tolerate older
+ * ones that predate `kitVersion`, `createdAt`, and `vars`; the writer must never stop emitting
+ * them. Only `class` is shared – it is `FileClass` from `../ownership` on both sides, so a typo is
+ * a compile error. Merging the two shapes needs a manifest schema version first.
+ */
 interface ManifestEntry {
     /** File path relative to the project root. */
     path: string;
@@ -116,7 +124,7 @@ export function checkSyncDrift(root: string, out: (line: string) => void): numbe
         return 1;
     }
 
-    const tracked = manifest.files.filter((e) => e.class === 'kit-owned' || e.class === 'shared');
+    const tracked = manifest.files.filter((e) => isKitManaged(e.class));
     const missing: string[] = [];
     const modified: string[] = [];
     let unchanged = 0;
@@ -177,34 +185,6 @@ function isSafeRelPath(relPath: string, root: string): boolean {
     return abs === root || abs.startsWith(root + sep);
 }
 
-/**
- * Classify a file by its project-relative path. Mirrors the scaffolder's `classifyFile` so newly
- * shipped kit files land in the same ownership class they would have at scaffold time.
- */
-function classifyFile(relPath: string): FileClass {
-    const normalized = relPath.replace(/\\/g, '/');
-
-    if (normalized === 'AGENTS.md' || normalized === 'CLAUDE.md') {
-        return 'shared';
-    }
-
-    if (
-        normalized.startsWith('docs/') ||
-        normalized.startsWith('.cursor/rules/') ||
-        normalized.startsWith('.cursor/hooks/') ||
-        normalized.startsWith('.cursor/commands/') ||
-        normalized === '.cursor/hooks.json' ||
-        normalized.startsWith('.claude/skills/') ||
-        normalized.startsWith('.claude/rules/') ||
-        normalized.startsWith('.claude/hooks/') ||
-        normalized === '.claude/settings.json'
-    ) {
-        return 'kit-owned';
-    }
-
-    return 'user-owned';
-}
-
 /** Default template vars when an older manifest did not record them (npm commands, project name). */
 function fallbackVars(root: string): TemplateVars {
     const pm: PackageManager = detectPackageManager(root);
@@ -254,8 +234,8 @@ function regenerate(manifest: BlitManifest, root: string): Map<string, string> {
         map.set(doc.path, doc.content);
     }
 
-    const hasClaude = manifest.files.some((f) => f.path === 'CLAUDE.md' || f.path.startsWith('.claude/'));
-    const hasCursor = manifest.files.some((f) => f.path.startsWith('.cursor/'));
+    const hasClaude = hasAgentFiles(manifest.files, 'claude');
+    const hasCursor = hasAgentFiles(manifest.files, 'cursor');
 
     if (hasClaude) {
         for (const file of generateClaudeAdapter(kr, vars)) {
@@ -622,15 +602,6 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
     return { ok: true, manifest };
 }
 
-/** Does the manifest already track files for this assistant? */
-function isAgentPresent(manifest: BlitManifest, agent: AddableAgent): boolean {
-    if (agent === 'claude') {
-        return manifest.files.some((f) => f.path === 'CLAUDE.md' || f.path.startsWith('.claude/'));
-    }
-
-    return manifest.files.some((f) => f.path.startsWith('.cursor/'));
-}
-
 /**
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
@@ -647,7 +618,7 @@ function runAddAgent(root: string, agent: AddableAgent, out: (line: string) => v
     const manifest = result.manifest;
     const label = AGENT_LABEL[agent];
 
-    if (isAgentPresent(manifest, agent)) {
+    if (hasAgentFiles(manifest.files, agent)) {
         out(ui.info(`${label} is already set up in this project.`));
         out(ui.info('Run `npx blit agents sync` to update its files from the latest kit.'));
         return 0;

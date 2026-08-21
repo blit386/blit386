@@ -40,8 +40,9 @@ post-process effects.
 
 Nothing syncs this package from `packages/blit386` automatically. The kit docs and shipped skills are hand-authored
 beginner prose, so they go stale silently when the engine changes. Shipping an engine feature is the trigger to come
-here – review in the same pass, not later. Run `/kit-audit` to walk the checklist. Also check `BLIT386_RANGE` in
-`packages/create-blit386/src/scaffold.ts` when new games should pin a newer engine version.
+here – review in the same pass, not later. Run `/kit-audit` to walk the checklist. `BLIT386_RANGE` in
+`packages/create-blit386/src/scaffold.ts` needs no manual check – `pnpm run bump:check` (repo root) verifies it against
+`blit386.engineRange` on every push and in CI.
 
 | Kit file | Review when |
 | --- | --- |
@@ -68,7 +69,7 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude-only; Cursor has no SessionStart-equivalent event) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
-| `content/agents.config.json` | Which files each adapter (claude / cursor) emits |
+| `content/agents.config.json` | Descriptive only – no code reads it. The executable source for what each adapter emits is `src/ownership.ts` (paths + classes) plus `src/adapters.ts`; review this file when those change |
 
 While auditing, confirm every skill directory appears in the skills table in `README.md` – that is the only human-facing
 list of what ships, and it has no automated guard.
@@ -80,21 +81,24 @@ list of what ships, and it has no automated guard.
 3. Use the `BT` namespace in generated game code, never `BTAPI`
 4. Named exports only in this package's own TypeScript; no default exports
 5. `blit386.engineRange` in `package.json` is derived, not hand-edited – `scripts/bump-lockstep.mjs` (repo root) writes
-   it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`. Any other literal this package uses to
-   describe the engine or the scaffolder follows the same derive-or-document discipline: root
-   `.claude/rules/named-constants.md`
+   it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`, and `pnpm run bump:check` fails the
+   build when either drifts. Any other literal this package uses to describe the engine or the scaffolder follows the
+   same derive-or-document discipline: file classes and generated-project paths live once in `src/ownership.ts`, which
+   `create-blit386` imports through `@blit386/kit/adapters`. Root `.claude/rules/named-constants.md`
 
 ## Where to find information
 
 | Question | Where to look |
 | --- | --- |
 | What does the `blit` CLI do? | `src/cli.ts`, `README.md` |
-| How are agent files generated? | `src/adapters.ts`; the scaffolder writes them to disk |
+| How are agent files generated? | `src/adapters.ts`; every path it emits is built from `src/ownership.ts`, and the scaffolder writes them to disk |
 | What do `blit agents sync` / `add` do? | `src/commands/agents.ts` (drift `--check` + write path, `runAddAgent`) |
 | How do API migrations / codemods work? | `src/migrations/` (registry + codemod engine), `src/commands/migrate.ts` |
 | Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `src/commands/agents.ts` |
+| Which files the kit owns, and the paths it writes into a game | `src/ownership.ts` – shared with `create-blit386` via `@blit386/kit/adapters` |
 | Engine API names for generated games | `packages/blit386/CLAUDE.md`, `packages/blit386/docs/api-core.md` |
 | What does the scaffolder generate? | `packages/create-blit386/CLAUDE.md` |
 | Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release`, `pnpm run bump -- 1.5.0` from the repo root (replace `1.5.0` with the target version) |
 | Maintainer agent-config drift check | `scripts/check-agent-config.mjs` (root) |
+| Lockstep version / range drift check | `pnpm run bump:check` (root `scripts/bump-lockstep.mjs --check`) |
 | Contributing / DCO | root `CONTRIBUTING.md` |
