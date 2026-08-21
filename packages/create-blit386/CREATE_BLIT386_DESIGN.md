@@ -489,9 +489,10 @@ still accepts manifests written by any released scaffolder. Deriving rather than
 added to `BlitManifest` becomes required of every writer and visible to the reader in one edit. The widened shape is
 also what sync _writes_, not merely what it reads, and the two widened root fields differ on the way out. `createdAt` is
 copied across only when the manifest already had it, so an old manifest never gains a fabricated creation timestamp.
-`vars` is copied when present and _backfilled_ when absent – both write paths resolve it from `fallbackVars` and persist
-it – so an old manifest does gain `vars` on its first sync, by design: the package manager is then detected once instead
-of on every run.
+`vars` is copied when present and _backfilled_ when absent: sync resolves it from `fallbackVars` and persists it, so an
+old manifest gains `vars` on its first sync, by design – the package manager is then detected once instead of on every
+run. `add` backfills identically, but only where it completes; a generated file colliding with an untracked user file
+aborts it before the manifest is written at all.
 
 No schema version, deliberately (Round 28). A `schemaVersion` field was specified and rejected on inspection. It is
 absent from every manifest already in the wild, so the reader would carry the widened branch indefinitely and gain a

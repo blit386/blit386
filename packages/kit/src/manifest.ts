@@ -84,9 +84,11 @@ export type ReadManifestEntry = LegacyOptional<ManifestEntry, 'kitVersion'>;
  * This is also the shape `sync` and `add` write, not just read, and the two widened root fields are
  * treated differently on the way out. `createdAt` is copied across only when the manifest they read
  * had it, so a legacy manifest never gains a fabricated creation timestamp. `vars` is copied across
- * when present but *backfilled* when absent: both commands resolve it from `fallbackVars` and write
- * it back, so a legacy manifest does gain `vars` on its first sync – deliberately, so the package
- * manager is detected once rather than re-detected on every run.
+ * when present but *backfilled* when absent: `sync` resolves it from `fallbackVars` and writes it
+ * back, so a legacy manifest gains `vars` on its first sync – deliberately, so the package manager
+ * is detected once rather than re-detected on every run. `add` backfills the same way, but only on
+ * the path where it completes: a generated file colliding with an untracked user file aborts it
+ * before the manifest is touched at all.
  *
  * Deliberately not a schema version. A version field is absent from every manifest already in the
  * wild, so the reader would keep this widened branch indefinitely and gain a second one beside it;
