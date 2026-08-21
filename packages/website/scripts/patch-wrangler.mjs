@@ -29,21 +29,31 @@ const REPLACEMENT = "createRequire(import.meta.url ?? 'file:///worker.js')";
  * HTML's noindex meta, banner, and canonical URLs were correct regardless – those are
  * baked in once during the Node build, not re-evaluated in the Worker).
  *
+ * `isCspReportOnly` sets `BLIT386_CSP_REPORT_ONLY: '1'`, read the same request-time way
+ * by `src/csp-nonce.ts`. It downgrades the nonce-based CSP to
+ * `Content-Security-Policy-Report-Only` for a deployment, so a policy change can be
+ * measured against real traffic on next.blit386.dev before it is enforced on production.
+ * Never set it for the production build.
+ *
  * `observability.enabled` turns on Workers Logs. blit386.dev is a production site with a
  * live JSON-RPC endpoint (`/mcp`) and a request-time markdown-negotiation path in front of
  * every doc URL; without this there is no way to see a runtime error in either without
  * reproducing it locally.
- * @param {{ isNextChannel?: boolean }} [options]
+ * @param {{ isNextChannel?: boolean, isCspReportOnly?: boolean }} [options]
  */
 export const patchWranglerConfig = (config, options = {}) => {
-    const { isNextChannel = false } = options;
+    const { isNextChannel = false, isCspReportOnly = false } = options;
     const existingFlags = Array.isArray(config.compatibility_flags) ? config.compatibility_flags : [];
     const flags = existingFlags.includes(REQUIRED_FLAG) ? existingFlags : [...existingFlags, REQUIRED_FLAG];
     const assets =
         config.assets && config.assets.run_worker_first !== true
             ? { ...config.assets, run_worker_first: true }
             : config.assets;
-    const vars = isNextChannel ? { ...config.vars, BLIT386_CHANNEL: 'next' } : config.vars;
+    const extraVars = {
+        ...(isNextChannel ? { BLIT386_CHANNEL: 'next' } : {}),
+        ...(isCspReportOnly ? { BLIT386_CSP_REPORT_ONLY: '1' } : {}),
+    };
+    const vars = Object.keys(extraVars).length > 0 ? { ...config.vars, ...extraVars } : config.vars;
     const observability = { ...config.observability, enabled: true };
     return {
         ...config,
@@ -63,7 +73,11 @@ export const patchRequireMetaUrl = (content) => content.replace(PATTERN, REPLACE
 
 const main = () => {
     const isNextChannel = process.env.BLIT386_CHANNEL === 'next';
-    const patchedConfig = patchWranglerConfig(JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8')), { isNextChannel });
+    const isCspReportOnly = process.env.BLIT386_CSP_REPORT_ONLY === '1';
+    const patchedConfig = patchWranglerConfig(JSON.parse(readFileSync(WRANGLER_CONFIG, 'utf8')), {
+        isNextChannel,
+        isCspReportOnly,
+    });
     writeFileSync(WRANGLER_CONFIG, `${JSON.stringify(patchedConfig, null, 2)}\n`);
 
     // Scan the whole server bundle recursively, not just dist/server/assets: the

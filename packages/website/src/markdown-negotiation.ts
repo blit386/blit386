@@ -1,5 +1,6 @@
 import type { ConfigContext, ServerPlugin } from 'fumapress';
 import { isMarkdownPreferred } from 'fumadocs-core/negotiation';
+import { isHtmlAssetPath } from './csp';
 
 // Cloudflare Static Assets binding (declared as `ASSETS` in dist/server/wrangler.json).
 // Waku forwards the Worker `env` into the Hono app, so it is reachable via `c.env`.
@@ -12,6 +13,27 @@ interface AssetsBinding {
 // is acceptable and avoids shipping a tokenizer into the Worker.
 function estimateTokens(text: string): number {
     return Math.ceil(text.length / 4);
+}
+
+/**
+ * The request to forward to the ASSETS binding.
+ *
+ * Identical to the incoming one except for HTML, where the conditional headers are dropped so the
+ * binding cannot answer `304`. `csp-nonce.ts` stamps a fresh per-request nonce into every HTML body,
+ * and a `304` would hand the client that nonce's `Content-Security-Policy` to merge into a *stored*
+ * body carrying a different one – blocking every script on the page. Only HTML pays for this: hashed
+ * JS, CSS, and fonts keep their conditionals and their `304`s.
+ */
+function assetRequest(request: Request, pathname: string): Request {
+    if (!isHtmlAssetPath(pathname)) {
+        return request;
+    }
+
+    const headers = new Headers(request.headers);
+    headers.delete('if-none-match');
+    headers.delete('if-modified-since');
+
+    return new Request(request, { headers });
 }
 
 /**
@@ -73,7 +95,7 @@ export function markdownNegotiationPlugin<C extends ConfigContext = ConfigContex
                     // Otherwise emulate assets-first: serve the pre-built static asset.
                     const assets = (c.env as { ASSETS?: AssetsBinding } | undefined)?.ASSETS;
                     if (assets) {
-                        const response = await assets.fetch(c.req.raw);
+                        const response = await assets.fetch(assetRequest(c.req.raw, c.req.path));
                         if (response.status !== 404) {
                             return response;
                         }

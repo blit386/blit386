@@ -46,12 +46,63 @@ for exploration.
 | Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
 | Cloudflare security headers | `public/_headers` |
+| The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` – see Content-Security-Policy |
 
-Four Fumapress `ServerPlugin`s are local to this package rather than upstream: `channelHeadersPlugin`
-(`src/channel-headers.ts`), `markdownNegotiationPlugin` (`src/markdown-negotiation.ts`), `mcpServerPlugin`
-(`src/mcp-server.ts`), and `feedPlugin` (`src/feed.ts`) – plus the `blog-post-date` helper (`src/blog-post-date.ts`,
-which exists because the framework's adapter cannot read a post's `date` frontmatter). The rest of the chain in
-`press.config.tsx` is stock: flexsearch, blog, llms, sitemap, takumi OG images, and link validation.
+Five Fumapress `ServerPlugin`s are local to this package rather than upstream: `cspNoncePlugin` (`src/csp-nonce.ts`),
+`channelHeadersPlugin` (`src/channel-headers.ts`), `markdownNegotiationPlugin` (`src/markdown-negotiation.ts`),
+`mcpServerPlugin` (`src/mcp-server.ts`), and `feedPlugin` (`src/feed.ts`) – plus the `blog-post-date` helper
+(`src/blog-post-date.ts`, which exists because the framework's adapter cannot read a post's `date` frontmatter). The
+rest of the chain in `press.config.tsx` is stock: flexsearch, blog, llms, sitemap, takumi OG images, and link
+validation.
+
+## Content-Security-Policy
+
+`script-src` carries no `'unsafe-inline'` (BT-191). Inline scripts are allowed by a per-request nonce instead, which
+takes three pieces:
+
+| Piece | Role |
+| --- | --- |
+| `src/csp.ts` | The policy, defined once. `BASE_CSP` is the nonce-free form; `buildCsp(nonce)` adds the nonce to `script-src` |
+| `public/_headers` | Serves `BASE_CSP` on every response Cloudflare returns from the ASSETS binding. Fail-closed default |
+| `src/csp-nonce.ts` | Stamps a fresh nonce onto every `<script>` in a prerendered HTML response and replaces the header with `buildCsp(nonce)` |
+
+A nonce rather than hashes because the site renders statically (`mode: 'static'`): Waku's React bootstrap script and the
+RSC flight payload `rsc-html-stream` injects are both per-page, so no fixed hash list covers them, and Waku's
+`unstable_setNonce` only applies to request-time SSR. That leaves the Worker as the only place a nonce can be applied,
+via `HTMLRewriter`.
+
+Four things about this are load-bearing and easy to undo by accident:
+
+- **`public/_headers` duplicates `BASE_CSP` by hand** – a static Cloudflare config cannot import. `src/csp.test.ts`
+  compares the two character for character and fails if either is edited alone. Change the policy in `src/csp.ts` first,
+  then copy the new line across.
+- **`cspNoncePlugin` wraps the server entry's `fetch`, not a middleware.** A Fumapress `ServerPlugin` middleware never
+  sees the response it would need to rewrite: Fumapress's own composer (`fumapress/dist/router/index.js`,
+  `pluginsMiddleware`) keeps a downstream handler's returned `Response` in a local and returns it at the end, never
+  assigning `c.res`. After `await next()`, `c.res` is still Hono's placeholder, and only its _headers_ reach the real
+  response – merged in by Hono's `set res`. That is enough for `channelHeadersPlugin`'s `x-robots-tag`, and not enough
+  to stamp a body.
+- **The wrapper strips `etag` and `last-modified` from HTML, and `markdownNegotiationPlugin` strips `if-none-match` /
+  `if-modified-since` on the way in.** Both halves are needed. A `304` for HTML is unanswerable once nonces exist: the
+  client merges the `304`'s headers into its _stored_ body, so a fresh nonce lands on scripts carrying an older one and
+  the whole page is blocked. Dropping the validators stops new copies from being revalidatable; dropping the
+  conditionals stops copies cached before this shipped from getting a `304` today. `isHtmlAssetPath` in `src/csp.ts`
+  decides which paths pay for it – hashed JS, CSS, and fonts keep their `304`s.
+- **The rewriting needs a real parser.** `<script` occurs inside the RSC flight payload as ordinary JSON string data, so
+  a string replace corrupts pages. `HTMLRewriter` is a correctness requirement, not a convenience.
+
+Rolling out a policy change: build with `BLIT386_CSP_REPORT_ONLY=1` (picked up by `scripts/patch-wrangler.mjs` as a
+Worker var, the same mechanism as `BLIT386_CHANNEL`) and deploy to the `next` channel. That serves the new policy as
+`Content-Security-Policy-Report-Only` and enforces nothing, so violations show up in the console without a blank page.
+Never set it for production. The var is not wired into `.github/workflows/deploy.yml`, so this is a local build plus
+`pnpm run deploy` today.
+
+Verify a deployment with `curl -s -D - -o /dev/null <url> | grep -i content-security-policy`: the value must contain a
+`nonce-` term, and a second request must return a different one. It has to be a GET – `curl -I` sends `HEAD`, which has
+no body to stamp and correctly gets the nonce-free `BASE_CSP`.
+
+`style-src` still has `'unsafe-inline'` – Fumadocs and Tailwind both emit inline styles, and removing it was out of
+scope for BT-191.
 
 ## Test runners
 
