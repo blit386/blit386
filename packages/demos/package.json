@@ -33,10 +33,10 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "dev": "node scripts/ensure-engine-built.mjs && vite",
+    "dev": "node ../../scripts/ensure-engine-built.mjs && vite",
     "dev:watch": "pnpm --filter blit386 run build && concurrently -n \"lib,demos\" -c \"blue,green\" \"pnpm --filter blit386 run build:browser --watch\" \"pnpm run dev\"",
-    "build": "node scripts/ensure-engine-built.mjs && vite build",
-    "preview": "node scripts/ensure-engine-built.mjs && vite preview",
+    "build": "node ../../scripts/ensure-engine-built.mjs && vite build",
+    "preview": "node ../../scripts/ensure-engine-built.mjs && vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "biome format --write . && prettier --ignore-path ../../.prettierignore --write \"**/*.{md,mdx,yml,yaml}\"",
@@ -52,7 +52,7 @@
     "generate:audio-loops": "node scripts/generate-audio-loops.mjs",
     "test": "node --test \"scripts/__tests__/*.test.mjs\" \"plugins/__tests__/*.test.mjs\"",
     "preflight": "pnpm run format:check && pnpm run lint && pnpm run test && pnpm run spellcheck && pnpm run knip && pnpm run check:demo-registry && pnpm run check:demo-comment-links && pnpm run build",
-    "knip": "node scripts/ensure-engine-built.mjs && cd ../.. && knip --workspace packages/demos",
+    "knip": "node ../../scripts/ensure-engine-built.mjs && cd ../.. && knip --workspace packages/demos",
     "knip:fix": "knip --fix",
     "clean": "rm -rf dist node_modules/.vite",
     "prepare": "husky",

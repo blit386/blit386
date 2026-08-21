@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
-import { buildEngineBuildCommand, isEngineBuilt, resolveEngineViteEntry } from '../ensure-engine-built.mjs';
+import { buildEngineBuildCommand, isEngineBuilt, resolveEngineViteEntry } from './ensure-engine-built.mjs';
+
+const repositoryRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 
 describe('ensure-engine-built', () => {
     describe('resolveEngineViteEntry', () => {
@@ -36,7 +39,7 @@ describe('ensure-engine-built', () => {
 
             assert.equal(command, 'pnpm');
             assert.deepEqual(args, ['--filter', 'blit386', 'run', 'build']);
-            assert.ok(cwd.endsWith(join('packages', 'demos')));
+            assert.equal(cwd, repositoryRoot);
         });
     });
 });

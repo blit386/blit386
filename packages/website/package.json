@@ -33,7 +33,7 @@
   "scripts": {
     "dev": "waku dev",
     "dev:twoslash": "cross-env BLIT386_TWOSLASH=1 NODE_OPTIONS=--max-old-space-size=8192 waku dev",
-    "build": "fumadocs-mdx && cross-env CLOUDFLARE=1 waku build",
+    "build": "node ../../scripts/ensure-engine-built.mjs && fumadocs-mdx && cross-env CLOUDFLARE=1 waku build",
     "postbuild": "node scripts/patch-wrangler.mjs && node scripts/patch-html-title.mjs",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
@@ -48,7 +48,7 @@
     "encode:video": "node scripts/encode-video.mjs",
     "knip": "cd ../.. && knip --workspace packages/website",
     "knip:fix": "cd ../.. && knip --workspace packages/website --fix",
-    "test": "pnpm run test:scripts && pnpm run test:unit:coverage",
+    "test": "node ../../scripts/ensure-engine-built.mjs && pnpm run test:scripts && pnpm run test:unit:coverage",
     "test:scripts": "node --test scripts/__tests__/*.test.mjs",
     "test:scripts:watch": "node --test --watch scripts/__tests__/*.test.mjs",
     "test:unit": "vitest run",
