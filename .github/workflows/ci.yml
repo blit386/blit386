@@ -136,6 +136,18 @@ jobs:
         run: pnpm run test:agent-config
         background: true
 
+      - name: Run kit-docs-drift tests
+        run: pnpm run test:check-kit-docs-drift
+        background: true
+
+      - name: Run linear-client tests
+        run: pnpm run test:linear-client
+        background: true
+
+      - name: Run report-kit-docs-drift tests
+        run: pnpm run test:report-kit-docs-drift
+        background: true
+
       - name: Check dash typography
         run: pnpm run check-dash-typography
         background: true

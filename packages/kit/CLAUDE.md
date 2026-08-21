@@ -46,6 +46,12 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 `packages/create-blit386/src/scaffold.ts` needs no manual check – `pnpm run bump:check` (repo root) verifies it against
 `blit386.engineRange` on every push and in CI.
 
+`scripts/check-kit-docs-drift.mjs` (repo root) automates a coarse, page-level version of this table's triggers for
+`content/docs/*.md` only, comparing `packages/blit386/docs/_api-history.json` against `blit386.docsReviewedAt`
+(`package.json`) and, on `push` to `main` or weekly, filing/updating a Linear tracking issue
+(`.github/workflows/kit-docs-drift.yml`). It does not replace this table or `/kit-audit`, and does not cover
+`content/skills/*` or the other kit files below.
+
 | Kit file | Review when |
 | --- | --- |
 | `content/docs/getting-started.md` | Install/run flow, `npx blit run` / `doctor`, first-edit hot reload |
@@ -86,7 +92,9 @@ list of what ships, and it has no automated guard.
 4. Named exports only in this package's own TypeScript; no default exports
 5. `blit386.engineRange` in `package.json` is derived, not hand-edited – `scripts/bump-lockstep.mjs` (repo root) writes
    it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`, and `pnpm run bump:check` fails the
-   build when either drifts. Any other literal this package uses to describe the engine or the scaffolder follows the
+   build when either drifts. `blit386.docsReviewedAt` is the opposite case – hand-set only, bumped by whoever actually
+   reviewed `content/docs/*.md` against a new engine release; no script writes it, `scripts/check-kit-docs-drift.mjs`
+   (repo root) only reads it. Any other literal this package uses to describe the engine or the scaffolder follows the
    same derive-or-document discipline: file classes and generated-project paths live once in `src/ownership.ts`, which
    `create-blit386` imports through `@blit386/kit/adapters`. Same discipline, one boundary further out:
    `MCP_SERVER_NAME` and `MCP_SERVER_URL` in `src/adapters.ts` are a documented copy of
@@ -110,4 +118,5 @@ list of what ships, and it has no automated guard.
 | Publishing / release | `packages/create-blit386/PUBLISHING.md`, `/release`, `pnpm run bump -- 1.5.0` from the repo root (replace `1.5.0` with the target version) |
 | Maintainer agent-config drift check | `scripts/check-agent-config.mjs` (root) |
 | Lockstep version / range drift check | `pnpm run bump:check` (root `scripts/bump-lockstep.mjs --check`) |
+| Kit docs drift check + Linear filing | `scripts/check-kit-docs-drift.mjs`, `scripts/report-kit-docs-drift.mjs` (root), `.github/workflows/kit-docs-drift.yml` |
 | Contributing / DCO | root `CONTRIBUTING.md` |

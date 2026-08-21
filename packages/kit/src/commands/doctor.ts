@@ -1,11 +1,13 @@
 /** `blit doctor` - a friendly checkup of the things a BLIT386 game needs. */
 
 import {
+    compareVersions,
     detectPackageManager,
     exceedsCaretRange,
     findProjectRoot,
     installedVersion,
     isGitRepo,
+    kitDocsReviewedAt,
     kitEngineRange,
     nodeVersionOk,
     readProject,
@@ -64,6 +66,16 @@ export function runDoctor(): void {
     if (version && engineRange) {
         if (satisfiesCaretRange(version, engineRange)) {
             out(ui.success(`blit386 ${version} is compatible with this kit (${engineRange})`));
+
+            const docsReviewedAt = kitDocsReviewedAt();
+            if (docsReviewedAt && compareVersions(version, docsReviewedAt) > 0) {
+                out(
+                    ui.info(
+                        `This kit's guides were last checked against blit386 ${docsReviewedAt}; you have ${version}.`,
+                    ),
+                );
+                out(ui.info('Your guides are probably still fine – check the changelog if something looks off.'));
+            }
         } else if (exceedsCaretRange(version, engineRange)) {
             out('');
             out(

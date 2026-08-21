@@ -60,6 +60,31 @@ test('blit doctor reports a compatible engine range', () => {
         const { exitCode, output } = runDoctor(root);
         assert.equal(exitCode, 0);
         assert.ok(output.includes('is compatible with this kit'), `expected compatible line, got:\n${output}`);
+        assert.ok(
+            !output.includes('guides were last checked against'),
+            `did not expect a docs-review nudge when the engine matches docsReviewedAt, got:\n${output}`,
+        );
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('blit doctor nudges to check docs when the engine is newer than docsReviewedAt but still compatible', () => {
+    // The kit's committed blit386.docsReviewedAt is "1.5.0" (packages/kit/package.json); a patch release
+    // above that still satisfies the ^1.5.0 engineRange, so this exercises the compatible-but-stale branch.
+    const root = makeGame('1.5.1');
+    try {
+        const { exitCode, output } = runDoctor(root);
+        assert.equal(exitCode, 0);
+        assert.ok(output.includes('is compatible with this kit'), `expected compatible line, got:\n${output}`);
+        assert.ok(
+            output.includes('guides were last checked against blit386 1.5.0'),
+            `expected docs-review nudge, got:\n${output}`,
+        );
+        assert.ok(
+            output.includes('check the changelog if something looks off'),
+            `expected docs-review next step, got:\n${output}`,
+        );
     } finally {
         rmSync(root, { recursive: true, force: true });
     }

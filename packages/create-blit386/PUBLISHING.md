@@ -134,6 +134,7 @@ dependency edit needed.
 pnpm install
 pnpm run test:bump-lockstep         # unit tests for the bump script itself
 pnpm run format:check && pnpm run docs:links && pnpm run agents:check && pnpm run test:agent-config
+pnpm run bump:check                 # engineRange / BLIT386_RANGE safety net
 pnpm --filter blit386 run preflight
 pnpm --filter @blit386/kit run typecheck && pnpm --filter @blit386/kit run test
 pnpm --filter create-blit386 run typecheck && pnpm --filter create-blit386 run test
@@ -282,6 +283,12 @@ publishing the kit publishes the instructions an AI assistant will follow inside
   non-zero on any mismatch; it runs in CI's `quality-root` job and in `.husky/pre-push`, so a hand edit, a bad merge, or
   a cherry-pick between releases fails loudly instead of shipping. Neither range needs a checklist row of its own – this
   is the concrete payoff of lockstep versioning (BT-410).
+- Kit doc content (`packages/kit/content/docs/*.md`) can go stale even when `engineRange` is correct, if the engine
+  gains or changes public API within an already-covered range. `packages/kit/package.json`'s `blit386.docsReviewedAt`
+  marks the engine version the docs were last hand-reviewed against; `scripts/check-kit-docs-drift.mjs` (repo root)
+  compares it to `packages/blit386/docs/_api-history.json`, and `.github/workflows/kit-docs-drift.yml` runs
+  `scripts/report-kit-docs-drift.mjs`, which files or updates a Linear tracking issue when they diverge – advisory only,
+  never a blocking CI check. Bump `docsReviewedAt` once you have actually reviewed the flagged docs (BT-293).
 
 ## Troubleshooting
 
