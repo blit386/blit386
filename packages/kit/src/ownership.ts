@@ -118,10 +118,25 @@ export function isKitManaged(fileClass: FileClass): boolean {
 /**
  * One AI assistant the kit generates files for.
  *
- * Scoped to the path helpers below. The scaffolder's `AgentChoice` (which also has `none`) and the
- * CLI's `AddableAgent` remain separate unions whose values satisfy this one structurally.
+ * Scoped to the path helpers below. The scaffolder's `AgentChoice` narrows to `'none' | AgentKind`;
+ * `blit agents add` uses `AgentKind` directly.
  */
 export type AgentKind = 'claude' | 'cursor';
+
+/** Every `AgentKind` value, for iteration and membership checks (`blit agents add`, the wizard). */
+export const AGENT_KINDS: readonly AgentKind[] = ['claude', 'cursor'];
+
+/** Human-readable assistant names for Tier-1 messages and wizard hints. */
+export const AGENT_LABEL: Record<AgentKind, string> = {
+    claude: 'Claude Code',
+    cursor: 'Cursor',
+};
+
+/** Project-relative hint of what setting up each assistant adds, for wizard/CLI copy. */
+export const AGENT_SETUP_HINT: Record<AgentKind, string> = {
+    claude: `adds ${CLAUDE_MD}`,
+    cursor: `adds ${CURSOR_RULES_DIR}`,
+};
 
 /**
  * Exact paths and directory prefixes each assistant's generated files occupy.

@@ -38,7 +38,15 @@ import {
 } from '../adapters';
 import { detectPackageManager, findProjectRoot, type PackageManager } from '../env';
 import { ui } from '../messages';
-import { classifyFile, type FileClass, hasAgentFiles, isKitManaged } from '../ownership';
+import {
+    AGENT_KINDS,
+    AGENT_LABEL,
+    type AgentKind,
+    classifyFile,
+    type FileClass,
+    hasAgentFiles,
+    isKitManaged,
+} from '../ownership';
 
 /**
  * One entry as read back from `.blit/manifest.json`.
@@ -553,20 +561,9 @@ function printSummary(out: (line: string) => void, tally: SyncTally): void {
     out(ui.info(parts.join(', ')));
 }
 
-/** AI assistants `blit agents add` can set up. Matches the wizard's agent choices minus "none". */
-const ADDABLE_AGENTS = ['claude', 'cursor'] as const;
-
-type AddableAgent = (typeof ADDABLE_AGENTS)[number];
-
-/** Human-readable assistant names for Tier-1 messages. */
-const AGENT_LABEL: Record<AddableAgent, string> = {
-    claude: 'Claude Code',
-    cursor: 'Cursor',
-};
-
 /** Type guard: is `name` an assistant `add` knows how to set up? */
-function isAddableAgent(name: string): name is AddableAgent {
-    return (ADDABLE_AGENTS as readonly string[]).includes(name);
+function isAddableAgent(name: string): name is AgentKind {
+    return (AGENT_KINDS as readonly string[]).includes(name);
 }
 
 /** Result of reading the manifest: either the parsed manifest, or a friendly failure with an exit code. */
@@ -608,7 +605,7 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
  * untouched (so a later `sync` cannot clobber the user files). Returns the number of colliding files
  * that need the user's attention; 0 means the assistant was set up cleanly.
  */
-function runAddAgent(root: string, agent: AddableAgent, out: (line: string) => void): number {
+function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void): number {
     const result = readManifest(root, out);
 
     if (!result.ok) {
@@ -761,7 +758,7 @@ export function runAgents(args: string[]): void {
 
         if (!isAddableAgent(name)) {
             out(ui.warn(`I do not know the assistant "${name}".`));
-            out(ui.info(`You can set up: ${ADDABLE_AGENTS.join(', ')}.`));
+            out(ui.info(`You can set up: ${AGENT_KINDS.join(', ')}.`));
             process.exitCode = 1;
             return;
         }
