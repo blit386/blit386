@@ -46,7 +46,7 @@ package).
 | `pnpm run test:visual:coverage` | Run visual tests with Istanbul coverage report |
 | `pnpm run bench` | Run CPU benchmarks – Tier 4 (Vitest bench; see [Testing](reference-testing.md)) |
 | `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
-| `pnpm run preflight` | All checks: format, lint, typecheck, spellcheck, knip, docs:links, agents:check, sync:doc-banners:check, api:since:check, api:history:check, test:unit, test:declarations, test:agent-config, test:api-history, test:security-preflight |
+| `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here – see the note below the table |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
 | `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer) |
 | `pnpm run sync:doc-banners` | Insert/refresh blit386.dev banners in published docs |
@@ -54,7 +54,12 @@ package).
 | `pnpm run api:history` | Regenerate API version-history manifest (`docs/_api-history.json`) |
 | `pnpm run api:since:check` | Check public API `@since` / `@changed` / `@deprecated` tags |
 | `pnpm run api:history:check` | Check API version-history manifest drift |
+| `pnpm run api:getters:check` | Check `BT.*` getter/method coverage in `.claude/rules/bt-api-getters.md` |
 | `pnpm run test:api-history` | API history generator unit tests (Node test) |
+| `pnpm run test:api-getters` | API getter drift checker unit tests (Node test) |
+| `pnpm run test:compact-tables` | Compact-table Prettier plugin unit tests (Node test) |
+| `pnpm run test:shell-safety` | Shell safety hook unit tests (Node test) |
+| `pnpm run test:spellcheck-coverage` | Spellcheck coverage unit tests (Node test) |
 | `pnpm run knip` | Find unused exports and dependencies |
 | `pnpm run knip:fix` | Auto-fix unused exports and dependencies |
 | `pnpm run clean` | Remove dist and cache directories |
@@ -67,6 +72,11 @@ package).
 | `pnpm run security:audit:fix` | Run dependency security audit and auto-fix |
 | `pnpm run security:mcp-preflight` | MCP health/auth preflight and governance scan (requires `-- --mcps-dir`) |
 | `pnpm run test:security-preflight` | Unit tests for MCP preflight script |
+
+`docs:links` and `agents:check` are repo-wide: each package's copy walks the whole tree from the repo root no matter
+which `package.json` invoked it. They are deliberately absent from every package's `preflight` chain so that one push
+does not run the same full-repo check two to four times – run them once from the repo root instead
+(`pnpm run docs:links`, `pnpm run agents:check`), as `.husky/pre-push` does after the per-package gates pass.
 
 Dependency audit severity policy and CI gate: [dependency-policy.md](security/dependency-policy.md). Temporary
 exceptions: [audit-exceptions.md](security/audit-exceptions.md).
