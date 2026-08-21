@@ -45,7 +45,7 @@
 
 import { AudioClip, bootstrap, BT, Rect2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
@@ -215,7 +215,7 @@ class Demo {
      * line of text, no panel around it.
      */
     renderStatusLine() {
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
 
         // The shared "click to enable sound" row – it draws itself only while sound is
         // still locked, and disappears on its own after the first click or key press.
@@ -253,7 +253,7 @@ class Demo {
      * same, which is what makes this demo playable on a touchscreen.
      */
     renderKeyboardPanel() {
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Keyboard SFX (pitch)');
 
         for (const preset of KEY_PITCH_PRESETS) {
@@ -279,7 +279,7 @@ class Demo {
         const hasClicked = this.lastClickVolume !== null && this.lastClickPan !== null;
         const flashing = this.pointerFlashTimer > 0;
 
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Pointer SFX (volume/pan)');
 
         // Two short reminders of how a click's position maps to sound.

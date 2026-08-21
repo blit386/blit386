@@ -34,7 +34,7 @@
  * so steady-state frames allocate nothing – safe to call from render() at 60 FPS.
  */
 
-import { UiContext } from './ui-core.js';
+import { UI_ANCHORS, UiContext } from './ui-core.js';
 import { dpadIsDown, dpadIsPressed, dpadWidget, stepDpad } from './ui-dpad.js';
 import { stepGestures, swipeResult, tapIn } from './ui-gestures.js';
 import { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET } from './ui-theme.js';
@@ -279,4 +279,4 @@ const ui = {
     },
 };
 
-export { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET, ui };
+export { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET, ui, UI_ANCHORS };

@@ -41,7 +41,7 @@
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
 import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -422,7 +422,7 @@ class Demo {
      * to the bottom-left corner of the screen.
      */
     renderCodeSnippet() {
-        ui.begin('bottomLeft', { y: 178 });
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT, { y: 178 });
         ui.panel('Production PNG load:');
         ui.label('const indexed = await SpriteSheet', { color: 'info' });
         ui.label("  .loadIndexed('/sprites/test.png', palette, 10);", { color: 'info' });

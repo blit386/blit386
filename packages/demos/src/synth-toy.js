@@ -51,7 +51,7 @@
 
 import { AudioClip, bootstrap, BT } from 'blit386';
 
-import { applyTheme, THEME_DEFAULT_START_SLOT, ui } from './shared/ui.js';
+import { applyTheme, THEME_DEFAULT_START_SLOT, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
@@ -242,7 +242,7 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // The full-width title strip along the top edge.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Synth Toy - six presets and a randomizer');
         ui.end();
 
@@ -257,7 +257,7 @@ class Demo {
      * the title strip.
      */
     renderUnlockPrompt() {
-        ui.begin('topLeft', { y: 28 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 28 });
 
         // The shared "click to enable sound" row – it draws itself only while sound is
         // still locked, and disappears on its own after the first click or key press.
@@ -276,7 +276,7 @@ class Demo {
      * on click, tap, or its keyboard shortcut – ui.button() treats all three the same.
      */
     renderPresetPanel() {
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Presets');
 
         for (let i = 0; i < PRESET_DEFINITIONS.length; i++) {
@@ -302,7 +302,7 @@ class Demo {
     renderRandomPanel() {
         const params = this.lastRandomParams;
 
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Randomizer');
 
         if (ui.button('R - Randomize', { key: 'KeyR' })) {

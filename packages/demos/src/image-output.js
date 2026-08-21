@@ -12,7 +12,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -218,7 +218,7 @@ class Demo {
         // Note: this panel is drawn onto the frame, so it WILL be part of the saved
         // PNG. That is acceptable here – it even doubles as a caption telling you
         // which demo produced the screenshot.
-        ui.begin('topRight');
+        ui.begin(UI_ANCHORS.TOP_RIGHT);
         ui.panel('Image Output');
 
         // The Save button. ui.button() returns true only on the single frame it was

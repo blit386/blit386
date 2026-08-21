@@ -50,8 +50,23 @@ import {
     Vignette,
 } from 'blit386';
 
+import {
+    ABERRATION_BASE,
+    applyGlitchUniforms,
+    FLICKER_BASE,
+    GLITCH_ACTIVE_MAX,
+    GLITCH_ACTIVE_MIN,
+    GLITCH_COOLDOWN_MAX,
+    GLITCH_COOLDOWN_MIN,
+    GLITCH_INTENSITY_MAX,
+    GLITCH_INTENSITY_MIN,
+    GLITCH_TYPES_CHROMA,
+    NOISE_BASE,
+    PIXEL_GLITCH_BAND_HEIGHT,
+    resetGlitchUniforms,
+} from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -118,23 +133,6 @@ const MUSIC_PITCH_FADE_MS = 120;
 
 // Two seconds at 60 ticks per second before a new round starts.
 const RESTART_DELAY_TICKS = 120;
-
-// CRT glitch state machine (same tuning as crt-pipboy demo)
-const GLITCH_COOLDOWN_MIN = 120;
-const GLITCH_COOLDOWN_MAX = 360;
-const GLITCH_ACTIVE_MIN = 5;
-const GLITCH_ACTIVE_MAX = 30;
-
-const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker', 'interference'];
-
-const GLITCH_INTENSITY_MIN = 0.35;
-const GLITCH_INTENSITY_MAX = 1.0;
-
-const FLICKER_BASE = 1.0;
-const FLICKER_DIP = 0.6;
-
-const ABERRATION_BASE = 0;
-const NOISE_BASE = 0.025;
 
 /**
  * Minimal snake with PipBoy CRT post-processing from crt-pipboy demo.
@@ -435,7 +433,7 @@ class Demo {
         // the same gesture that starts the snake moving, so the hint is usually only
         // visible for a single frame. The default sentence is too long for this 160-wide
         // playfield, so we pass a short override.
-        ui.begin('topLeft', { margin: 3 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { margin: 3 });
         ui.audioUnlockHint({ text: 'Click for sound' });
         ui.end();
 
@@ -453,7 +451,7 @@ class Demo {
     setupCrtEffects() {
         // Pixel-tier glitch (same role as crt-pipboy demo).
         this.pixelGlitch = new PixelGlitch();
-        this.pixelGlitch.bandHeight = 6;
+        this.pixelGlitch.bandHeight = PIXEL_GLITCH_BAND_HEIGHT;
         this.pixelGlitch.intensity = 0;
         BT.effectAdd(this.pixelGlitch);
 
@@ -607,14 +605,14 @@ class Demo {
             const t = 1 - this.glitchTicksLeft / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
 
-            this.applyGlitchUniforms(envelope);
+            applyGlitchUniforms(this, envelope);
 
             this.glitchTicksLeft--;
 
             // Countdown just hit zero: the burst is over, so calm the effects down
             // and roll a fresh cooldown until the next burst.
             if (this.glitchTicksLeft === 0) {
-                this.resetGlitchUniforms();
+                resetGlitchUniforms(this);
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
 
@@ -626,41 +624,12 @@ class Demo {
         if (this.glitchCooldown <= 0) {
             // pick() draws one item out of a list, like taking a card off the top of a shuffled deck.
             // float() is the decimal cousin of int(), for values that are not whole numbers.
-            this.glitchType = BT.random.pick(GLITCH_TYPES);
+            this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
             this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
             this.pixelGlitch.seed = BT.random.float(0, 1000);
         }
-    }
-
-    /**
-     * @param {number} envelope – 0 -> 1 -> 0 over the glitch burst.
-     */
-    applyGlitchUniforms(envelope) {
-        const peak = this.glitchPeak * envelope;
-
-        this.resetGlitchUniforms();
-
-        if (this.glitchType === 'hshift') {
-            this.pixelGlitch.intensity = peak;
-        } else if (this.glitchType === 'chromasplit') {
-            this.aberration.aberration = ABERRATION_BASE + peak * 4;
-        } else if (this.glitchType === 'noise') {
-            this.noise.amount = NOISE_BASE + peak * 0.08;
-        } else if (this.glitchType === 'flicker') {
-            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
-        } else if (this.glitchType === 'interference') {
-            this.interference.amount = peak * 0.06;
-        }
-    }
-
-    resetGlitchUniforms() {
-        this.pixelGlitch.intensity = 0;
-        this.aberration.aberration = ABERRATION_BASE;
-        this.noise.amount = NOISE_BASE;
-        this.flicker.amount = FLICKER_BASE;
-        this.interference.amount = 0;
     }
 
     /**

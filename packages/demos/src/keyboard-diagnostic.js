@@ -20,7 +20,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -331,7 +331,7 @@ class Demo {
         // Full-width title strip. The second row is contextual: touch devices get a
         // warning that the demo is pointless without a keyboard, everyone else gets
         // the fast-tap testing hint.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('BLIT386 Keyboard Diagnostic');
 
         if (ui.hasTouch()) {
@@ -343,7 +343,7 @@ class Demo {
         ui.end();
 
         // Status readout: which edge fired last, and on which engine tick.
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel();
         ui.kv('Last', this.lastEvent);
         ui.kv('Tick', this.lastTick === null ? '-' : this.lastTick);
@@ -351,7 +351,7 @@ class Demo {
 
         // Edge counters: after a burst of fast taps both numbers must match – a
         // mismatch means an edge was dropped somewhere.
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel();
         ui.kv('Presses', this.pressCount);
         ui.kv('Releases', this.releaseCount);

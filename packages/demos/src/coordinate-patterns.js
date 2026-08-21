@@ -44,7 +44,7 @@
 
 import { bootstrap, BT, Color32, hash1i, hash2i, hash3i, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -335,7 +335,7 @@ class Demo {
      * The travel buttons.
      */
     renderControlPanel() {
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Travel');
 
         if (ui.button('Jump far', { key: 'KeyJ' })) {
@@ -360,7 +360,7 @@ class Demo {
      * Where we are, what layer we are on, and the number that matters most.
      */
     renderReadoutPanel() {
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('This world');
         ui.kv('tile x', Math.floor(this.camX / TILE));
         ui.kv('tile y', Math.floor(this.camY / TILE));

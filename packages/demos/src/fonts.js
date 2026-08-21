@@ -25,7 +25,7 @@
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -194,7 +194,7 @@ class Demo {
 
         // A small dim caption in the bottom-left corner pointing to the next font lesson.
         // No ui.panel() call inside the group means it is just floating text – no box.
-        ui.begin('bottomLeft', { y: 160 });
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT, { y: 160 });
         ui.label('To see how to load bitmap fonts from disk,', { color: 'dim' });
         ui.label('go to Bitmap Font demo', { color: 'dim' });
         ui.end();

@@ -33,7 +33,7 @@
 
 import { bootstrap, BT, Color32, PerlinNoise, Rect2i, SimplexNoise, ValueNoise } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
@@ -334,7 +334,7 @@ class Demo {
      * The three flavor buttons and the block size.
      */
     renderKindPanel() {
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Flavor');
 
         for (let i = 0; i < KIND_NAMES.length; i++) {
@@ -357,7 +357,7 @@ class Demo {
      * The sliders and switches that shape the landscape.
      */
     renderShapePanel() {
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel(`${KIND_NAMES[this.kind]} noise`);
 
         // Every control compares its new value against the old one, and only asks for a

@@ -41,7 +41,7 @@ import { BitmapFont, bootstrap, BT, Color32, Vector2i } from 'blit386';
 // The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
 // palette (slots 240-251, far above this demo's slots 1-38), and ui.* draws the small
 // "Font Info" panel in the bottom-right corner of the screen.
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -405,7 +405,7 @@ class Demo {
     renderFontInfo() {
         // Anchor the group to the bottom-right corner of the screen, away from the showcase
         // text on the left and the engine overlay's toggle hint in the bottom-left corner.
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
 
         // Give the group a background, border, and an amber title.
         ui.panel('Font Info');

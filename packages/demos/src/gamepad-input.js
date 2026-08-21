@@ -32,7 +32,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -258,7 +258,7 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // The full-width title strip along the top edge.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Gamepad Input - sticks, triggers, button masks');
         ui.end();
 
@@ -353,7 +353,7 @@ class Demo {
      * particular demo cannot work without a physical gamepad.
      */
     renderHints() {
-        ui.begin('topLeft', { y: 28 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 28 });
         ui.label('Left stick move | Right stick aim', { color: 'dim' });
         ui.label('Triggers = pod size', { color: 'dim' });
         ui.label('A color | B trail | Start reset', { color: 'dim' });
@@ -429,7 +429,7 @@ class Demo {
         const aimY = BT.getAxis(BT.AXIS_RIGHT_Y, PLAYER);
         const throttle = Math.max(BT.getAxis(BT.AXIS_TRIGGER_L, PLAYER), BT.getAxis(BT.AXIS_TRIGGER_R, PLAYER));
 
-        ui.begin('topRight', { y: 28 });
+        ui.begin(UI_ANCHORS.TOP_RIGHT, { y: 28 });
         ui.panel('Gamepad');
 
         // How many gamepads the browser reports, and whether player one has one.
@@ -459,7 +459,7 @@ class Demo {
      * old hand-drawn warning, restyled as warm kit labels in a borderless group.
      */
     renderEmptyState() {
-        ui.begin('topLeft', { x: ARENA_X + 12, y: ARENA_Y + 42 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: ARENA_X + 12, y: ARENA_Y + 42 });
         ui.label('Connect a gamepad and press', { color: 'warm' });
         ui.label('any button to wake it.', { color: 'warm' });
         ui.end();

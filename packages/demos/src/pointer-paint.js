@@ -39,7 +39,7 @@
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { applyTheme, THEME_DEFAULT_START_SLOT, ui } from './shared/ui.js';
+import { applyTheme, THEME_DEFAULT_START_SLOT, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -371,7 +371,7 @@ class Demo {
      * reserved for that).
      */
     renderPanel() {
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Paint');
 
         // One pip per pointer slot: lit while that mouse / finger is active.

@@ -46,6 +46,7 @@ import {
     Vignette,
 } from 'blit386';
 
+import { GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable } from './shared/post-process-backend.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
@@ -110,10 +111,6 @@ const GLITCH_ACTIVE_MIN = 4; // Fault lasts at least 4 ticks (~0.07 s).
 const GLITCH_ACTIVE_MAX = 24; // Fault lasts up to 24 ticks (~0.4 s).
 const GLITCH_INTENSITY_MIN = 0.3; // Weakest fault (barely visible).
 const GLITCH_INTENSITY_MAX = 0.95; // Strongest fault (almost unwatchable).
-
-// The five kinds of B/W TV fault this demo can show.
-// (Chromatic aberration is omitted because a B/W set has no color to split.)
-const GLITCH_TYPES = ['hshift', 'noise', 'flicker', 'interference', 'vroll'];
 
 // --- Occasional subtle band-wobble (pixel-tier PixelGlitch) ---
 // This is separate from the bigger TV fault bursts. A real CRT sometimes has a
@@ -474,7 +471,7 @@ class Demo {
         if (this.glitchCooldown <= 0) {
             // Time for a fault! pick() draws one item out of a list, like taking a card
             // off the top of a shuffled deck. float() is the decimal cousin of int().
-            this.glitchType = BT.random.pick(GLITCH_TYPES);
+            this.glitchType = BT.random.pick(GLITCH_TYPES_VROLL);
             this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);

@@ -39,7 +39,7 @@
 
 import { bootstrap, BT } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -264,7 +264,7 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // Full-width title strip across the top, in the classic 22-pixel top-bar style.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Keyboard Input (KeyboardEvent.code)');
         ui.end();
 
@@ -272,7 +272,7 @@ class Demo {
         // warning – this page has no on-screen substitute for a physical keyboard – and
         // otherwise it lists the default key maps as a quick reference. pad: 0 removes
         // the group's inner padding so the single line sits snug against its y position.
-        ui.begin('topLeft', { y: NOTICE_Y, pad: 0 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: NOTICE_Y, pad: 0 });
 
         if (ui.hasTouch()) {
             ui.label('This demo needs a keyboard', { color: 'warm' });
@@ -302,7 +302,7 @@ class Demo {
      */
     renderFacePanel(player, x) {
         // Pin the panel to its column; both player panels share the same top edge.
-        ui.begin('topLeft', { x, y: PANEL_TOP_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x, y: PANEL_TOP_Y });
         ui.panel(player === 0 ? 'Player 0' : 'Player 1');
 
         const buttons = this.faceButtons[player];
@@ -323,7 +323,7 @@ class Demo {
      * Readout for edge-only press counting on one key at a time.
      */
     renderPressCounter() {
-        ui.begin('topLeft', { x: READOUT_COLUMN_X, y: PANEL_TOP_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: PANEL_TOP_Y });
         ui.panel('isKeyPressed counter');
 
         // Before any counted key is tapped there is nothing to show, so both rows fall
@@ -341,7 +341,7 @@ class Demo {
      * Panel for Q held state and the last F release.
      */
     renderRawKeyPanel() {
-        ui.begin('topLeft', { x: READOUT_COLUMN_X, y: RAW_PANEL_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: READOUT_COLUMN_X, y: RAW_PANEL_Y });
         ui.panel('Raw keys');
 
         // Held state is safe to read in render() (see renderFacePanel above).
@@ -358,7 +358,7 @@ class Demo {
     renderTypedLine() {
         // A fixed width keeps the panel spanning the screen even while the buffer is
         // short; bottomLeft anchors it just above the bottom edge.
-        ui.begin('bottomLeft', { width: TYPED_PANEL_WIDTH });
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT, { width: TYPED_PANEL_WIDTH });
         ui.panel('BT.inputString (typed this session)');
 
         const hasText = this.typedBuffer.length > 0;

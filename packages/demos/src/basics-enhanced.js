@@ -53,8 +53,24 @@ import {
     Vignette,
 } from 'blit386';
 
+import {
+    ABERRATION_BASE,
+    applyGlitchUniforms,
+    FLICKER_BASE,
+    GLITCH_ACTIVE_MAX,
+    GLITCH_ACTIVE_MIN,
+    GLITCH_COOLDOWN_MAX,
+    GLITCH_COOLDOWN_MIN,
+    GLITCH_INTENSITY_MAX,
+    GLITCH_INTENSITY_MIN,
+    GLITCH_LABELS,
+    GLITCH_TYPES_CHROMA,
+    NOISE_BASE,
+    PIXEL_GLITCH_BAND_HEIGHT,
+    resetGlitchUniforms,
+} from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -88,29 +104,6 @@ const TARGET_FPS = 30;
 // Run the display-tier post-process at a larger output buffer than the logical screen.
 const OUTPUT_W = 960;
 const OUTPUT_H = 720;
-
-const GLITCH_COOLDOWN_MIN = 120;
-const GLITCH_COOLDOWN_MAX = 360;
-const GLITCH_ACTIVE_MIN = 5;
-const GLITCH_ACTIVE_MAX = 30;
-
-const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker', 'interference'];
-const GLITCH_INTENSITY_MIN = 0.35;
-const GLITCH_INTENSITY_MAX = 1.0;
-
-const FLICKER_BASE = 1.0;
-const FLICKER_DIP = 0.6;
-const ABERRATION_BASE = 0;
-const NOISE_BASE = 0.025;
-
-const GLITCH_LABELS = {
-    none: 'NONE',
-    hshift: 'H-SHIFT',
-    chromasplit: 'CHROMA',
-    noise: 'NOISE',
-    flicker: 'FLICKER',
-    interference: 'INTERFERENCE',
-};
 
 // The shared fallback note is one long sentence – too wide for this 320-pixel screen in
 // the 6-pixel-wide system font. split('. ') cuts the string at the sentence break, giving
@@ -294,7 +287,7 @@ class Demo {
 
         // --- Pixel tier: chunky band glitch on the index buffer ---
         this.pixelGlitch = new PixelGlitch();
-        this.pixelGlitch.bandHeight = 6;
+        this.pixelGlitch.bandHeight = PIXEL_GLITCH_BAND_HEIGHT;
         this.pixelGlitch.intensity = 0; // state machine raises this during hshift bursts
         BT.effectAdd(this.pixelGlitch);
 
@@ -403,12 +396,12 @@ class Demo {
             // t goes from 0 at burst start to 1 on the last tick; sin(t * PI) is a smooth hump.
             const t = 1 - (this.glitchTicksLeft - 1) / this.glitchDuration;
             const envelope = Math.sin(t * Math.PI);
-            this.applyGlitchUniforms(envelope);
+            applyGlitchUniforms(this, envelope);
 
             this.glitchTicksLeft--;
             if (this.glitchTicksLeft <= 0) {
                 // Burst finished – return effect uniforms to calm resting values.
-                this.resetGlitchUniforms();
+                resetGlitchUniforms(this);
 
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
@@ -420,7 +413,7 @@ class Demo {
         if (this.glitchCooldown <= 0) {
             // Roll a new burst. pick() draws one item out of a list, like taking a card off the top of a shuffled deck.
             // float() is the decimal cousin of int(), for values that are not whole numbers.
-            this.glitchType = BT.random.pick(GLITCH_TYPES);
+            this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
             this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
@@ -447,7 +440,7 @@ class Demo {
         // On-canvas text drawn with the shared UI kit: a borderless label group (no
         // ui.panel() call, so no box) pinned to the top-left corner. Small margin and
         // padding keep it tucked near the edge, like the old hand-drawn hint.
-        ui.begin('topLeft', { margin: 2, pad: 2 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { margin: 2, pad: 2 });
 
         // Hint: the engine overlay (FPS, position, CRT status) toggles with Backquote
         // or the small symbol in the bottom-left corner of the upscaled canvas.
@@ -489,34 +482,6 @@ class Demo {
         }
 
         return this.overlayRowData;
-    }
-
-    /**
-     * @param {number} envelope
-     */
-    applyGlitchUniforms(envelope) {
-        const peak = this.glitchPeak * envelope;
-        this.resetGlitchUniforms();
-
-        if (this.glitchType === 'hshift') {
-            this.pixelGlitch.intensity = peak;
-        } else if (this.glitchType === 'chromasplit') {
-            this.aberration.aberration = ABERRATION_BASE + peak * 4;
-        } else if (this.glitchType === 'noise') {
-            this.noise.amount = NOISE_BASE + peak * 0.08;
-        } else if (this.glitchType === 'flicker') {
-            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
-        } else if (this.glitchType === 'interference') {
-            this.interference.amount = peak * 0.06;
-        }
-    }
-
-    resetGlitchUniforms() {
-        this.pixelGlitch.intensity = 0;
-        this.aberration.aberration = ABERRATION_BASE;
-        this.noise.amount = NOISE_BASE;
-        this.flicker.amount = FLICKER_BASE;
-        this.interference.amount = 0;
     }
 }
 

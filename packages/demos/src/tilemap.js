@@ -27,7 +27,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -406,7 +406,7 @@ class Demo {
         // rows, draws the panel background, and places the group for us.
         // The kit draws in whatever camera space is active, so this must run AFTER
         // BT.cameraReset() – otherwise the panel would scroll away with the world.
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
         ui.panel('Tilemap');
         ui.label('30x20 tiles, 16px each', { color: 'dim' });
         ui.label('Camera scrolls automatically', { color: 'dim' });
@@ -429,7 +429,7 @@ class Demo {
 
         // Backing panel from the shared UI kit (same look as every other demo panel).
         // spacer() reserves the tile area; the custom tile overlay draws on top after end().
-        ui.begin('topLeft', { x: mapX - 2, y: mapY - 2, width: mapPixelW + 4, margin: 0, pad: 2 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: mapX - 2, y: mapY - 2, width: mapPixelW + 4, margin: 0, pad: 2 });
         ui.panel();
         ui.spacer(mapPixelH);
         ui.end();

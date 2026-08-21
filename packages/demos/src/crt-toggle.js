@@ -52,7 +52,7 @@
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 // Internal pixel resolution.
 const DISPLAY_W = 320;
@@ -333,7 +333,7 @@ class Demo {
         // top of the moving squares. Like everything the demo draws, it lives on the
         // logical buffer, so the CRT effects warp and glow the panel too – a nice way to
         // read the toggle even when you cannot see the scanlines up close.
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
         ui.panel();
         if (this.effectsAvailable) {
             // 'accent' (phosphor green) while the stack is live, 'dim' gray while it rests.

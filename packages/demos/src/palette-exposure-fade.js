@@ -127,7 +127,14 @@
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Vector2i } from 'blit386';
 
-import { applyTheme, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET, ui } from './shared/ui.js';
+import {
+    applyTheme,
+    THEME_DEFAULT_START_SLOT,
+    THEME_PANEL_OFFSET,
+    THEME_TEXT_OFFSET,
+    ui,
+    UI_ANCHORS,
+} from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').HardwareSettings} HardwareSettings */
@@ -447,7 +454,7 @@ class Demo {
 
         // Pinned to PANEL_Y rather than anchored to the bottom of the screen: the
         // overlay's palette grid owns the bottom, and it draws after this.
-        ui.begin('topLeft', { y: PANEL_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: PANEL_Y });
         ui.panel('Exposure Fade');
 
         // Dragging this changes the next fade, not the one already running – a fade

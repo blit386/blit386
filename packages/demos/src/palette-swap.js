@@ -50,7 +50,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -287,7 +287,7 @@ class Demo {
         // Section caption below the legend, drawn as a borderless kit group.
         // Passing x and y to ui.begin() pins the group's top-left corner exactly
         // there, so the caption sits right under the last legend entry.
-        ui.begin('topLeft', { x: 0, y: 113 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: 113 });
         ui.label('Themes:', { color: 'header' });
         ui.label('2 s each', { color: 'dim' });
         ui.end();
@@ -310,7 +310,7 @@ class Demo {
         // under the artwork. The group's inner padding (6 px) shifts its text right
         // and down a little, so the pin point compensates by starting 6 px to the
         // left of the sprite and just 1 px below it.
-        ui.begin('topLeft', { x: spriteX - 6, y: spriteY + this.charSprite.height + 1 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: spriteX - 6, y: spriteY + this.charSprite.height + 1 });
 
         // Which theme the sprite is currently drawn with.
         ui.label(`Theme: ${this.themeNames[this.currentTheme]}`, { color: 'header' });
@@ -329,7 +329,7 @@ class Demo {
      * dim lines are code comments, blue "info" lines are the code itself.
      */
     renderCodePanel() {
-        ui.begin('topRight');
+        ui.begin(UI_ANCHORS.TOP_RIGHT);
 
         ui.label('How it works:', { color: 'header' });
         ui.label('// Build palettes', { color: 'dim' });

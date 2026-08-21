@@ -59,6 +59,17 @@ const CMD_TEXT = 2;
 // flush time (used by ui.separator(), which cannot know the final width when declared).
 const FULL_WIDTH = -1;
 
+// The five group anchors a demo can pass to ui.begin(anchor). 'topBar' is the classic
+// full-width title strip; the other four pin a group to a screen corner, with bottom
+// anchors growing the group upward (see resolveOriginY()).
+const UI_ANCHORS = {
+    TOP_LEFT: 'topLeft',
+    TOP_RIGHT: 'topRight',
+    BOTTOM_LEFT: 'bottomLeft',
+    BOTTOM_RIGHT: 'bottomRight',
+    TOP_BAR: 'topBar',
+};
+
 // The engine tracks up to four pointers: slot 0 is the mouse, slots 1-3 are touches.
 const POINTER_SLOTS = 4;
 
@@ -195,7 +206,7 @@ class UiContext {
     // Per-group layout state (valid between begin() and end()).
     inGroup = false;
 
-    anchor = 'topLeft';
+    anchor = UI_ANCHORS.TOP_LEFT;
 
     groupOptX = null;
 
@@ -351,7 +362,7 @@ class UiContext {
      *   to the screen edge; pad is the inner padding; kvCols is the key column width of
      *   ui.kv() rows, in characters.
      */
-    begin(anchor = 'topLeft', opts = {}) {
+    begin(anchor = UI_ANCHORS.TOP_LEFT, opts = {}) {
         if (!T.ready) {
             throw new Error('ui.begin: call applyTheme(palette) in init() before drawing any UI.');
         }
@@ -373,7 +384,7 @@ class UiContext {
 
         this.inGroup = true;
         this.anchor = anchor;
-        this.isTopBar = anchor === 'topBar';
+        this.isTopBar = anchor === UI_ANCHORS.TOP_BAR;
         this.groupOptX = typeof opts.x === 'number' ? opts.x : null;
         this.groupOptY = typeof opts.y === 'number' ? opts.y : null;
         this.groupOptWidth = typeof opts.width === 'number' ? opts.width : null;
@@ -446,7 +457,7 @@ class UiContext {
             return 0;
         }
 
-        const isRight = this.anchor === 'topRight' || this.anchor === 'bottomRight';
+        const isRight = this.anchor === UI_ANCHORS.TOP_RIGHT || this.anchor === UI_ANCHORS.BOTTOM_RIGHT;
 
         return isRight ? display.x - this.margin - groupW : this.margin;
     }
@@ -469,7 +480,7 @@ class UiContext {
             return 0;
         }
 
-        const isBottom = this.anchor === 'bottomLeft' || this.anchor === 'bottomRight';
+        const isBottom = this.anchor === UI_ANCHORS.BOTTOM_LEFT || this.anchor === UI_ANCHORS.BOTTOM_RIGHT;
 
         return isBottom ? display.y - this.margin - groupH : this.margin;
     }
@@ -756,4 +767,15 @@ class UiContext {
     }
 }
 
-export { BUTTON_H, CMD_RECT_FILL, CMD_RECT_STROKE, CMD_TEXT, FONT_W, FULL_WIDTH, hitContains, ROW_H, UiContext };
+export {
+    BUTTON_H,
+    CMD_RECT_FILL,
+    CMD_RECT_STROKE,
+    CMD_TEXT,
+    FONT_W,
+    FULL_WIDTH,
+    hitContains,
+    ROW_H,
+    UI_ANCHORS,
+    UiContext,
+};
