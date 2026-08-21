@@ -26,13 +26,14 @@ Transport: streamable-HTTP (JSON-RPC 2.0 over POST). No authentication required.
 
 ### Claude Code
 
-Add the server with the CLI:
+For your own account, add the server with the CLI:
 
 ```bash
 claude mcp add --transport http blit386-docs https://blit386.dev/mcp
 ```
 
-Or check a project-scoped config into your repository as `.mcp.json`, so every contributor's agent picks it up:
+Or check a project-scoped config into your repository root as `.mcp.json`, so every contributor's agent picks it up –
+`type` is required for a remote server, since Claude Code skips an entry that has a `url` but no `type`:
 
 ```json
 {
@@ -45,9 +46,15 @@ Or check a project-scoped config into your repository as `.mcp.json`, so every c
 }
 ```
 
+Claude Code prompts once per project to approve a project-scoped server – expect that prompt the first time you open the
+project after `.mcp.json` lands. A game scaffolded with `npm create blit386@latest` already ships this `.mcp.json`, so
+its contributors get the prompt with no setup of their own.
+
 ### Claude Desktop
 
-Add the same block to `claude_desktop_config.json`.
+`claude_desktop_config.json` only configures local (stdio) servers. To connect a remote server like this one, add it as
+a Custom Connector instead: open Settings, go to Connectors, choose "Add custom connector", and paste the endpoint URL
+above.
 
 ### Cursor
 
