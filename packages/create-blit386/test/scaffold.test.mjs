@@ -9,7 +9,17 @@
 import { strict as assert } from 'node:assert';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+    existsSync,
+    lstatSync,
+    mkdirSync,
+    mkdtempSync,
+    readdirSync,
+    readFileSync,
+    rmSync,
+    symlinkSync,
+    writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -1403,6 +1413,97 @@ test('blit agents add claude merges when the same server entry is written in a d
 
         assert.equal(exitCode, 0, 'a same-entry, different-key-order file should merge cleanly, not collide');
         assert.ok(!existsSync(`${mcpPath}.new`), 'a clean merge should not leave a .new conflict copy');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add claude does not read or write through a symlinked .mcp.json', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-symlink-add-'));
+
+    try {
+        const project = join(work, 'symlink-add-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'symlink-add-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // A file outside the project root, made to look like a plausible pre-existing MCP config so a
+        // vulnerable merge path would happily read and rewrite it. `.mcp.json` is on the mergeable-JSON
+        // allowlist, so this exercises the MCP-merge read as well as the plain collision/write paths.
+        const externalPath = join(work, 'outside-the-project.mcp.json');
+        const externalContent = `${JSON.stringify({ mcpServers: { 'attacker-server': { url: 'https://evil.example/mcp' } } }, null, 2)}\n`;
+        writeFileSync(externalPath, externalContent);
+        symlinkSync(externalPath, join(project, '.mcp.json'));
+
+        const { output } = runBlit(project, ['agents', 'add', 'claude']);
+
+        assert.equal(
+            readFileSync(externalPath, 'utf8'),
+            externalContent,
+            'the file outside the project must not be read, merged, or overwritten through the symlink',
+        );
+        assert.ok(
+            lstatSync(join(project, '.mcp.json')).isSymbolicLink(),
+            'the symlink itself must be left in place, not replaced with a regular file',
+        );
+        assert.ok(output.includes('.mcp.json'), 'output should mention the skipped unsafe path');
+
+        // Every other Claude file the kit generates does not depend on the symlinked path and should
+        // still have been written normally.
+        assert.ok(existsSync(join(project, 'CLAUDE.md')), 'unrelated Claude files should still be added');
+
+        const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+        assert.ok(
+            !manifest.files.some((f) => f.path === '.mcp.json'),
+            'the skipped symlinked path must not be recorded in the manifest',
+        );
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync does not write through a symlinked kit-owned directory', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-symlink-sync-'));
+
+    try {
+        const project = join(work, 'symlink-sync-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'symlink-sync-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        // Replace the kit-owned rules directory (already tracked in the manifest from scaffolding) with
+        // a symlink pointing outside the project. The external target starts empty; if sync ever wrote
+        // through the symlink, regenerated kit rule files would land there.
+        const rulesDir = join(project, '.claude', 'rules');
+        rmSync(rulesDir, { recursive: true, force: true });
+        const externalDir = join(work, 'outside-the-project-rules');
+        mkdirSync(externalDir, { recursive: true });
+        symlinkSync(externalDir, rulesDir);
+
+        runBlit(project, ['agents', 'sync']);
+
+        assert.deepEqual(
+            readdirSync(externalDir),
+            [],
+            'sync must not write kit rule files through the symlinked directory',
+        );
+        assert.ok(
+            lstatSync(rulesDir).isSymbolicLink(),
+            'the symlink itself must be left in place, not replaced with a regular directory',
+        );
     } finally {
         rmSync(work, { recursive: true, force: true });
     }
