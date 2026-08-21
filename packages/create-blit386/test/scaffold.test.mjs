@@ -1241,6 +1241,16 @@ test('blit agents sync keeps a user-added MCP server in .mcp.json', { skip: !has
     }
 });
 
+// Shared pmInstall/pmRunDev/pmRunBuild/pmRunFormat/pmRunLint fixture for the MCP-config tests below – they
+// only care about the .mcp.json merge behavior, not which package manager the scaffold fixture records.
+const PNPM_SCAFFOLD_COMMANDS = {
+    pmInstall: 'pnpm install',
+    pmRunDev: 'pnpm run dev',
+    pmRunBuild: 'pnpm run build',
+    pmRunFormat: 'pnpm run format',
+    pmRunLint: 'pnpm run lint',
+};
+
 test('blit agents add claude aborts safely on a conflicting .mcp.json server entry', () => {
     const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-collision-'));
 
@@ -1249,11 +1259,7 @@ test('blit agents add claude aborts safely on a conflicting .mcp.json server ent
         scaffold({
             targetDir: project,
             projectName: 'mcp-collision-game',
-            pmInstall: 'pnpm install',
-            pmRunDev: 'pnpm run dev',
-            pmRunBuild: 'pnpm run build',
-            pmRunFormat: 'pnpm run format',
-            pmRunLint: 'pnpm run lint',
+            ...PNPM_SCAFFOLD_COMMANDS,
         });
 
         // The user already registered a server under the same key the kit wants to add, but pointing
@@ -1291,11 +1297,7 @@ test('blit agents add claude merges a pre-existing .mcp.json', () => {
         scaffold({
             targetDir: project,
             projectName: 'mcp-merge-add-game',
-            pmInstall: 'pnpm install',
-            pmRunDev: 'pnpm run dev',
-            pmRunBuild: 'pnpm run build',
-            pmRunFormat: 'pnpm run format',
-            pmRunLint: 'pnpm run lint',
+            ...PNPM_SCAFFOLD_COMMANDS,
         });
 
         // The user already registered an unrelated MCP server before asking for Claude. .mcp.json is
@@ -1330,11 +1332,7 @@ test('blit agents add claude aborts safely on malformed .mcp.json', () => {
         scaffold({
             targetDir: project,
             projectName: 'mcp-malformed-game',
-            pmInstall: 'pnpm install',
-            pmRunDev: 'pnpm run dev',
-            pmRunBuild: 'pnpm run build',
-            pmRunFormat: 'pnpm run format',
-            pmRunLint: 'pnpm run lint',
+            ...PNPM_SCAFFOLD_COMMANDS,
         });
 
         // A pre-existing .mcp.json that isn't even valid JSON cannot be merged. It must fall back to
@@ -1363,11 +1361,7 @@ test('blit agents add claude aborts safely on a non-object .mcp.json mcpServers 
         scaffold({
             targetDir: project,
             projectName: 'mcp-bad-shape-game',
-            pmInstall: 'pnpm install',
-            pmRunDev: 'pnpm run dev',
-            pmRunBuild: 'pnpm run build',
-            pmRunFormat: 'pnpm run format',
-            pmRunLint: 'pnpm run lint',
+            ...PNPM_SCAFFOLD_COMMANDS,
         });
 
         // Valid JSON, but `mcpServers` is an array instead of an object – not a shape the merge can
@@ -1396,11 +1390,7 @@ test('blit agents add claude merges when the same server entry is written in a d
         scaffold({
             targetDir: project,
             projectName: 'mcp-key-order-game',
-            pmInstall: 'pnpm install',
-            pmRunDev: 'pnpm run dev',
-            pmRunBuild: 'pnpm run build',
-            pmRunFormat: 'pnpm run format',
-            pmRunLint: 'pnpm run lint',
+            ...PNPM_SCAFFOLD_COMMANDS,
         });
 
         // Same server entry as the kit generates, but with its keys written in a different order.
