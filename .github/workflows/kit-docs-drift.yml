@@ -48,7 +48,14 @@ jobs:
 
       # No pnpm install: check-kit-docs-drift.mjs, lib/linear-client.mjs, and
       # report-kit-docs-drift.mjs use only Node builtins (fs, fetch).
+      #
+      # LINEAR_API_KEY is withheld unless this run is on main. push/schedule are already
+      # main-only (see the `on:` triggers above), but workflow_dispatch has no ref
+      # restriction - anyone who can dispatch this workflow could otherwise pick a branch
+      # with a modified report-kit-docs-drift.mjs and exfiltrate the secret (CWE-200). A
+      # non-main run still executes with an empty key, which report-kit-docs-drift.mjs
+      # already treats as "key not set" and skips the Linear call cleanly (exit 0).
       - name: Check and report kit docs drift
         run: node scripts/report-kit-docs-drift.mjs
         env:
-          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_API_KEY: ${{ github.ref == 'refs/heads/main' && secrets.LINEAR_API_KEY || '' }}
