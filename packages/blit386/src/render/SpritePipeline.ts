@@ -41,7 +41,7 @@ export class SpritePipeline {
     /** Uniform buffer containing screen resolution. */
     private uniformBuffer: GPUBuffer | null = null;
 
-    /** Shared palette uniform buffer (256 x vec4f, 4 KB). */
+    /** Shared palette uniform buffer ({@link MAX_PALETTE_SIZE} x vec4f). */
     private paletteBuffer: GPUBuffer | null = null;
 
     /** Bind group 0: uniforms + palette (shared across all textures). */
@@ -104,7 +104,7 @@ export class SpritePipeline {
      *
      * @param device – WebGPU device for GPU operations.
      * @param displaySize – Render target resolution in pixels.
-     * @param paletteBuffer – Shared palette uniform buffer (256 x vec4f).
+     * @param paletteBuffer – Shared palette uniform buffer ({@link MAX_PALETTE_SIZE} x vec4f).
      * @param targetFormat – Color attachment format for sprite output.
      */
     async init(
@@ -304,7 +304,7 @@ export class SpritePipeline {
                     if (rawIndex == ${TRANSPARENT_PALETTE_INDEX}u) { discard; }
 
                     let combined = rawIndex + input.paletteOffset;
-                    let index = min(combined, 255u);
+                    let index = min(combined, ${MAX_PALETTE_SIZE - 1}u);
 
                     let color = palette.colors[index];
                     if (color.a == 0.0) { discard; }

@@ -93,7 +93,7 @@ export class PrimitivePipeline {
      *
      * @param device – WebGPU device for GPU operations.
      * @param displaySize – Render target resolution in pixels.
-     * @param paletteBuffer – Shared palette uniform buffer (256 x vec4f = 4096 bytes).
+     * @param paletteBuffer – Shared palette uniform buffer ({@link MAX_PALETTE_SIZE} x vec4f).
      * @param targetFormat – Color attachment format for primitive output.
      */
     async init(

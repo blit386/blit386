@@ -16,7 +16,7 @@ import { SpritePipeline } from './SpritePipeline';
 import type { UpscaleFilter } from './UpscalePass';
 
 /**
- * GPU palette uniform buffer size: {@link MAX_PALETTE_SIZE} entries x 4 floats x 4 bytes = 4096 bytes.
+ * GPU palette uniform buffer size: {@link MAX_PALETTE_SIZE} entries x 4 floats x 4 bytes.
  */
 const PALETTE_BUFFER_SIZE = MAX_PALETTE_SIZE * 4 * 4;
 
@@ -78,7 +78,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /** Active palette for color lookups and GPU upload. */
     private palette: Palette | null = null;
 
-    /** GPU uniform buffer for the 256-entry palette. */
+    /** GPU uniform buffer for the {@link MAX_PALETTE_SIZE}-entry palette. */
     private paletteBuffer: GPUBuffer | null = null;
 
     /** Reusable staging buffer for GPU palette uploads. Avoids per-frame allocation. */
@@ -197,7 +197,7 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
             this.sceneTexView = null;
             this.lastFrameMs = 0;
 
-            // Create shared palette uniform buffer (256 entries x vec4f).
+            // Create shared palette uniform buffer (MAX_PALETTE_SIZE entries x vec4f).
             this.paletteBuffer = this.device.createBuffer({
                 label: 'Palette Uniform Buffer',
                 size: PALETTE_BUFFER_SIZE,
