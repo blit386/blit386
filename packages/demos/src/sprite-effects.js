@@ -60,8 +60,9 @@ import {
     Vignette,
 } from 'blit386';
 
+import { GLITCH_LABELS, GLITCH_TYPES_VROLL } from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -151,17 +152,6 @@ const GLITCH_ACTIVE_MIN = 4;
 const GLITCH_ACTIVE_MAX = 24;
 const GLITCH_INTENSITY_MIN = 0.3;
 const GLITCH_INTENSITY_MAX = 0.95;
-
-// Tesla Orava B/W: horizontal tear, snow, brightness waver, ghosting, vertical roll (no chroma split).
-const GLITCH_TYPES = ['hshift', 'noise', 'flicker', 'interference', 'vroll'];
-const GLITCH_LABELS = {
-    none: 'NONE',
-    hshift: 'H-HOLD',
-    noise: 'SNOW',
-    flicker: 'DIM',
-    interference: 'GHOST',
-    vroll: 'V-ROLL',
-};
 
 // The shared fallback note is one long sentence. split('. ') cuts the string at the
 // sentence break, giving us an array of two shorter lines the UI kit can draw one under
@@ -473,7 +463,7 @@ class Demo {
         // borderless kit group in the top-left corner; the shared note was split into
         // two lines up top (FALLBACK_LINES) so it stays short and easy to read.
         if (!this.effectsAvailable) {
-            ui.begin('topLeft', { margin: 2, pad: 2 });
+            ui.begin(UI_ANCHORS.TOP_LEFT, { margin: 2, pad: 2 });
 
             for (const line of FALLBACK_LINES) {
                 ui.label(line, { color: 'warm' });
@@ -620,7 +610,7 @@ class Demo {
         if (this.glitchCooldown <= 0) {
             // pick() draws one item out of a list, like taking a card off the top of a shuffled deck.
             // float() is the decimal cousin of int().
-            this.glitchType = BT.random.pick(GLITCH_TYPES);
+            this.glitchType = BT.random.pick(GLITCH_TYPES_VROLL);
             this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);

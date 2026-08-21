@@ -51,7 +51,7 @@
 
 import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -282,7 +282,7 @@ class Demo {
         // The heading lives in a kit panel pinned to the band position. ui.end() draws
         // the panel right away, so the stripes drawn after it land ON TOP of the panel
         // background. ui.spacer() reserves empty rows for that artwork.
-        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Sky (0.5 steps/sec, forward)');
         ui.spacer(40);
         ui.end();
@@ -309,7 +309,7 @@ class Demo {
         const colW = Math.floor(308 / FIRE_SLOTS);
 
         // Kit panel with the heading; the spacer reserves room for the fire columns.
-        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Fire (-6 steps/sec, backward)');
         ui.spacer(40);
         ui.end();
@@ -340,7 +340,7 @@ class Demo {
         const colW = Math.floor(308 / WATER_SLOTS);
 
         // Kit panel with the heading; the spacer reserves room for the water tiles.
-        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Water (4 steps/sec, forward)');
         ui.spacer(54);
         ui.end();

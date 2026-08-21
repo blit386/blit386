@@ -31,7 +31,7 @@
 
 import { bootstrap, BT, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -176,13 +176,13 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // Full-width 22-pixel title strip across the top of the screen.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Input Map Remapping - BT.inputMap / BT.inputMapReset');
         ui.end();
 
         // A borderless text group under the title: what the demo is about, plus the
         // classic "click the canvas" focus tip. No ui.panel() call means no box is drawn.
-        ui.begin('topLeft', { x: MARGIN_X, y: INTRO_Y });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: MARGIN_X, y: INTRO_Y });
         ui.label('Face buttons use BT.isDown(BTN_*, player). Remap at runtime with BT.inputMap.', { color: 'dim' });
         ui.label('Tap a preset button or press its number key. Click the canvas if keys stop.', { color: 'dim' });
         ui.end();
@@ -194,7 +194,7 @@ class Demo {
         // The preset switcher lives in its own panel in the bottom-left corner. Each
         // ui.button() returns true on the one frame it is clicked, tapped, or its bound
         // key goes down – all three inputs behave exactly the same.
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Presets');
 
         if (ui.button('1 - Defaults (inputMapReset)', { key: 'Digit1', width: PRESET_BUTTON_W })) {
@@ -272,7 +272,7 @@ class Demo {
     renderPlayerPanel(player, originX, originY) {
         // Pin the group at an exact position and force both panels to the same width so
         // the two columns line up regardless of how long each panel's text rows are.
-        ui.begin('topLeft', { x: originX, y: originY, width: PANEL_W });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: originX, y: originY, width: PANEL_W });
         ui.panel(player === 0 ? 'Player 0' : 'Player 1');
 
         // Which physical keys feed this player's face buttons out of the box. The custom

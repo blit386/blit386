@@ -26,7 +26,7 @@
 
 import { bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -178,7 +178,7 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // Full-width title strip with the one-line instructions.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Pointer Basics - move, click, spin the wheel');
         ui.end();
 
@@ -205,7 +205,7 @@ class Demo {
         const scroll = BT.pointerScrollDelta;
 
         // The panel starts below the title strip (y: 28 skips past it).
-        ui.begin('topLeft', { y: 28 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 28 });
         ui.panel('Slot 0 (mouse)');
 
         ui.kv('Active', active ? 'yes' : 'no');
@@ -240,7 +240,7 @@ class Demo {
      * released. BT.isDown() checks held state, which is safe from render().
      */
     renderButtonPips() {
-        ui.begin('topRight', { y: 28 });
+        ui.begin(UI_ANCHORS.TOP_RIGHT, { y: 28 });
         ui.panel('Buttons');
 
         // Each pip pairs a label with the live held-state of one button code.
@@ -264,7 +264,7 @@ class Demo {
         }
 
         // A borderless group (no ui.panel call) is just floating text.
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.label('Scroll wheel and right-click: desktop only', { color: 'dim' });
         ui.end();
     }

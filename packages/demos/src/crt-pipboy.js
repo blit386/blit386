@@ -90,8 +90,23 @@ import {
     Vignette,
 } from 'blit386';
 
+import {
+    ABERRATION_BASE,
+    applyGlitchUniforms,
+    FLICKER_BASE,
+    GLITCH_ACTIVE_MAX,
+    GLITCH_ACTIVE_MIN,
+    GLITCH_COOLDOWN_MAX,
+    GLITCH_COOLDOWN_MIN,
+    GLITCH_INTENSITY_MAX,
+    GLITCH_INTENSITY_MIN,
+    GLITCH_TYPES_CHROMA,
+    NOISE_BASE,
+    PIXEL_GLITCH_BAND_HEIGHT,
+    resetGlitchUniforms,
+} from './shared/crt-glitch.js';
 import { isAvailable, SOFTWARE_FALLBACK_NOTE } from './shared/post-process-backend.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 // The internal pixel resolution of the demo. Small numbers keep the pixel art look.
 const DISPLAY_W = 320;
@@ -162,36 +177,6 @@ const STATUS_LINES = [
 // The cursor blinks: ON for half a second, OFF for half a second.
 // 30 ticks at 60 FPS = 0.5 seconds. The cursor is just a bright square.
 const CURSOR_BLINK_TICKS = 30;
-
-// Glitch state machine tuning. All durations are in ticks (60 per second).
-// MIN/MAX cooldown = how long the screen stays calm BETWEEN glitches.
-// MIN/MAX active   = how long each glitch lasts once it starts.
-// Larger values = a calmer demo; smaller values = chaos.
-const GLITCH_COOLDOWN_MIN = 120; // 2 seconds
-const GLITCH_COOLDOWN_MAX = 360; // 6 seconds
-const GLITCH_ACTIVE_MIN = 5; // 0.083 seconds (a brief stutter)
-const GLITCH_ACTIVE_MAX = 30; // 0.5 seconds  (a noticeable hiccup)
-
-// The glitch personalities the state machine can pick from.
-// Each one drives a different combination of effect uniforms. Strings are easier to read
-// in `update()` than magic numbers when you decide to tune one of them.
-const GLITCH_TYPES = ['hshift', 'chromasplit', 'noise', 'flicker', 'interference'];
-
-// Multipliers per glitch type. We pick the strength for the current burst once and then
-// blend it in for the lifetime of the burst (envelope: ramp up, hold, ramp down).
-const GLITCH_INTENSITY_MIN = 0.35;
-const GLITCH_INTENSITY_MAX = 1.0;
-
-// Flicker dips the brightness of the WHOLE picture briefly. 1.0 = unmodulated; lower = darker.
-const FLICKER_BASE = 1.0;
-const FLICKER_DIP = 0.6;
-
-// Resting values the glitch state machine returns to between bursts.
-// ABERRATION_BASE is 0 so the screen is clean between bursts – chromasplit
-// glitches then clearly pop the channel split on from nothing rather than
-// boosting an already-visible split. NOISE_BASE is the constant faint grain.
-const ABERRATION_BASE = 0;
-const NOISE_BASE = 0.025;
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -362,7 +347,7 @@ class Demo {
         // stay palette-native. If the same shift ran after resolve + upscale, each band
         // would span multiple output pixels and lose the chunky retro look.
         this.pixelGlitch = new PixelGlitch();
-        this.pixelGlitch.bandHeight = 6; // height of each glitch band in source pixels
+        this.pixelGlitch.bandHeight = PIXEL_GLITCH_BAND_HEIGHT; // height of each glitch band in source pixels
         this.pixelGlitch.intensity = 0; // 0 = no glitch right now (state machine will spike it)
         BT.effectAdd(this.pixelGlitch); // tier='pixel' on the effect routes this automatically
 
@@ -510,60 +495,10 @@ class Demo {
         // In software mode the CRT stack is skipped – say so with a kit label. Omitting
         // ui.panel() keeps the group borderless, so it reads as a single caption line.
         if (!this.effectsAvailable) {
-            ui.begin('bottomLeft');
+            ui.begin(UI_ANCHORS.BOTTOM_LEFT);
             ui.label(SOFTWARE_FALLBACK_NOTE, { color: 'warm' });
             ui.end();
         }
-    }
-
-    /**
-     * Layers the chosen glitch personality onto the resting effect uniforms.
-     * Different burst types drive different effect uniforms – that is what gives each
-     * burst its own visual feel.
-     *
-     * @param {number} envelope – 0 -> 1 -> 0 over the lifetime of the burst.
-     */
-    applyGlitchUniforms(envelope) {
-        const peak = this.glitchPeak * envelope;
-
-        // Reset to "calm" first, then layer the chosen personality.
-        // This way two bursts back-to-back never accidentally inherit each other's settings.
-        this.resetGlitchUniforms();
-
-        if (this.glitchType === 'hshift') {
-            // Pixel-tier band shift: chunky and palette-correct. Lives in 320x240 space
-            // so each band is one source-pixel row tall.
-            this.pixelGlitch.intensity = peak;
-        } else if (this.glitchType === 'chromasplit') {
-            // Boost chromatic aberration for a split-color look. The display-tier effect
-            // works in output-pixel space so we get smooth fringes, not jagged ones.
-            this.aberration.aberration = ABERRATION_BASE + peak * 4;
-        } else if (this.glitchType === 'noise') {
-            // Push noise up by a multiplier of its baseline. The noise reseeds every
-            // frame, so this looks like crackling static.
-            this.noise.amount = NOISE_BASE + peak * 0.08;
-        } else if (this.glitchType === 'flicker') {
-            // Whole-screen brightness dip via the Flicker effect. This is the "lights
-            // flicker" moment in a horror movie.
-            this.flicker.amount = FLICKER_BASE - (FLICKER_BASE - FLICKER_DIP) * envelope;
-        } else if (this.glitchType === 'interference') {
-            // Per-row jitter burst. At rest the interference amount is 0 (screen calm);
-            // during this burst we spike it so the rows suddenly start jittering.
-            this.interference.amount = peak * 0.06;
-        }
-    }
-
-    /**
-     * Returns every glitch-driven uniform to its resting value. Called between bursts
-     * AND at the start of each frame inside applyGlitchUniforms() so the state machine
-     * never accidentally inherits settings from the previous burst.
-     */
-    resetGlitchUniforms() {
-        this.pixelGlitch.intensity = 0;
-        this.aberration.aberration = ABERRATION_BASE;
-        this.noise.amount = NOISE_BASE;
-        this.flicker.amount = FLICKER_BASE;
-        this.interference.amount = 0;
     }
 
     /**
@@ -580,12 +515,12 @@ class Demo {
             const t = 1 - this.glitchTicksLeft / this.glitchDuration; // 0 at start, 1 at end
             const envelope = Math.sin(t * Math.PI); // 0 -> 1 -> 0
 
-            this.applyGlitchUniforms(envelope);
+            applyGlitchUniforms(this, envelope);
 
             this.glitchTicksLeft--;
             // When the burst ends, reset the uniforms so the screen calms down.
             if (this.glitchTicksLeft === 0) {
-                this.resetGlitchUniforms();
+                resetGlitchUniforms(this);
                 this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
             }
         } else {
@@ -595,7 +530,7 @@ class Demo {
                 // Roll a new burst. pick() draws one item out of a list, like taking a
                 // card off the top of a shuffled deck. float() is the decimal cousin of
                 // int(), for values that are not whole numbers.
-                this.glitchType = BT.random.pick(GLITCH_TYPES);
+                this.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
                 BT.assignTag(`Glitch: ${this.glitchType}`);
                 this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
                 this.glitchTicksLeft = this.glitchDuration;

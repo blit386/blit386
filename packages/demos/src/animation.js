@@ -40,7 +40,7 @@
 import { applyEasing, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
 import { canvasToImage, registerCanvasColors } from './shared/canvas-sprites.js';
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -486,7 +486,7 @@ class Demo {
         }
 
         // A small bordered kit panel in the top-right corner names the current state.
-        ui.begin('topRight');
+        ui.begin(UI_ANCHORS.TOP_RIGHT);
         ui.panel('State');
         ui.label(this.animState, { color: stateRole });
         ui.end();
@@ -547,7 +547,7 @@ class Demo {
 
         // Timer readouts: a borderless kit group pinned near the top-left corner.
         // { x, y } pin the group's top-left corner; the kit stacks the rows below it.
-        ui.begin('topLeft', { x: 4, y: 22 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 4, y: 22 });
 
         // Orange while counting down, green once the ability is ready again.
         // Math.ceil rounds up, so "1s" shows until the very last tick of the cooldown.
@@ -562,7 +562,7 @@ class Demo {
         ui.end();
 
         // Concept summary: another borderless kit group, pinned over the ground strip.
-        ui.begin('topLeft', { x: 4, y: 162 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 4, y: 162 });
         ui.label('Tick-based timing:', { color: 'header' });
         ui.label('- Tick-based timing (update rate)', { color: 'dim' });
         ui.label('- Cooldown & event scheduling', { color: 'dim' });

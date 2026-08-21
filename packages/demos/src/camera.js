@@ -29,7 +29,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -475,7 +475,7 @@ class Demo {
         // measures the rows, draws the panel background, and places it for us.
         // The kit draws in whatever camera space is active, so this must run AFTER
         // BT.cameraReset() – otherwise the panel would scroll away with the world.
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
         ui.panel();
         ui.label('Auto-scrolling camera', { color: 'dim' });
 

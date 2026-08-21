@@ -35,7 +35,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
@@ -324,7 +324,7 @@ class Demo {
         // The mode picker sits in the same corner in every scene, so it never moves around.
         // Two arrow buttons rather than five named ones: at 320x240 a five-row panel would
         // swallow half the screen, and the number keys still jump straight to a scene.
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel(`Scene ${this.mode + 1}/5 (keys 1-5)`);
         ui.label(MODE_NAMES[this.mode], { color: 'accent' });
 
@@ -609,7 +609,7 @@ class Demo {
      * The two shuffle buttons, which are the whole lesson of this scene.
      */
     renderShufflePanel() {
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Shuffle');
 
         if (ui.button('shuffle() a copy', { key: 'KeyC' })) {
@@ -641,7 +641,7 @@ class Demo {
             total += count;
         }
 
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Drops so far');
 
         for (let i = 0; i < TIER_NAMES.length; i++) {
@@ -662,7 +662,7 @@ class Demo {
      * The spread slider and the flat-versus-clumped switch.
      */
     renderGaussianPanel() {
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Scatter');
 
         this.useGaussian = ui.checkbox('Use gaussian()', this.useGaussian, { key: 'KeyG' });
@@ -686,7 +686,7 @@ class Demo {
     renderSignPanel() {
         const total = this.leftCount + this.rightCount;
 
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Coin flips');
         ui.kv('Left (-1)', this.leftCount);
         ui.kv('Right (+1)', this.rightCount);
@@ -701,7 +701,7 @@ class Demo {
      * A reminder of what separates the two bugs.
      */
     renderDirectionsPanel() {
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel('Two bugs');
         ui.label('Blue: direction4()', { color: 'info' });
         ui.label('up, down, left, right', { color: 'dim' });

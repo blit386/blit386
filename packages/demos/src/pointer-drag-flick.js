@@ -46,7 +46,7 @@
 
 import { AudioClip, bootstrap, BT, Color32, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -492,7 +492,7 @@ class Demo {
      */
     renderHUD() {
         // The classic full-width 22 px title strip along the top edge.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Drag a ball, release to flick');
 
         // Browsers refuse to play any sound until the page is clicked or a key
@@ -508,7 +508,7 @@ class Demo {
         // a wall. ui.pip() draws a small square that fills in while its state is true.
         const labels = ['M', 'T1', 'T2', 'T3'];
 
-        ui.begin('topRight', { y: HUD_HEIGHT + 6 });
+        ui.begin(UI_ANCHORS.TOP_RIGHT, { y: HUD_HEIGHT + 6 });
         ui.panel('Grabs');
 
         for (let slot = 0; slot < 4; slot++) {

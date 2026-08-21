@@ -36,7 +36,7 @@
 
 import { AudioClip, bootstrap, BT, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -167,13 +167,13 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // The full-width title strip along the top edge.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Audio Buses - drag a slider, toggle a Mute, try the Alert');
         ui.end();
 
         // The mixer panel, pinned just below the title strip. Width and height size
         // themselves to the widest row and the number of rows – no layout math here.
-        ui.begin('topLeft', { y: 30 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { y: 30 });
         ui.panel('Mixer');
 
         for (const row of BUSES) {

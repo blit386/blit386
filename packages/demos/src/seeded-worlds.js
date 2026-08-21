@@ -32,7 +32,7 @@
 
 import { bootstrap, BT, Color32, Random, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 /** @typedef {import('blit386').Palette} Palette */
@@ -327,7 +327,7 @@ class Demo {
      * The three buttons that reseed the worlds.
      */
     renderSeedPanel() {
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Seeds');
 
         if (ui.button('New left', { key: 'KeyQ' })) {
@@ -354,7 +354,7 @@ class Demo {
      * The clone-versus-fork comparison.
      */
     renderStreamPanel() {
-        ui.begin('bottomRight');
+        ui.begin(UI_ANCHORS.BOTTOM_RIGHT);
         ui.panel(`One more generator (seed ${this.streams.seed})`);
         ui.kv('original', this.streams.base.join(' '));
         ui.kv('clone()', this.streams.cloned.join(' '));

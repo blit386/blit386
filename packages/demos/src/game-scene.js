@@ -51,7 +51,7 @@
 
 import { applyEasing, AudioClip, bootstrap, BT, Color32, Rect2i, SpriteSheet, Timer, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -963,7 +963,7 @@ class Demo {
      */
     renderLegend() {
         // Anchor the group to the top-left corner; the kit sizes the panel to fit its rows.
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
 
         // panel() gives the group a background, border, and an amber title line.
         ui.panel('Capstone: scroll, tiles, sprite, day/night');

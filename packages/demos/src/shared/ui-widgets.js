@@ -14,7 +14,7 @@
 import { BT } from 'blit386';
 
 import { BUTTON_H, CMD_RECT_FILL, CMD_RECT_STROKE, CMD_TEXT, FONT_W, FULL_WIDTH, ROW_H } from './ui-core.js';
-import { T } from './ui-theme.js';
+import { T, UI_ROLES } from './ui-theme.js';
 
 // Checkbox pip geometry: a 10x10 square with the label starting 14 pixels in.
 const PIP_SIZE = 10;
@@ -40,27 +40,36 @@ function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
 
+// Roles that already failed a roleSlot() lookup once – logged once each, not once per
+// frame, so a demo with a typo'd role does not spam the console at 60 FPS.
+const warnedRoles = new Set();
+
 /**
  * Translates a color role name ('dim', 'header', ...) into its theme palette slot.
+ * 'text' (and any other unrecognized value, including undefined) falls back to T.text –
+ * this fallback is intentional: a demo passing no {color} option, or the literal role
+ * 'text', should draw with the plain text color, not throw.
  *
- * @param {string | undefined} role – One of 'text', 'dim', 'header', 'accent', 'warm', 'info'.
+ * @param {string | undefined} role – One of UI_ROLES, or 'text', or omitted.
  * @returns {number} A palette index from the shared theme.
  */
 function roleSlot(role) {
-    switch (role) {
-        case 'dim':
-            return T.dim;
-        case 'header':
-            return T.header;
-        case 'accent':
-            return T.accent;
-        case 'warm':
-            return T.warm;
-        case 'info':
-            return T.info;
-        default:
-            return T.text;
+    if (role === undefined || role === 'text') {
+        return T.text;
     }
+
+    if (UI_ROLES.includes(role)) {
+        return T[role];
+    }
+
+    if (!warnedRoles.has(role)) {
+        console.warn(
+            `ui: unrecognized color role "${role}" – falling back to text. Valid roles: ${UI_ROLES.join(', ')}.`,
+        );
+        warnedRoles.add(role);
+    }
+
+    return T.text;
 }
 
 /**

@@ -61,7 +61,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -279,7 +279,7 @@ class Demo {
         // A small UI kit panel names the current phase, so viewers can follow the
         // cycle without opening the engine overlay. Its colors come from the theme
         // slots, which the fade leaves alone (see init()).
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
         ui.panel('Palette Fade & Flash');
         ui.label(this.getPhaseLabel());
         ui.end();

@@ -46,7 +46,7 @@
 
 import { bootstrap, BT, Color32, Palette, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -249,7 +249,7 @@ class Demo {
         BT.clear(this.theme.bg);
 
         // Full-width title strip across the top, drawn by the shared UI kit.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Palette Presets - six built-in retro color sets');
         ui.end();
 
@@ -324,7 +324,7 @@ class Demo {
             // pad 0 draws nothing but the text, pinned right after the last swatch.
             const label = `${this.presetNames[p]} (${this.presets[p].size})`;
 
-            ui.begin('topLeft', { x: 6 + count * (SWATCH_W + 1) + 4, y: y + 1, pad: 0 });
+            ui.begin(UI_ANCHORS.TOP_LEFT, { x: 6 + count * (SWATCH_W + 1) + 4, y: y + 1, pad: 0 });
             ui.label(label, { color: 'dim' });
             ui.end();
         }
@@ -340,7 +340,7 @@ class Demo {
         // ui.spacer(28) reserves an empty band inside the panel where the 24px-tall
         // swatches will be drawn AFTER ui.end() – the kit paints its panel fill on
         // end(), so anything drawn later lands on top of it.
-        ui.begin('topLeft', { x: LIVE_PANEL_X, y: LIVE_PANEL_Y, width: 298 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: LIVE_PANEL_X, y: LIVE_PANEL_Y, width: 298 });
         ui.panel('Live view (cycles every 2s)');
         ui.spacer(28);
 

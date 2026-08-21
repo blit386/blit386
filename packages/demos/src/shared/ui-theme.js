@@ -66,6 +66,12 @@ const THEME_DEFAULT_START_SLOT = 240;
 const THEME_PANEL_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'panel');
 const THEME_TEXT_OFFSET = THEME_COLORS.findIndex((entry) => entry.key === 'text');
 
+// The five color roles a demo can pass as `{ color: '<role>' }` at any UI kit call site.
+// ui-widgets.js's roleSlot() derives its role -> T-slot lookup from this list so the two
+// can never independently drift – see the worked example in the root
+// .claude/rules/named-constants.md for what happens when they do.
+const UI_ROLES = ['dim', 'header', 'accent', 'warm', 'info'];
+
 const T = {
     bg: 0,
     shadow: 0,
@@ -140,4 +146,4 @@ function applyTheme(palette, startSlot = THEME_DEFAULT_START_SLOT) {
     };
 }
 
-export { applyTheme, T, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET };
+export { applyTheme, T, THEME_DEFAULT_START_SLOT, THEME_PANEL_OFFSET, THEME_TEXT_OFFSET, UI_ROLES };

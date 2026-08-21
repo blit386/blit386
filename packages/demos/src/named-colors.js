@@ -29,7 +29,7 @@ import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 // The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
 // palette (slots 240-251, far above this demo's slots 1-9), and ui.* draws the title
 // strip, the caption text, and the Tips panel.
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -188,7 +188,7 @@ class Demo {
 
         // Full-width title strip across the top of the screen, drawn by the shared UI kit.
         // 'topBar' is the classic 22-pixel strip; panel() gives it a background and title.
-        ui.begin('topBar');
+        ui.begin(UI_ANCHORS.TOP_BAR);
         ui.panel('Built-in lookups + register / update / unregister');
         ui.end();
 
@@ -207,7 +207,7 @@ class Demo {
         // Captions under the swatches: a borderless kit group pinned inside the panel.
         // Passing x and y pins the group's top-left corner; pad: 0 removes the group's
         // inner padding so the first row starts exactly at (16, 100).
-        ui.begin('topLeft', { x: 16, y: 100, pad: 0 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 16, y: 100, pad: 0 });
         ui.label("Custom dynamic name: 'demo-dynamic'");
         ui.label("Custom optional name: 'demo-optional'");
 
@@ -223,7 +223,7 @@ class Demo {
 
         // Lower panel: API tips as a kit panel anchored to the bottom-left corner.
         // The kit sizes the panel to its widest row and keeps a small screen margin.
-        ui.begin('bottomLeft');
+        ui.begin(UI_ANCHORS.BOTTOM_LEFT);
         ui.panel('Tips');
         ui.label('Names are trim + lowercase normalized.', { color: 'dim' });
         ui.label('registerColor throws if the name exists.', { color: 'dim' });

@@ -42,7 +42,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -416,7 +416,7 @@ class Demo {
         // The heading and subtitle live in a kit panel pinned to the band position.
         // ui.end() draws the panel right away, so the swatches drawn after it land ON TOP
         // of the panel background. ui.spacer() reserves empty rows for that artwork.
-        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Scrolling Gradient');
         ui.label('Hues rotate in update() each tick', { color: 'dim' });
         ui.spacer(18);
@@ -439,7 +439,7 @@ class Demo {
         const bandY = 70;
 
         // Kit panel with the heading; the spacer reserves room for the 80-pixel column.
-        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Fire Column');
         ui.label('Color stack shifts upward in update()', { color: 'dim' });
         ui.spacer(86);
@@ -478,7 +478,7 @@ class Demo {
         // The status text turns warm orange when health is critical, dim gray otherwise.
         const isCritical = this.health <= HEALTH_LOW;
 
-        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Flashing Health Bar');
         ui.spacer(18);
         ui.label(isCritical ? 'CRITICAL! slot 80 flashes red/white' : 'Healthy: slot 80 = steady red', {
@@ -511,7 +511,7 @@ class Demo {
         const bandY = 266;
 
         // Kit panel with the heading; the spacer reserves room for the tile strip.
-        ui.begin('topLeft', { x: 0, y: bandY, width: 320 });
+        ui.begin(UI_ANCHORS.TOP_LEFT, { x: 0, y: bandY, width: 320 });
         ui.panel('Cycling Water Strip');
         ui.label('3 slots (90..92) ripple in sequence', { color: 'dim' });
         ui.spacer(18);

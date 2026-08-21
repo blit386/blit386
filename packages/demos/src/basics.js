@@ -53,7 +53,7 @@ import { bootstrap, BT, Color32, SpriteSheet, Vector2i } from 'blit386';
 // The shared demo UI kit – every demo in this series uses it for on-screen text and panels
 // so they all look the same. applyTheme() installs the kit's colors into our palette, and
 // ui.* draws things like the hint label you see in the top-left corner.
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /**
  * These @typedef lines tell code editors what types we mean when we write
@@ -454,7 +454,7 @@ class Demo {
         // { color: 'dim' } picks the kit's muted gray so the hint stays out of the way.
         // (Under the hood the kit prints with the same built-in 6x14 system font.)
         // "~" is the Backquote key (usually under Esc, left of the 1 key).
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
         ui.label('Press ~ or click/tap the symbol below', { color: 'dim' });
         ui.label('to toggle the overlay', { color: 'dim' });
         ui.end();

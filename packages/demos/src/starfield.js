@@ -39,7 +39,7 @@
 
 import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';
 
-import { applyTheme, ui } from './shared/ui.js';
+import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 
 /** @typedef {import('blit386').IBTDemo} IBTDemo */
 
@@ -423,7 +423,7 @@ class Demo {
      * keeps the sky visible behind the caption instead of covering it with a box.
      */
     drawLabels() {
-        ui.begin('topLeft');
+        ui.begin(UI_ANCHORS.TOP_LEFT);
         ui.label('FAR: slow, dim, 1 pixel', { color: 'dim' });
         ui.label('MED: faster, brighter pixel', { color: 'dim' });
         ui.label('NEAR: fastest, bright 2x2 block', { color: 'dim' });
