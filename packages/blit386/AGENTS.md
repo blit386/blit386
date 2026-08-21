@@ -19,7 +19,7 @@ pnpm install                 # from the repo root
 cd packages/blit386
 pnpm run build               # Build the library
 pnpm run test                # Run unit tests
-pnpm run preflight           # All quality gates (format, lint, typecheck, spellcheck, knip, docs, tests, ...)
+pnpm run preflight           # All quality gates (format, lint, typecheck, spellcheck, knip, doc banners, API drift, tests)
 ```
 
 `pnpm run preflight` is the single command to run before committing – it combines every check CI runs except visual
