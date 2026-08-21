@@ -19,11 +19,13 @@ pnpm install                 # from the repo root
 cd packages/blit386
 pnpm run build               # Build the library
 pnpm run test                # Run unit tests
-pnpm run preflight           # All quality gates (format, lint, typecheck, spellcheck, knip, doc banners, API drift, tests)
+pnpm run preflight           # Package quality gates (format, lint, typecheck, spellcheck, knip, doc banners, tests)
 ```
 
-`pnpm run preflight` is the single command to run before committing – it combines every check CI runs except visual
-regression tests (`/test blit386 visual`, run separately when renderer output can change).
+`pnpm run preflight` is the one command to run before committing here: it covers every CI check for this package except
+visual regression tests (`/test blit386 visual`, run separately when renderer output can change). It does not cover the
+repo-wide checks in CI's `Code Quality (root)` job – run `pnpm run docs:links` and `pnpm run agents:check` from the
+repository root, which is also what `.husky/pre-push` does once the per-package gates pass.
 
 ## Rules that matter most
 
