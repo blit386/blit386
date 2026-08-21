@@ -6,6 +6,29 @@
 #   Cursor – JSON on stdout with {"permission":"allow"|"deny"|"ask"}
 #   Claude – deny: reason on stderr + exit 2; ask: Claude permissionDecision JSON + exit 0; allow: exit 0
 # Detection: Claude stdin includes hook_event_name and/or tool_name.
+#
+# Policy: which git operations get gated here, and how hard.
+#
+# Two tiers, split by whether git itself can still recover what the command would discard:
+#
+#   - Hard block (deny, no override): git reset --hard, git checkout -- / git restore in any form
+#     that touches the worktree, and git clean without a no-force dry run. Each of these destroys
+#     content with no git object ever created for it -- uncommitted worktree/index changes, or
+#     untracked files -- so nothing is left to recover once the command runs, and no amount of
+#     after-the-fact approval changes that. `git restore --staged <path>` (without --worktree) is
+#     the one safe form: it only unstages, the worktree file is untouched, so it is not gated.
+#
+#   - Ask (overridable by an explicit approval): git push --force*, git branch -D, and
+#     git stash drop/clear. Each of these can still discard work, but git keeps the underlying
+#     commits reachable via reflog (or the remote's own reflog, for a force push) for a window
+#     afterward, so an approval that lets the command through is not approving something
+#     irreversible.
+#
+# `git checkout --` and `git restore` are two spellings of the same operation (git split
+# checkout's overloaded roles in 2.23; restore is the current, recommended spelling) and must
+# always land in the same tier -- see BT-413. Do not add a new destructive command to either tier
+# without updating both copies of this file: this one and .claude/hooks/shell-safety.sh (the
+# engine repo's own copy).
 
 set -u
 
@@ -143,7 +166,23 @@ is_destructive_clean() {
     return 0
 }
 
-if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}checkout[[:space:]]+--" || is_destructive_clean; then
+# `git restore` is the modern spelling of what `git checkout -- <path>` used to do, and must be
+# gated the same way (BT-413). Every form touches the worktree and discards uncommitted changes
+# with no recovery path, except `--staged`/`-S` given without `--worktree`/`-W`: that form only
+# unstages, leaving the worktree file exactly as it was, so it is the one safe spelling.
+GIT_RESTORE='restore([[:space:]]|[;&|<>]|$)'
+GIT_RESTORE_STAGED='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+(-S|--staged)([[:space:]]|[;&|<>]|$)'
+GIT_RESTORE_WORKTREE='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+(-W|--worktree)([[:space:]]|[;&|<>]|$)'
+
+# Exit status 0 when the command runs a `git restore` that is not the staged-only safe form.
+is_destructive_restore() {
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}${GIT_RESTORE}" || return 1
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}restore${GIT_RESTORE_STAGED}" || return 0
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}restore${GIT_RESTORE_WORKTREE}" && return 0
+    return 1
+}
+
+if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}reset[[:space:]]+--hard|${GIT_PREFIX}checkout[[:space:]]+--" || is_destructive_clean || is_destructive_restore; then
     respond_deny \
         'Blocked a destructive git command that could lose your game changes.' \
         'Use safer git operations. Ask the user before discarding any work.'
@@ -165,6 +204,43 @@ if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}push(${FORCE_FLAG}|${
     respond_ask \
         'Force push detected. Confirm before continuing.' \
         'Force push rewrites history. Ask the user for explicit confirmation first.'
+fi
+
+# `git branch -D` permanently deletes an unmerged branch. The deleted commits stay reachable via
+# reflog for a while (unlike reset --hard / checkout --/ restore / clean above), so this is "ask"
+# rather than a hard block. `-D` is shorthand for `--delete --force`; scan for either spelling,
+# including `-D` bundled with other short flags (e.g. `-Dq`).
+GIT_BRANCH='branch([[:space:]]|[;&|<>]|$)'
+GIT_BRANCH_SHORT_D='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+-[[:alnum:]]*D[[:alnum:]]*([[:space:]]|[;&|<>]|$)'
+GIT_BRANCH_LONG_DELETE='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+--delete([[:space:]]|[;&|<>]|$)'
+GIT_BRANCH_LONG_FORCE='([[:space:]]+[^[:space:];&|<>]+)*[[:space:]]+(-f|--force)([[:space:]]|[;&|<>]|$)'
+
+# Exit status 0 when the command force-deletes a branch (`-D`, or `--delete` plus `--force`).
+is_force_branch_delete() {
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}${GIT_BRANCH}" || return 1
+    printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}branch${GIT_BRANCH_SHORT_D}" && return 0
+    if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}branch${GIT_BRANCH_LONG_DELETE}" \
+        && printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}branch${GIT_BRANCH_LONG_FORCE}"; then
+        return 0
+    fi
+    return 1
+}
+
+if is_force_branch_delete; then
+    respond_ask \
+        'Force branch delete detected (git branch -D). Confirm before continuing.' \
+        'git branch -D permanently deletes an unmerged branch. Ask the user for explicit confirmation first.'
+fi
+
+# `git stash drop`/`git stash clear` permanently discards stashed work, but a stash entry is a
+# commit object, so it stays reachable via reflog for a while -- same "ask" tier as branch -D and
+# force push, not a hard block.
+GIT_STASH_DROP_CLEAR='stash[[:space:]]+(drop|clear)([[:space:]]|[;&|<>]|$)'
+
+if printf '%s' "$NORMALIZED_TEXT" | grep -Eq "${GIT_PREFIX}${GIT_STASH_DROP_CLEAR}"; then
+    respond_ask \
+        'Stash drop/clear detected. Confirm before continuing.' \
+        'git stash drop/clear permanently discards stashed work. Ask the user for explicit confirmation first.'
 fi
 
 respond_allow
