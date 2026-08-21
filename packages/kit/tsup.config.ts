@@ -16,6 +16,7 @@ export default defineConfig([
         entry: {
             adapters: 'src/adapters.ts',
             env: 'src/env.ts',
+            ownership: 'src/ownership.ts',
             'migrations/codemod': 'src/migrations/codemod.ts',
             'migrations/registry': 'src/migrations/registry.ts',
             'migrations/enableHotReload': 'src/migrations/enableHotReload.ts',

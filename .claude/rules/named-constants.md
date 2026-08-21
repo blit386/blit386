@@ -76,9 +76,10 @@ The engine version range genuinely has to exist twice: `BLIT386_RANGE` in `packa
 the engine in a freshly scaffolded game's `package.json`, and `blit386.engineRange` in `packages/kit/package.json` tells
 `blit doctor` which engine the kit's guides describe. Different mechanisms, different consumers, same value.
 
-They stay in step because `scripts/bump-lockstep.mjs` writes both and `packages/create-blit386/PUBLISHING.md` records
-that both are derived, never hand-edited. That is the threading option, done properly: one place decides the value, the
-coupling is written down, and a reviewer who edits one copy by hand is told so.
+They stay in step because `scripts/bump-lockstep.mjs` writes both, `pnpm run bump:check` re-derives and verifies both
+from the engine's own version in CI and pre-push, and `packages/create-blit386/PUBLISHING.md` records that both are
+derived, never hand-edited. That is the threading option, done properly: one place decides the value, the coupling is
+written down and enforced, and a reviewer who edits one copy by hand is told so.
 
 ## Per-package notes
 
@@ -88,6 +89,8 @@ coupling is written down, and a reviewer who edits one copy by hand is told so.
   numeric sentinel shared with a WGSL source into the shader template rather than typing it twice.
 - `packages/kit` and `packages/create-blit386` describe each other constantly – version ranges, file classes, marker
   strings, ownership manifests. Any literal one package uses to talk about the other is derived or documented, never
-  copied.
+  copied. File classes and the paths the kit writes into a generated game (`CLAUDE.md`, `.claude/`, `.cursor/`, `docs/`)
+  live once in `packages/kit/src/ownership.ts`, which both the adapters that emit those paths and the scaffolder that
+  classifies them import.
 
 Full shared-conventions list: [CLAUDE.md](../../CLAUDE.md).

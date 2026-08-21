@@ -8,6 +8,8 @@
  * Usage:
  *   node scripts/bump-lockstep.mjs 1.5.0
  *   pnpm run bump -- 1.5.0
+ *   node scripts/bump-lockstep.mjs --check   (read-only; verifies the checked-in values)
+ *   pnpm run bump:check
  *
  * Does not create git tags, commit, or publish. Dry-run with --dry-run.
  */
@@ -479,32 +481,114 @@ export function bumpLockstep(options) {
 }
 
 /**
- * @param {string[]} argv Process argv (including node + script path).
- * @returns {{ version: string, dryRun: boolean }} The parsed command-line arguments.
+ * Verify every lockstep target already holds the value derived from the engine's own version.
+ *
+ * Read-only counterpart to {@link bumpLockstep}. `packages/blit386/package.json`'s version is the
+ * anchor (the engine anchors semver for all three packages), every other value is re-derived from it
+ * with the exact transforms the bump uses, and any field whose checked-in value differs is reported.
+ * A target already in step is a fixed point of its own transform, so this needs no second copy of
+ * the derivation rules – which is the point: `bump` is a writer run once per release, and until now
+ * nothing verified the result afterwards. A hand edit, a bad merge, or a cherry-pick drifted
+ * silently.
+ *
+ * The engine's own `package.json` is a target too, and is trivially in step with the version read
+ * out of it; keeping it in the loop keeps the iteration uniform.
+ *
+ * @param {{ root?: string, readFile?: (path: string) => string }} [options] Root and reader overrides.
+ * @returns {{ version: string, drift: { path: string, actual: string, expected: string }[] }} The anchor version and every drifted field.
  */
-export function parseArgv(argv) {
-    const args = argv.slice(2).filter((arg) => arg !== '--');
-    const dryRun = args.includes('--dry-run');
-    const positional = args.filter((arg) => arg !== '--dry-run');
+export function checkLockstep(options = {}) {
+    const root = options.root ?? ROOT;
+    const readFile = options.readFile ?? ((path) => readFileSync(path, 'utf8'));
 
-    if (positional.length !== 1) {
-        throw new Error('Usage: node scripts/bump-lockstep.mjs <x.y.z> [--dry-run]');
+    const enginePkg = JSON.parse(readFile(join(root, ENGINE_PACKAGE_JSON_PATH)));
+
+    if (typeof enginePkg.version !== 'string') {
+        throw new Error(`${ENGINE_PACKAGE_JSON_PATH} is missing a string "version" field.`);
     }
 
-    return { version: parseVersionArg(positional[0]), dryRun };
+    const version = parseVersionArg(enginePkg.version);
+
+    /** @type {{ path: string, actual: string, expected: string }[]} */
+    const drift = [];
+
+    for (const target of LOCKSTEP_TARGETS) {
+        const { results } = target.apply(readFile(join(root, target.path)), version);
+
+        for (const result of results) {
+            if (result.previous !== result.next) {
+                drift.push({ path: result.path, actual: result.previous, expected: result.next });
+            }
+        }
+    }
+
+    return { version, drift };
 }
 
 /**
  * @param {string[]} argv Process argv (including node + script path).
- * @param {{ log?: (message: string) => void, bump?: typeof bumpLockstep }} [hooks] Optional hooks for logging and bumping.
+ * @returns {{ mode: 'check' } | { mode: 'bump', version: string, dryRun: boolean }} The parsed command-line arguments.
+ */
+export function parseArgv(argv) {
+    const args = argv.slice(2).filter((arg) => arg !== '--');
+    const check = args.includes('--check');
+    const dryRun = args.includes('--dry-run');
+    const positional = args.filter((arg) => arg !== '--dry-run' && arg !== '--check');
+
+    if (check) {
+        if (dryRun) {
+            throw new Error('Usage: --check and --dry-run are mutually exclusive.');
+        }
+
+        if (positional.length > 0) {
+            throw new Error(`Usage: --check derives the version from ${ENGINE_PACKAGE_JSON_PATH}; do not pass one.`);
+        }
+
+        return { mode: 'check' };
+    }
+
+    if (positional.length !== 1) {
+        throw new Error(
+            'Usage: node scripts/bump-lockstep.mjs <x.y.z> [--dry-run] | node scripts/bump-lockstep.mjs --check',
+        );
+    }
+
+    return { mode: 'bump', version: parseVersionArg(positional[0]), dryRun };
+}
+
+/**
+ * @param {string[]} argv Process argv (including node + script path).
+ * @param {{ log?: (message: string) => void, error?: (message: string) => void, bump?: typeof bumpLockstep, check?: typeof checkLockstep }} [hooks] Optional hooks for logging, bumping, and checking.
  * @returns {number} Process exit code.
  */
 export function main(argv, hooks = {}) {
     const log = hooks.log ?? console.log;
+    const error = hooks.error ?? console.error;
     const bump = hooks.bump ?? bumpLockstep;
+    const check = hooks.check ?? checkLockstep;
 
     try {
-        const { version, dryRun } = parseArgv(argv);
+        const parsed = parseArgv(argv);
+
+        if (parsed.mode === 'check') {
+            const { version, drift } = check({});
+
+            if (drift.length === 0) {
+                log(`Lockstep is in step at ${version}.`);
+                return 0;
+            }
+
+            error(`Lockstep drift against ${ENGINE_PACKAGE_JSON_PATH} version ${version}:`);
+
+            for (const entry of drift) {
+                error(`  ${entry.path}: ${entry.actual} (expected ${entry.expected})`);
+            }
+
+            error(`Run \`pnpm run bump -- ${version}\` to restore, or bump to a new version.`);
+            return 1;
+        }
+
+        const { version, dryRun } = parsed;
         const results = bump({ version, dryRun });
         const label = dryRun ? 'Would set' : 'Set';
 

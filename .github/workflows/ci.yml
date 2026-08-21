@@ -140,6 +140,12 @@ jobs:
         run: pnpm run check-dash-typography
         background: true
 
+      # Lockstep drift is cross-package: the `scaffolder` paths filter does not cover the engine's
+      # own package.json, so this belongs in the job that always runs.
+      - name: Check lockstep versions
+        run: pnpm run bump:check
+        background: true
+
       - name: Run dash-typography tests
         run: pnpm run test:dash-typography
         background: true

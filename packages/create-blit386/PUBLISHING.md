@@ -277,9 +277,11 @@ publishing the kit publishes the instructions an AI assistant will follow inside
   This is not the same thing as `BLIT386_RANGE`: `engineRange` is checked against an already-installed engine on an
   existing project, while `BLIT386_RANGE` only affects what a fresh scaffold's `package.json` pins.
 - Both `engineRange` and `BLIT386_RANGE` are **derived**, not hand-edited: `pnpm run bump -- x.y.0` sets both to
-  `^x.y.0` (major.minor from the lockstep version, patch pinned to `0`) automatically. Neither can drift from the
-  version or from each other, and neither needs a checklist row of its own – this is the concrete payoff of lockstep
-  versioning (BT-410).
+  `^x.y.0` (major.minor from the lockstep version, patch pinned to `0`) automatically. `pnpm run bump:check`
+  (`scripts/bump-lockstep.mjs --check`) re-derives every lockstep value from `packages/blit386/package.json` and exits
+  non-zero on any mismatch; it runs in CI's `quality-root` job and in `.husky/pre-push`, so a hand edit, a bad merge, or
+  a cherry-pick between releases fails loudly instead of shipping. Neither range needs a checklist row of its own – this
+  is the concrete payoff of lockstep versioning (BT-410).
 
 ## Troubleshooting
 
