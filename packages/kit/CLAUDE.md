@@ -17,13 +17,15 @@ The `blit` CLI is a project-local bin inside every generated game: `blit run`, `
 
 Generated games receive `AGENTS.md`, nine beginner docs from `content/docs/` (`getting-started`, `basics`, `drawing`,
 `input`, `palette`, `random`, `audio`, `hot-reload`, `when-something-breaks`), and the game-author skills in
-`content/skills/`. These are not copies of the engine's full `docs/` tree – they teach the starter game and point to
-GitHub for deep API reference.
+`content/skills/`. These are not copies of the engine's full `docs/` tree – they teach the starter game and route
+anything deeper to the live documentation at blit386.dev: the `blit386-docs` MCP server (`search_docs`,
+`get_docs_summary`), `https://blit386.dev/llms.txt`, or any doc page fetched with `Accept: text/markdown`. GitHub is the
+last resort, for when the documentation itself falls short.
 
 The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (24
-game-author capability skills plus the `run`, `fix`, and `migrate` workflow skills), `hooks/shell-safety.sh` +
-`hooks.manifest.json`, and `agents.config.json`. Skills and rules are discovered by directory scan in `src/adapters.ts`
-– adding a skill folder is enough, nothing registers it by name.
+game-author capability skills plus the `run`, `fix`, `migrate`, and `ask-the-docs` workflow skills),
+`hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are discovered by directory
+scan in `src/adapters.ts` – adding a skill folder is enough, nothing registers it by name.
 
 Kit content must be self-contained. Skills and docs may reference only `packages/blit386` (the engine) and other local
 kit files. Do not reference the `packages/demos` package, its demo slugs, or its URLs – that package may be archived in
@@ -65,11 +67,13 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/skills/use-noise/SKILL.md` | `hash*` functions, `ValueNoise` / `PerlinNoise` / `SimplexNoise`, fBm defaults |
 | `content/skills/move-and-time/SKILL.md` | Clock getters, `Timer`, the `EasingFunction` curve list, `interpolate` |
 | `content/skills/animate-the-palette/SKILL.md` | Cycle / fade / exposure fade / flash / swap, `highlightLead` |
+| `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude-only; Cursor has no SessionStart-equivalent event) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
 | `content/agents.config.json` | Descriptive only – no code reads it. The executable source for what each adapter emits is `src/ownership.ts` (paths + classes) plus `src/adapters.ts`; review this file when those change |
+| `src/adapters.ts` (docs-MCP config) | `packages/website/public/.well-known/mcp/server-card.json` changes name, URL, or transport |
 
 While auditing, confirm every skill directory appears in the skills table in `README.md` – that is the only human-facing
 list of what ships, and it has no automated guard.
@@ -84,8 +88,11 @@ list of what ships, and it has no automated guard.
    it together with `BLIT386_RANGE` in `packages/create-blit386/src/scaffold.ts`, and `pnpm run bump:check` fails the
    build when either drifts. Any other literal this package uses to describe the engine or the scaffolder follows the
    same derive-or-document discipline: file classes and generated-project paths live once in `src/ownership.ts`, which
-   `create-blit386` imports through `@blit386/kit/adapters`. See root `.claude/rules/named-constants.md` for the shared
-   policy
+   `create-blit386` imports through `@blit386/kit/adapters`. Same discipline, one boundary further out:
+   `MCP_SERVER_NAME` and `MCP_SERVER_URL` in `src/adapters.ts` are a documented copy of
+   `packages/website/public/.well-known/mcp/server-card.json`, which this package cannot import;
+   `test/mcp-config.test.mjs` compares the two, so the copy fails loudly instead of drifting. See root
+   `.claude/rules/named-constants.md` for the shared policy
 
 ## Where to find information
 
@@ -93,6 +100,7 @@ list of what ships, and it has no automated guard.
 | --- | --- |
 | What does the `blit` CLI do? | `src/cli.ts`, `README.md` |
 | How are agent files generated? | `src/adapters.ts`; every path it emits is built from `src/ownership.ts`, and the scaffolder writes them to disk |
+| Docs-MCP config shipped into games | `buildMcpConfig` in `src/adapters.ts`; canonical server definition lives in `packages/website` |
 | What do `blit agents sync` / `add` do? | `src/commands/agents.ts` (drift `--check` + write path, `runAddAgent`) |
 | How do API migrations / codemods work? | `src/migrations/` (registry + codemod engine), `src/commands/migrate.ts` |
 | Sync ownership model / manifest | `.blit/manifest.json` (classes + `vars`), `src/commands/agents.ts` |

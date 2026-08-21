@@ -156,6 +156,8 @@ test('scaffolds without --yes when no interactive terminal is attached', () => {
         assert.ok(existsSync(join(project, 'package.json')), 'non-TTY run should still scaffold the project');
         assert.ok(existsSync(join(project, 'src', 'game.js')), 'non-TTY run should emit the game file');
         assert.ok(!existsSync(join(project, 'CLAUDE.md')), 'non-TTY run should use the default of no AI assistant');
+        assert.ok(!existsSync(join(project, '.mcp.json')), 'no assistant means no Claude MCP config');
+        assert.ok(!existsSync(join(project, '.cursor', 'mcp.json')), 'no assistant means no Cursor MCP config');
         assert.ok(!existsSync(join(project, '.github')), 'non-TTY run should use the default of no CI');
     } finally {
         rmSync(work, { recursive: true, force: true });
@@ -251,6 +253,18 @@ test('scaffold copies optional CI and agent files when requested', () => {
             existsSync(join(project, '.claude', 'hooks', 'session-start.sh')),
             '.claude/hooks/session-start.sh should be generated',
         );
+
+        // The docs-MCP config. Claude Code skips a remote entry that has a url but no type, so the type
+        // is load-bearing, not decoration.
+        const claudeMcp = JSON.parse(readFileSync(join(project, '.mcp.json'), 'utf8'));
+        assert.deepEqual(
+            Object.keys(claudeMcp.mcpServers),
+            ['blit386-docs'],
+            '.mcp.json should declare exactly the blit386-docs server',
+        );
+        assert.equal(claudeMcp.mcpServers['blit386-docs'].type, 'http', 'Claude MCP entry needs an explicit type');
+        assert.equal(claudeMcp.mcpServers['blit386-docs'].url, 'https://blit386.dev/mcp');
+        assertNoPlaceholders(project, '.mcp.json');
 
         const claudeSettings = JSON.parse(readFileSync(join(project, '.claude', 'settings.json'), 'utf8'));
         assert.ok(Array.isArray(claudeSettings.hooks?.PostToolUse), 'settings.json should have PostToolUse entries');
@@ -399,6 +413,24 @@ test('scaffold copies optional CI and agent files when requested', () => {
         const runCmd = readFileSync(join(cursorProject, '.cursor', 'commands', 'run.md'), 'utf8');
         assert.ok(!runCmd.includes('{{'), 'run command should not have unrendered placeholders');
 
+        // The same docs-MCP server, in Cursor's shape: a type there would mark a local stdio server,
+        // so the remote entry carries the url alone.
+        const cursorMcp = JSON.parse(readFileSync(join(cursorProject, '.cursor', 'mcp.json'), 'utf8'));
+        assert.deepEqual(
+            Object.keys(cursorMcp.mcpServers),
+            ['blit386-docs'],
+            '.cursor/mcp.json should declare exactly the blit386-docs server',
+        );
+        assert.equal(cursorMcp.mcpServers['blit386-docs'].url, 'https://blit386.dev/mcp');
+        assert.ok(!('type' in cursorMcp.mcpServers['blit386-docs']), 'Cursor MCP entry should not carry a type');
+
+        // Each adapter ships its own assistant's config path and not the other's.
+        assert.ok(!existsSync(join(cursorProject, '.mcp.json')), 'a Cursor project should not get Claude .mcp.json');
+        assert.ok(
+            !existsSync(join(project, '.cursor', 'mcp.json')),
+            'a Claude project should not get .cursor/mcp.json',
+        );
+
         // Cursor has no SessionStart-equivalent hook event, so the manifest's session-start
         // entry (Claude-only) should not appear here.
         assert.ok(
@@ -534,6 +566,14 @@ test('scaffold agent files match @blit386/kit/adapters memory output', () => {
 
             assert.ok(generated.length > 0, `${agent} adapter should emit files`);
 
+            // The loop below only checks what the adapter claims to emit, so it would happily pass on an
+            // adapter that stopped emitting the MCP config entirely. Pin its presence explicitly.
+            const mcpPath = agent === 'claude' ? '.mcp.json' : '.cursor/mcp.json';
+            assert.ok(
+                generated.some((file) => file.path === mcpPath),
+                `${agent} adapter should emit ${mcpPath}`,
+            );
+
             for (const file of generated) {
                 const onDisk = join(project, file.path);
                 assert.ok(existsSync(onDisk), `scaffold should have written ${file.path}`);
@@ -657,6 +697,7 @@ test('blit agents sync (full) changes nothing on a freshly scaffolded Claude pro
         const ruleBefore = readFileSync(join(project, '.claude', 'rules', 'blit-api-names.md'), 'utf8');
         const claudeBefore = readFileSync(join(project, 'CLAUDE.md'), 'utf8');
         const settingsBefore = readFileSync(join(project, '.claude', 'settings.json'), 'utf8');
+        const mcpBefore = readFileSync(join(project, '.mcp.json'), 'utf8');
 
         const { exitCode, output } = runBlit(project, ['agents', 'sync']);
 
@@ -677,6 +718,12 @@ test('blit agents sync (full) changes nothing on a freshly scaffolded Claude pro
             readFileSync(join(project, '.claude', 'settings.json'), 'utf8'),
             settingsBefore,
             'generated settings.json should be byte-identical after sync',
+        );
+        // A .mcp.json misclassified as user-owned would go stale here instead of being refreshed.
+        assert.equal(
+            readFileSync(join(project, '.mcp.json'), 'utf8'),
+            mcpBefore,
+            'generated .mcp.json should be byte-identical after sync',
         );
         assert.ok(!existsSync(join(project, 'CLAUDE.md.new')), 'no .new conflict file should be created');
 
@@ -706,6 +753,7 @@ test('blit agents sync (full) changes nothing on a freshly scaffolded Cursor pro
 
         const hooksBefore = readFileSync(join(project, '.cursor', 'hooks.json'), 'utf8');
         const ruleBefore = readFileSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8');
+        const mcpBefore = readFileSync(join(project, '.cursor', 'mcp.json'), 'utf8');
 
         const { exitCode, output } = runBlit(project, ['agents', 'sync']);
 
@@ -720,6 +768,11 @@ test('blit agents sync (full) changes nothing on a freshly scaffolded Cursor pro
             readFileSync(join(project, '.cursor', 'rules', 'blit-api-names.mdc'), 'utf8'),
             ruleBefore,
             'generated cursor rule should be byte-identical after sync',
+        );
+        assert.equal(
+            readFileSync(join(project, '.cursor', 'mcp.json'), 'utf8'),
+            mcpBefore,
+            'generated .cursor/mcp.json should be byte-identical after sync',
         );
     } finally {
         rmSync(work, { recursive: true, force: true });
@@ -853,6 +906,7 @@ test('blit agents add claude sets up Claude files in a project that did not pick
 
         // No agent was chosen, so none of the Claude files exist yet.
         assert.ok(!existsSync(join(project, 'CLAUDE.md')), 'CLAUDE.md should be absent before add');
+        assert.ok(!existsSync(join(project, '.mcp.json')), '.mcp.json should be absent before add');
 
         const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
         assert.equal(exitCode, 0, 'add claude should exit 0');
@@ -872,6 +926,7 @@ test('blit agents add claude sets up Claude files in a project that did not pick
             existsSync(join(project, '.claude', 'hooks', 'shell-safety.sh')),
             '.claude/hooks/shell-safety.sh should be created',
         );
+        assert.ok(existsSync(join(project, '.mcp.json')), '.mcp.json should be created');
 
         // The new files are recorded in the manifest, so a drift check is clean.
         const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
@@ -880,6 +935,11 @@ test('blit agents add claude sets up Claude files in a project that did not pick
             'CLAUDE.md should be recorded in the manifest',
         );
         assert.ok(existsSync(join(project, '.blit', 'base', 'CLAUDE.md')), 'a pristine base copy should be written');
+
+        const mcpEntry = manifest.files.find((f) => f.path === '.mcp.json');
+        assert.ok(mcpEntry, '.mcp.json should be recorded in the manifest');
+        assert.equal(mcpEntry.class, 'kit-owned', '.mcp.json should be kit-owned so sync keeps it current');
+        assert.ok(existsSync(join(project, '.blit', 'base', '.mcp.json')), '.mcp.json should get a base copy');
 
         const drift = runBlit(project, ['agents', 'sync', '--check']);
         assert.equal(drift.exitCode, 0, 'sync --check should be clean right after add');
@@ -912,6 +972,12 @@ test('blit agents add cursor sets up Cursor files and a later sync is clean', ()
             '.cursor/rules should be created',
         );
         assert.ok(existsSync(join(project, '.cursor', 'commands', 'run.md')), '.cursor/commands should be created');
+        assert.ok(existsSync(join(project, '.cursor', 'mcp.json')), '.cursor/mcp.json should be created');
+
+        const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+        const mcpEntry = manifest.files.find((f) => f.path === '.cursor/mcp.json');
+        assert.ok(mcpEntry, '.cursor/mcp.json should be recorded in the manifest');
+        assert.equal(mcpEntry.class, 'kit-owned', '.cursor/mcp.json should be kit-owned so sync keeps it current');
 
         // A full sync on the freshly added agent changes nothing.
         const sync = runBlit(project, ['agents', 'sync']);
@@ -1066,6 +1132,124 @@ test('blit agents sync does not flag a clean-merged kit file as drift', { skip: 
 
         const check2 = runBlit(project, ['agents', 'sync', '--check']);
         assert.equal(check2.exitCode, 0, 'still in sync after a second sync');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('the scaffolded MCP config is recorded as kit-owned in the manifest', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-class-'));
+
+    try {
+        for (const [agent, mcpPath] of [
+            ['claude', '.mcp.json'],
+            ['cursor', '.cursor/mcp.json'],
+        ]) {
+            const project = join(work, `${agent}-mcp-class`);
+            scaffold({
+                targetDir: project,
+                projectName: `${agent}-mcp-class`,
+                pmInstall: 'npm install',
+                pmRunDev: 'npm run dev',
+                pmRunBuild: 'npm run build',
+                pmRunFormat: 'npm run format',
+                pmRunLint: 'npm run lint',
+                agent,
+            });
+
+            const manifest = JSON.parse(readFileSync(join(project, '.blit', 'manifest.json'), 'utf8'));
+            const entry = manifest.files.find((f) => f.path === mcpPath);
+
+            // A user-owned misclassification is silent: the file scaffolds fine and then never updates
+            // again, so the game keeps pointing at whatever the docs server looked like on day one.
+            assert.ok(entry, `${mcpPath} should be recorded in the manifest`);
+            assert.equal(entry.class, 'kit-owned', `${mcpPath} should be kit-owned`);
+
+            const onDisk = createHash('sha256')
+                .update(readFileSync(join(project, ...mcpPath.split('/'))))
+                .digest('hex');
+            assert.equal(entry.sha256, onDisk, `${mcpPath} manifest hash should match the file on disk`);
+            assert.ok(existsSync(join(project, '.blit', 'base', ...mcpPath.split('/'))), 'a base copy is needed');
+        }
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents sync keeps a user-added MCP server in .mcp.json', { skip: !hasGit }, () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-merge-'));
+
+    try {
+        const project = join(work, 'mcp-merge-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'mcp-merge-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+            agent: 'claude',
+        });
+
+        // .mcp.json is the natural place for a user to register their own servers. Being kit-owned, it
+        // goes through the three-way merge, so their entry has to survive a sync that regenerates it.
+        const mcpPath = join(project, '.mcp.json');
+        const config = JSON.parse(readFileSync(mcpPath, 'utf8'));
+        config.mcpServers['my-server'] = { type: 'http', url: 'https://example.test/mcp' };
+        writeFileSync(mcpPath, `${JSON.stringify(config, null, 2)}\n`);
+
+        const sync = runBlit(project, ['agents', 'sync']);
+        assert.equal(sync.exitCode, 0, 'a clean merge should exit 0');
+        assert.ok(!existsSync(`${mcpPath}.new`), 'a clean merge should not leave a .new conflict copy');
+
+        const merged = JSON.parse(readFileSync(mcpPath, 'utf8'));
+        assert.ok(merged.mcpServers['my-server'], 'the user server must survive the sync');
+        assert.ok(merged.mcpServers['blit386-docs'], 'the kit server must still be there');
+
+        const check = runBlit(project, ['agents', 'sync', '--check']);
+        assert.equal(check.exitCode, 0, 'a clean-merged .mcp.json must not be reported as drift');
+    } finally {
+        rmSync(work, { recursive: true, force: true });
+    }
+});
+
+test('blit agents add claude aborts safely on a hand-written .mcp.json', () => {
+    const work = mkdtempSync(join(tmpdir(), 'cbt-mcp-collision-'));
+
+    try {
+        const project = join(work, 'mcp-collision-game');
+        scaffold({
+            targetDir: project,
+            projectName: 'mcp-collision-game',
+            pmInstall: 'npm install',
+            pmRunDev: 'npm run dev',
+            pmRunBuild: 'npm run build',
+            pmRunFormat: 'npm run format',
+            pmRunLint: 'npm run lint',
+        });
+
+        // The user already registered an unrelated MCP server before asking for Claude. That file is
+        // theirs, so the add is all-or-nothing: nothing is written except the .new copy.
+        const mcpPath = join(project, '.mcp.json');
+        const userContent = `${JSON.stringify({ mcpServers: { mine: { type: 'http', url: 'https://example.test/mcp' } } }, null, 2)}\n`;
+        writeFileSync(mcpPath, userContent);
+
+        const { exitCode, output } = runBlit(project, ['agents', 'add', 'claude']);
+
+        assert.equal(readFileSync(mcpPath, 'utf8'), userContent, 'the user .mcp.json must not be overwritten');
+        assert.ok(existsSync(`${mcpPath}.new`), 'the kit version should be saved as .mcp.json.new');
+        assert.ok(output.includes('.mcp.json.new'), 'output should mention the .new copy');
+        assert.notEqual(exitCode, 0, 'a needs-review collision should exit non-zero');
+        assert.ok(!existsSync(join(project, 'CLAUDE.md')), 'an aborted add must not write the other Claude files');
+
+        const sync = runBlit(project, ['agents', 'sync']);
+        assert.equal(sync.exitCode, 0, 'sync should still succeed after an aborted add');
+        assert.equal(
+            readFileSync(mcpPath, 'utf8'),
+            userContent,
+            'a later sync must not overwrite the user .mcp.json after an aborted add',
+        );
     } finally {
         rmSync(work, { recursive: true, force: true });
     }

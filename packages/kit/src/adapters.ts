@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import {
     AGENTS_MD,
     CLAUDE_HOOKS_DIR,
+    CLAUDE_MCP_JSON,
     CLAUDE_MD,
     CLAUDE_RULES_DIR,
     CLAUDE_SETTINGS_JSON,
@@ -20,6 +21,7 @@ import {
     CURSOR_COMMANDS_DIR,
     CURSOR_HOOKS_DIR,
     CURSOR_HOOKS_JSON,
+    CURSOR_MCP_JSON,
     CURSOR_RULES_DIR,
     DOCS_DIR,
 } from './ownership';
@@ -32,6 +34,19 @@ export { type AgentKind, type FileClass, classifyFile, hasAgentFiles, isAgentPat
 /** Managed-region markers shared by AGENTS.md and CLAUDE.md. */
 const MANAGED_START = '<!-- blit-kit:managed:start -->';
 const MANAGED_END = '<!-- blit-kit:managed:end -->';
+
+/**
+ * The blit386.dev documentation MCP server that every generated game registers with its assistant.
+ *
+ * MANUAL-SYNC HAZARD: the canonical definition of this server lives in the website package, at
+ * `packages/website/public/.well-known/mcp/server-card.json` (and `packages/website/src/mcp-server.ts`).
+ * `@blit386/kit` ships standalone and cannot import across that boundary, so these two literals are a
+ * deliberate copy. `packages/kit/test/mcp-config.test.mjs` compares them against the server card, so an
+ * edit on either side that is not mirrored on the other fails the kit test suite rather than shipping
+ * a generated game that points at a dead endpoint.
+ */
+const MCP_SERVER_NAME = 'blit386-docs';
+const MCP_SERVER_URL = 'https://blit386.dev/mcp';
 
 /** A regenerated file: a project-relative path (forward slashes) and its full content. */
 export interface GeneratedFile {
@@ -177,6 +192,7 @@ export function collectDocs(root: string): GeneratedFile[] {
  *   - `.claude/skills/{name}/SKILL.md` (kit-owned)
  *   - `.claude/settings.json`          (kit-owned; translated from content/hooks.manifest.json)
  *   - `.claude/hooks/{script}`         (kit-owned; copied verbatim)
+ *   - `.mcp.json`                      (kit-owned; the blit386.dev documentation MCP server)
  *
  * @param root – The kit root directory.
  * @param vars – Template variables used when rendering generated content.
@@ -262,6 +278,8 @@ export function generateClaudeAdapter(root: string, vars: TemplateVars): Generat
         files.push({ path: CLAUDE_SETTINGS_JSON, content: `${JSON.stringify(claudeSettings, null, 2)}\n` });
         claudeHookScripts = referencedHookScripts(manifest, 'claude');
     }
+
+    files.push(mcpConfigFile('claude'));
 
     const hooksScriptsDir = join(contentRoot, 'hooks');
     if (existsSync(hooksScriptsDir)) {
@@ -433,12 +451,50 @@ function buildClaudeSettings(manifest: HooksManifest, vars: TemplateVars): Claud
     return { hooks };
 }
 
+/** Which assistant's MCP configuration file to build. */
+type McpTarget = 'claude' | 'cursor';
+
+/** One remote MCP server entry. */
+interface McpServerEntry {
+    /** Transport marker. Required by Claude Code, omitted for Cursor – see `buildMcpConfig`. */
+    type?: string;
+    url: string;
+}
+
+/** The `mcpServers` wrapper both assistants read. */
+interface McpConfigJson {
+    mcpServers: Record<string, McpServerEntry>;
+}
+
+/**
+ * Build the documentation-MCP configuration for one assistant.
+ *
+ * The two entries differ by one key on purpose, and the difference is not cosmetic:
+ * Claude Code rejects a remote entry that has a `url` but no `type` and skips the server entirely,
+ * while for Cursor a `type` is the marker of a local stdio server – adding one there would make it
+ * misread a remote HTTP endpoint. Do not harmonize the two shapes.
+ */
+function buildMcpConfig(target: McpTarget): McpConfigJson {
+    const entry: McpServerEntry = target === 'claude' ? { type: 'http', url: MCP_SERVER_URL } : { url: MCP_SERVER_URL };
+
+    return { mcpServers: { [MCP_SERVER_NAME]: entry } };
+}
+
+/** The MCP configuration file for one assistant, at that assistant's conventional path. */
+function mcpConfigFile(target: McpTarget): GeneratedFile {
+    return {
+        path: target === 'claude' ? CLAUDE_MCP_JSON : CURSOR_MCP_JSON,
+        content: `${JSON.stringify(buildMcpConfig(target), null, 2)}\n`,
+    };
+}
+
 /**
  * Generate the Cursor adapter files from the kit IR:
  *   - `.cursor/rules/{name}.mdc`      (kit-owned; MDC frontmatter preserved)
  *   - `.cursor/hooks.json`            (kit-owned; translated from content/hooks.manifest.json)
  *   - `.cursor/hooks/{script}`        (kit-owned; copied verbatim)
  *   - `.cursor/commands/{name}.md`    (kit-owned, one per skill)
+ *   - `.cursor/mcp.json`              (kit-owned; the blit386.dev documentation MCP server)
  */
 export function generateCursorAdapter(root: string, vars: TemplateVars): GeneratedFile[] {
     const contentRoot = join(root, 'content');
@@ -465,6 +521,8 @@ export function generateCursorAdapter(root: string, vars: TemplateVars): Generat
         files.push({ path: CURSOR_HOOKS_JSON, content: `${JSON.stringify(cursorHooks, null, 2)}\n` });
         cursorHookScripts = referencedHookScripts(manifest, 'cursor');
     }
+
+    files.push(mcpConfigFile('cursor'));
 
     const hooksScriptsDir = join(contentRoot, 'hooks');
     if (existsSync(hooksScriptsDir)) {

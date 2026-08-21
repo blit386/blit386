@@ -74,4 +74,8 @@ the usual suspects: blank screens, "command not found," forgotten `await`, and m
 - `AGENTS.md` – a short home base for you or an AI assistant.
 - `docs/` – friendly guides: getting started, the game loop, drawing, input, colors, randomness and world generation,
   hot reload, and fixing problems.
-- [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site.
+- [blit386.dev](https://blit386.dev) – the full BLIT386 documentation site. If you set up Claude Code or Cursor, it can
+  search this site directly – that is what the `.mcp.json` file here (Claude Code) or `.cursor/mcp.json` (Cursor) is
+  for.
+- [blit386.dev/llms.txt](https://blit386.dev/llms.txt) – the whole site's contents as one plain text file, handy for
+  skimming or pasting into a chat.

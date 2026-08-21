@@ -285,6 +285,7 @@ Capability matrix (what each adapter emits from the same source):
 | On-demand actions (skills) | described in prose | `.claude/skills/<name>/SKILL.md` | `.cursor/commands` or scoped rules | reads `AGENTS.md` |
 | Deterministic guardrails (hooks) | prose warning only | `.claude/settings.json` hooks (PreToolUse / PostToolUse) | `.cursor/hooks.json` (afterFileEdit, beforeShellExecution, `failClosed`) – richest | `.zed/settings.json` tool_permissions |
 | Lockfile / .env block | prose warning | settings.json PreToolUse | hooks.json `failClosed` | settings.json `always_deny` |
+| Live docs lookup (MCP) | prose pointer | `.mcp.json` (`type: http` required) | `.cursor/mcp.json` (`url` only; a `type` marks stdio) | n/a |
 
 This formalizes exactly what the engine repos do by hand today. Reuse the output to clean up the engine repos too.
 
@@ -1124,3 +1125,19 @@ ships both at `^1.4.0`.
   `generateClaudeAdapter` emits `.claude/settings.json` (PreToolUse / PostToolUse) and copies `content/hooks/` into
   `.claude/hooks/`. `shell-safety.sh` speaks both Cursor permission JSON and Claude exit-2 / permissionDecision
   protocols. Ownership classifiers treat `.claude/hooks/` as kit-owned; scaffold twin tests cover settings.json.
+- 2026-08-21: Round 27 (BT-253). Docs MCP into generated games – see the "Live docs lookup" row of the §4 capability
+  matrix for what each adapter emits. A new `ask-the-docs` kit skill and an `AGENTS.md` managed-region rewrite teach an
+  assistant the three live-docs routes (MCP `search_docs` / `get_docs_summary`, `llms.txt`, `Accept: text/markdown`),
+  and the old "go read GitHub" pointer is demoted to last resort. Three decisions worth keeping: (1) no
+  `content/mcp.manifest.json` – one server with no per-adapter divergence beyond a single key does not earn a manifest
+  plus parser plus schema; revisit when a second server appears. (2) The generated `.claude/settings.json` does not
+  pre-approve the server in its MCP enable list – the approval prompt is Claude Code's consent boundary for a network
+  server, the scaffolder is not the party entitled to answer it, and a checked-in settings file's approvals are ignored
+  in an untrusted folder anyway. (3) The two configs differ by one key deliberately: Claude Code skips a remote entry
+  with a `url` and no `type`, while for Cursor a `type` marks a local stdio server. Both are kit-owned, so
+  `blit agents sync` refreshes them and three-way merges a user's own added servers. Both paths are declared in
+  `packages/kit/src/ownership.ts` alongside the other generated-project paths, so the emitters and the classifier cannot
+  disagree about them. `.mcp.json` is the one Claude path the `.claude/` prefix does not cover, so `AGENT_PATHS` names
+  it outright; a hand-written one is still safe, because those predicates read manifest entries and an untracked file is
+  caught by `runAddAgent`'s collision check instead. `packages/kit/test/mcp-config.test.mjs` guards the server name and
+  URL against `packages/website/public/.well-known/mcp/server-card.json`.
