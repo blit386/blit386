@@ -64,7 +64,7 @@ function roleSlot(role) {
 
     if (!warnedRoles.has(role)) {
         console.warn(
-            `ui: unrecognized color role "${role}" - falling back to text. Valid roles: ${UI_ROLES.join(', ')}.`,
+            `ui: unrecognized color role "${role}" – falling back to text. Valid roles: ${UI_ROLES.join(', ')}.`,
         );
         warnedRoles.add(role);
     }
