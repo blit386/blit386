@@ -32,6 +32,7 @@
   "packageManager": "pnpm@11.20.0",
   "scripts": {
     "dev": "waku dev",
+    "dev:twoslash": "cross-env BLIT386_TWOSLASH=1 NODE_OPTIONS=--max-old-space-size=8192 waku dev",
     "build": "fumadocs-mdx && cross-env CLOUDFLARE=1 waku build",
     "postbuild": "node scripts/patch-wrangler.mjs && node scripts/patch-html-title.mjs",
     "start": "wrangler dev --config dist/server/wrangler.json",

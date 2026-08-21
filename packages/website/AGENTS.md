@@ -24,7 +24,7 @@ pnpm --filter blit386-website run preflight    # format:check, typecheck, test, 
 `test` covers both suites: `node --test` over `scripts/**` and Vitest over `src/**`.
 
 Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shell commands. Production builds need
-`CLOUDFLARE=1`, which `pnpm run build` already sets.
+`CLOUDFLARE=1`, which `pnpm run build` already sets; `WORKERS_CI` also counts, and `BLIT386_TWOSLASH` overrides both.
 
 ## Rules that matter most
 
@@ -33,8 +33,12 @@ Use `pnpm run <script>` (not bare `pnpm <script>`) so RTK hooks can rewrite shel
   `pnpm run sync:docs`.
 - No MDX comments. Prettier formats `.mdx` with the Markdown parser, so remark reads `{/* ... */}` as emphasis and
   rewrites it to `{/_ ... _/}`, which renders as visible italic text on the page. Delete the note or make it real prose.
-- Twoslash type-on-hover popups are gated on `!!process.env.CLOUDFLARE` (a memory workaround, not a build-mode check),
-  so popups are absent from a plain `pnpm run dev` – use `pnpm run build && pnpm run start` to see the real thing.
+- Twoslash type-on-hover popups are gated by `isTwoslashEnabled()` in `scripts/twoslash-config.mjs`, which is true for
+  `CLOUDFLARE` or `WORKERS_CI` and can be forced either way with `BLIT386_TWOSLASH`. Popups are absent from a plain
+  `pnpm run dev`; `pnpm run dev:twoslash` turns them on for one page at a time (browsing many pages OOMs – see
+  `CLAUDE.md`, Twoslash), and `pnpm run build && pnpm run start` is the faithful full-site preview. Build the engine
+  first (`pnpm --filter blit386 run build`) for any of those – Twoslash reads `packages/blit386/dist`, and
+  `throws: false` turns a missing build into silently plain code blocks rather than an error.
 - Documentation ships with the change – update `content/` and run `pnpm run docs:links` from the repo root when adding
   links.
 
@@ -46,7 +50,7 @@ Hand-authored: `content/index.mdx`, `content/blog/**`, and a handful of top-leve
 
 ## Where to go next
 
-[`CLAUDE.md`](CLAUDE.md) has the full "Where to Find Information" routing table, documentation-mirror mechanics,
-Twoslash memory-constraint detail, and blog-media conventions.
+[`CLAUDE.md`](CLAUDE.md) has the full "Where to Find Information" routing table, documentation-mirror mechanics, the
+Twoslash gate and its measured dev cost, and blog-media conventions.
 
 Condensed, always-applicable agent rules also live in the root `.claude/rules/*.md`.

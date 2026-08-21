@@ -134,17 +134,21 @@ reviews:
     - path: 'packages/website/scripts/**'
       instructions: >-
         Build/CI helpers (`sync-docs-from-engine.mjs`, `watch-engine-docs.mjs`, `patch-wrangler.mjs`,
-        `patch-html-title.mjs`, `encode-video.mjs`) plus `scripts/__tests__`. The sync script is MDX-aware and owns the
-        Documentation mirror – it must not gain a hard-coded per-page list (publish set lives in
+        `patch-html-title.mjs`, `encode-video.mjs`, `twoslash-config.mjs`) plus `scripts/__tests__`. The sync script is
+        MDX-aware and owns the Documentation mirror – it must not gain a hard-coded per-page list (publish set lives in
         `packages/blit386/docs/_sitemap.json`). American English; no emoji; keep `pnpm run <script>` command forms
         accurate. Tests use `node --test` via `pnpm run test`.
     - path: 'packages/website/{press.config.tsx,source.config.ts,waku.config.ts}'
       instructions: >-
         Site wiring: Fumapress plugins/layouts/`GLOBAL_HEAD` (`press.config.tsx`), fumadocs-mdx collections and Twoslash
         (`source.config.ts`), Waku/Vite plugins (`waku.config.ts`). MDX components used in engine docs must be
-        registered in `fumadocsMdx({ getMdxComponents })`. Twoslash is gated on `CLOUDFLARE` (production builds only) –
-        do not "fix" that by enabling it in dev. American English; no emoji. When plugins or routing change, check
-        whether `CLAUDE.md` / `README.md` still match (see root `.claude/rules/docs-sync-required.md`).
+        registered in `fumadocsMdx({ getMdxComponents })`. The Twoslash gate lives in `isTwoslashEnabled()`
+        (`scripts/twoslash-config.mjs`) and covers `CLOUDFLARE`, `WORKERS_CI`, and `BLIT386_TWOSLASH` – do not re-inline
+        an env check in `source.config.ts`, and do not "simplify" the adapter-var truthiness, which deliberately mirrors
+        Waku's own `getDefaultAdapter()`. Dev stays off by default (`pnpm run dev:twoslash` is the opt-in); do not turn
+        it on in `dev`, for the measured reasons in `packages/website/CLAUDE.md`, Twoslash. American English; no emoji.
+        When plugins or routing change, check whether `CLAUDE.md` / `README.md` still match (see root
+        `.claude/rules/docs-sync-required.md`).
     - path: 'packages/website/content/**'
       instructions: >-
         Hand-authored MDX and meta (landing, showcase, community, mcp-server, blog, and docs hub pages such as

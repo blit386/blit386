@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { twoslasher } from 'twoslash';
-import { TWOSLASH_COMPILER_OPTIONS } from '../twoslash-compiler-options.mjs';
+import { TWOSLASH_COMPILER_OPTIONS } from '../twoslash-config.mjs';
 
 // The `Effect` interface example from packages/blit386/docs/guide-post-process-effects.md.
 const EFFECT_INTERFACE_EXAMPLE = `import type { Effect, EffectTier, Vector2i } from 'blit386';
