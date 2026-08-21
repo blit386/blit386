@@ -73,6 +73,21 @@ describe('patchWranglerConfig', () => {
         assert.deepEqual(result.vars, { OTHER: 'value' });
     });
 
+    test('sets BLIT386_CSP_REPORT_ONLY=1 when isCspReportOnly is true', () => {
+        const result = patchWranglerConfig({ name: 'worker' }, { isCspReportOnly: true });
+        assert.deepEqual(result.vars, { BLIT386_CSP_REPORT_ONLY: '1' });
+    });
+
+    test('combines both channel vars', () => {
+        const result = patchWranglerConfig({ name: 'worker' }, { isNextChannel: true, isCspReportOnly: true });
+        assert.deepEqual(result.vars, { BLIT386_CHANNEL: 'next', BLIT386_CSP_REPORT_ONLY: '1' });
+    });
+
+    test('leaves vars untouched when neither flag is set', () => {
+        const result = patchWranglerConfig({ vars: { OTHER: 'value' } }, {});
+        assert.deepEqual(result.vars, { OTHER: 'value' });
+    });
+
     test('enables observability when the key is absent', () => {
         const result = patchWranglerConfig({ name: 'worker' });
         assert.deepEqual(result.observability, { enabled: true });

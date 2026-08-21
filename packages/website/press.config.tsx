@@ -17,6 +17,7 @@ import { feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { channelHeadersPlugin } from './src/channel-headers';
+import { cspNoncePlugin } from './src/csp-nonce';
 import { AuthorByline } from './src/components/author-byline';
 import { BlogIndexPage } from './src/components/blog-index';
 import { BlogLayout } from './src/components/blog-layout';
@@ -384,8 +385,14 @@ export default defineConfig({
     // fallback serves most requests (including /robots.txt) directly from the ASSETS
     // binding and returns without calling next(), so a plugin registered after it would
     // never see those requests to override robots.txt or set a response header on them.
+    //
+    // cspNoncePlugin contributes no middleware at all – it wraps the server entry's fetch,
+    // outside the whole chain, because that is the only place the response body exists. Its
+    // position in this list is therefore cosmetic; it leads because it is outermost.
 
     .plugins(
+        cspNoncePlugin(),
+
         channelHeadersPlugin(),
 
         flexsearchPlugin(),

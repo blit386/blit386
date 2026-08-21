@@ -247,6 +247,51 @@ describe('markdownNegotiationPlugin', () => {
             expect(assets.requests[0]).toBe(harness.context.req.raw);
         });
 
+        describe('conditional headers', () => {
+            const CONDITIONAL = {
+                'if-none-match': '"87eaabf8441fbd725e14f88ea6debca3"',
+                'if-modified-since': 'Wed, 20 Aug 2026 10:00:00 GMT',
+            };
+
+            it('strips them for an HTML page so the binding cannot answer 304', async () => {
+                // csp-nonce.ts stamps a fresh nonce into every HTML body. A 304 would hand the
+                // client that nonce's CSP to merge into a *stored* body carrying a different one,
+                // blocking every script on the page.
+                const harness = assetsHarness(new Response('<!doctype html>'), {
+                    url: 'https://blit386.dev/docs/getting-started',
+                    headers: CONDITIONAL,
+                });
+
+                await harness.run(middleware);
+
+                expect(assets.requests[0]?.headers.get('if-none-match')).toBeNull();
+                expect(assets.requests[0]?.headers.get('if-modified-since')).toBeNull();
+            });
+
+            it('keeps the rest of the request intact while stripping them', async () => {
+                const harness = assetsHarness(new Response('<!doctype html>'), {
+                    url: 'https://blit386.dev/',
+                    headers: { ...CONDITIONAL, 'accept-language': 'en-GB' },
+                });
+
+                await harness.run(middleware);
+
+                expect(assets.requests[0]?.url).toBe('https://blit386.dev/');
+                expect(assets.requests[0]?.headers.get('accept-language')).toBe('en-GB');
+            });
+
+            it('keeps them for a hashed asset, which relies on 304s', async () => {
+                const harness = assetsHarness(new Response('ok'), {
+                    url: 'https://blit386.dev/assets/entry-BujZVH9j.js',
+                    headers: CONDITIONAL,
+                });
+
+                await harness.run(middleware);
+
+                expect(assets.requests[0]?.headers.get('if-none-match')).toBe(CONDITIONAL['if-none-match']);
+            });
+        });
+
         it('falls through to the next middleware when the binding has no such asset', async () => {
             const harness = assetsHarness(new Response('not found', { status: 404 }));
 

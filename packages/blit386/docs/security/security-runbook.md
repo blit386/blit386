@@ -96,6 +96,7 @@ When Opsera `compliance-audit` MCP is unavailable, gather evidence manually:
 | Secrets in repo | `.gitignore`, hooks blocking `.env`; `rg` for hardcoded tokens (no secret values in reports) |
 | CI integrity | `.github/workflows/*.yml` – pinned actions, least privilege |
 | Deploy headers (demos) | `packages/demos/public/_headers`, `curl -I` on deployed URLs |
+| Deploy headers (website) | `packages/website/public/_headers` plus the nonce'd CSP from `packages/website/src/csp-nonce.ts`; `curl -s -D - -o /dev/null https://blit386.dev/` must show a `nonce-` in `script-src` and no `'unsafe-inline'` (a GET, not `curl -I`) |
 | Ownership / bus factor | [Maintainers](#maintainers) (solo); optional `security-ownership-map` skill output (`summary.json`) |
 | MCP governance | `pnpm run security:mcp-preflight --governance-only` |
 
