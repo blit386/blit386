@@ -62,6 +62,29 @@ The description after the package argument becomes the commit subject.
 
 - Display the GitHub PR URL for review
 
+## Watching CI after a label was added
+
+If the PR was labeled after it was opened (e.g. `--label` at creation, or a label added moments later),
+`gh pr checks <pr>` can lie. Every job in `.github/workflows/ci.yml` is gated on
+`needs.changes.outputs.label-event != 'true'`, so labeling starts a second `pull_request` run in which every job skips –
+correct behavior, since re-running full CI on every label would be worse. But `gh pr checks` aggregates across all runs
+for the head SHA, and the label run's skipped entries shadow the real run's results, so a fully checked PR can read as
+unchecked.
+
+The tell: a run whose jobs are _all_ `skipping` is a label run, not a CI failure. Distinguish the two runs by creation
+time – the earlier-created run is the real one. Query runs directly rather than trusting the aggregated view:
+
+```bash
+SHA=$(gh pr view <pr> --json headRefOid -q .headRefOid)
+RUN_ID=$(gh api "repos/{owner}/{repo}/actions/runs?head_sha=$SHA&event=pull_request" \
+  --jq '[.workflow_runs[] | select(.name=="CI")] | sort_by(.created_at) | .[0].id')
+gh api "repos/{owner}/{repo}/actions/runs/$RUN_ID/jobs" --jq '.jobs[] | {name, conclusion}'
+```
+
+This reads the earliest `CI` workflow run for the head SHA and its jobs directly, bypassing whatever a later label run
+shadowed. Verified against blit386/blit386#562, labeled `cr` 14 seconds after opening: `gh pr checks 562` reported
+`Code Quality (root)` as `skipping`, while the earliest run's jobs reported it `success`.
+
 ## Requirements
 
 - `gh` CLI must be installed and authenticated
