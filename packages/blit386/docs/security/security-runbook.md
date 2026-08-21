@@ -228,7 +228,9 @@ Use this structure in agent output or issue/PR comments:
 
 Report the three fields above and nothing else – no secrets, credentials, auth headers, or full MCP config bodies. Give
 config paths repo-relative: the preflight prints them absolute, so a pasted report would otherwise carry the local
-username. The accepted entry's URL is deliberately absent here; `pnpm run agents:check` is what verifies it.
+username. The accepted entry's URL is deliberately absent here; `pnpm run agents:check` is what verifies it, against a
+pinned literal rather than a copy, so aiming the server at a new URL takes a deliberate edit to
+`scripts/check-agent-config.mjs`.
 
 ## Related docs
 

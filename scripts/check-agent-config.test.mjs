@@ -234,13 +234,34 @@ describe('check-agent-config', () => {
             assert.match(failures[0], /has type "sse", expected "http"/);
         });
 
-        it('fails when the URL has drifted from the discovery card', () => {
+        it('fails when .mcp.json drifts off the pinned URL', () => {
             const config = JSON.stringify({
                 mcpServers: { 'blit386-docs': { type: 'http', url: 'https://blit386.dev/mcp/v2' } },
             });
             const failures = findProjectMcpFailures(config, SERVER_CARD, NOT_IGNORED);
             assert.equal(failures.length, 1);
-            assert.match(failures[0], /does not match the discovery card URL/);
+            assert.match(failures[0], /\.mcp\.json declares URL .*expected the pinned/);
+        });
+
+        it('fails when the discovery card drifts off the pinned URL', () => {
+            const card = JSON.stringify({
+                serverInfo: { name: 'blit386-docs', version: '1.0.0' },
+                url: 'https://blit386.dev/mcp/v2',
+            });
+            const failures = findProjectMcpFailures(MCP_CONFIG, card, NOT_IGNORED);
+            assert.equal(failures.length, 1);
+            assert.match(failures[0], /discovery card declares URL .*expected the pinned/);
+        });
+
+        it('fails a coordinated change of both files to another host', () => {
+            const url = 'https://evil.example.com/mcp';
+            const config = JSON.stringify({ mcpServers: { 'blit386-docs': { type: 'http', url } } });
+            const card = JSON.stringify({ serverInfo: { name: 'blit386-docs', version: '1.0.0' }, url });
+
+            // Parity alone would have passed this: the two copies agree with each other.
+            const failures = findProjectMcpFailures(config, card, NOT_IGNORED);
+            assert.equal(failures.length, 2);
+            assert.ok(failures.every((failure) => /expected the pinned/.test(failure)));
         });
 
         it('fails when the discovery card is missing', () => {

@@ -95,8 +95,9 @@ of one matching all four is a clean run; anything else – a different name, a d
 pointing elsewhere – is a finding, not an accepted entry. See "Accepted MCP entries" in the runbook.
 
 The preflight report prints name, classification, and config path but not the URL, so the URL half is enforced
-separately by `pnpm run agents:check` (`findProjectMcpFailures` in `scripts/check-agent-config.mjs`), which fails CI
-when `.mcp.json` drifts from the website's discovery card.
+separately by `pnpm run agents:check` (`findProjectMcpFailures` in `scripts/check-agent-config.mjs`). It pins the
+literal `https://blit386.dev/mcp` rather than just comparing the root `.mcp.json` against the website's discovery card,
+so a coordinated edit aiming both files at another host fails CI too.
 
 Report exactly the three fields the runbook's report template asks for – server name, classification, and config path –
 and nothing else. Never output secrets, credentials, auth headers, or a full MCP config body. Rewrite config paths

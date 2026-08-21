@@ -15,8 +15,9 @@
  *   - `.github/copilot-instructions.md` points at both AGENTS.md and CLAUDE.md.
  *     GitHub only reads the top-level `.github/`, so this does not apply to
  *     package roots.
- *   - `.mcp.json` declares the blit386.dev docs server, its URL still matches
- *     the website's discovery card, and git does not ignore the file.
+ *   - `.mcp.json` declares the blit386.dev docs server, it and the website's
+ *     discovery card both still point at the pinned endpoint, and git does not
+ *     ignore the file.
  *
  * Repo root and every package that carries an AGENTS.md or CLAUDE.md:
  *   - AGENTS.md still points at an existing CLAUDE.md.
@@ -198,14 +199,25 @@ export function findZedSettingsFailures(zedSettingsContent, agentsSkillsLayoutEx
 
 /**
  * The one MCP server the repo declares for contributors. `packages/website` both serves
- * this endpoint and publishes the discovery card the URL is checked against, so the two
- * JSON copies of the URL are kept honest by this assertion rather than by a shared constant
- * (neither file can import one).
+ * this endpoint and publishes the discovery card, so the URL exists as two JSON copies
+ * neither of which can import a constant – this file is what keeps them honest.
  */
 const PROJECT_MCP_SERVER_NAME = 'blit386-docs';
 
 /** Claude Code's transport discriminant for a remote streamable-HTTP MCP server. */
 const PROJECT_MCP_SERVER_TYPE = 'http';
+
+/**
+ * The pinned endpoint, asserted literally rather than by comparing the two JSON copies to
+ * each other. Parity alone would accept a coordinated edit that aims both files at some
+ * other host, and every contributor's agent queries whatever this names – with the responses
+ * landing in agent context. Changing it therefore has to touch this file too, where the
+ * diff reads as what it is.
+ *
+ * Changing the endpoint is a deliberate three-file edit: here, the root `.mcp.json`, and
+ * `packages/website/public/.well-known/mcp/server-card.json`.
+ */
+const PROJECT_MCP_SERVER_URL = 'https://blit386.dev/mcp';
 
 /**
  * Whether git would ignore the root `.mcp.json` if it were removed and re-added.
@@ -300,9 +312,17 @@ export function findProjectMcpFailures(mcpConfigContent, serverCardContent, root
     try {
         const card = JSON.parse(serverCardContent);
 
-        if (server.url !== card.url) {
+        // Pinning both copies to the literal subsumes a parity check: if each equals the
+        // pinned URL they equal each other, and a coordinated change fails on both counts.
+        if (server.url !== PROJECT_MCP_SERVER_URL) {
             failures.push(
-                `.mcp.json URL ${JSON.stringify(server.url)} does not match the discovery card URL ${JSON.stringify(card.url)}`,
+                `.mcp.json declares URL ${JSON.stringify(server.url)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
+            );
+        }
+
+        if (card.url !== PROJECT_MCP_SERVER_URL) {
+            failures.push(
+                `discovery card declares URL ${JSON.stringify(card.url)}, expected the pinned ${JSON.stringify(PROJECT_MCP_SERVER_URL)}`,
             );
         }
 
