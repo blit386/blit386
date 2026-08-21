@@ -10,8 +10,8 @@ tables, …) live in the root [`CLAUDE.md`](../../CLAUDE.md) – read together w
 Scripts are `pnpm run <script>` from this package's directory (or `pnpm --filter blit386-website run <script>` from the
 repo root); `package.json` is the list and `pnpm run preflight` is the gating set (it includes the build and, last of
 all, the docs-mirror check – see Documentation mirror). Production builds require `CLOUDFLARE=1`, which `pnpm run build`
-already sets. Shell commands are rewritten by `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep
-for exploration.
+already sets; `WORKERS_CI` works too, and `BLIT386_TWOSLASH` overrides either (see Twoslash). Shell commands are
+rewritten by `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Read/Grep for exploration.
 
 ## Critical Rules
 
@@ -36,6 +36,7 @@ for exploration.
 | --- | --- |
 | Site and plugin config, layouts, global head, MDX component map | `press.config.tsx` |
 | MDX collection config, Twoslash wiring | `source.config.ts` |
+| Twoslash gate, compiler options | `scripts/twoslash-config.mjs` |
 | Waku / Vite plugins | `waku.config.ts` |
 | Generated MDX loader | `.source/` (gitignored; run `fumadocs-mdx` or `pnpm run typecheck`) |
 | Engine API truth | `packages/blit386/docs/` in this monorepo – never this package |
@@ -182,21 +183,60 @@ block that fails compilation degrades to plain highlighting instead of crashing 
 
 `blit386` is a `workspace:*` devDependency (BT-414), not a pinned npm version – Twoslash resolves its type declarations
 from `packages/blit386/dist`, so a doc can reference and validate unreleased engine API before it ships, and the engine
-must be built (`pnpm --filter blit386 run build`) before this package's `build` in every CI/deploy job that runs one.
-Because `throws: false` swallows a failing block into plain highlighting rather than an error, a regression here is
-silent. `grep -c twoslash-hover "dist/public/docs/<page>/index.html"` after a build (`<page>` is a placeholder, e.g.
+must be built (`pnpm --filter blit386 run build`) before this package's `build` in every CI/deploy job that runs one –
+and now before `pnpm run dev:twoslash` too, since dev can run the transformer as well. Because `throws: false` swallows
+a failing block into plain highlighting rather than an error, a regression here is silent.
+`grep -c twoslash-hover "dist/public/docs/<page>/index.html"` after a build (`<page>` is a placeholder, e.g.
 `api/random`; keep it quoted or the shell reads `<`/`>` as redirection) is only a page-wide smoke check, not proof a
 specific block typechecked – a page with several blocks can show a nonzero count while one block still silently failed
 (see BT-427). To confirm one block specifically, grep the built HTML for a distinctive identifier from that block's
 source and check whether it renders as a hoverable `twoslash-hover` token instead of plain syntax-highlighted text.
 
-Dev-mode skip (memory constraint): the transformer is gated on `!!process.env.CLOUDFLARE`. `blit386.d.ts` is ~192 KB and
-imports WebGPU types; across the several dozen MDX files the TypeScript language service accumulates over 4 GB during
-`waku dev` and OOMs. `NODE_ENV` is not a usable signal because `source.config.ts` is evaluated by the fumadocs-mdx Vite
-plugin before Vite writes `NODE_ENV=production`. So Twoslash runs whenever `CLOUDFLARE` is truthy – in practice that
-means `pnpm run build` (which sets `CLOUDFLARE=1`), or any other command launched with `CLOUDFLARE=1` in the
-environment. Popups are absent from a plain `pnpm run dev` – use `pnpm run build && pnpm run start` to preview the real
-thing.
+### The gate
+
+`isTwoslashEnabled()` in `scripts/twoslash-config.mjs` decides whether the transformer runs. Absent an override it
+mirrors `getDefaultAdapter()` in `waku/dist/lib/utils/config.js` exactly – true for `CLOUDFLARE` **or** `WORKERS_CI`,
+read for plain truthiness, so `CLOUDFLARE=0` counts as on. That asymmetry is deliberate: the contract is "Twoslash runs
+iff Waku selected its Cloudflare adapter", and checking only `CLOUDFLARE` is what let a Cloudflare Workers Builds run
+ship the site with every popup missing, silently, because `throws: false` degrades rather than errors (BT-188).
+`BLIT386_TWOSLASH` is the human escape hatch and gets human semantics: set it to force Twoslash on in dev, or to
+`0`/`false` to force it off during a build for a faster loop. `NODE_ENV` is not a usable signal because
+`source.config.ts` is evaluated by the fumadocs-mdx Vite plugin before Vite writes `NODE_ENV=production`.
+
+Keep the check in `twoslash-config.mjs`; do not re-inline an env read into `source.config.ts`.
+`scripts/__tests__/twoslash-enabled.test.mjs` pins every case, including the `package.json` copies of the env-var names
+– the only copies that live outside TypeScript.
+
+### Dev mode and its real cost (measured 2026-08-21, M4 Max / 64 GB, Node 26.7.0)
+
+`pnpm run dev:twoslash` turns popups on locally. It is **not** the default, and it carries `--max-old-space-size=8192`,
+because dev-mode Twoslash is genuinely expensive – though not for the reason this file asserted until BT-188 measured
+it.
+
+**The language service is cheap.** `fumadocs-twoslash` memoizes the twoslasher in a module-level `cachedInstance`, and
+`twoslash` caches the virtual TS environment keyed on a hash of the compiler options – every block here uses the same
+options, so exactly **one** language service serves the whole process, not one per MDX file. Replaying all 155 blocks
+through it peaks at **318 MB RSS / 120 MB heap** in 4.0 s, p50 8 ms per block, and the heap is flat: three full sweeps
+end at 318, 322, 323 MB. Dev is lazier still – with `async: true` the eager pass reads frontmatter only, so Twoslash
+runs per page you actually open. `blit386.d.ts` is **288,348 bytes**, not the ~192 KB previously claimed here.
+
+**The rendered payload is what costs.** A twoslashed page serves **~6.8 MB of HTML against ~0.6 MB plain** (`api/audio`
+carries 215 hover tokens), and the dev server retains roughly **2 GB of RSS per distinct page visited**, monotonically.
+The OOM stack tops out in `JsonStringify`/`ApplyReplacerFunction` – RSC payload serialization – not in TypeScript. So
+the growth is unbounded in pages browsed and no fixed heap fixes a full sweep: the 4 GB default dies after 2 pages, 8 GB
+after 4.
+
+**What that means in practice.** Editing one page is fine and is the workflow the script is for: first load of
+`api/audio` takes 5.3 s and settles at ~4.7 GB, then five edit-and-reload cycles hold at 2.7 s and plateau around 5.9 GB
+with all 215 popups intact. **Browsing the whole docs section under `dev:twoslash` will OOM.** Restart the server if you
+need to move on to another heavy page. For a faithful full-site preview use `pnpm run build && pnpm run start`, which is
+single-shot and streams to disk.
+
+Two options measured and rejected, so nobody re-tries them: `fsCache: false` is worse on both axes (353 MB peak, p50 18
+ms), and `cache: false` – a fresh environment per block – costs 388 MB and 31 s for a 24x latency regression. Both are
+already-correct defaults. Per-block opt-in was also considered and does not apply: every Twoslash block lives in the
+generated mirror owned by `packages/blit386/docs/`, so a dev-only fence marker would have to ship into the published
+engine docs – and lazy dev compilation already gives per-page opt-in for free.
 
 ## Dependency pins
 
@@ -244,8 +284,8 @@ turns those red rather than silently degrading production. That is the largest p
 It is not the whole of it. The suite calls the plugins directly with doubles, so it cannot see anything that lives in
 the wiring or the build, and these still need a real build diffed against a baseline captured on the old pins:
 
-- per-page `twoslash-hover` counts (the transformer only runs under `CLOUDFLARE=1`, and `throws: false` degrades a
-  failing block silently)
+- per-page `twoslash-hover` counts (the transformer only runs when `isTwoslashEnabled()` is true, and `throws: false`
+  degrades a failing block silently)
 - `dist/server/wrangler.json` assertions – `run_worker_first`, `nodejs_compat`, `vars.BLIT386_CHANNEL`
 - the plugin chain order in `press.config.tsx`, which the unit tests do not construct
 - OG card geometry (1200x630), and the layout and RSC surface generally
