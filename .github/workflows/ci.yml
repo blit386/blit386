@@ -734,6 +734,12 @@ jobs:
         run: pnpm --filter blit386-website run knip
         background: true
 
+      # Structural validation only (no build needed) - see check-well-known-urls
+      # below in build-website for the URL-reachability half of BT-248.
+      - name: Check well-known artifact schemas
+        run: pnpm --filter blit386-website run check:well-known-schemas
+        background: true
+
       - wait-all:
 
       # Deliberately after the join rather than alongside the checks above: this one
@@ -774,6 +780,13 @@ jobs:
         run: pnpm --filter blit386-website run build
         env:
           NODE_ENV: production
+
+      # Boots the built worker (wrangler dev against dist/server/wrangler.json) and
+      # makes real requests against every URL/endpoint advertised to agents, including
+      # /mcp's JSON-RPC tools - a bare status check would not have caught BT-247's
+      # dead-endpoint bug, which returned 200 with the wrong content.
+      - name: Verify advertised URLs resolve in the built output
+        run: pnpm --filter blit386-website run check:well-known-urls
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

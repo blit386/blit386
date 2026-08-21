@@ -46,6 +46,7 @@ rewritten by `rtk hook claude` – prefer `rtk read` / `rtk grep` over native Re
 | Worker plugin test coverage | `src/**/*.test.ts` (Vitest, via `pnpm run test:unit`) – see Test runners |
 | Why every git subprocess passes `gitEnv()` | `scripts/git-env.mjs` |
 | MCP server | `src/mcp-server.ts`, `public/.well-known/mcp/server-card.json`, `content/mcp-server.mdx` |
+| Well-known artifact CI validation (digest, schema, URL reachability) | `scripts/check-well-known-schemas.mjs` (`check:well-known-schemas`, structural checks, no build needed), `scripts/check-well-known-urls.mjs` (`check:well-known-urls`, boots the built worker and makes real requests, needs `pnpm run build` first); the digest check itself lives in `scripts/__tests__/agent-skills-manifest.test.mjs` |
 | Cloudflare security headers | `public/_headers` |
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` – see Content-Security-Policy |
 

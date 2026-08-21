@@ -45,6 +45,8 @@
     "sync:docs": "node scripts/sync-docs-from-engine.mjs",
     "sync:docs:check": "node scripts/check-docs-sync.mjs",
     "sync:docs:watch": "node scripts/watch-engine-docs.mjs",
+    "check:well-known-schemas": "node scripts/check-well-known-schemas.mjs",
+    "check:well-known-urls": "node scripts/check-well-known-urls.mjs",
     "encode:video": "node scripts/encode-video.mjs",
     "knip": "cd ../.. && knip --workspace packages/website",
     "knip:fix": "cd ../.. && knip --workspace packages/website --fix",
@@ -54,7 +56,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest watch",
     "test:unit:coverage": "vitest run --coverage",
-    "preflight": "pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run spellcheck && pnpm run knip && pnpm run build && pnpm run sync:docs:check",
+    "preflight": "pnpm run format:check && pnpm run typecheck && pnpm run test && pnpm run spellcheck && pnpm run knip && pnpm run check:well-known-schemas && pnpm run build && pnpm run check:well-known-urls && pnpm run sync:docs:check",
     "deploy": "wrangler deploy --config dist/server/wrangler.json --name blit386"
   },
   "dependencies": {
