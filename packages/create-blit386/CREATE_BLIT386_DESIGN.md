@@ -286,8 +286,11 @@ kit/
   skills/<name>/SKILL.md     # game-author skills (name, description, when-to-use, steps)
   hooks/                    # hook scripts + hooks.manifest.json declaring intent in a neutral schema
   docs/*.md                 # progressive-disclosure deep dives (trimmed from engine docs/api-*.md)
-  agents.config.json        # capability matrix: which adapter renders what, and how
 ```
+
+The matrix below was originally also mirrored into a `kit/agents.config.json`. That file was descriptive only, drifted
+twice, and was deleted in BT-478 – `src/ownership.ts` plus `src/adapters.ts` are the executable answer to "which adapter
+renders what".
 
 Capability matrix (what each adapter emits from the same source):
 
@@ -577,7 +580,8 @@ Resolved:
 - Q-FILIPEK-AGENT (resolved): Filipek uses no AI agent (and no Node.js yet; editor is Zed). v0.1 ships the no-agent
   path; no agent dirs emitted; README teaches Node.js install and running from Zed's terminal.
 - Q-GROUND-TRUTH-FORMAT (resolved): canonical kit IR = `AGENTS.md` prose + `rules/*.md` + `skills/*/SKILL.md` +
-  `hooks.manifest.json` + `agents.config.json` (see 4.3).
+  `hooks.manifest.json` + `agents.config.json` (see 4.3). (`agents.config.json` was dropped in BT-478, 2026-08-21: no
+  code ever read it.)
 - Q-PKGMGR (resolved -> D10): auto-detect the package manager that invoked `create-blit386` (via
   `npm_config_user_agent`, like create-vite); default docs/examples to npm (ships with Node). pnpm-only stays Václav's
   own-repo rule.

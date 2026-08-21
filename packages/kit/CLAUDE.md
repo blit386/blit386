@@ -24,8 +24,8 @@ last resort, for when the documentation itself falls short.
 
 The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (24
 game-author capability skills plus the `run`, `fix`, `migrate`, and `ask-the-docs` workflow skills),
-`hooks/shell-safety.sh` + `hooks.manifest.json`, and `agents.config.json`. Skills and rules are discovered by directory
-scan in `src/adapters.ts` – adding a skill folder is enough, nothing registers it by name.
+`hooks/shell-safety.sh` + `hooks.manifest.json`. Skills and rules are discovered by directory scan in `src/adapters.ts`
+– adding a skill folder is enough, nothing registers it by name.
 
 Kit content must be self-contained. Skills and docs may reference only `packages/blit386` (the engine) and other local
 kit files. Do not reference the `packages/demos` package, its demo slugs, or its URLs – that package may be archived in
@@ -78,7 +78,6 @@ here – review in the same pass, not later. Run `/kit-audit` to walk the checkl
 | `content/hooks/shell-safety.sh` | Shell commands the hook blocks in a generated game (Cursor + Claude protocols) |
 | `content/hooks/session-start.sh` | Dependency install + `blit doctor` checkup a fresh remote/web session runs (Claude-only; Cursor has no SessionStart-equivalent event) |
 | `content/hooks.manifest.json` | Canonical hook intent; Cursor `hooks.json` and Claude `settings.json` derive from it |
-| `content/agents.config.json` | Descriptive only – no code reads it. The executable source for what each adapter emits is `src/ownership.ts` (paths + classes) plus `src/adapters.ts`; review this file when those change |
 | `src/adapters.ts` (docs-MCP config) | `packages/website/public/.well-known/mcp/server-card.json` changes name, URL, or transport |
 
 While auditing, confirm every skill directory appears in the skills table in `README.md` – that is the only human-facing
