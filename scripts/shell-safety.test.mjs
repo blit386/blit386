@@ -247,3 +247,133 @@ describe('force-push detection', () => {
         assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
     });
 });
+
+describe('git restore detection', () => {
+    it('blocks a bare restore, which discards worktree changes by default', () => {
+        const result = runHook('git restore file.txt');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks an explicit --worktree restore', () => {
+        const result = runHook('git restore --worktree file.txt');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks a --staged --worktree restore, which discards both index and worktree', () => {
+        const result = runHook('git restore --staged --worktree file.txt');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('allows a --staged-only restore, which only unstages and leaves the worktree untouched', () => {
+        const result = runHook('git restore --staged file.txt');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+
+    it('blocks a quoted restore (quote-based bypass)', () => {
+        const result = runHook('git "restore" file.txt');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+
+    it('blocks a backslash-escaped restore (escape-based bypass)', () => {
+        const result = runHook('git \\restore file.txt');
+
+        assert.equal(result.status, 2);
+        assert.match(result.stderr, /Destructive git command detected/);
+    });
+});
+
+describe('git branch -D detection', () => {
+    it('asks before a short -D delete', () => {
+        const result = runHook('git branch -D foo');
+
+        assert.equal(result.status, 0);
+        const parsed = JSON.parse(result.stdout);
+
+        assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+    });
+
+    it('asks before the long --delete --force spelling', () => {
+        const result = runHook('git branch --delete --force foo');
+
+        assert.equal(result.status, 0);
+        const parsed = JSON.parse(result.stdout);
+
+        assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+    });
+
+    it('asks before a bundled short flag', () => {
+        const result = runHook('git branch -Dq foo');
+
+        assert.equal(result.status, 0);
+        const parsed = JSON.parse(result.stdout);
+
+        assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+    });
+
+    it('does not trip on the safe lowercase -d delete', () => {
+        const result = runHook('git branch -d foo');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+
+    it('does not trip on a branch name that merely contains "D"', () => {
+        const result = runHook('git branch feature-D');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+});
+
+describe('git stash drop/clear detection', () => {
+    it('asks before a stash drop', () => {
+        const result = runHook('git stash drop');
+
+        assert.equal(result.status, 0);
+        const parsed = JSON.parse(result.stdout);
+
+        assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+    });
+
+    it('asks before a stash drop with an explicit ref', () => {
+        const result = runHook('git stash drop stash@{0}');
+
+        assert.equal(result.status, 0);
+        const parsed = JSON.parse(result.stdout);
+
+        assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+    });
+
+    it('asks before a stash clear', () => {
+        const result = runHook('git stash clear');
+
+        assert.equal(result.status, 0);
+        const parsed = JSON.parse(result.stdout);
+
+        assert.equal(parsed.hookSpecificOutput.permissionDecision, 'ask');
+    });
+
+    it('does not trip on stash pop', () => {
+        const result = runHook('git stash pop');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+
+    it('does not trip on stash list', () => {
+        const result = runHook('git stash list');
+
+        assert.equal(result.status, 0);
+        assert.equal(result.stdout, '');
+    });
+});
