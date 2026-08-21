@@ -288,9 +288,18 @@ kit/
   docs/*.md                 # progressive-disclosure deep dives (trimmed from engine docs/api-*.md)
 ```
 
-The matrix below was originally also mirrored into a `kit/agents.config.json`. That file was descriptive only, drifted
-twice, and was deleted in BT-478 – `src/ownership.ts` plus `src/adapters.ts` are the executable answer to "which adapter
-renders what".
+The matrix below was originally also mirrored into a machine-readable `kit/agents.config.json`, which BT-478 deleted. No
+code ever read it, yet `files: ["dist", "content"]` shipped it to npm as inert bytes in every generated game's
+dependency tree, and it was wrong twice over – once in the Cursor `emits` list (the generated `.cursor/hooks/{script}`),
+and again by omitting `AGENTS.md` and the whole of `docs/` from both adapters. Regenerating it at build time behind a
+`--check` gate was considered and rejected, because `src/ownership.ts` cannot produce it: that module holds directory
+prefixes and exact paths, while the `{name}` / `{script}` filename patterns live as inline literals in the emitters
+(`` `${CLAUDE_SKILLS_DIR}${entry.name}/SKILL.md` ``, `entry.name.replace(/\.md$/, '.mdc')`). A faithful generator would
+have to re-derive the emitters' naming conventions – a second, drift-capable model of `adapters.ts`, guarding a file
+with zero consumers. The durable rule: `src/ownership.ts` (paths + ownership classes, pinned by
+`test/ownership.test.mjs`) plus `src/adapters.ts` are the executable answer to "which adapter renders what", and a
+descriptive mirror of them is a liability, not documentation. `content/hooks.manifest.json` is the counter-case and
+stays – `adapters.ts` parses it, so it cannot drift unnoticed.
 
 Capability matrix (what each adapter emits from the same source):
 
