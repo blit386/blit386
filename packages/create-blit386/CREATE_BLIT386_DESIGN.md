@@ -487,8 +487,11 @@ shape, every field required, so a writer that stops emitting one fails to compil
 it, widening only the fields that postdate the format (`createdAt`, `vars`, and per-entry `kitVersion`) so the reader
 still accepts manifests written by any released scaffolder. Deriving rather than re-declaring is the point: a field
 added to `BlitManifest` becomes required of every writer and visible to the reader in one edit. The widened shape is
-also what sync _writes_, not merely what it reads: both write paths copy `createdAt`/`vars` across only when the
-manifest they read had them, so an old manifest stays old instead of gaining a fabricated creation timestamp.
+also what sync _writes_, not merely what it reads, and the two widened root fields differ on the way out. `createdAt` is
+copied across only when the manifest already had it, so an old manifest never gains a fabricated creation timestamp.
+`vars` is copied when present and _backfilled_ when absent – both write paths resolve it from `fallbackVars` and persist
+it – so an old manifest does gain `vars` on its first sync, by design: the package manager is then detected once instead
+of on every run.
 
 No schema version, deliberately (Round 28). A `schemaVersion` field was specified and rejected on inspection. It is
 absent from every manifest already in the wild, so the reader would carry the widened branch indefinitely and gain a
