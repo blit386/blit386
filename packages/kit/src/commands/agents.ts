@@ -26,6 +26,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 import {
     agentsFile,
@@ -38,7 +39,19 @@ import { detectPackageManager, findProjectRoot, type PackageManager } from '../e
 import { kitRoot } from '../kit-root';
 import { BASE_DIR, BLIT_DIR, MANIFEST_FILE, type ReadBlitManifest, type TemplateVars } from '../manifest';
 import { ui } from '../messages';
-import { AGENT_KINDS, AGENT_LABEL, type AgentKind, classifyFile, hasAgentFiles, isKitManaged } from '../ownership';
+import {
+    AGENT_KINDS,
+    AGENT_LABEL,
+    type AgentKind,
+    CLAUDE_MCP_JSON,
+    classifyFile,
+    CURSOR_MCP_JSON,
+    hasAgentFiles,
+    isKitManaged,
+} from '../ownership';
+
+/** JSON config paths eligible for structural (not text) merge in `runAddAgent`. */
+const MERGEABLE_JSON_PATHS: readonly string[] = [CLAUDE_MCP_JSON, CURSOR_MCP_JSON];
 
 /** SHA-256 hex digest of a string. */
 function sha256Text(text: string): string {
@@ -48,6 +61,56 @@ function sha256Text(text: string): string {
 /** SHA-256 hex digest of a file's current on-disk content. */
 function sha256(filePath: string): string {
     return createHash('sha256').update(readFileSync(filePath)).digest('hex');
+}
+
+interface McpConfigLike {
+    mcpServers?: Record<string, unknown>;
+    [key: string]: unknown;
+}
+
+/** True for a plain JSON object – the only shape `mcpServers` is allowed to have. */
+function isMcpServerMap(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Merge the kit's generated MCP config into a pre-existing hand-written one. Adds the kit's server(s)
+ * under `mcpServers` next to whatever the user already registered. Returns null – not a crash – when
+ * the existing file isn't a mergeable JSON object, its `mcpServers` isn't a plain object, or a server
+ * key the kit wants to add already exists with different content: all three cases fall back to the
+ * existing collision (`.new` + abort) path.
+ */
+function tryMergeMcpConfig(existingContent: string, generatedContent: string): string | null {
+    let existing: McpConfigLike;
+
+    try {
+        existing = JSON.parse(existingContent) as McpConfigLike;
+    } catch {
+        return null;
+    }
+
+    if (!isMcpServerMap(existing)) {
+        return null;
+    }
+
+    if (existing.mcpServers !== undefined && !isMcpServerMap(existing.mcpServers)) {
+        return null;
+    }
+
+    const generated = JSON.parse(generatedContent) as McpConfigLike;
+    const generatedServers = generated.mcpServers ?? {};
+    const existingServers = existing.mcpServers ?? {};
+
+    for (const [name, entry] of Object.entries(generatedServers)) {
+        const existingEntry = existingServers[name];
+        if (existingEntry !== undefined && !isDeepStrictEqual(existingEntry, entry)) {
+            return null;
+        }
+    }
+
+    const merged = { ...existing, mcpServers: { ...existingServers, ...generatedServers } };
+
+    return `${JSON.stringify(merged, null, 2)}\n`;
 }
 
 /**
@@ -561,8 +624,11 @@ function readManifest(root: string, out: (line: string) => void): ManifestResult
 /**
  * Set up one AI assistant's files in `root`. All-or-nothing: if any generated file would collide with
  * an existing untracked user file, nothing is written except `.new` copies and the manifest is left
- * untouched (so a later `sync` cannot clobber the user files). Returns the number of colliding files
- * that need the user's attention; 0 means the assistant was set up cleanly.
+ * untouched (so a later `sync` cannot clobber the user files). A generated path on the mergeable-JSON
+ * allowlist (`.mcp.json`, `.cursor/mcp.json`) is the one exception: a clean structural merge with the
+ * user's existing file is written and tracked like any other generated file instead of counting as a
+ * collision. Returns the number of colliding files that need the user's attention; 0 means the
+ * assistant was set up cleanly.
  */
 function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void): number {
     const result = readManifest(root, out);
@@ -587,13 +653,44 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     const entryByPath = new Map(manifest.files.map((e) => [e.path, e] as const));
 
     // A generated path that already exists on disk but is not tracked in the manifest belongs to the
-    // user. Setting up the assistant must be all-or-nothing: if we wrote only the non-colliding files,
-    // the assistant would be half-present, and a later `sync` would regenerate the colliding path, find
-    // no manifest entry, and overwrite the very user file we are protecting here. So if anything
-    // collides, save the kit versions beside the originals and stop without touching the project or the
-    // manifest.
-    const collisions = generated.filter(
-        (file) => isSafeRelPath(file.path, root) && existsSync(resolve(root, file.path)) && !entryByPath.has(file.path),
+    // user. For an allowlisted JSON config (the MCP config files), try a structural merge first: the
+    // kit's server can usually be added next to whatever the user already registered without touching
+    // their entries. Only a real conflict (same server key, different content) or an existing file
+    // that fails to parse as JSON falls through to the collision path below.
+    const mergedPaths = new Set<string>();
+    const preparedGenerated = generated.map((file) => {
+        if (
+            !MERGEABLE_JSON_PATHS.includes(file.path) ||
+            !isSafeRelPath(file.path, root) ||
+            !existsSync(resolve(root, file.path)) ||
+            entryByPath.has(file.path)
+        ) {
+            return file;
+        }
+
+        const onDisk = readFileSync(resolve(root, file.path), 'utf8');
+        const mergedContent = tryMergeMcpConfig(onDisk, file.content);
+
+        if (mergedContent === null) {
+            return file;
+        }
+
+        mergedPaths.add(file.path);
+
+        return { ...file, content: mergedContent };
+    });
+
+    // Setting up the assistant must be all-or-nothing: if we wrote only the non-colliding files, the
+    // assistant would be half-present, and a later `sync` would regenerate the colliding path, find no
+    // manifest entry, and overwrite the very user file we are protecting here. So if anything still
+    // collides after the merge attempt above, save the kit versions beside the originals and stop
+    // without touching the project or the manifest.
+    const collisions = preparedGenerated.filter(
+        (file) =>
+            isSafeRelPath(file.path, root) &&
+            existsSync(resolve(root, file.path)) &&
+            !entryByPath.has(file.path) &&
+            !mergedPaths.has(file.path),
     );
 
     if (collisions.length > 0) {
@@ -619,7 +716,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
         manifest.vars = vars;
     }
 
-    for (const file of generated) {
+    for (const file of preparedGenerated) {
         const relPath = file.path;
 
         if (!isSafeRelPath(relPath, root)) {
@@ -651,7 +748,7 @@ function runAddAgent(root: string, agent: AgentKind, out: (line: string) => void
     writeFileSync(join(root, BLIT_DIR, MANIFEST_FILE), `${JSON.stringify(refreshed, null, 2)}\n`);
 
     for (const path of added) {
-        out(ui.success(`Added ${path}.`));
+        out(ui.success(mergedPaths.has(path) ? `Merged ${path}.` : `Added ${path}.`));
     }
 
     out('');

@@ -75,7 +75,7 @@ const MANAGED_END = '<!-- blit-kit:managed:end -->';
  * edit on either side that is not mirrored on the other fails the kit test suite rather than shipping
  * a generated game that points at a dead endpoint.
  */
-const MCP_SERVER_NAME = 'blit386-docs';
+export const MCP_SERVER_NAME = 'blit386-docs';
 const MCP_SERVER_URL = 'https://blit386.dev/mcp';
 
 /** A regenerated file: a project-relative path (forward slashes) and its full content. */
