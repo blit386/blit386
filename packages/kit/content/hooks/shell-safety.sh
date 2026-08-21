@@ -13,8 +13,8 @@
 #
 #   - Hard block (deny, no override): git reset --hard, git checkout -- / git restore in any form
 #     that touches the worktree, and git clean without a no-force dry run. Each of these destroys
-#     content with no git object ever created for it -- uncommitted worktree/index changes, or
-#     untracked files -- so nothing is left to recover once the command runs, and no amount of
+#     content with no git object ever created for it – uncommitted worktree/index changes, or
+#     untracked files – so nothing is left to recover once the command runs, and no amount of
 #     after-the-fact approval changes that. `git restore --staged <path>` (without --worktree) is
 #     the one safe form: it only unstages, the worktree file is untouched, so it is not gated.
 #
@@ -26,9 +26,8 @@
 #
 # `git checkout --` and `git restore` are two spellings of the same operation (git split
 # checkout's overloaded roles in 2.23; restore is the current, recommended spelling) and must
-# always land in the same tier -- see BT-413. Do not add a new destructive command to either tier
-# without updating both copies of this file: this one and .claude/hooks/shell-safety.sh (the
-# engine repo's own copy).
+# always land in the same tier – see BT-413. Do not add a new destructive command to either tier
+# without updating the matching runtime hook.
 
 set -u
 
@@ -233,7 +232,7 @@ if is_force_branch_delete; then
 fi
 
 # `git stash drop`/`git stash clear` permanently discards stashed work, but a stash entry is a
-# commit object, so it stays reachable via reflog for a while -- same "ask" tier as branch -D and
+# commit object, so it stays reachable via reflog for a while – same "ask" tier as branch -D and
 # force push, not a hard block.
 GIT_STASH_DROP_CLEAR='stash[[:space:]]+(drop|clear)([[:space:]]|[;&|<>]|$)'
 
