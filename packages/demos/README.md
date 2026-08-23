@@ -250,10 +250,10 @@ hardware-setting change still forces a full reload – see [CLAUDE.md](CLAUDE.md
 
 ## Social metadata and OG images
 
-Every demo page ships a full social head block: a meta description, `rel=canonical`, favicon links, OpenGraph and
-Twitter card tags, and a `SoftwareApplication` JSON-LD block. It is assembled by `plugins/social-meta.js` and rendered
-into `_partials/layout.html` through the `{{socialMeta}}` placeholder. All URLs in it are absolute and channel-aware, so
-the `next` preview deploy never advertises production URLs.
+Every demo page ships a full social head block: a meta description, `rel=canonical`, favicon links, OpenGraph tags, and
+a `SoftwareApplication` JSON-LD block. It is assembled by `plugins/social-meta.js` and rendered into
+`_partials/layout.html` through the `{{socialMeta}}` placeholder. All URLs in it are absolute and channel-aware, so the
+`next` preview deploy never advertises production URLs.
 
 The description comes from a **required** `@description` tag in each demo's header comment:
 
@@ -302,7 +302,6 @@ changed over re-running `--all --force`.
 
 - [Discord](https://discord.gg/tC2wGt88Uj)
 - [GitHub Discussions](https://github.com/blit386/blit386/discussions)
-- [X](https://x.com/blit386)
 - [Bluesky](https://bsky.app/profile/blit386.bsky.social)
 - [Mastodon](https://mastodon.gamedev.place/@blit386)
 

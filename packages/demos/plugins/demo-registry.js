@@ -36,7 +36,7 @@ export const NAV_HIDDEN_SLUGS = new Set();
  * "BLIT386 Demo – Title Cased Topic" and may be overridden by a `@pageTitle ...` tag
  * in the JS file header. `navLabel` is always the short title (searchable, no number).
  * `description` comes from the required `@description ...` header tag and feeds the page's
- * meta description, og:description, and twitter:description (see `plugins/social-meta.js`).
+ * meta description and og:description (see `plugins/social-meta.js`).
  * `ogScale` is the optional `@ogScale ...` override for how that demo's OpenGraph card is
  * framed, empty when the demo is happy with the default.
  * @param {string} rootDir – Absolute path to the project root (Vite's config.root).

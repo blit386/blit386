@@ -51,15 +51,10 @@ describe('buildSocialMeta', () => {
             'property="og:description"',
             'property="og:url"',
             'property="og:image"',
-            'name="twitter:card"',
-            'name="twitter:title"',
-            'name="twitter:description"',
-            'name="twitter:image"',
         ]) {
             assert.equal(occurrences(html, needle), 1, `expected exactly one ${needle}`);
         }
 
-        assert.match(html, /<meta name="twitter:card" content="summary_large_image">/);
         assert.match(html, /<meta property="og:type" content="website">/);
         // Two icon links: the SVG with its light/dark variants, plus a raster fallback.
         assert.equal(occurrences(html, '<link rel="icon"'), 2);
@@ -132,7 +127,6 @@ describe('buildSocialMeta', () => {
 
         assert.ok(!html.includes('name="description"'));
         assert.ok(!html.includes('og:description'));
-        assert.ok(!html.includes('twitter:description'));
         assert.ok(!html.includes('content=""'), 'must not emit an empty content attribute');
         assert.equal(parseJsonLd(html).description, undefined);
     });
