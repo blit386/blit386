@@ -260,7 +260,6 @@ primitives, fonts, and a palette.
 
 - [Discord](https://discord.gg/tC2wGt88Uj)
 - [GitHub Discussions](https://github.com/blit386/blit386/discussions)
-- [X](https://x.com/blit386)
 - [Bluesky](https://bsky.app/profile/blit386.bsky.social)
 - [Mastodon](https://mastodon.gamedev.place/@blit386)
 

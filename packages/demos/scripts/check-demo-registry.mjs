@@ -31,9 +31,9 @@ const FILENAME_PATTERN = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.js$/;
 // The ceiling is the column budget, not an SEO limit: the tag must be one line, and the
 // longest prefix (" * @description ") is 16 characters, so 104 is the most that fits this
 // repo's 120-column convention. That lands comfortably under every consumer's truncation
-// point anyway – Google cuts a meta description around 155 characters, Facebook's own
-// guidance is under 155, and X cuts twitter:description well before 200. The floor keeps
-// one-word placeholders ("Sprites.") from passing the gate.
+// point anyway – Google cuts a meta description around 155 characters, and Facebook's own
+// guidance is under 155. The floor keeps one-word placeholders ("Sprites.") from passing the
+// gate.
 const DESCRIPTION_MIN_CHARS = 60;
 const DESCRIPTION_MAX_CHARS = 104;
 

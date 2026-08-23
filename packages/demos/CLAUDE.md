@@ -58,7 +58,7 @@ Three header tags are parsed out of the first `HEADER_SCAN_BYTES` (2000) of each
 | Tag | Required | Purpose |
 | --- | --- | --- |
 | `@pageTitle` | no | Overrides the derived `<title>` and nav label |
-| `@description` | **yes** | One line, 60–104 characters, ending in a period. Feeds the meta description, `og:description`, `twitter:description`, and the JSON-LD `description` |
+| `@description` | **yes** | One line, 60–104 characters, ending in a period. Feeds the meta description, `og:description`, and the JSON-LD `description` |
 | `@ogScale` | no | `auto` (default), `integer`, or `fit` – how `scripts/capture-og-image.mjs` frames this demo's social card |
 
 All three are single-line: the patterns stop at the first newline, so a wrapped value truncates rather than failing.
@@ -69,16 +69,16 @@ column budget, not an SEO limit: the tag must fit this repo's 120-column line wi
 ## Social metadata and OG cards
 
 `plugins/social-meta.js` builds the whole social/SEO head block – meta description, `rel=canonical`, two favicon links,
-OpenGraph, Twitter card, and a `SoftwareApplication` JSON-LD block – and `plugins/virtual-demos.js` substitutes it into
+OpenGraph, and a `SoftwareApplication` JSON-LD block – and `plugins/virtual-demos.js` substitutes it into
 `{{socialMeta}}` **last** in its replacement chain, through a function replacer, so a `$&` or another placeholder's
 literal text inside a description can never trigger a second substitution pass.
 
 Two rules there are load-bearing rather than stylistic:
 
 - **Every URL is absolute**, built from `SITE_URL` / `NEXT_SITE_URL` in `plugins/sitemap.js`. Vite rewrites `og:image`
-  and `twitter:image` like any other asset reference, and under `base: './'` a root-absolute path becomes `../social/…`
-  for a page built at `demos/<slug>.html` – which `flattenDemosPlugin` then moves to `dist/` root, leaving it pointing
-  outside `dist/`. Absolute `https://` URLs are skipped as external and survive untouched.
+  like any other asset reference, and under `base: './'` a root-absolute path becomes `../social/…` for a page built at
+  `demos/<slug>.html` – which `flattenDemosPlugin` then moves to `dist/` root, leaving it pointing outside `dist/`.
+  Absolute `https://` URLs are skipped as external and survive untouched.
 - **The JSON-LD is never HTML-escaped.** Escaping it would put `&quot;` inside a `<script>` body and break every parser.
   Its only transform is `</` → `<\/`, which is a valid JSON escape and stops any description from closing the element.
 

@@ -1,13 +1,13 @@
 import { Fragment } from 'react';
 import type { AppContext } from 'fumapress';
-import { FEDIVERSE_HANDLE, TWITTER_HANDLE } from '../data/site';
+import { FEDIVERSE_HANDLE } from '../data/site';
 
 type MetaPage = AppContext['$context']['page'];
 
 /**
  * Reconstructs fumapress's internal `renderPageMeta` (`title`, `og:title`/`og:description`,
  * the site's `meta.page()` block from `press.config.tsx`, and every `ctx.data['core:page-meta']`
- * hook – notably `takumiPlugin`'s `og:image`/`width`/`height`/`twitter:card`). That function
+ * hook – notably `takumiPlugin`'s `og:image`/`width`/`height`). That function
  * itself is not part of fumapress's public API, only exercised internally by the framework's own
  * `docsPageLayout` and stock blog layout – `BlogPage` replaces the latter with a hand-rolled
  * component (for the docs-style TOC sidebar, see its own doc comment) and lost this call in the
@@ -40,7 +40,6 @@ export function renderBlogPostMeta(page: MetaPage, ctx: AppContext) {
  */
 export function renderBlogIndexMeta(ctx: AppContext, indexPath: string, title: string, description: string) {
     const url = ctx.siteConfig.baseUrl ? `${ctx.siteConfig.baseUrl}${indexPath}` : indexPath;
-    const twitterTitle = `${ctx.siteConfig.name} – ${title}`;
 
     // Escape </ so a field value containing "</script>" cannot terminate the tag, mirroring
     // press.config.tsx's meta.page(). \/ is a valid JSON escape, so parsers handle it correctly.
@@ -62,11 +61,6 @@ export function renderBlogIndexMeta(ctx: AppContext, indexPath: string, title: s
             <meta property="og:url" content={url} />
             <meta property="og:type" content="website" />
             <meta property="og:site_name" content={ctx.siteConfig.name} />
-
-            <meta name="twitter:title" content={twitterTitle} />
-            <meta name="twitter:description" content={description} />
-            <meta name="twitter:site" content={TWITTER_HANDLE} />
-            <meta name="twitter:creator" content={TWITTER_HANDLE} />
 
             <meta name="fediverse:creator" content={FEDIVERSE_HANDLE} />
 

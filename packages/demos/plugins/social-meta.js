@@ -1,6 +1,6 @@
 /**
  * Builds the social/SEO head block rendered into every demo page: meta description, canonical
- * link, favicon links, OpenGraph, Twitter card, and JSON-LD.
+ * link, favicon links, OpenGraph, and JSON-LD.
  *
  * Kept out of `virtual-demos.js` so it stays a pure function – no fs, no `process.env`, channel
  * state passed in – and can be unit-tested directly (plugins/__tests__/social-meta.test.mjs).
@@ -40,7 +40,6 @@ export const OG_SCALE_DEFAULT = 'auto';
 export const OG_AUTO_FILL_THRESHOLD = 0.9;
 
 const SITE_NAME = 'BLIT386 Demos';
-const TWITTER_HANDLE = '@blit386';
 const AUTHOR_NAME = 'Václav Vančura';
 const AUTHOR_URL = 'https://github.com/vancura';
 
@@ -61,7 +60,7 @@ export function buildSocialMeta({ entry, isNextChannel = false, hasOgImage = fal
     const origin = isNextChannel ? NEXT_SITE_URL : SITE_URL;
 
     // Every URL below is absolute, and that is load-bearing rather than stylistic. Vite rewrites
-    // `og:image` and `twitter:image` like any other asset reference, and with `base: './'` a
+    // `og:image` like any other asset reference, and with `base: './'` a
     // root-absolute path becomes `../social/...` for a page built at demos/<slug>.html – which
     // flattenDemosPlugin then moves to dist/ root, leaving the path pointing outside dist/.
     // Absolute https:// URLs are skipped as external, so they survive both untouched.
@@ -109,19 +108,6 @@ export function buildSocialMeta({ entry, isNextChannel = false, hasOgImage = fal
         `<meta property="og:image:width" content="${OG_IMAGE_WIDTH}">`,
         `<meta property="og:image:height" content="${OG_IMAGE_HEIGHT}">`,
         `<meta property="og:image:alt" content="${imageAlt}">`,
-        '',
-        '<meta name="twitter:card" content="summary_large_image">',
-        `<meta name="twitter:site" content="${TWITTER_HANDLE}">`,
-        `<meta name="twitter:title" content="${title}">`,
-    );
-
-    if (description !== '') {
-        lines.push(`<meta name="twitter:description" content="${description}">`);
-    }
-
-    lines.push(
-        `<meta name="twitter:image" content="${imageUrl}">`,
-        `<meta name="twitter:image:alt" content="${imageAlt}">`,
         '',
         `<script type="application/ld+json">${buildJsonLd({ entry, origin, pageUrl, imageUrl })}</script>`,
     );

@@ -1,4 +1,4 @@
-export type CommunityPlatform = 'github' | 'discord' | 'bluesky' | 'mastodon' | 'x';
+export type CommunityPlatform = 'github' | 'discord' | 'bluesky' | 'mastodon';
 
 export type CommunityDestination = {
     label: string;
@@ -25,12 +25,6 @@ export const communityDestinations: CommunityDestination[] = [
         label: 'Bluesky',
         platform: 'bluesky',
         url: 'https://bsky.app/profile/blit386.bsky.social',
-        external: true,
-    },
-    {
-        label: 'X',
-        platform: 'x',
-        url: 'https://x.com/blit386',
         external: true,
     },
     {

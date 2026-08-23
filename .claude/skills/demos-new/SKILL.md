@@ -119,9 +119,9 @@ bootstrap(Demo);
 - The page title defaults to `BLIT386 Demo – Title Cased Topic`. Only add a `// @pageTitle Custom Title` comment (in the
   first ~20 lines) when that default is wrong for the demo.
 - **Required:** a `@description` tag in the header – one line, 60–104 characters, ending in a period, within the first
-  ~20 lines. It becomes the page's meta description, `og:description`, and `twitter:description`, so write the sentence
-  you would want to read under a shared link, not a restatement of the title. `check:demo-registry` fails without it and
-  enforces every one of those rules, the 60-character floor included, so a short placeholder will not pass:
+  ~20 lines. It becomes the page's meta description and `og:description`, so write the sentence you would want to read
+  under a shared link, not a restatement of the title. `check:demo-registry` fails without it and enforces every one of
+  those rules, the 60-character floor included, so a short placeholder will not pass:
 
   ```js
   // @description Fade old frames through the palette instead of clearing them, leaving sprite trails.
