@@ -9,8 +9,10 @@
 
 import { SOURCE_UPDATED_EVENT } from './source-panel-protocol.js';
 
-if (import.meta.hot) {
-    import.meta.hot.on(SOURCE_UPDATED_EVENT, ({ slug, sourceHtml }) => {
+const hot = import.meta.hot;
+
+if (hot) {
+    hot.on(SOURCE_UPDATED_EVENT, ({ slug, sourceHtml }) => {
         if (document.body.dataset.slug !== slug) {
             return;
         }
