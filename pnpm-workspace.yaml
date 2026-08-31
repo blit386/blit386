@@ -18,7 +18,7 @@ overrides:
   # GHSA-2v37-7h3g-55p8 (high): custom generators loop indefinitely when size is zero.
   # Dev-only, reached through postcss via vite and vitest, so it never enters a runtime
   # bundle - but `security:audit` covers dev + prod, so it fails CI. 3.3.17 is the patch.
-  nanoid@<3.3.17: ^3.3.17
+  nanoid@<3.3.17: ^3.3.18
 
 allowBuilds:
   esbuild: true
