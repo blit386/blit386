@@ -68,8 +68,8 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
       '@webgpu/types':
-        specifier: ^0.1.71
-        version: 0.1.71
+        specifier: ^0.1.72
+        version: 0.1.72
       acorn:
         specifier: ^8.17.0
         version: 8.17.0
@@ -302,8 +302,8 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(vitest@4.1.10)
       '@webgpu/types':
-        specifier: ^0.1.71
-        version: 0.1.71
+        specifier: ^0.1.72
+        version: 0.1.72
       blit386:
         specifier: workspace:*
         version: link:../blit386
@@ -2790,8 +2790,8 @@ packages:
   '@webassemblyjs/wast-printer@1.14.1':
     resolution: {integrity: sha512-kPSSXE6De1XOR820C90RIo2ogvZG+c3KiHzqUoO/F34Y2shGzesfqv7o57xrxovZJH/MetF5UjroJ/R/3isoiw==}
 
-  '@webgpu/types@0.1.71':
-    resolution: {integrity: sha512-mMy8/ODcKhab808co15eW+yN+HgXoQxRQHTiBV9Mrvl1r0ufnid7YOcI+gi4eUWSWl9ezD6TW2KXccrL8HCh2A==}
+  '@webgpu/types@0.1.72':
+    resolution: {integrity: sha512-0cF7RFM2edNoiIS1ODJp0/Gzv4/xSXhwoR0YCza+OWpJWtn4wmo9DvK91aLlH9+uUnwIriP7ZiC3WitmyhuzBw==}
 
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
@@ -8201,7 +8201,7 @@ snapshots:
       '@webassemblyjs/ast': 1.14.1
       '@xtuc/long': 4.2.2
 
-  '@webgpu/types@0.1.71': {}
+  '@webgpu/types@0.1.72': {}
 
   '@xtuc/ieee754@1.2.0': {}
 
