@@ -45,7 +45,7 @@ Developer Experience.
 | Page | What it covers |
 | --- | --- |
 | [Performance Best Practices](performance-best-practices.md) | When and how to optimize demos: object allocation, batching, and hot-path guidance |
-| [Performance Testing](performance-testing.md) | CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate |
+| [Performance Testing](performance-testing.md) | CPU micro-benchmarks: when to use them, how to add one, and the local baseline/compare workflow |
 | [Software Fallback Smoke Matrix](performance-smoke-matrix.md) | Manual smoke-test checklist for the Canvas 2D software renderer |
 | [Deprecation Timeline](reference-deprecations.md) | Central tracker for public API compatibility aliases and planned removals |
 | [Changelog](changelog.md) | Release history in Keep a Changelog style: what shipped, what broke, and when |
