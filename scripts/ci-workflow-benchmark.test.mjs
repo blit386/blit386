@@ -34,7 +34,13 @@ test('ci.yml does not reference benchmark result/baseline/comparison artifacts o
 });
 
 test('no job carves out the perf label in a conditional', () => {
+    // Two known forms: quality-engine's carve-out compared `github.event.label.name`, while the
+    // deleted benchmark job's own trigger used `contains(...labels.*.name, 'perf')` - different
+    // property paths, so both are checked. The literal 'perf' check alone is broad enough to catch
+    // either reintroduction; nothing in ci.yml has a legitimate reason to reference it today.
     assert.doesNotMatch(ciYml, /label\.name\s*==\s*'perf'/);
+    assert.doesNotMatch(ciYml, /labels\.\*\.name/);
+    assert.doesNotMatch(ciYml, /'perf'/);
 });
 
 test('the pull_request trigger does not listen for labeled/unlabeled events', () => {

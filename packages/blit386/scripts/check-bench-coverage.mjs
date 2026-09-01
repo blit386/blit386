@@ -2,10 +2,14 @@
 /**
  * Advisory pre-push reminder for the local benchmark workflow (see `docs/performance-testing.md`, the
  * `/perf` skill): prints a note when a push touches one of the engine's hot-path directories without
- * touching any colocated `*.bench.ts` file. This cannot know whether a given change actually needed a
- * benchmark, so it never fails – it only makes the local baseline/compare loop hard to forget about.
- * `HOT_PATH_DIRS` below and the `paths:` glob in `.claude/rules/bench-coverage.md` name the same six
- * directories; update both together.
+ * touching any `*.bench.ts` file. The check is push-wide, not per-file – any `*.bench.ts` touched
+ * anywhere in the push counts as "benchmarks were considered," not only one colocated with the exact
+ * hot file that changed (see `checkBenchCoverage`'s tests for why: per-file matching has no reliable
+ * way to know which benchmark covers a given change, and a wrong guess would train people to ignore
+ * the reminder). This cannot know whether a given change actually needed a benchmark either way, so it
+ * never fails – it only makes the local baseline/compare loop hard to forget about. `HOT_PATH_DIRS`
+ * below and the `paths:` glob in `.claude/rules/bench-coverage.md` name the same six directories;
+ * update both together.
  *
  * Usage:
  *   node scripts/check-bench-coverage.mjs --base <git-ref>
@@ -61,7 +65,7 @@ function changedFilesSince(baseRef) {
  */
 function printReminder({ hotFiles }) {
     console.log('');
-    console.log('[reminder] This push changes engine hot-path code with no matching *.bench.ts update:');
+    console.log('[reminder] This push changes engine hot-path code, but no *.bench.ts file was touched:');
 
     for (const file of hotFiles) {
         console.log(`  - packages/blit386/${file}`);
