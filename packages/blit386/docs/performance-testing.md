@@ -43,10 +43,17 @@ Current benchmark files:
 - `src/utils/Color32.bench.ts`
 - `src/utils/Rect2i.bench.ts`
 - `src/assets/BitmapFont.bench.ts`
+- `src/assets/Palette.bench.ts`
 - `src/assets/PaletteEffect.bench.ts`
 - `src/assets/SpriteSheet.bench.ts`
 - `src/assets/SystemFont.bench.ts`
+- `src/core/GameLoop.bench.ts`
+- `src/input/GamepadInput.bench.ts`
+- `src/overlay/Overlay.bench.ts`
 - `src/overlay/palette/PaletteView.bench.ts`
+- `src/render/PrimitivePipeline.bench.ts`
+- `src/render/SoftwareRenderer.bench.ts`
+- `src/render/SpritePipeline.bench.ts`
 
 ### Overlay palette grid
 
@@ -59,6 +66,21 @@ These benchmarks guard perf follow-ups for the live palette swatch grid:
 
 They run in the same Vitest bench suite as the rest of the repo and are included in `benchmark-results.json` when you
 run `pnpm run bench:json`. No separate registration step is required.
+
+### Engine hot paths (2026 performance audit)
+
+These benchmarks were added ahead of the engine-wide performance optimization pass, so each optimization PR can quote a
+measured before/after improvement:
+
+| File | What it measures |
+| --- | --- |
+| `render/SoftwareRenderer.bench.ts` | Canvas 2D fallback raster loops: sprite blit (8×8 vs. 32×32), bitmap text (20 vs. 200 chars), full-screen rect fill, a diagonal line, and an empty frame's clear + present |
+| `render/PrimitivePipeline.bench.ts` | CPU-side vertex batch filling for pixels, rects, and Bresenham lines, plus `reset()` batch teardown |
+| `render/SpritePipeline.bench.ts` | CPU-side sprite and bitmap-text batch filling, including per-quad UV computation and `reset()` |
+| `input/GamepadInput.bench.ts` | A realistic per-frame query mix (button/axis reads plus `endFrame()`), and `poll()` / `endFrame()` in isolation |
+| `assets/Palette.bench.ts` | `get()` vs. `getRef()` color lookup, and `toFloat32ArrayInto()` GPU staging |
+| `core/GameLoop.bench.ts` | Steady-state dropped-frame detection scan over the 60-sample ring buffer |
+| `overlay/Overlay.bench.ts` | `buildOverlayLayoutPlan()`, overlay label composition, and `TimingChart.draw()` with tagged samples |
 
 ### Metrics
 
