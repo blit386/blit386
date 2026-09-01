@@ -47,6 +47,28 @@ export interface Rename {
 
     /** Optional human note explaining the rename or why it needs review. */
     note?: string;
+
+    /**
+     * Presentation-only grouping label reproducing one of `docs/reference-deprecations.md`'s `###` subsections (for
+     * example `` `BT` namespace ``, `` `HardwareSettings` compatibility fields ``, `` `BootstrapOptions` compatibility
+     * fields ``, `Class method aliases`). Every rename in the same group repeats the same `section` text so the
+     * generator can group by it; drives doc generation only, never codemod matching.
+     */
+    section?: string;
+
+    /**
+     * Presentation-only removal-target version for this rename's group (for example `2.0.0`), repeated across every
+     * rename in the same `section`. Drives doc generation only, never codemod matching.
+     */
+    removalTarget?: string;
+
+    /**
+     * Presentation-only list of class-qualified receivers for a `method` rename whose old name is generic enough to
+     * exist on several unrelated classes (e.g. `equals` on `Vector2i`, `Rect2i`, and `Color32`). The doc generator
+     * emits one class-qualified bullet per entry, in array order. Drives doc generation only, never codemod matching –
+     * the codemod engine still matches `method` renames by name alone, regardless of receiver type.
+     */
+    receiverClasses?: string[];
 }
 
 /** A dated set of renames shipped together, mirroring one section of the engine's deprecation timeline. */

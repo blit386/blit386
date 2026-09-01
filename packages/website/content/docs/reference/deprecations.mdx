@@ -3,7 +3,7 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Deprecation Timeline"
 description: "Central tracker for public API compatibility aliases and planned removals."
-lastModified: "2026-07-22T16:23:13+02:00"
+lastModified: "2026-09-01T20:55:13+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/reference-deprecations.md"
 ---
 
@@ -52,14 +52,14 @@ Removal target: 2.0.0
 Removal target: 2.0.0
 
 - `SpriteSheet.isIndexized()` → `SpriteSheet.isIndexed()`
+- `Rect2i.containsXY()` → `Rect2i.isContainingXY()`
+- `Rect2i.intersectionTo()` → `Rect2i.intersectTo()`
 - `Timer.tick()` → `Timer.fireIfElapsed()`
 - `Vector2i.equals()` → `Vector2i.isEqual()`
-- `Rect2i.contains()` → `Rect2i.isContaining()`
-- `Rect2i.containsXY()` → `Rect2i.isContainingXY()`
-- `Rect2i.intersects()` → `Rect2i.isIntersecting()`
-- `Rect2i.intersectionTo()` → `Rect2i.intersectTo()`
 - `Rect2i.equals()` → `Rect2i.isEqual()`
 - `Color32.equals()` → `Color32.isEqual()`
+- `Rect2i.contains()` → `Rect2i.isContaining()`
+- `Rect2i.intersects()` → `Rect2i.isIntersecting()`
 
 ### Removal checklist
 
