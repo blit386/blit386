@@ -115,7 +115,7 @@ test('scaffolds a runnable game project', () => {
         const manifest = JSON.parse(manifestRaw);
         assert.equal(manifest.name, 'my-game', 'package name should match the folder');
         assert.ok(manifest.dependencies?.blit386, 'blit386 dependency is missing');
-        assert.equal(manifest.dependencies.blit386, '^1.5.0', 'generated games should pin blit386 ^1.5.0');
+        assert.equal(manifest.dependencies.blit386, '^1.6.0', 'generated games should pin blit386 ^1.6.0');
         assert.equal(
             manifest.devDependencies?.['@blit386/kit'],
             `^${installedKit.version}`,
