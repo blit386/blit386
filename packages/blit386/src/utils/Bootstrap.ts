@@ -58,6 +58,16 @@ export interface BootstrapOptions {
      * @deprecated Deprecated since 0.2.0 (2026-05-31). Use `isWaitingForDOMReady` instead.
      */
     waitForDOMReady?: boolean;
+
+    /**
+     * Whether to assign the `BT` namespace to `window.BT`, for browser-console debugging
+     * (`window.BT.captureFrame()`). Undefined follows `BT.isDevMode` – exposed in development,
+     * not in a consumer's production build. Set `true` to force it on in release too, or `false`
+     * to disable it even in development.
+     *
+     * @since 1.7.0
+     */
+    exposeGlobal?: boolean;
 }
 
 /**
@@ -230,41 +240,16 @@ async function routeIfAlreadyInitialized(DemoClass: DemoConstructor): Promise<bo
 }
 
 /**
- * One-liner bootstrap function for BLIT386 demos.
- * Handles canvas retrieval and engine initialization. Backend selection
+ * Handles canvas retrieval and engine initialization for a bootstrap call. Backend selection
  * (WebGPU or software fallback) is managed internally by BTAPI.
  *
- * This function provides a streamlined way to start a demo with sensible defaults
- * while allowing customization through options.
+ * Internal implementation – `BLIT386.ts` wraps this as the public `bootstrap()` export (see its
+ * JSDoc for the full public contract, `@since`/`@changed` history, and usage examples) to also
+ * expose `BT` on `window` per {@link BootstrapOptions.exposeGlobal} once this resolves.
  *
- * @since 0.2.0
- * @changed 1.4.0 Calling `bootstrap()` again while already initialized now routes to a hot
- *   swap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a
- *   double-bootstrap guard and returns `false` otherwise – previously it silently started a
- *   second, unstoppable `GameLoop`.
  * @param DemoClass – Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
  * @param options – Optional configuration for IDs and callbacks.
  * @returns `true` when the demo boots successfully; otherwise `false`.
- *
- * @example
- * // Simplest usage – uses default IDs.
- * bootstrap(MyDemo);
- *
- * @example
- * // With custom options.
- * bootstrap(MyDemo, {
- *     canvasID: 'custom-canvas',
- *     containerID: 'custom-container',
- *     onSuccess: () => console.log('Demo started!'),
- *     onError: (err) => analytics.trackError(err),
- * });
- *
- * @example
- * // Await the result.
- * const success = await bootstrap(MyDemo);
- * if (success) {
- *     console.log('Demo is running');
- * }
  */
 export async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOptions = {}): Promise<boolean> {
     // One microtask yield before anything else runs. Module top-level evaluation is
