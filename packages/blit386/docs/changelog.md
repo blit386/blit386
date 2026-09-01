@@ -19,6 +19,14 @@ This page is editorial – release highlights and migration notes, not an exhaus
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## 1.6.0 – 2026-09-01
+
+No changes to blit386's public API this release. The version bump is lockstep with `@blit386/kit` and `create-blit386`,
+which shipped a `blit386.dev` docs MCP server into every scaffolded game and this repository's own root, replaced the
+website's `unsafe-inline` script policy with a per-request CSP nonce, and closed a symlink-safety gap in the kit's file
+operations. See [the release blog post](https://blit386.dev/blog/mcp-release-1-6-0) or
+[GitHub Releases](https://github.com/blit386/blit386/releases/tag/1.6.0) for the full picture.
+
 ## 1.5.0 – 2026-08-11
 
 ### Added
