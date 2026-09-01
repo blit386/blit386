@@ -41,14 +41,16 @@ const SPRITE_DRAW_COUNT = 300;
 type MockContext = {
     imageSmoothingEnabled: boolean;
     createImageData: (w: number, h: number) => ImageData;
-    putImageData: ReturnType<typeof vi.fn>;
-    clearRect: ReturnType<typeof vi.fn>;
-    drawImage: ReturnType<typeof vi.fn>;
+    putImageData: () => void;
+    clearRect: () => void;
+    drawImage: () => void;
 };
 
 /**
- * Builds a 2D context mock whose drawing methods are `vi.fn()` no-ops, so bench timings measure
- * the renderer's own CPU raster loops rather than canvas emulation.
+ * Builds a 2D context mock whose drawing methods are plain no-ops, so bench timings measure the
+ * renderer's own CPU raster loops rather than canvas emulation or Vitest mock call-history
+ * bookkeeping (a `vi.fn()` here would retain `mock.calls`/`mock.results` for every one of the
+ * potentially millions of samples an empty-frame benchmark can run).
  *
  * @returns Mock 2D context.
  */
@@ -61,9 +63,9 @@ function makeMockContext(): MockContext {
                 width: w,
                 height: h,
             }) as ImageData,
-        putImageData: vi.fn(),
-        clearRect: vi.fn(),
-        drawImage: vi.fn(),
+        putImageData: () => {},
+        clearRect: () => {},
+        drawImage: () => {},
     };
 }
 
