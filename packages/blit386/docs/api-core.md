@@ -49,6 +49,7 @@ await bootstrap(MyDemo, {
   onSuccess: () => console.log('started'),
   onError: (err) => trackError(err),
   isWaitingForDOMReady: true, // default true; set false in Electron after DOMContentLoaded
+  exposeGlobal: undefined, // default: BT.isDevMode – window.BT for console debugging
 });
 ```
 
@@ -60,7 +61,13 @@ await bootstrap(MyDemo, {
     onSuccess: { type: '() => void', description: 'Called after successful init' },
     onError: { type: '(error: Error) => void', description: 'Called on any init failure' },
     isWaitingForDOMReady: { type: 'boolean', default: 'true', description: 'Wait for DOMContentLoaded' },
+    exposeGlobal: { type: 'boolean', default: 'BT.isDevMode', description: 'Assign BT to window.BT for console debugging' },
   }} />
+
+`exposeGlobal` lets you debug from the browser console (`window.BT.captureFrame()`). Unset, it follows `BT.isDevMode` –
+on in development, off in a consumer's production build. Set `true` to force it on in release too, or `false` to disable
+it even in development. The assignment only runs when a `window` is actually present, so importing the engine in Node or
+another non-browser context never throws.
 
 Manual utilities (for custom initialization flows):
 

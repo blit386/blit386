@@ -70,14 +70,15 @@ import { PixelGlitch } from './render/effects/pixel/PixelGlitch';
 import { PixelMosaic } from './render/effects/pixel/PixelMosaic';
 import { amber, crtPipBoy, green } from './render/effects/presets';
 import type { SplashState } from './splash';
-import type { BootstrapOptions } from './utils/Bootstrap';
-import { bootstrap } from './utils/Bootstrap';
+import type { BootstrapOptions, DemoConstructor } from './utils/Bootstrap';
+import { bootstrap as bootstrapImpl } from './utils/Bootstrap';
 import { displayError, getCanvas } from './utils/BootstrapHelpers';
 import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
 import { noActivePaletteError } from './utils/errorMessages';
+import { exposeGlobal } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
 import { PerlinNoise } from './utils/PerlinNoise';
 import { Random } from './utils/Random';
@@ -2227,6 +2228,53 @@ export const BT = {
         BTAPI.instance.spritesRefresh();
     },
 };
+
+/**
+ * One-liner bootstrap function for BLIT386 demos.
+ * Handles canvas retrieval and engine initialization. Backend selection
+ * (WebGPU or software fallback) is managed internally by BTAPI.
+ *
+ * This function provides a streamlined way to start a demo with sensible defaults
+ * while allowing customization through options.
+ *
+ * @since 0.2.0
+ * @changed 1.4.0 Calling `bootstrap()` again while already initialized now routes to a hot
+ *   swap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a
+ *   double-bootstrap guard and returns `false` otherwise – previously it silently started a
+ *   second, unstoppable `GameLoop`.
+ * @changed 1.7.0 Exposes `BT` on `window.BT` after bootstrap finishes, gated by
+ *   {@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode}).
+ * @param DemoClass – Demo class constructor implementing `IBTDemo` (optional `configure()` for hardware settings).
+ * @param options – Optional configuration for IDs and callbacks.
+ * @returns `true` when the demo boots successfully; otherwise `false`.
+ *
+ * @example
+ * // Simplest usage – uses default IDs.
+ * bootstrap(MyDemo);
+ *
+ * @example
+ * // With custom options.
+ * bootstrap(MyDemo, {
+ *     canvasID: 'custom-canvas',
+ *     containerID: 'custom-container',
+ *     onSuccess: () => console.log('Demo started!'),
+ *     onError: (err) => analytics.trackError(err),
+ * });
+ *
+ * @example
+ * // Await the result.
+ * const success = await bootstrap(MyDemo);
+ * if (success) {
+ *     console.log('Demo is running');
+ * }
+ */
+async function bootstrap(DemoClass: DemoConstructor, options: BootstrapOptions = {}): Promise<boolean> {
+    const success = await bootstrapImpl(DemoClass, options);
+
+    exposeGlobal(BT, options.exposeGlobal);
+
+    return success;
+}
 
 export {
     amber,

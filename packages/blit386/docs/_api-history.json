@@ -14,7 +14,8 @@
     "1.4.0": "2026-07-23T12:32:13+02:00",
     "1.5.0": "2026-08-11T06:51:18+02:00",
     "1.6.0": "2026-09-01T11:41:10+02:00",
-    "1.6.1": null
+    "1.6.1": null,
+    "1.7.0": null
   },
   "symbols": {
     "AssetLoader": {
@@ -1459,6 +1460,10 @@
         {
           "version": "1.4.0",
           "note": "Calling `bootstrap()` again while already initialized now routes to a hot\nswap (via {@link registerHotReload}) when a Vite HMR context is registered, or logs a\ndouble-bootstrap guard and returns `false` otherwise – previously it silently started a\nsecond, unstoppable `GameLoop`."
+        },
+        {
+          "version": "1.7.0",
+          "note": "Exposes `BT` on `window.BT` after bootstrap finishes, gated by\n{@link BootstrapOptions.exposeGlobal} (default: {@link BT.isDevMode})."
         }
       ],
       "deprecated": null,
