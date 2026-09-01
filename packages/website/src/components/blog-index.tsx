@@ -7,7 +7,8 @@ import { renderBlogIndexMeta } from './blog-page-meta';
 import styles from './blog-index.module.css';
 import layoutStyles from './blog-layout.module.css';
 
-const BLOG_TITLE = 'Blog';
+/** Also used by press.config.tsx to build the /blog.webp OG image's title. */
+export const BLOG_TITLE = 'Blog';
 
 interface BlogIndexPageProps {
     lang?: string;

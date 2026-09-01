@@ -4,6 +4,12 @@ import { FEDIVERSE_HANDLE } from '../data/site';
 
 type MetaPage = AppContext['$context']['page'];
 
+/** Dimensions of the hand-rolled `/blog.webp` OG image (press.config.tsx); must match the
+ * `width`/`height` passed to its `ImageResponse` call, the same coupling `takumiPlugin` keeps
+ * internally for every content-loader page. */
+export const BLOG_INDEX_OG_IMAGE_WIDTH = 1200;
+export const BLOG_INDEX_OG_IMAGE_HEIGHT = 630;
+
 /**
  * Reconstructs fumapress's internal `renderPageMeta` (`title`, `og:title`/`og:description`,
  * the site's `meta.page()` block from `press.config.tsx`, and every `ctx.data['core:page-meta']`
@@ -29,27 +35,45 @@ export function renderBlogPostMeta(page: MetaPage, ctx: AppContext) {
     );
 }
 
+interface ListingMetaOptions {
+    /** Only `/blog` itself carries this: `takumiPlugin` generates an OG image per content-loader
+     * page (`packages/blit386/docs/...`, `content/blog/...`), and every route this file covers –
+     * the index, the tags listing, and each tag – is a plugin-created route rather than one of
+     * those. `/blog` gets a hand-rolled equivalent (`press.config.tsx`, `/blog.webp`); the tags
+     * routes do not, since no template exists for what a per-tag card should show. */
+    ogImage?: { width: number; height: number };
+    /** Only `/blog` carries a JSON-LD `Blog` block; the tags listing and per-tag pages are
+     * navigational, not content the site wants indexed as structured data. */
+    jsonLd?: boolean;
+}
+
 /**
- * Same gap as `renderBlogPostMeta` above, but for the `/blog` index: fumapress's own stock
- * `createBlogIndexPage()` never calls `renderPageMeta` either (there is no single `Page` to key it
- * off), so this is not a parity fix so much as filling a real gap – the index shipped with no
- * `<title>` at all. Deliberately excludes `ctx.data['core:page-meta']`: `takumiPlugin` only
- * generates an OG image per content-loader page (`packages/blit386/docs/...`, `content/blog/...`),
- * and the index is a plugin-created route rather than one of those, so calling that hook here
- * would emit an `og:image` pointing at a URL that 404s.
+ * Shared by `renderBlogIndexMeta`, `renderBlogTagsMeta`, and `renderBlogTagMeta` below: none of
+ * `/blog`, `/blog/tags`, or `/blog/tags/<tag>` key off a single `Page`, so fumapress's own
+ * `renderPageMeta` (see `renderBlogPostMeta`'s doc comment) has nothing to call for any of them –
+ * `createBlogIndexPage()`/`createBlogTagsPage()`/`createBlogTagPage()` never call it either, which
+ * left all three shipping with no `<title>` at all.
  */
-export function renderBlogIndexMeta(ctx: AppContext, indexPath: string, title: string, description: string) {
-    const url = ctx.siteConfig.baseUrl ? `${ctx.siteConfig.baseUrl}${indexPath}` : indexPath;
+function renderListingMeta(
+    ctx: AppContext,
+    path: string,
+    title: string,
+    description: string,
+    options: ListingMetaOptions = {},
+) {
+    const url = ctx.siteConfig.baseUrl ? `${ctx.siteConfig.baseUrl}${path}` : path;
 
     // Escape </ so a field value containing "</script>" cannot terminate the tag, mirroring
     // press.config.tsx's meta.page(). \/ is a valid JSON escape, so parsers handle it correctly.
-    const jsonLd = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'Blog',
-        name: title,
-        description,
-        url,
-    }).replaceAll('</', '<\\/');
+    const jsonLd = options.jsonLd
+        ? JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Blog',
+              name: title,
+              description,
+              url,
+          }).replaceAll('</', '<\\/')
+        : undefined;
 
     return (
         <>
@@ -62,12 +86,56 @@ export function renderBlogIndexMeta(ctx: AppContext, indexPath: string, title: s
             <meta property="og:type" content="website" />
             <meta property="og:site_name" content={ctx.siteConfig.name} />
 
+            {options.ogImage && (
+                <>
+                    <meta
+                        property="og:image"
+                        content={
+                            ctx.siteConfig.baseUrl
+                                ? new URL(`${path}.webp`, ctx.siteConfig.baseUrl).href
+                                : `${path}.webp`
+                        }
+                    />
+                    <meta property="og:image:width" content={String(options.ogImage.width)} />
+                    <meta property="og:image:height" content={String(options.ogImage.height)} />
+                    <meta property="twitter:card" content="summary_large_image" />
+                </>
+            )}
+
             <meta name="fediverse:creator" content={FEDIVERSE_HANDLE} />
 
             <link rel="canonical" href={url} />
 
-            {/* biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD requires raw script content; data is static site copy, not user input */}
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+            {jsonLd && (
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD requires raw script content; data is static site copy, not user input
+                <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+            )}
         </>
     );
+}
+
+/** `/blog` – see `renderListingMeta`'s doc comment for why this doesn't call fumapress's own
+ * `renderPageMeta`. Carries the JSON-LD `Blog` block and, now that `/blog.webp` exists
+ * (`press.config.tsx`), the same `og:image`/`width`/`height`/`twitter:card` set `takumiPlugin`
+ * emits for a real content-loader page. */
+export function renderBlogIndexMeta(ctx: AppContext, indexPath: string, title: string, description: string) {
+    return renderListingMeta(ctx, indexPath, title, description, {
+        jsonLd: true,
+        ogImage: { width: BLOG_INDEX_OG_IMAGE_WIDTH, height: BLOG_INDEX_OG_IMAGE_HEIGHT },
+    });
+}
+
+/** `/blog/tags` – see `renderListingMeta`'s doc comment. No OG image: out of scope, no template
+ * exists for what a tags-listing card should show. */
+export function renderBlogTagsMeta(ctx: AppContext, tagsPath: string, title: string, description: string) {
+    return renderListingMeta(ctx, tagsPath, title, description);
+}
+
+/** `/blog/tags/<tag>` – see `renderListingMeta`'s doc comment. `title`/`description` are synthetic
+ * (there is no `Page` backing a tag), and, like `renderBlogTagsMeta`, there is no OG image. */
+export function renderBlogTagMeta(ctx: AppContext, tagsPath: string, tag: string) {
+    const title = `Tag "${tag}"`;
+    const description = `Blog posts tagged "${tag}" on ${ctx.siteConfig.name}.`;
+
+    return renderListingMeta(ctx, `${tagsPath}/${tag}`, title, description);
 }

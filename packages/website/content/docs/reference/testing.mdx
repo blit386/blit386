@@ -3,12 +3,12 @@
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Testing"
 description: "Testing tiers (unit, integration, visual) plus CPU benchmarks and WebGPU mocks."
-lastModified: "2026-08-21T08:18:38+02:00"
+lastModified: "2026-09-01T18:20:44+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/reference-testing.md"
 ---
 
 BLIT386 uses three primary testing tiers (unit, integration, visual) plus a benchmark tier for CPU performance
-regression tracking.
+regression tracking, compared locally rather than in CI.
 
 ## Architecture
 
@@ -78,8 +78,8 @@ baseline screenshots for each. `post-process.spec.ts` is WebGPU-only (software b
 
 ### Tier 4: CPU benchmarks (Vitest bench)
 
-Hot-path performance checks for methods and allocation patterns. Benchmarks are tracked in CI benchmark jobs and
-documented in [Performance Testing](/docs/performance/testing).
+Hot-path performance checks for methods and allocation patterns. Benchmarks run locally only – compare a feature branch
+against a `main` baseline with `pnpm run bench:compare`; see [Performance Testing](/docs/performance/testing).
 
 ## Declaration tooling checks
 
@@ -105,6 +105,8 @@ pnpm run test:visual:update     # Update visual test baselines
 pnpm run test:visual:coverage   # Visual tests with Istanbul coverage report
 pnpm run bench                  # Run CPU benchmarks (Vitest bench)
 pnpm run bench:json             # Run CPU benchmarks and write benchmark-results.json
+pnpm run bench:baseline         # Run CPU benchmarks and write benchmark-baseline.json
+pnpm run bench:compare          # Compare benchmark-results.json against benchmark-baseline.json
 ```
 
 ## Test file location
@@ -267,8 +269,8 @@ GitHub Actions runs unit tests and quality gates in CI. Visual regression is loc
 
 ### `ci.yml` (`CI` workflow)
 
-Triggers on push to `main` and on pull requests targeting `main`. `labeled` / `unlabeled` PR events skip every job
-except `quality-engine`, and that one only when the added label is `perf` (which enables the benchmark job).
+Triggers on push to `main` and on pull requests targeting `main` (`opened`, `synchronize`, `reopened` – labeling a PR
+does not retrigger the workflow).
 
 The pipeline is path-filtered. A `changes` job runs [`dorny/paths-filter`](https://github.com/dorny/paths-filter) first
 and emits one boolean per package plus a `shared` flag for root configs, `scripts/`, and `.github/`; every package job
@@ -286,7 +288,6 @@ consumes the engine as `workspace:*`, and `website` includes `packages/blit386/d
 | `build-engine` | engine | `pnpm run build`, declaration tooling check, uploads `dist/` artifact |
 | `bundle-size` | engine | Downloads the `build-engine` artifact, gzipped ESM size gate (80 KB) |
 | `test-engine` | engine | `test:unit:coverage` with Codecov upload, `test:api-history`, `test:security-preflight` |
-| `benchmark` | engine | On `main` push or PRs labeled `perf`: `pnpm run bench:json`, PR regression compare (25% threshold) |
 | `quality-demos` | demos | `lint`, `spellcheck`, `knip`, `check:demo-registry` |
 | `build-demos` | demos | Builds the engine first (workspace dependency), then the demos bundle |
 | `quality-website` | website | `typecheck`, `spellcheck`, `test`, `knip`, and `sync:docs:check` (no `lint`: the package's `lint` is `biome check .`, which `quality-root`'s repo-wide `format:check` already covers) |

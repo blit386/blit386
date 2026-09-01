@@ -222,7 +222,8 @@ These demos are thin wrappers around the library. For complete behavior, APIs, a
   writing effects
 - [Bitmap fonts](https://blit386.dev/docs/guides/bitmap-fonts) – `.btfont` format and tooling
 - [Testing](https://blit386.dev/docs/reference/testing) – unit, integration, and visual tests
-- [Performance testing](https://blit386.dev/docs/performance/testing) – benchmarks and CI
+- [Performance testing](https://blit386.dev/docs/performance/testing) – benchmarks and the local baseline/compare
+  workflow
 - [Software fallback smoke matrix](https://blit386.dev/docs/performance/smoke-matrix) – manual backend coverage notes
 
 ## How to Run

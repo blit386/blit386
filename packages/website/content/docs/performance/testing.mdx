@@ -2,13 +2,13 @@
 # Generated from blit386/docs/performance-testing.md by scripts/sync-docs-from-engine.mjs.
 # Do not edit by hand: edit the engine source, then run `pnpm run sync:docs`.
 title: "Performance Testing"
-description: "CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate."
-lastModified: "2026-08-21T08:18:38+02:00"
+description: "CPU micro-benchmarks: when to use them, how to add one, and the local baseline/compare workflow."
+lastModified: "2026-09-01T18:20:44+02:00"
 editUrl: "https://github.com/blit386/blit386/blob/main/docs/performance-testing.md"
 ---
 
 BLIT386 has CPU micro-benchmarks for hot methods. This guide explains when to use them, how to add a new benchmark, and
-how CI uses the results.
+how to compare results against a baseline locally.
 
 ## Overview
 
@@ -54,9 +54,8 @@ These benchmarks guard perf follow-ups for the live palette swatch grid:
 | `SpriteSheet.bench.ts` | `markPaletteIndicesInRect` on 8×8 glyph vs. 64 × 64 sprite rects |
 | `PaletteView.bench.ts` | Palette grid `draw()` for 16 vs. 256 slots |
 
-They run in the same Vitest bench suite as the rest of the repo and are included in `benchmark-results.json` for CI. No
-separate registration step is required; the next successful `main` push refreshes the baseline artifact with these
-entries.
+They run in the same Vitest bench suite as the rest of the repo and are included in `benchmark-results.json` when you
+run `pnpm run bench:json`. No separate registration step is required.
 
 ### Metrics
 
@@ -79,9 +78,9 @@ CPU benchmarks are:
 - faster to run locally
 - easier to write
 - easier to reason about
-- already integrated into CI regression checks when the PR is labeled `perf`
+- already wired into the local baseline/compare workflow described below
 
-If you add a new hot method and want immediate automated regression protection, this is the first tool to use.
+If you add a new hot method and want regression protection, this is the first tool to use.
 
 ## Adding a new CPU benchmark
 
@@ -152,51 +151,85 @@ pnpm run bench:json
 
 `pnpm run bench` gives the terminal report.
 
-`pnpm run bench:json` writes `benchmark-results.json`, which is what CI uses.
+`pnpm run bench:json` writes `benchmark-results.json`, the machine-readable file the local compare workflow reads.
 
 ## Commands
 
 ```bash
-pnpm run bench       # Run all CPU benchmarks
-pnpm run bench:json  # Run benchmarks and write benchmark-results.json
+pnpm run bench           # Run all CPU benchmarks
+pnpm run bench:json      # Run benchmarks and write benchmark-results.json
+pnpm run bench:baseline  # Run benchmarks and write benchmark-baseline.json
+pnpm run bench:compare   # Compare benchmark-results.json against benchmark-baseline.json
 ```
 
 ### Which command should I use?
 
 - New hot method: `pnpm run bench`
-- Need machine-readable result for comparison: `pnpm run bench:json`
+- Capturing a baseline on `main` before starting perf work: `pnpm run bench:baseline`
+- Machine-readable result for a feature branch: `pnpm run bench:json`
+- Comparing a feature branch against the captured baseline: `pnpm run bench:compare`
 
-## CI benchmark workflow
+## Local baseline/compare workflow
 
-CPU benchmark regression detection is wired into GitHub Actions.
+Benchmarks run locally only. GitHub-hosted CI runners share CPU, have no GPU, and their run-to-run variance regularly
+crosses a useful regression threshold, so CI does not gate on benchmark results.
 
-### What happens on `main`
+<Steps>
 
-On pushes to `main`, CI:
+<Step>
 
-1. runs `pnpm run bench:json`
-2. produces `benchmark-results.json`
-3. uploads that file as the latest benchmark baseline artifact
+### Check out `main` and capture a baseline
 
-That artifact becomes the reference point for future pull requests.
+```bash
+git checkout main
+pnpm run bench:baseline
+```
 
-### What happens on a pull request
+This writes `benchmark-baseline.json`.
 
-On PRs targeting `main` with the `perf` label, CI:
+</Step>
 
-1. runs the normal `quality` job first
-2. runs the `benchmark` job
-3. runs `pnpm run bench:json`
-4. downloads the latest successful `main` benchmark baseline artifact
-5. compares PR results against the `main` baseline
-6. posts or updates a PR comment with a benchmark comparison table
-7. fails the job if any benchmark is more than 25% slower
+<Step>
 
-PRs without the `perf` label skip the benchmark job to reduce CI cost.
+### Switch to the feature branch and run benchmarks
 
-### What the PR comment contains
+```bash
+git checkout <feature-branch>
+pnpm run bench:json
+```
 
-The comparison comment includes:
+This writes `benchmark-results.json`.
+
+</Step>
+
+<Step>
+
+### Compare against the baseline
+
+```bash
+pnpm run bench:compare
+```
+
+This runs `scripts/compare-tier-1-benchmarks.mjs` with a 25% regression threshold (matching the previous CI gate),
+writing `benchmark-comparison.json` and `benchmark-comparison.md`. The command exits nonzero if any benchmark regresses
+by more than 25% or a benchmark present in the baseline is missing from the current run.
+
+</Step>
+
+<Step>
+
+### Paste the result into the PR when relevant
+
+`benchmark-comparison.md` renders the same table CI used to post as a PR comment. Paste it into the PR description by
+hand when the change is performance-sensitive.
+
+</Step>
+
+</Steps>
+
+### What the comparison contains
+
+`benchmark-comparison.md` includes:
 
 - benchmark name
 - baseline ops/sec
@@ -204,12 +237,20 @@ The comparison comment includes:
 - delta percent
 - pass/fail status
 
-### What counts as failure
+### Quiet-machine discipline
 
-The benchmark CI job fails if:
+Local runs replace the CI gate, so run-to-run noise matters more than it used to:
 
-- any benchmark regresses by more than 25%
-- a previously existing benchmark disappears from the PR run
+- close other heavy applications before benchmarking
+- run on a plugged-in machine, not on battery
+- repeat a run that looks marginal before trusting it
+
+### Coverage reminder
+
+Nothing forces a benchmark to exist for a given hot path, so a change can slip through with no coverage to compare
+against. A pre-push hook (`scripts/check-bench-coverage.mjs`) prints a reminder, never a failure, when a push touches
+the renderer, input, overlay, core, assets, or utils directories without touching any `*.bench.ts` file. An agent rule
+(`.claude/rules/bench-coverage.md`) covers the same directories for anyone using an AI coding assistant on this repo.
 
 ## Recommended workflow for new performance work
 
@@ -241,9 +282,10 @@ Compare the new method against the old behavior or an alternative implementation
 
 <Step>
 
-### Run `pnpm run bench:json`
+### Capture a baseline on `main`, then compare
 
-If you want to inspect the machine-readable output used by CI.
+Follow the [local baseline/compare workflow](#local-baselinecompare-workflow) above: `pnpm run bench:baseline` on
+`main`, `pnpm run bench:json` on the feature branch, then `pnpm run bench:compare`.
 
 </Step>
 
@@ -251,24 +293,24 @@ If you want to inspect the machine-readable output used by CI.
 
 ### Open a PR
 
-Add the `perf` label for CPU benchmark comparison.
+Paste `benchmark-comparison.md` into the PR description if the change is performance-sensitive.
 
 </Step>
 
 </Steps>
 
-For overlay palette usage or grid draw changes, include steps 2–5 so `SpriteSheet.bench.ts` and `PaletteView.bench.ts`
-are compared against `main`.
+For overlay palette usage or grid draw changes, include the baseline/compare steps so `SpriteSheet.bench.ts` and
+`PaletteView.bench.ts` are compared against `main`.
 
 ### Best default
 
 If you are unsure where to start, use CPU benchmarking with Vitest bench. It is simple, fast, and already supported by
-the label-gated benchmark CI.
+the local baseline/compare workflow.
 
 ## See also
 
 <Cards>
   <Card title="Testing" href="/docs/reference/testing">Unit, integration, and visual test tiers.</Card>
   <Card title="Performance Best Practices" href="/docs/performance/best-practices">When and how to optimize hot paths.</Card>
-  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">pnpm run bench and CI workflow.</Card>
+  <Card title="Developer Experience" href="https://github.com/blit386/blit386/blob/main/docs/developer-experience-guide.md">pnpm run bench and the local baseline/compare workflow.</Card>
 </Cards>

@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import type { ReactNode } from 'react';
 import type { Page, PageData } from 'fumadocs-core/source';
 import { defineConfig } from 'fumapress';
-import type { ConfigContext } from 'fumapress';
+import type { ConfigContext, ServerPlugin } from 'fumapress';
+import { ImageResponse } from 'takumi-js/response';
 import { fumadocsMdx } from 'fumapress/adapters/mdx';
 import { flexsearchPlugin } from 'fumapress/plugins/flexsearch';
 import { linkValidationPlugin } from 'fumapress/plugins/link-validation';
@@ -13,16 +14,17 @@ import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
 import { createDocsLayoutPage } from 'fumapress/layouts/docs';
-import { feedPlugin } from './src/feed';
+import { CHANNEL_DESCRIPTION, feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
 import { mcpServerPlugin } from './src/mcp-server';
 import { channelHeadersPlugin } from './src/channel-headers';
 import { cspNoncePlugin } from './src/csp-nonce';
 import { AuthorByline } from './src/components/author-byline';
-import { BlogIndexPage } from './src/components/blog-index';
+import { BLOG_TITLE, BlogIndexPage } from './src/components/blog-index';
 import { BlogLayout } from './src/components/blog-layout';
 import { BlogPage } from './src/components/blog-page';
 import { BlogTagPage, BlogTagsPage } from './src/components/blog-tags-page';
+import { BLOG_INDEX_OG_IMAGE_HEIGHT, BLOG_INDEX_OG_IMAGE_WIDTH } from './src/components/blog-page-meta';
 import { SidebarSocials } from './src/components/sidebar-socials';
 import { SidebarLogo } from './src/components/sidebar-logo';
 import { CommunityConnect } from './src/components/community-connect';
@@ -301,6 +303,37 @@ function buildOgNode(title: string | undefined, description: string | undefined)
     );
 }
 
+/**
+ * Hand-rolled equivalent of `takumiPlugin`'s own `core:page-meta` OG-image route (below), for
+ * `/blog` specifically. `takumiPlugin` only builds images for pages returned by
+ * `this.getLoader().getPages()` (`packages/blit386/docs/...`, `content/blog/...`); `/blog` is a
+ * route `blogPlugin` registers itself, not a loader page, so it never gets one – confirmed via
+ * `curl -sI https://blit386.dev/blog.webp` returning 404 where a real content page's `.webp`
+ * returns 200. `takumiPlugin` exposes no option to register an extra image page, so this
+ * registers its own `createApiIsomorphic` route with the same signature takumi.js uses for a
+ * single page: same 1200x630 geometry (`BLOG_INDEX_OG_IMAGE_WIDTH`/`HEIGHT`, shared with the
+ * `og:image:width`/`height` meta tags in `blog-page-meta.tsx` so the two can't drift), same
+ * `format: 'webp'`, reusing `buildOgNode` so the card looks like every other page's.
+ */
+function blogIndexOgImagePlugin<C extends ConfigContext = ConfigContext>(): ServerPlugin<C> {
+    return {
+        name: 'core:blog-index-og-image',
+        createPages({ createApiIsomorphic }) {
+            createApiIsomorphic({
+                render: this.mode === 'default' ? 'static' : this.mode,
+                path: '/blog.webp',
+                handler: async () =>
+                    new ImageResponse(buildOgNode(BLOG_TITLE, CHANNEL_DESCRIPTION), {
+                        width: BLOG_INDEX_OG_IMAGE_WIDTH,
+                        height: BLOG_INDEX_OG_IMAGE_HEIGHT,
+                        fonts: [{ name: 'DepartureMono', data: getDepartureMono() }],
+                        format: 'webp',
+                    }),
+            });
+        },
+    };
+}
+
 // Top-level Fumapress config: content sources, build mode, and SEO meta here; plugins,
 // MDX adapters, and layouts are chained on below via `.plugins()`, `.adapters()`, `.layouts()`.
 export default defineConfig({
@@ -446,6 +479,8 @@ export default defineConfig({
                 };
             },
         }),
+
+        blogIndexOgImagePlugin(),
 
         linkValidationPlugin(),
     )

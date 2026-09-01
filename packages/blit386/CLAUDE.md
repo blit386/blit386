@@ -20,7 +20,7 @@ Routing that is not obvious from the file tree. For "how does subsystem X work",
 | --- | --- |
 | Is this API exported publicly? | The trailing `export { ... }` / `export type { ... }` block at the end of `src/BLIT386.ts` |
 | What are the render/asset dimension limits? | `src/utils/RenderLimits.ts`, `src/utils/AssetLimits.ts` – not docs |
-| What is the benchmark regression threshold? | `.github/workflows/ci.yml` benchmark job (`--threshold 25`) – not docs |
+| What is the benchmark regression threshold? | the `bench:compare` script in `package.json` (`--threshold 25`) – not docs |
 | What error message style should I use? | `docs/voice.md`, then `src/utils/errorMessages.ts`; shared "can't find this file" hints in `src/utils/urlHints.ts` |
 | What test mock do I need? | `src/__test__/webgpu-mock.ts` (GPU), `src/__test__/webaudio-mock.ts` (Web Audio) |
 | How do I document a new/changed public API and keep it versioned? | `docs/documentation-and-versioning-guide.md`, `.claude/rules/bt-api-getters.md` |
@@ -130,7 +130,8 @@ Four tiers:
 Run `/test blit386 visual` when changing post-process effects, sprite rendering, bitmap fonts, primitive drawing,
 palette-indexed rendering, or camera offsets: it is the pixel-level correctness tool, not a performance one.
 `test:visual:update` regenerates baselines after an intentional visual change. Benchmarks cover isolated methods and
-allocation patterns; CI runs them on labeled PRs against a regression threshold.
+allocation patterns; compare a feature branch against a `main` baseline locally with `pnpm run bench:compare` – CI does
+not run or gate on benchmarks.
 
 Coverage lists, snapshot locations, mock usage, and known quirks:
 [docs/reference-testing.md](docs/reference-testing.md). Benchmark workflow: `docs/performance-testing.md` and the

@@ -24,6 +24,7 @@
     "test:spellcheck-coverage": "node --test scripts/spellcheck-coverage.test.mjs",
     "test:ensure-engine-built": "node --test scripts/ensure-engine-built.test.mjs",
     "test:ensure-kit-built": "node --test scripts/ensure-kit-built.test.mjs",
+    "test:ci-workflow-benchmark": "node --test scripts/ci-workflow-benchmark.test.mjs",
     "bump": "node scripts/bump-lockstep.mjs",
     "bump:check": "node scripts/bump-lockstep.mjs --check",
     "test:bump-lockstep": "node --test scripts/bump-lockstep.test.mjs",

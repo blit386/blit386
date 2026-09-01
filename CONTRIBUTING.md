@@ -190,6 +190,7 @@ Pre-commit (lint-staged) and CI/`preflight` now agree: both reject ESLint warnin
 - Agent config drift checker tests (`test:agent-config`)
 - API history generator tests (`test:api-history`)
 - API getter drift checker tests (`test:api-getters`)
+- Benchmark comparison script tests (`test:bench-compare`)
 - Compact-table Prettier plugin tests (`test:compact-tables`)
 - Shell safety hook tests (`test:shell-safety`)
 - Spellcheck coverage tests (`test:spellcheck-coverage`)

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const COMMENT_MARKER = '<!-- benchmark-comparison -->';
 const DEFAULT_THRESHOLD = 10;
@@ -16,7 +17,7 @@ const DEFAULT_THRESHOLD = 10;
  *   threshold: number,
  * }} Parsed command options.
  */
-function parseArgs(argv) {
+export function parseArgs(argv) {
     const args = {
         baseline: null,
         current: null,
@@ -136,7 +137,7 @@ function validateBenchmarkReport(report, sourceLabel) {
  *   filepath: string,
  * }>} Flattened benchmark entries.
  */
-function flattenBenchmarks(report) {
+export function flattenBenchmarks(report) {
     const entries = [];
     const reportLabel = report.__sourceLabel ?? 'benchmark report';
 
@@ -218,7 +219,7 @@ function flattenBenchmarks(report) {
  *   }>,
  * }} Comparison report used by CI and PR comments.
  */
-function compareReports(currentReport, baselineReport, thresholdPct) {
+export function compareReports(currentReport, baselineReport, thresholdPct) {
     const currentEntries = flattenBenchmarks(currentReport);
     const baselineEntries = baselineReport ? flattenBenchmarks(baselineReport) : [];
     const currentByKey = new Map(currentEntries.map((entry) => [entry.matchKey, entry]));
@@ -378,7 +379,7 @@ function escapeMarkdownCell(value) {
  * }} report Comparison report.
  * @returns {string} Markdown comment body.
  */
-function buildMarkdown(report) {
+export function buildMarkdown(report) {
     const lines = [COMMENT_MARKER, '## Tier 1 Benchmark Comparison', ''];
 
     if (!report.hasBaseline) {
@@ -427,7 +428,20 @@ function writeFile(filePath, content) {
 }
 
 /**
- * Runs the benchmark comparison CLI.
+ * Determines whether a comparison report should fail the command that produced it: a baseline was available and the
+ * comparison found a regression past the threshold or a benchmark missing from the current run.
+ *
+ * @param {{ hasBaseline: boolean, summary: { regressions: number, missingBenchmarks: number } }} report Comparison
+ *   report returned by {@link compareReports}.
+ * @returns {boolean} True when the command should exit nonzero.
+ */
+export function hasComparisonFailures(report) {
+    return report.hasBaseline && (report.summary.regressions > 0 || report.summary.missingBenchmarks > 0);
+}
+
+/**
+ * Runs the benchmark comparison CLI. Exits with a nonzero code when {@link hasComparisonFailures} is true, so the
+ * command can gate a local workflow the same way CI used to gate a PR.
  *
  * @returns {void}
  */
@@ -445,6 +459,12 @@ function main() {
 
     writeFile(args.jsonOut, JSON.stringify(report, null, 2));
     writeFile(args.markdownOut, buildMarkdown(report));
+
+    if (hasComparisonFailures(report)) {
+        process.exitCode = 1;
+    }
 }
 
-main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+    main();
+}

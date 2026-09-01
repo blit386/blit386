@@ -32,6 +32,9 @@ playwright-report/
 test-results/
 .vitest/
 benchmark-results.json
+benchmark-baseline.json
+benchmark-comparison.json
+benchmark-comparison.md
 
 # Claude Code (skills, rules, settings.json are tracked)
 .claude/settings.local.json

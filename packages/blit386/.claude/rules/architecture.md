@@ -123,6 +123,15 @@ src/
     setup.ts               # Vitest global setup (GPU constants)
 ```
 
+## Adding a new subsystem
+
+When adding a new top-level `src/` directory, or a file within an existing one that becomes a genuine per-frame hot path
+(called every `update()`/`render()`, not just at init or on rare events): update this file's tree above, the Where to
+Find table in [CLAUDE.md](../../CLAUDE.md), and check whether it belongs in
+[`.claude/rules/bench-coverage.md`](bench-coverage.md)'s hot-path directory list. That file's `paths:` glob and
+`scripts/check-bench-coverage.mjs`'s `HOT_PATH_DIRS` are what make benchmark coverage get reminded about at all – a new
+hot subsystem left off both lists gets no nudge to add benchmarks and no pre-push reminder when it changes.
+
 ## Palette-First Rendering
 
 Two backends selectable via `HardwareSettings.backend` (default `'webgpu'`):
