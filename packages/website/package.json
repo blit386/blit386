@@ -68,6 +68,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-server-dom-webpack": "^19.2.8",
+    "takumi-js": "^2.0.0",
     "waku": "1.0.0-beta.6",
     "zod": "^4.4.3"
   },
