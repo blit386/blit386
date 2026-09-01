@@ -46,7 +46,9 @@ package).
 | `pnpm run test:visual:coverage` | Run visual tests with Istanbul coverage report |
 | `pnpm run bench` | Run CPU benchmarks – Tier 4 (Vitest bench; see [Testing](reference-testing.md)) |
 | `pnpm run bench:json` | Run Tier 4 benchmarks and write `benchmark-results.json` |
-| `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here – see the note below the table |
+| `pnpm run bench:baseline` | Run Tier 4 benchmarks and write `benchmark-baseline.json` (run on `main` before perf work) |
+| `pnpm run bench:compare` | Compare `benchmark-results.json` against `benchmark-baseline.json`, 25% regression threshold |
+| `pnpm run preflight` | All checks, in order: `format:check`, `lint`, `typecheck`, `spellcheck`, `knip`, `sync:doc-banners:check`, `api:since:check`, `api:history:check`, `api:getters:check`, `test:unit`, `test:declarations`, `test:agent-config`, `test:api-history`, `test:api-getters`, `test:bench-compare`, `test:compact-tables`, `test:shell-safety`, `test:spellcheck-coverage`, `test:security-preflight`. `docs:links` and `agents:check` are repo-wide and run at the root, not here – see the note below the table |
 | `pnpm run docs:links` | Check Markdown links in git-tracked `*.md` / `*.mdx` files (honors `.gitignore`) |
 | `pnpm run agents:check` | Check agent config drift (skills symlinks, AGENTS.md <-> CLAUDE.md pointer, root `.mcp.json`) |
 | `pnpm run sync:doc-banners` | Insert/refresh blit386.dev banners in published docs |
@@ -57,6 +59,7 @@ package).
 | `pnpm run api:getters:check` | Check `BT.*` getter/method coverage in `.claude/rules/bt-api-getters.md` |
 | `pnpm run test:api-history` | API history generator unit tests (Node test) |
 | `pnpm run test:api-getters` | API getter drift checker unit tests (Node test) |
+| `pnpm run test:bench-compare` | Benchmark comparison script unit tests (Node test) |
 | `pnpm run test:compact-tables` | Compact-table Prettier plugin unit tests (Node test) |
 | `pnpm run test:shell-safety` | Shell safety hook unit tests (Node test) |
 | `pnpm run test:spellcheck-coverage` | Spellcheck coverage unit tests (Node test) |
@@ -111,7 +114,7 @@ exceptions: [audit-exceptions.md](security/audit-exceptions.md).
 | [Authors](reference-authors.md) | credits and external inspirations |
 | [Changelog](changelog.md) | release history in Keep a Changelog style |
 | [Testing](reference-testing.md) | test tiers, WebGPU mocks, visual regression |
-| [Performance Testing](performance-testing.md) | CPU benchmarks, CI regression checks |
+| [Performance Testing](performance-testing.md) | CPU benchmarks, local baseline/compare workflow |
 | [Performance Best Practices](performance-best-practices.md) | optimization guidelines |
 | [Software Fallback Smoke Matrix](performance-smoke-matrix.md) | manual software renderer verification matrix |
 | [Developer Experience](developer-experience-guide.md) | contributing workflow, IDE setup |

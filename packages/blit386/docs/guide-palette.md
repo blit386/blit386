@@ -276,7 +276,7 @@ Palette-first rendering minimizes color-update cost:
 - Sprite textures are indexed (one byte per pixel) rather than four-channel RGBA storage.
 - Primitive and sprite draws reuse compact index-based pipelines.
 
-For benchmark workflow and CI thresholds, see [Performance Testing](performance-testing.md).
+For the benchmark and local comparison workflow, see [Performance Testing](performance-testing.md).
 
 </Step>
 

@@ -94,6 +94,9 @@ Deprecated aliases still on `BT` (do not use in new code): see `docs/reference-d
    field)
 4. Update `docs/api-*.md`, demos if public; overlay behavior also updates `docs/guide-overlay.md`; structural `src/`
    changes update `.claude/rules/architecture.md` and the Where to Find table in `CLAUDE.md`
+5. New per-frame hot-path API (called every `update()`/`render()`, not just at init) – add or extend a `*.bench.ts`
+   alongside it, and if it lands in a directory `.claude/rules/bench-coverage.md` does not already cover, add that
+   directory there – see `.claude/rules/architecture.md`'s "Adding a new subsystem" section
 
 ## `@since` discipline and API history
 

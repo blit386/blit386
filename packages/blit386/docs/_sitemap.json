@@ -130,7 +130,7 @@
     {
       "src": "performance-testing.md",
       "path": "performance/testing",
-      "description": "CPU micro-benchmarks: when to use them, how to add one, and the CI benchmark gate."
+      "description": "CPU micro-benchmarks: when to use them, how to add one, and the local baseline/compare workflow."
     },
     {
       "src": "performance-smoke-matrix.md",

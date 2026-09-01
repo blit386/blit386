@@ -109,3 +109,11 @@ fi
 
 echo ""
 echo "Pre-push checks passed! Ready to push."
+
+# Advisory only - never fails the push. Reminds when this push touches an engine
+# hot-path directory (see packages/blit386/.claude/rules/bench-coverage.md) without
+# touching a matching *.bench.ts file, since CI does not run or gate on benchmarks
+# and it is easy to forget the local baseline/compare workflow.
+if [ -n "$BASE_REF" ] && [ -f "packages/blit386/scripts/check-bench-coverage.mjs" ]; then
+    node packages/blit386/scripts/check-bench-coverage.mjs --base "$BASE_REF"
+fi

@@ -5,20 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 concurrency:
   # Prefer PR number over head_ref so two forks/PRs with the same branch name do not
-  # cancel each other. Mirrors the benchmark job group below.
-  #
-  # Label events get their own group. They exist only so adding `perf` can start a
-  # benchmark run mid-PR, but they share a PR number with the real run - and since
-  # labelling a PR `cr` to request a review is routine here, a shared group meant every
-  # review request cancelled that PR's actual CI and replaced it with a run where every
-  # job correctly skipped. Green, having tested nothing.
-  group: >-
-    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{
-    contains(fromJSON('["labeled","unlabeled"]'), github.event.action) && 'label' || 'code' }}
+  # cancel each other.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -36,11 +27,6 @@ jobs:
       kit: ${{ steps.filter.outputs.kit }}
       scaffolder: ${{ steps.filter.outputs.scaffolder }}
       shared: ${{ steps.filter.outputs.shared }}
-      # Adding or removing a label re-triggers the workflow so the `perf` label can turn
-      # benchmarks on mid-PR. Everything else would just re-run unchanged code, so most
-      # jobs opt out via this flag.
-      label-event:
-        ${{ github.event_name == 'pull_request' && contains(fromJSON('["labeled","unlabeled"]'), github.event.action) }}
 
     steps:
       # paths-filter uses the API on pull_request events but needs a working tree on
@@ -100,7 +86,6 @@ jobs:
     name: Code Quality (root)
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.label-event != 'true'
     permissions:
       contents: read
 
@@ -178,13 +163,16 @@ jobs:
         run: pnpm run test:ensure-engine-built
         background: true
 
+      - name: Run ci-workflow-benchmark tests
+        run: pnpm run test:ci-workflow-benchmark
+        background: true
+
       - wait-all:
 
   security-audit:
     name: Dependency Security Audit
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.label-event != 'true'
     permissions:
       contents: read
 
@@ -223,12 +211,7 @@ jobs:
     name: Code Quality (engine)
     runs-on: ubuntu-latest
     needs: changes
-    # The `perf` label is the one label change that must reach a quality job, because
-    # the benchmark job below depends on this one.
-    if:
-      (needs.changes.outputs.engine == 'true' || needs.changes.outputs.shared == 'true') &&
-      (needs.changes.outputs.label-event != 'true' || (github.event.action == 'labeled' && github.event.label.name ==
-      'perf'))
+    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.shared == 'true'
     permissions:
       contents: read
 
@@ -415,199 +398,11 @@ jobs:
         with:
           files: ./packages/blit386/coverage/coverage-final.json
 
-  benchmark:
-    name: Benchmarks
-    runs-on: ubuntu-latest
-    needs: [changes, quality-engine]
-    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'perf')
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-benchmark
-      cancel-in-progress: true
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          persist-credentials: false
-
-      - name: Set up workspace
-        uses: ./.github/actions/setup
-
-      - name: Run benchmarks
-        working-directory: packages/blit386
-        run: pnpm run bench:json
-
-      - name: Upload current benchmark results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: benchmark-results-current
-          path: packages/blit386/benchmark-results.json
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload main benchmark baseline
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: benchmark-baseline
-          path: packages/blit386/benchmark-results.json
-          if-no-files-found: error
-          retention-days: 90
-
-      - name: Find latest main benchmark baseline
-        id: find-baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        with:
-          script: |
-            const workflowId = 'ci.yml';
-            const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: workflowId,
-              branch: 'main',
-              event: 'push',
-              status: 'completed',
-              per_page: 100,
-            });
-
-            for (const run of runs) {
-              if (run.conclusion !== 'success') {
-                continue;
-              }
-
-              const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: run.id,
-                per_page: 100,
-              });
-              const baselineArtifact = artifacts.find(
-                (artifact) => artifact.name === 'benchmark-baseline' && artifact.expired === false,
-              );
-
-              if (!baselineArtifact) {
-                continue;
-              }
-
-              core.setOutput('found', 'true');
-              core.setOutput('download-url', baselineArtifact.archive_download_url);
-              core.setOutput('artifact-id', String(baselineArtifact.id));
-              core.setOutput('run-id', String(run.id));
-              return;
-            }
-
-            core.setOutput('found', 'false');
-
-      - name: Download main benchmark baseline
-        if: github.event_name == 'pull_request' && steps.find-baseline.outputs.found == 'true'
-        working-directory: packages/blit386
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          BASELINE_URL: ${{ steps.find-baseline.outputs.download-url }}
-        run: |
-          mkdir -p baseline-artifact
-          curl --fail --location \
-            --header "Authorization: Bearer ${GITHUB_TOKEN}" \
-            --header "Accept: application/vnd.github+json" \
-            "${BASELINE_URL}" \
-            --output baseline-artifact.zip
-          unzip -o baseline-artifact.zip -d baseline-artifact
-
-      - name: Compare benchmark results
-        if: github.event_name == 'pull_request'
-        working-directory: packages/blit386
-        run: >
-          node scripts/compare-tier-1-benchmarks.mjs --current benchmark-results.json --baseline
-          baseline-artifact/benchmark-results.json --json-out benchmark-comparison.json --markdown-out
-          benchmark-comment.md --threshold 25
-
-      - name: Upload benchmark comparison artifacts
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: benchmark-comparison
-          path: |
-            packages/blit386/benchmark-comparison.json
-            packages/blit386/benchmark-comment.md
-            packages/blit386/benchmark-results.json
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Post benchmark PR comment
-        if:
-          github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && github.actor !=
-          'dependabot[bot]'
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
-        env:
-          BENCHMARK_COMMENT_PATH: packages/blit386/benchmark-comment.md
-        with:
-          script: |
-            const fs = require('node:fs');
-            const marker = '<!-- benchmark-comparison -->';
-            const body = fs.readFileSync(process.env.BENCHMARK_COMMENT_PATH, 'utf8');
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              per_page: 100,
-            });
-            const existingComment = comments.find((comment) =>
-              comment.user?.type === 'Bot' && comment.body?.includes(marker),
-            );
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body,
-              });
-              return;
-            }
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body,
-            });
-
-      - name: Fail on benchmark regressions
-        if: github.event_name == 'pull_request'
-        working-directory: packages/blit386
-        run: |
-          node --input-type=module <<'EOF'
-          import fs from 'node:fs';
-
-          if (!fs.existsSync('benchmark-comparison.json')) {
-              process.exit(0);
-          }
-
-          const report = JSON.parse(fs.readFileSync('benchmark-comparison.json', 'utf8'));
-
-          if (!report.hasBaseline) {
-              process.exit(0);
-          }
-
-          const hasFailures = report.summary.regressions > 0 || report.summary.missingBenchmarks > 0;
-
-          if (hasFailures) {
-              process.exit(1);
-          }
-          EOF
-
   quality-demos:
     name: Code Quality (demos)
     runs-on: ubuntu-latest
     needs: changes
-    if:
-      (needs.changes.outputs.demos == 'true' || needs.changes.outputs.shared == 'true') &&
-      needs.changes.outputs.label-event != 'true'
+    if: needs.changes.outputs.demos == 'true' || needs.changes.outputs.shared == 'true'
     permissions:
       contents: read
 
@@ -685,9 +480,7 @@ jobs:
     name: Code Quality (website)
     runs-on: ubuntu-latest
     needs: changes
-    if:
-      (needs.changes.outputs.website == 'true' || needs.changes.outputs.shared == 'true') &&
-      needs.changes.outputs.label-event != 'true'
+    if: needs.changes.outputs.website == 'true' || needs.changes.outputs.shared == 'true'
     permissions:
       contents: read
 
@@ -801,9 +594,7 @@ jobs:
     name: Code Quality (kit)
     runs-on: ubuntu-latest
     needs: changes
-    if:
-      (needs.changes.outputs.kit == 'true' || needs.changes.outputs.shared == 'true') &&
-      needs.changes.outputs.label-event != 'true'
+    if: needs.changes.outputs.kit == 'true' || needs.changes.outputs.shared == 'true'
     permissions:
       contents: read
 
@@ -857,9 +648,7 @@ jobs:
     name: Code Quality (scaffolder)
     runs-on: ubuntu-latest
     needs: changes
-    if:
-      (needs.changes.outputs.scaffolder == 'true' || needs.changes.outputs.shared == 'true') &&
-      needs.changes.outputs.label-event != 'true'
+    if: needs.changes.outputs.scaffolder == 'true' || needs.changes.outputs.shared == 'true'
     permissions:
       contents: read
 
