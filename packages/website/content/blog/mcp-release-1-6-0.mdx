@@ -1,0 +1,74 @@
+---
+title: BLIT386 1.6.0 – a live line to the docs
+description:
+  The MCP release – a live docs server wired into every scaffolded game, a website CSP nonce, and a symlink hole closed
+  in the kit.
+date: 2026-09-01
+tags: [release, mcp]
+author: vancura
+---
+
+Every scaffolded game ships with beginner docs baked in at scaffold time – nine files, hand-written, meant to get you
+from zero to a moving sprite without leaving the editor. The problem is the engine keeps moving and the baked-in docs do
+not, so eventually your coding assistant is confidently explaining an API that changed two releases ago, and neither of
+you notices until something breaks.
+
+1.6.0 doesn't add a new toy to draw with. It wires every scaffolded game, and this repository itself, into a live line
+to the real docs, so the assistant can ask instead of guess. The rest of it is exactly what you'd expect from the
+release after the exciting one: a security hardening pass on the website, a symlink hole closed in the kit, a pile of
+duplicate types finally merged into one, and a demo that had been showing the wrong glitch labels for months without
+anyone noticing.
+
+## Ask instead of guess
+
+There is now an MCP server at [blit386.dev/mcp](/mcp-server) – `search_docs` and `get_docs_summary`, JSON-RPC over
+streamable HTTP, no auth, public and read-only. It is wired into this repository's own root as a tracked `.mcp.json`, so
+opening Claude Code or Cursor here gets a pre-approved connection to the real docs with no per-machine trust prompt, and
+now every `npm create blit386` scaffold gets the same thing: `.mcp.json` for Claude Code, `.cursor/mcp.json` for Cursor,
+built from one shared config so the two never drift apart.
+
+There is a new `ask-the-docs` kit skill alongside it, which teaches the assistant to reach for `search_docs` before it
+reaches for GitHub, and the `AGENTS.md` shipped into every game now spells out the same routing – the live docs, then
+`llms.txt`, then `Accept: text/markdown` on any page, GitHub last. None of this replaces the nine beginner docs baked
+into your game at scaffold time. It is the fallback for everything past page nine, and the correction for whatever those
+nine pages got wrong by the time you read them.
+
+## The website stopped trusting inline scripts
+
+`script-src` used to carry `'unsafe-inline'`, which is the CSP equivalent of leaving the front door open because locking
+it was annoying. It is gone, replaced by a per-request nonce stamped onto every script tag via `HTMLRewriter` – the site
+renders statically, so no fixed hash list could ever cover Waku's per-page bootstrap script or its RSC flight payload,
+and a nonce is the only thing left that works at that point in the pipeline. Rolling a policy change like this out cold
+is asking for a blank page in production, so there is a `BLIT386_CSP_REPORT_ONLY` flag that serves the new policy
+without enforcing it first.
+
+## Other changes
+
+### A symlink couldn't quietly hijack a file write
+
+`blit agents add` and `blit agents sync` write into your project through paths taken from a manifest. If one of those
+paths, or a directory above it, turned out to be a symlink, the kit would happily write through it – to wherever the
+link actually pointed. That gap is closed: every kit-owned write now walks the path with `lstatSync` first and refuses
+to follow a symlinked segment, generated files included.
+
+### A pile of duplicate types became one
+
+The kit and the scaffolder had drifted into declaring the same things twice – the manifest shape, the agent-kind
+constants, how to find the kit's own root, which files the kit owns. They are now single declarations the scaffolder
+imports rather than re-derives. The one number that genuinely has to exist in both places – the engine version range
+each package pins – gets a CI check instead, one that fails the build the moment the two disagree.
+
+### The CRT demos agreed on their own labels
+
+Five demos shared the same glitch-effect logic but not the same labels for it – `basics-enhanced` called an effect
+H-SHIFT while `sprite-effects` called the identical thing H-HOLD, which is the kind of bug nobody files because it only
+shows up as a caption that's technically lying. Fixed, with the labels now coming from one shared module instead of five
+copies of the same guess.
+
+The full list, in the usual Keep a Changelog shape, is at [the changelog](/docs/reference/changelog).
+
+```bash
+npm create blit386@latest my-game
+```
+
+Ask it something.

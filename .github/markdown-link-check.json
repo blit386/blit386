@@ -75,6 +75,9 @@
       "pattern": "^/showcase(/|$)"
     },
     {
+      "pattern": "^/mcp-server(/|$)"
+    },
+    {
       "pattern": "^https://blit386\\.dev/sitemap\\.xml$"
     }
   ],
