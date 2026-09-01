@@ -94,12 +94,12 @@
 > resolve them. 24 skill directories under `content/skills/` cover the full renderer / input / palette / timing / audio
 > / post-process / hot-reload surface (plus `run`, `fix`, `migrate`, `share-the-game`). `npx blit` verified
 > (2026-06-14): `blit doctor` + `blit run` pass on npm, pnpm, and yarn for a freshly scaffolded project (bun
-> intentionally out of scope; see section 7). Still open (roadmap only – do not treat deleted GitHub issues as live
-> links): generate engine `docs/deprecations.md` from the kit migration registry; auto-stamp `blit386.engineRange` at
-> release; section 7 verification TODOs (StackBlitz, Windows, iPad/Safari); Catcher starter catch/miss sounds (deferred
-> product work). Repo: <https://github.com/blit386/create-blit386> (public). Owner: Václav (vancura). First external
-> user: Filipek. Started: 2026-06-07. Purpose: shared source of truth for the BLIT386 project scaffolder. We return to
-> this across sessions so we do not lose decisions, findings, or deferred ideas.
+> intentionally out of scope; see section 7). Engine `docs/deprecations.md` generation from the kit migration registry
+> shipped in-repo (BT-299, section 4.6). Still open (roadmap only – do not treat deleted GitHub issues as live links):
+> auto-stamp `blit386.engineRange` at release; section 7 verification TODOs (StackBlitz, Windows, iPad/Safari); Catcher
+> starter catch/miss sounds (deferred product work). Repo: <https://github.com/blit386/create-blit386> (public). Owner:
+> Václav (vancura). First external user: Filipek. Started: 2026-06-07. Purpose: shared source of truth for the BLIT386
+> project scaffolder. We return to this across sessions so we do not lose decisions, findings, or deferred ideas.
 
 This is the planning doc: roadmap, decisions, and monetization notes. It moved into the scaffolder repo in PR #34 and
 now lives at the root of `blit386/create-blit386`, which is public – so write it as a doc a stranger may read, and keep
@@ -402,11 +402,12 @@ could match unrelated code: common method words `equals`/`contains`/`intersects`
 `canvasId`/`containerId`/`waitForDOMReady` – reported with a suggestion, never auto-rewritten). `blit migrate` previews
 by default and writes only with `--write` (kid-safe: warns + confirms when the project is not under git); `blit upgrade`
 runs the applicable codemods after a real version change and offers to apply them. Decisions / still open: (1) the
-migration data lives in the kit, not the engine, so the feature ships without an engine release – the long-term "flip
-`deprecations.md` to be generated from this data" is cross-repo and deferred (the two are mirrored by hand for now); (2)
-no `ts-morph`/`jscodeshift` dependency yet – anchored string matching covers the current one-to-one table; (3) the AI
-migration skill (`content/skills/migrate/SKILL.md`, Round 22) ships into generated games as a Claude skill and a Cursor
-command: it runs `blit migrate --write` for the autos and resolves each `review` hit by checking the receiver type
+migration data lives in the kit, not the engine, but `docs/deprecations.md` is now generated from that kit registry
+in-repo (`packages/blit386/scripts/gen-deprecations.mjs`), with a CI `--check` drift gate
+(`pnpm run api:deprecations:check`) – no cross-repo token is needed; (2) no `ts-morph`/`jscodeshift` dependency yet –
+anchored string matching covers the current one-to-one table; (3) the AI migration skill
+(`content/skills/migrate/SKILL.md`, Round 22) ships into generated games as a Claude skill and a Cursor command: it runs
+`blit migrate --write` for the autos and resolves each `review` hit by checking the receiver type
 (`equals`/`contains`/`intersects`/`tick`, generic bootstrap keys).
 
 ### 4.7 The no-git nag (kind, not scary)
@@ -721,12 +722,14 @@ Phase 2 – "Agents on tap" (COMPLETE 2026-06-13, all merged to `main`):
 
 Phase 3 – "Stays fresh":
 
-- [~] Structured migrations derived from `deprecations.md`; `blit upgrade` runs codemods + shows a diff; AI migration
-  skill for non-mechanical changes. Round 21: registry + codemod engine + `blit migrate` + `blit upgrade` wiring shipped
-  kit-side (auto vs review split). Round 22: AI migration skill (`content/skills/migrate/`) ships into generated games
-  for Claude and Cursor, teaching the assistant to apply `--write` autos and resolve `review` hits by receiver type.
-  Remaining (roadmap): generate engine `docs/deprecations.md` from this data (cross-repo). →
-  [BT-299](https://linear.app/vancura/issue/BT-299/cross-repo-ci-to-generate-deprecationsmd-from-kit-migration-registry)
+- [x] Structured migrations derived from `deprecations.md`; `blit upgrade` runs codemods + shows a diff; AI migration
+      skill for non-mechanical changes. Round 21: registry + codemod engine + `blit migrate` + `blit upgrade` wiring
+      shipped kit-side (auto vs review split). Round 22: AI migration skill (`content/skills/migrate/`) ships into
+      generated games for Claude and Cursor, teaching the assistant to apply `--write` autos and resolve `review` hits
+      by receiver type.
+      [BT-299](https://linear.app/vancura/issue/BT-299/cross-repo-ci-to-generate-deprecationsmd-from-kit-migration-registry):
+      the source of truth flipped – engine `docs/deprecations.md` is now generated in-repo from the kit migration
+      registry (`packages/blit386/scripts/gen-deprecations.mjs`), with a CI `--check` drift gate.
 - [x] Auto-stamp `blit386.engineRange` during release + kit docs drift detection CI (replaces the original "generate kit
       docs FROM engine `docs/api-*.md`" plan; full prose generation is not feasible). The engine's own `bump-lockstep`
       already derived and wrote `engineRange` at release time (BT-410); `pnpm run bump:check` (BT-317) is the

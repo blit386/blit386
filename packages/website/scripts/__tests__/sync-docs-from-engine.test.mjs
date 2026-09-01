@@ -20,6 +20,7 @@ const {
     extractTitleAndBody,
     dropDuplicateIntro,
     stripSiteBanner,
+    stripGeneratedNote,
     isToolingDirective,
     summarizeComment,
     getLastModified,
@@ -223,6 +224,22 @@ describe('stripSiteBanner', () => {
     test('leaves content without a banner unchanged', () => {
         const input = 'No banner here.';
         assert.equal(stripSiteBanner(input), input);
+    });
+});
+
+describe('stripGeneratedNote', () => {
+    test('removes the generated-notice block, including its blockquote body', () => {
+        const input =
+            'Before.\n<!-- generated:start -->\n\n> [!NOTE]\n> Do not hand-edit.\n\n<!-- generated:end -->\nAfter.';
+        const result = stripGeneratedNote(input);
+        assert.ok(!result.includes('generated:start'));
+        assert.ok(!result.includes('Do not hand-edit'));
+        assert.ok(result.includes('After.'));
+    });
+
+    test('leaves content without a generated notice unchanged', () => {
+        const input = 'No generated notice here.';
+        assert.equal(stripGeneratedNote(input), input);
     });
 });
 

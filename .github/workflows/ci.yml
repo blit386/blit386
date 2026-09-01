@@ -178,6 +178,10 @@ jobs:
         run: pnpm run test:ensure-engine-built
         background: true
 
+      - name: Run ensure-kit-built tests
+        run: pnpm run test:ensure-kit-built
+        background: true
+
       - wait-all:
 
   security-audit:
@@ -272,6 +276,10 @@ jobs:
 
       - name: Check API history manifest
         run: pnpm --filter blit386 run api:history:check
+        background: true
+
+      - name: Check deprecations doc against kit migration registry
+        run: pnpm --filter blit386 run api:deprecations:check
         background: true
 
       - wait-all:

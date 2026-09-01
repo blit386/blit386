@@ -1,5 +1,15 @@
 # Deprecation Timeline
 
+<!-- generated:start -->
+
+<!-- prettier-ignore -->
+> [!NOTE]
+> This file is generated. Never hand-edit it: edit `packages/kit/src/migrations/registry.ts` and
+> run `pnpm run api:deprecations` to regenerate it. `pnpm run api:deprecations:check` fails when
+> this file drifts from the registry.
+
+<!-- generated:end -->
+
 <!-- blit386.dev-banner:start -->
 
 <!-- prettier-ignore -->
@@ -57,14 +67,14 @@ Removal target: 2.0.0
 Removal target: 2.0.0
 
 - `SpriteSheet.isIndexized()` → `SpriteSheet.isIndexed()`
+- `Rect2i.containsXY()` → `Rect2i.isContainingXY()`
+- `Rect2i.intersectionTo()` → `Rect2i.intersectTo()`
 - `Timer.tick()` → `Timer.fireIfElapsed()`
 - `Vector2i.equals()` → `Vector2i.isEqual()`
-- `Rect2i.contains()` → `Rect2i.isContaining()`
-- `Rect2i.containsXY()` → `Rect2i.isContainingXY()`
-- `Rect2i.intersects()` → `Rect2i.isIntersecting()`
-- `Rect2i.intersectionTo()` → `Rect2i.intersectTo()`
 - `Rect2i.equals()` → `Rect2i.isEqual()`
 - `Color32.equals()` → `Color32.isEqual()`
+- `Rect2i.contains()` → `Rect2i.isContaining()`
+- `Rect2i.intersects()` → `Rect2i.isIntersecting()`
 
 ### Removal checklist
 

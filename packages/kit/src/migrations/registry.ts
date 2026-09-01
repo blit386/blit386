@@ -1,9 +1,10 @@
 /**
  * The known engine migrations, in date order.
  *
- * This is the structured form of `blit386`'s `docs/deprecations.md`: each entry mirrors one dated section of that
- * timeline. Keep the two in sync until the engine generates `deprecations.md` from this data (see the design doc,
- * section 4.6). New games rarely need these, but a project that upgrades across the rename can use `blit migrate`.
+ * This file is the source of truth for `packages/blit386/docs/reference-deprecations.md`:
+ * `packages/blit386/scripts/gen-deprecations.mjs` renders that doc from `MIGRATIONS` below, grouping renames by their
+ * optional `section` field and formatting one bullet per rename (or one per `receiverClasses` entry). New games
+ * rarely need these, but a project that upgrades across the rename can use `blit migrate`.
  */
 
 import { compareVersions } from '../env';
@@ -49,6 +50,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'buttonDown',
@@ -56,6 +59,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'buttonPressed',
@@ -63,6 +68,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'buttonReleased',
@@ -70,6 +77,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'gamepadConnected',
@@ -77,6 +86,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'keyDown',
@@ -84,6 +95,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'keyPressed',
@@ -91,6 +104,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'keyReleased',
@@ -98,6 +113,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'memberCall',
                 safety: 'auto',
                 receiver: 'BT',
+                section: '`BT` namespace',
+                removalTarget: '2.0.0',
             },
 
             // HardwareSettings configure() flags (distinctive object keys).
@@ -106,48 +123,64 @@ export const MIGRATIONS: readonly Migration[] = [
                 to: 'isDetectingDroppedFrames',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'overlayEnabled',
                 to: 'isOverlayEnabled',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'overlayVisibleAtStart',
                 to: 'isOverlayVisibleAtStart',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'overlayToggleHintVisible',
                 to: 'isOverlayToggleHintVisible',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'overlayToggleEnabled',
                 to: 'isOverlayToggleEnabled',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'overlayPaletteView',
                 to: 'isOverlayPaletteEnabled',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'overlayTimingChart',
                 to: 'isOverlayTimingChartEnabled',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'overlayRendererDiagnosticsBar',
                 to: 'isOverlayRendererDiagnosticsBarEnabled',
                 kind: 'objectKey',
                 safety: 'auto',
+                section: '`HardwareSettings` compatibility fields',
+                removalTarget: '2.0.0',
             },
 
             // BootstrapOptions fields. These keys are generic enough to appear on unrelated objects, so they are
@@ -158,6 +191,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'objectKey',
                 safety: 'review',
                 note: 'bootstrap() option; "canvasId" is a generic key, so confirm the context before renaming.',
+                section: '`BootstrapOptions` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'containerId',
@@ -165,6 +200,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'objectKey',
                 safety: 'review',
                 note: 'bootstrap() option; "containerId" is a generic key, so confirm the context before renaming.',
+                section: '`BootstrapOptions` compatibility fields',
+                removalTarget: '2.0.0',
             },
             {
                 from: 'waitForDOMReady',
@@ -172,6 +209,8 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'objectKey',
                 safety: 'review',
                 note: 'bootstrap() option; confirm the context before renaming.',
+                section: '`BootstrapOptions` compatibility fields',
+                removalTarget: '2.0.0',
             },
 
             // Class method aliases. Distinctive names auto-apply; common-word names need review.
@@ -181,6 +220,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'method',
                 safety: 'auto',
                 note: 'SpriteSheet',
+                section: 'Class method aliases',
+                removalTarget: '2.0.0',
+                receiverClasses: ['SpriteSheet'],
             },
             {
                 from: 'containsXY',
@@ -188,6 +230,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'method',
                 safety: 'auto',
                 note: 'Rect2i',
+                section: 'Class method aliases',
+                removalTarget: '2.0.0',
+                receiverClasses: ['Rect2i'],
             },
             {
                 from: 'intersectionTo',
@@ -195,6 +240,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'method',
                 safety: 'auto',
                 note: 'Rect2i',
+                section: 'Class method aliases',
+                removalTarget: '2.0.0',
+                receiverClasses: ['Rect2i'],
             },
             {
                 from: 'tick',
@@ -202,6 +250,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'method',
                 safety: 'review',
                 note: 'Timer.tick(); "tick" is too common to rewrite automatically.',
+                section: 'Class method aliases',
+                removalTarget: '2.0.0',
+                receiverClasses: ['Timer'],
             },
             {
                 from: 'equals',
@@ -209,6 +260,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'method',
                 safety: 'review',
                 note: 'Vector2i / Rect2i / Color32; "equals" is too common to rewrite automatically.',
+                section: 'Class method aliases',
+                removalTarget: '2.0.0',
+                receiverClasses: ['Vector2i', 'Rect2i', 'Color32'],
             },
             {
                 from: 'contains',
@@ -216,6 +270,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'method',
                 safety: 'review',
                 note: 'Rect2i.contains(); "contains" is too common to rewrite automatically.',
+                section: 'Class method aliases',
+                removalTarget: '2.0.0',
+                receiverClasses: ['Rect2i'],
             },
             {
                 from: 'intersects',
@@ -223,6 +280,9 @@ export const MIGRATIONS: readonly Migration[] = [
                 kind: 'method',
                 safety: 'review',
                 note: 'Rect2i.intersects(); "intersects" is too common to rewrite automatically.',
+                section: 'Class method aliases',
+                removalTarget: '2.0.0',
+                receiverClasses: ['Rect2i'],
             },
         ],
     },

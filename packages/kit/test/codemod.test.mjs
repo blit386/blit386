@@ -145,3 +145,23 @@ test('every rename declares the fields the engine needs', () => {
         }
     }
 });
+
+test('presentation-only fields (section, removalTarget, receiverClasses) are optional and well-shaped', () => {
+    for (const migration of MIGRATIONS) {
+        for (const rename of migration.renames) {
+            if (rename.section !== undefined) {
+                assert.equal(typeof rename.section, 'string', 'section must be a string when present');
+            }
+            if (rename.removalTarget !== undefined) {
+                assert.equal(typeof rename.removalTarget, 'string', 'removalTarget must be a string when present');
+            }
+            if (rename.receiverClasses !== undefined) {
+                assert.ok(Array.isArray(rename.receiverClasses), 'receiverClasses must be an array when present');
+                assert.ok(
+                    rename.receiverClasses.every((cls) => typeof cls === 'string'),
+                    'every receiverClasses entry must be a string',
+                );
+            }
+        }
+    }
+});
