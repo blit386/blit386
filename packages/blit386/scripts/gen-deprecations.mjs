@@ -168,8 +168,8 @@ export function renderDeprecationsMarkdown(migrations) {
 
     const parts = [
         '# Deprecation Timeline',
-        GENERATED_HEADER,
         BANNER,
+        GENERATED_HEADER,
         INTRO,
         ...migrationBlocks,
         REMOVAL_CHECKLIST,

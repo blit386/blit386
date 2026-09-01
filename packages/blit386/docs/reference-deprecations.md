@@ -1,15 +1,5 @@
 # Deprecation Timeline
 
-<!-- generated:start -->
-
-<!-- prettier-ignore -->
-> [!NOTE]
-> This file is generated. Never hand-edit it: edit `packages/kit/src/migrations/registry.ts` and
-> run `pnpm run api:deprecations` to regenerate it. `pnpm run api:deprecations:check` fails when
-> this file drifts from the registry.
-
-<!-- generated:end -->
-
 <!-- blit386.dev-banner:start -->
 
 <!-- prettier-ignore -->
@@ -19,6 +9,16 @@
 > words either way.
 
 <!-- blit386.dev-banner:end -->
+
+<!-- generated:start -->
+
+<!-- prettier-ignore -->
+> [!NOTE]
+> This file is generated. Never hand-edit it: edit `packages/kit/src/migrations/registry.ts` and
+> run `pnpm run api:deprecations` to regenerate it. `pnpm run api:deprecations:check` fails when
+> this file drifts from the registry.
+
+<!-- generated:end -->
 
 Central tracker for public API compatibility aliases and planned removals.
 
