@@ -75,7 +75,14 @@ export class SpritePipeline {
     private readonly textureBindGroups: WeakMap<GPUTexture, GPUBindGroup> = new WeakMap();
 
     /** Sprite batches to render (one per texture). */
-    private batches: Array<{ bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number }> = [];
+    private readonly batches: Array<{ bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number }> = [];
+
+    /**
+     * Pool of reusable batch-entry objects, indexed in parallel with {@link batches}.
+     * Never truncated by {@link reset}, so a steady-state batch count reuses the same
+     * objects frame after frame instead of allocating a fresh literal per flush.
+     */
+    private readonly batchEntryPool: Array<{ bindGroup: GPUBindGroup; vertexStart: number; vertexCount: number }> = [];
 
     /** Total sprite vertices across all flushed batches. */
     private totalVertices: number = 0;
@@ -221,7 +228,7 @@ export class SpritePipeline {
     reset(): void {
         this.vertexCount = 0;
         this.totalVertices = 0;
-        this.batches = [];
+        this.batches.length = 0;
         this.currentTexture = null;
         this.currentBindGroup = null;
         this.overflowCount = 0;
@@ -460,11 +467,17 @@ export class SpritePipeline {
             return;
         }
 
-        this.batches.push({
-            bindGroup: this.currentBindGroup,
-            vertexStart: this.totalVertices,
-            vertexCount: this.vertexCount,
-        });
+        let entry = this.batchEntryPool[this.batches.length];
+
+        if (!entry) {
+            entry = { bindGroup: this.currentBindGroup, vertexStart: 0, vertexCount: 0 };
+            this.batchEntryPool.push(entry);
+        }
+
+        entry.bindGroup = this.currentBindGroup;
+        entry.vertexStart = this.totalVertices;
+        entry.vertexCount = this.vertexCount;
+        this.batches.push(entry);
 
         this.totalVertices += this.vertexCount;
         this.vertexCount = 0;

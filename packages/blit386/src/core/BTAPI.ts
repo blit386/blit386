@@ -1797,6 +1797,7 @@ export class BTAPI {
                     // provided; that is the signal that unlocks the display tier.
                     hw.drawingBufferSize === undefined ? undefined : webGPUResult.drawingBufferSize,
                     hw.outputUpscaleFilter ?? 'nearest',
+                    hw.isOverlayEnabled !== false,
                 );
 
                 if (!(await this.renderer.init())) {
