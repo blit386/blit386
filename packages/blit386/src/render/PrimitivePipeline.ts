@@ -67,7 +67,14 @@ export class PrimitivePipeline {
     private cameraOffset: Vector2i = Vector2i.zero();
 
     /** Primitive batches recorded after each early flush. */
-    private batches: Array<{ vertexStart: number; vertexCount: number }> = [];
+    private readonly batches: Array<{ vertexStart: number; vertexCount: number }> = [];
+
+    /**
+     * Pool of reusable batch-entry objects, indexed in parallel with {@link batches}.
+     * Never truncated by {@link reset}, so a steady-state batch count reuses the same
+     * objects frame after frame instead of allocating a fresh literal per flush.
+     */
+    private readonly batchEntryPool: Array<{ vertexStart: number; vertexCount: number }> = [];
 
     /** Total primitive vertices across all flushed batches. */
     private totalVertices: number = 0;
@@ -305,7 +312,7 @@ export class PrimitivePipeline {
     reset(): void {
         this.vertexCount = 0;
         this.totalVertices = 0;
-        this.batches = [];
+        this.batches.length = 0;
         this.overflowCount = 0;
     }
 
@@ -575,7 +582,17 @@ export class PrimitivePipeline {
             return;
         }
 
-        this.batches.push({ vertexStart: this.totalVertices, vertexCount: this.vertexCount });
+        let entry = this.batchEntryPool[this.batches.length];
+
+        if (!entry) {
+            entry = { vertexStart: 0, vertexCount: 0 };
+            this.batchEntryPool.push(entry);
+        }
+
+        entry.vertexStart = this.totalVertices;
+        entry.vertexCount = this.vertexCount;
+        this.batches.push(entry);
+
         this.totalVertices += this.vertexCount;
         this.vertexCount = 0;
     }

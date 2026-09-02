@@ -33,14 +33,18 @@ import type { PrimitivePipeline } from './PrimitivePipeline';
 import type { SpritePipeline } from './SpritePipeline';
 import { WebGPURenderer } from './WebGPURenderer';
 
-/** Internal pipeline batches on {@link WebGPURenderer} (compile-time private, runtime-accessible). */
+/**
+ * Internal pipeline batches on {@link WebGPURenderer} (compile-time private, runtime-accessible).
+ * Overlay pipelines are lazily allocated, so their fields may be `null` until overlay is
+ * enabled at init or the matching draw method is first called.
+ */
 type PipelineAccess = {
     primitives: PrimitivePipeline;
-    overlayPrimitives: PrimitivePipeline;
-    overlayTopPrimitives: PrimitivePipeline;
+    overlayPrimitives: PrimitivePipeline | null;
+    overlayTopPrimitives: PrimitivePipeline | null;
     sprites: SpritePipeline;
-    overlaySprites: SpritePipeline;
-    overlayTopSprites: SpritePipeline;
+    overlaySprites: SpritePipeline | null;
+    overlayTopSprites: SpritePipeline | null;
 };
 
 /**
@@ -51,6 +55,21 @@ type PipelineAccess = {
  */
 function getRendererPipelines(renderer: WebGPURenderer): PipelineAccess {
     return renderer as unknown as PipelineAccess;
+}
+
+/**
+ * Asserts a lazily-allocated overlay pipeline field is non-null and returns it, for tests
+ * that rely on eager allocation (overlay enabled at construction/init).
+ *
+ * @param pipeline – Overlay pipeline field value, expected to already be allocated.
+ * @returns The non-null pipeline instance.
+ */
+function requirePipeline<T>(pipeline: T | null): T {
+    if (!pipeline) {
+        throw new Error('Expected overlay pipeline to be allocated.');
+    }
+
+    return pipeline;
 }
 
 /** Creates a small 16-color test palette with known color assignments. */
@@ -434,8 +453,8 @@ describe('with initialized renderer', () => {
     it('drawBarFill routes fills to overlayPrimitives, not primitives', () => {
         const pipelines = getRendererPipelines(renderer);
         const sceneFill = vi.spyOn(pipelines.primitives, 'drawRectFill');
-        const overlayFill = vi.spyOn(pipelines.overlayPrimitives, 'drawRectFill');
-        const overlayTopFill = vi.spyOn(pipelines.overlayTopPrimitives, 'drawRectFill');
+        const overlayFill = vi.spyOn(requirePipeline(pipelines.overlayPrimitives), 'drawRectFill');
+        const overlayTopFill = vi.spyOn(requirePipeline(pipelines.overlayTopPrimitives), 'drawRectFill');
         const rect = new Rect2i(1, 2, 8, 8);
 
         renderer.beginFrame();
@@ -455,8 +474,8 @@ describe('with initialized renderer', () => {
     it('drawLabel routes text to overlaySprites, not sprites', () => {
         const pipelines = getRendererPipelines(renderer);
         const sceneText = vi.spyOn(pipelines.sprites, 'drawBitmapText');
-        const overlayText = vi.spyOn(pipelines.overlaySprites, 'drawBitmapText');
-        const overlayTopText = vi.spyOn(pipelines.overlayTopSprites, 'drawBitmapText');
+        const overlayText = vi.spyOn(requirePipeline(pipelines.overlaySprites), 'drawBitmapText');
+        const overlayTopText = vi.spyOn(requirePipeline(pipelines.overlayTopSprites), 'drawBitmapText');
         const mockFont = {
             getSpriteSheet: () => ({}),
             getGlyphByCode: () => null,
@@ -486,16 +505,16 @@ describe('with initialized renderer', () => {
         vi.spyOn(pipelines.sprites, 'encodePass').mockImplementation(() => {
             encodeOrder.push('sprites');
         });
-        vi.spyOn(pipelines.overlayPrimitives, 'encodePass').mockImplementation(() => {
+        vi.spyOn(requirePipeline(pipelines.overlayPrimitives), 'encodePass').mockImplementation(() => {
             encodeOrder.push('overlayPrimitives');
         });
-        vi.spyOn(pipelines.overlaySprites, 'encodePass').mockImplementation(() => {
+        vi.spyOn(requirePipeline(pipelines.overlaySprites), 'encodePass').mockImplementation(() => {
             encodeOrder.push('overlaySprites');
         });
-        vi.spyOn(pipelines.overlayTopPrimitives, 'encodePass').mockImplementation(() => {
+        vi.spyOn(requirePipeline(pipelines.overlayTopPrimitives), 'encodePass').mockImplementation(() => {
             encodeOrder.push('overlayTopPrimitives');
         });
-        vi.spyOn(pipelines.overlayTopSprites, 'encodePass').mockImplementation(() => {
+        vi.spyOn(requirePipeline(pipelines.overlayTopSprites), 'encodePass').mockImplementation(() => {
             encodeOrder.push('overlayTopSprites');
         });
 
@@ -525,10 +544,10 @@ describe('with initialized renderer', () => {
 
     it('resets overlay batches on beginFrame', () => {
         const pipelines = getRendererPipelines(renderer);
-        const overlayPrimitiveReset = vi.spyOn(pipelines.overlayPrimitives, 'reset');
-        const overlayTopPrimitiveReset = vi.spyOn(pipelines.overlayTopPrimitives, 'reset');
-        const overlaySpriteReset = vi.spyOn(pipelines.overlaySprites, 'reset');
-        const overlayTopSpriteReset = vi.spyOn(pipelines.overlayTopSprites, 'reset');
+        const overlayPrimitiveReset = vi.spyOn(requirePipeline(pipelines.overlayPrimitives), 'reset');
+        const overlayTopPrimitiveReset = vi.spyOn(requirePipeline(pipelines.overlayTopPrimitives), 'reset');
+        const overlaySpriteReset = vi.spyOn(requirePipeline(pipelines.overlaySprites), 'reset');
+        const overlayTopSpriteReset = vi.spyOn(requirePipeline(pipelines.overlayTopSprites), 'reset');
 
         renderer.beginFrame();
 
@@ -570,6 +589,219 @@ describe('with initialized renderer', () => {
         });
 
         renderer.endFrame();
+    });
+});
+
+describe('lazy overlay pipelines', () => {
+    it('does not construct GPU buffers for overlay pipelines when overlay is disabled at init', async () => {
+        installMockNavigatorGPU();
+
+        try {
+            const enabledDevice = createMockGPUDevice();
+            const enabledCreateBuffer = vi.spyOn(enabledDevice, 'createBuffer');
+            const enabledRenderer = new WebGPURenderer(
+                enabledDevice,
+                createMockGPUCanvasContext(),
+                new Vector2i(320, 240),
+                undefined,
+                'nearest',
+                true,
+            );
+
+            expect(await enabledRenderer.init()).toBe(true);
+
+            const disabledDevice = createMockGPUDevice();
+            const disabledCreateBuffer = vi.spyOn(disabledDevice, 'createBuffer');
+            const disabledRenderer = new WebGPURenderer(
+                disabledDevice,
+                createMockGPUCanvasContext(),
+                new Vector2i(320, 240),
+                undefined,
+                'nearest',
+                false,
+            );
+
+            expect(await disabledRenderer.init()).toBe(true);
+
+            // Each of the four overlay pipelines (2 x PrimitivePipeline, 2 x SpritePipeline)
+            // creates exactly one uniform buffer and one vertex buffer when allocated –
+            // 8 createBuffer calls saved in total when overlay stays disabled at init.
+            expect(enabledCreateBuffer.mock.calls.length - disabledCreateBuffer.mock.calls.length).toBe(8);
+
+            const disabledPipelines = getRendererPipelines(disabledRenderer);
+
+            expect(disabledPipelines.overlayPrimitives).toBeNull();
+            expect(disabledPipelines.overlayTopPrimitives).toBeNull();
+            expect(disabledPipelines.overlaySprites).toBeNull();
+            expect(disabledPipelines.overlayTopSprites).toBeNull();
+        } finally {
+            uninstallMockNavigatorGPU();
+        }
+    });
+
+    it('lazily allocates overlayPrimitives on first drawBarFill, exactly once', async () => {
+        installMockNavigatorGPU();
+
+        try {
+            const renderer = new WebGPURenderer(
+                createMockGPUDevice(),
+                createMockGPUCanvasContext(),
+                new Vector2i(320, 240),
+                undefined,
+                'nearest',
+                false,
+            );
+
+            expect(await renderer.init()).toBe(true);
+            renderer.setPalette(createTestPalette());
+
+            expect(getRendererPipelines(renderer).overlayPrimitives).toBeNull();
+
+            renderer.beginFrame();
+            renderer.drawBarFill(new Rect2i(0, 0, 4, 4), 1);
+
+            const firstInstance = getRendererPipelines(renderer).overlayPrimitives;
+
+            expect(firstInstance).not.toBeNull();
+
+            renderer.drawBarFill(new Rect2i(4, 4, 4, 4), 1);
+
+            expect(getRendererPipelines(renderer).overlayPrimitives).toBe(firstInstance);
+
+            renderer.endFrame();
+        } finally {
+            uninstallMockNavigatorGPU();
+        }
+    });
+
+    it('lazily allocates overlaySprites on first drawLabel, exactly once', async () => {
+        installMockNavigatorGPU();
+
+        try {
+            const renderer = new WebGPURenderer(
+                createMockGPUDevice(),
+                createMockGPUCanvasContext(),
+                new Vector2i(320, 240),
+                undefined,
+                'nearest',
+                false,
+            );
+
+            expect(await renderer.init()).toBe(true);
+            renderer.setPalette(createTestPalette());
+
+            expect(getRendererPipelines(renderer).overlaySprites).toBeNull();
+
+            const mockFont = {
+                getSpriteSheet: () => ({}),
+                getGlyphByCode: () => null,
+            } as unknown as BitmapFont;
+
+            renderer.beginFrame();
+            renderer.drawLabel(mockFont, new Vector2i(0, 0), '');
+
+            const firstInstance = getRendererPipelines(renderer).overlaySprites;
+
+            expect(firstInstance).not.toBeNull();
+
+            renderer.drawLabel(mockFont, new Vector2i(4, 4), '');
+
+            expect(getRendererPipelines(renderer).overlaySprites).toBe(firstInstance);
+
+            renderer.endFrame();
+        } finally {
+            uninstallMockNavigatorGPU();
+        }
+    });
+
+    it('getFrameDiagnostics reports correctly with overlay pipelines unallocated', async () => {
+        installMockNavigatorGPU();
+
+        try {
+            const renderer = new WebGPURenderer(
+                createMockGPUDevice(),
+                createMockGPUCanvasContext(),
+                new Vector2i(320, 240),
+                undefined,
+                'nearest',
+                false,
+            );
+
+            expect(await renderer.init()).toBe(true);
+            renderer.setPalette(createTestPalette());
+
+            renderer.beginFrame();
+            renderer.drawRectFill(new Rect2i(0, 0, 10, 10), 1);
+
+            expect(renderer.getFrameDiagnostics()).toEqual({
+                primitiveOverflowCount: 0,
+                spriteOverflowCount: 0,
+                primitiveSubmittedVertices: 6,
+                spriteSubmittedVertices: 0,
+            });
+
+            renderer.endFrame();
+        } finally {
+            uninstallMockNavigatorGPU();
+        }
+    });
+
+    it('recovers from a first-use overlay pipeline allocation failure without crashing', async () => {
+        installMockNavigatorGPU();
+
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        try {
+            const device = createMockGPUDevice();
+            const renderer = new WebGPURenderer(
+                device,
+                createMockGPUCanvasContext(),
+                new Vector2i(320, 240),
+                undefined,
+                'nearest',
+                false,
+            );
+
+            expect(await renderer.init()).toBe(true);
+            renderer.setPalette(createTestPalette());
+
+            // Fail only the overlay pipeline's first GPU buffer creation (the core
+            // primitives/sprites buffers were already created during init() above).
+            vi.spyOn(device, 'createBuffer').mockImplementationOnce(() => {
+                throw new Error('mock GPU buffer allocation failure');
+            });
+
+            renderer.beginFrame();
+
+            expect(() => {
+                renderer.drawBarFill(new Rect2i(0, 0, 4, 4), 1);
+            }).not.toThrow();
+
+            // Let the rejected init() promise's .catch() handler run.
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('overlayPrimitives'), expect.any(Error));
+            expect(getRendererPipelines(renderer).overlayPrimitives).toBeNull();
+
+            expect(() => {
+                renderer.endFrame();
+            }).not.toThrow();
+
+            // A later draw call retries construction and succeeds now that
+            // createBuffer is no longer mocked to throw.
+            renderer.beginFrame();
+            renderer.drawBarFill(new Rect2i(0, 0, 4, 4), 1);
+
+            expect(getRendererPipelines(renderer).overlayPrimitives).not.toBeNull();
+
+            expect(() => {
+                renderer.endFrame();
+            }).not.toThrow();
+        } finally {
+            consoleError.mockRestore();
+            uninstallMockNavigatorGPU();
+        }
     });
 });
 
