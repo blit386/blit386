@@ -1194,6 +1194,24 @@ export class BTAPI {
     }
 
     /**
+     * Draws a single pixel at raw coordinates.
+     * More efficient than {@link drawPixel} when coordinates are already unpacked –
+     * avoids constructing a `Vector2i` just to shuttle two numbers.
+     *
+     * @param x – X coordinate.
+     * @param y – Y coordinate.
+     * @param paletteIndex – Palette color index.
+     */
+    public drawPixelXY(x: number, y: number, paletteIndex: number): void {
+        this.assertPaletteIndex(paletteIndex);
+        this.trackPaletteIndexUsed(paletteIndex);
+
+        this.markDrawCall();
+
+        this.renderer?.drawPixelXY(x, y, paletteIndex);
+    }
+
+    /**
      * Draws a line between two points using Bresenham's algorithm.
      * Produces pixel-perfect lines without antialiasing.
      *
