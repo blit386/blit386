@@ -196,25 +196,19 @@ function reportMissingAwait(loadCall: string): void {
 }
 
 /**
- * Runs a draw call with readiness checks and beginner-friendly error handling.
+ * Shows a beginner-friendly error for a value thrown out of a draw call's body.
  *
- * @param methodName – BT method name for contextual error text.
- * @param callback – Draw-call body to execute.
+ * Shared by every `BT` draw method's own `catch` block – kept as a plain function
+ * taking the caught value (not a callback) so no per-call closure is needed on
+ * the hot draw-call path.
+ *
+ * @param error – Value caught from a draw call's try block.
  */
-function executeDrawCall(methodName: string, callback: () => void): void {
-    if (!isRendererReady()) {
-        reportEngineNotReady(methodName);
-        return;
-    }
-
-    try {
-        callback();
-    } catch (error) {
-        if (error instanceof Error) {
-            showBeginnerRuntimeError(error.message);
-        } else {
-            showBeginnerRuntimeError(String(error));
-        }
+function reportDrawError(error: unknown): void {
+    if (error instanceof Error) {
+        showBeginnerRuntimeError(error.message);
+    } else {
+        showBeginnerRuntimeError(String(error));
     }
 }
 
@@ -1308,9 +1302,16 @@ export const BT = {
      * When the engine is not ready, shows a canvas error instead of throwing.
      */
     effectAdd: (effect: Effect): void => {
-        executeDrawCall('effectAdd', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('effectAdd');
+            return;
+        }
+
+        try {
             BTAPI.instance.effectAdd(effect);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1324,9 +1325,16 @@ export const BT = {
      * When the engine is not ready, shows a canvas error instead of throwing.
      */
     effectRemove: (effect: Effect): void => {
-        executeDrawCall('effectRemove', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('effectRemove');
+            return;
+        }
+
+        try {
             BTAPI.instance.effectRemove(effect);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1337,9 +1345,16 @@ export const BT = {
      * @since 1.0.3
      */
     effectClear: (): void => {
-        executeDrawCall('effectClear', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('effectClear');
+            return;
+        }
+
+        try {
             BTAPI.instance.effectClear();
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1366,9 +1381,16 @@ export const BT = {
      * @param paletteIndex – Palette index for the full-screen clear pass.
      */
     clear: (paletteIndex: number): void => {
-        executeDrawCall('clear', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('clear');
+            return;
+        }
+
+        try {
             BTAPI.instance.setClearColor(paletteIndex);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1379,9 +1401,16 @@ export const BT = {
      * @param paletteIndex – Palette color index.
      */
     clearRect: (rect: Rect2i, paletteIndex: number): void => {
-        executeDrawCall('clearRect', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('clearRect');
+            return;
+        }
+
+        try {
             BTAPI.instance.clearRect(rect, paletteIndex);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1397,14 +1426,19 @@ export const BT = {
      * @param maybeColor – Palette index when using numeric overload.
      */
     drawPixel: (posOrX: Vector2i | number, yOrColor: number, maybeColor?: number): void => {
-        executeDrawCall('drawPixel', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('drawPixel');
+            return;
+        }
+
+        try {
             if (posOrX instanceof Vector2i && maybeColor === undefined) {
                 BTAPI.instance.drawPixel(new Vector2i(posOrX.x, posOrX.y), yOrColor);
                 return;
             }
 
             if (typeof posOrX === 'number' && typeof maybeColor === 'number') {
-                BTAPI.instance.drawPixel(new Vector2i(posOrX, yOrColor), maybeColor);
+                BTAPI.instance.drawPixelXY(posOrX, yOrColor, maybeColor);
                 return;
             }
 
@@ -1419,7 +1453,9 @@ export const BT = {
                 `drawPixel expects (x, y, paletteIndex) or (Vector2i, paletteIndex). Got: [${typeDetails}]`,
                 'Wrong drawPixel Arguments',
             );
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1433,9 +1469,16 @@ export const BT = {
      * @param paletteIndex – Palette color index.
      */
     drawLine: (p0: Vector2i, p1: Vector2i, paletteIndex: number): void => {
-        executeDrawCall('drawLine', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('drawLine');
+            return;
+        }
+
+        try {
             BTAPI.instance.drawLine(p0, p1, paletteIndex);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1446,9 +1489,16 @@ export const BT = {
      * @param paletteIndex – Palette color index.
      */
     drawRect: (rect: Rect2i, paletteIndex: number): void => {
-        executeDrawCall('drawRect', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('drawRect');
+            return;
+        }
+
+        try {
             BTAPI.instance.drawRect(rect, paletteIndex);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -1459,9 +1509,16 @@ export const BT = {
      * @param paletteIndex – Palette color index.
      */
     drawRectFill: (rect: Rect2i, paletteIndex: number): void => {
-        executeDrawCall('drawRectFill', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('drawRectFill');
+            return;
+        }
+
+        try {
             BTAPI.instance.drawRectFill(rect, paletteIndex);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -2055,9 +2112,16 @@ export const BT = {
      * @param text – String to render.
      */
     systemPrint: (pos: Vector2i, paletteIndex: number, text: string): void => {
-        executeDrawCall('systemPrint', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('systemPrint');
+            return;
+        }
+
+        try {
             BTAPI.instance.drawSystemText(pos, paletteIndex, text);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -2097,14 +2161,21 @@ export const BT = {
      * @param paletteOffset – Shift added to every stored glyph index before palette lookup (default 0).
      */
     printFont: (font: BitmapFont, pos: Vector2i, text: string, paletteOffset?: number): void => {
-        executeDrawCall('printFont', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('printFont');
+            return;
+        }
+
+        try {
             if (font instanceof Promise) {
                 reportMissingAwait('BitmapFont.load()');
                 return;
             }
 
             BTAPI.instance.drawBitmapText(font, pos, text, paletteOffset);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**
@@ -2187,14 +2258,21 @@ export const BT = {
      * BT.drawSprite(sheet, new Rect2i(0, 0, 16, 16), new Vector2i(10, 10), 16); // blue team
      */
     drawSprite: (spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset?: number): void => {
-        executeDrawCall('drawSprite', () => {
+        if (!isRendererReady()) {
+            reportEngineNotReady('drawSprite');
+            return;
+        }
+
+        try {
             if (spriteSheet instanceof Promise) {
                 reportMissingAwait('SpriteSheet.load()');
                 return;
             }
 
             BTAPI.instance.drawSprite(spriteSheet, srcRect, destPos, paletteOffset);
-        });
+        } catch (error) {
+            reportDrawError(error);
+        }
     },
 
     /**

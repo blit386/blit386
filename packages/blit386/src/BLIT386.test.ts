@@ -733,12 +733,12 @@ describe('BT.drawPixel', () => {
         expect(spy).toHaveBeenCalledWith(pos, 2);
     });
 
-    it('supports (x, y, color) arguments', () => {
-        const spy = vi.spyOn(BTAPI.instance, 'drawPixel').mockReturnValue(undefined);
+    it('supports (x, y, color) arguments, routed through the XY fast path', () => {
+        const spy = vi.spyOn(BTAPI.instance, 'drawPixelXY').mockReturnValue(undefined);
 
         BT.drawPixel(5, 10, 3);
 
-        expect(spy).toHaveBeenCalledWith(expect.objectContaining({ x: 5, y: 10 }), 3);
+        expect(spy).toHaveBeenCalledWith(5, 10, 3);
     });
 
     it('shows a beginner-friendly error when drawPixel arguments are invalid', async () => {
@@ -747,6 +747,30 @@ describe('BT.drawPixel', () => {
 
             const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
             expect(text).toContain('drawPixel expects (x, y, paletteIndex) or (Vector2i, paletteIndex).');
+        });
+    });
+
+    it('shows the beginner runtime error when the underlying draw call throws', async () => {
+        await withErrorContainer(async () => {
+            vi.spyOn(BTAPI.instance, 'drawPixel').mockImplementation(() => {
+                throw new Error('boom');
+            });
+
+            BT.drawPixel(new Vector2i(5, 10), 2);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain('boom');
+        });
+    });
+
+    it('names the method in the not-ready message when called before bootstrap', async () => {
+        await withErrorContainer(async () => {
+            vi.spyOn(BTAPI.instance, 'getRenderer').mockReturnValue(null);
+
+            BT.drawPixel(new Vector2i(5, 10), 2);
+
+            const text = document.getElementById(DEFAULT_CONTAINER_ID)?.textContent ?? '';
+            expect(text).toContain("Can't use BT.drawPixel() yet");
         });
     });
 });

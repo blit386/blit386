@@ -87,6 +87,17 @@ export interface IRenderer {
     drawPixel(pos: Vector2i, paletteIndex: number): void;
 
     /**
+     * Draws a single pixel at raw coordinates.
+     * More efficient than {@link IRenderer.drawPixel} when coordinates are already unpacked –
+     * avoids constructing a `Vector2i` just to shuttle two numbers.
+     *
+     * @param x – X position.
+     * @param y – Y position.
+     * @param paletteIndex – Palette color index.
+     */
+    drawPixelXY(x: number, y: number, paletteIndex: number): void;
+
+    /**
      * Draws a line between two points.
      *
      * @param p0 – Start point.

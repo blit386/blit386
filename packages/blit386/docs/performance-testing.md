@@ -39,6 +39,7 @@ CPU benchmarks are implemented with Vitest bench and colocated next to the sourc
 
 Current benchmark files:
 
+- `src/BLIT386.bench.ts`
 - `src/utils/Vector2i.bench.ts`
 - `src/utils/Color32.bench.ts`
 - `src/utils/Rect2i.bench.ts`
@@ -74,6 +75,7 @@ measured before/after improvement:
 
 | File | What it measures |
 | --- | --- |
+| `BLIT386.bench.ts` | The `BT` draw-call facade itself: `drawPixel` numeric vs. `Vector2i` overload, `drawRectFill`, `drawLine` – guards against a per-call closure or stray allocation creeping back into the facade |
 | `render/SoftwareRenderer.bench.ts` | Canvas 2D fallback raster loops: sprite blit (8×8 vs. 32×32), bitmap text (20 vs. 200 chars), full-screen rect fill, a diagonal line, and an empty frame's clear + present |
 | `render/PrimitivePipeline.bench.ts` | CPU-side vertex batch filling for pixels, rects, and Bresenham lines, plus `reset()` batch teardown |
 | `render/SpritePipeline.bench.ts` | CPU-side sprite and bitmap-text batch filling, including per-quad UV computation and `reset()` |

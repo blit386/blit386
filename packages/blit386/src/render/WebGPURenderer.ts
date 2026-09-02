@@ -417,7 +417,19 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex – Palette color index.
      */
     drawPixel(pos: Vector2i, paletteIndex: number): void {
-        this.drawPixelXYInternal(pos.x, pos.y, paletteIndex);
+        this.drawPixelXY(pos.x, pos.y, paletteIndex);
+    }
+
+    /**
+     * Fast-path pixel draw using raw integer coordinates.
+     * Avoids Vector2i unpacking overhead when coordinates are already available as numbers.
+     *
+     * @param x – X position.
+     * @param y – Y position.
+     * @param paletteIndex – Palette color index.
+     */
+    drawPixelXY(x: number, y: number, paletteIndex: number): void {
+        this.primitives.drawPixelXY(x, y, paletteIndex);
     }
 
     /**
@@ -839,18 +851,6 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
         }
 
         return chain.getInputView();
-    }
-
-    /**
-     * Fast-path pixel draw using raw integer coordinates.
-     * Avoids Vector2i unpacking overhead when coordinates are already available as numbers.
-     *
-     * @param x – X position.
-     * @param y – Y position.
-     * @param paletteIndex – Palette color index.
-     */
-    private drawPixelXYInternal(x: number, y: number, paletteIndex: number): void {
-        this.primitives.drawPixelXY(x, y, paletteIndex);
     }
 
     /**

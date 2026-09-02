@@ -413,6 +413,18 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
+     * Queues a single pixel draw command at raw coordinates.
+     * More efficient than {@link drawPixel} when coordinates are already unpacked.
+     *
+     * @param x – X position in logical coordinates.
+     * @param y – Y position in logical coordinates.
+     * @param paletteIndex – Palette entry index for the pixel color.
+     */
+    drawPixelXY(x: number, y: number, paletteIndex: number): void {
+        this.queueRectFillXY(x, y, 1, 1, paletteIndex);
+    }
+
+    /**
      * Queues a Bresenham line draw command between two points.
      *
      * @param p0 – Line start position in logical coordinates.
