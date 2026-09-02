@@ -3,10 +3,10 @@ import type { Palette } from '../assets/Palette';
 import { TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
-import { clipSpriteSourceRectXY } from '../utils/AssetLimits';
+import { clipSpriteSourceRectXYTo } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import { noActivePaletteError } from '../utils/errorMessages';
-import type { Rect2i } from '../utils/Rect2i';
+import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
@@ -108,6 +108,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private palette: Palette | null = null;
     private clearPaletteIndex: number = 0;
     private cameraOffset: Vector2i = Vector2i.zero();
+    private readonly clipScratch = new Rect2i();
     private readonly commands: DrawCommand[] = [];
     private frameWordView: Uint32Array | null = null;
     private imageData: ImageData | null = null;
@@ -943,9 +944,9 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         destY: number,
         paletteOffset: number,
     ): void {
-        const clipped = clipSpriteSourceRectXY(srcX, srcY, srcWidth, srcHeight, sheetWidth, sheetHeight);
+        const clipped = this.clipScratch;
 
-        if (clipped === null) {
+        if (!clipSpriteSourceRectXYTo(srcX, srcY, srcWidth, srcHeight, sheetWidth, sheetHeight, clipped)) {
             return;
         }
 

@@ -16,7 +16,7 @@ import {
     btfontGlyphSizeTooLargeError,
     btfontJsonTooLargeError,
 } from './errorMessages';
-import type { Rect2i } from './Rect2i';
+import { Rect2i } from './Rect2i';
 import { MAX_RENDER_DIMENSION, MAX_RENDER_PIXELS } from './RenderLimits';
 
 /** Maximum decoded asset width or height on either axis before CPU/GPU allocation. */
@@ -421,12 +421,9 @@ export function validateBtfontGlyphData(
 }
 
 /**
- * Clips a sprite source rectangle, given as scalars, to the sheet and software blit limits.
- *
- * Scalar counterpart to {@link clipSpriteSourceRect} for hot-path callers that must not
- * allocate a `Rect2i` per call (for example, a per-glyph blit loop). Returns `null` when the
- * rectangle is empty, fully outside the sheet, or still too large to iterate safely after
- * clipping.
+ * Reports whether all six clip inputs are finite integers. Split out of
+ * {@link clipSpriteSourceRectXYTo} to keep that function's cyclomatic complexity down; takes
+ * fixed positional arguments (no rest/array param) so it allocates nothing per call.
  *
  * @param srcX – Requested source rectangle X in sheet space.
  * @param srcY – Requested source rectangle Y in sheet space.
@@ -434,31 +431,66 @@ export function validateBtfontGlyphData(
  * @param srcHeight – Requested source rectangle height.
  * @param sheetWidth – Sprite sheet width in pixels.
  * @param sheetHeight – Sprite sheet height in pixels.
- * @returns Clipped source bounds, or `null` when the blit should be skipped.
+ * @returns True if every value is a finite integer.
  */
-export function clipSpriteSourceRectXY(
+function areFiniteIntegers(
     srcX: number,
     srcY: number,
     srcWidth: number,
     srcHeight: number,
     sheetWidth: number,
     sheetHeight: number,
-): { x: number; y: number; width: number; height: number } | null {
-    if (
-        !Number.isFinite(srcX) ||
-        !Number.isFinite(srcY) ||
-        !Number.isFinite(srcWidth) ||
-        !Number.isFinite(srcHeight) ||
-        !Number.isInteger(srcX) ||
-        !Number.isInteger(srcY) ||
-        !Number.isInteger(srcWidth) ||
-        !Number.isInteger(srcHeight)
-    ) {
-        return null;
+): boolean {
+    return (
+        Number.isFinite(srcX) &&
+        Number.isInteger(srcX) &&
+        Number.isFinite(srcY) &&
+        Number.isInteger(srcY) &&
+        Number.isFinite(srcWidth) &&
+        Number.isInteger(srcWidth) &&
+        Number.isFinite(srcHeight) &&
+        Number.isInteger(srcHeight) &&
+        Number.isFinite(sheetWidth) &&
+        Number.isInteger(sheetWidth) &&
+        Number.isFinite(sheetHeight) &&
+        Number.isInteger(sheetHeight)
+    );
+}
+
+/**
+ * Clips a sprite source rectangle, given as scalars, to the sheet and software blit limits,
+ * writing the result into a caller-owned `out` rectangle instead of allocating one.
+ *
+ * Zero-allocation counterpart to {@link clipSpriteSourceRect} for hot-path callers that blit
+ * many times per frame (for example, a per-glyph blit loop) and must not allocate a result
+ * object per call. Mirrors the `*To(out)` convention used elsewhere on `Rect2i`/`Vector2i`
+ * (e.g. {@link Rect2i.intersectTo}).
+ *
+ * @param srcX – Requested source rectangle X in sheet space.
+ * @param srcY – Requested source rectangle Y in sheet space.
+ * @param srcWidth – Requested source rectangle width.
+ * @param srcHeight – Requested source rectangle height.
+ * @param sheetWidth – Sprite sheet width in pixels.
+ * @param sheetHeight – Sprite sheet height in pixels.
+ * @param out – Rectangle to write the clipped bounds to.
+ * @returns True if the blit should proceed (`out` holds the clipped bounds), false if it
+ *   should be skipped (`out` is left unchanged).
+ */
+export function clipSpriteSourceRectXYTo(
+    srcX: number,
+    srcY: number,
+    srcWidth: number,
+    srcHeight: number,
+    sheetWidth: number,
+    sheetHeight: number,
+    out: Rect2i,
+): boolean {
+    if (!areFiniteIntegers(srcX, srcY, srcWidth, srcHeight, sheetWidth, sheetHeight)) {
+        return false;
     }
 
-    if (srcWidth <= 0 || srcHeight <= 0) {
-        return null;
+    if (srcWidth <= 0 || srcHeight <= 0 || sheetWidth <= 0 || sheetHeight <= 0) {
+        return false;
     }
 
     const x0 = Math.max(0, srcX);
@@ -469,23 +501,29 @@ export function clipSpriteSourceRectXY(
     const height = y1 - y0;
 
     if (width <= 0 || height <= 0) {
-        return null;
+        return false;
     }
 
     const area = width * height;
 
     if (!Number.isSafeInteger(area) || area > MAX_SPRITE_BLIT_PIXELS) {
-        return null;
+        return false;
     }
 
-    return { x: x0, y: y0, width, height };
+    out.x = x0;
+    out.y = y0;
+    out.width = width;
+    out.height = height;
+
+    return true;
 }
 
 /**
  * Clips a sprite source rectangle to the sheet and software blit limits.
  *
  * Returns `null` when the rectangle is empty, fully outside the sheet, or still
- * too large to iterate safely after clipping.
+ * too large to iterate safely after clipping. Use {@link clipSpriteSourceRectXYTo} in
+ * hot paths that call this many times per frame, to avoid the allocation this makes.
  *
  * @param srcRect – Requested source rectangle in sheet space.
  * @param sheetWidth – Sprite sheet width in pixels.
@@ -497,5 +535,11 @@ export function clipSpriteSourceRect(
     sheetWidth: number,
     sheetHeight: number,
 ): { x: number; y: number; width: number; height: number } | null {
-    return clipSpriteSourceRectXY(srcRect.x, srcRect.y, srcRect.width, srcRect.height, sheetWidth, sheetHeight);
+    const out = new Rect2i();
+
+    if (!clipSpriteSourceRectXYTo(srcRect.x, srcRect.y, srcRect.width, srcRect.height, sheetWidth, sheetHeight, out)) {
+        return null;
+    }
+
+    return { x: out.x, y: out.y, width: out.width, height: out.height };
 }
