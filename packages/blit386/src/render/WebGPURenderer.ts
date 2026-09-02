@@ -789,6 +789,22 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
+     * Logs a lazy overlay pipeline's initialization failure and clears its field back to
+     * `null` via `clearField`, so the next draw call retries construction from scratch
+     * instead of reusing an instance whose GPU resources never finished initializing (its
+     * `vertexBuffer`/`pipeline` would still be `null`, which would otherwise crash
+     * `encodePass()` on the next `endFrame()`).
+     *
+     * @param pipelineName – Field name for the log message (e.g. `'overlayPrimitives'`).
+     * @param clearField – Callback that resets the owning field to `null`.
+     * @param error – Rejection reason from the pipeline's `init()` call.
+     */
+    private handleLazyOverlayInitFailure(pipelineName: string, clearField: () => void, error: unknown): void {
+        console.error(`[WebGPURenderer] Failed to initialize ${pipelineName} pipeline:`, error);
+        clearField();
+    }
+
+    /**
      * Returns the overlay-primitive pipeline used by {@link drawBarFill}, lazily constructing
      * and initializing it on first use.
      *
@@ -796,19 +812,24 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
      * `await` inside it), so its GPU/CPU setup completes before this method returns even
      * though the returned promise is intentionally not awaited here – `drawBarFill()` is a
      * synchronous public API and cannot await. If `PrimitivePipeline.init()` ever gains real
-     * async work, this call site needs to change too.
+     * async work, this call site needs to change too. A rejection (e.g. GPU resource creation
+     * failure) is caught via {@link handleLazyOverlayInitFailure} rather than left as an
+     * unhandled rejection.
      *
      * @returns Initialized overlay-primitive pipeline.
      */
     private getOverlayPrimitives(): PrimitivePipeline {
         if (!this.overlayPrimitives) {
             this.overlayPrimitives = new PrimitivePipeline();
-            void this.overlayPrimitives.init(
-                this.device,
-                this.displaySize,
-                this.paletteBuffer as GPUBuffer,
-                LOGICAL_TARGET_FORMAT,
-            );
+            void this.overlayPrimitives
+                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
+                .catch((error: unknown) => {
+                    this.handleLazyOverlayInitFailure(
+                        'overlayPrimitives',
+                        () => (this.overlayPrimitives = null),
+                        error,
+                    );
+                });
             this.overlayPrimitives.setCameraOffset(this.cameraOffset);
         }
 
@@ -818,19 +839,22 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Returns the overlay-top-primitive pipeline used by {@link drawBarFillOnTop}, lazily
      * constructing and initializing it on first use. See {@link getOverlayPrimitives} for why
-     * the un-awaited `init()` call is safe.
+     * the un-awaited `init()` call is safe and how a failure is handled.
      *
      * @returns Initialized overlay-top-primitive pipeline.
      */
     private getOverlayTopPrimitives(): PrimitivePipeline {
         if (!this.overlayTopPrimitives) {
             this.overlayTopPrimitives = new PrimitivePipeline();
-            void this.overlayTopPrimitives.init(
-                this.device,
-                this.displaySize,
-                this.paletteBuffer as GPUBuffer,
-                LOGICAL_TARGET_FORMAT,
-            );
+            void this.overlayTopPrimitives
+                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
+                .catch((error: unknown) => {
+                    this.handleLazyOverlayInitFailure(
+                        'overlayTopPrimitives',
+                        () => (this.overlayTopPrimitives = null),
+                        error,
+                    );
+                });
             this.overlayTopPrimitives.setCameraOffset(this.cameraOffset);
         }
 
@@ -840,19 +864,18 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Returns the overlay-sprite pipeline used by {@link drawLabel}, lazily constructing and
      * initializing it on first use. See {@link getOverlayPrimitives} for why the un-awaited
-     * `init()` call is safe.
+     * `init()` call is safe and how a failure is handled.
      *
      * @returns Initialized overlay-sprite pipeline.
      */
     private getOverlaySprites(): SpritePipeline {
         if (!this.overlaySprites) {
             this.overlaySprites = new SpritePipeline();
-            void this.overlaySprites.init(
-                this.device,
-                this.displaySize,
-                this.paletteBuffer as GPUBuffer,
-                LOGICAL_TARGET_FORMAT,
-            );
+            void this.overlaySprites
+                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
+                .catch((error: unknown) => {
+                    this.handleLazyOverlayInitFailure('overlaySprites', () => (this.overlaySprites = null), error);
+                });
             this.overlaySprites.setCameraOffset(this.cameraOffset);
         }
 
@@ -862,19 +885,22 @@ export class WebGPURenderer implements IRenderer, OverlayDrawTarget {
     /**
      * Returns the overlay-top-sprite pipeline used by {@link drawLabelOnTop}, lazily
      * constructing and initializing it on first use. See {@link getOverlayPrimitives} for why
-     * the un-awaited `init()` call is safe.
+     * the un-awaited `init()` call is safe and how a failure is handled.
      *
      * @returns Initialized overlay-top-sprite pipeline.
      */
     private getOverlayTopSprites(): SpritePipeline {
         if (!this.overlayTopSprites) {
             this.overlayTopSprites = new SpritePipeline();
-            void this.overlayTopSprites.init(
-                this.device,
-                this.displaySize,
-                this.paletteBuffer as GPUBuffer,
-                LOGICAL_TARGET_FORMAT,
-            );
+            void this.overlayTopSprites
+                .init(this.device, this.displaySize, this.paletteBuffer as GPUBuffer, LOGICAL_TARGET_FORMAT)
+                .catch((error: unknown) => {
+                    this.handleLazyOverlayInitFailure(
+                        'overlayTopSprites',
+                        () => (this.overlayTopSprites = null),
+                        error,
+                    );
+                });
             this.overlayTopSprites.setCameraOffset(this.cameraOffset);
         }
 

@@ -745,6 +745,64 @@ describe('lazy overlay pipelines', () => {
             uninstallMockNavigatorGPU();
         }
     });
+
+    it('recovers from a first-use overlay pipeline allocation failure without crashing', async () => {
+        installMockNavigatorGPU();
+
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        try {
+            const device = createMockGPUDevice();
+            const renderer = new WebGPURenderer(
+                device,
+                createMockGPUCanvasContext(),
+                new Vector2i(320, 240),
+                undefined,
+                'nearest',
+                false,
+            );
+
+            expect(await renderer.init()).toBe(true);
+            renderer.setPalette(createTestPalette());
+
+            // Fail only the overlay pipeline's first GPU buffer creation (the core
+            // primitives/sprites buffers were already created during init() above).
+            vi.spyOn(device, 'createBuffer').mockImplementationOnce(() => {
+                throw new Error('mock GPU buffer allocation failure');
+            });
+
+            renderer.beginFrame();
+
+            expect(() => {
+                renderer.drawBarFill(new Rect2i(0, 0, 4, 4), 1);
+            }).not.toThrow();
+
+            // Let the rejected init() promise's .catch() handler run.
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('overlayPrimitives'), expect.any(Error));
+            expect(getRendererPipelines(renderer).overlayPrimitives).toBeNull();
+
+            expect(() => {
+                renderer.endFrame();
+            }).not.toThrow();
+
+            // A later draw call retries construction and succeeds now that
+            // createBuffer is no longer mocked to throw.
+            renderer.beginFrame();
+            renderer.drawBarFill(new Rect2i(0, 0, 4, 4), 1);
+
+            expect(getRendererPipelines(renderer).overlayPrimitives).not.toBeNull();
+
+            expect(() => {
+                renderer.endFrame();
+            }).not.toThrow();
+        } finally {
+            consoleError.mockRestore();
+            uninstallMockNavigatorGPU();
+        }
+    });
 });
 
 describe('resolveClearColor fallbacks', () => {
