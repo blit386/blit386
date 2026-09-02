@@ -410,8 +410,8 @@ Pointer and gamepad previous-state rollover happens at the end of each animation
 - On a 120 Hz monitor with `targetFPS: 60`, `render()` may run twice per `update()`. Keyboard edges are buffered on DOM
   events and consumed on the next fixed update so fast taps are not dropped between render-only frames.
 - `pointerDelta()` reflects movement between the last `update()` and the current one.
-- Gamepad current state is polled from the Gamepad API during button/axis queries; previous-state rollover still happens
-  at end-of-render-frame.
+- Gamepad current state is polled from the Gamepad API once per render frame, immediately after that frame's
+  previous-state rollover. Button/axis queries read that cached snapshot and never trigger a poll themselves.
 - Read `BT.inputString` during `update()`; the buffer clears at the end of each fixed update step.
 
 Pointer transitions:

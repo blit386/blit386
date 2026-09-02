@@ -1,10 +1,12 @@
 /**
  * Gamepad input subsystem.
  *
- * Uses the browser Gamepad API. Each public query re-polls
- * `navigator.getGamepads()` before reading state. Previous-state is snapshotted
- * at end-of-frame for edge detection ({@link isButtonPressed} /
- * {@link isButtonReleased}) and optional repeat timing.
+ * Uses the browser Gamepad API. `navigator.getGamepads()` is polled exactly
+ * once per rendered frame, inside {@link GamepadInput.endFrame}: the frame
+ * that's ending is first rolled into previous-state (for edge detection via
+ * {@link isButtonPressed} / {@link isButtonReleased} and optional repeat
+ * timing), then fresh state is polled for the frame about to start. Public
+ * accessors read that cached snapshot and never trigger a poll themselves.
  */
 /* eslint-disable security/detect-object-injection */
 
@@ -74,6 +76,12 @@ const VALID_AXIS_INDICES = [
     AXIS_TRIGGER_R,
 ] as const;
 
+/** Number of tracked axes per player, in {@link VALID_AXIS_INDICES} order. */
+const GAMEPAD_AXIS_COUNT = VALID_AXIS_INDICES.length;
+
+/** Fixed-length, preallocated per-player axis tuple (mutated in place, never reallocated). */
+type GamepadAxes = [number, number, number, number, number, number];
+
 /**
  * Reads and clamps a raw stick axis to `[-1, 1]`.
  *
@@ -136,7 +144,7 @@ interface PlayerSnapshot {
     /** Current button-state bitmask (`BTN_*`). */
     buttons: number;
     /** Snapshot axis values in `AXIS_*` order. */
-    axes: readonly [number, number, number, number, number, number];
+    axes: GamepadAxes;
 }
 
 /**
@@ -236,14 +244,13 @@ export class GamepadInput {
     }
 
     /**
-     * Polls gamepads, then snapshots current state into previous-state storage
-     * for next frame's edge detection.
+     * Snapshots this frame's state into previous-state storage for next
+     * frame's edge detection, then polls gamepads once for the frame about to
+     * start.
      *
      * @param _currentTick – Current engine tick (unused; kept for BTAPI parity).
      */
     public endFrame(_currentTick: number): void {
-        this.poll();
-
         for (let i = 0; i < GAMEPAD_PLAYER_COUNT; i++) {
             const current = this.current[i];
             const previous = this.previous[i];
@@ -254,12 +261,13 @@ export class GamepadInput {
 
             previous.isConnected = current.isConnected;
             previous.buttons = current.buttons;
-            previous.axes = [...current.axes] as PlayerSnapshot['axes'];
 
-            if (!current.isConnected) {
-                this.firstPressTick[i]?.clear();
+            for (let a = 0; a < GAMEPAD_AXIS_COUNT; a++) {
+                previous.axes[a] = current.axes[a] ?? 0;
             }
         }
+
+        this.poll();
     }
 
     /**
@@ -275,8 +283,6 @@ export class GamepadInput {
         if (index === null || buttonMask <= 0) {
             return false;
         }
-
-        this.poll();
 
         const current = this.current[index];
 
@@ -309,8 +315,6 @@ export class GamepadInput {
         if (index === null || buttonMask <= 0) {
             return false;
         }
-
-        this.poll();
 
         const current = this.current[index];
         const previous = this.previous[index];
@@ -362,8 +366,6 @@ export class GamepadInput {
             return false;
         }
 
-        this.poll();
-
         const current = this.current[index];
         const previous = this.previous[index];
 
@@ -398,8 +400,6 @@ export class GamepadInput {
             return 0;
         }
 
-        this.poll();
-
         const snapshot = this.current[index];
 
         if (!snapshot?.isConnected) {
@@ -422,8 +422,6 @@ export class GamepadInput {
             return false;
         }
 
-        this.poll();
-
         return this.current[index]?.isConnected ?? false;
     }
 
@@ -433,8 +431,6 @@ export class GamepadInput {
      * @returns Number of connected gamepads in `[0, GAMEPAD_PLAYER_COUNT]`.
      */
     public connectedCount(): number {
-        this.poll();
-
         let count = 0;
 
         for (let i = 0; i < GAMEPAD_PLAYER_COUNT; i++) {
@@ -491,13 +487,14 @@ export class GamepadInput {
             if (!pad?.connected) {
                 snapshot.isConnected = false;
                 snapshot.buttons = 0;
-                snapshot.axes = [0, 0, 0, 0, 0, 0];
+                snapshot.axes.fill(0);
+                this.firstPressTick[player]?.clear();
                 continue;
             }
 
             snapshot.isConnected = true;
             snapshot.buttons = this.mapButtons(pad);
-            snapshot.axes = this.mapAxes(pad);
+            this.mapAxesInto(pad, snapshot.axes);
             this.dropReleasedTickAnchors(player, snapshot.buttons);
         }
     }
@@ -565,20 +562,19 @@ export class GamepadInput {
     }
 
     /**
-     * Maps gamepad axis/button values into `AXIS_*` order.
+     * Maps gamepad axis/button values into `AXIS_*` order, writing into the
+     * given preallocated tuple in place.
      *
      * @param pad – Gamepad object from browser API.
-     * @returns Axis tuple in engine API order.
+     * @param target – Preallocated axis tuple to write into.
      */
-    private mapAxes(pad: Gamepad): PlayerSnapshot['axes'] {
-        const leftX = this.applyStickDeadZone(getAxis(pad, 0));
-        const leftY = this.applyStickDeadZone(getAxis(pad, 1));
-        const rightX = this.applyStickDeadZone(getAxis(pad, 2));
-        const rightY = this.applyStickDeadZone(getAxis(pad, 3));
-        const triggerL = getButtonValue(pad, 6);
-        const triggerR = getButtonValue(pad, 7);
-
-        return [leftX, leftY, rightX, rightY, triggerL, triggerR];
+    private mapAxesInto(pad: Gamepad, target: GamepadAxes): void {
+        target[0] = this.applyStickDeadZone(getAxis(pad, 0));
+        target[1] = this.applyStickDeadZone(getAxis(pad, 1));
+        target[2] = this.applyStickDeadZone(getAxis(pad, 2));
+        target[3] = this.applyStickDeadZone(getAxis(pad, 3));
+        target[4] = getButtonValue(pad, 6);
+        target[5] = getButtonValue(pad, 7);
     }
 
     /**
@@ -696,13 +692,13 @@ export class GamepadInput {
             if (current) {
                 current.isConnected = false;
                 current.buttons = 0;
-                current.axes = [0, 0, 0, 0, 0, 0];
+                current.axes.fill(0);
             }
 
             if (previous) {
                 previous.isConnected = false;
                 previous.buttons = 0;
-                previous.axes = [0, 0, 0, 0, 0, 0];
+                previous.axes.fill(0);
             }
 
             this.firstPressTick[i]?.clear();
