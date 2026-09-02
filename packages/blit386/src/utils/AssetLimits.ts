@@ -421,6 +421,67 @@ export function validateBtfontGlyphData(
 }
 
 /**
+ * Clips a sprite source rectangle, given as scalars, to the sheet and software blit limits.
+ *
+ * Scalar counterpart to {@link clipSpriteSourceRect} for hot-path callers that must not
+ * allocate a `Rect2i` per call (for example, a per-glyph blit loop). Returns `null` when the
+ * rectangle is empty, fully outside the sheet, or still too large to iterate safely after
+ * clipping.
+ *
+ * @param srcX – Requested source rectangle X in sheet space.
+ * @param srcY – Requested source rectangle Y in sheet space.
+ * @param srcWidth – Requested source rectangle width.
+ * @param srcHeight – Requested source rectangle height.
+ * @param sheetWidth – Sprite sheet width in pixels.
+ * @param sheetHeight – Sprite sheet height in pixels.
+ * @returns Clipped source bounds, or `null` when the blit should be skipped.
+ */
+export function clipSpriteSourceRectXY(
+    srcX: number,
+    srcY: number,
+    srcWidth: number,
+    srcHeight: number,
+    sheetWidth: number,
+    sheetHeight: number,
+): { x: number; y: number; width: number; height: number } | null {
+    if (
+        !Number.isFinite(srcX) ||
+        !Number.isFinite(srcY) ||
+        !Number.isFinite(srcWidth) ||
+        !Number.isFinite(srcHeight) ||
+        !Number.isInteger(srcX) ||
+        !Number.isInteger(srcY) ||
+        !Number.isInteger(srcWidth) ||
+        !Number.isInteger(srcHeight)
+    ) {
+        return null;
+    }
+
+    if (srcWidth <= 0 || srcHeight <= 0) {
+        return null;
+    }
+
+    const x0 = Math.max(0, srcX);
+    const y0 = Math.max(0, srcY);
+    const x1 = Math.min(sheetWidth, srcX + srcWidth);
+    const y1 = Math.min(sheetHeight, srcY + srcHeight);
+    const width = x1 - x0;
+    const height = y1 - y0;
+
+    if (width <= 0 || height <= 0) {
+        return null;
+    }
+
+    const area = width * height;
+
+    if (!Number.isSafeInteger(area) || area > MAX_SPRITE_BLIT_PIXELS) {
+        return null;
+    }
+
+    return { x: x0, y: y0, width, height };
+}
+
+/**
  * Clips a sprite source rectangle to the sheet and software blit limits.
  *
  * Returns `null` when the rectangle is empty, fully outside the sheet, or still
@@ -436,39 +497,5 @@ export function clipSpriteSourceRect(
     sheetWidth: number,
     sheetHeight: number,
 ): { x: number; y: number; width: number; height: number } | null {
-    if (
-        !Number.isFinite(srcRect.x) ||
-        !Number.isFinite(srcRect.y) ||
-        !Number.isFinite(srcRect.width) ||
-        !Number.isFinite(srcRect.height) ||
-        !Number.isInteger(srcRect.x) ||
-        !Number.isInteger(srcRect.y) ||
-        !Number.isInteger(srcRect.width) ||
-        !Number.isInteger(srcRect.height)
-    ) {
-        return null;
-    }
-
-    if (srcRect.width <= 0 || srcRect.height <= 0) {
-        return null;
-    }
-
-    const x0 = Math.max(0, srcRect.x);
-    const y0 = Math.max(0, srcRect.y);
-    const x1 = Math.min(sheetWidth, srcRect.x + srcRect.width);
-    const y1 = Math.min(sheetHeight, srcRect.y + srcRect.height);
-    const width = x1 - x0;
-    const height = y1 - y0;
-
-    if (width <= 0 || height <= 0) {
-        return null;
-    }
-
-    const area = width * height;
-
-    if (!Number.isSafeInteger(area) || area > MAX_SPRITE_BLIT_PIXELS) {
-        return null;
-    }
-
-    return { x: x0, y: y0, width, height };
+    return clipSpriteSourceRectXY(srcRect.x, srcRect.y, srcRect.width, srcRect.height, sheetWidth, sheetHeight);
 }

@@ -3,10 +3,10 @@ import type { Palette } from '../assets/Palette';
 import { TRANSPARENT_PALETTE_INDEX } from '../assets/Palette';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import type { OverlayDrawTarget, OverlayRendererDiagnostics } from '../overlay';
-import { clipSpriteSourceRect } from '../utils/AssetLimits';
+import { clipSpriteSourceRectXY } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
 import { noActivePaletteError } from '../utils/errorMessages';
-import { Rect2i } from '../utils/Rect2i';
+import type { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
 import type { IRenderer } from './IRenderer';
@@ -328,6 +328,13 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     endFrame(): void {
         if (!this.imageData) {
             this.commands.length = 0;
+
+            if (this.pending) {
+                this.pending.reject(
+                    new Error("Can't save this frame - the renderer hasn't finished initializing yet."),
+                );
+                this.pending = null;
+            }
 
             return;
         }
@@ -936,11 +943,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         destY: number,
         paletteOffset: number,
     ): void {
-        const clipped = clipSpriteSourceRect(
-            Rect2i.fromValuesUnchecked(srcX, srcY, srcWidth, srcHeight),
-            sheetWidth,
-            sheetHeight,
-        );
+        const clipped = clipSpriteSourceRectXY(srcX, srcY, srcWidth, srcHeight, sheetWidth, sheetHeight);
 
         if (clipped === null) {
             return;
