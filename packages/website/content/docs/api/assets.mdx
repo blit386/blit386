@@ -226,9 +226,9 @@ BT.printFont(font, new Vector2i(10, 10), 'Hello!', paletteOffset); // per-draw i
 ```
 
 - Font rendering goes through the same sprite pipeline as `BT.drawSprite()` and is auto-batched.
-- SpriteSheet helpers (after indexize): `isIndexed()`, `getIndexedPixels()` (defensive copy for software renderer),
-  `reindexize(palette)` when palette layout changes. `SpriteSheet.loadIndexed()` returns `IndexedSpriteLoadResult`
-  (`{ sheet, srcRect, colors }`).
+- SpriteSheet helpers (after indexize): `isIndexed()`, `getIndexedPixels()` (defensive copy), `getIndexedPixelsRef()`
+  (no copy, for hot-path CPU blitting – do not mutate the returned array), `reindexize(palette)` when palette layout
+  changes. `SpriteSheet.loadIndexed()` returns `IndexedSpriteLoadResult` (`{ sheet, srcRect, colors }`).
 - See [Bitmap Fonts Guide](/docs/guides/bitmap-fonts) for the `.btfont` format specification and the BMFont conversion
   workflow (`pnpm run convert-font`).
 

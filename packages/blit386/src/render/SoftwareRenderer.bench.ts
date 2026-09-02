@@ -7,6 +7,7 @@
  * - Sprite blit throughput (`drawSprite`) for small and large source rects
  * - Bitmap text throughput (`drawBitmapText`) for short and long strings
  * - Full-canvas rect fill (`drawRectFill`)
+ * - Repeated single-pixel draws (`drawPixel`)
  * - A corner-to-corner diagonal line (`drawLine`)
  * - An empty frame's clear + present cost (`fillFrame` / `presentFrame`)
  *
@@ -36,6 +37,9 @@ const DISPLAY_SIZE = new Vector2i(320, 240);
 
 /** Number of queued sprite draws per sprite-blit benchmark iteration. */
 const SPRITE_DRAW_COUNT = 300;
+
+/** Number of queued pixel draws per pixel-draw benchmark iteration. */
+const PIXEL_DRAW_COUNT = 300;
 
 /** No-op stand-in for a `CanvasRenderingContext2D` / `OffscreenCanvasRenderingContext2D`. */
 type MockContext = {
@@ -178,6 +182,7 @@ async function makeBenchRenderer(): Promise<SoftwareRenderer> {
 const spriteBlitRenderer = await makeBenchRenderer();
 const bitmapTextRenderer = await makeBenchRenderer();
 const rectFillRenderer = await makeBenchRenderer();
+const pixelDrawRenderer = await makeBenchRenderer();
 const lineDrawRenderer = await makeBenchRenderer();
 const frameClearRenderer = await makeBenchRenderer();
 
@@ -257,6 +262,26 @@ describe('SoftwareRenderer rect fill', () => {
         () => {
             renderer.beginFrame();
             renderer.drawRectFill(fullScreenRect, 1);
+            renderer.endFrame();
+        },
+        BENCH_OPTIONS,
+    );
+});
+
+describe('SoftwareRenderer pixel draw', () => {
+    const renderer = pixelDrawRenderer;
+
+    const pos = new Vector2i(0, 0);
+
+    bench(
+        `drawPixel (${PIXEL_DRAW_COUNT}x)`,
+        () => {
+            renderer.beginFrame();
+
+            for (let i = 0; i < PIXEL_DRAW_COUNT; i++) {
+                renderer.drawPixel(pos, 1);
+            }
+
             renderer.endFrame();
         },
         BENCH_OPTIONS,

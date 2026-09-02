@@ -49,12 +49,17 @@ type SpriteCommand = {
     cameraY: number;
 };
 
-/** A queued bitmap text draw command. Glyphs are expanded to sprite commands during replay. */
+/**
+ * A queued bitmap text draw command. Glyph shapes are resolved once at queue time into
+ * `glyphData` (6 ints per glyph: srcX, srcY, srcWidth, srcHeight, destOffsetX, destOffsetY) so
+ * replay can blit each glyph without re-walking the string or re-looking up glyph metrics.
+ */
 type BitmapTextCommand = {
     kind: 'bitmapText';
-    font: BitmapFont;
+    spriteSheet: SpriteSheet;
+    glyphData: Int32Array;
+    glyphCount: number;
     pos: Vector2i;
-    text: string;
     paletteOffset: number;
     cameraX: number;
     cameraY: number;
@@ -104,7 +109,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private clearPaletteIndex: number = 0;
     private cameraOffset: Vector2i = Vector2i.zero();
     private readonly commands: DrawCommand[] = [];
-    private readonly framePixels: Uint8ClampedArray;
+    private frameWordView: Uint32Array | null = null;
     private imageData: ImageData | null = null;
     private pending: Pending | null = null;
     private primitiveSubmittedVertices = 0;
@@ -121,7 +126,36 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         this.canvas = canvas;
         this.displaySize = displaySize.clone();
         this.outputSize = (outputSize ?? displaySize).clone();
-        this.framePixels = new Uint8ClampedArray(this.displaySize.x * this.displaySize.y * 4);
+    }
+
+    /**
+     * Direct reference to the logical canvas's `ImageData.data`, written into by every raster
+     * method. Available once {@link init} has created `imageData`.
+     *
+     * @returns The frame's RGBA pixel buffer.
+     * @throws If accessed before a successful {@link init} call.
+     */
+    private get framePixels(): Uint8ClampedArray {
+        if (!this.imageData) {
+            throw new Error('SoftwareRenderer.framePixels: renderer not initialized.');
+        }
+
+        return this.imageData.data;
+    }
+
+    /**
+     * `Uint32Array` view over the same buffer as {@link framePixels}, for word-at-a-time writes
+     * (see {@link fillFrame}). Available once {@link init} has created `imageData`.
+     *
+     * @returns The frame buffer, viewed as one `Uint32Array` word per pixel.
+     * @throws If accessed before a successful {@link init} call.
+     */
+    private get wordView(): Uint32Array {
+        if (!this.frameWordView) {
+            throw new Error('SoftwareRenderer.wordView: renderer not initialized.');
+        }
+
+        return this.frameWordView;
     }
 
     /**
@@ -162,25 +196,6 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         }
 
         return vertices;
-    }
-
-    /**
-     * Estimates sprite vertices for bitmap text (one quad per resolved glyph).
-     *
-     * @param font – Bitmap font containing glyph metrics.
-     * @param text – String to render.
-     * @returns Vertex count for the text draw.
-     */
-    private static estimateBitmapTextVertexCount(font: BitmapFont, text: string): number {
-        let glyphCount = 0;
-
-        for (const char of text) {
-            if (font.getGlyph(char)) {
-                glyphCount++;
-            }
-        }
-
-        return glyphCount * SoftwareRenderer.QUAD_VERTEX_COUNT;
     }
 
     /**
@@ -255,6 +270,8 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             this.imageData = new ImageData(this.displaySize.x, this.displaySize.y);
         }
 
+        this.frameWordView = new Uint32Array(this.imageData.data.buffer);
+
         return true;
     }
 
@@ -309,6 +326,12 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * Also resolves any pending `captureFrame` promise.
      */
     endFrame(): void {
+        if (!this.imageData) {
+            this.commands.length = 0;
+
+            return;
+        }
+
         const clearColor = this.resolveClearColor();
 
         this.fillFrame(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
@@ -346,17 +369,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex – Palette entry index for the fill color.
      */
     drawRectFill(rect: Rect2i, paletteIndex: number): void {
-        this.commands.push({
-            kind: 'rectFill',
-            x0: rect.x,
-            y0: rect.y,
-            width: rect.width,
-            height: rect.height,
-            paletteIndex,
-            cameraX: this.cameraOffset.x,
-            cameraY: this.cameraOffset.y,
-        });
-        this.primitiveSubmittedVertices += SoftwareRenderer.QUAD_VERTEX_COUNT;
+        this.queueRectFillXY(rect.x, rect.y, rect.width, rect.height, paletteIndex);
     }
 
     /**
@@ -388,7 +401,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteIndex – Palette entry index for the pixel color.
      */
     drawPixel(pos: Vector2i, paletteIndex: number): void {
-        this.drawRectFill(new Rect2i(pos.x, pos.y, 1, 1), paletteIndex);
+        this.queueRectFillXY(pos.x, pos.y, 1, 1, paletteIndex);
     }
 
     /**
@@ -472,16 +485,39 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param paletteOffset – Palette index offset applied to every glyph pixel.
      */
     drawBitmapText(font: BitmapFont, pos: Vector2i, text: string, paletteOffset: number = 0): void {
+        const glyphData = new Int32Array(text.length * 6);
+        let glyphCount = 0;
+        let cursorX = 0;
+
+        for (const char of text) {
+            const glyph = font.getGlyph(char);
+
+            if (glyph) {
+                const base = glyphCount * 6;
+
+                // eslint-disable-next-line security/detect-object-injection
+                glyphData[base] = glyph.rect.x;
+                glyphData[base + 1] = glyph.rect.y;
+                glyphData[base + 2] = glyph.rect.width;
+                glyphData[base + 3] = glyph.rect.height;
+                glyphData[base + 4] = cursorX + glyph.offsetX;
+                glyphData[base + 5] = glyph.offsetY;
+                glyphCount++;
+                cursorX += glyph.advance;
+            }
+        }
+
         this.commands.push({
             kind: 'bitmapText',
-            font,
+            spriteSheet: font.getSpriteSheet(),
+            glyphData,
+            glyphCount,
             pos: pos.clone(),
-            text,
             paletteOffset,
             cameraX: this.cameraOffset.x,
             cameraY: this.cameraOffset.y,
         });
-        this.spriteSubmittedVertices += SoftwareRenderer.estimateBitmapTextVertexCount(font, text);
+        this.spriteSubmittedVertices += glyphCount * SoftwareRenderer.QUAD_VERTEX_COUNT;
     }
 
     /**
@@ -577,6 +613,31 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
+     * Queues a filled rectangle draw command from scalar bounds. Shared by {@link drawRectFill}
+     * and {@link drawPixel} so neither has to allocate a `Rect2i` just to shuttle four numbers
+     * into the command queue.
+     *
+     * @param x – Left edge in logical pixels.
+     * @param y – Top edge in logical pixels.
+     * @param width – Rectangle width in pixels.
+     * @param height – Rectangle height in pixels.
+     * @param paletteIndex – Palette entry index for the fill color.
+     */
+    private queueRectFillXY(x: number, y: number, width: number, height: number, paletteIndex: number): void {
+        this.commands.push({
+            kind: 'rectFill',
+            x0: x,
+            y0: y,
+            width,
+            height,
+            paletteIndex,
+            cameraX: this.cameraOffset.x,
+            cameraY: this.cameraOffset.y,
+        });
+        this.primitiveSubmittedVertices += SoftwareRenderer.QUAD_VERTEX_COUNT;
+    }
+
+    /**
      * Creates an `OffscreenCanvas` when available, falling back to an off-DOM `<canvas>`.
      *
      * @returns A canvas sized to the logical display resolution.
@@ -595,7 +656,10 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Fills the entire `framePixels` buffer with a solid RGBA color.
+     * Fills the entire `framePixels` buffer with a solid RGBA color via a single word-at-a-time
+     * fill over {@link wordView}. Packing matches {@link Color32.toUint32}'s ABGR layout, which on
+     * little-endian platforms lays out as byte0=r, byte1=g, byte2=b, byte3=a – the same RGBA byte
+     * order `framePixels` itself uses.
      *
      * @param r – Red channel (0-255).
      * @param g – Green channel (0-255).
@@ -603,13 +667,9 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param a – Alpha channel (0-255).
      */
     private fillFrame(r: number, g: number, b: number, a: number): void {
-        for (let i = 0; i < this.framePixels.length; i += 4) {
-            // eslint-disable-next-line security/detect-object-injection
-            this.framePixels[i] = r;
-            this.framePixels[i + 1] = g;
-            this.framePixels[i + 2] = b;
-            this.framePixels[i + 3] = a;
-        }
+        const packed = ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
+
+        this.wordView.fill(packed);
     }
 
     /**
@@ -695,10 +755,11 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         const startY = Math.max(0, y - cameraY);
         const endX = Math.min(this.displaySize.x, x - cameraX + width);
         const endY = Math.min(this.displaySize.y, y - cameraY + height);
+        const pixels = this.framePixels;
 
         for (let py = startY; py < endY; py++) {
             for (let px = startX; px < endX; px++) {
-                this.writePixel(px, py, color.r, color.g, color.b, 255);
+                this.writePixelUnchecked(pixels, px, py, color.r, color.g, color.b, 255);
             }
         }
     }
@@ -770,9 +831,10 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         const sx = cx < tx ? 1 : -1;
         const sy = cy < ty ? 1 : -1;
         let err = dx - dy;
+        const pixels = this.framePixels;
 
         while (true) {
-            this.writePixel(cx, cy, color.r, color.g, color.b, 255);
+            this.writePixel(pixels, cx, cy, color.r, color.g, color.b, 255);
 
             if (cx === tx && cy === ty) {
                 break;
@@ -799,72 +861,128 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param command – Sprite draw command with sheet, source rect, destination, and camera state.
      */
     private rasterSprite(command: SpriteCommand): void {
-        const indexedPixels = command.spriteSheet.getIndexedPixels();
+        const indexedPixels = command.spriteSheet.getIndexedPixelsRef();
+
+        this.blitIndexedRect(
+            indexedPixels,
+            command.spriteSheet.width,
+            command.spriteSheet.height,
+            command.srcRect.x,
+            command.srcRect.y,
+            command.srcRect.width,
+            command.srcRect.height,
+            command.destPos.x - command.cameraX,
+            command.destPos.y - command.cameraY,
+            command.paletteOffset,
+        );
+    }
+
+    /**
+     * Rasterizes a bitmap text command by blitting each precomputed glyph rect. Glyph shapes
+     * were resolved once at queue time (see {@link drawBitmapText}), so this loop does not
+     * look up glyph metrics or allocate per glyph.
+     *
+     * @param command – Bitmap text command with sheet, precomputed glyph data, position, and camera state.
+     */
+    private rasterBitmapText(command: BitmapTextCommand): void {
+        const indexedPixels = command.spriteSheet.getIndexedPixelsRef();
         const sheetWidth = command.spriteSheet.width;
         const sheetHeight = command.spriteSheet.height;
-        const srcRect = command.srcRect;
-        const destPos = command.destPos;
-        const clipped = clipSpriteSourceRect(srcRect, sheetWidth, sheetHeight);
+
+        for (let i = 0; i < command.glyphCount; i++) {
+            const base = i * 6;
+
+            this.blitIndexedRect(
+                indexedPixels,
+                sheetWidth,
+                sheetHeight,
+                // eslint-disable-next-line security/detect-object-injection
+                command.glyphData[base] ?? 0,
+                command.glyphData[base + 1] ?? 0,
+                command.glyphData[base + 2] ?? 0,
+                command.glyphData[base + 3] ?? 0,
+                command.pos.x + (command.glyphData[base + 4] ?? 0) - command.cameraX,
+                command.pos.y + (command.glyphData[base + 5] ?? 0) - command.cameraY,
+                command.paletteOffset,
+            );
+        }
+    }
+
+    /**
+     * Blits an indexed-pixel source rectangle to a destination position, resolving each
+     * non-transparent pixel through the active palette. Shared by {@link rasterSprite} and
+     * {@link rasterBitmapText} so neither call site allocates a command object per blit.
+     *
+     * @param indexedPixels – Source sheet's indexed-pixel buffer (row-major, one byte per pixel).
+     * @param sheetWidth – Source sheet width in pixels.
+     * @param sheetHeight – Source sheet height in pixels.
+     * @param srcX – Source rect X in sheet coordinates.
+     * @param srcY – Source rect Y in sheet coordinates.
+     * @param srcWidth – Source rect width.
+     * @param srcHeight – Source rect height.
+     * @param destX – Destination X in logical coordinates (camera already applied).
+     * @param destY – Destination Y in logical coordinates (camera already applied).
+     * @param paletteOffset – Palette index offset applied to every non-transparent pixel.
+     */
+    private blitIndexedRect(
+        indexedPixels: Uint8Array,
+        sheetWidth: number,
+        sheetHeight: number,
+        srcX: number,
+        srcY: number,
+        srcWidth: number,
+        srcHeight: number,
+        destX: number,
+        destY: number,
+        paletteOffset: number,
+    ): void {
+        const clipped = clipSpriteSourceRect(
+            Rect2i.fromValuesUnchecked(srcX, srcY, srcWidth, srcHeight),
+            sheetWidth,
+            sheetHeight,
+        );
 
         if (clipped === null) {
             return;
         }
 
-        const destOffsetX = clipped.x - srcRect.x;
-        const destOffsetY = clipped.y - srcRect.y;
+        const destOffsetX = clipped.x - srcX;
+        const destOffsetY = clipped.y - srcY;
+        const pixels = this.framePixels;
 
         for (let y = 0; y < clipped.height; y++) {
             for (let x = 0; x < clipped.width; x++) {
-                const srcX = clipped.x + x;
-                const srcY = clipped.y + y;
-                const rawIndex = indexedPixels[srcY * sheetWidth + srcX] ?? 0;
+                const rawIndex = indexedPixels[(clipped.y + y) * sheetWidth + (clipped.x + x)] ?? 0;
 
                 if (rawIndex === TRANSPARENT_PALETTE_INDEX) {
                     continue;
                 }
 
-                const finalIndex = (rawIndex + command.paletteOffset) >>> 0;
+                const finalIndex = (rawIndex + paletteOffset) >>> 0;
                 const color = this.resolveSpriteColor(finalIndex);
-                const destX = destPos.x + destOffsetX + x - command.cameraX;
-                const destY = destPos.y + destOffsetY + y - command.cameraY;
 
-                this.writePixel(destX, destY, color.r, color.g, color.b, 255);
+                this.writePixel(
+                    pixels,
+                    destX + destOffsetX + x,
+                    destY + destOffsetY + y,
+                    color.r,
+                    color.g,
+                    color.b,
+                    255,
+                );
             }
         }
     }
 
     /**
-     * Rasterizes a bitmap text command by expanding each character to a sprite blit.
+     * Writes one RGBA pixel into `pixels`, bounds-checked against the display size.
      *
-     * @param command – Bitmap text command with font, position, text string, and camera state.
-     */
-    private rasterBitmapText(command: BitmapTextCommand): void {
-        let cursorX = command.pos.x;
-
-        for (const char of command.text) {
-            const glyph = command.font.getGlyph(char);
-
-            if (!glyph) {
-                continue;
-            }
-
-            this.rasterSprite({
-                kind: 'sprite',
-                spriteSheet: command.font.getSpriteSheet(),
-                srcRect: glyph.rect,
-                destPos: new Vector2i(cursorX + glyph.offsetX, command.pos.y + glyph.offsetY),
-                paletteOffset: command.paletteOffset,
-                cameraX: command.cameraX,
-                cameraY: command.cameraY,
-            });
-
-            cursorX += glyph.advance;
-        }
-    }
-
-    /**
-     * Writes one RGBA pixel into `framePixels`, bounds-checked against the display size.
+     * `pixels` is taken as a parameter (the caller's own {@link framePixels} read, done once per
+     * raster call) rather than read from `this` here, since this runs once per pixel and
+     * `framePixels` is a checked accessor – re-reading it per pixel would re-run that check on
+     * every call.
      *
+     * @param pixels – Destination buffer, from {@link framePixels}.
      * @param x – Pixel X in logical coordinates.
      * @param y – Pixel Y in logical coordinates.
      * @param r – Red channel (0-255).
@@ -872,7 +990,15 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @param b – Blue channel (0-255).
      * @param a – Alpha channel (0-255).
      */
-    private writePixel(x: number, y: number, r: number, g: number, b: number, a: number): void {
+    private writePixel(
+        pixels: Uint8ClampedArray,
+        x: number,
+        y: number,
+        r: number,
+        g: number,
+        b: number,
+        a: number,
+    ): void {
         if (x < 0 || y < 0 || x >= this.displaySize.x || y >= this.displaySize.y) {
             return;
         }
@@ -880,10 +1006,42 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
         const index = (y * this.displaySize.x + x) * 4;
 
         // eslint-disable-next-line security/detect-object-injection
-        this.framePixels[index] = r;
-        this.framePixels[index + 1] = g;
-        this.framePixels[index + 2] = b;
-        this.framePixels[index + 3] = a;
+        pixels[index] = r;
+        pixels[index + 1] = g;
+        pixels[index + 2] = b;
+        pixels[index + 3] = a;
+    }
+
+    /**
+     * Writes one RGBA pixel into `pixels` without a bounds check. Callers must guarantee
+     * `(x, y)` already lies within `[0, displaySize)` – used by loops that pre-clamp their
+     * range, such as {@link rasterRectFill}. See {@link writePixel} for why `pixels` is a
+     * parameter rather than a `this.framePixels` read.
+     *
+     * @param pixels – Destination buffer, from {@link framePixels}.
+     * @param x – Pixel X in logical coordinates, already known in-bounds.
+     * @param y – Pixel Y in logical coordinates, already known in-bounds.
+     * @param r – Red channel (0-255).
+     * @param g – Green channel (0-255).
+     * @param b – Blue channel (0-255).
+     * @param a – Alpha channel (0-255).
+     */
+    private writePixelUnchecked(
+        pixels: Uint8ClampedArray,
+        x: number,
+        y: number,
+        r: number,
+        g: number,
+        b: number,
+        a: number,
+    ): void {
+        const index = (y * this.displaySize.x + x) * 4;
+
+        // eslint-disable-next-line security/detect-object-injection
+        pixels[index] = r;
+        pixels[index + 1] = g;
+        pixels[index + 2] = b;
+        pixels[index + 3] = a;
     }
 
     /**
@@ -898,7 +1056,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             return null;
         }
 
-        const color = this.palette.get(paletteIndex);
+        const color = this.palette.getRef(paletteIndex);
 
         return color.a === 0 ? null : color;
     }
@@ -915,7 +1073,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             return Color32.black;
         }
 
-        return this.palette.get(paletteIndex);
+        return this.palette.getRef(paletteIndex);
     }
 
     /**
@@ -937,15 +1095,14 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     }
 
     /**
-     * Copies `framePixels` into the logical canvas via `ImageData` and blits
-     * the logical canvas to the output canvas, applying nearest-neighbor upscaling.
+     * Puts `imageData` (already written directly by raster methods) onto the logical canvas
+     * and blits the logical canvas to the output canvas, applying nearest-neighbor upscaling.
      */
     private presentFrame(): void {
         if (!this.logicalCtx || !this.outputCtx || !this.imageData || !this.logicalCanvas) {
             return;
         }
 
-        this.imageData.data.set(this.framePixels);
         this.logicalCtx.putImageData(this.imageData, 0, 0);
         this.outputCtx.clearRect(0, 0, this.outputSize.x, this.outputSize.y);
         this.outputCtx.drawImage(this.logicalCanvas, 0, 0, this.outputSize.x, this.outputSize.y);
