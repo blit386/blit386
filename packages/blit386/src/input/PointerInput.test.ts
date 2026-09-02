@@ -1267,4 +1267,173 @@ describe('PointerInput', () => {
             expect(input.isButtonReleased(99, 0)).toBe(false);
         });
     });
+
+    describe('canvas rect caching', () => {
+        it('reads getBoundingClientRect at most once for a burst of pointermove events', () => {
+            const rectSpy = canvas.getBoundingClientRect as ReturnType<typeof vi.fn>;
+
+            rectSpy.mockClear();
+
+            for (let i = 0; i < 50; i++) {
+                canvas.dispatchEvent(
+                    pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 100 + i, clientY: 100 }),
+                );
+            }
+
+            expect(rectSpy.mock.calls.length).toBeLessThanOrEqual(1);
+        });
+
+        it('does not re-read the rect on a second event within the same tick', () => {
+            const rectSpy = canvas.getBoundingClientRect as ReturnType<typeof vi.fn>;
+
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+
+            const callsAfterFirst = rectSpy.mock.calls.length;
+
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 180, clientY: 150 }),
+            );
+
+            expect(rectSpy.mock.calls.length).toBe(callsAfterFirst);
+        });
+
+        it('refreshes the cached rect on a window "resize" event', () => {
+            const mutableRect: BoundingRect = {
+                left: RECT_LEFT,
+                top: RECT_TOP,
+                width: RECT_WIDTH,
+                height: RECT_HEIGHT,
+            };
+            const c = createCanvas(mutableRect);
+            const p = new PointerInput();
+
+            p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
+
+            c.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+            expect(p.getPos(0).x).toBe(80);
+
+            // Simulate a CSS resize (e.g. the canvas doubling in on-screen width)
+            // shifting the mapping between client pixels and display pixels.
+            mutableRect.width = RECT_WIDTH * 2;
+            window.dispatchEvent(new Event('resize'));
+
+            c.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+            // (170-10)/1280 = 0.125 of width -> 0.125 * 320 = 40
+            expect(p.getPos(0).x).toBe(40);
+
+            p.detach();
+            c.remove();
+        });
+
+        it('refreshes the cached rect on a window "scroll" event while a pointer is down (capture phase)', () => {
+            const mutableRect: BoundingRect = {
+                left: RECT_LEFT,
+                top: RECT_TOP,
+                width: RECT_WIDTH,
+                height: RECT_HEIGHT,
+            };
+            const c = createCanvas(mutableRect);
+            const p = new PointerInput();
+
+            p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
+
+            c.dispatchEvent(
+                pointerEvent('pointerdown', {
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    button: 0,
+                    clientX: 170,
+                    clientY: 140,
+                }),
+            );
+            expect(p.getPos(0).y).toBe(60);
+
+            // Simulate the page scrolling while the pointer stays down (drag),
+            // which moves the canvas's client rect without resizing it.
+            mutableRect.top = RECT_TOP + 240;
+            window.dispatchEvent(new Event('scroll'));
+
+            c.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+            // (140-260)/480 clamps to 0 – negative offset floors below the canvas top.
+            expect(p.getPos(0).y).toBe(0);
+
+            p.detach();
+            c.remove();
+        });
+
+        it('refreshes the cached rect once per endFrame tick as a safety net for un-eventful layout changes', () => {
+            const mutableRect: BoundingRect = {
+                left: RECT_LEFT,
+                top: RECT_TOP,
+                width: RECT_WIDTH,
+                height: RECT_HEIGHT,
+            };
+            const c = createCanvas(mutableRect);
+            const p = new PointerInput();
+
+            p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
+
+            c.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+            expect(p.getPos(0).x).toBe(80);
+
+            // A CSS transform / class toggle on an ancestor can move the canvas
+            // without firing resize or scroll – nothing invalidates the cache
+            // except the once-per-tick safety net in endFrame().
+            mutableRect.left = RECT_LEFT + 320;
+            p.endFrame();
+
+            c.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+            // (170-330)/640 clamps to 0.
+            expect(p.getPos(0).x).toBe(0);
+
+            p.detach();
+            c.remove();
+        });
+
+        it('disconnects the ResizeObserver and stops listening to window events on detach', () => {
+            const observed: HTMLCanvasElement[] = [];
+            const disconnect = vi.fn();
+            const originalResizeObserver = globalThis.ResizeObserver;
+
+            class SpyResizeObserver {
+                public observe(target: HTMLCanvasElement): void {
+                    observed.push(target);
+                }
+
+                public unobserve(): void {
+                    // Not exercised by this test.
+                }
+
+                public disconnect(): void {
+                    disconnect();
+                }
+            }
+
+            vi.stubGlobal('ResizeObserver', SpyResizeObserver);
+
+            const c = createCanvas();
+            const p = new PointerInput();
+
+            p.attach(c, new Vector2i(DISPLAY_WIDTH, DISPLAY_HEIGHT));
+            expect(observed).toEqual([c]);
+
+            p.detach();
+            expect(disconnect).toHaveBeenCalledTimes(1);
+
+            vi.stubGlobal('ResizeObserver', originalResizeObserver);
+            c.remove();
+        });
+    });
 });

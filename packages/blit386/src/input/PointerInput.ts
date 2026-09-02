@@ -122,6 +122,34 @@ export class PointerInput {
     private originalCursor: string | null = null;
 
     /**
+     * Cached result of `canvas.getBoundingClientRect()`, reused by every
+     * pointer event in a frame instead of forcing a fresh layout read per
+     * event. `null` until first computed by {@link getCanvasRect}.
+     */
+    private cachedRect: DOMRect | null = null;
+
+    /**
+     * True when {@link cachedRect} must be recomputed before its next use.
+     * Set by the resize observer, the window `resize` / `scroll` listeners,
+     * and once per {@link endFrame} tick as a safety net for layout changes
+     * that fire none of those (a CSS transform or class toggle on an
+     * ancestor) – see {@link endFrame}'s JSDoc for the tradeoff.
+     */
+    private isRectDirty = true;
+
+    /** Observes the canvas's own box for CSS-driven size changes; created by {@link attach}. */
+    private resizeObserver: ResizeObserver | null = null;
+
+    /**
+     * The canvas's owning `window` (`canvas.ownerDocument.defaultView`), captured
+     * by {@link attach} so the `resize` / `scroll` invalidation listeners are
+     * registered on – and removed from – the same window the canvas actually
+     * lives in, not the global `window`. These differ when the canvas sits in an
+     * iframe or a secondary document.
+     */
+    private canvasWindow: (Window & typeof globalThis) | null = null;
+
+    /**
      * When true, wheel events call `preventDefault` and accumulate into
      * {@link getScrollDelta}. Set from `HardwareSettings.isCapturingPointerScroll`.
      */
@@ -140,6 +168,11 @@ export class PointerInput {
     private readonly onPointerLeave: (event: PointerEvent) => void;
     private readonly onWheel: (event: WheelEvent) => void;
     private readonly onContextMenu: (event: Event) => void;
+    /** Marks {@link cachedRect} dirty on the canvas window's `resize` event. */
+    private readonly onWindowResize: () => void;
+
+    /** Marks {@link cachedRect} dirty on the canvas window's `scroll` event (capture phase). */
+    private readonly onWindowScroll: () => void;
 
     /**
      * Creates a `PointerInput` with all slots inactive.
@@ -157,6 +190,12 @@ export class PointerInput {
         this.onPointerLeave = (event) => this.handlePointerLeave(event);
         this.onWheel = (event) => this.handleWheel(event);
         this.onContextMenu = (event) => event.preventDefault();
+        this.onWindowResize = () => {
+            this.isRectDirty = true;
+        };
+        this.onWindowScroll = () => {
+            this.isRectDirty = true;
+        };
     }
 
     /**
@@ -171,6 +210,16 @@ export class PointerInput {
      * - `contextmenu.preventDefault()` so right-click feeds `BTN_B`
      *   instead of popping the OS context menu
      *
+     * Also installs the {@link cachedRect} invalidation sources: a
+     * `ResizeObserver` on the canvas, and `resize` / `scroll` listeners on
+     * the canvas's owning window (`canvas.ownerDocument.defaultView`, not
+     * necessarily the global `window` – they differ for a canvas in an
+     * iframe or a secondary document). `scroll` uses the capture phase
+     * since a scroll on any ancestor can shift the canvas's client rect
+     * without resizing it. These mark the cache dirty instead of reading
+     * the rect synchronously, so a high-frequency scroll gesture doesn't
+     * reintroduce the same layout-thrash risk this cache exists to avoid.
+     *
      * @param canvas – Canvas element rendering the engine output.
      * @param displaySize – Logical display size used to convert screen coordinates.
      */
@@ -179,6 +228,7 @@ export class PointerInput {
 
         this.canvas = canvas;
         this.displaySize = displaySize;
+        this.isRectDirty = true;
 
         this.originalTouchAction = canvas.style.touchAction;
         this.originalCursor = canvas.style.cursor;
@@ -192,6 +242,20 @@ export class PointerInput {
         canvas.addEventListener('pointerleave', this.onPointerLeave);
         canvas.addEventListener('wheel', this.onWheel, { passive: false });
         canvas.addEventListener('contextmenu', this.onContextMenu);
+
+        if (typeof ResizeObserver !== 'undefined') {
+            this.resizeObserver = new ResizeObserver(() => {
+                this.isRectDirty = true;
+            });
+            this.resizeObserver.observe(canvas);
+        }
+
+        this.canvasWindow = canvas.ownerDocument?.defaultView ?? null;
+
+        if (this.canvasWindow !== null) {
+            this.canvasWindow.addEventListener('resize', this.onWindowResize);
+            this.canvasWindow.addEventListener('scroll', this.onWindowScroll, { capture: true, passive: true });
+        }
     }
 
     /**
@@ -232,12 +296,23 @@ export class PointerInput {
             }
         }
 
+        this.resizeObserver?.disconnect();
+        this.resizeObserver = null;
+
+        if (this.canvasWindow !== null) {
+            this.canvasWindow.removeEventListener('resize', this.onWindowResize);
+            this.canvasWindow.removeEventListener('scroll', this.onWindowScroll, { capture: true });
+        }
+
+        this.canvasWindow = null;
         this.canvas = null;
         this.displaySize = null;
         this.originalTouchAction = null;
         this.originalCursor = null;
         this.isCapturingScroll = false;
         this.isScrollCaptureForced = false;
+        this.cachedRect = null;
+        this.isRectDirty = true;
 
         this.idToSlot.clear();
         this.scrollDeltaY = 0;
@@ -264,6 +339,16 @@ export class PointerInput {
      * tick, `prev` is the state at the moment `update()` last looked, and
      * any event that arrives before the next `update()` is correctly visible
      * as a transition.
+     *
+     * Also marks {@link cachedRect} dirty for the next tick. This is a
+     * safety net on top of the `ResizeObserver` / `resize` / `scroll`
+     * invalidation sources installed by {@link attach}: none of those fire
+     * for a layout change with no dedicated DOM event (a CSS transform or a
+     * class toggle on an ancestor resizing the canvas). Recomputing at most
+     * once per tick bounds the staleness window to a single frame
+     * (~16 ms at 60 fps) while still cutting reads from once per pointer
+     * event (up to 500–1000/s for a high-poll-rate mouse) down to once per
+     * rendered frame.
      */
     public endFrame(): void {
         for (const slot of this.slots) {
@@ -275,6 +360,7 @@ export class PointerInput {
         }
 
         this.scrollDeltaY = 0;
+        this.isRectDirty = true;
     }
 
     /**
@@ -909,14 +995,17 @@ export class PointerInput {
      * @param clientY – DOM `clientY` from the source event.
      */
     private updateSlotPosition(slot: Slot, clientX: number, clientY: number): void {
-        const canvas = this.canvas;
         const displaySize = this.displaySize;
 
-        if (canvas === null || displaySize === null) {
+        if (displaySize === null) {
             return;
         }
 
-        const rect = canvas.getBoundingClientRect();
+        const rect = this.getCanvasRect();
+
+        if (rect === null) {
+            return;
+        }
 
         // Guard against a zero-sized canvas (no layout yet) which would
         // produce NaN coordinates from the division below.
@@ -934,6 +1023,30 @@ export class PointerInput {
         );
 
         slot.pos.set(x, y);
+    }
+
+    /**
+     * Returns the canvas's bounding client rect, reusing {@link cachedRect}
+     * unless {@link isRectDirty} demands a fresh `getBoundingClientRect()`
+     * read. This is what keeps a burst of pointer events (a high-poll-rate
+     * mouse firing `pointermove` at 500–1000 Hz) from each forcing a
+     * synchronous style/layout flush.
+     *
+     * @returns The current canvas rect, or `null` when not attached.
+     */
+    private getCanvasRect(): DOMRect | null {
+        const canvas = this.canvas;
+
+        if (canvas === null) {
+            return null;
+        }
+
+        if (this.isRectDirty || this.cachedRect === null) {
+            this.cachedRect = canvas.getBoundingClientRect();
+            this.isRectDirty = false;
+        }
+
+        return this.cachedRect;
     }
 
     /**
