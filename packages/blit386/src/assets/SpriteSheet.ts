@@ -29,7 +29,7 @@ const TEXTURE_LAYER_COUNT = 1;
  */
 type SpriteSheetStatus = 'loading' | 'ready' | 'failed';
 
-/** Normalized UV coordinates (0.0-1.0) of a sprite region: top-left (u0, v0) to bottom-right (u1, v1). */
+/** Normalized UV coordinates (0.0–1.0) of a sprite region: top-left (u0, v0) to bottom-right (u1, v1). */
 type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
 
 /**
