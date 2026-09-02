@@ -116,7 +116,7 @@ async function installBenchRenderer(): Promise<SoftwareRenderer> {
     return renderer;
 }
 
-await installBenchRenderer();
+const renderer = await installBenchRenderer();
 
 const rect = new Rect2i(10, 10, 4, 4);
 const p0 = new Vector2i(0, 0);
@@ -126,6 +126,11 @@ describe('BT draw-call facade', () => {
     bench(
         'BT.drawPixel(x, y, paletteIndex) x 10000',
         () => {
+            // beginFrame() clears the renderer's queued command buffer (an O(1) length
+            // reset) so it stays bounded across bench iterations instead of growing
+            // unbounded for the life of the suite.
+            renderer.beginFrame();
+
             for (let i = 0; i < 10000; i++) {
                 BT.drawPixel(i & 0xff, (i >> 8) & 0xff, PALETTE_INDEX);
             }
@@ -136,6 +141,8 @@ describe('BT draw-call facade', () => {
     bench(
         'BT.drawPixel(Vector2i, paletteIndex) x 10000',
         () => {
+            renderer.beginFrame();
+
             for (let i = 0; i < 10000; i++) {
                 BT.drawPixel(new Vector2i(i & 0xff, (i >> 8) & 0xff), PALETTE_INDEX);
             }
@@ -146,6 +153,8 @@ describe('BT draw-call facade', () => {
     bench(
         'BT.drawRectFill x 5000',
         () => {
+            renderer.beginFrame();
+
             for (let i = 0; i < 5000; i++) {
                 BT.drawRectFill(rect, PALETTE_INDEX);
             }
@@ -156,6 +165,8 @@ describe('BT draw-call facade', () => {
     bench(
         'BT.drawLine diagonal x 100',
         () => {
+            renderer.beginFrame();
+
             for (let i = 0; i < 100; i++) {
                 BT.drawLine(p0, p1, PALETTE_INDEX);
             }
