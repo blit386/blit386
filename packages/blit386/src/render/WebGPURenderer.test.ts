@@ -24,6 +24,7 @@ import {
 } from '../__test__/webgpu-mock';
 import type { BitmapFont } from '../assets/BitmapFont';
 import { Palette } from '../assets/Palette';
+import { CycleEffect, PaletteEffectManager } from '../assets/PaletteEffect';
 import type { SpriteSheet } from '../assets/SpriteSheet';
 import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
@@ -1187,6 +1188,55 @@ describe('palette dirty-flag auto-propagation', () => {
         renderer.endFrame();
 
         expect(writeBufferSpy.mock.calls.length).toBeGreaterThan(callsAfterFirstFrame);
+
+        writeBufferSpy.mockRestore();
+
+        uninstallMockNavigatorGPU();
+    });
+
+    it('a slow CycleEffect only triggers a palette upload on step-crossing frames', async () => {
+        const device = createMockGPUDevice();
+        const writeBufferSpy = vi.spyOn(device.queue, 'writeBuffer');
+
+        const renderer = new WebGPURenderer(device, createMockGPUCanvasContext(), new Vector2i(320, 240));
+
+        installMockNavigatorGPU();
+
+        await renderer.init();
+
+        const palette = new Palette(16);
+
+        renderer.setPalette(palette);
+
+        // Baseline frame so the initial isPaletteDirty upload is out of the way.
+        renderer.beginFrame();
+        renderer.endFrame();
+
+        writeBufferSpy.mockClear();
+
+        // 1 step/sec over a 15-entry range: a 16ms tick accumulates 0.016 steps, so
+        // nine 16ms ticks in a row never cross a whole step.
+        let clockMs = 0;
+        const manager = new PaletteEffectManager(() => clockMs);
+
+        manager.add(new CycleEffect(1, 15, 1));
+
+        for (let frame = 0; frame < 9; frame++) {
+            clockMs += 16;
+            manager.update(palette);
+            renderer.beginFrame();
+            renderer.endFrame();
+        }
+
+        expect(writeBufferSpy).not.toHaveBeenCalled();
+
+        // Advance far enough to guarantee a step crossing on this frame.
+        clockMs += 1000;
+        manager.update(palette);
+        renderer.beginFrame();
+        renderer.endFrame();
+
+        expect(writeBufferSpy).toHaveBeenCalledTimes(1);
 
         writeBufferSpy.mockRestore();
 

@@ -20,6 +20,13 @@ import type { Palette } from './Palette';
  * The manager calls {@link update} once per frame. The effect mutates palette
  * entries via `palette.getRef()` and returns `true` to keep running or `false`
  * to signal completion (the manager removes it automatically).
+ *
+ * An implementation **must** call {@link Palette.markDirty} itself on every tick
+ * where it actually mutates an entry (including the terminal tick that lands on
+ * a final value), and must not call it on a tick that leaves the palette
+ * unchanged. The manager no longer marks the palette dirty on an effect's
+ * behalf, so a tick that mutates without calling `markDirty` silently skips the
+ * next GPU upload.
  */
 export interface PaletteEffect {
     /**
@@ -97,7 +104,9 @@ export class PaletteEffectManager {
         this.lastTime = now;
 
         if (this.effects.length > 0) {
-            // In-place compaction: keep running effects, drop completed ones.
+            // In-place compaction: keep running effects, drop completed ones. Each
+            // effect calls palette.markDirty() itself on ticks where it actually
+            // mutates, so the manager does not mark dirty unconditionally here.
             let writeIdx = 0;
 
             for (let i = 0; i < this.effects.length; i++) {
@@ -112,7 +121,6 @@ export class PaletteEffectManager {
             }
 
             this.effects.length = writeIdx;
-            palette.markDirty();
         }
     }
 
@@ -169,8 +177,15 @@ export class CycleEffect implements PaletteEffect {
             const msPerSecond = 1_000;
 
             this.accumulator += (this.speed * deltaMs) / msPerSecond;
-            this.applyForwardSteps(palette);
-            this.applyBackwardSteps(palette);
+
+            // Only crossing a whole step actually mutates the palette; a slow cycle
+            // spends most ticks just accumulating fractional progress.
+            const crossedForward = this.applyForwardSteps(palette);
+            const crossedBackward = this.applyBackwardSteps(palette);
+
+            if (crossedForward || crossedBackward) {
+                palette.markDirty();
+            }
         }
 
         return true; // Runs indefinitely.
@@ -180,24 +195,36 @@ export class CycleEffect implements PaletteEffect {
      * Drains the forward accumulator, rotating entries toward lower indices one step at a time.
      *
      * @param palette – Palette whose entries are rotated.
+     * @returns `true` if at least one forward step was applied.
      */
-    private applyForwardSteps(palette: Palette): void {
+    private applyForwardSteps(palette: Palette): boolean {
+        let crossed = false;
+
         while (this.accumulator >= 1) {
             this.accumulator -= 1;
             this.rotateForward(palette);
+            crossed = true;
         }
+
+        return crossed;
     }
 
     /**
      * Drains the backward accumulator, rotating entries toward higher indices one step at a time.
      *
      * @param palette – Palette whose entries are rotated.
+     * @returns `true` if at least one backward step was applied.
      */
-    private applyBackwardSteps(palette: Palette): void {
+    private applyBackwardSteps(palette: Palette): boolean {
+        let crossed = false;
+
         while (this.accumulator <= -1) {
             this.accumulator += 1;
             this.rotateBackward(palette);
+            crossed = true;
         }
+
+        return crossed;
     }
 
     /**
@@ -379,6 +406,7 @@ export class FadeEffect implements PaletteEffect {
         const count = Math.min(this.size, palette.size);
 
         applyFadeToRange(palette, this.snapshotColors, this.targetColors, 1, count - 1, 0, t, easedT);
+        palette.markDirty();
 
         return isRunning;
     }
@@ -435,6 +463,7 @@ export class FadeRangeEffect implements PaletteEffect {
         const { t, easedT, isRunning } = computeFadeProgress(this.elapsed, this.durationMs, this.easing);
 
         applyFadeToRange(palette, this.snapshotColors, this.targetColors, this.start, this.end, this.start, t, easedT);
+        palette.markDirty();
 
         return isRunning;
     }
@@ -672,6 +701,8 @@ export class ExposureFadeEffect implements PaletteEffect {
             }
         }
 
+        palette.markDirty();
+
         return isRunning;
     }
 }
@@ -744,13 +775,16 @@ export class FlashEffect implements PaletteEffect {
             // First frame: snapshot and apply flash.
             this.snapshotColors = snapshotPaletteRange(palette, 0, palette.size - 1);
             copyColorToNonZeroSlots(palette, this.color);
+            palette.markDirty();
         } else {
             this.elapsed += deltaMs;
 
             if (this.elapsed >= this.durationMs) {
                 restoreNonZeroSlots(palette, this.snapshotColors);
+                palette.markDirty();
                 keepRunning = false;
             }
+            // Otherwise still holding the flash color: nothing changed this tick.
         }
 
         return keepRunning;
