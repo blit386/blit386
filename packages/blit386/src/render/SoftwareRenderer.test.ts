@@ -450,17 +450,31 @@ describe('SoftwareRenderer', () => {
         renderer.setPalette(makePalette());
 
         const sheet = SpriteSheet.fromIndexedPixels(2, 1, new Uint8Array([1, 0]));
+        const fontSheet = SpriteSheet.fromIndexedPixels(1, 1, new Uint8Array([1]));
+        const glyphs = new Map([
+            [
+                'A',
+                {
+                    rect: new Rect2i(0, 0, 1, 1),
+                    offsetX: 0,
+                    offsetY: 0,
+                    advance: 1,
+                },
+            ],
+        ]);
+        const font = BitmapFont.createFromGlyphs(fontSheet, glyphs, 'test', 8, 1, 1);
 
         renderer.beginFrame();
         renderer.drawRectFill(new Rect2i(0, 0, 2, 2), 1);
         renderer.drawLine(new Vector2i(0, 0), new Vector2i(3, 0), 2);
         renderer.drawSprite(sheet, new Rect2i(0, 0, 2, 1), new Vector2i(0, 0), 0);
+        renderer.drawBitmapText(font, new Vector2i(0, 0), 'AA', 0);
 
         expect(renderer.getFrameDiagnostics()).toEqual({
             primitiveOverflowCount: 0,
             spriteOverflowCount: 0,
             primitiveSubmittedVertices: 12,
-            spriteSubmittedVertices: 6,
+            spriteSubmittedVertices: 18,
         });
 
         renderer.endFrame();

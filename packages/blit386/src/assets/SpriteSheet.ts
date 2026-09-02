@@ -763,6 +763,27 @@ export class SpriteSheet {
     }
 
     /**
+     * Returns a direct reference to the internal indexed-pixel buffer.
+     *
+     * Unlike {@link getIndexedPixels}, this does **not** copy the buffer. Callers must not
+     * mutate the returned array. This exists for hot-path CPU blitting (the software
+     * renderer's sprite and bitmap-text raster loops), where copying the full sheet on every
+     * blit call is unaffordable.
+     *
+     * @returns Direct reference to the indexed-pixel buffer, row-major, one byte per pixel.
+     * @throws If the sheet has not been indexized yet.
+     */
+    getIndexedPixelsRef(): Uint8Array<ArrayBuffer> {
+        if (this.indexedPixels === null) {
+            throw new Error(
+                "This sprite sheet hasn't been converted to palette indices yet. Call sheet.indexize(palette) first.",
+            );
+        }
+
+        return this.indexedPixels;
+    }
+
+    /**
      * Marks palette indices referenced by non-zero pixels in a source rectangle.
      *
      * Used by the engine to build the overlay palette grid from demo draw
