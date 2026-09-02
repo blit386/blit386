@@ -141,6 +141,15 @@ export class PointerInput {
     private resizeObserver: ResizeObserver | null = null;
 
     /**
+     * The canvas's owning `window` (`canvas.ownerDocument.defaultView`), captured
+     * by {@link attach} so the `resize` / `scroll` invalidation listeners are
+     * registered on – and removed from – the same window the canvas actually
+     * lives in, not the global `window`. These differ when the canvas sits in an
+     * iframe or a secondary document.
+     */
+    private canvasWindow: (Window & typeof globalThis) | null = null;
+
+    /**
      * When true, wheel events call `preventDefault` and accumulate into
      * {@link getScrollDelta}. Set from `HardwareSettings.isCapturingPointerScroll`.
      */
@@ -159,7 +168,10 @@ export class PointerInput {
     private readonly onPointerLeave: (event: PointerEvent) => void;
     private readonly onWheel: (event: WheelEvent) => void;
     private readonly onContextMenu: (event: Event) => void;
+    /** Marks {@link cachedRect} dirty on the canvas window's `resize` event. */
     private readonly onWindowResize: () => void;
+
+    /** Marks {@link cachedRect} dirty on the canvas window's `scroll` event (capture phase). */
     private readonly onWindowScroll: () => void;
 
     /**
@@ -200,11 +212,13 @@ export class PointerInput {
      *
      * Also installs the {@link cachedRect} invalidation sources: a
      * `ResizeObserver` on the canvas, and `resize` / `scroll` listeners on
-     * `window` (`scroll` uses the capture phase since a scroll on any
-     * ancestor can shift the canvas's client rect without resizing it).
-     * These mark the cache dirty instead of reading the rect synchronously,
-     * so a high-frequency scroll gesture doesn't reintroduce the same
-     * layout-thrash risk this cache exists to avoid.
+     * the canvas's owning window (`canvas.ownerDocument.defaultView`, not
+     * necessarily the global `window` – they differ for a canvas in an
+     * iframe or a secondary document). `scroll` uses the capture phase
+     * since a scroll on any ancestor can shift the canvas's client rect
+     * without resizing it. These mark the cache dirty instead of reading
+     * the rect synchronously, so a high-frequency scroll gesture doesn't
+     * reintroduce the same layout-thrash risk this cache exists to avoid.
      *
      * @param canvas – Canvas element rendering the engine output.
      * @param displaySize – Logical display size used to convert screen coordinates.
@@ -236,9 +250,11 @@ export class PointerInput {
             this.resizeObserver.observe(canvas);
         }
 
-        if (typeof window !== 'undefined') {
-            window.addEventListener('resize', this.onWindowResize);
-            window.addEventListener('scroll', this.onWindowScroll, { capture: true, passive: true });
+        this.canvasWindow = canvas.ownerDocument?.defaultView ?? null;
+
+        if (this.canvasWindow !== null) {
+            this.canvasWindow.addEventListener('resize', this.onWindowResize);
+            this.canvasWindow.addEventListener('scroll', this.onWindowScroll, { capture: true, passive: true });
         }
     }
 
@@ -283,11 +299,12 @@ export class PointerInput {
         this.resizeObserver?.disconnect();
         this.resizeObserver = null;
 
-        if (typeof window !== 'undefined') {
-            window.removeEventListener('resize', this.onWindowResize);
-            window.removeEventListener('scroll', this.onWindowScroll, { capture: true });
+        if (this.canvasWindow !== null) {
+            this.canvasWindow.removeEventListener('resize', this.onWindowResize);
+            this.canvasWindow.removeEventListener('scroll', this.onWindowScroll, { capture: true });
         }
 
+        this.canvasWindow = null;
         this.canvas = null;
         this.displaySize = null;
         this.originalTouchAction = null;
@@ -330,7 +347,7 @@ export class PointerInput {
      * class toggle on an ancestor resizing the canvas). Recomputing at most
      * once per tick bounds the staleness window to a single frame
      * (~16 ms at 60 fps) while still cutting reads from once per pointer
-     * event (up to 500-1000/s for a high-poll-rate mouse) down to once per
+     * event (up to 500–1000/s for a high-poll-rate mouse) down to once per
      * rendered frame.
      */
     public endFrame(): void {
@@ -1012,7 +1029,7 @@ export class PointerInput {
      * Returns the canvas's bounding client rect, reusing {@link cachedRect}
      * unless {@link isRectDirty} demands a fresh `getBoundingClientRect()`
      * read. This is what keeps a burst of pointer events (a high-poll-rate
-     * mouse firing `pointermove` at 500-1000 Hz) from each forcing a
+     * mouse firing `pointermove` at 500–1000 Hz) from each forcing a
      * synchronous style/layout flush.
      *
      * @returns The current canvas rect, or `null` when not attached.

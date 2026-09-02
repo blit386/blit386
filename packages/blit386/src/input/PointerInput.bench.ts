@@ -4,7 +4,7 @@
  * Tier 1 CPU benchmarks for {@link PointerInput}'s pointer-event hot path.
  *
  * `handleMove` (routed from a `pointermove` listener) is the highest-frequency entry point in this
- * class – a high-poll-rate mouse can fire it at 500-1000 Hz, well above the 60-144 Hz a frame
+ * class – a high-poll-rate mouse can fire it at 500–1000 Hz, well above the 60–144 Hz a frame
  * budget assumes. `updateSlotPosition` used to call `canvas.getBoundingClientRect()` on every one
  * of those events; this benchmark's realistic-burst case simulates a frame's worth of such events
  * to keep that per-event rect read from silently coming back.
