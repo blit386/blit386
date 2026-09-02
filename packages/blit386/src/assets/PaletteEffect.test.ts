@@ -487,7 +487,7 @@ describe('FadeEffect', () => {
         const effect = new FadeEffect(source, target, 1000);
         const markDirtySpy = vi.spyOn(source, 'markDirty');
 
-        // This single call both lands on the target and completes the fade -- the
+        // This single call both lands on the target and completes the fade – the
         // final colors must still be flagged for upload.
         expect(effect.update(source, 1000)).toBe(false);
         expect(markDirtySpy).toHaveBeenCalledTimes(1);
@@ -609,13 +609,13 @@ describe('FlashEffect', () => {
         const effect = new FlashEffect(new Color32(255, 0, 0), 100);
         const markDirtySpy = vi.spyOn(palette, 'markDirty');
 
-        effect.update(palette, 0); // Apply -- mutates.
+        effect.update(palette, 0); // Apply – mutates.
         expect(markDirtySpy).toHaveBeenCalledTimes(1);
 
-        effect.update(palette, 50); // Holding -- no change.
+        effect.update(palette, 50); // Holding – no change.
         expect(markDirtySpy).toHaveBeenCalledTimes(1);
 
-        effect.update(palette, 50); // Restore -- mutates, also completes.
+        effect.update(palette, 50); // Restore – mutates, also completes.
         expect(markDirtySpy).toHaveBeenCalledTimes(2);
 
         markDirtySpy.mockRestore();
