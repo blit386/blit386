@@ -1,11 +1,11 @@
 /**
  * Benchmarks for {@link GamepadInput} per-frame polling and query throughput.
  *
- * Every public query (`isButtonDown`, `isButtonPressed`, `isButtonReleased`, `getAxis`, `isConnected`,
- * `connectedCount`) re-invokes the private `poll()` before reading state, and `poll()` re-derives the button
- * bitmask and allocates a fresh six-element axes tuple per connected player on every call. A typical frame issues
- * several such queries, so the realistic-mix benchmark below captures the cumulative cost of that re-polling and
- * allocation pattern, not just a single call.
+ * `navigator.getGamepads()` is polled exactly once per frame, inside `endFrame()`. Public queries
+ * (`isButtonDown`, `isButtonPressed`, `isButtonReleased`, `getAxis`, `isConnected`, `connectedCount`) read
+ * the cached snapshot from that single poll and never trigger one themselves; axis tuples are preallocated
+ * and written in place rather than reallocated per poll. The realistic-mix benchmark below is what regresses
+ * if either guarantee breaks (a query starts polling again, or an axes array starts reallocating).
  */
 import { bench, describe, vi } from 'vitest';
 
@@ -90,9 +90,9 @@ describe('GamepadInput per-frame query mix', () => {
     );
 });
 
-describe('GamepadInput.poll', () => {
+describe('GamepadInput.isConnected', () => {
     bench(
-        'poll via isConnected',
+        'isConnected (cached read)',
         () => {
             input.isConnected(0);
         },

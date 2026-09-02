@@ -63,6 +63,7 @@ describe('GamepadInput', () => {
     it('tracks connected gamepads and counts connected players', () => {
         pads[0] = makeGamepad({ isConnected: true });
         pads[1] = makeGamepad({ isConnected: true });
+        input.endFrame(1);
 
         expect(input.isConnected(0)).toBe(true);
         expect(input.isConnected(1)).toBe(true);
@@ -72,22 +73,25 @@ describe('GamepadInput', () => {
 
     it('reports down/pressed/released edges across endFrame', () => {
         pads[0] = makeGamepad({ pressed: [0] });
+        input.endFrame(9); // roll(prev=disconnected); poll(current=pressed)
 
         expect(input.isButtonDown(BT.BTN_A, 0)).toBe(true);
         expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 10)).toBe(true);
         expect(input.isButtonReleased(BT.BTN_A, 0)).toBe(false);
 
-        input.endFrame(10);
+        input.endFrame(10); // roll(prev=current=pressed); poll(current still pressed)
 
         expect(input.isButtonPressed(BT.BTN_A, 0, undefined, 11)).toBe(false);
 
         pads[0] = makeGamepad({ pressed: [] });
+        input.endFrame(11); // roll(prev=current=pressed); poll(current=released)
 
         expect(input.isButtonReleased(BT.BTN_A, 0)).toBe(true);
     });
 
     it('supports repeat behavior for held buttons', () => {
         pads[0] = makeGamepad({ pressed: [0] });
+        input.endFrame(0); // roll(prev=disconnected); poll(current=pressed)
 
         expect(input.isButtonPressed(BT.BTN_A, 0, 3, 5)).toBe(true);
         input.endFrame(5);
@@ -98,12 +102,14 @@ describe('GamepadInput', () => {
 
     it('uses ANY semantics for bitmasks', () => {
         pads[0] = makeGamepad({ pressed: [0] });
+        input.endFrame(1);
         expect(input.isButtonDown(BT.BTN_A | BT.BTN_B, 0)).toBe(true);
         expect(input.isButtonDown(BT.BTN_B, 0)).toBe(false);
     });
 
     it('maps dpad buttons to direction flags', () => {
         pads[0] = makeGamepad({ pressed: [12] });
+        input.endFrame(1);
         expect(input.isButtonDown(BT.BTN_UP, 0)).toBe(true);
     });
 
@@ -112,10 +118,12 @@ describe('GamepadInput', () => {
             axes: [0.7, 0, 0, 0],
             buttons: [0, 0, 0, 0, 0, 0, 0.25],
         });
+        input.endFrame(1);
         expect(input.getAxis(BT.AXIS_LEFT_X, 0)).toBe(0);
         expect(input.getAxis(BT.AXIS_TRIGGER_L, 0)).toBe(0.25);
 
         input.setDeadZone(0.2);
+        input.endFrame(2); // dead-zone changes only take effect on the next poll
         expect(input.getAxis(BT.AXIS_LEFT_X, 0)).toBeGreaterThan(0);
     });
 
@@ -129,9 +137,29 @@ describe('GamepadInput', () => {
 
     it('treats disconnect as release for previously held buttons', () => {
         pads[0] = makeGamepad({ pressed: [0, 1] });
-        input.endFrame(1);
+        input.endFrame(1); // roll(prev=disconnected); poll(current=pressed, connected)
+        input.endFrame(2); // roll(prev=current=pressed, connected); poll(current unchanged)
 
         pads[0] = null;
+        input.endFrame(3); // roll(prev=current=pressed, connected); poll(current=disconnected)
         expect(input.isButtonReleased(BT.BTN_A | BT.BTN_B, 0)).toBe(true);
+    });
+
+    it('polls navigator.getGamepads at most once per frame regardless of query count', () => {
+        pads[0] = makeGamepad({ pressed: [0] });
+        input.endFrame(1);
+
+        const getGamepadsSpy = vi.mocked(globalThis.navigator.getGamepads);
+        getGamepadsSpy.mockClear();
+
+        input.isButtonDown(BT.BTN_A, 0);
+        input.isButtonDown(BT.BTN_B, 0);
+        input.getAxis(BT.AXIS_LEFT_X, 0);
+        input.isConnected(0);
+        input.connectedCount();
+        expect(getGamepadsSpy).not.toHaveBeenCalled();
+
+        input.endFrame(2);
+        expect(getGamepadsSpy).toHaveBeenCalledTimes(1);
     });
 });
