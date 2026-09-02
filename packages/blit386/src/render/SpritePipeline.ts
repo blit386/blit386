@@ -89,6 +89,9 @@ export class SpritePipeline {
     /** Pre-allocated vector for sprite size in drawSprite. */
     private readonly tempSize: Vector2i = new Vector2i(0, 0);
 
+    /** Pre-allocated UV scratch object for drawSprite, written by SpriteSheet.getUVsTo. */
+    private readonly tempUV: { u0: number; v0: number; u1: number; v1: number } = { u0: 0, v0: 0, u1: 0, v1: 0 };
+
     /**
      * Creates an empty sprite pipeline.
      * Call `init()` before encoding GPU work.
@@ -138,7 +141,9 @@ export class SpritePipeline {
      */
     drawSprite(spriteSheet: SpriteSheet, srcRect: Rect2i, destPos: Vector2i, paletteOffset: number = 0): void {
         const texture = spriteSheet.getTexture(this.device as GPUDevice);
-        const uvs = spriteSheet.getUVs(srcRect);
+
+        // Use a pre-allocated object for UVs to avoid allocation.
+        const uvs = spriteSheet.getUVsTo(srcRect, this.tempUV);
 
         // Use a pre-allocated vector for size to avoid allocation.
         this.tempSize.set(srcRect.width, srcRect.height);

@@ -2,8 +2,8 @@
  * Tier 1 CPU benchmarks for {@link SpritePipeline}'s vertex batch filling.
  *
  * Measures the CPU-side cost of queuing sprite and bitmap-text draws – `drawSprite()` and
- * `drawBitmapText()` both resolve a texture, compute UVs via `SpriteSheet.getUVs()` (a known
- * per-quad object allocation), and append vertices into the shared batch buffer:
+ * `drawBitmapText()` both resolve a texture, compute UVs via `SpriteSheet.getUVsTo()` (zero-alloc,
+ * writing into a pipeline-owned scratch object), and append vertices into the shared batch buffer:
  * - `drawSprite()` throughput for a run of same-texture quads
  * - `drawBitmapText()` throughput for a realistic string length
  * - `reset()` cost against a fully populated batch

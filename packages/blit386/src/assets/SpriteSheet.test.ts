@@ -80,6 +80,29 @@ describe('SpriteSheet', () => {
         });
     });
 
+    describe('getUVsTo', () => {
+        it('should write UVs into the given object and return it', () => {
+            const sheet = new SpriteSheet(mockImage);
+            const out = { u0: -1, v0: -1, u1: -1, v1: -1 };
+            const result = sheet.getUVsTo(new Rect2i(64, 32, 16, 16), out);
+
+            expect(result).toBe(out);
+            expect(out.u0).toBe(64 / 256);
+            expect(out.v0).toBe(32 / 256);
+            expect(out.u1).toBe(80 / 256);
+            expect(out.v1).toBe(48 / 256);
+        });
+
+        it('should match getUVs for the same rect', () => {
+            const sheet = new SpriteSheet(mockImage);
+            const rect = new Rect2i(64, 32, 16, 16);
+            const expected = sheet.getUVs(rect);
+            const out = sheet.getUVsTo(rect, { u0: 0, v0: 0, u1: 0, v1: 0 });
+
+            expect(out).toEqual(expected);
+        });
+    });
+
     describe('size', () => {
         it('should reflect the image dimensions', () => {
             const sheet = new SpriteSheet(mockImage);

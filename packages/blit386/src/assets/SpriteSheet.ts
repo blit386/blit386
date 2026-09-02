@@ -29,6 +29,9 @@ const TEXTURE_LAYER_COUNT = 1;
  */
 type SpriteSheetStatus = 'loading' | 'ready' | 'failed';
 
+/** Normalized UV coordinates (0.0-1.0) of a sprite region: top-left (u0, v0) to bottom-right (u1, v1). */
+type SpriteUV = { u0: number; v0: number; u1: number; v1: number };
+
 /**
  * Dev-only registry of live sprite sheets keyed by normalized source URL, so
  * `HotRuntime.handleAssetChanged` can find and hot-replace every sheet loaded
@@ -873,13 +876,25 @@ export class SpriteSheet {
      * @param rect – Source rectangle in pixel coordinates.
      * @returns Object with u0, v0 (top-left) and u1, v1 (bottom-right) UV coordinates.
      */
-    getUVs(rect: Rect2i): { u0: number; v0: number; u1: number; v1: number } {
-        return {
-            u0: rect.x / this.size.x,
-            v0: rect.y / this.size.y,
-            u1: (rect.x + rect.width) / this.size.x,
-            v1: (rect.y + rect.height) / this.size.y,
-        };
+    getUVs(rect: Rect2i): SpriteUV {
+        return this.getUVsTo(rect, { u0: 0, v0: 0, u1: 0, v1: 0 });
+    }
+
+    /**
+     * Calculates normalized UV coordinates for a sprite region into a caller-owned object.
+     * Zero-allocation variant of {@link getUVs} for per-draw hot paths.
+     *
+     * @param rect – Source rectangle in pixel coordinates.
+     * @param out – Object to write the u0, v0, u1, v1 UV coordinates into.
+     * @returns `out`, for chaining.
+     */
+    getUVsTo(rect: Rect2i, out: SpriteUV): SpriteUV {
+        out.u0 = rect.x / this.size.x;
+        out.v0 = rect.y / this.size.y;
+        out.u1 = (rect.x + rect.width) / this.size.x;
+        out.v1 = (rect.y + rect.height) / this.size.y;
+
+        return out;
     }
 
     /**

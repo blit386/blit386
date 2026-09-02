@@ -395,6 +395,17 @@ describe('with initialized renderer', () => {
         const mockSheet = {
             getTexture: () => mockTexture,
             getUVs: () => ({ u0: 0, v0: 0, u1: 1, v1: 1 }),
+            getUVsTo: (
+                _rect: Rect2i,
+                out: { u0: number; v0: number; u1: number; v1: number },
+            ): { u0: number; v0: number; u1: number; v1: number } => {
+                out.u0 = 0;
+                out.v0 = 0;
+                out.u1 = 1;
+                out.v1 = 1;
+
+                return out;
+            },
         } as unknown as SpriteSheet;
 
         expect(() => {
