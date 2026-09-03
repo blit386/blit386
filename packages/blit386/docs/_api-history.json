@@ -1,6 +1,6 @@
 {
   "packageVersion": "1.6.0",
-  "unreleasedVersion": "1.6.1",
+  "unreleasedVersion": "1.7.0",
   "versions": {
     "0.1.0": "2025-12-13T11:02:41+01:00",
     "0.2.0": "2025-12-22T16:19:15+01:00",
@@ -14,7 +14,6 @@
     "1.4.0": "2026-07-23T12:32:13+02:00",
     "1.5.0": "2026-08-11T06:51:18+02:00",
     "1.6.0": "2026-09-01T11:41:10+02:00",
-    "1.6.1": null,
     "1.7.0": null
   },
   "symbols": {
@@ -802,12 +801,26 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.pointerDeltaTo": {
+      "kind": "method",
+      "since": "1.7.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.pointerPos": {
       "kind": "method",
       "since": "1.0.3",
       "changes": [],
       "deprecated": null,
       "status": "stable"
+    },
+    "BT.pointerPosTo": {
+      "kind": "method",
+      "since": "1.7.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
     },
     "BT.pointerPosValid": {
       "kind": "method",
@@ -1776,7 +1789,9 @@
       "BT.isPressed",
       "BT.isReleased",
       "BT.pointerDelta",
+      "BT.pointerDeltaTo",
       "BT.pointerPos",
+      "BT.pointerPosTo",
       "BT.pointerScrollDelta",
       "BT.showCursor"
     ],

@@ -54,6 +54,8 @@ frame; calling methods on `BT.random` advances the shared stream.
 - Drawing / clearing: `clear`, `clearRect`, `drawPixel`, `drawLine`, `drawRect`, `drawRectFill`, `drawSprite`,
   `systemPrint`, `systemPrintMeasure`, `printFont` (4th arg is optional `paletteOffset`, not `Color32`)
 - Any parameter: `pointerPos(0)`, `pointerDelta(0)`, `isDown(BT.BTN_A)`, `getAxis(...)`, `cameraClamp(...)`
+- Zero-alloc out-param counterparts: `pointerPosTo(out, index?)`, `pointerDeltaTo(out, index?)` – write into the
+  caller's `Vector2i` instead of allocating; `out` comes first because the slot index has a default
 - Boolean queries with parameters (Tier A; always methods on `BT`): `isPointerActive(0)`, `isDown(...)`,
   `isPressed(...)`, `isReleased(...)`, `isGamepadConnected(...)`, `isKeyDown(...)`, `isKeyPressed(...)`,
   `isKeyReleased(...)`

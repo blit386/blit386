@@ -384,6 +384,29 @@ export class PointerInput {
     }
 
     /**
+     * Writes the position of the pointer in slot `slot`, in display coordinates, into `out`.
+     *
+     * Zero-allocation alternative to `getPos()`. Writes `(0, 0)` into `out` when the slot index is
+     * out of `[0, POINTER_SLOT_COUNT - 1]`.
+     *
+     * @param slot – Pointer slot index (0 = mouse, 1-3 = touch / pen).
+     * @param out – Vector to write the pointer position into.
+     * @returns The `out` vector, for chaining.
+     */
+    public getPosTo(slot: number, out: Vector2i): Vector2i {
+        const s = this.getSlotOrNull(slot);
+
+        if (s === null) {
+            out.x = 0;
+            out.y = 0;
+
+            return out;
+        }
+
+        return s.pos.cloneTo(out);
+    }
+
+    /**
      * Returns the position delta `(pos - prevPos)` for slot `slot` since the last `endFrame()`.
      *
      * Returns `Vector2i.zero()` when the slot index is out of range.
@@ -399,6 +422,33 @@ export class PointerInput {
         }
 
         return new Vector2iImpl(s.pos.x - s.prevPos.x, s.pos.y - s.prevPos.y);
+    }
+
+    /**
+     * Writes the position delta `(pos - prevPos)` for slot `slot` since the last `endFrame()` into
+     * `out`.
+     *
+     * Zero-allocation alternative to `getDelta()`. Writes `(0, 0)` into `out` when the slot index
+     * is out of range.
+     *
+     * @param slot – Pointer slot index.
+     * @param out – Vector to write the delta into.
+     * @returns The `out` vector, for chaining.
+     */
+    public getDeltaTo(slot: number, out: Vector2i): Vector2i {
+        const s = this.getSlotOrNull(slot);
+
+        if (s === null) {
+            out.x = 0;
+            out.y = 0;
+
+            return out;
+        }
+
+        out.x = s.pos.x - s.prevPos.x;
+        out.y = s.pos.y - s.prevPos.y;
+
+        return out;
     }
 
     /**

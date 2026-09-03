@@ -76,6 +76,31 @@ if (BT.isPointerActive(1)) {
 
 <DemoEmbed demo="025-pointer-basics" title="BLIT386 pointer basics demo" />
 
+### Zero-allocation reads
+
+<Since symbol="BT.pointerPosTo" />
+<Since symbol="BT.pointerDeltaTo" />
+
+`BT.pointerPos()` and `BT.pointerDelta()` allocate a new `Vector2i` on every call. A demo reading pointer position or
+delta more than once per frame should reuse a scratch vector with the `*To(out)` counterparts instead:
+
+```ts twoslash
+import { BT, Vector2i } from 'blit386';
+
+// Allocate scratch vectors once, outside update()/render().
+const posScratch = new Vector2i();
+const deltaScratch = new Vector2i();
+// ---cut---
+BT.pointerPosTo(posScratch); // slot 0 (mouse)
+BT.pointerDeltaTo(deltaScratch); // slot 0 (mouse)
+
+// Same slot argument as pointerPos()/pointerDelta(), now trailing the out param.
+BT.pointerPosTo(posScratch, 1); // slot 1 (first touch)
+```
+
+Both write `(0, 0)` into `out` under the same conditions `pointerPos()`/`pointerDelta()` return `Vector2i.zero()` for
+(invalid slot, engine not initialized), and return `out` itself so the call can be chained.
+
 ## Buttons
 
 <Since symbol="BT.isDown" />

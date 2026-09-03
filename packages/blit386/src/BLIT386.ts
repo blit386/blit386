@@ -1583,6 +1583,31 @@ export const BT = {
     },
 
     /**
+     * Writes the position of the pointer in the given slot, in display coordinates, into `out`.
+     *
+     * Zero-allocation counterpart to {@link pointerPos}. Slot 0 is the mouse; slots 1 through 3 are
+     * touch / pen contacts assigned in arrival order. Writes `(0, 0)` into `out` when the engine has
+     * not been initialized, the slot index is out of `[0, 3]`, or the slot has no live pointer.
+     *
+     * @since 1.7.0
+     * @param out – Vector2i to write the pointer position into.
+     * @param pointerIndex – Pointer slot (defaults to 0 = mouse).
+     * @returns The `out` vector, for chaining.
+     */
+    pointerPosTo: (out: Vector2i, pointerIndex: number = 0): Vector2i => {
+        const pointer = BTAPI.instance.getPointer();
+
+        if (!pointer) {
+            out.x = 0;
+            out.y = 0;
+
+            return out;
+        }
+
+        return pointer.getPosTo(pointerIndex, out);
+    },
+
+    /**
      * Returns the position delta `(pos - prevPos)` for a pointer slot since the previous frame.
      *
      * Reflects movement accumulated between the previous and current frame.
@@ -1596,6 +1621,33 @@ export const BT = {
      */
     pointerDelta: (pointerIndex: number = 0): Vector2i => {
         return BTAPI.instance.getPointer()?.getDelta(pointerIndex) ?? Vector2i.zero();
+    },
+
+    /**
+     * Writes the position delta `(pos - prevPos)` for a pointer slot since the previous frame into
+     * `out`.
+     *
+     * Zero-allocation counterpart to {@link pointerDelta}. Reflects movement accumulated between
+     * the previous and current frame. Snapshotted and reset by the engine at `endFrame()`, which
+     * runs after `update()` and `render()`. Writes `(0, 0)` into `out` when the engine is not
+     * initialized or `pointerIndex` is out of range.
+     *
+     * @since 1.7.0
+     * @param out – Vector2i to write the per-frame movement into.
+     * @param pointerIndex – Pointer slot (defaults to 0 = mouse).
+     * @returns The `out` vector, for chaining.
+     */
+    pointerDeltaTo: (out: Vector2i, pointerIndex: number = 0): Vector2i => {
+        const pointer = BTAPI.instance.getPointer();
+
+        if (!pointer) {
+            out.x = 0;
+            out.y = 0;
+
+            return out;
+        }
+
+        return pointer.getDeltaTo(pointerIndex, out);
     },
 
     /**

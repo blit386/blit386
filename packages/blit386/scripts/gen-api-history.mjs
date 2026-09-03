@@ -45,7 +45,7 @@ const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
  * (it is not yet tagged), so it is a maintained constant: bump it by hand in the same commit
  * that bumps `package.json` `version` after a release ships.
  */
-const UNRELEASED_VERSION = '1.6.1';
+const UNRELEASED_VERSION = '1.7.0';
 
 /** Compiler options used when no real tsconfig is supplied (fixture / unit-test programs). */
 export const DEFAULT_TEST_COMPILER_OPTIONS = {

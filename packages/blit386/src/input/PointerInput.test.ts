@@ -667,6 +667,40 @@ describe('PointerInput', () => {
         });
     });
 
+    describe('zero-alloc pointer accessors', () => {
+        it('getPosTo fills out with the same values getPos returns, and returns out itself', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+
+            const expected = input.getPos(0);
+            const out = new Vector2i(0, 0);
+            const result = input.getPosTo(0, out);
+
+            expect(out.x).toBe(expected.x);
+            expect(out.y).toBe(expected.y);
+            expect(result).toBe(out);
+        });
+
+        it('getDeltaTo fills out with the same values getDelta returns, and returns out itself', () => {
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 170, clientY: 140 }),
+            );
+            input.endFrame();
+            canvas.dispatchEvent(
+                pointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', clientX: 186, clientY: 156 }),
+            );
+
+            const expected = input.getDelta(0);
+            const out = new Vector2i(0, 0);
+            const result = input.getDeltaTo(0, out);
+
+            expect(out.x).toBe(expected.x);
+            expect(out.y).toBe(expected.y);
+            expect(result).toBe(out);
+        });
+    });
+
     // The lifecycle model: each rAF tick is "events arrive (between ticks) ->
     // update / render read state -> endFrame snapshots current as prev". The
     // tests simulate one tick by dispatching events (the inter-frame window),
@@ -1240,11 +1274,20 @@ describe('PointerInput', () => {
         it.each([-1, POINTER_SLOT_COUNT, 99, 1.5, Number.NaN])('returns safe defaults for slot %s', (slot) => {
             const pos = input.getPos(slot);
             const delta = input.getDelta(slot);
+            const posOut = new Vector2i(9, 9);
+            const deltaOut = new Vector2i(9, 9);
+
+            input.getPosTo(slot, posOut);
+            input.getDeltaTo(slot, deltaOut);
 
             expect(pos.x).toBe(0);
             expect(pos.y).toBe(0);
             expect(delta.x).toBe(0);
             expect(delta.y).toBe(0);
+            expect(posOut.x).toBe(0);
+            expect(posOut.y).toBe(0);
+            expect(deltaOut.x).toBe(0);
+            expect(deltaOut.y).toBe(0);
             expect(input.isButtonDown(BTN_POINTER_A, slot)).toBe(false);
             expect(input.isButtonPressed(BTN_POINTER_A, slot)).toBe(false);
             expect(input.isButtonReleased(BTN_POINTER_A, slot)).toBe(false);
