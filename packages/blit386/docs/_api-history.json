@@ -1837,6 +1837,9 @@
       "RollLine",
       "Scanlines",
       "Vignette"
+    ],
+    "guides/splash": [
+      "BT.isReducedMotionPreferred"
     ]
   }
 }

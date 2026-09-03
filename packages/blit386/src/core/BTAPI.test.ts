@@ -3071,6 +3071,34 @@ describe('BTAPI splash palette capture', () => {
         expect(live?.get(1).r).toBe(0);
     });
 
+    it('installs the captured palette immediately when reduced motion is preferred', () => {
+        armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
+
+        const gamePalette = new Palette(16);
+        gamePalette.set(1, Color32.white);
+
+        BTAPI.instance.setPalette(gamePalette);
+        BTAPI.instance.endPaletteCapture(true);
+
+        const live = renderPalette();
+
+        expect(live).toBe(gamePalette);
+        expect(live?.get(1).r).toBe(255);
+        expect(activeEffectCount()).toBe(0);
+    });
+
+    it('snaps the splash palette to black immediately when the game never set one and reduced motion is preferred', () => {
+        const splashPalette = new Palette(RAMP_PALETTE_SIZE);
+        splashPalette.set(16, Color32.white);
+
+        armWithSplashPalette(splashPalette);
+
+        BTAPI.instance.endPaletteCapture(true);
+
+        expect(splashPalette.get(16).r).toBe(0);
+        expect(activeEffectCount()).toBe(0);
+    });
+
     it('lands exactly on the captured colors once the handoff fade completes', () => {
         armWithSplashPalette(new Palette(RAMP_PALETTE_SIZE));
 
@@ -3433,5 +3461,55 @@ describe('BTAPI splash lifecycle in init', () => {
         await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
 
         expect(endUpdate).toHaveBeenCalled();
+    });
+
+    describe('reduced motion', () => {
+        function installMockMatchMedia(matches: boolean): void {
+            Object.defineProperty(globalThis, 'matchMedia', {
+                configurable: true,
+                value: vi.fn(() => ({ matches, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+            });
+        }
+
+        afterEach(() => {
+            Reflect.deleteProperty(globalThis, 'matchMedia');
+        });
+
+        it('installs the game palette with no animated handoff', async () => {
+            installMockMatchMedia(true);
+
+            const gamePalette = new Palette(16);
+            gamePalette.set(1, Color32.white);
+
+            await BTAPI.instance.init(
+                makeSplashDemo({ isSplashEnabled: true }, () => {
+                    BTAPI.instance.setPalette(gamePalette);
+                }),
+                makeMockCanvas(),
+            );
+
+            expect(renderPalette()).toBe(gamePalette);
+            expect(gamePalette.get(1).r).toBe(255);
+        });
+
+        it('skips the WebGPU dissolve', async () => {
+            installMockMatchMedia(true);
+
+            const enableDissolveSpy = vi.spyOn(Splash.prototype, 'enableDissolve');
+
+            await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+            expect(enableDissolveSpy).not.toHaveBeenCalled();
+        });
+
+        it('still runs the WebGPU dissolve when reduced motion is not preferred', async () => {
+            installMockMatchMedia(false);
+
+            const enableDissolveSpy = vi.spyOn(Splash.prototype, 'enableDissolve');
+
+            await BTAPI.instance.init(makeSplashDemo({ isSplashEnabled: true }), makeMockCanvas());
+
+            expect(enableDissolveSpy).toHaveBeenCalled();
+        });
     });
 });

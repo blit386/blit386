@@ -1148,8 +1148,11 @@ export class BTAPI {
      *
      * Palette effects started during capture are dropped: they hold snapshots of a
      * palette that is about to be replaced wholesale.
+     *
+     * @param reducedMotion – When `true`, skips the exposure fade entirely and installs the
+     *   target colors immediately – no intermediate blackened state, no animation.
      */
-    public endPaletteCapture(): void {
+    public endPaletteCapture(reducedMotion: boolean = false): void {
         const captured = this.pendingPalette;
 
         this.isCapturingPalette = false;
@@ -1160,8 +1163,19 @@ export class BTAPI {
 
             if (current) {
                 this.paletteEffects.clear();
-                this.paletteEffects.add(new ExposureFadeEffect(current, createBlackened(current), HANDOFF_FADE_MS));
+
+                if (reducedMotion) {
+                    current.copyFrom(createBlackened(current));
+                } else {
+                    this.paletteEffects.add(new ExposureFadeEffect(current, createBlackened(current), HANDOFF_FADE_MS));
+                }
             }
+
+            return;
+        }
+
+        if (reducedMotion) {
+            this.installPalette(captured);
 
             return;
         }
@@ -2256,17 +2270,21 @@ export class BTAPI {
      * @returns Whatever the demo's `init()` resolved to.
      */
     private async runDemoInitBehindSplash(demo: IBTDemo, splash: Splash, displaySize: Vector2i): Promise<boolean> {
+        const reducedMotion = ReducedMotion.isPreferred;
+
         // Install it as the active palette, not just on the renderer: endPaletteCapture()
         // reads this.palette to fade the splash down when the game never sets one of its
         // own, and the two must not disagree while the splash is the thing on screen.
         this.installPalette(splash.palette);
         this.beginPaletteCapture();
         splash.attachSkipInput(globalThis);
-        splash.start();
+        splash.start(reducedMotion);
 
         // Gate on activeBackend, not requestedBackend: this is a runtime feature
-        // gate, and the software renderer throws on post-process.
-        if (this.activeBackend === 'webgpu') {
+        // gate, and the software renderer throws on post-process. Reduced motion skips the
+        // dissolve entirely – it is a simulated glitch effect, exactly the category of motion
+        // the preference exists to suppress.
+        if (this.activeBackend === 'webgpu' && !reducedMotion) {
             splash.enableDissolve();
 
             const dissolve = splash.dissolveEffect;
@@ -2308,7 +2326,7 @@ export class BTAPI {
                 this.effectRemove(dissolve);
             }
 
-            this.endPaletteCapture();
+            this.endPaletteCapture(reducedMotion);
             this.drainInputEdges();
         }
     }
