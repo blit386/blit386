@@ -468,7 +468,14 @@ export class PaletteInteraction {
 
     #tooltipLabel = '';
 
-    #tooltipLabelKey = '';
+    /** Hovered-index watermark backing the cached tooltip label; `undefined` forces the first resolve. */
+    #tooltipLabelHoveredIndex: number | null | undefined = undefined;
+
+    /** Copy-status watermark backing the cached tooltip label. */
+    #tooltipLabelCopyStatus: CopyStatus | undefined = undefined;
+
+    /** Copy-status-index watermark backing the cached tooltip label. */
+    #tooltipLabelCopyStatusIndex = Number.NaN;
 
     #scrollRowOffset = 0;
 
@@ -600,7 +607,6 @@ export class PaletteInteraction {
             this.#copyStatus = 'idle';
             this.#copyStatusIndex = -1;
             this.#copyStatusExpiryTick = -1;
-            this.#tooltipLabelKey = '';
         }
     }
 
@@ -958,11 +964,13 @@ export class PaletteInteraction {
         this.#copyStatus = status;
         this.#copyStatusIndex = index;
         this.#copyStatusExpiryTick = completionTick + Math.ceil(PALETTE_COPY_STATUS_SECONDS * this.#targetFps);
-        this.#tooltipLabelKey = '';
     }
 
     /**
      * Returns the tooltip label for hover or copy status, caching the last resolved string.
+     *
+     * Compares the three scalar fields the label is derived from directly, instead of building
+     * a template-string cache key every call.
      *
      * @returns Tooltip label for the current hover or copy status.
      */
@@ -979,10 +987,14 @@ export class PaletteInteraction {
             label = '';
         }
 
-        const key = `${this.#hoveredIndex}:${this.#copyStatus}:${this.#copyStatusIndex}`;
-
-        if (key !== this.#tooltipLabelKey) {
-            this.#tooltipLabelKey = key;
+        if (
+            this.#hoveredIndex !== this.#tooltipLabelHoveredIndex ||
+            this.#copyStatus !== this.#tooltipLabelCopyStatus ||
+            this.#copyStatusIndex !== this.#tooltipLabelCopyStatusIndex
+        ) {
+            this.#tooltipLabelHoveredIndex = this.#hoveredIndex;
+            this.#tooltipLabelCopyStatus = this.#copyStatus;
+            this.#tooltipLabelCopyStatusIndex = this.#copyStatusIndex;
             this.#tooltipLabel = label;
         }
 

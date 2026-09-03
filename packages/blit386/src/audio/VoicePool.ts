@@ -403,7 +403,15 @@ export class VoicePool {
      * @returns Active voice count, in `[0, getVoiceCount()]`.
      */
     public getActiveVoiceCount(): number {
-        return this.slots.filter((slot) => slot.isActive).length;
+        let count = 0;
+
+        for (const slot of this.slots) {
+            if (slot.isActive) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     /**

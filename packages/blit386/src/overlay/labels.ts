@@ -108,20 +108,21 @@ export function drawOverlayLabelWithDividers(
         return;
     }
 
-    const segments = text.split('|');
     let segmentX = pos.x;
+    let segmentStart = 0;
 
     segmentScratch.y = pos.y;
 
-    for (let index = 0; index < segments.length; index++) {
-        // eslint-disable-next-line security/detect-object-injection -- index bounded by segments.length
-        const segment = segments[index] ?? '';
+    for (;;) {
+        const separatorIndex = text.indexOf('|', segmentStart);
+        const isLastSegment = separatorIndex === -1;
+        const segment = isLastSegment ? text.slice(segmentStart) : text.slice(segmentStart, separatorIndex);
 
         segmentScratch.x = segmentX;
 
         target.drawLabel(font, segmentScratch, segment, textPaletteOffset);
 
-        if (index === segments.length - 1) {
+        if (isLastSegment) {
             break;
         }
 
@@ -132,6 +133,7 @@ export function drawOverlayLabelWithDividers(
         target.drawBarFill(dividerScratch, gapIndex);
 
         segmentX = segmentEnd + SEGMENT_SEPARATOR_ADVANCE_PX;
+        segmentStart = separatorIndex + 1;
     }
 }
 

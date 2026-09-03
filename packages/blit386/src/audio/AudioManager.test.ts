@@ -468,6 +468,15 @@ describe('AudioManager', () => {
 
             expect(firstBuffer).toBe(secondBuffer);
         });
+
+        it('returns the same reusable snapshot object across calls instead of allocating fresh ones', () => {
+            audio.attach(canvas);
+
+            const first = audio.getBusLevels();
+            const second = audio.getBusLevels();
+
+            expect(first).toBe(second);
+        });
     });
 
     describe('unlock state machine', () => {

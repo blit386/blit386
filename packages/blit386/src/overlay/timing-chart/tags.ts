@@ -36,6 +36,58 @@ export type TimingChartTagColumnGroup = {
 };
 
 /**
+ * Reusable scratch pool for {@link groupTimingChartTagsByColumn}, one per {@link TimingChart}
+ * instance. `groups`' capacity only grows across calls, never shrinks – only the first
+ * `groupCount` entries are live for the most recent call. Consumers must iterate
+ * `groups[0..groupCount)`, not `groups` itself, so a frame with fewer tag columns than a
+ * previous one does not discard the descriptors a later, busier frame would otherwise have to
+ * reallocate.
+ */
+export interface TimingChartTagGroupScratch {
+    /** Pooled group descriptors; capacity only grows. */
+    readonly groups: TimingChartTagColumnGroup[];
+
+    /** Live prefix length of {@link groups} from the most recent call. */
+    groupCount: number;
+}
+
+/**
+ * Creates an empty scratch pool for {@link groupTimingChartTagsByColumn}.
+ *
+ * @returns Scratch pool with no pooled groups yet.
+ */
+export function createTimingChartTagGroupScratch(): TimingChartTagGroupScratch {
+    return { groups: [], groupCount: 0 };
+}
+
+/**
+ * Returns the pooled group descriptor at `index`, growing the pool and resetting the
+ * descriptor's tag list as needed.
+ *
+ * @param scratch – Scratch pool.
+ * @param index – Zero-based group index for this call.
+ * @param sampleIndex – Column sample index for this group.
+ * @returns Reset, reused group descriptor.
+ */
+function acquireTagGroup(
+    scratch: TimingChartTagGroupScratch,
+    index: number,
+    sampleIndex: number,
+): TimingChartTagColumnGroup {
+    while (scratch.groups.length <= index) {
+        scratch.groups.push({ sampleIndex: 0, tags: [] });
+    }
+
+    // eslint-disable-next-line security/detect-object-injection -- index bounded by the while loop above
+    const group = scratch.groups[index] as TimingChartTagColumnGroup;
+
+    group.sampleIndex = sampleIndex;
+    group.tags.length = 0;
+
+    return group;
+}
+
+/**
  * Normalizes a tag label; empty or missing labels become `"Untitled"`.
  *
  * @param label – Caller-provided label.
@@ -164,46 +216,51 @@ export function computeTimingChartTagLabelY(chartTopY: number, stackIndex: numbe
 /**
  * Groups on-screen tags by sample column for stacked drawing.
  *
+ * Relies on {@link TimingChartTag.sampleIndex} being non-decreasing across `tags` (tags are
+ * pushed in assignment order and `sampleIndex` is the monotonic sample counter at assign time,
+ * and pruning preserves relative order), so tags sharing a column are always contiguous – a
+ * single run-length pass over pooled group descriptors replaces the previous per-call
+ * `Map`/array allocations.
+ *
  * @param tags – Active tags for the current frame.
  * @param totalSamples – Timing samples recorded since the last chart width reset.
  * @param chartWidth – Chart width in pixels.
- * @returns Groups in first-seen column order.
+ * @param scratch – Reusable group pool from {@link createTimingChartTagGroupScratch}, mutated in
+ * place: `scratch.groups[0..scratch.groupCount)` holds this call's groups in first-seen column
+ * order, live only until the next call with `scratch`.
+ * @returns The same `scratch` object, for convenience at call sites that don't already hold it.
  */
 export function groupTimingChartTagsByColumn(
     tags: readonly TimingChartTag[],
     totalSamples: number,
     chartWidth: number,
-): TimingChartTagColumnGroup[] {
-    const groups = new Map<number, TimingChartTag[]>();
-    const order: number[] = [];
+    scratch: TimingChartTagGroupScratch,
+): TimingChartTagGroupScratch {
+    if (tags.length === 0) {
+        scratch.groupCount = 0;
+
+        return scratch;
+    }
+
+    let groupCount = 0;
+    let currentGroup: TimingChartTagColumnGroup | undefined;
 
     for (const tag of tags) {
         if (shouldPruneTimingChartTag(totalSamples, tag.sampleIndex, chartWidth)) {
             continue;
         }
 
-        let bucket = groups.get(tag.sampleIndex);
-
-        if (bucket === undefined) {
-            bucket = [];
-            groups.set(tag.sampleIndex, bucket);
-            order.push(tag.sampleIndex);
+        if (currentGroup === undefined || currentGroup.sampleIndex !== tag.sampleIndex) {
+            currentGroup = acquireTagGroup(scratch, groupCount, tag.sampleIndex);
+            groupCount++;
         }
 
-        bucket.push(tag);
+        currentGroup.tags.push(tag);
     }
 
-    const result: TimingChartTagColumnGroup[] = [];
+    scratch.groupCount = groupCount;
 
-    for (const sampleIndex of order) {
-        const bucket = groups.get(sampleIndex);
-
-        if (bucket !== undefined && bucket.length > 0) {
-            result.push({ sampleIndex, tags: bucket });
-        }
-    }
-
-    return result;
+    return scratch;
 }
 
 /**

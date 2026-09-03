@@ -202,6 +202,13 @@ function resolveFooterClusterTopY(scratch: OverlayLayoutPlanScratch, customRowCo
 }
 
 /**
+ * Reusable 2-element scratch tuple for the diagnostics/audio-meter walk in {@link populateGapLayout};
+ * reassigned per call instead of allocating a fresh array literal. Consumed synchronously within one
+ * call so it is safe to share across {@link OverlayLayoutPlanScratch} instances.
+ */
+const optionalTailBarsScratch: [Rect2i, Rect2i] = [new Rect2i(), new Rect2i()];
+
+/**
  * Populates row gap rects and cluster boundary separators from bar geometry.
  *
  * @param scratch – Layout scratch with bar rects already assigned.
@@ -222,7 +229,10 @@ function populateGapLayout(scratch: OverlayLayoutPlanScratch, config: OverlayLay
     let lastTopClusterBar = scratch.timingTextBar;
     let hasOptionalTailBand = false;
 
-    for (const optionalTailBar of [scratch.rendererDiagnosticsBar, scratch.audioMeterBar]) {
+    optionalTailBarsScratch[0] = scratch.rendererDiagnosticsBar;
+    optionalTailBarsScratch[1] = scratch.audioMeterBar;
+
+    for (const optionalTailBar of optionalTailBarsScratch) {
         if (optionalTailBar.height > 0) {
             gapIndex = writeRowGapBelow(scratch, lastTopClusterBar, displayWidth, gapIndex);
 

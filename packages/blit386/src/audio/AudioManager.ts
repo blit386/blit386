@@ -59,6 +59,9 @@ export class AudioManager {
     /** Reusable per-bus sample scratch buffers for {@link getBusLevels}, sized to each analyzer's `fftSize`. */
     private analyzerBuffers: PerBus<Float32Array<ArrayBuffer>> | null = null;
 
+    /** Reusable per-bus level snapshot returned (and mutated in place) by {@link getBusLevels}. */
+    private readonly busLevels: PerBus<number> = { main: 0, music: 0, sfx: 0 };
+
     /** SFX voice pool, or `null` before {@link attach} / after {@link detach}. */
     private voicePool: VoicePool | null = null;
 
@@ -623,19 +626,24 @@ export class AudioManager {
      * Returns a normalized per-bus level snapshot (RMS of the current time-domain samples, in
      * `[0, 1]`).
      *
-     * @returns Per-bus level snapshot, or all zeros when {@link enableBusMetering} was never
-     *   called or the audio context is not yet unlocked.
+     * @returns Reusable per-bus level snapshot (mutated in place on every call; copy values out
+     *   before the next call rather than retaining the returned reference), or all zeros when
+     *   {@link enableBusMetering} was never called or the audio context is not yet unlocked.
      */
     public getBusLevels(): PerBus<number> {
         if (this.analyzerNodes === null || this.analyzerBuffers === null || !this.unlocked) {
-            return { main: 0, music: 0, sfx: 0 };
+            this.busLevels.main = 0;
+            this.busLevels.music = 0;
+            this.busLevels.sfx = 0;
+
+            return this.busLevels;
         }
 
-        return {
-            main: computeBusLevel(this.analyzerNodes.main, this.analyzerBuffers.main),
-            music: computeBusLevel(this.analyzerNodes.music, this.analyzerBuffers.music),
-            sfx: computeBusLevel(this.analyzerNodes.sfx, this.analyzerBuffers.sfx),
-        };
+        this.busLevels.main = computeBusLevel(this.analyzerNodes.main, this.analyzerBuffers.main);
+        this.busLevels.music = computeBusLevel(this.analyzerNodes.music, this.analyzerBuffers.music);
+        this.busLevels.sfx = computeBusLevel(this.analyzerNodes.sfx, this.analyzerBuffers.sfx);
+
+        return this.busLevels;
     }
 
     /**

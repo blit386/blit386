@@ -29,6 +29,7 @@ import {
     computeTimingChartTagMarkerX,
     computeTimingChartTagTextX,
     computeTimingChartTagTickY,
+    createTimingChartTagGroupScratch,
     formatTimingChartTagRelTick,
     groupTimingChartTagsByColumn,
     normalizeTimingChartTagLabel,
@@ -36,6 +37,7 @@ import {
     TIMING_CHART_TAG_START,
     type TimingChartTag,
     type TimingChartTagColumnGroup,
+    type TimingChartTagGroupScratch,
 } from './tags';
 
 /**
@@ -83,6 +85,9 @@ export class TimingChart {
     #totalSamples = 0;
 
     readonly #tagLabelPos = new Vector2i(0, 0);
+
+    /** Reusable group pool for {@link groupTimingChartTagsByColumn}, populated fresh each {@link draw}. */
+    readonly #tagGroupScratch: TimingChartTagGroupScratch = createTimingChartTagGroupScratch();
 
     /**
      * Creates a timing chart with the given feature flag.
@@ -230,15 +235,15 @@ export class TimingChart {
 
         this.#drawGridLines(target, chartRect, style);
 
-        const tagGroups = groupTimingChartTagsByColumn(this.#tags, this.#totalSamples, this.#bufferWidth);
+        groupTimingChartTagsByColumn(this.#tags, this.#totalSamples, this.#bufferWidth, this.#tagGroupScratch);
 
-        this.#drawTagMarkers(target, chartRect, style, tagGroups);
+        this.#drawTagMarkers(target, chartRect, style, this.#tagGroupScratch);
 
         if (this.#sampleCount > 0) {
             this.#drawSamples(target, chartRect, style);
         }
 
-        this.#drawTags(target, chartRect, style, font, tagGroups);
+        this.#drawTags(target, chartRect, style, font, this.#tagGroupScratch);
     }
 
     /**
@@ -317,15 +322,17 @@ export class TimingChart {
      * @param target – Overlay draw target.
      * @param chartRect – Screen-space chart band.
      * @param style – Resolved chart palette indices.
-     * @param tagGroups – Tags grouped by sample column.
+     * @param tagGroupScratch – Tags grouped by sample column; only `groups[0..groupCount)` is live.
      */
     #drawTagMarkers(
         target: OverlayDrawTarget,
         chartRect: Rect2i,
         style: TimingChartDrawStyle,
-        tagGroups: readonly TimingChartTagColumnGroup[],
+        tagGroupScratch: TimingChartTagGroupScratch,
     ): void {
-        for (const group of tagGroups) {
+        for (let index = 0; index < tagGroupScratch.groupCount; index++) {
+            // eslint-disable-next-line security/detect-object-injection -- index bounded by groupCount
+            const group = tagGroupScratch.groups[index] as TimingChartTagColumnGroup;
             const x = computeTimingChartTagMarkerX(chartRect.x, chartRect.width, group.sampleIndex, this.#totalSamples);
 
             if (x === null) {
@@ -344,18 +351,20 @@ export class TimingChart {
      * @param chartRect – Screen-space chart band.
      * @param style – Resolved chart palette indices.
      * @param font – System bitmap font.
-     * @param tagGroups – Tags grouped by sample column.
+     * @param tagGroupScratch – Tags grouped by sample column; only `groups[0..groupCount)` is live.
      */
     #drawTags(
         target: OverlayDrawTarget,
         chartRect: Rect2i,
         style: TimingChartDrawStyle,
         font: BitmapFont,
-        tagGroups: readonly TimingChartTagColumnGroup[],
+        tagGroupScratch: TimingChartTagGroupScratch,
     ): void {
         const paletteOffset = style.tagBarIndex - 1;
 
-        for (const group of tagGroups) {
+        for (let index = 0; index < tagGroupScratch.groupCount; index++) {
+            // eslint-disable-next-line security/detect-object-injection -- index bounded by groupCount
+            const group = tagGroupScratch.groups[index] as TimingChartTagColumnGroup;
             const textX = computeTimingChartTagTextX(
                 chartRect.x,
                 chartRect.width,
@@ -375,7 +384,7 @@ export class TimingChart {
 
                 target.drawLabelOnTop(
                     font,
-                    this.#tagLabelPos.clone(),
+                    this.#tagLabelPos,
                     formatTimingChartTagRelTick(leadTag.tick, this.#startTick),
                     paletteOffset,
                 );
@@ -392,7 +401,7 @@ export class TimingChart {
                 this.#tagLabelPos.x = textX;
                 this.#tagLabelPos.y = computeTimingChartTagLabelY(chartRect.y, stackIndex);
 
-                target.drawLabelOnTop(font, this.#tagLabelPos.clone(), tag.label, paletteOffset);
+                target.drawLabelOnTop(font, this.#tagLabelPos, tag.label, paletteOffset);
                 /* eslint-enable security/detect-object-injection */
             }
         }

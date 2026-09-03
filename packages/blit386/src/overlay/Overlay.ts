@@ -99,16 +99,6 @@ function createAudioMeter(isEnabled: boolean): AudioMeter {
 }
 
 /**
- * Formats a millisecond timing value to one decimal place, padded to the fixed overlay field width.
- *
- * @param valueMs – Timing value in milliseconds.
- * @returns Padded `X.X` text for the `Frame`/`update()`/`render()` metrics row.
- */
-function formatOverlayMsField(valueMs: number): string {
-    return padOverlayField(valueMs.toFixed(1), OVERLAY_MS_FIELD_WIDTH);
-}
-
-/**
  * Screen-space overlay HUD rendered after demo content each frame.
  *
  * Internal to the engine; demos do not instantiate this class. Use
@@ -169,6 +159,55 @@ export class Overlay {
     #idxText = DEFAULT_IDX_TEXT;
 
     #idxGap = DEFAULT_IDX_BG;
+
+    /**
+     * Cached per-frame layout config and plan, reused across `handleFrameInput` and
+     * `updateAndRender` for the same frame, and across frames while the custom row count
+     * and palette color count watermarks below stay unchanged.
+     */
+    #framePlanCache: { layoutConfig: OverlayLayoutConfig; plan: OverlayLayoutPlan } | undefined;
+
+    /** Demo custom row count the cached frame plan was built for; `-1` forces the first build. */
+    #framePlanCustomRowCount = -1;
+
+    /** Palette color count the cached frame plan was built for; `-1` forces the first build. */
+    #framePlanColorCount = -1;
+
+    /** Rounded present-FPS watermark backing the cached top-metrics label below. */
+    #cachedPresentFps = -1;
+
+    /** Draw-call watermark backing the cached top-metrics label below. */
+    #cachedDrawCalls = -1;
+
+    /** Composed `Present … FPS|Target … FPS|Draw Calls …` label, re-formatted only on change. */
+    #cachedTopMetricsLabel = '';
+
+    /**
+     * `toFixed(1)` frame-time watermark backing the cached top-timing label below. Comparing the
+     * formatted string itself (rather than an independently-rounded number) guarantees this can
+     * never disagree with what is actually drawn – a `Math.round(ms * 10)` watermark can round a
+     * tie differently than `toFixed(1)`'s decimal rounding (for example `0.15`), which would
+     * freeze the label on stale text for one frame.
+     */
+    #cachedFrameMsField = '';
+
+    /**
+     * `toFixed(1)` update-time watermark backing the cached top-timing label below; same
+     * rationale as the frame-time one above.
+     */
+    #cachedUpdateMsField = '';
+
+    /**
+     * `toFixed(1)` render-time watermark backing the cached top-timing label below; same
+     * rationale as the frame-time one above.
+     */
+    #cachedRenderMsField = '';
+
+    /** Update-step-count watermark backing the cached top-timing label below. */
+    #cachedUpdateSteps = -1;
+
+    /** Composed `Frame …ms|update() …ms|render() …ms` label, re-formatted only on change. */
+    #cachedTopTimingLabel = '';
 
     /**
      * Creates an overlay with fixed layout and text strings.
@@ -302,7 +341,7 @@ export class Overlay {
 
         if (this.#paletteView.isEnabled && this.#toggle.isBodyVisible) {
             const customRows = getCustomRows?.();
-            const { layoutConfig, plan } = this.#buildFramePlan(customRows?.length ?? 0, palette);
+            const { layoutConfig, plan } = this.#getFramePlan(customRows?.length ?? 0, palette);
             const grid = layoutConfig.paletteGrid;
             const colorCount = palette?.size ?? MAX_PALETTE_SIZE;
 
@@ -391,7 +430,7 @@ export class Overlay {
         }
 
         const customRows = isBodyVisible ? getCustomRows?.() : undefined;
-        const { layoutConfig, plan } = this.#buildFramePlan(customRows?.length ?? 0, palette);
+        const { layoutConfig, plan } = this.#getFramePlan(customRows?.length ?? 0, palette);
 
         this.#withCamera(renderer, () => {
             this.#drawFrame(
@@ -524,6 +563,42 @@ export class Overlay {
     }
 
     /**
+     * Returns the per-frame layout plan, rebuilding only when the custom row count or palette
+     * color count differ from the cached build. `handleFrameInput` and `updateAndRender` both
+     * call this for the same frame with the same inputs, so at most one rebuild happens per
+     * frame instead of the previous two (`createDefaultLayoutConfig` plus `PaletteView.computeGrid`
+     * each ran twice). Display size, palette columns/rows, and feature flags never change across
+     * an `Overlay` instance's lifetime, so `customRowCount` and palette color count are the only
+     * inputs that need watching.
+     *
+     * @param customRowCount – Demo custom row count for this frame.
+     * @param palette – Active demo palette, if any.
+     * @returns Cached or freshly built layout config and plan.
+     */
+    #getFramePlan(
+        customRowCount: number,
+        palette: Palette | null | undefined,
+    ): { layoutConfig: OverlayLayoutConfig; plan: OverlayLayoutPlan } {
+        const colorCount = palette?.size ?? MAX_PALETTE_SIZE;
+
+        if (
+            this.#framePlanCache !== undefined &&
+            this.#framePlanCustomRowCount === customRowCount &&
+            this.#framePlanColorCount === colorCount
+        ) {
+            return this.#framePlanCache;
+        }
+
+        const framePlan = this.#buildFramePlan(customRowCount, palette);
+
+        this.#framePlanCustomRowCount = customRowCount;
+        this.#framePlanColorCount = colorCount;
+        this.#framePlanCache = framePlan;
+
+        return framePlan;
+    }
+
+    /**
      * Resets camera for screen-space overlay drawing.
      *
      * @param renderer – Active renderer.
@@ -538,6 +613,60 @@ export class Overlay {
             draw();
         } finally {
             renderer.setCameraOffset(savedCamera);
+        }
+    }
+
+    /**
+     * Re-formats the top-metrics and top-timing labels only when the underlying sampled values
+     * they display actually changed since the last call. The FPS sampler and timing sampler
+     * smooth every rendered frame, so their raw floats rarely repeat exactly, but the displayed
+     * digits they round to change far less often – comparing those watermarks skips the
+     * `padStart`/template-literal allocations on every frame where nothing visible would change.
+     *
+     * The ms fields are watermarked by their own `toFixed(1)` output, not an independently
+     * rounded number: `Math.round(ms * 10)` can disagree with `toFixed(1)`'s decimal rounding at
+     * a tie (for example `0.15`), which would freeze the label on stale text for one frame.
+     */
+    #composeTopLabels(): void {
+        const presentFps = this.#fps.measuredFps;
+        const drawCalls = this.#timing.drawCalls;
+
+        if (presentFps !== this.#cachedPresentFps || drawCalls !== this.#cachedDrawCalls) {
+            this.#cachedPresentFps = presentFps;
+            this.#cachedDrawCalls = drawCalls;
+
+            const presentFpsField = padOverlayField(String(presentFps), OVERLAY_FPS_FIELD_WIDTH);
+
+            this.#cachedTopMetricsLabel =
+                `Present ${presentFpsField} FPS|Target ${this.#targetFps} FPS|` + `Draw Calls ${drawCalls}`;
+        }
+
+        const frameMsField = this.#timing.frameMs.toFixed(1);
+        const updateMsField = this.#timing.updateMs.toFixed(1);
+        const renderMsField = this.#timing.renderMs.toFixed(1);
+        const updateSteps = this.#timing.updateSteps;
+
+        if (
+            frameMsField !== this.#cachedFrameMsField ||
+            updateMsField !== this.#cachedUpdateMsField ||
+            renderMsField !== this.#cachedRenderMsField ||
+            updateSteps !== this.#cachedUpdateSteps
+        ) {
+            this.#cachedFrameMsField = frameMsField;
+            this.#cachedUpdateMsField = updateMsField;
+            this.#cachedRenderMsField = renderMsField;
+            this.#cachedUpdateSteps = updateSteps;
+
+            const frameMs = padOverlayField(frameMsField, OVERLAY_MS_FIELD_WIDTH);
+            const updateMs = padOverlayField(updateMsField, OVERLAY_MS_FIELD_WIDTH);
+            const renderMs = padOverlayField(renderMsField, OVERLAY_MS_FIELD_WIDTH);
+            const updateStepSuffix = padOverlayField(
+                updateSteps > 1 ? `x${updateSteps}` : '',
+                OVERLAY_UPDATE_STEPS_FIELD_WIDTH,
+            );
+
+            this.#cachedTopTimingLabel =
+                `Frame ${frameMs}ms|update() ${updateMs}ms${updateStepSuffix}|` + `render() ${renderMs}ms`;
         }
     }
 
@@ -581,18 +710,10 @@ export class Overlay {
         const paletteGrid = layoutConfig.paletteGrid ?? DEFAULT_PALETTE_GRID;
 
         if (isBodyVisible) {
-            const presentFps = padOverlayField(String(this.#fps.measuredFps), OVERLAY_FPS_FIELD_WIDTH);
-            const frameMs = formatOverlayMsField(this.#timing.frameMs);
-            const updateMs = formatOverlayMsField(this.#timing.updateMs);
-            const renderMs = formatOverlayMsField(this.#timing.renderMs);
-            const updateStepSuffix = padOverlayField(
-                this.#timing.updateSteps > 1 ? `x${this.#timing.updateSteps}` : '',
-                OVERLAY_UPDATE_STEPS_FIELD_WIDTH,
-            );
+            this.#composeTopLabels();
 
-            topMetricsLabel = `Present ${presentFps} FPS|Target ${this.#targetFps} FPS|Draw Calls ${this.#timing.drawCalls}`;
-
-            topTimingLabel = `Frame ${frameMs}ms|update() ${updateMs}ms${updateStepSuffix}|` + `render() ${renderMs}ms`;
+            topMetricsLabel = this.#cachedTopMetricsLabel;
+            topTimingLabel = this.#cachedTopTimingLabel;
 
             if (this.#isOverlayRendererDiagnosticsBarEnabled) {
                 rendererDiagnosticsLabel = this.#timing.formatRendererDiagnosticsLabel();
