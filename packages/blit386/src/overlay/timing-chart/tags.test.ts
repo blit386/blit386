@@ -18,6 +18,8 @@ import {
     TIMING_CHART_TAG_TEXT_X_OFFSET,
     TIMING_CHART_TAG_TICK_Y_OFFSET,
     type TimingChartTag,
+    type TimingChartTagColumnGroup,
+    type TimingChartTagGroupScratch,
 } from './tags';
 
 describe('normalizeTimingChartTagLabel', () => {
@@ -107,6 +109,17 @@ describe('computeTimingChartTagTickY and computeTimingChartTagLabelY', () => {
     });
 });
 
+/**
+ * Live groups from a {@link TimingChartTagGroupScratch}: `groups[0..groupCount)`, the same slice
+ * consumers must respect (the pool beyond `groupCount` still holds prior calls' descriptors).
+ *
+ * @param scratch – Scratch mutated by {@link groupTimingChartTagsByColumn}.
+ * @returns The live group prefix.
+ */
+function liveGroups(scratch: TimingChartTagGroupScratch): TimingChartTagColumnGroup[] {
+    return scratch.groups.slice(0, scratch.groupCount);
+}
+
 describe('groupTimingChartTagsByColumn', () => {
     it('groups tags that share a column and preserves assignment order', () => {
         const tags: TimingChartTag[] = [
@@ -115,16 +128,21 @@ describe('groupTimingChartTagsByColumn', () => {
             { label: 'C', tick: 2, sampleIndex: 9 },
         ];
 
-        expect(groupTimingChartTagsByColumn(tags, 10, 100, createTimingChartTagGroupScratch())).toEqual([
+        const scratch = groupTimingChartTagsByColumn(tags, 10, 100, createTimingChartTagGroupScratch());
+
+        expect(liveGroups(scratch)).toEqual([
             { sampleIndex: 5, tags: [tags[0], tags[1]] },
             { sampleIndex: 9, tags: [tags[2]] },
         ]);
     });
 
-    it('returns an empty list without touching the scratch pool when there are no tags', () => {
+    it('returns an empty live prefix without touching the scratch pool when there are no tags', () => {
         const scratch = createTimingChartTagGroupScratch();
 
-        expect(groupTimingChartTagsByColumn([], 10, 100, scratch)).toEqual([]);
+        groupTimingChartTagsByColumn([], 10, 100, scratch);
+
+        expect(scratch.groupCount).toBe(0);
+        expect(liveGroups(scratch)).toEqual([]);
     });
 
     it('reuses pooled group descriptors across calls without leaking stale tags', () => {
@@ -136,7 +154,9 @@ describe('groupTimingChartTagsByColumn', () => {
             { label: 'C', tick: 3, sampleIndex: 3 },
         ];
 
-        expect(groupTimingChartTagsByColumn(first, 10, 100, scratch)).toEqual([
+        groupTimingChartTagsByColumn(first, 10, 100, scratch);
+
+        expect(liveGroups(scratch)).toEqual([
             { sampleIndex: 1, tags: [first[0]] },
             { sampleIndex: 2, tags: [first[1]] },
             { sampleIndex: 3, tags: [first[2]] },
@@ -144,16 +164,71 @@ describe('groupTimingChartTagsByColumn', () => {
 
         const second: TimingChartTag[] = [{ label: 'D', tick: 4, sampleIndex: 4 }];
 
-        expect(groupTimingChartTagsByColumn(second, 10, 100, scratch)).toEqual([{ sampleIndex: 4, tags: [second[0]] }]);
+        groupTimingChartTagsByColumn(second, 10, 100, scratch);
+
+        expect(liveGroups(scratch)).toEqual([{ sampleIndex: 4, tags: [second[0]] }]);
 
         const third: TimingChartTag[] = [
             { label: 'E', tick: 5, sampleIndex: 5 },
             { label: 'F', tick: 6, sampleIndex: 6 },
         ];
 
-        expect(groupTimingChartTagsByColumn(third, 10, 100, scratch)).toEqual([
+        groupTimingChartTagsByColumn(third, 10, 100, scratch);
+
+        expect(liveGroups(scratch)).toEqual([
             { sampleIndex: 5, tags: [third[0]] },
             { sampleIndex: 6, tags: [third[1]] },
+        ]);
+    });
+
+    it('keeps pooled descriptor identity across a shorter intermediate call instead of reallocating', () => {
+        // Regression test: an earlier version truncated the pool's own `.length` on every call,
+        // which discarded descriptors (and their inner `tags` arrays) once a shrink happened,
+        // forcing acquireTagGroup to allocate brand-new ones on the next larger call. The pool
+        // must keep growing-only capacity so a later, busier frame reuses what an in-between
+        // quieter frame did not need.
+        const scratch = createTimingChartTagGroupScratch();
+
+        const busyFirst: TimingChartTag[] = [
+            { label: 'A', tick: 1, sampleIndex: 1 },
+            { label: 'B', tick: 2, sampleIndex: 2 },
+            { label: 'C', tick: 3, sampleIndex: 3 },
+        ];
+
+        groupTimingChartTagsByColumn(busyFirst, 10, 100, scratch);
+
+        expect(scratch.groupCount).toBe(3);
+
+        const pooledDescriptors = [...scratch.groups];
+
+        // A quieter frame with a single tag, then an empty frame – both shorter than the pool's
+        // current capacity.
+        groupTimingChartTagsByColumn([{ label: 'D', tick: 4, sampleIndex: 4 }], 10, 100, scratch);
+        groupTimingChartTagsByColumn([], 10, 100, scratch);
+
+        expect(scratch.groupCount).toBe(0);
+        expect(scratch.groups).toEqual(pooledDescriptors);
+
+        const busySecond: TimingChartTag[] = [
+            { label: 'E', tick: 5, sampleIndex: 5 },
+            { label: 'F', tick: 6, sampleIndex: 6 },
+            { label: 'G', tick: 7, sampleIndex: 7 },
+        ];
+
+        groupTimingChartTagsByColumn(busySecond, 10, 100, scratch);
+
+        expect(scratch.groupCount).toBe(3);
+
+        // The same three descriptor objects come back into use, not freshly allocated ones.
+        for (let index = 0; index < 3; index++) {
+            // eslint-disable-next-line security/detect-object-injection -- index bounded by the literal loop above
+            expect(scratch.groups[index]).toBe(pooledDescriptors[index]);
+        }
+
+        expect(liveGroups(scratch)).toEqual([
+            { sampleIndex: 5, tags: [busySecond[0]] },
+            { sampleIndex: 6, tags: [busySecond[1]] },
+            { sampleIndex: 7, tags: [busySecond[2]] },
         ]);
     });
 });

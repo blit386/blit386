@@ -191,10 +191,16 @@ export class Overlay {
      */
     #cachedFrameMsField = '';
 
-    /** `toFixed(1)` update-time watermark backing the cached top-timing label below; same rationale as the frame-time one above. */
+    /**
+     * `toFixed(1)` update-time watermark backing the cached top-timing label below; same
+     * rationale as the frame-time one above.
+     */
     #cachedUpdateMsField = '';
 
-    /** `toFixed(1)` render-time watermark backing the cached top-timing label below; same rationale as the frame-time one above. */
+    /**
+     * `toFixed(1)` render-time watermark backing the cached top-timing label below; same
+     * rationale as the frame-time one above.
+     */
     #cachedRenderMsField = '';
 
     /** Update-step-count watermark backing the cached top-timing label below. */
@@ -631,7 +637,8 @@ export class Overlay {
 
             const presentFpsField = padOverlayField(String(presentFps), OVERLAY_FPS_FIELD_WIDTH);
 
-            this.#cachedTopMetricsLabel = `Present ${presentFpsField} FPS|Target ${this.#targetFps} FPS|Draw Calls ${drawCalls}`;
+            this.#cachedTopMetricsLabel =
+                `Present ${presentFpsField} FPS|Target ${this.#targetFps} FPS|` + `Draw Calls ${drawCalls}`;
         }
 
         const frameMsField = this.#timing.frameMs.toFixed(1);

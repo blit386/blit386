@@ -235,20 +235,15 @@ export class TimingChart {
 
         this.#drawGridLines(target, chartRect, style);
 
-        const tagGroups = groupTimingChartTagsByColumn(
-            this.#tags,
-            this.#totalSamples,
-            this.#bufferWidth,
-            this.#tagGroupScratch,
-        );
+        groupTimingChartTagsByColumn(this.#tags, this.#totalSamples, this.#bufferWidth, this.#tagGroupScratch);
 
-        this.#drawTagMarkers(target, chartRect, style, tagGroups);
+        this.#drawTagMarkers(target, chartRect, style, this.#tagGroupScratch);
 
         if (this.#sampleCount > 0) {
             this.#drawSamples(target, chartRect, style);
         }
 
-        this.#drawTags(target, chartRect, style, font, tagGroups);
+        this.#drawTags(target, chartRect, style, font, this.#tagGroupScratch);
     }
 
     /**
@@ -327,15 +322,17 @@ export class TimingChart {
      * @param target – Overlay draw target.
      * @param chartRect – Screen-space chart band.
      * @param style – Resolved chart palette indices.
-     * @param tagGroups – Tags grouped by sample column.
+     * @param tagGroupScratch – Tags grouped by sample column; only `groups[0..groupCount)` is live.
      */
     #drawTagMarkers(
         target: OverlayDrawTarget,
         chartRect: Rect2i,
         style: TimingChartDrawStyle,
-        tagGroups: readonly TimingChartTagColumnGroup[],
+        tagGroupScratch: TimingChartTagGroupScratch,
     ): void {
-        for (const group of tagGroups) {
+        for (let index = 0; index < tagGroupScratch.groupCount; index++) {
+            // eslint-disable-next-line security/detect-object-injection -- index bounded by groupCount
+            const group = tagGroupScratch.groups[index] as TimingChartTagColumnGroup;
             const x = computeTimingChartTagMarkerX(chartRect.x, chartRect.width, group.sampleIndex, this.#totalSamples);
 
             if (x === null) {
@@ -354,18 +351,20 @@ export class TimingChart {
      * @param chartRect – Screen-space chart band.
      * @param style – Resolved chart palette indices.
      * @param font – System bitmap font.
-     * @param tagGroups – Tags grouped by sample column.
+     * @param tagGroupScratch – Tags grouped by sample column; only `groups[0..groupCount)` is live.
      */
     #drawTags(
         target: OverlayDrawTarget,
         chartRect: Rect2i,
         style: TimingChartDrawStyle,
         font: BitmapFont,
-        tagGroups: readonly TimingChartTagColumnGroup[],
+        tagGroupScratch: TimingChartTagGroupScratch,
     ): void {
         const paletteOffset = style.tagBarIndex - 1;
 
-        for (const group of tagGroups) {
+        for (let index = 0; index < tagGroupScratch.groupCount; index++) {
+            // eslint-disable-next-line security/detect-object-injection -- index bounded by groupCount
+            const group = tagGroupScratch.groups[index] as TimingChartTagColumnGroup;
             const textX = computeTimingChartTagTextX(
                 chartRect.x,
                 chartRect.width,

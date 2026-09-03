@@ -35,10 +35,20 @@ export type TimingChartTagColumnGroup = {
     tags: TimingChartTag[];
 };
 
-/** Reusable scratch pool for {@link groupTimingChartTagsByColumn}, one per {@link TimingChart} instance. */
+/**
+ * Reusable scratch pool for {@link groupTimingChartTagsByColumn}, one per {@link TimingChart}
+ * instance. `groups`' capacity only grows across calls, never shrinks – only the first
+ * `groupCount` entries are live for the most recent call. Consumers must iterate
+ * `groups[0..groupCount)`, not `groups` itself, so a frame with fewer tag columns than a
+ * previous one does not discard the descriptors a later, busier frame would otherwise have to
+ * reallocate.
+ */
 export interface TimingChartTagGroupScratch {
-    /** Pooled group descriptors; only the first N (from the last call) are live. */
-    groups: TimingChartTagColumnGroup[];
+    /** Pooled group descriptors; capacity only grows. */
+    readonly groups: TimingChartTagColumnGroup[];
+
+    /** Live prefix length of {@link groups} from the most recent call. */
+    groupCount: number;
 }
 
 /**
@@ -47,7 +57,7 @@ export interface TimingChartTagGroupScratch {
  * @returns Scratch pool with no pooled groups yet.
  */
 export function createTimingChartTagGroupScratch(): TimingChartTagGroupScratch {
-    return { groups: [] };
+    return { groups: [], groupCount: 0 };
 }
 
 /**
@@ -215,19 +225,21 @@ export function computeTimingChartTagLabelY(chartTopY: number, stackIndex: numbe
  * @param tags – Active tags for the current frame.
  * @param totalSamples – Timing samples recorded since the last chart width reset.
  * @param chartWidth – Chart width in pixels.
- * @param scratch – Reusable group pool from {@link createTimingChartTagGroupScratch}.
- * @returns Groups in first-seen column order; live only until the next call with `scratch`.
+ * @param scratch – Reusable group pool from {@link createTimingChartTagGroupScratch}, mutated in
+ * place: `scratch.groups[0..scratch.groupCount)` holds this call's groups in first-seen column
+ * order, live only until the next call with `scratch`.
+ * @returns The same `scratch` object, for convenience at call sites that don't already hold it.
  */
 export function groupTimingChartTagsByColumn(
     tags: readonly TimingChartTag[],
     totalSamples: number,
     chartWidth: number,
     scratch: TimingChartTagGroupScratch,
-): readonly TimingChartTagColumnGroup[] {
+): TimingChartTagGroupScratch {
     if (tags.length === 0) {
-        scratch.groups.length = 0;
+        scratch.groupCount = 0;
 
-        return scratch.groups;
+        return scratch;
     }
 
     let groupCount = 0;
@@ -246,9 +258,9 @@ export function groupTimingChartTagsByColumn(
         currentGroup.tags.push(tag);
     }
 
-    scratch.groups.length = groupCount;
+    scratch.groupCount = groupCount;
 
-    return scratch.groups;
+    return scratch;
 }
 
 /**
