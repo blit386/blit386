@@ -30,6 +30,7 @@ export const DEMO_ORDER = [
     'palette-cycling',
     'palette-fade',
     'bitmap-font',
+    'system-font-glyphs',
     'crt-pipboy',
     'crt-toggle',
     'pointer-basics',
