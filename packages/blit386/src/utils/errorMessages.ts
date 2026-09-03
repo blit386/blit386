@@ -426,7 +426,10 @@ export function noActivePaletteError(): string {
  * @returns User-facing error string.
  */
 export function systemFontNotReadyError(): string {
-    return "BT.systemFont isn't ready yet. Make sure the engine has finished starting (BT.init() has resolved) before reading it.";
+    return (
+        "BT.systemFont isn't ready yet. Make sure the engine has finished starting " +
+        '(BT.init() has resolved) before reading it.'
+    );
 }
 
 /**

@@ -720,6 +720,25 @@ describe('BitmapFont', () => {
 
             expect(font.codePoints).toEqual([0x41, 0xfffd]);
         });
+
+        it('skips a multi-scalar key instead of reporting a duplicate first-scalar code point', () => {
+            const pixels = new Uint8Array(16 * 16) as Uint8Array<ArrayBuffer>;
+            const sheet = SpriteSheet.fromIndexedPixels(16, 16, pixels);
+
+            // Nothing validates glyph keys down to a single Unicode scalar on load, so a
+            // malformed .btfont could define one keyed by a multi-character string – here,
+            // 'A' followed by a combining acute accent (U+0301). Naively taking
+            // codePointAt(0) on both keys below would report 0x41 (plain 'A') twice.
+            const glyphs = new Map([
+                ['A', { rect: new Rect2i(0, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }],
+                ['A\u0301', { rect: new Rect2i(8, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }],
+            ]);
+
+            const font = BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
+
+            expect(font.codePoints).toEqual([0x41]);
+            expect(font.glyphCount).toBe(2); // the malformed entry still counts toward glyphCount
+        });
     });
 
     describe('fallback glyph', () => {
