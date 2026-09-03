@@ -332,6 +332,7 @@ declare class BitmapFont {
   readonly lineHeight: number;
   readonly baseline: number;
   readonly glyphCount: number;
+  readonly codePoints: readonly number[];
   getGlyph(char: string): Glyph | null;
   measureText(text: string): number;
   measureTextSize(text: string): TextSize;
@@ -353,8 +354,23 @@ fallback keeps both the glyph and the spacing correct. `hasGlyph()` is unaffecte
 has its own glyph, not whether the fallback would cover it.
 
 A font with no `U+FFFD` entry keeps the previous behavior exactly. The built-in system font (`BT.systemPrint`) defines
-one, alongside a set of extra glyphs beyond plain ASCII – see `scripts/system-font-extra-chars.mjs` in the engine source
-for the full list (dashes, arrows, media icons, and more).
+one, alongside a set of extra glyphs beyond plain ASCII – see `codePoints` below for the live, always-current list, or
+`scripts/system-font-extra-chars.mjs` in the engine source for the same list annotated with human-readable labels.
+
+### Listing covered characters
+
+`codePoints` returns every Unicode code point a font defines a glyph for, ascending – derived live from the same glyph
+map `getGlyph()` / `hasGlyph()` read, so it can never list a character the font doesn't actually render. Use it to build
+a glyph browser or a coverage check instead of hand-maintaining a duplicate character list next to the font:
+
+```ts twoslash
+import { type BitmapFont } from 'blit386';
+declare const font: BitmapFont;
+// ---cut---
+for (const codePoint of font.codePoints) {
+  console.log(String.fromCodePoint(codePoint));
+}
+```
 
 ### BT.printFont()
 

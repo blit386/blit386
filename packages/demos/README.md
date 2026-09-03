@@ -73,6 +73,8 @@ to these URLs via `VINTAGE_URLS`.
 - [patterns](https://demos.blit386.dev/patterns) – Mathematical art: spirals, Lissajous, waves, tunnel
 - [bitmap-font](https://demos.blit386.dev/bitmap-font) – Load a proportional `.btfont` file and draw rainbow,
   alpha-pulsing, and measured text
+- [system-font-glyphs](https://demos.blit386.dev/system-font-glyphs) – Browse every glyph the built-in system font
+  covers and click one to copy it to your clipboard
 
 ### World Building
 

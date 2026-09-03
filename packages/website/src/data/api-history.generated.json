@@ -978,6 +978,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.systemFont": {
+      "kind": "getter",
+      "since": "1.7.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.systemPrint": {
       "kind": "method",
       "since": "1.0.3",
@@ -1041,6 +1048,10 @@
         {
           "version": "1.5.0",
           "note": "`getGlyph` / `getGlyphByCode` (and `measureText`, which now shares their\nlookup) substitute a font-defined fallback glyph for a missing character instead of\nreturning `null`, when the font's glyph map has an entry keyed by `U+FFFD`."
+        },
+        {
+          "version": "1.7.0",
+          "note": "Added the `codePoints` getter, returning every Unicode code point the font\ndefines a glyph for (ascending, derived live from the same glyph map `getGlyph()` and\n`hasGlyph()` read)."
         }
       ],
       "deprecated": null,
@@ -1732,6 +1743,7 @@
       "BT.preset",
       "BT.printFont",
       "BT.spritesRefresh",
+      "BT.systemFont",
       "BT.systemPrint",
       "BT.systemPrintMeasure",
       "amber",

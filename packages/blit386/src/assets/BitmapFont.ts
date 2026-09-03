@@ -216,6 +216,9 @@ export function getHotReloadFonts(url: string): ReadonlySet<BitmapFont> | undefi
  * @changed 1.5.0 `getGlyph` / `getGlyphByCode` (and `measureText`, which now shares their
  *   lookup) substitute a font-defined fallback glyph for a missing character instead of
  *   returning `null`, when the font's glyph map has an entry keyed by `U+FFFD`.
+ * @changed 1.7.0 Added the `codePoints` getter, returning every Unicode code point the font
+ *   defines a glyph for (ascending, derived live from the same glyph map `getGlyph()` and
+ *   `hasGlyph()` read).
  */
 export class BitmapFont {
     /** Font display name. */
@@ -290,12 +293,41 @@ export class BitmapFont {
     }
 
     /**
+     * Returns every Unicode code point this font defines a glyph for, ascending.
+     *
+     * Derived live from the same {@link glyphs} map {@link getGlyph} / {@link hasGlyph} read –
+     * it can never drift from what actually renders. Includes ordinary ASCII (the ASCII
+     * fast-path array is populated from this same map at construction time, not a second,
+     * disjoint source) and the fallback glyph when the font defines one (see
+     * `FALLBACK_GLYPH_CHAR`). Skips a key that spans more than one Unicode scalar value (for
+     * example a multi-character string from a malformed `.btfont` file) rather than reporting
+     * just its first scalar – nothing validates glyph keys down to a single scalar on load, so
+     * this getter defends its own "one code point per real glyph" guarantee instead of risking
+     * a duplicate or misleading entry. `codePoints.length` can therefore be lower than
+     * {@link glyphCount} for such a font.
+     *
+     * @returns Sorted array of Unicode code points covered by this font's glyph map.
+     */
+    get codePoints(): readonly number[] {
+        return Array.from(this.glyphs.keys())
+            .filter((char) => [...char].length === 1)
+            .map((char) => char.codePointAt(0))
+            .filter((codePoint): codePoint is number => codePoint !== undefined)
+            .sort((a, b) => a - b);
+    }
+
+    /**
      * Creates a bitmap font synchronously from pre-built glyph data.
      *
      * Used for embedded fonts (e.g. the built-in system font) where the sprite
      * sheet and glyph map are already constructed in memory. The sprite sheet
      * should already contain indexed pixel data via
      * {@link SpriteSheet.fromIndexedPixels}.
+     *
+     * Copies `glyphs` rather than retaining the caller's map: `asciiGlyphs` is a
+     * cache built once here, so a caller mutating its own map afterward would
+     * otherwise drift out of sync with {@link glyphs} (and so with `getGlyph()`,
+     * `hasGlyph()`, and `codePoints`).
      *
      * @param spriteSheet – Texture atlas containing all font glyphs.
      * @param glyphs – Map of character strings to glyph metadata.
@@ -313,13 +345,14 @@ export class BitmapFont {
         lineHeight: number,
         baseline: number,
     ): BitmapFont {
+        const glyphMap = new Map(glyphs);
         const asciiGlyphs = createAsciiGlyphTable();
 
-        for (const [char, glyph] of glyphs) {
+        for (const [char, glyph] of glyphMap) {
             populateAsciiGlyph(asciiGlyphs, char, glyph);
         }
 
-        return new BitmapFont(spriteSheet, glyphs, asciiGlyphs, name, size, lineHeight, baseline);
+        return new BitmapFont(spriteSheet, glyphMap, asciiGlyphs, name, size, lineHeight, baseline);
     }
 
     /**

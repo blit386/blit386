@@ -420,6 +420,19 @@ export function noActivePaletteError(): string {
 }
 
 /**
+ * Returns the error message shown when `BT.systemFont` is read before the
+ * engine has finished creating it.
+ *
+ * @returns User-facing error string.
+ */
+export function systemFontNotReadyError(): string {
+    return (
+        "BT.systemFont isn't ready yet. Make sure the engine has finished starting " +
+        '(BT.init() has resolved) before reading it.'
+    );
+}
+
+/**
  * Returns the error message for a palette index that is negative or not a
  * whole number.
  *
