@@ -19,17 +19,19 @@ Zero-argument read-only values on `BT`:
   `?backend=software`); `null` before `BT.init()`
 - Loop: `deltaSeconds`, `timeSeconds`, `ticks`, `renderAlpha`
 - Runtime: `activeBackend`, `camera`, `palette`, `random`, `systemFont`, `isAudioUnlocked`, `isMusicPlaying`,
-  `screenOrientation`, `loadingAssetsCount`, `isDevMode`, `splashState`, `isSplashVisible` – `activeBackend` is `null`
-  before init or on failure; `isAudioUnlocked` is `false` until the first user gesture resumes the audio context;
-  `isMusicPlaying` is `true` while the music player has a live current track; `screenOrientation` is the current
-  `screen.orientation.type` string, or `null` when the API is unavailable; `loadingAssetsCount` is the combined count of
-  in-flight `AssetLoader` + `AudioClip` loads (poll for a loading screen); `random` is a live, time-seeded `Random`
-  (always present; reseed with `randomSeed`); `systemFont` is the same live `BitmapFont` instance `BT.systemPrint` draws
-  with – throws if read before `BT.init()` finishes creating it (mirrors `palette`); `isDevMode` resolves an explicit
-  override, then the `blit386/vite` plugin's build-time flag, then live hot-reload activity – it is Tier A below, not
-  Tier B, because no `HardwareSettings` field mirrors it, so it reads as a runtime environment query rather than a
-  configure flag; `splashState` is the five-state splash machine's current state (`'disabled'` when gated off);
-  `isSplashVisible` is the one-term derived query game code should prefer over `splashState`
+  `screenOrientation`, `loadingAssetsCount`, `isDevMode`, `splashState`, `isSplashVisible`, `isReducedMotionPreferred` –
+  `activeBackend` is `null` before init or on failure; `isAudioUnlocked` is `false` until the first user gesture resumes
+  the audio context; `isMusicPlaying` is `true` while the music player has a live current track; `screenOrientation` is
+  the current `screen.orientation.type` string, or `null` when the API is unavailable; `loadingAssetsCount` is the
+  combined count of in-flight `AssetLoader` + `AudioClip` loads (poll for a loading screen); `random` is a live,
+  time-seeded `Random` (always present; reseed with `randomSeed`); `systemFont` is the same live `BitmapFont` instance
+  `BT.systemPrint` draws with – throws if read before `BT.init()` finishes creating it (mirrors `palette`); `isDevMode`
+  resolves an explicit override, then the `blit386/vite` plugin's build-time flag, then live hot-reload activity – it is
+  Tier A below, not Tier B, because no `HardwareSettings` field mirrors it, so it reads as a runtime environment query
+  rather than a configure flag; `splashState` is the five-state splash machine's current state (`'disabled'` when gated
+  off); `isSplashVisible` is the one-term derived query game code should prefer over `splashState`;
+  `isReducedMotionPreferred` resolves the platform's `prefers-reduced-motion` match (or a `?reducedmotion` /
+  `?noreducedmotion` URL override) and needs no init either, mirroring `screenOrientation`
 - Per-frame input: `pointerScrollDelta`, `inputString`, `gamepadCount`
 
 Good: `BT.displaySize.y`, `BT.targetFPS`, `BT.ticks % 180`

@@ -54,6 +54,7 @@ import {
     resolveOverlayTimingChartDiagnostics,
 } from './IBTDemo';
 import { Orientation } from './Orientation';
+import { ReducedMotion } from './ReducedMotion';
 import { markIndexUsed, resetUsage, USAGE_CAPACITY } from './RenderPaletteUsage';
 import { WakeLock } from './WakeLock';
 import { initWebGPU } from './WebGPUContext';
@@ -252,6 +253,9 @@ export class BTAPI {
 
     /** Screen orientation detection / lock subsystem. Created and attached during {@link init}. */
     private orientation: Orientation | null = null;
+
+    /** Reduced-motion preference detection. Created and attached during {@link init}. */
+    private reducedMotion: ReducedMotion | null = null;
 
     /**
      * Private constructor to enforce singleton access via `BTAPI.instance`.
@@ -527,19 +531,21 @@ export class BTAPI {
         this.orientation = new Orientation();
         this.orientation.attach(hwSettings.preferredOrientation ?? 'any', demo.onOrientationChange?.bind(demo) ?? null);
 
+        this.attachReducedMotion(demo);
+
         console.log('[BT] Initialization complete');
 
         return true;
     }
 
     /**
-     * Stops the active game loop and detaches input, audio, wake lock, and orientation
-     * subsystems.
+     * Stops the active game loop and detaches input, audio, wake lock, orientation, and
+     * reduced-motion subsystems.
      *
-     * Pointer, keyboard, gamepad, audio, wake lock, and orientation subsystems are
-     * detached so listeners, polling state, the audio context, the held wake lock
-     * sentinel, and the orientation change listener do not leak across engine restarts
-     * (relevant in tests where the same DOM persists).
+     * Pointer, keyboard, gamepad, audio, wake lock, orientation, and reduced-motion
+     * subsystems are detached so listeners, polling state, the audio context, the held
+     * wake lock sentinel, and the orientation/reduced-motion change listeners do not leak
+     * across engine restarts (relevant in tests where the same DOM persists).
      */
     public stop(): void {
         this.loop?.stop();
@@ -550,6 +556,9 @@ export class BTAPI {
 
         this.orientation?.detach();
         this.orientation = null;
+
+        this.reducedMotion?.detach();
+        this.reducedMotion = null;
     }
 
     /**
@@ -563,10 +572,11 @@ export class BTAPI {
      * loop while this candidate's `init()` runs. A failed hot reload must leave the running
      * engine untouched.
      *
-     * On success, also rebinds the orientation subsystem's change callback to the new
-     * instance via {@link Orientation.setOnChange} - the listener installed at {@link init}
-     * closes over the *previous* demo's bound `onOrientationChange`, so without this,
-     * orientation events would keep reaching stale code after the swap.
+     * On success, also rebinds the orientation and reduced-motion subsystems' change
+     * callbacks to the new instance via {@link Orientation.setOnChange} and
+     * {@link ReducedMotion.setOnChange} - the listeners installed at {@link init} close over
+     * the *previous* demo's bound `onOrientationChange` / `onReducedMotionChange`, so without
+     * this, those events would keep reaching stale code after the swap.
      *
      * @param newDemo – Freshly constructed candidate demo instance.
      * @returns `true` when `newDemo.init()` succeeds and {@link demo} was swapped to it.
@@ -599,6 +609,7 @@ export class BTAPI {
 
         this.demo = newDemo;
         this.orientation?.setOnChange(newDemo.onOrientationChange?.bind(newDemo) ?? null);
+        this.reducedMotion?.setOnChange(newDemo.onReducedMotionChange?.bind(newDemo) ?? null);
 
         return true;
     }
@@ -1006,6 +1017,20 @@ export class BTAPI {
      */
     public getScreenOrientation(): string | null {
         return Orientation.type;
+    }
+
+    /**
+     * Reports whether reduced motion is currently preferred.
+     *
+     * Resolves the `?reducedmotion` / `?noreducedmotion` URL flags over the platform's own
+     * `prefers-reduced-motion: reduce` match. Does not require a successful init – reads the
+     * platform API directly, mirroring {@link getScreenOrientation}.
+     *
+     * @since 1.7.0
+     * @returns `true` when reduced motion should be preferred.
+     */
+    public isReducedMotionPreferred(): boolean {
+        return ReducedMotion.isPreferred;
     }
 
     /**
@@ -1755,6 +1780,22 @@ export class BTAPI {
         if (this.isCollectAudioMetersEnabled) {
             this.audio.enableBusMetering();
         }
+    }
+
+    /**
+     * Attaches the reduced-motion preference listener, rebinding the demo callback.
+     *
+     * Extracted from {@link init} to keep that method's cyclomatic complexity within the
+     * project's lint threshold, following the same pattern as {@link attachInputSubsystems}
+     * and {@link attachAudioSubsystem}.
+     *
+     * @param demo – Active demo instance whose optional {@link IBTDemo.onReducedMotionChange}
+     *   hook is bound.
+     */
+    private attachReducedMotion(demo: IBTDemo): void {
+        this.reducedMotion?.detach();
+        this.reducedMotion = new ReducedMotion();
+        this.reducedMotion.attach(demo.onReducedMotionChange?.bind(demo) ?? null);
     }
 
     /**

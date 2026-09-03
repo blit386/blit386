@@ -628,6 +628,13 @@
       "deprecated": null,
       "status": "stable"
     },
+    "BT.isReducedMotionPreferred": {
+      "kind": "getter",
+      "since": "1.7.0",
+      "changes": [],
+      "deprecated": null,
+      "status": "unreleased"
+    },
     "BT.isReleased": {
       "kind": "method",
       "since": "1.1.1",
@@ -1208,6 +1215,10 @@
         {
           "version": "1.4.0",
           "note": "Added optional {@link IBTDemo.onHotReload} hook."
+        },
+        {
+          "version": "1.7.0",
+          "note": "Added optional {@link IBTDemo.onReducedMotionChange} hook."
         }
       ],
       "deprecated": null,
@@ -1656,6 +1667,7 @@
       "BT.drawingBufferSize",
       "BT.init",
       "BT.isDevMode",
+      "BT.isReducedMotionPreferred",
       "BT.isSplashVisible",
       "BT.outputSize",
       "BT.requestedBackend",
@@ -1666,6 +1678,7 @@
       "HardwareSettings",
       "HotContext",
       "HotReloadContext",
+      "IBTDemo.onReducedMotionChange",
       "PreferredOrientation",
       "bootstrap",
       "defaultConfig",
