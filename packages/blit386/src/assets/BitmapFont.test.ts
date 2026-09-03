@@ -212,6 +212,12 @@ describe('BitmapFont', () => {
         expect(font.glyphCount).toBe(3);
     });
 
+    it('should return codePoints matching glyphCount, one per defined glyph', () => {
+        // MOCK_FONT_DATA defines 'A' (0x41), 'B' (0x42), and 'é' (0xe9).
+        expect(font.codePoints).toEqual([0x41, 0x42, 0xe9]);
+        expect(font.codePoints.length).toBe(font.glyphCount);
+    });
+
     it('should return null for getGlyph of a missing character', () => {
         expect(font.getGlyph('Z')).toBeNull();
     });
@@ -670,6 +676,49 @@ describe('BitmapFont', () => {
             const font = BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
 
             expect(font.measureText('Hi')).toBe(14); // 8 + 6
+        });
+    });
+
+    describe('codePoints', () => {
+        it('sorts ascending regardless of glyph map insertion order', () => {
+            const pixels = new Uint8Array(16 * 16) as Uint8Array<ArrayBuffer>;
+            const sheet = SpriteSheet.fromIndexedPixels(16, 16, pixels);
+
+            const glyphs = new Map();
+
+            glyphs.set('é', { rect: new Rect2i(0, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }); // 0xe9
+            glyphs.set('A', { rect: new Rect2i(8, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }); // 0x41
+            glyphs.set('Z', { rect: new Rect2i(16, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }); // 0x5a
+
+            const font = BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
+
+            expect(font.codePoints).toEqual([0x41, 0x5a, 0xe9]);
+        });
+
+        it('includes an astral code point, resolved from the full surrogate pair', () => {
+            const pixels = new Uint8Array(16 * 16) as Uint8Array<ArrayBuffer>;
+            const sheet = SpriteSheet.fromIndexedPixels(16, 16, pixels);
+            const ASTRAL_CHAR = '😀'; // U+1F600, a UTF-16 surrogate pair.
+            const glyphs = new Map([
+                [ASTRAL_CHAR, { rect: new Rect2i(0, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }],
+            ]);
+
+            const font = BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
+
+            expect(font.codePoints).toEqual([0x1f600]);
+        });
+
+        it('includes the fallback glyph code point when the font defines one', () => {
+            const pixels = new Uint8Array(16 * 16) as Uint8Array<ArrayBuffer>;
+            const sheet = SpriteSheet.fromIndexedPixels(16, 16, pixels);
+            const glyphs = new Map([
+                ['A', { rect: new Rect2i(0, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }],
+                ['�', { rect: new Rect2i(8, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 }],
+            ]);
+
+            const font = BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
+
+            expect(font.codePoints).toEqual([0x41, 0xfffd]);
         });
     });
 

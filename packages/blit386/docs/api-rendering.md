@@ -159,8 +159,12 @@ RGBA values are gone.
 
 <Since symbol="BT.systemPrint" />
 <Since symbol="BT.systemPrintMeasure" />
+<Since symbol="BT.systemFont" />
 
 Built-in 6×14 monospace font covering printable ASCII (characters 32–126).
+
+`BT.systemFont` returns the same `BitmapFont` instance `BT.systemPrint` draws with, as a live reference. Read
+`codePoints` on it to see every Unicode code point it covers, or pass it to `BT.printFont` directly.
 
 ```ts twoslash
 import { BT, Vector2i } from 'blit386';
@@ -170,6 +174,8 @@ declare const text: string;
 // ---cut---
 BT.systemPrint(pos, paletteIndex, text); // draw text at pos
 BT.systemPrintMeasure(text); // → Vector2i (pixel width × height)
+BT.systemFont.codePoints.length; // how many characters the system font covers
+BT.systemFont.hasGlyph('é'); // test one character before drawing it
 ```
 
 <DemoEmbed demo="004-fonts" title="BLIT386 fonts demo" />

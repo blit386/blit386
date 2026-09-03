@@ -216,6 +216,9 @@ export function getHotReloadFonts(url: string): ReadonlySet<BitmapFont> | undefi
  * @changed 1.5.0 `getGlyph` / `getGlyphByCode` (and `measureText`, which now shares their
  *   lookup) substitute a font-defined fallback glyph for a missing character instead of
  *   returning `null`, when the font's glyph map has an entry keyed by `U+FFFD`.
+ * @changed 1.7.0 Added the `codePoints` getter, returning every Unicode code point the font
+ *   defines a glyph for (ascending, derived live from the same glyph map `getGlyph()` and
+ *   `hasGlyph()` read).
  */
 export class BitmapFont {
     /** Font display name. */
@@ -287,6 +290,23 @@ export class BitmapFont {
      */
     get glyphCount(): number {
         return this.glyphs.size;
+    }
+
+    /**
+     * Returns every Unicode code point this font defines a glyph for, ascending.
+     *
+     * Derived live from the same {@link glyphs} map {@link getGlyph} / {@link hasGlyph} read –
+     * it can never drift from what actually renders. Includes ordinary ASCII (the ASCII
+     * fast-path array is populated from this same map at construction time, not a second,
+     * disjoint source) and the fallback glyph when the font defines one (see
+     * `FALLBACK_GLYPH_CHAR`).
+     *
+     * @returns Sorted array of Unicode code points covered by this font's glyph map.
+     */
+    get codePoints(): readonly number[] {
+        return Array.from(this.glyphs.keys(), (char) => char.codePointAt(0))
+            .filter((codePoint): codePoint is number => codePoint !== undefined)
+            .sort((a, b) => a - b);
     }
 
     /**

@@ -79,6 +79,21 @@ describe('createSystemFont', () => {
         expect(font.hasGlyph('→')).toBe(true);
         expect(font.hasGlyph('↓')).toBe(true);
     });
+
+    it('exposes codePoints as an ascending, duplicate-free enumeration of every real glyph', () => {
+        // Structural checks rather than a hardcoded count – a glyph browser built on codePoints
+        // must never need updating when the font gains or loses a glyph.
+        const font = createSystemFont();
+        const codePoints = font.codePoints;
+
+        expect(codePoints.length).toBe(SYSTEM_FONT_GLYPH_COUNT);
+        expect(new Set(codePoints).size).toBe(codePoints.length);
+        expect([...codePoints]).toEqual([...codePoints].sort((a, b) => a - b));
+
+        for (const codePoint of codePoints) {
+            expect(font.hasGlyph(String.fromCodePoint(codePoint))).toBe(true);
+        }
+    });
 });
 
 describe('system font glyph access', () => {

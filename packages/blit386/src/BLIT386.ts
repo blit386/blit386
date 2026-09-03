@@ -77,7 +77,7 @@ import { clampCameraToWorld } from './utils/CameraUtils';
 import { Color32 } from './utils/Color32';
 import type { EasingFunction } from './utils/Easing';
 import { applyEasing, interpolate } from './utils/Easing';
-import { noActivePaletteError } from './utils/errorMessages';
+import { noActivePaletteError, systemFontNotReadyError } from './utils/errorMessages';
 import { exposeGlobal } from './utils/globalExpose';
 import { hash1, hash1i, hash2, hash2i, hash3, hash3i } from './utils/hash';
 import { PerlinNoise } from './utils/PerlinNoise';
@@ -2150,6 +2150,27 @@ export const BT = {
      */
     get inputString(): string {
         return BTAPI.instance.getKeyboard()?.getInputString() ?? '';
+    },
+
+    /**
+     * Built-in 6x14 system font used by {@link BT.systemPrint} (live reference, not a copy).
+     *
+     * Read `codePoints` on the returned font to see every Unicode code point it covers, or
+     * `hasGlyph(char)` to test one character. Pass it to {@link BT.printFont} to draw with the
+     * exact glyphs and metrics {@link BT.systemPrint} uses internally.
+     *
+     * @since 1.7.0
+     * @throws Error if read before {@link BT.init} finishes creating the system font.
+     * @returns The engine's built-in system font.
+     */
+    get systemFont(): BitmapFont {
+        const font = BTAPI.instance.getSystemFont();
+
+        if (!font) {
+            throw new Error(systemFontNotReadyError());
+        }
+
+        return font;
     },
 
     /**
