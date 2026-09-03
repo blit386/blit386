@@ -677,6 +677,30 @@ describe('BitmapFont', () => {
 
             expect(font.measureText('Hi')).toBe(14); // 8 + 6
         });
+
+        it('is unaffected by later mutations to the caller’s map (ASCII cache stays in sync)', () => {
+            const pixels = new Uint8Array(16 * 16) as Uint8Array<ArrayBuffer>;
+            const sheet = SpriteSheet.fromIndexedPixels(16, 16, pixels);
+
+            const glyphs = new Map();
+
+            glyphs.set('A', { rect: new Rect2i(0, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 });
+            glyphs.set('B', { rect: new Rect2i(8, 0, 8, 8), offsetX: 0, offsetY: 0, advance: 8 });
+
+            const font = BitmapFont.createFromGlyphs(sheet, glyphs, 'Test', 8, 8, 8);
+
+            // Add a new ASCII key and remove an existing one, on the caller's own map, after
+            // the font was already built.
+            glyphs.set('C', { rect: new Rect2i(0, 8, 8, 8), offsetX: 0, offsetY: 0, advance: 8 });
+            glyphs.delete('B');
+
+            // The font's ASCII fast path and its codePoints (Map-based) view must agree: the
+            // font should still act exactly as it did at construction time, seeing neither the
+            // caller's later addition nor its later removal.
+            expect(font.getGlyph('C')).toBeNull();
+            expect(font.getGlyph('B')).not.toBeNull();
+            expect(font.codePoints).toEqual([0x41, 0x42]);
+        });
     });
 
     describe('codePoints', () => {

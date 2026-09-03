@@ -324,6 +324,11 @@ export class BitmapFont {
      * should already contain indexed pixel data via
      * {@link SpriteSheet.fromIndexedPixels}.
      *
+     * Copies `glyphs` rather than retaining the caller's map: `asciiGlyphs` is a
+     * cache built once here, so a caller mutating its own map afterward would
+     * otherwise drift out of sync with {@link glyphs} (and so with `getGlyph()`,
+     * `hasGlyph()`, and `codePoints`).
+     *
      * @param spriteSheet – Texture atlas containing all font glyphs.
      * @param glyphs – Map of character strings to glyph metadata.
      * @param name – Font display name.
@@ -340,13 +345,14 @@ export class BitmapFont {
         lineHeight: number,
         baseline: number,
     ): BitmapFont {
+        const glyphMap = new Map(glyphs);
         const asciiGlyphs = createAsciiGlyphTable();
 
-        for (const [char, glyph] of glyphs) {
+        for (const [char, glyph] of glyphMap) {
             populateAsciiGlyph(asciiGlyphs, char, glyph);
         }
 
-        return new BitmapFont(spriteSheet, glyphs, asciiGlyphs, name, size, lineHeight, baseline);
+        return new BitmapFont(spriteSheet, glyphMap, asciiGlyphs, name, size, lineHeight, baseline);
     }
 
     /**
