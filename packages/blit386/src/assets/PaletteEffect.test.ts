@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Color32, srgbToLinear } from '../utils/Color32';
 import { Palette } from './Palette';
@@ -112,18 +112,66 @@ describe('PaletteEffectManager', () => {
         expect(manager.activeCount).toBe(0);
     });
 
-    it('marks palette dirty after update with active effects', () => {
+    it('marks palette dirty when an active effect mutates the palette', () => {
         const clock = makeTimeClock();
         const manager = new PaletteEffectManager(clock.provider);
         const palette = makeTestPalette();
 
-        manager.add({ update: () => true });
+        manager.add({
+            update: (p) => {
+                p.markDirty();
+
+                return true;
+            },
+        });
         palette.clearDirty();
 
         clock.advance(16);
         manager.update(palette);
 
         expect(palette.isDirty).toBe(true);
+    });
+
+    it('does not mark palette dirty when no effect mutates it this tick', () => {
+        const clock = makeTimeClock();
+        const manager = new PaletteEffectManager(clock.provider);
+        const palette = makeTestPalette();
+
+        // An effect that keeps running but never touches the palette (e.g. a slow
+        // CycleEffect between step crossings) must not trigger an upload.
+        manager.add({ update: () => true });
+        palette.clearDirty();
+
+        clock.advance(16);
+        manager.update(palette);
+
+        expect(palette.isDirty).toBe(false);
+    });
+
+    it('calls palette.markDirty() only on ticks where a CycleEffect crosses a step', () => {
+        const clock = makeTimeClock();
+        const manager = new PaletteEffectManager(clock.provider);
+        const palette = makeTestPalette();
+        const markDirtySpy = vi.spyOn(palette, 'markDirty');
+
+        // 1 step/sec over a 15-entry range: a 16ms tick (~60 FPS) accumulates 0.016
+        // steps, so most ticks must not cross a whole step.
+        manager.add(new CycleEffect(1, 15, 1));
+
+        for (let frame = 0; frame < 10; frame++) {
+            clock.advance(16);
+            manager.update(palette);
+        }
+
+        expect(markDirtySpy).not.toHaveBeenCalled();
+
+        // Advance far enough to guarantee at least one step crossing.
+        clock.advance(1000);
+        manager.update(palette);
+
+        expect(markDirtySpy).toHaveBeenCalledTimes(1);
+
+        markDirtySpy.mockRestore();
     });
 
     it('skips first-frame delta (delta is 0 on first call)', () => {
@@ -293,6 +341,44 @@ describe('CycleEffect', () => {
 
         expect(palette.getRef(5).isEqual(original5)).toBe(true);
     });
+
+    it('does not mark the palette dirty on a tick that does not cross a step', () => {
+        const palette = makeTestPalette();
+        const effect = new CycleEffect(1, 3, 1); // 1 step/sec
+        const markDirtySpy = vi.spyOn(palette, 'markDirty');
+
+        // 400ms = 0.4 steps -> no rotation this tick.
+        effect.update(palette, 400);
+
+        expect(markDirtySpy).not.toHaveBeenCalled();
+
+        markDirtySpy.mockRestore();
+    });
+
+    it('marks the palette dirty on a tick that crosses a step', () => {
+        const palette = makeTestPalette();
+        const effect = new CycleEffect(1, 3, 1); // 1 step/sec
+        const markDirtySpy = vi.spyOn(palette, 'markDirty');
+
+        // 1000ms = 1 full step -> rotation happens this tick.
+        effect.update(palette, 1000);
+
+        expect(markDirtySpy).toHaveBeenCalledTimes(1);
+
+        markDirtySpy.mockRestore();
+    });
+
+    it('does not mark the palette dirty when speed is 0', () => {
+        const palette = makeTestPalette();
+        const effect = new CycleEffect(1, 3, 0);
+        const markDirtySpy = vi.spyOn(palette, 'markDirty');
+
+        effect.update(palette, 1000);
+
+        expect(markDirtySpy).not.toHaveBeenCalled();
+
+        markDirtySpy.mockRestore();
+    });
 });
 
 describe('FadeEffect', () => {
@@ -390,6 +476,23 @@ describe('FadeEffect', () => {
 
         // Index 0 should remain transparent (unmodified by the fade loop starting at 1).
         expect(source.getRef(0).a).toBe(0);
+    });
+
+    it('marks the palette dirty on its terminal (completion) tick', () => {
+        const source = makeTestPalette();
+        const target = new Palette(16);
+
+        fillNonTransparentSlots(target, new Color32(255, 0, 0));
+
+        const effect = new FadeEffect(source, target, 1000);
+        const markDirtySpy = vi.spyOn(source, 'markDirty');
+
+        // This single call both lands on the target and completes the fade – the
+        // final colors must still be flagged for upload.
+        expect(effect.update(source, 1000)).toBe(false);
+        expect(markDirtySpy).toHaveBeenCalledTimes(1);
+
+        markDirtySpy.mockRestore();
     });
 });
 
@@ -499,6 +602,23 @@ describe('FlashEffect', () => {
         expect(effect.update(palette, 0)).toBe(true); // Flash applied.
         expect(effect.update(palette, 50)).toBe(true); // Still flashing.
         expect(effect.update(palette, 50)).toBe(false); // Restored.
+    });
+
+    it('marks the palette dirty only on the apply and restore ticks, not while holding', () => {
+        const palette = makeTestPalette();
+        const effect = new FlashEffect(new Color32(255, 0, 0), 100);
+        const markDirtySpy = vi.spyOn(palette, 'markDirty');
+
+        effect.update(palette, 0); // Apply – mutates.
+        expect(markDirtySpy).toHaveBeenCalledTimes(1);
+
+        effect.update(palette, 50); // Holding – no change.
+        expect(markDirtySpy).toHaveBeenCalledTimes(1);
+
+        effect.update(palette, 50); // Restore – mutates, also completes.
+        expect(markDirtySpy).toHaveBeenCalledTimes(2);
+
+        markDirtySpy.mockRestore();
     });
 });
 
