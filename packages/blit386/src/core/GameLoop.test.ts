@@ -250,6 +250,33 @@ describe('GameLoop', () => {
             expect(p.lastUpdateTime).toBeGreaterThan(0);
             expect(rafCallbacks).toHaveLength(3);
         });
+
+        it('schedules every frame with the same bound tick callback reference used from start() through tick()', () => {
+            const rafCallbacks: Array<(time?: number) => void> = [];
+
+            vi.stubGlobal(
+                'requestAnimationFrame',
+                vi.fn((cb: (time?: number) => void) => {
+                    rafCallbacks.push(cb);
+
+                    return rafCallbacks.length;
+                }),
+            );
+
+            const loop = new GameLoop(16.67, vi.fn(), vi.fn());
+
+            loop.start();
+            rafCallbacks[0]?.(); // outer start() rAF
+            rafCallbacks[1]?.(); // inner start() rAF – schedules the first tick
+
+            const firstTickCallback = rafCallbacks[2];
+
+            firstTickCallback?.(10); // run the first tick – schedules the next one
+            const secondTickCallback = rafCallbacks[3];
+
+            expect(firstTickCallback).toBeDefined();
+            expect(firstTickCallback).toBe(secondTickCallback);
+        });
     });
 
     describe('tick (via type cast)', () => {
@@ -337,6 +364,24 @@ describe('GameLoop', () => {
             p.tick(10);
 
             expect(requestAnimationFrame).toHaveBeenCalled();
+        });
+
+        it('should reuse the same bound callback reference across every scheduled frame', () => {
+            const loop = new GameLoop(10, vi.fn(), vi.fn());
+            const p = loop as unknown as PrivateLoop;
+
+            p.isRunning = true;
+            p.lastUpdateTime = 0;
+            p.tick(10);
+            p.tick(20);
+            p.tick(30);
+
+            const raf = requestAnimationFrame as ReturnType<typeof vi.fn>;
+            const callbacks = raf.mock.calls.map((call) => call[0]);
+
+            expect(callbacks).toHaveLength(3);
+            expect(callbacks[0]).toBe(callbacks[1]);
+            expect(callbacks[1]).toBe(callbacks[2]);
         });
     });
 
@@ -545,6 +590,104 @@ describe('GameLoop', () => {
             p.lastUpdateTime = 0;
 
             expect(() => p.tick(100)).not.toThrow();
+        });
+    });
+
+    describe('frame-drop detection – incremental baseline matches full rescan', () => {
+        type PrivateDetector = {
+            detectFrameDrop: (deltaTime: number) => void;
+        };
+
+        const BASELINE_WINDOW = 60;
+        const WARMUP_SAMPLES = 8;
+        const BACKGROUND_THRESHOLD_MS = 1000;
+        const DROP_THRESHOLD_MULTIPLIER = 1.5;
+
+        /**
+         * Reference re-implementation of the pre-optimization O(window) full
+         * rescan baseline algorithm (identical ring-buffer write, warm-up
+         * gating, and threshold semantics), used to generate the expected
+         * event sequence for comparison against the production incremental
+         * tracker in {@link GameLoop.detectFrameDrop}.
+         */
+        function referenceEvents(deltas: number[]): FrameDropEvent[] {
+            const ring = new Array<number>(BASELINE_WINDOW).fill(0);
+            let head = 0;
+            let count = 0;
+            const events: FrameDropEvent[] = [];
+
+            for (const deltaTime of deltas) {
+                if (deltaTime >= BACKGROUND_THRESHOLD_MS) {
+                    continue;
+                }
+
+                // eslint-disable-next-line security/detect-object-injection -- reference impl, index is a bounded ring-buffer head
+                ring[head] = deltaTime;
+                head = (head + 1) % BASELINE_WINDOW;
+
+                if (count < BASELINE_WINDOW) {
+                    count++;
+                }
+
+                if (count < WARMUP_SAMPLES) {
+                    continue;
+                }
+
+                let baseline = Number.POSITIVE_INFINITY;
+                let seen = 0;
+
+                for (const sample of ring) {
+                    if (seen >= count) {
+                        break;
+                    }
+
+                    if (sample < baseline) {
+                        baseline = sample;
+                    }
+
+                    seen++;
+                }
+
+                if (deltaTime <= baseline * DROP_THRESHOLD_MULTIPLIER) {
+                    continue;
+                }
+
+                events.push({
+                    droppedFrames: Math.max(1, Math.round(deltaTime / baseline) - 1),
+                    deltaTime,
+                    expectedInterval: baseline,
+                });
+            }
+
+            return events;
+        }
+
+        it('produces identical FrameDropEvents to a full-rescan reference over a mixed 60/120Hz scripted sequence', () => {
+            const deltas: number[] = [
+                ...(Array(20).fill(16.67) as number[]), // 60Hz warm-up
+                ...(Array(30).fill(8.33) as number[]), // switch to 120Hz cadence
+                20, // drop relative to the 8.33 baseline
+                ...(Array(40).fill(8.33) as number[]), // continue at 120Hz, wraps the ring buffer, evicts old 60Hz + drop samples
+                5000, // background pause – excluded from ring and reporting
+                50, // drop relative to the 8.33 baseline, right after the pause
+                ...(Array(70).fill(16.67) as number[]), // back to 60Hz for long enough to evict all 8.33 samples
+                35, // drop relative to the re-established 16.67 baseline
+            ];
+
+            const expected = referenceEvents(deltas);
+
+            const onFrameDrop = vi.fn();
+            const loop = new GameLoop(16.67, vi.fn(), vi.fn(), onFrameDrop);
+            const p = loop as unknown as PrivateDetector;
+
+            for (const deltaTime of deltas) {
+                p.detectFrameDrop(deltaTime);
+            }
+
+            const actual = onFrameDrop.mock.calls.map((call) => call[0] as FrameDropEvent);
+
+            expect(expected.length).toBeGreaterThan(0);
+            expect(actual).toEqual(expected);
         });
     });
 });

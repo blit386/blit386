@@ -141,6 +141,29 @@ export class GameLoop {
     private deltaCount: number = 0;
 
     /**
+     * Shortest sample currently in {@link recentDeltas}, maintained incrementally by
+     * {@link detectFrameDrop} instead of re-scanning the window on every call. Only trustworthy
+     * when {@link baselineMinValid} is `true`.
+     */
+    private baselineMin: number = Number.POSITIVE_INFINITY;
+
+    /** Index into {@link recentDeltas} holding {@link baselineMin}'s value. */
+    private baselineMinIndex: number = -1;
+
+    /**
+     * Whether {@link baselineMin} / {@link baselineMinIndex} currently reflect the contents of
+     * {@link recentDeltas}. Starts `false` so the first call after construction always performs a
+     * full scan; set `true` once that scan runs.
+     */
+    private baselineMinValid: boolean = false;
+
+    /**
+     * Bound reference to {@link tick}, created once so every `requestAnimationFrame` call across
+     * the loop's lifetime schedules the same callback instead of allocating a fresh closure per frame.
+     */
+    private readonly boundTick: (currentTime: number) => void;
+
+    /**
      * Creates a new GameLoop.
      *
      * @param updateInterval – Milliseconds between fixed update steps (1000 / targetFPS).
@@ -158,6 +181,7 @@ export class GameLoop {
         this.onUpdate = onUpdate;
         this.onRender = onRender;
         this.onFrameDrop = onFrameDrop ?? null;
+        this.boundTick = (currentTime) => this.tick(currentTime);
     }
 
     /**
@@ -177,7 +201,7 @@ export class GameLoop {
             requestAnimationFrame(() => {
                 this.lastUpdateTime = performance.now();
 
-                requestAnimationFrame((t) => this.tick(t));
+                requestAnimationFrame(this.boundTick);
             });
         });
     }
@@ -260,7 +284,7 @@ export class GameLoop {
 
         this.onRender();
 
-        requestAnimationFrame((t) => this.tick(t));
+        requestAnimationFrame(this.boundTick);
     }
 
     /**
@@ -307,8 +331,12 @@ export class GameLoop {
         }
 
         // Ring-buffer write: O(1) overwrite of the oldest slot.
-        this.recentDeltas[this.deltaHead] = deltaTime;
-        this.deltaHead = (this.deltaHead + 1) % GameLoop.BASELINE_WINDOW;
+        const writeIndex = this.deltaHead;
+        const wasWindowFull = this.deltaCount >= GameLoop.BASELINE_WINDOW;
+
+        // eslint-disable-next-line security/detect-object-injection -- writeIndex is deltaHead, bounded to [0, BASELINE_WINDOW)
+        this.recentDeltas[writeIndex] = deltaTime;
+        this.deltaHead = (writeIndex + 1) % GameLoop.BASELINE_WINDOW;
 
         if (this.deltaCount < GameLoop.BASELINE_WINDOW) {
             this.deltaCount++;
@@ -319,22 +347,9 @@ export class GameLoop {
             return;
         }
 
-        // Baseline = shortest recent delta. Robust to slow frames since drops
-        // can only stretch deltas, never shorten them.
-        let baseline = Number.POSITIVE_INFINITY;
-        let seen = 0;
+        this.updateBaselineMin(deltaTime, writeIndex, wasWindowFull);
 
-        for (const sample of this.recentDeltas) {
-            if (seen >= this.deltaCount) {
-                break;
-            }
-
-            if (sample < baseline) {
-                baseline = sample;
-            }
-
-            seen++;
-        }
+        const baseline = this.baselineMin;
 
         if (deltaTime <= baseline * GameLoop.DROP_THRESHOLD_MULTIPLIER) {
             return;
@@ -347,5 +362,68 @@ export class GameLoop {
             deltaTime,
             expectedInterval: baseline,
         });
+    }
+
+    /**
+     * Keeps {@link baselineMin} / {@link baselineMinIndex} in sync with {@link recentDeltas} after
+     * a ring-buffer write, without re-scanning the window unless the just-evicted slot held the
+     * previous minimum.
+     *
+     * Baseline = shortest recent delta. Robust to slow frames since drops can only stretch deltas,
+     * never shorten them – so a new sample can only ever lower or preserve the tracked minimum,
+     * never invalidate it by itself.
+     *
+     * @param newSample – The delta just written into {@link recentDeltas} at `writeIndex`.
+     * @param writeIndex – The ring-buffer slot `newSample` was written to (the just-overwritten slot).
+     * @param wasWindowFull – Whether the overwritten slot held a valid prior sample (window already
+     *   at {@link BASELINE_WINDOW} capacity before this write).
+     */
+    private updateBaselineMin(newSample: number, writeIndex: number, wasWindowFull: boolean): void {
+        if (!this.baselineMinValid) {
+            this.recomputeBaselineMin();
+
+            return;
+        }
+
+        const evictedTrackedMinimum = wasWindowFull && writeIndex === this.baselineMinIndex;
+
+        if (evictedTrackedMinimum) {
+            this.recomputeBaselineMin();
+
+            return;
+        }
+
+        if (newSample <= this.baselineMin) {
+            this.baselineMin = newSample;
+            this.baselineMinIndex = writeIndex;
+        }
+    }
+
+    /**
+     * Full O({@link BASELINE_WINDOW}) rescan of {@link recentDeltas}, used to (re)establish
+     * {@link baselineMin} / {@link baselineMinIndex} whenever the incremental tracker in
+     * {@link updateBaselineMin} cannot prove the cached minimum is still valid.
+     */
+    private recomputeBaselineMin(): void {
+        let baseline = Number.POSITIVE_INFINITY;
+        let baselineIndex = -1;
+        let seen = 0;
+
+        for (const [index, sample] of this.recentDeltas.entries()) {
+            if (seen >= this.deltaCount) {
+                break;
+            }
+
+            if (sample < baseline) {
+                baseline = sample;
+                baselineIndex = index;
+            }
+
+            seen++;
+        }
+
+        this.baselineMin = baseline;
+        this.baselineMinIndex = baselineIndex;
+        this.baselineMinValid = true;
     }
 }
